@@ -12,8 +12,8 @@ import spock.lang.Ignore
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
-class TriggerProtocolTest extends Specification implements ManagerContainerTrait {
-    // TODO: Test the trigger protocol
+class TimerProtocolTest extends Specification implements ManagerContainerTrait {
+    // TODO: Test the timer protocol
     @Ignore
     def "Check time trigger protocol"() {
 

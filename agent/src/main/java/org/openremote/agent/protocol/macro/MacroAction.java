@@ -29,7 +29,7 @@ import org.openremote.model.value.Values;
 import java.util.Objects;
 import java.util.Optional;
 
-import static org.openremote.agent.protocol.macro.MacroConfiguration.META_MACRO_ACTION;
+import static org.openremote.agent.protocol.macro.MacroProtocol.META_MACRO_ACTION;
 
 /**
  * A desired {@link AttributeState} and a delay in milli seconds before that state
@@ -86,9 +86,10 @@ public class MacroAction {
     }
 
     public static Optional<MacroAction> fromValue(Value value) {
+        //noinspection ConstantConditions
         return Values.getObject(value)
             .map(objectValue -> new Pair<>(
-                    AttributeState.fromValue(objectValue.get("attributeState").get()),
+                    AttributeState.fromValue(objectValue.get("attributeState").orElse(null)),
                     objectValue.getNumber("delay").orElse(0d)
                 )
             ).filter(pair -> pair.key.isPresent())

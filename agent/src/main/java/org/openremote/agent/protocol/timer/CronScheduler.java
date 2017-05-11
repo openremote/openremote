@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.agent.protocol.trigger.time;
+package org.openremote.agent.protocol.timer;
 
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.Pair;

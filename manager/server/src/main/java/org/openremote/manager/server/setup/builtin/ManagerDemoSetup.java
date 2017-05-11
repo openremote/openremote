@@ -27,9 +27,7 @@ import org.openremote.agent.protocol.simulator.element.ColorSimulatorElement;
 import org.openremote.agent.protocol.simulator.element.DecimalSimulatorElement;
 import org.openremote.agent.protocol.simulator.element.IntegerSimulatorElement;
 import org.openremote.agent.protocol.simulator.element.SwitchSimulatorElement;
-import org.openremote.agent.protocol.trigger.TriggerProtocol;
-import org.openremote.agent.protocol.trigger.TriggerType;
-import org.openremote.agent.protocol.trigger.time.TimeTriggerProperty;
+import org.openremote.agent.protocol.timer.TimerValue;
 import org.openremote.container.Container;
 import org.openremote.manager.server.asset.ServerAsset;
 import org.openremote.manager.server.setup.AbstractManagerSetup;
@@ -47,8 +45,8 @@ import java.util.Arrays;
 import java.util.List;
 
 import static org.openremote.agent.protocol.macro.MacroProtocol.META_MACRO_ACTION_INDEX;
-import static org.openremote.agent.protocol.macro.MacroProtocol.PROPERTY_MACRO_ACTION;
-import static org.openremote.agent.protocol.trigger.TriggerConfiguration.*;
+import static org.openremote.agent.protocol.timer.TimerConfiguration.initTimerConfiguration;
+import static org.openremote.agent.protocol.timer.TimerProtocol.META_TIMER_VALUE_LINK;
 import static org.openremote.model.asset.AssetMeta.*;
 import static org.openremote.model.asset.AssetType.*;
 import static org.openremote.model.asset.agent.ProtocolConfiguration.initProtocolConfiguration;
@@ -452,250 +450,150 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                     new MacroAction(new AttributeState(new AttributeRef(apartment1Id, "alarmEnabled"), Values.create(true))).toMetaItem(),
                     new MacroAction(new AttributeState(new AttributeRef(apartment1LivingroomThermostatId, "targetTemperature"), Values.create(19d))).toMetaItem(),
                     new MacroAction(new AttributeState(new AttributeRef(apartment1Id, "lastExecutedScene"), Values.create("NIGHT"))).toMetaItem()
+                ),
+            // Add triggers
+            initTimerConfiguration(new AssetAttribute("homeMondayTrigger"), "0 0 7 ? * MON *",
+                new AttributeState(apartment1Id, "home", Values.create("REQUEST_START")))
+                .addMeta(
+                    new MetaItem(LABEL, Values.create("Home Monday trigger"))
+                ),
+            initTimerConfiguration(new AssetAttribute("awayMondayTrigger"), "0 30 8 ? * MON *",
+                new AttributeState(apartment1Id, "away", Values.create("REQUEST_START")))
+                .addMeta(
+                    new MetaItem(LABEL, Values.create("Evening Monday trigger"))
+                ),
+            initTimerConfiguration(new AssetAttribute("eveningMondayTrigger"), "0 30 17 ? * MON *",
+                new AttributeState(apartment1Id, "evening", Values.create("REQUEST_START")))
+                .addMeta(
+                    new MetaItem(LABEL, Values.create("Evening Monday trigger"))
+                ),
+            initTimerConfiguration(new AssetAttribute("nightMondayTrigger"), "0 0 22 ? * MON *",
+                new AttributeState(apartment1Id, "night", Values.create("REQUEST_START")))
+                .addMeta(
+                    new MetaItem(LABEL, Values.create("Night Monday trigger"))
+                ),
+            initTimerConfiguration(new AssetAttribute("homeTuesdayTrigger"), "0 0 7 ? * TUE *",
+                new AttributeState(apartment1Id, "home", Values.create("REQUEST_START")))
+                .addMeta(
+                    new MetaItem(LABEL, Values.create("Home Tuesday trigger"))
+                ),
+            initTimerConfiguration(new AssetAttribute("awayTuesdayTrigger"), "0 30 8 ? * TUE *",
+                new AttributeState(apartment1Id, "away", Values.create("REQUEST_START")))
+                .addMeta(
+                    new MetaItem(LABEL, Values.create("Evening Tuesday trigger"))
+                ),
+            initTimerConfiguration(new AssetAttribute("eveningTuesdayTrigger"), "0 30 17 ? * TUE *",
+                new AttributeState(apartment1Id, "evening", Values.create("REQUEST_START")))
+                .addMeta(
+                    new MetaItem(LABEL, Values.create("Evening Tuesday trigger"))
+                ),
+            initTimerConfiguration(new AssetAttribute("nightTuesdayTrigger"), "0 0 22 ? * TUE *",
+                new AttributeState(apartment1Id, "night", Values.create("REQUEST_START")))
+                .addMeta(
+                    new MetaItem(LABEL, Values.create("Night Tuesday trigger"))
+                ),
+            initTimerConfiguration(new AssetAttribute("homeWednesdayTrigger"), "0 0 7 ? * WED *",
+                new AttributeState(apartment1Id, "home", Values.create("REQUEST_START")))
+                .addMeta(
+                    new MetaItem(LABEL, Values.create("Home Wednesday trigger"))
+                ),
+            initTimerConfiguration(new AssetAttribute("awayWednesdayTrigger"), "0 30 8 ? * WED *",
+                new AttributeState(apartment1Id, "away", Values.create("REQUEST_START")))
+                .addMeta(
+                    new MetaItem(LABEL, Values.create("Evening Wednesday trigger"))
+                ),
+            initTimerConfiguration(new AssetAttribute("eveningWednesdayTrigger"), "0 30 17 ? * WED *",
+                new AttributeState(apartment1Id, "evening", Values.create("REQUEST_START")))
+                .addMeta(
+                    new MetaItem(LABEL, Values.create("Evening Wednesday trigger"))
+                ),
+            initTimerConfiguration(new AssetAttribute("nightWednesdayTrigger"), "0 0 22 ? * WED *",
+                new AttributeState(apartment1Id, "night", Values.create("REQUEST_START")))
+                .addMeta(
+                    new MetaItem(LABEL, Values.create("Night Wednesday trigger"))
+                ),
+            initTimerConfiguration(new AssetAttribute("homeThursdayTrigger"), "0 0 7 ? * THU *",
+                new AttributeState(apartment1Id, "home", Values.create("REQUEST_START")))
+                .addMeta(
+                    new MetaItem(LABEL, Values.create("Home Thursday trigger"))
+                ),
+            initTimerConfiguration(new AssetAttribute("awayThursdayTrigger"), "0 30 8 ? * THU *",
+                new AttributeState(apartment1Id, "away", Values.create("REQUEST_START")))
+                .addMeta(
+                    new MetaItem(LABEL, Values.create("Evening Thursday trigger"))
+                ),
+            initTimerConfiguration(new AssetAttribute("eveningThursdayTrigger"), "0 30 17 ? * THU *",
+                new AttributeState(apartment1Id, "evening", Values.create("REQUEST_START")))
+                .addMeta(
+                    new MetaItem(LABEL, Values.create("Evening Thursday trigger"))
+                ),
+            initTimerConfiguration(new AssetAttribute("nightThursdayTrigger"), "0 0 22 ? * THU *",
+                new AttributeState(apartment1Id, "night", Values.create("REQUEST_START")))
+                .addMeta(
+                    new MetaItem(LABEL, Values.create("Night Thursday trigger"))
+                ),
+            initTimerConfiguration(new AssetAttribute("homeFridayTrigger"), "0 0 7 ? * FRI *",
+                new AttributeState(apartment1Id, "home", Values.create("REQUEST_START")))
+                .addMeta(
+                    new MetaItem(LABEL, Values.create("Home Friday trigger"))
+                ),
+            initTimerConfiguration(new AssetAttribute("awayFridayTrigger"), "0 30 8 ? * FRI *",
+                new AttributeState(apartment1Id, "away", Values.create("REQUEST_START")))
+                .addMeta(
+                    new MetaItem(LABEL, Values.create("Evening Friday trigger"))
+                ),
+            initTimerConfiguration(new AssetAttribute("eveningFridayTrigger"), "0 30 17 ? * FRI *",
+                new AttributeState(apartment1Id, "evening", Values.create("REQUEST_START")))
+                .addMeta(
+                    new MetaItem(LABEL, Values.create("Evening Friday trigger"))
+                ),
+            initTimerConfiguration(new AssetAttribute("nightFridayTrigger"), "0 0 22 ? * FRI *",
+                new AttributeState(apartment1Id, "night", Values.create("REQUEST_START")))
+                .addMeta(
+                    new MetaItem(LABEL, Values.create("Night Friday trigger"))
+                ),
+            initTimerConfiguration(new AssetAttribute("homeSaturdayTrigger"), "0 0 8 ? * SAT *",
+                new AttributeState(apartment1Id, "home", Values.create("REQUEST_START")))
+                .addMeta(
+                    new MetaItem(LABEL, Values.create("Home Saturday trigger"))
+                ),
+            initTimerConfiguration(new AssetAttribute("awaySaturdayTrigger"), "0 30 9 ? * SAT *",
+                new AttributeState(apartment1Id, "away", Values.create("REQUEST_START")))
+                .addMeta(
+                    new MetaItem(LABEL, Values.create("Evening Saturday trigger"))
+                ),
+            initTimerConfiguration(new AssetAttribute("eveningSaturdayTrigger"), "0 30 18 ? * SAT *",
+                new AttributeState(apartment1Id, "evening", Values.create("REQUEST_START")))
+                .addMeta(
+                    new MetaItem(LABEL, Values.create("Evening Saturday trigger"))
+                ),
+            initTimerConfiguration(new AssetAttribute("nightSaturdayTrigger"), "0 0 23 ? * SAT *",
+                new AttributeState(apartment1Id, "night", Values.create("REQUEST_START")))
+                .addMeta(
+                    new MetaItem(LABEL, Values.create("Night Saturday trigger"))
+                ),
+            initTimerConfiguration(new AssetAttribute("homeSundayTrigger"), "0 0 8 ? * SUN *",
+                new AttributeState(apartment1Id, "home", Values.create("REQUEST_START")))
+                .addMeta(
+                    new MetaItem(LABEL, Values.create("Home Sunday trigger"))
+                ),
+            initTimerConfiguration(new AssetAttribute("awaySundayTrigger"), "0 30 9 ? * SUN *",
+                new AttributeState(apartment1Id, "away", Values.create("REQUEST_START")))
+                .addMeta(
+                    new MetaItem(LABEL, Values.create("Evening Sunday trigger"))
+                ),
+            initTimerConfiguration(new AssetAttribute("eveningSundayTrigger"), "0 30 18 ? * SUN *",
+                new AttributeState(apartment1Id, "evening", Values.create("REQUEST_START")))
+                .addMeta(
+                    new MetaItem(LABEL, Values.create("Evening Sunday trigger"))
+                ),
+            initTimerConfiguration(new AssetAttribute("nightSundayTrigger"), "0 0 23 ? * SUN *",
+                new AttributeState(apartment1Id, "night", Values.create("REQUEST_START")))
+                .addMeta(
+                    new MetaItem(LABEL, Values.create("Night Sunday trigger"))
                 )
         );
 
-        // Add triggers
-        AssetAttribute homeMonday = initProtocolConfiguration(new AssetAttribute("homeMondayTrigger"), TriggerProtocol.PROTOCOL_NAME)
-            .addMeta(
-                new MetaItem(LABEL, Values.create("Home Monday trigger"))
-            );
-        setTriggerType(homeMonday, TriggerType.TIME);
-        setTriggerValue(homeMonday, Values.create("0 0 7 ? * MON *"));
-        setTriggerAction(homeMonday, new AttributeState(apartment1Id, "home", Values.create("REQUEST_START")));
-        AssetAttribute awayMonday = initProtocolConfiguration(new AssetAttribute("awayMondayTrigger"), TriggerProtocol.PROTOCOL_NAME)
-            .addMeta(
-                new MetaItem(LABEL, Values.create("Away Monday trigger"))
-            );
-        setTriggerType(awayMonday, TriggerType.TIME);
-        setTriggerValue(awayMonday, Values.create("0 30 8 ? * MON *"));
-        setTriggerAction(awayMonday, new AttributeState(apartment1Id, "away", Values.create("REQUEST_START")));
-        AssetAttribute eveningMonday = initProtocolConfiguration(new AssetAttribute("eveningMondayTrigger"), TriggerProtocol.PROTOCOL_NAME)
-            .addMeta(
-                new MetaItem(LABEL, Values.create("Evening Monday trigger"))
-            );
-        setTriggerType(eveningMonday, TriggerType.TIME);
-        setTriggerValue(eveningMonday, Values.create("0 30 17 ? * MON *"));
-        setTriggerAction(eveningMonday, new AttributeState(apartment1Id, "evening", Values.create("REQUEST_START")));
-        AssetAttribute nightMonday = initProtocolConfiguration(new AssetAttribute("nightMondayTrigger"), TriggerProtocol.PROTOCOL_NAME)
-            .addMeta(
-                new MetaItem(LABEL, Values.create("Night Monday trigger"))
-            );
-        setTriggerType(nightMonday, TriggerType.TIME);
-        setTriggerValue(nightMonday, Values.create("0 0 22 ? * MON *"));
-        setTriggerAction(nightMonday, new AttributeState(apartment1Id, "night", Values.create("REQUEST_START")));
-
-
-        AssetAttribute homeTuesday = initProtocolConfiguration(new AssetAttribute("homeTuesdayTrigger"), TriggerProtocol.PROTOCOL_NAME)
-            .addMeta(
-                new MetaItem(LABEL, Values.create("Home Tuesday trigger"))
-            );
-        setTriggerType(homeTuesday, TriggerType.TIME);
-        setTriggerValue(homeTuesday, Values.create("0 0 7 ? * TUE *"));
-        setTriggerAction(homeTuesday, new AttributeState(apartment1Id, "home", Values.create("REQUEST_START")));
-        AssetAttribute awayTuesday = initProtocolConfiguration(new AssetAttribute("awayTuesdayTrigger"), TriggerProtocol.PROTOCOL_NAME)
-            .addMeta(
-                new MetaItem(LABEL, Values.create("Away Tuesday trigger"))
-            );
-        setTriggerType(awayTuesday, TriggerType.TIME);
-        setTriggerValue(awayTuesday, Values.create("0 30 8 ? * TUE *"));
-        setTriggerAction(awayTuesday, new AttributeState(apartment1Id, "away", Values.create("REQUEST_START")));
-        AssetAttribute eveningTuesday = initProtocolConfiguration(new AssetAttribute("eveningTuesdayTrigger"), TriggerProtocol.PROTOCOL_NAME)
-            .addMeta(
-                new MetaItem(LABEL, Values.create("Evening Tuesday trigger"))
-            );
-        setTriggerType(eveningTuesday, TriggerType.TIME);
-        setTriggerValue(eveningTuesday, Values.create("0 30 17 ? * TUE *"));
-        setTriggerAction(eveningTuesday, new AttributeState(apartment1Id, "evening", Values.create("REQUEST_START")));
-        AssetAttribute nightTuesday = initProtocolConfiguration(new AssetAttribute("nightTuesdayTrigger"), TriggerProtocol.PROTOCOL_NAME)
-            .addMeta(
-                new MetaItem(LABEL, Values.create("Night Tuesday trigger"))
-            );
-        setTriggerType(nightTuesday, TriggerType.TIME);
-        setTriggerValue(nightTuesday, Values.create("0 0 22 ? * TUE *"));
-        setTriggerAction(nightTuesday, new AttributeState(apartment1Id, "night", Values.create("REQUEST_START")));
-
-
-        AssetAttribute homeWednesday = initProtocolConfiguration(new AssetAttribute("homeWednesdayTrigger"), TriggerProtocol.PROTOCOL_NAME)
-            .addMeta(
-                new MetaItem(LABEL, Values.create("Home Wednesday trigger"))
-            );
-        setTriggerType(homeWednesday, TriggerType.TIME);
-        setTriggerValue(homeWednesday, Values.create("0 0 7 ? * WED *"));
-        setTriggerAction(homeWednesday, new AttributeState(apartment1Id, "home", Values.create("REQUEST_START")));
-        AssetAttribute awayWednesday = initProtocolConfiguration(new AssetAttribute("awayWednesdayTrigger"), TriggerProtocol.PROTOCOL_NAME)
-            .addMeta(
-                new MetaItem(LABEL, Values.create("Away Wednesday trigger"))
-            );
-        setTriggerType(awayWednesday, TriggerType.TIME);
-        setTriggerValue(awayWednesday, Values.create("0 30 8 ? * WED *"));
-        setTriggerAction(awayWednesday, new AttributeState(apartment1Id, "away", Values.create("REQUEST_START")));
-        AssetAttribute eveningWednesday = initProtocolConfiguration(new AssetAttribute("eveningWednesdayTrigger"), TriggerProtocol.PROTOCOL_NAME)
-            .addMeta(
-                new MetaItem(LABEL, Values.create("Evening Wednesday trigger"))
-            );
-        setTriggerType(eveningWednesday, TriggerType.TIME);
-        setTriggerValue(eveningWednesday, Values.create("0 30 17 ? * WED *"));
-        setTriggerAction(eveningWednesday, new AttributeState(apartment1Id, "evening", Values.create("REQUEST_START")));
-        AssetAttribute nightWednesday = initProtocolConfiguration(new AssetAttribute("nightWednesdayTrigger"), TriggerProtocol.PROTOCOL_NAME)
-            .addMeta(
-                new MetaItem(LABEL, Values.create("Night Wednesday trigger"))
-            );
-        setTriggerType(nightWednesday, TriggerType.TIME);
-        setTriggerValue(nightWednesday, Values.create("0 0 22 ? * WED *"));
-        setTriggerAction(nightWednesday, new AttributeState(apartment1Id, "night", Values.create("REQUEST_START")));
-
-
-        AssetAttribute homeThursday = initProtocolConfiguration(new AssetAttribute("homeThursdayTrigger"), TriggerProtocol.PROTOCOL_NAME)
-            .addMeta(
-                new MetaItem(LABEL, Values.create("Home Thursday trigger"))
-            );
-        setTriggerType(homeThursday, TriggerType.TIME);
-        setTriggerValue(homeThursday, Values.create("0 0 7 ? * THU *"));
-        setTriggerAction(homeThursday, new AttributeState(apartment1Id, "home", Values.create("REQUEST_START")));
-        AssetAttribute awayThursday = initProtocolConfiguration(new AssetAttribute("awayThursdayTrigger"), TriggerProtocol.PROTOCOL_NAME)
-            .addMeta(
-                new MetaItem(LABEL, Values.create("Away Thursday trigger"))
-            );
-        setTriggerType(awayThursday, TriggerType.TIME);
-        setTriggerValue(awayThursday, Values.create("0 30 8 ? * THU *"));
-        setTriggerAction(awayThursday, new AttributeState(apartment1Id, "away", Values.create("REQUEST_START")));
-        AssetAttribute eveningThursday = initProtocolConfiguration(new AssetAttribute("eveningThursdayTrigger"), TriggerProtocol.PROTOCOL_NAME)
-            .addMeta(
-                new MetaItem(LABEL, Values.create("Evening Thursday trigger"))
-            );
-        setTriggerType(eveningThursday, TriggerType.TIME);
-        setTriggerValue(eveningThursday, Values.create("0 30 17 ? * THU *"));
-        setTriggerAction(eveningThursday, new AttributeState(apartment1Id, "evening", Values.create("REQUEST_START")));
-        AssetAttribute nightThursday = initProtocolConfiguration(new AssetAttribute("nightThursdayTrigger"), TriggerProtocol.PROTOCOL_NAME)
-            .addMeta(
-                new MetaItem(LABEL, Values.create("Night Thursday trigger"))
-            );
-        setTriggerType(nightThursday, TriggerType.TIME);
-        setTriggerValue(nightThursday, Values.create("0 0 22 ? * THU *"));
-        setTriggerAction(nightThursday, new AttributeState(apartment1Id, "night", Values.create("REQUEST_START")));
-
-
-        AssetAttribute homeFriday = initProtocolConfiguration(new AssetAttribute("homeFridayTrigger"), TriggerProtocol.PROTOCOL_NAME)
-            .addMeta(
-                new MetaItem(LABEL, Values.create("Home Friday trigger"))
-            );
-        setTriggerType(homeFriday, TriggerType.TIME);
-        setTriggerValue(homeFriday, Values.create("0 0 7 ? * FRI *"));
-        setTriggerAction(homeFriday, new AttributeState(apartment1Id, "home", Values.create("REQUEST_START")));
-        AssetAttribute awayFriday = initProtocolConfiguration(new AssetAttribute("awayFridayTrigger"), TriggerProtocol.PROTOCOL_NAME)
-            .addMeta(
-                new MetaItem(LABEL, Values.create("Away Friday trigger"))
-            );
-        setTriggerType(awayFriday, TriggerType.TIME);
-        setTriggerValue(awayFriday, Values.create("0 30 8 ? * FRI *"));
-        setTriggerAction(awayFriday, new AttributeState(apartment1Id, "away", Values.create("REQUEST_START")));
-        AssetAttribute eveningFriday = initProtocolConfiguration(new AssetAttribute("eveningFridayTrigger"), TriggerProtocol.PROTOCOL_NAME)
-            .addMeta(
-                new MetaItem(LABEL, Values.create("Evening Friday trigger"))
-            );
-        setTriggerType(eveningFriday, TriggerType.TIME);
-        setTriggerValue(eveningFriday, Values.create("0 30 17 ? * FRI *"));
-        setTriggerAction(eveningFriday, new AttributeState(apartment1Id, "evening", Values.create("REQUEST_START")));
-        AssetAttribute nightFriday = initProtocolConfiguration(new AssetAttribute("nightFridayTrigger"), TriggerProtocol.PROTOCOL_NAME)
-            .addMeta(
-                new MetaItem(LABEL, Values.create("Night Friday trigger"))
-            );
-        setTriggerType(nightFriday, TriggerType.TIME);
-        setTriggerValue(nightFriday, Values.create("0 0 22 ? * FRI *"));
-        setTriggerAction(nightFriday, new AttributeState(apartment1Id, "night", Values.create("REQUEST_START")));
-
-
-        AssetAttribute homeSaturday = initProtocolConfiguration(new AssetAttribute("homeSaturdayTrigger"), TriggerProtocol.PROTOCOL_NAME)
-            .addMeta(
-                new MetaItem(LABEL, Values.create("Home Saturday trigger"))
-            );
-        setTriggerType(homeSaturday, TriggerType.TIME);
-        setTriggerValue(homeSaturday, Values.create("0 0 8 ? * SAT *"));
-        setTriggerAction(homeSaturday, new AttributeState(apartment1Id, "home", Values.create("REQUEST_START")));
-        AssetAttribute awaySaturday = initProtocolConfiguration(new AssetAttribute("awaySaturdayTrigger"), TriggerProtocol.PROTOCOL_NAME)
-            .addMeta(
-                new MetaItem(LABEL, Values.create("Away Saturday trigger"))
-            );
-        setTriggerType(awaySaturday, TriggerType.TIME);
-        setTriggerValue(awaySaturday, Values.create("0 30 9 ? * SAT *"));
-        setTriggerAction(awaySaturday, new AttributeState(apartment1Id, "away", Values.create("REQUEST_START")));
-        AssetAttribute eveningSaturday = initProtocolConfiguration(new AssetAttribute("eveningSaturdayTrigger"), TriggerProtocol.PROTOCOL_NAME)
-            .addMeta(
-                new MetaItem(LABEL, Values.create("Evening Saturday trigger"))
-            );
-        setTriggerType(eveningSaturday, TriggerType.TIME);
-        setTriggerValue(eveningSaturday, Values.create("0 0 18 ? * SAT *"));
-        setTriggerAction(eveningSaturday, new AttributeState(apartment1Id, "evening", Values.create("REQUEST_START")));
-        AssetAttribute nightSaturday = initProtocolConfiguration(new AssetAttribute("nightSaturdayTrigger"), TriggerProtocol.PROTOCOL_NAME)
-            .addMeta(
-                new MetaItem(LABEL, Values.create("Night Saturday trigger"))
-            );
-        setTriggerType(nightSaturday, TriggerType.TIME);
-        setTriggerValue(nightSaturday, Values.create("0 0 23 ? * SAT *"));
-        setTriggerAction(nightSaturday, new AttributeState(apartment1Id, "night", Values.create("REQUEST_START")));
-
-
-        AssetAttribute homeSunday = initProtocolConfiguration(new AssetAttribute("homeSundayTrigger"), TriggerProtocol.PROTOCOL_NAME)
-            .addMeta(
-                new MetaItem(LABEL, Values.create("Home Sunday trigger"))
-            );
-        setTriggerType(homeSunday, TriggerType.TIME);
-        setTriggerValue(homeSunday, Values.create("0 0 8 ? * SUN *"));
-        setTriggerAction(homeSunday, new AttributeState(apartment1Id, "home", Values.create("REQUEST_START")));
-        AssetAttribute awaySunday = initProtocolConfiguration(new AssetAttribute("awaySundayTrigger"), TriggerProtocol.PROTOCOL_NAME)
-            .addMeta(
-                new MetaItem(LABEL, Values.create("Away Sunday trigger"))
-            );
-        setTriggerType(awaySunday, TriggerType.TIME);
-        setTriggerValue(awaySunday, Values.create("0 30 9 ? * SUN *"));
-        setTriggerAction(awaySunday, new AttributeState(apartment1Id, "away", Values.create("REQUEST_START")));
-        AssetAttribute eveningSunday = initProtocolConfiguration(new AssetAttribute("eveningSundayTrigger"), TriggerProtocol.PROTOCOL_NAME)
-            .addMeta(
-                new MetaItem(LABEL, Values.create("Evening Sunday trigger"))
-            );
-        setTriggerType(eveningSunday, TriggerType.TIME);
-        setTriggerValue(eveningSunday, Values.create("0 0 18 ? * SUN *"));
-        setTriggerAction(eveningSunday, new AttributeState(apartment1Id, "evening", Values.create("REQUEST_START")));
-        AssetAttribute nightSunday = initProtocolConfiguration(new AssetAttribute("nightSundayTrigger"), TriggerProtocol.PROTOCOL_NAME)
-            .addMeta(
-                new MetaItem(LABEL, Values.create("Night Sunday trigger"))
-            );
-        setTriggerType(nightSunday, TriggerType.TIME);
-        setTriggerValue(nightSunday, Values.create("0 0 23 ? * SUN *"));
-        setTriggerAction(nightSunday, new AttributeState(apartment1Id, "night", Values.create("REQUEST_START")));
-
-        // Save the scenes and trigger agent
-        apartment1SceneAgent.addAttributes(
-            homeMonday,
-            homeTuesday,
-            homeWednesday,
-            homeThursday,
-            homeFriday,
-            homeSaturday,
-            homeSunday,
-            awayMonday,
-            awayTuesday,
-            awayWednesday,
-            awayThursday,
-            awayFriday,
-            awaySaturday,
-            awaySunday,
-            eveningMonday,
-            eveningTuesday,
-            eveningWednesday,
-            eveningThursday,
-            eveningFriday,
-            eveningSaturday,
-            eveningSunday,
-            nightMonday,
-            nightTuesday,
-            nightWednesday,
-            nightThursday,
-            nightFriday,
-            nightSaturday,
-            nightSunday
-        );
         apartment1SceneAgent = assetStorageService.merge(apartment1SceneAgent);
         apartment1SceneAgentId = apartment1SceneAgent.getId();
 
@@ -712,7 +610,6 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Home alarm enabled")),
                     new MetaItem(DESCRIPTION, Values.create("Alarm enabled for home scene")),
-                    new MetaItem(PROTOCOL_PROPERTY, Values.create(PROPERTY_MACRO_ACTION)),
                     new MetaItem(META_MACRO_ACTION_INDEX, Values.create(0)),
                     new MetaItem(AGENT_LINK, new AttributeRef(apartment1SceneAgentId, "homeScene").toArrayValue())
                 ),
@@ -720,7 +617,6 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Home target temperature")),
                     new MetaItem(DESCRIPTION, Values.create("Target temperature for home scene")),
-                    new MetaItem(PROTOCOL_PROPERTY, Values.create(PROPERTY_MACRO_ACTION)),
                     new MetaItem(META_MACRO_ACTION_INDEX, Values.create(1)),
                     new MetaItem(AGENT_LINK, new AttributeRef(apartment1SceneAgentId, "homeScene").toArrayValue())
                 ),
@@ -735,7 +631,6 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Away alarm enabled")),
                     new MetaItem(DESCRIPTION, Values.create("Alarm enabled for away scene")),
-                    new MetaItem(PROTOCOL_PROPERTY, Values.create(PROPERTY_MACRO_ACTION)),
                     new MetaItem(META_MACRO_ACTION_INDEX, Values.create(0)),
                     new MetaItem(AGENT_LINK, new AttributeRef(apartment1SceneAgentId, "awayScene").toArrayValue())
                 ),
@@ -743,7 +638,6 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Away target temperature")),
                     new MetaItem(DESCRIPTION, Values.create("Target temperature for away scene")),
-                    new MetaItem(PROTOCOL_PROPERTY, Values.create(PROPERTY_MACRO_ACTION)),
                     new MetaItem(META_MACRO_ACTION_INDEX, Values.create(1)),
                     new MetaItem(AGENT_LINK, new AttributeRef(apartment1SceneAgentId, "awayScene").toArrayValue())
                 ),
@@ -758,7 +652,6 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Evening alarm enabled")),
                     new MetaItem(DESCRIPTION, Values.create("Alarm enabled for evening scene")),
-                    new MetaItem(PROTOCOL_PROPERTY, Values.create(PROPERTY_MACRO_ACTION)),
                     new MetaItem(META_MACRO_ACTION_INDEX, Values.create(0)),
                     new MetaItem(AGENT_LINK, new AttributeRef(apartment1SceneAgentId, "eveningScene").toArrayValue())
                 ),
@@ -766,7 +659,6 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Evening target temperature")),
                     new MetaItem(DESCRIPTION, Values.create("Target temperature for evening scene")),
-                    new MetaItem(PROTOCOL_PROPERTY, Values.create(PROPERTY_MACRO_ACTION)),
                     new MetaItem(META_MACRO_ACTION_INDEX, Values.create(1)),
                     new MetaItem(AGENT_LINK, new AttributeRef(apartment1SceneAgentId, "eveningScene").toArrayValue())
                 ),
@@ -781,7 +673,6 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Night alarm enabled")),
                     new MetaItem(DESCRIPTION, Values.create("Alarm enabled for night scene")),
-                    new MetaItem(PROTOCOL_PROPERTY, Values.create(PROPERTY_MACRO_ACTION)),
                     new MetaItem(META_MACRO_ACTION_INDEX, Values.create(0)),
                     new MetaItem(AGENT_LINK, new AttributeRef(apartment1SceneAgentId, "nightScene").toArrayValue())
                 ),
@@ -789,7 +680,6 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Night target temperature")),
                     new MetaItem(DESCRIPTION, Values.create("Target temperature for night scene")),
-                    new MetaItem(PROTOCOL_PROPERTY, Values.create(PROPERTY_MACRO_ACTION)),
                     new MetaItem(META_MACRO_ACTION_INDEX, Values.create(1)),
                     new MetaItem(AGENT_LINK, new AttributeRef(apartment1SceneAgentId, "nightScene").toArrayValue())
                 ),
@@ -797,364 +687,364 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Home time Monday")),
                     new MetaItem(RULE_STATE, Values.create(true)),
-                    new MetaItem(PROTOCOL_PROPERTY, Values.create(TimeTriggerProperty.TIME.toString())),
+                    new MetaItem(META_TIMER_VALUE_LINK, Values.create(TimerValue.TIME.toString())),
                     new MetaItem(AGENT_LINK, new AttributeRef(apartment1SceneAgentId, "homeMondayTrigger").toArrayValue())
                 ),
             new AssetAttribute("homeEnabledMONDAY", AttributeType.BOOLEAN)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Home enabled Monday")),
-                    new MetaItem(PROTOCOL_PROPERTY, Values.create(ENABLED.toString())),
+                    new MetaItem(META_TIMER_VALUE_LINK, Values.create(TimerValue.ENABLED.toString())),
                     new MetaItem(AGENT_LINK, new AttributeRef(apartment1SceneAgentId, "homeMondayTrigger").toArrayValue())
                 ),
             new AssetAttribute("awayTimeMONDAY", AttributeType.STRING)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Away time Monday")),
                     new MetaItem(RULE_STATE, Values.create(true)),
-                    new MetaItem(PROTOCOL_PROPERTY, Values.create(TimeTriggerProperty.TIME.toString())),
+                    new MetaItem(META_TIMER_VALUE_LINK, Values.create(TimerValue.TIME.toString())),
                     new MetaItem(AGENT_LINK, new AttributeRef(apartment1SceneAgentId, "awayMondayTrigger").toArrayValue())
                 ),
             new AssetAttribute("awayEnabledMONDAY", AttributeType.BOOLEAN)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Away enabled Monday")),
-                    new MetaItem(PROTOCOL_PROPERTY, Values.create(ENABLED.toString())),
+                    new MetaItem(META_TIMER_VALUE_LINK, Values.create(TimerValue.ENABLED.toString())),
                     new MetaItem(AGENT_LINK, new AttributeRef(apartment1SceneAgentId, "awayMondayTrigger").toArrayValue())
                 ),
             new AssetAttribute("eveningTimeMONDAY", AttributeType.STRING)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Evening time Monday")),
                     new MetaItem(RULE_STATE, Values.create(true)),
-                    new MetaItem(PROTOCOL_PROPERTY, Values.create(TimeTriggerProperty.TIME.toString())),
+                    new MetaItem(META_TIMER_VALUE_LINK, Values.create(TimerValue.TIME.toString())),
                     new MetaItem(AGENT_LINK, new AttributeRef(apartment1SceneAgentId, "eveningMondayTrigger").toArrayValue())
                 ),
             new AssetAttribute("eveningEnabledMONDAY", AttributeType.BOOLEAN)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Evening enabled Monday")),
-                    new MetaItem(PROTOCOL_PROPERTY, Values.create(ENABLED.toString())),
+                    new MetaItem(META_TIMER_VALUE_LINK, Values.create(TimerValue.ENABLED.toString())),
                     new MetaItem(AGENT_LINK, new AttributeRef(apartment1SceneAgentId, "eveningMondayTrigger").toArrayValue())
                 ),
             new AssetAttribute("nightTimeMONDAY", AttributeType.STRING)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Night time Monday")),
                     new MetaItem(RULE_STATE, Values.create(true)),
-                    new MetaItem(PROTOCOL_PROPERTY, Values.create(TimeTriggerProperty.TIME.toString())),
+                    new MetaItem(META_TIMER_VALUE_LINK, Values.create(TimerValue.TIME.toString())),
                     new MetaItem(AGENT_LINK, new AttributeRef(apartment1SceneAgentId, "nightMondayTrigger").toArrayValue())
                 ),
             new AssetAttribute("nightEnabledMONDAY", AttributeType.BOOLEAN)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Night enabled Monday")),
-                    new MetaItem(PROTOCOL_PROPERTY, Values.create(ENABLED.toString())),
+                    new MetaItem(META_TIMER_VALUE_LINK, Values.create(TimerValue.ENABLED.toString())),
                     new MetaItem(AGENT_LINK, new AttributeRef(apartment1SceneAgentId, "nightMondayTrigger").toArrayValue())
                 ),
             new AssetAttribute("homeTimeTUESDAY", AttributeType.STRING)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Home time Tuesday")),
                     new MetaItem(RULE_STATE, Values.create(true)),
-                    new MetaItem(PROTOCOL_PROPERTY, Values.create(TimeTriggerProperty.TIME.toString())),
+                    new MetaItem(META_TIMER_VALUE_LINK, Values.create(TimerValue.TIME.toString())),
                     new MetaItem(AGENT_LINK, new AttributeRef(apartment1SceneAgentId, "homeTuesdayTrigger").toArrayValue())
                 ),
             new AssetAttribute("homeEnabledTUESDAY", AttributeType.BOOLEAN)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Home enabled Tuesday")),
-                    new MetaItem(PROTOCOL_PROPERTY, Values.create(ENABLED.toString())),
+                    new MetaItem(META_TIMER_VALUE_LINK, Values.create(TimerValue.ENABLED.toString())),
                     new MetaItem(AGENT_LINK, new AttributeRef(apartment1SceneAgentId, "homeTuesdayTrigger").toArrayValue())
                 ),
             new AssetAttribute("awayTimeTUESDAY", AttributeType.STRING)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Away time Tuesday")),
                     new MetaItem(RULE_STATE, Values.create(true)),
-                    new MetaItem(PROTOCOL_PROPERTY, Values.create(TimeTriggerProperty.TIME.toString())),
+                    new MetaItem(META_TIMER_VALUE_LINK, Values.create(TimerValue.TIME.toString())),
                     new MetaItem(AGENT_LINK, new AttributeRef(apartment1SceneAgentId, "awayTuesdayTrigger").toArrayValue())
                 ),
             new AssetAttribute("awayEnabledTUESDAY", AttributeType.BOOLEAN)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Away enabled Tuesday")),
-                    new MetaItem(PROTOCOL_PROPERTY, Values.create(ENABLED.toString())),
+                    new MetaItem(META_TIMER_VALUE_LINK, Values.create(TimerValue.ENABLED.toString())),
                     new MetaItem(AGENT_LINK, new AttributeRef(apartment1SceneAgentId, "awayTuesdayTrigger").toArrayValue())
                 ),
             new AssetAttribute("eveningTimeTUESDAY", AttributeType.STRING)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Evening time Tuesday")),
                     new MetaItem(RULE_STATE, Values.create(true)),
-                    new MetaItem(PROTOCOL_PROPERTY, Values.create(TimeTriggerProperty.TIME.toString())),
+                    new MetaItem(META_TIMER_VALUE_LINK, Values.create(TimerValue.TIME.toString())),
                     new MetaItem(AGENT_LINK, new AttributeRef(apartment1SceneAgentId, "eveningTuesdayTrigger").toArrayValue())
                 ),
             new AssetAttribute("eveningEnabledTUESDAY", AttributeType.BOOLEAN)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Evening enabled Tuesday")),
-                    new MetaItem(PROTOCOL_PROPERTY, Values.create(ENABLED.toString())),
+                    new MetaItem(META_TIMER_VALUE_LINK, Values.create(TimerValue.ENABLED.toString())),
                     new MetaItem(AGENT_LINK, new AttributeRef(apartment1SceneAgentId, "eveningTuesdayTrigger").toArrayValue())
                 ),
             new AssetAttribute("nightTimeTUESDAY", AttributeType.STRING)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Night time Tuesday")),
                     new MetaItem(RULE_STATE, Values.create(true)),
-                    new MetaItem(PROTOCOL_PROPERTY, Values.create(TimeTriggerProperty.TIME.toString())),
+                    new MetaItem(META_TIMER_VALUE_LINK, Values.create(TimerValue.TIME.toString())),
                     new MetaItem(AGENT_LINK, new AttributeRef(apartment1SceneAgentId, "nightTuesdayTrigger").toArrayValue())
                 ),
             new AssetAttribute("nightEnabledTUESDAY", AttributeType.BOOLEAN)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Night enabled Tuesday")),
-                    new MetaItem(PROTOCOL_PROPERTY, Values.create(ENABLED.toString())),
+                    new MetaItem(META_TIMER_VALUE_LINK, Values.create(TimerValue.ENABLED.toString())),
                     new MetaItem(AGENT_LINK, new AttributeRef(apartment1SceneAgentId, "nightTuesdayTrigger").toArrayValue())
                 ),
             new AssetAttribute("homeTimeWEDNESDAY", AttributeType.STRING)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Home time Wednesday")),
                     new MetaItem(RULE_STATE, Values.create(true)),
-                    new MetaItem(PROTOCOL_PROPERTY, Values.create(TimeTriggerProperty.TIME.toString())),
+                    new MetaItem(META_TIMER_VALUE_LINK, Values.create(TimerValue.TIME.toString())),
                     new MetaItem(AGENT_LINK, new AttributeRef(apartment1SceneAgentId, "homeWednesdayTrigger").toArrayValue())
                 ),
             new AssetAttribute("homeEnabledWEDNESDAY", AttributeType.BOOLEAN)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Home enabled Wednesday")),
-                    new MetaItem(PROTOCOL_PROPERTY, Values.create(ENABLED.toString())),
+                    new MetaItem(META_TIMER_VALUE_LINK, Values.create(TimerValue.ENABLED.toString())),
                     new MetaItem(AGENT_LINK, new AttributeRef(apartment1SceneAgentId, "homeWednesdayTrigger").toArrayValue())
                 ),
             new AssetAttribute("awayTimeWEDNESDAY", AttributeType.STRING)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Away time Wednesday")),
                     new MetaItem(RULE_STATE, Values.create(true)),
-                    new MetaItem(PROTOCOL_PROPERTY, Values.create(TimeTriggerProperty.TIME.toString())),
+                    new MetaItem(META_TIMER_VALUE_LINK, Values.create(TimerValue.TIME.toString())),
                     new MetaItem(AGENT_LINK, new AttributeRef(apartment1SceneAgentId, "awayWednesdayTrigger").toArrayValue())
                 ),
             new AssetAttribute("awayEnabledWEDNESDAY", AttributeType.BOOLEAN)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Away enabled Wednesday")),
-                    new MetaItem(PROTOCOL_PROPERTY, Values.create(ENABLED.toString())),
+                    new MetaItem(META_TIMER_VALUE_LINK, Values.create(TimerValue.ENABLED.toString())),
                     new MetaItem(AGENT_LINK, new AttributeRef(apartment1SceneAgentId, "awayWednesdayTrigger").toArrayValue())
                 ),
             new AssetAttribute("eveningTimeWEDNESDAY", AttributeType.STRING)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Evening time Wednesday")),
                     new MetaItem(RULE_STATE, Values.create(true)),
-                    new MetaItem(PROTOCOL_PROPERTY, Values.create(TimeTriggerProperty.TIME.toString())),
+                    new MetaItem(META_TIMER_VALUE_LINK, Values.create(TimerValue.TIME.toString())),
                     new MetaItem(AGENT_LINK, new AttributeRef(apartment1SceneAgentId, "eveningWednesdayTrigger").toArrayValue())
                 ),
             new AssetAttribute("eveningEnabledWEDNESDAY", AttributeType.BOOLEAN)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Evening enabled Wednesday")),
-                    new MetaItem(PROTOCOL_PROPERTY, Values.create(ENABLED.toString())),
+                    new MetaItem(META_TIMER_VALUE_LINK, Values.create(TimerValue.ENABLED.toString())),
                     new MetaItem(AGENT_LINK, new AttributeRef(apartment1SceneAgentId, "eveningWednesdayTrigger").toArrayValue())
                 ),
             new AssetAttribute("nightTimeWEDNESDAY", AttributeType.STRING)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Night time Wednesday")),
                     new MetaItem(RULE_STATE, Values.create(true)),
-                    new MetaItem(PROTOCOL_PROPERTY, Values.create(TimeTriggerProperty.TIME.toString())),
+                    new MetaItem(META_TIMER_VALUE_LINK, Values.create(TimerValue.TIME.toString())),
                     new MetaItem(AGENT_LINK, new AttributeRef(apartment1SceneAgentId, "nightWednesdayTrigger").toArrayValue())
                 ),
             new AssetAttribute("nightEnabledWEDNESDAY", AttributeType.BOOLEAN)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Night enabled Wednesday")),
-                    new MetaItem(PROTOCOL_PROPERTY, Values.create(ENABLED.toString())),
+                    new MetaItem(META_TIMER_VALUE_LINK, Values.create(TimerValue.ENABLED.toString())),
                     new MetaItem(AGENT_LINK, new AttributeRef(apartment1SceneAgentId, "nightWednesdayTrigger").toArrayValue())
                 ),
             new AssetAttribute("homeTimeTHURSDAY", AttributeType.STRING)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Home time Thursday")),
                     new MetaItem(RULE_STATE, Values.create(true)),
-                    new MetaItem(PROTOCOL_PROPERTY, Values.create(TimeTriggerProperty.TIME.toString())),
+                    new MetaItem(META_TIMER_VALUE_LINK, Values.create(TimerValue.TIME.toString())),
                     new MetaItem(AGENT_LINK, new AttributeRef(apartment1SceneAgentId, "homeThursdayTrigger").toArrayValue())
                 ),
             new AssetAttribute("homeEnabledTHURSDAY", AttributeType.BOOLEAN)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Home enabled Thursday")),
-                    new MetaItem(PROTOCOL_PROPERTY, Values.create(ENABLED.toString())),
+                    new MetaItem(META_TIMER_VALUE_LINK, Values.create(TimerValue.ENABLED.toString())),
                     new MetaItem(AGENT_LINK, new AttributeRef(apartment1SceneAgentId, "homeThursdayTrigger").toArrayValue())
                 ),
             new AssetAttribute("awayTimeTHURSDAY", AttributeType.STRING)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Away time Thursday")),
                     new MetaItem(RULE_STATE, Values.create(true)),
-                    new MetaItem(PROTOCOL_PROPERTY, Values.create(TimeTriggerProperty.TIME.toString())),
+                    new MetaItem(META_TIMER_VALUE_LINK, Values.create(TimerValue.TIME.toString())),
                     new MetaItem(AGENT_LINK, new AttributeRef(apartment1SceneAgentId, "awayThursdayTrigger").toArrayValue())
                 ),
             new AssetAttribute("awayEnabledTHURSDAY", AttributeType.BOOLEAN)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Away enabled Thursday")),
-                    new MetaItem(PROTOCOL_PROPERTY, Values.create(ENABLED.toString())),
+                    new MetaItem(META_TIMER_VALUE_LINK, Values.create(TimerValue.ENABLED.toString())),
                     new MetaItem(AGENT_LINK, new AttributeRef(apartment1SceneAgentId, "awayThursdayTrigger").toArrayValue())
                 ),
             new AssetAttribute("eveningTimeTHURSDAY", AttributeType.STRING)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Evening time Thursday")),
                     new MetaItem(RULE_STATE, Values.create(true)),
-                    new MetaItem(PROTOCOL_PROPERTY, Values.create(TimeTriggerProperty.TIME.toString())),
+                    new MetaItem(META_TIMER_VALUE_LINK, Values.create(TimerValue.TIME.toString())),
                     new MetaItem(AGENT_LINK, new AttributeRef(apartment1SceneAgentId, "eveningThursdayTrigger").toArrayValue())
                 ),
             new AssetAttribute("eveningEnabledTHURSDAY", AttributeType.BOOLEAN)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Evening enabled Thursday")),
-                    new MetaItem(PROTOCOL_PROPERTY, Values.create(ENABLED.toString())),
+                    new MetaItem(META_TIMER_VALUE_LINK, Values.create(TimerValue.ENABLED.toString())),
                     new MetaItem(AGENT_LINK, new AttributeRef(apartment1SceneAgentId, "eveningThursdayTrigger").toArrayValue())
                 ),
             new AssetAttribute("nightTimeTHURSDAY", AttributeType.STRING)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Night time Thursday")),
                     new MetaItem(RULE_STATE, Values.create(true)),
-                    new MetaItem(PROTOCOL_PROPERTY, Values.create(TimeTriggerProperty.TIME.toString())),
+                    new MetaItem(META_TIMER_VALUE_LINK, Values.create(TimerValue.TIME.toString())),
                     new MetaItem(AGENT_LINK, new AttributeRef(apartment1SceneAgentId, "nightThursdayTrigger").toArrayValue())
                 ),
             new AssetAttribute("nightEnabledTHURSDAY", AttributeType.BOOLEAN)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Night enabled Thursday")),
-                    new MetaItem(PROTOCOL_PROPERTY, Values.create(ENABLED.toString())),
+                    new MetaItem(META_TIMER_VALUE_LINK, Values.create(TimerValue.ENABLED.toString())),
                     new MetaItem(AGENT_LINK, new AttributeRef(apartment1SceneAgentId, "nightThursdayTrigger").toArrayValue())
                 ),
             new AssetAttribute("homeTimeFRIDAY", AttributeType.STRING)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Home time Friday")),
                     new MetaItem(RULE_STATE, Values.create(true)),
-                    new MetaItem(PROTOCOL_PROPERTY, Values.create(TimeTriggerProperty.TIME.toString())),
+                    new MetaItem(META_TIMER_VALUE_LINK, Values.create(TimerValue.TIME.toString())),
                     new MetaItem(AGENT_LINK, new AttributeRef(apartment1SceneAgentId, "homeFridayTrigger").toArrayValue())
                 ),
             new AssetAttribute("homeEnabledFRIDAY", AttributeType.BOOLEAN)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Home enabled Friday")),
-                    new MetaItem(PROTOCOL_PROPERTY, Values.create(ENABLED.toString())),
+                    new MetaItem(META_TIMER_VALUE_LINK, Values.create(TimerValue.ENABLED.toString())),
                     new MetaItem(AGENT_LINK, new AttributeRef(apartment1SceneAgentId, "homeFridayTrigger").toArrayValue())
                 ),
             new AssetAttribute("awayTimeFRIDAY", AttributeType.STRING)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Away time Friday")),
                     new MetaItem(RULE_STATE, Values.create(true)),
-                    new MetaItem(PROTOCOL_PROPERTY, Values.create(TimeTriggerProperty.TIME.toString())),
+                    new MetaItem(META_TIMER_VALUE_LINK, Values.create(TimerValue.TIME.toString())),
                     new MetaItem(AGENT_LINK, new AttributeRef(apartment1SceneAgentId, "awayFridayTrigger").toArrayValue())
                 ),
             new AssetAttribute("awayEnabledFRIDAY", AttributeType.BOOLEAN)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Away enabled Friday")),
-                    new MetaItem(PROTOCOL_PROPERTY, Values.create(ENABLED.toString())),
+                    new MetaItem(META_TIMER_VALUE_LINK, Values.create(TimerValue.ENABLED.toString())),
                     new MetaItem(AGENT_LINK, new AttributeRef(apartment1SceneAgentId, "awayFridayTrigger").toArrayValue())
                 ),
             new AssetAttribute("eveningTimeFRIDAY", AttributeType.STRING)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Evening time Friday")),
                     new MetaItem(RULE_STATE, Values.create(true)),
-                    new MetaItem(PROTOCOL_PROPERTY, Values.create(TimeTriggerProperty.TIME.toString())),
+                    new MetaItem(META_TIMER_VALUE_LINK, Values.create(TimerValue.TIME.toString())),
                     new MetaItem(AGENT_LINK, new AttributeRef(apartment1SceneAgentId, "eveningFridayTrigger").toArrayValue())
                 ),
             new AssetAttribute("eveningEnabledFRIDAY", AttributeType.BOOLEAN)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Evening enabled Friday")),
-                    new MetaItem(PROTOCOL_PROPERTY, Values.create(ENABLED.toString())),
+                    new MetaItem(META_TIMER_VALUE_LINK, Values.create(TimerValue.ENABLED.toString())),
                     new MetaItem(AGENT_LINK, new AttributeRef(apartment1SceneAgentId, "eveningFridayTrigger").toArrayValue())
                 ),
             new AssetAttribute("nightTimeFRIDAY", AttributeType.STRING)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Night time Friday")),
                     new MetaItem(RULE_STATE, Values.create(true)),
-                    new MetaItem(PROTOCOL_PROPERTY, Values.create(TimeTriggerProperty.TIME.toString())),
+                    new MetaItem(META_TIMER_VALUE_LINK, Values.create(TimerValue.TIME.toString())),
                     new MetaItem(AGENT_LINK, new AttributeRef(apartment1SceneAgentId, "nightFridayTrigger").toArrayValue())
                 ),
             new AssetAttribute("nightEnabledFRIDAY", AttributeType.BOOLEAN)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Night enabled Friday")),
-                    new MetaItem(PROTOCOL_PROPERTY, Values.create(ENABLED.toString())),
+                    new MetaItem(META_TIMER_VALUE_LINK, Values.create(TimerValue.ENABLED.toString())),
                     new MetaItem(AGENT_LINK, new AttributeRef(apartment1SceneAgentId, "nightFridayTrigger").toArrayValue())
                 ),
             new AssetAttribute("homeTimeSATURDAY", AttributeType.STRING)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Home time Saturday")),
                     new MetaItem(RULE_STATE, Values.create(true)),
-                    new MetaItem(PROTOCOL_PROPERTY, Values.create(TimeTriggerProperty.TIME.toString())),
+                    new MetaItem(META_TIMER_VALUE_LINK, Values.create(TimerValue.TIME.toString())),
                     new MetaItem(AGENT_LINK, new AttributeRef(apartment1SceneAgentId, "homeSaturdayTrigger").toArrayValue())
                 ),
             new AssetAttribute("homeEnabledSATURDAY", AttributeType.BOOLEAN)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Home enabled Saturday")),
-                    new MetaItem(PROTOCOL_PROPERTY, Values.create(ENABLED.toString())),
+                    new MetaItem(META_TIMER_VALUE_LINK, Values.create(TimerValue.ENABLED.toString())),
                     new MetaItem(AGENT_LINK, new AttributeRef(apartment1SceneAgentId, "homeSaturdayTrigger").toArrayValue())
                 ),
             new AssetAttribute("awayTimeSATURDAY", AttributeType.STRING)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Away time Saturday")),
                     new MetaItem(RULE_STATE, Values.create(true)),
-                    new MetaItem(PROTOCOL_PROPERTY, Values.create(TimeTriggerProperty.TIME.toString())),
+                    new MetaItem(META_TIMER_VALUE_LINK, Values.create(TimerValue.TIME.toString())),
                     new MetaItem(AGENT_LINK, new AttributeRef(apartment1SceneAgentId, "awaySaturdayTrigger").toArrayValue())
                 ),
             new AssetAttribute("awayEnabledSATURDAY", AttributeType.BOOLEAN)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Away enabled Saturday")),
-                    new MetaItem(PROTOCOL_PROPERTY, Values.create(ENABLED.toString())),
+                    new MetaItem(META_TIMER_VALUE_LINK, Values.create(TimerValue.ENABLED.toString())),
                     new MetaItem(AGENT_LINK, new AttributeRef(apartment1SceneAgentId, "awaySaturdayTrigger").toArrayValue())
                 ),
             new AssetAttribute("eveningTimeSATURDAY", AttributeType.STRING)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Evening time Saturday")),
                     new MetaItem(RULE_STATE, Values.create(true)),
-                    new MetaItem(PROTOCOL_PROPERTY, Values.create(TimeTriggerProperty.TIME.toString())),
+                    new MetaItem(META_TIMER_VALUE_LINK, Values.create(TimerValue.TIME.toString())),
                     new MetaItem(AGENT_LINK, new AttributeRef(apartment1SceneAgentId, "eveningSaturdayTrigger").toArrayValue())
                 ),
             new AssetAttribute("eveningEnabledSATURDAY", AttributeType.BOOLEAN)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Evening enabled Saturday")),
-                    new MetaItem(PROTOCOL_PROPERTY, Values.create(ENABLED.toString())),
+                    new MetaItem(META_TIMER_VALUE_LINK, Values.create(TimerValue.ENABLED.toString())),
                     new MetaItem(AGENT_LINK, new AttributeRef(apartment1SceneAgentId, "eveningSaturdayTrigger").toArrayValue())
                 ),
             new AssetAttribute("nightTimeSATURDAY", AttributeType.STRING)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Night time Saturday")),
                     new MetaItem(RULE_STATE, Values.create(true)),
-                    new MetaItem(PROTOCOL_PROPERTY, Values.create(TimeTriggerProperty.TIME.toString())),
+                    new MetaItem(META_TIMER_VALUE_LINK, Values.create(TimerValue.TIME.toString())),
                     new MetaItem(AGENT_LINK, new AttributeRef(apartment1SceneAgentId, "nightSaturdayTrigger").toArrayValue())
                 ),
             new AssetAttribute("nightEnabledSATURDAY", AttributeType.BOOLEAN)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Night enabled Saturday")),
-                    new MetaItem(PROTOCOL_PROPERTY, Values.create(ENABLED.toString())),
+                    new MetaItem(META_TIMER_VALUE_LINK, Values.create(TimerValue.ENABLED.toString())),
                     new MetaItem(AGENT_LINK, new AttributeRef(apartment1SceneAgentId, "nightSaturdayTrigger").toArrayValue())
                 ),
             new AssetAttribute("homeTimeSUNDAY", AttributeType.STRING)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Home time Sunday")),
                     new MetaItem(RULE_STATE, Values.create(true)),
-                    new MetaItem(PROTOCOL_PROPERTY, Values.create(TimeTriggerProperty.TIME.toString())),
+                    new MetaItem(META_TIMER_VALUE_LINK, Values.create(TimerValue.TIME.toString())),
                     new MetaItem(AGENT_LINK, new AttributeRef(apartment1SceneAgentId, "homeSundayTrigger").toArrayValue())
                 ),
             new AssetAttribute("homeEnabledSUNDAY", AttributeType.BOOLEAN)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Home enabled Sunday")),
-                    new MetaItem(PROTOCOL_PROPERTY, Values.create(ENABLED.toString())),
+                    new MetaItem(META_TIMER_VALUE_LINK, Values.create(TimerValue.ENABLED.toString())),
                     new MetaItem(AGENT_LINK, new AttributeRef(apartment1SceneAgentId, "homeSundayTrigger").toArrayValue())
                 ),
             new AssetAttribute("awayTimeSUNDAY", AttributeType.STRING)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Away time Sunday")),
                     new MetaItem(RULE_STATE, Values.create(true)),
-                    new MetaItem(PROTOCOL_PROPERTY, Values.create(TimeTriggerProperty.TIME.toString())),
+                    new MetaItem(META_TIMER_VALUE_LINK, Values.create(TimerValue.TIME.toString())),
                     new MetaItem(AGENT_LINK, new AttributeRef(apartment1SceneAgentId, "awaySundayTrigger").toArrayValue())
                 ),
             new AssetAttribute("awayEnabledSUNDAY", AttributeType.BOOLEAN)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Away enabled Sunday")),
-                    new MetaItem(PROTOCOL_PROPERTY, Values.create(ENABLED.toString())),
+                    new MetaItem(META_TIMER_VALUE_LINK, Values.create(TimerValue.ENABLED.toString())),
                     new MetaItem(AGENT_LINK, new AttributeRef(apartment1SceneAgentId, "awaySundayTrigger").toArrayValue())
                 ),
             new AssetAttribute("eveningTimeSUNDAY", AttributeType.STRING)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Evening time Sunday")),
                     new MetaItem(RULE_STATE, Values.create(true)),
-                    new MetaItem(PROTOCOL_PROPERTY, Values.create(TimeTriggerProperty.TIME.toString())),
+                    new MetaItem(META_TIMER_VALUE_LINK, Values.create(TimerValue.TIME.toString())),
                     new MetaItem(AGENT_LINK, new AttributeRef(apartment1SceneAgentId, "eveningSundayTrigger").toArrayValue())
                 ),
             new AssetAttribute("eveningEnabledSUNDAY", AttributeType.BOOLEAN)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Evening enabled Sunday")),
-                    new MetaItem(PROTOCOL_PROPERTY, Values.create(ENABLED.toString())),
+                    new MetaItem(META_TIMER_VALUE_LINK, Values.create(TimerValue.ENABLED.toString())),
                     new MetaItem(AGENT_LINK, new AttributeRef(apartment1SceneAgentId, "eveningSundayTrigger").toArrayValue())
                 ),
             new AssetAttribute("nightTimeSUNDAY", AttributeType.STRING)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Night time Sunday")),
                     new MetaItem(RULE_STATE, Values.create(true)),
-                    new MetaItem(PROTOCOL_PROPERTY, Values.create(TimeTriggerProperty.TIME.toString())),
+                    new MetaItem(META_TIMER_VALUE_LINK, Values.create(TimerValue.TIME.toString())),
                     new MetaItem(AGENT_LINK, new AttributeRef(apartment1SceneAgentId, "nightSundayTrigger").toArrayValue())
                 ),
             new AssetAttribute("nightEnabledSUNDAY", AttributeType.BOOLEAN)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Night enabled Sunday")),
-                    new MetaItem(PROTOCOL_PROPERTY, Values.create(ENABLED.toString())),
+                    new MetaItem(META_TIMER_VALUE_LINK, Values.create(TimerValue.ENABLED.toString())),
                     new MetaItem(AGENT_LINK, new AttributeRef(apartment1SceneAgentId, "nightSundayTrigger").toArrayValue())
                 )
         );

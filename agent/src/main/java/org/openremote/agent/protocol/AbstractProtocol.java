@@ -26,14 +26,14 @@ import org.openremote.container.message.MessageBrokerContext;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.message.MessageBrokerSetupService;
 import org.openremote.container.timer.TimerService;
-import org.openremote.model.AbstractValueHolder;
 import org.openremote.model.HasUniqueResourceName;
 import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.asset.AssetMeta;
 import org.openremote.model.asset.agent.AgentLink;
-import org.openremote.model.attribute.*;
+import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.attribute.AttributeRef;
+import org.openremote.model.attribute.AttributeState;
+import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.util.Triplet;
-import org.openremote.model.value.Values;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -85,31 +85,7 @@ public abstract class AbstractProtocol implements Protocol {
                                         LOG.warning("Attribute doesn't exist on this protocol: " + event.getAttributeRef());
                                     } else {
                                         AssetAttribute protocolConfiguration = getLinkedProtocolConfiguration(attribute);
-
-                                        // TODO: Merge this into new TimerProtocol as custom configuration item
-                                        // If attribute is linked to protocol's enabled status handle here
-                                        boolean isLinkedToEnabledStatus = attribute
-                                            .getMetaItem(AssetMeta.PROTOCOL_PROPERTY)
-                                            .flatMap(AbstractValueHolder::getValueAsString)
-                                            .map(property -> property.equals("ENABLED"))
-                                            .orElse(false);
-
-                                        if (isLinkedToEnabledStatus) {
-                                            LOG.fine("Attribute is linked to protocol's enabled property so handling write here");
-
-                                            // check event value is a boolean
-                                            boolean enabled = Values.getBoolean(event.getValue()
-                                                .orElse(null))
-                                                .orElseThrow(() -> new IllegalStateException("Writing to protocol configuration ENABLED property requires a boolean value"));
-
-                                            if (enabled == protocolConfiguration.isEnabled()) {
-                                                LOG.finer("Protocol configuration enabled status is already: " + enabled);
-                                            } else {
-                                                updateLinkedProtocolConfiguration(protocolConfiguration, AssetMeta.ENABLED, new MetaItem(AssetMeta.ENABLED, Values.create(enabled)));
-                                            }
-                                        } else {
-                                            processLinkedAttributeWrite(event, protocolConfiguration);
-                                        }
+                                        processLinkedAttributeWrite(event, protocolConfiguration);
                                     }
                                 }
                             }
@@ -154,23 +130,8 @@ public abstract class AbstractProtocol implements Protocol {
         synchronized (linkedAttributes) {
             attributes.forEach(attribute -> {
                 LOG.fine("Linking attribute to '" + getProtocolName() + "': " + attribute);
-
-                // If attribute is linked to protocol configuration enabled status handle here
-                boolean isLinkedToEnabledStatus = attribute
-                    .getMetaItem(AssetMeta.PROTOCOL_PROPERTY)
-                    .flatMap(AbstractValueHolder::getValueAsString)
-                    .map(property -> property.equals("ENABLED"))
-                    .orElse(false);
-
-                AttributeRef attributeRef = attribute.getReferenceOrThrow();
-                linkedAttributes.put(attributeRef, attribute);
-
-                if (isLinkedToEnabledStatus) {
-                    LOG.fine("Attribute is linked to protocol's enabled property so handling here");
-                    updateLinkedAttribute(new AttributeState(attributeRef, Values.create(protocolConfiguration.isEnabled())));
-                } else {
-                    doLinkAttribute(attribute, protocolConfiguration);
-                }
+                linkedAttributes.put(attribute.getReferenceOrThrow(), attribute);
+                doLinkAttribute(attribute, protocolConfiguration);
             });
         }
     }
@@ -180,18 +141,7 @@ public abstract class AbstractProtocol implements Protocol {
         synchronized (linkedAttributes) {
             attributes.forEach(attribute -> {
                 LOG.fine("Unlinking attribute on '" + getProtocolName() + "': " + attribute);
-
-                // If attribute is linked to protocol's enabled status handle here
-                boolean isLinkedToEnabledStatus = attribute
-                    .getMetaItem(AssetMeta.PROTOCOL_PROPERTY)
-                    .flatMap(AbstractValueHolder::getValueAsString)
-                    .map(property -> property.equals("ENABLED"))
-                    .orElse(false);
-
-                if (!isLinkedToEnabledStatus) {
-                    // Only pass to the protocol if it is not linked to enabled status
-                    doUnlinkAttribute(attribute, protocolConfiguration);
-                }
+                doUnlinkAttribute(attribute, protocolConfiguration);
                 linkedAttributes.remove(attribute.getReferenceOrThrow());
             });
         }

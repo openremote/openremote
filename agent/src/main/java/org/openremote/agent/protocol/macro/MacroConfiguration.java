@@ -19,6 +19,7 @@
  */
 package org.openremote.agent.protocol.macro;
 
+import org.openremote.model.AbstractValueHolder;
 import org.openremote.model.asset.AssetAttribute;
 
 import java.util.Arrays;
@@ -29,20 +30,18 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.openremote.model.Constants.ASSET_META_NAMESPACE;
-import static org.openremote.model.attribute.MetaItem.isMetaNameEqualTo;
+import static org.openremote.agent.protocol.macro.MacroProtocol.META_MACRO_ACTION;
 import static org.openremote.model.asset.agent.ProtocolConfiguration.getProtocolName;
 import static org.openremote.model.asset.agent.ProtocolConfiguration.initProtocolConfiguration;
+import static org.openremote.model.attribute.MetaItem.isMetaNameEqualTo;
 
 /**
  * Agent attributes can be macro configurations.
  * <p>
- * A macro configuration attribute has {@link MacroConfiguration#META_MACRO_ACTION} items attached to it, each
+ * A macro configuration attribute has {@link MacroProtocol#META_MACRO_ACTION} items attached to it, each
  * item is a sequence of asset state changes to be executed.
  */
 final public class MacroConfiguration {
-
-    public static final String META_MACRO_ACTION = ASSET_META_NAMESPACE + ":macroAction";
 
     private MacroConfiguration() {
     }
@@ -107,5 +106,11 @@ final public class MacroConfiguration {
         );
 
         return attribute;
+    }
+
+    public static Optional<Integer> getMacroActionIndex(AssetAttribute attribute) {
+        return attribute == null ? Optional.empty()
+            : attribute.getMetaItem(MacroProtocol.META_MACRO_ACTION_INDEX)
+                .flatMap(AbstractValueHolder::getValueAsInteger);
     }
 }

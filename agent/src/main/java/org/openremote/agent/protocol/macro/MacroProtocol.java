@@ -20,48 +20,39 @@
 package org.openremote.agent.protocol.macro;
 
 import org.openremote.agent.protocol.AbstractProtocol;
-import org.openremote.model.AbstractValueHolder;
 import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.asset.AssetMeta;
 import org.openremote.model.attribute.*;
 import org.openremote.model.util.Pair;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.Values;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ScheduledFuture;
 import java.util.logging.Logger;
 
-import static org.openremote.agent.protocol.macro.MacroConfiguration.META_MACRO_ACTION;
+import static org.openremote.agent.protocol.macro.MacroConfiguration.getMacroActionIndex;
 import static org.openremote.agent.protocol.macro.MacroConfiguration.isValidMacroConfiguration;
+import static org.openremote.model.Constants.ASSET_META_NAMESPACE;
 import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
 
 /**
  * This protocol is responsible for executing macros.
  * <p>
- * It expects a {@link AttributeExecuteStatus} as the attribute event value on the
- * processLinkedAttributeWrite. The protocol will then try to perform the requested status on the
- * linked macro.
+ * It expects a {@link AttributeExecuteStatus} as the attribute event value on the {@link #processLinkedAttributeWrite}.
+ * The protocol will then try to perform the request on the linked macro protocol configuration.
+ * <p>
+ * {@link AssetAttribute}s can also read/write the macro configuration's {@link MacroAction} values by using the
+ * {@link #META_MACRO_ACTION_INDEX} Meta Item with the index of the {@link MacroAction} to link to.
  */
 public class MacroProtocol extends AbstractProtocol {
 
     private static final Logger LOG = Logger.getLogger(MacroProtocol.class.getName());
 
     public static final String PROTOCOL_NAME = PROTOCOL_NAMESPACE + ":macro";
-
-    /**
-     * Use as value of {@link org.openremote.model.asset.AssetMeta#PROTOCOL_PROPERTY} meta item to
-     * link an attribute to a macro action's value (allows reading/writing of macro action value).
-     * <p>
-     * Use in conjunction with {@link #META_MACRO_ACTION_INDEX} to determine which macro action to
-     * link to (defaults to 0 if not present).
-     */
-    public static final String PROPERTY_MACRO_ACTION = "ACTION";
-
-    /**
-     * Use in combination with {@link #PROPERTY_MACRO_ACTION} on linked attributes to read/write
-     * a macro action's value. Value should be of type {@link org.openremote.model.value.ValueType#NUMBER}.
-     */
+    public static final String META_MACRO_ACTION = ASSET_META_NAMESPACE + ":macroAction";
     public static final String META_MACRO_ACTION_INDEX = PROTOCOL_NAME + ":actionIndex";
 
     class MacroExecutionTask {
@@ -210,34 +201,36 @@ public class MacroProtocol extends AbstractProtocol {
             return;
         }
 
-        // Check for protocol property meta
-        String protocolProperty = attribute
-            .getMetaItem(AssetMeta.PROTOCOL_PROPERTY)
-            .flatMap(AbstractValueHolder::getValueAsString)
-            .orElse("");
+        // Check for action index or default to index 0
+        int actionIndex = getMacroActionIndex(attribute)
+            .orElse(0);
 
-        if (protocolProperty.equals(PROPERTY_MACRO_ACTION)) {
-            // Get the macro action index
-            int actionIndex = attribute
-                .getMetaItem(META_MACRO_ACTION_INDEX)
-                .flatMap(AbstractValueHolder::getValueAsInteger)
-                .orElse(0);
+        // Pull the macro action value out with the same type as the linked attribute
+        // otherwise push a null value through to the attribute
+        List<MacroAction> actions = getMacroActions(macroRef);
+        Value actionValue = null;
 
-            List<MacroAction> actions = getMacroActions(macroRef);
-
-            Optional<Value> actionValue = Optional.empty();
-
-            if (actions.isEmpty()) {
-                LOG.fine("No actions are available for the linked macro, maybe it is disabled?: " + macroRef);
-            } else {
-                actionIndex = Math.min(actions.size(), Math.max(0, actionIndex));
-                actionValue = actions.get(actionIndex).getAttributeState().getCurrentValue();
-                LOG.fine("Attribute is linked to the value of macro action [" + actionIndex + "] current value: " + actionValue.map(Value::toJson).orElse(""));
-            }
-
-            // Push the value of this macro action into the attribute
-            updateLinkedAttribute(new AttributeState(attribute.getReferenceOrThrow(), actionValue.orElse(null)));
+        if (actions.isEmpty()) {
+            LOG.fine("No actions are available for the linked macro, maybe it is disabled?: " + macroRef);
+        } else {
+            actionIndex = Math.min(actions.size(), Math.max(0, actionIndex));
+            actionValue = actions.get(actionIndex).getAttributeState().getCurrentValue().orElse(null);
+            LOG.fine("Attribute is linked to the value of macro action index: actionIndex");
         }
+
+        if (actionValue != null) {
+            // Verify the type of the attribute matches the action value
+            if (attribute
+                .getType()
+                .map(AttributeType::getValueType)
+                .orElse(null) != actionValue.getType()) {
+                // Use a value of null so it is clear that the attribute isn't linked correctly
+                actionValue = null;
+            }
+        }
+
+        // Push the value of this macro action into the attribute
+        updateLinkedAttribute(new AttributeState(attribute.getReferenceOrThrow(), actionValue));
     }
 
     @Override
@@ -257,7 +250,6 @@ public class MacroProtocol extends AbstractProtocol {
 
         if (attribute.isExecutable()) {
             // This is a macro execution related write operation
-            Optional<Value> value = event.getValue();
             AttributeExecuteStatus status = event.getValue()
                 .flatMap(Values::getString)
                 .flatMap(AttributeExecuteStatus::fromString)
@@ -296,37 +288,25 @@ public class MacroProtocol extends AbstractProtocol {
             return;
         }
 
-        // Check if this is a write to a macro action value
-        // Check for protocol property meta
-        String protocolProperty = attribute
-            .getMetaItem(AssetMeta.PROTOCOL_PROPERTY)
-            .flatMap(AbstractValueHolder::getValueAsString)
-            .orElse("");
+        // Assume this is a write to a macro action value (default to index 0)
+        int actionIndex = getMacroActionIndex(attribute).orElse(0);
 
-        if (protocolProperty.equals(PROPERTY_MACRO_ACTION)) {
-            // Get the macro action index
-            int actionIndex = attribute
-                .getMetaItem(META_MACRO_ACTION_INDEX)
-                .flatMap(AbstractValueHolder::getValueAsInteger)
-                .orElse(0);
+        // Extract macro actions from protocol configuration rather than modify the in memory ones
+        List<MacroAction> actions = MacroConfiguration.getMacroActions(protocolConfiguration);
 
-            // Extract macro actions from protocol configuration rather than modify the in memory ones
-            List<MacroAction> actions = MacroConfiguration.getMacroActions(protocolConfiguration);
+        if (actions.isEmpty()) {
+            LOG.fine("No actions are available for the linked macro, maybe it is disabled?: " + protocolConfiguration.getReferenceOrThrow());
+        } else {
+            actionIndex = Math.min(actions.size(), Math.max(0, actionIndex));
+            LOG.fine("Updating macro action [" + actionIndex + "] value to: " + event.getValue().map(Value::toJson).orElse(""));
+            MacroAction action = actions.get(actionIndex);
+            action.setAttributeState(new AttributeState(action.getAttributeState().getAttributeRef(), event.getValue().orElse(null)));
+            MetaItem[] actionMeta = actions
+                .stream()
+                .map(MacroAction::toMetaItem)
+                .toArray(MetaItem[]::new);
 
-            if (actions.isEmpty()) {
-                LOG.fine("No actions are available for the linked macro, maybe it is disabled?: " + protocolConfiguration.getReferenceOrThrow());
-            } else {
-                actionIndex = Math.min(actions.size(), Math.max(0, actionIndex));
-                LOG.fine("Updating macro action [" + actionIndex + "] value to: " + event.getValue().map(Value::toJson).orElse(""));
-                MacroAction action = actions.get(actionIndex);
-                action.setAttributeState(new AttributeState(action.getAttributeState().getAttributeRef(), event.getValue().orElse(null)));
-                MetaItem[] actionMeta = actions
-                    .stream()
-                    .map(MacroAction::toMetaItem)
-                    .toArray(MetaItem[]::new);
-
-                updateLinkedProtocolConfiguration(protocolConfiguration, META_MACRO_ACTION, actionMeta);
-            }
+            updateLinkedProtocolConfiguration(protocolConfiguration, META_MACRO_ACTION, actionMeta);
         }
     }
 

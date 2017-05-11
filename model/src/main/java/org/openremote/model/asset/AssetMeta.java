@@ -155,14 +155,7 @@ public enum AssetMeta implements HasUniqueResourceName {
     /**
      * Marks an attribute as being executable so it then supports values of type {@link AttributeExecuteStatus}.
      */
-    EXECUTABLE(ASSET_META_NAMESPACE + ":executable", new Access(true, false, true), ValueType.BOOLEAN),
-
-    /**
-     * Marks an agent linked attribute as being linked to a property of the linked protocol, supported values
-     * are protocol dependent.
-     * TODO: Merge this into protocols that require custom configuration
-     */
-    PROTOCOL_PROPERTY(ASSET_META_NAMESPACE + ":protocolProperty", new Access(true, false, true), ValueType.STRING);
+    EXECUTABLE(ASSET_META_NAMESPACE + ":executable", new Access(true, false, true), ValueType.BOOLEAN);
 
     public enum AssetMetaValidationFailure implements ValidationFailure {
         VALUE_DOES_NOT_MATCH_ASSET_META_TYPE

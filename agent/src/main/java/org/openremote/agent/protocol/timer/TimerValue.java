@@ -17,11 +17,16 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.agent.protocol.trigger.time;
+package org.openremote.agent.protocol.timer;
 
 import java.util.Locale;
 
-public enum TimeTriggerProperty {
+public enum TimerValue {
+
+    /**
+     * Links an attribute to the enabled status of a timer for read/write
+     */
+    ENABLED,
 
     /**
      * Links the entire cron expression to an attribute for read/write
@@ -30,22 +35,17 @@ public enum TimeTriggerProperty {
 
     /**
      * Links the time of the cron expression to an attribute for read/write
-     * (read works for simple hour, min and second cron expressions
-     * e.g. 0 35 15 ? * *) once a write is performed to a non simple cron
-     * expression then it becomes simple.
+     * <p>
+     * Read works for simple hour, min and second cron expressions (e.g. 0 35 15 ? * *) once a write is performed to a
+     * non simple cron expression then it becomes simple.
      *
      * 24h time format
      */
     TIME;
 
-//    /**
-//     * Links the Day of week of the cron expression to an attribute for
-//     * read/write (only works for single day of week cron expressions)
-//     */
-//    //TODO: Could pull multiple days as a JsonArray
-//    DAY_OF_WEEK
+    // TODO: Add support for other links (e.g. DAY_OF_WEEK)
 
-    public static TimeTriggerProperty fromString(String value) {
+    public static TimerValue fromString(String value) {
         return value == null ? null : valueOf(value.toUpperCase(Locale.ROOT));
     }
 }

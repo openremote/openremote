@@ -263,17 +263,6 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait {
                                 new AttributeRef(mockAgent.getId(), "mockConfig4").toArrayValue()
                         )
                 ),
-                // The below attribute is handled by abstract protocol and won't reach the mock
-                // protocol link/unlink attribute method
-                new AssetAttribute("protocolEnabled", AttributeType.BOOLEAN)
-                        .setMeta(
-                        new MetaItem("MOCK_ATTRIBUTE_REQUIRED_META", Values.create(true)),
-                        new MetaItem(AssetMeta.PROTOCOL_PROPERTY, Values.create("ENABLED")),
-                        new MetaItem(
-                                AssetMeta.AGENT_LINK,
-                                new AttributeRef(mockAgent.getId(), "mockConfig4").toArrayValue()
-                        )
-                ),
                 new AssetAttribute("invalidToggle5", AttributeType.BOOLEAN, Values.create(false))
                     .setMeta(
                         new MetaItem(
@@ -356,34 +345,6 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait {
             assert protocolMethodCalls[0] == "UNLINK_ATTRIBUTE"
             assert protocolMethodCalls[1] == "UNLINK_PROTOCOL"
         }
-
-        when: "a disabled protocol configuration is enabled"
-        protocolMethodCalls.clear()
-        assetProcessingService.sendAttributeEvent(new AttributeEvent(mockThing.getId(),"protocolEnabled", Values.create(true)))
-
-        then: "the protocol configuration should be relinked"
-        conditions.eventually {
-            assert protocolLinkedAttributes['mockConfig4'].size() == 2
-            assert protocolMethodCalls.size() == 6
-            assert protocolMethodCalls[0] == "UNLINK_ATTRIBUTE"
-            assert protocolMethodCalls[1] == "UNLINK_ATTRIBUTE"
-            assert protocolMethodCalls[2] == "UNLINK_PROTOCOL"
-            assert protocolMethodCalls[3] == "LINK_PROTOCOL"
-            assert protocolMethodCalls[4] == "LINK_ATTRIBUTE"
-            assert protocolMethodCalls[5] == "LINK_ATTRIBUTE"
-        }
-
-        and: "the deployment status of the relinked protocol configuration should now be LINKED_ENABLED"
-        def config4 = protocolLinkedConfigurations.find { it.getName().orElse("").equals("mockConfig4") }
-        assert config4 != null
-        assert agentService.getProtocolDeploymentStatus(config4.getReferenceOrThrow()) == Protocol.DeploymentStatus.LINKED_ENABLED
-
-        when: "the mock thing is retrieved from the DB"
-        mockThing = assetStorageService.find(mockThing.getId(), true)
-
-        then: "the linked attribute values should have been updated by the protocol"
-        assert mockThing.getAttribute("lightToggle4").get().getValueAsBoolean().orElse(false)
-        assert mockThing.getAttribute("tempTarget4").get().getValueAsNumber().orElse(0d) == 25.5d
 
         when: "the mock protocol tries to update the plain readonly attribute"
         mockProtocol.updateAttribute(new AttributeState(mockThing.getId(),"plainAttribute", Values.create("UPDATE")))

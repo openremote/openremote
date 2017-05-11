@@ -17,8 +17,23 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.agent.protocol.trigger;
+package org.openremote.agent.protocol.timer;
 
-public interface TriggerHandlerProducer {
-    AbstractTriggerHandler getHandler();
+import org.quartz.Job;
+import org.quartz.JobExecutionContext;
+import org.quartz.JobExecutionException;
+
+/**
+ * This has to be in its' own class or quartz has issues instantiating it
+ */
+public class CronJob implements Job {
+
+    @Override
+    public void execute(JobExecutionContext context) throws JobExecutionException {
+        Runnable executeAction = (Runnable)context.getMergedJobDataMap().get("ACTION");
+
+        if (executeAction != null) {
+            executeAction.run();
+        }
+    }
 }
