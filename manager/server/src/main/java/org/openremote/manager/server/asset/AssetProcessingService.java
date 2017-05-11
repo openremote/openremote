@@ -134,6 +134,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
     protected AssetDatapointService assetDatapointService;
     protected MessageBrokerService messageBrokerService;
     protected EventService eventService;
+    protected long lastProcessedEventTimestamp;
 
     final protected List<Consumer<AssetState>> processors = new ArrayList<>();
 
@@ -487,6 +488,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
             }
 
         } finally {
+            lastProcessedEventTimestamp = System.currentTimeMillis();
             LOG.fine("<<< Processing complete: " + assetState);
         }
     }

@@ -45,6 +45,7 @@ import java.util.logging.Logger;
 public abstract class AbstractProtocol implements Protocol {
 
     private static final Logger LOG = Logger.getLogger(AbstractProtocol.class.getName());
+
     protected final Map<AttributeRef, AssetAttribute> linkedAttributes = new HashMap<>();
     protected final Map<AttributeRef, Triplet<AssetAttribute, Consumer<DeploymentStatus>, DeploymentStatus>> linkedProtocolConfigurations = new HashMap<>();
     protected MessageBrokerContext messageBrokerContext;
@@ -74,7 +75,7 @@ public abstract class AbstractProtocol implements Protocol {
                     from(ACTUATOR_TOPIC)
                         .routeId("Actuator-" + getProtocolName())
                         .process(exchange -> {
-                            String protocolName = exchange.getIn().getHeader(Protocol.ACTUATOR_TOPIC_TARGET_PROTOCOL, String.class);
+                            String protocolName = exchange.getIn().getHeader(ACTUATOR_TOPIC_TARGET_PROTOCOL, String.class);
                             if (getProtocolName().equals(protocolName)) {
                                 // TODO Use read/write lock for link/unlink attributes synchronization and additional optional exclusive lock for single-threaded implementors
                                 synchronized (linkedAttributes) {
@@ -85,6 +86,7 @@ public abstract class AbstractProtocol implements Protocol {
                                     } else {
                                         AssetAttribute protocolConfiguration = getLinkedProtocolConfiguration(attribute);
 
+                                        // TODO: Merge this into new TimerProtocol as custom configuration item
                                         // If attribute is linked to protocol's enabled status handle here
                                         boolean isLinkedToEnabledStatus = attribute
                                             .getMetaItem(AssetMeta.PROTOCOL_PROPERTY)

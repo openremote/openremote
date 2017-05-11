@@ -111,12 +111,10 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
 
         then: "the container should be running and initialised"
         conditions.eventually {
-            assert isContainerRunning()
+            assertNothingProcessedFor(assetProcessingService, 500)
         }
 
         then: "register mock asset processors"
-        // TODO We have no choice but to sleep here as we wait for trigger protocol to finish initialization
-        sleep(3000)
         assetProcessingService.processors.add(mockDatapointServiceConsumer)
         assetProcessingService.processors.add(3, mockAssetStorageConsumer)
         assetProcessingService.processors.add(2, mockAgentServiceConsumer)

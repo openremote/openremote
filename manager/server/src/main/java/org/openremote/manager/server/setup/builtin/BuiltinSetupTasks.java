@@ -53,6 +53,8 @@ public class BuiltinSetupTasks extends AbstractSetupTasks {
     public static final String SETUP_INIT_CLEAN_DATABASE = "SETUP_INIT_CLEAN_DATABASE";
     public static final String SETUP_IMPORT_DEMO_USERS = "SETUP_IMPORT_DEMO_USERS";
     public static final String SETUP_IMPORT_DEMO_ASSETS = "SETUP_IMPORT_DEMO_ASSETS";
+    // TODO: Only import apartment 1 if this flag is set
+    public static final String SETUP_IMPORT_DEMO_APARTMENT = "SETUP_IMPORT_DEMO_APARTMENT";
     public static final String SETUP_IMPORT_DEMO_RULES = "SETUP_IMPORT_DEMO_RULES";
 
     @Override

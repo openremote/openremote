@@ -158,9 +158,9 @@ public enum AssetMeta implements HasUniqueResourceName {
     EXECUTABLE(ASSET_META_NAMESPACE + ":executable", new Access(true, false, true), ValueType.BOOLEAN),
 
     /**
-     * Marks an agent linked attribute as being linked to a property of the linked protocol. For example, an
-     * attribute linked to the {@link #ENABLED} status of a protocol configuration should use this meta with
-     * a value of "ENABLED"; other supported values are protocol dependent.
+     * Marks an agent linked attribute as being linked to a property of the linked protocol, supported values
+     * are protocol dependent.
+     * TODO: Merge this into protocols that require custom configuration
      */
     PROTOCOL_PROPERTY(ASSET_META_NAMESPACE + ":protocolProperty", new Access(true, false, true), ValueType.STRING);
 

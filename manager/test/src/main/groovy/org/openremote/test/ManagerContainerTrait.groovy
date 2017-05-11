@@ -98,6 +98,11 @@ trait ManagerContainerTrait extends ContainerTrait {
         startContainer(config << [(TIMER_CLOCK_TYPE): PSEUDO.name()], services)
     }
 
+    static assertNothingProcessedFor(AssetProcessingService assetProcessingService, int milliseconds) {
+        assert (assetProcessingService.lastProcessedEventTimestamp > 0
+                && assetProcessingService.lastProcessedEventTimestamp + milliseconds < System.currentTimeMillis())
+    }
+
     /**
      * Execute pseudo clock operations in Rules engine.
      */
@@ -121,13 +126,17 @@ trait ManagerContainerTrait extends ContainerTrait {
     }
 
     static void advancePseudoClocks(long amount, TimeUnit unit, Container container, RulesEngine[] engine) {
-        withClockOf(container) { it.advanceTime(amount, unit)}
-        engine.each { withClockOf(it) { it.advanceTime(amount, unit)} }
+        withClockOf(container) { it.advanceTime(amount, unit) }
+        engine.each { withClockOf(it) { it.advanceTime(amount, unit) } }
     }
 
     static void setPseudoClocksToRealTime(Container container, RulesEngine[] engine) {
-        withClockOf(container) { it.advanceTime(System.currentTimeMillis() - it.currentTimeMillis, TimeUnit.MILLISECONDS) }
-        engine.each { withClockOf(it) { it.advanceTime(System.currentTimeMillis() - it.currentTime, TimeUnit.MILLISECONDS)} }
+        withClockOf(container) {
+            it.advanceTime(System.currentTimeMillis() - it.currentTimeMillis, TimeUnit.MILLISECONDS)
+        }
+        engine.each {
+            withClockOf(it) { it.advanceTime(System.currentTimeMillis() - it.currentTime, TimeUnit.MILLISECONDS) }
+        }
     }
 
 }

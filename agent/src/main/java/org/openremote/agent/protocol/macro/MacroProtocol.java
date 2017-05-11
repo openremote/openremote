@@ -56,7 +56,7 @@ public class MacroProtocol extends AbstractProtocol {
      * Use in conjunction with {@link #META_MACRO_ACTION_INDEX} to determine which macro action to
      * link to (defaults to 0 if not present).
      */
-    public static final String PROPERTY_MACRO_ACTION = PROTOCOL_NAME + ":action";
+    public static final String PROPERTY_MACRO_ACTION = "ACTION";
 
     /**
      * Use in combination with {@link #PROPERTY_MACRO_ACTION} on linked attributes to read/write
