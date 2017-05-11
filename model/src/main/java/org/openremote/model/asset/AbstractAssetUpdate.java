@@ -71,14 +71,13 @@ public abstract class AbstractAssetUpdate {
 
     final protected long oldValueTimestamp;
 
-    // True if the update was initiated by a protocol and is being processed northbound
-    protected boolean northbound;
+    protected boolean southbound;
 
     public AbstractAssetUpdate(Asset asset, AssetAttribute attribute) {
         this(asset, attribute, null, 0, false);
     }
 
-    public AbstractAssetUpdate(Asset asset, AssetAttribute attribute, Value oldValue, long oldValueTimestamp, boolean northbound) {
+    public AbstractAssetUpdate(Asset asset, AssetAttribute attribute, Value oldValue, long oldValueTimestamp, boolean southbound) {
         this(
             attribute,
             asset.getCreatedOn(),
@@ -96,7 +95,7 @@ public abstract class AbstractAssetUpdate {
             asset.getCoordinates(),
             oldValue,
             oldValueTimestamp,
-            northbound
+            southbound
         );
     }
 
@@ -118,7 +117,7 @@ public abstract class AbstractAssetUpdate {
             that.coordinates,
             that.oldValue,
             that.oldValueTimestamp,
-            that.northbound
+            that.southbound
         );
     }
 
@@ -129,7 +128,7 @@ public abstract class AbstractAssetUpdate {
                                   double[] coordinates,
                                   Value oldValue,
                                   long oldValueTimestamp,
-                                  boolean northbound) {
+                                  boolean southbound) {
         this.attribute = attribute;
         this.createdOn = createdOn;
         this.id = id;
@@ -149,7 +148,7 @@ public abstract class AbstractAssetUpdate {
         this.coordinates = coordinates;
         this.oldValue = oldValue;
         this.oldValueTimestamp = oldValueTimestamp;
-        this.northbound = northbound;
+        this.southbound = southbound;
     }
 
     public Date getCreatedOn() {
@@ -212,8 +211,12 @@ public abstract class AbstractAssetUpdate {
         return oldValueTimestamp;
     }
 
-    public boolean isNorthbound() {
-        return northbound;
+    /**
+     *  True if the update was initiated by a client (and not protocol or internal) and
+     *  is being processed southbound.
+     */
+    public boolean isSouthbound() {
+        return southbound;
     }
 
     public Value getValue() {

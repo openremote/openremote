@@ -27,6 +27,7 @@ import org.openremote.container.ContainerService;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.message.MessageBrokerSetupService;
 import org.openremote.container.persistence.PersistenceEvent;
+import org.openremote.manager.server.asset.AssetProcessingService;
 import org.openremote.manager.server.asset.AssetStorageService;
 import org.openremote.manager.server.asset.ServerAsset;
 import org.openremote.manager.server.datapoint.AssetDatapointService;
@@ -66,6 +67,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
     private static final Logger LOG = Logger.getLogger(AgentService.class.getName());
 
     protected Container container;
+    protected AssetProcessingService assetProcessingService;
     protected AssetStorageService assetStorageService;
     protected AssetDatapointService assetDatapointService;
     protected MessageBrokerService messageBrokerService;
@@ -75,6 +77,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
     @Override
     public void init(Container container) throws Exception {
         this.container = container;
+        assetProcessingService = container.getService(AssetProcessingService.class);
         assetStorageService = container.getService(AssetStorageService.class);
         assetDatapointService = container.getService(AssetDatapointService.class);
         messageBrokerService = container.getService(MessageBrokerService.class);
@@ -143,11 +146,8 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
 
     /**
      * This should only be called by protocol implementations to request an update to
-     * one of their own protocol configuration attributes. The {@link ProtocolAssetService}
-     * interface was implemented here because the sendAttributeEvent already exists here
-     * and there are already protocol related things here anyway.
+     * one of their own protocol configuration attributes.
      */
-    // TODO: Need a way of restricting protocols to their own protocolConfigurations
     @Override
     public void updateProtocolConfiguration(AssetAttribute protocolConfiguration) {
         if (protocolConfiguration == null || !protocolConfiguration.getReference().isPresent()) {
@@ -173,6 +173,11 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
         agent.replaceAttribute(protocolConfiguration);
         LOG.fine("Updating agent protocol configuration: " + protocolRef);
         assetStorageService.merge(agent);
+    }
+
+    @Override
+    public void sendAttributeEvent(AttributeEvent attributeEvent) {
+        assetProcessingService.sendAttributeEvent(attributeEvent, false);
     }
 
     /**
@@ -513,18 +518,19 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
     }
 
     /**
-     * If this update is not for an asset of type THING or it has been initiated by
-     * a protocol then we ignore it.
+     * If this is not a southbound update from a client, or if the changed attribute is not linked to
+     * an agent's protocol configuration, we ignore it.
      * <p>
-     * Otherwise we push the update to the protocol to handle and prevent any further
-     * processing of this event by the processing chain, the protocol should raise
-     * sensor updates as required (i.e. the protocol is responsible for synchronising state)
+     * Otherwise we push the update to the attributes' linked protocol to handle and prevent any further
+     * processing of this event by the processing chain. The protocol should raise sensor updates as
+     * required (i.e. the protocol is responsible for synchronising state with the database).
      */
     @Override
     public void accept(AssetState assetState) {
-        // If update was initiated by a protocol ignore it
-        if (assetState.isNorthbound()) {
-            LOG.fine("Ignoring as it came from a protocol: " + assetState);
+        if (assetState.isSouthbound()) {
+            LOG.fine("Handling south-bound update: " + assetState);
+        } else {
+            LOG.fine("Ignoring non-client update: " + assetState);
             return;
         }
 

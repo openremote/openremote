@@ -243,7 +243,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             int invalid = 0;
             for (AssetAttribute attribute : asset.getAttributesList()) {
                 List<ValidationFailure> validationFailures = attribute.getValidationFailures();
-                if (validationFailures.size() > 0) {
+                if (!validationFailures.isEmpty()) {
                     LOG.warning("Validation failure(s) " + validationFailures + ", can't store: " + attribute);
                     invalid++;
                 }

@@ -223,26 +223,25 @@ public abstract class AbstractProtocol implements Protocol {
 
     /**
      * Send an arbitrary {@link AttributeState} through the processing chain
-     * using the current system time as the timestamp.
+     * using the current system time as the timestamp. Use {@link #updateLinkedAttribute}
+     * to publish new sensor values, which performs additional verification and uses a
+     * different messaging queue.
      */
     protected void sendAttributeEvent(AttributeState state) {
-        sendAttributeEvent(new AttributeEvent(state, timerService.getCurrentTimeMillis()));
+        assetService.sendAttributeEvent(new AttributeEvent(state, timerService.getCurrentTimeMillis()));
     }
 
     /**
      * Send an arbitrary {@link AttributeEvent} through the processing chain.
+     * Use {@link #updateLinkedAttribute} to publish new sensor values, which performs
+     * additional verification and uses a different messaging queue.
      */
-    protected void sendAttributeEvent(AttributeEvent attributeEvent) {
-        LOG.info("Sending attribute event from protocol '" + getProtocolName() + "': " + attributeEvent);
-        // TODO: Decide whether protocols should be allowed to send arbitrary attribute events to read only attributes
-        // Use same mechanism as clients - cannot write to readonly attributes
-        //assetProcessingService.sendAttributeEvent();
-        // Use special route for protocols to allow write on readonly attributes
-        producerTemplate.sendBodyAndHeader(SENSOR_QUEUE, attributeEvent, "isSensorUpdate", false);
+    protected void sendAttributeEvent(AttributeEvent event) {
+        assetService.sendAttributeEvent(event);
     }
 
     /**
-     * Update the value of a linked attribute.
+     * Update the value of a linked attribute. Call this to publish new sensor values.
      */
     protected void updateLinkedAttribute(AttributeState state, long timestamp) {
         AttributeEvent attributeEvent = new AttributeEvent(state, timestamp);
@@ -251,7 +250,8 @@ public abstract class AbstractProtocol implements Protocol {
     }
 
     /**
-     * Update the value of a linked attribute.
+     * Update the value of a linked attribute, with the current system time as event time.
+     * Call this to publish new sensor values.
      */
     protected void updateLinkedAttribute(AttributeState state) {
         updateLinkedAttribute(state, timerService.getCurrentTimeMillis());

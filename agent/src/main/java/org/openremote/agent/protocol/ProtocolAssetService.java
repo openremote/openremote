@@ -21,15 +21,22 @@ package org.openremote.agent.protocol;
 
 import org.openremote.container.ContainerService;
 import org.openremote.model.asset.AssetAttribute;
+import org.openremote.model.attribute.AttributeEvent;
 
 /**
  * Interface for protocols to perform limited asset related operations.
- * <p>
- * <ul>
- * <li>Update their own protocol configurations</li>
- * </ul>
  */
 public interface ProtocolAssetService extends ContainerService {
-    // TODO: Find a way of limiting protocols to only modifying their own protocol configurations
+
+    /**
+     * Protocols can update their own protocol configuration, for example, to store configuration
+     * details such as temporary access (e.g. OAuth offline) tokens.
+     */
     void updateProtocolConfiguration(AssetAttribute protocolConfiguration);
+
+    /**
+     * Protocols can send arbitrary attribute change events for regular processing.
+     */
+    void sendAttributeEvent(AttributeEvent attributeEvent);
+
 }

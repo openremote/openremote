@@ -34,7 +34,6 @@ import java.util.logging.Logger;
 
 import static org.openremote.agent.protocol.macro.MacroConfiguration.META_MACRO_ACTION;
 import static org.openremote.agent.protocol.macro.MacroConfiguration.isValidMacroConfiguration;
-import static org.openremote.model.Constants.ASSET_META_NAMESPACE;
 import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
 
 /**
@@ -49,6 +48,7 @@ public class MacroProtocol extends AbstractProtocol {
     private static final Logger LOG = Logger.getLogger(MacroProtocol.class.getName());
 
     public static final String PROTOCOL_NAME = PROTOCOL_NAMESPACE + ":macro";
+
     /**
      * Use as value of {@link org.openremote.model.asset.AssetMeta#PROTOCOL_PROPERTY} meta item to
      * link an attribute to a macro action's value (allows reading/writing of macro action value).
@@ -56,15 +56,16 @@ public class MacroProtocol extends AbstractProtocol {
      * Use in conjunction with {@link #META_MACRO_ACTION_INDEX} to determine which macro action to
      * link to (defaults to 0 if not present).
      */
-    public static final String PROPERTY_MACRO_ACTION = PROTOCOL_NAMESPACE + ":macro";
+    public static final String PROPERTY_MACRO_ACTION = PROTOCOL_NAME + ":action";
 
     /**
      * Use in combination with {@link #PROPERTY_MACRO_ACTION} on linked attributes to read/write
      * a macro action's value. Value should be of type {@link org.openremote.model.value.ValueType#NUMBER}.
      */
-    public static final String META_MACRO_ACTION_INDEX = ASSET_META_NAMESPACE + ":macroActionIndex";
+    public static final String META_MACRO_ACTION_INDEX = PROTOCOL_NAME + ":actionIndex";
 
     class MacroExecutionTask {
+
         AttributeRef attributeRef;
         List<MacroAction> actions;
         boolean repeat;
@@ -86,7 +87,11 @@ public class MacroProtocol extends AbstractProtocol {
             // Update the command Status of this attribute - We use a timestamp slightly in the past otherwise
             // it is possible for COMPLETED status update below to have the same timestamp and to then be rejected
             // by the asset processing service
-            updateLinkedAttribute(new AttributeState(attributeRef, AttributeExecuteStatus.RUNNING.asValue()), System.currentTimeMillis()-10);
+            updateLinkedAttribute(new AttributeState(
+                attributeRef,
+                AttributeExecuteStatus.RUNNING.asValue()),
+                timerService.getCurrentTimeMillis()-10
+            );
             run();
         }
 

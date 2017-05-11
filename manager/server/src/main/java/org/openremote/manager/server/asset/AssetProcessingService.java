@@ -33,6 +33,7 @@ import org.openremote.manager.server.event.EventService;
 import org.openremote.manager.server.rules.RulesService;
 import org.openremote.manager.server.security.ManagerIdentityService;
 import org.openremote.manager.shared.security.ClientRole;
+import org.openremote.model.ValidationFailure;
 import org.openremote.model.asset.*;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeExecuteStatus;
@@ -115,7 +116,7 @@ import static org.openremote.model.asset.agent.AgentLink.getAgentLink;
  * <p>
  * Checks if attribute has {@link org.openremote.model.asset.AssetMeta#STORE_DATA_POINTS} meta item with a value of true
  * and if it does then the {@link AttributeEvent} is stored in a time series DB. Then allows the message to continue
- * if the commit was successful. TODO Should the datapoint service only store northbound updates?
+ * if the commit was successful.
  */
 public class AssetProcessingService extends RouteBuilder implements ContainerService {
 
@@ -204,7 +205,8 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
     @Override
     public void configure() throws Exception {
 
-        // Process attribute events from protocols
+        // Process new sensor values from protocols, must be events for
+        // attributes linked to an agent's protocol configurations
         from(SENSOR_QUEUE)
             .filter(body().isInstanceOf(AttributeEvent.class))
             .process(exchange -> {
@@ -213,22 +215,58 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                     Protocol.SENSOR_QUEUE_SOURCE_PROTOCOL, "Unknown Protocol", String.class
                 );
                 LOG.fine("Received from protocol '" + protocolName + "' on sensor queue: " + event);
-                // Can either come from onUpdateSensor or sendAttributeUpdate
-                boolean isSensorUpdate = (boolean) exchange.getIn().getHeader("isSensorUpdate", true);
-                if (isSensorUpdate) {
-                    processSensorUpdate(protocolName, event);
-                } else {
-                    updateAttributeValue(event, true);
+
+                ServerAsset asset = assetStorageService.find(event.getEntityId(), true);
+
+                if (asset == null) {
+                    LOG.warning(
+                        "Sensor update received from protocol '" + protocolName + "' for an asset that cannot be found: "
+                            + event.getEntityId()
+                    );
+                    return;
                 }
+
+                LOG.fine("Processing sensor " + event + " for asset: " + asset);
+
+                // Get the attribute and check it is actually linked to an agent (although the
+                // event comes from a Protocol, we can not assume that the attribute is still linked,
+                // consider a protocol that receives a batch of messages because a gateway was offline
+                // for a day)
+                AssetAttribute attribute = asset.getAttribute(event.getAttributeName()).orElse(null);
+
+                if (attribute == null) {
+                    LOG.warning(
+                        "Processing sensor update from protocol '" + protocolName
+                            + "' failed, no attribute or not linked to an agent: " + event
+                    );
+                    return;
+                }
+
+                Optional<AssetAttribute> protocolConfiguration =
+                    getAgentLink(attribute)
+                        .flatMap(agentService::getProtocolConfiguration);
+
+                if (!protocolConfiguration.isPresent()) {
+                    LOG.warning(
+                        "Processing sensor update from protocol '" + protocolName
+                            + "' failed, linked agent protocol configuration not found: " + event
+                    );
+                    return;
+                }
+
+                // Process as non-client source (not southbound)
+                processUpdate(asset, attribute, event, false);
+
             });
 
-        // Process attribute events from clients
+        // Process arbitrary attribute events
         from(ASSET_QUEUE)
             .filter(body().isInstanceOf(AttributeEvent.class))
             .process(exchange -> {
                 AttributeEvent event = exchange.getIn().getBody(AttributeEvent.class);
-                LOG.fine("Received on asset queue: " + event);
-                updateAttributeValue(event, false);
+                boolean southbound = exchange.getIn().getHeader(AttributeEvent.HEADER_SOUTHBOUND, true, Boolean.class);
+                LOG.fine("Received (southbound: " + southbound + ") on asset queue: " + event);
+                updateAttributeValue(event, southbound);
             });
 
         // React if a client wants to write attribute state
@@ -245,7 +283,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
 
                 // Superuser can write all
                 if (auth.isSuperUser()) {
-                    sendAttributeEvent(event);
+                    sendAttributeEvent(event, true);
                     return;
                 }
 
@@ -276,32 +314,34 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                     return;
 
                 // Put it on the asset queue
-                sendAttributeEvent(event);
+                sendAttributeEvent(event, true);
             });
     }
 
+    /**
+     * Send attribute change events, with a client origin, into the {@link #ASSET_QUEUE}.
+     *
+     */
     public void sendAttributeEvent(AttributeEvent attributeEvent) {
-        messageBrokerService.getProducerTemplate().sendBody(ASSET_QUEUE, attributeEvent);
+        sendAttributeEvent(attributeEvent, true);
     }
 
     /**
-     * This is the entry point for any attribute value change event in the entire system.
-     * <p>
-     * Ingestion is asynchronous, through either
-     * {@link org.openremote.agent.protocol.Protocol#SENSOR_QUEUE} or {@link #ASSET_QUEUE}.
-     * <p>
-     * This deals with single attribute value changes and pushes them through the attribute event
-     * processing chain where each consumer is given the opportunity to consume the event or allow
-     * it progress to the next consumer {@link AssetState.ProcessingStatus}.
-     * <p>
-     * NOTE: An attribute value can be changed during Asset CRUD but this does not come through
-     * this route but is handled separately see {@link AssetResourceImpl}. Any attribute values
-     * assigned during Asset CRUD can be thought of as the attributes initial value and is subject
-     * to change by the following actors (depending on attribute meta etc.) All actors use this
-     * entry point to initiate an attribute value change: Sensor updates from protocols, attribute
-     * write requests from clients, and attribute write dispatching as rules RHS action.
+     * Send attribute change events into the {@link #ASSET_QUEUE}.
+     *
+     * @param southBound <code>true</code> if the event origin is a client, and not from a
+     *                   protocol or internal (rules) processing.
      */
-    private void updateAttributeValue(AttributeEvent attributeEvent, boolean fromProtocol) {
+    public void sendAttributeEvent(AttributeEvent attributeEvent, boolean southBound) {
+        messageBrokerService.getProducerTemplate().sendBodyAndHeader(
+            ASSET_QUEUE,
+            attributeEvent,
+            AttributeEvent.HEADER_SOUTHBOUND,
+            southBound
+        );
+    }
+
+    private void updateAttributeValue(AttributeEvent attributeEvent, boolean southBound) {
         // Check this event relates to a valid asset
         ServerAsset asset = assetStorageService.find(attributeEvent.getEntityId(), true);
 
@@ -327,15 +367,13 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
         }
 
         // Prevent editing of read only attributes
-        // TODO This also means a rule RHS can't write a read-only attribute with Assets#dispatch!
-        // TODO should protocols be allowed to write to read-only attributes
-        if (!fromProtocol && attribute.get().isReadOnly()) {
-            LOG.warning("Ignoring " + attributeEvent + ", attribute is read-only in: " + asset);
+        if (southBound && attribute.get().isReadOnly()) {
+            LOG.warning("Ignoring southbound " + attributeEvent + ", attribute is read-only in: " + asset);
             return;
         }
 
-        // If attribute is marked as executable and not from northbound only allow write AttributeExecuteStatus to be sent
-        if (!fromProtocol && attribute.get().isExecutable()) {
+        // If attribute is marked as executable and southbound only allow write AttributeExecuteStatus to be sent
+        if (southBound && attribute.get().isExecutable()) {
             Optional<AttributeExecuteStatus> status = attributeEvent.getValue()
                 .flatMap(Values::getString)
                 .flatMap(AttributeExecuteStatus::fromString);
@@ -351,59 +389,13 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
             }
         }
 
-        processUpdate(asset, attribute.get(), attributeEvent, false);
-    }
-
-    /**
-     * We get here if a protocol pushes a sensor update message.
-     */
-    protected void processSensorUpdate(String protocolName, AttributeEvent attributeEvent) {
-        ServerAsset asset = assetStorageService.find(attributeEvent.getEntityId(), true);
-
-        if (asset == null) {
-            LOG.warning(
-                "Sensor update received from protocol '" + protocolName + "' for an asset that cannot be found: "
-                    + attributeEvent.getEntityId()
-            );
-            return;
-        }
-
-        LOG.fine("Processing sensor " + attributeEvent + " for asset: " + asset);
-
-        // Get the attribute and check it is actually linked to an agent (although the
-        // event comes from a Protocol, we can not assume that the attribute is still linked,
-        // consider a protocol that receives a batch of messages because a gateway was offline
-        // for a day)
-        AssetAttribute attribute = asset.getAttribute(attributeEvent.getAttributeName()).orElse(null);
-
-        if (attribute == null) {
-            LOG.warning(
-                "Processing sensor update from protocol '" + protocolName
-                    + "' failed, no attribute or not linked to an agent: " + attributeEvent
-            );
-            return;
-        }
-
-        Optional<AssetAttribute> protocolConfiguration =
-            getAgentLink(attribute)
-                .flatMap(agentService::getProtocolConfiguration);
-
-        if (!protocolConfiguration.isPresent()) {
-            LOG.warning(
-                "Processing sensor update from protocol '" + protocolName
-                    + "' failed, linked agent protocol configuration not found: " + attributeEvent
-            );
-            return;
-        }
-
-        // Protocols can write to readonly attributes (i.e. sensor attributes) so no need to check readonly flag
-        processUpdate(asset, attribute, attributeEvent, true);
+        processUpdate(asset, attribute.get(), attributeEvent, southBound);
     }
 
     protected void processUpdate(ServerAsset asset,
                                  AssetAttribute attribute,
                                  AttributeEvent attributeEvent,
-                                 boolean northbound) {
+                                 boolean southbound) {
         // Ensure timestamp of event is not in the future as that would essentially block access to
         // the attribute until after that time (maybe that is desirable behaviour)
         // Allow a leniency of 1s
@@ -429,11 +421,13 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
             return;
         }
 
-        // Set new value and event timestamp on attribute, thus validating any attribute constraints
-        try {
-            attribute.setValue(attributeEvent.getValue().orElse(null), attributeEvent.getTimestamp());
-        } catch (IllegalArgumentException ex) {
-            LOG.log(Level.WARNING, "Ignoring " + attributeEvent + ", attribute constraint violation in: " + asset, ex);
+        // Set new value and event timestamp on attribute
+        attribute.setValue(attributeEvent.getValue().orElse(null), attributeEvent.getTimestamp());
+
+        // Validate constraints of attribute
+        List<ValidationFailure> validationFailures = attribute.getValidationFailures();
+        if (!validationFailures.isEmpty()) {
+            LOG.warning("Validation failure(s) " + validationFailures + ", can't process update of: " + attribute);
             return;
         }
 
@@ -443,10 +437,23 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                 attribute,
                 lastStateEvent.flatMap(AttributeEvent::getValue).orElse(null),
                 lastStateEvent.map(AttributeEvent::getTimestamp).orElse(-1L),
-                northbound)
+                southbound)
         );
     }
 
+    /*
+     * This deals with single attribute value changes and pushes them through the attribute event
+     * processing chain where each consumer is given the opportunity to consume the event or allow
+     * it progress to the next consumer {@link AssetState.ProcessingStatus}.
+     * <p>
+     * NOTE: An attribute value can be changed during Asset CRUD but this does not come through
+     * this route but is handled separately see {@link AssetResourceImpl}. Any attribute values
+     * assigned during Asset CRUD can be thought of as the attributes initial value and is subject
+     * to change by the following actors (depending on attribute meta etc.) All actors use this
+     * entry point to initiate an attribute value change: Sensor updates from protocols, attribute
+     * write requests from protocols, attribute write requests from clients, and attribute write
+     * dispatching as rules RHS action.
+     */
     protected void processUpdate(AssetState assetState) {
         try {
             long currentMillis = timerService.getCurrentTimeMillis();

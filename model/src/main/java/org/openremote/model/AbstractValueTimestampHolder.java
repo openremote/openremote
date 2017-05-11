@@ -76,7 +76,7 @@ public abstract class AbstractValueTimestampHolder extends AbstractValueHolder {
      * Sets the value and the timestamp to system time.
      */
     @Override
-    public void setValue(Value value) throws IllegalArgumentException {
+    public void setValue(Value value) {
         super.setValue(value);
         setValueTimestamp();
     }
@@ -84,7 +84,7 @@ public abstract class AbstractValueTimestampHolder extends AbstractValueHolder {
     /**
      * Sets the value and the timestamp to given time.
      */
-    public void setValue(Value value, long timestamp) throws IllegalArgumentException {
+    public void setValue(Value value, long timestamp) {
         setValue(value);
         setValueTimestamp(timestamp);
     }

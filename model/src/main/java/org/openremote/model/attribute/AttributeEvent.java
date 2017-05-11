@@ -31,28 +31,7 @@ import java.util.Optional;
  */
 public class AttributeEvent extends SharedEvent {
 
-    /**
-     * Processing of the attribute event depends on where the event originated from.
-     *
-     * TODO Use this as header in Camel messages for conditional routing
-     */
-    public enum Source {
-
-        /**
-         * The event was created by a client, it's a write request/actuator message.
-         */
-        SOUTHBOUND,
-
-        /**
-         * The event was created by internal processing, for example, as a rule consequence.
-         */
-        PROCESSING,
-
-        /**
-         * The event was created by a protocol, it's a value change on a sensor.
-         */
-        NORTHBOUND
-    }
+    public static final String HEADER_SOUTHBOUND = AttributeEvent.class.getName() + ".SOUTHBOUND";
 
     public static class EntityIdFilter extends EventFilter<AttributeEvent> {
 

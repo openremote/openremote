@@ -635,7 +635,7 @@ public class RulesEngine<T extends Ruleset> {
                     }
 
                     LOG.fine("Dispatching on " + RulesEngine.this + ": " + event);
-                    assetProcessingService.sendAttributeEvent(event);
+                    assetProcessingService.sendAttributeEvent(event, false);
                 }
             }
         };

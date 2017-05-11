@@ -82,7 +82,8 @@ public enum AssetMeta implements HasUniqueResourceName {
     ABOUT(ASSET_META_NAMESPACE + ":about", new Access(true, false, true), ValueType.STRING),
 
     /**
-     * Marks the attribute as read-only.
+     * Marks the attribute as read-only for clients. South-bound changes of the attribute are not possible.
+     * North-bound attribute updates made by protocols and changes made by rules are possible.
      */
     READ_ONLY(ASSET_META_NAMESPACE + ":readOnly", new Access(true, false, true), ValueType.BOOLEAN),
 
@@ -160,7 +161,6 @@ public enum AssetMeta implements HasUniqueResourceName {
      * Marks an agent linked attribute as being linked to a property of the linked protocol. For example, an
      * attribute linked to the {@link #ENABLED} status of a protocol configuration should use this meta with
      * a value of "ENABLED"; other supported values are protocol dependent.
-     * TODO I don't understand what this does from the description
      */
     PROTOCOL_PROPERTY(ASSET_META_NAMESPACE + ":protocolProperty", new Access(true, false, true), ValueType.STRING);
 

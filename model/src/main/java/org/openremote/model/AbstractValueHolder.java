@@ -88,19 +88,19 @@ public abstract class AbstractValueHolder {
         }
     }
 
-    public void setValue(Value... values) throws IllegalArgumentException {
+    public void setValue(Value... values) {
         setValue(Values.createArray().addAll(values));
     }
 
-    public void setValue(String string) throws IllegalArgumentException {
+    public void setValue(String string) {
         setValue(Values.create(string));
     }
 
-    public void setValue(Double number) throws IllegalArgumentException {
+    public void setValue(Double number) {
         setValue(Values.create(number));
     }
 
-    public void setValue(Boolean b) throws IllegalArgumentException {
+    public void setValue(Boolean b) {
         setValue(Values.create(b));
     }
 

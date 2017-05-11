@@ -65,8 +65,8 @@ public class AssetState extends AbstractAssetUpdate {
         super(asset, attribute);
     }
 
-    public AssetState(Asset asset, AssetAttribute attribute, Value oldValue, long oldValueTimestamp, boolean northbound) {
-        super(asset, attribute, oldValue, oldValueTimestamp, northbound);
+    public AssetState(Asset asset, AssetAttribute attribute, Value oldValue, long oldValueTimestamp, boolean southbound) {
+        super(asset, attribute, oldValue, oldValueTimestamp, southbound);
     }
 
     public ProcessingStatus getProcessingStatus() {
