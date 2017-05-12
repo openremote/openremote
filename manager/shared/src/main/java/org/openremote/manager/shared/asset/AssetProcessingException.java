@@ -17,26 +17,23 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.agent.protocol;
+package org.openremote.manager.shared.asset;
 
-import org.openremote.container.ContainerService;
-import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.attribute.AttributeEvent;
+public class AssetProcessingException extends RuntimeException {
+    public enum Reason {
+        INSUFFICIENT_ACCESS,
+        ASSET_NOT_FOUND,
+        ATTRIBUTE_NOT_FOUND,
+        INVALID_ACTION
+    }
 
-/**
- * Interface for protocols to perform limited asset related operations.
- */
-public interface ProtocolAssetService extends ContainerService {
+    protected Reason reason;
 
-    /**
-     * Protocols can update their own protocol configuration, for example, to store configuration
-     * details such as temporary access (e.g. OAuth offline) tokens.
-     */
-    void updateProtocolConfiguration(AssetAttribute protocolConfiguration);
+    public AssetProcessingException(Reason reason) {
+        this.reason = reason;
+    }
 
-    /**
-     * Protocols can send arbitrary attribute change events for regular processing.
-     */
-    void sendAttributeEvent(Protocol sender, AttributeEvent attributeEvent);
-
+    public Reason getReason() {
+        return reason;
+    }
 }

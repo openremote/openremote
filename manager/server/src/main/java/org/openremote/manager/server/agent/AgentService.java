@@ -37,6 +37,7 @@ import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.asset.agent.ProtocolConfiguration;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
+import org.openremote.model.event.shared.SharedEvent;
 import org.openremote.model.util.Pair;
 import org.openremote.model.value.ObjectValue;
 
@@ -53,6 +54,7 @@ import static org.openremote.agent.protocol.Protocol.DeploymentStatus.*;
 import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_TOPIC;
 import static org.openremote.manager.server.asset.AssetPredicates.isPersistenceEventForAssetType;
 import static org.openremote.manager.server.asset.AssetPredicates.isPersistenceEventForEntityType;
+import static org.openremote.manager.server.asset.AssetProcessingService.ASSET_QUEUE;
 import static org.openremote.model.asset.AssetAttribute.attributesFromJson;
 import static org.openremote.model.asset.AssetType.AGENT;
 import static org.openremote.model.asset.agent.AgentLink.getAgentLink;
@@ -176,8 +178,24 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
     }
 
     @Override
-    public void sendAttributeEvent(AttributeEvent attributeEvent) {
-        assetProcessingService.sendAttributeEvent(attributeEvent, false);
+    public void sendAttributeEvent(Protocol sender, AttributeEvent attributeEvent) {
+        // Don't allow updating linked attributes with this mechanism as it could cause
+        // an infinite loop
+        boolean isForLinkedAttribute = sender
+            .getLinkedAttributes()
+            .stream()
+            .anyMatch(attribute -> attribute.getReferenceOrThrow()
+                .equals(attributeEvent.getAttributeRef())
+            );
+
+        if (isForLinkedAttribute) {
+            LOG.warning("Cannot update an attribute linked to the same protocol; use updateLinkedAttribute for that");
+            return;
+        }
+
+        messageBrokerService
+            .getProducerTemplate()
+            .sendBodyAndHeader(ASSET_QUEUE, attributeEvent, SharedEvent.HEADER_SENDER, sender);
     }
 
     /**
@@ -527,11 +545,11 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
      */
     @Override
     public void accept(AssetState assetState) {
-        if (assetState.isSouthbound()) {
-            LOG.fine("Handling south-bound update: " + assetState);
-        } else {
-            LOG.fine("Ignoring non-client update: " + assetState);
+        if (assetState.isSensorUpdate()) {
+            LOG.fine("Ignoring sensor update: " + assetState);
             return;
+        } else {
+            LOG.fine("Handling update: " + assetState);
         }
 
         AgentLink.getAgentLink(assetState.getAttribute())

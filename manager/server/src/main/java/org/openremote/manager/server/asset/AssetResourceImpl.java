@@ -19,14 +19,17 @@
  */
 package org.openremote.manager.server.asset;
 
+import org.apache.camel.CamelExecutionException;
+import org.openremote.container.message.MessageBrokerService;
 import org.openremote.manager.server.security.ManagerIdentityService;
 import org.openremote.manager.server.web.ManagerWebResource;
+import org.openremote.manager.shared.asset.AssetProcessingException;
 import org.openremote.manager.shared.asset.AssetResource;
 import org.openremote.manager.shared.http.RequestParams;
 import org.openremote.manager.shared.security.Tenant;
+import org.openremote.manager.shared.security.User;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetQuery;
-import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.value.Value;
@@ -47,13 +50,16 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
 
     protected final AssetStorageService assetStorageService;
     protected final AssetProcessingService assetProcessingService;
+    protected final MessageBrokerService messageBrokerService;
 
     public AssetResourceImpl(ManagerIdentityService identityService,
                              AssetStorageService assetStorageService,
-                             AssetProcessingService assetProcessingService) {
+                             AssetProcessingService assetProcessingService,
+                             MessageBrokerService messageBrokerService) {
         super(identityService);
         this.assetStorageService = assetStorageService;
         this.assetProcessingService = assetProcessingService;
+        this.messageBrokerService = messageBrokerService;
     }
 
     @Override
@@ -226,51 +232,49 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
     @Override
     public void writeAttributeValue(RequestParams requestParams, String assetId, String attributeName, String rawJson) {
         try {
-
             ServerAsset asset;
+            User user = identityService.getUser(getAccessToken());
 
-            if (isRestrictedUser()) {
-                asset = assetStorageService.find(assetId, true, true);
-                if (asset == null)
-                    throw new WebApplicationException(NOT_FOUND);
+            Value value = Values.instance()
+                .parse(rawJson)
+                .orElse(null); // When parsing literal JSON "null"
 
-                if (!assetStorageService.isUserAsset(getUserId(), assetId))
+            AttributeEvent event = new AttributeEvent(new AttributeRef(assetId, attributeName), value);
+
+            // TODO: Get this working using camel route
+            assetProcessingService.sendAttributeEventWithoutCamel(event, user);
+
+//            messageBrokerService
+//                .getProducerTemplate()
+//                .sendBodyAndHeader(INCOMING_EVENT_TOPIC, event, SharedEvent.HEADER_SENDER, user);
+
+        } catch (AssetProcessingException assetProcessingException) {
+            switch (assetProcessingException.getReason()) {
+                case INSUFFICIENT_ACCESS:
                     throw new WebApplicationException(Response.Status.FORBIDDEN);
-
-            } else {
-                asset = assetStorageService.find(assetId, true);
-                if (asset == null)
+                case ASSET_NOT_FOUND:
                     throw new WebApplicationException(NOT_FOUND);
+                case ATTRIBUTE_NOT_FOUND:
+                    throw new WebApplicationException(NOT_FOUND);
+                case INVALID_ACTION:
+                    throw new WebApplicationException(Response.Status.FORBIDDEN);
             }
-
-            // Check attribute exists
-            if (!asset.hasAttribute(attributeName))
-                throw new WebApplicationException(NOT_FOUND);
-
-            // Check realm, must be accessible
-            if (!isTenantActiveAndAccessible(asset)) {
-                LOG.fine("Forbidden access for user '" + getUsername() + "', can't update: " + assetId);
-                throw new WebApplicationException(Response.Status.FORBIDDEN);
+        } catch (CamelExecutionException ex) {
+            // Unwrap the exception
+            Throwable cause = ex.getCause();
+            if (cause instanceof AssetProcessingException) {
+                AssetProcessingException assetProcessingException = (AssetProcessingException)cause;
+                switch (assetProcessingException.getReason()) {
+                    case INSUFFICIENT_ACCESS:
+                        throw new WebApplicationException(Response.Status.FORBIDDEN);
+                    case ASSET_NOT_FOUND:
+                        throw new WebApplicationException(NOT_FOUND);
+                    case ATTRIBUTE_NOT_FOUND:
+                        throw new WebApplicationException(NOT_FOUND);
+                }
             }
-
-            // Check read-only
-            if (!isSuperUser() && asset.getAttributesStream().anyMatch(attribute -> Attribute.isAttributeNameEqualTo(attribute, attributeName) && attribute.isReadOnly())) {
-                throw new WebApplicationException(Response.Status.FORBIDDEN);
-            }
-
-            // Process update
-            try {
-                Value value = Values.instance()
-                    .parse(rawJson)
-                    .orElse(null); // When parsing literal JSON "null"
-                assetProcessingService.sendAttributeEvent(
-                    new AttributeEvent(new AttributeRef(assetId, attributeName), value)
-                );
-            } catch (RuntimeException ex) {
-                throw new IllegalStateException("Error updating attribute: " + attributeName, ex);
-            }
-
-        } catch (IllegalStateException ex) {
+            throw new IllegalStateException("Error updating attribute: " + attributeName, ex);
+        } catch (Exception ex) {
             throw new WebApplicationException(ex, Response.Status.BAD_REQUEST);
         }
     }

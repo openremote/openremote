@@ -19,6 +19,7 @@
  */
 package org.openremote.model.asset;
 
+import org.kie.api.task.model.User;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.AttributeType;
@@ -71,13 +72,15 @@ public abstract class AbstractAssetUpdate {
 
     final protected long oldValueTimestamp;
 
-    protected boolean southbound;
+    final protected boolean sensorUpdate;
 
-    public AbstractAssetUpdate(Asset asset, AssetAttribute attribute) {
-        this(asset, attribute, null, 0, false);
+    final protected Object sender;
+
+    public AbstractAssetUpdate(Asset asset, AssetAttribute attribute, boolean sensorUpdate, Object sender) {
+        this(asset, attribute, null, 0, sensorUpdate, sender);
     }
 
-    public AbstractAssetUpdate(Asset asset, AssetAttribute attribute, Value oldValue, long oldValueTimestamp, boolean southbound) {
+    public AbstractAssetUpdate(Asset asset, AssetAttribute attribute, Value oldValue, long oldValueTimestamp, boolean sensorUpdate, Object sender) {
         this(
             attribute,
             asset.getCreatedOn(),
@@ -95,7 +98,8 @@ public abstract class AbstractAssetUpdate {
             asset.getCoordinates(),
             oldValue,
             oldValueTimestamp,
-            southbound
+            sensorUpdate,
+            sender
         );
     }
 
@@ -117,7 +121,8 @@ public abstract class AbstractAssetUpdate {
             that.coordinates,
             that.oldValue,
             that.oldValueTimestamp,
-            that.southbound
+            that.sensorUpdate,
+            that.sender
         );
     }
 
@@ -128,7 +133,8 @@ public abstract class AbstractAssetUpdate {
                                   double[] coordinates,
                                   Value oldValue,
                                   long oldValueTimestamp,
-                                  boolean southbound) {
+                                  boolean sensorUpdate,
+                                  Object sender) {
         this.attribute = attribute;
         this.createdOn = createdOn;
         this.id = id;
@@ -148,7 +154,8 @@ public abstract class AbstractAssetUpdate {
         this.coordinates = coordinates;
         this.oldValue = oldValue;
         this.oldValueTimestamp = oldValueTimestamp;
-        this.southbound = southbound;
+        this.sensorUpdate = sensorUpdate;
+        this.sender = sender;
     }
 
     public Date getCreatedOn() {
@@ -212,11 +219,15 @@ public abstract class AbstractAssetUpdate {
     }
 
     /**
-     *  True if the update was initiated by a client (and not protocol or internal) and
+     *  True if the update was initiated by a user/client (and not protocol or internal) and
      *  is being processed southbound.
      */
     public boolean isSouthbound() {
-        return southbound;
+        return sender == null || sender instanceof User;
+    }
+
+    public boolean isSensorUpdate() {
+        return sensorUpdate;
     }
 
     public Value getValue() {

@@ -61,12 +61,12 @@ public class AssetState extends AbstractAssetUpdate {
 
     protected Throwable error;
 
-    public AssetState(Asset asset, AssetAttribute attribute) {
-        super(asset, attribute);
+    public AssetState(Asset asset, AssetAttribute attribute, boolean isSensorUpdate, Object sender) {
+        super(asset, attribute, isSensorUpdate, sender);
     }
 
-    public AssetState(Asset asset, AssetAttribute attribute, Value oldValue, long oldValueTimestamp, boolean southbound) {
-        super(asset, attribute, oldValue, oldValueTimestamp, southbound);
+    public AssetState(Asset asset, AssetAttribute attribute, Value oldValue, long oldValueTimestamp, boolean isSensorUpdate, Object sender) {
+        super(asset, attribute, oldValue, oldValueTimestamp, isSensorUpdate, sender);
     }
 
     public ProcessingStatus getProcessingStatus() {

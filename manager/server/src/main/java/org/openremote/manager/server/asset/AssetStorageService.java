@@ -24,19 +24,21 @@ import org.hibernate.Session;
 import org.hibernate.jdbc.AbstractReturningWork;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
+import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.message.MessageBrokerSetupService;
 import org.openremote.container.persistence.PersistenceEvent;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.timer.TimerService;
 import org.openremote.container.web.WebService;
-import org.openremote.container.web.socket.WebsocketAuth;
 import org.openremote.manager.server.event.EventService;
 import org.openremote.manager.server.security.ManagerIdentityService;
 import org.openremote.manager.shared.security.ClientRole;
 import org.openremote.manager.shared.security.Tenant;
+import org.openremote.manager.shared.security.User;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.asset.*;
 import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.event.shared.SharedEvent;
 import org.openremote.model.util.Pair;
 import org.openremote.model.value.Value;
 import org.postgresql.util.PGobject;
@@ -50,7 +52,8 @@ import java.util.stream.Collectors;
 
 import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_TOPIC;
 import static org.openremote.manager.server.asset.AssetPredicates.isPersistenceEventForEntityType;
-import static org.openremote.manager.server.event.EventService.*;
+import static org.openremote.manager.server.event.EventService.INCOMING_EVENT_TOPIC;
+import static org.openremote.manager.server.event.EventService.getSessionKey;
 
 public class AssetStorageService extends RouteBuilder implements ContainerService, Consumer<AssetState> {
 
@@ -102,7 +105,8 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             new AssetResourceImpl(
                 managerIdentityService,
                 this,
-                container.getService(AssetProcessingService.class)
+                container.getService(AssetProcessingService.class),
+                container.getService(MessageBrokerService.class)
             )
         );
 
@@ -145,39 +149,30 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         // React if a client wants to read attribute state
         from(INCOMING_EVENT_TOPIC)
             .filter(body().isInstanceOf(ReadAssetAttributesEvent.class))
+            .filter(header(SharedEvent.HEADER_SENDER).isInstanceOf(User.class))
             .process(exchange -> {
+                String sessionKey = getSessionKey(exchange);
                 ReadAssetAttributesEvent event = exchange.getIn().getBody(ReadAssetAttributesEvent.class);
+                User user = exchange.getIn().getHeader(SharedEvent.HEADER_SENDER, User.class);
                 LOG.fine("Handling from client: " + event);
 
-                if (event.getAssetId() == null || event.getAssetId().isEmpty())
+                if (event.getAssetId() == null || event.getAssetId().isEmpty() || user == null)
                     return;
 
-                String sessionKey = getSessionKey(exchange);
-                WebsocketAuth auth = getWebsocketAuth(exchange);
-
-                // Superuser can get all
-                if (auth.isSuperUser()) {
-                    ServerAsset asset = find(event.getAssetId(), true);
-                    if (asset != null)
-                        replyWithAttributeEvents(sessionKey, asset, event.getAttributeNames());
-                    return;
-                }
-
-                // User must have role
-                if (!auth.isUserInRole(ClientRole.READ_ASSETS.getValue())) {
+                if (!user.isSuperUser() && !user.hasRole(ClientRole.READ_ASSETS.getValue())) {
                     return;
                 }
 
                 ServerAsset asset = find(
                     event.getAssetId(),
                     true,
-                    managerIdentityService.isRestrictedUser(auth.getUserId()) // Restricted users get filtered state
+                    user.isRestricted() // Restricted users get filtered state
                 );
+
                 if (asset != null) {
                     replyWithAttributeEvents(sessionKey, asset, event.getAttributeNames());
                 }
             });
-
     }
 
     public ServerAsset find(String assetId) {
@@ -686,6 +681,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 break;
         }
     }
+
 
     protected void replyWithAttributeEvents(String sessionKey, ServerAsset asset, String[] attributeNames) {
         List<String> names = attributeNames == null ? Collections.emptyList() : Arrays.asList(attributeNames);

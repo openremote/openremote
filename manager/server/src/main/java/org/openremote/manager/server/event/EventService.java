@@ -28,7 +28,11 @@ import org.openremote.container.message.MessageBrokerSetupService;
 import org.openremote.container.timer.TimerService;
 import org.openremote.container.web.socket.WebsocketAuth;
 import org.openremote.container.web.socket.WebsocketConstants;
+import org.openremote.manager.server.asset.AssetProcessingService;
+import org.openremote.manager.server.asset.AssetStorageService;
 import org.openremote.manager.server.concurrent.ManagerExecutorService;
+import org.openremote.manager.server.security.ManagerIdentityService;
+import org.openremote.manager.shared.security.User;
 import org.openremote.model.event.shared.CancelEventSubscription;
 import org.openremote.model.event.shared.EventSubscription;
 import org.openremote.model.event.shared.SharedEvent;
@@ -101,16 +105,23 @@ public class EventService implements ContainerService {
 
     final protected Collection<EventSubscriptionAuthorizer> eventSubscriptionAuthorizers = new CopyOnWriteArraySet<>();
     protected MessageBrokerService messageBrokerService;
+    protected ManagerIdentityService managerIdentityService;
+    protected AssetStorageService assetStorageService;
+    protected AssetProcessingService assetProcessingService;
     protected EventSubscriptions eventSubscriptions;
 
     @Override
     public void init(Container container) throws Exception {
         messageBrokerService = container.getService(MessageBrokerService.class);
+        managerIdentityService = container.getService(ManagerIdentityService.class);
+        assetStorageService = container.getService(AssetStorageService.class);
+        assetProcessingService = container.getService(AssetProcessingService.class);
 
         eventSubscriptions = new EventSubscriptions(
             container.getService(TimerService.class),
             container.getService(ManagerExecutorService.class)
         );
+
 
         MessageBrokerSetupService messageBrokerSetupService = container.getService(MessageBrokerSetupService.class);
         messageBrokerSetupService.getContext().getTypeConverterRegistry().addTypeConverters(
@@ -165,7 +176,18 @@ public class EventService implements ContainerService {
                     })
                     .when(bodyAs(String.class).startsWith(SharedEvent.MESSAGE_PREFIX))
                     .convertBodyTo(SharedEvent.class)
-                    .to(EventService.INCOMING_EVENT_TOPIC)
+                    .process(exchange -> {
+                        WebsocketAuth auth = getWebsocketAuth(exchange);
+
+                        // Extract user object to use as the sender
+                        User user = managerIdentityService.getUser(auth.getAccessToken());
+
+                        // TODO: There's probably a better way of doing this in camel
+                        SharedEvent event = exchange.getIn().getBody(SharedEvent.class);
+                        messageBrokerService
+                            .getProducerTemplate()
+                            .sendBodyAndHeader(INCOMING_EVENT_TOPIC, event, SharedEvent.HEADER_SENDER, user);
+                    })
                     .otherwise()
                     .process(exchange -> LOG.fine("Unsupported message body: " + exchange.getIn().getBody()))
                     .end();

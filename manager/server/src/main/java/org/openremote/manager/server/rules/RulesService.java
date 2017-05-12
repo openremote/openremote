@@ -172,7 +172,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
             .forEach(pair -> {
                 ServerAsset asset = pair.key;
                 pair.value.forEach(ruleAttribute -> {
-                    AssetState assetState = new AssetState(asset, ruleAttribute);
+                    AssetState assetState = new AssetState(asset, ruleAttribute, false, null);
                     // Set the status to completed already so rules cannot interfere with this initial insert
                     assetState.setProcessingStatus(AssetState.ProcessingStatus.COMPLETED);
                     updateAssetState(assetState, true);
@@ -254,7 +254,9 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
         BiFunction<Asset, AssetAttribute, AssetState> buildAssetState = (loadedAsset, attribute) ->
 
             new AssetState(loadedAsset,
-                attribute.deepCopy()
+                attribute.deepCopy(),
+                false,
+                null
             );
 
         Asset loadedAsset;
@@ -359,7 +361,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
                     .forEach(attribute -> {
                         // We can't load the asset again (it was deleted), so don't use buildAssetState() and
                         // hope that the path of the event asset has been loaded before deletion
-                        AssetState assetState = new AssetState(asset, attribute);
+                        AssetState assetState = new AssetState(asset, attribute, false, null);
                         LOG.fine("Asset was persisted (" + persistenceEvent.getCause() + "), retracting fact: " + assetState);
                         retractAssetState(assetState);
                     });

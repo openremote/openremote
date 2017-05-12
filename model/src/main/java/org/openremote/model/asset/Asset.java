@@ -340,6 +340,10 @@ public class Asset implements IdentifiableEntity {
 
 
     public void addAttributes(AssetAttribute... attributes) throws IllegalArgumentException {
+        if (this.attributes == null) {
+            this.attributes = Values.createObject();
+        }
+
         Arrays.asList(attributes).forEach(
             attribute -> {
                 if (getAttributesStream().anyMatch(attr -> isAttributeNameEqualTo(attr, attribute.getName().orElse(null)))) {
@@ -352,6 +356,10 @@ public class Asset implements IdentifiableEntity {
     }
 
     public void replaceAttribute(AssetAttribute attribute) throws IllegalArgumentException {
+        if (attributes == null) {
+            return;
+        }
+        
         if (attribute == null || !attribute.getName().isPresent() || !attribute.getType().isPresent())
             throw new IllegalArgumentException("Attribute cannot be null and must have a name and type");
 
@@ -363,6 +371,10 @@ public class Asset implements IdentifiableEntity {
     }
 
     public void removeAttribute(String name) {
+        if (attributes == null) {
+            return;
+        }
+
         attributes.remove(name);
     }
 
@@ -551,11 +563,11 @@ public class Asset implements IdentifiableEntity {
     }
 
     public boolean hasAttribute(String name) {
-        return attributes.hasKey(name);
+        return attributes != null && attributes.hasKey(name);
     }
 
     public Optional<AssetAttribute> getAttribute(String name) {
-        return attributes.getObject(name)
+        return attributes == null ? Optional.empty() : attributes.getObject(name)
             .flatMap(objectValue -> AssetAttribute.attributeFromJson(objectValue, id, name));
     }
 

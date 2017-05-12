@@ -33,14 +33,13 @@ import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.AttributeState;
 import org.openremote.model.attribute.MetaItem;
+import org.openremote.model.event.shared.SharedEvent;
 import org.openremote.model.util.Triplet;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 public abstract class AbstractProtocol implements Protocol {
 
@@ -173,6 +172,24 @@ public abstract class AbstractProtocol implements Protocol {
         }
     }
 
+    @Override
+    public List<AssetAttribute> getLinkedProtocolConfigurations() {
+        synchronized (linkedProtocolConfigurations) {
+            return linkedProtocolConfigurations
+                .values()
+                .stream()
+                .map(triplet -> triplet.getValue1())
+                .collect(Collectors.toList());
+        }
+    }
+
+    @Override
+    public List<AssetAttribute> getLinkedAttributes() {
+        synchronized (linkedAttributes) {
+            return new ArrayList<>(linkedAttributes.values());
+        }
+    }
+
     /**
      * Send an arbitrary {@link AttributeState} through the processing chain
      * using the current system time as the timestamp. Use {@link #updateLinkedAttribute}
@@ -180,7 +197,7 @@ public abstract class AbstractProtocol implements Protocol {
      * different messaging queue.
      */
     protected void sendAttributeEvent(AttributeState state) {
-        assetService.sendAttributeEvent(new AttributeEvent(state, timerService.getCurrentTimeMillis()));
+        assetService.sendAttributeEvent(this, new AttributeEvent(state, timerService.getCurrentTimeMillis()));
     }
 
     /**
@@ -189,7 +206,7 @@ public abstract class AbstractProtocol implements Protocol {
      * additional verification and uses a different messaging queue.
      */
     protected void sendAttributeEvent(AttributeEvent event) {
-        assetService.sendAttributeEvent(event);
+        assetService.sendAttributeEvent(this, event);
     }
 
     /**
@@ -198,7 +215,11 @@ public abstract class AbstractProtocol implements Protocol {
     protected void updateLinkedAttribute(AttributeState state, long timestamp) {
         AttributeEvent attributeEvent = new AttributeEvent(state, timestamp);
         LOG.fine("Sending on sensor queue: " + attributeEvent);
-        producerTemplate.sendBodyAndHeader(SENSOR_QUEUE, attributeEvent, Protocol.SENSOR_QUEUE_SOURCE_PROTOCOL, getProtocolName());
+        producerTemplate.sendBodyAndHeader(
+            SENSOR_QUEUE,
+            attributeEvent,
+            SharedEvent.HEADER_SENDER,
+            this);
     }
 
     /**

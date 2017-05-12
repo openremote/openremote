@@ -31,8 +31,6 @@ import java.util.Optional;
  */
 public class AttributeEvent extends SharedEvent {
 
-    public static final String HEADER_SOUTHBOUND = AttributeEvent.class.getName() + ".SOUTHBOUND";
-
     public static class EntityIdFilter extends EventFilter<AttributeEvent> {
 
         public static final String FILTER_TYPE = "attribute-entity-id";
