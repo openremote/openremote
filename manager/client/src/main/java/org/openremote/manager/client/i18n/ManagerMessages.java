@@ -358,4 +358,6 @@ public interface ManagerMessages extends Messages {
     String emptyJsonData();
 
     String reset();
+
+    String executable();
 }

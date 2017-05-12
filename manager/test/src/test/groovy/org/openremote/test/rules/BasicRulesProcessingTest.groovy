@@ -79,7 +79,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
 
         and: "the container is started"
         def serverPort = findEphemeralPort()
-        def container = startContainerNoDemoRules(defaultConfig(serverPort), defaultServices())
+        def container = startContainerNoDemoScenesOrRules(defaultConfig(serverPort), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
         def rulesService = container.getService(RulesService.class)
@@ -187,7 +187,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
 
         and: "the container is started"
         def serverPort = findEphemeralPort()
-        def container = startContainerNoDemoRules(defaultConfig(serverPort), defaultServices())
+        def container = startContainerNoDemoScenesOrRules(defaultConfig(serverPort), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
         def rulesService = container.getService(RulesService.class)
@@ -274,7 +274,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
 
         and: "the container is started"
         def serverPort = findEphemeralPort()
-        def container = startContainerNoDemoRules(defaultConfig(serverPort), defaultServices())
+        def container = startContainerNoDemoScenesOrRules(defaultConfig(serverPort), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
         def rulesService = container.getService(RulesService.class)
@@ -446,7 +446,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
 
         and: "the container is started"
         def serverPort = findEphemeralPort()
-        def container = startContainerNoDemoRules(defaultConfig(serverPort), defaultServices())
+        def container = startContainerNoDemoScenesOrRules(defaultConfig(serverPort), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
         def rulesService = container.getService(RulesService.class)

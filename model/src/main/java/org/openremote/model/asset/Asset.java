@@ -356,6 +356,9 @@ public class Asset implements IdentifiableEntity {
             throw new IllegalArgumentException("Attribute cannot be null and must have a name and type");
 
         attribute.assetId = getId();
+        if (attributes == null) {
+            attributes = Values.createObject();
+        }
         attributes.put(attribute.getName().get(), attribute.getObjectValue());
     }
 

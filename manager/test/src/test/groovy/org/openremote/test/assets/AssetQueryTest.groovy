@@ -24,7 +24,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
     def "Query assets"() {
         given: "the server container is started"
         def serverPort = findEphemeralPort()
-        def container = startContainerNoDemoRules(defaultConfig(serverPort), defaultServices())
+        def container = startContainerNoDemoScenesOrRules(defaultConfig(serverPort), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
         def assetStorageService = container.getService(AssetStorageService.class)
@@ -221,11 +221,10 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         )
 
         then: "result should match"
-        assets.size() == 4
+        assets.size() == 3
         assets.get(0).id == managerDemoSetup.apartment1Id
         assets.get(1).id == managerDemoSetup.apartment1LivingroomId
-        assets.get(2).id == managerDemoSetup.apartment1LivingroomThermostatId
-        assets.get(3).id == managerDemoSetup.apartment1SceneAgentId
+        assets.get(2).id == managerDemoSetup.apartment1ServiceAgentId
 
         when: "a query is executed"
         assets = assetStorageService.findAll(
@@ -244,16 +243,15 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         )
 
         then: "result should match"
-        assets.size() == 4
+        assets.size() == 3
         assets.get(0).id == managerDemoSetup.apartment1Id
         assets.get(1).id == managerDemoSetup.apartment1LivingroomId
-        assets.get(2).id == managerDemoSetup.apartment1LivingroomThermostatId
-        assets.get(2).getAttributesList().size() == 2
-        !assets.get(2).getAttribute("currentTemperature").get().getValue().isPresent()
-        assets.get(2).getAttribute("currentTemperature").get().meta.size() == 3
-        !assets.get(2).getAttribute("targetTemperature").get().getValue().isPresent()
-        assets.get(2).getAttribute("targetTemperature").get().meta.size() == 2
-        assets.get(3).id == managerDemoSetup.apartment2Id
+        assets.get(1).getAttributesList().size() == 6
+        !assets.get(1).getAttribute("currentTemperature").get().getValue().isPresent()
+        assets.get(1).getAttribute("currentTemperature").get().meta.size() == 3
+        !assets.get(1).getAttribute("targetTemperature").get().getValue().isPresent()
+        assets.get(1).getAttribute("targetTemperature").get().meta.size() == 2
+        assets.get(2).id == managerDemoSetup.apartment2Id
 
         when: "a query is executed"
         assets = assetStorageService.findAll(
@@ -266,7 +264,6 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         expect: "a result to match the executed query "
         assetStorageService.isUserAsset(keycloakDemoSetup.testuser3Id, managerDemoSetup.apartment1Id)
         assetStorageService.isUserAsset(keycloakDemoSetup.testuser3Id, managerDemoSetup.apartment1LivingroomId)
-        assetStorageService.isUserAsset(keycloakDemoSetup.testuser3Id, managerDemoSetup.apartment1LivingroomThermostatId)
         assetStorageService.isUserAsset(keycloakDemoSetup.testuser3Id, managerDemoSetup.apartment2Id)
         !assetStorageService.isUserAsset(keycloakDemoSetup.testuser3Id, managerDemoSetup.apartment3Id)
         !assetStorageService.isUserAsset(keycloakDemoSetup.testuser3Id, managerDemoSetup.smartOfficeId)
@@ -279,7 +276,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         then: "result should match"
         assets.size() == 2
         assets.get(0).id == managerDemoSetup.agentId
-        assets.get(1).id == managerDemoSetup.apartment1SceneAgentId
+        assets.get(1).id == managerDemoSetup.apartment1ServiceAgentId
 
         when: "a query is executed"
         assets = assetStorageService.findAll(new AssetQuery()

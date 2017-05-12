@@ -65,29 +65,29 @@ trait ManagerContainerTrait extends ContainerTrait {
         defaultServices(Arrays.asList(additionalServices))
     }
 
-    /**
-     * Faster startup - Start a container with no demo rules
-     */
-    static Container startContainerNoDemoRules(Map<String, String> config, Iterable<ContainerService> services) {
-        startContainer(config << [(SETUP_IMPORT_DEMO_RULES): "false"], services)
+    static Container startContainerNoDemoScenes(Map<String, String> config, Iterable<ContainerService> services) {
+        config << [(SETUP_IMPORT_DEMO_SCENES): "false"]
+        startContainer(config, services);
     }
 
-    /**
-     * Faster startup - Start a container with no demo assets or rules
-     */
-    static Container startContainerNoDemoRulesOrAssets(Map<String, String> config, Iterable<ContainerService> services) {
-        config << [(SETUP_IMPORT_DEMO_ASSETS): "false"]
+    static Container startContainerNoDemoScenesOrRules(Map<String, String> config, Iterable<ContainerService> services) {
+        config << [(SETUP_IMPORT_DEMO_SCENES): "false"]
         config << [(SETUP_IMPORT_DEMO_RULES): "false"]
         startContainer(config, services);
     }
 
-    /**
-     * Faster startup - Start a container with no demo users, assets or rules
-     */
-    static Container startContainerMinimal(Map<String, String> config, Iterable<ContainerService> services) {
-        config << [(SETUP_IMPORT_DEMO_USERS): "false"]
-        config << [(SETUP_IMPORT_DEMO_ASSETS): "false"]
+    static Container startContainerNoDemoScenesOrRulesOrAssets(Map<String, String> config, Iterable<ContainerService> services) {
+        config << [(SETUP_IMPORT_DEMO_SCENES): "false"]
         config << [(SETUP_IMPORT_DEMO_RULES): "false"]
+        config << [(SETUP_IMPORT_DEMO_ASSETS): "false"]
+        startContainer(config, services);
+    }
+
+    static Container startContainerNoDemoImport(Map<String, String> config, Iterable<ContainerService> services) {
+        config << [(SETUP_IMPORT_DEMO_SCENES): "false"]
+        config << [(SETUP_IMPORT_DEMO_RULES): "false"]
+        config << [(SETUP_IMPORT_DEMO_ASSETS): "false"]
+        config << [(SETUP_IMPORT_DEMO_USERS): "false"]
         startContainer(config, services);
     }
 

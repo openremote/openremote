@@ -28,7 +28,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
     def "Access assets as superuser"() {
         given: "the server container is started"
         def serverPort = findEphemeralPort()
-        def container = startContainerNoDemoRules(defaultConfig(serverPort), defaultServices())
+        def container = startContainerNoDemoScenesOrRules(defaultConfig(serverPort), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
         def conditions = new PollingConditions(delay: 1, timeout: 5)
@@ -153,8 +153,8 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         ex.response.status == 404
 
         when: "an asset is deleted in a foreign realm"
-        assetResource.delete(null, managerDemoSetup.apartment1LivingroomThermostatId)
-        assetResource.get(null, managerDemoSetup.apartment1LivingroomThermostatId)
+        assetResource.delete(null, managerDemoSetup.apartment2LivingroomId)
+        assetResource.get(null, managerDemoSetup.apartment2LivingroomId)
 
         then: "the asset should be not found"
         ex = thrown()
@@ -203,7 +203,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
 
         given: "the server container is started"
         def serverPort = findEphemeralPort()
-        def container = startContainerNoDemoRules(defaultConfig(serverPort), defaultServices())
+        def container = startContainerNoDemoScenesOrRules(defaultConfig(serverPort), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
         def conditions = new PollingConditions(delay: 1, timeout: 10)
@@ -327,8 +327,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         ex.response.status == 404
 
         when: "an asset is deleted in a foreign realm"
-        assetResource.delete(null, managerDemoSetup.apartment1LivingroomThermostatId)
-        assetResource.get(null, managerDemoSetup.apartment1LivingroomThermostatId)
+        assetResource.delete(null, managerDemoSetup.apartment2LivingroomId)
 
         then: "access should be forbidden"
         ex = thrown()
@@ -358,7 +357,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
     def "Access assets as testuser2"() {
         given: "the server container is started"
         def serverPort = findEphemeralPort()
-        def container = startContainerNoDemoRules(defaultConfig(serverPort), defaultServices())
+        def container = startContainerNoDemoScenesOrRules(defaultConfig(serverPort), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
 
@@ -455,7 +454,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         ex.response.status == 403
 
         when: "an asset is deleted in the authenticated realm"
-        assetResource.delete(null, managerDemoSetup.apartment1LivingroomThermostatId)
+        assetResource.delete(null, managerDemoSetup.apartment2LivingroomId)
 
         then: "access should be forbidden"
         ex = thrown()
@@ -489,7 +488,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
     def "Access assets as testuser3"() {
         given: "the server container is started"
         def serverPort = findEphemeralPort()
-        def container = startContainerNoDemoRules(defaultConfig(serverPort), defaultServices())
+        def container = startContainerNoDemoScenesOrRules(defaultConfig(serverPort), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
         def conditions = new PollingConditions(delay: 1, timeout: 5)
@@ -512,7 +511,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         def assets = assetResource.getCurrentUserAssets(null)
 
         then: "result should match"
-        assets.length == 4
+        assets.length == 3
         Asset apartment1 = assets[0]
         apartment1.id == managerDemoSetup.apartment1Id
         apartment1.name == "Apartment 1"
@@ -529,11 +528,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         apartment1Livingroom.id == managerDemoSetup.apartment1LivingroomId
         apartment1Livingroom.name == "Living Room"
 
-        Asset apartment1LivingroomThermostat = assets[2]
-        apartment1LivingroomThermostat.id == managerDemoSetup.apartment1LivingroomThermostatId
-        apartment1LivingroomThermostat.name == "Living Room Thermostat"
-
-        Asset apartment2 = assets[3]
+        Asset apartment2 = assets[2]
         apartment2.id == managerDemoSetup.apartment2Id
         apartment2.name == "Apartment 2"
 
@@ -581,14 +576,14 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         ex.response.status == 403
 
         when: "a user asset is retrieved by ID in the authenticated realm"
-        apartment1LivingroomThermostat = assetResource.get(null, managerDemoSetup.apartment1LivingroomThermostatId)
+        apartment1Livingroom = assetResource.get(null, managerDemoSetup.apartment1LivingroomId)
 
         then: "the protected asset details should be available"
-        apartment1LivingroomThermostat.id == managerDemoSetup.apartment1LivingroomThermostatId
-        apartment1LivingroomThermostat.name == "Living Room Thermostat"
-        def protectedAttributes = apartment1LivingroomThermostat.getAttributesList()
-        protectedAttributes.size() == 2
-        def currentTemperature = apartment1LivingroomThermostat.getAttribute("currentTemperature").get()
+        apartment1Livingroom.id == managerDemoSetup.apartment1LivingroomId
+        apartment1Livingroom.name == "Living Room"
+        def protectedAttributes = apartment1Livingroom.getAttributesList()
+        protectedAttributes.size() == 6
+        def currentTemperature = apartment1Livingroom.getAttribute("currentTemperature").get()
         currentTemperature.getType().get() == AttributeType.DECIMAL
         !currentTemperature.getValue().isPresent()
         Meta protectedMeta = currentTemperature.getMeta()
@@ -655,18 +650,18 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         ex.response.status == 404
 
         when: "a protected read-only asset attribute is written on a user asset"
-        assetResource.writeAttributeValue(null, managerDemoSetup.apartment1LivingroomThermostatId, "currentTemperature", Values.create(22.123).toJson())
+        assetResource.writeAttributeValue(null, managerDemoSetup.apartment1LivingroomId, "currentTemperature", Values.create(22.123).toJson())
 
         then: "the request should be forbidden"
         ex = thrown()
         ex.response.status == 403
 
         when: "a protected asset attribute is written on a user asset"
-        assetResource.writeAttributeValue(null, managerDemoSetup.apartment1LivingroomThermostatId, "targetTemperature", Values.create(22.123).toJson())
+        assetResource.writeAttributeValue(null, managerDemoSetup.apartment1LivingroomId, "targetTemperature", Values.create(22.123).toJson())
 
         then: "result should match"
         conditions.eventually {
-            def asset = assetResource.get(null, managerDemoSetup.apartment1LivingroomThermostatId)
+            def asset = assetResource.get(null, managerDemoSetup.apartment1LivingroomId)
             assert asset.getAttribute("targetTemperature").get().getValue().isPresent()
             assert asset.getAttribute("targetTemperature").get().getValue().get().toJson() == Values.create(22.123).toJson()
         }

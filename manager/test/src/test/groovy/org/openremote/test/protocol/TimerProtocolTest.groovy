@@ -22,14 +22,15 @@ class TimerProtocolTest extends Specification implements ManagerContainerTrait {
 
         when: "the container starts"
         def serverPort = findEphemeralPort()
-        def container = startContainerNoDemoRules(defaultConfig(serverPort), defaultServices())
+        def container = startContainerNoDemoScenesOrRules(defaultConfig(serverPort), defaultServices())
         def assetStorageService = container.getService(AssetStorageService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
 
         then: "the container should be running and attributes linked"
         conditions.eventually {
-            assert isContainerRunning()
+            assertNothingProcessedFor(assetProcessingService, 500)
+
             def apartment1 = assetStorageService.find(managerDemoSetup.apartment1Id, true)
             assert apartment1.getAttribute("home").get().getValueAsString().orElse("") == AttributeExecuteStatus.READY.toString()
             assert apartment1.getAttribute("away").get().getValueAsString().orElse("") == AttributeExecuteStatus.READY.toString()

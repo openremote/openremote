@@ -14,6 +14,7 @@ import spock.util.concurrent.PollingConditions
 
 import static java.util.concurrent.TimeUnit.*
 import static org.openremote.manager.server.setup.builtin.ManagerDemoSetup.DEMO_RULE_STATES_APARTMENT_1
+import static org.openremote.manager.server.setup.builtin.ManagerDemoSetup.DEMO_RULE_STATES_APARTMENT_1_WITH_SCENES
 
 class ApartmentVacationModeTest extends Specification implements ManagerContainerTrait {
 
@@ -38,8 +39,8 @@ class ApartmentVacationModeTest extends Specification implements ManagerContaine
 
         and: "the demo attributes marked with RULE_STATE = true meta should be inserted into the engines"
         conditions.eventually {
-            assert apartment1Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_1
-            assert apartment1Engine.knowledgeSession.factCount == DEMO_RULE_STATES_APARTMENT_1
+            assert apartment1Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_1_WITH_SCENES
+            assert apartment1Engine.knowledgeSession.factCount == DEMO_RULE_STATES_APARTMENT_1_WITH_SCENES
         }
 
         when: "the vacation days are set to 5"

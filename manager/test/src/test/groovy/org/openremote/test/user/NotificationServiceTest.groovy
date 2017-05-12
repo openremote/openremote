@@ -5,7 +5,6 @@ import org.openremote.manager.server.setup.SetupService
 import org.openremote.manager.server.setup.builtin.KeycloakDemoSetup
 import org.openremote.manager.server.setup.builtin.ManagerDemoSetup
 import org.openremote.manager.shared.notification.NotificationResource
-import org.openremote.model.asset.AssetQuery
 import org.openremote.model.notification.ActionType
 import org.openremote.model.notification.AlertAction
 import org.openremote.model.notification.AlertNotification
@@ -14,7 +13,6 @@ import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID
-import static org.openremote.model.Constants.MASTER_REALM
 
 class NotificationServiceTest extends Specification implements ManagerContainerTrait {
 
@@ -22,7 +20,7 @@ class NotificationServiceTest extends Specification implements ManagerContainerT
 
         given: "the server container is started"
         def serverPort = findEphemeralPort()
-        def container = startContainerNoDemoRules(defaultConfig(serverPort), defaultServices())
+        def container = startContainerNoDemoScenesOrRules(defaultConfig(serverPort), defaultServices())
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def notificationService = container.getService(NotificationService.class)

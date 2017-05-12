@@ -46,7 +46,7 @@ class AdminTenantsActivityTest extends Specification implements ManagerContainer
 
         given: "The server container is started"
         def serverPort = findEphemeralPort()
-        def container = startContainerNoDemoRulesOrAssets(defaultConfig(serverPort), defaultServices())
+        def container = startContainerNoDemoScenesOrRulesOrAssets(defaultConfig(serverPort), defaultServices())
         def identityService = container.getService(ManagerIdentityService.class)
 
         and: "expected results"

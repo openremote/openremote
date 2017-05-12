@@ -175,7 +175,6 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
                     AssetState assetState = new AssetState(asset, ruleAttribute);
                     // Set the status to completed already so rules cannot interfere with this initial insert
                     assetState.setProcessingStatus(AssetState.ProcessingStatus.COMPLETED);
-                    LOG.fine("Inserting initial rules engine state: " + assetState);
                     updateAssetState(assetState, true);
                 });
             });
@@ -560,10 +559,6 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
         // Get the chain of rule engines that we need to pass through
         List<RulesEngine> rulesEngines = getEnginesInScope(assetEvent.getRealmId(), assetEvent.getPathFromRoot());
 
-        if (rulesEngines.size() == 0) {
-            LOG.fine("Ignoring asset event as there are no matching rules engines: " + assetEvent);
-        }
-
         // Check that all engines in the scope are not in ERROR state
         if (rulesEngines.stream().anyMatch(RulesEngine::isError)) {
             LOG.severe("At least one rule engine is in an error state so cannot process event:" + assetEvent);
@@ -587,10 +582,6 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
 
         // Get the chain of rule engines that we need to pass through
         List<RulesEngine> rulesEngines = getEnginesInScope(assetState.getRealmId(), assetState.getPathFromRoot());
-
-        if (rulesEngines.size() == 0) {
-            LOG.fine("Ignoring as there are no matching rules engine: " + assetState);
-        }
 
         if (!skipStatusCheck) {
             // Check that all engines in the scope are not in ERROR state

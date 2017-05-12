@@ -22,10 +22,7 @@ package org.openremote.model.attribute;
 import org.openremote.model.value.ArrayValue;
 import org.openremote.model.value.Values;
 
-import java.util.AbstractList;
-import java.util.Collections;
-import java.util.NoSuchElementException;
-import java.util.Objects;
+import java.util.*;
 
 /**
  * A {@link java.util.List} of {@link MetaItem} elements, wrapping an {@link ArrayValue}.
@@ -82,6 +79,12 @@ public class Meta extends AbstractList<MetaItem> {
     public void add(int index, MetaItem item) {
         checkBounds(index == 0 ? 0 : index-1);
         arrayValue.add(index, item.getObjectValue());
+    }
+
+    public void add(MetaItem... items) {
+        if (items != null) {
+            addAll(Arrays.asList(items));
+        }
     }
 
     @Override

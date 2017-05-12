@@ -44,13 +44,20 @@ public class SimulatorProtocol extends AbstractProtocol {
      * Controls how and when sensor update is called after an actuator write.
      */
     public enum Mode {
-        // Send to actuator values are written through to sensor immediately
+
+        /**
+         * Send to actuator values are written through to sensor immediately.
+         */
         WRITE_THROUGH_IMMEDIATE,
 
-        // Send to actuator values are written through to sensor after configured delay
+        /**
+         * Send to actuator values are written through to sensor after configured delay.
+         */
         WRITE_THROUGH_DELAYED,
 
-        // Producer of send to actuator will have to manually update the sensor by calling updateSensor
+        /**
+         * Producer of send to actuator will have to manually update the sensor by calling {@link #updateSensor)}.
+         */
         MANUAL
     }
 

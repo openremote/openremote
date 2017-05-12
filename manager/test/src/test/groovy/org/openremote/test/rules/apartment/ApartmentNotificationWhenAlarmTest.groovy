@@ -13,6 +13,7 @@ import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
 import static org.openremote.manager.server.setup.builtin.ManagerDemoSetup.DEMO_RULE_STATES_APARTMENT_1
+import static org.openremote.manager.server.setup.builtin.ManagerDemoSetup.DEMO_RULE_STATES_APARTMENT_1_WITH_SCENES
 
 class ApartmentNotificationWhenAlarmTest  extends Specification implements ManagerContainerTrait {
 
@@ -37,8 +38,8 @@ class ApartmentNotificationWhenAlarmTest  extends Specification implements Manag
 
         and: "the demo attributes marked with RULE_STATE = true meta should be inserted into the engines"
         conditions.eventually {
-            assert apartment1Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_1
-            assert apartment1Engine.knowledgeSession.factCount == DEMO_RULE_STATES_APARTMENT_1
+            assert apartment1Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_1_WITH_SCENES
+            assert apartment1Engine.knowledgeSession.factCount == DEMO_RULE_STATES_APARTMENT_1_WITH_SCENES
         }
 
         and: "the alarm enabled, presence detected flag and timestamp of the room should not be set"

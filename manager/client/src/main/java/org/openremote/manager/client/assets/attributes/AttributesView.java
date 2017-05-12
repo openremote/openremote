@@ -300,12 +300,21 @@ public abstract class AttributesView<
 
         formGroup.addFormLabel(createAttributeLabel(attribute));
 
-        attribute.getType()
-            .map(attributeType -> environment.getMessages().attributeType(attributeType.name()))
-            .map(typeDisplayName -> typeDisplayName + (
-                getAttributeDescription(attribute)
-                    .map(description -> " - " + description).orElse("")
-            )).ifPresent(infoText -> formGroup.addInfolabel(new Label(infoText)));
+        StringBuilder infoText = new StringBuilder();
+        if (attribute.isExecutable()) {
+            infoText.append(environment.getMessages().executable());
+        } else if (attribute.getType().isPresent()) {
+            infoText.append(environment.getMessages().attributeType(attribute.getType().get().name()));
+        }
+        getAttributeDescription(attribute)
+            .ifPresent(description -> {
+                if (infoText.length() > 0)
+                    infoText.append(" - " );
+                infoText.append(description);
+            });
+        if (infoText.length() > 0) {
+            formGroup.addInfolabel(new Label(infoText.toString()));
+        }
 
         FormGroupActions formGroupActions = new FormGroupActions();
 

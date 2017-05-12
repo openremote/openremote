@@ -144,7 +144,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait {
 
         and: "the container is started with the mock protocol"
         def serverPort = findEphemeralPort()
-        def container = startContainerMinimal(defaultConfig(serverPort), defaultServices(mockProtocol))
+        def container = startContainerNoDemoImport(defaultConfig(serverPort), defaultServices(mockProtocol))
         def assetStorageService = container.getService(AssetStorageService.class)
         def agentService = container.getService(AgentService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)

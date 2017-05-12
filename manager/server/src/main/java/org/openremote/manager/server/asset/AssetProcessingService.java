@@ -134,7 +134,8 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
     protected AssetDatapointService assetDatapointService;
     protected MessageBrokerService messageBrokerService;
     protected EventService eventService;
-    protected long lastProcessedEventTimestamp;
+    // Used in testing to detect if initial/startup processing has completed
+    protected long lastProcessedEventTimestamp = System.currentTimeMillis();
 
     final protected List<Consumer<AssetState>> processors = new ArrayList<>();
 
