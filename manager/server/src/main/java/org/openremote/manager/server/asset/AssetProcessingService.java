@@ -53,7 +53,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static org.openremote.agent.protocol.Protocol.SENSOR_QUEUE;
-import static org.openremote.manager.server.event.EventService.INCOMING_EVENT_TOPIC;
 import static org.openremote.model.asset.agent.AgentLink.getAgentLink;
 
 /**
@@ -268,7 +267,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                 }
 
                 // Process as non-client source (not southbound)
-                processUpdate(asset, attribute, event, true, protocol);
+                processUpdate(asset, attribute, event, false, true, protocol);
 
             });
 
@@ -294,24 +293,8 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                     // TODO: implement any rules specific validation
                 }
 
-                processUpdate(asset, attribute, event, false, sender);
-            });
-
-        // Client initiated attribute events - sender should always be a user
-        from(INCOMING_EVENT_TOPIC)
-            .filter(body().isInstanceOf(AttributeEvent.class))
-            .filter(header(SharedEvent.HEADER_SENDER).isInstanceOf(User.class))
-            .process(exchange -> {
-                AttributeEvent event = exchange.getIn().getBody(AttributeEvent.class);
-                User user = exchange.getIn().getHeader(SharedEvent.HEADER_SENDER, User.class);
-
-                LOG.fine("Handling from client: " + event);
-
-                if (event.getEntityId() == null || event.getEntityId().isEmpty() || user == null)
-                    return;
-
-                // Put it on the asset queue
-                sendAttributeEvent(event, user);
+                boolean southbound = sender == null || sender instanceof User;
+                processUpdate(asset, attribute, event, southbound, false, sender);
             });
     }
 
@@ -352,7 +335,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
             // TODO: implement any rules specific validation
         }
 
-        processUpdate(asset, attribute, event, false, sender);
+        processUpdate(asset, attribute, event, true, false, sender);
     }
 
     // TODO: Update tests to include sender and remove this
@@ -483,6 +466,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
     protected void processUpdate(ServerAsset asset,
                                  AssetAttribute attribute,
                                  AttributeEvent attributeEvent,
+                                 boolean isSouthbound,
                                  boolean isSensorUpdate,
                                  Object sender) {
         // Ensure timestamp of event is not in the future as that would essentially block access to
@@ -527,6 +511,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                 attribute,
                 lastStateEvent.flatMap(AttributeEvent::getValue).orElse(null),
                 lastStateEvent.map(AttributeEvent::getTimestamp).orElse(-1L),
+                isSouthbound,
                 isSensorUpdate,
                 sender);
 

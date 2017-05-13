@@ -32,7 +32,6 @@ import org.openremote.container.Container;
 import org.openremote.manager.server.asset.ServerAsset;
 import org.openremote.manager.server.setup.AbstractManagerSetup;
 import org.openremote.manager.shared.security.Tenant;
-import org.openremote.model.Constants;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetState;
 import org.openremote.model.attribute.*;
@@ -256,54 +255,54 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         AssetAttribute light1PowerConsumptionAttribute = thing.getAttribute("light1PowerConsumption")
             .orElseThrow(() -> new RuntimeException("Invalid test data"));
 
-        assetDatapointService.accept(new AssetState(thing, light1PowerConsumptionAttribute, false, null));
+        assetDatapointService.accept(new AssetState(thing, light1PowerConsumptionAttribute, false, false, null));
 
         light1PowerConsumptionAttribute.setValue(Values.create(0.11), now.minusDays(80).toEpochSecond() * 1000);
-        assetDatapointService.accept(new AssetState(thing, light1PowerConsumptionAttribute, false, null));
+        assetDatapointService.accept(new AssetState(thing, light1PowerConsumptionAttribute, false, false, null));
 
         light1PowerConsumptionAttribute.setValue(Values.create(1.22), now.minusDays(40).toEpochSecond() * 1000);
-        assetDatapointService.accept(new AssetState(thing, light1PowerConsumptionAttribute, false, null));
+        assetDatapointService.accept(new AssetState(thing, light1PowerConsumptionAttribute, false, false, null));
 
         light1PowerConsumptionAttribute.setValue(Values.create(2.33), now.minusDays(20).toEpochSecond() * 1000);
-        assetDatapointService.accept(new AssetState(thing, light1PowerConsumptionAttribute, false, null));
+        assetDatapointService.accept(new AssetState(thing, light1PowerConsumptionAttribute, false, false, null));
 
         light1PowerConsumptionAttribute.setValue(Values.create(3.44), now.minusDays(10).toEpochSecond() * 1000);
-        assetDatapointService.accept(new AssetState(thing, light1PowerConsumptionAttribute, false, null));
+        assetDatapointService.accept(new AssetState(thing, light1PowerConsumptionAttribute, false, false, null));
 
         light1PowerConsumptionAttribute.setValue(Values.create(4.55), now.minusDays(8).toEpochSecond() * 1000);
 
         light1PowerConsumptionAttribute.setValue(Values.create(5.66), now.minusDays(6).toEpochSecond() * 1000);
-        assetDatapointService.accept(new AssetState(thing, light1PowerConsumptionAttribute, false, null));
+        assetDatapointService.accept(new AssetState(thing, light1PowerConsumptionAttribute, false, false, null));
 
         light1PowerConsumptionAttribute.setValue(Values.create(6.77), now.minusDays(3).toEpochSecond() * 1000);
-        assetDatapointService.accept(new AssetState(thing, light1PowerConsumptionAttribute, false, null));
+        assetDatapointService.accept(new AssetState(thing, light1PowerConsumptionAttribute, false, false, null));
 
         light1PowerConsumptionAttribute.setValue(Values.create(7.88), now.minusDays(1).toEpochSecond() * 1000);
-        assetDatapointService.accept(new AssetState(thing, light1PowerConsumptionAttribute, false, null));
+        assetDatapointService.accept(new AssetState(thing, light1PowerConsumptionAttribute, false, false, null));
 
         light1PowerConsumptionAttribute.setValue(Values.create(8.99), now.minusHours(10).toEpochSecond() * 1000);
-        assetDatapointService.accept(new AssetState(thing, light1PowerConsumptionAttribute, false, null));
+        assetDatapointService.accept(new AssetState(thing, light1PowerConsumptionAttribute, false, false, null));
 
         light1PowerConsumptionAttribute.setValue(Values.create(9.11), now.minusHours(5).toEpochSecond() * 1000);
-        assetDatapointService.accept(new AssetState(thing, light1PowerConsumptionAttribute, false, null));
+        assetDatapointService.accept(new AssetState(thing, light1PowerConsumptionAttribute, false, false, null));
 
         light1PowerConsumptionAttribute.setValue(Values.create(10.22), now.minusHours(2).toEpochSecond() * 1000);
-        assetDatapointService.accept(new AssetState(thing, light1PowerConsumptionAttribute, false, null));
+        assetDatapointService.accept(new AssetState(thing, light1PowerConsumptionAttribute, false, false, null));
 
         light1PowerConsumptionAttribute.setValue(Values.create(11.33), now.minusHours(1).toEpochSecond() * 1000);
-        assetDatapointService.accept(new AssetState(thing, light1PowerConsumptionAttribute, false, null));
+        assetDatapointService.accept(new AssetState(thing, light1PowerConsumptionAttribute, false, false, null));
 
         light1PowerConsumptionAttribute.setValue(Values.create(11.44), now.minusMinutes(30).toEpochSecond() * 1000);
-        assetDatapointService.accept(new AssetState(thing, light1PowerConsumptionAttribute, false, null));
+        assetDatapointService.accept(new AssetState(thing, light1PowerConsumptionAttribute, false, false, null));
 
         light1PowerConsumptionAttribute.setValue(Values.create(12.00), now.minusMinutes(5).toEpochSecond() * 1000);
-        assetDatapointService.accept(new AssetState(thing, light1PowerConsumptionAttribute, false, null));
+        assetDatapointService.accept(new AssetState(thing, light1PowerConsumptionAttribute, false, false, null));
 
         light1PowerConsumptionAttribute.setValue(Values.create(12.11), now.minusSeconds(5).toEpochSecond() * 1000);
-        assetDatapointService.accept(new AssetState(thing, light1PowerConsumptionAttribute, false, null));
+        assetDatapointService.accept(new AssetState(thing, light1PowerConsumptionAttribute, false, false, null));
 
         light1PowerConsumptionAttribute.setValue(Values.create(12.22), now.minusSeconds(1).toEpochSecond() * 1000);
-        assetDatapointService.accept(new AssetState(thing, light1PowerConsumptionAttribute, false, null));
+        assetDatapointService.accept(new AssetState(thing, light1PowerConsumptionAttribute, false, false, null));
 
         // ################################ Demo assets for 'customerA' realm ###################################
 

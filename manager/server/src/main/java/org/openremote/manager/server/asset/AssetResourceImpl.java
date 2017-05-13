@@ -244,10 +244,12 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             // TODO: Get this working using camel route
             assetProcessingService.sendAttributeEventWithoutCamel(event, user);
 
+            // Note camel SEDA endpoints seem to only support InOnly (if you try and set InOut) it will successfully
+            // block and wait for a response but you'll get your original message back so cannot get any exception
+            // information or anything.
 //            messageBrokerService
 //                .getProducerTemplate()
-//                .sendBodyAndHeader(INCOMING_EVENT_TOPIC, event, SharedEvent.HEADER_SENDER, user);
-
+//                .sendBodyAndHeader(ASSET_QUEUE, event, SharedEvent.HEADER_SENDER, user);
         } catch (AssetProcessingException assetProcessingException) {
             switch (assetProcessingException.getReason()) {
                 case INSUFFICIENT_ACCESS:

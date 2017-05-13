@@ -19,7 +19,7 @@
  */
 package org.openremote.model.asset;
 
-import org.kie.api.task.model.User;
+
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.AttributeType;
@@ -72,15 +72,18 @@ public abstract class AbstractAssetUpdate {
 
     final protected long oldValueTimestamp;
 
+    final protected boolean southbound;
+
     final protected boolean sensorUpdate;
 
     final protected Object sender;
 
-    public AbstractAssetUpdate(Asset asset, AssetAttribute attribute, boolean sensorUpdate, Object sender) {
-        this(asset, attribute, null, 0, sensorUpdate, sender);
+
+    public AbstractAssetUpdate(Asset asset, AssetAttribute attribute, boolean southbound, boolean sensorUpdate, Object sender) {
+        this(asset, attribute, null, 0, southbound, sensorUpdate, sender);
     }
 
-    public AbstractAssetUpdate(Asset asset, AssetAttribute attribute, Value oldValue, long oldValueTimestamp, boolean sensorUpdate, Object sender) {
+    public AbstractAssetUpdate(Asset asset, AssetAttribute attribute, Value oldValue, long oldValueTimestamp, boolean southbound, boolean sensorUpdate, Object sender) {
         this(
             attribute,
             asset.getCreatedOn(),
@@ -98,6 +101,7 @@ public abstract class AbstractAssetUpdate {
             asset.getCoordinates(),
             oldValue,
             oldValueTimestamp,
+            southbound,
             sensorUpdate,
             sender
         );
@@ -121,6 +125,7 @@ public abstract class AbstractAssetUpdate {
             that.coordinates,
             that.oldValue,
             that.oldValueTimestamp,
+            that.southbound,
             that.sensorUpdate,
             that.sender
         );
@@ -133,6 +138,7 @@ public abstract class AbstractAssetUpdate {
                                   double[] coordinates,
                                   Value oldValue,
                                   long oldValueTimestamp,
+                                  boolean southbound,
                                   boolean sensorUpdate,
                                   Object sender) {
         this.attribute = attribute;
@@ -154,6 +160,7 @@ public abstract class AbstractAssetUpdate {
         this.coordinates = coordinates;
         this.oldValue = oldValue;
         this.oldValueTimestamp = oldValueTimestamp;
+        this.southbound = southbound;
         this.sensorUpdate = sensorUpdate;
         this.sender = sender;
     }
@@ -223,8 +230,9 @@ public abstract class AbstractAssetUpdate {
      *  is being processed southbound.
      */
     public boolean isSouthbound() {
-        return sender == null || sender instanceof User;
+        return southbound;
     }
+
 
     public boolean isSensorUpdate() {
         return sensorUpdate;

@@ -33,6 +33,7 @@ import org.openremote.manager.server.asset.AssetStorageService;
 import org.openremote.manager.server.concurrent.ManagerExecutorService;
 import org.openremote.manager.server.security.ManagerIdentityService;
 import org.openremote.manager.shared.security.User;
+import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.event.shared.CancelEventSubscription;
 import org.openremote.model.event.shared.EventSubscription;
 import org.openremote.model.event.shared.SharedEvent;
@@ -44,6 +45,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.logging.Logger;
 
 import static org.apache.camel.builder.PredicateBuilder.or;
+import static org.openremote.manager.server.asset.AssetProcessingService.ASSET_QUEUE;
 
 /**
  * Receives and publishes messages, handles the client/server event bus.
@@ -175,19 +177,19 @@ public class EventService implements ContainerService {
                         eventSubscriptions.cancel(sessionKey, exchange.getIn().getBody(CancelEventSubscription.class));
                     })
                     .when(bodyAs(String.class).startsWith(SharedEvent.MESSAGE_PREFIX))
-                    .convertBodyTo(SharedEvent.class)
-                    .process(exchange -> {
-                        WebsocketAuth auth = getWebsocketAuth(exchange);
+                        .convertBodyTo(SharedEvent.class)
+                        .process(exchange -> {
+                            WebsocketAuth auth = getWebsocketAuth(exchange);
 
-                        // Extract user object to use as the sender
-                        User user = managerIdentityService.getUser(auth.getAccessToken());
-
-                        // TODO: There's probably a better way of doing this in camel
-                        SharedEvent event = exchange.getIn().getBody(SharedEvent.class);
-                        messageBrokerService
-                            .getProducerTemplate()
-                            .sendBodyAndHeader(INCOMING_EVENT_TOPIC, event, SharedEvent.HEADER_SENDER, user);
-                    })
+                            // Extract user object to use as the sender
+                            User user = managerIdentityService.getUser(auth.getAccessToken());
+                            exchange.getIn().setHeader(SharedEvent.HEADER_SENDER, user);
+                        }).end()
+                    .choice()
+                    .when(body().isInstanceOf(AttributeEvent.class))
+                        .to(ASSET_QUEUE).stop()
+                    .when(body().isInstanceOf(SharedEvent.class))
+                        .to(INCOMING_EVENT_TOPIC)
                     .otherwise()
                     .process(exchange -> LOG.fine("Unsupported message body: " + exchange.getIn().getBody()))
                     .end();
