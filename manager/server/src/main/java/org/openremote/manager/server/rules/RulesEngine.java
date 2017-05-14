@@ -53,11 +53,11 @@ import org.openremote.manager.shared.rules.AssetRuleset;
 import org.openremote.manager.shared.rules.GlobalRuleset;
 import org.openremote.manager.shared.rules.Ruleset;
 import org.openremote.manager.shared.rules.TenantRuleset;
-import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.asset.AbstractAssetUpdate;
 import org.openremote.model.asset.AssetEvent;
 import org.openremote.model.asset.AssetQuery;
 import org.openremote.model.asset.AssetState;
+import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.notification.AlertNotification;
 import org.openremote.model.rules.Assets;
 import org.openremote.model.rules.Users;
@@ -635,7 +635,7 @@ public class RulesEngine<T extends Ruleset> {
                     }
 
                     LOG.fine("Dispatching on " + RulesEngine.this + ": " + event);
-                    assetProcessingService.sendAttributeEvent(event, RulesEngine.this);
+                    assetProcessingService.sendAttributeEvent(event, AttributeEvent.Source.INTERNAL);
                 }
             }
         };

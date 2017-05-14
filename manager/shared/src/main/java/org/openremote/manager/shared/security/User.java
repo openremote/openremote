@@ -22,7 +22,6 @@ package org.openremote.manager.shared.security;
 import org.hibernate.annotations.Formula;
 import org.hibernate.annotations.Subselect;
 import org.hibernate.validator.constraints.Email;
-import org.openremote.model.Constants;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -31,7 +30,6 @@ import javax.persistence.Transient;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
-import java.util.*;
 
 /**
  * This can be used (among other things) to query the Keycloak USER_ENTITY table in JPA queries.
@@ -63,21 +61,6 @@ public class User {
 
     @Column(name = "ENABLED")
     protected Boolean enabled;
-
-    // TODO: Extract this data from the SQL view when not available in access token
-    @Transient
-    protected String client;
-
-    // TODO: Extract this data from the SQL view when not available in access token
-    @Transient
-    protected Map<String, List<String>> clientRoles;
-
-    // TODO: Extract this data from the SQL view when not available in access token
-    @Transient
-    protected List<String> realmRoles;
-
-    @Formula("(select u.RESTRICTED from USER_CONFIGURATION u where u.USER_ID = ID)")
-    protected boolean restricted;
 
     public User() {
     }
@@ -150,64 +133,6 @@ public class User {
 
     public void setEnabled(Boolean enabled) {
         this.enabled = enabled;
-    }
-
-    public Set<String> getRoles() {
-        List<String> roles = clientRoles != null ? clientRoles.get(client) : null;
-        return roles != null ? new HashSet<>(roles) : Collections.emptySet();
-    }
-
-    public Map<String, List<String>> getClientRoles() {
-        return clientRoles;
-    }
-
-    public void setClientRoles(Map<String, List<String>> clientRoles) {
-        this.clientRoles = clientRoles;
-    }
-
-    public void addClientRoles(String client, List<String> roles) {
-        if (client != null) {
-            if (clientRoles == null) {
-                clientRoles = new HashMap<>();
-            }
-            clientRoles.put(client, roles);
-        }
-    }
-
-    public List<String> getRealmRoles() {
-        return realmRoles;
-    }
-
-    public void setRealmRoles(List<String> realmRoles) {
-        this.realmRoles = realmRoles;
-    }
-
-    public String getClient() {
-        return client;
-    }
-
-    public void setClient(String client) {
-        this.client = client;
-    }
-
-    public boolean isRestricted() {
-        return !isSuperUser() && restricted;
-    }
-
-    public void setRestricted(boolean restricted) {
-        this.restricted = restricted;
-    }
-
-    public boolean isSuperUser() {
-        return getRealm().equals(Constants.MASTER_REALM) && hasRealmRole(Constants.REALM_ADMIN_ROLE);
-    }
-
-    public boolean hasRole(String role) {
-        return getRoles() != null && getRoles().contains(role);
-    }
-
-    public boolean hasRealmRole(String role) {
-        return getRealmRoles() != null && getRealmRoles().contains(role);
     }
 
     @Override

@@ -68,7 +68,7 @@ public class UserResourceImpl extends WebResource implements UserResource {
                     .realm(realm).users().search(null, 0, Integer.MAX_VALUE);
             List<User> users = new ArrayList<>();
             for (UserRepresentation userRepresentation : userRepresentations) {
-                users.add(identityService.getUser(realm, userRepresentation));
+                users.add(convertUser(realm, userRepresentation));
             }
             return users.toArray(new User[users.size()]);
         } catch (ClientErrorException ex) {
@@ -84,7 +84,7 @@ public class UserResourceImpl extends WebResource implements UserResource {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
         try {
-            return identityService.getUser(
+            return convertUser(
                 realm,
                 identityService.getRealms(getClientRemoteAddress(), requestParams.getBearerAuth())
                     .realm(realm).users().get(userId).toRepresentation()
@@ -279,6 +279,12 @@ public class UserResourceImpl extends WebResource implements UserResource {
         } catch (Exception ex) {
             throw new WebApplicationException(ex);
         }
+    }
+
+    protected User convertUser(String realm, UserRepresentation userRepresentation) {
+        User user = convert(Container.JSON, User.class, userRepresentation);
+        user.setRealm(realm);
+        return user;
     }
 
     protected ConstraintViolationReport isIllegalMasterAdminUserDeletion(RequestParams requestParams, String realm, String userId) {

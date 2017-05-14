@@ -122,6 +122,7 @@ public class EventSubscriptions {
         }
     }
 
+    @SuppressWarnings("unchecked")
     public <T extends SharedEvent> List<Message> splitForSubscribers(Exchange exchange) {
         List<Message> messageList = new ArrayList<>();
         SharedEvent event = exchange.getIn().getBody(SharedEvent.class);

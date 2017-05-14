@@ -19,6 +19,8 @@
  */
 package org.openremote.container.web.socket;
 
+import org.openremote.container.security.AuthContext;
+
 import javax.websocket.CloseReason;
 import javax.websocket.Endpoint;
 import javax.websocket.EndpointConfig;
@@ -42,14 +44,14 @@ public class WebsocketAdapter extends Endpoint {
             LOG.fine("Websocket session open: " + session.getId());
         session.setMaxIdleTimeout(WebsocketConstants.SESSION_MAX_IDLE_TIMEOUT_SECONDS * 1000);
         consumer.getEndpoint().getWebsocketSessions().add(session);
-        this.consumer.sendMessage(session.getId(), getWebsocketAuth(session), null, exchange -> {
+        this.consumer.sendMessage(session.getId(), getHandshakeAuth(session), null, exchange -> {
             exchange.getIn().setHeader(WebsocketConstants.SESSION, session);
             exchange.getIn().setHeader(WebsocketConstants.SESSION_OPEN, true);
         });
         session.addMessageHandler(String.class, message -> {
             if (LOG.isLoggable(Level.FINE))
                 LOG.fine("Websocket session " + session.getId() + " message received: " + message);
-            this.consumer.sendMessage(session.getId(), getWebsocketAuth(session), message, exchange -> {
+            this.consumer.sendMessage(session.getId(), getHandshakeAuth(session), message, exchange -> {
                 exchange.getIn().setHeader(WebsocketConstants.SESSION, session);
             });
         });
@@ -59,7 +61,7 @@ public class WebsocketAdapter extends Endpoint {
     public void onClose(Session session, CloseReason closeReason) {
         if (LOG.isLoggable(Level.FINE))
             LOG.fine("Websocket session close: " + session.getId() + " " + closeReason);
-        this.consumer.sendMessage(session.getId(), getWebsocketAuth(session), closeReason, exchange -> {
+        this.consumer.sendMessage(session.getId(), getHandshakeAuth(session), closeReason, exchange -> {
             exchange.getIn().setHeader(WebsocketConstants.SESSION, session);
             exchange.getIn().setHeader(WebsocketConstants.SESSION_CLOSE, true);
         });
@@ -71,15 +73,15 @@ public class WebsocketAdapter extends Endpoint {
         super.onError(session, thr);
         if (LOG.isLoggable(Level.INFO))
             LOG.log(Level.INFO, "Websocket session error: " + session.getId(), thr);
-        this.consumer.sendMessage(session.getId(), getWebsocketAuth(session), thr, exchange -> {
+        this.consumer.sendMessage(session.getId(), getHandshakeAuth(session), thr, exchange -> {
             exchange.getIn().setHeader(WebsocketConstants.SESSION, session);
             exchange.getIn().setHeader(WebsocketConstants.SESSION_CLOSE_ERROR, true);
         });
         consumer.getEndpoint().getWebsocketSessions().remove(session);
     }
 
-    protected WebsocketAuth getWebsocketAuth(Session session) {
-        WebsocketAuth auth = (WebsocketAuth) session.getUserProperties().get(WebsocketConstants.AUTH);
+    protected AuthContext getHandshakeAuth(Session session) {
+        AuthContext auth = (AuthContext) session.getUserProperties().get(WebsocketConstants.HANDSHAKE_AUTH);
         if (auth == null)
             throw new IllegalStateException("No authorization details in websocket session: " + session.getId());
         return auth;

@@ -37,7 +37,6 @@ import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.asset.agent.ProtocolConfiguration;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
-import org.openremote.model.event.shared.SharedEvent;
 import org.openremote.model.util.Pair;
 import org.openremote.model.value.ObjectValue;
 
@@ -52,9 +51,8 @@ import java.util.stream.Stream;
 import static org.openremote.agent.protocol.Protocol.ACTUATOR_TOPIC;
 import static org.openremote.agent.protocol.Protocol.DeploymentStatus.*;
 import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_TOPIC;
-import static org.openremote.manager.server.asset.AssetPredicates.isPersistenceEventForAssetType;
-import static org.openremote.manager.server.asset.AssetPredicates.isPersistenceEventForEntityType;
-import static org.openremote.manager.server.asset.AssetProcessingService.ASSET_QUEUE;
+import static org.openremote.manager.server.asset.AssetRoute.isPersistenceEventForAssetType;
+import static org.openremote.manager.server.asset.AssetRoute.isPersistenceEventForEntityType;
 import static org.openremote.model.asset.AssetAttribute.attributesFromJson;
 import static org.openremote.model.asset.AssetType.AGENT;
 import static org.openremote.model.asset.agent.AgentLink.getAgentLink;
@@ -62,7 +60,7 @@ import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 import static org.openremote.model.util.TextUtil.isValidURN;
 
 /**
- * Finds all {@link AssetType#AGENT} and {@link AssetType#THING} assets and starts the protocols for them.
+ * Finds all {@link AssetType#AGENT} assets and manages their {@link ProtocolConfiguration}s.
  */
 public class AgentService extends RouteBuilder implements ContainerService, Consumer<AssetState>, ProtocolAssetService {
 
@@ -134,6 +132,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
     @Override
     public void configure() throws Exception {
         from(PERSISTENCE_TOPIC)
+            .routeId("AgentPersistenceChanges")
             .filter(isPersistenceEventForEntityType(Asset.class))
             .process(exchange -> {
                 PersistenceEvent persistenceEvent = exchange.getIn().getBody(PersistenceEvent.class);
@@ -178,24 +177,8 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
     }
 
     @Override
-    public void sendAttributeEvent(Protocol sender, AttributeEvent attributeEvent) {
-        // Don't allow updating linked attributes with this mechanism as it could cause
-        // an infinite loop
-        boolean isForLinkedAttribute = sender
-            .getLinkedAttributes()
-            .stream()
-            .anyMatch(attribute -> attribute.getReferenceOrThrow()
-                .equals(attributeEvent.getAttributeRef())
-            );
-
-        if (isForLinkedAttribute) {
-            LOG.warning("Cannot update an attribute linked to the same protocol; use updateLinkedAttribute for that");
-            return;
-        }
-
-        messageBrokerService
-            .getProducerTemplate()
-            .sendBodyAndHeader(ASSET_QUEUE, attributeEvent, SharedEvent.HEADER_SENDER, sender);
+    public void sendAttributeEvent(AttributeEvent attributeEvent) {
+        assetProcessingService.sendAttributeEvent(attributeEvent, AttributeEvent.Source.INTERNAL);
     }
 
     /**
@@ -545,11 +528,8 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
      */
     @Override
     public void accept(AssetState assetState) {
-        if (assetState.isSensorUpdate()) {
-            LOG.fine("Ignoring sensor update: " + assetState);
+        if (assetState.getSource() == AttributeEvent.Source.SENSOR) {
             return;
-        } else {
-            LOG.fine("Handling update: " + assetState);
         }
 
         AgentLink.getAgentLink(assetState.getAttribute())
@@ -564,13 +544,12 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
             )
             .map(protocolConfiguration -> {
                 // Its' a send to actuator - push the update to the protocol
-                LOG.fine("Processing: " + assetState);
-
                 Optional<AttributeEvent> event = assetState
                     .getAttribute()
                     .getStateEvent();
 
                 if (event.isPresent()) {
+                    LOG.fine("Sending to actuator topic: " + event.get());
                     messageBrokerService.getProducerTemplate().sendBodyAndHeader(
                         ACTUATOR_TOPIC,
                         event.get(),

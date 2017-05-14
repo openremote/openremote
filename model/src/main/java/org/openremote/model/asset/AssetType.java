@@ -77,10 +77,6 @@ public enum AssetType {
 
     AGENT(ASSET_NAMESPACE + ":agent", "gears", null),
 
-    /**
-     * When a Thing asset is modified (created, updated, deleted), its attributes are examined
-     * and linked to and unlinked from the configured Protocol.
-     */
     THING(ASSET_NAMESPACE + ":thing", "gear", null);
 
     final protected String value;

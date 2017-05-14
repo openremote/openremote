@@ -26,9 +26,15 @@ import io.undertow.servlet.util.ImmediateInstanceHandle;
 import io.undertow.websockets.jsr.DefaultContainerConfigurator;
 import io.undertow.websockets.jsr.UndertowContainerProvider;
 import io.undertow.websockets.jsr.WebSocketDeploymentInfo;
+import org.keycloak.KeycloakPrincipal;
+import org.keycloak.KeycloakSecurityContext;
 import org.openremote.container.message.MessageBrokerSetupService;
+import org.openremote.container.security.AccessTokenAuthContext;
 import org.openremote.container.security.IdentityService;
-import org.openremote.container.web.socket.*;
+import org.openremote.container.web.socket.WebsocketAdapter;
+import org.openremote.container.web.socket.WebsocketCORSFilter;
+import org.openremote.container.web.socket.WebsocketComponent;
+import org.openremote.container.web.socket.WebsocketConstants;
 import org.xnio.OptionMap;
 import org.xnio.Options;
 import org.xnio.Xnio;
@@ -38,7 +44,10 @@ import javax.servlet.Filter;
 import javax.websocket.HandshakeResponse;
 import javax.websocket.server.HandshakeRequest;
 import javax.websocket.server.ServerEndpointConfig;
+import javax.ws.rs.WebApplicationException;
 import java.util.logging.Logger;
+
+import static javax.ws.rs.core.Response.Status.FORBIDDEN;
 
 public class DefaultWebsocketComponent extends WebsocketComponent {
 
@@ -64,7 +73,7 @@ public class DefaultWebsocketComponent extends WebsocketComponent {
 
         WebSocketDeploymentInfo webSocketDeploymentInfo = new WebSocketDeploymentInfo();
 
-        getConsumers().entrySet().stream().forEach(consumerEntry -> {
+        getConsumers().entrySet().forEach(consumerEntry -> {
             String endpointPath = MessageBrokerSetupService.WEBSOCKET_PATH + "/" + consumerEntry.getKey();
             LOG.info("Deploying websocket endpoint: " + endpointPath);
             webSocketDeploymentInfo.addEndpoint(
@@ -76,17 +85,26 @@ public class DefaultWebsocketComponent extends WebsocketComponent {
                             return (T) new WebsocketAdapter(consumerEntry.getValue());
                         }
 
+                        @SuppressWarnings("unchecked")
                         @Override
                         public void modifyHandshake(ServerEndpointConfig config, HandshakeRequest request, HandshakeResponse response) {
+
+                            KeycloakPrincipal<KeycloakSecurityContext> keycloakPrincipal =
+                                (KeycloakPrincipal<KeycloakSecurityContext>) request.getUserPrincipal();
+                            if (keycloakPrincipal == null) {
+                                throw new WebApplicationException(
+                                    "Websocket session is not authenticated, can't access user principal", FORBIDDEN
+                                );
+                            }
+
                             config.getUserProperties().put(
-                                WebsocketConstants.AUTH,
-                                new WebsocketAuth(request.getUserPrincipal()) {
-                                    @Override
-                                    public boolean isUserInRole(String role) {
-                                        return request.isUserInRole(role);
-                                    }
-                                }
+                                WebsocketConstants.HANDSHAKE_AUTH,
+                                new AccessTokenAuthContext(
+                                    keycloakPrincipal.getKeycloakSecurityContext().getRealm(),
+                                    keycloakPrincipal.getKeycloakSecurityContext().getToken()
+                                )
                             );
+
                             super.modifyHandshake(config, request, response);
                         }
                     })

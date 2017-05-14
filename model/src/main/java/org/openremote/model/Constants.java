@@ -25,6 +25,7 @@ public interface Constants {
     String MASTER_REALM = "master";
     String MASTER_REALM_ADMIN_USER = "admin";
     String REALM_ADMIN_ROLE = "admin";
+    String AUTH_CONTEXT = "AUTH_CONTEXT";
     int ACCESS_TOKEN_LIFESPAN_SECONDS = 300; // 5 minutes
     String PERSISTENCE_SEQUENCE_ID_GENERATOR = "SEQUENCE_ID_GENERATOR";
     String PERSISTENCE_UNIQUE_ID_GENERATOR = "UNIQUE_ID_GENERATOR";

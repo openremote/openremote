@@ -21,18 +21,17 @@ package org.openremote.container.web;
 
 import org.keycloak.KeycloakPrincipal;
 import org.keycloak.KeycloakSecurityContext;
-import org.keycloak.representations.AccessToken;
 import org.openremote.container.Container;
-import org.openremote.model.Constants;
+import org.openremote.container.security.AccessTokenAuthContext;
+import org.openremote.container.security.AuthContext;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.*;
 
-import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.FORBIDDEN;
 
-public class WebResource {
+public class WebResource implements AuthContext {
 
     @Context
     protected Application application;
@@ -49,6 +48,8 @@ public class WebResource {
     @Context
     protected SecurityContext securityContext;
 
+    protected AuthContext authContext;
+
     public WebApplication getApplication() {
         return (WebApplication) application;
     }
@@ -61,73 +62,46 @@ public class WebResource {
         return request.getRemoteAddr();
     }
 
-    /**
-     * Will try to access the realm from request header. This works even if the
-     * current caller is not authenticated, as the header will be set on
-     * all API requests by the {@link WebService)}, extracted from a request path segment.
-     */
-    public String getRealm() {
-        String realm = httpHeaders.getHeaderString(WebService.REQUEST_HEADER_REALM);
-        if (realm == null || realm.length() == 0) {
-            throw new WebApplicationException("Missing header '" + WebService.REQUEST_HEADER_REALM + "':", BAD_REQUEST);
-        }
-        return realm;
-    }
-
     @SuppressWarnings("unchecked")
-    public KeycloakPrincipal<KeycloakSecurityContext> getCallerPrincipal() {
-        KeycloakPrincipal<KeycloakSecurityContext> principal =
-            (KeycloakPrincipal<KeycloakSecurityContext>) securityContext.getUserPrincipal();
-        if (principal == null) {
-            throw new WebApplicationException("Request is not authenticated, can't access user principal", FORBIDDEN);
+    public AuthContext getAuthContext() {
+        if (authContext == null) {
+            KeycloakPrincipal<KeycloakSecurityContext> principal =
+                (KeycloakPrincipal<KeycloakSecurityContext>) securityContext.getUserPrincipal();
+            if (principal == null) {
+                throw new WebApplicationException("Request is not authenticated, can't access user principal", FORBIDDEN);
+            }
+            authContext = new AccessTokenAuthContext(
+                principal.getKeycloakSecurityContext().getRealm(),
+                principal.getKeycloakSecurityContext().getToken()
+            );
         }
-        return principal;
+        return authContext;
     }
 
-    public AccessToken getAccessToken() {
-        return getCallerPrincipal().getKeycloakSecurityContext().getToken();
-    }
+    // Convenience methods
 
-    public String getUsername() {
-        return getAccessToken().getPreferredUsername();
-    }
-
-    public String getUserId() {
-        return getAccessToken().getSubject();
-    }
-
-    /**
-     * This works only if the current caller is authenticated, we obtain the
-     * realm from auth material.
-     */
+    @Override
     public String getAuthenticatedRealm() {
-        return getCallerPrincipal().getKeycloakSecurityContext().getRealm();
+        return getAuthContext().getAuthenticatedRealm();
     }
 
-    /**
-     * @return <code>true</code> if the user is authenticated in the "master" realm and has the realm role "admin".
-     */
-    public boolean isSuperUser() {
-        return getRealm().equals(Constants.MASTER_REALM) && hasRealmRole(Constants.REALM_ADMIN_ROLE);
+    @Override
+    public String getUsername() {
+        return getAuthContext().getUsername();
     }
 
+    @Override
+    public String getUserId() {
+        return getAuthContext().getUserId();
+    }
+
+    @Override
     public boolean hasRealmRole(String role) {
-        return getAccessToken().getRealmAccess().isUserInRole(role);
+        return getAuthContext().hasRealmRole(role);
     }
 
+    @Override
     public boolean hasResourceRole(String role, String resource) {
-        return getAccessToken().getResourceAccess().containsKey(resource)
-            && getAccessToken().getResourceAccess().get(resource).isUserInRole(role);
-    }
-
-    public boolean hasResourceRoleOrIsSuperUser(String role, String resource) {
-        return hasResourceRole(role, resource) || isSuperUser();
-    }
-
-    /**
-     * @return <code>true</code> if the user is authenticated in the same realm or if the user is the superuser (admin).
-     */
-    public boolean isRealmAccessibleByUser(String realm) {
-        return realm != null && realm.length() > 0 && (realm.equals(getAuthenticatedRealm()) || isSuperUser());
+        return getAuthContext().hasResourceRole(role, resource);
     }
 }

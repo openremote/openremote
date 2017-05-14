@@ -355,11 +355,10 @@ public class Asset implements IdentifiableEntity {
         );
     }
 
+    /**
+     * Replaces existing or adds the attribute if it does not exist.
+     */
     public void replaceAttribute(AssetAttribute attribute) throws IllegalArgumentException {
-        if (attributes == null) {
-            return;
-        }
-        
         if (attribute == null || !attribute.getName().isPresent() || !attribute.getType().isPresent())
             throw new IllegalArgumentException("Attribute cannot be null and must have a name and type");
 

@@ -41,6 +41,7 @@ import org.openremote.manager.shared.rules.TenantRuleset;
 import org.openremote.manager.shared.security.Tenant;
 import org.openremote.model.AbstractValueTimestampHolder;
 import org.openremote.model.asset.*;
+import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.util.Pair;
 import org.openremote.model.value.ObjectValue;
 
@@ -54,7 +55,7 @@ import java.util.stream.Stream;
 
 import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_TOPIC;
 import static org.openremote.container.util.MapAccess.getString;
-import static org.openremote.manager.server.asset.AssetPredicates.isPersistenceEventForEntityType;
+import static org.openremote.manager.server.asset.AssetRoute.isPersistenceEventForEntityType;
 import static org.openremote.model.asset.AssetAttribute.attributesFromJson;
 
 /**
@@ -119,6 +120,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
     public void configure() throws Exception {
         // If any ruleset was modified in the database then check its' status and undeploy, deploy, or update it
         from(PERSISTENCE_TOPIC)
+            .routeId("RulesetPersistenceChanges")
             .filter(isPersistenceEventForEntityType(Ruleset.class))
             .process(exchange -> {
                 PersistenceEvent persistenceEvent = exchange.getIn().getBody(PersistenceEvent.class);
@@ -128,6 +130,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
         // If any tenant was modified in the database then check its' status and undeploy, deploy or update any
         // associated rulesets
         from(PERSISTENCE_TOPIC)
+            .routeId("RuleEngineTenantChanges")
             .filter(isPersistenceEventForEntityType(Tenant.class))
             .process(exchange -> {
                 PersistenceEvent persistenceEvent = exchange.getIn().getBody(PersistenceEvent.class);
@@ -137,6 +140,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
 
         // If any asset was modified in the database, detect changed attributes
         from(PERSISTENCE_TOPIC)
+            .routeId("RuleEngineAssetChanges")
             .filter(isPersistenceEventForEntityType(Asset.class))
             .process(exchange -> {
                 PersistenceEvent persistenceEvent = exchange.getIn().getBody(PersistenceEvent.class);
@@ -172,7 +176,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
             .forEach(pair -> {
                 ServerAsset asset = pair.key;
                 pair.value.forEach(ruleAttribute -> {
-                    AssetState assetState = new AssetState(asset, ruleAttribute, false, false, null);
+                    AssetState assetState = new AssetState(asset, ruleAttribute, AttributeEvent.Source.INTERNAL);
                     // Set the status to completed already so rules cannot interfere with this initial insert
                     assetState.setProcessingStatus(AssetState.ProcessingStatus.COMPLETED);
                     updateAssetState(assetState, true);
@@ -252,13 +256,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
         // We must load the asset from database (only when required), as the
         // persistence event might not contain a completely loaded asset
         BiFunction<Asset, AssetAttribute, AssetState> buildAssetState = (loadedAsset, attribute) ->
-
-            new AssetState(loadedAsset,
-                attribute.deepCopy(),
-                false,
-                false,
-                null
-            );
+            new AssetState(loadedAsset, attribute.deepCopy(), AttributeEvent.Source.INTERNAL);
 
         Asset loadedAsset;
 
@@ -362,7 +360,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
                     .forEach(attribute -> {
                         // We can't load the asset again (it was deleted), so don't use buildAssetState() and
                         // hope that the path of the event asset has been loaded before deletion
-                        AssetState assetState = new AssetState(asset, attribute, false, false, null);
+                        AssetState assetState = new AssetState(asset, attribute, AttributeEvent.Source.INTERNAL);
                         LOG.fine("Asset was persisted (" + persistenceEvent.getCause() + "), retracting fact: " + assetState);
                         retractAssetState(assetState);
                     });
@@ -430,7 +428,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
                 assetStorageService,
                 notificationService,
                 assetProcessingService,
-			    identityService,
+                identityService,
                 GlobalRuleset.class,
                 ID_GLOBAL_RULES_ENGINE,
                 rulesEngineListeners
@@ -466,7 +464,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
                     assetStorageService,
                     notificationService,
                     assetProcessingService,
-				    identityService,
+                    identityService,
                     TenantRuleset.class,
                     realmId,
                     rulesEngineListeners
@@ -532,7 +530,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
                     assetStorageService,
                     notificationService,
                     assetProcessingService,
-					identityService,
+                    identityService,
                     AssetRuleset.class,
                     assetId,
                     rulesEngineListeners

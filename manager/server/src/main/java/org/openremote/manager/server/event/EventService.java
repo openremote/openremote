@@ -25,15 +25,11 @@ import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.message.MessageBrokerSetupService;
+import org.openremote.container.security.AuthContext;
 import org.openremote.container.timer.TimerService;
-import org.openremote.container.web.socket.WebsocketAuth;
 import org.openremote.container.web.socket.WebsocketConstants;
-import org.openremote.manager.server.asset.AssetProcessingService;
-import org.openremote.manager.server.asset.AssetStorageService;
 import org.openremote.manager.server.concurrent.ManagerExecutorService;
-import org.openremote.manager.server.security.ManagerIdentityService;
-import org.openremote.manager.shared.security.User;
-import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.Constants;
 import org.openremote.model.event.shared.CancelEventSubscription;
 import org.openremote.model.event.shared.EventSubscription;
 import org.openremote.model.event.shared.SharedEvent;
@@ -45,7 +41,6 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.logging.Logger;
 
 import static org.apache.camel.builder.PredicateBuilder.or;
-import static org.openremote.manager.server.asset.AssetProcessingService.ASSET_QUEUE;
 
 /**
  * Receives and publishes messages, handles the client/server event bus.
@@ -107,23 +102,16 @@ public class EventService implements ContainerService {
 
     final protected Collection<EventSubscriptionAuthorizer> eventSubscriptionAuthorizers = new CopyOnWriteArraySet<>();
     protected MessageBrokerService messageBrokerService;
-    protected ManagerIdentityService managerIdentityService;
-    protected AssetStorageService assetStorageService;
-    protected AssetProcessingService assetProcessingService;
     protected EventSubscriptions eventSubscriptions;
 
     @Override
     public void init(Container container) throws Exception {
         messageBrokerService = container.getService(MessageBrokerService.class);
-        managerIdentityService = container.getService(ManagerIdentityService.class);
-        assetStorageService = container.getService(AssetStorageService.class);
-        assetProcessingService = container.getService(AssetProcessingService.class);
 
         eventSubscriptions = new EventSubscriptions(
             container.getService(TimerService.class),
             container.getService(ManagerExecutorService.class)
         );
-
 
         MessageBrokerSetupService messageBrokerSetupService = container.getService(MessageBrokerSetupService.class);
         messageBrokerSetupService.getContext().getTypeConverterRegistry().addTypeConverters(
@@ -135,7 +123,7 @@ public class EventService implements ContainerService {
             public void configure() throws Exception {
 
                 from("websocket://" + WEBSOCKET_EVENTS)
-                    .routeId("Receive incoming message on WebSocket session(s)")
+                    .routeId("FromClientWebsocketEvents")
                     .choice()
                     .when(header(WebsocketConstants.SESSION_OPEN))
                     .process(exchange -> {
@@ -158,13 +146,13 @@ public class EventService implements ContainerService {
                     .process(exchange -> {
                         String sessionKey = getSessionKey(exchange);
                         EventSubscription subscription = exchange.getIn().getBody(EventSubscription.class);
-                        WebsocketAuth auth = getWebsocketAuth(exchange);
+                        AuthContext authContext = exchange.getIn().getHeader(Constants.AUTH_CONTEXT, AuthContext.class);
                         if (eventSubscriptionAuthorizers.stream()
-                            .anyMatch(authorizer -> authorizer.apply(auth, subscription))) {
+                            .anyMatch(authorizer -> authorizer.apply(authContext, subscription))) {
                             eventSubscriptions.update(sessionKey, subscription);
                         } else {
                             LOG.warning("Unauthorized subscription from '"
-                                + auth.getUsername() + "' in realm '" + auth.getAuthenticatedRealm()
+                                + authContext.getUsername() + "' in realm '" + authContext.getAuthenticatedRealm()
                                 + "': " + subscription
                             );
                             sendToSession(sessionKey, new UnauthorizedEventSubscription(subscription.getEventType()));
@@ -177,25 +165,14 @@ public class EventService implements ContainerService {
                         eventSubscriptions.cancel(sessionKey, exchange.getIn().getBody(CancelEventSubscription.class));
                     })
                     .when(bodyAs(String.class).startsWith(SharedEvent.MESSAGE_PREFIX))
-                        .convertBodyTo(SharedEvent.class)
-                        .process(exchange -> {
-                            WebsocketAuth auth = getWebsocketAuth(exchange);
-
-                            // Extract user object to use as the sender
-                            User user = managerIdentityService.getUser(auth.getAccessToken());
-                            exchange.getIn().setHeader(SharedEvent.HEADER_SENDER, user);
-                        }).end()
-                    .choice()
-                    .when(body().isInstanceOf(AttributeEvent.class))
-                        .to(ASSET_QUEUE).stop()
-                    .when(body().isInstanceOf(SharedEvent.class))
-                        .to(INCOMING_EVENT_TOPIC)
+                    .convertBodyTo(SharedEvent.class)
+                    .to(EventService.INCOMING_EVENT_TOPIC)
                     .otherwise()
                     .process(exchange -> LOG.fine("Unsupported message body: " + exchange.getIn().getBody()))
                     .end();
 
                 from(EventService.OUTGOING_EVENT_QUEUE)
-                    .routeId("Send outgoing events to WebSocket session(s)")
+                    .routeId("ToClientWebsocketEvents")
                     .choice()
                     .when(body().isInstanceOf(SharedEvent.class))
                     .split(method(eventSubscriptions, "splitForSubscribers"))
@@ -244,13 +221,6 @@ public class EventService implements ContainerService {
 
     public static String getSessionKey(Exchange exchange) {
         return exchange.getIn().getHeader(WebsocketConstants.SESSION_KEY, String.class);
-    }
-
-    public static WebsocketAuth getWebsocketAuth(Exchange exchange) {
-        WebsocketAuth auth = exchange.getIn().getHeader(WebsocketConstants.AUTH, WebsocketAuth.class);
-        if (auth == null)
-            throw new IllegalStateException("No authorization details in websocket exchange");
-        return auth;
     }
 
     @Override

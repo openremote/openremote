@@ -19,12 +19,61 @@
  */
 package org.openremote.manager.shared.asset;
 
+import org.openremote.model.asset.AssetAttribute;
+import org.openremote.model.asset.AssetType;
+import org.openremote.model.attribute.AttributeExecuteStatus;
+
 public class AssetProcessingException extends RuntimeException {
+
     public enum Reason {
-        INSUFFICIENT_ACCESS,
+
+        /**
+         * Missing {@link org.openremote.model.attribute.AttributeEvent.Source}.
+         */
+        MISSING_SOURCE,
+
+        /**
+         * The source of the event does not match the expected source (e.g. expected client message
+         * but received sensor read).
+         */
+        ILLEGAL_SOURCE,
+
+        /**
+         * The asset does not exist.
+         */
         ASSET_NOT_FOUND,
+
+        /**
+         * The attribute does not exist.
+         */
         ATTRIBUTE_NOT_FOUND,
-        INVALID_ACTION
+
+        /**
+         * A sensor update must be for an attribute with a valid agent link.
+         */
+        INVALID_AGENT_LINK,
+
+        /**
+         * Attributes of an {@link AssetType#AGENT} can not be individually updated.
+         */
+        ILLEGAL_AGENT_UPDATE,
+
+        /**
+         * Invalid {@link AttributeExecuteStatus} for {@link AssetAttribute#isExecutable()} attribute,
+         * must be {@link AttributeExecuteStatus#isWrite()}.
+         */
+        INVALID_ATTRIBUTE_EXECUTE_STATUS,
+
+        /**
+         * No authentication/authorization context available.
+         */
+        NO_AUTH_CONTEXT,
+
+        /**
+         * Realm configuration or user privileges do not allow update (e.g. realm inactive, user is
+         * missing required role, attribute is read-only).
+         */
+        INSUFFICIENT_ACCESS
     }
 
     protected Reason reason;

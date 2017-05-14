@@ -171,7 +171,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
             assert asset.getAttribute("geoStreet").get().getValue().get().toJson() == Values.create("Teststreet 123").toJson()
         }
 
-        when: "an non-existent attribute is written in the authenticated realm"
+        when: "an non-existent assets attribute is written in the authenticated realm"
         assetResource.writeAttributeValue(null, "doesnotexist", "geoStreet", Values.create("Teststreet 123").toJson())
 
         then: "the attribute should be not found"

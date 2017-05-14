@@ -23,15 +23,14 @@ import org.apache.camel.ExchangePattern;
 import org.keycloak.admin.client.resource.ClientResource;
 import org.keycloak.admin.client.resource.ClientsResource;
 import org.keycloak.admin.client.resource.RolesResource;
-import org.keycloak.representations.AccessToken;
 import org.keycloak.representations.idm.ClientRepresentation;
 import org.keycloak.representations.idm.RealmRepresentation;
 import org.keycloak.representations.idm.RoleRepresentation;
-import org.keycloak.representations.idm.UserRepresentation;
 import org.openremote.container.Container;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceEvent;
 import org.openremote.container.persistence.PersistenceService;
+import org.openremote.container.security.AuthContext;
 import org.openremote.container.security.IdentityService;
 import org.openremote.container.web.WebService;
 import org.openremote.manager.server.event.EventService;
@@ -40,6 +39,7 @@ import org.openremote.manager.shared.security.Tenant;
 import org.openremote.manager.shared.security.TenantEmailConfig;
 import org.openremote.manager.shared.security.User;
 import org.openremote.model.Constants;
+import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetTreeModifiedEvent;
 
 import javax.ws.rs.core.UriBuilder;
@@ -47,9 +47,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
 
-import static org.openremote.manager.server.util.JsonUtil.convert;
 import static org.openremote.model.Constants.*;
-import static org.openremote.model.util.TextUtil.requireNonNullAndNonEmpty;
+import static org.openremote.manager.server.util.JsonUtil.convert;
 
 public class ManagerIdentityService extends IdentityService {
 
@@ -131,6 +130,26 @@ public class ManagerIdentityService extends IdentityService {
             Tenant tenant = em.find(Tenant.class, realmId);
             return tenant != null && tenant.isActive();
         });
+    }
+
+    public Tenant getAuthenticatedTenant(AuthContext authContext) {
+        return getTenantForRealm(authContext.getAuthenticatedRealm());
+    }
+
+    /**
+     * @return <code>true</code> if the user is the superuser (admin) or if the user is authenticated
+     * in the same realm as the tenant and the tenant is active.
+     */
+    public boolean isTenantActiveAndAccessible(AuthContext authContext, Tenant tenant) {
+        return tenant != null && (authContext.isSuperUser() || (tenant.isActive() && authContext.isRealmAccessibleByUser(tenant.getRealm())));
+    }
+
+    /**
+     * @return <code>true</code> if the user is the superuser (admin) or if the user is authenticated
+     * in the same realm as the assets' realm and the tenant is active.
+     */
+    public boolean isTenantActiveAndAccessible(AuthContext authContext, Asset asset) {
+        return isTenantActiveAndAccessible(authContext, getTenant(asset.getRealmId()));
     }
 
     public String[] getActiveTenantIds() {
@@ -240,59 +259,6 @@ public class ManagerIdentityService extends IdentityService {
             User user = em.find(User.class, userId);
             return (user != null&& realmId.equals(user.getRealmId()));
         });
-    }
-
-    // TODO: Have a single getUser method that gets all data in a single query
-
-    /**
-     * Get user from their Keycloak {@link UserRepresentation}
-     */
-    public User getUser(String realm, UserRepresentation userRepresentation) {
-        User user = convert(Container.JSON, User.class, userRepresentation);
-        user.setRealm(realm);
-        populateUserConfiguration(user);
-        return user;
-    }
-
-    /**
-     * Get user from their Keycloak {@link AccessToken}
-     */
-    public User getUser(AccessToken accessToken) {
-        String realm = accessToken.getIssuer().substring(accessToken.getIssuer().lastIndexOf('/') + 1);
-        requireNonNullAndNonEmpty(realm);
-        User user = new User();
-        user.setId(accessToken.getSubject());
-        user.setUsername(accessToken.getPreferredUsername());
-        user.setClient(accessToken.getIssuedFor());
-        user.setRealm(realm);
-        user.setFirstName(accessToken.getGivenName());
-        user.setLastName(accessToken.getFamilyName());
-        user.setEmail(accessToken.getEmail());
-        user.setEnabled(accessToken.isActive()); // If they have an active token then they're enabled
-        user.setRealmRoles(new ArrayList<>(accessToken.getRealmAccess().getRoles()));
-        accessToken.getResourceAccess()
-            .forEach(
-                (client, clientRoles) -> {
-                    user.addClientRoles(client, new ArrayList<>(clientRoles.getRoles()));
-                }
-            );
-        populateUserConfiguration(user);
-        return user;
-    }
-
-    /**
-     * Get user from their ID
-     */
-    // TODO: populate missing data
-    public User getUser(String userId, boolean loadComplete) {
-        return persistenceService.doReturningTransaction(em -> {
-            return em.find(User.class, userId);
-        });
-    }
-
-    protected void populateUserConfiguration(User user) {
-        UserConfiguration userConfiguration = getUserConfiguration(user.getId());
-        user.setRestricted(userConfiguration.isRestricted());
     }
 
     /**

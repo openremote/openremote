@@ -37,6 +37,6 @@ public interface ProtocolAssetService extends ContainerService {
     /**
      * Protocols can send arbitrary attribute change events for regular processing.
      */
-    void sendAttributeEvent(Protocol sender, AttributeEvent attributeEvent);
+    void sendAttributeEvent(AttributeEvent attributeEvent);
 
 }

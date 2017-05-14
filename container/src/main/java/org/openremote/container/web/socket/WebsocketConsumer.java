@@ -22,6 +22,8 @@ package org.openremote.container.web.socket;
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
 import org.apache.camel.impl.DefaultConsumer;
+import org.openremote.container.security.AuthContext;
+import org.openremote.model.Constants;
 
 import java.util.function.Consumer;
 
@@ -50,18 +52,18 @@ public class WebsocketConsumer extends DefaultConsumer {
         return endpoint;
     }
 
-    public void sendMessage(final String sessionKey, final WebsocketAuth websocketAuth, final String message) {
-        sendMessage(sessionKey, websocketAuth, (Object) message);
+    public void sendMessage(final String sessionKey, final AuthContext authContext, final String message) {
+        sendMessage(sessionKey, authContext, (Object) message);
     }
 
-    public void sendMessage(final String sessionKey, final WebsocketAuth websocketAuth, final Object message) {
-        sendMessage(sessionKey, websocketAuth, message, null);
+    public void sendMessage(final String sessionKey, final AuthContext authContext, final Object message) {
+        sendMessage(sessionKey, authContext, message, null);
     }
 
-    public void sendMessage(final String sessionKey, final WebsocketAuth websocketAuth, final Object message, Consumer<Exchange> exchangePreparer) {
+    public void sendMessage(final String sessionKey, final AuthContext authContext, final Object message, Consumer<Exchange> exchangePreparer) {
         final Exchange exchange = getEndpoint().createExchange();
         exchange.getIn().setHeader(WebsocketConstants.SESSION_KEY, sessionKey);
-        exchange.getIn().setHeader(WebsocketConstants.AUTH, websocketAuth);
+        exchange.getIn().setHeader(Constants.AUTH_CONTEXT, authContext);
         exchange.getIn().setBody(message);
         if (exchangePreparer != null) {
             exchangePreparer.accept(exchange);

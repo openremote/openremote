@@ -19,20 +19,18 @@
  */
 package org.openremote.manager.server.asset;
 
-import org.apache.camel.CamelExecutionException;
-import org.openremote.container.message.MessageBrokerService;
 import org.openremote.manager.server.security.ManagerIdentityService;
 import org.openremote.manager.server.web.ManagerWebResource;
 import org.openremote.manager.shared.asset.AssetProcessingException;
 import org.openremote.manager.shared.asset.AssetResource;
 import org.openremote.manager.shared.http.RequestParams;
 import org.openremote.manager.shared.security.Tenant;
-import org.openremote.manager.shared.security.User;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetQuery;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.value.Value;
+import org.openremote.model.value.ValueException;
 import org.openremote.model.value.Values;
 
 import javax.ws.rs.WebApplicationException;
@@ -50,16 +48,13 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
 
     protected final AssetStorageService assetStorageService;
     protected final AssetProcessingService assetProcessingService;
-    protected final MessageBrokerService messageBrokerService;
 
     public AssetResourceImpl(ManagerIdentityService identityService,
                              AssetStorageService assetStorageService,
-                             AssetProcessingService assetProcessingService,
-                             MessageBrokerService messageBrokerService) {
+                             AssetProcessingService assetProcessingService) {
         super(identityService);
         this.assetStorageService = assetStorageService;
         this.assetProcessingService = assetProcessingService;
-        this.messageBrokerService = messageBrokerService;
     }
 
     @Override
@@ -232,51 +227,38 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
     @Override
     public void writeAttributeValue(RequestParams requestParams, String assetId, String attributeName, String rawJson) {
         try {
-            ServerAsset asset;
-            User user = identityService.getUser(getAccessToken());
+            // Process update
+            try {
+                Value value = Values.instance()
+                    .parse(rawJson)
+                    .orElse(null); // When parsing literal JSON "null"
 
-            Value value = Values.instance()
-                .parse(rawJson)
-                .orElse(null); // When parsing literal JSON "null"
+                assetProcessingService.processFromClient(
+                    getAuthContext(),
+                    new AttributeEvent(new AttributeRef(assetId, attributeName), value)
+                );
 
-            AttributeEvent event = new AttributeEvent(new AttributeRef(assetId, attributeName), value);
-
-            // TODO: Get this working using camel route
-            assetProcessingService.sendAttributeEventWithoutCamel(event, user);
-
-            // Note camel SEDA endpoints seem to only support InOnly (if you try and set InOut) it will successfully
-            // block and wait for a response but you'll get your original message back so cannot get any exception
-            // information or anything.
-//            messageBrokerService
-//                .getProducerTemplate()
-//                .sendBodyAndHeader(ASSET_QUEUE, event, SharedEvent.HEADER_SENDER, user);
-        } catch (AssetProcessingException assetProcessingException) {
-            switch (assetProcessingException.getReason()) {
-                case INSUFFICIENT_ACCESS:
-                    throw new WebApplicationException(Response.Status.FORBIDDEN);
-                case ASSET_NOT_FOUND:
-                    throw new WebApplicationException(NOT_FOUND);
-                case ATTRIBUTE_NOT_FOUND:
-                    throw new WebApplicationException(NOT_FOUND);
-                case INVALID_ACTION:
-                    throw new WebApplicationException(Response.Status.FORBIDDEN);
-            }
-        } catch (CamelExecutionException ex) {
-            // Unwrap the exception
-            Throwable cause = ex.getCause();
-            if (cause instanceof AssetProcessingException) {
-                AssetProcessingException assetProcessingException = (AssetProcessingException)cause;
-                switch (assetProcessingException.getReason()) {
+            } catch (ValueException ex) {
+                throw new IllegalStateException("Error parsing JSON", ex);
+            } catch (AssetProcessingException ex) {
+                switch (ex.getReason()) {
+                    case ILLEGAL_SOURCE:
+                    case NO_AUTH_CONTEXT:
                     case INSUFFICIENT_ACCESS:
                         throw new WebApplicationException(Response.Status.FORBIDDEN);
                     case ASSET_NOT_FOUND:
-                        throw new WebApplicationException(NOT_FOUND);
                     case ATTRIBUTE_NOT_FOUND:
                         throw new WebApplicationException(NOT_FOUND);
+                    case INVALID_AGENT_LINK:
+                    case ILLEGAL_AGENT_UPDATE:
+                    case INVALID_ATTRIBUTE_EXECUTE_STATUS:
+                        throw new IllegalStateException(ex);
+                    default:
+                        throw ex;
                 }
             }
-            throw new IllegalStateException("Error updating attribute: " + attributeName, ex);
-        } catch (Exception ex) {
+
+        } catch (IllegalStateException ex) {
             throw new WebApplicationException(ex, Response.Status.BAD_REQUEST);
         }
     }

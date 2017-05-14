@@ -72,18 +72,13 @@ public abstract class AbstractAssetUpdate {
 
     final protected long oldValueTimestamp;
 
-    final protected boolean southbound;
+    final protected AttributeEvent.Source source;
 
-    final protected boolean sensorUpdate;
-
-    final protected Object sender;
-
-
-    public AbstractAssetUpdate(Asset asset, AssetAttribute attribute, boolean southbound, boolean sensorUpdate, Object sender) {
-        this(asset, attribute, null, 0, southbound, sensorUpdate, sender);
+    public AbstractAssetUpdate(Asset asset, AssetAttribute attribute, AttributeEvent.Source source) {
+        this(asset, attribute, null, 0, source);
     }
 
-    public AbstractAssetUpdate(Asset asset, AssetAttribute attribute, Value oldValue, long oldValueTimestamp, boolean southbound, boolean sensorUpdate, Object sender) {
+    public AbstractAssetUpdate(Asset asset, AssetAttribute attribute, Value oldValue, long oldValueTimestamp, AttributeEvent.Source source) {
         this(
             attribute,
             asset.getCreatedOn(),
@@ -101,9 +96,7 @@ public abstract class AbstractAssetUpdate {
             asset.getCoordinates(),
             oldValue,
             oldValueTimestamp,
-            southbound,
-            sensorUpdate,
-            sender
+            source
         );
     }
 
@@ -125,9 +118,7 @@ public abstract class AbstractAssetUpdate {
             that.coordinates,
             that.oldValue,
             that.oldValueTimestamp,
-            that.southbound,
-            that.sensorUpdate,
-            that.sender
+            that.source
         );
     }
 
@@ -138,9 +129,7 @@ public abstract class AbstractAssetUpdate {
                                   double[] coordinates,
                                   Value oldValue,
                                   long oldValueTimestamp,
-                                  boolean southbound,
-                                  boolean sensorUpdate,
-                                  Object sender) {
+                                  AttributeEvent.Source source) {
         this.attribute = attribute;
         this.createdOn = createdOn;
         this.id = id;
@@ -160,9 +149,7 @@ public abstract class AbstractAssetUpdate {
         this.coordinates = coordinates;
         this.oldValue = oldValue;
         this.oldValueTimestamp = oldValueTimestamp;
-        this.southbound = southbound;
-        this.sensorUpdate = sensorUpdate;
-        this.sender = sender;
+        this.source = source;
     }
 
     public Date getCreatedOn() {
@@ -225,17 +212,8 @@ public abstract class AbstractAssetUpdate {
         return oldValueTimestamp;
     }
 
-    /**
-     *  True if the update was initiated by a user/client (and not protocol or internal) and
-     *  is being processed southbound.
-     */
-    public boolean isSouthbound() {
-        return southbound;
-    }
-
-
-    public boolean isSensorUpdate() {
-        return sensorUpdate;
+    public AttributeEvent.Source getSource() {
+        return source;
     }
 
     public Value getValue() {
@@ -337,6 +315,7 @@ public abstract class AbstractAssetUpdate {
             ", valueTimestamp=" + getValueTimestamp() +
             ", oldValue='" + (getOldValue() != null ? getOldValue().toJson() : "null") + '\'' +
             ", oldValueTimestamp=" + getOldValueTimestamp() +
+            ", source=" + getSource() +
             '}';
     }
 }

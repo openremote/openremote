@@ -19,6 +19,7 @@
  */
 package org.openremote.model.asset;
 
+import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.value.Value;
 
 /**
@@ -61,12 +62,12 @@ public class AssetState extends AbstractAssetUpdate {
 
     protected Throwable error;
 
-    public AssetState(Asset asset, AssetAttribute attribute, boolean southbound, boolean sensorUpdate, Object sender) {
-        super(asset, attribute, southbound, sensorUpdate, sender);
+    public AssetState(Asset asset, AssetAttribute attribute, AttributeEvent.Source source) {
+        super(asset, attribute, source);
     }
 
-    public AssetState(Asset asset, AssetAttribute attribute, Value oldValue, long oldValueTimestamp, boolean southbound, boolean sensorUpdate, Object sender) {
-        super(asset, attribute, oldValue, oldValueTimestamp, southbound, sensorUpdate, sender);
+    public AssetState(Asset asset, AssetAttribute attribute, Value oldValue, long oldValueTimestamp, AttributeEvent.Source source) {
+        super(asset, attribute, oldValue, oldValueTimestamp, source);
     }
 
     public ProcessingStatus getProcessingStatus() {

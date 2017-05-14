@@ -41,15 +41,11 @@ public class ManagerWebResource extends WebResource {
     }
 
     public boolean isTenantActiveAndAccessible(Asset asset) {
-        return isTenantActiveAndAccessible(identityService.getTenant(asset.getRealmId()));
+        return identityService.isTenantActiveAndAccessible(this, asset);
     }
 
-    /**
-     * @return <code>true</code> if the user is the superuser (admin) or if the user is authenticated
-     * in the same realm as the tenant and the tenant is active.
-     */
     public boolean isTenantActiveAndAccessible(Tenant tenant) {
-        return tenant != null && (isSuperUser() || (tenant.isActive() && super.isRealmAccessibleByUser(tenant.getRealm())));
+        return identityService.isTenantActiveAndAccessible(this, tenant);
     }
 
 }

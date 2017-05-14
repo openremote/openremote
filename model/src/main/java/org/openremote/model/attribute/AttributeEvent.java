@@ -31,6 +31,31 @@ import java.util.Optional;
  */
 public class AttributeEvent extends SharedEvent {
 
+    public static final String HEADER_SOURCE = AttributeEvent.class.getName() + ".SOURCE";
+
+    /**
+     * Processing of the attribute event depends on the origin of the event.
+     */
+    public enum Source {
+
+        /**
+         * The event was created by a client, it's a write request by a user.
+         */
+        CLIENT,
+
+        /**
+         * The event was created by internal processing, for example, as a rule
+         * consequence. Protocols can also create events for internal processing,
+         * to update any assets' state.
+         */
+        INTERNAL,
+
+        /**
+         * The event is a value change on a sensor, created by a protocol.
+         */
+        SENSOR
+    }
+
     public static class EntityIdFilter extends EventFilter<AttributeEvent> {
 
         public static final String FILTER_TYPE = "attribute-entity-id";

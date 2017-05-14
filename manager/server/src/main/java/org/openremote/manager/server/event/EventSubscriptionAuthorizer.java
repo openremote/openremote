@@ -19,7 +19,7 @@
  */
 package org.openremote.manager.server.event;
 
-import org.openremote.container.web.socket.WebsocketAuth;
+import org.openremote.container.security.AuthContext;
 import org.openremote.model.event.shared.EventSubscription;
 
 import java.util.function.BiFunction;
@@ -31,6 +31,6 @@ import java.util.function.BiFunction;
  * permissions. It might also fail if the subscription is invalid, for example, if
  * a required filter is not supplied or if the filter is not valid.
  */
-public interface EventSubscriptionAuthorizer extends BiFunction<WebsocketAuth, EventSubscription, Boolean> {
+public interface EventSubscriptionAuthorizer extends BiFunction<AuthContext, EventSubscription, Boolean> {
 
 }
