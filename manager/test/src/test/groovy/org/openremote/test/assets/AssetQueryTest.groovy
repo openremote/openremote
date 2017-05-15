@@ -40,7 +40,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
 
         then: "result should match (and some values should be empty because we need an AssetQuery to get them)"
         asset.id == managerDemoSetup.apartment1Id
-        asset.version == 1
+        asset.version == 0
         asset.createdOn.time < System.currentTimeMillis()
         asset.name == "Apartment 1"
         asset.wellKnownType == AssetType.RESIDENCE
@@ -161,7 +161,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         then: "result should match"
         assets.size() == 3
         assets.get(0).id == managerDemoSetup.apartment1Id
-        assets.get(0).version == 1
+        assets.get(0).version == 0
         assets.get(0).createdOn.time < System.currentTimeMillis()
         assets.get(0).name == "Apartment 1"
         assets.get(0).wellKnownType == AssetType.RESIDENCE
@@ -223,8 +223,8 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         then: "result should match"
         assets.size() == 3
         assets.get(0).id == managerDemoSetup.apartment1Id
-        assets.get(1).id == managerDemoSetup.apartment1LivingroomId
-        assets.get(2).id == managerDemoSetup.apartment1ServiceAgentId
+        assets.get(1).id == managerDemoSetup.apartment1ServiceAgentId
+        assets.get(2).id == managerDemoSetup.apartment1LivingroomId
 
         when: "a query is executed"
         assets = assetStorageService.findAll(
@@ -248,9 +248,9 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets.get(1).id == managerDemoSetup.apartment1LivingroomId
         assets.get(1).getAttributesList().size() == 6
         !assets.get(1).getAttribute("currentTemperature").get().getValue().isPresent()
-        assets.get(1).getAttribute("currentTemperature").get().meta.size() == 3
+        assets.get(1).getAttribute("currentTemperature").get().meta.size() == 6
         !assets.get(1).getAttribute("targetTemperature").get().getValue().isPresent()
-        assets.get(1).getAttribute("targetTemperature").get().meta.size() == 2
+        assets.get(1).getAttribute("targetTemperature").get().meta.size() == 4
         assets.get(2).id == managerDemoSetup.apartment2Id
 
         when: "a query is executed"

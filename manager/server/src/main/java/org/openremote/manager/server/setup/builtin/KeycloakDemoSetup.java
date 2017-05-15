@@ -67,14 +67,14 @@ public class KeycloakDemoSetup extends AbstractKeycloakSetup {
         customerA.setRealm("customerA");
         customerA.setDisplayName("Customer A");
         customerA.setEnabled(true);
-        identityService.createTenant(null, accessToken, customerA);
+        identityService.createTenant(null, accessToken, customerA, emailConfig);
         customerATenant = identityService.getTenantForRealm(customerA.getRealm());
 
         Tenant customerB = new Tenant();
         customerB.setRealm("customerB");
         customerB.setDisplayName("Customer B");
         customerB.setEnabled(true);
-        identityService.createTenant(null, accessToken, customerB);
+        identityService.createTenant(null, accessToken, customerB, emailConfig);
         customerBTenant = identityService.getTenantForRealm(customerB.getRealm());
 
         // Users

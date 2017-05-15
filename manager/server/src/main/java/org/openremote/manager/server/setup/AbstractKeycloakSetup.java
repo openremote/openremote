@@ -25,8 +25,12 @@ import org.keycloak.admin.client.resource.UsersResource;
 import org.keycloak.representations.idm.ClientRepresentation;
 import org.openremote.container.Container;
 import org.openremote.container.security.AuthForm;
+import org.openremote.container.util.MapAccess;
 import org.openremote.manager.server.security.ManagerIdentityService;
+import org.openremote.manager.shared.security.TenantEmailConfig;
 
+import static org.openremote.container.util.MapAccess.getBoolean;
+import static org.openremote.container.util.MapAccess.getInteger;
 import static org.openremote.model.Constants.*;
 
 public abstract class AbstractKeycloakSetup implements Setup {
@@ -38,6 +42,20 @@ public abstract class AbstractKeycloakSetup implements Setup {
 
     public static final String SETUP_KEYCLOAK_ADMIN_PASSWORD = "SETUP_KEYCLOAK_ADMIN_PASSWORD";
     public static final String SETUP_KEYCLOAK_ADMIN_PASSWORD_DEFAULT = "secret";
+    public static final String SETUP_KEYCLOAK_EMAIL_HOST = "SETUP_KEYCLOAK_EMAIL_HOST";
+    public static final String SETUP_KEYCLOAK_EMAIL_HOST_DEFAULT = "smtp-host.demo.tld";
+    public static final String SETUP_KEYCLOAK_EMAIL_USER = "SETUP_KEYCLOAK_EMAIL_USER";
+    public static final String SETUP_KEYCLOAK_EMAIL_USER_DEFAULT = "smtp-user";
+    public static final String SETUP_KEYCLOAK_EMAIL_PASSWORD = "SETUP_KEYCLOAK_EMAIL_PASSWORD";
+    public static final String SETUP_KEYCLOAK_EMAIL_PASSWORD_DEFAULT = "smtp-password";
+    public static final String SETUP_KEYCLOAK_EMAIL_PORT = "SETUP_KEYCLOAK_EMAIL_PORT";
+    public static final int SETUP_KEYCLOAK_EMAIL_PORT_DEFAULT = 25;
+    public static final String SETUP_KEYCLOAK_EMAIL_AUTH = "SETUP_KEYCLOAK_EMAIL_AUTH";
+    public static final boolean SETUP_KEYCLOAK_EMAIL_AUTH_DEFAULT = true;
+    public static final String SETUP_KEYCLOAK_EMAIL_TLS = "SETUP_KEYCLOAK_EMAIL_TLS";
+    public static final boolean SETUP_KEYCLOAK_EMAIL_TLS_DEFAULT = true;
+    public static final String SETUP_KEYCLOAK_EMAIL_FROM = "SETUP_KEYCLOAK_EMAIL_FROM";
+    public static final String SETUP_KEYCLOAK_EMAIL_FROM_DEFAULT = "noreply@demo.tld";
 
     final protected ManagerIdentityService identityService;
     final protected SetupService setupService;
@@ -45,6 +63,7 @@ public abstract class AbstractKeycloakSetup implements Setup {
     final protected RealmResource masterRealmResource;
     final protected ClientsResource masterClientsResource;
     final protected UsersResource masterUsersResource;
+    final protected TenantEmailConfig emailConfig;
 
     public AbstractKeycloakSetup(Container container) {
         this.identityService = container.getService(ManagerIdentityService.class);
@@ -59,6 +78,20 @@ public abstract class AbstractKeycloakSetup implements Setup {
         masterRealmResource = identityService.getRealms(null, accessToken).realm(MASTER_REALM);
         masterClientsResource = identityService.getRealms(null, accessToken).realm(MASTER_REALM).clients();
         masterUsersResource = identityService.getRealms(null, accessToken).realm(MASTER_REALM).users();
+
+        // Configure SMTP
+        if (container.getConfig().containsKey(SETUP_KEYCLOAK_EMAIL_HOST)) {
+            emailConfig = new TenantEmailConfig();
+            emailConfig.setHost(container.getConfig().getOrDefault(SETUP_KEYCLOAK_EMAIL_HOST, SETUP_KEYCLOAK_EMAIL_HOST_DEFAULT));
+            emailConfig.setStarttls(getBoolean(container.getConfig(), SETUP_KEYCLOAK_EMAIL_TLS,SETUP_KEYCLOAK_EMAIL_TLS_DEFAULT));
+            emailConfig.setPort(getInteger(container.getConfig(), SETUP_KEYCLOAK_EMAIL_PORT, SETUP_KEYCLOAK_EMAIL_PORT_DEFAULT));
+            emailConfig.setAuth(getBoolean(container.getConfig(), SETUP_KEYCLOAK_EMAIL_AUTH, SETUP_KEYCLOAK_EMAIL_AUTH_DEFAULT));
+            emailConfig.setUser(container.getConfig().getOrDefault(SETUP_KEYCLOAK_EMAIL_USER, SETUP_KEYCLOAK_EMAIL_USER_DEFAULT));
+            emailConfig.setPassword(container.getConfig().getOrDefault(SETUP_KEYCLOAK_EMAIL_PASSWORD, SETUP_KEYCLOAK_EMAIL_PASSWORD_DEFAULT));
+            emailConfig.setFrom(container.getConfig().getOrDefault(SETUP_KEYCLOAK_EMAIL_FROM, SETUP_KEYCLOAK_EMAIL_FROM_DEFAULT));
+        } else {
+            emailConfig = null;
+        }
     }
 
     protected String getClientObjectId(ClientsResource clientsResource) {

@@ -1,5 +1,6 @@
 package org.openremote.test.assets
 
+import org.openremote.model.attribute.MetaItem
 import org.openremote.model.value.Values
 import org.openremote.container.util.IdentifierUtil
 import org.openremote.manager.server.setup.SetupService
@@ -21,6 +22,9 @@ import static org.openremote.container.util.MapAccess.getString
 import static org.openremote.manager.server.setup.AbstractKeycloakSetup.SETUP_KEYCLOAK_ADMIN_PASSWORD
 import static org.openremote.manager.server.setup.AbstractKeycloakSetup.SETUP_KEYCLOAK_ADMIN_PASSWORD_DEFAULT
 import static org.openremote.model.Constants.*
+import static org.openremote.model.asset.AssetMeta.FORMAT
+import static org.openremote.model.asset.AssetMeta.SHOW_ON_DASHBOARD
+import static org.openremote.model.asset.AssetMeta.STORE_DATA_POINTS
 import static org.openremote.model.attribute.MetaItem.isMetaNameEqualTo
 
 class AssetPermissionsTest extends Specification implements ManagerContainerTrait {
@@ -587,10 +591,13 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         currentTemperature.getType().get() == AttributeType.DECIMAL
         !currentTemperature.getValue().isPresent()
         Meta protectedMeta = currentTemperature.getMeta()
-        protectedMeta.size() == 3
-        protectedMeta.stream().filter(isMetaNameEqualTo(AssetMeta.LABEL)).findFirst().get().getValueAsString().get() == "Current temperature"
+        protectedMeta.size() == 6
+        protectedMeta.stream().filter(isMetaNameEqualTo(AssetMeta.LABEL)).findFirst().get().getValueAsString().get() == "Current Temperature"
         protectedMeta.stream().filter(isMetaNameEqualTo(AssetMeta.READ_ONLY)).findFirst().get().getValueAsBoolean().get()
         protectedMeta.stream().filter(isMetaNameEqualTo(AssetMeta.RULE_STATE)).findFirst().get().getValueAsBoolean().get()
+        protectedMeta.stream().filter(isMetaNameEqualTo(AssetMeta.STORE_DATA_POINTS)).findFirst().get().getValueAsBoolean().get()
+        protectedMeta.stream().filter(isMetaNameEqualTo(AssetMeta.SHOW_ON_DASHBOARD)).findFirst().get().getValueAsBoolean().get()
+        protectedMeta.stream().filter(isMetaNameEqualTo(AssetMeta.FORMAT)).findFirst().get().getValueAsString().get() == "%0.1f °"
 
         when: "an asset is retrieved by ID in a foreign realm"
         assetResource.get(null, managerDemoSetup.thingId)

@@ -19,7 +19,6 @@
  */
 package org.openremote.manager.server.notification;
 
-import org.apache.http.NoHttpResponseException;
 import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
@@ -27,7 +26,6 @@ import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.web.WebService;
-import org.openremote.model.asset.AssetQuery;
 import org.openremote.model.notification.AlertNotification;
 import org.openremote.model.notification.DeliveryStatus;
 import org.openremote.model.user.UserQuery;
@@ -45,18 +43,20 @@ public class NotificationService implements ContainerService {
 
     private static final Logger LOG = Logger.getLogger(NotificationService.class.getName());
 
+    public static final String NOTIFICATION_FIREBASE_API_KEY = "NOTIFICATION_FIREBASE_API_KEY";
+    public static final String NOTIFICATION_FIREBASE_URL = "NOTIFICATION_FIREBASE_URL";
+    public static final String NOTIFICATION_FIREBASE_URL_DEFAULT = "https://fcm.googleapis.com/fcm/send";
+
     protected PersistenceService persistenceService;
-
     protected ResteasyWebTarget target;
-
     private String fcmKey;
 
     @Override
     public void init(Container container) throws Exception {
 
-        fcmKey = container.getConfig().get("FCM_KEY");
+        fcmKey = container.getConfig().get(NOTIFICATION_FIREBASE_API_KEY);
         if (fcmKey == null) {
-            LOG.info("FCM_KEY not defined, notification service cannot send fcm notification");
+            LOG.info(NOTIFICATION_FIREBASE_API_KEY + " not defined, can not send notifications to user devices");
         }
         this.persistenceService = container.getService(PersistenceService.class);
 
@@ -65,7 +65,7 @@ public class NotificationService implements ContainerService {
         );
 
         ResteasyClient client = new ResteasyClientBuilder().build();
-        target = client.target("https://fcm.googleapis.com/fcm/send");
+        target = client.target(container.getConfig().getOrDefault(NOTIFICATION_FIREBASE_URL, NOTIFICATION_FIREBASE_URL_DEFAULT));
     }
 
     @Override
@@ -107,7 +107,7 @@ public class NotificationService implements ContainerService {
         persistenceService.doTransaction((EntityManager entityManager) -> {
             entityManager.merge(alertNotification);
             if (fcmKey == null) {
-                LOG.info("No FCM key configured, can't send to '" + userId + "', not sending: " + alertNotification);
+                LOG.info("No " + NOTIFICATION_FIREBASE_API_KEY + " configured, not sending to '" + userId + "': " + alertNotification);
                 return;
             }
             List<DeviceNotificationToken> allTokenForUser = findAllTokenForUser(userId);

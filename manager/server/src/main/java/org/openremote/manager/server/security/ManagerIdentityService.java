@@ -163,8 +163,10 @@ public class ManagerIdentityService extends IdentityService {
         });
     }
 
-    public void configureRealm(RealmRepresentation realmRepresentation) {
+    public void configureRealm(RealmRepresentation realmRepresentation, TenantEmailConfig emailConfig) {
         configureRealm(realmRepresentation, ACCESS_TOKEN_LIFESPAN_SECONDS);
+        if (emailConfig != null)
+            realmRepresentation.setSmtpServer(emailConfig.asMap());
     }
 
     public void createTenant(String forwardFor, String accessToken, Tenant tenant) throws Exception {
@@ -174,10 +176,7 @@ public class ManagerIdentityService extends IdentityService {
     public void createTenant(String forwardFor, String accessToken, Tenant tenant, TenantEmailConfig emailConfig) throws Exception {
         LOG.fine("Create tenant: " + tenant);
         RealmRepresentation realmRepresentation = convert(Container.JSON, RealmRepresentation.class, tenant);
-        if (emailConfig != null) {
-            realmRepresentation.setSmtpServer(emailConfig.asMap());
-        }
-        configureRealm(realmRepresentation);
+        configureRealm(realmRepresentation, emailConfig);
         getRealms(forwardFor, accessToken).create(realmRepresentation);
         // TODO This is not atomic, write compensation actions
         createClientApplication(forwardFor, accessToken, realmRepresentation.getRealm());

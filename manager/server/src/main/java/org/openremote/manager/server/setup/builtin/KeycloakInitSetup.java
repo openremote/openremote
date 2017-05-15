@@ -48,8 +48,8 @@ public class KeycloakInitSetup extends AbstractKeycloakSetup {
 
         masterRealm.setDisplayName("Master");
 
-        // Set theme, timeouts, etc.
-        identityService.configureRealm(masterRealm);
+        // Set SMTP server, theme, timeouts, etc.
+        identityService.configureRealm(masterRealm, emailConfig);
 
         masterRealmResource.update(masterRealm);
 

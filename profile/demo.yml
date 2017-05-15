@@ -61,6 +61,15 @@ services:
       SETUP_IMPORT_DEMO_ASSETS: 'true'
       SETUP_IMPORT_DEMO_RULES: 'true'
 
+      # Optional: Configure SMTP smart host for Keycloak, to send password reset emails etc.
+      #SETUP_KEYCLOAK_EMAIL_HOST: smtp-host.demo.tld
+      #SETUP_KEYCLOAK_EMAIL_USER: 'smtp-user'
+      #SETUP_KEYCLOAK_EMAIL_PASSWORD: 'smtp-password'
+      #SETUP_KEYCLOAK_EMAIL_PORT: 25
+      #SETUP_KEYCLOAK_EMAIL_AUTH: 'true'
+      #SETUP_KEYCLOAK_EMAIL_TLS: 'true'
+      #SETUP_KEYCLOAK_EMAIL_FROM: 'noreply@demo.tld'
+
       # The public host name of this OpenRemote installation. This name is used in bearer tokens
       # and must be the name you access the web services under. If you are using Docker Toolbox,
       # this is the IP of a virtual machine running the Linux Docker host (see VirtualBox).
@@ -85,6 +94,10 @@ services:
       # The service-internal host name and port of the identity provider.
       KEYCLOAK_HOST: keycloak
       KEYCLOAK_PORT: 8080
+
+      # Optional: Console applications can register for push notifications through FCM.
+      # NOTIFICATION_FIREBASE_URL: https://fcm.googleapis.com/fcm/send
+      # NOTIFICATION_FIREBASE_API_KEY = '...'
 
       # Optional: Override built-in logging.properties with a file of your choice
       # LOGGING_CONFIG_FILE: /my/manager/logging.properties
