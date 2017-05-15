@@ -48,8 +48,6 @@ public class WebResource implements AuthContext {
     @Context
     protected SecurityContext securityContext;
 
-    protected AuthContext authContext;
-
     public WebApplication getApplication() {
         return (WebApplication) application;
     }
@@ -64,18 +62,16 @@ public class WebResource implements AuthContext {
 
     @SuppressWarnings("unchecked")
     public AuthContext getAuthContext() {
-        if (authContext == null) {
-            KeycloakPrincipal<KeycloakSecurityContext> principal =
-                (KeycloakPrincipal<KeycloakSecurityContext>) securityContext.getUserPrincipal();
-            if (principal == null) {
-                throw new WebApplicationException("Request is not authenticated, can't access user principal", FORBIDDEN);
-            }
-            authContext = new AccessTokenAuthContext(
-                principal.getKeycloakSecurityContext().getRealm(),
-                principal.getKeycloakSecurityContext().getToken()
-            );
+        // The securityContext is a thread-local proxy, careful when/how you call it
+        KeycloakPrincipal<KeycloakSecurityContext> principal =
+            (KeycloakPrincipal<KeycloakSecurityContext>) securityContext.getUserPrincipal();
+        if (principal == null) {
+            throw new WebApplicationException("Request is not authenticated, can't access user principal", FORBIDDEN);
         }
-        return authContext;
+        return new AccessTokenAuthContext(
+            principal.getKeycloakSecurityContext().getRealm(),
+            principal.getKeycloakSecurityContext().getToken()
+        );
     }
 
     // Convenience methods
