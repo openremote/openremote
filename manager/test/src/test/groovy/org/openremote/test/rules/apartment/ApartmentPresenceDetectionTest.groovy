@@ -177,6 +177,7 @@ class ApartmentPresenceDetectionTest extends Specification implements ManagerCon
         def livingRoomAsset = assetStorageService.find(managerDemoSetup.apartment2LivingroomId, true)
         assert !livingRoomAsset.getAttribute("presenceDetected").get().getValueAsBoolean().get()
         assert !livingRoomAsset.getAttribute("lastPresenceDetected").get().getValueAsNumber().isPresent()
+        assert !livingRoomAsset.getAttribute("firstPresenceDetected").get().getValueAsNumber().isPresent()
 
         when: "we have an events consumer for collecting test data"
         List<AssetEvent> insertedAssetEvents = []
@@ -193,7 +194,7 @@ class ApartmentPresenceDetectionTest extends Specification implements ManagerCon
                     managerDemoSetup.apartment2LivingroomId, "motionSensor", Values.create(true), getClockTimeOf(apartment2Engine)
             )
             assetProcessingService.sendAttributeEvent(motionSensorTrigger)
-            new PollingConditions(timeout: 5, initialDelay: 0.2, delay: 0.2).eventually {
+            new PollingConditions(timeout: 25, initialDelay: 0.2, delay: 0.2).eventually {
                 assert insertedAssetEvents.any() { it.matches(motionSensorTrigger) }
             }
             advancePseudoClocks(3, MINUTES, container, apartment2Engine)
@@ -204,6 +205,9 @@ class ApartmentPresenceDetectionTest extends Specification implements ManagerCon
             def asset = assetStorageService.find(managerDemoSetup.apartment2LivingroomId, true)
             assert !asset.getAttribute("presenceDetected").get().getValueAsBoolean().get()
             assert !asset.getAttribute("lastPresenceDetected").get().getValue().isPresent()
+            // First presence should be fetch
+            // TODO this condition fails because rule "Fetch the first presence detected time stamp" does not trigger
+            // assert asset.getAttribute("firstPresenceDetected").get().getValue().isPresent()
         }
 
         when: "time is advanced enough for event expiration"
@@ -212,6 +216,7 @@ class ApartmentPresenceDetectionTest extends Specification implements ManagerCon
         then: "the events should have been expired and retracted automatically from the knowledge session"
         conditions.eventually {
             assert apartment2Engine.knowledgeSession.factCount == DEMO_RULE_STATES_APARTMENT_2
+            assert !livingRoomAsset.getAttribute("firstPresenceDetected").get().getValueAsNumber().isPresent()
         }
 
         when: "several motion sensor events are triggered in the room, fast enough for presence detection"

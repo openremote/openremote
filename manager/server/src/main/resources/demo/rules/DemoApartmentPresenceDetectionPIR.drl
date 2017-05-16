@@ -16,6 +16,44 @@ removed if the motion sensor has not been triggered within a time window. All ti
 the number of matches required can be configured.
 */
 
+rule "Fetch the first presence detected time stamp"
+when
+    // A room has a motion sensor
+    $room : AssetState(type == AssetType.ROOM, attributeName == "motionSensor")
+    // And the presence detected flag is not set already
+    AssetState(id == $room.id, attributeName == "firstPresenceDetected", valueAsNumber==-1)
+    // And the motion sensor is triggered
+    $sensorState: AssetState(id == $room.id, attributeName == "motionSensor", valueAsBoolean == true)
+then
+    // Fetch the first presence detected timestamp of the room
+    assets.dispatch(
+            new AttributeEvent($room.getId(), "firstPresenceDetected", Values.create($sensorState.getValueTimestamp()))
+    );
+end
+
+declare initFact
+    @role(event)
+    init: Boolean
+end
+
+rule "Insert init fact at startup"
+then
+    insert(new initFact(true));
+end
+
+rule "Init firstPresenceDetected"
+salience 10
+when
+    $init: initFact(init)
+    $room : AssetState(type == AssetType.ROOM, attributeName == "motionSensor")
+    AssetState(id==$room.id, attributeName == "firstPresenceDetected")
+then
+    retract($init);
+    assets.dispatch(
+            new AttributeEvent($room.getId(), "firstPresenceDetected", Values.create(-1))
+    );
+end
+
 rule "Set presence detected flag if motion sensor is triggered in time window"
 when
     // A room has a motion sensor
