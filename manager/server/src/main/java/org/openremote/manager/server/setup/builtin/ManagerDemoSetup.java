@@ -530,14 +530,14 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                     new MetaItem(PROTECTED, Values.create(true)),
                     new MetaItem(READ_ONLY, Values.create(true))
                 ),
-            new AssetAttribute("firstPresenceDetected", AttributeType.DECIMAL)
-                .setMeta(
-                    new MetaItem(LABEL, Values.create("First Presence Timestamp")),
-                    new MetaItem(DESCRIPTION, Values.create("Timestamp of the first detected presence")),
-                    new MetaItem(RULE_STATE, Values.create(true)),
-                    new MetaItem(PROTECTED, Values.create(true)),
-                    new MetaItem(READ_ONLY, Values.create(true))
-                ),
+//            new AssetAttribute("firstPresenceDetected", AttributeType.DECIMAL)
+//                .setMeta(
+//                    new MetaItem(LABEL, Values.create("First Presence Timestamp")),
+//                    new MetaItem(DESCRIPTION, Values.create("Timestamp of the first detected presence")),
+//                    new MetaItem(RULE_STATE, Values.create(true)),
+//                    new MetaItem(PROTECTED, Values.create(true)),
+//                    new MetaItem(READ_ONLY, Values.create(true))
+//                ),
             new AssetAttribute("lastPresenceDetected", AttributeType.DECIMAL)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Last Presence Timestamp")),
