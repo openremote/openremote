@@ -1,6 +1,5 @@
 package org.openremote.test.assets
 
-import org.openremote.model.attribute.MetaItem
 import org.openremote.model.value.Values
 import org.openremote.container.util.IdentifierUtil
 import org.openremote.manager.server.setup.SetupService
@@ -22,9 +21,6 @@ import static org.openremote.container.util.MapAccess.getString
 import static org.openremote.manager.server.setup.AbstractKeycloakSetup.SETUP_KEYCLOAK_ADMIN_PASSWORD
 import static org.openremote.manager.server.setup.AbstractKeycloakSetup.SETUP_KEYCLOAK_ADMIN_PASSWORD_DEFAULT
 import static org.openremote.model.Constants.*
-import static org.openremote.model.asset.AssetMeta.FORMAT
-import static org.openremote.model.asset.AssetMeta.SHOW_ON_DASHBOARD
-import static org.openremote.model.asset.AssetMeta.STORE_DATA_POINTS
 import static org.openremote.model.attribute.MetaItem.isMetaNameEqualTo
 
 class AssetPermissionsTest extends Specification implements ManagerContainerTrait {
@@ -588,7 +584,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         def protectedAttributes = apartment1Livingroom.getAttributesList()
         protectedAttributes.size() == 6
         def currentTemperature = apartment1Livingroom.getAttribute("currentTemperature").get()
-        currentTemperature.getType().get() == AttributeType.DECIMAL
+        currentTemperature.getType().get() == AttributeType.NUMBER
         !currentTemperature.getValue().isPresent()
         Meta protectedMeta = currentTemperature.getMeta()
         protectedMeta.size() == 6

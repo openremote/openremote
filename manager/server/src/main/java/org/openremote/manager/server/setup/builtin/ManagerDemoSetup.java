@@ -22,8 +22,7 @@ package org.openremote.manager.server.setup.builtin;
 import com.vividsolutions.jts.geom.Coordinate;
 import org.openremote.agent.protocol.simulator.SimulatorProtocol;
 import org.openremote.agent.protocol.simulator.element.ColorSimulatorElement;
-import org.openremote.agent.protocol.simulator.element.DecimalSimulatorElement;
-import org.openremote.agent.protocol.simulator.element.IntegerSimulatorElement;
+import org.openremote.agent.protocol.simulator.element.NumberSimulatorElement;
 import org.openremote.agent.protocol.simulator.element.SwitchSimulatorElement;
 import org.openremote.container.Container;
 import org.openremote.manager.server.asset.ServerAsset;
@@ -107,7 +106,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                     new MetaItem(LABEL, Values.create("Street")),
                     new MetaItem(ABOUT, Values.create("http://project-haystack.org/tag/geoStreet"))
                 ),
-            new AssetAttribute("geoPostalCode", AttributeType.INTEGER, Values.create(5617))
+            new AssetAttribute("geoPostalCode", AttributeType.NUMBER, Values.create(5617))
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Postal Code")),
                     new MetaItem(ABOUT, Values.create("http://project-haystack.org/tag/geoPostalCode"))
@@ -192,7 +191,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                             AGENT_LINK,
                             new AttributeRef(agent.getId(), agentProtocolConfigName).toArrayValue()),
                         new MetaItem(
-                            SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(IntegerSimulatorElement.ELEMENT_NAME_RANGE)),
+                            SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME_RANGE)),
                         new MetaItem(
                             SimulatorProtocol.CONFIG_MODE, Values.create(true))
                     )
@@ -230,7 +229,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                             AGENT_LINK,
                             new AttributeRef(agent.getId(), agentProtocolConfigName).toArrayValue()),
                         new MetaItem(
-                            SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(DecimalSimulatorElement.ELEMENT_NAME)),
+                            SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME)),
                         new MetaItem(
                             STORE_DATA_POINTS.getUrn(), Values.create(true))
                     )
@@ -308,7 +307,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                     new MetaItem(LABEL, Values.create("Street")),
                     new MetaItem(ABOUT, Values.create("http://project-haystack.org/tag/geoStreet"))
                 ),
-            new AssetAttribute("geoPostalCode", AttributeType.INTEGER, Values.create(5611))
+            new AssetAttribute("geoPostalCode", AttributeType.NUMBER, Values.create(5611))
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Postal Code")),
                     new MetaItem(ABOUT, Values.create("http://project-haystack.org/tag/geoPostalCode"))
@@ -351,23 +350,23 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         ServerAsset apartment1Livingroom = createDemoApartmentRoom(apartment1, "Living Room");
         addDemoApartmentRoomMotionCounter(apartment1Livingroom, true, () -> new MetaItem[]{
             new MetaItem(AGENT_LINK, new AttributeRef(apartment1ServiceAgentId, "apartmentSimulator").toArrayValue()),
-            new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(IntegerSimulatorElement.ELEMENT_NAME_INTEGER))
+            new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME))
         });
         addDemoApartmentRoomCO2Sensor(apartment1Livingroom, true, () -> new MetaItem[]{
             new MetaItem(AGENT_LINK, new AttributeRef(apartment1ServiceAgentId, "apartmentSimulator").toArrayValue()),
-            new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(DecimalSimulatorElement.ELEMENT_NAME))
+            new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME))
         });
         addDemoApartmentRoomHumiditySensor(apartment1Livingroom, true, () -> new MetaItem[]{
             new MetaItem(AGENT_LINK, new AttributeRef(apartment1ServiceAgentId, "apartmentSimulator").toArrayValue()),
-            new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(DecimalSimulatorElement.ELEMENT_NAME))
+            new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME))
         });
         addDemoApartmentRoomThermometer(apartment1Livingroom, true, () -> new MetaItem[]{
             new MetaItem(AGENT_LINK, new AttributeRef(apartment1ServiceAgentId, "apartmentSimulator").toArrayValue()),
-            new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(DecimalSimulatorElement.ELEMENT_NAME))
+            new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME))
         });
         addDemoApartmentTemperatureControl(apartment1Livingroom, true, () -> new MetaItem[]{
             new MetaItem(AGENT_LINK, new AttributeRef(apartment1ServiceAgentId, "apartmentSimulator").toArrayValue()),
-            new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(DecimalSimulatorElement.ELEMENT_NAME))
+            new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME))
         });
 
         apartment1Livingroom = assetStorageService.merge(apartment1Livingroom);
@@ -420,13 +419,13 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                     new MetaItem(DESCRIPTION, Values.create("Someone is currently present in the room")),
                     new MetaItem(RULE_STATE, Values.create(true))
                 ),
-            new AssetAttribute("firstPresenceDetected", AttributeType.DECIMAL)
+            new AssetAttribute("firstPresenceDetected", AttributeType.NUMBER)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("First Presence Timestamp")),
                     new MetaItem(DESCRIPTION, Values.create("Timestamp of the first detected presence")),
                     new MetaItem(RULE_STATE, Values.create(true))
                 ),
-            new AssetAttribute("lastPresenceDetected", AttributeType.DECIMAL)
+            new AssetAttribute("lastPresenceDetected", AttributeType.NUMBER)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Last Presence Timestamp")),
                     new MetaItem(DESCRIPTION, Values.create("Timestamp of last detected presence")),

@@ -20,23 +20,9 @@ then
   return;
 end
 
-rule "Kitchen Integer Attributes"
+rule "Kitchen Number Attributes"
 when
-  $e: AssetState(name == "Kitchen", attributeType == AttributeType.INTEGER)
-then
-  return;
-end
-
-rule "Living Room Thermostat"
-when
-  $e: AssetState(name == "Living Room Thermostat")
-then
-  return;
-end
-
-rule "Living Room Comfort Temperature"
-when
-  $e: AssetState(name == "Living Room Thermostat", attributeName == "targetTemperature")
+  $e: AssetState(name == "Kitchen", attributeType == AttributeType.NUMBER)
 then
   return;
 end
@@ -62,7 +48,7 @@ then
   return;
 end
 
-rule "JSON Number value types"
+rule "Number value types"
 when
     AssetState(value != null, value.type == ValueType.NUMBER)
 then

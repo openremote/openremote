@@ -46,7 +46,7 @@ import static org.openremote.agent.protocol.timer.TimerProtocol.META_TIMER_VALUE
 import static org.openremote.model.asset.AssetMeta.*;
 import static org.openremote.model.asset.AssetType.*;
 import static org.openremote.model.asset.agent.ProtocolConfiguration.initProtocolConfiguration;
-import static org.openremote.model.attribute.AttributeType.DECIMAL;
+import static org.openremote.model.attribute.AttributeType.NUMBER;
 
 public abstract class AbstractManagerSetup implements Setup {
 
@@ -80,7 +80,7 @@ public abstract class AbstractManagerSetup implements Setup {
                     new MetaItem(RULE_STATE, Values.create(true)),
                     new MetaItem(SHOW_ON_DASHBOARD, Values.create(true))
                 )),
-            new AssetAttribute("vacationDays", AttributeType.INTEGER)
+            new AssetAttribute("vacationDays", NUMBER)
                 .setMeta(new Meta(
                     new MetaItem(LABEL, Values.create("Vacation days")),
                     new MetaItem(DESCRIPTION, Values.create("Enable vacation mode for given days")),
@@ -111,7 +111,7 @@ public abstract class AbstractManagerSetup implements Setup {
 
     protected void addDemoApartmentRoomMotionCounter(ServerAsset room, boolean shouldBeLinked, Supplier<MetaItem[]> agentLinker) {
         room.addAttributes(
-            new AssetAttribute("motionCount", AttributeType.INTEGER)
+            new AssetAttribute("motionCount", NUMBER)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Motion Count")),
                     new MetaItem(DESCRIPTION, Values.create("Sensor that increments a counter when motion is detected")),
@@ -129,8 +129,7 @@ public abstract class AbstractManagerSetup implements Setup {
                     new MetaItem(READ_ONLY, Values.create(true)),
                     new MetaItem(SHOW_ON_DASHBOARD, Values.create(true))
                 ),
-            // TODO Should we have LONG?
-            new AssetAttribute("lastPresenceDetected", AttributeType.DECIMAL)
+            new AssetAttribute("lastPresenceDetected", NUMBER)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Last Presence Timestamp")),
                     new MetaItem(DESCRIPTION, Values.create("Timestamp of last detected presence")),
@@ -143,7 +142,7 @@ public abstract class AbstractManagerSetup implements Setup {
 
     protected void addDemoApartmentRoomCO2Sensor(ServerAsset room, boolean shouldBeLinked, Supplier<MetaItem[]> agentLinker) {
         room.addAttributes(
-            new AssetAttribute("co2Level", AttributeType.DECIMAL)
+            new AssetAttribute("co2Level", NUMBER)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("CO2 Level")),
                     new MetaItem(RULE_STATE, Values.create(true)),
@@ -158,7 +157,7 @@ public abstract class AbstractManagerSetup implements Setup {
 
     protected void addDemoApartmentRoomHumiditySensor(ServerAsset room, boolean shouldBeLinked, Supplier<MetaItem[]> agentLinker) {
         room.addAttributes(
-            new AssetAttribute("humidity", AttributeType.DECIMAL)
+            new AssetAttribute("humidity", NUMBER)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Humidity")),
                     new MetaItem(RULE_STATE, Values.create(true)),
@@ -175,7 +174,7 @@ public abstract class AbstractManagerSetup implements Setup {
                                                   boolean shouldBeLinked,
                                                   Supplier<MetaItem[]> agentLinker) {
         room.addAttributes(
-            new AssetAttribute("currentTemperature", DECIMAL)
+            new AssetAttribute("currentTemperature", NUMBER)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Current Temperature")),
                     new MetaItem(RULE_STATE, Values.create(true)),
@@ -191,7 +190,7 @@ public abstract class AbstractManagerSetup implements Setup {
                                                       boolean shouldBeLinked,
                                                       Supplier<MetaItem[]> agentLinker) {
         room.addAttributes(
-            new AssetAttribute("targetTemperature", DECIMAL)
+            new AssetAttribute("targetTemperature", NUMBER)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Target Temperature")),
                     new MetaItem(RULE_STATE, Values.create(true)),
@@ -288,7 +287,7 @@ public abstract class AbstractManagerSetup implements Setup {
                         new MetaItem(META_MACRO_ACTION_INDEX, Values.create(0)),
                         new MetaItem(AGENT_LINK, new AttributeRef(agent.getId(), scene.attributeName).toArrayValue())
                     ),
-                new AssetAttribute(scene.attributeName + "TargetTemperature", AttributeType.DECIMAL)
+                new AssetAttribute(scene.attributeName + "TargetTemperature", AttributeType.NUMBER)
                     .setMeta(
                         new MetaItem(LABEL, Values.create(scene.attributeLabel + " target temperature")),
                         new MetaItem(META_MACRO_ACTION_INDEX, Values.create(1)),

@@ -43,9 +43,7 @@ public enum AttributeType {
 
     STRING(ValueType.STRING, value -> Optional.empty()),
 
-    INTEGER(ValueType.NUMBER, value -> Optional.empty()),
-
-    DECIMAL(ValueType.NUMBER, value -> Optional.empty()),
+    NUMBER(ValueType.NUMBER, value -> Optional.empty()),
 
     BOOLEAN(ValueType.BOOLEAN, value -> Optional.empty()),
 

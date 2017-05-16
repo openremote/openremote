@@ -358,14 +358,12 @@ public class SimulatorProtocol extends AbstractProtocol {
         switch (elementType.toLowerCase(Locale.ROOT)) {
             case SwitchSimulatorElement.ELEMENT_NAME:
                 return new SwitchSimulatorElement();
-            case IntegerSimulatorElement.ELEMENT_NAME_INTEGER:
-                return new IntegerSimulatorElement();
-            case DecimalSimulatorElement.ELEMENT_NAME:
-                return new DecimalSimulatorElement();
-            case IntegerSimulatorElement.ELEMENT_NAME_RANGE:
+            case NumberSimulatorElement.ELEMENT_NAME:
+                return new NumberSimulatorElement();
+            case NumberSimulatorElement.ELEMENT_NAME_RANGE:
                 int min = attribute.getMetaItem(RANGE_MIN).flatMap(AbstractValueHolder::getValueAsInteger).orElse(0);
                 int max = attribute.getMetaItem(RANGE_MAX).flatMap(AbstractValueHolder::getValueAsInteger).orElse(100);
-                return new IntegerSimulatorElement(min, max);
+                return new NumberSimulatorElement(min, max);
             case ColorSimulatorElement.ELEMENT_NAME:
                 return new ColorSimulatorElement();
             default:

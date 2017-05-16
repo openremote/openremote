@@ -264,7 +264,7 @@ public enum AssetMeta implements HasUniqueResourceName {
      */
     public enum EditableType {
         STRING("Text", ValueType.STRING),
-        NUMBER("Decimal number", ValueType.NUMBER),
+        NUMBER("Number", ValueType.NUMBER),
         BOOLEAN("On/Off toggle", ValueType.BOOLEAN);
 
         EditableType(String label, ValueType valueType) {

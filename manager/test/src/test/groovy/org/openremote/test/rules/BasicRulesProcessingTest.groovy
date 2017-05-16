@@ -336,7 +336,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
                         .setMeta(
                         new MetaItem(AssetMeta.RULE_STATE, Values.create(true))
                 ),
-                new AssetAttribute("testInteger", AttributeType.INTEGER, Values.create(0))
+                new AssetAttribute("testInteger", AttributeType.NUMBER, Values.create(0))
         ]
         asset.setAttributes(attributes)
         asset = assetStorageService.merge(asset)
@@ -362,7 +362,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
                         .setMeta(
                         new MetaItem(AssetMeta.RULE_STATE, Values.create(false))
                 ),
-                new AssetAttribute("testInteger", AttributeType.INTEGER, Values.create(0))
+                new AssetAttribute("testInteger", AttributeType.NUMBER, Values.create(0))
         ]
         asset.setAttributes(attributes)
         asset = assetStorageService.merge(asset)
@@ -389,7 +389,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
                         .setMeta(
                         new MetaItem(AssetMeta.RULE_STATE, Values.create(true))
                 ),
-                new AssetAttribute("testInteger", AttributeType.INTEGER, Values.create(0))
+                new AssetAttribute("testInteger", AttributeType.NUMBER, Values.create(0))
                         .setMeta(
                         new MetaItem(AssetMeta.RULE_STATE, Values.create(true))
                 )

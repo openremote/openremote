@@ -353,7 +353,7 @@ public class AttributesEditor
                 Consumer<String> updateConsumer = isEditable
                     ? rawValue -> DOUBLE_UPDATER.accept(new ValueUpdate<>(item.getName().orElse(null), formGroup, item, resultConsumer, rawValue))
                     : null;
-                editor = createDecimalEditorWidget(style, currentValue, Optional.empty(), updateConsumer);
+                editor = createNumberEditorWidget(style, currentValue, Optional.empty(), updateConsumer);
             } else if (valueType.equals(ValueType.BOOLEAN)) {
                 Boolean currentValue = item.getValueAsBoolean().orElse(null);
                 Consumer<Boolean> updateConsumer = isEditable

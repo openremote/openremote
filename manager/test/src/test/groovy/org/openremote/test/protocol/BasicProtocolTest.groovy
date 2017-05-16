@@ -200,7 +200,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait {
                             new AttributeRef(mockAgent.getId(), "mockConfig1").toArrayValue()
                         )
                     ),
-                new AssetAttribute("tempTarget1", AttributeType.DECIMAL)
+                new AssetAttribute("tempTarget1", AttributeType.NUMBER)
                     .setMeta(
                         new MetaItem("MOCK_ATTRIBUTE_REQUIRED_META", Values.create(true)),
                         new MetaItem(
@@ -223,7 +223,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait {
                                 new AttributeRef(mockAgent.getId(), "mockConfig2").toArrayValue()
                         )
                 ),
-                new AssetAttribute("tempTarget2", AttributeType.DECIMAL)
+                new AssetAttribute("tempTarget2", AttributeType.NUMBER)
                         .setMeta(
                         new MetaItem("MOCK_ATTRIBUTE_REQUIRED_META", Values.create(true)),
                         new MetaItem(
@@ -239,7 +239,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait {
                                 new AttributeRef(mockAgent.getId(), "mockConfig3").toArrayValue()
                         )
                 ),
-                new AssetAttribute("tempTarget3", AttributeType.DECIMAL)
+                new AssetAttribute("tempTarget3", AttributeType.NUMBER)
                         .setMeta(
                         new MetaItem("MOCK_ATTRIBUTE_REQUIRED_META", Values.create(true)),
                         new MetaItem(
@@ -255,7 +255,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait {
                                 new AttributeRef(mockAgent.getId(), "mockConfig4").toArrayValue()
                         )
                 ),
-                new AssetAttribute("tempTarget4", AttributeType.DECIMAL)
+                new AssetAttribute("tempTarget4", AttributeType.NUMBER)
                         .setMeta(
                         new MetaItem("MOCK_ATTRIBUTE_REQUIRED_META", Values.create(true)),
                         new MetaItem(

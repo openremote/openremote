@@ -28,7 +28,7 @@ import java.util.stream.Stream;
 
 import static org.openremote.model.Constants.ASSET_NAMESPACE;
 import static org.openremote.model.asset.AssetMeta.*;
-import static org.openremote.model.attribute.AttributeType.INTEGER;
+import static org.openremote.model.attribute.AttributeType.NUMBER;
 import static org.openremote.model.attribute.AttributeType.STRING;
 
 /**
@@ -42,7 +42,7 @@ public enum AssetType {
     CUSTOM(null, "cube", null),
 
     BUILDING(ASSET_NAMESPACE + ":building", "building", Arrays.asList(
-        new AssetAttribute("area", INTEGER)
+        new AssetAttribute("area", NUMBER)
             .setMeta(
                 new MetaItem(LABEL, Values.create("Surface area")),
                 new MetaItem(DESCRIPTION, Values.create("Floor area of building measured in m²")),
@@ -53,7 +53,7 @@ public enum AssetType {
                 new MetaItem(LABEL, Values.create("Street")),
                 new MetaItem(ABOUT, Values.create("http://project-haystack.org/tag/geoStreet"))
         ),
-        new AssetAttribute("geoPostalCode", AttributeType.INTEGER)
+        new AssetAttribute("geoPostalCode", NUMBER)
             .setMeta(
                 new MetaItem(LABEL, Values.create("Postal Code")),
                 new MetaItem(ABOUT, Values.create("http://project-haystack.org/tag/geoPostalCode"))

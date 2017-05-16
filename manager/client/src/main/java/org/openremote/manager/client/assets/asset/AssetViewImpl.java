@@ -61,9 +61,7 @@ public class AssetViewImpl extends Composite implements AssetView {
 
     interface AttributesBrowserStyle extends CssResource, AttributesBrowser.Style {
 
-        String integerEditor();
-
-        String decimalEditor();
+        String numberEditor();
 
         String stringEditor();
 

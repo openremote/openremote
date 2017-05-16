@@ -68,9 +68,7 @@ public abstract class AttributesView<
 
         String stringEditor();
 
-        String integerEditor();
-
-        String decimalEditor();
+        String numberEditor();
 
         String booleanEditor();
     }
@@ -124,8 +122,7 @@ public abstract class AttributesView<
     }
 
     public enum ConversionValidationFailure implements ValidationFailure {
-        NOT_A_VALID_INTEGER,
-        NOT_A_VALID_DECIMAL
+        NOT_A_VALID_NUMBER
     }
 
     public final ValueUpdater<String> STRING_UPDATER = new ValueUpdater<String>() {
@@ -135,24 +132,13 @@ public abstract class AttributesView<
         }
     };
 
-    public final ValueUpdater<String> INTEGER_UPDATER = new ValueUpdater<String>() {
-        @Override
-        Value createValue(String rawValue) throws IllegalArgumentException {
-            try {
-                return Values.create(Integer.valueOf(rawValue));
-            } catch (NumberFormatException ex) {
-                throw new IllegalArgumentException(ConversionValidationFailure.NOT_A_VALID_INTEGER.name());
-            }
-        }
-    };
-
     public final ValueUpdater<String> DOUBLE_UPDATER = new ValueUpdater<String>() {
         @Override
         Value createValue(String rawValue) throws IllegalArgumentException {
             try {
                 return Values.create(Double.valueOf(rawValue));
             } catch (NumberFormatException ex) {
-                throw new IllegalArgumentException(ConversionValidationFailure.NOT_A_VALID_DECIMAL.name());
+                throw new IllegalArgumentException(ConversionValidationFailure.NOT_A_VALID_NUMBER.name());
             }
         }
     };
@@ -309,7 +295,7 @@ public abstract class AttributesView<
         getAttributeDescription(attribute)
             .ifPresent(description -> {
                 if (infoText.length() > 0)
-                    infoText.append(" - " );
+                    infoText.append(" - ");
                 infoText.append(description);
             });
         if (infoText.length() > 0) {
@@ -365,10 +351,8 @@ public abstract class AttributesView<
         AttributeEditor attributeEditor;
         if (attributeType == AttributeType.STRING || attributeType.getValueType() == ValueType.STRING) {
             attributeEditor = createStringEditor(attribute, defaultValueItem, style, formGroup);
-        } else if (attributeType == AttributeType.INTEGER) {
-            attributeEditor = createIntegerEditor(attribute, defaultValueItem, style, formGroup);
-        } else if (attributeType == AttributeType.DECIMAL || attributeType.getValueType() == ValueType.NUMBER) {
-            attributeEditor = createDecimalEditor(attribute, defaultValueItem, style, formGroup);
+        } else if (attributeType == AttributeType.NUMBER) {
+            attributeEditor = createNumberEditor(attribute, defaultValueItem, style, formGroup);
         } else if (attributeType == AttributeType.BOOLEAN || attributeType.getValueType() == ValueType.BOOLEAN) {
             attributeEditor = createBooleanEditor(attribute, defaultValueItem, style, formGroup);
         } else if (attributeType.getValueType() == ValueType.ARRAY) {
@@ -431,49 +415,7 @@ public abstract class AttributesView<
         return input;
     }
 
-    protected AttributeEditor createIntegerEditor(AssetAttribute attribute, Optional<MetaItem> defaultValueItem, S style, FormGroup formGroup) {
-        String currentValue = attribute.getValue().map(Object::toString).orElse(null);
-        Optional<String> defaultValue = defaultValueItem.flatMap(AbstractValueHolder::getValueAsString);
-
-        Consumer<String> updateConsumer = !isEditorReadOnly(attribute)
-            ? rawValue -> INTEGER_UPDATER.accept(new ValueUpdate<>(attribute.getLabelOrName().orElse(null), formGroup, attribute, null, rawValue))
-            : null;
-
-        FlowPanel panel = new FlowPanel();
-        panel.setStyleName("flex layout horizontal center");
-        FormInputNumber inputNumber = createIntegerEditorWidget(style, currentValue, defaultValue, updateConsumer);
-        panel.add(inputNumber);
-        if (isShowTimestamp(attribute)) {
-            TimestampLabel timestampLabel = new TimestampLabel(attribute.getValueTimestamp());
-            panel.add(timestampLabel);
-        }
-
-        return () -> panel;
-    }
-
-    protected FormInputNumber createIntegerEditorWidget(S style,
-                                                        String currentValue,
-                                                        Optional<String> defaultValue,
-                                                        Consumer<String> updateConsumer) {
-        FormInputNumber input = createFormInputNumber(style.integerEditor());
-
-        if (currentValue != null) {
-            input.setValue(currentValue);
-        } else defaultValue.ifPresent(input::setValue);
-
-        if (updateConsumer != null) {
-            input.addValueChangeHandler(event -> {
-                updateConsumer.accept(
-                    event.getValue() == null || event.getValue().length() == 0 ? null : event.getValue()
-                );
-            });
-        } else {
-            input.setReadOnly(true);
-        }
-        return input;
-    }
-
-    protected AttributeEditor createDecimalEditor(AssetAttribute attribute, Optional<MetaItem> defaultValueItem, S style, FormGroup formGroup) {
+    protected AttributeEditor createNumberEditor(AssetAttribute attribute, Optional<MetaItem> defaultValueItem, S style, FormGroup formGroup) {
         String currentValue = attribute.getValue().map(Object::toString).orElse(null);
         Optional<String> defaultValue = defaultValueItem.flatMap(AbstractValueHolder::getValueAsString);
 
@@ -483,7 +425,7 @@ public abstract class AttributesView<
 
         FlowPanel panel = new FlowPanel();
         panel.setStyleName("flex layout horizontal center");
-        FormInputText inputText = createDecimalEditorWidget(style, currentValue, defaultValue, updateConsumer);
+        FormInputText inputText = createNumberEditorWidget(style, currentValue, defaultValue, updateConsumer);
         panel.add(inputText);
         if (isShowTimestamp(attribute)) {
             TimestampLabel timestampLabel = new TimestampLabel(attribute.getValueTimestamp());
@@ -493,11 +435,11 @@ public abstract class AttributesView<
         return () -> panel;
     }
 
-    protected FormInputText createDecimalEditorWidget(S style,
-                                                      String currentValue,
-                                                      Optional<String> defaultValue,
-                                                      Consumer<String> updateConsumer) {
-        FormInputText input = createFormInputText(style.decimalEditor());
+    protected FormInputText createNumberEditorWidget(S style,
+                                                     String currentValue,
+                                                     Optional<String> defaultValue,
+                                                     Consumer<String> updateConsumer) {
+        FormInputText input = createFormInputText(style.numberEditor());
 
         if (currentValue != null) {
             input.setValue(currentValue);

@@ -24,12 +24,7 @@
             width: 100%;
         }
 
-        .integerEditor {
-            min-width: 5em;
-            width: 100%;
-        }
-
-        .decimalEditor {
+        .numberEditor {
             min-width: 5em;
             width: 100%;
         }

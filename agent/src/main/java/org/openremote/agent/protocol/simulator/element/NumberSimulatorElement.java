@@ -23,20 +23,20 @@ import org.openremote.model.attribute.AttributeType;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.Values;
 
-public class IntegerSimulatorElement extends SimulatorElement {
+public class NumberSimulatorElement extends SimulatorElement {
 
-    public static final String ELEMENT_NAME_INTEGER = "integer";
+    public static final String ELEMENT_NAME = "number";
     public static final String ELEMENT_NAME_RANGE = "range";
 
     final protected Integer min;
     final protected Integer max;
 
-    public IntegerSimulatorElement() {
+    public NumberSimulatorElement() {
         this(null, null);
     }
 
-    public IntegerSimulatorElement(Integer min, Integer max) {
-        super(AttributeType.INTEGER);
+    public NumberSimulatorElement(Integer min, Integer max) {
+        super(AttributeType.NUMBER);
         this.min = min;
         this.max = max;
     }

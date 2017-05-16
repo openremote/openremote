@@ -67,9 +67,7 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
 
     interface AttributesEditorStyle extends CssResource, AttributesEditor.Style {
 
-        String integerEditor();
-
-        String decimalEditor();
+        String numberEditor();
 
         String stringEditor();
 
