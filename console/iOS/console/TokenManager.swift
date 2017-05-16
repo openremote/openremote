@@ -124,8 +124,11 @@ class TokenManager:NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationD
         }
         if (offlineToken != nil && refreshToken != nil && idToken != nil && !didLogOut) {
             self.hasToken = true
+            if let vc = viewController.presentingViewController as? ViewController {
+                vc.isInError = false
+            }
             UIApplication.shared.isNetworkActivityIndicatorVisible = false
-            self.viewController.dismiss(animated: true, completion: {
+            self.viewController.dismiss(animated: false, completion: {
                 let notificationName = Notification.Name(NotificationsNames.isAuthenticated)
                 NotificationCenter.default.post(name: notificationName, object: nil)
             })

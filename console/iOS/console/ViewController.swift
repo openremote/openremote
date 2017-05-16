@@ -51,10 +51,11 @@ class ViewController: UIViewController {
     func showLoginPage() {
         if (TokenManager.sharedInstance.hasToken && !TokenManager.sharedInstance.didLogOut) {
             isInError = false
+            if (self.presentedViewController == nil) {
             self.present(orViewController, animated: true, completion: nil)
+            }
         } else {
             TokenManager.sharedInstance.authenticate()
-            isInError = true
         }
     }
     
