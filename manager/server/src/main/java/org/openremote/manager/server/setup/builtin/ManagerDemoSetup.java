@@ -349,13 +349,6 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         apartment1ServiceAgentId = apartment1ServiceAgent.getId();
 
         ServerAsset apartment1Livingroom = createDemoApartmentRoom(apartment1, "Living Room");
-        apartment1Livingroom.addAttributes(
-            new AssetAttribute("presenceDetected", AttributeType.BOOLEAN, Values.create(false))
-                .setMeta(
-                        new MetaItem(LABEL, Values.create("Presence Detected")),
-                        new MetaItem(DESCRIPTION, Values.create("Someone is currently present in the room")),
-                        new MetaItem(RULE_STATE, Values.create(true))
-                ));
         addDemoApartmentRoomMotionCounter(apartment1Livingroom, true, () -> new MetaItem[]{
             new MetaItem(AGENT_LINK, new AttributeRef(apartment1ServiceAgentId, "apartmentSimulator").toArrayValue()),
             new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(IntegerSimulatorElement.ELEMENT_NAME_INTEGER))

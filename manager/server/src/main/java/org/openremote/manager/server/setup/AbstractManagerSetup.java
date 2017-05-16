@@ -115,6 +115,7 @@ public abstract class AbstractManagerSetup implements Setup {
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Motion Count")),
                     new MetaItem(DESCRIPTION, Values.create("Sensor that increments a counter when motion is detected")),
+                    new MetaItem(READ_ONLY, Values.create(true)),
                     new MetaItem(RULE_STATE, Values.create(true)),
                     new MetaItem(RULE_EVENT, Values.create(true)),
                     new MetaItem(STORE_DATA_POINTS, Values.create(true))
