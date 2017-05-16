@@ -659,7 +659,12 @@ public class RulesEngine<T extends Ruleset> {
                         if (GlobalRuleset.class.isAssignableFrom(rulesetType))
                             return super.asset(assetPredicate);
                         if (TenantRuleset.class.isAssignableFrom(rulesetType)) {
+                            return super.asset(assetPredicate);
                             // TODO: should only be allowed if asset belongs to tenant
+                        }
+                        if (AssetRuleset.class.isAssignableFrom(rulesetType)) {
+                            return super.asset(assetPredicate);
+                            // TODO: should only be allowed if restricted asset is descendant of scope's asset
                         }
                         throw new IllegalArgumentException("Overriding query restriction is not allowed in this rules scope");
                     }

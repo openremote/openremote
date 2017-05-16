@@ -2,6 +2,8 @@ package org.openremote.test.rules;
 
 import org.openremote.model.*;
 import org.openremote.model.asset.*
+import org.openremote.model.notification.*
+import org.openremote.model.user.UserQuery
 
 global java.util.logging.Logger LOG;
 global org.openremote.model.rules.Users users;
@@ -12,5 +14,17 @@ when
     $residence : AssetState(type == AssetType.RESIDENCE, attributeName == "alarmEnabled", valueAsBoolean == true)
     $room : AssetState(parentId == $residence.id, type == AssetType.ROOM, attributeName == "presenceDetected", valueAsBoolean == true)
 then
-    // users.storeAndNotify("todo", );
+    AlertNotification alert = new AlertNotification();
+        alert.setTitle("Alert Title");
+        alert.setMessage("Alert Message");
+        alert.setAppUrl("Deep Url");
+        AlertAction alertAction = new AlertAction();
+        alertAction.setTitle("ACTION1");
+        alertAction.setActionType(ActionType.LINK);
+        alert.addAction(alertAction);
+
+    users
+        .query()
+        .asset(new UserQuery.AssetPredicate($room.getId()))
+        .applyResults(userIds -> userIds.forEach(userId -> users.storeAndNotify(userId, alert)));
 end
