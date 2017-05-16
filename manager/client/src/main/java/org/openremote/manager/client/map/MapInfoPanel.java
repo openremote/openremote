@@ -23,17 +23,15 @@ import com.google.gwt.core.client.GWT;
 import com.google.gwt.resources.client.CssResource;
 import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
-import com.google.gwt.user.client.ui.FlowPanel;
-import com.google.gwt.user.client.ui.HTMLPanel;
-import com.google.gwt.user.client.ui.Label;
+import com.google.gwt.user.client.ui.*;
 import elemental.client.Browser;
 import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.style.WidgetStyle;
-import org.openremote.manager.client.widget.AbstractAppPanel;
-import org.openremote.manager.client.widget.FormLabel;
+import org.openremote.manager.client.widget.*;
 import org.openremote.manager.client.widget.PopupPanel;
-import org.openremote.model.util.Pair;
 import org.openremote.model.util.TextUtil;
+import org.openremote.model.value.Value;
+import org.openremote.model.value.Values;
 
 import java.util.List;
 
@@ -46,13 +44,13 @@ public class MapInfoPanel extends AbstractAppPanel {
 
     public interface Style extends CssResource {
 
-        String contentItemKeyLabel();
+        String infoItemLabel();
 
         String popup();
 
-        String contentItemValueLabel();
+        String infoItemValue();
 
-        String contentItem();
+        String infoItem();
 
         String panel();
 
@@ -78,29 +76,29 @@ public class MapInfoPanel extends AbstractAppPanel {
         super(GWT.create(UI.class));
     }
 
-    public void setItems(List<Pair<String, String>> infoItems) {
+    public void setItems(List<MapInfoItem> infoItems) {
         contentPanel.clear();
 
         int itemLineHeightPixels = 20;
         int itemMarginPixels = 8;
-        int itemHeightPixels = itemLineHeightPixels + (itemMarginPixels*2);
+        int itemHeightPixels = itemLineHeightPixels + (itemMarginPixels * 2);
         int totalMaxHeight = itemHeightPixels * MAX_ITEMS_BEFORE_SCROLLING;
 
-        for (Pair<String, String> infoItem : infoItems) {
-            FormLabel keyLabel = new FormLabel(
-                TextUtil.ellipsize(infoItem.key, 35)
+        for (MapInfoItem infoItem : infoItems) {
+            FormLabel itemLabel = new FormLabel(
+                TextUtil.ellipsize(infoItem.getLabel(), 35)
             );
-            keyLabel.addStyleName("flex");
-            keyLabel.addStyleName(style.contentItemKeyLabel());
+            itemLabel.addStyleName("flex");
+            itemLabel.addStyleName(style.infoItemLabel());
 
-            Label valueLabel = new Label(infoItem.value);
-            valueLabel.setStyleName(style.contentItemValueLabel());
+            Widget itemValue = createItemValue(infoItem);
+            itemValue.addStyleName(style.infoItemValue());
 
             FlowPanel itemPanel = new FlowPanel();
-            itemPanel.addStyleName("flex-none layout horizontal center");
-            itemPanel.addStyleName(style.contentItem());
-            itemPanel.add(keyLabel);
-            itemPanel.add(valueLabel);
+            itemPanel.addStyleName("flex-none layout horizontal");
+            itemPanel.addStyleName(style.infoItem());
+            itemPanel.add(itemLabel);
+            itemPanel.add(itemValue);
             contentPanel.add(itemPanel);
         }
 
@@ -115,4 +113,35 @@ public class MapInfoPanel extends AbstractAppPanel {
             }, 250);
         }
     }
+
+    protected Widget createItemValue(MapInfoItem item) {
+        if (!item.getValue().isPresent())
+            return new Label("-");
+        Value value = item.getValue().get();
+
+        switch (value.getType()) {
+            case BOOLEAN:
+                return new IconLabel(Values.getBoolean(value).get() ? "check-square" : "square-o");
+            default:
+                return new Label(
+                    item.getFormat()
+                        .map(format -> formatValue(format, value.toString()))
+                        .orElse(value.toString())
+                );
+        }
+    }
+
+    protected native static String formatValue(String formatString, String value) /*-{
+        if (value === null)
+            return '-';
+        if (formatString === null)
+            return value;
+        try {
+            return $wnd.sprintf(formatString, value);
+        } catch (e) {
+            console.log(e.message);
+            return value;
+        }
+    }-*/;
+
 }

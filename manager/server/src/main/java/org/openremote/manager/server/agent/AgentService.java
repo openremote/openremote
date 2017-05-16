@@ -356,7 +356,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
     }
 
     protected void linkProtocolConfiguration(AssetAttribute protocolConfiguration) {
-        LOG.info("Linking all attributes that use protocol attribute: " + protocolConfiguration);
+        LOG.fine("Linking all attributes that use protocol attribute: " + protocolConfiguration);
         AttributeRef protocolAttributeRef = protocolConfiguration.getReferenceOrThrow();
         Protocol protocol = getProtocol(protocolConfiguration);
 
@@ -417,7 +417,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
     }
 
     protected void unlinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
-        LOG.info("Unlinking all attributes that use protocol attribute: " + protocolConfiguration);
+        LOG.fine("Unlinking all attributes that use protocol attribute: " + protocolConfiguration);
         AttributeRef protocolAttributeRef = protocolConfiguration.getReferenceOrThrow();
 
         // Get all assets that have attributes that use this protocol configuration
@@ -565,7 +565,6 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
             })
             .orElseGet(() -> {
                 // This is just a non protocol attribute so allow the processing to continue
-                LOG.fine("Ignoring as it is not for an attribute linked to an agent:" + assetState);
                 return null;
             });
     }

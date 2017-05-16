@@ -18,17 +18,17 @@
             overflow: auto;
         }
 
-        .contentItem {
+        .infoItem {
             white-space: nowrap;
             margin: 8px;
         }
 
-        .contentItemKeyLabel {
+        .infoItemLabel {
             font-size: 14px;
             line-height: 16px;
         }
 
-        .contentItemValueLabel {
+        .infoItemValue {
             font-size: 18px;
             line-height: 20px;
         }

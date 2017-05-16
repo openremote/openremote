@@ -40,6 +40,7 @@ import org.openremote.model.event.bus.EventBus;
 import org.openremote.model.event.bus.EventRegistration;
 import org.openremote.model.geo.GeoJSON;
 import org.openremote.model.util.Pair;
+import org.openremote.model.value.Values;
 
 import javax.inject.Inject;
 import java.util.ArrayList;
@@ -194,32 +195,24 @@ public class MapActivity extends AssetBrowsingActivity<MapPlace> implements MapV
     }
 
     protected void showAssetInfoItems() {
-        List<Pair<String, String>> infoItems = dashboardAttributes.stream()
-            .map(attribute -> new Pair<>(
-                    attribute.getLabel().orElse(""),
-                    format(
-                        attribute.getFormat().orElse(null),
-                        attribute.getValue().map(Object::toString).orElse(null)
-                    )
+        List<MapInfoItem> infoItems = dashboardAttributes.stream()
+            .filter(attribute -> attribute.getLabel().isPresent())
+            .map(attribute -> new MapInfoItem(
+                    attribute.getLabel().get(),
+                    attribute.getFormat().orElse(null),
+                    attribute.getValue().orElse(null)
                 )
             )
-            .sorted(Comparator.comparing(pair -> pair.key))
+            .sorted(Comparator.comparing(MapInfoItem::getLabel))
             .collect(Collectors.toList());
         if (asset.hasGeoFeature()) {
-            infoItems.add(0, new Pair<>(
+            infoItems.add(0, new MapInfoItem(
                 environment.getMessages().location(),
-                asset.getCoordinatesLabel()
+                null,
+                Values.create(asset.getCoordinatesLabel())
             ));
-
         }
         view.showInfoItems(infoItems);
     }
-
-    protected native static String format(String formatString, String value) /*-{
-        if (formatString === null)
-            return value;
-        return $wnd.sprintf(formatString, value);
-    }-*/;
-
 
 }

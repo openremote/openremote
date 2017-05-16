@@ -1,5 +1,5 @@
 /*
- * Copyright 2016, OpenRemote Inc.
+ * Copyright 2017, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -19,30 +19,31 @@
  */
 package org.openremote.manager.client.map;
 
-import com.google.gwt.user.client.ui.IsWidget;
-import org.openremote.model.util.Pair;
-import org.openremote.model.geo.GeoJSON;
-import org.openremote.model.value.ObjectValue;
+import org.openremote.model.value.Value;
 
-import java.util.List;
+import java.util.Optional;
 
-public interface MapView extends IsWidget {
+public class MapInfoItem {
 
-    interface Presenter {
-        void onMapReady();
+    final protected String label;
+    final protected String format;
+    final protected Value value;
+
+    public MapInfoItem(String label, String format, Value value) {
+        this.label = label;
+        this.format = format;
+        this.value = value;
     }
 
-    void setPresenter(Presenter presenter);
+    public String getLabel() {
+        return label;
+    }
 
-    void setAssetViewHistoryToken(String token);
+    public Optional<String> getFormat() {
+        return Optional.ofNullable(format);
+    }
 
-    void initialiseMap(ObjectValue mapOptions);
-
-    boolean isMapInitialised();
-
-    void showDroppedPin(GeoJSON geoFeature);
-
-    void flyTo(double[] coordinates);
-
-    void showInfoItems(List<MapInfoItem> infoItems);
+    public Optional<Value> getValue() {
+        return Optional.ofNullable(value);
+    }
 }

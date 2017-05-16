@@ -76,9 +76,9 @@ public abstract class AbstractManagerSetup implements Setup {
             new AssetAttribute("alarmEnabled", AttributeType.BOOLEAN, Values.create(false))
                 .setMeta(new Meta(
                     new MetaItem(LABEL, Values.create("Alarm enabled")),
-                    new MetaItem(READ_ONLY, Values.create(true)),
                     new MetaItem(DESCRIPTION, Values.create("Send notifications when presence is detected")),
-                    new MetaItem(RULE_STATE, Values.create(true))
+                    new MetaItem(RULE_STATE, Values.create(true)),
+                    new MetaItem(SHOW_ON_DASHBOARD, Values.create(true))
                 )),
             new AssetAttribute("vacationDays", AttributeType.INTEGER)
                 .setMeta(new Meta(
@@ -96,7 +96,8 @@ public abstract class AbstractManagerSetup implements Setup {
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Last executed scene")),
                     new MetaItem(READ_ONLY, Values.create(true)),
-                    new MetaItem(RULE_STATE, Values.create(true))
+                    new MetaItem(RULE_STATE, Values.create(true)),
+                    new MetaItem(SHOW_ON_DASHBOARD, Values.create(true))
                 )
         );
         return apartment;

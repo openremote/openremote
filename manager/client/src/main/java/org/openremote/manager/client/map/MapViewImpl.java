@@ -36,7 +36,9 @@ import org.openremote.model.geo.GeoJSON;
 import org.openremote.model.value.ObjectValue;
 
 import javax.inject.Inject;
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class MapViewImpl extends Composite implements MapView {
 
@@ -138,7 +140,7 @@ public class MapViewImpl extends Composite implements MapView {
     }
 
     @Override
-    public void showInfoItems(List<Pair<String, String>> infoItems) {
+    public void showInfoItems(List<MapInfoItem> infoItems) {
         if (!mapWidget.isMapReady())
             return;
 
