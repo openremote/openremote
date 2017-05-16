@@ -48,7 +48,7 @@ class NotificationService: UNNotificationServiceExtension, URLSessionDelegate {
                                         bestAttemptContent.body = error.debugDescription
                                     } else {
                                         do {
-                                            print(String(data: data!, encoding: .utf8) ?? "")
+                                            //print(String(data: data!, encoding: .utf8) ?? "")
                                             let json = try JSONSerialization.jsonObject(with: data!) as? [[String: Any]]
                                             if (json?.count)! > 0 {
                                             let detailedJson = (json?[0])! as [String: Any]

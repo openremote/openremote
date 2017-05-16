@@ -20,6 +20,10 @@ class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMessageHa
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = UIColor.white
+    }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
         self.configureAccess()
     }
     
@@ -47,18 +51,42 @@ class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMessageHa
         }
     }
     
+    func webView(_ webView: WKWebView, decidePolicyFor navigationResponse: WKNavigationResponse, decisionHandler: @escaping (WKNavigationResponsePolicy) -> Void) {
+        if let response = navigationResponse.response as? HTTPURLResponse {
+            if response.statusCode != 200 && response.statusCode != 204 {
+                decisionHandler(.cancel)
+                NSLog("error http status : %@  message : %@",response.statusCode,response.description)
+                let error = NSError(domain: "", code: 0, userInfo:  [
+                    NSLocalizedDescriptionKey :  NSLocalizedString("HTTPErrorReturned", value: "Connection Error", comment: "")
+                    ])
+                if let vc = self.presentingViewController as? ViewController {
+                    vc.isInError = true
+                }
+                self.dismiss(animated: true) {
+                    ErrorManager.showError(error:error)
+                }
+            }
+        }
+        decisionHandler(.allow)
+    }
     
+/*
     // just for testing purpose (ask backend to get list of notifications or send a notification to device)
     func apiCall() {
         UIApplication.shared.isNetworkActivityIndicatorVisible = true
         TokenManager.sharedInstance.getAccessToken { (accessTokenResult) in
             switch accessTokenResult {
             case .Failure(let error) :
-                ErrorManager.showError(error: error!)
+                UIApplication.shared.isNetworkActivityIndicatorVisible = false
+                print(error ?? "")
+                    ErrorManager.showError(error: NSError(domain: "", code: 0, userInfo:  [
+                        NSLocalizedDescriptionKey :  NSLocalizedString("ErrorCallingapi", value: "Delete app and restart token probably expired", comment: "")
+                        ]))
+            
             case .Success(let accessToken) :
             guard let urlRequest = URL(string: String(Server.apiTestResource)) else { return }
             let request = NSMutableURLRequest(url: urlRequest)
-            request.httpMethod = "GET" // post to create a notification alert, get to get a list of notification alerts
+            request.httpMethod = "POST" // post to create a notification alert, get to get a list of notification alerts
             request.addValue("application/json", forHTTPHeaderField: "Content-Type")
             request.httpBody = "{\"title\" :\" notif alert title\",\"message\" : \"notif alert message\",\"appUrl\" : \"Veilig\",\"actions\": [ {\"title\" : \"Open link\" , \"type\": \"ACTION_DEEP_LINK\"},{\"title\" : \"background call\" , \"type\": \"ACTION_ACTUATOR\" , \"assetId\" : \"2E2vrICRSEa6mfzOquZzxA\", \"attributeName\" : \"targetTemp\", \"rawJson\" : \"18\" } ]}".data(using: .utf8)
             request.addValue(String(format:"Bearer %@", accessToken!), forHTTPHeaderField: "Authorization")
@@ -83,7 +111,7 @@ class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMessageHa
         }
         }
     }
-    
+*/
     func login() {
         guard let request = URL(string: String(format:"https://%@/%@",Server.hostURL,Server.initialPath)) else { return }
         UIApplication.shared.isNetworkActivityIndicatorVisible = true
@@ -93,9 +121,14 @@ class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMessageHa
     func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
         NSLog("error %@", error.localizedDescription)
         UIApplication.shared.isNetworkActivityIndicatorVisible = false
-        ErrorManager.showError(error: NSError(domain: "networkError", code: 0, userInfo:[
-            NSLocalizedDescriptionKey :  NSLocalizedString("FailedLoadingPage", value: "Could not load page", comment: "")
-            ]))
+        if let vc = self.presentingViewController as? ViewController {
+            vc.isInError = true
+        }
+        self.dismiss(animated: true) {
+            ErrorManager.showError(error: NSError(domain: "networkError", code: 0, userInfo:[
+                NSLocalizedDescriptionKey :  NSLocalizedString("FailedLoadingPage", value: "Could not load page in OR", comment: "")
+                ]))
+        }
     }
     
     func webView(_ webView: WKWebView, didReceive challenge: URLAuthenticationChallenge, completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
@@ -161,10 +194,11 @@ class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMessageHa
         TokenManager.sharedInstance.getAccessToken { (accessTokenResult) in
             switch accessTokenResult {
             case .Failure(let error) :
+                UIApplication.shared.isNetworkActivityIndicatorVisible = false
                 ErrorManager.showError(error: error!)
             case .Success(let accessToken) :
             guard let urlRequest = URL(string: String(String(format: "https://%@/%@/asset/%@/attribute/%@", Server.hostURL, Server.realm, assetId,attributeName))) else { return }
-            print(urlRequest)
+            //print(urlRequest)
             let request = NSMutableURLRequest(url: urlRequest)
             request.httpMethod = "PUT"
             request.addValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -181,8 +215,6 @@ class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMessageHa
                             NSLocalizedDescriptionKey :  NSLocalizedString("ErrorCallingAPI", value: "Could not get data", comment: "")
                             ])
                         ErrorManager.showError(error: error)
-                    } else {
-                        print(response.debugDescription)
                     }
                 }
             })

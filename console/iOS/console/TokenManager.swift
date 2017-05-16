@@ -145,9 +145,15 @@ class TokenManager:NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationD
     func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
         NSLog("error %@", error.localizedDescription)
         UIApplication.shared.isNetworkActivityIndicatorVisible = false
-        ErrorManager.showError(error: NSError(domain: "networkError", code: 0, userInfo:[
-            NSLocalizedDescriptionKey :  NSLocalizedString("FailedLoadingPage", value: "Could not load page", comment: "")
-            ]))
+        if let vc = viewController.presentingViewController as? ViewController {
+            vc.isInError = true
+        }
+        self.viewController.dismiss(animated: true) { 
+            ErrorManager.showError(error: NSError(domain: "networkError", code: 0, userInfo:[
+                NSLocalizedDescriptionKey :  NSLocalizedString("FailedLoadingPage", value: "Could not load page", comment: "")
+                ]))
+        }
+        
     }
     
     func webView(_ webView: WKWebView, didReceive challenge: URLAuthenticationChallenge, completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
@@ -159,6 +165,25 @@ class TokenManager:NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationD
             }
             
         }
+    }
+    
+    func webView(_ webView: WKWebView, decidePolicyFor navigationResponse: WKNavigationResponse, decisionHandler: @escaping (WKNavigationResponsePolicy) -> Void) {
+        if let response = navigationResponse.response as? HTTPURLResponse {
+            if response.statusCode != 200 && response.statusCode != 204 {
+                decisionHandler(.cancel)
+                NSLog("error http status : %i ",response.statusCode)
+                let error = NSError(domain: "", code: 0, userInfo:  [
+                    NSLocalizedDescriptionKey :  NSLocalizedString("HTTPErrorReturned", value: "Connection Error", comment: "")
+                    ])
+                if let vc = viewController.presentingViewController as? ViewController {
+                    vc.isInError = true
+                }
+                self.viewController.dismiss(animated: true) {
+                    ErrorManager.showError(error: error)
+                }
+            }
+        }
+        decisionHandler(.allow)
     }
     
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
@@ -183,11 +208,11 @@ class TokenManager:NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationD
     }
     
     func sendDeviceId() {
-        print("Device Id : -------------> ",deviceId ?? "")
         UIApplication.shared.isNetworkActivityIndicatorVisible = true
         self.getAccessToken { (accessTokenResult) in
             switch accessTokenResult {
             case .Failure(let error) :
+                    UIApplication.shared.isNetworkActivityIndicatorVisible = false
                     ErrorManager.showError(error: error!)
             case .Success(let accessToken) :
             guard let urlRequest = URL(string: String(Server.registerDeviceResource)) else { return }
@@ -233,6 +258,7 @@ class TokenManager:NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationD
         tkRequest.addValue("application/x-www-form-urlencoded", forHTTPHeaderField:"Content-Type");
         tkRequest.httpMethod = "POST"
         let postString = String(format:"grant_type=refresh_token&refresh_token=%@&client_id=%@",(TokenManager.sharedInstance.refreshToken )!,Client.clientId)
+        
         tkRequest.httpBody = postString.data(using: .utf8)
         let sessionConfiguration = URLSessionConfiguration.default
         let session = URLSession(configuration: sessionConfiguration, delegate: self, delegateQueue: nil)
