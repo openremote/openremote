@@ -114,7 +114,9 @@ public class NotificationService implements ContainerService {
             for (DeviceNotificationToken notificationToken : allTokenForUser) {
                 try {
                     Invocation.Builder builder = target.request().header("Authorization", "key=" + fcmKey);
-                    Response response = builder.post(Entity.entity(new FCMMessage(notificationToken.getToken()), "application/json"));
+                    Notification notification = new Notification("_", true);
+
+                    Response response = builder.post(Entity.entity(new FCMMessage(notification, true, "high", notificationToken.getToken()), "application/json"));
                     if (response.getStatus() != 200) {
                         LOG.severe("Error send FCM notification status=[" + response.getStatus() + "], statusInformation=[" + response.getStatusInfo() + "]");
                     }
