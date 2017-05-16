@@ -35,7 +35,6 @@ import java.util.logging.Logger;
 
 import static org.openremote.agent.protocol.macro.MacroConfiguration.getMacroActionIndex;
 import static org.openremote.agent.protocol.macro.MacroConfiguration.isValidMacroConfiguration;
-import static org.openremote.model.Constants.ASSET_META_NAMESPACE;
 import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
 
 /**
@@ -52,7 +51,7 @@ public class MacroProtocol extends AbstractProtocol {
     private static final Logger LOG = Logger.getLogger(MacroProtocol.class.getName());
 
     public static final String PROTOCOL_NAME = PROTOCOL_NAMESPACE + ":macro";
-    public static final String META_MACRO_ACTION = ASSET_META_NAMESPACE + ":macroAction";
+    public static final String META_MACRO_ACTION = PROTOCOL_NAME + ":action";
     public static final String META_MACRO_ACTION_INDEX = PROTOCOL_NAME + ":actionIndex";
 
     class MacroExecutionTask {

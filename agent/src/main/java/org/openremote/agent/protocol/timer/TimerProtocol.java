@@ -61,9 +61,9 @@ public class TimerProtocol extends AbstractProtocol {
     private static final Logger LOG = Logger.getLogger(TimerProtocol.class.getName());
 
     public static final String PROTOCOL_NAME = PROTOCOL_NAMESPACE + ":timer";
-    public static final String META_TIMER_CRON_EXPRESSION = PROTOCOL_NAMESPACE + ":cronExpression";
-    public static final String META_TIMER_ACTION = PROTOCOL_NAMESPACE + ":action";
-    public static final String META_TIMER_VALUE_LINK = PROTOCOL_NAMESPACE + ":link";
+    public static final String META_TIMER_CRON_EXPRESSION = PROTOCOL_NAME + ":cronExpression";
+    public static final String META_TIMER_ACTION = PROTOCOL_NAME + ":action";
+    public static final String META_TIMER_VALUE_LINK = PROTOCOL_NAME + ":link";
     protected final Map<AttributeRef, CronExpressionParser> cronExpressionMap = new HashMap<>();
     protected CronScheduler cronScheduler;
 
