@@ -25,8 +25,13 @@ public class IconLabel extends InlineLabel {
 
     protected String icon;
 
-    public IconLabel() {
+    public IconLabel(String icon) {
         setStyleName("or-IconLabel");
+        setIcon(icon);
+    }
+
+    public IconLabel() {
+        this(null);
     }
 
     public String getIcon() {
@@ -34,13 +39,15 @@ public class IconLabel extends InlineLabel {
     }
 
     public void setIcon(String icon) {
-        if (this.icon != null) {
+        if (this.icon != null || icon == null) {
             removeStyleName("fa");
             removeStyleName("fa-" + this.icon);
         }
         this.icon = icon;
-        addStyleName("fa");
-        addStyleName("fa-" + icon);
+        if (this.icon != null) {
+            addStyleName("fa");
+            addStyleName("fa-" + icon);
+        }
     }
 
 }
