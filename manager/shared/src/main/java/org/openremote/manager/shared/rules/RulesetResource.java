@@ -22,6 +22,9 @@ package org.openremote.manager.shared.rules;
 import jsinterop.annotations.JsType;
 import org.openremote.manager.shared.http.RequestParams;
 import org.openremote.manager.shared.http.SuccessStatusCode;
+import org.openremote.model.rules.AssetRuleset;
+import org.openremote.model.rules.GlobalRuleset;
+import org.openremote.model.rules.TenantRuleset;
 
 import javax.annotation.security.RolesAllowed;
 import javax.validation.Valid;
@@ -35,7 +38,7 @@ public interface RulesetResource {
 
     /**
      * Retrieve global rules. Only the superuser can perform this operation, a 403 status is
-     * returned if a regular user tries to access global ruleset.
+     * returned if a regular user tries to access global rulesets.
      */
     @GET
     @Produces(APPLICATION_JSON)
@@ -45,7 +48,7 @@ public interface RulesetResource {
 
     /**
      * Retrieve rules of a tenant. The superuser can retrieve rules of all realms, a 403 status
-     * is returned if a regular user tries to access ruleset outside of its authenticated realm.
+     * is returned if a regular user tries to access rulesets outside of its authenticated realm.
      * An empty result will be returned if the realm can not be found.
      */
     @GET

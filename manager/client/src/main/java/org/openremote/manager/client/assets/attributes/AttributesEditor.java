@@ -369,7 +369,9 @@ public class AttributesEditor
                 String title = updateConsumer != null
                     ? environment.getMessages().edit() + " " + environment.getMessages().jsonObject()
                     : environment.getMessages().jsonObject();
-                editor = createJsonEditorWidget(style, title, currentValue, updateConsumer, resetSupplier);
+                editor = createJsonEditorWidget(
+                    style, title, environment.getMessages().jsonObject(), currentValue, updateConsumer, resetSupplier
+                );
             } else if (valueType.equals(ValueType.ARRAY)) {
                 ArrayValue currentValue = item.getValueAsArray().orElse(null);
                 Consumer<Value> updateConsumer = isEditable
@@ -379,7 +381,9 @@ public class AttributesEditor
                 String title = updateConsumer != null
                     ? environment.getMessages().edit() + " " + environment.getMessages().jsonArray()
                     : environment.getMessages().jsonArray();
-                editor = createJsonEditorWidget(style, title, currentValue, updateConsumer, resetSupplier);
+                editor = createJsonEditorWidget(
+                    style, title, environment.getMessages().jsonObject(), currentValue, updateConsumer, resetSupplier
+                );
             } else {
                 FormField unsupportedField = new FormField();
                 unsupportedField.add(new FormOutputText(

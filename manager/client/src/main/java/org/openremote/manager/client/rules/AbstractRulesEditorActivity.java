@@ -32,7 +32,7 @@ import org.openremote.manager.client.mvp.AppActivity;
 import org.openremote.manager.shared.http.EntityReader;
 import org.openremote.manager.shared.http.EntityWriter;
 import org.openremote.manager.shared.http.RequestParams;
-import org.openremote.manager.shared.rules.Ruleset;
+import org.openremote.model.rules.Ruleset;
 import org.openremote.manager.shared.rules.RulesetResource;
 import org.openremote.manager.shared.validation.ConstraintViolation;
 

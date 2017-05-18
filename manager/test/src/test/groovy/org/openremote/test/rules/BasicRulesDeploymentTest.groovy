@@ -6,10 +6,10 @@ import org.openremote.manager.server.security.ManagerIdentityService
 import org.openremote.manager.server.setup.SetupService
 import org.openremote.manager.server.setup.builtin.KeycloakDemoSetup
 import org.openremote.manager.server.setup.builtin.ManagerDemoSetup
-import org.openremote.manager.shared.rules.AssetRuleset
-import org.openremote.manager.shared.rules.GlobalRuleset
-import org.openremote.manager.shared.rules.Ruleset.DeploymentStatus
-import org.openremote.manager.shared.rules.TenantRuleset
+import org.openremote.model.rules.AssetRuleset
+import org.openremote.model.rules.GlobalRuleset
+import org.openremote.model.rules.Ruleset.DeploymentStatus
+import org.openremote.model.rules.TenantRuleset
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions

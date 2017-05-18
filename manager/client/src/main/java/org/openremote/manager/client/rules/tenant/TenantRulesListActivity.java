@@ -28,7 +28,7 @@ import org.openremote.manager.client.assets.browser.AssetBrowserSelection;
 import org.openremote.manager.client.mvp.AppActivity;
 import org.openremote.manager.client.rules.RulesModule;
 import org.openremote.manager.shared.rules.RulesetResource;
-import org.openremote.manager.shared.rules.TenantRuleset;
+import org.openremote.model.rules.TenantRuleset;
 import org.openremote.manager.shared.security.Tenant;
 import org.openremote.manager.shared.security.TenantResource;
 import org.openremote.model.event.bus.EventBus;

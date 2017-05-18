@@ -9,9 +9,9 @@ import org.openremote.manager.server.rules.RulesetStorageService
 import org.openremote.manager.server.setup.SetupService
 import org.openremote.manager.server.setup.builtin.KeycloakDemoSetup
 import org.openremote.manager.server.setup.builtin.ManagerDemoSetup
-import org.openremote.manager.shared.rules.AssetRuleset
-import org.openremote.manager.shared.rules.Ruleset.DeploymentStatus
-import org.openremote.manager.shared.rules.TenantRuleset
+import org.openremote.model.rules.AssetRuleset
+import org.openremote.model.rules.Ruleset.DeploymentStatus
+import org.openremote.model.rules.TenantRuleset
 import org.openremote.model.asset.AssetAttribute
 import org.openremote.model.asset.AssetMeta
 import org.openremote.model.asset.AssetType

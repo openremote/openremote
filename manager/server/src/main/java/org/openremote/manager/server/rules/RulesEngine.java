@@ -24,6 +24,7 @@ import org.drools.core.time.InternalSchedulerService;
 import org.drools.core.time.JobContext;
 import org.drools.core.time.JobHandle;
 import org.drools.core.time.impl.*;
+import org.drools.template.ObjectDataCompiler;
 import org.kie.api.KieServices;
 import org.kie.api.builder.KieBuilder;
 import org.kie.api.builder.KieFileSystem;
@@ -49,20 +50,24 @@ import org.openremote.manager.server.asset.ServerAsset;
 import org.openremote.manager.server.concurrent.ManagerExecutorService;
 import org.openremote.manager.server.notification.NotificationService;
 import org.openremote.manager.server.security.ManagerIdentityService;
-import org.openremote.manager.shared.rules.AssetRuleset;
-import org.openremote.manager.shared.rules.GlobalRuleset;
-import org.openremote.manager.shared.rules.Ruleset;
-import org.openremote.manager.shared.rules.TenantRuleset;
-import org.openremote.model.asset.AbstractAssetUpdate;
-import org.openremote.model.asset.AssetEvent;
-import org.openremote.model.asset.AssetQuery;
-import org.openremote.model.asset.AssetState;
+import org.openremote.model.AbstractValueHolder;
+import org.openremote.model.asset.*;
+import org.openremote.model.rules.AssetRuleset;
+import org.openremote.model.rules.GlobalRuleset;
+import org.openremote.model.rules.Ruleset;
+import org.openremote.model.rules.TenantRuleset;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.notification.AlertNotification;
 import org.openremote.model.rules.Assets;
 import org.openremote.model.rules.Users;
+import org.openremote.model.rules.template.AssetStateConstraints;
+import org.openremote.model.rules.template.TemplateFilter;
 import org.openremote.model.user.UserQuery;
+import org.openremote.model.util.Pair;
 
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledFuture;
@@ -186,8 +191,8 @@ public class RulesEngine<T extends Ruleset> {
      * then deploying new rules and then restarting the engine (after
      * {@link #AUTO_START_DELAY_SECONDS}) to prevent excessive engine stop/start.
      * <p>
-     * If engine is in an error state (one of the rulesets failed to deploy
-     * then the engine will not restart).
+     * If engine is in an error state (one of the rulesets failed to deploy)
+     * then the engine will not restart.
      *
      * @return Whether or not the ruleset deployed successfully
      */
@@ -232,8 +237,14 @@ public class RulesEngine<T extends Ruleset> {
         boolean addSuccessful = false;
 
         try {
+            // If the ruleset references a template asset, compile it as a template
+            String drl = ruleset.getTemplateAssetId() != null
+                ? compileTemplate(ruleset.getTemplateAssetId(), ruleset.getRules())
+                : ruleset.getRules();
+
             // ID will be unique within the scope of a rules engine as ruleset will all be of same type
-            kfs.write("src/main/resources/" + ruleset.getId() + ".drl", ruleset.getRules());
+            kfs.write("src/main/resources/" + ruleset.getId() + ".drl", drl);
+
             // Unload the rules string from the ruleset we don't need it anymore and don't want it using memory
             ruleset.setRules(null);
             KieBuilder kieBuilder = kieServices.newKieBuilder(kfs).buildAll();
@@ -755,6 +766,28 @@ public class RulesEngine<T extends Ruleset> {
         );
         sessionScheduler.internalSchedule(timerJobInstance);
 
+    }
+
+    protected String compileTemplate(String templateAssetId, String rules) {
+        ServerAsset asset = assetStorageService.find(templateAssetId, true);
+
+        if (asset == null)
+            throw new IllegalStateException("Template asset not found: " + templateAssetId);
+
+        List<TemplateFilter> filters = new ArrayList<>();
+
+        asset.getAttributesStream()
+            .filter(AssetAttribute::isRuleStateTemplateFilter)
+            .map(attribute -> new Pair<>(attribute.getName(), attribute.getValue()))
+            .filter(pair -> pair.key.isPresent() && pair.value.isPresent())
+            .map(pair -> new Pair<>(pair.key.get(), pair.value.get()))
+            .map(pair -> AssetStateConstraints.fromValue(pair.key, pair.value))
+            .filter(Optional::isPresent)
+            .forEach(filter -> filters.add(filter.get()));
+
+        ObjectDataCompiler converter = new ObjectDataCompiler();
+        InputStream is = new ByteArrayInputStream(rules.getBytes(StandardCharsets.UTF_8));
+        return converter.compile(filters, is);
     }
 
     protected synchronized void updateRulesetsDebug() {

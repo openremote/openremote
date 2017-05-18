@@ -33,7 +33,7 @@ import org.openremote.manager.shared.asset.AssetResource;
 import org.openremote.manager.shared.http.EntityReader;
 import org.openremote.manager.shared.http.EntityWriter;
 import org.openremote.manager.shared.http.RequestParams;
-import org.openremote.manager.shared.rules.AssetRuleset;
+import org.openremote.model.rules.AssetRuleset;
 import org.openremote.manager.shared.rules.RulesetResource;
 
 import javax.inject.Inject;

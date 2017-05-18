@@ -19,7 +19,7 @@
  */
 package org.openremote.manager.client.rules;
 
-import org.openremote.manager.shared.rules.Ruleset;
+import org.openremote.model.rules.Ruleset;
 
 public interface RulesList<P extends RulesList.Presenter<R>, R extends Ruleset> extends RulesView {
 

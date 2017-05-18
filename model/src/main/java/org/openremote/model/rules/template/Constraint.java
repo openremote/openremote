@@ -1,5 +1,5 @@
 /*
- * Copyright 2016, OpenRemote Inc.
+ * Copyright 2017, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -17,15 +17,13 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.client.rules.tenant;
+package org.openremote.model.rules.template;
 
-import org.openremote.manager.client.rules.RulesList;
-import org.openremote.model.rules.TenantRuleset;
+import org.openremote.model.value.ObjectValue;
 
-public interface TenantRulesList extends RulesList<TenantRulesList.Presenter, TenantRuleset> {
+public interface Constraint {
 
-    interface Presenter extends RulesList.Presenter<TenantRuleset> {
-    }
+    ObjectValue toObjectValue();
 
-    void setRealmLabel(String label);
+    String render();
 }

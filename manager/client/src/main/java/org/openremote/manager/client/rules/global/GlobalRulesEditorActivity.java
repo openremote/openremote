@@ -30,7 +30,7 @@ import org.openremote.manager.client.rules.RulesEditor;
 import org.openremote.manager.shared.http.EntityReader;
 import org.openremote.manager.shared.http.EntityWriter;
 import org.openremote.manager.shared.http.RequestParams;
-import org.openremote.manager.shared.rules.GlobalRuleset;
+import org.openremote.model.rules.GlobalRuleset;
 import org.openremote.manager.shared.rules.RulesetResource;
 
 import javax.inject.Inject;

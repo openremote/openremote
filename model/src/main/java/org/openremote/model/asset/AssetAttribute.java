@@ -321,6 +321,14 @@ public class AssetAttribute extends Attribute {
         }
     }
 
+    public boolean isRuleStateTemplateFilter() {
+        return getMetaStream()
+            .filter(isMetaNameEqualTo(RULE_STATE_TEMPLATE_FILTER))
+            .findFirst()
+            .map(metaItem -> metaItem.getValueAsBoolean().orElse(false))
+            .orElse(false);
+    }
+
     public boolean isRuleEvent() {
         return getMetaStream()
             .filter(isMetaNameEqualTo(RULE_EVENT))

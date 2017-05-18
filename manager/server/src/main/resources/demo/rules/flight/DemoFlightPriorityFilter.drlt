@@ -1,0 +1,32 @@
+template header
+filterId
+assetStateConstraints
+
+package org.openremote.test.rules.flight;
+
+import org.openremote.model.asset.*
+import org.openremote.model.attribute.*
+import org.openremote.model.value.*
+
+global java.util.logging.Logger LOG;
+global org.openremote.model.rules.Assets assets;
+
+template "FlightPriorityFilter"
+
+rule "Set priority for flights matching filter @{filterId}"
+when
+
+    // Flights which are not priority (the $assetState binding is used in the constraints later)
+    $assetState: AssetState(type == AssetType.FLIGHT, attributeName == "priority", valueAsBoolean != true)
+
+    // And match any of the filter constraints
+    @{assetStateConstraints}
+
+then
+    // Set the flight priority
+    assets.dispatch(
+        new AttributeEvent($assetState.getId(), "priority", Values.create(true))
+    );
+end
+
+end template

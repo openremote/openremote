@@ -110,7 +110,9 @@ public enum AttributeType {
 
     FLOW_CFPS(ValueType.NUMBER, value -> Optional.empty()),
 
-    FLOW_GPM(ValueType.NUMBER, value -> Optional.empty());
+    FLOW_GPM(ValueType.NUMBER, value -> Optional.empty()),
+
+    TEMPLATE_FILTER(ValueType.OBJECT, value -> Optional.empty());
 
     public enum AttributeTypeValidationFailure implements ValidationFailure {
         VALUE_DOES_NOT_MATCH_ATTRIBUTE_TYPE,

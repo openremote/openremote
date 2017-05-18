@@ -197,7 +197,7 @@ class AdminTenantsActivityTest extends Specification implements ManagerContainer
 
         and: "The view should have received the tenants"
         conditions.eventually {
-            assert resultTenants.length == 3
+            assert resultTenants.length == 4
         }
 
         when: "The user clicks Create Tenant"
@@ -302,7 +302,7 @@ class AdminTenantsActivityTest extends Specification implements ManagerContainer
 
         and: "The view should have received the tenants"
         conditions.eventually {
-            assert resultTenants.length == 4
+            assert resultTenants.length == 5
         }
 
         when: "The new tenant is selected"
@@ -433,7 +433,7 @@ class AdminTenantsActivityTest extends Specification implements ManagerContainer
 
         and: "The view should have received the tenants"
         conditions.eventually {
-            resultTenants.length == 3
+            resultTenants.length == 4
         }
 
         cleanup: "The server should be stopped"

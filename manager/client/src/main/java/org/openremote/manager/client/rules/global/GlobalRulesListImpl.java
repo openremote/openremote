@@ -25,7 +25,7 @@ import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.rules.AbstractRulesList;
 import org.openremote.manager.client.style.FormTableStyle;
 import org.openremote.manager.client.widget.FlexSplitPanel;
-import org.openremote.manager.shared.rules.GlobalRuleset;
+import org.openremote.model.rules.GlobalRuleset;
 
 import javax.inject.Inject;
 

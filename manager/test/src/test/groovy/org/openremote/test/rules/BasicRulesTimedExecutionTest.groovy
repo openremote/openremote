@@ -3,8 +3,8 @@ package org.openremote.test.rules
 import org.openremote.manager.server.rules.RulesEngine
 import org.openremote.manager.server.rules.RulesService
 import org.openremote.manager.server.rules.RulesetStorageService
-import org.openremote.manager.shared.rules.GlobalRuleset
-import org.openremote.manager.shared.rules.Ruleset
+import org.openremote.model.rules.GlobalRuleset
+import org.openremote.model.rules.Ruleset
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions

@@ -20,7 +20,7 @@
 package org.openremote.manager.client.rules.global;
 
 import org.openremote.manager.client.rules.RulesList;
-import org.openremote.manager.shared.rules.GlobalRuleset;
+import org.openremote.model.rules.GlobalRuleset;
 
 public interface GlobalRulesList extends RulesList<GlobalRulesList.Presenter, GlobalRuleset> {
 

@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.shared.rules;
+package org.openremote.model.rules;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -46,8 +46,8 @@ public class AssetRuleset extends Ruleset {
         this.assetId = assetId;
     }
 
-    public AssetRuleset(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String assetId) {
-        this(id, version, createdOn, lastModified, name, enabled, null, null, assetId);
+    public AssetRuleset(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String templateAssetId, String assetId) {
+        this(id, version, createdOn, lastModified, name, enabled, templateAssetId, null, null, assetId);
     }
 
     public AssetRuleset(String name, String assetId, String rules) {
@@ -55,8 +55,8 @@ public class AssetRuleset extends Ruleset {
         this.assetId = assetId;
     }
 
-    public AssetRuleset(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String rules, String assetId, String realmId) {
-        super(id, version, createdOn, lastModified, name, enabled, rules);
+    public AssetRuleset(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String templateAssetId, String rules, String assetId, String realmId) {
+        super(id, version, createdOn, lastModified, name, enabled, templateAssetId, rules);
         this.assetId = assetId;
         this.realmId = realmId;
     }

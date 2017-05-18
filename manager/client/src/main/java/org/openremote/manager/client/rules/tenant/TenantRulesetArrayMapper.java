@@ -23,7 +23,7 @@ import com.github.nmorel.gwtjackson.client.ObjectMapper;
 import com.github.nmorel.gwtjackson.client.annotation.JsonMixIns;
 import org.openremote.manager.client.interop.jackson.DefaultJsonMixin;
 import org.openremote.manager.shared.http.EntityReader;
-import org.openremote.manager.shared.rules.TenantRuleset;
+import org.openremote.model.rules.TenantRuleset;
 
 @JsonMixIns({@JsonMixIns.JsonMixIn(target = TenantRuleset.class, mixIn = DefaultJsonMixin.class)})
 public interface TenantRulesetArrayMapper

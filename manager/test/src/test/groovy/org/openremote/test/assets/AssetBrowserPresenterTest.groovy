@@ -156,7 +156,7 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
             assert arguments[0] == 0
             def rowData = arguments[1]
             treeDisplayRowData = rowData
-            assert rowData.size() == 3
+            assert rowData.size() == 4
             assert rowData[0] instanceof TenantTreeNode
             assert rowData[0].label == "Master"
             assert rowData[0].icon == "group"
@@ -167,8 +167,11 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
             assert rowData[2] instanceof TenantTreeNode
             assert rowData[2].label == "Customer B"
             assert rowData[2].tenant.id == keycloakDemoSetup.customerBTenant.id
+            assert rowData[3] instanceof TenantTreeNode
+            assert rowData[3].label == "Customer C"
+            assert rowData[3].tenant.id == keycloakDemoSetup.customerCTenant.id
         }
-        1 * treeDisplay.setRowCount(3, true)
+        1 * treeDisplay.setRowCount(4, true)
 
         when: "a tenant tree node is expanded"
         assetBrowserPresenter.loadNodeChildren(treeDisplayRowData[0], treeDisplay)

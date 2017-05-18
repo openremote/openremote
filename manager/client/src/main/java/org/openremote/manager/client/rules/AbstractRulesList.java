@@ -28,7 +28,7 @@ import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.style.FormTableStyle;
 import org.openremote.manager.client.widget.Headline;
 import org.openremote.manager.client.widget.Hyperlink;
-import org.openremote.manager.shared.rules.Ruleset;
+import org.openremote.model.rules.Ruleset;
 
 import java.util.ArrayList;
 import java.util.Arrays;

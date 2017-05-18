@@ -30,7 +30,7 @@ import org.openremote.manager.shared.http.EntityReader;
 import org.openremote.manager.shared.http.EntityWriter;
 import org.openremote.manager.shared.http.RequestParams;
 import org.openremote.manager.shared.rules.RulesetResource;
-import org.openremote.manager.shared.rules.TenantRuleset;
+import org.openremote.model.rules.TenantRuleset;
 import org.openremote.manager.shared.security.Tenant;
 import org.openremote.manager.shared.security.TenantResource;
 import org.openremote.model.event.bus.EventBus;

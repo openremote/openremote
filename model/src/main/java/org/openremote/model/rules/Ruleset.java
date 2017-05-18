@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.shared.rules;
+package org.openremote.model.rules;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
@@ -76,6 +76,9 @@ public abstract class Ruleset {
     @Column(name = "ENABLED", nullable = false)
     protected boolean enabled = true;
 
+    @Column(name = "TEMPLATE_ASSET_ID", nullable = true)
+    protected String templateAssetId;
+
     @Lob
     @Column(name = "RULES", nullable = false)
     protected String rules;
@@ -86,23 +89,30 @@ public abstract class Ruleset {
     public Ruleset() {
     }
 
-    public Ruleset(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled) {
-        this(id, version, createdOn, lastModified, name, enabled, null);
+    public Ruleset(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String templateAssetId) {
+        this(id, version, createdOn, lastModified, name, enabled, templateAssetId, null);
     }
 
-    public Ruleset(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String rules) {
+    public Ruleset(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String templateAssetId, String rules) {
         this.id = id;
         this.version = version;
         this.createdOn = createdOn;
         this.lastModified = lastModified;
         this.name = name;
         this.enabled = enabled;
+        this.templateAssetId = templateAssetId;
         this.rules = rules;
     }
 
     public Ruleset(String name, String rules) {
         this.name = name;
         this.rules = rules;
+    }
+
+    public Ruleset(String name, String rules, String templateAssetId) {
+        this.name = name;
+        this.rules = rules;
+        this.templateAssetId = templateAssetId;
     }
 
     public Long getId() {
@@ -147,6 +157,14 @@ public abstract class Ruleset {
         this.enabled = enabled;
     }
 
+    public String getTemplateAssetId() {
+        return templateAssetId;
+    }
+
+    public void setTemplateAssetId(String templateAssetId) {
+        this.templateAssetId = templateAssetId;
+    }
+
     public String getRules() {
         return rules;
     }
@@ -172,6 +190,7 @@ public abstract class Ruleset {
                 ", createdOn='" + createdOn + '\'' +
                 ", lastModified='" + lastModified + '\'' +
                 ", enabled='" + enabled + '\'' +
+                ", templateAssetId='" + templateAssetId+ '\'' +
                 '}';
     }
 }

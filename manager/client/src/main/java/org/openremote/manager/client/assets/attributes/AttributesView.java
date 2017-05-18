@@ -355,6 +355,8 @@ public abstract class AttributesView<
             attributeEditor = createNumberEditor(attribute, defaultValueItem, style, formGroup);
         } else if (attributeType == AttributeType.BOOLEAN || attributeType.getValueType() == ValueType.BOOLEAN) {
             attributeEditor = createBooleanEditor(attribute, defaultValueItem, style, formGroup);
+        } else if (attributeType.getValueType() == ValueType.OBJECT) {
+            attributeEditor = createObjectEditor(attribute, style, formGroup);
         } else if (attributeType.getValueType() == ValueType.ARRAY) {
             attributeEditor = createArrayEditor(attribute, style, formGroup);
         } else {
@@ -518,7 +520,9 @@ public abstract class AttributesView<
 
         FlowPanel panel = new FlowPanel();
         panel.setStyleName("flex layout horizontal center");
-        FormButton editButton = createJsonEditorWidget(style, title, currentValue.orElse(null), updateConsumer, resetSupplier);
+        FormButton editButton = createJsonEditorWidget(
+            style, environment.getMessages().jsonArray(), title, currentValue.orElse(null), updateConsumer, resetSupplier
+        );
         FlowPanel wrapper = new FlowPanel();
         wrapper.setStyleName("flex layout horizontal center");
         wrapper.add(editButton);
@@ -546,7 +550,9 @@ public abstract class AttributesView<
 
         FlowPanel panel = new FlowPanel();
         panel.setStyleName("flex layout horizontal center");
-        FormButton editButton = createJsonEditorWidget(style, title, currentValue.orElse(null), updateConsumer, resetSupplier);
+        FormButton editButton = createJsonEditorWidget(
+            style, title, environment.getMessages().jsonObject(), currentValue.orElse(null), updateConsumer, resetSupplier
+        );
         FlowPanel wrapper = new FlowPanel();
         wrapper.setStyleName("flex layout horizontal center");
         wrapper.add(editButton);
@@ -561,6 +567,7 @@ public abstract class AttributesView<
 
     protected FormButton createJsonEditorWidget(S style,
                                                 String title,
+                                                String buttonLabel,
                                                 Value currentValue,
                                                 Consumer<Value> updateConsumer,
                                                 Supplier<Value> resetSupplier) {
@@ -573,7 +580,7 @@ public abstract class AttributesView<
 
         FormButton button = new FormButton();
         button.setIcon("file-text-o");
-        button.setText(environment.getMessages().jsonArray());
+        button.setText(buttonLabel);
         button.addClickHandler(event -> jsonEditor.show());
 
         jsonEditor.setOnReset(() -> jsonEditor.setValue(resetSupplier.get()));

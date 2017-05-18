@@ -22,9 +22,9 @@ package org.openremote.manager.server.setup.builtin;
 import org.apache.commons.io.IOUtils;
 import org.openremote.container.Container;
 import org.openremote.manager.server.setup.AbstractManagerSetup;
-import org.openremote.manager.shared.rules.AssetRuleset;
-import org.openremote.manager.shared.rules.Ruleset;
-import org.openremote.manager.shared.rules.TenantRuleset;
+import org.openremote.model.rules.AssetRuleset;
+import org.openremote.model.rules.Ruleset;
+import org.openremote.model.rules.TenantRuleset;
 
 import java.io.InputStream;
 import java.nio.charset.Charset;
@@ -79,6 +79,12 @@ public class RulesDemoSetup extends AbstractManagerSetup {
             apartmentActionsRulesetId = rulesetStorageService.merge(ruleset).getId();
         }
 
+        // Flights
+        try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/flight/DemoFlightPriorityFilter.drlt")) {
+            String rules = IOUtils.toString(inputStream, Charset.forName("utf-8"));
+            Ruleset ruleset = new TenantRuleset("Demo Flights - Mark flights as priority", keycloakDemoSetup.customerCTenant.getId(), rules, managerDemoSetup.flightPriorityFiltersId);
+            rulesetStorageService.merge(ruleset);
+        }
 
     }
 }

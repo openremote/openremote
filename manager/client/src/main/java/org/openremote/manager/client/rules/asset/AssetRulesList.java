@@ -20,7 +20,7 @@
 package org.openremote.manager.client.rules.asset;
 
 import org.openremote.manager.client.rules.RulesList;
-import org.openremote.manager.shared.rules.AssetRuleset;
+import org.openremote.model.rules.AssetRuleset;
 
 public interface AssetRulesList extends RulesList<AssetRulesList.Presenter, AssetRuleset> {
 

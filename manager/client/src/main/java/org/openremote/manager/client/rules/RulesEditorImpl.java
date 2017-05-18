@@ -60,17 +60,23 @@ public class RulesEditorImpl
     @UiField
     FormInputText nameInput;
 
+
+    @UiField
+    FormGroup optionsGroup;
+    @UiField
+    FormCheckBox enabledCheckBox;
+
+/*
+    @UiField
+    FormCheckBox templateCheckBox;
+
+*/
     @UiField
     FormButton rulesFileDownload;
     @UiField
     LabelElement rulesFileUploadLabel;
     @UiField
     FileUpload rulesFileUpload;
-
-    @UiField
-    FormGroup enabledGroup;
-    @UiField
-    FormCheckBox enabledCheckBox;
 
     @UiField
     FormGroup rulesGroup;

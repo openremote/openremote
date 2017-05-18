@@ -21,13 +21,11 @@ package org.openremote.manager.client.rules.asset;
 
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.uibinder.client.UiBinder;
-import com.google.gwt.uibinder.client.UiField;
-import com.google.gwt.user.client.ui.InlineLabel;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.rules.AbstractRulesList;
 import org.openremote.manager.client.style.FormTableStyle;
 import org.openremote.manager.client.widget.FlexSplitPanel;
-import org.openremote.manager.shared.rules.AssetRuleset;
+import org.openremote.model.rules.AssetRuleset;
 
 import javax.inject.Inject;
 

@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.shared.rules;
+package org.openremote.model.rules;
 
 import javax.persistence.Entity;
 import javax.persistence.Table;
@@ -33,12 +33,12 @@ public class GlobalRuleset extends Ruleset {
     public GlobalRuleset() {
     }
 
-    public GlobalRuleset(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled) {
-        super(id, version, createdOn, lastModified, name, enabled);
+    public GlobalRuleset(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String templateAssetId) {
+        super(id, version, createdOn, lastModified, name, enabled, templateAssetId);
     }
 
-    public GlobalRuleset(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String rules) {
-        super(id, version, createdOn, lastModified, name, enabled, rules);
+    public GlobalRuleset(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String templateAssetId, String rules) {
+        super(id, version, createdOn, lastModified, name, enabled, templateAssetId, rules);
     }
 
     public GlobalRuleset(String name, String rules) {

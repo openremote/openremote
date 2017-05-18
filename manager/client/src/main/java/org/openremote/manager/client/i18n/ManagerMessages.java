@@ -360,4 +360,6 @@ public interface ManagerMessages extends Messages {
     String reset();
 
     String executable();
+
+    String template();
 }
