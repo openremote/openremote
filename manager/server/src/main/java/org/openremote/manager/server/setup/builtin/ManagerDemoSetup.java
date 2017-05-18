@@ -50,7 +50,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
 
     // Update these numbers whenever you change a RULE_STATE flag in test data
     public static final int DEMO_RULE_STATES_APARTMENT_1 = 11;
-    public static final int DEMO_RULE_STATES_APARTMENT_2 = 4;
+    public static final int DEMO_RULE_STATES_APARTMENT_2 = 9;
     public static final int DEMO_RULE_STATES_APARTMENT_3 = 0;
     public static final int DEMO_RULE_STATES_SMART_HOME = DEMO_RULE_STATES_APARTMENT_1 + DEMO_RULE_STATES_APARTMENT_2 + DEMO_RULE_STATES_APARTMENT_3;
     public static final int DEMO_RULE_STATES_CUSTOMER_A = DEMO_RULE_STATES_SMART_HOME;
@@ -74,6 +74,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
     public String apartment2Id;
     public String apartment3Id;
     public String apartment2LivingroomId;
+    public String apartment2BathroomId;
     public String apartment3LivingroomId;
     public String masterRealmId;
     public String customerARealmId;
@@ -431,6 +432,11 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                     new MetaItem(DESCRIPTION, Values.create("Timestamp of last detected presence")),
                     new MetaItem(RULE_STATE, Values.create(true))
                 ),
+            new AssetAttribute("co2Level", AttributeType.NUMBER, Values.create(350))
+                .setMeta(
+                    new MetaItem(LABEL, Values.create("CO2 Level")),
+                    new MetaItem(RULE_STATE, Values.create(true))
+                ),
             new AssetAttribute("lightSwitch", AttributeType.BOOLEAN, Values.create(true))
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Light Switch")),
@@ -443,6 +449,43 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         );
         apartment2Livingroom = assetStorageService.merge(apartment2Livingroom);
         apartment2LivingroomId = apartment2Livingroom.getId();
+
+        ServerAsset apartment2Bathroom = new ServerAsset("Bathroom", ROOM, apartment2);
+        apartment2Bathroom.setLocation(apartment2.getLocation());
+        apartment2Bathroom.setAttributes(
+            new AssetAttribute("motionSensor", AttributeType.BOOLEAN, Values.create(false))
+                .setMeta(
+                    new MetaItem(LABEL, Values.create("Motion Sensor")),
+                    new MetaItem(DESCRIPTION, Values.create("PIR sensor that sends 'true' when motion is sensed")),
+                    new MetaItem(RULE_STATE, Values.create(true)),
+                    new MetaItem(RULE_EVENT, Values.create(true))
+                ),
+            new AssetAttribute("presenceDetected", AttributeType.BOOLEAN, Values.create(false))
+                .setMeta(
+                    new MetaItem(LABEL, Values.create("Presence Detected")),
+                    new MetaItem(DESCRIPTION, Values.create("Someone is currently present in the room")),
+                    new MetaItem(RULE_STATE, Values.create(true))
+                ),
+            new AssetAttribute("firstPresenceDetected", AttributeType.NUMBER)
+                .setMeta(
+                    new MetaItem(LABEL, Values.create("First Presence Timestamp")),
+                    new MetaItem(DESCRIPTION, Values.create("Timestamp of the first detected presence")),
+                    new MetaItem(RULE_STATE, Values.create(true))
+                ),
+            new AssetAttribute("lastPresenceDetected", AttributeType.NUMBER)
+                .setMeta(
+                    new MetaItem(LABEL, Values.create("Last Presence Timestamp")),
+                    new MetaItem(DESCRIPTION, Values.create("Timestamp of last detected presence")),
+                    new MetaItem(RULE_STATE, Values.create(true))
+                ),
+            new AssetAttribute("lightSwitch", AttributeType.BOOLEAN, Values.create(true))
+                .setMeta(
+                    new MetaItem(LABEL, Values.create("Light Switch")),
+                    new MetaItem(RULE_STATE, Values.create(false))
+                )
+        );
+        apartment2Bathroom = assetStorageService.merge(apartment2Bathroom);
+        apartment2BathroomId = apartment2Bathroom.getId();
 
         ServerAsset apartment3 = new ServerAsset("Apartment 3", RESIDENCE, smartHome);
         apartment3.setLocation(smartHome.getLocation());
