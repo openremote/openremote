@@ -144,7 +144,7 @@ public class MapWidget extends FlowPanel {
         }
 
         mapOptions.put("container", hostElementId);
-        mapOptions.put("attributionControl", false);
+        mapOptions.put("attributionControl", true);
         mapboxMap = new MapboxMap(mapOptions.asNativeObject());
 
         mapboxMap.on(EventType.LOAD, eventData -> {
