@@ -73,7 +73,7 @@ class NotificationService: UNNotificationServiceExtension, URLSessionDelegate {
                                                 }
                                                     i += 1
                                             }
-                                            let categoryName = "blok61Notification"
+                                            let categoryName = "openremoteNotification"
                                             let category = UNNotificationCategory(identifier: categoryName, actions: notificationActions, intentIdentifiers: [], options: [])
                                             let categories : Set = [category]
                                             UNUserNotificationCenter.current().setNotificationCategories(categories)

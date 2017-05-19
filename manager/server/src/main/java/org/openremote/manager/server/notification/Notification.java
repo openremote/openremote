@@ -4,7 +4,7 @@ public class Notification {
 
 	String body;
 	boolean mutable_content;
-	String click_action = "blok61Notification";
+	String click_action = "openremoteNotification";
 
 	public Notification(String body, boolean mutable_content) {
 		super();
