@@ -42,18 +42,12 @@ public class AssetState extends AbstractAssetUpdate {
         CONTINUE,
 
         /**
-         * Processor has finally handled the update, cancel further processing.
-         */
-        HANDLED,
-
-        /**
          * Processor encountered an error trying to process the update, cancel further processing and escalate.
          */
         ERROR,
 
         /**
-         * Indicates that this update has been through the entire processing chain; the object can no longer be
-         * mutated at this stage.
+         * Indicates that this update has been handled; the object can no longer be mutated at this stage.
          */
         COMPLETED
     }

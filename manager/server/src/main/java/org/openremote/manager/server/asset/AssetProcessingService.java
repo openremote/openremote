@@ -72,11 +72,30 @@ import static org.openremote.model.attribute.AttributeEvent.Source.INTERNAL;
  * <p>
  * The regular processing chain is:
  * <ul>
- * <li>{@link RulesService}</li>
  * <li>{@link AgentService}</li>
+ * <li>{@link RulesService}</li>
  * <li>{@link AssetStorageService}</li>
  * <li>{@link AssetDatapointService}</li>
  * </ul>
+ * <h2>Agent service processing logic</h2>
+ * <p>
+ * The agent service's role is to communicate asset attribute writes to actuators, through protocols.
+ * When the update messages' source is {@link AttributeEvent.Source#SENSOR}, the agent service ignores the message.
+ * The message will also be ignored if the updated attribute is not linked to a protocol configuration.
+ * <p>
+ * If the updated attribute has an invalid agent link, the message status is set to {@link AssetState.ProcessingStatus#ERROR}.
+ * <p>
+ * If the updated attribute has a valid agent link, an {@link AttributeEvent} is sent on the {@link Protocol#ACTUATOR_TOPIC},
+ * for execution on an actual device or service 'things'. The update is then marked as
+ * {@link AssetState.ProcessingStatus#COMPLETED} and no further processing is necessary. The update will not reach the
+ * rules engine or the database.
+ * <p>
+ * This means that a protocol implementation is responsible for producing a new {@link AttributeEvent} to
+ * indicate to the system that the attribute value has/has not changed. The protocol should know best when to
+ * do this and it will vary from protocol to protocol; some 'things' might respond to an actuator write immediately
+ * with a new sensor read, or they might send a later "sensor changed" message or both or neither (fire and
+ * forget). The protocol must decide what the best course of action is based on the 'things' it communicates with
+ * and the transport layer it uses etc.
  * <h2>Rules Service processing logic</h2>
  * <p>
  * Checks if attribute is {@link AssetAttribute#isRuleState} or {@link AssetAttribute#isRuleEvent}, and if
@@ -91,23 +110,6 @@ import static org.openremote.model.attribute.AttributeEvent.Source.INTERNAL;
  * the event source timestamp anymore or b) by the rules service if the event lifetime set in
  * {@link RulesService#RULE_EVENT_EXPIRES} is reached or c) by the rules service if the event lifetime set in the
  * attribute {@link AssetMeta#RULE_EVENT_EXPIRES} is reached.
- * <h2>Agent service processing logic</h2>
- * <p>
- * The agent service's role is to communicate asset attribute writes to actuators, through protocols.
- * When the update messages' source is {@link AttributeEvent.Source#SENSOR}, the agent service ignores the message.
- * The message will also be ignored if the updated attribute is not linked to a protocol configuration.
- * <p>
- * If the updated attribute has an invalid agent link, the message status is set to {@link AssetState.ProcessingStatus#ERROR}.
- * <p>
- * If the updated attribute has a valid agent link, an {@link AttributeEvent} is sent on the {@link Protocol#ACTUATOR_TOPIC},
- * for execution on an actual device or service 'things'.
- * <p>
- * This means that a protocol implementation is responsible for producing a new {@link AttributeEvent} to
- * indicate to the system that the attribute value has/has not changed. The protocol should know best when to
- * do this and it will vary from protocol to protocol; some 'things' might respond to an actuator write immediately
- * with a new sensor read, or they might send a later "sensor changed" message or both or neither (fire and
- * forget). The protocol must decide what the best course of action is based on the 'things' it communicates with
- * and the transport layer it uses etc.
  * <h2>Asset Storage Service processing logic</h2>
  * <p>
  * Always tries to persist the attribute value in the database and allows the message to continue if the commit was
@@ -185,8 +187,8 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
             return false;
         });
 
-        processors.add(rulesService);
         processors.add(agentService);
+        processors.add(rulesService);
         processors.add(assetStorageService);
         processors.add(assetDatapointService);
 
@@ -363,7 +365,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                 }
 
                 switch (assetState.getProcessingStatus()) {
-                    case HANDLED:
+                    case COMPLETED:
                         LOG.fine("<== Processor " + processor + " finally handled: " + assetState);
                         break processorLoop;
                     case ERROR:
@@ -374,7 +376,8 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                 }
             }
             if (assetState.getProcessingStatus() != AssetState.ProcessingStatus.ERROR) {
-                assetState.setProcessingStatus(AssetState.ProcessingStatus.COMPLETED);
+                if (assetState.getProcessingStatus() != AssetState.ProcessingStatus.COMPLETED)
+                    assetState.setProcessingStatus(AssetState.ProcessingStatus.COMPLETED);
                 eventService.publishEvent(
                     new AttributeEvent(assetState.getId(), assetState.getAttributeName(), assetState.getValue())
                 );

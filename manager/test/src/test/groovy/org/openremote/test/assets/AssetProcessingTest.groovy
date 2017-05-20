@@ -117,8 +117,8 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
         then: "register mock asset processors"
         assetProcessingService.processors.add(mockDatapointServiceConsumer)
         assetProcessingService.processors.add(3, mockAssetStorageConsumer)
-        assetProcessingService.processors.add(2, mockAgentServiceConsumer)
-        assetProcessingService.processors.add(1, mockRulesServiceConsumer)
+        assetProcessingService.processors.add(2, mockRulesServiceConsumer)
+        assetProcessingService.processors.add(1, mockAgentServiceConsumer)
         assetProcessingService.processors.add(0, mockStartConsumer)
 
         when: "a mock agent that uses the mock protocol is created"
@@ -179,8 +179,8 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
         then: "the attribute event should reach the protocol and stop at the agent service with a status of COMPLETED"
         conditions.eventually {
             assert updatesPassedStartOfProcessingChain.size() == 1
-            assert updatesPassedRulesService.size() == 1
             assert updatesPassedAgentService.size() == 0
+            assert updatesPassedRulesService.size() == 0
             assert updatesPassedAssetStorageService.size() == 0
             assert updatesPassedDatapointService.size() == 0
             assert updatesPassedStartOfProcessingChain[0].attribute.getAssetId().orElse("") == mockThing.getId()
@@ -192,25 +192,33 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
         }
 
         when: "the protocol updates the attributes value with the value it just received"
+        updatesPassedStartOfProcessingChain.clear()
+        updatesPassedRulesService.clear()
+        updatesPassedAgentService.clear()
+        updatesPassedAssetStorageService.clear()
+        updatesPassedDatapointService.clear()
         mockProtocol.responseReceived()
 
         then: "a new attribute event should occur and reach the end of the processing chain"
         conditions.eventually {
-            assert updatesPassedStartOfProcessingChain.size() == 2
-            assert updatesPassedRulesService.size() == 2
+            assert updatesPassedStartOfProcessingChain.size() == 1
             assert updatesPassedAgentService.size() == 1
+            assert updatesPassedRulesService.size() == 1
             assert updatesPassedAssetStorageService.size() == 1
             assert updatesPassedDatapointService.size() == 1
-            assert updatesPassedStartOfProcessingChain[1].attribute.getAssetId().orElse("") == mockThing.getId()
-            assert updatesPassedStartOfProcessingChain[1].attribute.getName().orElse("") == "light1Toggle"
-            assert !Values.getBoolean(updatesPassedStartOfProcessingChain[1].getOldValue()).orElse(true)
-            assert !updatesPassedStartOfProcessingChain[1].getValueAsBoolean()
-            assert updatesPassedStartOfProcessingChain[1].error == null
-            assert updatesPassedStartOfProcessingChain[1].processingStatus == AssetState.ProcessingStatus.COMPLETED
+            assert updatesPassedStartOfProcessingChain[0].attribute.getAssetId().orElse("") == mockThing.getId()
+            assert updatesPassedStartOfProcessingChain[0].attribute.getName().orElse("") == "light1Toggle"
+            assert !Values.getBoolean(updatesPassedStartOfProcessingChain[0].getOldValue()).orElse(true)
+            assert !updatesPassedStartOfProcessingChain[0].getValueAsBoolean()
+            assert updatesPassedStartOfProcessingChain[0].error == null
+            assert updatesPassedStartOfProcessingChain[0].processingStatus == AssetState.ProcessingStatus.COMPLETED
         }
 
         when: "an attribute event occurs for the invalid protocol attribute"
         updatesPassedStartOfProcessingChain.clear()
+        updatesPassedRulesService.clear()
+        updatesPassedAgentService.clear()
+        updatesPassedAssetStorageService.clear()
         updatesPassedDatapointService.clear()
         sendToActuatorEvents.clear()
         def light2toggleOn = new AttributeEvent(
@@ -221,6 +229,9 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
         then: "the attribute event should pass the start of the processing chain, but not reach the mock protocol or the end of the processing chain and error should be populated"
         conditions.eventually {
             assert updatesPassedStartOfProcessingChain.size() == 1
+            assert updatesPassedAgentService.size() == 0
+            assert updatesPassedRulesService.size() == 0
+            assert updatesPassedAssetStorageService.size() == 0
             assert updatesPassedDatapointService.size() == 0
             assert sendToActuatorEvents.size() == 0
             assert updatesPassedStartOfProcessingChain[0].id == mockThing.id
@@ -232,6 +243,9 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
 
         when: "an attribute event occurs for the plain attribute"
         updatesPassedStartOfProcessingChain.clear()
+        updatesPassedRulesService.clear()
+        updatesPassedAgentService.clear()
+        updatesPassedAssetStorageService.clear()
         updatesPassedDatapointService.clear()
         sendToActuatorEvents.clear()
         def plainAttributeTest = new AttributeEvent(
@@ -242,8 +256,11 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
         then: "the attribute event should pass the start of the processing chain and reach the end of the processing chain"
         conditions.eventually {
             assert updatesPassedStartOfProcessingChain.size() == 1
-            assert sendToActuatorEvents.size() == 0
+            assert updatesPassedAgentService.size() == 1
+            assert updatesPassedRulesService.size() == 1
+            assert updatesPassedAssetStorageService.size() == 1
             assert updatesPassedDatapointService.size() == 1
+            assert sendToActuatorEvents.size() == 0
             assert updatesPassedDatapointService[0].name == "Mock Thing Asset"
             assert updatesPassedDatapointService[0].attributeName == "plainAttribute"
             assert Values.getString(updatesPassedDatapointService[0].oldValue).orElse(null) == "demo"

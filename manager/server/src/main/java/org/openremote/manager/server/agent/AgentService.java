@@ -519,10 +519,10 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
     }
 
     /**
-     * If this is not a southbound update from a client, or if the changed attribute is not linked to
-     * an agent's protocol configuration, we ignore it.
+     * If this is an update from a sensor, or if the changed attribute is not linked to an agent's protocol
+     * configuration, it's ignored.
      * <p>
-     * Otherwise we push the update to the attributes' linked protocol to handle and prevent any further
+     * Otherwise push the update to the attributes' linked protocol to handle and prevent any further
      * processing of this event by the processing chain. The protocol should raise sensor updates as
      * required (i.e. the protocol is responsible for synchronising state with the database).
      */
@@ -560,7 +560,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
                     LOG.warning("Attribute doesn't have a valid attribute event: " + assetState);
                 }
 
-                assetState.setProcessingStatus(AssetState.ProcessingStatus.HANDLED);
+                assetState.setProcessingStatus(AssetState.ProcessingStatus.COMPLETED);
                 return protocolConfiguration;
             })
             .orElseGet(() -> {
