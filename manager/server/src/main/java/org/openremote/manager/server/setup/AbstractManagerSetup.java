@@ -77,6 +77,7 @@ public abstract class AbstractManagerSetup implements Setup {
                 .setMeta(new Meta(
                     new MetaItem(LABEL, Values.create("Alarm enabled")),
                     new MetaItem(DESCRIPTION, Values.create("Send notifications when presence is detected")),
+                    new MetaItem(PROTECTED, Values.create(true)),
                     new MetaItem(RULE_STATE, Values.create(true)),
                     new MetaItem(SHOW_ON_DASHBOARD, Values.create(true))
                 )),
@@ -84,17 +85,20 @@ public abstract class AbstractManagerSetup implements Setup {
                 .setMeta(new Meta(
                     new MetaItem(LABEL, Values.create("Vacation days")),
                     new MetaItem(DESCRIPTION, Values.create("Enable vacation mode for given days")),
+                    new MetaItem(PROTECTED, Values.create(true)),
                     new MetaItem(RULE_STATE, Values.create(true))
                 )),
             new AssetAttribute("autoSceneSchedule", AttributeType.BOOLEAN, Values.create(false))
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Automatic scene schedule")),
                     new MetaItem(DESCRIPTION, Values.create("Predict presence and automatically adjust scene schedule")),
+                    new MetaItem(PROTECTED, Values.create(true)),
                     new MetaItem(RULE_STATE, Values.create(true))
                 ),
             new AssetAttribute("lastExecutedScene", AttributeType.STRING, Values.create("HOME"))
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Last executed scene")),
+                    new MetaItem(PROTECTED, Values.create(true)),
                     new MetaItem(READ_ONLY, Values.create(true)),
                     new MetaItem(RULE_STATE, Values.create(true)),
                     new MetaItem(SHOW_ON_DASHBOARD, Values.create(true))
@@ -278,18 +282,21 @@ public abstract class AbstractManagerSetup implements Setup {
                 new AssetAttribute(scene.attributeName, AttributeType.STRING, Values.create(AttributeExecuteStatus.READY.name()))
                     .setMeta(
                         new MetaItem(LABEL, Values.create(scene.attributeLabel)),
+                        new MetaItem(PROTECTED, Values.create(true)),
                         new MetaItem(EXECUTABLE, Values.create(true)),
                         new MetaItem(AGENT_LINK, new AttributeRef(agent.getId(), scene.attributeName).toArrayValue())
                     ),
                 new AssetAttribute(scene.attributeName + "AlarmEnabled", AttributeType.BOOLEAN)
                     .setMeta(
                         new MetaItem(LABEL, Values.create(scene.attributeLabel + " alarm enabled")),
+                        new MetaItem(PROTECTED, Values.create(true)),
                         new MetaItem(META_MACRO_ACTION_INDEX, Values.create(0)),
                         new MetaItem(AGENT_LINK, new AttributeRef(agent.getId(), scene.attributeName).toArrayValue())
                     ),
                 new AssetAttribute(scene.attributeName + "TargetTemperature", AttributeType.NUMBER)
                     .setMeta(
                         new MetaItem(LABEL, Values.create(scene.attributeLabel + " target temperature")),
+                        new MetaItem(PROTECTED, Values.create(true)),
                         new MetaItem(META_MACRO_ACTION_INDEX, Values.create(1)),
                         new MetaItem(AGENT_LINK, new AttributeRef(agent.getId(), scene.attributeName).toArrayValue())
                     )
@@ -301,6 +308,7 @@ public abstract class AbstractManagerSetup implements Setup {
                     new AssetAttribute(scene.attributeName + "Time" + dayOfWeek.name(), AttributeType.STRING)
                         .setMeta(
                             new MetaItem(LABEL, Values.create(scene.attributeLabel + " time " + dayName)),
+                            new MetaItem(PROTECTED, Values.create(true)),
                             new MetaItem(RULE_STATE, Values.create(true)),
                             new MetaItem(META_TIMER_VALUE_LINK, Values.create(TimerValue.TIME.toString())),
                             new MetaItem(AGENT_LINK, new AttributeRef(agent.getId(), scene.attributeName + dayName).toArrayValue())
@@ -308,6 +316,7 @@ public abstract class AbstractManagerSetup implements Setup {
                     new AssetAttribute(scene.attributeName + "Enabled" + dayOfWeek.name(), AttributeType.BOOLEAN)
                         .setMeta(
                             new MetaItem(LABEL, Values.create(scene.attributeLabel + " enabled " + dayName)),
+                            new MetaItem(PROTECTED, Values.create(true)),
                             new MetaItem(META_TIMER_VALUE_LINK, Values.create(TimerValue.ENABLED.toString())),
                             new MetaItem(AGENT_LINK, new AttributeRef(agent.getId(), scene.attributeName + dayName).toArrayValue())
                         )
