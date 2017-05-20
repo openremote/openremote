@@ -24,7 +24,7 @@ import org.openremote.model.ValidationFailure;
 import org.openremote.model.attribute.AttributeExecuteStatus;
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.rules.Ruleset;
-import org.openremote.model.rules.template.AssetStateConstraints;
+import org.openremote.model.rules.template.TemplateFilter;
 import org.openremote.model.util.Pair;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueType;
@@ -151,11 +151,12 @@ public enum AssetMeta implements HasUniqueResourceName {
 
     /**
      * When {@link Ruleset#templateAssetId} references an asset, use the attribute to customize the template when
-     * the ruleset is deployed. The attribute name is available in the template as <code>filterId</code>, the
-     * attribute value is converted into {@link AssetStateConstraints} and available in the template as
-     * {@link AssetStateConstraints#TEMPLATE_PARAM_NAME}.
+     * the ruleset is deployed. The attribute name is available in the template as parameter {@link
+     * TemplateFilter#TEMPLATE_PARAM_FILTER_NAME}, the attribute value is converted into {@link TemplateFilter} and
+     * available in the template as {@link TemplateFilter#TEMPLATE_PARAM_ASSET_STATE} and
+     * {@link TemplateFilter#TEMPLATE_PARAM_ASSET_EVENT}.
      */
-    RULE_STATE_TEMPLATE_FILTER(ASSET_META_NAMESPACE + ":ruleStateTemplateFilter", new Access(true, false, true), ValueType.BOOLEAN),
+    RULE_TEMPLATE_FILTER(ASSET_META_NAMESPACE + ":ruleTemplateFilter", new Access(true, false, true), ValueType.BOOLEAN),
 
     /**
      * Enable flag to be used by asset attributes that could require this functionality (e.g. {@link org.openremote.model.asset.agent.ProtocolConfiguration})

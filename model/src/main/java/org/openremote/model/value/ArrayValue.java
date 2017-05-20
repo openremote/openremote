@@ -16,6 +16,7 @@
 package org.openremote.model.value;
 
 import java.util.Optional;
+import java.util.stream.Stream;
 
 public interface ArrayValue extends Value {
 
@@ -31,7 +32,11 @@ public interface ArrayValue extends Value {
 
     Optional<ObjectValue> getObject(int index);
 
+    Stream<Value> stream();
+
     int length();
+
+    boolean isEmpty();
 
     ArrayValue remove(int index);
 

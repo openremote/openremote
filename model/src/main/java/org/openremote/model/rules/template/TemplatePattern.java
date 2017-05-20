@@ -19,11 +19,11 @@
  */
 package org.openremote.model.rules.template;
 
-import org.openremote.model.value.ObjectValue;
+import org.openremote.model.value.Value;
 
-public interface Constraint {
+public interface TemplatePattern {
 
-    ObjectValue toObjectValue();
+    Value toModelValue();
 
     String render();
 }

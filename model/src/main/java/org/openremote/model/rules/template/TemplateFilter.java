@@ -19,15 +19,88 @@
  */
 package org.openremote.model.rules.template;
 
+import org.openremote.model.value.ArrayValue;
+import org.openremote.model.value.Value;
+import org.openremote.model.value.Values;
+
+import java.util.Arrays;
+import java.util.Optional;
+import java.util.stream.Stream;
+
 public class TemplateFilter {
 
-    final protected String filterId;
+    public static final String TEMPLATE_PARAM_FILTER_NAME = "filterName";
+    public static final String TEMPLATE_PARAM_ASSET_STATE = "assetStatePatterns";
+    public static final String TEMPLATE_PARAM_ASSET_EVENT = "assetEventPatterns";
 
-    public TemplateFilter(String filterId) {
-        this.filterId = filterId;
+    final protected String filterName;
+    final protected TemplatePattern[] patterns;
+
+    public TemplateFilter(String filterName, TemplatePattern... patterns) {
+        this.filterName = filterName;
+        this.patterns = patterns;
     }
 
-    public String getFilterId() {
-        return filterId;
+    /**
+     * Renders {@link #TEMPLATE_PARAM_FILTER_NAME}
+     */
+    public String getFilterName() {
+        return filterName;
+    }
+
+    /**
+     * Renders {@link #TEMPLATE_PARAM_ASSET_STATE}, uses LHS rule binding <code>$assetState</code>.
+     */
+    public String getAssetStatePatterns() {
+        StringBuilder sb = new StringBuilder();
+        for (TemplatePattern templatePattern : patterns) {
+            sb.append("AssetState(id == $assetState.id, ");
+            sb.append(templatePattern.render());
+            sb.append(")").append("\n");
+        }
+        return sb.toString();
+    }
+
+    /**
+     * Renders {@link #TEMPLATE_PARAM_ASSET_EVENT}, uses LHS rule binding <code>$assetEvent</code>.
+     */
+    public String getAssetEventPatterns() {
+        StringBuilder sb = new StringBuilder();
+        for (TemplatePattern templatePattern : patterns) {
+            sb.append("AssetEvent(id == $assetEvent.id, ");
+            sb.append(templatePattern.render());
+            sb.append(")").append("\n");
+        }
+        return sb.toString();
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "{" +
+            "filterName='" + filterName + '\'' +
+            ", patterns=" + Arrays.toString(patterns) +
+            '}';
+    }
+
+    public Value toModelValue() {
+        return Values.createArray().addAll(
+            Arrays.stream(patterns)
+                .map(TemplatePattern::toModelValue)
+                .toArray(Value[]::new)
+        );
+    }
+
+    public static Optional<TemplateFilter> fromModelValue(String filterId, Value value) {
+        TemplatePattern[] templatePatterns =
+            Values.getArray(value)
+                .map(ArrayValue::stream)
+                .orElse(Stream.empty())
+                .map(AttributeValueConstraintPattern::fromModelValue)
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .toArray(TemplatePattern[]::new);
+        return templatePatterns.length > 0
+            ? Optional.of(new TemplateFilter(filterId, templatePatterns))
+            : Optional.empty();
     }
 }

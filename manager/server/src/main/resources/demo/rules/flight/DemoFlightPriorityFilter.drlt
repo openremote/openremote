@@ -1,6 +1,6 @@
 template header
-filterId
-assetStateConstraints
+filterName
+assetStatePatterns
 
 package org.openremote.test.rules.flight;
 
@@ -13,14 +13,14 @@ global org.openremote.model.rules.Assets assets;
 
 template "FlightPriorityFilter"
 
-rule "Set priority for flights matching filter @{filterId}"
+rule "Set priority for flights matching filter @{filterName}"
 when
 
-    // Flights which are not priority (the $assetState binding is used in the constraints later)
+    // Flights which are not priority (the $assetState binding is used in the filter patterns later)
     $assetState: AssetState(type == AssetType.FLIGHT, attributeName == "priority", valueAsBoolean != true)
 
-    // And match any of the filter constraints
-    @{assetStateConstraints}
+    // And match any of the filter patterns
+    @{assetStatePatterns}
 
 then
     // Set the flight priority

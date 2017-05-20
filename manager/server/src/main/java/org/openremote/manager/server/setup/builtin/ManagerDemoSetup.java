@@ -32,9 +32,9 @@ import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetState;
 import org.openremote.model.asset.AssetType;
 import org.openremote.model.attribute.*;
-import org.openremote.model.rules.template.AssetStateConstraints;
-import org.openremote.model.rules.template.AttributeValueConstraint;
-import org.openremote.model.rules.template.ValueComparator;
+import org.openremote.model.rules.template.TemplateFilter;
+import org.openremote.model.rules.template.AttributeValueConstraintPattern;
+import org.openremote.model.value.ValueComparator;
 import org.openremote.model.value.Values;
 
 import java.time.LocalDateTime;
@@ -47,7 +47,6 @@ import static org.openremote.model.asset.AssetMeta.*;
 import static org.openremote.model.asset.AssetType.*;
 import static org.openremote.model.asset.agent.ProtocolConfiguration.initProtocolConfiguration;
 import static org.openremote.model.attribute.AttributeType.*;
-import static org.openremote.model.value.ValueType.OBJECT;
 
 public class ManagerDemoSetup extends AbstractManagerSetup {
 
@@ -643,13 +642,15 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
             new AssetAttribute(
                 "originSwitzerland",
                 TEMPLATE_FILTER,
-                new AssetStateConstraints(
+                new TemplateFilter(
                     "originSwitzerland",
-                    new AttributeValueConstraint("originCountry", ValueComparator.EQUALS, Values.create("Switzerland"), true)
-                ).toObjectValue()
+                    new AttributeValueConstraintPattern(
+                        "originCountry", new AttributeValueConstraint(ValueComparator.EQUALS_IGNORE_CASE, Values.create("switzerland"))
+                    )
+                ).toModelValue()
             ).setMeta(
                 new MetaItem(LABEL, Values.create("Origin Switzerland")),
-                new MetaItem(RULE_STATE_TEMPLATE_FILTER, Values.create(true))
+                new MetaItem(RULE_TEMPLATE_FILTER, Values.create(true))
             )
         );
         flightPriorityFilters = assetStorageService.merge(flightPriorityFilters);

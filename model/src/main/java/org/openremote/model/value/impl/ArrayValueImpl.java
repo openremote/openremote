@@ -19,6 +19,7 @@ import org.openremote.model.value.*;
 
 import java.util.ArrayList;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 public class ArrayValueImpl extends ValueImpl implements ArrayValue {
 
@@ -70,6 +71,11 @@ public class ArrayValueImpl extends ValueImpl implements ArrayValue {
     }
 
     @Override
+    public Stream<Value> stream() {
+        return values.stream();
+    }
+
+    @Override
     public ValueType getType() {
         return ValueType.ARRAY;
     }
@@ -77,6 +83,11 @@ public class ArrayValueImpl extends ValueImpl implements ArrayValue {
     @Override
     public int length() {
         return values.size();
+    }
+
+    @Override
+    public boolean isEmpty() {
+        return values.isEmpty();
     }
 
     @Override

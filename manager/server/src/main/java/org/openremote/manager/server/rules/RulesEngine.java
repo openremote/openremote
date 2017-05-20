@@ -50,7 +50,6 @@ import org.openremote.manager.server.asset.ServerAsset;
 import org.openremote.manager.server.concurrent.ManagerExecutorService;
 import org.openremote.manager.server.notification.NotificationService;
 import org.openremote.manager.server.security.ManagerIdentityService;
-import org.openremote.model.AbstractValueHolder;
 import org.openremote.model.asset.*;
 import org.openremote.model.rules.AssetRuleset;
 import org.openremote.model.rules.GlobalRuleset;
@@ -60,7 +59,6 @@ import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.notification.AlertNotification;
 import org.openremote.model.rules.Assets;
 import org.openremote.model.rules.Users;
-import org.openremote.model.rules.template.AssetStateConstraints;
 import org.openremote.model.rules.template.TemplateFilter;
 import org.openremote.model.user.UserQuery;
 import org.openremote.model.util.Pair;
@@ -255,6 +253,7 @@ public class RulesEngine<T extends Ruleset> {
                 for (Message error : errors) {
                     LOG.severe(error.getText());
                 }
+                LOG.fine(drl);
                 // If compilation failed, remove rules from FileSystem so it won't fail on next pass here if any
                 kfs.delete("src/main/resources/" + ruleset.getId());
             } else {
@@ -769,21 +768,23 @@ public class RulesEngine<T extends Ruleset> {
     }
 
     protected String compileTemplate(String templateAssetId, String rules) {
-        ServerAsset asset = assetStorageService.find(templateAssetId, true);
+        ServerAsset templateAsset = assetStorageService.find(templateAssetId, true);
 
-        if (asset == null)
+        if (templateAsset == null)
             throw new IllegalStateException("Template asset not found: " + templateAssetId);
 
         List<TemplateFilter> filters = new ArrayList<>();
 
-        asset.getAttributesStream()
+        templateAsset.getAttributesStream()
             .filter(AssetAttribute::isRuleStateTemplateFilter)
             .map(attribute -> new Pair<>(attribute.getName(), attribute.getValue()))
             .filter(pair -> pair.key.isPresent() && pair.value.isPresent())
             .map(pair -> new Pair<>(pair.key.get(), pair.value.get()))
-            .map(pair -> AssetStateConstraints.fromValue(pair.key, pair.value))
+            .map(pair -> TemplateFilter.fromModelValue(pair.key, pair.value))
             .filter(Optional::isPresent)
             .forEach(filter -> filters.add(filter.get()));
+
+        LOG.fine("Rendering rules template with filters: " + filters);
 
         ObjectDataCompiler converter = new ObjectDataCompiler();
         InputStream is = new ByteArrayInputStream(rules.getBytes(StandardCharsets.UTF_8));
