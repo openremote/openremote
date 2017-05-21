@@ -23,6 +23,13 @@
             margin: 8px;
         }
 
+        .infoItemIcon {
+            width: 1.4em;
+            text-align: center;
+            margin-right: 0.4em;
+            opacity: 0.4;
+        }
+
         .infoItemLabel {
             font-size: 14px;
             line-height: 16px;

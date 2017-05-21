@@ -32,9 +32,11 @@ import org.openremote.model.asset.ReadAssetAttributesEvent;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeExecuteStatus;
 import org.openremote.model.attribute.AttributeState;
+import org.openremote.model.attribute.AttributeType;
 import org.openremote.model.datapoint.DatapointInterval;
 import org.openremote.model.datapoint.NumberDatapoint;
 import org.openremote.model.event.bus.EventRegistration;
+import org.openremote.model.util.TextUtil;
 import org.openremote.model.value.ValueType;
 
 import java.util.ArrayList;

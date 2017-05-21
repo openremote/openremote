@@ -92,7 +92,7 @@ public class MapWidget extends FlowPanel {
             offset.addAll(create(0), create(0.8));
             layout.put("text-offset", offset);
 
-            layout.put("icon-image", "marker-15");
+            layout.put("icon-image", "marker_15");
             offset = Values.createArray();
             offset.addAll(create(0), create(-4));
             layout.put("icon-offset", offset);
@@ -102,7 +102,7 @@ public class MapWidget extends FlowPanel {
             //paint.put("icon-color", "rgb(193, 215, 47)");
             paint.put("text-color", "#000");
             paint.put("text-halo-color", "#fff");
-            paint.put("text-halo-width", 4.0);
+            paint.put("text-halo-width", 2.0);
             paint.put("text-halo-blur", 4.0);
 
             LAYER_DROPPED_PIN.put("id", FEATURE_LAYER_DROPPED_PIN);

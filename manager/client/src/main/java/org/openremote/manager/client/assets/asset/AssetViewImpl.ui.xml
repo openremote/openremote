@@ -31,6 +31,14 @@
 
         .booleanEditor {
         }
+
+        .regularAttribute {
+            border-left: 4px solid;
+        }
+
+        .highlightAttribute {
+            border-left: 4px solid;
+        }
     </ui:style>
 
     <w:FlexSplitPanel ui:field="splitPanel"

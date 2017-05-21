@@ -25,14 +25,20 @@ import java.util.Optional;
 
 public class MapInfoItem {
 
+    final protected String icon;
     final protected String label;
     final protected String format;
     final protected Value value;
 
-    public MapInfoItem(String label, String format, Value value) {
+    public MapInfoItem(String icon, String label, String format, Value value) {
+        this.icon = icon;
         this.label = label;
         this.format = format;
         this.value = value;
+    }
+
+    public String getIcon() {
+        return icon;
     }
 
     public String getLabel() {

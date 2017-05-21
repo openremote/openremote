@@ -69,7 +69,6 @@ public class AttributesEditor
 
     protected FormLabel createAttributeLabel(AssetAttribute attribute) {
         FormLabel formLabel = new FormLabel(TextUtil.ellipsize(getAttributeLabel(attribute), 30));
-        formLabel.setIcon("edit");
         formLabel.addStyleName("larger");
         return formLabel;
     }
@@ -145,7 +144,13 @@ public class AttributesEditor
             List<ValidationFailure> failures = attribute.getValidationFailures();
             if (failures.isEmpty()) {
                 formGroup.setError(false);
+
+                attribute.getType().ifPresent(attributeType ->
+                    attribute.addMeta(attributeType.getDefaultMetaItems())
+                );
+
                 getAttributes().add(attribute);
+
                 showInfo(environment.getMessages().attributeAdded(attribute.getName().get()));
                 build();
             } else {

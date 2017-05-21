@@ -19,7 +19,6 @@
  */
 package org.openremote.model.asset;
 
-import org.openremote.model.attribute.AttributeType;
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.value.Values;
 
@@ -38,9 +37,9 @@ import static org.openremote.model.attribute.AttributeType.*;
  */
 public enum AssetType {
 
-    CUSTOM(null, "cube", null),
+    CUSTOM(null, "cube"),
 
-    BUILDING(ASSET_NAMESPACE + ":building", "building", Arrays.asList(
+    BUILDING(ASSET_NAMESPACE + ":building", "building",
         new AssetAttribute("area", NUMBER)
             .setMeta(
                 new MetaItem(LABEL, Values.create("Surface Area")),
@@ -66,16 +65,16 @@ public enum AssetType {
             .setMeta(
                 new MetaItem(LABEL, Values.create("Country")),
                 new MetaItem(ABOUT, Values.create("http://project-haystack.org/tag/geoCountry"))
-            ))
+            )
     ),
 
-    FLOOR(ASSET_NAMESPACE + ":floor", "server", null),
+    FLOOR(ASSET_NAMESPACE + ":floor", "server"),
 
-    RESIDENCE(ASSET_NAMESPACE + ":residence", "cubes", null),
+    RESIDENCE(ASSET_NAMESPACE + ":residence", "cubes"),
 
-    ROOM(ASSET_NAMESPACE + ":room", "cube", null),
+    ROOM(ASSET_NAMESPACE + ":room", "cube"),
 
-    FLIGHT(ASSET_NAMESPACE + ":flight", "plane", Arrays.asList(
+    FLIGHT(ASSET_NAMESPACE + ":flight", "plane",
         new AssetAttribute("code", STRING)
             .setMeta(
                 new MetaItem(LABEL, Values.create("Flight Code"))
@@ -147,18 +146,18 @@ public enum AssetType {
         new AssetAttribute("priority", BOOLEAN)
             .setMeta(
                 new MetaItem(LABEL, Values.create("Priority"))
-            ))
+            )
     ),
 
-    AGENT(ASSET_NAMESPACE + ":agent", "gears", null),
+    AGENT(ASSET_NAMESPACE + ":agent", "gears"),
 
-    THING(ASSET_NAMESPACE + ":thing", "gear", null);
+    THING(ASSET_NAMESPACE + ":thing", "gear");
 
     final protected String value;
     final protected String icon;
-    final protected List<AssetAttribute> defaultAttributes;
+    final protected AssetAttribute[] defaultAttributes;
 
-    AssetType(String value, String icon, List<AssetAttribute> defaultAttributes) {
+    AssetType(String value, String icon, AssetAttribute... defaultAttributes) {
         this.value = value;
         this.icon = icon;
         this.defaultAttributes = defaultAttributes;
@@ -173,7 +172,7 @@ public enum AssetType {
     }
 
     public Stream<AssetAttribute> getDefaultAttributes() {
-        return defaultAttributes != null ? defaultAttributes.stream() : Stream.empty();
+        return defaultAttributes != null ? Arrays.stream(defaultAttributes) : Stream.empty();
     }
 
     public static AssetType[] valuesSorted() {

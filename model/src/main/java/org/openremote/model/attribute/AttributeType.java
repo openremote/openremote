@@ -20,6 +20,7 @@
 package org.openremote.model.attribute;
 
 import org.openremote.model.ValidationFailure;
+import org.openremote.model.asset.AssetMeta;
 import org.openremote.model.rules.Ruleset;
 import org.openremote.model.rules.template.TemplateFilter;
 import org.openremote.model.value.Value;
@@ -29,6 +30,7 @@ import org.openremote.model.value.Values;
 import java.util.Optional;
 import java.util.function.Function;
 
+import static org.openremote.model.asset.AssetMeta.FORMAT;
 import static org.openremote.model.attribute.AttributeType.AttributeTypeValidationFailure.*;
 
 /**
@@ -41,13 +43,11 @@ import static org.openremote.model.attribute.AttributeType.AttributeTypeValidati
  */
 public enum AttributeType {
 
-    // TODO Implement more validator functions!
+    STRING("file-text-o", ValueType.STRING, value -> Optional.empty()),
 
-    STRING(ValueType.STRING, value -> Optional.empty()),
+    NUMBER("hashtag", ValueType.NUMBER, value -> Optional.empty()),
 
-    NUMBER(ValueType.NUMBER, value -> Optional.empty()),
-
-    BOOLEAN(ValueType.BOOLEAN, value -> Optional.empty()),
+    BOOLEAN("toggle-off", ValueType.BOOLEAN, value -> Optional.empty()),
 
     /**
      * When {@link Ruleset#templateAssetId} references an asset, use the attribute to customize the
@@ -56,84 +56,168 @@ public enum AttributeType {
      * into {@link TemplateFilter} and available in the template as
      * {@link TemplateFilter#TEMPLATE_PARAM_ASSET_STATE} and {@link TemplateFilter#TEMPLATE_PARAM_ASSET_EVENT}.
      */
-    RULES_TEMPLATE_FILTER(ValueType.ARRAY, value -> Optional.empty()),
-
-    PERCENTAGE(ValueType.NUMBER, value -> Values.getNumber(value)
-        .filter(number -> number < 0 || number > 100)
-        .map(number -> PERCENTAGE_NOT_WITHIN_BOUNDS)
+    RULES_TEMPLATE_FILTER("filter", ValueType.ARRAY, value ->
+        TemplateFilter.fromModelValue("test", value).isPresent()
+            ? Optional.empty()
+            : Optional.of(INVALID_TEMPLATE_FILTER)
     ),
 
-    TIMESTAMP_MILLIS(ValueType.NUMBER, value -> Optional.empty()),
+    PERCENTAGE("percent", ValueType.NUMBER,
+        value -> Values.getNumber(value)
+            .filter(number -> number < 0 || number > 100)
+            .map(number -> PERCENTAGE_OUT_OF_RANGE),
+        new MetaItem(AssetMeta.RANGE_MIN, Values.create(0)),
+        new MetaItem(AssetMeta.RANGE_MAX, Values.create(100)),
+        new MetaItem(AssetMeta.FORMAT, Values.create("%3d %%"))
+    ),
 
-    DATETIME(ValueType.STRING, value -> Optional.empty()),
+    TIMESTAMP_MILLIS("clock-o", ValueType.NUMBER, value -> Optional.empty()),
 
-    COLOR_RGB(ValueType.ARRAY, value -> Optional.empty()),
+    DATETIME("calendar", ValueType.STRING, value -> Optional.empty()),
 
-    COLOR_ARGB(ValueType.ARRAY, value -> Optional.empty()),
+    COLOR_RGB("paint-brush", ValueType.ARRAY, value -> Values.getArray(value)
+        .filter(array -> array.length() != 3)
+        .map(array -> WRONG_COLOR_FORMAT)
+    ),
 
-    COLOR_HEX(ValueType.STRING, value -> Optional.empty()),
+    COLOR_ARGB("paint-brush", ValueType.ARRAY, value -> Values.getArray(value)
+        .filter(array -> array.length() != 4)
+        .map(array -> WRONG_COLOR_FORMAT)
+    ),
 
-    TEMPERATURE_CELCIUS(ValueType.NUMBER, value -> Optional.empty()),
+    COLOR_HEX("paint-brush", ValueType.STRING, value -> Values.getString(value)
+        .filter(s -> !s.matches("[a-fA-F0-9]{6}"))
+        .map(array -> WRONG_COLOR_FORMAT)
+    ),
 
-    TEMPERATURE_KELVIN(ValueType.NUMBER, value -> Optional.empty()),
+    TEMPERATURE_CELCIUS("thermometer", ValueType.NUMBER, value -> Values.getNumber(value)
+        .filter(n -> n < -273.15)
+        .map(n -> TEMPERATURE_OUT_OF_RANGE),
+        new MetaItem(FORMAT, Values.create("%0.1f °"))
+    ),
 
-    TEMPERATURE_FAHRENHEIT(ValueType.NUMBER, value -> Optional.empty()),
+    TEMPERATURE_KELVIN("thermometer", ValueType.NUMBER, value -> Values.getNumber(value)
+        .filter(n -> n < 0)
+        .map(n -> TEMPERATURE_OUT_OF_RANGE)
+    ),
 
-    DISTANCE_M(ValueType.NUMBER, value -> Optional.empty()),
+    TEMPERATURE_FAHRENHEIT("thermometer", ValueType.NUMBER, value -> Values.getNumber(value)
+        .filter(n -> n < -459.67)
+        .map(n -> TEMPERATURE_OUT_OF_RANGE)
+    ),
 
-    DISTANCE_CM(ValueType.NUMBER, value -> Optional.empty()),
+    DISTANCE_M("arrows-h", ValueType.NUMBER, value -> Optional.empty(),
+        new MetaItem(FORMAT, Values.create("%0.5f m"))
+    ),
 
-    DISTANCE_MM(ValueType.NUMBER, value -> Optional.empty()),
+    DISTANCE_CM("arrows-h", ValueType.NUMBER, value -> Optional.empty(),
+        new MetaItem(FORMAT, Values.create("%0.5f cm"))
+    ),
 
-    DISTANCE_IN(ValueType.NUMBER, value -> Optional.empty()),
+    DISTANCE_MM("arrows-h", ValueType.NUMBER, value -> Optional.empty(),
+        new MetaItem(FORMAT, Values.create("%0.5f mm"))
+    ),
 
-    DISTANCE_FT(ValueType.NUMBER, value -> Optional.empty()),
+    DISTANCE_IN("arrows-h", ValueType.NUMBER, value -> Optional.empty(),
+        new MetaItem(FORMAT, Values.create("%0.5f \""))
+    ),
 
-    DISTANCE_YARD(ValueType.NUMBER, value -> Optional.empty()),
+    DISTANCE_FT("arrows-h", ValueType.NUMBER, value -> Optional.empty(),
+        new MetaItem(FORMAT, Values.create("%0.5f '"))
+    ),
 
-    CO2_PPM(ValueType.NUMBER, value -> Optional.empty()),
+    DISTANCE_YARD("arrows-h", ValueType.NUMBER, value -> Optional.empty(),
+        new MetaItem(FORMAT, Values.create("%0.5f yd"))
+    ),
 
-    HUMIDITY_PERCENTAGE(ValueType.NUMBER, value -> Optional.empty()),
+    CO2_PPM("leaf", ValueType.NUMBER, value -> Optional.empty(),
+        new MetaItem(FORMAT, Values.create("%4d ppm"))
+    ),
 
-    HUMIDITY_GPCM(ValueType.NUMBER, value -> Optional.empty()),
+    HUMIDITY_PERCENTAGE("tint", ValueType.NUMBER, value -> Values.getNumber(value)
+        .filter(number -> number < 0 || number > 100)
+        .map(number -> PERCENTAGE_OUT_OF_RANGE),
+        new MetaItem(AssetMeta.RANGE_MIN, Values.create(0)),
+        new MetaItem(AssetMeta.RANGE_MAX, Values.create(100)),
+        new MetaItem(FORMAT, Values.create("%3d %%"))
+    ),
 
-    POWER_WATT(ValueType.NUMBER, value -> Optional.empty()),
+    HUMIDITY_GPCM("tint", ValueType.NUMBER, value -> Optional.empty()),
 
-    POWER_KILOWATT(ValueType.NUMBER, value -> Optional.empty()),
+    POWER_WATT("plug", ValueType.NUMBER, value -> Optional.empty(),
+        new MetaItem(FORMAT, Values.create("%0.5f W"))
+    ),
 
-    POWER_MEGAWATT(ValueType.NUMBER, value -> Optional.empty()),
+    POWER_KILOWATT("plug", ValueType.NUMBER, value -> Optional.empty(),
+        new MetaItem(FORMAT, Values.create("%0.5f KW"))),
 
-    CHARGE_PERCENTAGE(ValueType.NUMBER, value -> Optional.empty()),
+    POWER_MEGAWATT("plug", ValueType.NUMBER, value -> Optional.empty(),
+        new MetaItem(FORMAT, Values.create("%0.5f MW"))),
 
-    CHARGE_KWH(ValueType.NUMBER, value -> Optional.empty()),
+    CHARGE_PERCENTAGE("battery-full", ValueType.NUMBER, value -> Values.getNumber(value)
+        .filter(number -> number < 0 || number > 100)
+        .map(number -> PERCENTAGE_OUT_OF_RANGE),
+        new MetaItem(AssetMeta.RANGE_MIN, Values.create(0)),
+        new MetaItem(AssetMeta.RANGE_MAX, Values.create(100)),
+        new MetaItem(FORMAT, Values.create("%3d %%"))
+    ),
 
-    ENERGY_KWH(ValueType.NUMBER, value -> Optional.empty()),
+    CHARGE_KWH("battery-full", ValueType.NUMBER, value -> Optional.empty(),
+        new MetaItem(FORMAT, Values.create("%0.5f KWh"))),
 
-    ENERGY_JOULE(ValueType.NUMBER, value -> Optional.empty()),
+    ENERGY_KWH("plug", ValueType.NUMBER, value -> Optional.empty(),
+        new MetaItem(FORMAT, Values.create("%0.5f KWh"))
+    ),
 
-    ENERGY_MEGAJOULE(ValueType.NUMBER, value -> Optional.empty()),
+    ENERGY_JOULE("plug", ValueType.NUMBER, value -> Optional.empty(),
+        new MetaItem(FORMAT, Values.create("%0.5f J"))
+    ),
 
-    FLOW_LPM(ValueType.NUMBER, value -> Optional.empty()),
+    ENERGY_MEGAJOULE("plug", ValueType.NUMBER, value -> Optional.empty(),
+        new MetaItem(FORMAT, Values.create("%0.5f MJ"))),
 
-    FLOW_CMPS(ValueType.NUMBER, value -> Optional.empty()),
+    FLOW_LPM("tachometer", ValueType.NUMBER, value -> Optional.empty(),
+        new MetaItem(FORMAT, Values.create("%0.5f l/m"))
+    ),
 
-    FLOW_SCCM(ValueType.NUMBER, value -> Optional.empty()),
+    FLOW_CMPS("tachometer", ValueType.NUMBER, value -> Optional.empty(),
+        new MetaItem(FORMAT, Values.create("%0.5f m³/s"))
+    ),
 
-    FLOW_CFPS(ValueType.NUMBER, value -> Optional.empty()),
+    FLOW_SCCM("tachometer", ValueType.NUMBER, value -> Optional.empty(),
+        new MetaItem(FORMAT, Values.create("%0.5f cm³/m"))
+    ),
 
-    FLOW_GPM(ValueType.NUMBER, value -> Optional.empty());
+    FLOW_CFPS("tachometer", ValueType.NUMBER, value -> Optional.empty(),
+        new MetaItem(FORMAT, Values.create("%0.5f cfs"))
+    ),
+
+    FLOW_GPM("tachometer", ValueType.NUMBER, value -> Optional.empty(),
+        new MetaItem(FORMAT, Values.create("%0.5f gpm"))
+    );
+
+    public static final String DEFAULT_ICON = "circle-thin";
 
     public enum AttributeTypeValidationFailure implements ValidationFailure {
         VALUE_DOES_NOT_MATCH_ATTRIBUTE_TYPE,
-        PERCENTAGE_NOT_WITHIN_BOUNDS
+        PERCENTAGE_OUT_OF_RANGE,
+        INVALID_TEMPLATE_FILTER,
+        WRONG_COLOR_FORMAT,
+        TEMPERATURE_OUT_OF_RANGE
     }
 
-    protected ValueType valueType;
-    protected Function<Value, Optional<ValidationFailure>> validator;
+    final protected String icon;
+    final protected ValueType valueType;
+    final protected Function<Value, Optional<ValidationFailure>> validator;
+    final protected MetaItem[] defaultMetaItems;
 
-    AttributeType(ValueType valueType, Function<Value, Optional<ValidationFailure>> validator) {
+    AttributeType(ValueType valueType, Function<Value, Optional<ValidationFailure>> validator, MetaItem... defaultMetaItems) {
+        this(DEFAULT_ICON, valueType, validator, defaultMetaItems);
+    }
+
+    AttributeType(String icon, ValueType valueType, Function<Value, Optional<ValidationFailure>> validator, MetaItem... defaultMetaItems) {
+        this.icon = icon;
         this.valueType = valueType;
-
         this.validator = value -> {
             // Always perform some basic validation
             if (value != null && getValueType() != value.getType())
@@ -142,10 +226,19 @@ public enum AttributeType {
             // Custom attribute type validation
             return validator.apply(value);
         };
+        this.defaultMetaItems = defaultMetaItems;
+    }
+
+    public String getIcon() {
+        return icon;
     }
 
     public ValueType getValueType() {
         return valueType;
+    }
+
+    public MetaItem[] getDefaultMetaItems() {
+        return defaultMetaItems;
     }
 
     public Optional<ValidationFailure> isValidValue(Value value) {

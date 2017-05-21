@@ -184,6 +184,10 @@ public class AssetAttribute extends Attribute {
         }
     }
 
+    public boolean hasAgentLink() {
+        return getMetaStream().anyMatch(isMetaNameEqualTo(AGENT_LINK));
+    }
+
     public boolean isShowOnDashboard() {
         return getMetaStream()
             .filter(isMetaNameEqualTo(SHOW_ON_DASHBOARD))

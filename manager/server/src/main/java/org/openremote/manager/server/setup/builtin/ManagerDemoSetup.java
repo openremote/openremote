@@ -433,19 +433,19 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                     new MetaItem(DESCRIPTION, Values.create("Someone is currently present in the room")),
                     new MetaItem(RULE_STATE, Values.create(true))
                 ),
-            new AssetAttribute("firstPresenceDetected", AttributeType.NUMBER)
+            new AssetAttribute("firstPresenceDetected", AttributeType.TIMESTAMP_MILLIS)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("First Presence Timestamp")),
                     new MetaItem(DESCRIPTION, Values.create("Timestamp of the first detected presence")),
                     new MetaItem(RULE_STATE, Values.create(true))
                 ),
-            new AssetAttribute("lastPresenceDetected", AttributeType.NUMBER)
+            new AssetAttribute("lastPresenceDetected", AttributeType.TIMESTAMP_MILLIS)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Last Presence Timestamp")),
                     new MetaItem(DESCRIPTION, Values.create("Timestamp of last detected presence")),
                     new MetaItem(RULE_STATE, Values.create(true))
                 ),
-            new AssetAttribute("co2Level", AttributeType.NUMBER, Values.create(350))
+            new AssetAttribute("co2Level", AttributeType.CO2_PPM, Values.create(350))
                 .setMeta(
                     new MetaItem(LABEL, Values.create("CO2 Level")),
                     new MetaItem(RULE_STATE, Values.create(true))
@@ -479,13 +479,13 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                     new MetaItem(DESCRIPTION, Values.create("Someone is currently present in the room")),
                     new MetaItem(RULE_STATE, Values.create(true))
                 ),
-            new AssetAttribute("firstPresenceDetected", AttributeType.NUMBER)
+            new AssetAttribute("firstPresenceDetected", AttributeType.TIMESTAMP_MILLIS)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("First Presence Timestamp")),
                     new MetaItem(DESCRIPTION, Values.create("Timestamp of the first detected presence")),
                     new MetaItem(RULE_STATE, Values.create(true))
                 ),
-            new AssetAttribute("lastPresenceDetected", AttributeType.NUMBER)
+            new AssetAttribute("lastPresenceDetected", AttributeType.TIMESTAMP_MILLIS)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Last Presence Timestamp")),
                     new MetaItem(DESCRIPTION, Values.create("Timestamp of last detected presence")),

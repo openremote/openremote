@@ -72,6 +72,10 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
         String stringEditor();
 
         String booleanEditor();
+
+        String regularAttribute();
+
+        String highlightAttribute();
     }
 
     @UiField

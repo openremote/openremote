@@ -71,6 +71,10 @@ public abstract class AttributesView<
         String numberEditor();
 
         String booleanEditor();
+
+        String regularAttribute();
+
+        String highlightAttribute();
     }
 
     public interface AttributeEditor extends IsWidget {
@@ -284,7 +288,20 @@ public abstract class AttributesView<
     protected FormGroup createAttributeGroup(AssetAttribute attribute) {
         FormGroup formGroup = new FormGroup();
 
-        formGroup.addFormLabel(createAttributeLabel(attribute));
+        if (attribute.hasAgentLink()) {
+            formGroup.addStyleName(container.getStyle().highlightAttribute());
+            formGroup.addStyleName(environment.getWidgetStyle().HighlightBorder());
+        } else {
+            formGroup.addStyleName(container.getStyle().regularAttribute());
+            formGroup.addStyleName(environment.getWidgetStyle().RegularBorder());
+        }
+
+        FormLabel formLabel = createAttributeLabel(attribute);
+        formLabel.setIcon(attribute.isExecutable()
+            ? "cog"
+            : attribute.getType().map(AttributeType::getIcon).orElse(AttributeType.DEFAULT_ICON)
+        );
+        formGroup.addFormLabel(formLabel);
 
         StringBuilder infoText = new StringBuilder();
         if (attribute.isExecutable()) {

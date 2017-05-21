@@ -104,7 +104,7 @@ public class TemplateFilter {
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .toArray(TemplatePattern[]::new);
-        return templatePatterns.length > 0
+        return Values.getArray(value).isPresent() && templatePatterns.length == Values.getArray(value).get().length()
             ? Optional.of(new TemplateFilter(filterId, templatePatterns))
             : Optional.empty();
     }

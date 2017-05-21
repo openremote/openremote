@@ -55,6 +55,8 @@ public class MapInfoPanel extends AbstractAppPanel {
         String panel();
 
         String content();
+
+        String infoItemIcon();
     }
 
     @UiField
@@ -85,6 +87,9 @@ public class MapInfoPanel extends AbstractAppPanel {
         int totalMaxHeight = itemHeightPixels * MAX_ITEMS_BEFORE_SCROLLING;
 
         for (MapInfoItem infoItem : infoItems) {
+            IconLabel itemIcon = new IconLabel(infoItem.getIcon());
+            itemIcon.addStyleName(style.infoItemIcon());
+
             FormLabel itemLabel = new FormLabel(
                 TextUtil.ellipsize(infoItem.getLabel(), 35)
             );
@@ -95,8 +100,9 @@ public class MapInfoPanel extends AbstractAppPanel {
             itemValue.addStyleName(style.infoItemValue());
 
             FlowPanel itemPanel = new FlowPanel();
-            itemPanel.addStyleName("flex-none layout horizontal");
+            itemPanel.addStyleName("flex-none layout horizontal center");
             itemPanel.addStyleName(style.infoItem());
+            itemPanel.add(itemIcon);
             itemPanel.add(itemLabel);
             itemPanel.add(itemValue);
             contentPanel.add(itemPanel);

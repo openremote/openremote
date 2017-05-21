@@ -405,6 +405,14 @@ public class WidgetStyle {
         return "or-HighlightBackground";
     }
 
+    public String HighlightBorder() {
+        return "or-HighlightBorder";
+    }
+
+    public String RegularBorder() {
+        return "or-RegularBorder";
+    }
+
     public String JsonEditor() {
         return "or-JsonEditor";
     }

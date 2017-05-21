@@ -1,23 +1,7 @@
-
-<!---
-
-This README is automatically generated from the comments in these files:
-iron-flex-layout.html
-
-Edit those files, and our readme bot will duplicate them over here!
-Edit this file, and the bot will squash your changes :)
-
-The bot does some handling of markdown. Please file a bug if it does the wrong
-thing! https://github.com/PolymerLabs/tedium/issues
-
--->
-
 [![Build status](https://travis-ci.org/PolymerElements/iron-flex-layout.svg?branch=master)](https://travis-ci.org/PolymerElements/iron-flex-layout)
+[![Published on webcomponents.org](https://img.shields.io/badge/webcomponents.org-published-blue.svg)](https://beta.webcomponents.org/element/PolymerElements/iron-flex-layout)
 
-_[Demo and API docs](https://elements.polymer-project.org/elements/iron-flex-layout)_
-
-
-##&lt;iron-flex-layout&gt;
+## &lt;iron-flex-layout&gt;
 
 The `<iron-flex-layout>` component provides simple ways to use
 [CSS flexible box layout](https://developer.mozilla.org/en-US/docs/Web/Guide/CSS/Flexible_boxes),
@@ -30,13 +14,41 @@ in every element that needs to use them.
 
 Sample use:
 
-   <link rel="import" href="../iron-flex-layout/iron-flex-layout-classes.html">
+<!--
+```
+<custom-element-demo>
+  <template>
+    <script src="../webcomponentsjs/webcomponents-lite.min.js"></script>
+    <link rel="import" href="iron-flex-layout-classes.html">
+    <dom-module id="demo-element">
+      <template>
+        <style is="custom-style" include="iron-flex iron-flex-alignment"></style>
+        <style>
+          .container, .layout {
+            background-color: #ccc;
+            padding: 4px;
+          }
 
-   <style is="custom-style" include="iron-flex iron-flex-alignment"></style>
-
-   <div class="layout horizontal layout-start">
-     <div>cross axis start alignment</div>
-   </div>
+          .container div, .layout div {
+            background-color: white;
+            padding: 12px;
+            margin: 4px;
+          }
+        </style>
+        <next-code-block></next-code-block>
+      </template>
+      <script>Polymer({is: "demo-element"});</script>
+    </dom-module>
+    <demo-element></demo-element>
+  </template>
+</custom-element-demo>
+```
+-->
+```html
+<div class="layout horizontal layout-start" style="height: 154px">
+  <div>cross axis start alignment</div>
+</div>
+```
 
 1. [Custom CSS mixins](https://github.com/PolymerElements/iron-flex-layout/blob/master/iron-flex-layout.html).
 The mixin stylesheet includes custom CSS mixins that can be applied inside a CSS rule using the `@apply` function.

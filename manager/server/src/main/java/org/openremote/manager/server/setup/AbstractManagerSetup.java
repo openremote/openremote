@@ -46,7 +46,7 @@ import static org.openremote.agent.protocol.timer.TimerProtocol.META_TIMER_VALUE
 import static org.openremote.model.asset.AssetMeta.*;
 import static org.openremote.model.asset.AssetType.*;
 import static org.openremote.model.asset.agent.ProtocolConfiguration.initProtocolConfiguration;
-import static org.openremote.model.attribute.AttributeType.NUMBER;
+import static org.openremote.model.attribute.AttributeType.*;
 
 public abstract class AbstractManagerSetup implements Setup {
 
@@ -133,10 +133,9 @@ public abstract class AbstractManagerSetup implements Setup {
                     new MetaItem(READ_ONLY, Values.create(true)),
                     new MetaItem(SHOW_ON_DASHBOARD, Values.create(true))
                 ),
-            new AssetAttribute("lastPresenceDetected", NUMBER)
+            new AssetAttribute("lastPresenceDetected", TIMESTAMP_MILLIS)
                 .setMeta(
-                    new MetaItem(LABEL, Values.create("Last Presence Timestamp")),
-                    new MetaItem(DESCRIPTION, Values.create("Timestamp of last detected presence")),
+                    new MetaItem(LABEL, Values.create("Last Presence")),
                     new MetaItem(RULE_STATE, Values.create(true)),
                     new MetaItem(PROTECTED, Values.create(true)),
                     new MetaItem(READ_ONLY, Values.create(true))
@@ -146,7 +145,7 @@ public abstract class AbstractManagerSetup implements Setup {
 
     protected void addDemoApartmentRoomCO2Sensor(ServerAsset room, boolean shouldBeLinked, Supplier<MetaItem[]> agentLinker) {
         room.addAttributes(
-            new AssetAttribute("co2Level", NUMBER)
+            new AssetAttribute("co2Level", CO2_PPM)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("CO2 Level")),
                     new MetaItem(RULE_STATE, Values.create(true)),
@@ -161,7 +160,7 @@ public abstract class AbstractManagerSetup implements Setup {
 
     protected void addDemoApartmentRoomHumiditySensor(ServerAsset room, boolean shouldBeLinked, Supplier<MetaItem[]> agentLinker) {
         room.addAttributes(
-            new AssetAttribute("humidity", NUMBER)
+            new AssetAttribute("humidity", HUMIDITY_PERCENTAGE)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Humidity")),
                     new MetaItem(RULE_STATE, Values.create(true)),
@@ -178,7 +177,7 @@ public abstract class AbstractManagerSetup implements Setup {
                                                   boolean shouldBeLinked,
                                                   Supplier<MetaItem[]> agentLinker) {
         room.addAttributes(
-            new AssetAttribute("currentTemperature", NUMBER)
+            new AssetAttribute("currentTemperature", TEMPERATURE_CELCIUS)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Current Temperature")),
                     new MetaItem(RULE_STATE, Values.create(true)),
@@ -194,7 +193,7 @@ public abstract class AbstractManagerSetup implements Setup {
                                                       boolean shouldBeLinked,
                                                       Supplier<MetaItem[]> agentLinker) {
         room.addAttributes(
-            new AssetAttribute("targetTemperature", NUMBER)
+            new AssetAttribute("targetTemperature", TEMPERATURE_CELCIUS)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Target Temperature")),
                     new MetaItem(RULE_STATE, Values.create(true)),

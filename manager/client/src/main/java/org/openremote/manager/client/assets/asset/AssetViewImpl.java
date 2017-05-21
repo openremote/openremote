@@ -66,6 +66,10 @@ public class AssetViewImpl extends Composite implements AssetView {
         String stringEditor();
 
         String booleanEditor();
+
+        String regularAttribute();
+
+        String highlightAttribute();
     }
 
     @UiField
