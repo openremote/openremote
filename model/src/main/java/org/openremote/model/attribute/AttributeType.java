@@ -20,6 +20,8 @@
 package org.openremote.model.attribute;
 
 import org.openremote.model.ValidationFailure;
+import org.openremote.model.rules.Ruleset;
+import org.openremote.model.rules.template.TemplateFilter;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueType;
 import org.openremote.model.value.Values;
@@ -47,7 +49,14 @@ public enum AttributeType {
 
     BOOLEAN(ValueType.BOOLEAN, value -> Optional.empty()),
 
-    TEMPLATE_FILTER(ValueType.ARRAY, value -> Optional.empty()),
+    /**
+     * When {@link Ruleset#templateAssetId} references an asset, use the attribute to customize the
+     * template when the ruleset is deployed. The attribute name is available in the template as
+     * parameter {@link TemplateFilter#TEMPLATE_PARAM_FILTER_NAME}, the attribute value is converted
+     * into {@link TemplateFilter} and available in the template as
+     * {@link TemplateFilter#TEMPLATE_PARAM_ASSET_STATE} and {@link TemplateFilter#TEMPLATE_PARAM_ASSET_EVENT}.
+     */
+    RULES_TEMPLATE_FILTER(ValueType.ARRAY, value -> Optional.empty()),
 
     PERCENTAGE(ValueType.NUMBER, value -> Values.getNumber(value)
         .filter(number -> number < 0 || number > 100)

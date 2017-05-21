@@ -23,8 +23,6 @@ import org.openremote.model.HasUniqueResourceName;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.attribute.AttributeExecuteStatus;
 import org.openremote.model.attribute.MetaItem;
-import org.openremote.model.rules.Ruleset;
-import org.openremote.model.rules.template.TemplateFilter;
 import org.openremote.model.util.Pair;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueType;
@@ -148,15 +146,6 @@ public enum AssetMeta implements HasUniqueResourceName {
      * (using event source timestamp, not event processing time).
      */
     RULE_EVENT_EXPIRES(ASSET_META_NAMESPACE + ":ruleEventExpires", new Access(true, false, true), ValueType.STRING),
-
-    /**
-     * When {@link Ruleset#templateAssetId} references an asset, use the attribute to customize the template when
-     * the ruleset is deployed. The attribute name is available in the template as parameter {@link
-     * TemplateFilter#TEMPLATE_PARAM_FILTER_NAME}, the attribute value is converted into {@link TemplateFilter} and
-     * available in the template as {@link TemplateFilter#TEMPLATE_PARAM_ASSET_STATE} and
-     * {@link TemplateFilter#TEMPLATE_PARAM_ASSET_EVENT}.
-     */
-    RULE_TEMPLATE_FILTER(ASSET_META_NAMESPACE + ":ruleTemplateFilter", new Access(true, false, true), ValueType.BOOLEAN),
 
     /**
      * Enable flag to be used by asset attributes that could require this functionality (e.g. {@link org.openremote.model.asset.agent.ProtocolConfiguration})

@@ -51,6 +51,7 @@ import org.openremote.manager.server.concurrent.ManagerExecutorService;
 import org.openremote.manager.server.notification.NotificationService;
 import org.openremote.manager.server.security.ManagerIdentityService;
 import org.openremote.model.asset.*;
+import org.openremote.model.attribute.AttributeType;
 import org.openremote.model.rules.AssetRuleset;
 import org.openremote.model.rules.GlobalRuleset;
 import org.openremote.model.rules.Ruleset;
@@ -74,6 +75,8 @@ import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+
+import static org.openremote.model.attribute.Attribute.isAttributeTypeEqualTo;
 
 public class RulesEngine<T extends Ruleset> {
 
@@ -775,7 +778,7 @@ public class RulesEngine<T extends Ruleset> {
             throw new IllegalStateException("Template asset not found: " + templateAssetId);
 
         List<TemplateFilter> filters = templateAsset.getAttributesStream()
-            .filter(AssetAttribute::isRuleStateTemplateFilter)
+            .filter(isAttributeTypeEqualTo(AttributeType.RULES_TEMPLATE_FILTER))
             .map(attribute -> new Pair<>(attribute.getName(), attribute.getValue()))
             .filter(pair -> pair.key.isPresent() && pair.value.isPresent())
             .map(pair -> new Pair<>(pair.key.get(), pair.value.get()))

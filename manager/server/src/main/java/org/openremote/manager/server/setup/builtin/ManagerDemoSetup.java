@@ -680,7 +680,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         flightPriorityFilters.setAttributes(
             new AssetAttribute(
                 "originSwitzerland",
-                TEMPLATE_FILTER,
+                RULES_TEMPLATE_FILTER,
                 new TemplateFilter(
                     new AttributeValueConstraintPattern(
                         "originCountry", new AttributeValueConstraint(ValueComparator.EQUALS_IGNORE_CASE, Values.create("switzerland"))
@@ -690,8 +690,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                     )
                 ).toModelValue()
             ).setMeta(
-                new MetaItem(LABEL, Values.create("Origin Switzerland")),
-                new MetaItem(RULE_TEMPLATE_FILTER, Values.create(true))
+                new MetaItem(LABEL, Values.create("Filter Origin Switzerland"))
             )
         );
         flightPriorityFilters = assetStorageService.merge(flightPriorityFilters);

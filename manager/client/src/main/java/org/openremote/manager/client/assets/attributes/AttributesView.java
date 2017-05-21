@@ -351,7 +351,7 @@ public abstract class AttributesView<
         AttributeEditor attributeEditor;
         if (attributeType == AttributeType.STRING || attributeType.getValueType() == ValueType.STRING) {
             attributeEditor = createStringEditor(attribute, defaultValueItem, style, formGroup);
-        } else if (attributeType == AttributeType.NUMBER) {
+        } else if (attributeType == AttributeType.NUMBER || attributeType.getValueType() == ValueType.NUMBER) {
             attributeEditor = createNumberEditor(attribute, defaultValueItem, style, formGroup);
         } else if (attributeType == AttributeType.BOOLEAN || attributeType.getValueType() == ValueType.BOOLEAN) {
             attributeEditor = createBooleanEditor(attribute, defaultValueItem, style, formGroup);

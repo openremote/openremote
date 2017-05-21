@@ -14,13 +14,13 @@ If you want to try OpenRemote v2, [read the OpenRemote v2 documentation](https:/
 
 We work with Java, Groovy, JavaScript, Gradle, Docker, and a wide range of APIs and protocol implementations. Clone or checkout this project and send us pull requests.
 
-A demo preview can be started with Docker Compose (install [Docker Toolbox](https://www.docker.com/products/docker-toolbox)):
+A demo preview can be started with Docker Compose (install [Docker Community Edition](https://www.docker.com/)):
 
 ```
 docker-compose -p openremote -f profile/demo.yml up
 ```
 
-Access the manager UI and API on https://192.168.99.100/ with username `admin` and password `secret`. Configuration options of the images are documented in the compose profiles.
+Access the manager UI and API on https://localhost/ with username `admin` and password `secret` (accept the 'insecure' self-signed SSL certificate). Configuration options of the images are documented in the compose profiles.
 
 You can build the Docker images from source with:
 

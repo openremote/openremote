@@ -71,7 +71,7 @@ public abstract class IdentityService implements ContainerService {
     public static final int IDENTITY_SESSION_TIMEOUT_SECONDS_DEFAULT = 10800; // 3 hours
 
     public static final String KEYCLOAK_HOST = "KEYCLOAK_HOST";
-    public static final String KEYCLOAK_HOST_DEFAULT = "192.168.99.100";
+    public static final String KEYCLOAK_HOST_DEFAULT = "localhost";
     public static final String KEYCLOAK_PORT = "KEYCLOAK_PORT";
     public static final int KEYCLOAK_PORT_DEFAULT = 8081;
     public static final String KEYCLOAK_CONNECT_TIMEOUT = "KEYCLOAK_CONNECT_TIMEOUT";

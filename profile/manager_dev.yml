@@ -12,7 +12,7 @@ services:
     environment:
       TZ: Europe/Zurich
       DEV_MODE: 'true'
-      IDENTITY_NETWORK_HOST: 192.168.99.100
+      IDENTITY_NETWORK_HOST: localhost
       IDENTITY_NETWORK_WEBSERVER_PORT: 443
       IDENTITY_NETWORK_SECURE: 'true'
       KEYCLOAK_HOST: keycloak
