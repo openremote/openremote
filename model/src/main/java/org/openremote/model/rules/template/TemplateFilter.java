@@ -41,6 +41,11 @@ public class TemplateFilter {
         this.patterns = patterns;
     }
 
+    public TemplateFilter(TemplatePattern... patterns) {
+        this.filterName = null;
+        this.patterns = patterns;
+    }
+
     /**
      * Renders {@link #TEMPLATE_PARAM_FILTER_NAME}
      */

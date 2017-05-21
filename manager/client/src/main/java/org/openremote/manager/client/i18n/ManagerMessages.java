@@ -185,8 +185,6 @@ public interface ManagerMessages extends Messages {
 
     String selectAsset();
 
-    String assetHasNoParent();
-
     String selectAssetDescription();
 
     String invalidAssetParent();
@@ -362,4 +360,12 @@ public interface ManagerMessages extends Messages {
     String executable();
 
     String template();
+
+    String templateAsset();
+
+    String invalidTemplateAsset();
+
+    String noAssetSelected();
+
+    String clearSelection();
 }

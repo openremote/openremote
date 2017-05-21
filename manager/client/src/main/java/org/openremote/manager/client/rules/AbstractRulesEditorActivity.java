@@ -22,19 +22,20 @@ package org.openremote.manager.client.rules;
 import com.google.gwt.user.client.ui.AcceptsOneWidget;
 import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.assets.AssetBrowsingActivity;
-import org.openremote.manager.client.assets.browser.AssetBrowser;
-import org.openremote.manager.client.assets.browser.AssetBrowserSelection;
+import org.openremote.manager.client.assets.browser.*;
+import org.openremote.manager.client.event.ShowFailureEvent;
 import org.openremote.manager.client.event.ShowSuccessEvent;
-import org.openremote.manager.shared.security.Tenant;
-import org.openremote.model.event.bus.EventBus;
-import org.openremote.model.event.bus.EventRegistration;
 import org.openremote.manager.client.mvp.AppActivity;
 import org.openremote.manager.shared.http.EntityReader;
 import org.openremote.manager.shared.http.EntityWriter;
 import org.openremote.manager.shared.http.RequestParams;
-import org.openremote.model.rules.Ruleset;
 import org.openremote.manager.shared.rules.RulesetResource;
+import org.openremote.manager.shared.security.Tenant;
 import org.openremote.manager.shared.validation.ConstraintViolation;
+import org.openremote.model.asset.Asset;
+import org.openremote.model.event.bus.EventBus;
+import org.openremote.model.event.bus.EventRegistration;
+import org.openremote.model.rules.Ruleset;
 
 import javax.inject.Inject;
 import java.util.Collection;
@@ -55,6 +56,7 @@ public abstract class AbstractRulesEditorActivity<T extends Ruleset, PLACE exten
 
     protected Long rulesetId;
     protected T ruleset;
+    protected Asset templateAsset;
 
     @Inject
     public AbstractRulesEditorActivity(Environment environment,
@@ -90,6 +92,8 @@ public abstract class AbstractRulesEditorActivity<T extends Ruleset, PLACE exten
         view.setPresenter(this);
         container.setWidget(view.asWidget());
 
+        assetBrowserPresenter.clearSelection();
+
         registrations.add(eventBus.register(
             AssetBrowserSelection.class,
             RulesModule.createDefaultNavigationListener(environment)
@@ -104,15 +108,11 @@ public abstract class AbstractRulesEditorActivity<T extends Ruleset, PLACE exten
                 getEntityReader(),
                 loadRequestConsumer(),
                 200,
-                result -> {
-                    this.ruleset = result;
-                    writeToView();
-                },
+                this::startEdit,
                 ex -> handleRequestException(ex, environment)
             );
         } else {
-            ruleset = newRuleset();
-            writeToView();
+            startCreate();
         }
     }
 
@@ -122,11 +122,34 @@ public abstract class AbstractRulesEditorActivity<T extends Ruleset, PLACE exten
         view.setPresenter(null);
     }
 
+    protected void startCreate() {
+        ruleset = newRuleset();
+        clearViewMessages();
+        writeToView();
+        writeTemplateAssetToView();
+        view.setFormBusy(false);
+    }
+
+    protected void startEdit(T ruleset) {
+        this.ruleset = ruleset;
+        clearViewMessages();
+        writeToView();
+        if (ruleset.getTemplateAssetId() != null) {
+            assetBrowserPresenter.loadAsset(ruleset.getTemplateAssetId(), loadedAsset -> {
+                this.templateAsset = loadedAsset;
+                writeTemplateAssetToView();
+                view.setFormBusy(false);
+            });
+        } else {
+            writeTemplateAssetToView();
+            view.setFormBusy(false);
+        }
+    }
+
     @Override
     public void create() {
         view.setFormBusy(true);
-        view.clearFormMessages();
-        clearViewFieldErrors();
+        clearViewMessages();
         readFromView();
         environment.getRequestService().execute(
             getEntityWriter(),
@@ -140,8 +163,7 @@ public abstract class AbstractRulesEditorActivity<T extends Ruleset, PLACE exten
     @Override
     public void update() {
         view.setFormBusy(true);
-        view.clearFormMessages();
-        clearViewFieldErrors();
+        clearViewMessages();
         readFromView();
         environment.getRequestService().execute(
             getEntityWriter(),
@@ -159,8 +181,7 @@ public abstract class AbstractRulesEditorActivity<T extends Ruleset, PLACE exten
             environment.getMessages().confirmationDelete(ruleset.getName()),
             () -> {
                 view.setFormBusy(true);
-                view.clearFormMessages();
-                clearViewFieldErrors();
+                clearViewMessages();
                 environment.getRequestService().execute(
                     deleteRequestConsumer(),
                     204,
@@ -169,6 +190,22 @@ public abstract class AbstractRulesEditorActivity<T extends Ruleset, PLACE exten
                 );
             }
         );
+    }
+
+    @Override
+    public void onTemplateAssetSelection(BrowserTreeNode treeNode) {
+        if (treeNode == null) {
+            templateAsset = null;
+        } else if (treeNode instanceof TenantTreeNode) {
+            environment.getEventBus().dispatch(
+                new ShowFailureEvent(environment.getMessages().invalidTemplateAsset(), 3000)
+            );
+            writeTemplateAssetToView();
+        } else if (treeNode instanceof AssetTreeNode){
+            assetBrowserPresenter.loadAsset(treeNode.getId(), loadedAsset -> {
+                templateAsset = loadedAsset;
+            });
+        }
     }
 
     protected void writeToView() {
@@ -180,10 +217,28 @@ public abstract class AbstractRulesEditorActivity<T extends Ruleset, PLACE exten
         view.enableDelete(rulesetId != null);
     }
 
+    protected void writeTemplateAssetToView() {
+        if (templateAsset != null) {
+            view.setTemplateAssetNode(new AssetTreeNode(templateAsset));
+        } else {
+            view.setTemplateAssetNode(null);
+        }
+    }
+
     protected void readFromView() {
         ruleset.setName(view.getName());
         ruleset.setEnabled(view.getRulesetEnabled());
         ruleset.setRules(view.getRules());
+        if (templateAsset != null) {
+            ruleset.setTemplateAssetId(templateAsset.getId());
+        } else {
+            ruleset.setTemplateAssetId(null);
+        }
+    }
+
+    protected void clearViewMessages() {
+        view.clearFormMessages();
+        clearViewFieldErrors();
     }
 
     protected void clearViewFieldErrors() {

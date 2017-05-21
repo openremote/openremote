@@ -24,7 +24,7 @@ import org.openremote.model.attribute.AttributeRef;
 import java.util.Locale;
 
 /**
- * Encapsulate asset query restriction, project, and ordering of results.
+ * Encapsulate asset query restriction, projection, and ordering of results.
  */
 public class AssetQuery<CHILD extends AssetQuery<CHILD>> {
 

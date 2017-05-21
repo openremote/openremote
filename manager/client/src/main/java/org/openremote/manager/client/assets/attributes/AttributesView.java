@@ -520,12 +520,12 @@ public abstract class AttributesView<
 
         FlowPanel panel = new FlowPanel();
         panel.setStyleName("flex layout horizontal center");
-        FormButton editButton = createJsonEditorWidget(
+        IsWidget jsonEditorWidget = createJsonEditorWidget(
             style, environment.getMessages().jsonArray(), title, currentValue.orElse(null), updateConsumer, resetSupplier
         );
         FlowPanel wrapper = new FlowPanel();
         wrapper.setStyleName("flex layout horizontal center");
-        wrapper.add(editButton);
+        wrapper.add(jsonEditorWidget);
         panel.add(wrapper);
         if (isShowTimestamp(attribute)) {
             TimestampLabel timestampLabel = new TimestampLabel(attribute.getValueTimestamp());
@@ -550,12 +550,12 @@ public abstract class AttributesView<
 
         FlowPanel panel = new FlowPanel();
         panel.setStyleName("flex layout horizontal center");
-        FormButton editButton = createJsonEditorWidget(
-            style, title, environment.getMessages().jsonObject(), currentValue.orElse(null), updateConsumer, resetSupplier
+        IsWidget jsonEditorWidget = createJsonEditorWidget(
+            style, environment.getMessages().jsonObject(), title, currentValue.orElse(null), updateConsumer, resetSupplier
         );
         FlowPanel wrapper = new FlowPanel();
         wrapper.setStyleName("flex layout horizontal center");
-        wrapper.add(editButton);
+        wrapper.add(jsonEditorWidget);
         panel.add(wrapper);
         if (isShowTimestamp(attribute)) {
             TimestampLabel timestampLabel = new TimestampLabel(attribute.getValueTimestamp());
@@ -565,12 +565,12 @@ public abstract class AttributesView<
         return () -> panel;
     }
 
-    protected FormButton createJsonEditorWidget(S style,
-                                                String title,
-                                                String buttonLabel,
-                                                Value currentValue,
-                                                Consumer<Value> updateConsumer,
-                                                Supplier<Value> resetSupplier) {
+    protected IsWidget createJsonEditorWidget(S style,
+                                              String label,
+                                              String title,
+                                              Value currentValue,
+                                              Consumer<Value> updateConsumer,
+                                              Supplier<Value> resetSupplier) {
         JsonEditor jsonEditor = container.getJsonEditor();
         jsonEditor.setTitle(title);
 
@@ -580,7 +580,7 @@ public abstract class AttributesView<
 
         FormButton button = new FormButton();
         button.setIcon("file-text-o");
-        button.setText(buttonLabel);
+        button.setText(label);
         button.addClickHandler(event -> jsonEditor.show());
 
         jsonEditor.setOnReset(() -> jsonEditor.setValue(resetSupplier.get()));

@@ -370,7 +370,7 @@ public class AttributesEditor
                     ? environment.getMessages().edit() + " " + environment.getMessages().jsonObject()
                     : environment.getMessages().jsonObject();
                 editor = createJsonEditorWidget(
-                    style, title, environment.getMessages().jsonObject(), currentValue, updateConsumer, resetSupplier
+                    style, environment.getMessages().jsonObject(), title, currentValue, updateConsumer, resetSupplier
                 );
             } else if (valueType.equals(ValueType.ARRAY)) {
                 ArrayValue currentValue = item.getValueAsArray().orElse(null);
@@ -382,7 +382,7 @@ public class AttributesEditor
                     ? environment.getMessages().edit() + " " + environment.getMessages().jsonArray()
                     : environment.getMessages().jsonArray();
                 editor = createJsonEditorWidget(
-                    style, title, environment.getMessages().jsonObject(), currentValue, updateConsumer, resetSupplier
+                    style, environment.getMessages().jsonArray(), title, currentValue, updateConsumer, resetSupplier
                 );
             } else {
                 FormField unsupportedField = new FormField();

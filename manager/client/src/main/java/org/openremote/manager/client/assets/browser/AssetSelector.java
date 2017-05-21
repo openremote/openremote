@@ -24,7 +24,9 @@ public abstract class AssetSelector extends FormGroup {
     final FormOutputText outputTenantDisplayName = new FormOutputText();
     final FormInputText outputAssetName = new FormInputText();
     final Label infoLabel = new Label();
+    final boolean enableClearSelection;
     final FormButton selectAssetButton = new FormButton();
+    final FormButton clearSelectionButton = new FormButton();
     final FormButton confirmButton = new FormButton();
 
     // The node that was selected before the selection process started
@@ -37,10 +39,12 @@ public abstract class AssetSelector extends FormGroup {
                          ManagerMessages managerMessages,
                          String labelText,
                          String infoText,
+                         boolean enableClearSelection,
                          Consumer<BrowserTreeNode> selectionConsumer) {
         this.assetBrowserPresenter = assetBrowserPresenter;
         this.managerMessages = managerMessages;
         this.selectionConsumer = selectionConsumer;
+        this.enableClearSelection = enableClearSelection;
         addFormLabel(label);
         addFormField(field);
         addFormGroupActions(actions);
@@ -50,6 +54,7 @@ public abstract class AssetSelector extends FormGroup {
         fieldContainer.add(outputTenantDisplayName);
         fieldContainer.add(outputAssetName);
         actions.add(selectAssetButton);
+        actions.add(clearSelectionButton);
         actions.add(confirmButton);
 
         setAlignStart(true);
@@ -63,6 +68,10 @@ public abstract class AssetSelector extends FormGroup {
         selectAssetButton.setIcon("external-link-square");
         selectAssetButton.setText(managerMessages.selectAsset());
         selectAssetButton.addClickHandler(event -> beginSelection());
+
+        clearSelectionButton.setIcon("remove");
+        clearSelectionButton.setText(managerMessages.clearSelection());
+        clearSelectionButton.addClickHandler(event -> clearSelection());
 
         confirmButton.setIcon("check");
         confirmButton.setText(managerMessages.OK());
@@ -78,18 +87,24 @@ public abstract class AssetSelector extends FormGroup {
         outputAssetName.setText(null);
         infoLabel.setVisible(false);
         selectAssetButton.setVisible(true);
+        clearSelectionButton.setVisible(false);
         confirmButton.setVisible(false);
         assetBrowserPresenter.useSelector(null);
     }
 
     public void beginSelection() {
         selectAssetButton.setVisible(false);
+        clearSelectionButton.setVisible(enableClearSelection);
         confirmButton.setVisible(true);
         infoLabel.setVisible(true);
 
         assetBrowserPresenter.useSelector(this);
         originalNode = assetBrowserPresenter.getSelectedNode();
         assetBrowserPresenter.clearSelection();
+    }
+
+    public void clearSelection() {
+        setSelectedNode(null);
     }
 
     public void setSelectedNode(BrowserTreeNode selectedNode) {
@@ -99,6 +114,7 @@ public abstract class AssetSelector extends FormGroup {
 
     public void endSelection() {
         selectAssetButton.setVisible(true);
+        clearSelectionButton.setVisible(false);
         confirmButton.setVisible(false);
         infoLabel.setVisible(false);
 
@@ -125,13 +141,21 @@ public abstract class AssetSelector extends FormGroup {
                                       BrowserTreeNode treeNode,
                                       FormOutputText outputTenantDisplayName,
                                       FormInputText outputAssetName) {
-
-        if (treeNode instanceof TenantTreeNode) {
-            outputTenantDisplayName.setText(treeNode.getLabel());
-            outputAssetName.setText(managerMessages.assetHasNoParent());
+        if (treeNode == null) {
+            outputTenantDisplayName.setVisible(false);
+            outputAssetName.setVisible(true);
+            outputAssetName.setText(managerMessages.noAssetSelected());
+        } else if (treeNode instanceof TenantTreeNode) {
+            TenantTreeNode tenantTreeNode = (TenantTreeNode) treeNode;
+            outputTenantDisplayName.setVisible(true);
+            outputTenantDisplayName.setText(tenantTreeNode.getLabel());
+            outputAssetName.setVisible(false);
+            outputAssetName.setText(null);
         } else if (treeNode instanceof AssetTreeNode) {
             AssetTreeNode assetTreeNode = (AssetTreeNode) treeNode;
+            outputTenantDisplayName.setVisible(true);
             outputTenantDisplayName.setText(assetTreeNode.getAsset().getTenantDisplayName());
+            outputAssetName.setVisible(true);
             outputAssetName.setText(treeNode.getLabel());
         }
     }

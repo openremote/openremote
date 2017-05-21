@@ -13,7 +13,7 @@
 
         .mapWidget {
             margin: 0 0 1em 1em;
-            height: 17em;
+            height: 15em;
         }
     </ui:style>
 

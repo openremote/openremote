@@ -1,6 +1,7 @@
 <ui:UiBinder xmlns:ui="urn:ui:com.google.gwt.uibinder"
              xmlns:g="urn:import:com.google.gwt.user.client.ui"
-             xmlns:w="urn:import:org.openremote.manager.client.widget">
+             xmlns:w="urn:import:org.openremote.manager.client.widget"
+             xmlns:assetBrowser="urn:import:org.openremote.manager.client.assets.browser">
 
     <ui:with field="managerMessages" type="org.openremote.manager.client.i18n.ManagerMessages"/>
     <ui:with field="widgetStyle" type="org.openremote.manager.client.style.WidgetStyle"/>
@@ -19,7 +20,7 @@
         }
 
         .rulesTextArea {
-            min-height: 44vh;
+            min-height: 38vh;
             max-height: 75vh;
         }
     </ui:style>
@@ -80,7 +81,7 @@
 
                         <w:FormGroup ui:field="optionsGroup">
                             <w:label>
-                                <w:FormLabel text="{managerMessages.enabled}" required="false"/>
+                                <w:FormLabel text="{managerMessages.enabled}"/>
                             </w:label>
                             <w:field>
                                 <w:FormField>
@@ -102,6 +103,8 @@
                                 </w:FormGroupActions>
                             </w:actions>
                         </w:FormGroup>
+
+                        <assetBrowser:AssetSelector ui:field="templateAssetSelector"/>
 
                         <w:FormGroup ui:field="rulesGroup" alignStart="true">
                             <w:label>

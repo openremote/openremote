@@ -41,10 +41,13 @@ class FlightPriorityTest extends Specification implements ManagerContainerTrait 
             assert customerCEngine.knowledgeSession.factCount == DEMO_RULE_STATES_CUSTOMER_C
         }
 
-        and: "the flight with origin Switzerland should now be priority"
+        and: "flight(s) with origin Switzerland and high capacity should now be priority"
         conditions.eventually {
-            def asset = assetStorageService.find(managerDemoSetup.flight1Id, true)
-            assert asset.getAttribute("priority").orElse(null).getValueAsBoolean().orElse(null)
+            def flight1 = assetStorageService.find(managerDemoSetup.flight1Id, true)
+            assert !flight1.getAttribute("priority").orElse(null).getValueAsBoolean().orElse(null)
+
+            def flight4 = assetStorageService.find(managerDemoSetup.flight4Id, true)
+            assert flight4.getAttribute("priority").orElse(null).getValueAsBoolean().orElse(null)
         }
 
         cleanup: "the server should be stopped"

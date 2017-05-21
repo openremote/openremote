@@ -47,6 +47,8 @@ public enum AttributeType {
 
     BOOLEAN(ValueType.BOOLEAN, value -> Optional.empty()),
 
+    TEMPLATE_FILTER(ValueType.ARRAY, value -> Optional.empty()),
+
     PERCENTAGE(ValueType.NUMBER, value -> Values.getNumber(value)
         .filter(number -> number < 0 || number > 100)
         .map(number -> PERCENTAGE_NOT_WITHIN_BOUNDS)
@@ -110,9 +112,7 @@ public enum AttributeType {
 
     FLOW_CFPS(ValueType.NUMBER, value -> Optional.empty()),
 
-    FLOW_GPM(ValueType.NUMBER, value -> Optional.empty()),
-
-    TEMPLATE_FILTER(ValueType.OBJECT, value -> Optional.empty());
+    FLOW_GPM(ValueType.NUMBER, value -> Optional.empty());
 
     public enum AttributeTypeValidationFailure implements ValidationFailure {
         VALUE_DOES_NOT_MATCH_ATTRIBUTE_TYPE,

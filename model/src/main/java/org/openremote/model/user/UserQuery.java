@@ -1,9 +1,6 @@
 package org.openremote.model.user;
 
 
-import org.openremote.model.asset.AssetQuery;
-import org.openremote.model.asset.AssetType;
-
 public class UserQuery<CHILD extends UserQuery<CHILD>> {
 
     public static class TenantPredicate {

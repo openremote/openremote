@@ -35,14 +35,15 @@ import elemental.html.Blob;
 import elemental.html.FileReader;
 import org.openremote.manager.client.app.dialog.Confirmation;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
+import org.openremote.manager.client.assets.browser.AssetSelector;
+import org.openremote.manager.client.assets.browser.AssetTreeNode;
+import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.widget.*;
 
 import javax.inject.Inject;
 import java.util.logging.Logger;
 
-public class RulesEditorImpl
-    extends FormViewImpl
-    implements RulesEditor {
+public class RulesEditorImpl extends FormViewImpl implements RulesEditor {
 
     private static final Logger LOG = Logger.getLogger(RulesEditorImpl.class.getName());
 
@@ -59,24 +60,21 @@ public class RulesEditorImpl
     FormGroup nameGroup;
     @UiField
     FormInputText nameInput;
+    @UiField
 
+    FormButton rulesFileDownload;
+    @UiField
+    LabelElement rulesFileUploadLabel;
+    @UiField
+    FileUpload rulesFileUpload;
 
     @UiField
     FormGroup optionsGroup;
     @UiField
     FormCheckBox enabledCheckBox;
 
-/*
-    @UiField
-    FormCheckBox templateCheckBox;
-
-*/
-    @UiField
-    FormButton rulesFileDownload;
-    @UiField
-    LabelElement rulesFileUploadLabel;
-    @UiField
-    FileUpload rulesFileUpload;
+    @UiField(provided = true)
+    AssetSelector templateAssetSelector;
 
     @UiField
     FormGroup rulesGroup;
@@ -98,9 +96,36 @@ public class RulesEditorImpl
     protected Presenter presenter;
 
     @Inject
-    public RulesEditorImpl(Provider<Confirmation> confirmationDialogProvider, AssetBrowser assetBrowser) {
+    public RulesEditorImpl(Provider<Confirmation> confirmationDialogProvider,
+                           AssetBrowser assetBrowser,
+                           ManagerMessages managerMessages) {
         super(confirmationDialogProvider);
         this.assetBrowser = assetBrowser;
+
+        templateAssetSelector = new AssetSelector(
+            assetBrowser.getPresenter(),
+            managerMessages,
+            managerMessages.templateAsset(),
+            managerMessages.selectAssetDescription(),
+            true,
+            treeNode -> {
+                if (presenter != null) {
+                    presenter.onTemplateAssetSelection(treeNode);
+                }
+            }
+        ) {
+            @Override
+            public void beginSelection() {
+                RulesEditorImpl.this.setOpaque(true);
+                super.beginSelection();
+            }
+
+            @Override
+            public void endSelection() {
+                super.endSelection();
+                RulesEditorImpl.this.setOpaque(false);
+            }
+        };
 
         RulesEditorImpl.UI ui = GWT.create(RulesEditorImpl.UI.class);
         initWidget(ui.createAndBindUi(this));
@@ -201,6 +226,11 @@ public class RulesEditorImpl
     }
 
     @Override
+    public void setTemplateAssetNode(AssetTreeNode assetTreeNode) {
+        templateAssetSelector.setSelectedNode(assetTreeNode);
+    }
+
+    @Override
     public void enableCreate(boolean enable) {
         createButton.setVisible(enable);
     }
@@ -237,6 +267,13 @@ public class RulesEditorImpl
     public void cancelClicked(ClickEvent e) {
         if (presenter != null)
             presenter.cancel();
+    }
+
+    protected void setOpaque(boolean opaque) {
+        nameGroup.setOpaque(opaque);
+        optionsGroup.setOpaque(opaque);
+        rulesGroup.setOpaque(opaque);
+        submitButtonGroup.setOpaque(opaque);
     }
 
 }

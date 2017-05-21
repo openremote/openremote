@@ -86,7 +86,7 @@ public class AttributeValueConstraint {
     public static Optional<AttributeValueConstraint> fromModelValue(Value value) {
         return Values.getObject(value)
             .filter(v -> v.getString("valueComparator").isPresent())
-            .filter(v -> v.getString("value").isPresent())
+            .filter(v -> v.get("value").isPresent())
             .flatMap(objectValue -> objectValue
                 .getString("valueComparator")
                 .flatMap(ValueComparator::fromString)

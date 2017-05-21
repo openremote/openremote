@@ -73,6 +73,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 public class RulesEngine<T extends Ruleset> {
 
@@ -711,7 +712,7 @@ public class RulesEngine<T extends Ruleset> {
                     if (!userIsInTenant) {
                         throw new IllegalArgumentException("User not in tenant: " + id);
                     }
-                 }
+                }
                 if (AssetRuleset.class.isAssignableFrom(rulesetType)) {
                     boolean userIsLinkedToAsset = assetStorageService.isUserAsset(userId, id);
                     if (!userIsLinkedToAsset) {
@@ -773,16 +774,15 @@ public class RulesEngine<T extends Ruleset> {
         if (templateAsset == null)
             throw new IllegalStateException("Template asset not found: " + templateAssetId);
 
-        List<TemplateFilter> filters = new ArrayList<>();
-
-        templateAsset.getAttributesStream()
+        List<TemplateFilter> filters = templateAsset.getAttributesStream()
             .filter(AssetAttribute::isRuleStateTemplateFilter)
             .map(attribute -> new Pair<>(attribute.getName(), attribute.getValue()))
             .filter(pair -> pair.key.isPresent() && pair.value.isPresent())
             .map(pair -> new Pair<>(pair.key.get(), pair.value.get()))
             .map(pair -> TemplateFilter.fromModelValue(pair.key, pair.value))
             .filter(Optional::isPresent)
-            .forEach(filter -> filters.add(filter.get()));
+            .map(Optional::get)
+            .collect(Collectors.toList());
 
         LOG.fine("Rendering rules template with filters: " + filters);
 

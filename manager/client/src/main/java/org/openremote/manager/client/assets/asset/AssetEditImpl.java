@@ -168,6 +168,7 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
             managerMessages,
             managerMessages.parentAsset(),
             managerMessages.selectAssetDescription(),
+            false,
             treeNode -> {
                 if (presenter != null) {
                     presenter.onParentSelection(treeNode);

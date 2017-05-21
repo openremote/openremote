@@ -58,7 +58,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
     public static final int DEMO_RULE_STATES_APARTMENT_3 = 0;
     public static final int DEMO_RULE_STATES_SMART_HOME = DEMO_RULE_STATES_APARTMENT_1 + DEMO_RULE_STATES_APARTMENT_2 + DEMO_RULE_STATES_APARTMENT_3;
     public static final int DEMO_RULE_STATES_CUSTOMER_A = DEMO_RULE_STATES_SMART_HOME;
-    public static final int DEMO_RULE_STATES_CUSTOMER_C = 9;
+    public static final int DEMO_RULE_STATES_CUSTOMER_C = 12;
     public static final int DEMO_RULE_STATES_GLOBAL = DEMO_RULE_STATES_CUSTOMER_A + DEMO_RULE_STATES_CUSTOMER_C;
 
     public static final int DEMO_RULE_STATES_APARTMENT_1_WITH_SCENES = DEMO_RULE_STATES_APARTMENT_1 + 28;
@@ -87,6 +87,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
     public String flight1Id;
     public String flight2Id;
     public String flight3Id;
+    public String flight4Id;
     public String flightPriorityFiltersId;
 
     public ManagerDemoSetup(Container container, boolean importDemoScenes) {
@@ -636,6 +637,44 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         flight3 = assetStorageService.merge(flight3);
         flight3Id = flight3.getId();
 
+        ServerAsset flight4 = new ServerAsset("Flight 4", AssetType.FLIGHT);
+        flight4.setRealmId(customerCTenant.getId());
+        flight4.setAttributes(
+            new AssetAttribute("airline", STRING, Values.create("Some Airline"))
+                .setMeta(
+                    new MetaItem(LABEL, Values.create("Airline"))
+                ),
+            new AssetAttribute("originAirport", STRING, Values.create("ZRH"))
+                .setMeta(
+                    new MetaItem(LABEL, Values.create("Origin Airport"))
+                ),
+            new AssetAttribute("originCountry", STRING, Values.create("Switzerland"))
+                .setMeta(
+                    new MetaItem(LABEL, Values.create("Origin Country")),
+                    new MetaItem(RULE_STATE, Values.create(true))
+                ),
+            new AssetAttribute("destinationAirport", STRING, Values.create("AMS"))
+                .setMeta(
+                    new MetaItem(LABEL, Values.create("Destination Airport"))
+                ),
+            new AssetAttribute("destinationCountry", STRING, Values.create("Netherlands"))
+                .setMeta(
+                    new MetaItem(LABEL, Values.create("Destination Country"))
+                ),
+            new AssetAttribute("passengerCapacity", NUMBER, Values.create(300))
+                .setMeta(
+                    new MetaItem(LABEL, Values.create("Passenger Capacity")),
+                    new MetaItem(RULE_STATE, Values.create(true))
+                ),
+            new AssetAttribute("priority", BOOLEAN, Values.create(false))
+                .setMeta(
+                    new MetaItem(LABEL, Values.create("Priority")),
+                    new MetaItem(RULE_STATE, Values.create(true))
+                )
+        );
+        flight4 = assetStorageService.merge(flight4);
+        flight4Id = flight4.getId();
+
         ServerAsset flightPriorityFilters = new ServerAsset("Flight Priority Filters", AssetType.THING);
         flightPriorityFilters.setRealmId(customerCTenant.getId());
         flightPriorityFilters.setAttributes(
@@ -643,9 +682,11 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                 "originSwitzerland",
                 TEMPLATE_FILTER,
                 new TemplateFilter(
-                    "originSwitzerland",
                     new AttributeValueConstraintPattern(
                         "originCountry", new AttributeValueConstraint(ValueComparator.EQUALS_IGNORE_CASE, Values.create("switzerland"))
+                    ),
+                    new AttributeValueConstraintPattern(
+                        "passengerCapacity", new AttributeValueConstraint(ValueComparator.GREATER_EQUAL_THAN, Values.create(300))
                     )
                 ).toModelValue()
             ).setMeta(
