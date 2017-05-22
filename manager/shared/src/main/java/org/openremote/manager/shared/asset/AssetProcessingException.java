@@ -23,6 +23,9 @@ import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetType;
 import org.openremote.model.attribute.AttributeExecuteStatus;
 
+/**
+ * The reason why processing an {@link org.openremote.model.attribute.AttributeEvent} failed.
+ */
 public class AssetProcessingException extends RuntimeException {
 
     public enum Reason {
@@ -73,16 +76,41 @@ public class AssetProcessingException extends RuntimeException {
          * Realm configuration or user privileges do not allow update (e.g. realm inactive, user is
          * missing required role, attribute is read-only).
          */
-        INSUFFICIENT_ACCESS
+        INSUFFICIENT_ACCESS,
+
+        /**
+         * The event timestamp is later than the processing time.
+         */
+        EVENT_IN_FUTURE,
+
+        /**
+         * The event timestamp is older than the last updated timestamp of the attribute.
+         */
+        EVENT_OUTDATED,
+
+        /**
+         * Applying the event violates constraints of the attribute.
+         */
+        ATTRIBUTE_VALIDATION_FAILURE,
     }
 
-    protected Reason reason;
+    final protected Reason reason;
+    final protected String message;
 
     public AssetProcessingException(Reason reason) {
+        this(reason, null);
+    }
+
+    public AssetProcessingException(Reason reason, String message) {
         this.reason = reason;
+        this.message = message;
     }
 
     public Reason getReason() {
         return reason;
+    }
+
+    public String getReasonPhrase() {
+        return getReason() + (message != null ? " (" + message + ")": "");
     }
 }

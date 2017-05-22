@@ -25,30 +25,38 @@ import org.apache.camel.Processor;
 import org.openremote.agent.protocol.Protocol;
 import org.openremote.container.persistence.PersistenceEvent;
 import org.openremote.container.security.AuthContext;
+import org.openremote.container.timer.TimerService;
 import org.openremote.manager.server.agent.AgentService;
 import org.openremote.manager.server.security.ManagerIdentityService;
 import org.openremote.manager.shared.asset.AssetProcessingException;
 import org.openremote.manager.shared.asset.AssetProcessingException.Reason;
 import org.openremote.manager.shared.security.ClientRole;
 import org.openremote.model.Constants;
+import org.openremote.model.ValidationFailure;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
+import org.openremote.model.asset.AssetState;
 import org.openremote.model.asset.AssetType;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeEvent.Source;
 import org.openremote.model.attribute.AttributeExecuteStatus;
+import org.openremote.model.event.Event;
 import org.openremote.model.value.Values;
 
+import java.util.Date;
+import java.util.List;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static org.openremote.model.asset.agent.AgentLink.getAgentLink;
+import static org.openremote.model.attribute.AttributeEvent.HEADER_SOURCE;
 
 public final class AssetRoute {
 
     public static final String HEADER_ASSET = AssetRoute.class.getName() + ".ASSET";
     public static final String HEADER_ATTRIBUTE = AssetRoute.class.getName() + ".ATTRIBUTE";
+    public static final String HEADER_ASSET_STATE = AssetRoute.class.getName() + ".ASSET_STATE";
 
     public static Predicate isPersistenceEventForEntityType(Class<?> type) {
         return exchange -> {
@@ -199,6 +207,66 @@ public final class AssetRoute {
         };
     }
 
+    public static Processor buildAssetState(TimerService timerService) {
+        return exchange -> {
+
+            AttributeEvent event = exchange.getIn().getBody(AttributeEvent.class);
+            AttributeEvent.Source source = exchange.getIn().getHeader(HEADER_SOURCE, AttributeEvent.Source.class);
+            ServerAsset asset = exchange.getIn().getHeader(HEADER_ASSET, ServerAsset.class);
+            AssetAttribute attribute = exchange.getIn().getHeader(HEADER_ATTRIBUTE, AssetAttribute.class);
+
+            long eventTime = event.getTimestamp();
+            long processingTime = timerService.getCurrentTimeMillis();
+
+            // Ensure timestamp of event is not in the future as that would essentially block access to
+            // the attribute until after that time (maybe that is desirable behaviour)
+            // Allow a leniency of 1s
+            if (eventTime - processingTime > 1000) {
+                // TODO: Decide how to handle update events in the future - ignore or change timestamp
+                throw new AssetProcessingException(
+                    Reason.EVENT_IN_FUTURE,
+                    "current time: " + new Date(processingTime) + "/" + processingTime
+                        + ", event time: " + new Date(eventTime) + "/" + eventTime
+                );
+            }
+
+            // Hold on to existing attribute state so we can use it during processing
+            Optional<AttributeEvent> lastStateEvent = attribute.getStateEvent();
+
+            // Check the last update timestamp of the attribute, ignoring any event that is older than last update
+            // TODO: This means we drop out-of-sequence events, we might need better at-least-once handling
+            lastStateEvent.map(Event::getTimestamp).filter(t -> t >= 0 && eventTime <= t).ifPresent(
+                lastStateTime -> {
+                    throw new AssetProcessingException(
+                        Reason.EVENT_OUTDATED,
+                        "last asset state time: " + new Date(lastStateTime) + "/" + lastStateTime
+                            + ", event time: " + new Date(eventTime) + "/" + eventTime);
+                }
+            );
+
+            // Set new value and event timestamp on attribute
+            attribute.setValue(event.getValue().orElse(null), eventTime);
+
+            // Validate constraints of attribute
+            List<ValidationFailure> validationFailures = attribute.getValidationFailures();
+            if (!validationFailures.isEmpty()) {
+                throw new AssetProcessingException(
+                    Reason.ATTRIBUTE_VALIDATION_FAILURE, validationFailures.toString()
+                );
+            }
+
+            AssetState assetState = new AssetState(
+                asset,
+                attribute,
+                lastStateEvent.flatMap(AttributeEvent::getValue).orElse(null),
+                lastStateEvent.map(AttributeEvent::getTimestamp).orElse(-1L),
+                source
+            );
+
+            exchange.getIn().setHeader(HEADER_ASSET_STATE, assetState);
+        };
+    }
+
     public static Processor handleAssetProcessingException(Logger logger) {
         return exchange -> {
             AttributeEvent event = exchange.getIn().getBody(AttributeEvent.class);
@@ -218,7 +286,7 @@ public final class AssetRoute {
 
             if (exception instanceof AssetProcessingException) {
                 AssetProcessingException processingException = (AssetProcessingException) exception;
-                error.append(" - ").append(processingException.getReason());
+                error.append(" - ").append(processingException.getReasonPhrase());
                 error.append(": ").append(event.toString());
                 logger.warning(error.toString());
             } else {

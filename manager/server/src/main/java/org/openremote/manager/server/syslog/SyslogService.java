@@ -21,7 +21,7 @@ package org.openremote.manager.server.syslog;
 
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
-import org.openremote.manager.server.event.EventService;
+import org.openremote.manager.server.event.ClientEventService;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.syslog.SyslogEvent;
 
@@ -36,19 +36,19 @@ public class SyslogService extends Handler implements ContainerService {
 
     private static final Logger LOG = Logger.getLogger(SyslogService.class.getName());
 
-    protected EventService eventService;
+    protected ClientEventService clientEventService;
 
     @Override
     public void init(Container container) throws Exception {
-        if (container.hasService(EventService.class)) {
+        if (container.hasService(ClientEventService.class)) {
             LOG.info("Syslog publisher enabled");
-            eventService = container.getService(EventService.class);
+            clientEventService = container.getService(ClientEventService.class);
         } else {
             LOG.info("Syslog publisher not enabled, event service not available");
         }
 
-        if (eventService != null) {
-            eventService.addSubscriptionAuthorizer((auth, subscription) -> {
+        if (clientEventService != null) {
+            clientEventService.addSubscriptionAuthorizer((auth, subscription) -> {
                 // Only superuser can get logging events
                 return subscription.isEventType(SyslogEvent.class) && auth.isSuperUser();
             });
@@ -73,11 +73,11 @@ public class SyslogService extends Handler implements ContainerService {
 
     @Override
     public void publish(LogRecord record) {
-        if (eventService == null)
+        if (clientEventService == null)
             return;
         SyslogEvent syslogEvent = SyslogCategory.mapSyslogEvent(record);
         if (syslogEvent != null) {
-            eventService.publishEvent(syslogEvent);
+            clientEventService.publishEvent(syslogEvent);
         }
     }
 

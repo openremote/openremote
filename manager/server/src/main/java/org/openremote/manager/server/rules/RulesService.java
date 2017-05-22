@@ -34,14 +34,14 @@ import org.openremote.manager.server.asset.ServerAsset;
 import org.openremote.manager.server.concurrent.ManagerExecutorService;
 import org.openremote.manager.server.notification.NotificationService;
 import org.openremote.manager.server.security.ManagerIdentityService;
-import org.openremote.model.rules.AssetRuleset;
-import org.openremote.model.rules.GlobalRuleset;
-import org.openremote.model.rules.Ruleset;
-import org.openremote.model.rules.TenantRuleset;
 import org.openremote.manager.shared.security.Tenant;
 import org.openremote.model.AbstractValueTimestampHolder;
 import org.openremote.model.asset.*;
 import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.rules.AssetRuleset;
+import org.openremote.model.rules.GlobalRuleset;
+import org.openremote.model.rules.Ruleset;
+import org.openremote.model.rules.TenantRuleset;
 import org.openremote.model.util.Pair;
 import org.openremote.model.value.ObjectValue;
 
@@ -258,21 +258,16 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
         BiFunction<Asset, AssetAttribute, AssetState> buildAssetState = (loadedAsset, attribute) ->
             new AssetState(loadedAsset, attribute.deepCopy(), AttributeEvent.Source.INTERNAL);
 
-        Asset loadedAsset;
-
         switch (persistenceEvent.getCause()) {
             case INSERT:
 
                 // New asset has been created so get attributes that have RULE_STATE meta
-                List<AssetAttribute> ruleAttributes =
+                List<AssetAttribute> ruleStateAttributes =
                     asset.getAttributesStream().filter(AssetAttribute::isRuleState).collect(Collectors.toList());
 
-                // Fully load the asset
-                loadedAsset = assetStorageService.find(asset.getId(), true);
-                Asset finalLoadedAsset = loadedAsset;
-
-                ruleAttributes.forEach(attribute -> {
-                    AssetState assetState = buildAssetState.apply(finalLoadedAsset, attribute);
+                // Build an update with a fully loaded asset
+                ruleStateAttributes.forEach(attribute -> {
+                    AssetState assetState = buildAssetState.apply(assetStorageService.find(asset.getId(), true), attribute);
                     // Set the status to completed already so rules cannot interfere with this initial insert
                     assetState.setProcessingStatus(AssetState.ProcessingStatus.COMPLETED);
                     LOG.fine("Asset was persisted (" + persistenceEvent.getCause() + "), inserting fact: " + assetState);
@@ -288,66 +283,59 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
                 }
 
                 // Fully load the asset
-                loadedAsset = assetStorageService.find(asset.getId(), true);
-                Asset finalLoadedAsset1 = loadedAsset;
+                final Asset loadedAsset = assetStorageService.find(asset.getId(), true);
 
-                // Attributes have possibly changed so need to compare old and new state to determine
-                // which facts to retract and which to insert
-                List<AssetAttribute> oldFactAttributes =
+                // Attributes have possibly changed so need to compare old and new attributes
+                // to determine which facts to retract and which to insert
+                List<AssetAttribute> oldRuleStateAttributes =
                     attributesFromJson(
                         (ObjectValue) persistenceEvent.getPreviousState()[attributesIndex],
                         asset.getId()
-                    )
-                        .filter(AssetAttribute::isRuleState)
-                        .collect(Collectors.toList());
+                    ).filter(AssetAttribute::isRuleState).collect(Collectors.toList());
 
-                List<AssetAttribute> newFactAttributes =
+                List<AssetAttribute> newRuleStateAttributes =
                     attributesFromJson(
                         (ObjectValue) persistenceEvent.getCurrentState()[attributesIndex],
                         asset.getId()
-                    )
-                        .filter(AssetAttribute::isRuleState)
-                        .collect(Collectors.toList());
+                    ).filter(AssetAttribute::isRuleState).collect(Collectors.toList());
 
-                // Compare attributes by JSON value
-                // Retract facts for attributes that are in oldFactAttributes but not in newFactAttributes
-                Stream<AssetAttribute> processAttributes = oldFactAttributes
+                // Retract facts for attributes that are obsolete
+                Stream<AssetAttribute> processAttributes = oldRuleStateAttributes
                     .stream()
-                    .filter(oldFactAttribute -> newFactAttributes
+                    .filter(oldRuleStateAttribute -> newRuleStateAttributes
                         .stream()
-                        .noneMatch(newFactAttribute ->
-                            oldFactAttribute.getObjectValue().equalsIgnoreKeys(
-                                newFactAttribute.getObjectValue(),
+                        .noneMatch(newRuleStateAttribute ->
+                            oldRuleStateAttribute.getObjectValue().equalsIgnoreKeys(
+                                newRuleStateAttribute.getObjectValue(),
                                 AbstractValueTimestampHolder.VALUE_TIMESTAMP_FIELD_NAME
                             )
                         )
                     );
 
-
                 processAttributes.forEach(obsoleteFactAttribute -> {
-                    AssetState update = buildAssetState.apply(finalLoadedAsset1, obsoleteFactAttribute);
-                    LOG.fine("Asset was persisted (" + persistenceEvent.getCause() + "), retracting fact: " + update);
+                    AssetState update = buildAssetState.apply(loadedAsset, obsoleteFactAttribute);
+                    LOG.fine("Asset was persisted (" + persistenceEvent.getCause() + "), retracting: " + update);
                     retractAssetState(update);
                 });
 
-                // Insert facts for attributes that are in newFactAttributes but not in oldFactAttributes
-                processAttributes = newFactAttributes
+                // Insert facts for attributes that are new
+                processAttributes = newRuleStateAttributes
                     .stream()
-                    .filter(newFactAttribute -> oldFactAttributes
+                    .filter(newRuleStateAttribute -> oldRuleStateAttributes
                         .stream()
-                        .noneMatch(oldFactAttribute ->
-                            oldFactAttribute.getObjectValue().equalsIgnoreKeys(
-                                newFactAttribute.getObjectValue(),
+                        .noneMatch(oldRuleStateAttribute ->
+                            oldRuleStateAttribute.getObjectValue().equalsIgnoreKeys(
+                                newRuleStateAttribute.getObjectValue(),
                                 AbstractValueTimestampHolder.VALUE_TIMESTAMP_FIELD_NAME
                             )
                         )
                     );
 
                 processAttributes.forEach(newFactAttribute -> {
-                    AssetState assetState = buildAssetState.apply(finalLoadedAsset1, newFactAttribute);
+                    AssetState assetState = buildAssetState.apply(loadedAsset, newFactAttribute);
                     // Set the status to completed already so rules cannot interfere with this initial insert
                     assetState.setProcessingStatus(AssetState.ProcessingStatus.COMPLETED);
-                    LOG.fine("Asset was persisted (" + persistenceEvent.getCause() + "), inserting fact: " + assetState);
+                    LOG.fine("Asset was persisted (" + persistenceEvent.getCause() + "), updating: " + assetState);
                     updateAssetState(assetState, true);
                 });
 
@@ -359,7 +347,8 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
                     .filter(AssetAttribute::isRuleState)
                     .forEach(attribute -> {
                         // We can't load the asset again (it was deleted), so don't use buildAssetState() and
-                        // hope that the path of the event asset has been loaded before deletion
+                        // hope that the path of the event asset has been loaded before deletion, although it is
+                        // "unlikely" anybody will access it during retraction...
                         AssetState assetState = new AssetState(asset, attribute, AttributeEvent.Source.INTERNAL);
                         LOG.fine("Asset was persisted (" + persistenceEvent.getCause() + "), retracting fact: " + assetState);
                         retractAssetState(assetState);

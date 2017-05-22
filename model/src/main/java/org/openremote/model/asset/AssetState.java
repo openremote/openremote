@@ -25,10 +25,8 @@ import org.openremote.model.value.Value;
 /**
  * An asset attribute value update, capturing that asset state at a point in time.
  * <p>
- * Instances of this class are processed by the system, with a sequence of processors. Each
- * processor can consume the asset state, and optionally set its status, thus controlling
- * how the asset state update is ultimately handled (e.g. the asset storage processor can
- * stop it from being handled by the asset datapoint processor).
+ * The methods {@link #setValue}, {@link #setProcessingStatus}, and {@link #setError} can not be
+ * called anymore when the {@link #getProcessingStatus} is {@link ProcessingStatus#COMPLETED}.
  */
 public class AssetState extends AbstractAssetUpdate {
 

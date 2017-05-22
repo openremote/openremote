@@ -89,16 +89,16 @@ import static org.apache.camel.builder.PredicateBuilder.or;
  * </p></dd>
  * </dl>
  */
-public class EventService implements ContainerService {
+public class ClientEventService implements ContainerService {
 
-    private static final Logger LOG = Logger.getLogger(EventService.class.getName());
+    private static final Logger LOG = Logger.getLogger(ClientEventService.class.getName());
 
     public static final String WEBSOCKET_EVENTS = "events";
 
     // TODO: Some of these options should be configurable depending on expected load etc.
-    public static final String INCOMING_EVENT_TOPIC = "seda://IncomingEventTopic?multipleConsumers=true&concurrentConsumers=1&waitForTaskToComplete=NEVER&purgeWhenStopping=true&discardIfNoConsumers=true&limitConcurrentConsumers=false&size=1000";
+    public static final String CLIENT_EVENT_TOPIC = "seda://ClientEventTopic?multipleConsumers=true&concurrentConsumers=1&waitForTaskToComplete=NEVER&purgeWhenStopping=true&discardIfNoConsumers=true&limitConcurrentConsumers=false&size=1000";
 
-    public static final String OUTGOING_EVENT_QUEUE = "seda://OutgoingEventQueue?multipleConsumers=false&waitForTaskToComplete=NEVER&purgeWhenStopping=true&discardIfNoConsumers=true&size=1000";
+    public static final String CLIENT_EVENT_QUEUE = "seda://ClientEventQueue?multipleConsumers=false&waitForTaskToComplete=NEVER&purgeWhenStopping=true&discardIfNoConsumers=true&size=1000";
 
     final protected Collection<EventSubscriptionAuthorizer> eventSubscriptionAuthorizers = new CopyOnWriteArraySet<>();
     protected MessageBrokerService messageBrokerService;
@@ -166,12 +166,12 @@ public class EventService implements ContainerService {
                     })
                     .when(bodyAs(String.class).startsWith(SharedEvent.MESSAGE_PREFIX))
                     .convertBodyTo(SharedEvent.class)
-                    .to(EventService.INCOMING_EVENT_TOPIC)
+                    .to(ClientEventService.CLIENT_EVENT_TOPIC)
                     .otherwise()
                     .process(exchange -> LOG.fine("Unsupported message body: " + exchange.getIn().getBody()))
                     .end();
 
-                from(EventService.OUTGOING_EVENT_QUEUE)
+                from(ClientEventService.CLIENT_EVENT_QUEUE)
                     .routeId("ToClientWebsocketEvents")
                     .choice()
                     .when(body().isInstanceOf(SharedEvent.class))
@@ -201,10 +201,7 @@ public class EventService implements ContainerService {
             if (!(event instanceof SyslogEvent)) {
                 LOG.fine("Publishing: " + event);
             }
-            messageBrokerService.getProducerTemplate().sendBody(
-                OUTGOING_EVENT_QUEUE,
-                event
-            );
+            messageBrokerService.getProducerTemplate().sendBody(CLIENT_EVENT_QUEUE, event);
         }
     }
 
