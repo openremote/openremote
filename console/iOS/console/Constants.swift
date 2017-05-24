@@ -57,6 +57,6 @@ enum Notifications {
 }
 
 enum ActionType {
-    static let ACTION_DEEP_LINK = "ACTION_DEEP_LINK"
-    static let ACTION_ACTUATOR = "ACTION_ACTUATOR"
+    static let ACTION_DEEP_LINK = "LINK"
+    static let ACTION_ACTUATOR = "ACTUATOR"
 }
