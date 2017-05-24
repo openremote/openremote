@@ -19,14 +19,17 @@
  */
 package org.openremote.manager.server.asset;
 
+import org.openremote.container.message.MessageBrokerService;
 import org.openremote.manager.server.security.ManagerIdentityService;
 import org.openremote.manager.server.web.ManagerWebResource;
 import org.openremote.manager.shared.asset.AssetProcessingException;
 import org.openremote.manager.shared.asset.AssetResource;
 import org.openremote.manager.shared.http.RequestParams;
 import org.openremote.manager.shared.security.Tenant;
+import org.openremote.model.Constants;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetQuery;
+import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.value.Value;
@@ -35,26 +38,29 @@ import org.openremote.model.value.Values;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Logger;
 
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.NOT_FOUND;
+import static org.openremote.model.attribute.AttributeEvent.Source.CLIENT;
 
 public class AssetResourceImpl extends ManagerWebResource implements AssetResource {
 
     private static final Logger LOG = Logger.getLogger(AssetResourceImpl.class.getName());
 
     protected final AssetStorageService assetStorageService;
-    protected final AssetProcessingService assetProcessingService;
+    protected final MessageBrokerService messageBrokerService;
 
     public AssetResourceImpl(ManagerIdentityService identityService,
                              AssetStorageService assetStorageService,
-                             AssetProcessingService assetProcessingService) {
+                             MessageBrokerService messageBrokerService) {
         super(identityService);
         this.assetStorageService = assetStorageService;
-        this.assetProcessingService = assetProcessingService;
+        this.messageBrokerService = messageBrokerService;
     }
 
     @Override
@@ -227,35 +233,42 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
     @Override
     public void writeAttributeValue(RequestParams requestParams, String assetId, String attributeName, String rawJson) {
         try {
-            // Process update
             try {
                 Value value = Values.instance()
                     .parse(rawJson)
                     .orElse(null); // When parsing literal JSON "null"
 
-                assetProcessingService.processFromClient(
-                    getAuthContext(),
-                    new AttributeEvent(new AttributeRef(assetId, attributeName), value)
+                AttributeEvent event = new AttributeEvent(new AttributeRef(assetId, attributeName), value);
+
+                // Process asynchronously but block for a little while waiting for the result
+                Map<String, Object> headers = new HashMap<>();
+                headers.put(AttributeEvent.HEADER_SOURCE, CLIENT);
+                headers.put(Constants.AUTH_CONTEXT, getAuthContext());
+                Object result = messageBrokerService.getProducerTemplate().requestBodyAndHeaders(
+                    AssetProcessingService.ASSET_QUEUE, event, headers
                 );
+
+                if (result instanceof AssetProcessingException) {
+                    AssetProcessingException processingException = (AssetProcessingException) result;
+                    switch (processingException.getReason()) {
+                        case ILLEGAL_SOURCE:
+                        case NO_AUTH_CONTEXT:
+                        case INSUFFICIENT_ACCESS:
+                            throw new WebApplicationException(Response.Status.FORBIDDEN);
+                        case ASSET_NOT_FOUND:
+                        case ATTRIBUTE_NOT_FOUND:
+                            throw new WebApplicationException(NOT_FOUND);
+                        case INVALID_AGENT_LINK:
+                        case ILLEGAL_AGENT_UPDATE:
+                        case INVALID_ATTRIBUTE_EXECUTE_STATUS:
+                            throw new IllegalStateException(processingException);
+                        default:
+                            throw processingException;
+                    }
+                }
 
             } catch (ValueException ex) {
                 throw new IllegalStateException("Error parsing JSON", ex);
-            } catch (AssetProcessingException ex) {
-                switch (ex.getReason()) {
-                    case ILLEGAL_SOURCE:
-                    case NO_AUTH_CONTEXT:
-                    case INSUFFICIENT_ACCESS:
-                        throw new WebApplicationException(Response.Status.FORBIDDEN);
-                    case ASSET_NOT_FOUND:
-                    case ATTRIBUTE_NOT_FOUND:
-                        throw new WebApplicationException(NOT_FOUND);
-                    case INVALID_AGENT_LINK:
-                    case ILLEGAL_AGENT_UPDATE:
-                    case INVALID_ATTRIBUTE_EXECUTE_STATUS:
-                        throw new IllegalStateException(ex);
-                    default:
-                        throw ex;
-                }
             }
 
         } catch (IllegalStateException ex) {

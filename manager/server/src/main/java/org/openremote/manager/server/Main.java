@@ -31,7 +31,7 @@ import org.openremote.manager.server.apps.ConsoleAppService;
 import org.openremote.manager.server.asset.AssetProcessingService;
 import org.openremote.manager.server.asset.AssetStorageService;
 import org.openremote.manager.server.datapoint.AssetDatapointService;
-import org.openremote.manager.server.event.EventService;
+import org.openremote.manager.server.event.ClientEventService;
 import org.openremote.manager.server.i18n.I18NService;
 import org.openremote.manager.server.map.MapService;
 import org.openremote.manager.server.notification.NotificationService;
@@ -60,7 +60,7 @@ public class Main {
                     new MessageBrokerSetupService(),
                     new ManagerIdentityService(),
                     new SetupService(),
-                    new EventService(),
+                    new ClientEventService(),
                     new RulesetStorageService(),
                     new RulesService(),
                     new AssetStorageService(),

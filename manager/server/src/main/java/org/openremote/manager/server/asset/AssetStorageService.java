@@ -24,13 +24,14 @@ import org.hibernate.Session;
 import org.hibernate.jdbc.AbstractReturningWork;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
+import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.message.MessageBrokerSetupService;
 import org.openremote.container.persistence.PersistenceEvent;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.AuthContext;
 import org.openremote.container.timer.TimerService;
 import org.openremote.container.web.WebService;
-import org.openremote.manager.server.event.EventService;
+import org.openremote.manager.server.event.ClientEventService;
 import org.openremote.manager.server.security.ManagerIdentityService;
 import org.openremote.manager.shared.security.ClientRole;
 import org.openremote.manager.shared.security.Tenant;
@@ -51,8 +52,8 @@ import java.util.stream.Collectors;
 
 import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_TOPIC;
 import static org.openremote.manager.server.asset.AssetRoute.isPersistenceEventForEntityType;
-import static org.openremote.manager.server.event.EventService.INCOMING_EVENT_TOPIC;
-import static org.openremote.manager.server.event.EventService.getSessionKey;
+import static org.openremote.manager.server.event.ClientEventService.CLIENT_EVENT_TOPIC;
+import static org.openremote.manager.server.event.ClientEventService.getSessionKey;
 
 public class AssetStorageService extends RouteBuilder implements ContainerService, Consumer<AssetState> {
 
@@ -60,18 +61,16 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     protected TimerService timerService;
     protected PersistenceService persistenceService;
     protected ManagerIdentityService managerIdentityService;
-    protected AssetProcessingService assetProcessingService;
-    protected EventService eventService;
+    protected ClientEventService clientEventService;
 
     @Override
     public void init(Container container) throws Exception {
         timerService = container.getService(TimerService.class);
         persistenceService = container.getService(PersistenceService.class);
         managerIdentityService = container.getService(ManagerIdentityService.class);
-        assetProcessingService = container.getService(AssetProcessingService.class);
-        eventService = container.getService(EventService.class);
+        clientEventService = container.getService(ClientEventService.class);
 
-        eventService.addSubscriptionAuthorizer((auth, subscription) -> {
+        clientEventService.addSubscriptionAuthorizer((auth, subscription) -> {
             if (!subscription.isEventType(AssetTreeModifiedEvent.class))
                 return false;
 
@@ -106,7 +105,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             new AssetResourceImpl(
                 managerIdentityService,
                 this,
-                container.getService(AssetProcessingService.class)
+                container.getService(MessageBrokerService.class)
             )
         );
 
@@ -148,7 +147,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             .process(exchange -> publishModificationEvents(exchange.getIn().getBody(PersistenceEvent.class)));
 
         // React if a client wants to read attribute state
-        from(INCOMING_EVENT_TOPIC)
+        from(CLIENT_EVENT_TOPIC)
             .routeId("FromClientReadRequests")
             .filter(body().isInstanceOf(ReadAssetAttributesEvent.class))
             .process(exchange -> {
@@ -648,7 +647,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         ServerAsset asset = persistenceEvent.getEntity();
         switch (persistenceEvent.getCause()) {
             case INSERT:
-                eventService.publishEvent(
+                clientEventService.publishEvent(
                     new AssetTreeModifiedEvent(asset.getRealmId(), asset.getId())
                 );
                 break;
@@ -658,7 +657,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 String previousName = persistenceEvent.getPreviousState("name");
                 String currentName = persistenceEvent.getCurrentState("name");
                 if (!Objects.equals(previousName, currentName)) {
-                    eventService.publishEvent(
+                    clientEventService.publishEvent(
                         new AssetTreeModifiedEvent(asset.getRealmId(), asset.getId())
                     );
                     break;
@@ -668,7 +667,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 String previousParentId = persistenceEvent.getPreviousState("parentId");
                 String currentParentId = persistenceEvent.getCurrentState("parentId");
                 if (!Objects.equals(previousParentId, currentParentId)) {
-                    eventService.publishEvent(
+                    clientEventService.publishEvent(
                         new AssetTreeModifiedEvent(asset.getRealmId(), asset.getId())
                     );
                     break;
@@ -678,7 +677,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 String previousRealmId = persistenceEvent.getPreviousState("realmId");
                 String currentRealmId = persistenceEvent.getCurrentState("realmId");
                 if (!Objects.equals(previousRealmId, currentRealmId)) {
-                    eventService.publishEvent(
+                    clientEventService.publishEvent(
                         new AssetTreeModifiedEvent(asset.getRealmId(), asset.getId())
                     );
                     break;
@@ -686,7 +685,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
                 break;
             case DELETE:
-                eventService.publishEvent(
+                clientEventService.publishEvent(
                     new AssetTreeModifiedEvent(asset.getRealmId(), asset.getId())
                 );
                 break;
@@ -704,7 +703,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             .map(Optional::get)
             .collect(Collectors.toList());
 
-        eventService.sendToSession(sessionKey, events.toArray(new AttributeEvent[events.size()]));
+        clientEventService.sendToSession(sessionKey, events.toArray(new AttributeEvent[events.size()]));
     }
 
     public String toString() {

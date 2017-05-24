@@ -50,16 +50,21 @@ import java.util.stream.Stream;
 
 import static org.openremote.agent.protocol.Protocol.ACTUATOR_TOPIC;
 import static org.openremote.agent.protocol.Protocol.DeploymentStatus.*;
+import static org.openremote.agent.protocol.Protocol.SENSOR_QUEUE;
 import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_TOPIC;
+import static org.openremote.manager.server.asset.AssetProcessingService.ASSET_QUEUE;
 import static org.openremote.manager.server.asset.AssetRoute.isPersistenceEventForAssetType;
 import static org.openremote.manager.server.asset.AssetRoute.isPersistenceEventForEntityType;
 import static org.openremote.model.asset.AssetAttribute.attributesFromJson;
 import static org.openremote.model.asset.AssetType.AGENT;
 import static org.openremote.model.asset.agent.AgentLink.getAgentLink;
+import static org.openremote.model.attribute.AttributeEvent.HEADER_SOURCE;
 import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 import static org.openremote.model.util.TextUtil.isValidURN;
 
 /**
+ * Handles life cycle and communication with {@link Protocol}s.
+ * <p>
  * Finds all {@link AssetType#AGENT} assets and manages their {@link ProtocolConfiguration}s.
  */
 public class AgentService extends RouteBuilder implements ContainerService, Consumer<AssetState>, ProtocolAssetService {
@@ -143,6 +148,13 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
                     processAssetChange(asset, persistenceEvent);
                 }
             });
+
+        // A protocol wants to write a new sensor value
+        from(SENSOR_QUEUE)
+            .routeId("FromSensorUpdates")
+            .filter(body().isInstanceOf(AttributeEvent.class))
+            .setHeader(HEADER_SOURCE, () -> AttributeEvent.Source.SENSOR)
+            .to(ASSET_QUEUE);
     }
 
     /**
@@ -178,7 +190,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
 
     @Override
     public void sendAttributeEvent(AttributeEvent attributeEvent) {
-        assetProcessingService.sendAttributeEvent(attributeEvent, AttributeEvent.Source.INTERNAL);
+        assetProcessingService.sendAttributeEvent(attributeEvent);
     }
 
     /**
@@ -536,7 +548,6 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
             .map(ref ->
                 getProtocolConfiguration(ref)
                     .orElseGet(() -> {
-                        LOG.warning("Cannot process as agent link is invalid:" + assetState);
                         assetState.setError(new RuntimeException("Attribute has an invalid agent link: " + assetState.getAttribute()));
                         assetState.setProcessingStatus(AssetState.ProcessingStatus.ERROR);
                         return null;
@@ -544,22 +555,15 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
             )
             .map(protocolConfiguration -> {
                 // Its' a send to actuator - push the update to the protocol
-                Optional<AttributeEvent> event = assetState
-                    .getAttribute()
-                    .getStateEvent();
-
-                if (event.isPresent()) {
-                    LOG.fine("Sending to actuator topic: " + event.get());
+                assetState.getAttribute().getStateEvent().ifPresent(attributeEvent -> {
+                    LOG.fine("Sending to actuator topic: " + attributeEvent);
                     messageBrokerService.getProducerTemplate().sendBodyAndHeader(
                         ACTUATOR_TOPIC,
-                        event.get(),
+                        attributeEvent,
                         Protocol.ACTUATOR_TOPIC_TARGET_PROTOCOL,
                         protocolConfiguration.getValueAsString().orElse("")
                     );
-                } else {
-                    LOG.warning("Attribute doesn't have a valid attribute event: " + assetState);
-                }
-
+                });
                 assetState.setProcessingStatus(AssetState.ProcessingStatus.COMPLETED);
                 return protocolConfiguration;
             })

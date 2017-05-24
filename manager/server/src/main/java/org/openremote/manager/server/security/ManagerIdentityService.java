@@ -33,7 +33,7 @@ import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.AuthContext;
 import org.openremote.container.security.IdentityService;
 import org.openremote.container.web.WebService;
-import org.openremote.manager.server.event.EventService;
+import org.openremote.manager.server.event.ClientEventService;
 import org.openremote.manager.shared.security.ClientRole;
 import org.openremote.manager.shared.security.Tenant;
 import org.openremote.manager.shared.security.TenantEmailConfig;
@@ -57,7 +57,7 @@ public class ManagerIdentityService extends IdentityService {
     protected boolean devMode;
     protected PersistenceService persistenceService;
     protected MessageBrokerService messageBrokerService;
-    protected EventService eventService;
+    protected ClientEventService clientEventService;
 
     public ManagerIdentityService() {
         super(Constants.KEYCLOAK_CLIENT_ID);
@@ -70,7 +70,7 @@ public class ManagerIdentityService extends IdentityService {
         this.devMode = container.isDevMode();
         this.persistenceService = container.getService(PersistenceService.class);
         this.messageBrokerService = container.getService(MessageBrokerService.class);
-        this.eventService = container.getService(EventService.class);
+        this.clientEventService = container.getService(ClientEventService.class);
 
         enableAuthProxy(container.getService(WebService.class));
 
@@ -274,7 +274,7 @@ public class ManagerIdentityService extends IdentityService {
             persistenceEvent.getEntity().getClass()
         );
 
-        eventService.publishEvent(
+        clientEventService.publishEvent(
             new AssetTreeModifiedEvent(tenant.getId(), null)
         );
     }
