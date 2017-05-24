@@ -43,6 +43,14 @@ public class AlertNotification {
     @Enumerated(EnumType.STRING)
     private DeliveryStatus deliveryStatus;
 
+    public AlertNotification() {
+    }
+
+    public AlertNotification(String title, String message) {
+        this.title = title;
+        this.message = message;
+    }
+
     /*  Actuator  */
 
     public Long getId() {
@@ -79,6 +87,20 @@ public class AlertNotification {
 
     public void addAction(AlertAction action) {
         this.actions.set(this.actions.length(), action.getObjectValue());
+    }
+
+    public void addLinkAction(String title, String url) {
+        AlertAction action = new AlertAction();
+        action.setActionType(ActionType.LINK);
+        action.setTitle(title);
+        // TODO: this is currenly on notification, should be on action, but must update console to support that
+        setAppUrl(url);
+        addAction(action);
+    }
+
+    public void addActuatorAction(String title, String assetId, String attributeName, String rawJson ) {
+        AlertAction action = new AlertAction(title, ActionType.ACTUATOR, assetId, attributeName, rawJson);
+        addAction(action);
     }
 
     public String getAppUrl() {

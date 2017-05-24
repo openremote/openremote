@@ -14,14 +14,9 @@ when
     $residence : AssetState(type == AssetType.RESIDENCE, attributeName == "alarmEnabled", valueAsBoolean == true)
     $room : AssetState(parentId == $residence.id, type == AssetType.ROOM, attributeName == "presenceDetected", valueAsBoolean == true)
 then
-    AlertNotification alert = new AlertNotification();
-        alert.setTitle("Alert Title");
-        alert.setMessage("Alert Message");
-        alert.setAppUrl("Deep Url");
-        AlertAction alertAction = new AlertAction();
-        alertAction.setTitle("ACTION1");
-        alertAction.setActionType(ActionType.LINK);
-        alert.addAction(alertAction);
+    AlertNotification alert = new AlertNotification("Alert Title", "Alert Message");
+        alert.addLinkAction("Link", "#/Veilig");
+        alert.addActuatorAction("Disarm", "assetId", "alarmEnabled", "value");
 
     users
         .query()
