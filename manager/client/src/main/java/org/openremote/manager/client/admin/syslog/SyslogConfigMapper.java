@@ -17,31 +17,18 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.client.admin.overview;
+package org.openremote.manager.client.admin.syslog;
 
-import com.google.gwt.core.client.GWT;
-import com.google.gwt.uibinder.client.UiBinder;
-import com.google.gwt.user.client.ui.Composite;
-import com.google.gwt.user.client.ui.HTMLPanel;
+import com.github.nmorel.gwtjackson.client.ObjectMapper;
+import com.github.nmorel.gwtjackson.client.annotation.JsonMixIns;
+import org.openremote.manager.client.interop.jackson.DefaultJsonMixin;
+import org.openremote.manager.shared.http.EntityReader;
+import org.openremote.manager.shared.http.EntityWriter;
+import org.openremote.manager.shared.syslog.SyslogConfig;
 
-import javax.inject.Inject;
-
-public class AdminOverviewImpl extends Composite implements AdminOverview {
-
-    interface UI extends UiBinder<HTMLPanel, AdminOverviewImpl> {
-    }
-
-    private UI ui = GWT.create(UI.class);
-
-    Presenter presenter;
-
-    @Inject
-    public AdminOverviewImpl() {
-        initWidget(ui.createAndBindUi(this));
-    }
-
-    @Override
-    public void setPresenter(Presenter presenter) {
-        this.presenter = presenter;
-    }
+@JsonMixIns({@JsonMixIns.JsonMixIn(target = SyslogConfig.class, mixIn = DefaultJsonMixin.class)})
+public interface SyslogConfigMapper
+    extends ObjectMapper<SyslogConfig>,
+    EntityReader<SyslogConfig>,
+    EntityWriter<SyslogConfig> {
 }

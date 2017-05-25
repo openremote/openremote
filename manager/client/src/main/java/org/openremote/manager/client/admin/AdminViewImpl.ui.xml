@@ -6,12 +6,18 @@
     <ui:with field="managerMessages" type="org.openremote.manager.client.i18n.ManagerMessages"/>
     <ui:with field="widgetStyle" type="org.openremote.manager.client.style.WidgetStyle"/>
 
+    <ui:style>
+        .adminContentContainer {
+            overflow: hidden;
+        }
+    </ui:style>
+
     <g:HTMLPanel styleName="flex layout horizontal">
 
         <an:AdminNavigation ui:field="adminNavigation"/>
 
         <g:HTMLPanel ui:field="adminContentContainer"
-                     styleName="flex layout vertical">
+                     styleName="flex layout vertical {style.adminContentContainer}">
         </g:HTMLPanel>
     </g:HTMLPanel>
 

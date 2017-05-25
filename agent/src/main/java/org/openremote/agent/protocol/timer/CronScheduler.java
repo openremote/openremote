@@ -86,7 +86,7 @@ class CronScheduler {
             scheduler.scheduleJob(cronTrigger.key, cronTrigger.value);
 
             if (!scheduler.isStarted()) {
-                LOG.info("Starting the cron cronScheduler");
+                LOG.info("Starting the cron scheduler");
                 scheduler.start();
             }
 

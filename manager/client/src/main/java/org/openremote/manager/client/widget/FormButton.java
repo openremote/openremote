@@ -22,8 +22,13 @@ package org.openremote.manager.client.widget;
 public class FormButton extends PushButton {
 
     public FormButton() {
+        this(null);
+    }
+
+    public FormButton(String text) {
         super();
         addStyleName("or-FormControl or-FormButton");
+        setText(text);
     }
 
     public void setPrimary(boolean primary) {

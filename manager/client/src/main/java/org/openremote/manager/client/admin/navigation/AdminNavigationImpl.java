@@ -41,7 +41,7 @@ public class AdminNavigationImpl extends Composite implements AdminNavigation {
     Presenter presenter;
 
     @UiField
-    Hyperlink overviewLink;
+    Hyperlink syslogLink;
 
     @UiField
     Hyperlink tenantsLink;
@@ -59,14 +59,14 @@ public class AdminNavigationImpl extends Composite implements AdminNavigation {
     public void setPresenter(Presenter presenter) {
         this.presenter = presenter;
 
-        overviewLink.setTargetHistoryToken(presenter.getAdminOverviewPlaceToken());
+        syslogLink.setTargetHistoryToken(presenter.getAdminOverviewPlaceToken());
         tenantsLink.setTargetHistoryToken(presenter.getAdminTenantsPlaceToken());
         usersLink.setTargetHistoryToken(presenter.getAdminUsersPlaceToken());
     }
 
     @Override
     public void onPlaceChange(AdminPlace adminPlace) {
-        overviewLink.removeStyleName("active");
+        syslogLink.removeStyleName("active");
         tenantsLink.removeStyleName("active");
         usersLink.removeStyleName("active");
 
@@ -79,7 +79,7 @@ public class AdminNavigationImpl extends Composite implements AdminNavigation {
         } else if (adminPlace instanceof AdminUserPlace) {
             usersLink.addStyleName("active");
         } else {
-            overviewLink.addStyleName("active");
+            syslogLink.addStyleName("active");
         }
     }
 

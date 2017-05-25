@@ -31,13 +31,6 @@
     <g:HTMLPanel styleName="flex layout horizontal center"
                  addStyleNames="{style.footer} {widgetStyle.Footer}">
 
-        <div class="flex layout horizontal">
-            <w:PushButton ui:field="quickSyslogButton"
-                          icon="list-alt"
-                          text="{managerMessages.syslog}"
-                          addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem}"/>
-        </div>
-
         <div class="flex layout horizontal center end-justified ">
             <w:PushButton
                     ui:field="fullscreenButton"

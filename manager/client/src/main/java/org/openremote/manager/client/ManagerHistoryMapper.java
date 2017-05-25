@@ -21,7 +21,7 @@ package org.openremote.manager.client;
 
 import com.google.gwt.place.shared.PlaceHistoryMapper;
 import com.google.gwt.place.shared.WithTokenizers;
-import org.openremote.manager.client.admin.overview.AdminOverviewPlace;
+import org.openremote.manager.client.admin.syslog.AdminSyslogPlace;
 import org.openremote.manager.client.admin.tenant.AdminTenantPlace;
 import org.openremote.manager.client.admin.tenant.AdminTenantsPlace;
 import org.openremote.manager.client.admin.users.AdminUserPlace;
@@ -56,7 +56,7 @@ import org.openremote.manager.client.user.UserAccountPlace;
         AssetRulesListPlace.Tokenizer.class,
         AssetRulesEditorPlace.Tokenizer.class,
         AppsPlace.Tokenizer.class,
-        AdminOverviewPlace.Tokenizer.class,
+        AdminSyslogPlace.Tokenizer.class,
         AdminTenantsPlace.Tokenizer.class,
         AdminTenantPlace.Tokenizer.class,
         AdminUsersPlace.Tokenizer.class,

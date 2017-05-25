@@ -21,7 +21,7 @@ package org.openremote.manager.client.app;
 
 import com.google.gwt.place.shared.PlaceController;
 import com.google.inject.Inject;
-import org.openremote.manager.client.admin.overview.AdminOverviewPlace;
+import org.openremote.manager.client.admin.syslog.AdminSyslogPlace;
 import org.openremote.manager.client.apps.AppsPlace;
 import org.openremote.manager.client.assets.AssetsDashboardPlace;
 import org.openremote.manager.client.assets.asset.AssetViewPlace;
@@ -136,7 +136,7 @@ public class HeaderPresenter implements HeaderView.Presenter {
 
     @Override
     public void navigateAdmin() {
-        placeController.goTo(new AdminOverviewPlace());
+        placeController.goTo(new AdminSyslogPlace());
 
     }
 

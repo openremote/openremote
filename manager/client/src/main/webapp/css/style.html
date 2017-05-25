@@ -1,6 +1,6 @@
 <style is="custom-style" include="iron-flex iron-flex-alignment iron-flex-factors iron-positioning">
 
-    :not(textarea)::-webkit-scrollbar {
+    ::-webkit-scrollbar {
         width: 1em;
     }
 
@@ -102,7 +102,7 @@
 
     .or-MainContent {
         overflow: auto;
-        padding: 1em;
+        padding: 0.8em;
     }
 
     .or-PushButton,
@@ -145,11 +145,11 @@
         opacity: inherit;
     }
 
-    .or-PushButtonIcon + .html-face {
+    .or-PushButtonIcon + .html-face:not(:empty) {
         margin-left: 0.6em;
     }
 
-    .or-PushButton.or-PushButton-up-disabled{
+    .or-PushButton.or-PushButton-up-disabled {
         cursor: not-allowed;
         opacity: .44;
     }
@@ -234,7 +234,6 @@
 
     .or-MessagesIcon {
         font-size: larger;
-        padding: 0.1em 0.4em 0 0;
     }
 
     .or-Form {
@@ -255,7 +254,13 @@
     }
 
     .or-FormMessages {
+        display: table;
         margin-bottom: 1em;
+    }
+
+    .or-Toast .or-MessagesIcon,
+    .or-FormMessages .or-MessagesIcon {
+        margin: 0.1em 0.4em 0 0;
     }
 
     .or-FormGroup {
@@ -292,13 +297,14 @@
 
     .or-FormLabel {
         width: 10em;
+        padding: 0.2em 0;
         font-weight: 600;
         white-space: normal;
         overflow: hidden;
     }
 
     .or-FormLabelIcon {
-        margin: 0 0.4em 0.1em 0.1em;
+        margin: 0.2em 0.4em 0.1em 0.1em;
         font-size: 1.2em;
         opacity: 0.4;
         align-self: flex-end;
@@ -308,16 +314,16 @@
         margin-right: 0.4em;
     }
 
+    .or-FormLabel.inline {
+        width: inherit;
+    }
+
     .or-FormLabel.larger {
         width: 15em;
     }
 
     .or-FormLabel.largest {
         width: 35em;
-    }
-
-    .or-FormLabel .required {
-        margin: 0 0.4em;
     }
 
     .or-FormField {
@@ -386,10 +392,10 @@
     .or-FormTextArea {
         font-size: 1em;
         font-family: monospace;
-        border: 1px solid;
         padding: 0.4em;
-        margin: 0 0.4em;
+        margin: 0 0 0.4em 0;
         white-space: pre;
+        resize: none;
     }
 
     .or-FormFileUploadLabel input[type="file"] {
@@ -418,7 +424,7 @@
     }
 
     .or-FormGroupActions .or-FormControl {
-        margin: 0.2em 0.4em;
+        margin: 0.1em 0.4em;
     }
 
     .or-FormTableHeaderCell {
@@ -426,7 +432,7 @@
         border-bottom: 1px solid;
         text-align: left;
         padding-right: 1em;
-        white-space:nowrap;
+        white-space: nowrap;
     }
 
     .or-FormTableHoveredRow {
@@ -523,6 +529,7 @@
     }
 
     .or-FormList {
+        padding: 0.4em 0;
 
     }
 

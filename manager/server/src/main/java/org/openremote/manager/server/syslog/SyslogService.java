@@ -21,30 +21,49 @@ package org.openremote.manager.server.syslog;
 
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
+import org.openremote.container.persistence.PersistenceService;
+import org.openremote.container.web.WebService;
+import org.openremote.manager.server.concurrent.ManagerExecutorService;
 import org.openremote.manager.server.event.ClientEventService;
+import org.openremote.manager.shared.syslog.SyslogConfig;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.syslog.SyslogEvent;
+import org.openremote.model.syslog.SyslogLevel;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.logging.Handler;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 
 /**
- * Act as a JUL handler and publish (some) log messages on the client event bus.
+ * Act as a JUL handler, publishes (some) log messages on the client event bus, stores
+ * (some, depending on {@link SyslogConfig}) log messages in the database.
  */
 public class SyslogService extends Handler implements ContainerService {
 
     private static final Logger LOG = Logger.getLogger(SyslogService.class.getName());
 
+    protected ManagerExecutorService executorService;
+    protected PersistenceService persistenceService;
     protected ClientEventService clientEventService;
+
+    protected SyslogConfig config;
+
+    final protected List<SyslogEvent> batch = new ArrayList<>();
 
     @Override
     public void init(Container container) throws Exception {
-        if (container.hasService(ClientEventService.class)) {
-            LOG.info("Syslog publisher enabled");
+        executorService = container.getService(ManagerExecutorService.class);
+
+        if (container.hasService(ClientEventService.class) && container.hasService(PersistenceService.class)) {
+            LOG.info("Syslog service enabled");
             clientEventService = container.getService(ClientEventService.class);
+            persistenceService = container.getService(PersistenceService.class);
         } else {
-            LOG.info("Syslog publisher not enabled, event service not available");
+            LOG.info("Syslog service disabled, missing required services");
         }
 
         if (clientEventService != null) {
@@ -53,10 +72,42 @@ public class SyslogService extends Handler implements ContainerService {
                 return subscription.isEventType(SyslogEvent.class) && auth.isSuperUser();
             });
         }
+
+        if (container.hasService(WebService.class)) {
+            container.getService(WebService.class).getApiSingletons().add(
+                new SyslogResourceImpl(this)
+            );
+        }
+
+        // Default config: Store all INFO messages for five days
+        config = new SyslogConfig(
+            SyslogLevel.INFO, SyslogCategory.values(), 60 * 24 * 5
+        );
     }
 
     @Override
     public void start(Container container) throws Exception {
+        if (persistenceService != null) {
+            // Flush batch every 3 seconds
+            executorService.scheduleAtFixedRate(this::flushBatch, 3 * 1000, 3 * 1000);
+
+            // Clear outdated events every minute
+            executorService.scheduleAtFixedRate(() -> {
+                // Not ready on startup
+                if (persistenceService.getEntityManagerFactory() == null)
+                    return;
+                final int maxAgeMinutes;
+                synchronized (batch) {
+                    maxAgeMinutes = config.getStoredMaxAgeMinutes();
+                }
+                persistenceService.doTransaction(em -> {
+                    em.createQuery(
+                        "delete from SyslogEvent e " +
+                            "where to_timestamp(e.timestamp/1000) < now() - make_interval(0, 0, 0, 0, 0, :minutes, 0)"
+                    ).setParameter("minutes", maxAgeMinutes).executeUpdate();
+                });
+            }, 60 * 1000, 60 * 1000);
+        }
     }
 
     @Override
@@ -73,11 +124,83 @@ public class SyslogService extends Handler implements ContainerService {
 
     @Override
     public void publish(LogRecord record) {
-        if (clientEventService == null)
-            return;
         SyslogEvent syslogEvent = SyslogCategory.mapSyslogEvent(record);
         if (syslogEvent != null) {
-            clientEventService.publishEvent(syslogEvent);
+            store(syslogEvent);
+            if (clientEventService != null)
+                clientEventService.publishEvent(syslogEvent);
+        }
+    }
+
+    public void setConfig(SyslogConfig config) {
+        synchronized (batch) {
+            LOG.info("Using: " + config);
+            this.config = config;
+        }
+    }
+
+    public SyslogConfig getConfig() {
+        synchronized (batch) {
+            return config;
+        }
+    }
+
+    public void clearStoredEvents() {
+        if (persistenceService == null)
+            return;
+        synchronized (batch) {
+            persistenceService.doTransaction(em -> {
+                em.createQuery("delete from SyslogEvent e").executeUpdate();
+            });
+        }
+    }
+
+    public List<SyslogEvent> getLastStoredEvents(SyslogLevel level, final int limit) {
+        if (persistenceService == null)
+            return new ArrayList<>();
+        return persistenceService.doReturningTransaction(em -> {
+            List list = em.createQuery("select e from SyslogEvent e where e.level >= :level order by e.timestamp desc")
+                .setParameter("level", level)
+                .setMaxResults(limit)
+                .getResultList();
+            Collections.reverse(list);
+            return list;
+        });
+    }
+
+    protected void store(SyslogEvent syslogEvent) {
+        if (persistenceService == null)
+            return;
+
+        // If we are not ready (on startup), ignore
+        if (persistenceService.getEntityManagerFactory() == null) {
+            return;
+        }
+        boolean isLoggable =
+            config.getStoredLevel().isLoggable(syslogEvent)
+                && Arrays.asList(config.getStoredCategories()).contains(syslogEvent.getCategory());
+        if (isLoggable) {
+            synchronized (batch) {
+                batch.add(syslogEvent);
+            }
+        }
+    }
+
+    protected void flushBatch() {
+        if (persistenceService == null)
+            return;
+        synchronized (batch) {
+            final List<SyslogEvent> transientEvents = new ArrayList<>(batch);
+            batch.clear();
+            if (transientEvents.size() == 0)
+                return;
+            LOG.fine("Flushing syslog batch: " + transientEvents.size());
+            persistenceService.doTransaction(em -> {
+                for (SyslogEvent e : transientEvents) {
+                    em.persist(e);
+                }
+                em.flush();
+            });
         }
     }
 

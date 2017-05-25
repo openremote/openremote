@@ -70,7 +70,7 @@ public class AdminUserImpl extends FormViewImpl implements AdminUser {
     FormCheckBox enabledCheckBox;
 
     @UiField
-    FormGroup resetPasswordNoteGroup;
+    Label resetPasswordNote;
 
     @UiField
     FormGroup resetPasswordGroup;
@@ -83,7 +83,7 @@ public class AdminUserImpl extends FormViewImpl implements AdminUser {
     PasswordTextBox resetPasswordControlInput;
 
     @UiField
-    FormGroup rolesNoteGroup;
+    Label rolesNote;
 
     @UiField
     FormGroup rolesGroup;
@@ -209,26 +209,15 @@ public class AdminUserImpl extends FormViewImpl implements AdminUser {
 
     @Override
     public void enableResetPassword(boolean enable) {
-        resetPasswordGroup.getStyle().clearDisplay();
-        resetPasswordControlGroup.getStyle().clearDisplay();
-        if (enable) {
-            resetPasswordNoteGroup.getStyle().setDisplay(NONE);
-        } else {
-            resetPasswordNoteGroup.getStyle().clearDisplay();
-            resetPasswordGroup.getStyle().setDisplay(NONE);
-            resetPasswordControlGroup.getStyle().setDisplay(NONE);
-        }
+        resetPasswordNote.setVisible(!enable);
+        resetPasswordGroup.setVisible(enable);
+        resetPasswordControlGroup.setVisible(enable);
     }
 
     @Override
     public void enableRoles(boolean enable) {
-        rolesGroup.getStyle().clearDisplay();
-        if (enable) {
-            rolesNoteGroup.getStyle().setDisplay(NONE);
-        } else {
-            rolesNoteGroup.getStyle().clearDisplay();
-            rolesGroup.getStyle().setDisplay(NONE);
-        }
+        rolesNote.setVisible(!enable);
+        rolesGroup.setVisible(enable);
     }
 
     @Override

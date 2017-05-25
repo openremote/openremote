@@ -22,8 +22,14 @@ package org.openremote.model.syslog;
 import org.openremote.model.event.shared.EventFilter;
 import org.openremote.model.event.shared.SharedEvent;
 
+import javax.persistence.*;
+import javax.validation.constraints.NotNull;
 import java.util.*;
 
+import static org.openremote.model.Constants.PERSISTENCE_SEQUENCE_ID_GENERATOR;
+
+@Entity
+@Table(name = "SYSLOG_EVENT")
 public class SyslogEvent extends SharedEvent {
 
     static public class LevelCategoryFilter extends EventFilter<SyslogEvent> {
@@ -77,9 +83,25 @@ public class SyslogEvent extends SharedEvent {
         }
     }
 
+    @Id
+    @Column(name = "ID")
+    @GeneratedValue(generator = PERSISTENCE_SEQUENCE_ID_GENERATOR)
+    protected Long id;
+
+    @NotNull
+    @Enumerated(EnumType.ORDINAL)
+    @Column(name = "LEVEL", nullable = false)
     protected SyslogLevel level;
+
+    @NotNull
+    @Enumerated(EnumType.STRING)
+    @Column(name = "CATEGORY", nullable = false)
     protected SyslogCategory category;
+
+    @Column(name = "SUBCATEGORY", length = 1024)
     protected String subCategory;
+
+    @Column(name = "MESSAGE", length = 8192)
     protected String message;
 
     protected SyslogEvent() {
@@ -102,6 +124,10 @@ public class SyslogEvent extends SharedEvent {
 
     public SyslogCategory getCategory() {
         return category;
+    }
+
+    public String getCategoryLabel() {
+        return getCategory().name() + getSubCategoryOptional().map(s -> " - " + s).orElse("");
     }
 
     public void setCategory(SyslogCategory category) {

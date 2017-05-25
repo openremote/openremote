@@ -1,5 +1,5 @@
 /*
- * Copyright 2017, OpenRemote Inc.
+ * Copyright 2016, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -19,28 +19,46 @@
  */
 package org.openremote.manager.client.admin.syslog;
 
-import com.google.gwt.user.client.ui.UIObject;
+import org.openremote.manager.client.admin.AdminContent;
+import org.openremote.manager.client.widget.FormView;
 import org.openremote.model.syslog.SyslogEvent;
 import org.openremote.model.syslog.SyslogLevel;
 
-public interface QuickSyslog {
+public interface AdminSyslog extends AdminContent, FormView {
 
     interface Presenter {
-        QuickSyslog getView();
 
-        void onOpen();
+        void onClearLog();
 
-        void onClose();
+        void onContinueLog();
 
-        void onLogLevelChanged(SyslogLevel level);
+        void onPauseLog();
+
+        void onFilterLimitChanged(int limit);
+
+        void onFilterLevelChanged(SyslogLevel level);
+
+        void saveSettings();
+
+        void removeAll();
     }
 
     void setPresenter(Presenter presenter);
 
-    void toggleRelativeTo(UIObject target);
+    void setStoredLevel(SyslogLevel level);
 
-    SyslogLevel getLogLevel();
+    SyslogLevel geStoredLevel();
 
-    void addEvent(SyslogEvent event);
+    void setStoredMinutes(int minutes);
+
+    int getStoredMinutes();
+
+    SyslogLevel getFilterLevel();
+
+    int getFilterLimit();
+
+    void showEvents(SyslogEvent... events);
+
+    void clearEvents();
 
 }

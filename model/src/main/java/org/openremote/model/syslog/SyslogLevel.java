@@ -21,7 +21,7 @@ package org.openremote.model.syslog;
 
 public enum SyslogLevel {
 
-    DEBUG("circle-o"),
+    DEBUG("bug"),
     INFO("info-circle"),
     WARN("exclamation-circle"),
     ERROR("exclamation-triangle");
@@ -47,6 +47,10 @@ public enum SyslogLevel {
             return DEBUG;
         }
         return null;
+    }
+
+    public boolean isLoggable(SyslogEvent event) {
+        return event.getLevel().ordinal() >= ordinal();
     }
 
 }

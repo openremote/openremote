@@ -401,10 +401,7 @@ public class Asset implements IdentifiableEntity {
         return name;
     }
 
-    public void setName(@NotNull String name) throws IllegalArgumentException {
-        if (name == null || name.isEmpty()) {
-            throw new IllegalArgumentException("Asset name is required");
-        }
+    public void setName(String name) throws IllegalArgumentException {
         this.name = name;
     }
 
@@ -420,11 +417,7 @@ public class Asset implements IdentifiableEntity {
         return AssetType.getByValue(getType()).orElse(AssetType.CUSTOM);
     }
 
-    public void setType(@NotNull String type) throws IllegalArgumentException {
-        if (type == null || type.isEmpty()) {
-            throw new IllegalArgumentException("Asset type is required");
-        }
-
+    public void setType(String type) throws IllegalArgumentException {
         this.type = type;
     }
 

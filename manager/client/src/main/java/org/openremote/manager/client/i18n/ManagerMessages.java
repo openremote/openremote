@@ -73,8 +73,6 @@ public interface ManagerMessages extends Messages {
 
     String search();
 
-    String requiredFields();
-
     String newUser();
 
     String selectTenant();
@@ -309,8 +307,6 @@ public interface ManagerMessages extends Messages {
 
     String noRulesetsFound();
 
-    String systemStatus();
-
     String noTenantsFound();
 
     String noUserFound();
@@ -337,13 +333,11 @@ public interface ManagerMessages extends Messages {
 
     String syslog();
 
-    String filterLevel();
-
     String pauseLog();
 
     String continueLog();
 
-    String clearLog();
+    String clear();
 
     String noLogMessagesReceived();
 
@@ -368,4 +362,28 @@ public interface ManagerMessages extends Messages {
     String noAssetSelected();
 
     String clearSelection();
+
+    String protocolConfiguration();
+
+    String showLast();
+
+    String events();
+
+    String store();
+
+    String eventsFor();
+
+    String saveSettings();
+
+    String removeAll();
+
+    String minutes();
+
+    String hours();
+
+    String days();
+
+    String eventsRemoved();
+
+    String settingsSaved();
 }

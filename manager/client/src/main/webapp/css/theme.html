@@ -17,11 +17,11 @@
         --theme-purple: #660092; /* rgb(102, 0, 146) */
     }
 
-    :not(textarea)::-webkit-scrollbar-track {
+    ::-webkit-scrollbar-track {
         background-color: var(--theme-black);
     }
 
-    :not(textarea)::-webkit-scrollbar-thumb {
+    ::-webkit-scrollbar-thumb {
         background-color: var(--theme-lightgreen);
     }
 
@@ -186,10 +186,6 @@
         color: var(--theme-darkgrey);
     }
 
-    .or-FormLabel .required {
-        color: var(--theme-mediumgrey);
-    }
-
     .or-FormField {
 
     }
@@ -219,7 +215,7 @@
     }
 
     .or-FormTextArea {
-        border-color: var(--theme-darkgrey);
+        background-color: var(--theme-brightgrey);
     }
 
     .or-FormButton {
@@ -330,7 +326,15 @@
     }
 
     .or-FormListItem {
-        background: var(--theme-white);
+        background: var(--theme-brightgrey);
+    }
+
+    .or-FormListItem .warn {
+        color: var(--theme-yellow);
+    }
+
+    .or-FormListItem .error {
+        color: var(--theme-red);
     }
 
     .or-FormListEmptyMessage {

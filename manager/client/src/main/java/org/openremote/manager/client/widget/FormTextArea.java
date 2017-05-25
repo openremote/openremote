@@ -48,4 +48,11 @@ public class FormTextArea extends TextArea {
         getElement().setPropertyString("wrap", wrap);
     }
 
+    public void setOpaque(boolean opaque) {
+        removeStyleName("opaque");
+        if (opaque) {
+            addStyleName("opaque");
+        }
+    }
+
 }

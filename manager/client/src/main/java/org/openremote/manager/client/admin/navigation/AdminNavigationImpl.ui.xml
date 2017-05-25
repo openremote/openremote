@@ -17,10 +17,10 @@
 
     <g:HTMLPanel styleName="layout vertical {widgetStyle.SecondaryNav} {style.nav}">
 
-        <w:Hyperlink ui:field="overviewLink"
+        <w:Hyperlink ui:field="syslogLink"
                      addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem}"
-                     icon="dashboard"
-                     text="{managerMessages.systemStatus}"/>
+                     icon="list-alt"
+                     text="{managerMessages.syslog}"/>
 
         <w:Hyperlink ui:field="tenantsLink"
                      addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem}"

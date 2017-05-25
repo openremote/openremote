@@ -77,8 +77,6 @@ public class RulesEditorImpl extends FormViewImpl implements RulesEditor {
     AssetSelector templateAssetSelector;
 
     @UiField
-    FormGroup rulesGroup;
-    @UiField
     FormTextArea rulesTextArea;
 
     @UiField
@@ -272,7 +270,7 @@ public class RulesEditorImpl extends FormViewImpl implements RulesEditor {
     protected void setOpaque(boolean opaque) {
         nameGroup.setOpaque(opaque);
         optionsGroup.setOpaque(opaque);
-        rulesGroup.setOpaque(opaque);
+        rulesTextArea.setOpaque(opaque);
         submitButtonGroup.setOpaque(opaque);
     }
 

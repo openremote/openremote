@@ -22,8 +22,8 @@ package org.openremote.manager.client;
 import com.google.gwt.place.shared.Place;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
-import org.openremote.manager.client.admin.overview.AdminOverviewActivity;
-import org.openremote.manager.client.admin.overview.AdminOverviewPlace;
+import org.openremote.manager.client.admin.syslog.AdminSyslogActivity;
+import org.openremote.manager.client.admin.syslog.AdminSyslogPlace;
 import org.openremote.manager.client.admin.tenant.AdminTenantActivity;
 import org.openremote.manager.client.admin.tenant.AdminTenantPlace;
 import org.openremote.manager.client.admin.tenant.AdminTenantsActivity;
@@ -43,7 +43,6 @@ import org.openremote.manager.client.assets.asset.AssetViewPlace;
 import org.openremote.manager.client.assets.tenant.AssetsTenantActivity;
 import org.openremote.manager.client.assets.tenant.AssetsTenantPlace;
 import org.openremote.manager.client.event.ShowFailureEvent;
-import org.openremote.model.event.bus.EventBus;
 import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.map.MapActivity;
 import org.openremote.manager.client.map.MapPlace;
@@ -65,6 +64,7 @@ import org.openremote.manager.client.rules.tenant.TenantRulesListPlace;
 import org.openremote.manager.client.service.SecurityService;
 import org.openremote.manager.client.user.UserAccountActivity;
 import org.openremote.manager.client.user.UserAccountPlace;
+import org.openremote.model.event.bus.EventBus;
 
 import java.util.logging.Logger;
 
@@ -87,7 +87,7 @@ public class ManagerActivityMapper implements AppActivityMapper {
     protected final Provider<AssetRulesListActivity> assetRulesListActivityProvider;
     protected final Provider<AssetRulesEditorActivity> assetRulesEditorActivityProvider;
     protected final Provider<AppsActivity> appsActivityProvider;
-    protected final Provider<AdminOverviewActivity> adminOverviewActivityProvider;
+    protected final Provider<AdminSyslogActivity> adminSyslogActivityProvider;
     protected final Provider<AdminTenantsActivity> adminTenantsActivityProvider;
     protected final Provider<AdminTenantActivity> adminTenantActivityProvider;
     protected final Provider<AdminUsersActivity> adminUsersActivityProvider;
@@ -110,7 +110,7 @@ public class ManagerActivityMapper implements AppActivityMapper {
                                  Provider<AssetRulesListActivity> assetRulesListActivityProvider,
                                  Provider<AssetRulesEditorActivity> assetRulesEditorActivityProvider,
                                  Provider<AppsActivity> appsActivityProvider,
-                                 Provider<AdminOverviewActivity> adminOverviewActivityProvider,
+                                 Provider<AdminSyslogActivity> adminSyslogActivityProvider,
                                  Provider<AdminTenantsActivity> adminTenantsActivityProvider,
                                  Provider<AdminTenantActivity> adminTenantActivityProvider,
                                  Provider<AdminUsersActivity> adminUsersActivityProvider,
@@ -131,7 +131,7 @@ public class ManagerActivityMapper implements AppActivityMapper {
         this.assetRulesListActivityProvider = assetRulesListActivityProvider;
         this.assetRulesEditorActivityProvider = assetRulesEditorActivityProvider;
         this.appsActivityProvider = appsActivityProvider;
-        this.adminOverviewActivityProvider = adminOverviewActivityProvider;
+        this.adminSyslogActivityProvider = adminSyslogActivityProvider;
         this.adminTenantsActivityProvider = adminTenantsActivityProvider;
         this.adminTenantActivityProvider = adminTenantActivityProvider;
         this.adminUsersActivityProvider = adminUsersActivityProvider;
@@ -177,8 +177,8 @@ public class ManagerActivityMapper implements AppActivityMapper {
             if (place instanceof AppsPlace) {
                 return appsActivityProvider.get().init(securityService, (AppsPlace) place);
             }
-            if (place instanceof AdminOverviewPlace) {
-                return adminOverviewActivityProvider.get().init(securityService, (AdminOverviewPlace) place);
+            if (place instanceof AdminSyslogPlace) {
+                return adminSyslogActivityProvider.get().init(securityService, (AdminSyslogPlace) place);
             }
             if (place instanceof AdminTenantsPlace) {
                 return adminTenantsActivityProvider.get().init(securityService, (AdminTenantsPlace) place);

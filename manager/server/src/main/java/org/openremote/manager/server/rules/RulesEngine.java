@@ -448,7 +448,6 @@ public class RulesEngine<T extends Ruleset> {
             } catch (Exception ex) {
                 // This is called in a background timer thread, we must log here or the exception is swallowed
                 LOG.log(Level.SEVERE, "On " + this + ", inserting initial asset states failed", ex);
-                // TODO Should we stop the engine here?
                 error = ex;
                 stop();
             }

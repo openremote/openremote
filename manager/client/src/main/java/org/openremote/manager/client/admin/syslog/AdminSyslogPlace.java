@@ -17,16 +17,30 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.client.admin.overview;
+package org.openremote.manager.client.admin.syslog;
 
-import org.openremote.manager.client.admin.AdminContent;
+import com.google.gwt.place.shared.PlaceTokenizer;
+import com.google.gwt.place.shared.Prefix;
+import org.openremote.manager.client.admin.AdminPlace;
 
-public interface AdminOverview extends AdminContent {
+public class AdminSyslogPlace extends AdminPlace {
 
-    interface Presenter {
+    @Prefix("admin")
+    public static class Tokenizer implements PlaceTokenizer<AdminSyslogPlace> {
 
+        @Override
+        public AdminSyslogPlace getPlace(String token) {
+            return new AdminSyslogPlace();
+        }
+
+        @Override
+        public String getToken(AdminSyslogPlace place) {
+            return "";
+        }
     }
 
-    void setPresenter(Presenter presenter);
-
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "{}";
+    }
 }

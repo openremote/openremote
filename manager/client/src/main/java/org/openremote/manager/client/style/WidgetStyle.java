@@ -109,18 +109,6 @@ public class WidgetStyle {
         return "or-PopupPanelFooter";
     }
 
-    public String Headline() {
-        return "or-Headline";
-    }
-
-    public String HeadlineText() {
-        return "or-HeadlineText";
-    }
-
-    public String HeadlineSub() {
-        return "or-HeadlineSub";
-    }
-
     public String Form() {
         return "or-Form";
     }

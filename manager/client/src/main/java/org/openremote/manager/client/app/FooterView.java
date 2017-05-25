@@ -21,14 +21,11 @@ package org.openremote.manager.client.app;
 
 import com.google.gwt.place.shared.Place;
 import com.google.gwt.user.client.ui.IsWidget;
-import org.openremote.manager.client.admin.syslog.QuickSyslog;
 
 public interface FooterView extends IsWidget {
 
     interface Presenter {
         FooterView getView();
-
-        QuickSyslog getQuickSyslog();
 
         void goTo(Place place);
     }

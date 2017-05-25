@@ -22,7 +22,7 @@ package org.openremote.manager.client.admin.navigation;
 import com.google.gwt.place.shared.PlaceHistoryMapper;
 import com.google.inject.Inject;
 import org.openremote.manager.client.admin.AdminPlace;
-import org.openremote.manager.client.admin.overview.AdminOverviewPlace;
+import org.openremote.manager.client.admin.syslog.AdminSyslogPlace;
 import org.openremote.manager.client.admin.tenant.AdminTenantsPlace;
 import org.openremote.manager.client.admin.users.AdminUsersPlace;
 
@@ -47,7 +47,7 @@ public class AdminNavigationPresenter implements AdminNavigation.Presenter {
 
     @Override
     public String getAdminOverviewPlaceToken() {
-        return historyMapper.getToken(new AdminOverviewPlace());
+        return historyMapper.getToken(new AdminSyslogPlace());
     }
 
     @Override

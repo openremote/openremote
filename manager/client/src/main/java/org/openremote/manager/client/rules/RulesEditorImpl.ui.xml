@@ -20,8 +20,6 @@
         }
 
         .rulesTextArea {
-            min-height: 38vh;
-            max-height: 75vh;
         }
     </ui:style>
 
@@ -47,7 +45,7 @@
 
                 </g:HTMLPanel>
 
-                <g:HTMLPanel styleName="flex {widgetStyle.MainContent}">
+                <g:HTMLPanel styleName="flex layout vertical {widgetStyle.MainContent}">
 
                     <w:Headline ui:field="headline" icon="edit"/>
 
@@ -106,18 +104,9 @@
 
                         <assetBrowser:AssetSelector ui:field="templateAssetSelector"/>
 
-                        <w:FormGroup ui:field="rulesGroup" alignStart="true">
-                            <w:label>
-                                <w:FormLabel text="{managerMessages.rules}"/>
-                            </w:label>
-                            <w:field>
-                                <w:FormField addStyleNames="larger">
-                                    <w:FormTextArea ui:field="rulesTextArea"
-                                                    spellcheck="false"
-                                                    addStyleNames="{style.rulesTextArea} flex"/>
-                                </w:FormField>
-                            </w:field>
-                        </w:FormGroup>
+                        <w:FormTextArea ui:field="rulesTextArea"
+                                        spellcheck="false"
+                                        addStyleNames="{style.rulesTextArea} flex"/>
 
                         <w:FormGroup ui:field="submitButtonGroup">
                             <w:field>

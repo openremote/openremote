@@ -27,8 +27,6 @@ public class FormLabel extends ComplexPanel {
     protected SpanElement iconElement;
     protected String icon;
     protected LabelElement labelElement;
-    protected SpanElement requiredElement;
-    protected boolean required;
     protected boolean error;
 
     public FormLabel() {
@@ -47,12 +45,6 @@ public class FormLabel extends ComplexPanel {
         labelElement.setHtmlFor(Document.get().createUniqueId());
         getElement().appendChild(labelElement);
 
-        requiredElement= (SpanElement) Document.get().createElement(SpanElement.TAG);
-        requiredElement.addClassName("required");
-        requiredElement.setInnerText("*");
-        requiredElement.getStyle().setVisibility(Style.Visibility.HIDDEN);
-        getElement().appendChild(requiredElement);
-
         setText(text);
     }
 
@@ -62,15 +54,6 @@ public class FormLabel extends ComplexPanel {
 
     public void setText(String text) {
         labelElement.setInnerText(text);
-    }
-
-    public boolean isRequired() {
-        return required;
-    }
-
-    public void setRequired(boolean required) {
-        this.required = required;
-        requiredElement.getStyle().setVisibility(required ? Style.Visibility.VISIBLE : Style.Visibility.HIDDEN);
     }
 
     public void setError(boolean error) {

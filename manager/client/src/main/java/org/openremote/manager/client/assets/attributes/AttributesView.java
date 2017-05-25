@@ -288,7 +288,7 @@ public abstract class AttributesView<
     protected FormGroup createAttributeGroup(AssetAttribute attribute) {
         FormGroup formGroup = new FormGroup();
 
-        if (attribute.hasAgentLink()) {
+        if (attribute.hasAgentLink() || attribute.isProtocolConfiguration()) {
             formGroup.addStyleName(container.getStyle().highlightAttribute());
             formGroup.addStyleName(environment.getWidgetStyle().HighlightBorder());
         } else {
@@ -297,15 +297,20 @@ public abstract class AttributesView<
         }
 
         FormLabel formLabel = createAttributeLabel(attribute);
-        formLabel.setIcon(attribute.isExecutable()
-            ? "cog"
-            : attribute.getType().map(AttributeType::getIcon).orElse(AttributeType.DEFAULT_ICON)
-        );
+        if (attribute.isExecutable()) {
+            formLabel.setIcon("cog");
+        } else if (attribute.isProtocolConfiguration()) {
+            formLabel.setIcon("gears");
+        } else {
+            formLabel.setIcon(attribute.getType().map(AttributeType::getIcon).orElse(AttributeType.DEFAULT_ICON));
+        }
         formGroup.addFormLabel(formLabel);
 
         StringBuilder infoText = new StringBuilder();
         if (attribute.isExecutable()) {
             infoText.append(environment.getMessages().executable());
+        } else if (attribute.isProtocolConfiguration()) {
+            infoText.append(environment.getMessages().protocolConfiguration());
         } else if (attribute.getType().isPresent()) {
             infoText.append(environment.getMessages().attributeType(attribute.getType().get().name()));
         }

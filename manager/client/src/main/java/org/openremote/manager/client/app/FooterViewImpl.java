@@ -21,7 +21,6 @@ package org.openremote.manager.client.app;
 
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.event.dom.client.ClickEvent;
-import com.google.gwt.place.shared.Place;
 import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
 import com.google.gwt.uibinder.client.UiHandler;
@@ -34,9 +33,6 @@ public class FooterViewImpl extends Composite implements FooterView {
 
     interface UI extends UiBinder<HTMLPanel, FooterViewImpl> {
     }
-
-    @UiField
-    PushButton quickSyslogButton;
 
     @UiField
     PushButton fullscreenButton;
@@ -53,11 +49,6 @@ public class FooterViewImpl extends Composite implements FooterView {
     @Override
     public void setPresenter(Presenter presenter) {
         this.presenter = presenter;
-    }
-
-    @UiHandler("quickSyslogButton")
-    public void quickSyslogClicked(final ClickEvent event) {
-        presenter.getQuickSyslog().toggleRelativeTo(quickSyslogButton);
     }
 
     @UiHandler("fullscreenButton")

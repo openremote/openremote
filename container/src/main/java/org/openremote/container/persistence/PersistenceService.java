@@ -117,6 +117,7 @@ public class PersistenceService implements ContainerService {
         }
     }
 
+
     public EntityManager createEntityManager() {
         EntityManager entityManager = getEntityManagerFactory().createEntityManager();
 
@@ -171,7 +172,7 @@ public class PersistenceService implements ContainerService {
         }
     }
 
-    protected EntityManagerFactory getEntityManagerFactory() {
+    public EntityManagerFactory getEntityManagerFactory() {
         return entityManagerFactory;
     }
 

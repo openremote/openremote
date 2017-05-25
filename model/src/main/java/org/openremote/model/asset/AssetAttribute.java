@@ -188,6 +188,14 @@ public class AssetAttribute extends Attribute {
         return getMetaStream().anyMatch(isMetaNameEqualTo(AGENT_LINK));
     }
 
+    public boolean isProtocolConfiguration() {
+        return getMetaStream()
+            .filter(isMetaNameEqualTo(PROTOCOL_CONFIGURATION))
+            .findFirst()
+            .map(metaItem -> metaItem.getValueAsBoolean().orElse(false))
+            .orElse(false);
+    }
+
     public boolean isShowOnDashboard() {
         return getMetaStream()
             .filter(isMetaNameEqualTo(SHOW_ON_DASHBOARD))

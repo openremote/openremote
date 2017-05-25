@@ -38,16 +38,11 @@
             <w:Headline icon="edit"
                         text="{managerMessages.editTenant}"/>
 
-            <div class="{widgetStyle.HeadlineSub}">
-                <span class="required">*</span>
-                <g:InlineLabel text="{managerMessages.requiredFields}"/>
-            </div>
-
             <w:Form ui:field="form">
 
                 <w:FormGroup ui:field="displayNameGroup">
                     <w:label>
-                        <w:FormLabel text="{managerMessages.tenantDisplayName}" required="true"/>
+                        <w:FormLabel text="{managerMessages.tenantDisplayName}"/>
                     </w:label>
                     <w:field>
                         <w:FormField>
@@ -58,7 +53,7 @@
 
                 <w:FormGroup ui:field="realmGroup">
                     <w:label>
-                        <w:FormLabel text="{managerMessages.realm}" required="true"/>
+                        <w:FormLabel text="{managerMessages.realm}"/>
                     </w:label>
                     <w:field>
                         <w:FormField>
@@ -69,7 +64,7 @@
 
                 <w:FormGroup ui:field="enabledGroup">
                     <w:label>
-                        <w:FormLabel text="{managerMessages.enabled}" required="false"/>
+                        <w:FormLabel text="{managerMessages.enabled}"/>
                     </w:label>
                     <w:field>
                         <w:FormField>

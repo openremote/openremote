@@ -124,6 +124,7 @@ public abstract class AbstractRulesEditorActivity<T extends Ruleset, PLACE exten
 
     protected void startCreate() {
         ruleset = newRuleset();
+        ruleset.setRules(environment.getMessages().rules() + "...");
         clearViewMessages();
         writeToView();
         writeTemplateAssetToView();

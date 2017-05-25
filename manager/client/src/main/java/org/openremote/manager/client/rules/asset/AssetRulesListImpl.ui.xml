@@ -9,10 +9,6 @@
         .navItem {
             margin: 0 1em;
         }
-
-        .noRulesetsLabel {
-            max-width: 30em;
-        }
     </ui:style>
 
     <ui:style field="tableStyle" type="org.openremote.manager.client.rules.RulesetTable.Style">
@@ -69,7 +65,7 @@
                                 sub="{managerMessages.manageAssetRulesets}"/>
 
                     <g:Label ui:field="noRulesetsLabel"
-                             addStyleNames="{style.noRulesetsLabel} {widgetStyle.FormMessages} info"
+                             addStyleNames="{widgetStyle.FormMessages} info"
                              visible="true"
                              text="{managerMessages.noRulesetsFound}"/>
 

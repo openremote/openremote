@@ -36,14 +36,13 @@
             </g:FlowPanel>
 
             <w:Headline icon="edit"
-                        text="{managerMessages.editUser}"
-                        sub="* {managerMessages.requiredFields}"/>
+                        text="{managerMessages.editUser}"/>
 
             <w:Form ui:field="form">
 
                 <w:FormGroup ui:field="usernameGroup">
                     <w:label>
-                        <w:FormLabel text="{managerMessages.username}" required="true" addStyleNames="larger"/>
+                        <w:FormLabel text="{managerMessages.username}" addStyleNames="larger"/>
                     </w:label>
                     <w:field>
                         <w:FormField>
@@ -96,11 +95,9 @@
                     </w:field>
                 </w:FormGroup>
 
-                <w:FormGroup ui:field="resetPasswordNoteGroup">
-                    <w:label>
-                        <w:FormLabel text="{managerMessages.notePasswordAfterCreate}" addStyleNames="larger"/>
-                    </w:label>
-                </w:FormGroup>
+                <g:Label ui:field="resetPasswordNote"
+                         styleName="{widgetStyle.FormMessages} info"
+                         text="{managerMessages.notePasswordAfterCreate}"/>
 
                 <w:FormGroup ui:field="resetPasswordGroup">
                     <w:label>
@@ -127,11 +124,9 @@
                     </w:field>
                 </w:FormGroup>
 
-                <w:FormGroup ui:field="rolesNoteGroup">
-                    <w:label>
-                        <w:FormLabel text="{managerMessages.noteRolesAfterCreate}" addStyleNames="larger"/>
-                    </w:label>
-                </w:FormGroup>
+                <g:Label ui:field="rolesNote"
+                         styleName="{widgetStyle.FormMessages} info"
+                         text="{managerMessages.noteRolesAfterCreate}"/>
 
                 <w:FormGroup ui:field="rolesGroup" alignStart="true">
                     <w:label>

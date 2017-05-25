@@ -21,6 +21,9 @@ package org.openremote.model.event;
 
 import org.openremote.model.util.TextUtil;
 
+import javax.persistence.Column;
+import javax.persistence.MappedSuperclass;
+
 /**
  * A timestamped event.
  * <p>
@@ -28,8 +31,10 @@ import org.openremote.model.util.TextUtil;
  * example, the type string of <code>AssetTreeModifiedEvent</code> is <code>asset-tree-modified</code>. The event
  * type is therefore usable in JavaScript frameworks, e.g. when declaring Polymer event listeners.
  */
+@MappedSuperclass
 public abstract class Event {
 
+    @Column(name = "TIMESTAMP", nullable = false)
     public long timestamp;
 
     protected Event(long timestamp) {
