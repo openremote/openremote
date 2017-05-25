@@ -20,8 +20,9 @@
 package org.openremote.manager.client.interop.chartjs;
 
 import com.google.gwt.canvas.dom.client.Context2d;
-import com.google.gwt.core.client.JsArrayNumber;
-import com.google.gwt.core.client.JsArrayString;
+import com.google.gwt.core.client.*;
+import com.google.gwt.json.client.JSONArray;
+import com.google.gwt.json.client.JSONNumber;
 import org.openremote.model.datapoint.NumberDatapoint;
 
 /**
@@ -29,7 +30,7 @@ import org.openremote.model.datapoint.NumberDatapoint;
  */
 public class ChartUtil {
 
-    static public JsArrayString convertLabels(NumberDatapoint[] numberDatapoints) {
+    static public JavaScriptObject convertLabels(NumberDatapoint[] numberDatapoints) {
         JsArrayString array = (JsArrayString) JsArrayString.createArray();
         for (int i = 0; i < numberDatapoints.length; i++) {
             NumberDatapoint numberDatapoint = numberDatapoints[i];
@@ -38,17 +39,21 @@ public class ChartUtil {
         return array;
     }
 
-    static public JsArrayNumber convertData(NumberDatapoint[] numberDatapoints) {
-        JsArrayNumber array = (JsArrayNumber) JsArrayNumber.createArray();
+    static public JavaScriptObject convertData(NumberDatapoint[] numberDatapoints) {
+        JSONArray array = new JSONArray();
         for (int i = 0; i < numberDatapoints.length; i++) {
             NumberDatapoint numberDatapoint = numberDatapoints[i];
-            array.set(i, numberDatapoint.getNumber().doubleValue());
+            Number number = numberDatapoint.getNumber();
+            if (number != null) {
+                array.set(i, new JSONNumber(number.doubleValue()));
+            } else {
+                array.set(i, null);
+            }
         }
-        return array;
-
+        return array.getJavaScriptObject();
     }
 
-    public native static void update(Chart chart, JsArrayString labels, JsArrayNumber data) /*-{
+    public native static void update(Chart chart, JavaScriptObject labels, JavaScriptObject data) /*-{
         chart.data.labels = labels;
         chart.data.datasets[0].data = data;
         chart.update();
@@ -70,7 +75,8 @@ public class ChartUtil {
                         pointHoverRadius: 4,
                         pointHoverBorderWidth: 4,
                         pointRadius: 4,
-                        pointHitRadius: 20
+                        pointHitRadius: 20,
+                        spanGaps: true
                     }
                 ]
             },

@@ -127,7 +127,7 @@ public class AssetDatapointService implements ContainerService, Consumer<AssetSt
                     }
 
                     PreparedStatement st = connection.prepareStatement(
-                        "select TS as X, coalesce(AVG_VALUE, 0) as Y " +
+                        "select TS as X, coalesce(AVG_VALUE, null) as Y " +
                             " from ( " +
                             "       select date_trunc(?, GS)::timestamp TS " +
                             "       from generate_series(to_timestamp(?) - ?, to_timestamp(?), ?) GS " +
