@@ -140,13 +140,6 @@ public class TimerProtocol extends AbstractProtocol {
             .flatMap(Values::getString)
             .flatMap(TextUtil::asNonNullAndNonEmpty);
 
-        if (!writeValue.isPresent()) {
-            LOG.warning("Send to actuator value for time trigger must be a non empty string");
-            return;
-        }
-
-        String value = writeValue.get().trim();
-
         switch (timerValue) {
             case ENABLED:
                 // check event value is a boolean
@@ -164,16 +157,24 @@ public class TimerProtocol extends AbstractProtocol {
             case CRON_EXPRESSION:
                 // Allow writing invalid cron expressions; mean that the trigger will stop working
                 // but that is handled gracefully
-                updateTimerValue(new AttributeState(protocolConfiguration.getReferenceOrThrow(), Values.create(value)));
+                if (!writeValue.isPresent()) {
+                    LOG.warning("Send to actuator value for time trigger must be a non empty string");
+                    return;
+                }
+                updateTimerValue(new AttributeState(protocolConfiguration.getReferenceOrThrow(), Values.create(writeValue.get().trim())));
                 break;
             case TIME:
+                if (!writeValue.isPresent()) {
+                    LOG.warning("Send to actuator value for time trigger must be a non empty string");
+                    return;
+                }
                 CronExpressionParser parser = getCronExpressionParser(protocolConfiguration.getReferenceOrThrow());
                 if (parser == null) {
                     LOG.info("Ignoring trigger update because current cron expression is invalid");
                     return;
                 }
 
-                String[] writeTimeValues = value.split(":");
+                String[] writeTimeValues = writeValue.get().trim().split(":");
                 Integer hours;
                 Integer minutes;
                 Integer seconds;
@@ -190,7 +191,7 @@ public class TimerProtocol extends AbstractProtocol {
                 updateTimerValue(new AttributeState(protocolConfiguration.getReferenceOrThrow(), Values.create(parser.buildCronExpression())));
                 break;
             default:
-                throw new NotSupportedException("Unsupported trigger property");
+                throw new NotSupportedException("Unsupported timer value: " + timerValue);
         }
     }
 

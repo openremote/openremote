@@ -174,8 +174,8 @@ public abstract class AbstractManagerSetup implements Setup {
     }
 
     protected void addDemoApartmentRoomThermometer(ServerAsset room,
-                                                  boolean shouldBeLinked,
-                                                  Supplier<MetaItem[]> agentLinker) {
+                                                   boolean shouldBeLinked,
+                                                   Supplier<MetaItem[]> agentLinker) {
         room.addAttributes(
             new AssetAttribute("currentTemperature", TEMPERATURE_CELCIUS)
                 .setMeta(
@@ -189,6 +189,7 @@ public abstract class AbstractManagerSetup implements Setup {
                 ).addMeta(shouldBeLinked ? agentLinker.get() : null)
         );
     }
+
     protected void addDemoApartmentTemperatureControl(ServerAsset room,
                                                       boolean shouldBeLinked,
                                                       Supplier<MetaItem[]> agentLinker) {
@@ -272,7 +273,42 @@ public abstract class AbstractManagerSetup implements Setup {
         for (Scene scene : scenes) {
             agent.addAttributes(scene.createTimerAttributes(apartment));
         }
+
+        addDemoApartmentSceneEnableDisableTimer(apartment, agent, scenes);
+
         return agent;
+    }
+
+    protected void addDemoApartmentSceneEnableDisableTimer(ServerAsset apartment, ServerAsset agent, Scene[] scenes) {
+        AssetAttribute enableAllMacro = initProtocolConfiguration(new AssetAttribute("enableSceneTimer"), MacroProtocol.PROTOCOL_NAME)
+            .addMeta(new MetaItem(LABEL, Values.create("Enable scene timer")));
+        for (Scene scene : scenes) {
+            for (DayOfWeek dayOfWeek : DayOfWeek.values()) {
+                String sceneAttributeName = scene.attributeName + "Enabled" + dayOfWeek;
+                enableAllMacro.getMeta().add(
+                    new MacroAction(new AttributeState(new AttributeRef(apartment.getId(), sceneAttributeName), Values.create(true))).toMetaItem()
+                );
+            }
+        }
+        enableAllMacro.getMeta().add(
+            new MacroAction(new AttributeState(new AttributeRef(apartment.getId(), "sceneTimerEnabled"), Values.create(true))).toMetaItem()
+        );
+        agent.addAttributes(enableAllMacro);
+
+        AssetAttribute disableAllMacro = initProtocolConfiguration(new AssetAttribute("disableSceneTimer"), MacroProtocol.PROTOCOL_NAME)
+            .addMeta(new MetaItem(LABEL, Values.create("Disable scene timer")));
+        for (Scene scene : scenes) {
+            for (DayOfWeek dayOfWeek : DayOfWeek.values()) {
+                String sceneAttributeName = scene.attributeName + "Enabled" + dayOfWeek;
+                disableAllMacro.getMeta().add(
+                    new MacroAction(new AttributeState(new AttributeRef(apartment.getId(), sceneAttributeName), Values.create(false))).toMetaItem()
+                );
+            }
+        }
+        disableAllMacro.getMeta().add(
+            new MacroAction(new AttributeState(new AttributeRef(apartment.getId(), "sceneTimerEnabled"), Values.create(false))).toMetaItem()
+        );
+        agent.addAttributes(disableAllMacro);
     }
 
     protected void linkDemoApartmentWithSceneAgent(ServerAsset apartment, ServerAsset agent, Scene[] scenes) {
@@ -322,5 +358,28 @@ public abstract class AbstractManagerSetup implements Setup {
                 );
             }
         }
+        apartment.addAttributes(
+            new AssetAttribute("sceneTimerEnabled", AttributeType.BOOLEAN, Values.create(true))
+                .setMeta(
+                    new MetaItem(LABEL, Values.create("Scene timer enabled")),
+                    new MetaItem(PROTECTED, Values.create(true)),
+                    new MetaItem(SHOW_ON_DASHBOARD, Values.create(true)),
+                    new MetaItem(READ_ONLY, Values.create(true))
+                ),
+            new AssetAttribute("enableSceneTimer", AttributeType.STRING, Values.create(AttributeExecuteStatus.READY.name()))
+                .setMeta(
+                    new MetaItem(LABEL, Values.create("Enable scene timer")),
+                    new MetaItem(PROTECTED, Values.create(true)),
+                    new MetaItem(EXECUTABLE, Values.create(true)),
+                    new MetaItem(AGENT_LINK, new AttributeRef(agent.getId(), "enableSceneTimer").toArrayValue())
+                ),
+            new AssetAttribute("disableSceneTimer", AttributeType.STRING, Values.create(AttributeExecuteStatus.READY.name()))
+                .setMeta(
+                    new MetaItem(LABEL, Values.create("Disable scene timer")),
+                    new MetaItem(PROTECTED, Values.create(true)),
+                    new MetaItem(EXECUTABLE, Values.create(true)),
+                    new MetaItem(AGENT_LINK, new AttributeRef(agent.getId(), "disableSceneTimer").toArrayValue())
+                )
+        );
     }
 }

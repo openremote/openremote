@@ -40,8 +40,6 @@ import java.util.Collection;
 import java.util.List;
 
 import static org.openremote.manager.client.http.RequestExceptionHandler.handleRequestException;
-import static org.openremote.manager.shared.syslog.SyslogConfig.DEFAULT_LEVEL;
-import static org.openremote.manager.shared.syslog.SyslogConfig.DEFAULT_LIMIT;
 
 public class AdminSyslogActivity
     extends AbstractAdminActivity<AdminSyslogPlace, AdminSyslog>
