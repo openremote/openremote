@@ -19,7 +19,7 @@ class MacroProtocolTest extends Specification implements ManagerContainerTrait {
 
         when: "the container starts"
         def serverPort = findEphemeralPort()
-        def container = startContainer(defaultConfig(serverPort), defaultServices())
+        def container = startContainerWithDemoScenesAndRules(defaultConfig(serverPort), defaultServices())
         def assetStorageService = container.getService(AssetStorageService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)

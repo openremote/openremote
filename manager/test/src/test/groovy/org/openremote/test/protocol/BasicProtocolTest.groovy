@@ -36,12 +36,10 @@ import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
-import java.util.logging.Logger
 /**
  * This tests the basic protocol interface and abstract protocol implementation.
  */
 class BasicProtocolTest extends Specification implements ManagerContainerTrait {
-    Logger LOG = Logger.getLogger(BasicProtocolTest.class.getName())
 
     def "Check processing of asset updates"() {
 
@@ -305,23 +303,24 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait {
         assert protocolMethodCalls[11] == "LINK_ATTRIBUTE"
         assert protocolMethodCalls[12] == "LINK_ATTRIBUTE"
 
-        when: "the mock thing is retrieved from the DB"
-        mockThing = assetStorageService.find(mockThing.getId(), true)
-
-        then: "the linked attributes values should have been updated by the protocol"
-        // Check all valid linked attributes have the new values
-        assert mockThing.getAttribute("lightToggle1").get().getValueAsBoolean().orElse(false)
-        assert mockThing.getAttribute("tempTarget1").get().getValueAsNumber().orElse(0d) == 25.5d
-        // Check disabled linked attributes don't have the new values
-        assert !mockThing.getAttribute("lightToggle4").get().getValue().isPresent()
-        assert !mockThing.getAttribute("tempTarget4").get().getValue().isPresent()
-        // Check invalid attributes don't have the new values
-        assert !mockThing.getAttribute("lightToggle2").get().getValue().isPresent()
-        assert !mockThing.getAttribute("tempTarget2").get().getValue().isPresent()
-        assert !mockThing.getAttribute("lightToggle3").get().getValue().isPresent()
-        assert !mockThing.getAttribute("tempTarget3").get().getValue().isPresent()
+        expect: "the linked attributes values should have been updated by the protocol"
+        conditions.eventually {
+            def mockAsset = assetStorageService.find(mockThing.getId(), true)
+            // Check all valid linked attributes have the new values
+            assert mockAsset.getAttribute("lightToggle1").get().getValueAsBoolean().orElse(false)
+            assert mockAsset.getAttribute("tempTarget1").get().getValueAsNumber().orElse(0d) == 25.5d
+            // Check disabled linked attributes don't have the new values
+            assert !mockAsset.getAttribute("lightToggle4").get().getValue().isPresent()
+            assert !mockAsset.getAttribute("tempTarget4").get().getValue().isPresent()
+            // Check invalid attributes don't have the new values
+            assert !mockAsset.getAttribute("lightToggle2").get().getValue().isPresent()
+            assert !mockAsset.getAttribute("tempTarget2").get().getValue().isPresent()
+            assert !mockAsset.getAttribute("lightToggle3").get().getValue().isPresent()
+            assert !mockAsset.getAttribute("tempTarget3").get().getValue().isPresent()
+        }
 
         when: "a linked attribute is removed"
+        mockThing = assetStorageService.find(mockThing.getId(), true)
         protocolMethodCalls.clear()
         mockThing.removeAttribute("tempTarget3")
         mockThing = assetStorageService.merge(mockThing)

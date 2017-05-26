@@ -103,7 +103,7 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
 
         when: "the container is started with the mock protocol and consumers"
         def serverPort = findEphemeralPort()
-        def container = startContainerNoDemoScenesOrRules(defaultConfig(serverPort), defaultServices(mockProtocol))
+        def container = startContainer(defaultConfig(serverPort), defaultServices(mockProtocol))
         def assetStorageService = container.getService(AssetStorageService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)

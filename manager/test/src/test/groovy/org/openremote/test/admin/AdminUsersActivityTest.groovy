@@ -43,7 +43,7 @@ class AdminUsersActivityTest extends Specification implements ManagerContainerTr
 
         given: "The server container is started"
         def serverPort = findEphemeralPort()
-        def container = startContainerNoDemoScenesOrRulesOrAssets(defaultConfig(serverPort), defaultServices())
+        def container = startContainerNoDemoAssets(defaultConfig(serverPort), defaultServices())
         def identityService = container.getService(ManagerIdentityService.class)
 
         and: "expected results"

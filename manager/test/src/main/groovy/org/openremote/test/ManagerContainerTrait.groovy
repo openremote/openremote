@@ -8,6 +8,7 @@ import org.openremote.container.ContainerService
 import org.openremote.container.message.MessageBrokerService
 import org.openremote.container.message.MessageBrokerSetupService
 import org.openremote.container.persistence.PersistenceService
+import org.openremote.container.security.IdentityService
 import org.openremote.container.timer.TimerService
 import org.openremote.manager.server.agent.AgentService
 import org.openremote.manager.server.apps.ConsoleAppService
@@ -28,11 +29,24 @@ import org.openremote.manager.server.web.ManagerWebService
 
 import java.util.concurrent.TimeUnit
 
+import static org.openremote.container.security.IdentityService.IDENTITY_NETWORK_HOST
+import static org.openremote.container.security.IdentityService.IDENTITY_NETWORK_WEBSERVER_PORT
 import static org.openremote.container.timer.TimerService.Clock.PSEUDO
 import static org.openremote.container.timer.TimerService.TIMER_CLOCK_TYPE
+import static org.openremote.container.web.WebService.WEBSERVER_LISTEN_PORT
 import static org.openremote.manager.server.setup.builtin.BuiltinSetupTasks.*
 
 trait ManagerContainerTrait extends ContainerTrait {
+
+    static Map<String, String> defaultConfig(int serverPort) {
+        [
+                (WEBSERVER_LISTEN_PORT)             : Integer.toString(serverPort),
+                (IDENTITY_NETWORK_HOST)             : IdentityService.KEYCLOAK_HOST_DEFAULT,
+                (IDENTITY_NETWORK_WEBSERVER_PORT)   : Integer.toString(IdentityService.KEYCLOAK_PORT_DEFAULT),
+                (SETUP_IMPORT_DEMO_SCENES)          : "false",
+                (SETUP_IMPORT_DEMO_RULES)           : "false"
+        ]
+    }
 
     static Iterable<ContainerService> defaultServices(Iterable<ContainerService> additionalServices) {
         [
@@ -65,27 +79,18 @@ trait ManagerContainerTrait extends ContainerTrait {
         defaultServices(Arrays.asList(additionalServices))
     }
 
-    static Container startContainerNoDemoScenes(Map<String, String> config, Iterable<ContainerService> services) {
-        config << [(SETUP_IMPORT_DEMO_SCENES): "false"]
-        startContainer(config, services);
-    }
-
-    static Container startContainerNoDemoScenesOrRules(Map<String, String> config, Iterable<ContainerService> services) {
-        config << [(SETUP_IMPORT_DEMO_SCENES): "false"]
-        config << [(SETUP_IMPORT_DEMO_RULES): "false"]
-        startContainer(config, services);
-    }
-
-    static Container startContainerNoDemoScenesOrRulesOrAssets(Map<String, String> config, Iterable<ContainerService> services) {
-        config << [(SETUP_IMPORT_DEMO_SCENES): "false"]
-        config << [(SETUP_IMPORT_DEMO_RULES): "false"]
+    static Container startContainerNoDemoAssets(Map<String, String> config, Iterable<ContainerService> services) {
         config << [(SETUP_IMPORT_DEMO_ASSETS): "false"]
         startContainer(config, services);
     }
 
+    static Container startContainerWithDemoScenesAndRules(Map<String, String> config, Iterable<ContainerService> services) {
+        config << [(SETUP_IMPORT_DEMO_SCENES): "true"]
+        config << [(SETUP_IMPORT_DEMO_RULES): "true"]
+        startContainer(config, services);
+    }
+
     static Container startContainerNoDemoImport(Map<String, String> config, Iterable<ContainerService> services) {
-        config << [(SETUP_IMPORT_DEMO_SCENES): "false"]
-        config << [(SETUP_IMPORT_DEMO_RULES): "false"]
         config << [(SETUP_IMPORT_DEMO_ASSETS): "false"]
         config << [(SETUP_IMPORT_DEMO_USERS): "false"]
         startContainer(config, services);

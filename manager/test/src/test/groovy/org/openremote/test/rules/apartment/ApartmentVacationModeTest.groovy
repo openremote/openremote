@@ -1,10 +1,13 @@
 package org.openremote.test.rules.apartment
 
+import org.openremote.model.rules.AssetRuleset
+import org.openremote.model.rules.Ruleset
 import org.openremote.model.value.Values
 import org.openremote.manager.server.asset.AssetProcessingService
 import org.openremote.manager.server.asset.AssetStorageService
 import org.openremote.manager.server.rules.RulesEngine
 import org.openremote.manager.server.rules.RulesService
+import org.openremote.manager.server.rules.RulesetStorageService
 import org.openremote.manager.server.setup.SetupService
 import org.openremote.manager.server.setup.builtin.ManagerDemoSetup
 import org.openremote.model.attribute.AttributeEvent
@@ -14,7 +17,6 @@ import spock.util.concurrent.PollingConditions
 
 import static java.util.concurrent.TimeUnit.*
 import static org.openremote.manager.server.setup.builtin.ManagerDemoSetup.DEMO_RULE_STATES_APARTMENT_1
-import static org.openremote.manager.server.setup.builtin.ManagerDemoSetup.DEMO_RULE_STATES_APARTMENT_1_WITH_SCENES
 
 class ApartmentVacationModeTest extends Specification implements ManagerContainerTrait {
 
@@ -28,19 +30,24 @@ class ApartmentVacationModeTest extends Specification implements ManagerContaine
         def rulesService = container.getService(RulesService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
         def assetStorageService = container.getService(AssetStorageService.class)
+        def rulesetStorageService = container.getService(RulesetStorageService.class)
         RulesEngine apartment1Engine
+
+        and: "some rules"
+        Ruleset ruleset = new AssetRuleset(
+                "Demo Apartment - Vacation Mode",
+                managerDemoSetup.apartment1Id,
+                getClass().getResource("/demo/rules/DemoApartmentVacationMode.drl").text
+        )
+        rulesetStorageService.merge(ruleset)
 
         expect: "the rule engines to become available and be running"
         conditions.eventually {
             apartment1Engine = rulesService.assetEngines.get(managerDemoSetup.apartment1Id)
             assert apartment1Engine != null
             assert apartment1Engine.isRunning()
-        }
-
-        and: "the demo attributes marked with RULE_STATE = true meta should be inserted into the engines"
-        conditions.eventually {
-            assert apartment1Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_1_WITH_SCENES
-            assert apartment1Engine.knowledgeSession.factCount == DEMO_RULE_STATES_APARTMENT_1_WITH_SCENES
+            assert apartment1Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_1
+            assert apartment1Engine.knowledgeSession.factCount == DEMO_RULE_STATES_APARTMENT_1
         }
 
         when: "the vacation days are set to 5"

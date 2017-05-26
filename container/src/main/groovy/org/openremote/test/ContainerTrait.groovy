@@ -44,15 +44,8 @@ import javax.ws.rs.core.UriBuilder
 import static java.util.concurrent.TimeUnit.SECONDS
 
 trait ContainerTrait {
-    private static Container container;
 
-    static Map<String, String> defaultConfig(int serverPort) {
-        [
-                (WebService.WEBSERVER_LISTEN_PORT)               : Integer.toString(serverPort),
-                (IdentityService.IDENTITY_NETWORK_HOST)          : IdentityService.KEYCLOAK_HOST_DEFAULT,
-                (IdentityService.IDENTITY_NETWORK_WEBSERVER_PORT): Integer.toString(IdentityService.KEYCLOAK_PORT_DEFAULT)
-        ]
-    }
+    private static Container container;
 
     static Container startContainer(Map<String, String> config, Iterable<ContainerService> services) {
         container = new Container(config, services)

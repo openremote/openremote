@@ -1,12 +1,14 @@
 package org.openremote.test.rules.flight
 
-import org.openremote.manager.server.asset.AssetProcessingService
 import org.openremote.manager.server.asset.AssetStorageService
 import org.openremote.manager.server.rules.RulesEngine
 import org.openremote.manager.server.rules.RulesService
+import org.openremote.manager.server.rules.RulesetStorageService
 import org.openremote.manager.server.setup.SetupService
 import org.openremote.manager.server.setup.builtin.KeycloakDemoSetup
 import org.openremote.manager.server.setup.builtin.ManagerDemoSetup
+import org.openremote.model.rules.Ruleset
+import org.openremote.model.rules.TenantRuleset
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
@@ -20,23 +22,28 @@ class FlightPriorityTest extends Specification implements ManagerContainerTrait 
         given: "the container environment is started"
         def conditions = new PollingConditions(timeout: 15, delay: 1)
         def serverPort = findEphemeralPort()
-        def container = startContainerNoDemoScenes(defaultConfig(serverPort), defaultServices())
+        def container = startContainer(defaultConfig(serverPort), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
         def rulesService = container.getService(RulesService.class)
-        def assetProcessingService = container.getService(AssetProcessingService.class)
+        def rulesetStorageService = container.getService(RulesetStorageService.class)
         def assetStorageService = container.getService(AssetStorageService.class)
         RulesEngine customerCEngine
+
+        and: "some rules template and template asset are deployed"
+        Ruleset ruleset = new TenantRuleset(
+                "Demo Flights - Mark flights as priority",
+                keycloakDemoSetup.customerCTenant.id,
+                getClass().getResource("/demo/rules/flight/DemoFlightPriorityFilter.drlt").text,
+                managerDemoSetup.flightPriorityFiltersId
+        )
+        rulesetStorageService.merge(ruleset)
 
         expect: "the rule engines to become available and be running"
         conditions.eventually {
             customerCEngine = rulesService.tenantEngines.get(keycloakDemoSetup.customerCTenant.id)
             assert customerCEngine != null
             assert customerCEngine.isRunning()
-        }
-
-        and: "the demo attributes marked with RULE_STATE = true meta should be inserted into the engines"
-        conditions.eventually {
             assert customerCEngine.assetStates.size() == DEMO_RULE_STATES_CUSTOMER_C
             assert customerCEngine.knowledgeSession.factCount == DEMO_RULE_STATES_CUSTOMER_C
         }

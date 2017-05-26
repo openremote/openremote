@@ -26,7 +26,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
     def "Test asset changes as superuser"() {
         given: "the server container is started"
         def serverPort = findEphemeralPort()
-        def container = startContainerNoDemoScenesOrRules(defaultConfig(serverPort), defaultServices())
+        def container = startContainer(defaultConfig(serverPort), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
 

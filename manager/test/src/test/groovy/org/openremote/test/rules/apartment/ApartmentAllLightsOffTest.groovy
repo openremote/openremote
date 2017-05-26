@@ -1,13 +1,16 @@
 package org.openremote.test.rules.apartment
 
-import org.openremote.model.value.Values
 import org.openremote.manager.server.asset.AssetProcessingService
 import org.openremote.manager.server.asset.AssetStorageService
 import org.openremote.manager.server.rules.RulesEngine
 import org.openremote.manager.server.rules.RulesService
+import org.openremote.manager.server.rules.RulesetStorageService
 import org.openremote.manager.server.setup.SetupService
 import org.openremote.manager.server.setup.builtin.ManagerDemoSetup
 import org.openremote.model.attribute.AttributeEvent
+import org.openremote.model.rules.AssetRuleset
+import org.openremote.model.rules.Ruleset
+import org.openremote.model.value.Values
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
@@ -25,9 +28,18 @@ class ApartmentAllLightsOffTest extends Specification implements ManagerContaine
         def container = startContainerWithPseudoClock(defaultConfig(serverPort), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def rulesService = container.getService(RulesService.class)
+        def rulesetStorageService = container.getService(RulesetStorageService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
         def assetStorageService = container.getService(AssetStorageService.class)
         RulesEngine apartment2Engine
+
+        and: "some rules"
+        Ruleset ruleset = new AssetRuleset(
+                "Demo Apartment - All Lights Off",
+                managerDemoSetup.apartment2Id,
+                getClass().getResource("/demo/rules/DemoApartmentAllLightsOff.drl").text
+        )
+        rulesetStorageService.merge(ruleset)
 
         expect: "the rule engines to become available and be running"
         conditions.eventually {

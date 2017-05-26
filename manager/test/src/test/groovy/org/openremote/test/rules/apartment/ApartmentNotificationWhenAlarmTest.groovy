@@ -5,17 +5,20 @@ import org.openremote.manager.server.asset.AssetStorageService
 import org.openremote.manager.server.notification.NotificationService
 import org.openremote.manager.server.rules.RulesEngine
 import org.openremote.manager.server.rules.RulesService
+import org.openremote.manager.server.rules.RulesetStorageService
 import org.openremote.manager.server.setup.SetupService
 import org.openremote.manager.server.setup.builtin.KeycloakDemoSetup
 import org.openremote.manager.server.setup.builtin.ManagerDemoSetup
 import org.openremote.manager.shared.notification.NotificationResource
 import org.openremote.model.attribute.AttributeEvent
+import org.openremote.model.rules.AssetRuleset
+import org.openremote.model.rules.Ruleset
 import org.openremote.model.value.Values
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
-import static org.openremote.manager.server.setup.builtin.ManagerDemoSetup.DEMO_RULE_STATES_APARTMENT_1_WITH_SCENES
+import static org.openremote.manager.server.setup.builtin.ManagerDemoSetup.DEMO_RULE_STATES_APARTMENT_1
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID
 
 class ApartmentNotificationWhenAlarmTest  extends Specification implements ManagerContainerTrait {
@@ -32,19 +35,24 @@ class ApartmentNotificationWhenAlarmTest  extends Specification implements Manag
         def assetProcessingService = container.getService(AssetProcessingService.class)
         def assetStorageService = container.getService(AssetStorageService.class)
         def notificationService = container.getService(NotificationService.class)
+        def rulesetStorageService = container.getService(RulesetStorageService.class)
         RulesEngine apartment1Engine
+
+        and: "some rules"
+        Ruleset ruleset = new AssetRuleset(
+                "Demo Apartment - Notification when Alarm",
+                managerDemoSetup.apartment1Id,
+                getClass().getResource("/demo/rules/DemoApartmentNotificationWhenAlarm.drl").text
+        )
+        rulesetStorageService.merge(ruleset)
 
         expect: "the rule engines to become available and be running"
         conditions.eventually {
             apartment1Engine = rulesService.assetEngines.get(managerDemoSetup.apartment1Id)
             assert apartment1Engine != null
             assert apartment1Engine.isRunning()
-        }
-
-        and: "the demo attributes marked with RULE_STATE = true meta should be inserted into the engines"
-        conditions.eventually {
-            assert apartment1Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_1_WITH_SCENES
-            assert apartment1Engine.knowledgeSession.factCount == DEMO_RULE_STATES_APARTMENT_1_WITH_SCENES
+            assert apartment1Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_1
+            assert apartment1Engine.knowledgeSession.factCount == DEMO_RULE_STATES_APARTMENT_1
         }
 
         and: "the alarm enabled, presence detected flag and timestamp of the room should not be set"
