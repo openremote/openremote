@@ -1,16 +1,16 @@
 package org.openremote.test.assets
 
-import org.openremote.model.value.Values
 import org.openremote.container.util.IdentifierUtil
 import org.openremote.manager.server.setup.SetupService
 import org.openremote.manager.server.setup.builtin.KeycloakDemoSetup
 import org.openremote.manager.server.setup.builtin.ManagerDemoSetup
 import org.openremote.manager.shared.asset.AssetResource
-import org.openremote.model.attribute.AttributeType
-import org.openremote.model.attribute.Meta
 import org.openremote.model.asset.Asset
 import org.openremote.model.asset.AssetMeta
 import org.openremote.model.asset.AssetType
+import org.openremote.model.attribute.AttributeType
+import org.openremote.model.attribute.Meta
+import org.openremote.model.value.Values
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
@@ -593,7 +593,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         protectedMeta.stream().filter(isMetaNameEqualTo(AssetMeta.RULE_STATE)).findFirst().get().getValueAsBoolean().get()
         protectedMeta.stream().filter(isMetaNameEqualTo(AssetMeta.STORE_DATA_POINTS)).findFirst().get().getValueAsBoolean().get()
         protectedMeta.stream().filter(isMetaNameEqualTo(AssetMeta.SHOW_ON_DASHBOARD)).findFirst().get().getValueAsBoolean().get()
-        protectedMeta.stream().filter(isMetaNameEqualTo(AssetMeta.FORMAT)).findFirst().get().getValueAsString().get() == "%0.1f °"
+        protectedMeta.stream().filter(isMetaNameEqualTo(AssetMeta.FORMAT)).findFirst().get().getValueAsString().get() == "%0.1f C"
 
         when: "an asset is retrieved by ID in a foreign realm"
         assetResource.get(null, managerDemoSetup.thingId)

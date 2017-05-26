@@ -93,7 +93,7 @@ public enum AttributeType {
     TEMPERATURE_CELCIUS("thermometer", ValueType.NUMBER, value -> Values.getNumber(value)
         .filter(n -> n < -273.15)
         .map(n -> TEMPERATURE_OUT_OF_RANGE),
-        new MetaItem(FORMAT, Values.create("%0.1f °"))
+        new MetaItem(FORMAT, Values.create("%0.1f C"))
     ),
 
     TEMPERATURE_KELVIN("thermometer", ValueType.NUMBER, value -> Values.getNumber(value)

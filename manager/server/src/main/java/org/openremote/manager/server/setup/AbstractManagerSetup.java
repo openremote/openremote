@@ -185,7 +185,7 @@ public abstract class AbstractManagerSetup implements Setup {
                     new MetaItem(READ_ONLY, Values.create(true)),
                     new MetaItem(STORE_DATA_POINTS, Values.create(true)),
                     new MetaItem(SHOW_ON_DASHBOARD, Values.create(true)),
-                    new MetaItem(FORMAT, Values.create("%0.1f °"))
+                    new MetaItem(FORMAT, Values.create("%0.1f C"))
                 ).addMeta(shouldBeLinked ? agentLinker.get() : null)
         );
     }
@@ -200,7 +200,7 @@ public abstract class AbstractManagerSetup implements Setup {
                     new MetaItem(RULE_STATE, Values.create(true)),
                     new MetaItem(PROTECTED, Values.create(true)),
                     new MetaItem(SHOW_ON_DASHBOARD, Values.create(true)),
-                    new MetaItem(FORMAT, Values.create("%0.1f °"))
+                    new MetaItem(FORMAT, Values.create("%0.1f C"))
                 ).addMeta(shouldBeLinked ? agentLinker.get() : null)
         );
     }
