@@ -20,7 +20,7 @@
 package org.openremote.test.protocol
 
 import org.openremote.agent.protocol.AbstractProtocol
-import org.openremote.agent.protocol.Protocol
+import org.openremote.agent.protocol.ConnectionStatus
 import org.openremote.manager.server.agent.AgentService
 import org.openremote.manager.server.asset.AssetProcessingService
 import org.openremote.manager.server.asset.AssetStorageService
@@ -41,7 +41,7 @@ import spock.util.concurrent.PollingConditions
  */
 class BasicProtocolTest extends Specification implements ManagerContainerTrait {
 
-    def "Check processing of asset updates"() {
+    def "Check abstract protocol linking/un-linking"() {
 
         given: "expected conditions"
         def conditions = new PollingConditions(timeout: 10, delay: 1)
@@ -78,13 +78,13 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait {
                 protocolMethodCalls.add("LINK_PROTOCOL")
                 protocolLinkedConfigurations.add(protocolConfiguration)
                 if (!protocolConfiguration.getMetaItem("MOCK_REQUIRED_META").isPresent()) {
-                    updateDeploymentStatus(protocolConfiguration.getReferenceOrThrow(), Protocol.DeploymentStatus.ERROR)
+                    updateStatus(protocolConfiguration.getReferenceOrThrow(), ConnectionStatus.ERROR)
                 } else if(protocolConfiguration.getMetaItem("MOCK_THROW_EXCEPTION").isPresent()) {
                     throw new IllegalStateException("Exception occurred whilst linking the protocol configuration")
                 } else if (protocolConfiguration.isEnabled()) {
-                    updateDeploymentStatus(protocolConfiguration.getReferenceOrThrow(), Protocol.DeploymentStatus.LINKED_ENABLED)
+                    updateStatus(protocolConfiguration.getReferenceOrThrow(), ConnectionStatus.CONNECTED)
                 } else {
-                    updateDeploymentStatus(protocolConfiguration.getReferenceOrThrow(), Protocol.DeploymentStatus.LINKED_DISABLED)
+                    updateStatus(protocolConfiguration.getReferenceOrThrow(), ConnectionStatus.DISABLED)
                 }
             }
 
@@ -104,8 +104,8 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait {
                 }
                 protocolLinkedAttributes[protocolConfiguration.getName().orElse("")] << attribute
 
-                def deploymentStatus = getDeploymentStatus(protocolConfiguration);
-                if (deploymentStatus == Protocol.DeploymentStatus.LINKED_ENABLED) {
+                def deploymentStatus = getStatus(protocolConfiguration);
+                if (deploymentStatus == ConnectionStatus.CONNECTED) {
                     String attributeName = attribute.getName().orElse("");
                     if (attributeName.startsWith("lightToggle")) {
                         // Set all lights to on
@@ -181,10 +181,10 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait {
             assert config2 != null
             assert config3 != null
             assert config4 != null
-            assert agentService.getProtocolDeploymentStatus(config1.getReferenceOrThrow()) == Protocol.DeploymentStatus.LINKED_ENABLED
-            assert agentService.getProtocolDeploymentStatus(config2.getReferenceOrThrow()) == Protocol.DeploymentStatus.ERROR
-            assert agentService.getProtocolDeploymentStatus(config3.getReferenceOrThrow()) == Protocol.DeploymentStatus.ERROR
-            assert agentService.getProtocolDeploymentStatus(config4.getReferenceOrThrow()) == Protocol.DeploymentStatus.LINKED_DISABLED
+            assert agentService.getProtocolDeploymentStatus(config1.getReferenceOrThrow()) == ConnectionStatus.CONNECTED
+            assert agentService.getProtocolDeploymentStatus(config2.getReferenceOrThrow()) == ConnectionStatus.ERROR
+            assert agentService.getProtocolDeploymentStatus(config3.getReferenceOrThrow()) == ConnectionStatus.ERROR
+            assert agentService.getProtocolDeploymentStatus(config4.getReferenceOrThrow()) == ConnectionStatus.DISABLED
         }
 
         when: "a mock thing asset is created that links to the mock protocol configurations"

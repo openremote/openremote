@@ -20,6 +20,7 @@
 package org.openremote.manager.server.agent;
 
 import org.apache.camel.builder.RouteBuilder;
+import org.openremote.agent.protocol.ConnectionStatus;
 import org.openremote.agent.protocol.Protocol;
 import org.openremote.agent.protocol.ProtocolAssetService;
 import org.openremote.container.Container;
@@ -49,7 +50,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.openremote.agent.protocol.Protocol.ACTUATOR_TOPIC;
-import static org.openremote.agent.protocol.Protocol.DeploymentStatus.*;
+import static org.openremote.agent.protocol.ConnectionStatus.*;
 import static org.openremote.agent.protocol.Protocol.SENSOR_QUEUE;
 import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_TOPIC;
 import static org.openremote.manager.server.asset.AssetProcessingService.ASSET_QUEUE;
@@ -76,7 +77,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
     protected AssetStorageService assetStorageService;
     protected AssetDatapointService assetDatapointService;
     protected MessageBrokerService messageBrokerService;
-    protected final Map<AttributeRef, Pair<AssetAttribute, Protocol.DeploymentStatus>> protocolConfigurations = new HashMap<>();
+    protected final Map<AttributeRef, Pair<AssetAttribute, ConnectionStatus>> protocolConfigurations = new HashMap<>();
     protected final Map<String, Protocol> protocols = new HashMap<>();
 
     @Override
@@ -379,17 +380,17 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
 
         synchronized (protocolConfigurations) {
             // Create a consumer callback for deployment status updates
-            Consumer<Protocol.DeploymentStatus> deploymentStatusConsumer = status ->
+            Consumer<ConnectionStatus> deploymentStatusConsumer = status ->
                 publishProtocolDeploymentStatus(protocolAttributeRef, status);
 
             // Store the info
             protocolConfigurations.put(
                 protocolAttributeRef,
-                new Pair<>(protocolConfiguration, LINKING)
+                new Pair<>(protocolConfiguration, CONNECTING)
             );
 
             // Set status to linking
-            publishProtocolDeploymentStatus(protocolAttributeRef, LINKING);
+            publishProtocolDeploymentStatus(protocolAttributeRef, CONNECTING);
 
             // Link the protocol configuration to the protocol
             try {
@@ -465,24 +466,24 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
                 LOG.log(Level.SEVERE, "Protocol threw an exception during protocol configuration unlinking", e);
             }
 
-            // Set status to error
-            publishProtocolDeploymentStatus(protocolAttributeRef, UNLINKED);
+            // Set status to disconnected
+            publishProtocolDeploymentStatus(protocolAttributeRef, DISCONNECTED);
             protocolConfigurations.remove(protocolAttributeRef);
         }
     }
 
     // TODO: Implement mechanism for publishing/subscribing to protocolconfiguration deployment status
-    protected void publishProtocolDeploymentStatus(AttributeRef protocolRef, Protocol.DeploymentStatus status) {
-        LOG.fine("Protocol status updated to '" + status + "': " + protocolRef);
+    protected void publishProtocolDeploymentStatus(AttributeRef protocolRef, ConnectionStatus connectionStatus) {
+        LOG.fine("Protocol status updated to '" + connectionStatus + "': " + protocolRef);
         synchronized (protocolConfigurations) {
-            Pair<AssetAttribute, Protocol.DeploymentStatus> protocolDeploymentInfo = protocolConfigurations.get(protocolRef);
+            Pair<AssetAttribute, ConnectionStatus> protocolDeploymentInfo = protocolConfigurations.get(protocolRef);
             if (protocolDeploymentInfo != null) {
-                protocolDeploymentInfo.value = status;
+                protocolDeploymentInfo.value = connectionStatus;
             }
         }
     }
 
-    public Protocol.DeploymentStatus getProtocolDeploymentStatus(AttributeRef protocolRef) {
+    public ConnectionStatus getProtocolDeploymentStatus(AttributeRef protocolRef) {
         synchronized (protocolConfigurations) {
             return Optional.ofNullable(protocolConfigurations.get(protocolRef))
                 .map(pair -> pair.value)
@@ -614,7 +615,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
 
     public Optional<AssetAttribute> getProtocolConfiguration(AttributeRef protocolRef) {
         synchronized (protocolConfigurations) {
-            Pair<AssetAttribute, Protocol.DeploymentStatus> deploymentStatusPair = protocolConfigurations.get(protocolRef);
+            Pair<AssetAttribute, ConnectionStatus> deploymentStatusPair = protocolConfigurations.get(protocolRef);
             return deploymentStatusPair == null ? Optional.empty() : Optional.of(deploymentStatusPair.key);
         }
     }

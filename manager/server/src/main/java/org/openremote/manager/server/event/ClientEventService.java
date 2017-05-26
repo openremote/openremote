@@ -104,6 +104,8 @@ public class ClientEventService implements ContainerService {
     protected MessageBrokerService messageBrokerService;
     protected EventSubscriptions eventSubscriptions;
 
+    protected boolean stopped;
+
     @Override
     public void init(Container container) throws Exception {
         messageBrokerService = container.getService(MessageBrokerService.class);
@@ -184,11 +186,12 @@ public class ClientEventService implements ContainerService {
 
     @Override
     public void start(Container container) {
+        stopped = false;
     }
 
     @Override
     public void stop(Container container) {
-
+        stopped = true;
     }
 
     public void addSubscriptionAuthorizer(EventSubscriptionAuthorizer authorizer) {
@@ -196,6 +199,11 @@ public class ClientEventService implements ContainerService {
     }
 
     public void publishEvent(SharedEvent event) {
+        // Only publish if service is not stopped
+        if (stopped) {
+            return;
+        }
+
         if (messageBrokerService != null && messageBrokerService.getProducerTemplate() != null) {
             // Don't log that we are publishing a syslog event,
             if (!(event instanceof SyslogEvent)) {

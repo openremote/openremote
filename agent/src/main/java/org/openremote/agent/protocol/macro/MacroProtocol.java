@@ -20,6 +20,7 @@
 package org.openremote.agent.protocol.macro;
 
 import org.openremote.agent.protocol.AbstractProtocol;
+import org.openremote.agent.protocol.ConnectionStatus;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.attribute.*;
 import org.openremote.model.util.Pair;
@@ -157,13 +158,13 @@ public class MacroProtocol extends AbstractProtocol {
             // Check macro configuration is valid
             if (!isValidMacroConfiguration(protocolConfiguration)) {
                 LOG.fine("Macro configuration is not valid: " + protocolConfiguration);
-                updateDeploymentStatus(macroRef, DeploymentStatus.ERROR);
+                updateStatus(macroRef, ConnectionStatus.ERROR);
                 // Put an empty list of actions against this macro
                 macroMap.put(macroRef, new Pair<>(isEnabled, Collections.emptyList()));
             } else {
                 // Store the macro actions for later execution requests
                 macroMap.put(macroRef, new Pair<>(isEnabled, MacroConfiguration.getMacroActions(protocolConfiguration)));
-                updateDeploymentStatus(macroRef, isEnabled ? DeploymentStatus.LINKED_ENABLED : DeploymentStatus.LINKED_DISABLED);
+                updateStatus(macroRef, isEnabled ? ConnectionStatus.CONNECTED : ConnectionStatus.DISABLED);
             }
         }
     }

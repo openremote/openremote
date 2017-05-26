@@ -31,7 +31,6 @@ import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.value.ValueType;
 
 import java.util.Collection;
-import java.util.List;
 import java.util.function.Consumer;
 
 /**
@@ -45,13 +44,13 @@ import java.util.function.Consumer;
  * attribute must conform to {@link ProtocolConfiguration}.
  * <p>
  * When a protocol configuration is loaded/created for a protocol then the
- * {@link #linkProtocolConfiguration(AssetAttribute, Consumer)} method will be called.
- * The protocol should check the {@link AssetAttribute#isEnabled()} status of the protocol
+ * {@link #linkProtocolConfiguration} method will be called.
+ * The protocol should check the {@link AssetAttribute#isEnabled} status of the protocol
  * configuration to determine whether or not the logical instance should be running or stopped.
  * <p>
  * The protocol is responsible for calling the provided consumer whenever the status of the
  * logical instance changes (e.g. if the configuration is not valid then the protocol should
- * call the consumer with a value of {@link DeploymentStatus#ERROR} and it should provide
+ * call the consumer with a value of {@link ConnectionStatus#ERROR} and it should provide
  * sensible logging to allow fault finding).
  * <h3>Connecting attributes to actuators and sensors</h3>
  * {@link AssetAttribute}s of {@link Asset}s can be linked to a protocol configuration
@@ -59,7 +58,7 @@ import java.util.function.Consumer;
  * Besides the {@link AssetMeta#AGENT_LINK}, other protocol-specific meta items may also be
  * required when an asset attribute is linked to a protocol configuration instance.
  * Attributes linked to a protocol configuration instance will get passed to the protocol via
- * a call to {@link #linkAttributes(Collection, AssetAttribute)}.
+ * a call to {@link #linkAttributes}.
  * <p>
  * The protocol handles read and write of linked attributes:
  * <p>
@@ -86,88 +85,41 @@ import java.util.function.Consumer;
  * <p>
  * Protocol configuration (logical instance) is created/loaded:
  * <ol>
- * <li>{@link #linkProtocolConfiguration(AssetAttribute, Consumer)}</li>
- * <li>{@link #linkAttributes(Collection, AssetAttribute)}</li>
+ * <li>{@link #linkProtocolConfiguration}</li>
+ * <li>{@link #linkAttributes}</li>
  * </ol>
  * <p>
  * Protocol configuration (logical instance) is modified:
  * <ol>
- * <li>{@link #unlinkAttributes(Collection, AssetAttribute)}</li>
- * <li>{@link #unlinkProtocolConfiguration(AssetAttribute)}</li>
- * <li>{@link #linkProtocolConfiguration(AssetAttribute, Consumer)}</li>
- * <li>{@link #linkAttributes(Collection, AssetAttribute)}</li>
+ * <li>{@link #unlinkAttributes}</li>
+ * <li>{@link #unlinkProtocolConfiguration)}</li>
+ * <li>{@link #linkProtocolConfiguration}</li>
+ * <li>{@link #linkAttributes}</li>
  * </ol>
  * <p>
  * Protocol configuration (logical instance) is removed:
  * <ol>
- * <li>{@link #unlinkAttributes(Collection, AssetAttribute)}</li>
- * <li>{@link #unlinkProtocolConfiguration(AssetAttribute)}</li>
+ * <li>{@link #unlinkAttributes}</li>
+ * <li>{@link #unlinkProtocolConfiguration}</li>
  * </ol>
  * <p>
  * Attribute linked to protocol configuration is created/loaded:
  * <ol>
- * <li>{@link #linkAttributes(Collection, AssetAttribute)}</li>
+ * <li>{@link #linkAttributes}</li>
  * </ol>
  * <p>
  * Attribute linked to protocol configuration is modified:
  * <ol>
- * <li>{@link #unlinkAttributes(Collection, AssetAttribute)}</li>
- * <li>{@link #linkAttributes(Collection, AssetAttribute)}</li>
+ * <li>{@link #unlinkAttributes}</li>
+ * <li>{@link #linkAttributes}</li>
  * </ol>
  * <p>
  * Attribute link to protocol configuration is removed:
  * <ol>
- * <li>{@link #unlinkAttributes(Collection, AssetAttribute)}</li>
+ * <li>{@link #unlinkAttributes}</li>
  * </ol>
  */
 public interface Protocol extends ContainerService {
-
-    /**
-     * Indicates the deployment status of a protocol configuration (i.e. protocol instance).
-     */
-    enum DeploymentStatus {
-
-        /**
-         * Protocol configuration has not yet been linked (i.e. {@link #linkProtocolConfiguration}
-         * hasn't yet been called for the configuration).
-         */
-        UNLINKED,
-
-        /**
-         * Protocol configuration is being linked to the protocol.
-         */
-        LINKING,
-
-        /**
-         * Protocol configuration is being unlinked from the protocol.
-         */
-        UNLINKING,
-
-        /**
-         * Protocol configuration has been linked, is valid and it is enabled.
-         */
-        LINKED_ENABLED,
-
-        /**
-         * Protocol configuration has been linked, it is valid but it is not enabled (i.e. it has a
-         * {@link org.openremote.model.asset.AssetMeta#ENABLED} {@link MetaItem}
-         * with a value of <code>false</code>).
-         */
-        LINKED_DISABLED,
-
-        /**
-         * Protocol configuration is not valid or some internal protocol error occurred that prevents
-         * this configuration from running (the protocol should provide sensible logging to allow fault
-         * finding).
-         */
-        ERROR,
-
-        /**
-         * Protocol is performing an operation that means the status cannot be exactly determined at this
-         * time (e.g. the protocol is trying to re-establish a connection to a remote server).
-         */
-        UPDATING
-    }
 
     String ACTUATOR_TOPIC_TARGET_PROTOCOL = "Protocol";
     String SENSOR_QUEUE_SOURCE_PROTOCOL = "Protocol";
@@ -186,7 +138,7 @@ public interface Protocol extends ContainerService {
      * Links attributes to their protocolConfiguration; the protocolConfiguration would have
      * been linked before this call. If an attribute is not valid for this protocol or the protocol
      * Configuration then it is up to the protocol whether to put the entire protocolConfiguration
-     * into an {@link DeploymentStatus#ERROR} state or to continue running (appropriate logging should
+     * into an {@link ConnectionStatus#ERROR} state or to continue running (appropriate logging should
      * always be used).
      * <p>
      * Attributes are linked to a protocol configuration via an {@link AssetMeta#AGENT_LINK} meta item.
@@ -200,10 +152,10 @@ public interface Protocol extends ContainerService {
     void unlinkAttributes(Collection<AssetAttribute> attributes, AssetAttribute protocolConfiguration) throws Exception;
 
     /**
-     * Links the protocol configuration to the protocol; the protocol is responsible for calling the deploymentStatusConsumer
-     * to indicate the state of the protocol configuration.
+     * Links the protocol configuration to the protocol; the protocol is responsible for calling the statusConsumer
+     * to indicate the runtime state of the protocol configuration.
      */
-    void linkProtocolConfiguration(AssetAttribute protocolConfiguration, Consumer<DeploymentStatus> deploymentStatusConsumer);
+    void linkProtocolConfiguration(AssetAttribute protocolConfiguration, Consumer<ConnectionStatus> statusConsumer);
 
     /**
      * Un-links the protocol configuration from the protocol; called whenever a protocolConfiguration is modified

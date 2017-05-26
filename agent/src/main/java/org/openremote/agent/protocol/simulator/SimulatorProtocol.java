@@ -20,6 +20,7 @@
 package org.openremote.agent.protocol.simulator;
 
 import org.openremote.agent.protocol.AbstractProtocol;
+import org.openremote.agent.protocol.ConnectionStatus;
 import org.openremote.agent.protocol.simulator.element.*;
 import org.openremote.model.AbstractValueHolder;
 import org.openremote.model.asset.AssetAttribute;
@@ -150,7 +151,7 @@ public class SimulatorProtocol extends AbstractProtocol {
                             .flatMap(AbstractValueHolder::getValueAsInteger)
                             .orElse(DEFAULT_WRITE_DELAY);
 
-                        updateDeploymentStatus(protocolRef, protocolConfiguration.isEnabled() ? DeploymentStatus.LINKED_ENABLED : DeploymentStatus.LINKED_DISABLED);
+                        updateStatus(protocolRef, protocolConfiguration.isEnabled() ? ConnectionStatus.CONNECTED : ConnectionStatus.DISABLED);
                         return new Instance(mode, writeDelay, protocolConfiguration.isEnabled());
                     }
                 );

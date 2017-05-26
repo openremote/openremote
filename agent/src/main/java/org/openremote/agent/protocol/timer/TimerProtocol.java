@@ -20,6 +20,7 @@
 package org.openremote.agent.protocol.timer;
 
 import org.openremote.agent.protocol.AbstractProtocol;
+import org.openremote.agent.protocol.ConnectionStatus;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetMeta;
 import org.openremote.model.attribute.AttributeEvent;
@@ -79,7 +80,7 @@ public class TimerProtocol extends AbstractProtocol {
         // Verify that this is a valid Timer Configuration
         if (!isValidTimerConfiguration(protocolConfiguration)) {
             LOG.warning("Timer Configuration is not valid so it will be ignored: " + protocolRef);
-            updateDeploymentStatus(protocolRef, DeploymentStatus.ERROR);
+            updateStatus(protocolRef, ConnectionStatus.ERROR);
             return;
         }
 
@@ -90,7 +91,7 @@ public class TimerProtocol extends AbstractProtocol {
 
         if (expressionParser == null || !expressionParser.isValid()) {
             LOG.warning("Timer cron expression is missing or invalid");
-            updateDeploymentStatus(protocolRef, DeploymentStatus.ERROR);
+            updateStatus(protocolRef, ConnectionStatus.ERROR);
             return;
         }
 
@@ -145,7 +146,7 @@ public class TimerProtocol extends AbstractProtocol {
                 // check event value is a boolean
                 boolean enabled = Values.getBoolean(event.getValue()
                     .orElse(null))
-                    .orElseThrow(() -> new IllegalStateException("Writing to protocol configuration ENABLED property requires a boolean value"));
+                    .orElseThrow(() -> new IllegalStateException("Writing to protocol configuration CONNECTED property requires a boolean value"));
 
                 if (enabled == protocolConfiguration.isEnabled()) {
                     LOG.finer("Protocol configuration enabled status is already: " + enabled);

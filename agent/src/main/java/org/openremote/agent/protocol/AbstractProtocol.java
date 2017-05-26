@@ -47,7 +47,7 @@ public abstract class AbstractProtocol implements Protocol {
     private static final Logger LOG = Logger.getLogger(AbstractProtocol.class.getName());
 
     protected final Map<AttributeRef, AssetAttribute> linkedAttributes = new HashMap<>();
-    protected final Map<AttributeRef, Triplet<AssetAttribute, Consumer<DeploymentStatus>, DeploymentStatus>> linkedProtocolConfigurations = new HashMap<>();
+    protected final Map<AttributeRef, Triplet<AssetAttribute, Consumer<ConnectionStatus>, ConnectionStatus>> linkedProtocolConfigurations = new HashMap<>();
     protected MessageBrokerContext messageBrokerContext;
     protected ProducerTemplate producerTemplate;
     protected TimerService timerService;
@@ -106,12 +106,12 @@ public abstract class AbstractProtocol implements Protocol {
 
 
     @Override
-    public void linkProtocolConfiguration(AssetAttribute protocolConfiguration, Consumer<DeploymentStatus> deploymentStatusConsumer) {
+    public void linkProtocolConfiguration(AssetAttribute protocolConfiguration, Consumer<ConnectionStatus> statusConsumer) {
         synchronized (linkedProtocolConfigurations) {
             LOG.finer("Linking protocol configuration to protocol '" + getProtocolName() + "': " + protocolConfiguration);
             linkedProtocolConfigurations.put(
                 protocolConfiguration.getReferenceOrThrow(),
-                new Triplet<>(protocolConfiguration, deploymentStatusConsumer, DeploymentStatus.LINKING)
+                new Triplet<>(protocolConfiguration, statusConsumer, ConnectionStatus.CONNECTING)
             );
             doLinkProtocolConfiguration(protocolConfiguration);
         }
@@ -167,7 +167,7 @@ public abstract class AbstractProtocol implements Protocol {
 
     protected AssetAttribute getLinkedProtocolConfiguration(AttributeRef protocolConfigurationRef) {
         synchronized (linkedProtocolConfigurations) {
-            Triplet<AssetAttribute, Consumer<DeploymentStatus>, DeploymentStatus> assetAttributeConsumerInfo = linkedProtocolConfigurations.get(protocolConfigurationRef);
+            Triplet<AssetAttribute, Consumer<ConnectionStatus>, ConnectionStatus> assetAttributeConsumerInfo = linkedProtocolConfigurations.get(protocolConfigurationRef);
             // Don't bother with null check if someone calls here with an attribute not linked to this protocol
             // then they're doing something wrong so fail hard and fast
             return assetAttributeConsumerInfo.getValue1();
@@ -239,14 +239,14 @@ public abstract class AbstractProtocol implements Protocol {
     }
 
     /**
-     * Update the deployment status of a protocol configuration by its attribute ref
+     * Update the runtime status of a protocol configuration by its attribute ref
      */
-    protected void updateDeploymentStatus(AttributeRef protocolRef, DeploymentStatus deploymentStatus) {
+    protected void updateStatus(AttributeRef protocolRef, ConnectionStatus connectionStatus) {
         synchronized (linkedProtocolConfigurations) {
             linkedProtocolConfigurations.computeIfPresent(protocolRef,
                 (ref, pair) -> {
-                    pair.getValue2().accept(deploymentStatus);
-                    pair.value3 = deploymentStatus;
+                    pair.getValue2().accept(connectionStatus);
+                    pair.value3 = connectionStatus;
                     return pair;
                 }
             );
@@ -254,11 +254,11 @@ public abstract class AbstractProtocol implements Protocol {
     }
 
     /**
-     * Gets the current deployment status of a protocol configuration.
+     * Gets the current runtime status of a protocol configuration.
      */
-    protected DeploymentStatus getDeploymentStatus(AssetAttribute protocolConfiguration) {
+    protected ConnectionStatus getStatus(AssetAttribute protocolConfiguration) {
         synchronized (linkedProtocolConfigurations) {
-            Triplet<AssetAttribute, Consumer<DeploymentStatus>, DeploymentStatus> assetAttributeConsumerInfo = linkedProtocolConfigurations.get(protocolConfiguration.getReferenceOrThrow());
+            Triplet<AssetAttribute, Consumer<ConnectionStatus>, ConnectionStatus> assetAttributeConsumerInfo = linkedProtocolConfigurations.get(protocolConfiguration.getReferenceOrThrow());
             return assetAttributeConsumerInfo.getValue3();
         }
     }
