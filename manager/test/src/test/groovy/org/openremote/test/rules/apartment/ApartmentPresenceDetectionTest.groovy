@@ -1,5 +1,6 @@
 package org.openremote.test.rules.apartment
 
+import org.openremote.agent.protocol.simulator.SimulatorProtocol
 import org.openremote.manager.server.asset.AssetProcessingService
 import org.openremote.manager.server.asset.AssetStorageService
 import org.openremote.manager.server.rules.RulesEngine
@@ -13,18 +14,16 @@ import org.openremote.model.rules.AssetRuleset
 import org.openremote.model.rules.Ruleset
 import org.openremote.model.value.Values
 import org.openremote.test.ManagerContainerTrait
-import spock.lang.Ignore
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
 import static java.util.concurrent.TimeUnit.*
 import static org.openremote.manager.server.setup.builtin.ManagerDemoSetup.DEMO_RULE_STATES_APARTMENT_1
 import static org.openremote.manager.server.setup.builtin.ManagerDemoSetup.DEMO_RULE_STATES_APARTMENT_2
+import static org.openremote.model.attribute.AttributeEvent.Source.SENSOR
 
 class ApartmentPresenceDetectionTest extends Specification implements ManagerContainerTrait {
 
-    // TODO: Rewrite with co2 level confirmation rules
-    @Ignore
     def "Detect presence with motion counter"() {
 
         given: "the container environment is started"
@@ -33,9 +32,9 @@ class ApartmentPresenceDetectionTest extends Specification implements ManagerCon
         def container = startContainerWithPseudoClock(defaultConfig(serverPort), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def rulesService = container.getService(RulesService.class)
-        def assetProcessingService = container.getService(AssetProcessingService.class)
         def assetStorageService = container.getService(AssetStorageService.class)
         def rulesetStorageService = container.getService(RulesetStorageService.class)
+        def simulatorProtocol = container.getService(SimulatorProtocol.class)
         RulesEngine apartment1Engine = null
 
         and: "some rules"
@@ -61,22 +60,23 @@ class ApartmentPresenceDetectionTest extends Specification implements ManagerCon
 
         when: "we have an events consumer for collecting test data"
         List<AssetEvent> insertedAssetEvents = []
-        apartment1Engine.assetEventsConsumer = { assetEvent->
+        apartment1Engine.assetEventsConsumer = { assetEvent ->
             insertedAssetEvents << assetEvent
         }
 
         and: "several motion counter increments occur in the room, but not enough for presence detection"
         insertedAssetEvents = []
         setPseudoClocksToRealTime(container, apartment1Engine)
-        // Send 5 triggers each 3 minutes apart
+        // The motion counter increments 5 times, 3 minutes apart
         for (i in 1..5) {
-            // TODO Send event through sensor/simulator
             def motionCountIncrement = new AttributeEvent(
                     managerDemoSetup.apartment1LivingroomId, "motionCount", Values.create(i), getClockTimeOf(apartment1Engine)
             )
-            assetProcessingService.sendAttributeEvent(motionCountIncrement)
-            new PollingConditions(timeout: 5, initialDelay: 0.2, delay: 0.2).eventually {
-                assert insertedAssetEvents.any() { it.matches(motionCountIncrement) }
+            // Use the simulator to inject the update
+            simulatorProtocol.putState(motionCountIncrement)
+            // Wait until rules engine has the asset event
+            new PollingConditions(timeout: 3).eventually {
+                assert insertedAssetEvents.any() { it.matches(motionCountIncrement, SENSOR, true) }
             }
             advancePseudoClocks(3, MINUTES, container, apartment1Engine)
         }
@@ -99,15 +99,17 @@ class ApartmentPresenceDetectionTest extends Specification implements ManagerCon
         when: "several motion counter increments occur in the room, fast enough for presence detection"
         insertedAssetEvents = []
         double expectedLastPresenceTimestamp = 0d
-        // Send 5 increments each 1 minute apart
+        // The motion counter increments 5 times, 1 minute apart
         for (i in 1..5) {
             def motionCountIncrement = new AttributeEvent(
                     managerDemoSetup.apartment1LivingroomId, "motionCount", Values.create(i), getClockTimeOf(apartment1Engine)
             )
-            expectedLastPresenceTimestamp = motionCountIncrement.timestamp
-            assetProcessingService.sendAttributeEvent(motionCountIncrement)
-            new PollingConditions(timeout: 5, initialDelay: 0.2, delay: 0.2).eventually {
-                assert insertedAssetEvents.any() { it.matches(motionCountIncrement) }
+            simulatorProtocol.putState(motionCountIncrement)
+            new PollingConditions(timeout: 3).eventually {
+                assert insertedAssetEvents.any() {
+                    expectedLastPresenceTimestamp = it.valueTimestamp
+                    it.matches(motionCountIncrement, SENSOR, true)
+                }
             }
             advancePseudoClocks(1, MINUTES, container, apartment1Engine)
         }
@@ -122,15 +124,17 @@ class ApartmentPresenceDetectionTest extends Specification implements ManagerCon
 
         when: "time moves on and we keep incrementing the motion counter in short intervals "
         insertedAssetEvents = []
-        // Send 20 increments each 90 seconds apart
+        // The motion counter increments 20 times, 90 seconds apart
         for (i in 1..20) {
             def motionCountIncrement = new AttributeEvent(
                     managerDemoSetup.apartment1LivingroomId, "motionCount", Values.create(i), getClockTimeOf(apartment1Engine)
             )
-            expectedLastPresenceTimestamp = motionCountIncrement.timestamp
-            assetProcessingService.sendAttributeEvent(motionCountIncrement)
-            new PollingConditions(timeout: 5, initialDelay: 0.2, delay: 0.2).eventually {
-                assert insertedAssetEvents.any() { it.matches(motionCountIncrement) }
+            simulatorProtocol.putState(motionCountIncrement)
+            new PollingConditions(timeout: 3).eventually {
+                assert insertedAssetEvents.any() {
+                    expectedLastPresenceTimestamp = it.valueTimestamp
+                    it.matches(motionCountIncrement, SENSOR, true)
+                }
             }
             advancePseudoClocks(90, SECONDS, container, apartment1Engine)
         }
@@ -143,7 +147,7 @@ class ApartmentPresenceDetectionTest extends Specification implements ManagerCon
             assert asset.getAttribute("lastPresenceDetected").get().getValueAsNumber().get() == expectedLastPresenceTimestamp
         }
 
-        when: "time moves on without the motion sensor being triggered"
+        when: "time moves on without the motion counter incrementing"
         advancePseudoClocks(20, MINUTES, container, apartment1Engine)
 
         then: "presence should be gone but the last timestamp still available"
@@ -207,7 +211,7 @@ class ApartmentPresenceDetectionTest extends Specification implements ManagerCon
 
         when: "we have an events consumer for collecting test data"
         List<AssetEvent> insertedAssetEvents = []
-        apartment2Engine.assetEventsConsumer = { assetEvent->
+        apartment2Engine.assetEventsConsumer = { assetEvent ->
             insertedAssetEvents << assetEvent
         }
 
@@ -221,7 +225,7 @@ class ApartmentPresenceDetectionTest extends Specification implements ManagerCon
                     managerDemoSetup.apartment2BathroomId, "motionSensor", Values.create(true), getClockTimeOf(apartment2Engine)
             )
             assetProcessingService.sendAttributeEvent(motionSensorTrigger)
-            if(i==1)
+            if (i == 1)
                 firstPresenceDetectedTimeStamp = motionSensorTrigger.timestamp
             new PollingConditions(timeout: 25, initialDelay: 0.2, delay: 0.2).eventually {
                 assert insertedAssetEvents.any() { it.matches(motionSensorTrigger) }
@@ -261,25 +265,25 @@ class ApartmentPresenceDetectionTest extends Specification implements ManagerCon
                     managerDemoSetup.apartment2BathroomId, "motionSensor", Values.create(true), getClockTimeOf(apartment2Engine)
             )
             def co2LevelIncrement = new AttributeEvent(
-                    managerDemoSetup.apartment2LivingroomId, "co2Level", Values.create(400+i), getClockTimeOf(apartment2Engine)
+                    managerDemoSetup.apartment2LivingroomId, "co2Level", Values.create(400 + i), getClockTimeOf(apartment2Engine)
             )
             expectedLastPresenceTimestampBathroom = motionSensorTriggerBathroom.timestamp
             assetProcessingService.sendAttributeEvent(motionSensorTriggerBathroom)
-            if(i==1) {
+            if (i == 1) {
                 // Trigger motion sensor
                 assetProcessingService.sendAttributeEvent(motionSensorTriggerLivingroom)
                 assetProcessingService.sendAttributeEvent(co2LevelIncrement)
                 expectedLastPresenceTimestampLivingroom = motionSensorTriggerLivingroom.timestamp
-            }else{
+            } else {
                 // Increase CO2 because person is not moving but breathing
                 assetProcessingService.sendAttributeEvent(co2LevelIncrement)
             }
             new PollingConditions(timeout: 25, initialDelay: 0.2, delay: 0.2).eventually {
                 assert insertedAssetEvents.any() { it.matches(motionSensorTriggerBathroom) }
-                if(i>1) {
+                if (i > 1) {
                     // TODO why the following test fails?
                     // assert insertedAssetEvents.any() { it.matches(co2LevelIncrement) }
-                }else
+                } else
                     assert insertedAssetEvents.any() { it.matches(motionSensorTriggerLivingroom) }
             }
             advancePseudoClocks(1, MINUTES, container, apartment2Engine)

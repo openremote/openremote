@@ -49,7 +49,7 @@ when
         $count >= 5
     )
     // And the latest counter increment event is newer than the recorded last presence detected time
-    AssetState(id == $room.id, attributeName == "lastPresenceDetected", $latestIncrementTimestamp > valueAsNumber)
+    AssetState(id == $room.id, attributeName == "lastPresenceDetected", valueAsNumber == null || $latestIncrementTimestamp > valueAsNumber)
 then
     // Update the last presence detected timestamp to the latest counter increment event
     assets.dispatch(

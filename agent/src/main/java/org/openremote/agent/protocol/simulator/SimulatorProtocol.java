@@ -276,7 +276,7 @@ public class SimulatorProtocol extends AbstractProtocol {
     /**
      * Call this to simulate a send to actuator.
      */
-    protected void putState(String entityId, String attributeName, Value value) {
+    public void putState(String entityId, String attributeName, Value value) {
         putState(new AttributeState(new AttributeRef(entityId, attributeName), value));
     }
 
@@ -290,14 +290,14 @@ public class SimulatorProtocol extends AbstractProtocol {
     /**
      * Call this to simulate a send to actuator.
      */
-    protected void putState(AttributeEvent event) {
+    public void putState(AttributeEvent event) {
         putState(event.getAttributeState());
     }
 
     /**
      * Call this to simulate a send to actuator.
      */
-    protected void putState(AttributeState attributeState) {
+    public void putState(AttributeState attributeState) {
         AttributeRef attributeRef = attributeState.getAttributeRef();
         AttributeRef instanceRef = attributeInstanceMap.get(attributeRef);
 

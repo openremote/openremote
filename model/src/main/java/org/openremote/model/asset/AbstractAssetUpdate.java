@@ -264,10 +264,21 @@ public abstract class AbstractAssetUpdate {
         return attribute.getReferenceOrThrow();
     }
 
+    /**
+     * Compares entity identifier, attribute name, value, and timestamp.
+     */
     public boolean matches(AttributeEvent event) {
+        return matches(event, null, false);
+    }
+
+    /**
+     * Compares entity identifier, attribute name, value, source, and optional timestamp.
+     */
+    public boolean matches(AttributeEvent event, AttributeEvent.Source source, boolean ignoreTimestamp) {
         return event.getAttributeRef().equals(getAttributeRef())
             && Optional.ofNullable(getValue()).equals(event.getAttributeState().getCurrentValue())
-            && getValueTimestamp() == event.getTimestamp();
+            && (ignoreTimestamp || getValueTimestamp() == event.getTimestamp())
+            && (source == null || getSource() == source);
     }
 
     /**
