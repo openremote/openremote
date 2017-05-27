@@ -34,9 +34,9 @@ when
     AssetState(id==$room.id, attributeName == "firstPresenceDetected")
 then
     retract($init);
-//    assets.dispatch(
-//            new AttributeEvent($room.getId(), "firstPresenceDetected", Values.create(-1))
-//    );
+    assets.dispatch(
+            new AttributeEvent($room.getId(), "firstPresenceDetected", Values.create(-1))
+    );
 end
 
 rule "Fetch the first presence detected time stamp"
@@ -46,11 +46,12 @@ when
     // And the presence detected flag is not set already
     // TODO although rule "Init firstPresenceDetected" is triggered this does not work here when uncommented.
     // we need some kind on unset value marker, probably -1 does not work. In the old rules files it was string "-"
-    //AssetState(id == $room.id, attributeName == "firstPresenceDetected", valueAsNumber==-1)
+    // AssetState(id == $room.id, attributeName == "firstPresenceDetected", valueAsNumber==-1)
     AssetState(id == $room.id, attributeName == "firstPresenceDetected", value==null)
     // And the motion sensor is triggered
     $sensorState: AssetState(id == $room.id, attributeName == "motionSensor", valueAsBoolean == true)
 then
+    LOG.info("@-@"+(new java.util.Date(drools.getWorkingMemory().getSessionClock().getCurrentTime())).toString());
     // Fetch the first presence detected timestamp of the room
     assets.dispatch(
             new AttributeEvent($room.getId(), "firstPresenceDetected", Values.create($sensorState.getValueTimestamp()))
@@ -59,27 +60,15 @@ end
 
 declare CO2Rising
 	@role(event)
-	@expires(15m)
+	@expires(10m)
     roomId: String
 end
 
-// TODO comparision does not work and this LHS generates:
-//Unable to Analyse Expression valueAsNumber > oldValue:
-//[Error: Comparison operation requires compatible types. Found class java.lang.Double and interface org.openremote.model.value.Value]
-//[Near : {... valueAsNumber > oldValue ....}]
-//                             ^ : [Rule name='Insert CO2 rising event']
-//rule "Insert CO2 rising event"
-//when
-//    AssetState($roomId: id, type==AssetType.ROOM, attributeName == "co2Level", valueAsNumber > oldValue)
-//then
-//	insert(new CO2Rising($roomId));
-//end
-
-// TODO remove this rule if the rule above is working
-rule "Insert CO2 rising event to be removed if the previous rule compiles"
+rule "Insert CO2 rising event"
 when
-    AssetState($roomId: id, type==AssetType.ROOM, attributeName == "co2Level", valueAsNumber != 350)
+    AssetState($roomId: id, type==AssetType.ROOM, attributeName == "co2Level", valueAsNumber > Values.getNumber(oldValue).orElse(null))
 then
+    LOG.info("@-@"+(new java.util.Date(drools.getWorkingMemory().getSessionClock().getCurrentTime())).toString());
 	insert(new CO2Rising($roomId));
 end
 
@@ -98,6 +87,7 @@ when
     // Only when there is no CO2 sensor
     not AssetState(id == $room.id, attributeName == "co2Level")
 then
+    LOG.info("@-@"+(new java.util.Date(drools.getWorkingMemory().getSessionClock().getCurrentTime())).toString());
     // Set the presence detected flag of the room
     assets.dispatch(
             new AttributeEvent($room.getId(), "presenceDetected", Values.create(true))
@@ -119,6 +109,7 @@ when
         $count >= 5
     )
 then
+    LOG.info("@-@"+(new java.util.Date(drools.getWorkingMemory().getSessionClock().getCurrentTime())).toString());
     // Set the presence detected flag of the room
     assets.dispatch(
             new AttributeEvent($room.getId(), "presenceDetected", Values.create(true))
@@ -132,6 +123,7 @@ when
     // And the motion sensor is triggered
     $sensorState: AssetState(id == $room.id, attributeName == "motionSensor", valueAsBoolean == true)
 then
+    LOG.info("@-@"+(new java.util.Date(drools.getWorkingMemory().getSessionClock().getCurrentTime())).toString());
     // Update the last presence detected timestamp of the room
     assets.dispatch(
             new AttributeEvent($room.getId(), "lastPresenceDetected", Values.create($sensorState.getValueTimestamp()))
@@ -151,6 +143,8 @@ when
         $count == 0
     )
 then
+    // TODO this should be 10 min after the Update rule, but it happens at irregular times, sometimes earlier, sometimes later.
+    LOG.info("@-@"+(new java.util.Date(drools.getWorkingMemory().getSessionClock().getCurrentTime())).toString());
     // Clear the presence detected flag of the room
     assets.dispatch(
             new AttributeEvent($room.getId(), "presenceDetected", Values.create(false))
