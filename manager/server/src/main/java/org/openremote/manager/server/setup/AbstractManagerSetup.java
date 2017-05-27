@@ -122,25 +122,35 @@ public abstract class AbstractManagerSetup implements Setup {
                     new MetaItem(READ_ONLY, Values.create(true)),
                     new MetaItem(RULE_STATE, Values.create(true)),
                     new MetaItem(RULE_EVENT, Values.create(true)),
+                    new MetaItem(RULE_EVENT_EXPIRES, Values.create("1h")),
                     new MetaItem(STORE_DATA_POINTS, Values.create(true))
                 ).addMeta(shouldBeLinked ? agentLinker.get() : null),
-            new AssetAttribute("presenceDetected", AttributeType.BOOLEAN)
+            new AssetAttribute("motionDetected", AttributeType.BOOLEAN)
                 .setMeta(
-                    new MetaItem(LABEL, Values.create("Presence Detected")),
-                    new MetaItem(DESCRIPTION, Values.create("Someone is currently present in the room")),
+                    new MetaItem(LABEL, Values.create("Motion Detected")),
+                    new MetaItem(DESCRIPTION, Values.create("Someone is moving around in the room")),
                     new MetaItem(RULE_STATE, Values.create(true)),
                     new MetaItem(PROTECTED, Values.create(true)),
                     new MetaItem(READ_ONLY, Values.create(true)),
                     new MetaItem(SHOW_ON_DASHBOARD, Values.create(true))
                 ),
-            new AssetAttribute("lastPresenceDetected", TIMESTAMP_MILLIS)
+            new AssetAttribute("lastMotionDetected", TIMESTAMP_MILLIS)
                 .setMeta(
-                    new MetaItem(LABEL, Values.create("Last Presence")),
+                    new MetaItem(LABEL, Values.create("Last time someone moved in the room")),
                     new MetaItem(RULE_STATE, Values.create(true)),
                     new MetaItem(PROTECTED, Values.create(true)),
                     new MetaItem(READ_ONLY, Values.create(true))
+                ),
+            new AssetAttribute("presenceDetected", AttributeType.BOOLEAN)
+                .setMeta(
+                    new MetaItem(LABEL, Values.create("Presence Detected")),
+                    new MetaItem(DESCRIPTION, Values.create("Someone is present in the room")),
+                    new MetaItem(RULE_STATE, Values.create(true)),
+                    new MetaItem(PROTECTED, Values.create(true)),
+                    new MetaItem(READ_ONLY, Values.create(true)),
+                    new MetaItem(SHOW_ON_DASHBOARD, Values.create(true))
                 )
-        );
+            );
     }
 
     protected void addDemoApartmentRoomCO2Sensor(ServerAsset room, boolean shouldBeLinked, Supplier<MetaItem[]> agentLinker) {
@@ -149,6 +159,8 @@ public abstract class AbstractManagerSetup implements Setup {
                 .setMeta(
                     new MetaItem(LABEL, Values.create("CO2 Level")),
                     new MetaItem(RULE_STATE, Values.create(true)),
+                    new MetaItem(RULE_EVENT, Values.create(true)),
+                    new MetaItem(RULE_EVENT_EXPIRES, Values.create("16m")),
                     new MetaItem(PROTECTED, Values.create(true)),
                     new MetaItem(READ_ONLY, Values.create(true)),
                     new MetaItem(STORE_DATA_POINTS, Values.create(true)),

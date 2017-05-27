@@ -55,12 +55,11 @@ class ApartmentNotificationWhenAlarmTest  extends Specification implements Manag
             assert apartment1Engine.knowledgeSession.factCount == DEMO_RULE_STATES_APARTMENT_1
         }
 
-        and: "the alarm enabled, presence detected flag and timestamp of the room should not be set"
+        and: "the alarm enabled, presence detected flag of room should not be set"
         def apartment1Asset = assetStorageService.find(managerDemoSetup.apartment1Id, true)
         assert !apartment1Asset.getAttribute("alarmEnabled").get().valueAsBoolean.orElse(null)
         def livingRoomAsset = assetStorageService.find(managerDemoSetup.apartment1LivingroomId, true)
         assert !livingRoomAsset.getAttribute("presenceDetected").orElse(null).valueAsBoolean.orElse(null)
-        assert !livingRoomAsset.getAttribute("lastPresenceDetected").orElse(null).getValue().isPresent()
 
         and: "an authenticated test user"
         def realm = "customerA"

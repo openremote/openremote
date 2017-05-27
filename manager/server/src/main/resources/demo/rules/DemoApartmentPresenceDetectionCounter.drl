@@ -10,23 +10,77 @@ global java.util.logging.Logger LOG;
 global org.openremote.model.rules.Assets assets;
 
 /*
-Calculate and set the "presenceDetected" flag and the "lastPresenceDetected" timestamp attributes
-of a ROOM when a motion counter is incremented several times within a time window. The flag will be
-removed if the motion counter has not been incremented within a time window. All time windows and
-the number of matches required can be configured.
+Uses 'motionCount' and optional 'co2Level' of a room asset to set the 'motionDetected',
+'lastMotionDetected', and 'presenceDetected' attributes of the room. Motion detection
+is based on multiple increments of the motion counter over a time window. Presence
+detection is based on motion detection, and increasing CO2 level over a time window.
 */
 
-rule "Set presence detected flag if motion counter is incremented in time window"
+rule "Set motion detected flag of room when motion counter increments"
 when
-    // A room has a motion counter
-    $room : AssetState(type == AssetType.ROOM, attributeName == "motionCount")
-    // And the presence detected flag is not set already
-    AssetState(id == $room.id, attributeName == "presenceDetected", valueAsBoolean != true)
-    // And at least 5 motion counter increments have been received in the last 10 minutes
+    // A room were the motion detected flag is not set
+    $room: AssetState(type == AssetType.ROOM, attributeName == "motionDetected", valueFalse)
+    // And the motion counter incremented at least 3 times in the last 2 minutes
     accumulate(
-        AssetEvent(id == $room.id, attributeName == "motionCount", valueAsNumber > 0) over window:time(10m);
-        $count: count(1);
-        $count >= 5
+        AssetEvent(id == $room.id, attributeName == "motionCount", valueGreaterThanOldValue) over window:time(2m);
+        $motionIncrements: count(1);
+        $motionIncrements >= 3
+    )
+then
+    // Set the motion detected flag of the room
+    assets.dispatch(
+            new AttributeEvent($room.getId(), "motionDetected", Values.create(true))
+    );
+end
+
+
+rule "Update the motion detected timestamp when motion counter increments"
+when
+    // A room were the motion detected flag is  set
+    $room : AssetState(type == AssetType.ROOM, attributeName == "motionDetected", valueTrue)
+    // And the motion counter increments
+    AssetState(id == $room.id, attributeName == "motionCount", valueGreaterThanOldValue, $lastIncrementTimestamp: valueTimestamp)
+    // And the last counter increment event is newer than\ the recorded last detected time
+    AssetState(id == $room.id, attributeName == "lastMotionDetected", isValueLessThan($lastIncrementTimestamp))
+then
+    // Update the last presence detected timestamp to the latest counter increment event
+    assets.dispatch(
+            new AttributeEvent($room.getId(), "lastMotionDetected", Values.create($lastIncrementTimestamp))
+    );
+end
+
+
+rule "Clear motion detected flag of a room if the motion counter doesn't increment"
+when
+    // A room were the motion detected flag is set
+    $room: AssetState(type == AssetType.ROOM, attributeName == "motionDetected", valueTrue)
+    // And the room has a motion counter
+    AssetState(id == $room.id, attributeName == "motionCount")
+    // And the motion counter was not incremented in the last 15 minutes
+    accumulate(
+        AssetEvent(id == $room.id, attributeName == "motionCount", valueGreaterThanOldValue) over window:time(15m);
+        $countMotion: count(1);
+        $countMotion == 0
+    )
+then
+    // Clear the motion detected flag of the room
+    assets.dispatch(
+            new AttributeEvent($room.getId(), "motionDetected", Values.create(false))
+    );
+end
+
+
+rule "Set presence detected flag of room when motion is detected and confirmed with CO2 level rising"
+when
+    // A room were the presence detected flag is not set
+    $room: AssetState(type == AssetType.ROOM, attributeName == "presenceDetected", valueFalse)
+    // And the motion detected flag is set
+    AssetState(id == $room.id, attributeName == "motionDetected", valueTrue)
+    // And the CO2 level increased at least 2 times in the last 11 minutes
+    accumulate(
+        AssetEvent(id == $room.id, attributeName == "co2Level", valueGreaterThanOldValue) over window:time(11m);
+        $countCO2: count(1);
+        $countCO2 >= 2
     )
 then
     // Set the presence detected flag of the room
@@ -35,40 +89,20 @@ then
     );
 end
 
-rule "Update the presence detected timestamp if motion counter is incremented and we have already detected presence"
-when
-    // A room has a motion counter
-    $room : AssetState(type == AssetType.ROOM, attributeName == "motionCount")
-    // And the presence detected flag is set
-    AssetState(id == $room.id, attributeName == "presenceDetected", valueAsBoolean == true)
-    // And at least 5 motion counter increments have been received in the last 10 minutes
-    accumulate(
-        AssetEvent(id == $room.id, attributeName == "motionCount", valueAsNumber > 0, $ts: valueTimestamp) over window:time(10m);
-        $count: count(1),
-        $latestIncrementTimestamp: max($ts);
-        $count >= 5
-    )
-    // And the latest counter increment event is newer than the recorded last presence detected time
-    AssetState(id == $room.id, attributeName == "lastPresenceDetected", valueAsNumber == null || $latestIncrementTimestamp > valueAsNumber)
-then
-    // Update the last presence detected timestamp to the latest counter increment event
-    assets.dispatch(
-            new AttributeEvent($room.getId(), "lastPresenceDetected", Values.create($latestIncrementTimestamp))
-    );
-end
 
-
-rule "Clear presence detected timestamp if motion counter was not incremented in a while"
+rule "Clear presence detected flag of a room if no motion or CO2 increase was sensed in a while"
 when
-    // A room has a motion counter
-    $room: AssetState(type == AssetType.ROOM, attributeName == "motionCount")
-    // And the presence detected flag is set
-    AssetState(id == $room.id, attributeName == "presenceDetected", valueAsBoolean == true)
-    // And no motion counter increments have been received in the last 10 minutes
+    // A room weare the presence detected flag is set
+    $room: AssetState(type == AssetType.ROOM, attributeName == "presenceDetected", valueTrue)
+    // And the motion detected flag is not set
+    AssetState(id == $room.id, attributeName == "motionDetected", valueFalse)
+    // And the room has a CO2 sensor
+    AssetState(id == $room.id, attributeName == "co2Level")
+    // And the CO2 level was not increased in the last 11 minutes
     accumulate(
-        AssetEvent(id == $room.id, attributeName == "motionCount", valueAsNumber > 0) over window:time(10m);
-        $count: count(1);
-        $count == 0
+        AssetEvent(id == $room.id, attributeName == "co2Level", valueGreaterThanOldValue) over window:time(11m);
+        $countCO2: count(1);
+        $countCO2 == 0
     )
 then
     // Clear the presence detected flag of the room

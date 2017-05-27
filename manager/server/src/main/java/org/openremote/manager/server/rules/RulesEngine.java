@@ -558,6 +558,13 @@ public class RulesEngine<T extends Ruleset> {
         }
         FactHandle fh = knowledgeSession.insert(update);
         LOG.fine("On " + this + ", fact count after insert: " + knowledgeSession.getFactCount());
+        /* TODO Not synchronous with actual session state due to active mode, and a bit too much output?
+        if (LOG.isLoggable(Level.FINEST)) {
+            for (FactHandle factHandle : knowledgeSession.getFactHandles()) {
+                LOG.fine("Fact: " + knowledgeSession.getObject(factHandle));
+            }
+        }
+        */
         return fh;
     }
 

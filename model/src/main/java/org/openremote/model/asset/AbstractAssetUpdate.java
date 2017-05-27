@@ -26,6 +26,7 @@ import org.openremote.model.attribute.AttributeType;
 import org.openremote.model.value.ArrayValue;
 import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Value;
+import org.openremote.model.value.Values;
 
 import java.util.Date;
 import java.util.Optional;
@@ -258,6 +259,64 @@ public abstract class AbstractAssetUpdate {
 
     public boolean isValueChanged() {
         return !attribute.getValue().equals(Optional.ofNullable(oldValue));
+    }
+
+    /**
+     * <code>true</code> if this value is not null and that value is null or this value is greater than that value.
+     */
+    public boolean isValueGreaterThan(Double that) {
+        Double number = getValueAsNumber();
+        return (number != null && that == null) || (number != null && number > that);
+    }
+
+    /**
+     * <code>true</code> if this value is not null and that value is null or this value is greater than that value.
+     */
+    public boolean isValueGreaterThan(Long that) {
+        return isValueGreaterThan(that != null ? (double) that : null);
+    }
+
+    /**
+     * <code>true</code> if this value is not null and the old value is null or this value is greater than old value.
+     */
+    public boolean isValueGreaterThanOldValue() {
+        return isValueGreaterThan(Values.getNumber(getOldValue()).orElse(null));
+    }
+
+    /**
+     * <code>true</code> if this value is null and that value is not null or this value is less than that value.
+     */
+    public boolean isValueLessThan(Double that) {
+        Double number = getValueAsNumber();
+        return (number == null && that != null) || (number != null && number < that);
+    }
+
+    /**
+     * <code>true</code> if this value is null and that value is not null or this value is less than that value.
+     */
+    public boolean isValueLessThan(Long that) {
+        return isValueLessThan(that != null ? (double) that : null);
+    }
+
+    /**
+     * <code>true</code> if this value is null and the old value is not null or this value is less than old value.
+     */
+    public boolean isValueLessThanOldValue() {
+        return isValueLessThan(Values.getNumber(getOldValue()).orElse(null));
+    }
+
+    /**
+     * Value is null or {@link org.openremote.model.value.BooleanValue} <code>false</code>.
+     */
+    public boolean isValueFalse() {
+        return getValueAsBoolean() == null || !getValueAsBoolean();
+    }
+
+    /**
+     * Value is not null or {@link org.openremote.model.value.BooleanValue} <code>true</code>.
+     */
+    public boolean isValueTrue() {
+        return getValueAsBoolean() != null && getValueAsBoolean();
     }
 
     public AttributeRef getAttributeRef() {

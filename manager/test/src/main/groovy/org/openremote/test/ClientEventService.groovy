@@ -20,9 +20,7 @@
 package org.openremote.test
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import org.openremote.manager.client.event.ShowFailureEvent
 import org.openremote.manager.client.event.SubscriptionFailureEvent
-import org.openremote.manager.client.i18n.ManagerMessages
 import org.openremote.manager.client.service.EventService
 import org.openremote.model.event.bus.EventBus
 import org.openremote.model.event.shared.*
