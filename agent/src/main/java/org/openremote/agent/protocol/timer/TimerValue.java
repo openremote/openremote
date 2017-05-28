@@ -19,6 +19,9 @@
  */
 package org.openremote.agent.protocol.timer;
 
+import org.openremote.model.attribute.MetaItem;
+import org.openremote.model.value.Values;
+
 import java.util.Locale;
 
 public enum TimerValue {
@@ -47,5 +50,9 @@ public enum TimerValue {
 
     public static TimerValue fromString(String value) {
         return value == null ? null : valueOf(value.toUpperCase(Locale.ROOT));
+    }
+
+    public MetaItem asMetaItem() {
+        return new MetaItem(TimerProtocol.META_TIMER_VALUE_LINK, Values.create(this.toString()));
     }
 }
