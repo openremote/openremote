@@ -130,7 +130,7 @@ then
     );
 end
 
-rule "Clear presence detected flag if motion sensor was not triggered in a while"
+rule "Clear presence detected flag if motion sensor was not triggered for 10m and CO2 is not rising for 20m"
 when
     // A room has a motion sensor
     $room: AssetState(type == AssetType.ROOM, attributeName == "motionSensor")
@@ -141,6 +141,12 @@ when
         AssetEvent(id == $room.id, attributeName == "motionSensor", valueAsBoolean == true) over window:time(10m);
         $count: count(1);
         $count == 0
+    )
+    // and no increasing CO2 in the last 20 minutes
+    accumulate(
+        CO2Rising(roomId == $room.id) over window:time(20m);
+        $countCO2: count(1);
+        $countCO2 == 0
     )
 then
     // TODO this should be 10 min after the Update rule, but it happens at irregular times, sometimes earlier, sometimes later.
