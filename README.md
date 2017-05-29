@@ -4,9 +4,7 @@
 
 ## Getting started with OpenRemote
 
-We are currently working on v3 of the OpenRemote platform.
-
-*No installable released versions are available at this time.*
+We are currently working on v3 of the OpenRemote platform. This is **alpha** software that should be used only for development.
 
 If you want to try OpenRemote v2, [read the OpenRemote v2 documentation](https://github.com/openremote/Documentation/wiki).
 
