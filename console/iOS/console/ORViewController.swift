@@ -43,8 +43,8 @@ class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMessageHa
     
     func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
         if (navigationAction.request.url?.absoluteString.contains("logout"))! {
-            decisionHandler(.allow)
             TokenManager.sharedInstance.didLogOut = true
+            decisionHandler(.cancel)
             self.dismiss(animated: false, completion: nil)
         } else {
             decisionHandler(.allow)
@@ -70,48 +70,6 @@ class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMessageHa
         decisionHandler(.allow)
     }
     
-/*
-    // just for testing purpose (ask backend to get list of notifications or send a notification to device)
-    func apiCall() {
-        UIApplication.shared.isNetworkActivityIndicatorVisible = true
-        TokenManager.sharedInstance.getAccessToken { (accessTokenResult) in
-            switch accessTokenResult {
-            case .Failure(let error) :
-                UIApplication.shared.isNetworkActivityIndicatorVisible = false
-                print(error ?? "")
-                    ErrorManager.showError(error: NSError(domain: "", code: 0, userInfo:  [
-                        NSLocalizedDescriptionKey :  NSLocalizedString("ErrorCallingapi", value: "Delete app and restart token probably expired", comment: "")
-                        ]))
-            
-            case .Success(let accessToken) :
-            guard let urlRequest = URL(string: String(Server.apiTestResource)) else { return }
-            let request = NSMutableURLRequest(url: urlRequest)
-            request.httpMethod = "POST" // post to create a notification alert, get to get a list of notification alerts
-            request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-            request.httpBody = "{\"title\" :\" notif alert title\",\"message\" : \"notif alert message\",\"appUrl\" : \"Veilig\",\"actions\": [ {\"title\" : \"Open link\" , \"type\": \"ACTION_DEEP_LINK\"},{\"title\" : \"background call\" , \"type\": \"ACTION_ACTUATOR\" , \"assetId\" : \"2E2vrICRSEa6mfzOquZzxA\", \"attributeName\" : \"targetTemp\", \"rawJson\" : \"18\" } ]}".data(using: .utf8)
-            request.addValue(String(format:"Bearer %@", accessToken!), forHTTPHeaderField: "Authorization")
-            let sessionConfiguration = URLSessionConfiguration.default
-            let session = URLSession(configuration: sessionConfiguration, delegate: self, delegateQueue : nil)
-            let reqDataTask = session.dataTask(with: request as URLRequest, completionHandler: { (data, response, error) in
-                DispatchQueue.main.async {
-                    UIApplication.shared.isNetworkActivityIndicatorVisible = false
-                    if (error != nil) {
-                        NSLog("error %@", (error! as NSError).localizedDescription)
-                        let error = NSError(domain: "", code: 0, userInfo:  [
-                            NSLocalizedDescriptionKey :  NSLocalizedString("ErrorCallingAPI", value: "Could not get data", comment: "")
-                            ])
-                        ErrorManager.showError(error: error)
-                    } else {
-                        print(response.debugDescription)
-                        _ = self.myWebView?.load(data!, mimeType: "text/html", characterEncodingName: "utf8", baseURL: URL(string:Server.apiTestResource)!)
-                    }
-                }
-            })
-            reqDataTask.resume()
-        }
-        }
-    }
-*/
     func login() {
         guard let request = URL(string: String(format:"https://%@/%@",Server.hostURL,Server.initialPath)) else { return }
         UIApplication.shared.isNetworkActivityIndicatorVisible = true
@@ -145,6 +103,7 @@ class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMessageHa
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         UIApplication.shared.isNetworkActivityIndicatorVisible = false
     }
+    
     func urlSession(_ session: URLSession, didReceive challenge: URLAuthenticationChallenge, completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
         if (challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodServerTrust) {
             if challenge.protectionSpace.host == Server.hostURL {

@@ -19,7 +19,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     var reachabilityAlert : UIAlertController?
     var reachabilityAlertShown = false
     let internetReachability = Reachability.forInternetConnection()
-     
     
     
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplicationLaunchOptionsKey: Any]?) -> Bool {
@@ -29,13 +28,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
             options: authOptions,
             completionHandler: {_, _ in })
         
-        //FIRMessaging.messaging().remoteMessageDelegate = self
-        
         FIRApp.configure()
         
         application.registerForRemoteNotifications()
         NotificationCenter.default.addObserver(self, selector: #selector(self.tokenRefreshNotification), name: NSNotification.Name.firInstanceIDTokenRefresh, object: nil)
-        
         NotificationCenter.default.addObserver(self,
                                                selector: #selector(self.reachabilityChanged(note:)),
                                                name: NSNotification.Name.reachabilityChanged,
@@ -91,12 +87,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         
     }
     
-    func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable : Any]) {
-        // Print full message.
-    }
-    
     func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable : Any], fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
-        //self.scheduleLocalNotification()
         completionHandler(UIBackgroundFetchResult.noData)
     }
     
@@ -113,9 +104,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         UIApplication.shared.isNetworkActivityIndicatorVisible = true
         switch response.actionIdentifier {
         case ActionType.ACTION_DEEP_LINK :
-            // open url
             if let urlToOpen = response.notification.request.content.userInfo["appUrl"] { // until now we are considering anchor name (without the #)
-            (self.window?.rootViewController as! ViewController).loadUrl(url: URL(string: String(format: "https://%@/%@%@", Server.hostURL, Server.navigationPath,urlToOpen as! String))!)
+                 guard let urlRequest = URL(string:String(format: "https://%@/%@%@", Server.hostURL, Server.navigationPath,urlToOpen as! String)) else { return }
+            (self.window?.rootViewController as! ViewController).loadUrl(url:urlRequest)
             NSLog("Action asked : %@",response.actionIdentifier)
             }
         case ActionType.ACTION_ACTUATOR :
@@ -187,7 +178,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         FIRMessaging.messaging().connect { (error) in
             if (error != nil)
             {
-                //NSLog("Unable to connect with FCM. \(error)")
                 if let token = FIRInstanceID.instanceID().token() {
                     NSLog("Connected to FCM. Token is %@",token as String)
                     TokenManager.sharedInstance.storeDeviceId(token: token)
@@ -198,8 +188,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
                 if let token = FIRInstanceID.instanceID().token() {
                     NSLog("Connected to FCM. Token is %@",token as String)
                     TokenManager.sharedInstance.storeDeviceId(token: token)
-                } else {
-                //    NSLog("Connected to FCM. Token is currently nil")
                 }
             }
         }
@@ -257,10 +245,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
             } else {
                 completionHandler(.performDefaultHandling, nil)
             }
-            
         }
     }
-
 }
 
 
