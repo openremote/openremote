@@ -216,7 +216,7 @@ class TokenManager:NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationD
     }
     
     func sendDeviceId() {
-        if (TokenManager.sharedInstance.deviceId != "" && TokenManager.sharedInstance.hasToken ) {
+        if (TokenManager.sharedInstance.deviceId != nil && TokenManager.sharedInstance.hasToken) {
         UIApplication.shared.isNetworkActivityIndicatorVisible = true
         self.getAccessToken { (accessTokenResult) in
             switch accessTokenResult {
