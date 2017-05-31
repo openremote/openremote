@@ -407,6 +407,63 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets.size() == 1
         assets.get(0).id == managerDemoSetup.thingId
 
+        when: "a query is executed to select a subset of attributes"
+        asset = assetStorageService.find(
+                new AssetQuery()
+                        .id(managerDemoSetup.apartment1LivingroomId)
+                        .select(new Select("co2Level", "lastMotionDetected", "motionCount").loadComplete(true))
+        )
+
+        then: "result should match"
+        asset.id == managerDemoSetup.apartment1LivingroomId
+        asset.version == 0
+        asset.createdOn.time < System.currentTimeMillis()
+        asset.name == "Living Room"
+        asset.wellKnownType == AssetType.ROOM
+        asset.parentId != null
+        asset.parentName == "Apartment 1"
+        asset.parentType == AssetType.RESIDENCE.getValue()
+        asset.realmId == keycloakDemoSetup.customerATenant.id
+        asset.tenantRealm == keycloakDemoSetup.customerATenant.realm
+        asset.tenantDisplayName == keycloakDemoSetup.customerATenant.displayName
+        asset.coordinates.length == 2
+        asset.path != null
+        asset.getAttributesList().size() == 3
+        asset.getAttribute("co2Level").isPresent()
+        asset.getAttribute("co2Level").get().meta.size() == 11
+        asset.getAttribute("lastMotionDetected").isPresent()
+        asset.getAttribute("lastMotionDetected").get().meta.size() == 4
+        asset.getAttribute("motionCount").isPresent()
+        asset.getAttribute("motionCount").get().meta.size() == 9
+
+        when: "a query is executed to select a subset of protected attributes"
+        asset = assetStorageService.find(
+                new AssetQuery()
+                        .id(managerDemoSetup.apartment1LivingroomId)
+                        .select(new Select("co2Level", "lastMotionDetected", "motionCount").loadComplete(true).filterProtected(true))
+        )
+
+        then: "result should contain only matches that are protected"
+        asset.id == managerDemoSetup.apartment1LivingroomId
+        asset.version == 0
+        asset.createdOn.time < System.currentTimeMillis()
+        asset.name == "Living Room"
+        asset.wellKnownType == AssetType.ROOM
+        asset.parentId != null
+        asset.parentName == "Apartment 1"
+        asset.parentType == AssetType.RESIDENCE.getValue()
+        asset.realmId == keycloakDemoSetup.customerATenant.id
+        asset.tenantRealm == keycloakDemoSetup.customerATenant.realm
+        asset.tenantDisplayName == keycloakDemoSetup.customerATenant.displayName
+        asset.coordinates.length == 2
+        asset.path != null
+        asset.getAttributesList().size() == 2
+        asset.getAttribute("co2Level").isPresent()
+        asset.getAttribute("co2Level").get().meta.size() == 8
+        asset.getAttribute("lastMotionDetected").isPresent()
+        asset.getAttribute("lastMotionDetected").get().meta.size() == 3
+        !asset.getAttribute("motionCount").isPresent()
+
         cleanup: "the server should be stopped"
         stopContainer(container)
     }
