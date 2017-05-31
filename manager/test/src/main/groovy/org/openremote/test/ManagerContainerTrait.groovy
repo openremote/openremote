@@ -14,6 +14,7 @@ import org.openremote.manager.server.agent.AgentService
 import org.openremote.manager.server.apps.ConsoleAppService
 import org.openremote.manager.server.asset.AssetProcessingService
 import org.openremote.manager.server.asset.AssetStorageService
+import org.openremote.manager.server.asset.AssetAttributeLinkingService
 import org.openremote.manager.server.concurrent.ManagerExecutorService
 import org.openremote.manager.server.datapoint.AssetDatapointService
 import org.openremote.manager.server.event.ClientEventService
@@ -62,6 +63,7 @@ trait ManagerContainerTrait extends ContainerTrait {
                 new RulesService(),
                 new AssetStorageService(),
                 new AssetDatapointService(),
+                new AssetAttributeLinkingService(),
                 new AssetProcessingService(),
                 *Lists.newArrayList(ServiceLoader.load(Protocol.class)),
                 new AgentService(),

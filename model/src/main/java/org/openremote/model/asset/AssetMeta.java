@@ -57,6 +57,12 @@ public enum AssetMeta implements HasUniqueResourceName {
     AGENT_LINK(ASSET_META_NAMESPACE + ":agentLink", new Access(false, false, true), ValueType.ARRAY),
 
     /**
+     * Links the attribute to another attribute, so an attribute event on the attribute triggers the same attribute
+     * event on the linked attribute.
+     */
+    ATTRIBUTE_LINK(ASSET_META_NAMESPACE + ":attributeLink", new Access(false, false, true), ValueType.OBJECT),
+
+    /**
      * A human-friendly string that can be displayed in UI instead of the raw attribute name.
      */
     LABEL(ASSET_META_NAMESPACE + ":label", new Access(true, true, true), ValueType.STRING),
