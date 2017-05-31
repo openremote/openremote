@@ -93,7 +93,7 @@ class TokenManager:NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationD
         myWebView.navigationDelegate = self;
         viewController.view.addSubview(myWebView)
         UIApplication.shared.keyWindow?.rootViewController?.present(viewController, animated: true, completion: nil)
-        guard let request = URL(string: String(format:"https://%@/%@",Server.hostURL,Server.initialPath)) else { return }
+        guard let request = URL(string: String(format:"\(Server.scheme)://%@/%@",Server.hostURL,Server.initialPath)) else { return }
         myWebView.load(URLRequest(url: request))
     }
     
@@ -256,7 +256,7 @@ class TokenManager:NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationD
     }
     
     func getAccessToken(callback: @escaping (AccesTokenResult<String>) -> ()) {
-        guard let tkurlRequest = URL(string: String(format:"https://%@/auth/realms/%@/protocol/openid-connect/token",Server.hostURL,Server.realm)) else { return }
+        guard let tkurlRequest = URL(string: String(format:"\(Server.scheme)://%@/auth/realms/%@/protocol/openid-connect/token",Server.hostURL,Server.realm)) else { return }
         let tkRequest = NSMutableURLRequest(url: tkurlRequest)
         tkRequest.addValue("application/x-www-form-urlencoded", forHTTPHeaderField:"Content-Type");
         tkRequest.httpMethod = "POST"

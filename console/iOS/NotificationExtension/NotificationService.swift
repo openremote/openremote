@@ -23,7 +23,7 @@ class NotificationService: UNNotificationServiceExtension, URLSessionDelegate {
             
             defaults?.synchronize()
 
-            guard let tkurlRequest = URL(string:String(format: "https://%@/auth/realms/%@/protocol/openid-connect/token",Server.hostURL,Server.realm))
+            guard let tkurlRequest = URL(string:String(format: "\(Server.scheme)://%@/auth/realms/%@/protocol/openid-connect/token",Server.hostURL,Server.realm))
                 else { return }
             let tkRequest = NSMutableURLRequest(url: tkurlRequest)
             tkRequest.addValue("application/x-www-form-urlencoded", forHTTPHeaderField:"Content-Type");

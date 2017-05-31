@@ -113,7 +113,7 @@ class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMessageHa
     }
 */
     func login() {
-        guard let request = URL(string: String(format:"https://%@/%@",Server.hostURL,Server.initialPath)) else { return }
+        guard let request = URL(string: String(format:"\(Server.scheme)://%@/%@",Server.hostURL,Server.initialPath)) else { return }
         UIApplication.shared.isNetworkActivityIndicatorVisible = true
         _ = self.myWebView?.load(URLRequest(url: request))
     }
@@ -197,7 +197,7 @@ class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMessageHa
                 UIApplication.shared.isNetworkActivityIndicatorVisible = false
                 ErrorManager.showError(error: error!)
             case .Success(let accessToken) :
-            guard let urlRequest = URL(string: String(String(format: "https://%@/%@/asset/%@/attribute/%@", Server.hostURL, Server.realm, assetId,attributeName))) else { return }
+            guard let urlRequest = URL(string: String(String(format: "\(Server.scheme)://%@/%@/asset/%@/attribute/%@", Server.hostURL, Server.realm, assetId,attributeName))) else { return }
             //print(urlRequest)
             let request = NSMutableURLRequest(url: urlRequest)
             request.httpMethod = "PUT"

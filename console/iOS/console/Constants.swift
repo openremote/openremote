@@ -15,15 +15,17 @@ enum AccesTokenResult<String>
 }
 
 enum Server {
-    static let hostURL = "192.168.0.177"
-    static let initialPath = String(format:"console/%@/",Server.realm)
-    static let navigationPath = String(format:"console/%@/#/",Server.realm)
+    static let scheme = "https"
+    // static let hostURL = "192.168.1.145:8080"
+    static let hostURL = "blok61.openremote.io"
+    static let initialPath = "console/\(Server.realm)/"
+    static let navigationPath = "console/\(Server.realm)/"
     static let realm = "blok61"
-    static let apiTestResource = String(format:"https://%@/%@/notification/alert",Server.hostURL,Server.realm)
-//    static let apiTestResource = String(format:"https://%@/%@/asset/user/current",Server.hostURL,Server.realm)
+    static let apiTestResource = String(format:"\(Server.scheme)://%@/%@/notification/alert",Server.hostURL,Server.realm)
+//    static let apiTestResource = String(format:"\(Server.scheme)://%@/%@/asset/user/current",Server.hostURL,Server.realm)
 
-    static let registerDeviceResource = String(format:"https://%@/%@/notification/token",Server.hostURL,Server.realm)
-    static let deleteNotifiedAlertResource = String(format:"https://%@/%@/notification/alert/",Server.hostURL,Server.realm)
+    static let registerDeviceResource = String(format:"\(Server.scheme)://%@/%@/notification/token",Server.hostURL,Server.realm)
+    static let deleteNotifiedAlertResource = String(format:"\(Server.scheme)://%@/%@/notification/alert/",Server.hostURL,Server.realm)
 }
 
 enum Client {
