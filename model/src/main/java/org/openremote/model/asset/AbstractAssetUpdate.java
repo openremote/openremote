@@ -313,7 +313,7 @@ public abstract class AbstractAssetUpdate {
     }
 
     /**
-     * Value is not null or {@link org.openremote.model.value.BooleanValue} <code>true</code>.
+     * Value is not null and {@link org.openremote.model.value.BooleanValue} <code>true</code>.
      */
     public boolean isValueTrue() {
         return getValueAsBoolean() != null && getValueAsBoolean();
