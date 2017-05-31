@@ -1,8 +1,8 @@
 # Demo setup of OpenRemote v3
 #
-# This configuration works with https://www.docker.com/products/overview#/docker_toolbox
+# This configuration works with Docker Community edition (https://docker.com/) on Windows and macOS.
 #
-# Install Docker Toolbox and execute "docker-compose -p openremote -f profile/demo.yml up"
+# Install Docker Community edition and execute "docker-compose -p openremote -f profile/demo.yml up"
 #
 version: '2'
 services:

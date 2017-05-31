@@ -53,6 +53,10 @@ public abstract class AbstractAssetUpdate {
 
     final protected AssetType type;
 
+    /**
+     * The identifiers of all parents representing the path in the tree. The first element
+     * is the root asset without a parent, the last is the identifier of this instance.
+     */
     final protected String[] pathFromRoot;
 
     final protected String parentId;
