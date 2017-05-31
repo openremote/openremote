@@ -20,7 +20,6 @@ class TokenManager:NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationD
     var viewController : TokenManagerViewController
     var myWebView : WKWebView
     var didLogOut : Bool = false
-
     
     static let sharedInstance = TokenManager()
     
@@ -92,8 +91,11 @@ class TokenManager:NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationD
         myWebView.uiDelegate = self;
         myWebView.navigationDelegate = self;
         viewController.view.addSubview(myWebView)
-        UIApplication.shared.keyWindow?.rootViewController?.present(viewController, animated: true, completion: nil)
-        guard let request = URL(string: String(format:"\(Server.scheme)://%@/%@",Server.hostURL,Server.initialPath)) else { return }
+        if (UIApplication.shared.keyWindow?.rootViewController?.presentedViewController == nil) {
+            UIApplication.shared.keyWindow?.rootViewController?.present(viewController, animated: true, completion: nil)
+        }
+        
+        guard let request = URL(string: String(format:"https://%@/%@",Server.hostURL,Server.initialPath)) else { return }
         myWebView.load(URLRequest(url: request))
     }
     
@@ -200,17 +202,20 @@ class TokenManager:NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationD
         }
     }
     
+    
     func storeDeviceId(token : String) {
         let defaults = UserDefaults(suiteName: AppGroup.entitlement)
         if deviceId == nil  || (deviceId != token){
             deviceId = token
             defaults?.set(token, forKey: DefaultsKey.deviceId)
+            TokenManager.sharedInstance.sendDeviceId()
         } else {
             deviceId = defaults?.object(forKey: DefaultsKey.deviceId) as! String?
         }
     }
     
     func sendDeviceId() {
+        if (TokenManager.sharedInstance.deviceId != nil && TokenManager.sharedInstance.hasToken) {
         UIApplication.shared.isNetworkActivityIndicatorVisible = true
         self.getAccessToken { (accessTokenResult) in
             switch accessTokenResult {
@@ -238,6 +243,7 @@ class TokenManager:NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationD
                         ErrorManager.showError(error: error)
                     } else {
                         if let httpStatus = response as? HTTPURLResponse , httpStatus.statusCode != 204 {
+                            NSLog("Device not registred ",response.debugDescription)
                             let error = NSError(domain: "", code: 0, userInfo:  [
                                 NSLocalizedDescriptionKey :  NSLocalizedString("ErrorSendingDeviceId", value: "Could not register your device for notifications", comment: "")
                                 ])
@@ -251,6 +257,7 @@ class TokenManager:NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationD
                 }
             })
             reqDataTask.resume()
+        }
         }
         }
     }
