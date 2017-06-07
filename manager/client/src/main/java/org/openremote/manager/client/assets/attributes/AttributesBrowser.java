@@ -296,7 +296,7 @@ public abstract class AttributesBrowser
 
     protected DatapointBrowser createDatapointBrowser(AssetAttribute attribute) {
         if (attribute.isStoreDatapoints() && isAttributeTypeEqualTo(attribute, ValueType.NUMBER)) {
-            return new DatapointBrowser(environment.getMessages(), 900, 200) {
+            return new DatapointBrowser(environment.getMessages(), 675, 200) {
                 @Override
                 protected void queryDatapoints(DatapointInterval interval,
                                                long timestamp,
