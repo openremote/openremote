@@ -18,27 +18,27 @@
 
         </g:HTMLPanel>
 
-        <g:HTMLPanel ui:field="mainContent"
-                     styleName="flex {widgetStyle.MainContent}">
+        <w:Form ui:field="form" addStyleNames="flex">
 
-            <g:FlowPanel
-                    styleName="layout horizontal {style.formMessages} {widgetStyle.FormMessages} success"
-                    visible="false">
-                <w:IconLabel icon="check" addStyleNames="{widgetStyle.MessagesIcon}"/>
-                <g:FlowPanel ui:field="formMessagesSuccess"/>
-            </g:FlowPanel>
+            <g:HTMLPanel styleName="flex {widgetStyle.MainContent}">
 
-            <g:FlowPanel
-                    styleName="layout horizontal {style.formMessages} {widgetStyle.FormMessages} error"
-                    visible="false">
-                <w:IconLabel icon="warning" addStyleNames="{widgetStyle.MessagesIcon}"/>
-                <g:FlowPanel ui:field="formMessagesError"/>
-            </g:FlowPanel>
+                <g:FlowPanel
+                        styleName="layout horizontal {style.formMessages} {widgetStyle.FormMessages} success"
+                        visible="false">
+                    <w:IconLabel icon="check" addStyleNames="{widgetStyle.MessagesIcon}"/>
+                    <g:FlowPanel ui:field="formMessagesSuccess"/>
+                </g:FlowPanel>
 
-            <w:Headline icon="edit"
-                        text="{managerMessages.editTenant}"/>
+                <g:FlowPanel
+                        styleName="layout horizontal {style.formMessages} {widgetStyle.FormMessages} error"
+                        visible="false">
+                    <w:IconLabel icon="warning" addStyleNames="{widgetStyle.MessagesIcon}"/>
+                    <g:FlowPanel ui:field="formMessagesError"/>
+                </g:FlowPanel>
 
-            <w:Form ui:field="form">
+                <w:Headline icon="edit"
+                            text="{managerMessages.editTenant}"/>
+
 
                 <w:FormGroup ui:field="displayNameGroup">
                     <w:label>
@@ -73,6 +73,9 @@
                     </w:field>
                 </w:FormGroup>
 
+            </g:HTMLPanel>
+
+            <g:FlowPanel styleName="flex-none layout vertical {widgetStyle.MainContent}">
                 <w:FormGroup>
                     <w:field>
                         <w:FormField>
@@ -86,10 +89,9 @@
                         </w:FormField>
                     </w:field>
                 </w:FormGroup>
+            </g:FlowPanel>
 
-            </w:Form>
-
-        </g:HTMLPanel>
+        </w:Form>
     </g:HTMLPanel>
 
 </ui:UiBinder>

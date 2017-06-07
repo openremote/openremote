@@ -138,6 +138,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
     protected AgentService agentService;
     protected AssetStorageService assetStorageService;
     protected AssetDatapointService assetDatapointService;
+    protected AssetAttributeLinkingService assetAttributeLinkingService;
     protected MessageBrokerService messageBrokerService;
     protected ClientEventService clientEventService;
     // Used in testing to detect if initial/startup processing has completed
@@ -153,6 +154,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
         agentService = container.getService(AgentService.class);
         assetStorageService = container.getService(AssetStorageService.class);
         assetDatapointService = container.getService(AssetDatapointService.class);
+        assetAttributeLinkingService = container.getService(AssetAttributeLinkingService.class);
         messageBrokerService = container.getService(MessageBrokerService.class);
         clientEventService = container.getService(ClientEventService.class);
 
@@ -196,6 +198,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
         processors.add(rulesService);
         processors.add(assetStorageService);
         processors.add(assetDatapointService);
+        processors.add(assetAttributeLinkingService);
 
         container.getService(MessageBrokerSetupService.class).getContext().addRoutes(this);
     }

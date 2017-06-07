@@ -221,6 +221,8 @@ public interface ManagerMessages extends Messages {
 
     String value();
 
+    String noValue();
+
     String metaItems();
 
     String or();
@@ -282,6 +284,8 @@ public interface ManagerMessages extends Messages {
     String editAssetRuleset();
 
     String attributeWriteSent(String name);
+
+    String duplicateAttributeName();
 
     String invalidAttributeName();
 
@@ -386,4 +390,6 @@ public interface ManagerMessages extends Messages {
     String eventsRemoved();
 
     String settingsSaved();
+
+    String noAttributes();
 }

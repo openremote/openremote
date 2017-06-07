@@ -153,6 +153,20 @@ public class AssetViewActivity
         view.flyTo(asset.getCoordinates());
     }
 
+    @Override
+    public void enableLiveUpdates(boolean enable) {
+        if (attributesBrowser != null) {
+            attributesBrowser.subscribeToLiveUpdates(enable);
+        }
+    }
+
+    @Override
+    public void refresh() {
+        if (attributesBrowser != null) {
+            attributesBrowser.readAllAttributeValues();
+        }
+    }
+
     protected void writeAssetToView() {
         view.setAssetEditHistoryToken(environment.getPlaceHistoryMapper().getToken(new AssetEditPlace(assetId)));
         view.setName(asset.getName());
@@ -200,5 +214,6 @@ public class AssetViewActivity
         };
         view.setAttributesBrowser(attributesBrowser);
         attributesBrowser.build();
+        attributesBrowser.subscribeToLiveUpdates(view.isLiveUpdatesEnabled());
     }
 }

@@ -312,8 +312,7 @@ public class Asset implements IdentifiableEntity {
         }
     }
 
-    public Asset(boolean filterProtectedAttributes,
-                 String id, long version, Date createdOn, String name, String type,
+    public Asset(String id, long version, Date createdOn, String name, String type,
                  String parentId, String parentName, String parentType,
                  String realmId, String tenantRealm, String tenantDisplayName,
                  String[] path, ObjectValue attributes) {
@@ -327,15 +326,7 @@ public class Asset implements IdentifiableEntity {
         this.tenantRealm = tenantRealm;
         this.tenantDisplayName = tenantDisplayName;
         this.path = path;
-
-        if (filterProtectedAttributes && attributes != null) {
-            this.attributes = attributesToJson(
-                filterProtectedAttributes(attributesFromJson(attributes, id))
-                    .collect(Collectors.toList())
-            ).orElse(Values.createObject());
-        } else {
-            this.attributes = attributes;
-        }
+        this.attributes = attributes;
     }
 
 

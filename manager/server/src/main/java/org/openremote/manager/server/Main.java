@@ -28,6 +28,7 @@ import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.server.agent.AgentService;
 import org.openremote.manager.server.apps.ConsoleAppService;
+import org.openremote.manager.server.asset.AssetAttributeLinkingService;
 import org.openremote.manager.server.asset.AssetProcessingService;
 import org.openremote.manager.server.asset.AssetStorageService;
 import org.openremote.manager.server.datapoint.AssetDatapointService;
@@ -65,6 +66,7 @@ public class Main {
                     new RulesService(),
                     new AssetStorageService(),
                     new AssetDatapointService(),
+                    new AssetAttributeLinkingService(),
                     new AssetProcessingService()
                 ));
                 ServiceLoader.load(Protocol.class).forEach(this::add);

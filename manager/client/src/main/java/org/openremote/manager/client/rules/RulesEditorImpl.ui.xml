@@ -20,6 +20,8 @@
         }
 
         .rulesTextArea {
+            margin: 0 !important;
+            padding: 0 !important;
         }
     </ui:style>
 
@@ -34,8 +36,7 @@
         <w:second>
             <g:HTMLPanel styleName="flex layout vertical">
 
-                <g:HTMLPanel
-                        styleName="layout horizontal center end-justified {style.rulesControls} {widgetStyle.SecondaryNavHorizontal}">
+                <div class="layout horizontal center end-justified {style.rulesControls} {widgetStyle.SecondaryNavHorizontal}">
 
                     <w:Hyperlink
                             addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem}"
@@ -43,29 +44,30 @@
                             targetHistoryToken="globalRules:"
                             text="{managerMessages.manageGlobalRulesets}"/>
 
-                </g:HTMLPanel>
+                </div>
 
-                <g:HTMLPanel styleName="flex layout vertical {widgetStyle.MainContent}">
+                <w:Form ui:field="form" addStyleNames="flex">
 
-                    <w:Headline ui:field="headline" icon="edit"/>
+                    <g:HTMLPanel styleName="flex-none layout vertical {widgetStyle.MainContent}">
 
-                    <g:FlowPanel
-                            styleName="flex-none layout horizontal {style.formMessages} {widgetStyle.FormMessages} success"
-                            visible="false">
-                        <w:IconLabel icon="check"
-                                     addStyleNames="{widgetStyle.MessagesIcon}"/>
-                        <g:FlowPanel ui:field="formMessagesSuccess"/>
-                    </g:FlowPanel>
+                        <w:Headline ui:field="headline" icon="edit"/>
 
-                    <g:FlowPanel
-                            styleName="flex-none layout horizontal {style.formMessages} {widgetStyle.FormMessages} error"
-                            visible="false">
-                        <w:IconLabel icon="warning"
-                                     addStyleNames="{widgetStyle.MessagesIcon}"/>
-                        <g:FlowPanel ui:field="formMessagesError"/>
-                    </g:FlowPanel>
+                        <g:FlowPanel
+                                styleName="flex-none layout horizontal {style.formMessages} {widgetStyle.FormMessages} success"
+                                visible="false">
+                            <w:IconLabel icon="check"
+                                         addStyleNames="{widgetStyle.MessagesIcon}"/>
+                            <g:FlowPanel ui:field="formMessagesSuccess"/>
+                        </g:FlowPanel>
 
-                    <w:Form ui:field="form" addStyleNames="flex">
+                        <g:FlowPanel
+                                styleName="flex-none layout horizontal {style.formMessages} {widgetStyle.FormMessages} error"
+                                visible="false">
+                            <w:IconLabel icon="warning"
+                                         addStyleNames="{widgetStyle.MessagesIcon}"/>
+                            <g:FlowPanel ui:field="formMessagesError"/>
+                        </g:FlowPanel>
+
                         <w:FormGroup ui:field="nameGroup">
                             <w:label>
                                 <w:FormLabel text="{managerMessages.rulesetName}"/>
@@ -103,11 +105,15 @@
                         </w:FormGroup>
 
                         <assetBrowser:AssetSelector ui:field="templateAssetSelector"/>
+                    </g:HTMLPanel>
 
+                    <g:HTMLPanel addStyleNames="flex layout vertical {style.rulesTextArea} {widgetStyle.MainContent}">
                         <w:FormTextArea ui:field="rulesTextArea"
                                         spellcheck="false"
-                                        addStyleNames="{style.rulesTextArea} flex"/>
+                                        addStyleNames="flex"/>
+                    </g:HTMLPanel>
 
+                    <g:HTMLPanel addStyleNames="flex-none layout vertical {widgetStyle.MainContent}">
                         <w:FormGroup ui:field="submitButtonGroup">
                             <w:field>
                                 <w:FormField>
@@ -126,10 +132,9 @@
                                 </w:FormField>
                             </w:field>
                         </w:FormGroup>
+                    </g:HTMLPanel>
 
-                    </w:Form>
-
-                </g:HTMLPanel>
+                </w:Form>
 
             </g:HTMLPanel>
 

@@ -268,5 +268,8 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
             assert updatesPassedDatapointService[0].error == null
             assert updatesPassedDatapointService[0].processingStatus == AssetState.ProcessingStatus.COMPLETED
         }
+
+        cleanup: "the server should be stopped"
+        stopContainer(container)
     }
 }

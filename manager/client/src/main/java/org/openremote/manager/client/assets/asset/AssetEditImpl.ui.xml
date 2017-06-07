@@ -23,6 +23,11 @@
             margin: 0 0 1em 1em;
             height: 17em;
         }
+
+        .newAttributeFormGroup {
+
+
+        }
     </ui:style>
 
     <ui:style field="attributesEditorStyle"
@@ -49,7 +54,7 @@
 
     <w:FlexSplitPanel ui:field="splitPanel"
                       handleStyle="{widgetStyle.SplitPanelHandle}"
-                      firstPanelWidth="250"
+                      firstPanelWidth="200"
                       firstPanelMinWidth="0"
                       secondPanelMinWidth="400">
 
@@ -60,8 +65,7 @@
 
         <w:second>
             <g:HTMLPanel styleName="flex layout vertical">
-                <g:HTMLPanel
-                        styleName="layout horizontal center end-justified {widgetStyle.SecondaryNavHorizontal}">
+                <div class="layout horizontal center end-justified {widgetStyle.SecondaryNavHorizontal}">
 
                     <!--
                                         <w:Hyperlink
@@ -86,40 +90,42 @@
                             targetHistoryToken="assetEdit:"
                             text="{managerMessages.createAsset}"/>
 
-                </g:HTMLPanel>
+                </div>
 
-                <div class="flex layout vertical {widgetStyle.MainContent}">
+                <w:Form ui:field="form" addStyleNames="flex">
 
-                    <div class="flex-none layout horizontal">
+                    <g:HTMLPanel styleName="flex-none layout vertical {widgetStyle.MainContent}">
 
-                        <div class="layout vertical">
+                        <div class="flex-none layout horizontal">
 
-                            <w:Headline ui:field="headline" icon="edit"/>
+                            <div class="layout vertical">
 
-                            <g:FlowPanel
-                                    styleName="flex-none layout horizontal {style.formMessages} {widgetStyle.FormMessages} success"
-                                    visible="false">
-                                <w:IconLabel icon="check"
-                                             addStyleNames="{widgetStyle.MessagesIcon}"/>
-                                <g:FlowPanel ui:field="formMessagesSuccess"/>
-                            </g:FlowPanel>
+                                <w:Headline ui:field="headline" icon="edit"/>
 
-                            <g:FlowPanel
-                                    styleName="flex-none layout horizontal {style.formMessages} {widgetStyle.FormMessages} error"
-                                    visible="false">
-                                <w:IconLabel icon="warning"
-                                             addStyleNames="{widgetStyle.MessagesIcon}"/>
-                                <g:FlowPanel ui:field="formMessagesError"/>
-                            </g:FlowPanel>
+                                <g:FlowPanel
+                                        styleName="flex-none layout horizontal {style.formMessages} {widgetStyle.FormMessages} success"
+                                        visible="false">
+                                    <w:IconLabel icon="check"
+                                                 addStyleNames="{widgetStyle.MessagesIcon}"/>
+                                    <g:FlowPanel ui:field="formMessagesSuccess"/>
+                                </g:FlowPanel>
 
-                            <w:Form ui:field="form">
+                                <g:FlowPanel
+                                        styleName="flex-none layout horizontal {style.formMessages} {widgetStyle.FormMessages} error"
+                                        visible="false">
+                                    <w:IconLabel icon="warning"
+                                                 addStyleNames="{widgetStyle.MessagesIcon}"/>
+                                    <g:FlowPanel ui:field="formMessagesError"/>
+                                </g:FlowPanel>
+
                                 <w:FormGroup ui:field="nameGroup">
                                     <w:label>
                                         <w:FormLabel text="{managerMessages.assetName}"/>
                                     </w:label>
                                     <w:field>
                                         <w:FormField addStyleNames="larger">
-                                            <w:FormInputText ui:field="nameInput" addStyleNames="flex {style.nameInput}"/>
+                                            <w:FormInputText ui:field="nameInput"
+                                                             addStyleNames="flex {style.nameInput}"/>
                                         </w:FormField>
                                     </w:field>
                                 </w:FormGroup>
@@ -163,18 +169,14 @@
                                         </w:FormGroupActions>
                                     </w:actions>
                                 </w:FormGroup>
-                            </w:Form>
+                            </div>
 
+                            <w:MapWidget ui:field="mapWidget"
+                                         addStyleNames="flex self-end {style.mapWidget} {widgetStyle.ItemWithBorder}"/>
                         </div>
 
-                        <w:MapWidget ui:field="mapWidget"
-                                     addStyleNames="flex self-end {style.mapWidget} {widgetStyle.ItemWithBorder}"/>
-                    </div>
-
-                    <g:HTMLPanel styleName="flex-none layout horizontal">
-                        <w:Form ui:field="attributesForm" addStyleNames="flex">
-
-                            <w:FormGroup ui:field="typeGroup">
+                        <div class="layout horizontal center wrap">
+                            <w:FormGroup ui:field="typeGroup" addStyleNames="flex">
                                 <w:label>
                                     <w:FormLabel text="{managerMessages.assetType}"/>
                                 </w:label>
@@ -192,35 +194,56 @@
                                     <g:Label ui:field="customTypeInfoLabel" visible="false"
                                              text="{managerMessages.enterCustomAssetType}"/>
                                 </w:info>
-
                             </w:FormGroup>
-
-                            <g:FlowPanel ui:field="attributesEditorContainer"/>
-
-                        </w:Form>
-                    </g:HTMLPanel>
-
-                    <g:HTMLPanel styleName="flex-none layout horizontal">
-                        <w:Form ui:field="submitForm" addStyleNames="flex">
-                            <w:FormGroup ui:field="submitButtonGroup">
+                            <w:FormGroup ui:field="newAttributeFormGroup" addStyleNames="flex secondary">
+                                <w:label>
+                                    <w:FormLabel text="{managerMessages.newAttribute}"
+                                                 icon="plus-square"
+                                                 addStyleNames="larger"/>
+                                </w:label>
                                 <w:field>
                                     <w:FormField>
-                                        <w:FormButton ui:field="updateButton" primary="true"
-                                                      text="{managerMessages.updateAsset}" visible="false"
-                                                      icon="save"/>
-                                        <w:FormButton ui:field="createButton" primary="true"
-                                                      text="{managerMessages.createAsset}" visible="false"
-                                                      icon="save"/>
-                                        <w:FormButton ui:field="deleteButton" danger="true"
-                                                      text="{managerMessages.deleteAsset}" visible="false"
-                                                      icon="trash"/>
+                                        <w:FormInputText ui:field="newAttributeNameInputText"
+                                                         addStyleNames="flex"/>
+                                        <w:FormListBox ui:field="newAttributeTypeListBox"/>
                                     </w:FormField>
                                 </w:field>
+                                <w:actions>
+                                    <w:FormGroupActions>
+                                        <w:FormButton ui:field="addAttributeButton"
+                                                      text="{managerMessages.addAttribute}"
+                                                      icon="plus"/>
+                                    </w:FormGroupActions>
+                                </w:actions>
                             </w:FormGroup>
-                        </w:Form>
+                        </div>
+
                     </g:HTMLPanel>
 
-                </div>
+                    <g:FlowPanel ui:field="attributesEditorContainer"
+                                 styleName="flex layout vertical {widgetStyle.MainContent} {widgetStyle.FormList}"/>
+
+                    <g:HTMLPanel styleName="flex-none layout vertical {widgetStyle.MainContent}">
+
+                        <w:FormGroup ui:field="submitButtonGroup">
+                            <w:field>
+                                <w:FormField>
+                                    <w:FormButton ui:field="updateButton" primary="true"
+                                                  text="{managerMessages.updateAsset}" visible="false"
+                                                  icon="save"/>
+                                    <w:FormButton ui:field="createButton" primary="true"
+                                                  text="{managerMessages.createAsset}" visible="false"
+                                                  icon="save"/>
+                                    <w:FormButton ui:field="deleteButton" danger="true"
+                                                  text="{managerMessages.deleteAsset}" visible="false"
+                                                  icon="trash"/>
+                                </w:FormField>
+                            </w:field>
+                        </w:FormGroup>
+
+                    </g:HTMLPanel>
+
+                </w:Form>
 
             </g:HTMLPanel>
         </w:second>

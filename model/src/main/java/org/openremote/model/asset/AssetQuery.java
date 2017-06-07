@@ -30,8 +30,8 @@ public class AssetQuery<CHILD extends AssetQuery<CHILD>> {
 
     public static class Select {
         public boolean loadComplete;
-        // TODO: Filtering attributes can be moved into database functions
         public boolean filterProtected;
+        public String[] attributeNames;
 
         public Select() {
         }
@@ -45,6 +45,10 @@ public class AssetQuery<CHILD extends AssetQuery<CHILD>> {
             this.filterProtected = filterProtected;
         }
 
+        public Select(String... attributeNames) {
+            this.attributeNames = attributeNames;
+        }
+
         public Select loadComplete(boolean loadComplete) {
             this.loadComplete = loadComplete;
             return this;
@@ -52,6 +56,11 @@ public class AssetQuery<CHILD extends AssetQuery<CHILD>> {
 
         public Select filterProtected(boolean filterProtected) {
             this.filterProtected = filterProtected;
+            return this;
+        }
+
+        public Select attributesByName(String... attributeNames) {
+            this.attributeNames = attributeNames;
             return this;
         }
     }

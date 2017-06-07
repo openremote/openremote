@@ -46,6 +46,7 @@ class TimerProtocolTest extends Specification implements ManagerContainerTrait {
 
             apartment1 = assetStorageService.find(managerDemoSetup.apartment1Id, true)
             sceneAgent = assetStorageService.find(new AssetQuery().name("Scene Agent").type(AssetType.AGENT).parent(managerDemoSetup.apartment1Id))
+            sceneAgent = assetStorageService.find(sceneAgent.id, true)
             assert apartment1.getAttribute("awaySceneTimeFRIDAY").get().getValueAsString().orElse("") == "08:30:00"
             assert sceneAgent != null
         }
@@ -155,6 +156,16 @@ class TimerProtocolTest extends Specification implements ManagerContainerTrait {
             assert triggers[0] instanceof CronTrigger
             def cronTrigger = (CronTrigger)triggers[0]
             assert cronTrigger.cronExpression == "0 0 4 ? * MON,FRI *"
+        }
+
+        when: "a timer action is executed"
+        timerProtocol.doTriggerAction(sceneAgent.getAttribute("awaySceneFriday").get())
+
+        then: "the linked macro should have been executed"
+        conditions.eventually {
+            apartment1 = assetStorageService.find(apartment1.id, true)
+            apartment1.getAttribute("awayScene").get().getValueAsString() == "COMPLETED"
+            apartment1.getAttribute("lastExecutedScene").get().getValueAsString() == "AWAY"
         }
 
         when: "a trigger is deleted"

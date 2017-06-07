@@ -32,11 +32,9 @@ import org.openremote.model.asset.ReadAssetAttributesEvent;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeExecuteStatus;
 import org.openremote.model.attribute.AttributeState;
-import org.openremote.model.attribute.AttributeType;
 import org.openremote.model.datapoint.DatapointInterval;
 import org.openremote.model.datapoint.NumberDatapoint;
 import org.openremote.model.event.bus.EventRegistration;
-import org.openremote.model.util.TextUtil;
 import org.openremote.model.value.ValueType;
 
 import java.util.ArrayList;
@@ -79,15 +77,6 @@ public abstract class AttributesBrowser
                 }
             }
         );
-    }
-
-    @Override
-    protected void createAttributeGroups() {
-        if (getAttributes().size() > 0) {
-            liveUpdatesGroup = createLiveUpdatesGroup();
-            container.getPanel().add(liveUpdatesGroup);
-        }
-        super.createAttributeGroups();
     }
 
     @Override
@@ -215,37 +204,7 @@ public abstract class AttributesBrowser
 
     /* ####################################################################### */
 
-    protected FormGroup createLiveUpdatesGroup() {
-        FormGroup formGroup = new FormGroup();
-
-        FormLabel formLabel = new FormLabel(environment.getMessages().showLiveUpdates());
-        formLabel.addStyleName("larger");
-        formGroup.addFormLabel(formLabel);
-
-        FormField formField = new FormField();
-        formGroup.addFormField(formField);
-
-        FormCheckBox liveUpdatesCheckBox = new FormCheckBox();
-        liveUpdatesCheckBox.addValueChangeHandler(event -> subscribeToLiveUpdates(event.getValue()));
-        formField.add(liveUpdatesCheckBox);
-
-        if (attributes.size() > 0) {
-            FormGroupActions formGroupActions = new FormGroupActions();
-
-            FormButton readAllButton = new FormButton();
-            readAllButton.setText(environment.getMessages().refreshAllAttributes());
-            readAllButton.addClickHandler(event -> readAllAttributeValues());
-            formGroupActions.add(readAllButton);
-
-            readButtons.add(readAllButton);
-
-            formGroup.addFormGroupActions(formGroupActions);
-        }
-
-        return formGroup;
-    }
-
-    protected void subscribeToLiveUpdates(boolean enable) {
+    public void subscribeToLiveUpdates(boolean enable) {
         for (FormButton readButton : readButtons) {
             readButton.setEnabled(!enable);
         }
@@ -266,7 +225,7 @@ public abstract class AttributesBrowser
         }
     }
 
-    protected void readAllAttributeValues() {
+    public void readAllAttributeValues() {
         environment.getEventService().dispatch(
             new ReadAssetAttributesEvent(asset.getId())
         );
@@ -337,7 +296,7 @@ public abstract class AttributesBrowser
 
     protected DatapointBrowser createDatapointBrowser(AssetAttribute attribute) {
         if (attribute.isStoreDatapoints() && isAttributeTypeEqualTo(attribute, ValueType.NUMBER)) {
-            return new DatapointBrowser(environment.getMessages(), 580, 220) {
+            return new DatapointBrowser(environment.getMessages(), 675, 200) {
                 @Override
                 protected void queryDatapoints(DatapointInterval interval,
                                                long timestamp,

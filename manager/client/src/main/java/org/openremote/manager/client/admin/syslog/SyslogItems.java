@@ -31,7 +31,7 @@ public class SyslogItems extends FlowPanel {
 
     public SyslogItems(IsWidget emptyLabel) {
         this.emptyLabel = emptyLabel;
-        setStyleName("flex layout vertical or-FormList");
+        setStyleName("flex layout vertical or-MainContent or-FormList");
         getElement().getStyle().setOverflow(Style.Overflow.AUTO);
         add(emptyLabel);
     }

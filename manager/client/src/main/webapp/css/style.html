@@ -91,7 +91,9 @@
     }
 
     .or-LeftGradient::before {
-        background-image: -webkit-linear-gradient(right, rgba(255, 255, 255, 0) 0%, rgba(0, 0, 0, 0.5) 100%);
+        background: -moz-linear-gradient(right, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0) 100%);
+        background: -webkit-linear-gradient(right, rgba(0,0,0,0.65) 0%,rgba(0,0,0,0) 100%);
+        background: linear-gradient(to left, rgba(0,0,0,0.65) 0%,rgba(0,0,0,0) 100%);
         content: "\00a0";
         height: 100%;
         position: absolute;
@@ -101,8 +103,20 @@
     }
 
     .or-MainContent {
+        padding: .8em .8em 0 .8em
+    }
+
+    .or-MainContent.scrollable {
         overflow: auto;
-        padding: 0.8em;
+    }
+
+    .or-MainContent.scrollable div {
+        -webkit-flex-shrink:0;
+        flex-shrink:0;
+    }
+
+    .or-MainContent:first-child {
+        z-index: 0;
     }
 
     .or-PushButton,
@@ -293,6 +307,7 @@
     .or-FormGroupExtension .or-FormSectionLabel {
         margin: 0.8em 0 0.4em 0;
         font-size: inherit;
+        font-weight: 600;
     }
 
     .or-FormLabel {
@@ -392,8 +407,8 @@
     .or-FormTextArea {
         font-size: 1em;
         font-family: monospace;
-        padding: 0.4em;
-        margin: 0 0 0.4em 0;
+        padding: 0.4em 1.4em;
+        margin: 0;
         white-space: pre;
         resize: none;
     }
@@ -529,13 +544,16 @@
     }
 
     .or-FormList {
-        padding: 0.4em 0;
+        overflow: auto;
+    }
 
+    .or-FormList .or-FormListItem:last-child {
+        margin-bottom: 1.2em;
     }
 
     .or-FormListItem {
-        border-radius: 0.4em;
-        margin: 0.4em 0.8em;
+        border-radius: 0.3em;
+        margin: 0.4em;
         padding: 0.4em;
     }
 

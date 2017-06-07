@@ -39,7 +39,6 @@ import org.openremote.model.Constants;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.asset.*;
 import org.openremote.model.attribute.AttributeEvent;
-import org.openremote.model.util.Pair;
 import org.openremote.model.value.Value;
 import org.postgresql.util.PGobject;
 
@@ -62,6 +61,22 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     protected PersistenceService persistenceService;
     protected ManagerIdentityService managerIdentityService;
     protected ClientEventService clientEventService;
+    protected static final String protectedAssetMetaClause; // Maybe these should be in the DB
+
+    static {
+        StringBuilder sb = new StringBuilder("('");
+        sb.append(
+            String.join(
+                "','",
+                Arrays.stream(AssetMeta.values())
+                    .filter(am -> am.getAccess().protectedRead)
+                    .map(AssetMeta::getUrn)
+                    .toArray(String[]::new)
+            )
+        );
+        sb.append("')");
+        protectedAssetMetaClause = sb.toString();
+    }
 
     @Override
     public void init(Container container) throws Exception {
@@ -329,16 +344,17 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
     protected List<ServerAsset> findAll(EntityManager em, AssetQuery query) {
         StringBuilder sb = new StringBuilder();
-        sb.append(buildSelectString(query, false));
+        List<ParameterBinder> binders = new ArrayList<>();
+        sb.append(buildSelectString(query, false, binders));
         sb.append(buildFromString(query));
-        Pair<String, List<ParameterBinder>> whereClause = buildWhereClause(query);
-        sb.append(whereClause.key);
+        String whereClause = buildWhereClause(query, binders);
+        sb.append(whereClause);
         sb.append(buildOrderByString(query));
         return em.unwrap(Session.class).doReturningWork(new AbstractReturningWork<List<ServerAsset>>() {
             @Override
             public List<ServerAsset> execute(Connection connection) throws SQLException {
                 PreparedStatement st = connection.prepareStatement(sb.toString());
-                for (ParameterBinder binder : whereClause.value) {
+                for (ParameterBinder binder : binders) {
                     binder.accept(st);
                 }
                 try (ResultSet rs = st.executeQuery()) {
@@ -354,16 +370,17 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
     protected List<String> findAllIdentifiersOnly(EntityManager em, AssetQuery query) {
         StringBuilder sb = new StringBuilder();
-        sb.append(buildSelectString(query, true));
+        List<ParameterBinder> binders = new ArrayList<>();
+        sb.append(buildSelectString(query, true, binders));
         sb.append(buildFromString(query));
-        Pair<String, List<ParameterBinder>> whereClause = buildWhereClause(query);
-        sb.append(whereClause.key);
+        String whereClause = buildWhereClause(query, binders);
+        sb.append(whereClause);
         sb.append(buildOrderByString(query));
         return em.unwrap(Session.class).doReturningWork(new AbstractReturningWork<List<String>>() {
             @Override
             public List<String> execute(Connection connection) throws SQLException {
                 PreparedStatement st = connection.prepareStatement(sb.toString());
-                for (ParameterBinder binder : whereClause.value) {
+                for (ParameterBinder binder : binders) {
                     binder.accept(st);
                 }
                 try (ResultSet rs = st.executeQuery()) {
@@ -377,7 +394,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         });
     }
 
-    protected String buildSelectString(AssetQuery query, boolean identifiersOnly) {
+    protected String buildSelectString(AssetQuery query, boolean identifiersOnly, List<ParameterBinder> binders) {
         StringBuilder sb = new StringBuilder();
 
         sb.append("select ");
@@ -396,13 +413,65 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         sb.append("A.REALM_ID as REALM_ID, R.NAME as TENANT_NAME, RA.VALUE as TENANT_DISPLAY_NAME, ");
         sb.append("A.LOCATION as LOCATION");
 
-        if (query.select != null && query.select.loadComplete) {
-            sb.append(", get_asset_tree_path(A.ID) as PATH ");
-            sb.append(", A.ATTRIBUTES as ATTRIBUTES");
+        // TODO: Decide on behaviour of select query
+        // AssetPermissionsTest::Access assets as testuser3 assumes loadComplete(false) & filterProtected(true) returns no attributes
+        // But need to be able to select attributes without loading the path as well
+        if (query.select == null || !query.select.loadComplete) {
+            // Default to not returning path or attributes
+            sb.append(", NULL as PATH, NULL as ATTRIBUTES ");
         } else {
-            sb.append(", NULL as PATH, NULL as ATTRIBUTES");
+            sb.append(query.select.loadComplete ? ", get_asset_tree_path(A.ID) as PATH " : ", NULL as PATH ");
+            if (query.select.attributeNames != null || query.select.filterProtected) {
+                sb.append(", (");
+                sb.append(buildAttributeFilter(query.select.attributeNames, query.select.filterProtected, binders));
+                sb.append(") AS ATTRIBUTES ");
+            } else {
+                sb.append(", A.ATTRIBUTES as ATTRIBUTES ");
+            }
         }
 
+        return sb.toString();
+    }
+
+    protected String buildAttributeFilter(String[] attributeNames, boolean filterProtected, List<ParameterBinder> binders) {
+        StringBuilder sb = new StringBuilder();
+
+        if (filterProtected) {
+            // Use sub-select for processing the attributes the meta inside each attribute is replaced with filtered meta
+            sb.append("select json_object_agg(AX.key, jsonb_set(AX.value, '{meta}', AMF.value, false)) from jsonb_each(A.attributes) as AX ");
+            // Use implicit inner join on meta array set to only select attributes with a protected=true meta item
+            sb.append(", jsonb_array_elements(AX.VALUE #> '{meta}') as AM ");
+            // Use subquery to filter out meta items not marked as protected
+            sb.append("INNER JOIN LATERAL (");
+            sb.append("select jsonb_agg(AM.value) AS VALUE from jsonb_array_elements(AX.VALUE #> '{meta}') as AM ");
+            sb.append("where AM.VALUE #>> '{name}' IN ");
+            sb.append(protectedAssetMetaClause);
+            sb.append(") as AMF ON true");
+        } else {
+            sb.append("select json_object_agg(AX.key, AX.value) from jsonb_each(A.attributes) as AX ");
+        }
+
+        sb.append(" where true ");
+
+        if (attributeNames != null && attributeNames.length > 0) {
+            sb.append(" AND AX.key IN (");
+            for (int i = 0; i < attributeNames.length; i++) {
+                sb.append(i == attributeNames.length - 1 ? "?" : "?, ");
+                final String attributeName = attributeNames[i];
+                final int pos = binders.size() + 1;
+                binders.add(st -> st.setString(pos, attributeName));
+            }
+            sb.append(") ");
+        }
+
+        if (filterProtected) {
+            // Filter protected Attributes
+            AssetQuery.AttributeMetaPredicate protectedPredicate =
+                new AssetQuery.AttributeMetaPredicate()
+                    .itemName(AssetMeta.PROTECTED)
+                    .itemValue(new AssetQuery.BooleanPredicate(true));
+            sb.append(buildAttributeMetaFilter(protectedPredicate, binders));
+        }
         return sb.toString();
     }
 
@@ -463,10 +532,8 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         return sb.toString();
     }
 
-    protected Pair<String, List<ParameterBinder>> buildWhereClause(AssetQuery query) {
+    protected String buildWhereClause(AssetQuery query, List<ParameterBinder> binders) {
         StringBuilder sb = new StringBuilder();
-        List<ParameterBinder> binders = new ArrayList<>();
-
         sb.append(" where true ");
 
         if (query.id != null) {
@@ -528,61 +595,66 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         }
 
         if (query.attributeMetaPredicate != null) {
-            StringBuilder attributeMetaBuilder = new StringBuilder();
+            String attributeMetaFilter = buildAttributeMetaFilter(query.attributeMetaPredicate, binders);
 
-            if (query.attributeMetaPredicate.itemNamePredicate != null) {
-                attributeMetaBuilder.append(query.attributeMetaPredicate.itemNamePredicate.caseSensitive
-                    ? " and AM.VALUE #>> '{name}' "
-                    : " and upper(AM.VALUE #>> '{name}') "
-                );
-                attributeMetaBuilder.append(query.attributeMetaPredicate.itemNamePredicate.match == AssetQuery.Match.EXACT ? " = ? " : " like ? ");
-                final int pos = binders.size() + 1;
-                binders.add(st -> st.setString(pos, query.attributeMetaPredicate.itemNamePredicate.prepareValue()));
-            }
-            if (query.attributeMetaPredicate.itemValuePredicate != null) {
-                if (query.attributeMetaPredicate.itemValuePredicate instanceof AssetQuery.StringPredicate) {
-                    AssetQuery.StringPredicate stringPredicate = (AssetQuery.StringPredicate) query.attributeMetaPredicate.itemValuePredicate;
-                    attributeMetaBuilder.append(stringPredicate.caseSensitive
-                        ? " and AM.VALUE #>> '{value}' "
-                        : " and upper(AM.VALUE #>> '{value}') "
-                    );
-                    attributeMetaBuilder.append(stringPredicate.match == AssetQuery.Match.EXACT ? " = ? " : " like ? ");
-                    final int pos = binders.size() + 1;
-                    binders.add(st -> st.setString(pos, stringPredicate.prepareValue()));
-                } else if (query.attributeMetaPredicate.itemValuePredicate instanceof AssetQuery.BooleanPredicate) {
-                    AssetQuery.BooleanPredicate booleanPredicate = (AssetQuery.BooleanPredicate) query.attributeMetaPredicate.itemValuePredicate;
-                    attributeMetaBuilder.append(" and AM.VALUE #> '{value}' = to_jsonb(").append(booleanPredicate.predicate).append(") ");
-                } else if (query.attributeMetaPredicate.itemValuePredicate instanceof AssetQuery.StringArrayPredicate) {
-                    AssetQuery.StringArrayPredicate stringArrayPredicate = (AssetQuery.StringArrayPredicate) query.attributeMetaPredicate.itemValuePredicate;
-                    for (int i = 0; i < stringArrayPredicate.predicates.length; i++) {
-                        AssetQuery.StringPredicate stringPredicate = stringArrayPredicate.predicates[i];
-                        attributeMetaBuilder.append(stringPredicate.caseSensitive
-                            ? " and AM.VALUE #> '{value}' ->> " + i
-                            : " and upper(AM.VALUE #> '{value}' ->> " + i + ") "
-                        );
-                        attributeMetaBuilder.append(stringPredicate.match == AssetQuery.Match.EXACT ? " = ? " : " like ? ");
-                        final int pos = binders.size() + 1;
-                        binders.add(st -> st.setString(pos, stringPredicate.prepareValue()));
-                    }
-                }
-            }
-
-            if (attributeMetaBuilder.length() > 0) {
+            if (attributeMetaFilter.length() > 0) {
                 sb.append(" and A.ID in (select A.ID from ");
                 sb.append(" jsonb_each(A.ATTRIBUTES) as AX, ");
                 sb.append(" jsonb_array_elements(AX.VALUE #> '{meta}') as AM ");
                 sb.append(" where true ");
-                sb.append(attributeMetaBuilder);
+                sb.append(attributeMetaFilter);
                 sb.append(")");
             }
         }
 
-        return new Pair<>(sb.toString(), binders);
+        return sb.toString();
+    }
+
+    protected String buildAttributeMetaFilter(AssetQuery.AttributeMetaPredicate attributeMetaPredicate, List<ParameterBinder> binders) {
+        StringBuilder attributeMetaBuilder = new StringBuilder();
+
+        if (attributeMetaPredicate.itemNamePredicate != null) {
+            attributeMetaBuilder.append(attributeMetaPredicate.itemNamePredicate.caseSensitive
+                ? " and AM.VALUE #>> '{name}' "
+                : " and upper(AM.VALUE #>> '{name}') "
+            );
+            attributeMetaBuilder.append(attributeMetaPredicate.itemNamePredicate.match == AssetQuery.Match.EXACT ? " = ? " : " like ? ");
+            final int pos = binders.size() + 1;
+            binders.add(st -> st.setString(pos, attributeMetaPredicate.itemNamePredicate.prepareValue()));
+        }
+        if (attributeMetaPredicate.itemValuePredicate != null) {
+            if (attributeMetaPredicate.itemValuePredicate instanceof AssetQuery.StringPredicate) {
+                AssetQuery.StringPredicate stringPredicate = (AssetQuery.StringPredicate) attributeMetaPredicate.itemValuePredicate;
+                attributeMetaBuilder.append(stringPredicate.caseSensitive
+                    ? " and AM.VALUE #>> '{value}' "
+                    : " and upper(AM.VALUE #>> '{value}') "
+                );
+                attributeMetaBuilder.append(stringPredicate.match == AssetQuery.Match.EXACT ? " = ? " : " like ? ");
+                final int pos = binders.size() + 1;
+                binders.add(st -> st.setString(pos, stringPredicate.prepareValue()));
+            } else if (attributeMetaPredicate.itemValuePredicate instanceof AssetQuery.BooleanPredicate) {
+                AssetQuery.BooleanPredicate booleanPredicate = (AssetQuery.BooleanPredicate) attributeMetaPredicate.itemValuePredicate;
+                attributeMetaBuilder.append(" and AM.VALUE #> '{value}' = to_jsonb(").append(booleanPredicate.predicate).append(") ");
+            } else if (attributeMetaPredicate.itemValuePredicate instanceof AssetQuery.StringArrayPredicate) {
+                AssetQuery.StringArrayPredicate stringArrayPredicate = (AssetQuery.StringArrayPredicate) attributeMetaPredicate.itemValuePredicate;
+                for (int i = 0; i < stringArrayPredicate.predicates.length; i++) {
+                    AssetQuery.StringPredicate stringPredicate = stringArrayPredicate.predicates[i];
+                    attributeMetaBuilder.append(stringPredicate.caseSensitive
+                        ? " and AM.VALUE #> '{value}' ->> " + i
+                        : " and upper(AM.VALUE #> '{value}' ->> " + i + ") "
+                    );
+                    attributeMetaBuilder.append(stringPredicate.match == AssetQuery.Match.EXACT ? " = ? " : " like ? ");
+                    final int pos = binders.size() + 1;
+                    binders.add(st -> st.setString(pos, stringPredicate.prepareValue()));
+                }
+            }
+        }
+
+        return attributeMetaBuilder.toString();
     }
 
     protected ServerAsset mapResultTuple(AssetQuery query, ResultSet rs) throws SQLException {
         return new ServerAsset(
-            query.select != null && query.select.filterProtected,
             rs.getString("ID"), rs.getLong("OBJ_VERSION"), rs.getTimestamp("CREATED_ON"), rs.getString("NAME"), rs.getString("ASSET_TYPE"),
             rs.getString("PARENT_ID"), rs.getString("PARENT_NAME"), rs.getString("PARENT_TYPE"),
             rs.getString("REALM_ID"), rs.getString("TENANT_NAME"), rs.getString("TENANT_DISPLAY_NAME"),

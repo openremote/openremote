@@ -21,6 +21,7 @@ package org.openremote.manager.client.apps;
 
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.dom.client.IFrameElement;
+import com.google.gwt.dom.client.Style;
 import com.google.gwt.resources.client.CssResource;
 import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
@@ -81,6 +82,7 @@ public class AppsViewImpl extends Composite implements AppsView {
         if (presenter == null) {
             appsListPanel.clear();
             frame.setSrc("about:blank");
+            frame.getStyle().setDisplay(com.google.gwt.dom.client.Style.Display.NONE);
             placeholder.setVisible(true);
         }
     }
@@ -114,6 +116,7 @@ public class AppsViewImpl extends Composite implements AppsView {
     @Override
     public void openAppUrl(String appUrl) {
         placeholder.setVisible(false);
+        frame.getStyle().clearDisplay();
         frame.setSrc(appUrl);
         Timeout.debounce("setiframefocus", () -> {
             frame.focus();

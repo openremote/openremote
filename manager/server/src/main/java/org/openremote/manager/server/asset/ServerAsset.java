@@ -106,14 +106,12 @@ public class ServerAsset extends Asset {
     }
 
     @SuppressWarnings("unchecked")
-    public ServerAsset(boolean filterProtectedAttributes,
-                       String id, long version, Date createdOn, String name, String type,
+    public ServerAsset(String id, long version, Date createdOn, String name, String type,
                        String parentId, String parentName, String parentType,
                        String realmId, String tenantRealm, String tenantDisplayName,
                        Object location,
                        Array path, String attributes) throws SQLException {
         super(
-            filterProtectedAttributes,
             id, version, createdOn, name, type,
             parentId, parentName, parentType,
             realmId, tenantRealm, tenantDisplayName,

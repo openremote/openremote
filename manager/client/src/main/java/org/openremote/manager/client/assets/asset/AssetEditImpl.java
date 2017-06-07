@@ -41,6 +41,7 @@ import org.openremote.manager.client.widget.Hyperlink;
 import org.openremote.manager.client.widget.PushButton;
 import org.openremote.model.Constants;
 import org.openremote.model.asset.AssetType;
+import org.openremote.model.attribute.AttributeType;
 import org.openremote.model.geo.GeoJSON;
 import org.openremote.model.value.ObjectValue;
 
@@ -128,8 +129,6 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
     /* ############################################################################ */
 
     @UiField
-    Form attributesForm;
-    @UiField
     FormGroup typeGroup;
     @UiField(provided = true)
     FormValueListBox<AssetType> typeListBox;
@@ -143,7 +142,16 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
     /* ############################################################################ */
 
     @UiField
-    Form submitForm;
+    FormGroup newAttributeFormGroup;
+    @UiField
+    FormInputText newAttributeNameInputText;
+    @UiField
+    FormListBox newAttributeTypeListBox;
+    @UiField
+    FormButton addAttributeButton;
+
+    /* ############################################################################ */
+
     @UiField
     FormGroup submitButtonGroup;
     @UiField
@@ -245,6 +253,9 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
         setOpaque(false);
         attributesEditorContainer.clear();
         attributesEditor = null;
+        newAttributeFormGroup.setError(false);
+        newAttributeNameInputText.setValue(null);
+        newAttributeTypeListBox.clear();
 
         if (presenter != null) {
             assetBrowser.asWidget().removeFromParent();
@@ -256,8 +267,6 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
     public void setFormBusy(boolean busy) {
         super.setFormBusy(busy);
         headline.setVisible(!busy);
-        attributesForm.setBusy(busy);
-        submitForm.setBusy(busy);
         mapWidget.setVisible(!busy);
         if (!busy)
             mapWidget.resize();
@@ -378,6 +387,12 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
     @Override
     public void setType(String type) {
         typeInput.setValue(type);
+        AssetType assetType = AssetType.getByValue(type).orElse(AssetType.CUSTOM);
+        if (assetType == AssetType.CUSTOM) {
+            headline.setSub(type);
+        } else {
+            headline.setSub(managerMessages.assetTypeLabel(assetType.name()));
+        }
     }
 
     @Override
@@ -426,6 +441,28 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
     public void setAttributesEditor(AttributesEditor editor) {
         this.attributesEditor = editor;
         attributesEditorContainer.clear();
+    }
+
+    @Override
+    public void setNewAttributeError(boolean error) {
+        newAttributeFormGroup.setError(error);
+    }
+
+    @Override
+    public void setAvailableAttributeTypes(AttributeType[] types) {
+        newAttributeTypeListBox.clear();
+        newAttributeTypeListBox.addItem(managerMessages.selectType());
+        for (AttributeType attributeType: types) {
+            newAttributeTypeListBox.addItem(
+                managerMessages.attributeType(attributeType.name())
+            );
+        }
+    }
+
+    @UiHandler("addAttributeButton")
+    public void addAttributeButtonClicked(ClickEvent e) {
+        if (presenter != null)
+            presenter.addAttribute(newAttributeNameInputText.getValue(), newAttributeTypeListBox.getSelectedIndex()-1);
     }
 
     /* ############################################################################ */
@@ -478,6 +515,7 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
         typeGroup.setOpaque(opaque);
         if (attributesEditor != null)
             attributesEditor.setOpaque(opaque);
+        newAttributeFormGroup.setOpaque(opaque);
         submitButtonGroup.setOpaque(opaque);
     }
 }

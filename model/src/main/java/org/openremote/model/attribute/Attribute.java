@@ -33,6 +33,7 @@ import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import static org.openremote.model.attribute.Attribute.AttributeValidationFailure.*;
+import static org.openremote.model.attribute.MetaItem.isMetaNameEqualTo;
 import static org.openremote.model.util.TextUtil.requireNonNullAndNonEmpty;
 
 /**
@@ -132,11 +133,11 @@ public abstract class Attribute extends AbstractValueTimestampHolder {
     }
 
     public boolean hasMetaItem(String metaName) {
-        return getMetaItem(metaName).isPresent();
+        return getMetaStream().anyMatch(isMetaNameEqualTo(metaName));
     }
 
     public boolean hasMetaItem(HasUniqueResourceName metaName) {
-        return getMetaItem(metaName).isPresent();
+        return getMetaStream().anyMatch(isMetaNameEqualTo(metaName));
     }
 
     public Optional<MetaItem> getMetaItem(String metaName) {

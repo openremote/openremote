@@ -31,7 +31,6 @@ import org.openremote.container.persistence.PersistenceEvent;
 import org.openremote.manager.server.asset.AssetProcessingService;
 import org.openremote.manager.server.asset.AssetStorageService;
 import org.openremote.manager.server.asset.ServerAsset;
-import org.openremote.manager.server.datapoint.AssetDatapointService;
 import org.openremote.model.AbstractValueTimestampHolder;
 import org.openremote.model.asset.*;
 import org.openremote.model.asset.agent.AgentLink;
@@ -49,8 +48,8 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.openremote.agent.protocol.Protocol.ACTUATOR_TOPIC;
 import static org.openremote.agent.protocol.ConnectionStatus.*;
+import static org.openremote.agent.protocol.Protocol.ACTUATOR_TOPIC;
 import static org.openremote.agent.protocol.Protocol.SENSOR_QUEUE;
 import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_TOPIC;
 import static org.openremote.manager.server.asset.AssetProcessingService.ASSET_QUEUE;
@@ -75,7 +74,6 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
     protected Container container;
     protected AssetProcessingService assetProcessingService;
     protected AssetStorageService assetStorageService;
-    protected AssetDatapointService assetDatapointService;
     protected MessageBrokerService messageBrokerService;
     protected final Map<AttributeRef, Pair<AssetAttribute, ConnectionStatus>> protocolConfigurations = new HashMap<>();
     protected final Map<String, Protocol> protocols = new HashMap<>();
@@ -85,7 +83,6 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
         this.container = container;
         assetProcessingService = container.getService(AssetProcessingService.class);
         assetStorageService = container.getService(AssetStorageService.class);
-        assetDatapointService = container.getService(AssetDatapointService.class);
         messageBrokerService = container.getService(MessageBrokerService.class);
     }
 
