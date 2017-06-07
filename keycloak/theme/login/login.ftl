@@ -16,11 +16,13 @@
                     <#if usernameEditDisabled??>
                         <input id="username"
                                autofocus
+                               autocomplete="off"
                                class="or-FormControl or-FormInputText"
                                name="username" value="${(login.username!'')?html}" type="text" disabled/>
                     <#else>
                         <input id="username"
                                autofocus
+                               autocomplete="off" 
                                class="or-FormControl or-FormInputText"
                                name="username" value="${(login.username!'')?html}" type="text" autofocus/>
                     </#if>
