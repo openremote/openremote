@@ -43,7 +43,6 @@ class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMessageHa
         let defaults = UserDefaults(suiteName: AppGroup.entitlement)
         defaults?.set(message.body, forKey: message.name)
         defaults?.synchronize()
-        
     }
     
     func webView(_ webView: WKWebView, runJavaScriptAlertPanelWithMessage message: String, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping () -> Void) {
@@ -83,7 +82,7 @@ class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMessageHa
     }
     
     func login() {
-        guard let request = URL(string: String(format:"\(Server.scheme)://%@/%@",Server.hostURL,Server.initialPath)) else { return }
+        guard let request = URL(string: String(format:"\(Server.scheme)://%@/%@", Server.hostURL, Server.initialPath)) else { return }
         UIApplication.shared.isNetworkActivityIndicatorVisible = true
         _ = self.myWebView?.load(URLRequest(url: request))
     }
@@ -108,7 +107,6 @@ class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMessageHa
             } else {
                 completionHandler(.performDefaultHandling, nil)
             }
-            
         }
     }
     
@@ -168,31 +166,29 @@ class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMessageHa
                 UIApplication.shared.isNetworkActivityIndicatorVisible = false
                 ErrorManager.showError(error: error!)
             case .Success(let accessToken) :
-            guard let urlRequest = URL(string: String(String(format: "\(Server.scheme)://%@/%@/asset/%@/attribute/%@", Server.hostURL, Server.realm, assetId,attributeName))) else { return }
-            //print(urlRequest)
-            let request = NSMutableURLRequest(url: urlRequest)
-            request.httpMethod = "PUT"
-            request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-            request.httpBody = rawJson.data(using: .utf8)
-            request.addValue(String(format:"Bearer %@", accessToken!), forHTTPHeaderField: "Authorization")
-            let sessionConfiguration = URLSessionConfiguration.default
-            let session = URLSession(configuration: sessionConfiguration, delegate: self, delegateQueue : nil)
-            let reqDataTask = session.dataTask(with: request as URLRequest, completionHandler: { (data, response, error) in
-                DispatchQueue.main.async {
-                    UIApplication.shared.isNetworkActivityIndicatorVisible = false
-                    if (error != nil) {
-                        NSLog("error %@", (error! as NSError).localizedDescription)
-                        let error = NSError(domain: "", code: 0, userInfo:  [
-                            NSLocalizedDescriptionKey :  NSLocalizedString("ErrorCallingAPI", value: "Could not get data", comment: "")
-                            ])
-                        ErrorManager.showError(error: error)
+                guard let urlRequest = URL(string: String(String(format: "\(Server.scheme)://%@/%@/asset/%@/attribute/%@", Server.hostURL, Server.realm, assetId,attributeName))) else { return }
+                let request = NSMutableURLRequest(url: urlRequest)
+                request.httpMethod = "PUT"
+                request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+                request.httpBody = rawJson.data(using: .utf8)
+                request.addValue(String(format:"Bearer %@", accessToken!), forHTTPHeaderField: "Authorization")
+                let sessionConfiguration = URLSessionConfiguration.default
+                let session = URLSession(configuration: sessionConfiguration, delegate: self, delegateQueue : nil)
+                let reqDataTask = session.dataTask(with: request as URLRequest, completionHandler: { (data, response, error) in
+                    DispatchQueue.main.async {
+                        UIApplication.shared.isNetworkActivityIndicatorVisible = false
+                        if (error != nil) {
+                            NSLog("error %@", (error! as NSError).localizedDescription)
+                            let error = NSError(domain: "", code: 0, userInfo:  [
+                                NSLocalizedDescriptionKey :  NSLocalizedString("ErrorCallingAPI", value: "Could not get data", comment: "")
+                                ])
+                            ErrorManager.showError(error: error)
+                        }
                     }
-                }
-            })
-            reqDataTask.resume()
-        }
+                })
+                reqDataTask.resume()
+            }
         }
     }
-
     
 }

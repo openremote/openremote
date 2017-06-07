@@ -81,7 +81,6 @@ class TokenManager:NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationD
             let userScript:WKUserScript = WKUserScript(source: exec_template, injectionTime: .atDocumentStart, forMainFrameOnly: false)
             userController.addUserScript(userScript)
             
-            
             webCfg.userContentController = userController;
         } else {
             let userController:WKUserContentController = WKUserContentController()
@@ -95,7 +94,6 @@ class TokenManager:NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationD
             
             let userScript:WKUserScript = WKUserScript(source: exec_template, injectionTime: .atDocumentStart, forMainFrameOnly: false)
             userController.addUserScript(userScript)
-            
             
             webCfg.userContentController = userController;
         }

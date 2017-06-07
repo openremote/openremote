@@ -26,6 +26,7 @@ class ViewController: UIViewController {
     let orViewController = ORViewcontroller()
     
     @IBOutlet weak var loginViewController: UIWebView!
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         let notificationName = Notification.Name(NotificationsNames.isAuthenticated)
@@ -60,7 +61,7 @@ class ViewController: UIViewController {
         if (TokenManager.sharedInstance.hasToken && !TokenManager.sharedInstance.didLogOut) {
             isInError = false
             if (self.presentedViewController == nil) {
-            self.present(orViewController, animated: true, completion: nil)
+                self.present(orViewController, animated: true, completion: nil)
             }
         } else {
             TokenManager.sharedInstance.authenticate()
