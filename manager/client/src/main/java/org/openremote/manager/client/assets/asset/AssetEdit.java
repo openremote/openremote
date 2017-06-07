@@ -24,6 +24,7 @@ import org.openremote.manager.client.assets.attributes.AttributesEditor;
 import org.openremote.manager.client.assets.browser.BrowserTreeNode;
 import org.openremote.manager.client.widget.FormView;
 import org.openremote.model.asset.AssetType;
+import org.openremote.model.attribute.AttributeType;
 import org.openremote.model.geo.GeoJSON;
 import org.openremote.model.value.ObjectValue;
 
@@ -42,6 +43,8 @@ public interface AssetEdit extends FormView, IsWidget {
         void onMapClicked(double lng, double lat);
 
         void onAssetTypeSelected(AssetType value);
+
+        void addAttribute(String name, int attributeTypeIndex);
 
         void update();
 
@@ -93,6 +96,10 @@ public interface AssetEdit extends FormView, IsWidget {
     AttributesEditor.Container getAttributesEditorContainer();
 
     void setAttributesEditor(AttributesEditor attributesEditor);
+
+    void setAvailableAttributeTypes(AttributeType[] types);
+
+    void setNewAttributeError(boolean error);
 
     void enableCreate(boolean enable);
 

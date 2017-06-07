@@ -128,7 +128,12 @@ public class AssetViewImpl extends Composite implements AssetView {
     /* ############################################################################ */
 
     @UiField
-    Form attributesForm;
+    PushButton refreshButton;
+
+    @UiField
+    PushButton liveUpdatesOnButton;
+    @UiField
+    PushButton liveUpdatesOffButton;
 
     @UiField
     FlowPanel attributesBrowserContainer;
@@ -184,7 +189,6 @@ public class AssetViewImpl extends Composite implements AssetView {
     public void setFormBusy(boolean busy) {
         headline.setVisible(!busy);
         form.setBusy(busy);
-        attributesForm.setBusy(busy);
         if (!busy && locationGroup.isVisible()) {
             mapWidget.setVisible(true);
             mapWidget.resize();
@@ -273,7 +277,6 @@ public class AssetViewImpl extends Composite implements AssetView {
         headline.setIcon(icon);
         // TODO: Should unknown/undefined asset type default to custom
         AssetType assetType = AssetType.getByValue(type).orElse(AssetType.CUSTOM);
-
         if (assetType == AssetType.CUSTOM) {
             headline.setSub(type);
         } else {
@@ -311,5 +314,32 @@ public class AssetViewImpl extends Composite implements AssetView {
     public void setAttributesBrowser(AttributesBrowser browser) {
         this.attributesBrowser = browser;
         attributesBrowserContainer.clear();
+    }
+
+    @UiHandler("refreshButton")
+    public void onRefreshButtonClicked(ClickEvent e) {
+        if (presenter != null)
+            presenter.refresh();
+    }
+
+    @Override
+    public boolean isLiveUpdatesEnabled() {
+        return liveUpdatesOnButton.isVisible();
+    }
+
+    @UiHandler("liveUpdatesOnButton")
+    public void onLiveUpdatesOnButtonClicked(ClickEvent e) {
+        if (presenter != null)
+            presenter.enableLiveUpdates(false);
+        liveUpdatesOnButton.setVisible(false);
+        liveUpdatesOffButton.setVisible(true);
+    }
+
+    @UiHandler("liveUpdatesOffButton")
+    public void onLiveUpdatesOffButtonClicked(ClickEvent e) {
+        if (presenter != null)
+            presenter.enableLiveUpdates(true);
+        liveUpdatesOnButton.setVisible(true);
+        liveUpdatesOffButton.setVisible(false);
     }
 }

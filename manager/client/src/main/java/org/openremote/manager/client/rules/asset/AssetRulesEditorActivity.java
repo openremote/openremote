@@ -82,7 +82,6 @@ public class AssetRulesEditorActivity
             200,
             asset -> {
                 view.setHeadline(asset.getName(), environment.getMessages().editAssetRuleset());
-                view.setFormBusy(false);
             },
             ex -> handleRequestException(ex, environment)
         );

@@ -34,6 +34,10 @@ public interface AssetView extends IsWidget {
         void onMapReady();
 
         void centerMap();
+
+        void enableLiveUpdates(boolean enable);
+
+        void refresh();
     }
 
     void setPresenter(Presenter presenter);
@@ -63,4 +67,6 @@ public interface AssetView extends IsWidget {
     AttributesBrowser.Container getAttributesBrowserContainer();
 
     void setAttributesBrowser(AttributesBrowser attributesBrowser);
+
+    boolean isLiveUpdatesEnabled();
 }

@@ -34,7 +34,9 @@ import org.openremote.manager.shared.map.MapResource;
 import org.openremote.manager.shared.security.Tenant;
 import org.openremote.manager.shared.validation.ConstraintViolation;
 import org.openremote.model.asset.Asset;
+import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetType;
+import org.openremote.model.attribute.AttributeType;
 import org.openremote.model.event.bus.EventBus;
 import org.openremote.model.event.bus.EventRegistration;
 
@@ -123,6 +125,8 @@ public class AssetEditActivity
         } else {
             onMapReady();
         }
+
+        view.setAvailableAttributeTypes(AttributeType.values());
     }
 
     @Override
@@ -185,6 +189,15 @@ public class AssetEditActivity
         asset.setType(type);
         writeTypeToView(true);
         writeAttributesEditorToView();
+    }
+
+    @Override
+    public void addAttribute(String name, int attributeTypeIndex) {
+        if (attributesEditor != null) {
+            view.setNewAttributeError(
+                !attributesEditor.addAttribute(name, attributeTypeIndex >= 0 ? AttributeType.values()[attributeTypeIndex] : null)
+            );
+        }
     }
 
     @Override

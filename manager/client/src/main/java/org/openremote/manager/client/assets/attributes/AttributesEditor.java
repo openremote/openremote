@@ -28,7 +28,6 @@ import org.openremote.manager.client.widget.*;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetMeta;
-import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeType;
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.util.TextUtil;
@@ -40,6 +39,7 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import static org.openremote.model.attribute.Attribute.ATTRIBUTE_NAME_VALIDATOR;
+import static org.openremote.model.attribute.Attribute.isAttributeNameEqualTo;
 
 public class AttributesEditor
     extends AttributesView<AttributesEditor.Container, AttributesEditor.Style> {
@@ -53,18 +53,10 @@ public class AttributesEditor
     }
 
     final protected boolean isCreate;
-    protected FormGroup newAttributeGroup;
 
     public AttributesEditor(Environment environment, Container container, List<AssetAttribute> attributes, boolean isCreate) {
         super(environment, container, attributes);
         this.isCreate = isCreate;
-    }
-
-    @Override
-    protected void createAttributeGroups() {
-        newAttributeGroup = createNewAttributeEditor();
-        container.getPanel().add(newAttributeGroup);
-        super.createAttributeGroups();
     }
 
     protected FormLabel createAttributeLabel(AssetAttribute attribute) {
@@ -81,12 +73,6 @@ public class AttributesEditor
     @Override
     protected Optional<String> getAttributeDescription(AssetAttribute attribute) {
         return Optional.empty();
-    }
-
-    @Override
-    public void setOpaque(boolean opaque) {
-        super.setOpaque(opaque);
-        newAttributeGroup.setOpaque(opaque);
     }
 
     @Override
@@ -126,88 +112,46 @@ public class AttributesEditor
 
     /* ####################################################################### */
 
-    protected FormGroup createNewAttributeEditor() {
-        AssetAttribute attribute = new AssetAttribute();
+    public boolean addAttribute(String name, AttributeType type) {
 
-        FormGroup formGroup = createAttributeNameEditor(attribute);
-
-        FormGroupActions formGroupActions = new FormGroupActions();
-        FormButton addButton = new FormButton();
-        addButton.setText(container.getMessages().addAttribute());
-        addButton.setIcon("plus");
-        addButton.addClickHandler(clickEvent -> {
-
-            // Must initialize timestamp for proper attribute state (here it
-            // means: "When was the initial 'empty' attribute value state created?")
-            attribute.setValueTimestamp();
-
-            List<ValidationFailure> failures = attribute.getValidationFailures();
-            if (failures.isEmpty()) {
-                formGroup.setError(false);
-
-                attribute.getType().ifPresent(attributeType ->
-                    attribute.addMeta(attributeType.getDefaultMetaItems())
-                );
-
-                getAttributes().add(attribute);
-
-                showInfo(environment.getMessages().attributeAdded(attribute.getName().get()));
-                build();
-            } else {
-                formGroup.setError(true);
-                for (ValidationFailure failure : failures) {
-                    showValidationError(attribute.getLabelOrName().orElse(null), failure);
-                }
-            }
-        });
-        formGroupActions.add(addButton);
-        formGroup.addFormGroupActions(formGroupActions);
-
-        return formGroup;
-    }
-
-    protected FormGroup createAttributeNameEditor(Attribute attribute) {
-        FormGroup formGroup = new FormGroup();
-
-        FormLabel label = new FormLabel(environment.getMessages().newAttribute());
-        label.setIcon("plus-square");
-        label.addStyleName("larger");
-        formGroup.addFormLabel(label);
-
-        FormField formField = new FormField();
-        formGroup.addFormField(formField);
-
-        FormInputText nameInput = createFormInputText(container.getStyle().stringEditor());
-        nameInput.setPlaceholder(environment.getMessages().attributeName());
-        nameInput.addValueChangeHandler(event -> {
-            if (!ATTRIBUTE_NAME_VALIDATOR.test(event.getValue())) {
-                formGroup.setError(true);
-                attribute.clearName();
-                showValidationError(environment.getMessages().invalidAttributeName());
-            } else {
-                formGroup.setError(false);
-                attribute.setName(event.getValue());
-            }
-        });
-        formField.add(nameInput);
-
-        FormListBox typeListBox = new FormListBox();
-        typeListBox.addItem(environment.getMessages().selectType());
-        for (AttributeType attributeType : AttributeType.values()) {
-            typeListBox.addItem(environment.getMessages().attributeType(attributeType.name()));
+        if (getAttributes().stream().anyMatch(isAttributeNameEqualTo(name))) {
+            showValidationError(environment.getMessages().duplicateAttributeName());
+            return false;
         }
-        typeListBox.addChangeHandler(event -> {
-            if (typeListBox.getSelectedIndex() > 0) {
-                attribute.setTypeAndClearValue(
-                    AttributeType.values()[typeListBox.getSelectedIndex() - 1]
-                );
-            } else {
-                attribute.clearType();
-            }
-        });
-        formField.add(typeListBox);
 
-        return formGroup;
+        if (!ATTRIBUTE_NAME_VALIDATOR.test(name)) {
+            showValidationError(environment.getMessages().invalidAttributeName());
+            return false;
+        }
+
+        AssetAttribute attribute = new AssetAttribute();
+        attribute.setName(name);
+        if (type != null) {
+            attribute.setTypeAndClearValue(type);
+        }
+
+        // Must initialize timestamp for proper attribute state (here it
+        // means: "When was the initial 'empty' attribute value state created?")
+        attribute.setValueTimestamp();
+
+        List<ValidationFailure> failures = attribute.getValidationFailures();
+        if (!failures.isEmpty()) {
+            for (ValidationFailure failure : failures) {
+                showValidationError(attribute.getLabelOrName().orElse(null), failure);
+            }
+            return false;
+        }
+
+        attribute.getType().ifPresent(attributeType ->
+            attribute.addMeta(attributeType.getDefaultMetaItems())
+        );
+        getAttributes().add(attribute);
+
+        showInfo(environment.getMessages().attributeAdded(name));
+
+        build();
+
+        return true;
     }
 
     /* ####################################################################### */

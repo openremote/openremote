@@ -20,10 +20,7 @@
 package org.openremote.manager.client.assets.attributes;
 
 import com.google.gwt.i18n.client.DateTimeFormat;
-import com.google.gwt.user.client.ui.FlowPanel;
-import com.google.gwt.user.client.ui.InsertPanel;
-import com.google.gwt.user.client.ui.IsWidget;
-import com.google.gwt.user.client.ui.Label;
+import com.google.gwt.user.client.ui.*;
 import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.app.dialog.JsonEditor;
 import org.openremote.manager.client.event.ShowFailureEvent;
@@ -280,13 +277,22 @@ public abstract class AttributesView<
 
         sortAttributes(attributeGroups);
 
-        for (FormGroup attributeGroup : attributeGroups.values()) {
-            container.getPanel().add(attributeGroup);
+        if (attributeGroups.size() == 0) {
+            Label emptyLabel = new Label(environment.getMessages().noAttributes());
+            emptyLabel.addStyleName(environment.getWidgetStyle().FormListEmptyMessage());
+            container.getPanel().add(emptyLabel);
+        } else {
+            for (FormGroup attributeGroup : attributeGroups.values()) {
+                container.getPanel().add(attributeGroup);
+            }
         }
     }
 
     protected FormGroup createAttributeGroup(AssetAttribute attribute) {
         FormGroup formGroup = new FormGroup();
+
+        formGroup.addStyleName("flex-none");
+        formGroup.addStyleName(environment.getWidgetStyle().FormListItem());
 
         if (attribute.hasAgentLink() || attribute.isProtocolConfiguration()) {
             formGroup.addStyleName(container.getStyle().highlightAttribute());
@@ -397,6 +403,12 @@ public abstract class AttributesView<
         return () -> unsupportedField;
     }
 
+    protected IsWidget createNoValueWidget() {
+        return new FormOutputText(
+            environment.getMessages().noValue()
+        );
+    }
+
     protected AttributeEditor createStringEditor(AssetAttribute attribute, Optional<MetaItem> defaultValueItem, S style, FormGroup formGroup) {
         String currentValue = attribute.getValue().map(Object::toString).orElse(null);
         Optional<String> defaultValue = defaultValueItem.flatMap(AbstractValueHolder::getValueAsString);
@@ -407,8 +419,11 @@ public abstract class AttributesView<
 
         FlowPanel panel = new FlowPanel();
         panel.setStyleName("flex layout horizontal center");
-        FormInputText inputText = createStringEditorWidget(style, currentValue, defaultValue, updateConsumer);
-        panel.add(inputText);
+        IsWidget widget = createStringEditorWidget(style, currentValue, defaultValue, updateConsumer);
+        FlowPanel widgetWrapper = new FlowPanel();
+        widgetWrapper.setStyleName("flex layout horizontal center");
+        widgetWrapper.add(widget);
+        panel.add(widgetWrapper);
         if (isShowTimestamp(attribute)) {
             TimestampLabel timestampLabel = new TimestampLabel(attribute.getValueTimestamp());
             panel.add(timestampLabel);
@@ -417,15 +432,19 @@ public abstract class AttributesView<
         return () -> panel;
     }
 
-    protected FormInputText createStringEditorWidget(S style,
-                                                     String currentValue,
-                                                     Optional<String> defaultValue,
-                                                     Consumer<String> updateConsumer) {
+    protected IsWidget createStringEditorWidget(S style,
+                                                String currentValue,
+                                                Optional<String> defaultValue,
+                                                Consumer<String> updateConsumer) {
         FormInputText input = createFormInputText(style.stringEditor());
 
         if (currentValue != null) {
-            input.setValue(currentValue);
-        } else defaultValue.ifPresent(input::setValue);
+              input.setValue(currentValue);
+        } else if (defaultValue.isPresent()) {
+              input.setValue(defaultValue.get());
+        } else if (updateConsumer == null) {
+            return createNoValueWidget();
+        }
 
         if (updateConsumer != null) {
             input.addValueChangeHandler(
@@ -449,8 +468,11 @@ public abstract class AttributesView<
 
         FlowPanel panel = new FlowPanel();
         panel.setStyleName("flex layout horizontal center");
-        FormInputText inputText = createNumberEditorWidget(style, currentValue, defaultValue, updateConsumer);
-        panel.add(inputText);
+        IsWidget widget = createNumberEditorWidget(style, currentValue, defaultValue, updateConsumer);
+        FlowPanel widgetWrapper = new FlowPanel();
+        widgetWrapper.setStyleName("flex layout horizontal center");
+        widgetWrapper.add(widget);
+        panel.add(widgetWrapper);
         if (isShowTimestamp(attribute)) {
             TimestampLabel timestampLabel = new TimestampLabel(attribute.getValueTimestamp());
             panel.add(timestampLabel);
@@ -459,15 +481,19 @@ public abstract class AttributesView<
         return () -> panel;
     }
 
-    protected FormInputText createNumberEditorWidget(S style,
-                                                     String currentValue,
-                                                     Optional<String> defaultValue,
-                                                     Consumer<String> updateConsumer) {
+    protected IsWidget createNumberEditorWidget(S style,
+                                                String currentValue,
+                                                Optional<String> defaultValue,
+                                                Consumer<String> updateConsumer) {
         FormInputText input = createFormInputText(style.numberEditor());
 
         if (currentValue != null) {
             input.setValue(currentValue);
-        } else defaultValue.ifPresent(input::setValue);
+        } else if (defaultValue.isPresent()) {
+            input.setValue(defaultValue.get());
+        } else if (updateConsumer == null) {
+            return createNoValueWidget();
+        }
 
         if (updateConsumer != null) {
             input.addValueChangeHandler(event -> {
@@ -482,7 +508,7 @@ public abstract class AttributesView<
     }
 
     protected AttributeEditor createBooleanEditor(AssetAttribute attribute, Optional<MetaItem> defaultValueItem, S style, FormGroup formGroup) {
-        boolean currentValue = attribute.getValueAsBoolean().orElse(false); // An empty boolean attribute value is false
+        Boolean currentValue = attribute.getValueAsBoolean().orElse(null);
         Optional<Boolean> defaultValue = defaultValueItem.flatMap(AbstractValueHolder::getValueAsBoolean);
 
         Consumer<Boolean> updateConsumer = !isEditorReadOnly(attribute)
@@ -491,11 +517,11 @@ public abstract class AttributesView<
 
         FlowPanel panel = new FlowPanel();
         panel.setStyleName("flex layout horizontal center");
-        FormCheckBox checkBox = createBooleanEditorWidget(style, currentValue, defaultValue, updateConsumer);
-        FlowPanel checkBoxWrapper = new FlowPanel();
-        checkBoxWrapper.setStyleName("flex layout horizontal center");
-        checkBoxWrapper.add(checkBox);
-        panel.add(checkBoxWrapper);
+        IsWidget widget = createBooleanEditorWidget(style, currentValue, defaultValue, updateConsumer);
+        FlowPanel widgetWrapper = new FlowPanel();
+        widgetWrapper.setStyleName("flex layout horizontal center");
+        widgetWrapper.add(widget);
+        panel.add(widgetWrapper);
         if (isShowTimestamp(attribute)) {
             TimestampLabel timestampLabel = new TimestampLabel(attribute.getValueTimestamp());
             panel.add(timestampLabel);
@@ -504,10 +530,10 @@ public abstract class AttributesView<
         return () -> panel;
     }
 
-    protected FormCheckBox createBooleanEditorWidget(S style,
-                                                     Boolean currentValue,
-                                                     Optional<Boolean> defaultValue,
-                                                     Consumer<Boolean> updateConsumer) {
+    protected IsWidget createBooleanEditorWidget(S style,
+                                                 Boolean currentValue,
+                                                 Optional<Boolean> defaultValue,
+                                                 Consumer<Boolean> updateConsumer) {
         FormCheckBox input = createFormInputCheckBox(style.booleanEditor());
 
         Boolean value = null;
@@ -515,6 +541,8 @@ public abstract class AttributesView<
             value = currentValue;
         } else if (defaultValue.isPresent()) {
             value = defaultValue.get();
+        } else if (updateConsumer == null) {
+            return createNoValueWidget();
         }
 
         input.setValue(value);
@@ -542,13 +570,13 @@ public abstract class AttributesView<
 
         FlowPanel panel = new FlowPanel();
         panel.setStyleName("flex layout horizontal center");
-        IsWidget jsonEditorWidget = createJsonEditorWidget(
+        IsWidget widget = createJsonEditorWidget(
             style, environment.getMessages().jsonArray(), title, currentValue.orElse(null), updateConsumer, resetSupplier
         );
-        FlowPanel wrapper = new FlowPanel();
-        wrapper.setStyleName("flex layout horizontal center");
-        wrapper.add(jsonEditorWidget);
-        panel.add(wrapper);
+        FlowPanel widgetWrapper = new FlowPanel();
+        widgetWrapper.setStyleName("flex layout horizontal center");
+        widgetWrapper.add(widget);
+        panel.add(widgetWrapper);
         if (isShowTimestamp(attribute)) {
             TimestampLabel timestampLabel = new TimestampLabel(attribute.getValueTimestamp());
             panel.add(timestampLabel);
@@ -572,13 +600,13 @@ public abstract class AttributesView<
 
         FlowPanel panel = new FlowPanel();
         panel.setStyleName("flex layout horizontal center");
-        IsWidget jsonEditorWidget = createJsonEditorWidget(
+        IsWidget widget = createJsonEditorWidget(
             style, environment.getMessages().jsonObject(), title, currentValue.orElse(null), updateConsumer, resetSupplier
         );
-        FlowPanel wrapper = new FlowPanel();
-        wrapper.setStyleName("flex layout horizontal center");
-        wrapper.add(jsonEditorWidget);
-        panel.add(wrapper);
+        FlowPanel widgetWrapper = new FlowPanel();
+        widgetWrapper.setStyleName("flex layout horizontal center");
+        widgetWrapper.add(widget);
+        panel.add(widgetWrapper);
         if (isShowTimestamp(attribute)) {
             TimestampLabel timestampLabel = new TimestampLabel(attribute.getValueTimestamp());
             panel.add(timestampLabel);
@@ -656,6 +684,12 @@ public abstract class AttributesView<
         int attributeGroupIndex = container.getPanel().getWidgetIndex(attributeGroups.get(attribute));
         container.getPanel().remove(attributeGroupIndex);
         attributeGroups.remove(attribute);
+
+        if (attributeGroups.size() == 0) {
+            Label emptyLabel = new Label(environment.getMessages().noAttributes());
+            emptyLabel.addStyleName(environment.getWidgetStyle().FormListEmptyMessage());
+            container.getPanel().add(emptyLabel);
+        }
     }
 
     protected void showInfo(String text) {
@@ -670,7 +704,7 @@ public abstract class AttributesView<
         environment.getEventBus().dispatch(new ShowFailureEvent(error, 5000));
     }
 
-    protected void showValidationError(String fieldLabel, ValidationFailure validationFailure) {
+    public void showValidationError(String fieldLabel, ValidationFailure validationFailure) {
         StringBuilder error = new StringBuilder();
         if (fieldLabel != null)
             error.append(environment.getMessages().validationFailedFor(fieldLabel));

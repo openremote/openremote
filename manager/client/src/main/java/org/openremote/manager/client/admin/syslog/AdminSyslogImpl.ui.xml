@@ -19,12 +19,11 @@
     <g:HTMLPanel styleName="flex layout vertical">
 
         <g:HTMLPanel
-                styleName="layout horizontal center end-justified {widgetStyle.SecondaryNavHorizontal}">
+                styleName="flex-none layout horizontal center end-justified {widgetStyle.SecondaryNavHorizontal}">
 
         </g:HTMLPanel>
 
-        <g:HTMLPanel ui:field="mainContent"
-                     styleName="layout vertical {widgetStyle.MainContent}">
+        <div class="flex-none layout vertical {widgetStyle.MainContent}" style="z-index:1;">
 
             <w:Headline icon="list-alt"
                         text="{managerMessages.syslog}"/>
@@ -78,13 +77,13 @@
                     </w:actions>
                 </w:FormGroup>
 
-                <syslog:SyslogFilter ui:field="syslogFilter"/>
-
             </w:Form>
 
-        </g:HTMLPanel>
+        </div>
 
         <syslog:SyslogItems ui:field="syslogItems"/>
+
+        <syslog:SyslogFilter ui:field="syslogFilter"/>
 
     </g:HTMLPanel>
 

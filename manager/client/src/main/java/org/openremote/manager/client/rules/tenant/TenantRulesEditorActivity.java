@@ -82,7 +82,6 @@ public class TenantRulesEditorActivity
             200,
             tenant -> {
                 view.setHeadline(tenant.getDisplayName(), environment.getMessages().editTenantRuleset());
-                view.setFormBusy(false);
             },
             ex -> handleRequestException(ex, environment)
         );

@@ -28,20 +28,27 @@ import org.openremote.model.syslog.SyslogLevel;
 import static org.openremote.manager.shared.syslog.SyslogConfig.DEFAULT_LEVEL;
 import static org.openremote.manager.shared.syslog.SyslogConfig.DEFAULT_LIMIT;
 
-public abstract class SyslogFilter extends FormGroup {
+public abstract class SyslogFilter extends FlowPanel {
 
+    final protected FormGroup formGroup;
     final protected FormListBox limitListBox;
     final protected FormListBox levelListBox;
     final protected FormButton pauseButton;
     final protected FormButton continueButton;
 
     public SyslogFilter(ManagerMessages messages, WidgetStyle widgetStyle) {
+        addStyleName("flex-none layout vertical");
+        addStyleName(widgetStyle.MainContent());
+
+        formGroup = new FormGroup();
+        add(formGroup);
+
         FormLabel showLastLabel = new FormLabel(messages.showLast());
         showLastLabel.addStyleName("inline");
-        addFormLabel(showLastLabel);
+        formGroup.addFormLabel(showLastLabel);
 
         FormField field = new FormField();
-        addFormField(field);
+        formGroup.addFormField(field);
         FlowPanel fieldPanel = new FlowPanel();
         field.add(fieldPanel);
 
@@ -63,7 +70,7 @@ public abstract class SyslogFilter extends FormGroup {
         fieldPanel.add(eventsLabel);
 
         FormGroupActions actions = new FormGroupActions();
-        addFormGroupActions(actions);
+        formGroup.addFormGroupActions(actions);
 
         pauseButton = new FormButton(messages.pauseLog());
         pauseButton.setIcon("pause");
