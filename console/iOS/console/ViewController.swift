@@ -56,10 +56,6 @@ class ViewController: UIViewController {
         }
     }
     
-    override func didReceiveMemoryWarning() {
-        super.didReceiveMemoryWarning()
-    }
-    
     func showLoginPage() {
         if (TokenManager.sharedInstance.hasToken && !TokenManager.sharedInstance.didLogOut) {
             isInError = false
