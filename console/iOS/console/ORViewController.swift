@@ -135,6 +135,7 @@ class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMessageHa
         let sbHeight = UIApplication.shared.statusBarFrame.height
         let webFrame = CGRect(x : 0,y : sbHeight,width : view.frame.size.width,height : view.frame.size.height - sbHeight)
         myWebView = WKWebView(frame: webFrame, configuration: webCfg!)
+        myWebView?.autoresizingMask = [.flexibleWidth, .flexibleHeight];
         myWebView?.uiDelegate = self;
         myWebView?.navigationDelegate = self;
         view.addSubview(myWebView!)

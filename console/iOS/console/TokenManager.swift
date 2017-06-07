@@ -27,6 +27,7 @@ class TokenManager:NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationD
         viewController = TokenManagerViewController()
         let webCfg:WKWebViewConfiguration = WKWebViewConfiguration()
         myWebView = WKWebView(frame: viewController.view.frame, configuration: webCfg)
+        myWebView.autoresizingMask = [.flexibleWidth, .flexibleHeight];
         let defaults = UserDefaults(suiteName: AppGroup.entitlement)
         defaults?.synchronize()
         if let token = defaults?.value(forKey: DefaultsKey.offlineToken) {
@@ -88,6 +89,7 @@ class TokenManager:NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationD
         }
         
         myWebView = WKWebView(frame: viewController.view.frame, configuration: webCfg)
+        myWebView.autoresizingMask = [.flexibleWidth, .flexibleHeight];
         myWebView.uiDelegate = self;
         myWebView.navigationDelegate = self;
         viewController.view.addSubview(myWebView)
