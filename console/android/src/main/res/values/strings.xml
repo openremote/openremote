@@ -12,4 +12,5 @@
     <string name="noConnectivity">No connectivity Detected</string>
     <string name="SHARED_PREF_OPENED_ALERT">OPENED_ALERT</string>
     <string name="AUTH_URL">/auth</string>
+    <string name="SSL_IGNORE">false</string>
 </resources>

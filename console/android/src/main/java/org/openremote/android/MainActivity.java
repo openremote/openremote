@@ -148,7 +148,7 @@ public class MainActivity extends Activity {
 
             @Override
             public void onReceivedSslError(WebView view, SslErrorHandler handler, SslError error) {
-                if (BuildConfig.DEBUG) {
+                if (Boolean.parseBoolean(getString(R.string.SSL_IGNORE))) {
                     handler.proceed(); // Ignore SSL certificate errors
                 } else {
                     super.onReceivedSslError(view, handler, error);

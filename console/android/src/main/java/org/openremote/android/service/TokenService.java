@@ -47,7 +47,7 @@ public class TokenService {
                 .baseUrl(context.getString(R.string.OR_BASE_SERVER))
                 .addConverterFactory(ScalarsConverterFactory.create())
                 .addConverterFactory(JacksonConverterFactory.create());
-        if (BuildConfig.DEBUG) {
+        if (Boolean.parseBoolean(context.getString(R.string.SSL_IGNORE)))  {
             builder.client(getUnsafeOkHttpClient());
         }
         Retrofit retrofit = builder.build();
