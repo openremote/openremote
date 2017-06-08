@@ -39,11 +39,11 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
     }
 
     @Override
-    public void storeDeviceToken(RequestParams requestParams, String deviceId, String token) {
+    public void storeDeviceToken(RequestParams requestParams, String deviceId, String token, String deviceType) {
         if (token == null || token.length() == 0 || deviceId == null || deviceId.length() == 0) {
             throw new WebApplicationException("Missing token or device identifier", BAD_REQUEST);
         }
-        notificationService.storeDeviceToken(deviceId, getUserId(), token);
+        notificationService.storeDeviceToken(deviceId, getUserId(), token, deviceType);
     }
 
     @Override

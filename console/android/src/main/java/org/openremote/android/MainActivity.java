@@ -9,6 +9,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.net.http.SslError;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.StrictMode;
@@ -18,6 +19,7 @@ import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
 import android.webkit.JavascriptInterface;
+import android.webkit.SslErrorHandler;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
@@ -37,6 +39,14 @@ public class MainActivity extends Activity {
     private WebView webView;
     private View errorView;
     private View noConnectivityView;
+
+
+    @Override
+    public void onActivityReenter(int resultCode, Intent data) {
+        super.onActivityReenter(resultCode, data);
+    }
+
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -63,6 +73,14 @@ public class MainActivity extends Activity {
         boolean hasConnectivity = activeNetwork != null && activeNetwork.isConnectedOrConnecting();
 
     }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+       if (intent.hasExtra("url")) {
+           webView.loadUrl(getString(R.string.OR_BASE_SERVER) + getString(R.string.OR_CONSOLE_URL) + intent.getStringExtra("url"));
+       }
+    }
+
 
     @Override
     protected void onResume() {
@@ -129,6 +147,15 @@ public class MainActivity extends Activity {
             }
 
             @Override
+            public void onReceivedSslError(WebView view, SslErrorHandler handler, SslError error) {
+                if (BuildConfig.DEBUG) {
+                    handler.proceed(); // Ignore SSL certificate errors
+                } else {
+                    super.onReceivedSslError(view, handler, error);
+                }
+            }
+
+            @Override
             public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
 
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -141,10 +168,14 @@ public class MainActivity extends Activity {
             }
         });
         webView.setWebChromeClient(new WebChromeClient());
-        webView.loadUrl(getString(R.string.OR_BASE_SERVER) + getString(R.string.OR_CONSOLE_URL));
+        String url = getString(R.string.OR_BASE_SERVER) + getString(R.string.OR_CONSOLE_URL);
+        if (getIntent().hasExtra("url")) {
+            url = url + getIntent().getStringExtra("url");
+        }
+        webView.loadUrl(url);
     }
 
-    public void reloadPage(View view) {
+    public void reloadPage() {
         errorView.setVisibility(View.GONE);
         webView.loadUrl(getString(R.string.OR_BASE_SERVER) + getString(R.string.OR_CONSOLE_URL));
     }

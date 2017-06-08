@@ -26,7 +26,7 @@
             android:name="com.google.firebase.messaging.default_notification_color"
             android:resource="@color/light_green" />
 
-        <activity android:name="org.openremote.android.MainActivity"
+        <activity android:name=".MainActivity"
             android:configChanges="orientation|screenSize"
             android:windowSoftInputMode="adjustResize"
             android:label="@string/app_name">

@@ -31,15 +31,18 @@ public class ORMessagingActionService extends IntentService {
 
         NotificationManager manager = (NotificationManager) getSystemService(Service.NOTIFICATION_SERVICE);
         manager.cancel(notification.getId().hashCode());
+        AlertAction alertAction =  (AlertAction) intent.getSerializableExtra("action");
 
-        if(intent.hasExtra("action")) {
-
-            AlertAction alertAction =  (AlertAction) intent.getSerializableExtra("action");
-            if (AlertNotification.ActionType.ACTUATOR.equals(alertAction.getType())) {
-                tokenService.executeAction(alertAction);
-            } else {
-                //TODO : open app and pass rawJson to webView
-            }
+        if(AlertNotification.ActionType.ACTUATOR.equals(alertAction.getType())) {
+            tokenService.executeAction(alertAction);
+        } else {
+            Intent activityIntent = new Intent(this, MainActivity.class);
+            activityIntent.setAction(Intent.ACTION_MAIN);
+            activityIntent.addCategory(Intent.CATEGORY_LAUNCHER);
+            activityIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK |
+                    Intent.FLAG_ACTIVITY_SINGLE_TOP);
+            activityIntent.putExtra("url", intent.getStringExtra("url"));
+            startActivity(activityIntent);
         }
 
 

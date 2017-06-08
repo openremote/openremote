@@ -2,23 +2,32 @@ package org.openremote.android.service;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.os.Build;
 import android.preference.PreferenceManager;
 import android.util.Log;
 
+import org.openremote.android.BuildConfig;
 import org.openremote.android.R;
 
 import java.io.IOException;
+import java.security.cert.CertificateException;
 import java.util.List;
 import java.util.Map;
 
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSession;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
+
+import okhttp3.OkHttpClient;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.jackson.JacksonConverterFactory;
 import retrofit2.converter.scalars.ScalarsConverterFactory;
-
-import static android.R.attr.id;
 
 
 public class TokenService {
@@ -34,11 +43,14 @@ public class TokenService {
     private final NotificationService notificationService;
 
     public TokenService(Context context) {
-        Retrofit retrofit = new Retrofit.Builder()
+        Retrofit.Builder builder = new Retrofit.Builder()
                 .baseUrl(context.getString(R.string.OR_BASE_SERVER))
                 .addConverterFactory(ScalarsConverterFactory.create())
-                .addConverterFactory(JacksonConverterFactory.create())
-                .build();
+                .addConverterFactory(JacksonConverterFactory.create());
+        if (BuildConfig.DEBUG) {
+            builder.client(getUnsafeOkHttpClient());
+        }
+        Retrofit retrofit = builder.build();
 
         oauth2Service = retrofit.create(OAuth2Service.class);
         notificationService = retrofit.create(NotificationService.class);
@@ -124,7 +136,7 @@ public class TokenService {
         getAuthorization(new TokenCallback() {
             @Override
             public void onToken(String accessToken) {
-                Call call = notificationService.updateToken(realm, accessToken, fcmToken, id);
+                Call call = notificationService.updateToken(realm, accessToken, fcmToken, id, "ANDROID");
                 try {
                     Response response = call.execute();
                     if (response.code() != 204) {
@@ -177,7 +189,17 @@ public class TokenService {
         getAuthorization(new TokenCallback() {
             @Override
             public void onToken(String accessToken) throws IOException {
-                notificationService.deleteNotification(realm, accessToken,id).execute();
+                notificationService.deleteNotification(realm, accessToken,id).enqueue(new Callback<Void>() {
+                    @Override
+                    public void onResponse(Call<Void> call, Response<Void> response) {
+
+                    }
+
+                    @Override
+                    public void onFailure(Call<Void> call, Throwable t) {
+                        Log.e("TOKEN_SERVICE","Error deleting notification",t);
+                    }
+                });
 
             }
 
@@ -194,15 +216,68 @@ public class TokenService {
         getAuthorization(new TokenCallback() {
             @Override
             public void onToken(String accessToken) throws IOException {
-                notificationService.updateAssetAction(realm, accessToken,alertAction.getAssetId(),alertAction.getAttributeName(),alertAction.getRawJson()).execute();
+                notificationService.updateAssetAction(realm, accessToken,alertAction.getAssetId(),alertAction.getAttributeName(),alertAction.getRawJson()).enqueue(new Callback<Void>() {
+                    @Override
+                    public void onResponse(Call<Void> call, Response<Void> response) {
+
+                    }
+
+                    @Override
+                    public void onFailure(Call<Void> call, Throwable t) {
+                        Log.e("TOKEN_SERVICE","Error execute actuator",t);
+                    }
+                });
 
             }
 
             @Override
             public void onFailure(Throwable t) {
-                Log.e("TOKEN_SERVICE","Error deleting notification",t);
+                Log.e("TOKEN_SERVICE","Error execute actuator",t);
             }
         });
 
+    }
+
+
+    private static OkHttpClient getUnsafeOkHttpClient() {
+        try {
+            // Create a trust manager that does not validate certificate chains
+            final TrustManager[] trustAllCerts = new TrustManager[] {
+                    new X509TrustManager() {
+                        @Override
+                        public void checkClientTrusted(java.security.cert.X509Certificate[] chain, String authType) throws CertificateException {
+                        }
+
+                        @Override
+                        public void checkServerTrusted(java.security.cert.X509Certificate[] chain, String authType) throws CertificateException {
+                        }
+
+                        @Override
+                        public java.security.cert.X509Certificate[] getAcceptedIssuers() {
+                            return new java.security.cert.X509Certificate[]{};
+                        }
+                    }
+            };
+
+            // Install the all-trusting trust manager
+            final SSLContext sslContext = SSLContext.getInstance("SSL");
+            sslContext.init(null, trustAllCerts, new java.security.SecureRandom());
+            // Create an ssl socket factory with our all-trusting manager
+            final SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
+
+            OkHttpClient.Builder builder = new OkHttpClient.Builder();
+            builder.sslSocketFactory(sslSocketFactory);
+            builder.hostnameVerifier(new HostnameVerifier() {
+                @Override
+                public boolean verify(String hostname, SSLSession session) {
+                    return true;
+                }
+            });
+
+            OkHttpClient okHttpClient = builder.build();
+            return okHttpClient;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 }

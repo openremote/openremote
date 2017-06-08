@@ -17,7 +17,7 @@ import retrofit2.http.Path;
 public interface NotificationService {
     @FormUrlEncoded
     @PUT("/{realm}/notification/token")
-    Call<Void> updateToken(@Path("realm") String realm, @Header("Authorization") String authorization, @Field("token") String token, @Field("device_id") String deviceId);
+    Call<Void> updateToken(@Path("realm") String realm, @Header("Authorization") String authorization, @Field("token") String token, @Field("device_id") String deviceId, @Field("device_type") String deviceType);
 
 
     @GET("/{realm}/notification/alert")

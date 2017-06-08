@@ -76,10 +76,10 @@ public class NotificationService implements ContainerService {
     public void stop(Container container) throws Exception {
     }
 
-    public void storeDeviceToken(String deviceId, String userId, String token) {
+    public void storeDeviceToken(String deviceId, String userId, String token, String deviceType) {
         persistenceService.doTransaction(entityManager -> {
             DeviceNotificationToken.Id id = new DeviceNotificationToken.Id(deviceId, userId);
-            DeviceNotificationToken deviceToken = new DeviceNotificationToken(id, token);
+            DeviceNotificationToken deviceToken = new DeviceNotificationToken(id, token, deviceType);
             entityManager.merge(deviceToken);
         });
     }
@@ -116,7 +116,13 @@ public class NotificationService implements ContainerService {
                     Invocation.Builder builder = target.request().header("Authorization", "key=" + fcmKey);
                     Notification notification = new Notification("_", true);
 
-                    Response response = builder.post(Entity.entity(new FCMMessage(notification, true, "high", notificationToken.getToken()), "application/json"));
+                    FCMBaseMessage message;
+                    if ("ANDROID".equals(notificationToken.getDeviceType())) {
+                        message = new FCMBaseMessage(notificationToken.getToken());
+                    } else {
+                        message = new FCMMessage(notification, true, "high", notificationToken.getToken());
+                    }
+                    Response response = builder.post(Entity.entity(message, "application/json"));
                     if (response.getStatus() != 200) {
                         LOG.severe("Error send FCM notification status=[" + response.getStatus() + "], statusInformation=[" + response.getStatusInfo() + "]");
                     }

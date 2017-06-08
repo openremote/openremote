@@ -69,12 +69,16 @@ public class DeviceNotificationToken {
     @Column(name = "TOKEN", nullable = false, length = 4096)
     protected String token;
 
+    @Column(name = "DEVICE_TYPE", nullable = true)
+    protected String deviceType;
+
     public DeviceNotificationToken() {
     }
 
-    public DeviceNotificationToken(Id id, String token) {
+    public DeviceNotificationToken(Id id, String token, String deviceType) {
         this.id = id;
         this.token = token;
+        this.deviceType = deviceType;
     }
 
     public Id getId() {
@@ -93,11 +97,20 @@ public class DeviceNotificationToken {
         this.token = token;
     }
 
+    public String getDeviceType() {
+        return deviceType;
+    }
+
+    public void setDeviceType(String deviceType) {
+        this.deviceType = deviceType;
+    }
+
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
             "id=" + id +
             ", token='" + token + '\'' +
+            ", deviceType='" + deviceType + '\'' +
             '}';
     }
 }

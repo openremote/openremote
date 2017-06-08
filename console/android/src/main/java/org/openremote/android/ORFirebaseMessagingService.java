@@ -111,6 +111,8 @@ public class ORFirebaseMessagingService extends com.google.firebase.messaging.Fi
     // [END receive_message]
 
 
+
+
     private void sendNotification(AlertNotification alertNotification) {
         int notificationId = alertNotification.getId().hashCode();
         Intent intent = new Intent(this, ORMessagingActionService.class);
@@ -131,12 +133,14 @@ public class ORFirebaseMessagingService extends com.google.firebase.messaging.Fi
                 .setSound(defaultSoundUri);
 
         for (AlertAction alertAction : alertNotification.getActions()) {
-            Intent actionIntent = new Intent(this, ORMessagingActionService.class);
+            Intent  actionIntent = new Intent(this, ORMessagingActionService.class);
+
             actionIntent.putExtra("action", alertAction);
+            actionIntent.putExtra("url", alertNotification.getAppUrl());
             actionIntent.putExtra("notification", alertNotification);
             actionIntent.setAction(Long.toString(System.currentTimeMillis()));
             PendingIntent actionPendingIntent = PendingIntent.getService(this, notificationId, actionIntent,
-                    PendingIntent.FLAG_ONE_SHOT);
+                  pendingIntent.FLAG_ONE_SHOT);
             notificationBuilder = notificationBuilder.addAction(new NotificationCompat.Action(R.drawable.empty, alertAction.getTitle(), actionPendingIntent));
         }
 

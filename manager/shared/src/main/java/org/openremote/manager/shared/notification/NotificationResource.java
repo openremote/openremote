@@ -43,7 +43,8 @@ public interface NotificationResource {
     @RolesAllowed({"write:user"})
     void storeDeviceToken(@BeanParam RequestParams requestParams,
                           @FormParam("device_id") String deviceId,
-                          @FormParam("token") String token);
+                          @FormParam("token") String token,
+                          @FormParam("device_type") String deviceType);
 
     @POST
     @Path("alert")
