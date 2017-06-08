@@ -2,6 +2,7 @@
     <string name="app_name">OpenRemote</string>
     <string name="OR_BASE_SERVER">http://192.168.0.143:8080</string>
     <string name="OR_CONSOLE_URL">/console/REALM/index.html</string>
+    <string name="ENABLE_REMOTE_DEBUGGING">false</string>
     <string name="SHARED_PREF_TOKEN">TOKEN</string>
     <string name="SHARED_PREF_REFRESH_TOKEN">REFRESH_TOKEN</string>
     <string name="SHARED_PREF_TOKEN_ID">TOKEN_ID</string>

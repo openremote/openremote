@@ -2,19 +2,17 @@ package org.openremote.android;
 
 import android.app.Activity;
 import android.app.Notification;
-import android.app.NotificationManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.ApplicationInfo;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.http.SslError;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.StrictMode;
-import android.support.v4.app.NotificationBuilderWithBuilderAccessor;
-import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
@@ -29,30 +27,38 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
 import org.openremote.android.service.AlertNotification;
-import org.openremote.android.service.NotificationService;
 import org.openremote.android.service.TokenService;
 
+import java.util.logging.Logger;
 
 public class MainActivity extends Activity {
+
+    private static final Logger LOG = Logger.getLogger(MainActivity.class.getName());
 
     private final ConnectivityChangeReceiver connectivityChangeReceiver = new ConnectivityChangeReceiver();
     private WebView webView;
     private View errorView;
     private View noConnectivityView;
 
-
     @Override
     public void onActivityReenter(int resultCode, Intent data) {
         super.onActivityReenter(resultCode, data);
     }
 
-
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // Enable remote debugging of WebView from Chrome Debugger tools
+        if (isRemoteDebuggingEnabled()) {
+            LOG.info("Enabling remote debugging");
+            WebView.setWebContentsDebuggingEnabled(true);
+        }
+
+        // TODO Do we need this? Document why
         StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
         StrictMode.setThreadPolicy(policy);
+
         setContentView(R.layout.activity_web);
         if (getIntent().hasExtra("notification")) {
             AlertNotification alertNotification = (AlertNotification) getIntent().getSerializableExtra("notification");
@@ -163,6 +169,10 @@ public class MainActivity extends Activity {
                     Log.i("WEBVIEW", "error :" + error.getErrorCode());
                     Log.i("WEBVIEW", "error :" + error.getDescription());
                 }
+                // Remote debugging sessions from Chrome trigger "ERR_CACHE_MISS" that don't hurt, but we should not redirect the view
+                if (isRemoteDebuggingEnabled() && error.getErrorCode() == ERROR_UNKNOWN) {
+                    return;
+                }
                 webView.loadUrl("about:blank");
                 errorView.setVisibility(View.VISIBLE);
             }
@@ -223,6 +233,10 @@ public class MainActivity extends Activity {
             NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
             onConnectivityChanged(activeNetwork != null && activeNetwork.isConnectedOrConnecting());
         }
+    }
+
+    protected boolean isRemoteDebuggingEnabled() {
+        return Boolean.valueOf(getString(R.string.ENABLE_REMOTE_DEBUGGING));
     }
 
 }
