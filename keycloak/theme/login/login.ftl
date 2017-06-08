@@ -17,12 +17,14 @@
                         <input id="username"
                                autofocus
                                autocomplete="off"
+                               autocapitalize="off"
                                class="or-FormControl or-FormInputText"
                                name="username" value="${(login.username!'')?html}" type="text" disabled/>
                     <#else>
                         <input id="username"
                                autofocus
-                               autocomplete="off" 
+                               autocomplete="off"
+                               autocapitalize="off"
                                class="or-FormControl or-FormInputText"
                                name="username" value="${(login.username!'')?html}" type="text" autofocus/>
                     </#if>
