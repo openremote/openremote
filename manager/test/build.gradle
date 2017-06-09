@@ -26,6 +26,7 @@ dependencies {
 
     compile "junit:junit:$junitVersion"
     compile "org.spockframework:spock-core:$spockVersion"
+    compile "com.github.calimero:calimero-server:$calimeroVersion"
 }
 
 test {

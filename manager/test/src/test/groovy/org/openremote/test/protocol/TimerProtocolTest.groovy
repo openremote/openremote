@@ -32,7 +32,7 @@ class TimerProtocolTest extends Specification implements ManagerContainerTrait {
 
         when: "the container starts"
         def serverPort = findEphemeralPort()
-        def container = startContainerWithDemoScenesAndRules(defaultConfig(serverPort) << [(SETUP_IMPORT_DEMO_SCENES): "true"], defaultServices())
+        def container = startContainerWithDemoScenesAndRules(defaultConfig(serverPort), defaultServices())
         def assetStorageService = container.getService(AssetStorageService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)

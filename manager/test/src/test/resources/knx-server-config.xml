@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Calimero 2 server settings -->
+<knxServer name="knx-server" friendlyName="Calimero KNXnet/IP Test Server">
+
+	<!-- KNXnet/IP search & discovery -->
+	<discovery listenNetIf="all" outgoingNetIf="all" activate="true" />
+
+	<!-- Provides the KNXnet/IP-side configuration for access to one KNX subnet -->
+	<serviceContainer activate="true" routing="false" networkMonitoring="true" 
+		udpPort="3671" listenNetIf="any" reuseCtrlEP="false">
+		<knxAddress type="individual">1.1.1</knxAddress>
+		<disruptionBuffer expirationTimeout="30" udpPort="5555-5559" />
+		
+		<knxSubnet type="emulate">1.1.1</knxSubnet>
+
+		<!-- KNX group address filter applied for this service container (optional)  -->
+		<groupAddressFilter>
+			<knxAddress type="group">0/0/0</knxAddress>
+			<knxAddress type="group">2/1/1</knxAddress>
+			<knxAddress type="group">2/1/0</knxAddress>
+			<knxAddress type="group">2/1/20</knxAddress>
+		</groupAddressFilter>
+		<!-- Additional KNX individual addresses assigned to KNXnet/IP connections (optional) -->
+		<additionalAddresses>
+			<knxAddress type="individual">1.1.10</knxAddress>
+			<knxAddress type="individual">1.1.11</knxAddress>
+			<knxAddress type="individual">1.1.12</knxAddress>
+			<knxAddress type="individual">1.1.13</knxAddress>
+		</additionalAddresses>
+	</serviceContainer>
+	<!-- Next service container (optional) -->
+</knxServer>

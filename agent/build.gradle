@@ -10,4 +10,8 @@ dependencies {
 
     compile "com.luckycatlabs:SunriseSunsetCalculator:$sunriseSunsetCalculatorVersion"
     compile "org.quartz-scheduler:quartz:$quartzVersion"
+    
+    compile "com.github.calimero:calimero-core:$calimeroVersion"
+    compile "com.github.calimero:calimero-tools:$calimeroVersion"
+    
 }

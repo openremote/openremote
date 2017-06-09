@@ -1,3 +1,4 @@
 org.openremote.agent.protocol.simulator.SimulatorProtocol
 org.openremote.agent.protocol.macro.MacroProtocol
 org.openremote.agent.protocol.timer.TimerProtocol
+org.openremote.agent.protocol.knx.KNXProtocol
