@@ -19,11 +19,14 @@ import org.openremote.model.value.StringValue;
 import org.openremote.model.value.ValueException;
 import org.openremote.model.value.ValueType;
 
+import java.util.Objects;
+
 public class StringValueImpl extends ValueImpl implements StringValue {
 
     private transient String string;
 
     public StringValueImpl(String string) {
+        Objects.requireNonNull(string);
         this.string = string;
     }
 

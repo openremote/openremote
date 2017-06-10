@@ -20,6 +20,7 @@
 package org.openremote.agent.protocol;
 
 import org.openremote.container.ContainerService;
+import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.attribute.AttributeEvent;
 
@@ -33,6 +34,20 @@ public interface ProtocolAssetService extends ContainerService {
      * details such as temporary access (e.g. OAuth offline) tokens.
      */
     void updateProtocolConfiguration(AssetAttribute protocolConfiguration);
+
+    /**
+     * Protocols may store assets in the context or update existing assets. A unique identifier
+     * must be set by the protocol implementor, as well as a parent identifier. This operation
+     * stores transient or detached state and returns the current state.
+     */
+    Asset mergeAsset(Asset asset);
+
+    /**
+     * Protocols may remove assets from the context store.
+     *
+     * @return <code>false</code> if the delete could not be performed (asset may have children?)
+     */
+    boolean deleteAsset(String assetId);
 
     /**
      * Protocols can send arbitrary attribute change events for regular processing.

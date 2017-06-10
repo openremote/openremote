@@ -52,7 +52,7 @@ public class UserAsset implements Serializable {
     protected String userId;
 
     @Id
-    @Column(name = "ASSET_ID", length = 27)
+    @Column(name = "ASSET_ID", length = 36)
     protected String assetId;
 
     protected UserAsset() {

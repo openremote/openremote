@@ -42,7 +42,7 @@ import static org.openremote.model.Constants.PERSISTENCE_JSON_VALUE_TYPE;
 public abstract class Datapoint implements Serializable {
 
     @Id
-    @Column(name = "ENTITY_ID", length = 27, nullable = false)
+    @Column(name = "ENTITY_ID", length = 36, nullable = false)
     protected String entityId;
 
     @Id

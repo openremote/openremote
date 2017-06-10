@@ -19,10 +19,11 @@
  */
 package org.openremote.container.persistence;
 
+import com.fasterxml.uuid.Generators;
+import com.fasterxml.uuid.impl.RandomBasedGenerator;
 import org.hibernate.HibernateException;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.id.IdentifierGenerator;
-import org.openremote.container.util.IdentifierUtil;
 import org.openremote.model.IdentifiableEntity;
 
 import java.io.Serializable;
@@ -33,6 +34,8 @@ import java.io.Serializable;
  */
 public class UniqueIdentifierGenerator implements IdentifierGenerator {
 
+    final protected RandomBasedGenerator generator = Generators.randomBasedGenerator();
+
     @Override
     public Serializable generate(SharedSessionContractImplementor session, Object object) throws HibernateException {
         if (object instanceof IdentifiableEntity) {
@@ -40,6 +43,6 @@ public class UniqueIdentifierGenerator implements IdentifierGenerator {
             if (identifiableEntity.getId() != null)
                 return identifiableEntity.getId();
         }
-        return IdentifierUtil.generateGlobalUniqueId();
+        return generator.generate().toString();
     }
 }

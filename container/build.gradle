@@ -47,6 +47,8 @@ dependencies {
     compile "org.apache.camel:camel-script:$camelVersion"
     compile "org.apache.camel:camel-groovy:$camelVersion"
 
+    compile "com.fasterxml.uuid:java-uuid-generator:$uuidGeneratorVersion"
+
     // Test environment dependencies
     compile "org.glassfish.tyrus:tyrus-client:$tyrusVersion"
     compile "org.glassfish.tyrus:tyrus-container-grizzly-client:$tyrusVersion"

@@ -75,7 +75,7 @@ class ApartmentNotificationWhenAlarmTest  extends Specification implements Manag
         def notificationResource = getClientTarget(serverUri(serverPort), realm, accessToken).proxy(NotificationResource.class)
 
         when: "the notification tokens of some devices are stored"
-        notificationResource.storeDeviceToken(null, "device123", "token123")
+        notificationResource.storeDeviceToken(null, "device123", "token123", "ANDROID")
 
         then: "the tokens should be in the database"
         notificationService.findDeviceToken("device123", keycloakDemoSetup.testuser3Id) == "token123"

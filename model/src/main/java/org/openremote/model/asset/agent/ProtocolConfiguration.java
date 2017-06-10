@@ -72,7 +72,12 @@ final public class ProtocolConfiguration {
     }
 
     public static boolean isProtocolConfiguration(AssetAttribute attribute) {
-        return getProtocolName(attribute).isPresent() && attribute.getMetaStream().anyMatch(isMetaNameEqualTo(PROTOCOL_CONFIGURATION));
+        return getProtocolName(attribute).isPresent()
+            && attribute.getMetaStream().anyMatch(isMetaNameEqualTo(PROTOCOL_CONFIGURATION))
+            && attribute.getMetaStream().filter(isMetaNameEqualTo(PROTOCOL_CONFIGURATION))
+            .findFirst()
+            .map(metaItem -> metaItem.getValueAsBoolean().orElse(false))
+            .orElse(false);
     }
 
     public static Optional<String> getProtocolName(AssetAttribute attribute) {

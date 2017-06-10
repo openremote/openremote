@@ -24,6 +24,7 @@ import org.openremote.agent.protocol.simulator.SimulatorProtocol;
 import org.openremote.agent.protocol.simulator.element.ColorSimulatorElement;
 import org.openremote.agent.protocol.simulator.element.NumberSimulatorElement;
 import org.openremote.agent.protocol.simulator.element.SwitchSimulatorElement;
+import org.openremote.agent.protocol.upnp.UpnpProtocol;
 import org.openremote.container.Container;
 import org.openremote.manager.server.asset.ServerAsset;
 import org.openremote.manager.server.setup.AbstractManagerSetup;
@@ -416,6 +417,14 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         );
         apartment2 = assetStorageService.merge(apartment2);
         apartment2Id = apartment2.getId();
+
+        /* TODO Experimental
+        ServerAsset apartment2UpnpAgent= new ServerAsset("UPnP Agent", AGENT, apartment2);
+        apartment2UpnpAgent.setAttributes(
+            initProtocolConfiguration(new AssetAttribute("upnpConfig1"), UpnpProtocol.PROTOCOL_NAME)
+        );
+        apartment2UpnpAgent = assetStorageService.merge(apartment2UpnpAgent);
+        */
 
         ServerAsset apartment2Livingroom = new ServerAsset("Living Room", ROOM, apartment2);
         apartment2Livingroom.setLocation(apartment2.getLocation());

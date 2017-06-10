@@ -49,6 +49,8 @@ public enum AttributeType {
 
     BOOLEAN("toggle-off", ValueType.BOOLEAN, value -> Optional.empty()),
 
+    OBJECT("cubes", ValueType.OBJECT, value -> Optional.empty()),
+
     /**
      * When {@link Ruleset#templateAssetId} references an asset, use the attribute to customize the
      * template when the ruleset is deployed. The attribute name is available in the template as

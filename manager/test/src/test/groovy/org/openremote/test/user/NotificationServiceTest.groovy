@@ -54,8 +54,8 @@ class NotificationServiceTest extends Specification implements ManagerContainerT
         notificationService.findAllUsersWithToken().isEmpty()
 
         when: "the notification tokens of some devices are stored"
-        notificationResource.storeDeviceToken(null, "device123", "token123")
-        notificationResource.storeDeviceToken(null, "device456", "token456")
+        notificationResource.storeDeviceToken(null, "device123", "token123", "ANDROID")
+        notificationResource.storeDeviceToken(null, "device456", "token456", "ANDROID")
 
         then: "the tokens should be in the database"
         notificationService.findDeviceToken("device123", keycloakDemoSetup.testuser3Id) == "token123"
@@ -83,7 +83,7 @@ class NotificationServiceTest extends Specification implements ManagerContainerT
         notificationService.findAllUsersWithToken(new UserQuery().asset(new UserQuery.AssetPredicate().id(managerDemoSetup.apartment3Id))).isEmpty()
 
         when: "the notification token of some device is updated"
-        notificationResource.storeDeviceToken(null, "device456", "token789")
+        notificationResource.storeDeviceToken(null, "device456", "token789", "ANDROID")
 
         then: "the updated token should be in the database"
         notificationService.findDeviceToken("device456", keycloakDemoSetup.testuser3Id) == "token789"

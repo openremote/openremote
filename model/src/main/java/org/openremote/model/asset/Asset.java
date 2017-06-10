@@ -220,7 +220,7 @@ import static org.openremote.model.asset.AssetAttribute.*;
 public class Asset implements IdentifiableEntity {
 
     @Id
-    @Column(name = "ID", length = 27)
+    @Column(name = "ID", length = 43) // TODO Is this ideal long-term for reads when keys must be distributed on cluster?
     @GeneratedValue(generator = PERSISTENCE_UNIQUE_ID_GENERATOR)
     protected String id;
 
@@ -243,7 +243,7 @@ public class Asset implements IdentifiableEntity {
     @Column(name = "ASSET_TYPE", nullable = false, updatable = false)
     protected String type;
 
-    @Column(name = "PARENT_ID", length = 27)
+    @Column(name = "PARENT_ID", length = 36)
     protected String parentId;
 
     @Transient

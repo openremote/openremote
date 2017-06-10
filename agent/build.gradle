@@ -13,5 +13,7 @@ dependencies {
     
     compile "com.github.calimero:calimero-core:$calimeroVersion"
     compile "com.github.calimero:calimero-tools:$calimeroVersion"
+
+    compile "org.fourthline.cling:cling-core:$clingVersion"
     
 }

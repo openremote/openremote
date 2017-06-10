@@ -242,11 +242,17 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
      * @throws IllegalArgumentException if the realm or parent is illegal, or other asset constraint is violated.
      */
     public ServerAsset merge(ServerAsset asset) {
+        return merge(asset, false);
+    }
+
+    /**
+     * @param overrideVersion If <code>true</code>, the merge will override the data in the database, independent of version.
+     * @return The current stored asset state.
+     * @throws IllegalArgumentException if the realm or parent is illegal, or other asset constraint is violated.
+     */
+    public ServerAsset merge(ServerAsset asset, boolean overrideVersion) {
         return persistenceService.doReturningTransaction(em -> {
-            // Validate realm
-            if (!managerIdentityService.isActiveTenant(asset.getRealmId())) {
-                throw new IllegalStateException("Realm not found/active: " + asset.getRealmId());
-            }
+
             // Validate parent
             if (asset.getParentId() != null) {
                 // If this is a not a root asset...
@@ -257,6 +263,15 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 // ... the parent can not be a child of the asset
                 if (parent.pathContains(asset.getId()))
                     throw new IllegalStateException("Invalid parent");
+
+                // ... and if we don't have a realm identifier, use the parent's
+                if (asset.getRealmId() == null)
+                    asset.setRealmId(parent.getRealmId());
+            }
+
+            // Validate realm
+            if (!managerIdentityService.isActiveTenant(asset.getRealmId())) {
+                throw new IllegalStateException("Realm not found/active: " + asset.getRealmId());
             }
 
             // Validate attributes
@@ -270,6 +285,17 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             }
             if (invalid > 0) {
                 throw new IllegalStateException("Storing asset failed, invalid attributes: " + invalid);
+            }
+
+
+            // If this is real merge and desired, copy the persistent version number over the detached
+            // version, so the detached state always wins and this update will go through and ignore
+            // concurrent updates
+            if (asset.getId() != null && overrideVersion) {
+                ServerAsset existing = em.find(ServerAsset.class, asset.getId());
+                if (existing != null) {
+                    asset.setVersion(existing.getVersion());
+                }
             }
 
             LOG.fine("Storing: " + asset);
