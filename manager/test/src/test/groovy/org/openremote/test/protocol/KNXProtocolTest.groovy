@@ -19,6 +19,7 @@
  */
 package org.openremote.test.protocol
 
+import org.apache.camel.language.simple.ast.BlockStart
 import org.openremote.agent.protocol.AbstractProtocol
 import org.openremote.agent.protocol.knx.KNXProtocol
 import org.openremote.agent.protocol.ConnectionStatus
@@ -36,6 +37,7 @@ import org.openremote.model.value.Values
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
+import tuwien.auto.calimero.server.Launcher
 
 /**
  * This tests the KNX protocol and protocol implementation.
@@ -45,17 +47,20 @@ class KNXProtocolTest extends Specification implements ManagerContainerTrait {
     def "Check KNX protocol"() {
 
         given: "expected conditions"
-        def conditions = new PollingConditions(timeout: 10, delay: 1)
+        def conditions = new PollingConditions(timeout: 1, delay: 1)
 
+        and: "the KNX emulation server is started"
+        def knxEmulationServer = new Launcher("manager/test/src/test/resources/knx-server-config.xml")
+        def knxServerThread = new Thread(knxEmulationServer);
+        knxServerThread.start();
+        
         and: "the container is started"
         def serverPort = findEphemeralPort()
-        def container = startContainerNoDemoAssets(defaultConfig(serverPort), defaultServices())
+        def container = startContainerNoDemoImport(defaultConfig(serverPort), defaultServices())
         def assetStorageService = container.getService(AssetStorageService.class)
         def agentService = container.getService(AgentService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
         
-        and: "the KNX emulation server is started"
-        //TODO
 
         when: "a KNX agent that uses the KNX protocol is created with a valid protocol configuration"
         def knxAgent = new ServerAsset()
@@ -75,13 +80,24 @@ class KNXProtocolTest extends Specification implements ManagerContainerTrait {
         conditions.eventually {
             assert agentService.getProtocolDeploymentStatus(knxAgent.getAttribute("knxConfig").get().getReferenceOrThrow()) == ConnectionStatus.CONNECTED
         }
-        
         conditions.eventually {
             assert agentService.getProtocolDeploymentStatus(knxAgent.getAttribute("knxConfigError").get().getReferenceOrThrow()) == ConnectionStatus.ERROR
         }
 
-
+        when: "the connection to the KNX IP gateway is lost"
+        knxEmulationServer.quit()
+        
+        then: "the protocol status should switch to closed, waiting, connecting, connected"
+        conditions.eventually {
+            assert agentService.getProtocolDeploymentStatus(knxAgent.getAttribute("knxConfig").get().getReferenceOrThrow()) == ConnectionStatus.WAITING
+        }
+        conditions.eventually {
+            assert agentService.getProtocolDeploymentStatus(knxAgent.getAttribute("knxConfig").get().getReferenceOrThrow()) == ConnectionStatus.CONNECTED
+        }
+        
         cleanup: "the server should be stopped"
         stopContainer(container)
+
+        
     }
 }

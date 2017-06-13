@@ -6,11 +6,8 @@
 	<discovery listenNetIf="all" outgoingNetIf="all" activate="true" />
 
 	<!-- Provides the KNXnet/IP-side configuration for access to one KNX subnet -->
-	<serviceContainer activate="true" routing="false" networkMonitoring="true" 
-		udpPort="3671" listenNetIf="any" reuseCtrlEP="false">
+	<serviceContainer activate="true" routing="false" networkMonitoring="true" udpPort="3671" listenNetIf="any" reuseCtrlEP="false">
 		<knxAddress type="individual">1.1.1</knxAddress>
-		<disruptionBuffer expirationTimeout="30" udpPort="5555-5559" />
-		
 		<knxSubnet type="emulate">1.1.1</knxSubnet>
 
 		<!-- KNX group address filter applied for this service container (optional)  -->
