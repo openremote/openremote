@@ -36,6 +36,9 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 @JsType(isNative = true)
 public interface NotificationResource {
 
+    /**
+     * Store a device token for the authenticated user.
+     */
     @PUT
     @Path("token")
     @SuccessStatusCode(204)

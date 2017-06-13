@@ -51,6 +51,7 @@ final public class ProtocolConfiguration {
         }
         isValidProtocolNameOrThrow(protocolName);
         attribute.setEnabled(true);
+        attribute.setReadOnly(true);
         attribute.setTypeAndClearValue(AttributeType.STRING);
         attribute.setValue(Values.create(protocolName));
         attribute.getMeta().add(new MetaItem(PROTOCOL_CONFIGURATION, Values.create(true)));

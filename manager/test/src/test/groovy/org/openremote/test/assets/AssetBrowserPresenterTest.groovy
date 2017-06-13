@@ -103,6 +103,7 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
         def placeController = createPlaceController(securityService, eventBus)
         def placeHistoryMapper = createPlaceHistoryMapper(ManagerHistoryMapper.getAnnotation(WithTokenizers.class))
         def environment = Environment.create(
+                Mock(Environment.Factory),
                 securityService,
                 requestService,
                 clientEventService,
@@ -275,6 +276,7 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
         def placeController = createPlaceController(securityService, eventBus)
         def placeHistoryMapper = createPlaceHistoryMapper(ManagerHistoryMapper.getAnnotation(WithTokenizers.class))
         def environment = Environment.create(
+                Mock(Environment.Factory),
                 securityService,
                 requestService,
                 clientEventService,
@@ -453,6 +455,7 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
         def placeController = createPlaceController(securityService, eventBus)
         def placeHistoryMapper = createPlaceHistoryMapper(ManagerHistoryMapper.getAnnotation(WithTokenizers.class))
         def environment = Environment.create(
+                Mock(Environment.Factory),
                 securityService,
                 requestService,
                 clientEventService,

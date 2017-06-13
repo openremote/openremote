@@ -21,10 +21,7 @@ package org.openremote.manager.client.widget;
 
 import com.google.gwt.dom.client.Style;
 import com.google.gwt.uibinder.client.UiChild;
-import com.google.gwt.user.client.ui.FlowPanel;
-import com.google.gwt.user.client.ui.HasWidgets;
-import com.google.gwt.user.client.ui.Label;
-import com.google.gwt.user.client.ui.Widget;
+import com.google.gwt.user.client.ui.*;
 
 import java.util.function.Consumer;
 import java.util.logging.Logger;
@@ -119,7 +116,7 @@ public class FormGroup extends FlowPanel implements HasWidgets {
     }
 
     @UiChild(tagname = "expansion")
-    public void addExtension(Widget widget) {
+    public void addExtension(IsWidget widget) {
         toggleExtensionButton.setVisible(true);
         toggleExtensionButton.setEnabled(true);
         extensionPanel.add(widget);

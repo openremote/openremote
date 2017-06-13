@@ -1,5 +1,5 @@
 /*
- * Copyright 2016, OpenRemote Inc.
+ * Copyright 2017, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -48,7 +48,7 @@ public class NotificationService implements ContainerService {
     public static final String NOTIFICATION_FIREBASE_URL_DEFAULT = "https://fcm.googleapis.com/fcm/send";
 
     protected PersistenceService persistenceService;
-    protected ResteasyWebTarget target;
+    protected ResteasyWebTarget firebaseTarget;
     private String fcmKey;
 
     @Override
@@ -65,7 +65,7 @@ public class NotificationService implements ContainerService {
         );
 
         ResteasyClient client = new ResteasyClientBuilder().build();
-        target = client.target(container.getConfig().getOrDefault(NOTIFICATION_FIREBASE_URL, NOTIFICATION_FIREBASE_URL_DEFAULT));
+        firebaseTarget = client.target(container.getConfig().getOrDefault(NOTIFICATION_FIREBASE_URL, NOTIFICATION_FIREBASE_URL_DEFAULT));
     }
 
     @Override
@@ -113,7 +113,7 @@ public class NotificationService implements ContainerService {
             List<DeviceNotificationToken> allTokenForUser = findAllTokenForUser(userId);
             for (DeviceNotificationToken notificationToken : allTokenForUser) {
                 try {
-                    Invocation.Builder builder = target.request().header("Authorization", "key=" + fcmKey);
+                    Invocation.Builder builder = firebaseTarget.request().header("Authorization", "key=" + fcmKey);
                     Notification notification = new Notification("_", true);
 
                     FCMBaseMessage message;
@@ -183,7 +183,7 @@ public class NotificationService implements ContainerService {
     protected String buildFromString(UserQuery query) {
         StringBuilder sb = new StringBuilder();
 
-        sb.append("FROM  DeviceNotificationToken dnt ");
+        sb.append("FROM DeviceNotificationToken dnt ");
 
         if (query.tenantPredicate != null) {
             sb.append("join User u on u.id = dnt.id.userId");

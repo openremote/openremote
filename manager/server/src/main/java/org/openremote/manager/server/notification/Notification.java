@@ -1,34 +1,62 @@
+/*
+ * Copyright 2017, OpenRemote Inc.
+ *
+ * See the CONTRIBUTORS.txt file in the distribution for a
+ * full listing of individual contributors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 package org.openremote.manager.server.notification;
 
 public class Notification {
 
-	String body;
-	boolean mutable_content;
-	String click_action = "openremoteNotification";
+    protected String body;
+    protected boolean mutableContent;
+    protected String clickAction = "openremoteNotification";
 
-	public Notification(String body, boolean mutable_content) {
-		super();
-		this.body = body;
-		this.mutable_content = mutable_content;
-	}
+    public Notification(String body, boolean mutableContent) {
+        super();
+        this.body = body;
+        this.mutableContent = mutableContent;
+    }
 
-	public String getBody() {
-		return body;
-	}
+    public String getBody() {
+        return body;
+    }
 
-	public void setBody(String body) {
-		this.body = body;
-	}
+    public void setBody(String body) {
+        this.body = body;
+    }
 
-	public boolean getMutable_content() {
-		return mutable_content;
-	}
+    public boolean getMutableContent() {
+        return mutableContent;
+    }
 
-	public void setMutable_content(boolean mutable_content) {
-		this.mutable_content = mutable_content;
-	}
+    public void setMutableContent(boolean mutableContent) {
+        this.mutableContent = mutableContent;
+    }
 
-	public String getClick_action() {
-		return click_action;
-	}
+    public String getClickAction() {
+        return clickAction;
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "{" +
+            "body='" + body + '\'' +
+            ", mutableContent=" + mutableContent +
+            ", clickAction='" + clickAction + '\'' +
+            '}';
+    }
 }

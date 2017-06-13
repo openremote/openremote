@@ -134,6 +134,7 @@ class AdminTenantsActivityTest extends Specification implements ManagerContainer
 
         and: "An activity management configuration"
         def environment = Environment.create(
+                Mock(Environment.Factory),
                 securityService,
                 requestService,
                 Mock(EventService),

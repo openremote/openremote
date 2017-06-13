@@ -38,6 +38,7 @@ import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
+import static org.openremote.manager.client.widget.ValueEditors.*;
 import static org.openremote.model.attribute.Attribute.ATTRIBUTE_NAME_VALIDATOR;
 import static org.openremote.model.attribute.Attribute.isAttributeNameEqualTo;
 
@@ -61,7 +62,7 @@ public class AttributesEditor
 
     protected FormLabel createAttributeLabel(AssetAttribute attribute) {
         FormLabel formLabel = new FormLabel(TextUtil.ellipsize(getAttributeLabel(attribute), 30));
-        formLabel.addStyleName("larger");
+        formLabel.getElement().getStyle().setWidth(20, com.google.gwt.dom.client.Style.Unit.EM);
         return formLabel;
     }
 
@@ -79,8 +80,7 @@ public class AttributesEditor
     protected void addAttributeActions(AssetAttribute attribute,
                                        FormGroup formGroup,
                                        FormField formField,
-                                       FormGroupActions formGroupActions,
-                                       IsWidget editor) {
+                                       FormGroupActions formGroupActions) {
 
         FormButton deleteButton = new FormButton();
         deleteButton.setText(container.getMessages().deleteAttribute());
@@ -191,7 +191,7 @@ public class AttributesEditor
                 FormGroup formGroup = new FormGroup();
 
                 FormLabel label = new FormLabel(item.getName().orElse(null));
-                label.addStyleName("largest");
+                label.getElement().getStyle().setWidth(40, com.google.gwt.dom.client.Style.Unit.EM);
                 formGroup.addFormLabel(label);
 
                 FormField formField = new FormField();
@@ -265,82 +265,66 @@ public class AttributesEditor
             itemValueEditorGroup.addFormGroupActions(formGroupActions);
         }
 
-        protected IsWidget createEditor(MetaItem item, ValueType valueType, boolean forceEditable, FormGroup formGroup) {
-            IsWidget editor;
-
+        protected IsWidget createEditor(MetaItem item, ValueType valueType, boolean isNewMetaItem, FormGroup formGroup) {
             AttributesEditor.Style style = container.getStyle();
 
             // For some meta items we know if we can edit them or not... custom items are always editable
-            boolean isEditable = item.getName().map(AssetMeta::isEditable).orElse(forceEditable);
+            boolean isEditable = item.getName().map(AssetMeta::isEditable).orElse(isNewMetaItem);
 
-            // Validation failure of meta item marks the attribute form extension as error state
-            Consumer<Boolean> resultConsumer = !forceEditable ?
-                success -> {
-                    // Validate again in context of attribute
-                    if (success) {
-                        List<ValidationFailure> failures = attribute.getMetaItemValidationFailures(item);
-                        if (!failures.isEmpty()) {
-                            success = false;
-                            formGroup.setError(true);
-                            for (ValidationFailure failure : failures) {
-                                showValidationError(item.getName().orElse(null), failure);
-                            }
+            Consumer<List<ValidationFailure>> validationResultConsumer =
+                failures -> {
+                    // If we are not creating a new meta item, validate again in context of attribute
+                    if (!isNewMetaItem && failures.isEmpty()) {
+                        failures = attribute.getMetaItemValidationFailures(item);
+                    }
+                    if (!failures.isEmpty()) {
+                        formGroup.setError(true);
+                        for (ValidationFailure failure : failures) {
+                            showValidationError(item.getName().orElse(null), failure);
                         }
                     }
-                    attributeGroups.get(attribute).setErrorInExtension(!success);
-                }
-                : null;
+                    // Validation failure of meta item marks the attribute form extension as error state
+                    if (!isNewMetaItem) {
+                        attributeGroups.get(attribute).setErrorInExtension(!failures.isEmpty());
+                    }
+                };
 
             if (valueType.equals(ValueType.STRING)) {
                 String currentValue = item.getValue().map(Object::toString).orElse(null);
-                Consumer<String> updateConsumer = isEditable
-                    ? rawValue -> STRING_UPDATER.accept(new ValueUpdate<>(item.getName().orElse(null), formGroup, item, resultConsumer, rawValue))
-                    : null;
-                editor = createStringEditorWidget(style, currentValue, Optional.empty(), updateConsumer);
+                return createStringEditor(
+                    item, currentValue, null, false, style.stringEditor(), formGroup, false, validationResultConsumer
+                );
             } else if (valueType.equals(ValueType.NUMBER)) {
                 String currentValue = item.getValue().map(Object::toString).orElse(null);
-                Consumer<String> updateConsumer = isEditable
-                    ? rawValue -> DOUBLE_UPDATER.accept(new ValueUpdate<>(item.getName().orElse(null), formGroup, item, resultConsumer, rawValue))
-                    : null;
-                editor = createNumberEditorWidget(style, currentValue, Optional.empty(), updateConsumer);
+                return createNumberEditor(
+                    item, currentValue, null, false, style.numberEditor(), formGroup, false, validationResultConsumer
+                );
             } else if (valueType.equals(ValueType.BOOLEAN)) {
                 Boolean currentValue = item.getValueAsBoolean().orElse(null);
-                Consumer<Boolean> updateConsumer = isEditable
-                    ? rawValue -> BOOLEAN_UPDATER.accept(new ValueUpdate<>(item.getName().orElse(null), formGroup, item, resultConsumer, rawValue))
-                    : null;
-                editor = createBooleanEditorWidget(style, currentValue, Optional.empty(), updateConsumer);
+                return createBooleanEditor(
+                    item, currentValue, null, false, style.booleanEditor(), formGroup, false, validationResultConsumer
+                );
             } else if (valueType.equals(ValueType.OBJECT)) {
                 ObjectValue currentValue = item.getValueAsObject().orElse(null);
-                Consumer<Value> updateConsumer = isEditable
-                    ? rawValue -> VALUE_UPDATER.accept(new ValueUpdate<>(item.getName().orElse(null), formGroup, item, resultConsumer, rawValue))
-                    : null;
+                String label = environment.getMessages().jsonObject();
+                String title = environment.getMessages().edit() + " " + environment.getMessages().jsonObject();
                 Supplier<Value> resetSupplier = () -> item.getValue().orElse(null);
-                String title = updateConsumer != null
-                    ? environment.getMessages().edit() + " " + environment.getMessages().jsonObject()
-                    : environment.getMessages().jsonObject();
-                editor = createJsonEditorWidget(
-                    style, environment.getMessages().jsonObject(), title, currentValue, updateConsumer, resetSupplier
+                return createObjectEditor(
+                    attribute, currentValue, resetSupplier, false, label, title, container.getJsonEditor(), formGroup, false, validationResultConsumer
                 );
             } else if (valueType.equals(ValueType.ARRAY)) {
                 ArrayValue currentValue = item.getValueAsArray().orElse(null);
-                Consumer<Value> updateConsumer = isEditable
-                    ? rawValue -> VALUE_UPDATER.accept(new ValueUpdate<>(item.getName().orElse(null), formGroup, item, resultConsumer, rawValue))
-                    : null;
+                String label = environment.getMessages().jsonArray();
+                String title = environment.getMessages().edit() + " " + environment.getMessages().jsonArray();
                 Supplier<Value> resetSupplier = () -> item.getValue().orElse(null);
-                String title = updateConsumer != null
-                    ? environment.getMessages().edit() + " " + environment.getMessages().jsonArray()
-                    : environment.getMessages().jsonArray();
-                editor = createJsonEditorWidget(
-                    style, environment.getMessages().jsonArray(), title, currentValue, updateConsumer, resetSupplier
+                return createArrayEditor(
+                    attribute, currentValue, resetSupplier, false, label, title, container.getJsonEditor(), formGroup, false, validationResultConsumer
                 );
             } else {
-                FormField unsupportedField = new FormField();
-                unsupportedField.add(new FormOutputText(
+                return new FormOutputText(
                     environment.getMessages().unsupportedMetaItemType(valueType.name())
-                ));
-                editor = unsupportedField;
+                );
             }
-            return editor;
         }
 
         /**
@@ -372,7 +356,8 @@ public class AttributesEditor
 
             formField.add(new FormOutputText(environment.getMessages().or()));
 
-            FormInputText itemNameInput = createFormInputText(container.getStyle().stringEditor());
+            FormInputText itemNameInput = new FormInputText();
+            itemNameInput.addStyleName(container.getStyle().stringEditor());
             itemNameInput.setPlaceholder(environment.getMessages().enterCustomAssetAttributeMetaName());
             itemNameInput.addValueChangeHandler(event -> item.setName(event.getValue()));
             formField.add(itemNameInput);

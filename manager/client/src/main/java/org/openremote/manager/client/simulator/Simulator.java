@@ -1,5 +1,5 @@
 /*
- * Copyright 2017, OpenRemote Inc.
+ * Copyright 2016, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -17,21 +17,23 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.server.notification;
+package org.openremote.manager.client.simulator;
 
-public class FCMBaseMessage {
+import com.google.gwt.user.client.ui.FlowPanel;
+import com.google.gwt.user.client.ui.IsWidget;
+import com.google.gwt.user.client.ui.Label;
+import com.google.inject.Inject;
+import org.openremote.manager.client.Environment;
 
-    protected String to;
+public class Simulator extends FlowPanel implements IsWidget{
 
-    public FCMBaseMessage(String to) {
-        this.to = to;
+    final protected Environment environment;
+    @Inject
+    public Simulator(Environment environment) {
+        this.environment = environment;
+        setStyleName("layout vertical center or-Simulator");
+
+        add(new Label("TODO Use ValueEditors and a new SimulatorResource on server to implement " + environment.getMessages().simulator()));
     }
 
-    public String getTo() {
-        return to;
-    }
-
-    public void setTo(String to) {
-        this.to = to;
-    }
 }

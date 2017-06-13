@@ -237,6 +237,26 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         return persistenceService.doReturningTransaction(em -> findAllIdentifiersOnly(em, query));
     }
 
+    public List<String> findNames(String... ids) {
+        // TODO: Do this in a loop in reasonably sized batches
+        return persistenceService.doReturningTransaction(em -> {
+            List<Object[]> result = em.createQuery("select a.id, a.name from Asset a where a.id in :ids")
+                .setParameter("ids", Arrays.asList(ids))
+                .getResultList();
+            List<String> names = new ArrayList<>();
+            idLoop:
+            for (String id : ids) {
+                for (Object[] tuple: result) {
+                    if (tuple[0].equals(id)) {
+                        names.add((String) tuple[1]);
+                        break idLoop;
+                    }
+                }
+            }
+            return names;
+        });
+    }
+
     /**
      * @return The current stored asset state.
      * @throws IllegalArgumentException if the realm or parent is illegal, or other asset constraint is violated.

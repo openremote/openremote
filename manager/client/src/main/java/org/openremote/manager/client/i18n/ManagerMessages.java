@@ -221,8 +221,6 @@ public interface ManagerMessages extends Messages {
 
     String value();
 
-    String noValue();
-
     String metaItems();
 
     String or();
@@ -392,4 +390,6 @@ public interface ManagerMessages extends Messages {
     String settingsSaved();
 
     String noAttributes();
+
+    String simulator();
 }

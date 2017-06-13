@@ -96,10 +96,10 @@ class NotificationServiceTest extends Specification implements ManagerContainerT
         then: "it should be one alert notification pending"
         alerts.size() == 1
 
-        when: "the alert Notification is acknowledge"
+        when: "the alert Notification is acknowledged"
         notificationResource.removeAlertNotification(alerts.get(0).id)
 
-        then: "it should be no alert"
+        then: "there should be no alert"
         notificationResource.getAlertNotification().size() == 0
 
         cleanup: "the server should be stopped"

@@ -51,6 +51,8 @@ public enum AttributeType {
 
     OBJECT("cubes", ValueType.OBJECT, value -> Optional.empty()),
 
+    ARRAY("ellipsis-h", ValueType.ARRAY, value -> Optional.empty()),
+
     /**
      * When {@link Ruleset#templateAssetId} references an asset, use the attribute to customize the
      * template when the ruleset is deployed. The attribute name is available in the template as

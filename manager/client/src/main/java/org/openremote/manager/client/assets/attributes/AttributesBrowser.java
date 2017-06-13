@@ -20,15 +20,17 @@
 package org.openremote.manager.client.assets.attributes;
 
 import com.google.gwt.user.client.ui.IsWidget;
-import com.google.gwt.user.client.ui.Widget;
 import elemental.client.Browser;
 import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.datapoint.DatapointBrowser;
+import org.openremote.manager.client.simulator.Simulator;
 import org.openremote.manager.client.util.CollectionsUtil;
 import org.openremote.manager.client.widget.*;
+import org.openremote.model.Constants;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.ReadAssetAttributesEvent;
+import org.openremote.model.asset.agent.ProtocolConfiguration;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeExecuteStatus;
 import org.openremote.model.attribute.AttributeState;
@@ -121,83 +123,93 @@ public abstract class AttributesBrowser
     protected void addAttributeActions(AssetAttribute attribute,
                                        FormGroup formGroup,
                                        FormField formField,
-                                       FormGroupActions formGroupActions,
-                                       IsWidget editor) {
+                                       FormGroupActions formGroupActions) {
 
-        // Allow read/write of attribute if we understand attribute type (have an editor)
-        if (editor != null) {
+        if (attribute.isExecutable()) {
+            // A command is executed by writing a special value
+            FormButton startButton = new FormButton();
+            startButton.setEnabled(!attribute.isReadOnly());
+            startButton.setText(container.getMessages().start());
+            startButton.setPrimary(true);
+            startButton.setIcon("play-circle");
+            startButton.addClickHandler(clickEvent -> {
+                attribute.setValue(AttributeExecuteStatus.REQUEST_START.asValue());
+                writeAttributeValue(attribute);
+            });
+            formGroupActions.add(startButton);
 
-            if (attribute.isExecutable()) {
-                // A command is executed by writing a special value
-                FormButton startButton = new FormButton();
-                startButton.setEnabled(!attribute.isReadOnly());
-                startButton.setText(container.getMessages().start());
-                startButton.setPrimary(true);
-                startButton.setIcon("play-circle");
-                startButton.addClickHandler(clickEvent -> {
-                    attribute.setValue(AttributeExecuteStatus.REQUEST_START.asValue());
-                    writeAttributeValue(attribute);
-                });
-                formGroupActions.add(startButton);
+            FormButton repeatButton = new FormButton();
+            repeatButton.setEnabled(!attribute.isReadOnly());
+            repeatButton.setText(container.getMessages().repeat());
+            repeatButton.setPrimary(true);
+            repeatButton.setIcon("repeat");
+            repeatButton.addClickHandler(clickEvent -> {
+                attribute.setValue(AttributeExecuteStatus.REQUEST_REPEATING.asValue());
+                writeAttributeValue(attribute);
+            });
+            formGroupActions.add(repeatButton);
 
-                FormButton repeatButton = new FormButton();
-                repeatButton.setEnabled(!attribute.isReadOnly());
-                repeatButton.setText(container.getMessages().repeat());
-                repeatButton.setPrimary(true);
-                repeatButton.setIcon("repeat");
-                repeatButton.addClickHandler(clickEvent -> {
-                    attribute.setValue(AttributeExecuteStatus.REQUEST_REPEATING.asValue());
-                    writeAttributeValue(attribute);
-                });
-                formGroupActions.add(repeatButton);
+            FormButton cancelButton = new FormButton();
+            cancelButton.setEnabled(!attribute.isReadOnly());
+            cancelButton.setText(container.getMessages().cancel());
+            cancelButton.setPrimary(true);
+            cancelButton.setIcon("stop-circle");
+            cancelButton.addClickHandler(clickEvent -> {
+                attribute.setValue(AttributeExecuteStatus.REQUEST_CANCEL.asValue());
+                writeAttributeValue(attribute);
+            });
+            formGroupActions.add(cancelButton);
 
-                FormButton cancelButton = new FormButton();
-                cancelButton.setEnabled(!attribute.isReadOnly());
-                cancelButton.setText(container.getMessages().cancel());
-                cancelButton.setPrimary(true);
-                cancelButton.setIcon("stop-circle");
-                cancelButton.addClickHandler(clickEvent -> {
-                    attribute.setValue(AttributeExecuteStatus.REQUEST_CANCEL.asValue());
-                    writeAttributeValue(attribute);
-                });
-                formGroupActions.add(cancelButton);
+            FormButton readStatusButton = new FormButton();
+            readStatusButton.setText(container.getMessages().getStatus());
+            readStatusButton.setIcon("cloud-download");
+            readStatusButton.addClickHandler(clickEvent -> readAttributeValue(attribute));
+            readButtons.add(readStatusButton);
+            formGroupActions.add(readStatusButton);
 
-                FormButton readStatusButton = new FormButton();
-                readStatusButton.setText(container.getMessages().getStatus());
-                readStatusButton.setIcon("cloud-download");
-                readStatusButton.addClickHandler(clickEvent -> readAttributeValue(attribute));
-                readButtons.add(readStatusButton);
-                formGroupActions.add(readStatusButton);
+        } else {
+            // Default read/write actions
+            FormButton writeValueButton = new FormButton();
+            writeValueButton.setEnabled(!attribute.isReadOnly());
+            writeValueButton.setText(container.getMessages().write());
+            writeValueButton.setPrimary(true);
+            writeValueButton.setIcon("cloud-upload");
+            writeValueButton.addClickHandler(clickEvent -> writeAttributeValue(attribute));
+            formGroupActions.add(writeValueButton);
 
-            } else {
-                // Default read/write actions
-                FormButton writeValueButton = new FormButton();
-                writeValueButton.setEnabled(!attribute.isReadOnly());
-                writeValueButton.setText(container.getMessages().write());
-                writeValueButton.setPrimary(true);
-                writeValueButton.setIcon("cloud-upload");
-                writeValueButton.addClickHandler(clickEvent -> writeAttributeValue(attribute));
-                formGroupActions.add(writeValueButton);
-
-                FormButton readValueButton = new FormButton();
-                readValueButton.setText(container.getMessages().read());
-                readValueButton.setIcon("cloud-download");
-                readValueButton.addClickHandler(clickEvent -> readAttributeValue(attribute));
-                readButtons.add(readValueButton);
-                formGroupActions.add(readValueButton);
-            }
+            FormButton readValueButton = new FormButton();
+            readValueButton.setText(container.getMessages().read());
+            readValueButton.setIcon("cloud-download");
+            readValueButton.addClickHandler(clickEvent -> readAttributeValue(attribute));
+            readButtons.add(readValueButton);
+            formGroupActions.add(readValueButton);
         }
     }
 
     @Override
     protected void addAttributeExtensions(AssetAttribute attribute,
                                           FormGroup formGroup) {
-        Widget datapointBrowser = createDatapointBrowser(attribute);
+
+        boolean haveExtensions = false;
+
+        IsWidget datapointBrowser = createDatapointBrowser(attribute);
         if (datapointBrowser != null) {
             FormSectionLabel sectionLabel = new FormSectionLabel(environment.getMessages().historicalData());
             formGroup.addExtension(sectionLabel);
             formGroup.addExtension(datapointBrowser);
-        } else {
+            haveExtensions = true;
+        }
+
+        IsWidget simulator = createSimulator(attribute);
+        if (simulator != null) {
+            FormSectionLabel sectionLabel = new FormSectionLabel(environment.getMessages().simulator());
+            formGroup.addExtension(sectionLabel);
+            formGroup.addExtension(simulator);
+            haveExtensions = true;
+        }
+
+
+        if (!haveExtensions) {
             formGroup.showDisabledExtensionToggle();
         }
     }
@@ -268,12 +280,7 @@ public abstract class AttributesBrowser
         if (formField.getWidgetCount() > 0) {
             formField.getWidget(0).removeFromParent();
         }
-        final AttributeEditor editor = createEditor(attribute, formGroup);
-        if (editor == null) {
-            formField.add(createUnsupportedEditor(attribute));
-            return;
-        }
-
+        final IsWidget editor = createAttributeValueEditor(attribute, formGroup);
         formField.add(editor);
 
         // "Blink" the editor so users know there might be a new value
@@ -306,6 +313,13 @@ public abstract class AttributesBrowser
             };
         }
         return null;
+    }
+
+    protected Simulator createSimulator(AssetAttribute attribute) {
+        return environment.getSecurityService().isSuperUser() && ProtocolConfiguration.isProtocolConfiguration(attribute)
+            ? ProtocolConfiguration.getProtocolName(attribute)
+            .filter(name -> name.equals(Constants.PROTOCOL_NAMESPACE + ":simulator"))
+            .map(name ->environment.getFactory().getSimulatorProvider().get()).orElse(null) : null;
     }
 
     /* ####################################################################### */

@@ -23,6 +23,10 @@ import com.google.firebase.iid.FirebaseInstanceIdService;
 import org.openremote.android.service.TokenService;
 
 
+/**
+ * This runs only once when the application is started for the first time after install. To generate
+ * new device tokens and send them to the server, uninstall the app first.
+ */
 public class ORFirebaseInstanceIDService extends FirebaseInstanceIdService {
 
     private static final String TAG = "ORFirebaseIIDService";

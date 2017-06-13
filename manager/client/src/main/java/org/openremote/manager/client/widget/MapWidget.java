@@ -91,6 +91,7 @@ public class MapWidget extends FlowPanel {
             ArrayValue offset = Values.createArray();
             offset.addAll(create(0), create(0.8));
             layout.put("text-offset", offset);
+            layout.put("text-max-width", create(44));
 
             layout.put("icon-image", "marker_15");
             offset = Values.createArray();
