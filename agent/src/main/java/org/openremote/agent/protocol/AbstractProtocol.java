@@ -33,7 +33,6 @@ import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.AttributeState;
 import org.openremote.model.attribute.MetaItem;
-import org.openremote.model.util.Triplet;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -44,10 +43,43 @@ import java.util.logging.Logger;
 
 public abstract class AbstractProtocol implements Protocol {
 
+    protected static class LinkedProtocolInfo {
+
+        AssetAttribute protocolConfiguration;
+        Consumer<ConnectionStatus> connectionStatusConsumer;
+        ConnectionStatus currentConnectionStatus;
+
+        protected LinkedProtocolInfo(
+            AssetAttribute protocolConfiguration,
+            Consumer<ConnectionStatus> connectionStatusConsumer,
+            ConnectionStatus currentConnectionStatus
+        ) {
+            this.protocolConfiguration = protocolConfiguration;
+            this.connectionStatusConsumer = connectionStatusConsumer;
+            this.currentConnectionStatus = currentConnectionStatus;
+        }
+
+        public AssetAttribute getProtocolConfiguration() {
+            return protocolConfiguration;
+        }
+
+        public Consumer<ConnectionStatus> getConnectionStatusConsumer() {
+            return connectionStatusConsumer;
+        }
+
+        public ConnectionStatus getCurrentConnectionStatus() {
+            return currentConnectionStatus;
+        }
+
+        protected void setCurrentConnectionStatus(ConnectionStatus currentConnectionStatus) {
+            this.currentConnectionStatus = currentConnectionStatus;
+        }
+    }
+
     private static final Logger LOG = Logger.getLogger(AbstractProtocol.class.getName());
 
     protected final Map<AttributeRef, AssetAttribute> linkedAttributes = new HashMap<>();
-    protected final Map<AttributeRef, Triplet<AssetAttribute, Consumer<ConnectionStatus>, ConnectionStatus>> linkedProtocolConfigurations = new HashMap<>();
+    protected final Map<AttributeRef, LinkedProtocolInfo> linkedProtocolConfigurations = new HashMap<>();
     protected MessageBrokerContext messageBrokerContext;
     protected ProducerTemplate producerTemplate;
     protected TimerService timerService;
@@ -111,7 +143,7 @@ public abstract class AbstractProtocol implements Protocol {
             LOG.finer("Linking protocol configuration to protocol '" + getProtocolName() + "': " + protocolConfiguration);
             linkedProtocolConfigurations.put(
                 protocolConfiguration.getReferenceOrThrow(),
-                new Triplet<>(protocolConfiguration, statusConsumer, ConnectionStatus.CONNECTING)
+                new LinkedProtocolInfo(protocolConfiguration, statusConsumer, ConnectionStatus.CONNECTING)
             );
             doLinkProtocolConfiguration(protocolConfiguration);
         }
@@ -167,10 +199,10 @@ public abstract class AbstractProtocol implements Protocol {
 
     protected AssetAttribute getLinkedProtocolConfiguration(AttributeRef protocolConfigurationRef) {
         synchronized (linkedProtocolConfigurations) {
-            Triplet<AssetAttribute, Consumer<ConnectionStatus>, ConnectionStatus> assetAttributeConsumerInfo = linkedProtocolConfigurations.get(protocolConfigurationRef);
+            LinkedProtocolInfo linkedProtocolInfo = linkedProtocolConfigurations.get(protocolConfigurationRef);
             // Don't bother with null check if someone calls here with an attribute not linked to this protocol
             // then they're doing something wrong so fail hard and fast
-            return assetAttributeConsumerInfo.getValue1();
+            return linkedProtocolInfo.getProtocolConfiguration();
         }
     }
 
@@ -244,10 +276,10 @@ public abstract class AbstractProtocol implements Protocol {
     protected void updateStatus(AttributeRef protocolRef, ConnectionStatus connectionStatus) {
         synchronized (linkedProtocolConfigurations) {
             linkedProtocolConfigurations.computeIfPresent(protocolRef,
-                (ref, pair) -> {
-                    pair.getValue2().accept(connectionStatus);
-                    pair.value3 = connectionStatus;
-                    return pair;
+                (ref, linkedProtocolInfo) -> {
+                    linkedProtocolInfo.getConnectionStatusConsumer().accept(connectionStatus);
+                    linkedProtocolInfo.setCurrentConnectionStatus(connectionStatus);
+                    return linkedProtocolInfo;
                 }
             );
         }
@@ -258,8 +290,8 @@ public abstract class AbstractProtocol implements Protocol {
      */
     protected ConnectionStatus getStatus(AssetAttribute protocolConfiguration) {
         synchronized (linkedProtocolConfigurations) {
-            Triplet<AssetAttribute, Consumer<ConnectionStatus>, ConnectionStatus> assetAttributeConsumerInfo = linkedProtocolConfigurations.get(protocolConfiguration.getReferenceOrThrow());
-            return assetAttributeConsumerInfo.getValue3();
+            LinkedProtocolInfo linkedProtocolInfo = linkedProtocolConfigurations.get(protocolConfiguration.getReferenceOrThrow());
+            return linkedProtocolInfo.getCurrentConnectionStatus();
         }
     }
 
