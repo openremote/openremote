@@ -71,6 +71,59 @@ public class Values {
         return cast(BooleanValue.class, value).map(BooleanValue::getBoolean);
     }
 
+    /**
+     * Will attempt to coerce the value into a boolean (where it makes sense)
+     */
+    public static Optional<Boolean> getBooleanCoerced(Value value) {
+        if (value == null) {
+            return Optional.empty();
+        }
+
+        switch (value.getType()) {
+            case OBJECT:
+                return Optional.empty();
+            case ARRAY:
+                return Optional.empty();
+            case STRING:
+                return Optional.of(Boolean.parseBoolean(value.toString().toLowerCase()));
+            case NUMBER:
+                int number = Values.getNumber(value).map(Double::intValue).orElse(2);
+                return number == 0 ? Optional.of(false) : number == 1 ? Optional.of(true) : Optional.empty();
+            case BOOLEAN:
+                return Values.getBoolean(value);
+        }
+
+        return Optional.empty();
+    }
+
+    /**
+     * Attempts to coerce the value into an integer (where it makes sense)
+     */
+    public static Optional<Integer> getIntegerCoerced(Value value) {
+        if (value == null) {
+            return Optional.empty();
+        }
+
+        switch (value.getType()) {
+            case OBJECT:
+                return Optional.empty();
+            case ARRAY:
+                return Optional.empty();
+            case STRING:
+                try {
+                    Optional.of(Integer.parseInt(value.toString()));
+                } catch (NumberFormatException e) {
+                    return Optional.empty();
+                }
+            case NUMBER:
+                return Values.getNumber(value).map(Double::intValue);
+            case BOOLEAN:
+                return Values.getBoolean(value).map(b -> b ? 1 : 0);
+        }
+
+        return Optional.empty();
+    }
+
     public static Optional<ObjectValue> getObject(Value value) {
         return cast(ObjectValue.class, value);
     }
