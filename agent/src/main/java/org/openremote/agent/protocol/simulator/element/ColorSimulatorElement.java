@@ -19,13 +19,15 @@
  */
 package org.openremote.agent.protocol.simulator.element;
 
+import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.AttributeType;
+import org.openremote.model.simulator.SimulatorElement;
 
 public class ColorSimulatorElement extends SimulatorElement {
 
     public static final String ELEMENT_NAME = "color";
 
-    public ColorSimulatorElement() {
-        super(AttributeType.COLOR_RGB);
+    public ColorSimulatorElement(AttributeRef attributeRef) {
+        super(attributeRef, AttributeType.COLOR_RGB);
     }
 }

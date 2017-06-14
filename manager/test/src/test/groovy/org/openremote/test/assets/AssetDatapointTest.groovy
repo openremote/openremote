@@ -28,17 +28,18 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
 
         then: "the simulator elements should have the initial state"
         conditions.eventually {
-            assert Values.getNumber(simulatorProtocol.getState(managerDemoSetup.thingId, "light1PowerConsumption")).orElse(null) == 12.345d
+            def state = simulatorProtocol.getValue(managerDemoSetup.thingId, "light1PowerConsumption")
+            assert Values.getNumber(state.orElse(null)).orElse(null) == 12.345d
         }
 
         when: "a simulated sensor changes its value several times"
         conditions = new PollingConditions(timeout: 10, initialDelay: 1)
         sleep(10)
-        simulatorProtocol.putState(managerDemoSetup.thingId, "light1PowerConsumption", Values.create(13.3))
+        simulatorProtocol.putValue(managerDemoSetup.thingId, "light1PowerConsumption", Values.create(13.3))
         sleep(10)
-        simulatorProtocol.putState(managerDemoSetup.thingId, "light1PowerConsumption", Values.create(14.4))
+        simulatorProtocol.putValue(managerDemoSetup.thingId, "light1PowerConsumption", Values.create(14.4))
         sleep(10)
-        simulatorProtocol.putState(managerDemoSetup.thingId, "light1PowerConsumption", Values.create(15.5))
+        simulatorProtocol.putValue(managerDemoSetup.thingId, "light1PowerConsumption", Values.create(15.5))
 
         then: "the thing attribute value should be updated and the datapoints stored"
         conditions.eventually {

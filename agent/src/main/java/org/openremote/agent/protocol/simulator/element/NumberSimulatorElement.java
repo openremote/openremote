@@ -19,11 +19,20 @@
  */
 package org.openremote.agent.protocol.simulator.element;
 
+import org.openremote.model.ValidationFailure;
+import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.AttributeType;
+import org.openremote.model.simulator.SimulatorElement;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.Values;
 
+import java.util.List;
+
 public class NumberSimulatorElement extends SimulatorElement {
+
+    public enum ValueValidationFailure implements ValidationFailure {
+        NUMBER_OUT_OF_RANGE
+    }
 
     public static final String ELEMENT_NAME = "number";
     public static final String ELEMENT_NAME_RANGE = "range";
@@ -31,12 +40,12 @@ public class NumberSimulatorElement extends SimulatorElement {
     final protected Integer min;
     final protected Integer max;
 
-    public NumberSimulatorElement() {
-        this(null, null);
+    public NumberSimulatorElement(AttributeRef attributeRef) {
+        this(attributeRef, null, null);
     }
 
-    public NumberSimulatorElement(Integer min, Integer max) {
-        super(AttributeType.NUMBER);
+    public NumberSimulatorElement(AttributeRef attributeRef, Integer min, Integer max) {
+        super(attributeRef, AttributeType.NUMBER);
         this.min = min;
         this.max = max;
     }
@@ -50,14 +59,12 @@ public class NumberSimulatorElement extends SimulatorElement {
     }
 
     @Override
-    protected boolean isValid(Value value) {
-        boolean valid = super.isValid(value);
-        return valid && (
-            value == null || (
-                (getMin() == null || Values.getNumber(value).filter(v -> v >= getMin()).isPresent())
-                    && (getMax() == null || Values.getNumber(value).filter(v -> v <= getMax()).isPresent())
-            )
-        );
+    protected List<ValidationFailure> getValidationFailures(Value value) {
+        List<ValidationFailure> failures = super.getValidationFailures(value);
+        if ((getMin() != null && Values.getNumber(value).filter(v -> v < getMin()).isPresent())
+            && (getMax() != null && Values.getNumber(value).filter(v -> v > getMax()).isPresent())) {
+            failures.add(ValueValidationFailure.NUMBER_OUT_OF_RANGE);
+        }
+        return failures;
     }
-
 }

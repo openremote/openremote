@@ -19,13 +19,15 @@
  */
 package org.openremote.agent.protocol.simulator.element;
 
+import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.AttributeType;
+import org.openremote.model.simulator.SimulatorElement;
 
 public class SwitchSimulatorElement extends SimulatorElement {
 
     public static final String ELEMENT_NAME = "switch";
 
-    public SwitchSimulatorElement() {
-        super(AttributeType.BOOLEAN);
+    public SwitchSimulatorElement(AttributeRef attributeRef) {
+        super(attributeRef, AttributeType.BOOLEAN);
     }
 }

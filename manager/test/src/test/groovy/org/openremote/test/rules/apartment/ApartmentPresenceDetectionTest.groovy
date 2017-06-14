@@ -72,7 +72,7 @@ class ApartmentPresenceDetectionTest extends Specification implements ManagerCon
                     managerDemoSetup.apartment1LivingroomId, "motionCount", Values.create(i), getClockTimeOf(apartment1Engine)
             )
             // Use the simulator to inject the update
-            simulatorProtocol.putState(motionCountIncrement)
+            simulatorProtocol.putValue(motionCountIncrement)
             // Wait until rules engine has the asset event
             new PollingConditions(timeout: 3).eventually {
                 assert insertedAssetEvents.any() { it.matches(motionCountIncrement, SENSOR, true) }
@@ -106,7 +106,7 @@ class ApartmentPresenceDetectionTest extends Specification implements ManagerCon
             def motionCountIncrement = new AttributeEvent(
                     managerDemoSetup.apartment1LivingroomId, "motionCount", Values.create(100+i), getClockTimeOf(apartment1Engine)
             )
-            simulatorProtocol.putState(motionCountIncrement)
+            simulatorProtocol.putValue(motionCountIncrement)
             new PollingConditions(timeout: 3).eventually {
                 assert insertedAssetEvents.any() {
                     expectedLastMotionTimestamp = it.valueTimestamp
@@ -198,7 +198,7 @@ class ApartmentPresenceDetectionTest extends Specification implements ManagerCon
             def motionCountIncrement = new AttributeEvent(
                     managerDemoSetup.apartment1LivingroomId, "motionCount", Values.create(100+i), getClockTimeOf(apartment1Engine)
             )
-            simulatorProtocol.putState(motionCountIncrement)
+            simulatorProtocol.putValue(motionCountIncrement)
             new PollingConditions(timeout: 3).eventually {
                 assert insertedAssetEvents.any() {
                     expectedLastMotionTimestamp = it.valueTimestamp
@@ -216,7 +216,7 @@ class ApartmentPresenceDetectionTest extends Specification implements ManagerCon
             def co2LevelIncrement = new AttributeEvent(
                     managerDemoSetup.apartment1LivingroomId, "co2Level", Values.create(400 + i), getClockTimeOf(apartment1Engine)
             )
-            simulatorProtocol.putState(co2LevelIncrement)
+            simulatorProtocol.putValue(co2LevelIncrement)
             new PollingConditions(timeout: 3).eventually {
                 assert insertedAssetEvents.any() {
                     it.matches(co2LevelIncrement, SENSOR, true)
@@ -243,7 +243,7 @@ class ApartmentPresenceDetectionTest extends Specification implements ManagerCon
             def co2LevelIncrement = new AttributeEvent(
                     managerDemoSetup.apartment1LivingroomId, "co2Level", Values.create(500 + i), getClockTimeOf(apartment1Engine)
             )
-            simulatorProtocol.putState(co2LevelIncrement)
+            simulatorProtocol.putValue(co2LevelIncrement)
             new PollingConditions(timeout: 3).eventually {
                 assert insertedAssetEvents.any() {
                     it.matches(co2LevelIncrement, SENSOR, true)
