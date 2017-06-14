@@ -167,11 +167,6 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
             if (subscription.getFilter() != null && subscription.getFilter() instanceof AttributeEvent.EntityIdFilter) {
                 AttributeEvent.EntityIdFilter filter = (AttributeEvent.EntityIdFilter) subscription.getFilter();
 
-                // If the asset doesn't exist, subscription must fail
-                Asset asset = assetStorageService.find(filter.getEntityId());
-                if (asset == null)
-                    return false;
-
                 // Superuser can get attribute events for any asset
                 if (auth.isSuperUser())
                     return true;
@@ -181,15 +176,25 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                     return false;
                 }
 
-                if (identityService.isRestrictedUser(auth.getUserId())) {
-                    // Restricted users can only get attribute events for their linked assets
-                    if (assetStorageService.isUserAsset(auth.getUserId(), filter.getEntityId()))
-                        return true;
-                } else {
-                    // Regular users can only get attribute events for assets in their realm
-                    if (asset.getTenantRealm().equals(auth.getAuthenticatedRealm()))
-                        return true;
+                boolean isRestrictedUser =  identityService.isRestrictedUser(auth.getUserId());
+
+                // Client can subscribe to several assets
+                for (String assetId : filter.getEntityId()) {
+                    Asset asset = assetStorageService.find(assetId);
+                    // If the asset doesn't exist, subscription must fail
+                    if (asset == null)
+                        return false;
+                    if (isRestrictedUser) {
+                        // Restricted users can only get attribute events for their linked assets
+                        if (!assetStorageService.isUserAsset(auth.getUserId(), assetId))
+                            return false;
+                    } else {
+                        // Regular users can only get attribute events for assets in their realm
+                        if (!asset.getTenantRealm().equals(auth.getAuthenticatedRealm()))
+                            return false;
+                    }
                 }
+                return true;
             }
             return false;
         });

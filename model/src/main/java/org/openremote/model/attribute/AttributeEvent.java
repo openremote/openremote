@@ -23,6 +23,7 @@ import org.openremote.model.event.shared.EventFilter;
 import org.openremote.model.event.shared.SharedEvent;
 import org.openremote.model.value.Value;
 
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -60,20 +61,20 @@ public class AttributeEvent extends SharedEvent {
 
         public static final String FILTER_TYPE = "attribute-entity-id";
 
-        protected String entityId;
+        protected String[] entityId = new String[0];
 
         protected EntityIdFilter() {
         }
 
-        public EntityIdFilter(String entityId) {
+        public EntityIdFilter(String... entityId) {
             this.entityId = entityId;
         }
 
-        public String getEntityId() {
+        public String[] getEntityId() {
             return entityId;
         }
 
-        public void setEntityId(String entityId) {
+        public void setEntityId(String[] entityId) {
             this.entityId = entityId;
         }
 
@@ -84,13 +85,13 @@ public class AttributeEvent extends SharedEvent {
 
         @Override
         public boolean apply(AttributeEvent event) {
-            return event.getEntityId().equals(entityId);
+            return Arrays.asList(entityId).contains(event.getEntityId());
         }
 
         @Override
         public String toString() {
             return getClass().getSimpleName() + "{" +
-                "assetId='" + entityId + '\'' +
+                "entityId='" + Arrays.toString(entityId) + '\'' +
                 '}';
         }
     }
