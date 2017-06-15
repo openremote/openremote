@@ -21,6 +21,15 @@
 package org.openremote.model.notification;
 
 public enum ActionType {
+
+    /**
+     * Write an attribute, set the given {@link org.openremote.model.attribute.AttributeState}.
+     */
+    // TODO Rename to ATTRIBUTE_STATE
     ACTUATOR,
+
+    /**
+     * Go to application URL defined in {@link AlertNotification#appUrl}.
+     */
     LINK,
 }

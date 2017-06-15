@@ -61,7 +61,7 @@ public class NotificationService implements ContainerService {
         this.persistenceService = container.getService(PersistenceService.class);
 
         container.getService(WebService.class).getApiSingletons().add(
-                new NotificationResourceImpl(this)
+            new NotificationResourceImpl(this)
         );
 
         ResteasyClient client = new ResteasyClientBuilder().build();
@@ -111,6 +111,9 @@ public class NotificationService implements ContainerService {
                 return;
             }
             List<DeviceNotificationToken> allTokenForUser = findAllTokenForUser(userId);
+            if (allTokenForUser.size() == 0) {
+                LOG.fine("User has no registered devices/notification tokens: " + userId);
+            }
             for (DeviceNotificationToken notificationToken : allTokenForUser) {
                 try {
                     Invocation.Builder builder = firebaseTarget.request().header("Authorization", "key=" + fcmKey);
@@ -122,6 +125,7 @@ public class NotificationService implements ContainerService {
                     } else {
                         message = new FCMMessage(notification, true, "high", notificationToken.getToken());
                     }
+                    LOG.fine("Sending notification message to device of user '" + userId + "': " + message);
                     Response response = builder.post(Entity.entity(message, "application/json"));
                     if (response.getStatus() != 200) {
                         LOG.severe("Error send FCM notification status=[" + response.getStatus() + "], statusInformation=[" + response.getStatusInfo() + "]");

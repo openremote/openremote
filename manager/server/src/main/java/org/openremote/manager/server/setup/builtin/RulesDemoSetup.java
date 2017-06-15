@@ -61,11 +61,6 @@ public class RulesDemoSetup extends AbstractManagerSetup {
             Ruleset ruleset = new AssetRuleset("Demo Apartment - Vacation Mode", managerDemoSetup.apartment1Id, rules);
             apartmentActionsRulesetId = rulesetStorageService.merge(ruleset).getId();
         }
-        try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/DemoApartmentNotificationWhenAlarm.drl")) {
-            String rules = IOUtils.toString(inputStream, Charset.forName("utf-8"));
-            Ruleset ruleset = new AssetRuleset("Demo Apartment - Notification when Alarm", managerDemoSetup.apartment1Id, rules);
-            apartmentActionsRulesetId = rulesetStorageService.merge(ruleset).getId();
-        }
 
         // Apartment 2
         try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/DemoApartmentPresenceDetectionPIR.drl")) {

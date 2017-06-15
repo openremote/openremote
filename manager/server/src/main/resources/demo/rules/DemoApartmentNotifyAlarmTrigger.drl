@@ -1,0 +1,64 @@
+package org.openremote.test.rules;
+
+import org.openremote.model.*;
+import org.openremote.model.asset.*
+import org.openremote.model.notification.*
+import org.openremote.model.user.UserQuery
+import org.openremote.model.value.Values
+import org.openremote.model.attribute.AttributeEvent
+import org.openremote.model.attribute.AttributeState;
+
+global java.util.logging.Logger LOG;
+global org.openremote.model.rules.Users users;
+global org.openremote.model.rules.Assets assets;
+
+declare AlarmTrigger
+    residenceId : String
+    roomName : String
+end
+
+// Notify the user every 30 mninutes while alarm is triggered
+declare UserNotified
+    @role(event)
+    @expires(30m)
+    residenceId : String
+end
+
+rule "Trigger alarm when alarm is enabled and presence is detected in any room"
+when
+    $residence : AssetState(type == AssetType.RESIDENCE, attributeName == "alarmEnabled", valueTrue)
+    $room : AssetState(parentId == $residence.id, type == AssetType.ROOM, attributeName == "presenceDetected", valueTrue)
+then
+    AlarmTrigger trigger =new AlarmTrigger();
+    trigger.setResidenceId($residence.getId());
+    trigger.setRoomName($room.getName());
+    insert(trigger);
+end
+
+rule "Stop alarm when alarm has been triggered and no presence is detected in any room"
+when
+    $residence : AssetState(type == AssetType.RESIDENCE, attributeName == "alarmEnabled")
+    $alarmTrigger : AlarmTrigger(residenceId == $residence.id)
+    $room : AssetState(parentId == $residence.id, type == AssetType.ROOM, attributeName == "presenceDetected", valueFalse)
+then
+    delete($alarmTrigger);
+end
+
+rule "Alert user when alarm has been triggered and not done so already"
+when
+    $residence : AssetState(type == AssetType.RESIDENCE, attributeName == "alarmEnabled")
+    $alarmTrigger : AlarmTrigger(residenceId == $residence.id)
+    not(UserNotified(residenceId == $residence.id))
+then
+    AlertNotification alert = new AlertNotification("Alarm triggered!", "Presence was detected in: " + $alarmTrigger.getRoomName());
+        alert.addLinkAction("View security status", "#/Veilig");
+        alert.addActuatorAction("Disarm alarm", $residence.getId(), "alarmEnabled", Values.create(false).toJson());
+    users
+        .query()
+        .asset(new UserQuery.AssetPredicate($residence.getId()))
+        .applyResults(userIds -> userIds.forEach(userId -> users.storeAndNotify(userId, alert)));
+
+    UserNotified userNotified = new UserNotified();
+    userNotified.setResidenceId($residence.getId());
+    insert(userNotified);
+end

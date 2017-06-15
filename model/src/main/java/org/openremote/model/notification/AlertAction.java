@@ -34,8 +34,13 @@ public class AlertAction extends AbstractTypeHolder {
         super(Values.createObject());
     }
 
+    public AlertAction(String title, ActionType type) {
+        setTitle(title);
+        setActionType(type);
+    }
+
+    // TODO This should use AttributeState, do this when Android Console project has dependency on Model
     public AlertAction(String title, ActionType type, String assetId, String attributeName, String rawJson) {
-        this();
         setTitle(title);
         setActionType(type);
         setAssetId(assetId);

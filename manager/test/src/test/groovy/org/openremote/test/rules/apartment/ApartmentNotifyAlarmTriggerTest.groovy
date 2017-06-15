@@ -11,6 +11,8 @@ import org.openremote.manager.server.setup.builtin.KeycloakDemoSetup
 import org.openremote.manager.server.setup.builtin.ManagerDemoSetup
 import org.openremote.manager.shared.notification.NotificationResource
 import org.openremote.model.attribute.AttributeEvent
+import org.openremote.model.notification.ActionType
+import org.openremote.model.notification.AlertAction
 import org.openremote.model.rules.AssetRuleset
 import org.openremote.model.rules.Ruleset
 import org.openremote.model.value.Values
@@ -18,12 +20,14 @@ import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
+import java.util.concurrent.TimeUnit
+
 import static org.openremote.manager.server.setup.builtin.ManagerDemoSetup.DEMO_RULE_STATES_APARTMENT_1
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID
 
-class ApartmentNotificationWhenAlarmTest  extends Specification implements ManagerContainerTrait {
+class ApartmentNotifyAlarmTriggerTest extends Specification implements ManagerContainerTrait {
 
-    def "Trigger notification when presence is detected and alarm is set"() {
+    def "Trigger notification when presence is detected and alarm enabled"() {
 
         given: "the container environment is started"
         def conditions = new PollingConditions(timeout: 15, delay: 1)
@@ -40,9 +44,9 @@ class ApartmentNotificationWhenAlarmTest  extends Specification implements Manag
 
         and: "some rules"
         Ruleset ruleset = new AssetRuleset(
-                "Demo Apartment - Notification when Alarm",
+                "Demo Apartment - Notify Alarm Trigger",
                 managerDemoSetup.apartment1Id,
-                getClass().getResource("/demo/rules/DemoApartmentNotificationWhenAlarm.drl").text
+                getClass().getResource("/demo/rules/DemoApartmentNotifyAlarmTrigger.drl").text
         )
         rulesetStorageService.merge(ruleset)
 
@@ -100,7 +104,63 @@ class ApartmentNotificationWhenAlarmTest  extends Specification implements Manag
         then: "that value should be stored"
         conditions.eventually {
             def asset = assetStorageService.find(managerDemoSetup.apartment1LivingroomId, true)
-            assert asset.getAttribute("presenceDetected").get().valueAsBoolean
+            assert asset.getAttribute("presenceDetected").get().valueAsBoolean.orElse(null)
+        }
+
+        and: "the user should be notified"
+        conditions.eventually {
+            def alerts = notificationResource.getAlertNotification()
+            assert alerts.size() == 1
+            assert alerts[0].title == "Alarm triggered!"
+            assert alerts[0].message == "Presence was detected in: Living Room"
+            assert alerts[0].actions.length() == 2
+            assert alerts[0].actions.getObject(0).orElse(null) == new AlertAction("View security status", ActionType.LINK).objectValue
+            assert alerts[0].appUrl == "#/Veilig"
+            assert alerts[0].actions.getObject(1).orElse(null) == new AlertAction("Disarm alarm", ActionType.ACTUATOR, managerDemoSetup.apartment1Id, "alarmEnabled", Values.create(false).toJson()).objectValue
+        }
+
+        when: "time moves on and other events happen that trigger evaluation in the rule engine"
+        advancePseudoClocks(20, TimeUnit.MINUTES, container, apartment1Engine)
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(
+                managerDemoSetup.apartment1LivingroomId, "co2Level", Values.create(444), getClockTimeOf(container)
+        ))
+
+        then: "we have still only one notification pending"
+        conditions.eventually {
+            def asset = assetStorageService.find(managerDemoSetup.apartment1LivingroomId, true)
+            assert asset.getAttribute("co2Level").get().valueAsInteger.orElse(null) == 444
+            def alerts = notificationResource.getAlertNotification()
+            assert alerts.size() == 1
+        }
+
+        when: "time moves on"
+        advancePseudoClocks(30, TimeUnit.MINUTES, container, apartment1Engine)
+
+        then: "we notify again and now have two notifications pending"
+        conditions.eventually {
+            def alerts = notificationResource.getAlertNotification()
+            assert alerts.size() == 2
+        }
+
+        when: "the presence os no longer in Living room of apartment 1"
+        advancePseudoClocks(5, TimeUnit.SECONDS, container, apartment1Engine)
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(
+                managerDemoSetup.apartment1LivingroomId, "presenceDetected", Values.create(false), getClockTimeOf(container)
+        ))
+
+        then: "that value should be stored"
+        conditions.eventually {
+            def asset = assetStorageService.find(managerDemoSetup.apartment1LivingroomId, true)
+            assert !asset.getAttribute("presenceDetected").get().valueAsBoolean.orElse(null)
+        }
+
+        when: "time moves on"
+        advancePseudoClocks(40, TimeUnit.MINUTES, container, apartment1Engine)
+
+        then: "we have still only two notifications pending"
+        conditions.eventually {
+            def alerts = notificationResource.getAlertNotification()
+            assert alerts.size() == 2
         }
 
         cleanup: "the server should be stopped"
