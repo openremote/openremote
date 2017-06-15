@@ -10,10 +10,12 @@ dependencies {
 
     compile "com.luckycatlabs:SunriseSunsetCalculator:$sunriseSunsetCalculatorVersion"
     compile "org.quartz-scheduler:quartz:$quartzVersion"
-    
+
     compile "com.github.calimero:calimero-core:$calimeroVersion"
-    compile "com.github.calimero:calimero-tools:$calimeroVersion"
+    compile ("com.github.calimero:calimero-tools:$calimeroVersion") {
+        // Libraries should not depend on a logging implementation
+        exclude group: "org.slf4j"
+    }
 
     compile "org.fourthline.cling:cling-core:$clingVersion"
-    
 }
