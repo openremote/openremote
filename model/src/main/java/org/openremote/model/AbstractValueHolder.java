@@ -34,7 +34,7 @@ import java.util.Optional;
  * {@link ObjectValue} that has a <code>value</code> field that accepts any
  * {@link Value}.
  */
-public abstract class AbstractValueHolder {
+public abstract class AbstractValueHolder implements ValueHolder {
 
     protected static final String VALUE_FIELD_NAME = "value";
 

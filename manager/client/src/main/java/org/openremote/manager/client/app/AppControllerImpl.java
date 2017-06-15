@@ -85,11 +85,9 @@ public class AppControllerImpl implements AppController, AppView.Presenter {
 
         environment.getEventBus().register(
             SubscriptionFailureEvent.class,
-            event -> {
-                environment.getEventBus().dispatch(new ShowFailureEvent(
-                    environment.getMessages().subscriptionFailed(event.getEventType()), 5000
-                ));
-            }
+            event -> environment.getEventBus().dispatch(new ShowFailureEvent(
+                environment.getMessages().subscriptionFailed(event.getEventType()), 5000
+            ))
         );
     }
 

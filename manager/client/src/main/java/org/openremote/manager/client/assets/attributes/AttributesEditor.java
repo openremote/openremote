@@ -115,12 +115,12 @@ public class AttributesEditor
     public boolean addAttribute(String name, AttributeType type) {
 
         if (getAttributes().stream().anyMatch(isAttributeNameEqualTo(name))) {
-            showValidationError(environment.getMessages().duplicateAttributeName());
+            showValidationError(environment, environment.getMessages().duplicateAttributeName());
             return false;
         }
 
         if (!ATTRIBUTE_NAME_VALIDATOR.test(name)) {
-            showValidationError(environment.getMessages().invalidAttributeName());
+            showValidationError(environment, environment.getMessages().invalidAttributeName());
             return false;
         }
 
@@ -137,7 +137,7 @@ public class AttributesEditor
         List<ValidationFailure> failures = attribute.getValidationFailures();
         if (!failures.isEmpty()) {
             for (ValidationFailure failure : failures) {
-                showValidationError(attribute.getLabelOrName().orElse(null), failure);
+                showValidationError(environment, attribute.getLabelOrName().orElse(null), failure);
             }
             return false;
         }
@@ -257,7 +257,7 @@ public class AttributesEditor
                     itemNameEditorGroup.setError(true);
                     itemValueEditorGroup.setError(true);
                     for (ValidationFailure failure : failures) {
-                        showValidationError(item.getName().orElse(null), failure);
+                        showValidationError(environment, item.getName().orElse(null), failure);
                     }
                 }
             });
@@ -280,7 +280,7 @@ public class AttributesEditor
                     if (!failures.isEmpty()) {
                         formGroup.setError(true);
                         for (ValidationFailure failure : failures) {
-                            showValidationError(item.getName().orElse(null), failure);
+                            showValidationError(environment, item.getName().orElse(null), failure);
                         }
                     }
                     // Validation failure of meta item marks the attribute form extension as error state

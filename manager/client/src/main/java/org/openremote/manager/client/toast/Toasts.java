@@ -71,6 +71,13 @@ public class Toasts extends Timer {
         if (toast == null)
             return;
         synchronized (toasts) {
+
+            // If it's the same toast content, only show it once
+            for (Toast existing : toasts) {
+                if (existing.equalsForUser(toast))
+                return;
+            }
+
             toasts.add(toast);
             if (!isRunning())
                 scheduleRepeating(100);

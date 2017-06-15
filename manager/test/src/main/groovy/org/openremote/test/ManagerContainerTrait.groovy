@@ -26,6 +26,7 @@ import org.openremote.manager.server.rules.RulesService
 import org.openremote.manager.server.rules.RulesetStorageService
 import org.openremote.manager.server.security.ManagerIdentityService
 import org.openremote.manager.server.setup.SetupService
+import org.openremote.manager.server.simulator.SimulatorService
 import org.openremote.manager.server.web.ManagerWebService
 
 import java.util.concurrent.TimeUnit
@@ -67,6 +68,7 @@ trait ManagerContainerTrait extends ContainerTrait {
                 new AssetProcessingService(),
                 *Lists.newArrayList(ServiceLoader.load(Protocol.class)),
                 new AgentService(),
+                new SimulatorService(),
                 new MapService(),
                 new NotificationService(),
                 new MessageBrokerService(),

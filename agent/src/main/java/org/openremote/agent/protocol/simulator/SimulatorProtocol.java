@@ -21,10 +21,10 @@ package org.openremote.agent.protocol.simulator;
 
 import org.openremote.agent.protocol.AbstractProtocol;
 import org.openremote.agent.protocol.ConnectionStatus;
-import org.openremote.agent.protocol.simulator.element.ColorSimulatorElement;
-import org.openremote.agent.protocol.simulator.element.NumberSimulatorElement;
+import org.openremote.model.simulator.element.ColorSimulatorElement;
+import org.openremote.model.simulator.element.NumberSimulatorElement;
 import org.openremote.model.simulator.SimulatorElement;
-import org.openremote.agent.protocol.simulator.element.SwitchSimulatorElement;
+import org.openremote.model.simulator.element.SwitchSimulatorElement;
 import org.openremote.model.AbstractValueHolder;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.asset.AssetAttribute;
@@ -32,10 +32,10 @@ import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.AttributeState;
 import org.openremote.model.simulator.SimulatorState;
-import org.openremote.model.util.Pair;
 import org.openremote.model.value.Value;
 
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
@@ -119,6 +119,9 @@ public class SimulatorProtocol extends AbstractProtocol {
     static final protected Map<AttributeRef, AttributeRef> attributeInstanceMap = new HashMap<>();
     static final protected Map<AttributeRef, SimulatorElement> elements = new HashMap<>();
 
+    // TODO This is not nice, find a better way how the protocol can talk to the service (through message bus?)
+    protected Consumer<AttributeRef> protocolConfigurationValuesChangedHandler;
+
     @Override
     public String getProtocolName() {
         return PROTOCOL_NAME;
@@ -188,8 +191,10 @@ public class SimulatorProtocol extends AbstractProtocol {
             return;
         }
         if (attribute.getValue().isPresent()) {
-            List<ValidationFailure> failures = element.setValue(attribute.getValue().get());
+            element.setValue(attribute.getValue().get());
+            List<ValidationFailure> failures = element.getValidationFailures();
             if (!failures.isEmpty()) {
+                element.clearValue();
                 LOG.warning("Failed to initialize simulator element, initial value validation failures " + failures + ": " + attribute);
                 return;
             }
@@ -215,7 +220,19 @@ public class SimulatorProtocol extends AbstractProtocol {
 
     @Override
     protected void processLinkedAttributeWrite(AttributeEvent event, AssetAttribute protocolConfiguration) {
-        putValue(event.getAttributeState());
+        if (putValue(event.getAttributeState())) {
+            // Notify listener when write was successful
+            if (protocolConfigurationValuesChangedHandler != null)
+                protocolConfigurationValuesChangedHandler.accept(protocolConfiguration.getReferenceOrThrow());
+        }
+    }
+
+    public Consumer<AttributeRef> getProtocolConfigurationValuesChangedHandler() {
+        return protocolConfigurationValuesChangedHandler;
+    }
+
+    public void setValuesChangedHandler(Consumer<AttributeRef> protocolConfigurationValuesChangedHandler) {
+        this.protocolConfigurationValuesChangedHandler = protocolConfigurationValuesChangedHandler;
     }
 
     /**
@@ -280,34 +297,34 @@ public class SimulatorProtocol extends AbstractProtocol {
     /**
      * Call this to simulate a send to actuator.
      */
-    public void putValue(String entityId, String attributeName, Value value) {
-        putValue(new AttributeState(new AttributeRef(entityId, attributeName), value));
+    public boolean putValue(String entityId, String attributeName, Value value) {
+        return putValue(new AttributeState(new AttributeRef(entityId, attributeName), value));
     }
 
     /**
      * Call this to simulate a send to actuator.
      */
-    protected void putValue(AttributeRef attributeRef, Value value) {
-        putValue(new AttributeState(attributeRef, value));
+    protected boolean putValue(AttributeRef attributeRef, Value value) {
+        return putValue(new AttributeState(attributeRef, value));
     }
 
     /**
      * Call this to simulate a send to actuator.
      */
-    public void putValue(AttributeEvent event) {
-        putValue(event.getAttributeState());
+    public boolean putValue(AttributeEvent event) {
+        return putValue(event.getAttributeState());
     }
 
     /**
      * Call this to simulate a send to actuator.
      */
-    public void putValue(AttributeState attributeState) {
+    public boolean putValue(AttributeState attributeState) {
         AttributeRef attributeRef = attributeState.getAttributeRef();
         AttributeRef instanceRef = attributeInstanceMap.get(attributeRef);
 
         if (instanceRef == null) {
             LOG.warning("Attribute is not referenced by an instance:" + attributeRef);
-            return;
+            return false;
         }
 
         Instance instance;
@@ -317,34 +334,37 @@ public class SimulatorProtocol extends AbstractProtocol {
 
             if (instance == null) {
                 LOG.warning("No instance found by name '" + instanceRef + "'");
-                return;
+                return false;
             }
 
             if (!instance.isEnabled()) {
                 LOG.fine("Simulator protocol configuration is disabled so cannot process request");
-                return;
+                return false;
             }
 
             LOG.info("Put simulator value: " + attributeState);
             SimulatorElement element = elements.get(attributeRef);
             if (element == null) {
                 LOG.warning("No simulated element for: " + attributeRef);
-                return;
+                return false;
             }
 
-            List<ValidationFailure> failures = element.setValue(attributeState.getCurrentValue().orElse(null));
+            Optional<Value> oldValue = element.getValue();
+            element.setValue(attributeState.getCurrentValue().orElse(null));
+            List<ValidationFailure> failures =element.getValidationFailures();
             if (!failures.isEmpty()) {
-                if (!failures.isEmpty()) {
-                    LOG.warning("Failed to update simulator element, state validation failures " + failures + ": " + attributeRef);
-                    return;
-                }
-                return;
+                // Reset to old value
+                oldValue.ifPresent(element::setValue);
+                LOG.warning("Failed to update simulator element, state validation failures " + failures + ": " + attributeRef);
+                return false;
             }
         }
 
         if (instance.getMode() != Mode.MANUAL) {
             updateSensor(attributeRef, instance.getMode() == Mode.WRITE_THROUGH_IMMEDIATE ? 0 : instance.getDelayMilliseconds());
         }
+
+        return true;
     }
 
     /**
@@ -360,28 +380,51 @@ public class SimulatorProtocol extends AbstractProtocol {
     public Optional<Value> getValue(AttributeRef attributeRef) {
         synchronized (instances) {
             SimulatorElement element = elements.get(attributeRef);
-            return element != null ? Optional.ofNullable(element.getValue()) : Optional.empty();
+            return element != null ? element.getValue() : Optional.empty();
+        }
+    }
+
+    public List<SimulatorElement> getLinkedElements(AttributeRef protocolConfigurationRef) {
+        List<AttributeRef> linkedAttributes = attributeInstanceMap.entrySet().stream()
+            .filter(entry -> entry.getValue().equals(protocolConfigurationRef))
+            .map(Map.Entry::getKey)
+            .collect(Collectors.toList());
+        List<SimulatorElement> linkedElements = new ArrayList<>();
+        for (AttributeRef linkedAttribute : linkedAttributes) {
+            if (elements.containsKey(linkedAttribute)) {
+                linkedElements.add(elements.get(linkedAttribute));
+            }
+        }
+        return linkedElements;
+    }
+
+    /**
+     * Read a state snapshot.
+     */
+    public Optional<SimulatorState> getSimulatorState(AttributeRef protocolConfigurationRef) {
+        synchronized (instances) {
+            LOG.info("Getting simulator state for protocol configuration: " + protocolConfigurationRef);
+            if (!instances.containsKey(protocolConfigurationRef))
+                return Optional.empty();
+            List<SimulatorElement> linkedElements = getLinkedElements(protocolConfigurationRef);
+            return Optional.of(new SimulatorState(protocolConfigurationRef, linkedElements.toArray(new SimulatorElement[linkedElements.size()])));
         }
     }
 
     /**
-     * Get attributes linked to the given protocol configuration and their {@link SimulatorElement}s.
+     * Write a state snapshot.
      */
-    public Optional<SimulatorState> getSimulatorState(AttributeRef protocolConfigurationRef) {
+    public void updateSimulatorState(SimulatorState simulatorState) {
         synchronized (instances) {
-            if (!instances.containsKey(protocolConfigurationRef))
-                return Optional.empty();
-            List<AttributeRef> linkedAttributes = attributeInstanceMap.entrySet().stream()
-                .filter(entry -> entry.getValue().equals(protocolConfigurationRef))
-                .map(Map.Entry::getKey)
-                .collect(Collectors.toList());
-            List<SimulatorElement> result = new ArrayList<>();
-            for (AttributeRef linkedAttribute : linkedAttributes) {
-                if (elements.containsKey(linkedAttribute)) {
-                    result.add(elements.get(linkedAttribute));
-                }
+            AttributeRef protocolConfigurationRef = simulatorState.getProtocolConfigurationRef();
+            if (!instances.containsKey(protocolConfigurationRef)) {
+                LOG.info("Ignoring simulator update, no instance for protocol configuration: " + protocolConfigurationRef);
+                return;
             }
-            return Optional.of(new SimulatorState(result.toArray(new SimulatorElement[result.size()])));
+            // Merge from updated simulator state onto existing elements, setting their values
+            for (SimulatorElement updatedElement : simulatorState.getElements()) {
+                putValue(updatedElement.getAttributeRef(), updatedElement.getValue().orElse(null));
+            }
         }
     }
 

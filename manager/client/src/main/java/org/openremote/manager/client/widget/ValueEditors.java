@@ -22,11 +22,13 @@ package org.openremote.manager.client.widget;
 import com.google.gwt.i18n.client.DateTimeFormat;
 import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.IsWidget;
+import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.app.dialog.JsonEditor;
-import org.openremote.model.AbstractValueHolder;
+import org.openremote.manager.client.event.ShowFailureEvent;
 import org.openremote.model.AbstractValueTimestampHolder;
 import org.openremote.model.Constants;
 import org.openremote.model.ValidationFailure;
+import org.openremote.model.ValueHolder;
 import org.openremote.model.value.ArrayValue;
 import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Value;
@@ -48,17 +50,17 @@ public final class ValueEditors {
     }
 
     /**
-     * Maps a {@link FormGroup} which is typically one editor line to an {@link AbstractValueHolder} and
+     * Maps a {@link FormGroup} which is typically one editor line to an {@link ValueHolder} and
      * encapsulates the raw value that should be set on the value holder and the consumer of validation failure
      * results. If there are no validation failures, the update was successful.
      */
     private static class ValueUpdate<T> {
         final FormGroup formGroup;
-        final AbstractValueHolder valueHolder;
+        final ValueHolder valueHolder;
         final Consumer<List<ValidationFailure>> resultConsumer;
         final T rawValue;
 
-        public ValueUpdate(FormGroup formGroup, AbstractValueHolder valueHolder, Consumer<List<ValidationFailure>> resultConsumer, T rawValue) {
+        public ValueUpdate(FormGroup formGroup, ValueHolder valueHolder, Consumer<List<ValidationFailure>> resultConsumer, T rawValue) {
             this.formGroup = formGroup;
             this.valueHolder = valueHolder;
             this.resultConsumer = resultConsumer;
@@ -147,7 +149,7 @@ public final class ValueEditors {
         }
     }
 
-    public static IsWidget createStringEditor(AbstractValueHolder valueHolder,
+    public static IsWidget createStringEditor(ValueHolder valueHolder,
                                        String currentValue,
                                        String defaultValue,
                                        boolean readOnly,
@@ -159,7 +161,7 @@ public final class ValueEditors {
             ? rawValue -> STRING_UPDATER.accept(new ValueUpdate<>(formGroup, valueHolder, validationResultConsumer, rawValue))
             : null;
         FlowPanel panel = new FlowPanel();
-        panel.setStyleName("flex layout horizontal center or-StringValueEditor");
+        panel.setStyleName("flex layout horizontal center or-ValueEditor or-StringValueEditor");
         IsWidget widget = ValueEditors.createStringEditorWidget(styleName, currentValue, defaultValue, updateConsumer);
         FlowPanel widgetWrapper = new FlowPanel();
         widgetWrapper.setStyleName("flex layout horizontal center");
@@ -174,7 +176,7 @@ public final class ValueEditors {
     }
 
 
-    public static IsWidget createNumberEditor(AbstractValueHolder valueHolder,
+    public static IsWidget createNumberEditor(ValueHolder valueHolder,
                                        String currentValue,
                                        String defaultValue,
                                        boolean readOnly,
@@ -188,7 +190,7 @@ public final class ValueEditors {
             : null;
 
         FlowPanel panel = new FlowPanel();
-        panel.setStyleName("flex layout horizontal center or-NumberValueEditor");
+        panel.setStyleName("flex layout horizontal center or-ValueEditor or-NumberValueEditor");
         IsWidget widget = ValueEditors.createStringEditorWidget(styleName, currentValue, defaultValue, updateConsumer);
         FlowPanel widgetWrapper = new FlowPanel();
         widgetWrapper.setStyleName("flex layout horizontal center");
@@ -202,7 +204,7 @@ public final class ValueEditors {
         return () -> panel;
     }
 
-    public static IsWidget createBooleanEditor(AbstractValueHolder valueHolder,
+    public static IsWidget createBooleanEditor(ValueHolder valueHolder,
                                         Boolean currentValue,
                                         Boolean defaultValue,
                                         boolean readOnly,
@@ -215,7 +217,7 @@ public final class ValueEditors {
             : null;
 
         FlowPanel panel = new FlowPanel();
-        panel.setStyleName("flex layout horizontal center or-BooleanValueEditor");
+        panel.setStyleName("flex layout horizontal center or-ValueEditor or-BooleanValueEditor");
         IsWidget widget = ValueEditors.createBooleanEditorWidget(styleName, currentValue, defaultValue, updateConsumer);
         FlowPanel widgetWrapper = new FlowPanel();
         widgetWrapper.setStyleName("flex layout horizontal center");
@@ -229,7 +231,7 @@ public final class ValueEditors {
         return () -> panel;
     }
 
-    public static IsWidget createObjectEditor(AbstractValueHolder valueHolder,
+    public static IsWidget createObjectEditor(ValueHolder valueHolder,
                                        ObjectValue currentValue,
                                        Supplier<Value> resetSupplier,
                                        boolean readOnly,
@@ -243,7 +245,7 @@ public final class ValueEditors {
             ? rawValue -> VALUE_UPDATER.accept(new ValueUpdate<>(formGroup, valueHolder, validationResultConsumer, rawValue))
             : null;
         FlowPanel panel = new FlowPanel();
-        panel.setStyleName("flex layout horizontal center or-ObjectValueEditor");
+        panel.setStyleName("flex layout horizontal center or-ValueEditor or-ObjectValueEditor");
         IsWidget widget = createJsonEditorWidget(
             jsonEditor, label, title, currentValue, updateConsumer, resetSupplier
         );
@@ -259,7 +261,7 @@ public final class ValueEditors {
         return () -> panel;
     }
 
-    public static IsWidget createArrayEditor(AbstractValueHolder valueHolder,
+    public static IsWidget createArrayEditor(ValueHolder valueHolder,
                                       ArrayValue currentValue,
                                       Supplier<Value> resetSupplier,
                                       boolean readOnly,
@@ -274,7 +276,7 @@ public final class ValueEditors {
             : null;
 
         FlowPanel panel = new FlowPanel();
-        panel.setStyleName("flex layout horizontal center or-ArrayValueEditor");
+        panel.setStyleName("flex layout horizontal center or-ValueEditor or-ArrayValueEditor");
         IsWidget widget = createJsonEditorWidget(
             jsonEditor, label, title, currentValue, updateConsumer, resetSupplier
         );
@@ -288,6 +290,21 @@ public final class ValueEditors {
             panel.add(timestampLabel);
         }
         return () -> panel;
+    }
+
+    public static void showValidationError(Environment environment, String error) {
+        environment.getEventBus().dispatch(new ShowFailureEvent(error, 5000));
+    }
+
+    public static void showValidationError(Environment environment, String fieldLabel, ValidationFailure validationFailure) {
+        StringBuilder error = new StringBuilder();
+        if (fieldLabel != null)
+            error.append(environment.getMessages().validationFailedFor(fieldLabel));
+        else
+            error.append(environment.getMessages().validationFailed());
+        if (validationFailure != null)
+            error.append(": ").append(environment.getMessages().validationFailure(validationFailure.name()));
+        showValidationError(environment, error.toString());
     }
 
     private static IsWidget createStringEditorWidget(String styleName,
@@ -304,11 +321,11 @@ public final class ValueEditors {
             input.setValue("-");
         }
         if (updateConsumer != null) {
-            input.addValueChangeHandler(
-                event -> updateConsumer.accept(
-                    event.getValue() == null || event.getValue().length() == 0 ? null : event.getValue()
-                )
-            );
+            // Both keyup and change (e.g. after pasting) must be used
+            input.addKeyUpHandler(event ->
+                updateConsumer.accept(input.getValue() == null || input.getValue().length() == 0 ? null : input.getValue()));
+            input.addValueChangeHandler(event ->
+                updateConsumer.accept(event.getValue() == null || event.getValue().length() == 0 ? null : event.getValue()));
         } else {
             input.setReadOnly(true);
         }

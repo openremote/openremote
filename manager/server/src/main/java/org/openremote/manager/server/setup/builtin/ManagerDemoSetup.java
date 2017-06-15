@@ -21,10 +21,9 @@ package org.openremote.manager.server.setup.builtin;
 
 import com.vividsolutions.jts.geom.Coordinate;
 import org.openremote.agent.protocol.simulator.SimulatorProtocol;
-import org.openremote.agent.protocol.simulator.element.ColorSimulatorElement;
-import org.openremote.agent.protocol.simulator.element.NumberSimulatorElement;
-import org.openremote.agent.protocol.simulator.element.SwitchSimulatorElement;
-import org.openremote.agent.protocol.upnp.UpnpProtocol;
+import org.openremote.model.simulator.element.ColorSimulatorElement;
+import org.openremote.model.simulator.element.NumberSimulatorElement;
+import org.openremote.model.simulator.element.SwitchSimulatorElement;
 import org.openremote.container.Container;
 import org.openremote.manager.server.asset.ServerAsset;
 import org.openremote.manager.server.setup.AbstractManagerSetup;

@@ -41,6 +41,7 @@ import org.openremote.manager.server.rules.RulesetStorageService;
 import org.openremote.manager.server.security.ManagerIdentityService;
 import org.openremote.manager.server.setup.SetupService;
 import org.openremote.manager.server.concurrent.ManagerExecutorService;
+import org.openremote.manager.server.simulator.SimulatorService;
 import org.openremote.manager.server.web.ManagerWebService;
 
 import java.util.ArrayList;
@@ -72,6 +73,7 @@ public class Main {
                 ServiceLoader.load(Protocol.class).forEach(this::add);
                 addAll(Arrays.asList(
                     new AgentService(),
+                    new SimulatorService(),
                     new MapService(),
                     new NotificationService(),
                     new MessageBrokerService(),

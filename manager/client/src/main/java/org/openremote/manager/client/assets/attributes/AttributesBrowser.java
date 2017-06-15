@@ -33,10 +33,12 @@ import org.openremote.model.asset.ReadAssetAttributesEvent;
 import org.openremote.model.asset.agent.ProtocolConfiguration;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeExecuteStatus;
+import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.AttributeState;
 import org.openremote.model.datapoint.DatapointInterval;
 import org.openremote.model.datapoint.NumberDatapoint;
 import org.openremote.model.event.bus.EventRegistration;
+import org.openremote.model.simulator.SimulatorState;
 import org.openremote.model.value.ValueType;
 
 import java.util.ArrayList;
@@ -59,6 +61,7 @@ public abstract class AttributesBrowser
 
     final protected Asset asset;
     final protected List<FormButton> readButtons = new ArrayList<>();
+    final protected List<AttributeRef> activeSimulators = new ArrayList<>();
 
     protected FormGroup liveUpdatesGroup;
     protected EventRegistration<AttributeEvent> eventRegistration;
@@ -284,10 +287,8 @@ public abstract class AttributesBrowser
         formField.add(editor);
 
         // "Blink" the editor so users know there might be a new value
-        editor.asWidget().addStyleName(environment.getWidgetStyle().HighlightBackground());
-        Browser.getWindow().setTimeout(() -> editor
-            .asWidget()
-            .removeStyleName(environment.getWidgetStyle().HighlightBackground()), 250);
+        formGroup.addStyleName(environment.getWidgetStyle().HighlightBackground());
+        Browser.getWindow().setTimeout(() -> formGroup.removeStyleName(environment.getWidgetStyle().HighlightBackground()), 250);
 
         // Refresh charts, jump to current time so the new value is visible
         FormGroup attributeFormGroup = attributeGroups.get(attribute);
@@ -316,11 +317,37 @@ public abstract class AttributesBrowser
     }
 
     protected Simulator createSimulator(AssetAttribute attribute) {
+        AttributeRef protocolConfigurationRef = attribute.getReferenceOrThrow();
         return environment.getSecurityService().isSuperUser() && ProtocolConfiguration.isProtocolConfiguration(attribute)
             ? ProtocolConfiguration.getProtocolName(attribute)
             .filter(name -> name.equals(Constants.PROTOCOL_NAMESPACE + ":simulator"))
-            .map(name ->environment.getFactory().getSimulatorProvider().get()).orElse(null) : null;
+            .map(name -> new Simulator(
+                environment,
+                protocolConfigurationRef
+                ,
+                () -> {
+                    activeSimulators.add(protocolConfigurationRef);
+                    updateSimulatorSubscription();
+                },
+                () -> {
+                    activeSimulators.remove(protocolConfigurationRef);
+                    updateSimulatorSubscription();
+                }
+            )).orElse(null) : null;
     }
+
+    protected void updateSimulatorSubscription() {
+        if (activeSimulators.size() > 0) {
+            environment.getEventService().subscribe(
+                SimulatorState.class, new SimulatorState.ConfigurationFilter(
+                    activeSimulators.toArray(new AttributeRef[activeSimulators.size()])
+                )
+            );
+        } else {
+            environment.getEventService().unsubscribe(SimulatorState.class);
+        }
+    }
+
 
     /* ####################################################################### */
 

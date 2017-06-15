@@ -20,68 +20,97 @@
 package org.openremote.model.simulator;
 
 import org.openremote.model.attribute.AttributeRef;
+import org.openremote.model.event.shared.EventFilter;
+import org.openremote.model.event.shared.SharedEvent;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Consumer;
 
-public class SimulatorState {
+/**
+ * A snapshot of {@link SimulatorElement}s and their values.
+ */
+public class SimulatorState extends SharedEvent {
 
-    public class SimulatedAssetAttribute {
+    public static class ConfigurationFilter extends EventFilter<SimulatorState> {
 
-        final protected String assetName;
-        final protected String attributeName;
+        public static final String FILTER_TYPE = "simulator-state-configuration";
 
-        public SimulatedAssetAttribute(String assetName, String attributeName) {
-            this.assetName = assetName;
-            this.attributeName = attributeName;
+        protected AttributeRef[] configurations;
+
+        public ConfigurationFilter() {
         }
 
-        public String getAssetName() {
-            return assetName;
+        public ConfigurationFilter(AttributeRef... configurations) {
+            this.configurations = configurations;
         }
 
-        public String getAttributeName() {
-            return attributeName;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-
-            SimulatedAssetAttribute that = (SimulatedAssetAttribute) o;
-
-            if (!assetName.equals(that.assetName)) return false;
-            return attributeName.equals(that.attributeName);
+        public AttributeRef[] getConfigurations() {
+            return configurations;
         }
 
         @Override
-        public int hashCode() {
-            int result = assetName.hashCode();
-            result = 31 * result + attributeName.hashCode();
-            return result;
+        public String getFilterType() {
+            return FILTER_TYPE;
+        }
+
+        @Override
+        public boolean apply(SimulatorState event) {
+            return event.getProtocolConfigurationRef() != null
+                && Arrays.asList(getConfigurations()).contains(event.getProtocolConfigurationRef());
+        }
+
+        @Override
+        public String toString() {
+            return getClass().getSimpleName() + "{" +
+                "configurations='" + Arrays.toString(configurations) + '\'' +
+                '}';
         }
     }
 
-    protected Map<AttributeRef, SimulatedAssetAttribute> attributeDetails = new HashMap<>();
+    // This map can be populated to complete the simulator state with user-friendly names for each simulated AttributeRef
+    protected Map<String, String> assetIdAndName = new HashMap<>();
+
+    protected AttributeRef protocolConfigurationRef;
     protected SimulatorElement[] elements = new SimulatorElement[0];
 
     protected SimulatorState() {
     }
 
-    public SimulatorState(SimulatorElement... elements) {
+    public SimulatorState(AttributeRef protocolConfigurationRef, SimulatorElement... elements) {
+        this.protocolConfigurationRef = protocolConfigurationRef;
         this.elements = elements;
+    }
+
+    public AttributeRef getProtocolConfigurationRef() {
+        return protocolConfigurationRef;
     }
 
     public SimulatorElement[] getElements() {
         return elements;
     }
 
-    public void setAttributeDetails(Map<AttributeRef, SimulatedAssetAttribute> attributeDetails) {
-        this.attributeDetails = attributeDetails;
+    public void updateAssetNames(Consumer<Map<String, String>> updater) {
+        clearAssetNames();
+        for (SimulatorElement element : elements) {
+            assetIdAndName.put(element.getAttributeRef().getEntityId(), null);
+        }
+        updater.accept(assetIdAndName);
     }
 
-    public void clearAttributeDetails() {
-        this.attributeDetails.clear();
+    public void clearAssetNames() {
+        this.assetIdAndName.clear();
     }
+
+    public Map<String, String> getAssetIdAndName() {
+        return assetIdAndName;
+    }
+
+    public String getElementName(SimulatorElement element) {
+        AttributeRef ref = element.getAttributeRef();
+        return (assetIdAndName.containsKey(ref.getEntityId()) ? assetIdAndName.get(ref.getEntityId()) : ref.getEntityId())
+            + ":" + ref.getAttributeName();
+    }
+
 }

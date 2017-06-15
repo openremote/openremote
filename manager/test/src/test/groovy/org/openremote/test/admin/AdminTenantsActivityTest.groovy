@@ -18,6 +18,7 @@ import org.openremote.manager.client.event.ShowFailureEvent
 import org.openremote.manager.client.event.ShowSuccessEvent
 import org.openremote.manager.client.event.WillGoToPlaceEvent
 import org.openremote.manager.client.i18n.ManagerMessages
+import org.openremote.manager.client.service.EventService
 import org.openremote.manager.client.service.RequestServiceImpl
 import org.openremote.manager.client.style.WidgetStyle
 import org.openremote.manager.server.security.ManagerIdentityService
@@ -27,7 +28,6 @@ import org.openremote.manager.shared.security.TenantResource
 import org.openremote.manager.shared.validation.ConstraintViolationReport
 import org.openremote.model.event.Event
 import org.openremote.model.event.bus.EventListener
-import org.openremote.manager.client.service.EventService
 import org.openremote.test.ClientObjectMapper
 import org.openremote.test.ClientSecurityService
 import org.openremote.test.GwtClientTrait
@@ -134,7 +134,6 @@ class AdminTenantsActivityTest extends Specification implements ManagerContainer
 
         and: "An activity management configuration"
         def environment = Environment.create(
-                Mock(Environment.Factory),
                 securityService,
                 requestService,
                 Mock(EventService),

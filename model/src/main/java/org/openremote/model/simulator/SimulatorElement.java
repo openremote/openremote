@@ -19,19 +19,44 @@
  */
 package org.openremote.model.simulator;
 
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import org.openremote.model.ValidationFailure;
+import org.openremote.model.ValueHolder;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.AttributeType;
+import org.openremote.model.simulator.element.ColorSimulatorElement;
+import org.openremote.model.simulator.element.NumberSimulatorElement;
+import org.openremote.model.simulator.element.SwitchSimulatorElement;
+import org.openremote.model.value.ArrayValue;
+import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Value;
+import org.openremote.model.value.Values;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
-public abstract class SimulatorElement {
+@JsonSubTypes({
+    // Events used on client and server (serializable)
+    @JsonSubTypes.Type(value = NumberSimulatorElement.class, name = NumberSimulatorElement.ELEMENT_NAME),
+    @JsonSubTypes.Type(value = SwitchSimulatorElement.class, name = SwitchSimulatorElement.ELEMENT_NAME),
+    @JsonSubTypes.Type(value = ColorSimulatorElement.class, name = ColorSimulatorElement.ELEMENT_NAME),
+})
+@JsonTypeInfo(
+    use = JsonTypeInfo.Id.NAME,
+    include = JsonTypeInfo.As.PROPERTY,
+    property = "elementType"
+)
+public abstract class SimulatorElement implements ValueHolder {
 
-    final protected AttributeRef attributeRef;
-    final protected AttributeType expectedType;
-    protected Value value = null;
+    public AttributeRef attributeRef;
+    public AttributeType expectedType;
+    // TODO GWT jackson doesn't like fields with the same name as getters in the hierarchy
+    public Value elementValue = null;
+
+    protected SimulatorElement() {
+    }
 
     public SimulatorElement(AttributeRef attributeRef, AttributeType expectedType) {
         this.attributeRef = attributeRef;
@@ -46,33 +71,84 @@ public abstract class SimulatorElement {
         return expectedType;
     }
 
-    public Value getValue() {
-        return value;
+    @Override
+    public Optional<Value> getValue() {
+        return Optional.ofNullable(elementValue);
     }
 
-    public List<ValidationFailure> setValue(Value value) {
+    @Override
+    public void setValue(Value value) {
+        this.elementValue = value;
+    }
+
+    @Override
+    public void clearValue() {
+        this.elementValue = null;
+    }
+
+    @Override
+    public Optional<String> getValueAsString() {
+        return Values.getString(elementValue);
+    }
+
+    @Override
+    public Optional<Double> getValueAsNumber() {
+        return Values.getNumber(elementValue);
+    }
+
+    @Override
+    public Optional<Integer> getValueAsInteger() {
+        return Values.getNumber(elementValue).map(Double::intValue);
+    }
+
+    @Override
+    public Optional<Boolean> getValueAsBoolean() {
+        return Values.getBoolean(elementValue);
+    }
+
+    @Override
+    public Optional<ObjectValue> getValueAsObject() {
+        return Values.getObject(elementValue);
+    }
+
+    @Override
+    public Optional<ArrayValue> getValueAsArray() {
+        return Values.getArray(elementValue);
+    }
+
+    @Override
+    public void setValue(Value... values) {
+        this.elementValue = Values.createArray().addAll(values);
+    }
+
+    @Override
+    public void setValue(String string) {
+        this.elementValue = Values.create(string);
+    }
+
+    @Override
+    public void setValue(Double number) {
+        this.elementValue = Values.create(number);
+    }
+
+    @Override
+    public void setValue(Boolean b) {
+        this.elementValue = Values.create(b);
+    }
+
+    @Override
+    public List<ValidationFailure> getValidationFailures() {
         List<ValidationFailure> failures = new ArrayList<>();
-        if (value != null) {
-            failures.addAll(getValidationFailures(value));
-            if (failures.isEmpty()) {
-                this.value = value;
-            }
-        } else {
-            this.value = null;
+        if (elementValue != null) {
+            expectedType.isValidValue(elementValue).ifPresent(failures::add);
         }
-        return failures;
-    }
-
-    protected List<ValidationFailure> getValidationFailures(Value value) {
-        List<ValidationFailure> failures = new ArrayList<>();
-        expectedType.isValidValue(value).ifPresent(failures::add);
         return failures;
     }
 
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
-            "value=" + (getValue() != null ? getValue().toJson() : "null") +
+            "value=" + elementValue +
             "}";
     }
 }

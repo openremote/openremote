@@ -23,7 +23,6 @@ import com.google.gwt.inject.client.AbstractGinModule;
 import com.google.gwt.place.shared.PlaceController;
 import com.google.gwt.place.shared.PlaceHistoryHandler;
 import com.google.gwt.place.shared.PlaceHistoryMapper;
-import com.google.inject.Provider;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import org.openremote.manager.client.event.*;
@@ -34,7 +33,6 @@ import org.openremote.manager.client.map.MapAssetPlace;
 import org.openremote.manager.client.mvp.AppActivityManager;
 import org.openremote.manager.client.mvp.AppPlaceController;
 import org.openremote.manager.client.service.*;
-import org.openremote.manager.client.simulator.Simulator;
 import org.openremote.manager.client.style.WidgetStyle;
 import org.openremote.manager.shared.security.Tenant;
 import org.openremote.manager.shared.security.TenantResource;
@@ -65,15 +63,8 @@ public class ManagerModule extends AbstractGinModule {
                                          PlaceHistoryMapper placeHistoryMapper,
                                          EventBus eventBus,
                                          ManagerMessages managerMessages,
-                                         WidgetStyle widgetStyle,
-                                         Provider<Simulator> simulatorProvider) {
+                                         WidgetStyle widgetStyle) {
         return Environment.create(
-            new Environment.Factory() {
-                @Override
-                public Provider<Simulator> getSimulatorProvider() {
-                    return simulatorProvider;
-                }
-            },
             securityService,
             requestService,
             eventService,

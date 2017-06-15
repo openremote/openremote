@@ -17,13 +17,12 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.agent.protocol.simulator.element;
+package org.openremote.model.simulator.element;
 
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.AttributeType;
 import org.openremote.model.simulator.SimulatorElement;
-import org.openremote.model.value.Value;
 import org.openremote.model.value.Values;
 
 import java.util.List;
@@ -37,8 +36,11 @@ public class NumberSimulatorElement extends SimulatorElement {
     public static final String ELEMENT_NAME = "number";
     public static final String ELEMENT_NAME_RANGE = "range";
 
-    final protected Integer min;
-    final protected Integer max;
+    protected Integer min;
+    protected Integer max;
+
+    protected NumberSimulatorElement() {
+    }
 
     public NumberSimulatorElement(AttributeRef attributeRef) {
         this(attributeRef, null, null);
@@ -59,11 +61,13 @@ public class NumberSimulatorElement extends SimulatorElement {
     }
 
     @Override
-    protected List<ValidationFailure> getValidationFailures(Value value) {
-        List<ValidationFailure> failures = super.getValidationFailures(value);
-        if ((getMin() != null && Values.getNumber(value).filter(v -> v < getMin()).isPresent())
-            && (getMax() != null && Values.getNumber(value).filter(v -> v > getMax()).isPresent())) {
-            failures.add(ValueValidationFailure.NUMBER_OUT_OF_RANGE);
+    public List<ValidationFailure> getValidationFailures() {
+        List<ValidationFailure> failures = super.getValidationFailures();
+        if (elementValue != null) {
+            if ((getMin() != null && Values.getNumber(elementValue).filter(v -> v < getMin()).isPresent())
+                && (getMax() != null && Values.getNumber(elementValue).filter(v -> v > getMax()).isPresent())) {
+                failures.add(ValueValidationFailure.NUMBER_OUT_OF_RANGE);
+            }
         }
         return failures;
     }

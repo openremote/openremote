@@ -11,19 +11,19 @@ import org.openremote.manager.client.admin.*
 import org.openremote.manager.client.admin.navigation.AdminNavigation
 import org.openremote.manager.client.admin.navigation.AdminNavigationPresenter
 import org.openremote.manager.client.admin.users.*
-import org.openremote.manager.server.security.ManagerIdentityService
 import org.openremote.manager.client.event.GoToPlaceEvent
 import org.openremote.manager.client.event.ShowSuccessEvent
 import org.openremote.manager.client.event.WillGoToPlaceEvent
 import org.openremote.manager.client.i18n.ManagerMessages
+import org.openremote.manager.client.service.EventService
 import org.openremote.manager.client.service.RequestServiceImpl
 import org.openremote.manager.client.style.WidgetStyle
+import org.openremote.manager.server.security.ManagerIdentityService
 import org.openremote.manager.shared.http.EntityReader
 import org.openremote.manager.shared.security.*
 import org.openremote.manager.shared.validation.ConstraintViolationReport
 import org.openremote.model.event.Event
 import org.openremote.model.event.bus.EventListener
-import org.openremote.manager.client.service.EventService
 import org.openremote.test.ClientObjectMapper
 import org.openremote.test.ClientSecurityService
 import org.openremote.test.GwtClientTrait
@@ -154,7 +154,6 @@ class AdminUsersActivityTest extends Specification implements ManagerContainerTr
 
         and: "An activity management configuration"
         def environment = Environment.create(
-                Mock(Environment.Factory),
                 securityService,
                 requestService,
                 Mock(EventService),

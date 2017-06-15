@@ -57,6 +57,7 @@ import static org.openremote.manager.server.event.ClientEventService.getSessionK
 public class AssetStorageService extends RouteBuilder implements ContainerService, Consumer<AssetState> {
 
     private static final Logger LOG = Logger.getLogger(AssetStorageService.class.getName());
+
     protected TimerService timerService;
     protected PersistenceService persistenceService;
     protected ManagerIdentityService managerIdentityService;

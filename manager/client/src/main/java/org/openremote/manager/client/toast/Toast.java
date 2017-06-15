@@ -65,4 +65,9 @@ public class Toast {
     public boolean isExpired() {
         return !isDurableFailure() && (getTimestamp() + getMaxAgeMillis()) <= System.currentTimeMillis();
     }
+
+    public boolean equalsForUser(Toast that) {
+        return getType().equals(that.getType()) && getText().equals(that.getText()) && getMaxAgeMillis() == that.getMaxAgeMillis();
+    }
+
 }

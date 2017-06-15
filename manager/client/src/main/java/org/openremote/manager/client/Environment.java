@@ -25,11 +25,8 @@ import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.service.EventService;
 import org.openremote.manager.client.service.RequestService;
 import org.openremote.manager.client.service.SecurityService;
-import org.openremote.manager.client.simulator.Simulator;
 import org.openremote.manager.client.style.WidgetStyle;
 import org.openremote.model.event.bus.EventBus;
-
-import javax.inject.Provider;
 
 /**
  * Bundle all typically needed dependencies of activities/presenters, so
@@ -37,15 +34,7 @@ import javax.inject.Provider;
  */
 public interface Environment {
 
-    /**
-     * Various managed components with dependent lifecycle.
-     */
-    interface Factory {
-        Provider<Simulator> getSimulatorProvider();
-    }
-
-    static Environment create(Factory factory,
-                              SecurityService securityService,
+    static Environment create(SecurityService securityService,
                               RequestService requestService,
                               EventService eventService,
                               PlaceController placeController,
@@ -54,11 +43,6 @@ public interface Environment {
                               ManagerMessages managerMessages,
                               WidgetStyle widgetStyle) {
         return new Environment() {
-
-            @Override
-            public Factory getFactory() {
-                return factory;
-            }
 
             @Override
             public SecurityService getSecurityService() {
@@ -123,7 +107,4 @@ public interface Environment {
     ManagerMessages getMessages();
 
     WidgetStyle getWidgetStyle();
-
-    Factory getFactory();
-
 }

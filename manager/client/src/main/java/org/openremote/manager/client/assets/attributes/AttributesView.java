@@ -114,7 +114,7 @@ public abstract class AttributesView<
                 isValid = false;
         }
         if (!isValid) {
-            showValidationError(environment.getMessages().invalidAssetAttributes());
+            showValidationError(environment, environment.getMessages().invalidAssetAttributes());
         }
         return isValid;
     }
@@ -132,7 +132,7 @@ public abstract class AttributesView<
             attributeGroups.get(attribute).setError(true);
             if (showValidationFailureMessage) {
                 for (ValidationFailure failure : failures) {
-                    showValidationError(attribute.getLabelOrName().orElse(null), failure);
+                    showValidationError(environment, attribute.getLabelOrName().orElse(null), failure);
                 }
             }
             return false;
@@ -265,7 +265,7 @@ public abstract class AttributesView<
 
         Consumer<List<ValidationFailure>> validationResultConsumer = failures -> {
             for (ValidationFailure failure : failures) {
-                showValidationError(attribute.getLabelOrName().orElse(null), failure);
+                showValidationError(environment, attribute.getLabelOrName().orElse(null), failure);
             }
         };
 
@@ -356,18 +356,4 @@ public abstract class AttributesView<
         environment.getEventBus().dispatch(new ShowSuccessEvent(text));
     }
 
-    protected void showValidationError(String error) {
-        environment.getEventBus().dispatch(new ShowFailureEvent(error, 5000));
-    }
-
-    public void showValidationError(String fieldLabel, ValidationFailure validationFailure) {
-        StringBuilder error = new StringBuilder();
-        if (fieldLabel != null)
-            error.append(environment.getMessages().validationFailedFor(fieldLabel));
-        else
-            error.append(environment.getMessages().validationFailed());
-        if (validationFailure != null)
-            error.append(": ").append(environment.getMessages().validationFailure(validationFailure.name()));
-        showValidationError(error.toString());
-    }
 }

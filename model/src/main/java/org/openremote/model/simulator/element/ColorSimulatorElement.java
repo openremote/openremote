@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.agent.protocol.simulator.element;
+package org.openremote.model.simulator.element;
 
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.AttributeType;
@@ -26,6 +26,9 @@ import org.openremote.model.simulator.SimulatorElement;
 public class ColorSimulatorElement extends SimulatorElement {
 
     public static final String ELEMENT_NAME = "color";
+
+    protected ColorSimulatorElement() {
+    }
 
     public ColorSimulatorElement(AttributeRef attributeRef) {
         super(attributeRef, AttributeType.COLOR_RGB);

@@ -21,12 +21,9 @@ package org.openremote.manager.server.web;
 
 import io.undertow.server.HttpHandler;
 import io.undertow.servlet.api.DeploymentInfo;
-import org.openremote.agent.protocol.simulator.SimulatorProtocol;
 import org.openremote.container.Container;
 import org.openremote.container.security.IdentityService;
 import org.openremote.container.web.WebService;
-import org.openremote.manager.server.security.ManagerIdentityService;
-import org.openremote.manager.server.simulator.SimulatorResourceImpl;
 import org.openremote.model.Constants;
 
 import javax.ws.rs.core.UriBuilder;
@@ -85,16 +82,6 @@ public class ManagerWebService extends WebService {
         getPrefixRoutes().put(
             CONSOLE_PATH, ManagerFileServlet.wrapHandler(consoleHandler, CONSOLE_PATTERN)
         );
-
-        if (container.hasService(SimulatorProtocol.class)) {
-            LOG.info("Enabling simulator web resource");
-            container.getService(WebService.class).getApiSingletons().add(
-                new SimulatorResourceImpl(
-                    container.getService(ManagerIdentityService.class),
-                    container.getService(SimulatorProtocol.class)
-                )
-            );
-        }
 
         super.init(container);
     }

@@ -1,11 +1,11 @@
 package org.openremote.test.assets
 
 import com.google.gwt.junit.GWTMockUtilities
-import org.openremote.manager.client.ManagerHistoryMapper
 import com.google.gwt.place.shared.WithTokenizers
 import com.google.gwt.user.client.ui.Widget
 import com.google.gwt.view.client.HasData
 import org.openremote.manager.client.Environment
+import org.openremote.manager.client.ManagerHistoryMapper
 import org.openremote.manager.client.admin.TenantArrayMapper
 import org.openremote.manager.client.assets.AssetArrayMapper
 import org.openremote.manager.client.assets.AssetMapper
@@ -103,7 +103,6 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
         def placeController = createPlaceController(securityService, eventBus)
         def placeHistoryMapper = createPlaceHistoryMapper(ManagerHistoryMapper.getAnnotation(WithTokenizers.class))
         def environment = Environment.create(
-                Mock(Environment.Factory),
                 securityService,
                 requestService,
                 clientEventService,
@@ -276,7 +275,6 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
         def placeController = createPlaceController(securityService, eventBus)
         def placeHistoryMapper = createPlaceHistoryMapper(ManagerHistoryMapper.getAnnotation(WithTokenizers.class))
         def environment = Environment.create(
-                Mock(Environment.Factory),
                 securityService,
                 requestService,
                 clientEventService,
@@ -455,7 +453,6 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
         def placeController = createPlaceController(securityService, eventBus)
         def placeHistoryMapper = createPlaceHistoryMapper(ManagerHistoryMapper.getAnnotation(WithTokenizers.class))
         def environment = Environment.create(
-                Mock(Environment.Factory),
                 securityService,
                 requestService,
                 clientEventService,

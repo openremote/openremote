@@ -147,6 +147,8 @@ public interface ManagerMessages extends Messages {
 
     String unsupportedMetaItemType(String name);
 
+    String unsupportedValueType(String name);
+
     String emptyMetaItem();
 
     String loadingAssets();
@@ -392,4 +394,11 @@ public interface ManagerMessages extends Messages {
     String noAttributes();
 
     String simulator();
+
+    String invalidValues();
+
+    String writeSimulatorState();
+
+    String simulatorStateSubmitted();
+
 }
