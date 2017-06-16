@@ -77,6 +77,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
     protected MessageBrokerService messageBrokerService;
     protected final Map<AttributeRef, Pair<AssetAttribute, ConnectionStatus>> protocolConfigurations = new HashMap<>();
     protected final Map<String, Protocol> protocols = new HashMap<>();
+    protected final List<AttributeRef> linkedAttributes = new ArrayList<>();
 
     @Override
     public void init(Container container) throws Exception {
@@ -296,7 +297,10 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
                 // so need to check that all protocol configs exist - any that don't we will exclude here
                 // and handle in agent insert
 
-                // Link any AGENT_LINK attributes to the referenced protocol
+                // If an agent insert just occurred then we will end up trying to link the attribute again
+                // so we keep track of linked attributes to avoid this
+
+                // Link any AGENT_LINK attributes to their referenced protocol
                 Map<AssetAttribute, List<AssetAttribute>> groupedAgentLinksAttributes =
                     getGroupedAgentLinkAttributes(
                         asset.getAttributesStream(),
@@ -517,6 +521,11 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
             return;
         }
 
+        synchronized (linkedAttributes) {
+            attributes.removeIf(attr -> linkedAttributes.contains(attr.getReferenceOrThrow()));
+            linkedAttributes.addAll(attributes.stream().map(AssetAttribute::getReferenceOrThrow).collect(Collectors.toList()));
+        }
+
         try {
             LOG.finest("Linking protocol attributes to: " + protocol.getProtocolName());
             protocol.linkAttributes(attributes, protocolConfiguration);
@@ -533,6 +542,11 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
         if (protocol == null) {
             LOG.severe("Cannot unlink protocol attributes as protocol is null: " + protocolConfiguration);
             return;
+        }
+
+        synchronized (linkedAttributes) {
+            attributes.removeIf(attr -> !linkedAttributes.contains(attr.getReferenceOrThrow()));
+            linkedAttributes.removeAll(attributes.stream().map(AssetAttribute::getReferenceOrThrow).collect(Collectors.toList()));
         }
 
         try {
