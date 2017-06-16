@@ -230,7 +230,7 @@ public abstract class AbstractSocketMessageProcessor<T> implements MessageProces
     }
 
     @Override
-    public void sendMessage(T message) {
+    public synchronized void sendMessage(T message) {
         if (connectionStatus != ConnectionStatus.CONNECTED) {
             LOG.fine("Cannot send message: Status = " + connectionStatus);
             return;
@@ -238,7 +238,7 @@ public abstract class AbstractSocketMessageProcessor<T> implements MessageProces
 
         try {
             channel.writeAndFlush(message);
-            LOG.finer("Message sent");
+            LOG.finest("Message sent");
         } catch (Exception e) {
             LOG.log(Level.SEVERE, "Message send failed", e);
         }
@@ -282,18 +282,19 @@ public abstract class AbstractSocketMessageProcessor<T> implements MessageProces
     }
 
     protected synchronized void onMessageReceived(T message) {
-        LOG.finer("Message received");
+        if (connectionStatus != ConnectionStatus.CONNECTED) {
+            return;
+        }
+        LOG.finest("Message received notifying consumers");
         messageConsumers.forEach(consumer -> consumer.accept(message));
     }
 
-    protected void onConnectionStatusChanged(ConnectionStatus connectionStatus) {
+    protected synchronized void onConnectionStatusChanged(ConnectionStatus connectionStatus) {
         this.connectionStatus = connectionStatus;
 
-        synchronized (connectionStatusConsumers) {
-            connectionStatusConsumers.forEach(
-                consumer -> consumer.accept(connectionStatus)
-            );
-        }
+        connectionStatusConsumers.forEach(
+            consumer -> consumer.accept(connectionStatus)
+        );
     }
 
     protected synchronized void scheduleReconnect() {

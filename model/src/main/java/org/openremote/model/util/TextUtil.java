@@ -21,11 +21,9 @@ package org.openremote.model.util;
 
 import com.google.gwt.regexp.shared.RegExp;
 
-import java.text.MessageFormat;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Properties;
 import java.util.function.Predicate;
 
 public class TextUtil {
@@ -189,10 +187,14 @@ public class TextUtil {
     }
 
     public static String requireNonNullAndNonEmpty(String str) {
+        return requireNonNullAndNonEmpty(str, "String cannot be empty");
+    }
+
+    public static String requireNonNullAndNonEmpty(String str, String exceptionMessage) {
         Objects.requireNonNull(str);
 
         if (isNullOrEmpty(str)) {
-            throw new IllegalArgumentException("String cannot be empty");
+            throw new IllegalArgumentException(exceptionMessage);
         }
 
         return str;
