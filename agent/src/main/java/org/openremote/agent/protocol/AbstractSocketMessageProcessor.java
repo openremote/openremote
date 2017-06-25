@@ -139,7 +139,7 @@ public abstract class AbstractSocketMessageProcessor<T> implements MessageProces
         onConnectionStatusChanged(ConnectionStatus.CONNECTING);
 
         if (workerGroup == null) {
-            // TODO: In Netty 5 you can pass in an executor service but could pass in thread factory for now
+            // TODO: In Netty 5 you can pass in an executor service; can only pass in thread factory for now
             workerGroup = new NioEventLoopGroup(1);
             bootstrap = new Bootstrap();
             bootstrap.channel(NioSocketChannel.class);
@@ -230,7 +230,7 @@ public abstract class AbstractSocketMessageProcessor<T> implements MessageProces
     }
 
     @Override
-    public synchronized void sendMessage(T message) {
+    public void sendMessage(T message) {
         if (connectionStatus != ConnectionStatus.CONNECTED) {
             LOG.fine("Cannot send message: Status = " + connectionStatus);
             return;
@@ -239,8 +239,17 @@ public abstract class AbstractSocketMessageProcessor<T> implements MessageProces
         try {
             channel.writeAndFlush(message);
             LOG.finest("Message sent");
+            // Don't block here as it can cause deadlock
+//            ChannelFuture future = channel.writeAndFlush(message).sync();
+//            if (future.isCancelled()) {
+//                LOG.info("Message send cancelled");
+//            } else if (!future.isSuccess()) {
+//                LOG.log(Level.WARNING, "Message send failed", future.cause());
+//            } else {
+//                LOG.finest("Message sent");
+//            }
         } catch (Exception e) {
-            LOG.log(Level.SEVERE, "Message send failed", e);
+            LOG.log(Level.WARNING, "Message send failed", e);
         }
     }
 
@@ -250,15 +259,19 @@ public abstract class AbstractSocketMessageProcessor<T> implements MessageProces
     }
 
     @Override
-    public synchronized void addConnectionStatusConsumer(Consumer<ConnectionStatus> connectionStatusConsumer) {
-        if (!connectionStatusConsumers.contains(connectionStatusConsumer)) {
-            connectionStatusConsumers.add(connectionStatusConsumer);
+    public void addConnectionStatusConsumer(Consumer<ConnectionStatus> connectionStatusConsumer) {
+        synchronized (connectionStatusConsumers) {
+            if (!connectionStatusConsumers.contains(connectionStatusConsumer)) {
+                connectionStatusConsumers.add(connectionStatusConsumer);
+            }
         }
     }
 
     @Override
-    public synchronized void removeConnectionStatusConsumer(Consumer<ConnectionStatus> connectionStatusConsumer) {
-        connectionStatusConsumers.remove(connectionStatusConsumer);
+    public void removeConnectionStatusConsumer(Consumer<ConnectionStatus> connectionStatusConsumer) {
+        synchronized (connectionStatusConsumers) {
+            connectionStatusConsumers.remove(connectionStatusConsumer);
+        }
     }
 
     @Override
@@ -281,7 +294,7 @@ public abstract class AbstractSocketMessageProcessor<T> implements MessageProces
         channel.pipeline().addLast(new MessageEncoder());
     }
 
-    protected synchronized void onMessageReceived(T message) {
+    protected void onMessageReceived(T message) {
         if (connectionStatus != ConnectionStatus.CONNECTED) {
             return;
         }
@@ -292,9 +305,11 @@ public abstract class AbstractSocketMessageProcessor<T> implements MessageProces
     protected synchronized void onConnectionStatusChanged(ConnectionStatus connectionStatus) {
         this.connectionStatus = connectionStatus;
 
-        connectionStatusConsumers.forEach(
-            consumer -> consumer.accept(connectionStatus)
-        );
+        synchronized (connectionStatusConsumers) {
+            connectionStatusConsumers.forEach(
+                consumer -> consumer.accept(connectionStatus)
+            );
+        }
     }
 
     protected synchronized void scheduleReconnect() {
