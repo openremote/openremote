@@ -19,6 +19,9 @@
  */
 package org.openremote.test.protocol
 
+import static org.openremote.model.asset.AssetMeta.DESCRIPTION
+import static org.openremote.model.asset.AssetMeta.LABEL
+
 import org.apache.camel.language.simple.ast.BlockStart
 import org.openremote.agent.protocol.AbstractProtocol
 import org.openremote.agent.protocol.knx.KNXProtocol
@@ -49,13 +52,13 @@ class KNXProtocolTest extends Specification implements ManagerContainerTrait {
     def "Check KNX protocol"() {
 
         given: "expected conditions"
-        def conditions = new PollingConditions(timeout: 1, delay: 1)
+        def conditions = new PollingConditions(timeout: 10, initialDelay: 1.5, delay: 1)
 
         and: "the KNX emulation server is started"
         def knxEmulationServer = new Launcher("manager/test/src/test/resources/knx-server-config.xml")
         def knxServerThread = new Thread(knxEmulationServer);
         knxServerThread.start();
-        
+
         and: "the container is started"
         def serverPort = findEphemeralPort()
         def container = startContainerNoDemoImport(defaultConfig(serverPort), defaultServices())
@@ -86,20 +89,58 @@ class KNXProtocolTest extends Specification implements ManagerContainerTrait {
             assert agentService.getProtocolDeploymentStatus(knxAgent.getAttribute("knxConfigError").get().getReferenceOrThrow()) == ConnectionStatus.ERROR
         }
 
-        when: "the connection to the KNX IP gateway is lost"
-        knxEmulationServer.quit()
+//        when: "the connection to the KNX IP gateway is lost"
+//        knxEmulationServer.quit()
+//        
+//        then: "the protocol status should switch to closed, waiting, connecting, connected"
+//        conditions.eventually {
+//            assert agentService.getProtocolDeploymentStatus(knxAgent.getAttribute("knxConfig").get().getReferenceOrThrow()) == ConnectionStatus.CLOSED
+//        }
+//        conditions.eventually {
+//            assert agentService.getProtocolDeploymentStatus(knxAgent.getAttribute("knxConfig").get().getReferenceOrThrow()) == ConnectionStatus.WAITING
+//        }
+//        conditions.eventually {
+//            assert agentService.getProtocolDeploymentStatus(knxAgent.getAttribute("knxConfig").get().getReferenceOrThrow()) == ConnectionStatus.CONNECTING
+//        }
+//        conditions.eventually {
+//            assert agentService.getProtocolDeploymentStatus(knxAgent.getAttribute("knxConfig").get().getReferenceOrThrow()) == ConnectionStatus.CONNECTED
+//        }
         
-        then: "the protocol status should switch to closed, waiting, connecting, connected"
+
+        when: "a thing asset is created that links it's attributes to the knx protocol configuration"
+        def knxThing = new ServerAsset("Living Room Assset", AssetType.THING, knxAgent)
+        knxThing.setAttributes(
+                new AssetAttribute("light1ToggleOnOff", AttributeType.BOOLEAN)
+                    .setMeta(
+                        new MetaItem(LABEL, Values.create("Light 1 Toggle On/Off")),
+                        new MetaItem(DESCRIPTION, Values.create("Light 1 for living room")),
+                        new MetaItem(KNXProtocol.ACTION_GA, Values.create("1/0/17")),
+                        new MetaItem(KNXProtocol.STATUS_GA, Values.create("0/4/14")),
+                        new MetaItem(KNXProtocol.DPT, Values.create("1.001")),
+                        new MetaItem(AssetMeta.AGENT_LINK, new AttributeRef(knxAgent.getId(), "knxConfig").toArrayValue())
+                    )
+        )
+        knxThing = assetStorageService.merge(knxThing)
+
+        then: "the mock thing to be fully deployed"
         conditions.eventually {
-            assert agentService.getProtocolDeploymentStatus(knxAgent.getAttribute("knxConfig").get().getReferenceOrThrow()) == ConnectionStatus.WAITING
+            ((KNXProtocol) agentService.getProtocol(knxAgent.getAttribute("knxConfig").get())).getAttributeActionMap().get(knxThing.getAttribute("light1ToggleOnOff")) != null
         }
+        
+        
+        when: "change light1ToggleOnOff value to 'true'"
+        def switchChange = new AttributeEvent(knxThing.getId(), "light1ToggleOnOff", Values.create(false))
+        assetProcessingService.sendAttributeEvent(switchChange)
+                
+        then: ""
         conditions.eventually {
-            assert agentService.getProtocolDeploymentStatus(knxAgent.getAttribute("knxConfig").get().getReferenceOrThrow()) == ConnectionStatus.CONNECTED
+            knxThing.getAttribute("light1ToggleOnOff") != null
         }
+        
         
         cleanup: "the server should be stopped"
         stopContainer(container)
-
+        knxEmulationServer.quit()
         
     }
 }
