@@ -1,0 +1,11 @@
+hostname: MY_HOSTNAME
+
+# Remove/comment this block if you don't use Wifi
+wifi:
+  interfaces:
+     wlan0:
+       ssid: "MY_SSID"
+       password: "MY_PASSWORD"
+
+runcmd:
+  - "sh /boot/openremote-boot.sh >> /var/log/openremote-boot.log 2>&1"
