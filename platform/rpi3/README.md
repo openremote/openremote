@@ -13,7 +13,7 @@ DOCKER_MACHINE_NAME=openremote1 \
 DOCKER_MACHINE_IP=10.0.0.123 \
 WIFI_SSID=MyWifiNetwork \
 WIFI_PASSWORD=MyWifiPassword \
-SSH_PUBKEY= $HOME/ssh/id_dsa.pub \
+SSH_PUBKEY=$HOME/.ssh/id_dsa.pub \
  platform/rpi3/machine/openremote-setup.sh
 ```
 
