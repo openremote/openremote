@@ -126,30 +126,28 @@ class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMessageHa
     }
     
     func configureAccess() {
-        webCfg = WKWebViewConfiguration()
+        let webCfg:WKWebViewConfiguration = WKWebViewConfiguration()
         let userController:WKUserContentController = WKUserContentController()
         
-        userController.add(self, name: DefaultsKey.offlineToken)
-        userController.add(self, name: DefaultsKey.refreshToken)
-        userController.add(self, name: DefaultsKey.idToken)
+        userController.add(self, name: DefaultsKey.token)
         
-        var exec_template = "var iOSToken"
+        var exec_template = String(format: "tokenObject = { token: null, refreshToken: null,idToken: null};")
         if TokenManager.sharedInstance.hasToken {
-            exec_template = String(format: "var iOSToken = \"%@\"; var iOSRefreshToken = \"%@\"; var iOSTokenId = \"%@\";", TokenManager.sharedInstance.offlineToken!, TokenManager.sharedInstance.refreshToken!, TokenManager.sharedInstance.idToken!)
+            exec_template = "tokenObject = { token: \"\(TokenManager.sharedInstance.offlineToken ?? "null")\", refreshToken: \"\(TokenManager.sharedInstance.refreshToken ?? "null")\",idToken: \"\(TokenManager.sharedInstance.idToken ?? "null")\"};"
+
         }
-        
         let userScript:WKUserScript = WKUserScript(source: exec_template, injectionTime: .atDocumentStart, forMainFrameOnly: true)
         userController.addUserScript(userScript)
         
-        webCfg?.userContentController = userController;
+        webCfg.userContentController = userController;
         let sbHeight = UIApplication.shared.statusBarFrame.height
         let webFrame = CGRect(x : 0,y : sbHeight,width : view.frame.size.width,height : view.frame.size.height - sbHeight)
-        myWebView = WKWebView(frame: webFrame, configuration: webCfg!)
+        myWebView = WKWebView(frame: webFrame, configuration: webCfg)
         myWebView?.autoresizingMask = [.flexibleWidth, .flexibleHeight];
         myWebView?.uiDelegate = self;
         myWebView?.navigationDelegate = self;
         view.addSubview(myWebView!)
-
+        
         self.login()
     }
     

@@ -42,9 +42,11 @@ class TokenManager:NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationD
         myWebView.autoresizingMask = [.flexibleWidth, .flexibleHeight];
         let defaults = UserDefaults(suiteName: AppGroup.entitlement)
         defaults?.synchronize()
-        if let token = defaults?.value(forKey: DefaultsKey.offlineToken) {
+        if defaults?.value(forKey: DefaultsKey.token) != nil &&
+            defaults?.value(forKey: DefaultsKey.refreshToken) != nil &&
+            defaults?.value(forKey: DefaultsKey.idToken) != nil {
             hasToken = true
-            offlineToken = token as? String
+            offlineToken = defaults?.value(forKey: DefaultsKey.token) as? String
             refreshToken = defaults?.value(forKey: DefaultsKey.refreshToken) as? String
             idToken = defaults?.value(forKey: DefaultsKey.idToken) as? String
         } else {
@@ -66,16 +68,14 @@ class TokenManager:NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationD
         if (!didLogOut) {
             let userController:WKUserContentController = WKUserContentController()
             
-            userController.add(self, name: DefaultsKey.offlineToken)
-            userController.add(self, name: DefaultsKey.refreshToken)
-            userController.add(self, name: DefaultsKey.idToken)
+            userController.add(self, name: DefaultsKey.token)
             
-            var exec_template = "var iOSToken"
-            if let offlineToken = defaults?.object(forKey: DefaultsKey.offlineToken) {
-                NSLog("offlinetoken exists")
+            var exec_template = String(format: "tokenObject = { token: null, refreshToken: null,idToken: null};")
+            if self.hasToken {
+                let offlineToken = defaults?.object(forKey: DefaultsKey.token)
                 let refreshToken = defaults?.object(forKey: DefaultsKey.refreshToken)
                 let idToken = defaults?.object(forKey: DefaultsKey.idToken)
-                exec_template = String(format: "var iOSToken = \"%@\"; var iOSRefreshToken = \"%@\"; var iOSTokenId = \"%@\";", offlineToken as! String, refreshToken as! String, idToken as! String)
+                exec_template = "tokenObject = { token: \(offlineToken ?? "null"), refreshToken: \(refreshToken ?? "null"),idToken: \(idToken ?? "null")};"
             }
             
             let userScript:WKUserScript = WKUserScript(source: exec_template, injectionTime: .atDocumentStart, forMainFrameOnly: false)
@@ -85,12 +85,10 @@ class TokenManager:NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationD
         } else {
             let userController:WKUserContentController = WKUserContentController()
             
-            userController.add(self, name: DefaultsKey.offlineToken)
-            userController.add(self, name: DefaultsKey.refreshToken)
-            userController.add(self, name: DefaultsKey.idToken)
+            userController.add(self, name: DefaultsKey.token)
             
-            var exec_template = "var iOSToken"
-            exec_template = String(format: "var iOSToken = \"%@\"; var iOSRefreshToken = \"%@\"; var iOSTokenId = \"%@\";", "", "", "")
+            
+            let exec_template = String(format: "tokenObject = { token: null, refreshToken: null,idToken: null};")
             
             let userScript:WKUserScript = WKUserScript(source: exec_template, injectionTime: .atDocumentStart, forMainFrameOnly: false)
             userController.addUserScript(userScript)
@@ -107,7 +105,7 @@ class TokenManager:NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationD
             UIApplication.shared.keyWindow?.rootViewController?.present(viewController, animated: true, completion: nil)
         }
         
-        guard let request = URL(string: String(format:"https://%@/%@",Server.hostURL,Server.initialPath)) else { return }
+        guard let request = URL(string: String(format:"%@://%@/%@",Server.scheme, Server.hostURL,Server.initialPath)) else { return }
         myWebView.load(URLRequest(url: request))
     }
     
@@ -117,7 +115,7 @@ class TokenManager:NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationD
         refreshToken = nil
         idToken = nil
         let defaults = UserDefaults(suiteName: AppGroup.entitlement)
-        defaults?.removeObject(forKey: DefaultsKey.offlineToken)
+        defaults?.removeObject(forKey: DefaultsKey.token)
         defaults?.removeObject(forKey: DefaultsKey.refreshToken)
         defaults?.removeObject(forKey: DefaultsKey.idToken)
         authenticate()
@@ -125,14 +123,21 @@ class TokenManager:NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationD
     
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
         let defaults = UserDefaults(suiteName: AppGroup.entitlement)
-        defaults?.set(message.body, forKey: message.name)
         switch message.name {
-        case DefaultsKey.offlineToken:
-            offlineToken = message.body as? String
-        case DefaultsKey.refreshToken:
-            refreshToken = message.body as? String
-        case DefaultsKey.idToken:
-            idToken = message.body as? String
+        case DefaultsKey.token:
+            do {
+                let json = try JSONSerialization.jsonObject(with: (message.body as! String).data(using: String.Encoding.utf8)!, options: .allowFragments)
+                let jsonDictionnary = json as? [String : String]
+                offlineToken = jsonDictionnary?["token"]! ?? nil
+                refreshToken = jsonDictionnary?["refreshToken"]! ?? nil
+                idToken = jsonDictionnary?["idToken"]! ?? nil
+                defaults?.set(offlineToken, forKey: DefaultsKey.token)
+                defaults?.set(refreshToken, forKey: DefaultsKey.refreshToken)
+                defaults?.set(idToken, forKey: DefaultsKey.idToken)
+                
+            } catch {
+                print("Error deserializing JSON: \(error)")
+            }
         default:
             NSLog("unknown message received from javascript : %@", message.name)
         }
@@ -165,7 +170,7 @@ class TokenManager:NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationD
         if let vc = viewController.presentingViewController as? ViewController {
             vc.isInError = true
         }
-        self.viewController.dismiss(animated: true) { 
+        self.viewController.dismiss(animated: true) {
             ErrorManager.showError(error: NSError(domain: "networkError", code: 0, userInfo:[
                 NSLocalizedDescriptionKey :  NSLocalizedString("FailedLoadingPage", value: "Could not load page", comment: "")
                 ]))
@@ -228,49 +233,49 @@ class TokenManager:NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationD
     
     func sendDeviceId() {
         if (TokenManager.sharedInstance.deviceId != nil && TokenManager.sharedInstance.hasToken) {
-        UIApplication.shared.isNetworkActivityIndicatorVisible = true
-        self.getAccessToken { (accessTokenResult) in
-            switch accessTokenResult {
-            case .Failure(let error) :
+            UIApplication.shared.isNetworkActivityIndicatorVisible = true
+            self.getAccessToken { (accessTokenResult) in
+                switch accessTokenResult {
+                case .Failure(let error) :
                     UIApplication.shared.isNetworkActivityIndicatorVisible = false
                     ErrorManager.showError(error: error!)
-            case .Success(let accessToken) :
-            guard let urlRequest = URL(string: String(Server.registerDeviceResource)) else { return }
-            let request = NSMutableURLRequest(url: urlRequest)
-            request.addValue("application/x-www-form-urlencoded", forHTTPHeaderField:"Content-Type");
-            request.httpMethod = "PUT"
-            let postString = String(format:"token=%@&device_id=%@", TokenManager.sharedInstance.deviceId!, (UIDevice.current.identifierForVendor?.uuidString)!)
-            request.httpBody = postString.data(using: .utf8)
-            request.addValue(String(format:"Bearer %@", accessToken!), forHTTPHeaderField: "Authorization")
-            let sessionConfiguration = URLSessionConfiguration.default
-            let session = URLSession(configuration: sessionConfiguration, delegate: self, delegateQueue: nil)
-            let reqDataTask = session.dataTask(with: request as URLRequest, completionHandler: { (data, response, error) in
-                DispatchQueue.main.async {
-                    UIApplication.shared.isNetworkActivityIndicatorVisible = false
-                    if (error != nil) {
-                        NSLog("error %@", (error! as NSError).localizedDescription)
-                        let error = NSError(domain: "", code: 0, userInfo:  [
-                            NSLocalizedDescriptionKey :  NSLocalizedString("ErrorCallingAPI", value: "Could not get data", comment: "")
-                            ])
-                        ErrorManager.showError(error: error)
-                    } else {
-                        if let httpStatus = response as? HTTPURLResponse , httpStatus.statusCode != 204 {
-                            NSLog("Device not registred ",response.debugDescription)
-                            let error = NSError(domain: "", code: 0, userInfo:  [
-                                NSLocalizedDescriptionKey :  NSLocalizedString("ErrorSendingDeviceId", value: "Could not register your device for notifications", comment: "")
-                                ])
-                            ErrorManager.showError(error: error)
-                        } else {
-                            NSLog("Device registred with token %@",postString)
-                            let notificationName = Notification.Name(NotificationsNames.isdeviceIdSent)
-                            NotificationCenter.default.post(name: notificationName, object: nil)
+                case .Success(let accessToken) :
+                    guard let urlRequest = URL(string: String(Server.registerDeviceResource)) else { return }
+                    let request = NSMutableURLRequest(url: urlRequest)
+                    request.addValue("application/x-www-form-urlencoded", forHTTPHeaderField:"Content-Type");
+                    request.httpMethod = "PUT"
+                    let postString = String(format:"token=%@&device_id=%@", TokenManager.sharedInstance.deviceId!, (UIDevice.current.identifierForVendor?.uuidString)!)
+                    request.httpBody = postString.data(using: .utf8)
+                    request.addValue(String(format:"Bearer %@", accessToken!), forHTTPHeaderField: "Authorization")
+                    let sessionConfiguration = URLSessionConfiguration.default
+                    let session = URLSession(configuration: sessionConfiguration, delegate: self, delegateQueue: nil)
+                    let reqDataTask = session.dataTask(with: request as URLRequest, completionHandler: { (data, response, error) in
+                        DispatchQueue.main.async {
+                            UIApplication.shared.isNetworkActivityIndicatorVisible = false
+                            if (error != nil) {
+                                NSLog("error %@", (error! as NSError).localizedDescription)
+                                let error = NSError(domain: "", code: 0, userInfo:  [
+                                    NSLocalizedDescriptionKey :  NSLocalizedString("ErrorCallingAPI", value: "Could not get data", comment: "")
+                                    ])
+                                ErrorManager.showError(error: error)
+                            } else {
+                                if let httpStatus = response as? HTTPURLResponse , httpStatus.statusCode != 204 {
+                                    NSLog("Device not registred ",response.debugDescription)
+                                    let error = NSError(domain: "", code: 0, userInfo:  [
+                                        NSLocalizedDescriptionKey :  NSLocalizedString("ErrorSendingDeviceId", value: "Could not register your device for notifications", comment: "")
+                                        ])
+                                    ErrorManager.showError(error: error)
+                                } else {
+                                    NSLog("Device registred with token %@",postString)
+                                    let notificationName = Notification.Name(NotificationsNames.isdeviceIdSent)
+                                    NotificationCenter.default.post(name: notificationName, object: nil)
+                                }
+                            }
                         }
-                    }
+                    })
+                    reqDataTask.resume()
                 }
-            })
-            reqDataTask.resume()
-        }
-        }
+            }
         }
     }
     

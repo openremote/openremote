@@ -47,7 +47,7 @@ enum FCM {
     static let serverKey = "Dummy"
 }
 enum DefaultsKey {
-    static let offlineToken = "offlineToken"
+    static let token = "token"
     static let refreshToken = "refreshToken"
     static let idToken = "idToken"
     static let deviceId = "deviceToken"

@@ -115,7 +115,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         switch response.actionIdentifier {
         case ActionType.ACTION_DEEP_LINK :
             if let urlToOpen = response.notification.request.content.userInfo["appUrl"] { // until now we are considering anchor name (without the #)
-                guard let urlRequest = URL(string:String(format: "https://%@/%@%@", Server.hostURL, Server.navigationPath, urlToOpen as! String)) else { return }
+                guard let urlRequest = URL(string:String(format: "%@://%@/%@%@",Server.scheme, Server.hostURL, Server.navigationPath, urlToOpen as! String)) else { return }
                 (self.window?.rootViewController as! ViewController).loadUrl(url:urlRequest)
                 NSLog("Action asked : %@",response.actionIdentifier)
             }
