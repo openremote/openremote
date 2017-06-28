@@ -37,6 +37,7 @@ import org.openremote.model.asset.AssetType
 import org.openremote.model.asset.agent.ProtocolConfiguration
 import org.openremote.model.attribute.*
 import org.openremote.model.value.Values
+import org.openremote.test.KNXTestingNetworkLink
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Ignore
 import spock.lang.Specification
@@ -46,18 +47,20 @@ import tuwien.auto.calimero.server.Launcher
 /**
  * This tests the KNX protocol and protocol implementation.
  */
-@Ignore // TODO Test fails
+@Ignore // TODO Verify test on other machines
 class KNXProtocolTest extends Specification implements ManagerContainerTrait {
 
     def "Check KNX protocol"() {
 
         given: "expected conditions"
-        def conditions = new PollingConditions(timeout: 10, initialDelay: 1.5, delay: 1)
+        def conditions = new PollingConditions(timeout: 10, initialDelay: 1, delay: 1)
 
         and: "the KNX emulation server is started"
         def knxEmulationServer = new Launcher("manager/test/src/test/resources/knx-server-config.xml")
         def knxServerThread = new Thread(knxEmulationServer);
         knxServerThread.start();
+        
+        def knxTestingNetwork = KNXTestingNetworkLink.getInstance();
 
         and: "the container is started"
         def serverPort = findEphemeralPort()
@@ -89,23 +92,6 @@ class KNXProtocolTest extends Specification implements ManagerContainerTrait {
             assert agentService.getProtocolDeploymentStatus(knxAgent.getAttribute("knxConfigError").get().getReferenceOrThrow()) == ConnectionStatus.ERROR
         }
 
-//        when: "the connection to the KNX IP gateway is lost"
-//        knxEmulationServer.quit()
-//        
-//        then: "the protocol status should switch to closed, waiting, connecting, connected"
-//        conditions.eventually {
-//            assert agentService.getProtocolDeploymentStatus(knxAgent.getAttribute("knxConfig").get().getReferenceOrThrow()) == ConnectionStatus.CLOSED
-//        }
-//        conditions.eventually {
-//            assert agentService.getProtocolDeploymentStatus(knxAgent.getAttribute("knxConfig").get().getReferenceOrThrow()) == ConnectionStatus.WAITING
-//        }
-//        conditions.eventually {
-//            assert agentService.getProtocolDeploymentStatus(knxAgent.getAttribute("knxConfig").get().getReferenceOrThrow()) == ConnectionStatus.CONNECTING
-//        }
-//        conditions.eventually {
-//            assert agentService.getProtocolDeploymentStatus(knxAgent.getAttribute("knxConfig").get().getReferenceOrThrow()) == ConnectionStatus.CONNECTED
-//        }
-        
 
         when: "a thing asset is created that links it's attributes to the knx protocol configuration"
         def knxThing = new ServerAsset("Living Room Assset", AssetType.THING, knxAgent)
@@ -122,21 +108,29 @@ class KNXProtocolTest extends Specification implements ManagerContainerTrait {
         )
         knxThing = assetStorageService.merge(knxThing)
 
-        then: "the mock thing to be fully deployed"
+        then: "the living room thing to be fully deployed"
         conditions.eventually {
             ((KNXProtocol) agentService.getProtocol(knxAgent.getAttribute("knxConfig").get())).getAttributeActionMap().get(knxThing.getAttribute("light1ToggleOnOff")) != null
         }
         
         
-        when: "change light1ToggleOnOff value to 'true'"
+        when: "change light1ToggleOnOff value to 'false'"
         def switchChange = new AttributeEvent(knxThing.getId(), "light1ToggleOnOff", Values.create(false))
         assetProcessingService.sendAttributeEvent(switchChange)
                 
-        then: ""
+        then: "the correct data should arrive on KNX bus"
         conditions.eventually {
-            knxThing.getAttribute("light1ToggleOnOff") != null
+           assert knxTestingNetwork.getLastDataReceived().equals("0080") == true
         }
-        
+
+        when: "change light1ToggleOnOff value to 'true'"
+        switchChange = new AttributeEvent(knxThing.getId(), "light1ToggleOnOff", Values.create(true))
+        assetProcessingService.sendAttributeEvent(switchChange)
+                
+        then: "the correct data should arrive on KNX bus"
+        conditions.eventually {
+            assert knxTestingNetwork.getLastDataReceived().equals("0081") == true
+        }
         
         cleanup: "the server should be stopped"
         stopContainer(container)
