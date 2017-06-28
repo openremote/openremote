@@ -22,8 +22,6 @@ import org.quartz.impl.matchers.GroupMatcher
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
-import static org.openremote.manager.server.setup.builtin.BuiltinSetupTasks.SETUP_IMPORT_DEMO_SCENES
-
 class TimerProtocolTest extends Specification implements ManagerContainerTrait {
     def "Check timer protocol agent and device asset deployment"() {
 
@@ -42,7 +40,7 @@ class TimerProtocolTest extends Specification implements ManagerContainerTrait {
 
         then: "the container should be running and attributes linked"
         conditions.eventually {
-            assertNothingProcessedFor(assetProcessingService, 500)
+            assert noEventProcessedIn(assetProcessingService, 500)
 
             apartment1 = assetStorageService.find(managerDemoSetup.apartment1Id, true)
             sceneAgent = assetStorageService.find(new AssetQuery().name("Scene Agent").type(AssetType.AGENT).parent(managerDemoSetup.apartment1Id))

@@ -2,19 +2,21 @@ package org.openremote.test.rules;
 
 import org.openremote.model.*;
 import org.openremote.model.asset.*
-import org.openremote.model.value.Values
-import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.value.*
+import org.openremote.model.attribute.*;
 
 global java.util.logging.Logger LOG;
 global org.openremote.model.rules.Assets assets;
 
-rule "Decrement vacation days every day 1 minute after midnight until vacation is over"
-    // http://www.cronmaker.com/
-    timer (cron: 0 1 0 1/1 * ? *)
+rule "When vacation timestamp was set, execute AWAY scene"
 when
-    // Vacation days are more than zero, which means vacation mode is enabled
-    AssetState($ref: attributeRef, attributeName == "vacationDays", type == AssetType.RESIDENCE, $val: valueAsNumber > 0 )
+    $residence : AssetState(type == AssetType.RESIDENCE, attributeName == "vacationUntil", valueAsNumber > 0, oldValue == null)
 then
-    // Decrement the vacation days by one
-    assets.dispatch( new AttributeEvent($ref, Values.create($val - 1)) );
+    assets.dispatch(
+        new AttributeEvent(
+            $residence.getId(),
+            "awayScene",
+            AttributeExecuteStatus.REQUEST_START.asValue()
+        )
+    );
 end

@@ -51,7 +51,7 @@ public abstract class Datapoint implements Serializable {
 
     @Id
     @Column(name = "TIMESTAMP", nullable = false)
-    protected long timestamp = System.currentTimeMillis();
+    protected long timestamp;
 
     @Id
     @Column(name = "VALUE", columnDefinition = "jsonb", nullable = false)
@@ -61,28 +61,16 @@ public abstract class Datapoint implements Serializable {
     public Datapoint() {
     }
 
-    public Datapoint(AttributeState attributeState) {
-        this(attributeState.getAttributeRef(), attributeState.getCurrentValue().orElse(null));
+    public Datapoint(AttributeState attributeState, long timestamp) {
+        this(attributeState.getAttributeRef(), attributeState.getCurrentValue().orElse(null), timestamp);
     }
 
     public Datapoint(AttributeEvent stateEvent) {
         this(stateEvent.getAttributeState(), stateEvent.getTimestamp());
     }
 
-    public Datapoint(AttributeState attributeState, long timestamp) {
-        this(attributeState.getAttributeRef(), attributeState.getCurrentValue().orElse(null), timestamp);
-    }
-
-    public Datapoint(AttributeRef attributeRef, Value value) {
-        this(attributeRef.getEntityId(), attributeRef.getAttributeName(), value);
-    }
-
     public Datapoint(AttributeRef attributeRef, Value value, long timestamp) {
         this(attributeRef.getEntityId(), attributeRef.getAttributeName(), value, timestamp);
-    }
-
-    public Datapoint(String entityId, String attributeName, Value value) {
-        this(entityId, attributeName, value, System.currentTimeMillis());
     }
 
     public Datapoint(String entityId, String attributeName, Value value, long timestamp) {

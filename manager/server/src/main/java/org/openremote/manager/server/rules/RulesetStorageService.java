@@ -22,6 +22,7 @@ package org.openremote.manager.server.rules;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.persistence.PersistenceService;
+import org.openremote.container.timer.TimerService;
 import org.openremote.container.web.WebService;
 import org.openremote.manager.server.asset.AssetStorageService;
 import org.openremote.manager.server.security.ManagerIdentityService;
@@ -44,6 +45,7 @@ public class RulesetStorageService implements ContainerService {
 
         container.getService(WebService.class).getApiSingletons().add(
             new RulesetResourceImpl(
+                container.getService(TimerService.class),
                 container.getService(ManagerIdentityService.class),
                 this,
                 container.getService(AssetStorageService.class)

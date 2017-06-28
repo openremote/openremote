@@ -110,6 +110,7 @@ public class JsonEditorImpl implements JsonEditor {
 
         editor = new TextArea();
         editor.setHeight("30em");
+        editor.setReadOnly(onApply == null);
         dialog.getContentPanel().add(editor);
     }
 

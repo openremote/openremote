@@ -19,6 +19,7 @@
  */
 package org.openremote.manager.server.datapoint;
 
+import org.openremote.container.timer.TimerService;
 import org.openremote.manager.server.asset.AssetStorageService;
 import org.openremote.manager.server.asset.ServerAsset;
 import org.openremote.manager.server.security.ManagerIdentityService;
@@ -42,10 +43,11 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
     protected final AssetStorageService assetStorageService;
     protected final AssetDatapointService assetDatapointService;
 
-    public AssetDatapointResourceImpl(ManagerIdentityService identityService,
+    public AssetDatapointResourceImpl(TimerService timerService,
+                                      ManagerIdentityService identityService,
                                       AssetStorageService assetStorageService,
                                       AssetDatapointService assetDatapointService) {
-        super(identityService);
+        super(timerService, identityService);
         this.assetStorageService = assetStorageService;
         this.assetDatapointService = assetDatapointService;
     }

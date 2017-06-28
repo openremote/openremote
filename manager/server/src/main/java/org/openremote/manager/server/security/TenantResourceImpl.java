@@ -19,6 +19,7 @@
  */
 package org.openremote.manager.server.security;
 
+import org.openremote.container.timer.TimerService;
 import org.openremote.manager.server.i18n.I18NService;
 import org.openremote.manager.server.web.ManagerWebResource;
 import org.openremote.manager.shared.http.RequestParams;
@@ -44,8 +45,8 @@ public class TenantResourceImpl extends ManagerWebResource implements TenantReso
 
     private static final Logger LOG = Logger.getLogger(TenantResourceImpl.class.getName());
 
-    public TenantResourceImpl(ManagerIdentityService identityService) {
-        super(identityService);
+    public TenantResourceImpl(TimerService timerService, ManagerIdentityService identityService) {
+        super(timerService, identityService);
     }
 
     @Override

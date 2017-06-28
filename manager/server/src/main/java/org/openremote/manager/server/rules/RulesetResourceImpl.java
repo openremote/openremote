@@ -19,6 +19,7 @@
  */
 package org.openremote.manager.server.rules;
 
+import org.openremote.container.timer.TimerService;
 import org.openremote.manager.server.asset.AssetStorageService;
 import org.openremote.manager.server.security.ManagerIdentityService;
 import org.openremote.manager.server.web.ManagerWebResource;
@@ -46,10 +47,11 @@ public class RulesetResourceImpl extends ManagerWebResource implements RulesetRe
     final protected RulesetStorageService rulesetStorageService;
     final protected AssetStorageService assetStorageService;
 
-    public RulesetResourceImpl(ManagerIdentityService identityService,
+    public RulesetResourceImpl(TimerService timerService,
+                               ManagerIdentityService identityService,
                                RulesetStorageService rulesetStorageService,
                                AssetStorageService assetStorageService) {
-        super(identityService);
+        super(timerService, identityService);
         this.rulesetStorageService = rulesetStorageService;
         this.assetStorageService = assetStorageService;
     }

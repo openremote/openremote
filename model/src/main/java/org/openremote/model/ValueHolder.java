@@ -49,13 +49,5 @@ public interface ValueHolder {
 
     void setValue(Value value);
 
-    void setValue(Value... values);
-
-    void setValue(String string);
-
-    void setValue(Double number);
-
-    void setValue(Boolean b);
-
     List<ValidationFailure> getValidationFailures();
 }

@@ -35,28 +35,16 @@ public class AssetDatapoint extends Datapoint {
     public AssetDatapoint() {
     }
 
-    public AssetDatapoint(AttributeState attributeState) {
-        super(attributeState);
+    public AssetDatapoint(AttributeState attributeState, long timestamp) {
+        super(attributeState, timestamp);
     }
 
     public AssetDatapoint(AttributeEvent stateEvent) {
         super(stateEvent);
     }
 
-    public AssetDatapoint(AttributeState attributeState, long timestamp) {
-        super(attributeState, timestamp);
-    }
-
-    public AssetDatapoint(AttributeRef attributeRef, Value value) {
-        super(attributeRef, value);
-    }
-
     public AssetDatapoint(AttributeRef attributeRef, Value value, long timestamp) {
         super(attributeRef, value, timestamp);
-    }
-
-    public AssetDatapoint(String entityId, String attributeName, Value value) {
-        super(entityId, attributeName, value);
     }
 
     public AssetDatapoint(String entityId, String attributeName, Value value, long timestamp) {

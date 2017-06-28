@@ -133,7 +133,7 @@ public final class AssetRoute {
                     .flatMap(Values::getString)
                     .flatMap(AttributeExecuteStatus::fromString);
 
-                if (!status.isPresent() && !status.get().isWrite()) {
+                if (status.isPresent() && !status.get().isWrite()) {
                     throw new AssetProcessingException(Reason.INVALID_ATTRIBUTE_EXECUTE_STATUS);
                 }
             }

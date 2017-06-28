@@ -73,7 +73,13 @@ public abstract class Attribute extends AbstractValueTimestampHolder {
     protected Attribute(String name, AttributeType type) {
         this(name);
         setName(name);
-        setTypeAndClearValue(type);
+        setType(type);
+    }
+
+    protected Attribute(String name, AttributeType type, Value value, long timestamp) {
+        this(name, type);
+        setValue(value);
+        setValueTimestamp(timestamp);
     }
 
     protected Attribute(String name, AttributeType type, Value value) {
@@ -98,12 +104,9 @@ public abstract class Attribute extends AbstractValueTimestampHolder {
         return getObjectValue().getString(TYPE_FIELD_NAME).flatMap(AttributeType::optionalValueOf);
     }
 
-    public void setTypeAndClearValue(AttributeType type) {
+    public void setType(AttributeType type) {
         Objects.requireNonNull(type);
         getObjectValue().put(TYPE_FIELD_NAME, Values.create(type.name()));
-
-        // Remove existing value and timestamp
-        clearValue();
     }
 
     public void clearType() {
@@ -185,7 +188,7 @@ public abstract class Attribute extends AbstractValueTimestampHolder {
         if (!getType().isPresent())
             failures.add(MISSING_ATTRIBUTE_TYPE);
 
-        if (!hasValueTimestamp())
+        if (!getValueTimestamp().isPresent())
             failures.add(MISSING_ATTRIBUTE_VALUE_TIMESTAMP);
 
         // Value can be empty, if it's not it must validate with the type

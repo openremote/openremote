@@ -45,8 +45,8 @@ import static org.openremote.container.util.MapAccess.getBoolean;
  * <li>{@link #SETUP_INIT_CLEAN_DATABASE}</li>
  * <li>{@link #SETUP_IMPORT_DEMO_USERS}</li>
  * <li>{@link #SETUP_IMPORT_DEMO_ASSETS} depends on {@link #SETUP_IMPORT_DEMO_USERS}</li>
- * <li>{@link #SETUP_IMPORT_DEMO_RULES} depends on {@link #SETUP_IMPORT_DEMO_ASSETS}</li>
- * <li>{@link #SETUP_IMPORT_DEMO_SCENES} depends on {@link #SETUP_IMPORT_DEMO_RULES}</li>
+ * <li>{@link #SETUP_IMPORT_DEMO_SCENES} depends on {@link #SETUP_IMPORT_DEMO_ASSETS}</li>
+ * <li>{@link #SETUP_IMPORT_DEMO_RULES} depends on {@link #SETUP_IMPORT_DEMO_SCENES}</li>
  * </ul>
  */
 public class BuiltinSetupTasks extends AbstractSetupTasks {
@@ -54,19 +54,19 @@ public class BuiltinSetupTasks extends AbstractSetupTasks {
     public static final String SETUP_INIT_CLEAN_DATABASE = "SETUP_INIT_CLEAN_DATABASE";
     public static final String SETUP_IMPORT_DEMO_USERS = "SETUP_IMPORT_DEMO_USERS";
     public static final String SETUP_IMPORT_DEMO_ASSETS = "SETUP_IMPORT_DEMO_ASSETS";
-    public static final String SETUP_IMPORT_DEMO_RULES = "SETUP_IMPORT_DEMO_RULES";
     public static final String SETUP_IMPORT_DEMO_SCENES = "SETUP_IMPORT_DEMO_SCENES";
+    public static final String SETUP_IMPORT_DEMO_RULES = "SETUP_IMPORT_DEMO_RULES";
 
     @Override
     public List<Setup> createTasks(Container container) {
 
         boolean cleanDatabase = getBoolean(container.getConfig(), SETUP_INIT_CLEAN_DATABASE, container.isDevMode());
 
-        // Demo scenes are optional because they create many attributes
-        boolean importDemoScenes = getBoolean(container.getConfig(), SETUP_IMPORT_DEMO_SCENES, container.isDevMode());
+        // Too many rules are difficult to debug, so they are optional
+        boolean importDemoRules = getBoolean(container.getConfig(), SETUP_IMPORT_DEMO_RULES, container.isDevMode());
 
-        // If importing demo scenes we have to import demo rules
-        boolean importDemoRules = importDemoScenes || getBoolean(container.getConfig(), SETUP_IMPORT_DEMO_RULES, container.isDevMode());
+        // If importing demo rules we have to import demo scenes
+        boolean importDemoScenes = importDemoRules || getBoolean(container.getConfig(), SETUP_IMPORT_DEMO_SCENES, container.isDevMode());
 
         // If importing demo rules we have to import demo assets
         boolean importDemoAssets = importDemoRules || getBoolean(container.getConfig(), SETUP_IMPORT_DEMO_ASSETS, container.isDevMode());

@@ -31,19 +31,19 @@ class AssetAttributeLinkingTest extends Specification implements ManagerContaine
 
         then: "the container should be running and initialised"
         conditions.eventually {
-            assertNothingProcessedFor(assetProcessingService, 500)
+            assert noEventProcessedIn(assetProcessingService, 500)
         }
 
         when: "assets are created"
         def asset1 = new ServerAsset("Asset 1", AssetType.THING, null, Constants.MASTER_REALM)
         asset1.setAttributes(
-            new AssetAttribute("button", AttributeType.STRING, Values.create("RELEASED"))
+            new AssetAttribute("button", AttributeType.STRING, Values.create("RELEASED"), getClockTimeOf(container))
         )
         asset1 = assetStorageService.merge(asset1)
         def asset2 = new ServerAsset("Asset 2", AssetType.THING, null, Constants.MASTER_REALM)
         asset2.setAttributes(
-                new AssetAttribute("lightOnOff", AttributeType.BOOLEAN, Values.create(false)),
-                new AssetAttribute("counter", AttributeType.NUMBER, Values.create(0))
+                new AssetAttribute("lightOnOff", AttributeType.BOOLEAN, Values.create(false), getClockTimeOf(container)),
+                new AssetAttribute("counter", AttributeType.NUMBER, Values.create(0), getClockTimeOf(container))
         )
         asset2 = assetStorageService.merge(asset2)
 
@@ -120,14 +120,14 @@ class AssetAttributeLinkingTest extends Specification implements ManagerContaine
         conditions.eventually {
             asset2 = assetStorageService.find(asset2.id, true)
             assert !asset2.getAttribute("lightOnOff").get().getValueAsBoolean().get()
-            assertNothingProcessedFor(assetProcessingService, 1000)
+            assert noEventProcessedIn(assetProcessingService, 1000)
         }
 
         // Need to reset counter due to synchronisation issues (ideally counter would still be at 0 as
         // each press event had a corresponding release event)
         when: "the counter is reset"
         def attr = asset2.getAttribute("counter").get()
-        attr.setValue(0.0)
+        attr.setValue(Values.create(0.0))
         asset2.replaceAttribute(attr)
         asset2 = assetStorageService.merge(asset2)
 

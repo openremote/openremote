@@ -107,8 +107,8 @@ trait ManagerContainerTrait extends ContainerTrait {
         startContainer(config << [(TIMER_CLOCK_TYPE): PSEUDO.name()], services)
     }
 
-    static assertNothingProcessedFor(AssetProcessingService assetProcessingService, int milliseconds) {
-        assert (assetProcessingService.lastProcessedEventTimestamp > 0
+    static boolean noEventProcessedIn(AssetProcessingService assetProcessingService, int milliseconds) {
+        return (assetProcessingService.lastProcessedEventTimestamp > 0
                 && assetProcessingService.lastProcessedEventTimestamp + milliseconds < System.currentTimeMillis())
     }
 

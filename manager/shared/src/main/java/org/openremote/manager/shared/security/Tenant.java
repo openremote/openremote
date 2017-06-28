@@ -130,9 +130,9 @@ public class Tenant {
         this.duplicateEmailsAllowed = duplicateEmailsAllowed;
     }
 
-    public boolean isActive() {
+    public boolean isActive(long currentTimeMillis) {
         return enabled != null && enabled
-            && (notBefore == null || notBefore == 0 || notBefore <= (System.currentTimeMillis()/1000));
+            && (notBefore == null || notBefore == 0 || notBefore <= (currentTimeMillis/1000));
     }
 
     @Override

@@ -20,6 +20,7 @@
 package org.openremote.manager.server.asset;
 
 import org.openremote.container.message.MessageBrokerService;
+import org.openremote.container.timer.TimerService;
 import org.openremote.manager.server.security.ManagerIdentityService;
 import org.openremote.manager.server.web.ManagerWebResource;
 import org.openremote.manager.shared.asset.AssetProcessingException;
@@ -29,7 +30,6 @@ import org.openremote.manager.shared.security.Tenant;
 import org.openremote.model.Constants;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetQuery;
-import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.value.Value;
@@ -55,10 +55,11 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
     protected final AssetStorageService assetStorageService;
     protected final MessageBrokerService messageBrokerService;
 
-    public AssetResourceImpl(ManagerIdentityService identityService,
+    public AssetResourceImpl(TimerService timerService,
+                             ManagerIdentityService identityService,
                              AssetStorageService assetStorageService,
                              MessageBrokerService messageBrokerService) {
-        super(identityService);
+        super(timerService, identityService);
         this.assetStorageService = assetStorageService;
         this.messageBrokerService = messageBrokerService;
     }
@@ -141,7 +142,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                 return result.toArray(new Asset[result.size()]);
             } else {
                 Tenant tenant = getAuthenticatedTenant();
-                if (tenant == null || !tenant.isActive()) {
+                if (tenant == null || !tenant.isActive(timerService.getCurrentTimeMillis())) {
                     throw new WebApplicationException(NOT_FOUND);
                 }
                 List<ServerAsset> result = assetStorageService.findAll(
@@ -238,7 +239,9 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                     .parse(rawJson)
                     .orElse(null); // When parsing literal JSON "null"
 
-                AttributeEvent event = new AttributeEvent(new AttributeRef(assetId, attributeName), value);
+                AttributeEvent event = new AttributeEvent(
+                    new AttributeRef(assetId, attributeName), value, timerService.getCurrentTimeMillis()
+                );
 
                 // Process asynchronously but block for a little while waiting for the result
                 Map<String, Object> headers = new HashMap<>();

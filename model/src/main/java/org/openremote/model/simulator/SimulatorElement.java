@@ -117,26 +117,6 @@ public abstract class SimulatorElement implements ValueHolder {
     }
 
     @Override
-    public void setValue(Value... values) {
-        this.elementValue = Values.createArray().addAll(values);
-    }
-
-    @Override
-    public void setValue(String string) {
-        this.elementValue = Values.create(string);
-    }
-
-    @Override
-    public void setValue(Double number) {
-        this.elementValue = Values.create(number);
-    }
-
-    @Override
-    public void setValue(Boolean b) {
-        this.elementValue = Values.create(b);
-    }
-
-    @Override
     public List<ValidationFailure> getValidationFailures() {
         List<ValidationFailure> failures = new ArrayList<>();
         if (elementValue != null) {

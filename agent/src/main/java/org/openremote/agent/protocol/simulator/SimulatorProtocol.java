@@ -407,7 +407,13 @@ public class SimulatorProtocol extends AbstractProtocol {
             if (!instances.containsKey(protocolConfigurationRef))
                 return Optional.empty();
             List<SimulatorElement> linkedElements = getLinkedElements(protocolConfigurationRef);
-            return Optional.of(new SimulatorState(protocolConfigurationRef, linkedElements.toArray(new SimulatorElement[linkedElements.size()])));
+            return Optional.of(
+                new SimulatorState(
+                    timerService.getCurrentTimeMillis(),
+                    protocolConfigurationRef,
+                    linkedElements.toArray(new SimulatorElement[linkedElements.size()])
+                )
+            );
         }
     }
 

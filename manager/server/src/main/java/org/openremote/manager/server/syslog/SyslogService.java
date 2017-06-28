@@ -88,8 +88,8 @@ public class SyslogService extends Handler implements ContainerService {
     @Override
     public void start(Container container) throws Exception {
         if (persistenceService != null) {
-            // Flush batch every 3 seconds
-            executorService.scheduleAtFixedRate(this::flushBatch, 3 * 1000, 3 * 1000);
+            // Flush batch every 3 seconds (wait 10 seconds for database (schema) to be ready in dev mode)
+            executorService.scheduleAtFixedRate(this::flushBatch, 10 * 1000, 3 * 1000);
 
             // Clear outdated events every minute
             executorService.scheduleAtFixedRate(() -> {

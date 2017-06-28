@@ -176,7 +176,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                     return false;
                 }
 
-                boolean isRestrictedUser =  identityService.isRestrictedUser(auth.getUserId());
+                boolean isRestrictedUser = identityService.isRestrictedUser(auth.getUserId());
 
                 // Client can subscribe to several assets
                 for (String assetId : filter.getEntityId()) {
@@ -252,6 +252,10 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
      * Send internal attribute change events into the {@link #ASSET_QUEUE}.
      */
     public void sendAttributeEvent(AttributeEvent attributeEvent) {
+        // Set event source time if not already set
+        if (attributeEvent.getTimestamp() <= 0) {
+            attributeEvent.setTimestamp(timerService.getCurrentTimeMillis());
+        }
         messageBrokerService.getProducerTemplate().sendBodyAndHeader(ASSET_QUEUE, attributeEvent, HEADER_SOURCE, INTERNAL);
     }
 
@@ -288,9 +292,9 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
         if (assetState.getProcessingStatus() != AssetState.ProcessingStatus.ERROR) {
             if (assetState.getProcessingStatus() != AssetState.ProcessingStatus.COMPLETED)
                 assetState.setProcessingStatus(AssetState.ProcessingStatus.COMPLETED);
-            clientEventService.publishEvent(
-                new AttributeEvent(assetState.getId(), assetState.getAttributeName(), assetState.getValue())
-            );
+            clientEventService.publishEvent(new AttributeEvent(
+                assetState.getId(), assetState.getAttributeName(), assetState.getValue(), timerService.getCurrentTimeMillis()
+            ));
         }
         lastProcessedEventTimestamp = System.currentTimeMillis();
         LOG.fine("<<< Processing complete: " + assetState);

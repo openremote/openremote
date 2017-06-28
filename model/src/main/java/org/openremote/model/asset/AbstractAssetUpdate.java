@@ -254,7 +254,7 @@ public abstract class AbstractAssetUpdate {
     }
 
     public long getValueTimestamp() {
-        return attribute.getValueTimestamp();
+        return attribute.getValueTimestamp().orElse(-1L);
     }
 
     public AttributeType getAttributeType() {

@@ -26,7 +26,7 @@ class MacroProtocolTest extends Specification implements ManagerContainerTrait {
 
         then: "the container should be running and attributes linked"
         conditions.eventually {
-            assertNothingProcessedFor(assetProcessingService, 500)
+            assert noEventProcessedIn(assetProcessingService, 500)
 
             def apartment1 = assetStorageService.find(managerDemoSetup.apartment1Id, true)
             assert apartment1.getAttribute("homeScene").get().getValueAsString().orElse("") == AttributeExecuteStatus.READY.toString()

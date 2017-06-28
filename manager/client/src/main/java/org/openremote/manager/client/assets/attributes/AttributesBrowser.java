@@ -255,6 +255,10 @@ public abstract class AttributesBrowser
     }
 
     protected void writeAttributeValue(AssetAttribute attribute) {
+
+        // Let the server set the timestamp by setting it to 0
+        attribute.setValueTimestamp(0);
+
         if (!validateAttribute(attribute, true)) {
             return;
         }
@@ -262,7 +266,7 @@ public abstract class AttributesBrowser
         attribute
             .getReference()
             .map(attributeRef -> new AttributeState(attributeRef, attribute.getValue().orElse(null)))
-            .map(attributeState -> new AttributeEvent(attributeState, System.currentTimeMillis())) // Event time is browser time
+            .map(attributeState -> new AttributeEvent(attributeState, attribute.getValueTimestamp().orElse(0L)))
             .ifPresent(attributeEvent -> {
                 environment.getEventService().dispatch(attributeEvent);
                 if (attribute.isExecutable()) {
@@ -296,7 +300,7 @@ public abstract class AttributesBrowser
             attributeFormGroup.forExtension(widget -> {
                 if (widget instanceof DatapointBrowser) {
                     DatapointBrowser datapointBrowser = (DatapointBrowser) widget;
-                    datapointBrowser.refresh(System.currentTimeMillis());
+                    datapointBrowser.refresh(attribute.getValueTimestamp().orElse(System.currentTimeMillis()));
                 }
             });
         }

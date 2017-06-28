@@ -21,6 +21,7 @@ package org.openremote.manager.server.apps;
 
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
+import org.openremote.container.timer.TimerService;
 import org.openremote.container.web.WebService;
 import org.openremote.manager.server.security.ManagerIdentityService;
 import org.openremote.manager.server.web.ManagerWebService;
@@ -35,12 +36,14 @@ import static org.openremote.model.Constants.MASTER_REALM;
 
 public class ConsoleAppService implements ContainerService {
 
+    protected TimerService timerService;
     protected ManagerWebService managerWebService;
     protected ManagerIdentityService identityService;
 
     @Override
     public void init(Container container) throws Exception {
 
+        this.timerService= container.getService(TimerService.class);
         this.managerWebService = container.getService(ManagerWebService.class);
         this.identityService = container.getService(ManagerIdentityService.class);
 
@@ -62,7 +65,7 @@ public class ConsoleAppService implements ContainerService {
         Files.list(managerWebService.getConsoleDocRoot()).forEach(path -> {
             String directoryName = path.getFileName().toString();
             Tenant tenant = identityService.getTenantForRealm(directoryName);
-            if (tenant.isActive() && tenant.getDisplayName() != null) {
+            if (tenant.isActive(timerService.getCurrentTimeMillis()) && tenant.getDisplayName() != null) {
                 String appUrl = managerWebService.getConsoleUrl(
                     identityService.getExternalServerUri(),
                     directoryName

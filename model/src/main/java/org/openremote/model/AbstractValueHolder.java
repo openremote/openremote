@@ -48,38 +48,47 @@ public abstract class AbstractValueHolder implements ValueHolder {
         return objectValue;
     }
 
+    @Override
     public void clearValue() {
         objectValue.remove(VALUE_FIELD_NAME);
     }
 
+    @Override
     public Optional<Value> getValue() {
         return objectValue.get(VALUE_FIELD_NAME);
     }
 
+    @Override
     public Optional<String> getValueAsString() {
         return objectValue.getString(VALUE_FIELD_NAME);
     }
 
+    @Override
     public Optional<Double> getValueAsNumber() {
         return objectValue.getNumber(VALUE_FIELD_NAME);
     }
 
+    @Override
     public Optional<Integer> getValueAsInteger() {
         return objectValue.getNumber(VALUE_FIELD_NAME).map(Double::intValue);
     }
 
+    @Override
     public Optional<Boolean> getValueAsBoolean() {
         return objectValue.getBoolean(VALUE_FIELD_NAME);
     }
 
+    @Override
     public Optional<ObjectValue> getValueAsObject() {
         return objectValue.getObject(VALUE_FIELD_NAME);
     }
 
+    @Override
     public Optional<ArrayValue> getValueAsArray() {
         return objectValue.getArray(VALUE_FIELD_NAME);
     }
 
+    @Override
     public void setValue(Value value) {
         if (value != null) {
             objectValue.put(VALUE_FIELD_NAME, value);
@@ -88,25 +97,10 @@ public abstract class AbstractValueHolder implements ValueHolder {
         }
     }
 
-    public void setValue(Value... values) {
-        setValue(Values.createArray().addAll(values));
-    }
-
-    public void setValue(String string) {
-        setValue(Values.create(string));
-    }
-
-    public void setValue(Double number) {
-        setValue(Values.create(number));
-    }
-
-    public void setValue(Boolean b) {
-        setValue(Values.create(b));
-    }
-
     /**
      * Override to implement constraint checking.
      */
+    @Override
     public List<ValidationFailure> getValidationFailures() {
         return new ArrayList<>();
     }

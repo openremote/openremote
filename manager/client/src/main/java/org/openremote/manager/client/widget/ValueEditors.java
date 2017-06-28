@@ -81,6 +81,13 @@ public final class ValueEditors {
                 valueUpdate.valueHolder.setValue(
                     valueUpdate.rawValue != null ? createValue(valueUpdate.rawValue) : null
                 );
+
+                // Let the server set the timestamp by setting it to 0
+                if (valueUpdate.valueHolder instanceof AbstractValueTimestampHolder) {
+                    AbstractValueTimestampHolder timestampHolder = (AbstractValueTimestampHolder) valueUpdate.valueHolder;
+                    timestampHolder.setValueTimestamp(0);
+                }
+
                 failures.addAll(valueUpdate.valueHolder.getValidationFailures());
             } catch (IllegalArgumentException ex) {
                 failures.add(ex::getMessage);
@@ -150,13 +157,13 @@ public final class ValueEditors {
     }
 
     public static IsWidget createStringEditor(ValueHolder valueHolder,
-                                       String currentValue,
-                                       String defaultValue,
-                                       boolean readOnly,
-                                       String styleName,
-                                       FormGroup formGroup,
-                                       boolean showTimestamp,
-                                       Consumer<List<ValidationFailure>> validationResultConsumer) {
+                                              String currentValue,
+                                              String defaultValue,
+                                              boolean readOnly,
+                                              String styleName,
+                                              FormGroup formGroup,
+                                              boolean showTimestamp,
+                                              Consumer<List<ValidationFailure>> validationResultConsumer) {
         Consumer<String> updateConsumer = !readOnly
             ? rawValue -> STRING_UPDATER.accept(new ValueUpdate<>(formGroup, valueHolder, validationResultConsumer, rawValue))
             : null;
@@ -169,7 +176,7 @@ public final class ValueEditors {
         panel.add(widgetWrapper);
         if (showTimestamp && valueHolder instanceof AbstractValueTimestampHolder) {
             AbstractValueTimestampHolder timestampHolder = (AbstractValueTimestampHolder) valueHolder;
-            TimestampLabel timestampLabel = new TimestampLabel(timestampHolder.getValueTimestamp());
+            TimestampLabel timestampLabel = new TimestampLabel(timestampHolder.getValueTimestamp().orElse(null));
             panel.add(timestampLabel);
         }
         return () -> panel;
@@ -177,13 +184,13 @@ public final class ValueEditors {
 
 
     public static IsWidget createNumberEditor(ValueHolder valueHolder,
-                                       String currentValue,
-                                       String defaultValue,
-                                       boolean readOnly,
-                                       String styleName,
-                                       FormGroup formGroup,
-                                       boolean showTimestamp,
-                                       Consumer<List<ValidationFailure>> validationResultConsumer) {
+                                              String currentValue,
+                                              String defaultValue,
+                                              boolean readOnly,
+                                              String styleName,
+                                              FormGroup formGroup,
+                                              boolean showTimestamp,
+                                              Consumer<List<ValidationFailure>> validationResultConsumer) {
 
         Consumer<String> updateConsumer = !readOnly
             ? rawValue -> DOUBLE_UPDATER.accept(new ValueUpdate<>(formGroup, valueHolder, validationResultConsumer, rawValue))
@@ -198,20 +205,20 @@ public final class ValueEditors {
         panel.add(widgetWrapper);
         if (showTimestamp && valueHolder instanceof AbstractValueTimestampHolder) {
             AbstractValueTimestampHolder timestampHolder = (AbstractValueTimestampHolder) valueHolder;
-            TimestampLabel timestampLabel = new TimestampLabel(timestampHolder.getValueTimestamp());
+            TimestampLabel timestampLabel = new TimestampLabel(timestampHolder.getValueTimestamp().orElse(null));
             panel.add(timestampLabel);
         }
         return () -> panel;
     }
 
     public static IsWidget createBooleanEditor(ValueHolder valueHolder,
-                                        Boolean currentValue,
-                                        Boolean defaultValue,
-                                        boolean readOnly,
-                                        String styleName,
-                                        FormGroup formGroup,
-                                        boolean showTimestamp,
-                                        Consumer<List<ValidationFailure>> validationResultConsumer) {
+                                               Boolean currentValue,
+                                               Boolean defaultValue,
+                                               boolean readOnly,
+                                               String styleName,
+                                               FormGroup formGroup,
+                                               boolean showTimestamp,
+                                               Consumer<List<ValidationFailure>> validationResultConsumer) {
         Consumer<Boolean> updateConsumer = !readOnly
             ? rawValue -> BOOLEAN_UPDATER.accept(new ValueUpdate<>(formGroup, valueHolder, validationResultConsumer, rawValue))
             : null;
@@ -225,22 +232,22 @@ public final class ValueEditors {
         panel.add(widgetWrapper);
         if (showTimestamp && valueHolder instanceof AbstractValueTimestampHolder) {
             AbstractValueTimestampHolder timestampHolder = (AbstractValueTimestampHolder) valueHolder;
-            TimestampLabel timestampLabel = new TimestampLabel(timestampHolder.getValueTimestamp());
+            TimestampLabel timestampLabel = new TimestampLabel(timestampHolder.getValueTimestamp().orElse(null));
             panel.add(timestampLabel);
         }
         return () -> panel;
     }
 
     public static IsWidget createObjectEditor(ValueHolder valueHolder,
-                                       ObjectValue currentValue,
-                                       Supplier<Value> resetSupplier,
-                                       boolean readOnly,
-                                       String label,
-                                       String title,
-                                       JsonEditor jsonEditor,
-                                       FormGroup formGroup,
-                                       boolean showTimestamp,
-                                       Consumer<List<ValidationFailure>> validationResultConsumer) {
+                                              ObjectValue currentValue,
+                                              Supplier<Value> resetSupplier,
+                                              boolean readOnly,
+                                              String label,
+                                              String title,
+                                              JsonEditor jsonEditor,
+                                              FormGroup formGroup,
+                                              boolean showTimestamp,
+                                              Consumer<List<ValidationFailure>> validationResultConsumer) {
         Consumer<Value> updateConsumer = !readOnly
             ? rawValue -> VALUE_UPDATER.accept(new ValueUpdate<>(formGroup, valueHolder, validationResultConsumer, rawValue))
             : null;
@@ -255,22 +262,22 @@ public final class ValueEditors {
         panel.add(widgetWrapper);
         if (showTimestamp && valueHolder instanceof AbstractValueTimestampHolder) {
             AbstractValueTimestampHolder timestampHolder = (AbstractValueTimestampHolder) valueHolder;
-            TimestampLabel timestampLabel = new TimestampLabel(timestampHolder.getValueTimestamp());
+            TimestampLabel timestampLabel = new TimestampLabel(timestampHolder.getValueTimestamp().orElse(null));
             panel.add(timestampLabel);
         }
         return () -> panel;
     }
 
     public static IsWidget createArrayEditor(ValueHolder valueHolder,
-                                      ArrayValue currentValue,
-                                      Supplier<Value> resetSupplier,
-                                      boolean readOnly,
-                                      String label,
-                                      String title,
-                                      JsonEditor jsonEditor,
-                                      FormGroup formGroup,
-                                      boolean showTimestamp,
-                                      Consumer<List<ValidationFailure>> validationResultConsumer) {
+                                             ArrayValue currentValue,
+                                             Supplier<Value> resetSupplier,
+                                             boolean readOnly,
+                                             String label,
+                                             String title,
+                                             JsonEditor jsonEditor,
+                                             FormGroup formGroup,
+                                             boolean showTimestamp,
+                                             Consumer<List<ValidationFailure>> validationResultConsumer) {
         Consumer<Value> updateConsumer = !readOnly
             ? rawValue -> VALUE_UPDATER.accept(new ValueUpdate<>(formGroup, valueHolder, validationResultConsumer, rawValue))
             : null;
@@ -286,7 +293,7 @@ public final class ValueEditors {
         panel.add(widgetWrapper);
         if (showTimestamp && valueHolder instanceof AbstractValueTimestampHolder) {
             AbstractValueTimestampHolder timestampHolder = (AbstractValueTimestampHolder) valueHolder;
-            TimestampLabel timestampLabel = new TimestampLabel(timestampHolder.getValueTimestamp());
+            TimestampLabel timestampLabel = new TimestampLabel(timestampHolder.getValueTimestamp().orElse(null));
             panel.add(timestampLabel);
         }
         return () -> panel;
@@ -308,9 +315,9 @@ public final class ValueEditors {
     }
 
     private static IsWidget createStringEditorWidget(String styleName,
-                                             String currentValue,
-                                             String defaultValue,
-                                             Consumer<String> updateConsumer) {
+                                                     String currentValue,
+                                                     String defaultValue,
+                                                     Consumer<String> updateConsumer) {
         FormInputText input = new FormInputText();
         input.addStyleName(styleName);
         if (currentValue != null) {
@@ -333,9 +340,9 @@ public final class ValueEditors {
     }
 
     private static IsWidget createBooleanEditorWidget(String styleName,
-                                              Boolean currentValue,
-                                              Boolean defaultValue,
-                                              Consumer<Boolean> updateConsumer) {
+                                                      Boolean currentValue,
+                                                      Boolean defaultValue,
+                                                      Consumer<Boolean> updateConsumer) {
         FormCheckBox input = new FormCheckBox();
         input.addStyleName(styleName);
 
@@ -359,11 +366,11 @@ public final class ValueEditors {
     }
 
     private static IsWidget createJsonEditorWidget(JsonEditor jsonEditor,
-                                           String label,
-                                           String title,
-                                           Value currentValue,
-                                           Consumer<Value> updateConsumer,
-                                           Supplier<Value> resetSupplier) {
+                                                   String label,
+                                                   String title,
+                                                   Value currentValue,
+                                                   Consumer<Value> updateConsumer,
+                                                   Supplier<Value> resetSupplier) {
         jsonEditor.setTitle(title);
 
         if (currentValue != null) {

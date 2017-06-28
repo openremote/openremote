@@ -22,6 +22,7 @@ package org.openremote.container.timer;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 
+import java.util.Date;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -38,6 +39,11 @@ public class TimerService implements ContainerService {
     public enum Clock {
         REAL {
             @Override
+            public void init() {
+                // NOOP
+            }
+
+            @Override
             public long getCurrentTimeMillis() {
                 return System.currentTimeMillis();
             }
@@ -48,7 +54,12 @@ public class TimerService implements ContainerService {
             }
         },
         PSEUDO {
-            AtomicLong timer = new AtomicLong(System.currentTimeMillis()); // Init to wall clock time!
+            AtomicLong timer = new AtomicLong(System.currentTimeMillis());
+
+            @Override
+            public void init() {
+                timer.set(System.currentTimeMillis());
+            }
 
             @Override
             public long getCurrentTimeMillis() {
@@ -61,6 +72,7 @@ public class TimerService implements ContainerService {
             }
         };
 
+        public abstract void init();
         public abstract long getCurrentTimeMillis();
         public abstract long advanceTime(long amount, TimeUnit unit);
     }
@@ -72,6 +84,7 @@ public class TimerService implements ContainerService {
         this.clock = Clock.valueOf(
             getString(container.getConfig(), TIMER_CLOCK_TYPE, TIMER_CLOCK_TYPE_DEFAULT)
         );
+        this.clock.init();
     }
 
     @Override

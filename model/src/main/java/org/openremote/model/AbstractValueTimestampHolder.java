@@ -23,6 +23,8 @@ import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.Values;
 
+import java.util.Optional;
+
 /**
  * Base class for all model classes which have to internally store data in an
  * {@link ObjectValue} that has a <code>value</code> field that accepts any
@@ -37,15 +39,8 @@ public abstract class AbstractValueTimestampHolder extends AbstractValueHolder {
         super(objectValue);
     }
 
-    public boolean hasValueTimestamp() {
-        return getObjectValue().hasKey(VALUE_TIMESTAMP_FIELD_NAME);
-    }
-
-    /**
-     * @return <code>-1</code> if there is no timestamp.
-     */
-    public long getValueTimestamp() {
-        return getObjectValue().getNumber(VALUE_TIMESTAMP_FIELD_NAME).map(Double::longValue).orElse(-1L);
+    public Optional<Long> getValueTimestamp() {
+        return getObjectValue().getNumber(VALUE_TIMESTAMP_FIELD_NAME).map(Double::longValue);
     }
 
     /**
@@ -56,29 +51,14 @@ public abstract class AbstractValueTimestampHolder extends AbstractValueHolder {
         getObjectValue().put(VALUE_TIMESTAMP_FIELD_NAME, Values.create(timestamp));
     }
 
-    /**
-     * Sets the value timestamp to current system time.
-     */
-    public void setValueTimestamp() {
-        setValueTimestamp(System.currentTimeMillis());
-    }
-
-    /**
-     * Removes the value and sets the timestamp to current system time.
-     */
     @Override
     public void clearValue() {
         super.clearValue();
-        setValueTimestamp();
+        clearTimestamp();
     }
 
-    /**
-     * Sets the value and the timestamp to system time.
-     */
-    @Override
-    public void setValue(Value value) {
-        super.setValue(value);
-        setValueTimestamp();
+    public void clearTimestamp() {
+        objectValue.remove(VALUE_TIMESTAMP_FIELD_NAME);
     }
 
     /**

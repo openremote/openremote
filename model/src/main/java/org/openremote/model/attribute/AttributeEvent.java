@@ -113,6 +113,10 @@ public class AttributeEvent extends SharedEvent {
         this(new AttributeState(attributeRef, value));
     }
 
+    public AttributeEvent(AttributeRef attributeRef, Value value, long timestamp) {
+        this(new AttributeState(attributeRef, value), timestamp);
+    }
+
     public AttributeEvent(AttributeState attributeState) {
         this.attributeState = attributeState;
     }

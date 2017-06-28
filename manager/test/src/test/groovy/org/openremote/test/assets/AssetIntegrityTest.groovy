@@ -70,7 +70,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
         when: "an asset is stored with a non-empty attribute value"
         testAsset = assetResource.get(null, testAsset.getId())
         testAsset.setAttributes(
-                new AssetAttribute("foo", AttributeType.STRING, Values.create("bar"))
+                new AssetAttribute("foo", AttributeType.STRING, Values.create("bar"), getClockTimeOf(container))
         )
         assetResource.update(null, testAsset.id, testAsset)
         testAsset = assetResource.get(null, testAsset.getId())

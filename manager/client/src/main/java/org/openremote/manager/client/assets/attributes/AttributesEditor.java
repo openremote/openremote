@@ -127,12 +127,11 @@ public class AttributesEditor
         AssetAttribute attribute = new AssetAttribute();
         attribute.setName(name);
         if (type != null) {
-            attribute.setTypeAndClearValue(type);
+            attribute.setType(type);
         }
 
-        // Must initialize timestamp for proper attribute state (here it
-        // means: "When was the initial 'empty' attribute value state created?")
-        attribute.setValueTimestamp();
+        // Tell the server to set the timestamp when saving because we don't want to use browser time
+        attribute.setValueTimestamp(0);
 
         List<ValidationFailure> failures = attribute.getValidationFailures();
         if (!failures.isEmpty()) {

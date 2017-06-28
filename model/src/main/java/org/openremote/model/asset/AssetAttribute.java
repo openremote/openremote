@@ -60,6 +60,10 @@ public class AssetAttribute extends Attribute {
         super(name, type);
     }
 
+    public AssetAttribute(String name, AttributeType type, Value value, long timestamp) {
+        super(name, type, value, timestamp);
+    }
+
     public AssetAttribute(String name, AttributeType type, Value value) {
         super(name, type, value);
     }
@@ -76,6 +80,11 @@ public class AssetAttribute extends Attribute {
 
     public AssetAttribute(String assetId, String name, AttributeType type, Value value) {
         super(name, type, value);
+        setAssetId(assetId);
+    }
+
+    public AssetAttribute(String assetId, String name, AttributeType type, Value value, long timestamp) {
+        super(name, type, value, timestamp);
         setAssetId(assetId);
     }
 
@@ -112,7 +121,7 @@ public class AssetAttribute extends Attribute {
     public List<ValidationFailure> getMetaItemValidationFailures(MetaItem item) {
         List<ValidationFailure> failures = super.getMetaItemValidationFailures(item);
 
-        // We validation well-known meta items
+        // Validate well-known meta items
         AssetMeta.getValidationFailure(item).ifPresent(failures::add);
 
         return failures;
@@ -141,7 +150,7 @@ public class AssetAttribute extends Attribute {
      * @return The current value and its timestamp represented as an attribute event.
      */
     public Optional<AttributeEvent> getStateEvent() {
-        return getState().map(state -> new AttributeEvent(state, getValueTimestamp()));
+        return getState().flatMap(state -> getValueTimestamp().map(ts -> new AttributeEvent(state, ts)));
     }
 
     public boolean hasLabel() {
@@ -382,32 +391,23 @@ public class AssetAttribute extends Attribute {
     //    FUNCTIONAL METHODS BELOW
     //    ---------------------------------------------------
 
-    /**
-     * Returns non-private attributes with non-private meta items.
-     *
-     * @see #isProtected()
-     * @see AssetMeta#isMetaItemProtectedReadable(MetaItem)
-     */
-    public static Stream<AssetAttribute> filterProtectedAttributes(Stream<AssetAttribute> attributes) {
-        return attributes == null ? Stream.empty() : attributes
-            .filter(AssetAttribute::isProtected)
-            .map(AssetAttribute::deepCopy)
-            .peek(attribute -> attribute.getMeta().removeIf(((Predicate<MetaItem>) AssetMeta::isMetaItemProtectedReadable).negate()));
-    }
-
     public static Optional<AssetAttribute> attributeFromJson(ObjectValue objectValue, String assetId, String name) {
-        if (objectValue == null || objectValue.keys().length == 0 || isNullOrEmpty(assetId) || isNullOrEmpty(name)) {
+        if (objectValue == null || objectValue.keys().length == 0) {
             return Optional.empty();
         }
 
         AssetAttribute attribute = new AssetAttribute(objectValue);
-        attribute.setAssetId(assetId);
-        attribute.setName(name);
+        if (!isNullOrEmpty(assetId)) {
+            attribute.setAssetId(assetId);
+        }
+        if (!isNullOrEmpty(name)) {
+            attribute.setName(name);
+        }
         return Optional.of(attribute);
     }
 
     public static Stream<AssetAttribute> attributesFromJson(ObjectValue objectValue, String assetId) {
-        if (objectValue == null || objectValue.keys().length == 0 || isNullOrEmpty(assetId)) {
+        if (objectValue == null || objectValue.keys().length == 0) {
             return Stream.empty();
         }
         return Arrays

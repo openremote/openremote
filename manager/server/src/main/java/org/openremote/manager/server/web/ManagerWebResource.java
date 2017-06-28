@@ -19,6 +19,7 @@
  */
 package org.openremote.manager.server.web;
 
+import org.openremote.container.timer.TimerService;
 import org.openremote.container.web.WebResource;
 import org.openremote.manager.server.security.ManagerIdentityService;
 import org.openremote.manager.shared.security.Tenant;
@@ -26,9 +27,11 @@ import org.openremote.model.asset.Asset;
 
 public class ManagerWebResource extends WebResource {
 
+    final protected TimerService timerService;
     final protected ManagerIdentityService identityService;
 
-    public ManagerWebResource(ManagerIdentityService identityService) {
+    public ManagerWebResource(TimerService timerService, ManagerIdentityService identityService) {
+        this.timerService = timerService;
         this.identityService = identityService;
     }
 

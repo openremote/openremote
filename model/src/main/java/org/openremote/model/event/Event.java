@@ -42,7 +42,6 @@ public abstract class Event {
     }
 
     protected Event() {
-        this(System.currentTimeMillis());
     }
 
     public static String getEventType(String simpleClassName) {
@@ -62,6 +61,10 @@ public abstract class Event {
 
     public long getTimestamp() {
         return timestamp;
+    }
+
+    public void setTimestamp(long timestamp) {
+        this.timestamp = timestamp;
     }
 
     @Override

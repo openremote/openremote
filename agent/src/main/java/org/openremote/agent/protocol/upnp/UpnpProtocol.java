@@ -122,51 +122,52 @@ public class UpnpProtocol extends AbstractProtocol {
         asset.setParentId(parentId);
         asset.setId(getAssetId(device));
 
+        long currentTime = timerService.getCurrentTimeMillis();
         Optional.ofNullable(device.getType().getDisplayString()).ifPresent(v ->
             asset.addAttributes(
-                new AssetAttribute("type", STRING, Values.create(v))
+                new AssetAttribute("type", STRING, Values.create(v), currentTime)
                     .addMeta(new MetaItem(LABEL, Values.create("Device Type")))
             )
         );
 
         Optional.ofNullable(device.getDetails().getManufacturerDetails().getManufacturer()).ifPresent(v ->
             asset.addAttributes(
-                new AssetAttribute("manufacturer", STRING, Values.create(v))
+                new AssetAttribute("manufacturer", STRING, Values.create(v), currentTime)
                     .addMeta(new MetaItem(LABEL, Values.create("Manufacturer")))
             )
         );
 
         Optional.ofNullable(device.getDetails().getFriendlyName()).ifPresent(v ->
             asset.addAttributes(
-                new AssetAttribute("friendlyName", STRING, Values.create(v))
+                new AssetAttribute("friendlyName", STRING, Values.create(v), currentTime)
                     .addMeta(new MetaItem(LABEL, Values.create("Friendly Name")))
             )
         );
 
         Optional.ofNullable(device.getDetails().getModelDetails().getModelNumber()).ifPresent(v ->
             asset.addAttributes(
-                new AssetAttribute("modelNumber", STRING, Values.create(v))
+                new AssetAttribute("modelNumber", STRING, Values.create(v), currentTime)
                     .addMeta(new MetaItem(LABEL, Values.create("Model Number")))
             )
         );
 
         Optional.ofNullable(device.getDetails().getModelDetails().getModelName()).ifPresent(v ->
             asset.addAttributes(
-                new AssetAttribute("modelName", STRING, Values.create(v))
+                new AssetAttribute("modelName", STRING, Values.create(v), currentTime)
                     .addMeta(new MetaItem(LABEL, Values.create("Model Name")))
             )
         );
 
         Optional.ofNullable(device.getDetails().getModelDetails().getModelDescription()).ifPresent(v ->
             asset.addAttributes(
-                new AssetAttribute("modelDescription", STRING, Values.create(v))
+                new AssetAttribute("modelDescription", STRING, Values.create(v), currentTime)
                     .addMeta(new MetaItem(LABEL, Values.create("Model Description")))
             )
         );
 
         Optional.ofNullable(device.getDetails().getSerialNumber()).ifPresent(v ->
             asset.addAttributes(
-                new AssetAttribute("serialNumber", STRING, Values.create(v))
+                new AssetAttribute("serialNumber", STRING, Values.create(v), currentTime)
                     .addMeta(new MetaItem(LABEL, Values.create("Serial Number")))
             )
         );

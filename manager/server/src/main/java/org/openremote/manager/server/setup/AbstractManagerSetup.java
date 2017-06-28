@@ -81,10 +81,10 @@ public abstract class AbstractManagerSetup implements Setup {
                     new MetaItem(RULE_STATE, Values.create(true)),
                     new MetaItem(SHOW_ON_DASHBOARD, Values.create(true))
                 )),
-            new AssetAttribute("vacationDays", NUMBER)
+            new AssetAttribute("vacationUntil", TIMESTAMP_MILLIS)
                 .setMeta(new Meta(
-                    new MetaItem(LABEL, Values.create("Vacation days")),
-                    new MetaItem(DESCRIPTION, Values.create("Enable vacation mode for given days")),
+                    new MetaItem(LABEL, Values.create("Vacation until")),
+                    new MetaItem(DESCRIPTION, Values.create("Vacation mode enabled until")),
                     new MetaItem(PROTECTED, Values.create(true)),
                     new MetaItem(RULE_STATE, Values.create(true))
                 )),
@@ -150,7 +150,7 @@ public abstract class AbstractManagerSetup implements Setup {
                     new MetaItem(READ_ONLY, Values.create(true)),
                     new MetaItem(SHOW_ON_DASHBOARD, Values.create(true))
                 )
-            );
+        );
     }
 
     protected void addDemoApartmentRoomCO2Sensor(ServerAsset room, boolean shouldBeLinked, Supplier<MetaItem[]> agentLinker) {

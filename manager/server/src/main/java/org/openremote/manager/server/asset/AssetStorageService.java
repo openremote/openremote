@@ -119,6 +119,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
         container.getService(WebService.class).getApiSingletons().add(
             new AssetResourceImpl(
+                container.getService(TimerService.class),
                 managerIdentityService,
                 this,
                 container.getService(MessageBrokerService.class)
@@ -143,10 +144,11 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         String attributeName = assetState.getAttribute().getName()
             .orElseThrow(() -> new IllegalStateException("Cannot store asset state for attribute with no name"));
         Value value = assetState.getAttribute().getValue().orElse(null);
-        // Some sanity checking, of course the timestamp should never be -1 if we store updated attribute state
-        long timestamp = assetState.getAttribute().getValueTimestamp();
+        // If there is no timestamp, use system time (0 or -1 are "no timestamp")
+        Optional<Long> timestamp = assetState.getAttribute().getValueTimestamp();
         String valueTimestamp = Long.toString(
-            timestamp >= 0 ? timestamp : timerService.getCurrentTimeMillis()
+            timestamp.map(ts -> ts > 0 ? ts : timerService.getCurrentTimeMillis())
+                .orElseGet(() -> timerService.getCurrentTimeMillis())
         );
         if (!storeAttributeValue(assetId, attributeName, value, valueTimestamp)) {
             throw new RuntimeException("Database update failed, no rows updated");
@@ -273,6 +275,16 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
      */
     public ServerAsset merge(ServerAsset asset, boolean overrideVersion) {
         return persistenceService.doReturningTransaction(em -> {
+
+            // Update all empty attribute timestamps with server-time (a caller which doesn't have a
+            // reliable time source such as a browser should clear the timestamp when setting an attribute
+            // value).
+            asset.getAttributesStream().forEach(attribute -> {
+                Optional<Long> timestamp = attribute.getValueTimestamp();
+                if (!timestamp.isPresent() || timestamp.get() <= 0) {
+                    attribute.setValueTimestamp(timerService.getCurrentTimeMillis());
+                }
+            });
 
             // Validate parent
             if (asset.getParentId() != null) {
@@ -767,7 +779,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         switch (persistenceEvent.getCause()) {
             case INSERT:
                 clientEventService.publishEvent(
-                    new AssetTreeModifiedEvent(asset.getRealmId(), asset.getId())
+                    new AssetTreeModifiedEvent(timerService.getCurrentTimeMillis(), asset.getRealmId(), asset.getId())
                 );
                 break;
             case UPDATE:
@@ -777,7 +789,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 String currentName = persistenceEvent.getCurrentState("name");
                 if (!Objects.equals(previousName, currentName)) {
                     clientEventService.publishEvent(
-                        new AssetTreeModifiedEvent(asset.getRealmId(), asset.getId())
+                        new AssetTreeModifiedEvent(timerService.getCurrentTimeMillis(), asset.getRealmId(), asset.getId())
                     );
                     break;
                 }
@@ -787,7 +799,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 String currentParentId = persistenceEvent.getCurrentState("parentId");
                 if (!Objects.equals(previousParentId, currentParentId)) {
                     clientEventService.publishEvent(
-                        new AssetTreeModifiedEvent(asset.getRealmId(), asset.getId())
+                        new AssetTreeModifiedEvent(timerService.getCurrentTimeMillis(), asset.getRealmId(), asset.getId())
                     );
                     break;
                 }
@@ -797,7 +809,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 String currentRealmId = persistenceEvent.getCurrentState("realmId");
                 if (!Objects.equals(previousRealmId, currentRealmId)) {
                     clientEventService.publishEvent(
-                        new AssetTreeModifiedEvent(asset.getRealmId(), asset.getId())
+                        new AssetTreeModifiedEvent(timerService.getCurrentTimeMillis(), asset.getRealmId(), asset.getId())
                     );
                     break;
                 }
@@ -805,7 +817,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 break;
             case DELETE:
                 clientEventService.publishEvent(
-                    new AssetTreeModifiedEvent(asset.getRealmId(), asset.getId())
+                    new AssetTreeModifiedEvent(timerService.getCurrentTimeMillis(), asset.getRealmId(), asset.getId())
                 );
                 break;
         }

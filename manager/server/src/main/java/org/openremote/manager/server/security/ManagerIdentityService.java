@@ -32,6 +32,7 @@ import org.openremote.container.persistence.PersistenceEvent;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.AuthContext;
 import org.openremote.container.security.IdentityService;
+import org.openremote.container.timer.TimerService;
 import org.openremote.container.web.WebService;
 import org.openremote.manager.server.event.ClientEventService;
 import org.openremote.manager.shared.security.ClientRole;
@@ -55,6 +56,7 @@ public class ManagerIdentityService extends IdentityService {
     private static final Logger LOG = Logger.getLogger(ManagerIdentityService.class.getName());
 
     protected boolean devMode;
+    protected TimerService timerService;
     protected PersistenceService persistenceService;
     protected MessageBrokerService messageBrokerService;
     protected ClientEventService clientEventService;
@@ -68,6 +70,7 @@ public class ManagerIdentityService extends IdentityService {
         super.init(container);
 
         this.devMode = container.isDevMode();
+        this.timerService = container.getService(TimerService.class);
         this.persistenceService = container.getService(PersistenceService.class);
         this.messageBrokerService = container.getService(MessageBrokerService.class);
         this.clientEventService = container.getService(ClientEventService.class);
@@ -75,7 +78,7 @@ public class ManagerIdentityService extends IdentityService {
         enableAuthProxy(container.getService(WebService.class));
 
         container.getService(WebService.class).getApiSingletons().add(
-            new TenantResourceImpl(this)
+            new TenantResourceImpl(container.getService(TimerService.class), this)
         );
         container.getService(WebService.class).getApiSingletons().add(
             new UserResourceImpl(this)
@@ -128,7 +131,7 @@ public class ManagerIdentityService extends IdentityService {
     public boolean isActiveTenant(String realmId) {
         return persistenceService.doReturningTransaction(em -> {
             Tenant tenant = em.find(Tenant.class, realmId);
-            return tenant != null && tenant.isActive();
+            return tenant != null && tenant.isActive(timerService.getCurrentTimeMillis());
         });
     }
 
@@ -141,7 +144,8 @@ public class ManagerIdentityService extends IdentityService {
      * in the same realm as the tenant and the tenant is active.
      */
     public boolean isTenantActiveAndAccessible(AuthContext authContext, Tenant tenant) {
-        return tenant != null && (authContext.isSuperUser() || (tenant.isActive() && authContext.isRealmAccessibleByUser(tenant.getRealm())));
+        return tenant != null && (authContext.isSuperUser()
+            || (tenant.isActive(timerService.getCurrentTimeMillis()) && authContext.isRealmAccessibleByUser(tenant.getRealm())));
     }
 
     /**
@@ -275,7 +279,7 @@ public class ManagerIdentityService extends IdentityService {
         );
 
         clientEventService.publishEvent(
-            new AssetTreeModifiedEvent(tenant.getId(), null)
+            new AssetTreeModifiedEvent(timerService.getCurrentTimeMillis(), tenant.getId(), null)
         );
     }
 

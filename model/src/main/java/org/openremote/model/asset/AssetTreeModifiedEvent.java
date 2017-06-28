@@ -78,12 +78,14 @@ public class AssetTreeModifiedEvent extends SharedEvent {
     protected AssetTreeModifiedEvent() {
     }
 
-    public AssetTreeModifiedEvent(String realmId, String assetId) {
+    public AssetTreeModifiedEvent(long timestamp, String realmId, String assetId) {
+        super(timestamp);
         this.realmId = realmId;
         this.assetId = assetId;
     }
 
-    public AssetTreeModifiedEvent(String assetId) {
+    public AssetTreeModifiedEvent(long timestamp, String assetId) {
+        super(timestamp);
         this.assetId = assetId;
     }
 

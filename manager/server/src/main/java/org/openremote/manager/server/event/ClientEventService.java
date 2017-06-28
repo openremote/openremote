@@ -101,6 +101,7 @@ public class ClientEventService implements ContainerService {
     public static final String CLIENT_EVENT_QUEUE = "seda://ClientEventQueue?multipleConsumers=false&waitForTaskToComplete=NEVER&purgeWhenStopping=true&discardIfNoConsumers=true&size=1000";
 
     final protected Collection<EventSubscriptionAuthorizer> eventSubscriptionAuthorizers = new CopyOnWriteArraySet<>();
+    protected TimerService timerService;
     protected MessageBrokerService messageBrokerService;
     protected EventSubscriptions eventSubscriptions;
 
@@ -108,6 +109,7 @@ public class ClientEventService implements ContainerService {
 
     @Override
     public void init(Container container) throws Exception {
+        timerService = container.getService(TimerService.class);
         messageBrokerService = container.getService(MessageBrokerService.class);
 
         eventSubscriptions = new EventSubscriptions(
@@ -168,6 +170,13 @@ public class ClientEventService implements ContainerService {
                     })
                     .when(bodyAs(String.class).startsWith(SharedEvent.MESSAGE_PREFIX))
                     .convertBodyTo(SharedEvent.class)
+                    .process(exchange -> {
+                        SharedEvent event = exchange.getIn().getBody(SharedEvent.class);
+                        // If there is no timestamp in event, set to system time
+                        if (event.getTimestamp() <= 0) {
+                            event.setTimestamp(timerService.getCurrentTimeMillis());
+                        }
+                    })
                     .to(ClientEventService.CLIENT_EVENT_TOPIC)
                     .otherwise()
                     .process(exchange -> LOG.fine("Unsupported message body: " + exchange.getIn().getBody()))

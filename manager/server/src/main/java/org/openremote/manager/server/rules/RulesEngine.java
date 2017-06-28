@@ -642,9 +642,6 @@ public class RulesEngine<T extends Ruleset> {
                     return;
                 for (AttributeEvent event : events) {
 
-                    // Set event source time to current container time
-                    event.timestamp = timerService.getCurrentTimeMillis();
-
                     // Check if the asset ID of the event can be found in the original query
                     AssetQuery checkQuery = query();
                     checkQuery.id = event.getEntityId();

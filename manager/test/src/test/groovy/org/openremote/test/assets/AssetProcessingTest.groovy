@@ -111,7 +111,7 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
 
         then: "the container should be running and initialised"
         conditions.eventually {
-            assertNothingProcessedFor(assetProcessingService, 500)
+            assert noEventProcessedIn(assetProcessingService, 500)
         }
 
         then: "register mock asset processors"

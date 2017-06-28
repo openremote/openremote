@@ -107,7 +107,8 @@ public class SyslogEvent extends SharedEvent {
     protected SyslogEvent() {
     }
 
-    public SyslogEvent(SyslogLevel level, SyslogCategory category, String subCategory, String message) {
+    public SyslogEvent(long timestamp, SyslogLevel level, SyslogCategory category, String subCategory, String message) {
+        super(timestamp);
         this.level = level;
         this.category = category;
         this.subCategory = subCategory;

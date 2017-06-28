@@ -78,7 +78,8 @@ public class SimulatorState extends SharedEvent {
     protected SimulatorState() {
     }
 
-    public SimulatorState(AttributeRef protocolConfigurationRef, SimulatorElement... elements) {
+    public SimulatorState(long timestamp, AttributeRef protocolConfigurationRef, SimulatorElement... elements) {
+        super(timestamp);
         this.protocolConfigurationRef = protocolConfigurationRef;
         this.elements = elements;
     }

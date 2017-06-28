@@ -5,6 +5,7 @@ import org.hibernate.jdbc.AbstractReturningWork;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.persistence.PersistenceService;
+import org.openremote.container.timer.TimerService;
 import org.openremote.container.web.WebService;
 import org.openremote.manager.server.asset.AssetStorageService;
 import org.openremote.manager.server.security.ManagerIdentityService;
@@ -38,6 +39,7 @@ public class AssetDatapointService implements ContainerService, Consumer<AssetSt
 
         container.getService(WebService.class).getApiSingletons().add(
             new AssetDatapointResourceImpl(
+                container.getService(TimerService.class),
                 container.getService(ManagerIdentityService.class),
                 container.getService(AssetStorageService.class),
                 this

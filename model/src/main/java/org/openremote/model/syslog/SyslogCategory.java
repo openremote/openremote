@@ -103,7 +103,7 @@ public enum SyslogCategory {
                     ? record.getMessage() + " -- " + record.getThrown().getMessage()
                     : record.getMessage();
 
-                return new SyslogEvent(level, category, subCategory, message);
+                return new SyslogEvent(record.getMillis(), level, category, subCategory, message);
             }
         }
         return null;
