@@ -63,7 +63,6 @@ class TokenManager:NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationD
     func authenticate() {
         NSLog("authenticate")
         UIApplication.shared.isNetworkActivityIndicatorVisible = true
-        let defaults = UserDefaults(suiteName: AppGroup.entitlement)
         let webCfg:WKWebViewConfiguration = WKWebViewConfiguration()
         let userController:WKUserContentController = WKUserContentController()
             
@@ -107,7 +106,7 @@ class TokenManager:NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationD
             let type = jsonDictionnary?["type"] as! String
             switch (type){
             case "token":
-                let tokenJsonDictionnary = jsonDictionnary?["value"] as? [String : String]
+                let tokenJsonDictionnary = jsonDictionnary?["data"] as? [String : String]
                 if (tokenJsonDictionnary?["token"] != nil &&
                     tokenJsonDictionnary?["refreshToken"] != nil &&
                     tokenJsonDictionnary?["idToken"] != nil){
@@ -131,33 +130,8 @@ class TokenManager:NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationD
                     let exec_template = "readValue = { token: \(offlineToken ?? "null"), refreshToken: \(refreshToken ?? "null"),idToken: \(idToken ?? "null")};"
                     myWebView.evaluateJavaScript(exec_template, completionHandler: nil)
                 }
-               /* do {
-                    let json = try JSONSerialization.jsonObject(with: (((jsonDictionnary?["value"]!) as! String).data(using: String.Encoding.utf8)!), options: .allowFragments)
-                    let jsonDictionnary = json as? [String : String]
-                    offlineToken = jsonDictionnary?["token"]! ?? nil
-                    refreshToken = jsonDictionnary?["refreshToken"]! ?? nil
-                    idToken = jsonDictionnary?["idToken"]! ?? nil
-                    defaults?.set(offlineToken, forKey: DefaultsKey.token)
-                    defaults?.set(refreshToken, forKey: DefaultsKey.refreshToken)
-                    defaults?.set(idToken, forKey: DefaultsKey.idToken)
-                    if (offlineToken != nil && refreshToken != nil && idToken != nil && !didLogOut) {
-                        self.hasToken = true
-                        if let vc = viewController.presentingViewController as? ViewController {
-                            vc.isInError = false
-                        }
-                        UIApplication.shared.isNetworkActivityIndicatorVisible = false
-                        self.viewController.dismiss(animated: false, completion: {
-                            let notificationName = Notification.Name(NotificationsNames.isAuthenticated)
-                            NotificationCenter.default.post(name: notificationName, object: nil)
-                        })
-                        let exec_template = "readValue = { token: \(offlineToken ?? "null"), refreshToken: \(refreshToken ?? "null"),idToken: \(idToken ?? "null")};"
-                        myWebView.evaluateJavaScript(exec_template, completionHandler: nil)
-                    }
-                } catch {
-                    print("Error deserializing JSON: \(error)")
-                }*/
             default:
-                print("Unknown message type: \(type ?? "")")
+                print("Unknown message type: \(type )")
             }
         
     }
@@ -167,7 +141,7 @@ class TokenManager:NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationD
         switch (prompt){
         case "token":
             if offlineToken != nil && refreshToken != nil && idToken != nil && didLogOut == false {
-                exec_template = "readValue = { token: \(offlineToken ?? "null"), refreshToken: \(refreshToken ?? "null"),idToken: \(idToken ?? "null")};"
+                exec_template = "{ \"token\": \"\(offlineToken ?? "null")\", \"refreshToken\": \"\(refreshToken ?? "null")\",\"idToken\": \"\(idToken ?? "null")\"};"
             }
 
         default:

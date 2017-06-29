@@ -71,7 +71,6 @@ class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMessageHa
     }
     
     func webView(_ webView: WKWebView, runJavaScriptTextInputPanelWithPrompt prompt: String, defaultText: String?, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping (String?) -> Void) {
-        let defaults = UserDefaults(suiteName: AppGroup.entitlement)
         var exec_template : String? = nil
         switch (prompt){
         case "token":
@@ -165,7 +164,7 @@ class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMessageHa
         
         userController.add(self, name: "int")
         
-        var exec_template : String? = ""
+        let exec_template : String? = ""
         let userScript:WKUserScript = WKUserScript(source: exec_template!, injectionTime: .atDocumentStart, forMainFrameOnly: true)
         userController.addUserScript(userScript)
         
