@@ -1,6 +1,8 @@
 #!/bin/bash
 
-crond
+if ! [ -f /var/run/crond.pid ]; then
+    crond
+fi
 
 if [ -n "${LE_EMAIL}" ]; then
   LE_EXTRA_ARGS+=" --email ${LE_EMAIL}"
@@ -90,7 +92,7 @@ function renew {
     fi
   done
 
-  ${LE_CMD} --renew-by-default ${DOMAIN_ARGS}
+  ${LE_CMD} --renew-by-default --expand ${DOMAIN_ARGS}
 
   LE_RESULT=$?
 
