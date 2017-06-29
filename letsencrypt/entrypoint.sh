@@ -261,7 +261,7 @@ elif [ "${CMD}" = "cron-auto-renewal" ]; then
   CRON_TIME=${CRON_TIME:-@daily}
   echo "Running cron job with execution time ${CRON_TIME}"
   echo "${CRON_TIME} root /entrypoint.sh auto-renew >> /var/log/cron.log 2>&1" > /etc/cron.d/letsencrypt
-  touch /var/log/cron.log && cron && tail -f /var/log/cron.log
+  touch /var/log/cron.log && tail -f /var/log/cron.log
 elif [ "${CMD}" = "print-pin" ]; then
   print_pin "${@}"
 else
