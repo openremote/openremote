@@ -41,8 +41,26 @@ class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMessageHa
     
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
         let defaults = UserDefaults(suiteName: AppGroup.entitlement)
-        defaults?.set(message.body, forKey: message.name)
-        defaults?.synchronize()
+        let jsonDictionnary = message.body as? [String : Any]
+        let type = jsonDictionnary?["type"] as! String
+        switch (type){
+        case "token":
+            let tokenJsonDictionnary = jsonDictionnary?["value"] as? [String : String]
+            if (tokenJsonDictionnary?["token"] != nil &&
+                tokenJsonDictionnary?["refreshToken"] != nil &&
+                tokenJsonDictionnary?["idToken"] != nil){
+                let offlineToken = tokenJsonDictionnary?["token"]! ?? nil
+                let refreshToken = tokenJsonDictionnary?["refreshToken"]! ?? nil
+                let idToken = tokenJsonDictionnary?["idToken"]! ?? nil
+                defaults?.set(offlineToken, forKey: DefaultsKey.token)
+                defaults?.set(refreshToken, forKey: DefaultsKey.refreshToken)
+                defaults?.set(idToken, forKey: DefaultsKey.idToken)
+            }
+            
+        default:
+            print("Unknown message type: \(type )")
+        }
+
     }
     
     func webView(_ webView: WKWebView, runJavaScriptAlertPanelWithMessage message: String, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping () -> Void) {
@@ -50,6 +68,22 @@ class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMessageHa
         TokenManager.sharedInstance.resetToken()
         self.dismiss(animated: true, completion: nil)
         completionHandler()
+    }
+    
+    func webView(_ webView: WKWebView, runJavaScriptTextInputPanelWithPrompt prompt: String, defaultText: String?, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping (String?) -> Void) {
+        let defaults = UserDefaults(suiteName: AppGroup.entitlement)
+        var exec_template : String? = nil
+        switch (prompt){
+        case "token":
+            if TokenManager.sharedInstance.offlineToken != nil && TokenManager.sharedInstance.refreshToken != nil && TokenManager.sharedInstance.idToken != nil {
+                exec_template = "{ \"token\": \"\(TokenManager.sharedInstance.offlineToken ?? "null")\", \"refreshToken\": \"\(TokenManager.sharedInstance.refreshToken ?? "null")\",\"idToken\": \"\(TokenManager.sharedInstance.idToken ?? "null")\"}"
+            }
+            
+        default:
+            print("Unknown message type: \(prompt )")
+        }
+        
+        completionHandler(exec_template)
     }
     
     func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
@@ -129,14 +163,10 @@ class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMessageHa
         let webCfg:WKWebViewConfiguration = WKWebViewConfiguration()
         let userController:WKUserContentController = WKUserContentController()
         
-        userController.add(self, name: DefaultsKey.token)
+        userController.add(self, name: "int")
         
-        var exec_template = String(format: "tokenObject = { token: null, refreshToken: null,idToken: null};")
-        if TokenManager.sharedInstance.hasToken {
-            exec_template = "tokenObject = { token: \"\(TokenManager.sharedInstance.offlineToken ?? "null")\", refreshToken: \"\(TokenManager.sharedInstance.refreshToken ?? "null")\",idToken: \"\(TokenManager.sharedInstance.idToken ?? "null")\"};"
-
-        }
-        let userScript:WKUserScript = WKUserScript(source: exec_template, injectionTime: .atDocumentStart, forMainFrameOnly: true)
+        var exec_template : String? = ""
+        let userScript:WKUserScript = WKUserScript(source: exec_template!, injectionTime: .atDocumentStart, forMainFrameOnly: true)
         userController.addUserScript(userScript)
         
         webCfg.userContentController = userController;

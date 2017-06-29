@@ -65,36 +65,16 @@ class TokenManager:NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationD
         UIApplication.shared.isNetworkActivityIndicatorVisible = true
         let defaults = UserDefaults(suiteName: AppGroup.entitlement)
         let webCfg:WKWebViewConfiguration = WKWebViewConfiguration()
-        if (!didLogOut) {
-            let userController:WKUserContentController = WKUserContentController()
+        let userController:WKUserContentController = WKUserContentController()
             
-            userController.add(self, name: DefaultsKey.token)
+        userController.add(self, name: "int")
+        
+        let exec_template : String? = ""
             
-            var exec_template = String(format: "tokenObject = { token: null, refreshToken: null,idToken: null};")
-            if self.hasToken {
-                let offlineToken = defaults?.object(forKey: DefaultsKey.token)
-                let refreshToken = defaults?.object(forKey: DefaultsKey.refreshToken)
-                let idToken = defaults?.object(forKey: DefaultsKey.idToken)
-                exec_template = "tokenObject = { token: \(offlineToken ?? "null"), refreshToken: \(refreshToken ?? "null"),idToken: \(idToken ?? "null")};"
-            }
+        let userScript:WKUserScript = WKUserScript(source: exec_template!, injectionTime: .atDocumentStart, forMainFrameOnly: false)
+        userController.addUserScript(userScript)
             
-            let userScript:WKUserScript = WKUserScript(source: exec_template, injectionTime: .atDocumentStart, forMainFrameOnly: false)
-            userController.addUserScript(userScript)
-            
-            webCfg.userContentController = userController;
-        } else {
-            let userController:WKUserContentController = WKUserContentController()
-            
-            userController.add(self, name: DefaultsKey.token)
-            
-            
-            let exec_template = String(format: "tokenObject = { token: null, refreshToken: null,idToken: null};")
-            
-            let userScript:WKUserScript = WKUserScript(source: exec_template, injectionTime: .atDocumentStart, forMainFrameOnly: false)
-            userController.addUserScript(userScript)
-            
-            webCfg.userContentController = userController;
-        }
+        webCfg.userContentController = userController;
         
         myWebView = WKWebView(frame: viewController.view.frame, configuration: webCfg)
         myWebView.autoresizingMask = [.flexibleWidth, .flexibleHeight];
@@ -123,35 +103,78 @@ class TokenManager:NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationD
     
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
         let defaults = UserDefaults(suiteName: AppGroup.entitlement)
-        switch message.name {
-        case DefaultsKey.token:
-            do {
-                let json = try JSONSerialization.jsonObject(with: (message.body as! String).data(using: String.Encoding.utf8)!, options: .allowFragments)
-                let jsonDictionnary = json as? [String : String]
-                offlineToken = jsonDictionnary?["token"]! ?? nil
-                refreshToken = jsonDictionnary?["refreshToken"]! ?? nil
-                idToken = jsonDictionnary?["idToken"]! ?? nil
-                defaults?.set(offlineToken, forKey: DefaultsKey.token)
-                defaults?.set(refreshToken, forKey: DefaultsKey.refreshToken)
-                defaults?.set(idToken, forKey: DefaultsKey.idToken)
-                
-            } catch {
-                print("Error deserializing JSON: \(error)")
+            let jsonDictionnary = message.body as? [String : Any]
+            let type = jsonDictionnary?["type"] as! String
+            switch (type){
+            case "token":
+                let tokenJsonDictionnary = jsonDictionnary?["value"] as? [String : String]
+                if (tokenJsonDictionnary?["token"] != nil &&
+                    tokenJsonDictionnary?["refreshToken"] != nil &&
+                    tokenJsonDictionnary?["idToken"] != nil){
+                        offlineToken = tokenJsonDictionnary?["token"]! ?? nil
+                        refreshToken = tokenJsonDictionnary?["refreshToken"]! ?? nil
+                        idToken = tokenJsonDictionnary?["idToken"]! ?? nil
+                        defaults?.set(offlineToken, forKey: DefaultsKey.token)
+                        defaults?.set(refreshToken, forKey: DefaultsKey.refreshToken)
+                        defaults?.set(idToken, forKey: DefaultsKey.idToken)
+                }
+                if (offlineToken != nil && refreshToken != nil && idToken != nil && !didLogOut) {
+                    self.hasToken = true
+                    if let vc = viewController.presentingViewController as? ViewController {
+                        vc.isInError = false
+                    }
+                    UIApplication.shared.isNetworkActivityIndicatorVisible = false
+                    self.viewController.dismiss(animated: false, completion: {
+                        let notificationName = Notification.Name(NotificationsNames.isAuthenticated)
+                        NotificationCenter.default.post(name: notificationName, object: nil)
+                    })
+                    let exec_template = "readValue = { token: \(offlineToken ?? "null"), refreshToken: \(refreshToken ?? "null"),idToken: \(idToken ?? "null")};"
+                    myWebView.evaluateJavaScript(exec_template, completionHandler: nil)
+                }
+               /* do {
+                    let json = try JSONSerialization.jsonObject(with: (((jsonDictionnary?["value"]!) as! String).data(using: String.Encoding.utf8)!), options: .allowFragments)
+                    let jsonDictionnary = json as? [String : String]
+                    offlineToken = jsonDictionnary?["token"]! ?? nil
+                    refreshToken = jsonDictionnary?["refreshToken"]! ?? nil
+                    idToken = jsonDictionnary?["idToken"]! ?? nil
+                    defaults?.set(offlineToken, forKey: DefaultsKey.token)
+                    defaults?.set(refreshToken, forKey: DefaultsKey.refreshToken)
+                    defaults?.set(idToken, forKey: DefaultsKey.idToken)
+                    if (offlineToken != nil && refreshToken != nil && idToken != nil && !didLogOut) {
+                        self.hasToken = true
+                        if let vc = viewController.presentingViewController as? ViewController {
+                            vc.isInError = false
+                        }
+                        UIApplication.shared.isNetworkActivityIndicatorVisible = false
+                        self.viewController.dismiss(animated: false, completion: {
+                            let notificationName = Notification.Name(NotificationsNames.isAuthenticated)
+                            NotificationCenter.default.post(name: notificationName, object: nil)
+                        })
+                        let exec_template = "readValue = { token: \(offlineToken ?? "null"), refreshToken: \(refreshToken ?? "null"),idToken: \(idToken ?? "null")};"
+                        myWebView.evaluateJavaScript(exec_template, completionHandler: nil)
+                    }
+                } catch {
+                    print("Error deserializing JSON: \(error)")
+                }*/
+            default:
+                print("Unknown message type: \(type ?? "")")
             }
+        
+    }
+    
+    func webView(_ webView: WKWebView, runJavaScriptTextInputPanelWithPrompt prompt: String, defaultText: String?, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping (String?) -> Void) {
+        var exec_template : String? = nil
+        switch (prompt){
+        case "token":
+            if offlineToken != nil && refreshToken != nil && idToken != nil && didLogOut == false {
+                exec_template = "readValue = { token: \(offlineToken ?? "null"), refreshToken: \(refreshToken ?? "null"),idToken: \(idToken ?? "null")};"
+            }
+
         default:
-            NSLog("unknown message received from javascript : %@", message.name)
+            print("Unknown message type: \(prompt )")
         }
-        if (offlineToken != nil && refreshToken != nil && idToken != nil && !didLogOut) {
-            self.hasToken = true
-            if let vc = viewController.presentingViewController as? ViewController {
-                vc.isInError = false
-            }
-            UIApplication.shared.isNetworkActivityIndicatorVisible = false
-            self.viewController.dismiss(animated: false, completion: {
-                let notificationName = Notification.Name(NotificationsNames.isAuthenticated)
-                NotificationCenter.default.post(name: notificationName, object: nil)
-            })
-        }
+
+        completionHandler(exec_template)
     }
     
     func webView(_ webView: WKWebView, runJavaScriptAlertPanelWithMessage message: String, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping () -> Void) {
