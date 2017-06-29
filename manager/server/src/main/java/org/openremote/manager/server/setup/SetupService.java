@@ -21,6 +21,7 @@ package org.openremote.manager.server.setup;
 
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
+import org.openremote.container.timer.TimerService;
 import org.openremote.manager.server.setup.builtin.BuiltinSetupTasks;
 
 import java.util.ArrayList;
@@ -88,6 +89,12 @@ public class SetupService implements ContainerService {
         } catch (Exception ex) {
             throw new RuntimeException("Error setting up application", ex);
         }
+
+        // When setup is complete, initialize the clock again - effectively set the PSEUDO clock to
+        // wall clock time. If the PSEUDO clock is enabled in tests, we must advance time after setup
+        // imports asset data. The protocols which are started after setup can trigger asset attribute
+        // events, and event source time must be later than asset state time.
+        container.getService(TimerService.class).getClock().init();
     }
 
     @Override
