@@ -1,18 +1,15 @@
 package org.openremote.android;
 
 import android.app.Activity;
-import android.app.Notification;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.pm.ApplicationInfo;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.http.SslError;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.StrictMode;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
@@ -25,8 +22,11 @@ import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.Button;
+import android.widget.TextView;
 
-import org.openremote.android.service.AlertNotification;
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.openremote.android.service.TokenService;
 
 import java.util.logging.Logger;
@@ -37,8 +37,42 @@ public class MainActivity extends Activity {
 
     private final ConnectivityChangeReceiver connectivityChangeReceiver = new ConnectivityChangeReceiver();
     private WebView webView;
-    private View errorView;
-    private View noConnectivityView;
+
+    private boolean hasNetwork = false;
+
+    private ErrorViewHolder errorViewHolder;
+
+
+    class ErrorViewHolder {
+        View errorView;
+
+        Button btnReload;
+        Button btnExit;
+        TextView tvErrorTitle;
+        TextView tvErrorExplanation;
+
+        public ErrorViewHolder(View errorView) {
+            this.errorView = errorView;
+            btnReload = (Button) errorView.findViewById(R.id.reload);
+            btnExit = (Button) errorView.findViewById(R.id.exit);
+            tvErrorTitle = (TextView) errorView.findViewById(R.id.errorTitle);
+            tvErrorExplanation = (TextView) errorView.findViewById(R.id.errorExplanation);
+        }
+
+        void show(int errorTitle, int errorDescription, boolean canReload, boolean canExit) {
+
+            btnReload.setVisibility(canReload ? View.VISIBLE : View.GONE);
+            btnExit.setVisibility(canExit ? View.VISIBLE : View.GONE);
+
+            tvErrorTitle.setText(errorTitle);
+            tvErrorExplanation.setText(errorDescription);
+            errorView.setVisibility(View.VISIBLE);
+        }
+
+        private void hide() {
+            errorView.setVisibility(View.GONE);
+        }
+    }
 
     @Override
     public void onActivityReenter(int resultCode, Intent data) {
@@ -55,28 +89,17 @@ public class MainActivity extends Activity {
             WebView.setWebContentsDebuggingEnabled(true);
         }
 
-        // TODO Do we need this? Document why
-        StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
-        StrictMode.setThreadPolicy(policy);
 
         setContentView(R.layout.activity_web);
-        if (getIntent().hasExtra("notification")) {
-            AlertNotification alertNotification = (AlertNotification) getIntent().getSerializableExtra("notification");
-            Notification notification = new Notification();
 
-        }
         webView = (WebView) findViewById(R.id.webview);
         if (savedInstanceState != null) {
             webView.restoreState(savedInstanceState);
         } else {
             loadIndex();
         }
-        errorView = findViewById(R.id.errorView);
-        noConnectivityView = findViewById(R.id.noConnectivityView);
-        ConnectivityManager cm
-                = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
-        NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
-        boolean hasConnectivity = activeNetwork != null && activeNetwork.isConnectedOrConnecting();
+        errorViewHolder = new ErrorViewHolder(findViewById(R.id.errorView));
+
 
     }
 
@@ -100,7 +123,6 @@ public class MainActivity extends Activity {
     @Override
     protected void onPause() {
         super.onPause();
-
         unregisterReceiver(connectivityChangeReceiver);
     }
 
@@ -147,9 +169,12 @@ public class MainActivity extends Activity {
                 Log.i("WEBVIEW", "request url :" + request.getUrl().toString());
                 Log.i("WEBVIEW", "error :" + errorResponse.getStatusCode());
                 if (request.getUrl().toString().startsWith(getString(R.string.OR_BASE_SERVER) + getString(R.string.OR_CONSOLE_URL))) {
-                    webView.loadUrl("about:blank");
-                    errorView.setVisibility(View.VISIBLE);
+                    errorViewHolder.show(R.string.httpError,R.string.httpErrorExplain,true,true);
                 }
+
+
+                //
+                //todo: translate common error into user friendly dialog msg ex 400-500 => try again later service not avaible (app clean exit with confirm button)
             }
 
             @Override
@@ -165,16 +190,18 @@ public class MainActivity extends Activity {
             public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
 
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                    Log.i("WEBVIEW", "request url :" + request.getUrl().toString());
-                    Log.i("WEBVIEW", "error :" + error.getErrorCode());
-                    Log.i("WEBVIEW", "error :" + error.getDescription());
+                    LOG.info("request url :" + request.getUrl().toString());
+                    LOG.info( "error :" + error.getErrorCode());
+                    LOG.info( "error :" + error.getDescription());
+                    // Remote debugging sessions from Chrome trigger "ERR_CACHE_MISS" that don't hurt, but we should not redirect the view
+                    if (isRemoteDebuggingEnabled() && error.getErrorCode() == ERROR_UNKNOWN) {
+                        return;
+                    }
                 }
-                // Remote debugging sessions from Chrome trigger "ERR_CACHE_MISS" that don't hurt, but we should not redirect the view
-                if (isRemoteDebuggingEnabled() && error.getErrorCode() == ERROR_UNKNOWN) {
-                    return;
-                }
-                webView.loadUrl("about:blank");
-                errorView.setVisibility(View.VISIBLE);
+
+                //TODO => try again later service not avaible (app clean exit with confirm button) // good message
+                //webView.loadUrl("about:blank");
+                errorViewHolder.show(R.string.fatalError,R.string.fatalErrorExplain,false,true);
             }
         });
         webView.setWebChromeClient(new WebChromeClient());
@@ -185,9 +212,15 @@ public class MainActivity extends Activity {
         webView.loadUrl(url);
     }
 
-    public void reloadPage() {
-        errorView.setVisibility(View.GONE);
-        webView.loadUrl(getString(R.string.OR_BASE_SERVER) + getString(R.string.OR_CONSOLE_URL));
+
+
+    public void reloadPage(View view) {
+        errorViewHolder.hide();
+        webView.loadUrl(webView.getUrl());
+    }
+
+    public void exitOnClick(View view) {
+        finish();
     }
 
     private class WebAppInterface {
@@ -212,14 +245,42 @@ public class MainActivity extends Activity {
         public void setMobileToken(String token, String refreshToken, String idToken) {
             tokenService.saveToken(token, refreshToken, idToken);
         }
+
+        @JavascriptInterface
+        public void postMessage(String jsonMessage) throws JSONException {
+            JSONObject reader = new JSONObject(jsonMessage);
+            String messageType = reader.getString("type");
+            JSONObject data = reader.getJSONObject("data");
+            switch (messageType) {
+                case "token" :
+                    tokenService.saveToken(data.getString("token"), data.getString("refreshToken") , data.getString("idToken"));
+                    break;
+                case "error" :
+                    //
+                default:
+            }
+        }
+
+        @JavascriptInterface
+        public String getMessage(String messageKey) {
+            switch (messageKey) {
+                case "token" :
+                    return tokenService.getJsonToken();
+                default:
+                    return "{}";
+            }
+        }
+        //TODO receive error with severity
     }
 
 
     private void onConnectivityChanged(boolean connectivity) {
+        this.hasNetwork = connectivity;
         if (connectivity) {
-            noConnectivityView.setVisibility(View.GONE);
+            //TODO :  pass conectivity information to wwebapp
+            reloadPage(getCurrentFocus());
         } else {
-            noConnectivityView.setVisibility(View.VISIBLE);
+            errorViewHolder.show(R.string.noConnectivity,R.string.noConnectivityExplain,false,true);
         }
     }
 

@@ -16,5 +16,5 @@
 
     </WebView>
         <include layout="@layout/error_layout"></include>
-    <include layout="@layout/no_connectivity_layout"></include>
+    <include layout="@layout/error_layout"></include>
 </RelativeLayout>

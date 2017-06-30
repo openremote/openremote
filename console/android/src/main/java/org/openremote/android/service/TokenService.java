@@ -137,19 +137,25 @@ public class TokenService {
             @Override
             public void onToken(String accessToken) {
                 Call call = notificationService.updateToken(realm, accessToken, fcmToken, id, "ANDROID");
-                try {
-                    Response response = call.execute();
-                    if (response.code() != 204) {
-                        Log.e("TOKEN_SERVICE", "save fcm token failed");
-                    } else {
-                        SharedPreferences.Editor editor = sharedPref.edit();
-                        editor.remove(fcmTokenKey);
-                        editor.remove(deviceIdKey);
-                        editor.commit();
-                    }
-                } catch (IOException e) {
-                    Log.e("TOKEN_SERVICE", "save fcm token failed ");
-                }
+
+                    call.enqueue(new Callback() {
+                        @Override
+                        public void onResponse(Call call, Response response) {
+                            if (response.code() != 204) {
+                                Log.e("TOKEN_SERVICE", "save fcm token failed");
+                            } else {
+                                SharedPreferences.Editor editor = sharedPref.edit();
+                                editor.remove(fcmTokenKey);
+                                editor.remove(deviceIdKey);
+                                editor.commit();
+                            }
+                        }
+
+                        @Override
+                        public void onFailure(Call call, Throwable t) {
+                            Log.e("TOKEN_SERVICE", "save fcm token failed ");
+                        }
+                    });
 
             }
 

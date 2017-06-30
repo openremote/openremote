@@ -33,9 +33,9 @@ public class ORMessagingActionService extends IntentService {
         manager.cancel(notification.getId().hashCode());
         AlertAction alertAction =  (AlertAction) intent.getSerializableExtra("action");
 
-        if(AlertNotification.ActionType.ACTUATOR.equals(alertAction.getType())) {
+        if(alertAction != null && AlertNotification.ActionType.ACTUATOR.equals(alertAction.getType())) {
             tokenService.executeAction(alertAction);
-        } else {
+        } else if (intent.hasExtra("url")) {
             Intent activityIntent = new Intent(this, MainActivity.class);
             activityIntent.setAction(Intent.ACTION_MAIN);
             activityIntent.addCategory(Intent.CATEGORY_LAUNCHER);

@@ -1,16 +1,66 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.v7.widget.LinearLayoutCompat xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/errorView"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:layout_alignParentEnd="true"
     android:layout_alignParentStart="true"
     android:gravity="center"
+    android:background="@color/white"
     android:visibility="gone">
 
-    <Button
-         android:layout_width="wrap_content"
+    <TextView
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:onClick="reloadPage"
-        android:text="@string/reload" />
-</android.support.v7.widget.LinearLayoutCompat>
+        android:text="@string/noConnectivity"
+
+        android:id="@+id/errorTitle"
+        android:layout_centerVertical="true"
+        android:layout_centerHorizontal="true" />
+
+    <TextView
+        android:id="@+id/errorExplanation"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:text="@string/noConnectivityExplain"
+        android:layout_margin="20dp"
+        android:layout_below="@+id/errorTitle"
+        android:layout_centerHorizontal="true" />
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+
+        android:orientation="vertical"
+        android:layout_below="@+id/errorExplanation"
+        android:layout_centerHorizontal="true">
+
+        <Button
+            android:id="@+id/reload"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:onClick="reloadPage"
+            android:text="@string/reload"
+            tools:text="reload" />
+
+        <Button
+            android:id="@+id/exit"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:onClick="exitOnClick"
+            android:text="@string/exit"
+            tools:text="exit" />
+    </LinearLayout>
+
+    <ImageView
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:src="@drawable/app_icon"
+        android:layout_marginBottom="16dp"
+        android:layout_above="@+id/errorTitle"
+        android:layout_centerHorizontal="true" />
+
+
+</RelativeLayout>
