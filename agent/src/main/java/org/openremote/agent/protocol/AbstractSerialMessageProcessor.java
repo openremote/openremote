@@ -20,58 +20,56 @@
 package org.openremote.agent.protocol;
 
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.ThreadPerChannelEventLoopGroup;
+import io.netty.channel.local.LocalEventLoopGroup;
+import io.netty.channel.oio.OioEventLoopGroup;
+import io.netty.channel.rxtx.RxtxChannel;
+import io.netty.channel.rxtx.RxtxDeviceAddress;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TextUtil;
 
-import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.util.Objects;
 import java.util.logging.Logger;
 
 import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
 /**
- * This is a {@link MessageProcessor} implementation for sockets.
+ * This is a {@link MessageProcessor} implementation for serial ports.
  */
-public abstract class AbstractSocketMessageProcessor<T> extends AbstractNettyMessageProcessor<T> {
+public abstract class AbstractSerialMessageProcessor<T> extends AbstractNettyMessageProcessor<T> {
 
-    private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, AbstractSocketMessageProcessor.class);
-    protected String host;
-    protected int port;
+    private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, AbstractSerialMessageProcessor.class);
+    protected String port;
+    protected int baudRate;
 
-    public AbstractSocketMessageProcessor(String host, int port, ProtocolExecutorService executorService) {
+    public AbstractSerialMessageProcessor(String port, Integer baudRate, ProtocolExecutorService executorService) {
         super(executorService);
-        TextUtil.requireNonNullAndNonEmpty(host);
-        this.host = host;
+        TextUtil.requireNonNullAndNonEmpty(port);
+        Objects.requireNonNull(baudRate);
         this.port = port;
+        this.baudRate = baudRate;
     }
 
     @Override
     protected Class<? extends Channel> getChannelClass() {
-        return NioSocketChannel.class;
+        return NrJavaSerialChannel.class;
     }
 
     @Override
     protected SocketAddress getSocketAddress() {
-        return new InetSocketAddress(host, port);
+        return new NrJavaSerialAddress(port, 38400);
     }
 
     @Override
     protected String getSocketAddressString() {
-        return host + ":" + port;
+        return port;
     }
 
     @Override
     protected EventLoopGroup getWorkerGroup() {
-        return new NioEventLoopGroup(1);
-    }
-
-    @Override
-    protected void configureChannel() {
-        super.configureChannel();
-        bootstrap.option(ChannelOption.SO_KEEPALIVE, true);
+        return new OioEventLoopGroup(1);
     }
 }
