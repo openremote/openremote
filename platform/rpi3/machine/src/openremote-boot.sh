@@ -9,7 +9,9 @@ if ! [ $(getent group openremote) ]; then
     rm /home/openremote/.bash_prompt
     rm /etc/sudoers.d/user-pirate
     echo 'openremote ALL=NOPASSWD: ALL' > /etc/sudoers.d/user-openremote
-    
+    mkdir -p /data/manager /data/postgresql
+    chown 5432:5432 /data/postgresql
+
     if [ -f /boot/openremote-ssh.pub ]; then
         echo "Disabling password authentication, using provided SSH public key"
         mkdir /home/openremote/.ssh

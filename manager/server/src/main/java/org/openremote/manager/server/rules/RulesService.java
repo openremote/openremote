@@ -155,7 +155,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
         rulesetStorageService.findEnabledGlobalRulesets().forEach(this::deployGlobalRuleset);
 
         LOG.info("Deploying tenant rulesets");
-        activeTenantIds = identityService.getActiveTenantIds();
+        activeTenantIds = identityService.getIdentityProvider().getActiveTenantIds();
         rulesetStorageService.findEnabledTenantRulesets()
             .stream()
             .filter(rd ->
@@ -217,7 +217,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
         // Check if enabled status has changed
         boolean wasEnabled = Arrays.asList(activeTenantIds).contains(tenant.getId());
         boolean isEnabled = tenant.getEnabled() && cause != PersistenceEvent.Cause.DELETE;
-        activeTenantIds = identityService.getActiveTenantIds();
+        activeTenantIds = identityService.getIdentityProvider().getActiveTenantIds();
 
         if (wasEnabled == isEnabled) {
             // Nothing to do here

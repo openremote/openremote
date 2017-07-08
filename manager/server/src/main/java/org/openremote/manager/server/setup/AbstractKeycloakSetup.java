@@ -25,8 +25,8 @@ import org.keycloak.admin.client.resource.UsersResource;
 import org.keycloak.representations.idm.ClientRepresentation;
 import org.openremote.container.Container;
 import org.openremote.container.security.AuthForm;
-import org.openremote.container.util.MapAccess;
 import org.openremote.manager.server.security.ManagerIdentityService;
+import org.openremote.manager.server.security.ManagerKeycloakProvider;
 import org.openremote.manager.shared.security.TenantEmailConfig;
 
 import static org.openremote.container.util.MapAccess.getBoolean;
@@ -58,6 +58,7 @@ public abstract class AbstractKeycloakSetup implements Setup {
     public static final String SETUP_KEYCLOAK_EMAIL_FROM_DEFAULT = "noreply@demo.tld";
 
     final protected ManagerIdentityService identityService;
+    final protected ManagerKeycloakProvider keycloakProvider;
     final protected SetupService setupService;
     final protected String accessToken;
     final protected RealmResource masterRealmResource;
@@ -67,17 +68,19 @@ public abstract class AbstractKeycloakSetup implements Setup {
 
     public AbstractKeycloakSetup(Container container) {
         this.identityService = container.getService(ManagerIdentityService.class);
+        this.keycloakProvider = ((ManagerKeycloakProvider)identityService.getIdentityProvider());
         this.setupService = container.getService(SetupService.class);
+
 
         // Use direct access grant feature of Keycloak Admin CLI to get superuser access token
         String demoAdminPassword = container.getConfig().getOrDefault(SETUP_KEYCLOAK_ADMIN_PASSWORD, SETUP_KEYCLOAK_ADMIN_PASSWORD_DEFAULT);
-        this.accessToken = identityService.getKeycloak().getAccessToken(
+        this.accessToken = keycloakProvider.getKeycloak().getAccessToken(
             MASTER_REALM, new AuthForm(ADMIN_CLI_CLIENT_ID, MASTER_REALM_ADMIN_USER, demoAdminPassword)
         ).getToken();
 
-        masterRealmResource = identityService.getRealms(null, accessToken).realm(MASTER_REALM);
-        masterClientsResource = identityService.getRealms(null, accessToken).realm(MASTER_REALM).clients();
-        masterUsersResource = identityService.getRealms(null, accessToken).realm(MASTER_REALM).users();
+        masterRealmResource = keycloakProvider.getRealms(accessToken).realm(MASTER_REALM);
+        masterClientsResource = keycloakProvider.getRealms(accessToken).realm(MASTER_REALM).clients();
+        masterUsersResource = keycloakProvider.getRealms(accessToken).realm(MASTER_REALM).users();
 
         // Configure SMTP
         if (container.getConfig().containsKey(SETUP_KEYCLOAK_EMAIL_HOST)) {
@@ -92,6 +95,10 @@ public abstract class AbstractKeycloakSetup implements Setup {
         } else {
             emailConfig = null;
         }
+    }
+
+    public ManagerKeycloakProvider getKeycloakProvider() {
+        return keycloakProvider;
     }
 
     protected String getClientObjectId(ClientsResource clientsResource) {

@@ -32,6 +32,7 @@ import org.openremote.container.message.MessageBrokerService
 import org.openremote.container.message.MessageBrokerSetupService
 import org.openremote.container.security.AuthForm
 import org.openremote.container.security.IdentityService
+import org.openremote.container.security.keycloak.KeycloakIdentityProvider
 import org.openremote.container.web.WebClient
 import org.openremote.container.web.WebService
 
@@ -98,14 +99,14 @@ trait ContainerTrait {
     }
 
     static int findEphemeralPort() {
-        ServerSocket socket = new ServerSocket(0, 0, Inet4Address.getLocalHost())
+        ServerSocket socket = new ServerSocket(0, 0, Inet4Address.getLoopbackAddress())
         int port = socket.getLocalPort()
         socket.close()
         return port
     }
 
     static AccessTokenResponse authenticate(Container container, String realm, String clientId, String username, String password) {
-        container.getService(IdentityService.class).getKeycloak()
+        ((KeycloakIdentityProvider)container.getService(IdentityService.class).getIdentityProvider()).getKeycloak()
                 .getAccessToken(realm, new AuthForm(clientId, username, password))
     }
 

@@ -9,6 +9,7 @@ import org.openremote.container.message.MessageBrokerService
 import org.openremote.container.message.MessageBrokerSetupService
 import org.openremote.container.persistence.PersistenceService
 import org.openremote.container.security.IdentityService
+import org.openremote.container.security.keycloak.KeycloakIdentityProvider
 import org.openremote.container.timer.TimerService
 import org.openremote.manager.server.agent.AgentService
 import org.openremote.manager.server.apps.ConsoleAppService
@@ -43,8 +44,8 @@ trait ManagerContainerTrait extends ContainerTrait {
     static Map<String, String> defaultConfig(int serverPort) {
         [
                 (WEBSERVER_LISTEN_PORT)             : Integer.toString(serverPort),
-                (IDENTITY_NETWORK_HOST)             : IdentityService.KEYCLOAK_HOST_DEFAULT,
-                (IDENTITY_NETWORK_WEBSERVER_PORT)   : Integer.toString(IdentityService.KEYCLOAK_PORT_DEFAULT),
+                (IDENTITY_NETWORK_HOST)             : KeycloakIdentityProvider.KEYCLOAK_HOST_DEFAULT,
+                (IDENTITY_NETWORK_WEBSERVER_PORT)   : Integer.toString(KeycloakIdentityProvider.KEYCLOAK_PORT_DEFAULT),
                 (SETUP_IMPORT_DEMO_SCENES)          : "false",
                 (SETUP_IMPORT_DEMO_RULES)           : "false"
         ]

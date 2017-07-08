@@ -16,6 +16,7 @@ import org.openremote.manager.client.service.RequestServiceImpl
 import org.openremote.manager.client.style.WidgetStyle
 import org.openremote.manager.server.asset.AssetStorageService
 import org.openremote.manager.server.security.ManagerIdentityService
+import org.openremote.manager.server.setup.AbstractKeycloakSetup
 import org.openremote.manager.server.setup.SetupService
 import org.openremote.manager.server.setup.builtin.KeycloakDemoSetup
 import org.openremote.manager.server.setup.builtin.ManagerDemoSetup
@@ -45,6 +46,7 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
         def serverPort = findEphemeralPort()
         def container = startContainer(defaultConfig(serverPort), defaultServices())
         def identityService = container.getService(ManagerIdentityService.class)
+        def keycloakProvider = container.getService(SetupService.class).getTaskOfType(AbstractKeycloakSetup.class).keycloakProvider
         def assetStorageService = container.getService(AssetStorageService.class)
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
@@ -60,8 +62,8 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
                     getString(container.getConfig(), SETUP_KEYCLOAK_ADMIN_PASSWORD, SETUP_KEYCLOAK_ADMIN_PASSWORD_DEFAULT)
             ).token
         }
-        def securityService = new ClientSecurityService(identityService.getKeycloakDeployment(realm, KEYCLOAK_CLIENT_ID), accessToken)
-        def currentTenant = identityService.getTenantForRealm(realm)
+        def securityService = new ClientSecurityService(keycloakProvider.getKeycloakDeployment(realm, KEYCLOAK_CLIENT_ID), accessToken)
+        def currentTenant = identityService.identityProvider.getTenantForRealm(realm)
 
         and: "a client request service and target"
         def constraintViolationReader = new ClientObjectMapper(container.JSON, ConstraintViolationReport.class) as EntityReader<ConstraintViolationReport>
@@ -217,6 +219,7 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
         def serverPort = findEphemeralPort()
         def container = startContainer(defaultConfig(serverPort), defaultServices())
         def identityService = container.getService(ManagerIdentityService.class)
+        def keycloakProvider = container.getService(SetupService.class).getTaskOfType(AbstractKeycloakSetup.class).keycloakProvider
         def assetStorageService = container.getService(AssetStorageService.class)
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
@@ -232,8 +235,8 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
                     "testuser1"
             ).token
         }
-        def securityService = new ClientSecurityService(identityService.getKeycloakDeployment(realm, KEYCLOAK_CLIENT_ID), accessToken)
-        def currentTenant = identityService.getTenantForRealm(realm)
+        def securityService = new ClientSecurityService(keycloakProvider.getKeycloakDeployment(realm, KEYCLOAK_CLIENT_ID), accessToken)
+        def currentTenant = identityService.identityProvider.getTenantForRealm(realm)
 
         and: "a client request service and target"
         def constraintViolationReader = new ClientObjectMapper(container.JSON, ConstraintViolationReport.class) as EntityReader<ConstraintViolationReport>
@@ -395,8 +398,7 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
         def serverPort = findEphemeralPort()
         def container = startContainer(defaultConfig(serverPort), defaultServices())
         def identityService = container.getService(ManagerIdentityService.class)
-        def assetStorageService = container.getService(AssetStorageService.class)
-        def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
+        def keycloakProvider = container.getService(SetupService.class).getTaskOfType(AbstractKeycloakSetup.class).keycloakProvider
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
 
         and: "An authenticated user and client security service"
@@ -410,8 +412,8 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
                     "testuser3"
             ).token
         }
-        def securityService = new ClientSecurityService(identityService.getKeycloakDeployment(realm, KEYCLOAK_CLIENT_ID), accessToken)
-        def currentTenant = identityService.getTenantForRealm(realm)
+        def securityService = new ClientSecurityService(keycloakProvider.getKeycloakDeployment(realm, KEYCLOAK_CLIENT_ID), accessToken)
+        def currentTenant = identityService.identityProvider.getTenantForRealm(realm)
 
         and: "a client request service and target"
         def constraintViolationReader = new ClientObjectMapper(container.JSON, ConstraintViolationReport.class) as EntityReader<ConstraintViolationReport>

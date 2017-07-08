@@ -25,6 +25,7 @@ import org.keycloak.representations.idm.RealmRepresentation;
 import org.keycloak.representations.idm.RoleRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.openremote.container.Container;
+import org.openremote.container.web.ClientRequestInfo;
 import org.openremote.manager.server.setup.AbstractKeycloakSetup;
 import org.openremote.manager.shared.security.ClientRole;
 
@@ -49,12 +50,12 @@ public class KeycloakInitSetup extends AbstractKeycloakSetup {
         masterRealm.setDisplayName("Master");
 
         // Set SMTP server, theme, timeouts, etc.
-        identityService.configureRealm(masterRealm, emailConfig);
+        keycloakProvider.configureRealm(masterRealm, emailConfig);
 
         masterRealmResource.update(masterRealm);
 
         // Create our client application with its default roles
-        identityService.createClientApplication(null, accessToken, masterRealm.getRealm());
+        keycloakProvider.createClientApplication(new ClientRequestInfo(null, accessToken), masterRealm.getRealm());
 
         // Get the client application ID so we can assign roles to users at the client
         // level (we can only check realm _or_ client application roles in @RolesAllowed!)

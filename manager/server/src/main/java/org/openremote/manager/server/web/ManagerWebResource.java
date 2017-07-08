@@ -40,15 +40,15 @@ public class ManagerWebResource extends WebResource {
     }
 
     public Tenant getAuthenticatedTenant() {
-        return identityService.getTenantForRealm(getAuthenticatedRealm());
+        return identityService.getIdentityProvider().getTenantForRealm(getAuthenticatedRealm());
     }
 
     public boolean isTenantActiveAndAccessible(Asset asset) {
-        return identityService.isTenantActiveAndAccessible(this, asset);
+        return identityService.getIdentityProvider().isTenantActiveAndAccessible(this, asset);
     }
 
     public boolean isTenantActiveAndAccessible(Tenant tenant) {
-        return identityService.isTenantActiveAndAccessible(this, tenant);
+        return identityService.getIdentityProvider().isTenantActiveAndAccessible(this, tenant);
     }
 
 }

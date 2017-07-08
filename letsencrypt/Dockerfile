@@ -1,7 +1,7 @@
 # Adapted from https://github.com/bringnow/docker-letsencrypt-manager
 FROM centos:7
 
-RUN yum -y install epel-release && yum -y install certbot cronie
+RUN yum update -y && yum -y install epel-release && yum -y install certbot cronie && yum clean all
 
 ENV TERM xterm
 ENV WEBROOT "/webroot"

@@ -25,6 +25,7 @@ import org.keycloak.admin.client.resource.UsersResource;
 import org.keycloak.representations.idm.CredentialRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.openremote.container.Container;
+import org.openremote.container.web.ClientRequestInfo;
 import org.openremote.manager.server.setup.AbstractKeycloakSetup;
 import org.openremote.manager.shared.security.ClientRole;
 import org.openremote.manager.shared.security.Tenant;
@@ -62,28 +63,28 @@ public class KeycloakDemoSetup extends AbstractKeycloakSetup {
     public void execute() throws Exception {
 
         // Tenants
-        masterTenant = identityService.getTenantForRealm(Constants.MASTER_REALM);
+        masterTenant = identityService.getIdentityProvider().getTenantForRealm(Constants.MASTER_REALM);
 
         Tenant customerA = new Tenant();
         customerA.setRealm("customerA");
         customerA.setDisplayName("Customer A");
         customerA.setEnabled(true);
-        identityService.createTenant(null, accessToken, customerA, emailConfig);
-        customerATenant = identityService.getTenantForRealm(customerA.getRealm());
+        keycloakProvider.createTenant(new ClientRequestInfo(null, accessToken), customerA, emailConfig);
+        customerATenant = keycloakProvider.getTenantForRealm(customerA.getRealm());
 
         Tenant customerB = new Tenant();
         customerB.setRealm("customerB");
         customerB.setDisplayName("Customer B");
         customerB.setEnabled(true);
-        identityService.createTenant(null, accessToken, customerB, emailConfig);
-        customerBTenant = identityService.getTenantForRealm(customerB.getRealm());
+        keycloakProvider.createTenant(new ClientRequestInfo(null, accessToken), customerB, emailConfig);
+        customerBTenant = keycloakProvider.getTenantForRealm(customerB.getRealm());
 
         Tenant customerC = new Tenant();
         customerC.setRealm("customerC");
         customerC.setDisplayName("Customer C");
         customerC.setEnabled(true);
-        identityService.createTenant(null, accessToken, customerC, emailConfig);
-        customerCTenant = identityService.getTenantForRealm(customerC.getRealm());
+        keycloakProvider.createTenant(new ClientRequestInfo(null, accessToken), customerC, emailConfig);
+        customerCTenant = keycloakProvider.getTenantForRealm(customerC.getRealm());
 
         // Users
 
@@ -113,8 +114,8 @@ public class KeycloakDemoSetup extends AbstractKeycloakSetup {
         ));
         LOG.info("Added demo user '" + testuser1.getUsername() + "' with password '" + testuser1Credentials.getValue() + "'");
 
-        UsersResource customerAUsersResource = identityService.getRealms(null, accessToken).realm("customerA").users();
-        ClientsResource customerAClientsResource = identityService.getRealms(null, accessToken).realm("customerA").clients();
+        UsersResource customerAUsersResource = keycloakProvider.getRealms(accessToken).realm("customerA").users();
+        ClientsResource customerAClientsResource = keycloakProvider.getRealms(accessToken).realm("customerA").clients();
         String customerAClientObjectId = getClientObjectId(customerAClientsResource);
         RolesResource customerARolesResource = customerAClientsResource.get(customerAClientObjectId).roles();
 

@@ -29,7 +29,7 @@ import io.undertow.websockets.jsr.WebSocketDeploymentInfo;
 import org.keycloak.KeycloakPrincipal;
 import org.keycloak.KeycloakSecurityContext;
 import org.openremote.container.message.MessageBrokerSetupService;
-import org.openremote.container.security.AccessTokenAuthContext;
+import org.openremote.container.security.keycloak.AccessTokenAuthContext;
 import org.openremote.container.security.IdentityService;
 import org.openremote.container.web.socket.WebsocketAdapter;
 import org.openremote.container.web.socket.WebsocketCORSFilter;
