@@ -1,6 +1,6 @@
 FROM centos:7
 
-RUN yum -y install epel-release && yum -y install rsyslog inotify-tools make gcc pcre-devel openssl-devel readline-devel
+RUN yum update -y && yum -y install epel-release && yum -y install rsyslog inotify-tools make gcc pcre-devel openssl-devel readline-devel && yum clean all
 
 ARG HA_PROXY_MINOR_VERSION=1.7
 ARG HA_PROXY_VERSION=1.7.5

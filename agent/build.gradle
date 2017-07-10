@@ -18,4 +18,6 @@ dependencies {
     }
 
     compile "org.fourthline.cling:cling-core:$clingVersion"
+
+    compile "com.neuronrobotics:nrjavaserial:$nrjavaserialVersion"
 }

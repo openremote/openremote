@@ -107,7 +107,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                     (AssetTreeModifiedEvent.TenantFilter) subscription.getFilter();
 
                 Tenant authenticatedTenant =
-                    managerIdentityService.getTenantForRealm(auth.getAuthenticatedRealm());
+                    managerIdentityService.getIdentityProvider().getTenantForRealm(auth.getAuthenticatedRealm());
                 if (authenticatedTenant == null)
                     return false;
                 if (filter.getRealmId().equals(authenticatedTenant.getId()))
@@ -303,7 +303,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             }
 
             // Validate realm
-            if (!managerIdentityService.isActiveTenant(asset.getRealmId())) {
+            if (!managerIdentityService.getIdentityProvider().isActiveTenant(asset.getRealmId())) {
                 throw new IllegalStateException("Realm not found/active: " + asset.getRealmId());
             }
 

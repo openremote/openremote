@@ -9,11 +9,9 @@ services:
       context: ../postgresql
     environment:
       TZ: Europe/Zurich
-      # This is the database superuser
-      POSTGRES_PASSWORD: CHANGE_ME_DB_SUPERUSER_PASSWORD
-      # Create default database when started (see scripts)
+      # Create transient database and user
       POSTGRES_DB: openremote
-      OPENREMOTE_USERNAME: openremote
-      OPENREMOTE_PASSWORD: CHANGE_ME_DB_USER_PASSWORD
+      POSTGRES_USER: openremote
+      POSTGRES_PASSWORD: CHANGE_ME_DB_USER_PASSWORD
     ports:
       - "5432:5432"

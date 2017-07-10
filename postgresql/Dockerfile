@@ -1,28 +1,46 @@
-# Copyright (c) 2014, Docker PostGIS Authors (See AUTHORS)
+FROM centos:7
 
-# Permission is hereby granted, free of charge, to any person
-# obtaining a copy of this software and associated documentation
-# files (the "Software"), to deal in the Software without
-# restriction, including without limitation the rights to use,
-# copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the
-# Software is furnished to do so, subject to the following
-# conditions:
+ENV CENTOS_VERSION=7 \
+    PG_VERSION=9.6 \
+    PG_VERSION_MINOR=3 \
+    PG_NODOT=96 \
+    POSTGIS_VERSION=23 \
+    GOSU_VERSION=1.10
 
-# The above copyright notice and this permission notice shall be
-# included in all copies or substantial portions of the Software.
+# Use fixed UID/GID
+RUN groupadd -r postgres --gid=5432 && useradd -N -r -g postgres --uid=5432 postgres
 
-FROM postgres:9.6.1
+# Install from Postgres website
+RUN cd /tmp && \
+    yum install -y epel-release && \
+    curl -L -o pgdg.rpm https://yum.postgresql.org/${PG_VERSION}/redhat/rhel-${CENTOS_VERSION}-x86_64/pgdg-redhat${PG_NODOT}-${PG_VERSION}-${PG_VERSION_MINOR}.noarch.rpm && \
+    yum localinstall -y pgdg.rpm && \
+    yum upgrade -y && \
+    yum install -y \
+        postgis${POSTGIS_VERSION}_${PG_NODOT} \
+        postgis${POSTGIS_VERSION}_${PG_NODOT}-client \
+        postgis${POSTGIS_VERSION}_${PG_NODOT}-utils \
+        pgrouting_${PG_NODOT} \
+        postgresql${PG_NODOT}-contrib \
+        postgresql${PG_NODOT}-server
 
-ENV POSTGIS_MAJOR 2.3
+# Need gosu
+RUN curl -L -o /usr/local/bin/gosu https://github.com/tianon/gosu/releases/download/$GOSU_VERSION/gosu-amd64 \
+	&& chmod +x /usr/local/bin/gosu \
+	&& gosu nobody true
 
-RUN apt-get update \
-      && apt-get install -y --no-install-recommends \
-           postgresql-$PG_MAJOR-postgis-$POSTGIS_MAJOR \
-           postgresql-$PG_MAJOR-postgis-$POSTGIS_MAJOR-scripts \
-      && rm -rf /var/lib/apt/lists/*
+# Prepare data directory
+ENV PGDATA /var/lib/postgresql/data/
+RUN mkdir -p "$PGDATA" && chown -R postgres:postgres "$PGDATA"
+VOLUME ${PGDATA}
 
-ENV POSTGRES_USER postgres
+# Some defaults
+ENV PG_BIN=/usr/pgsql-${PG_VERSION}/bin
+ENV PATH $PATH:$PG_BIN
+ENV LANG en_US.utf8
 
-ADD scripts /docker-entrypoint-initdb.d/
-RUN chmod +x /docker-entrypoint-initdb.d/*.sh
+EXPOSE 5432
+
+COPY entrypoint.sh /
+RUN chmod +x /entrypoint.sh
+ENTRYPOINT ["/entrypoint.sh"]

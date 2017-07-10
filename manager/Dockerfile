@@ -1,4 +1,7 @@
-FROM openjdk:8
+FROM centos:7
+
+RUN yum update -y && yum -y install java-1.8.0-openjdk-devel && yum clean all
+ENV JAVA_HOME /usr/lib/jvm/java
 
 ENV MANAGER_DOCROOT webapp
 ENV CONSOLE_DOCROOT deployment/resources_console

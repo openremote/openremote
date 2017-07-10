@@ -2,8 +2,9 @@ evaluationDependsOnChildren()
 
 task prepareImage(type: Copy) {
     dependsOn resolveTask(":manager:server:installDist"), resolveTask(":manager:client:installDist")
-    from "Dockerfile"
+    from "${project.projectDir}"
     into "${project.buildDir}/install"
+    include("Dockerfile*")
 }
 
 task clean() {

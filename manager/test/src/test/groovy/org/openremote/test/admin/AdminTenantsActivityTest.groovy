@@ -21,7 +21,8 @@ import org.openremote.manager.client.i18n.ManagerMessages
 import org.openremote.manager.client.service.EventService
 import org.openremote.manager.client.service.RequestServiceImpl
 import org.openremote.manager.client.style.WidgetStyle
-import org.openremote.manager.server.security.ManagerIdentityService
+import org.openremote.manager.server.setup.AbstractKeycloakSetup
+import org.openremote.manager.server.setup.SetupService
 import org.openremote.manager.shared.http.EntityReader
 import org.openremote.manager.shared.security.Tenant
 import org.openremote.manager.shared.security.TenantResource
@@ -47,7 +48,7 @@ class AdminTenantsActivityTest extends Specification implements ManagerContainer
         given: "The server container is started"
         def serverPort = findEphemeralPort()
         def container = startContainerNoDemoAssets(defaultConfig(serverPort), defaultServices())
-        def identityService = container.getService(ManagerIdentityService.class)
+        def keycloakProvider = container.getService(SetupService.class).getTaskOfType(AbstractKeycloakSetup.class).keycloakProvider
 
         and: "expected results"
         def conditions = new PollingConditions(timeout: 10)
@@ -66,7 +67,7 @@ class AdminTenantsActivityTest extends Specification implements ManagerContainer
                     getString(container.getConfig(), SETUP_KEYCLOAK_ADMIN_PASSWORD, SETUP_KEYCLOAK_ADMIN_PASSWORD_DEFAULT)
             ).token
         }
-        def securityService = new ClientSecurityService(identityService.getKeycloakDeployment(realm, KEYCLOAK_CLIENT_ID), accessToken)
+        def securityService = new ClientSecurityService(keycloakProvider.getKeycloakDeployment(realm, KEYCLOAK_CLIENT_ID), accessToken)
 
         and: "A client request service and target"
         def constraintViolationReader = new ClientObjectMapper(container.JSON, ConstraintViolationReport.class) as EntityReader<ConstraintViolationReport>

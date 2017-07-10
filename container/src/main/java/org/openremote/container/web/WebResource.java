@@ -22,7 +22,7 @@ package org.openremote.container.web;
 import org.keycloak.KeycloakPrincipal;
 import org.keycloak.KeycloakSecurityContext;
 import org.openremote.container.Container;
-import org.openremote.container.security.AccessTokenAuthContext;
+import org.openremote.container.security.keycloak.AccessTokenAuthContext;
 import org.openremote.container.security.AuthContext;
 
 import javax.servlet.http.HttpServletRequest;

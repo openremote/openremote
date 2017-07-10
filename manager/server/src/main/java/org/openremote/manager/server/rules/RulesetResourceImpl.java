@@ -137,7 +137,7 @@ public class RulesetResourceImpl extends ManagerWebResource implements RulesetRe
 
     @Override
     public void createTenantRuleset(@BeanParam RequestParams requestParams, TenantRuleset ruleset) {
-        Tenant tenant = identityService.getTenant(ruleset.getRealmId());
+        Tenant tenant = identityService.getIdentityProvider().getTenantForRealmId(ruleset.getRealmId());
         if (tenant == null) {
             throw new WebApplicationException(BAD_REQUEST);
         }
@@ -154,7 +154,7 @@ public class RulesetResourceImpl extends ManagerWebResource implements RulesetRe
         if (ruleset == null) {
             throw new WebApplicationException(NOT_FOUND);
         }
-        Tenant tenant = identityService.getTenant(ruleset.getRealmId());
+        Tenant tenant = identityService.getIdentityProvider().getTenantForRealmId(ruleset.getRealmId());
         if (tenant == null) {
             throw new WebApplicationException(BAD_REQUEST);
         }
@@ -171,7 +171,7 @@ public class RulesetResourceImpl extends ManagerWebResource implements RulesetRe
         if (existingRuleset == null) {
             throw new WebApplicationException(NOT_FOUND);
         }
-        Tenant tenant = identityService.getTenant(existingRuleset.getRealmId());
+        Tenant tenant = identityService.getIdentityProvider().getTenantForRealmId(existingRuleset.getRealmId());
         if (tenant == null) {
             throw new WebApplicationException(BAD_REQUEST);
         }
@@ -194,7 +194,7 @@ public class RulesetResourceImpl extends ManagerWebResource implements RulesetRe
         if (ruleset == null) {
             return;
         }
-        Tenant tenant = identityService.getTenant(ruleset.getRealmId());
+        Tenant tenant = identityService.getIdentityProvider().getTenantForRealmId(ruleset.getRealmId());
         if (tenant == null) {
             throw new WebApplicationException(BAD_REQUEST);
         }

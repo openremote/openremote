@@ -20,6 +20,7 @@
 package org.openremote.manager.server.security;
 
 import org.openremote.container.timer.TimerService;
+import org.openremote.container.web.ClientRequestInfo;
 import org.openremote.manager.server.i18n.I18NService;
 import org.openremote.manager.server.web.ManagerWebResource;
 import org.openremote.manager.shared.http.RequestParams;
@@ -55,7 +56,9 @@ public class TenantResourceImpl extends ManagerWebResource implements TenantReso
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
         try {
-            return identityService.getTenants(getClientRemoteAddress(), requestParams.getBearerAuth());
+            return identityService.getIdentityProvider().getTenants(
+                new ClientRequestInfo(getClientRemoteAddress(), requestParams.getBearerAuth())
+            );
         } catch (ClientErrorException ex) {
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
         } catch (Exception ex) {
@@ -65,7 +68,7 @@ public class TenantResourceImpl extends ManagerWebResource implements TenantReso
 
     @Override
     public Tenant get(RequestParams requestParams, String realm) {
-        Tenant tenant = identityService.getTenantForRealm(realm);
+        Tenant tenant = identityService.getIdentityProvider().getTenantForRealm(realm);
         if (tenant == null)
             throw new WebApplicationException(NOT_FOUND);
         if (!isTenantActiveAndAccessible(tenant)) {
@@ -77,7 +80,7 @@ public class TenantResourceImpl extends ManagerWebResource implements TenantReso
 
     @Override
     public Tenant getForRealmId(RequestParams requestParams, String realmId) {
-        Tenant tenant = identityService.getTenant(realmId);
+        Tenant tenant = identityService.getIdentityProvider().getTenantForRealmId(realmId);
         if (tenant == null)
             throw new WebApplicationException(NOT_FOUND);
         if (!isTenantActiveAndAccessible(tenant)) {
@@ -92,7 +95,6 @@ public class TenantResourceImpl extends ManagerWebResource implements TenantReso
         if (!isSuperUser()) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
-        // TODO If the realm name changes, what happens to all the assets?
         ConstraintViolationReport violationReport;
         if ((violationReport = isIllegalMasterRealmMutation(realm, tenant)) != null) {
             throw new WebApplicationException(
@@ -103,7 +105,9 @@ public class TenantResourceImpl extends ManagerWebResource implements TenantReso
             );
         }
         try {
-            identityService.updateTenant(getClientRemoteAddress(), requestParams.getBearerAuth(), realm, tenant);
+            identityService.getIdentityProvider().updateTenant(
+                new ClientRequestInfo(getClientRemoteAddress(), requestParams.getBearerAuth()), realm, tenant
+            );
         } catch (ClientErrorException ex) {
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
         } catch (Exception ex) {
@@ -117,7 +121,9 @@ public class TenantResourceImpl extends ManagerWebResource implements TenantReso
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
         try {
-            identityService.createTenant(getClientRemoteAddress(), requestParams.getBearerAuth(), tenant);
+            identityService.getIdentityProvider().createTenant(
+                new ClientRequestInfo(getClientRemoteAddress(), requestParams.getBearerAuth()), tenant
+            );
         } catch (ClientErrorException ex) {
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
         } catch (Exception ex) {
@@ -141,7 +147,9 @@ public class TenantResourceImpl extends ManagerWebResource implements TenantReso
             );
         }
         try {
-            identityService.deleteTenant(getClientRemoteAddress(), requestParams.getBearerAuth(), realm);
+            identityService.getIdentityProvider().deleteTenant(
+                new ClientRequestInfo(getClientRemoteAddress(), requestParams.getBearerAuth()), realm
+            );
         } catch (ClientErrorException ex) {
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
         } catch (Exception ex) {

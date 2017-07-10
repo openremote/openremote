@@ -26,21 +26,17 @@ import io.undertow.server.handlers.RequestDumpingHandler;
 import io.undertow.servlet.Servlets;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.DeploymentManager;
-import io.undertow.servlet.api.LoginConfig;
 import io.undertow.servlet.api.ServletInfo;
 import io.undertow.util.HttpString;
 import org.jboss.resteasy.plugins.server.servlet.HttpServlet30Dispatcher;
 import org.jboss.resteasy.plugins.server.servlet.ResteasyContextParameters;
 import org.jboss.resteasy.spi.ResteasyDeployment;
-import org.keycloak.adapters.KeycloakConfigResolver;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.json.JacksonConfig;
 import org.openremote.container.json.ModelValueMessageBodyConverter;
-import org.openremote.container.security.AuthOverloadHandler;
 import org.openremote.container.security.CORSFilter;
 import org.openremote.container.security.IdentityService;
-import org.openremote.container.security.SimpleKeycloakServletExtension;
 import org.openremote.container.web.jsapi.JSAPIServlet;
 import org.xnio.Options;
 
@@ -247,8 +243,10 @@ public abstract class WebService implements ContainerService {
             .addServlet(restServlet)
             .setClassLoader(Container.class.getClassLoader());
 
-        if (identityService != null && identityService.getKeycloakConfigResolver() != null) {
+        if (identityService != null) {
             resteasyDeployment.setSecurityEnabled(true);
+        } else {
+            throw new RuntimeException("No identity service deployed, can't enable API security");
         }
 
         return addServletDeployment(identityService, deploymentInfo, true);
@@ -292,19 +290,7 @@ public abstract class WebService implements ContainerService {
                     throw new IllegalStateException(
                         "No identity service found, make sure " + IdentityService.class.getName() + " is added before this service"
                     );
-
-                KeycloakConfigResolver keycloakConfigResolver = identityService.getKeycloakConfigResolver();
-                if (keycloakConfigResolver == null)
-                    throw new IllegalStateException(
-                        "No Keycloak config resolver found, make sure " + IdentityService.class.getName() + " is initialized"
-                    );
-
-                LOG.info("Deploying secure web context: " + deploymentInfo.getContextPath());
-                deploymentInfo.addOuterHandlerChainWrapper(AuthOverloadHandler::new);
-                deploymentInfo.setSecurityDisabled(false);
-                LoginConfig loginConfig = new LoginConfig(SimpleKeycloakServletExtension.AUTH_MECHANISM, "OpenRemote");
-                deploymentInfo.setLoginConfig(loginConfig);
-                deploymentInfo.addServletExtension(new SimpleKeycloakServletExtension(keycloakConfigResolver));
+                identityService.secureDeployment(deploymentInfo);
             } else {
                 LOG.info("Deploying insecure web context: " + deploymentInfo.getContextPath());
             }

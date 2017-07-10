@@ -159,7 +159,7 @@ public final class AssetRoute {
             }
 
             // Check realm, must be accessible
-            if (!identityService.isTenantActiveAndAccessible(authContext, asset)) {
+            if (!identityService.getIdentityProvider().isTenantActiveAndAccessible(authContext, asset)) {
                 throw new AssetProcessingException(Reason.INSUFFICIENT_ACCESS);
             }
 

@@ -28,17 +28,13 @@ import org.hibernate.tool.hbm2ddl.ImportSqlCommandExtractor;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
-import java.util.Arrays;
 import java.util.List;
-import java.util.logging.Logger;
 
 /**
  * Load and parse import SQL files, either the whole file as a single statement if its first line
  * is <code>-- importOneStatementOnly</code>, or as a semicolon-separated list of statements.
  */
 public class EnhancedImportSqlCommandExtractor implements ImportSqlCommandExtractor {
-
-    private static final Logger LOG = Logger.getLogger(EnhancedImportSqlCommandExtractor.class.getName());
 
     @Override
     public String[] extractCommands(Reader reader) {
@@ -65,7 +61,6 @@ public class EnhancedImportSqlCommandExtractor implements ImportSqlCommandExtrac
         }
         List<String> statementList = parser.getStatementList();
         String[] result = statementList.toArray(new String[statementList.size()]);
-        LOG.info("Importing multiline SQL: " + Arrays.toString(result));
         return result;
     }
 }

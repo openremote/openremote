@@ -28,7 +28,6 @@ import javax.validation.Valid;
 import javax.ws.rs.*;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
-import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
 
 /**
  * Manage users in realms.

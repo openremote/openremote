@@ -19,15 +19,10 @@
  */
 package org.openremote.manager.server.security;
 
-import org.keycloak.admin.client.resource.ClientsResource;
-import org.keycloak.admin.client.resource.RoleMappingResource;
-import org.keycloak.admin.client.resource.RolesResource;
-import org.keycloak.representations.idm.CredentialRepresentation;
-import org.keycloak.representations.idm.RoleRepresentation;
-import org.keycloak.representations.idm.UserRepresentation;
-import org.openremote.container.Container;
-import org.openremote.container.web.WebResource;
+import org.openremote.container.timer.TimerService;
+import org.openremote.container.web.ClientRequestInfo;
 import org.openremote.manager.server.i18n.I18NService;
+import org.openremote.manager.server.web.ManagerWebResource;
 import org.openremote.manager.shared.http.RequestParams;
 import org.openremote.manager.shared.security.Credential;
 import org.openremote.manager.shared.security.Role;
@@ -45,16 +40,13 @@ import java.util.List;
 import java.util.ResourceBundle;
 
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
-import static org.openremote.manager.server.util.JsonUtil.convert;
 import static org.openremote.manager.shared.validation.ConstraintViolationReport.VIOLATION_EXCEPTION_HEADER;
-import static org.openremote.model.Constants.*;
+import static org.openremote.model.Constants.MASTER_REALM;
 
-public class UserResourceImpl extends WebResource implements UserResource {
+public class UserResourceImpl extends ManagerWebResource implements UserResource {
 
-    protected final ManagerIdentityService identityService;
-
-    public UserResourceImpl(ManagerIdentityService identityService) {
-        this.identityService = identityService;
+    public UserResourceImpl(TimerService timerService, ManagerIdentityService identityService) {
+        super(timerService, identityService);
     }
 
     @Override
@@ -63,14 +55,9 @@ public class UserResourceImpl extends WebResource implements UserResource {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
         try {
-            List<UserRepresentation> userRepresentations =
-                identityService.getRealms(getClientRemoteAddress(), requestParams.getBearerAuth())
-                    .realm(realm).users().search(null, 0, Integer.MAX_VALUE);
-            List<User> users = new ArrayList<>();
-            for (UserRepresentation userRepresentation : userRepresentations) {
-                users.add(convertUser(realm, userRepresentation));
-            }
-            return users.toArray(new User[users.size()]);
+            return identityService.getIdentityProvider().getUsers(
+                new ClientRequestInfo(getClientRemoteAddress(), requestParams.getBearerAuth()), realm
+            );
         } catch (ClientErrorException ex) {
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
         } catch (Exception ex) {
@@ -84,10 +71,8 @@ public class UserResourceImpl extends WebResource implements UserResource {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
         try {
-            return convertUser(
-                realm,
-                identityService.getRealms(getClientRemoteAddress(), requestParams.getBearerAuth())
-                    .realm(realm).users().get(userId).toRepresentation()
+            return identityService.getIdentityProvider().getUser(
+                new ClientRequestInfo(getClientRemoteAddress(), requestParams.getBearerAuth()), realm, userId
             );
         } catch (ClientErrorException ex) {
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
@@ -111,9 +96,8 @@ public class UserResourceImpl extends WebResource implements UserResource {
             );
         }
         try {
-            identityService.getRealms(getClientRemoteAddress(), requestParams.getBearerAuth())
-                .realm(realm).users().get(userId).update(
-                convert(Container.JSON, UserRepresentation.class, user)
+            identityService.getIdentityProvider().updateUser(
+                new ClientRequestInfo(getClientRemoteAddress(), requestParams.getBearerAuth()), realm, userId, user
             );
         } catch (ClientErrorException ex) {
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
@@ -128,17 +112,9 @@ public class UserResourceImpl extends WebResource implements UserResource {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
         try {
-            Response response = identityService.getRealms(getClientRemoteAddress(), requestParams.getBearerAuth())
-                .realm(realm).users().create(
-                convert(Container.JSON, UserRepresentation.class, user)
+            identityService.getIdentityProvider().createUser(
+                new ClientRequestInfo(getClientRemoteAddress(), requestParams.getBearerAuth()), realm, user
             );
-            if (!response.getStatusInfo().equals(Response.Status.CREATED)) {
-                throw new WebApplicationException(
-                    Response.status(response.getStatus())
-                        .entity(response.getEntity())
-                        .build()
-                );
-            }
         } catch (ClientErrorException ex) {
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
         } catch (WebApplicationException ex) {
@@ -163,15 +139,9 @@ public class UserResourceImpl extends WebResource implements UserResource {
             );
         }
         try {
-            Response response = identityService.getRealms(getClientRemoteAddress(), requestParams.getBearerAuth())
-                .realm(realm).users().delete(userId);
-            if (!response.getStatusInfo().equals(Response.Status.NO_CONTENT)) {
-                throw new WebApplicationException(
-                    Response.status(response.getStatus())
-                        .entity(response.getEntity())
-                        .build()
-                );
-            }
+            identityService.getIdentityProvider().deleteUser(
+                new ClientRequestInfo(getClientRemoteAddress(), requestParams.getBearerAuth()), realm, userId
+            );
         } catch (ClientErrorException ex) {
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
         } catch (WebApplicationException ex) {
@@ -187,9 +157,8 @@ public class UserResourceImpl extends WebResource implements UserResource {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
         try {
-            identityService.getRealms(getClientRemoteAddress(), requestParams.getBearerAuth())
-                .realm(realm).users().get(userId).resetPassword(
-                convert(Container.JSON, CredentialRepresentation.class, credential)
+            identityService.getIdentityProvider().resetPassword(
+                new ClientRequestInfo(getClientRemoteAddress(), requestParams.getBearerAuth()), realm, userId, credential
             );
         } catch (ClientErrorException ex) {
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
@@ -204,37 +173,9 @@ public class UserResourceImpl extends WebResource implements UserResource {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
         try {
-            RoleMappingResource roleMappingResource =
-                identityService.getRealms(getClientRemoteAddress(), requestParams.getBearerAuth())
-                    .realm(realm).users().get(userId).roles();
-            ClientsResource clientsResource =
-                identityService.getRealms(getClientRemoteAddress(), requestParams.getBearerAuth())
-                    .realm(realm).clients();
-            String clientId = clientsResource.findByClientId(KEYCLOAK_CLIENT_ID).get(0).getId();
-            RolesResource rolesResource = clientsResource.get(clientId).roles();
-
-            List<RoleRepresentation> allRoles = rolesResource.list();
-            List<RoleRepresentation> effectiveRoles = roleMappingResource.clientLevel(clientId).listEffective();
-
-            List<Role> roles = new ArrayList<>();
-            for (RoleRepresentation roleRepresentation : allRoles) {
-                boolean isAssigned = false;
-
-                for (RoleRepresentation effectiveRole : effectiveRoles) {
-                    if (effectiveRole.getId().equals(roleRepresentation.getId()))
-                        isAssigned = true;
-                }
-
-                roles.add(new Role(
-                    roleRepresentation.getId(),
-                    roleRepresentation.getName(),
-                    roleRepresentation.isComposite(),
-                    isAssigned
-                ));
-            }
-
-            return roles.toArray(new Role[roles.size()]);
-
+            return identityService.getIdentityProvider().getRoles(
+                new ClientRequestInfo(getClientRemoteAddress(), requestParams.getBearerAuth()), realm, userId
+            );
         } catch (ClientErrorException ex) {
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
         } catch (Exception ex) {
@@ -248,31 +189,9 @@ public class UserResourceImpl extends WebResource implements UserResource {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
         try {
-            RoleMappingResource roleMappingResource =
-                identityService.getRealms(getClientRemoteAddress(), requestParams.getBearerAuth())
-                    .realm(realm).users().get(userId).roles();
-            ClientsResource clientsResource =
-                identityService.getRealms(getClientRemoteAddress(), requestParams.getBearerAuth())
-                    .realm(realm).clients();
-            String clientId = clientsResource.findByClientId(KEYCLOAK_CLIENT_ID).get(0).getId();
-
-            List<RoleRepresentation> rolesToAdd = new ArrayList<>();
-            List<RoleRepresentation> rolesToRemove = new ArrayList<>();
-
-            for (Role role : roles) {
-                RoleRepresentation roleRepresentation = new RoleRepresentation();
-                roleRepresentation.setId(role.getId());
-                roleRepresentation.setName(role.getName());
-                if (role.isAssigned()) {
-                    rolesToAdd.add(roleRepresentation);
-                } else {
-                    rolesToRemove.add(roleRepresentation);
-                }
-            }
-
-            roleMappingResource.clientLevel(clientId).add(rolesToAdd);
-            roleMappingResource.clientLevel(clientId).remove(rolesToRemove);
-
+            identityService.getIdentityProvider().updateRoles(
+                new ClientRequestInfo(getClientRemoteAddress(), requestParams.getBearerAuth()), realm, userId, roles
+            );
         } catch (ClientErrorException ex) {
             ex.printStackTrace(System.out);
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
@@ -281,19 +200,13 @@ public class UserResourceImpl extends WebResource implements UserResource {
         }
     }
 
-    protected User convertUser(String realm, UserRepresentation userRepresentation) {
-        User user = convert(Container.JSON, User.class, userRepresentation);
-        user.setRealm(realm);
-        return user;
-    }
-
     protected ConstraintViolationReport isIllegalMasterAdminUserDeletion(RequestParams requestParams, String realm, String userId) {
         if (!realm.equals(MASTER_REALM))
             return null;
 
-        UserRepresentation masterAdminUser = getMasterRealmAdminUser(requestParams);
-        if (!masterAdminUser.getId().equals(userId))
-            return null;
+        if (!identityService.getIdentityProvider().isMasterRealmAdmin(
+            new ClientRequestInfo(getClientRemoteAddress(), requestParams.getBearerAuth()), userId
+        )) return null;
 
         ResourceBundle validationMessages = getContainer().getService(I18NService.class).getValidationMessages();
         List<ConstraintViolation> violations = new ArrayList<>();
@@ -310,9 +223,9 @@ public class UserResourceImpl extends WebResource implements UserResource {
         if (!realm.equals(MASTER_REALM))
             return null;
 
-        UserRepresentation masterAdminUser = getMasterRealmAdminUser(requestParams);
-        if (!masterAdminUser.getId().equals(user.getId()))
-            return null;
+        if (!identityService.getIdentityProvider().isMasterRealmAdmin(
+            new ClientRequestInfo(getClientRemoteAddress(), requestParams.getBearerAuth()), user.getId()
+        )) return null;
 
         ResourceBundle validationMessages = getContainer().getService(I18NService.class).getValidationMessages();
 
@@ -333,16 +246,5 @@ public class UserResourceImpl extends WebResource implements UserResource {
         return null;
     }
 
-    protected UserRepresentation getMasterRealmAdminUser(RequestParams requestParams) {
-        List<UserRepresentation> adminUsers = identityService
-            .getRealms(null, requestParams.getBearerAuth()).realm(MASTER_REALM)
-            .users().search(MASTER_REALM_ADMIN_USER, null, null);
-        if (adminUsers.size() == 0) {
-            throw new IllegalStateException("Can't load master realm admin user");
-        } else if (adminUsers.size() > 1) {
-            throw new IllegalStateException("Several master realm admin users, this should not be possible.");
-        }
-        return adminUsers.get(0);
-    }
 }
 

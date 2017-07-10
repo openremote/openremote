@@ -106,7 +106,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
         try {
             Tenant tenant = realmId == null || realmId.length() == 0
                 ? getAuthenticatedTenant()
-                : identityService.getTenant(realmId);
+                : identityService.getIdentityProvider().getTenantForRealmId(realmId);
 
             if (tenant == null) {
                 throw new WebApplicationException(NOT_FOUND);
@@ -205,7 +205,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             if (serverAsset == null)
                 throw new WebApplicationException(NOT_FOUND);
 
-            Tenant tenant = identityService.getTenant(asset.getRealmId());
+            Tenant tenant = identityService.getIdentityProvider().getTenantForRealmId(asset.getRealmId());
             if (tenant == null)
                 throw new WebApplicationException(BAD_REQUEST);
 
