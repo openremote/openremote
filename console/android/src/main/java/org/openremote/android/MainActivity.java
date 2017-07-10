@@ -166,15 +166,9 @@ public class MainActivity extends Activity {
         webView.setWebViewClient(new WebViewClient() {
             @Override
             public void onReceivedHttpError(WebView view, WebResourceRequest request, WebResourceResponse errorResponse) {
-                Log.i("WEBVIEW", "request url :" + request.getUrl().toString());
-                Log.i("WEBVIEW", "error :" + errorResponse.getStatusCode());
-                if (request.getUrl().toString().startsWith(getString(R.string.OR_BASE_SERVER) + getString(R.string.OR_CONSOLE_URL))) {
-                    errorViewHolder.show(R.string.httpError,R.string.httpErrorExplain,true,true);
-                }
-
-
-                //
-                //todo: translate common error into user friendly dialog msg ex 400-500 => try again later service not avaible (app clean exit with confirm button)
+                LOG.warning("request url :" + request.getUrl().toString());
+                LOG.warning("error :" + errorResponse.getStatusCode());
+                errorViewHolder.show(R.string.httpError,R.string.httpErrorExplain,true,true);
             }
 
             @Override
@@ -182,7 +176,8 @@ public class MainActivity extends Activity {
                 if (Boolean.parseBoolean(getString(R.string.SSL_IGNORE))) {
                     handler.proceed(); // Ignore SSL certificate errors
                 } else {
-                    super.onReceivedSslError(view, handler, error);
+                    LOG.severe("error : something wrong with SSL configuration");
+                    errorViewHolder.show(R.string.httpError,R.string.httpErrorExplain,true,true);
                 }
             }
 
@@ -190,17 +185,14 @@ public class MainActivity extends Activity {
             public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
 
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                    LOG.info("request url :" + request.getUrl().toString());
-                    LOG.info( "error :" + error.getErrorCode());
-                    LOG.info( "error :" + error.getDescription());
+                    LOG.warning("request url :" + request.getUrl().toString());
+                    LOG.warning("error :" + error.getErrorCode());
+                    LOG.warning("error :" + error.getDescription());
                     // Remote debugging sessions from Chrome trigger "ERR_CACHE_MISS" that don't hurt, but we should not redirect the view
                     if (isRemoteDebuggingEnabled() && error.getErrorCode() == ERROR_UNKNOWN) {
                         return;
                     }
                 }
-
-                //TODO => try again later service not avaible (app clean exit with confirm button) // good message
-                //webView.loadUrl("about:blank");
                 errorViewHolder.show(R.string.fatalError,R.string.fatalErrorExplain,false,true);
             }
         });
@@ -221,6 +213,7 @@ public class MainActivity extends Activity {
 
     public void exitOnClick(View view) {
         finish();
+        System.exit(0);
     }
 
     private class WebAppInterface {
@@ -236,15 +229,6 @@ public class MainActivity extends Activity {
             tokenService.clearToken();
         }
 
-        @JavascriptInterface
-        public String getMobileToken() {
-            return tokenService.getJsonToken();
-        }
-
-        @JavascriptInterface
-        public void setMobileToken(String token, String refreshToken, String idToken) {
-            tokenService.saveToken(token, refreshToken, idToken);
-        }
 
         @JavascriptInterface
         public void postMessage(String jsonMessage) throws JSONException {
@@ -255,8 +239,14 @@ public class MainActivity extends Activity {
                 case "token" :
                     tokenService.saveToken(data.getString("token"), data.getString("refreshToken") , data.getString("idToken"));
                     break;
-                case "error" :
-                    //
+                case "logout":
+                    tokenService.clearToken();
+                    break;
+                case "status" :
+                    // TODO: status that we want to receive from webview | waiting to know if it's relevant to show error if bad connectivity meybe a conter or timmout retry should be consider
+                    // currently
+                    // websocket drop with error
+                    // websocket connect back (success)
                 default:
             }
         }
@@ -270,14 +260,13 @@ public class MainActivity extends Activity {
                     return "{}";
             }
         }
-        //TODO receive error with severity
+
     }
 
 
     private void onConnectivityChanged(boolean connectivity) {
         this.hasNetwork = connectivity;
         if (connectivity) {
-            //TODO :  pass conectivity information to wwebapp
             reloadPage(getCurrentFocus());
         } else {
             errorViewHolder.show(R.string.noConnectivity,R.string.noConnectivityExplain,false,true);

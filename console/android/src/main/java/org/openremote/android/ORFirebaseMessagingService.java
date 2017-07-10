@@ -1,5 +1,6 @@
 package org.openremote.android;
 
+import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
@@ -130,6 +131,7 @@ public class ORFirebaseMessagingService extends com.google.firebase.messaging.Fi
                 .setDeleteIntent(pendingIntent)
                 .setSmallIcon(R.drawable.app_icon)
                 .setWhen(0)
+                .setPriority(Notification.PRIORITY_MAX)
                 .setSound(defaultSoundUri);
 
         for (AlertAction alertAction : alertNotification.getActions()) {
