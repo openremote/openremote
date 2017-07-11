@@ -19,27 +19,29 @@
  */
 package org.openremote.manager.client.service;
 
-import com.google.inject.Inject;
 import elemental.client.Browser;
 import elemental.html.Location;
 import org.openremote.manager.client.event.UserChangeEvent;
-import org.openremote.model.event.bus.EventBus;
-import org.openremote.manager.client.interop.keycloak.*;
+import org.openremote.manager.client.interop.Consumer;
+import org.openremote.manager.client.interop.keycloak.AuthToken;
+import org.openremote.manager.client.interop.keycloak.Keycloak;
+import org.openremote.manager.client.interop.keycloak.KeycloakCallback;
+import org.openremote.manager.client.interop.keycloak.LogoutOptions;
+import org.openremote.manager.shared.http.RequestParams;
 import org.openremote.model.Constants;
+import org.openremote.model.event.bus.EventBus;
 
-import java.util.function.Consumer;
 import java.util.logging.Logger;
 
-public class SecurityServiceImpl implements SecurityService {
+public class KeycloakSecurityService implements SecurityService {
 
-    private static final Logger LOG = Logger.getLogger(SecurityServiceImpl.class.getName());
+    private static final Logger LOG = Logger.getLogger(KeycloakSecurityService.class.getName());
 
     protected final Keycloak keycloak;
 
-    @Inject
-    public SecurityServiceImpl(Keycloak keycloak,
-                               CookieService cookieService,
-                               EventBus eventBus) {
+    public KeycloakSecurityService(Keycloak keycloak,
+                                   CookieService cookieService,
+                                   EventBus eventBus) {
         this.keycloak = keycloak;
 
         onAuthSuccess(() -> eventBus.dispatch(
@@ -51,7 +53,7 @@ public class SecurityServiceImpl implements SecurityService {
         });
 
         // We update the refresh token in the background. The only other option would
-        // be to update the token before every request in request service. However, this
+        // be to update the token before every request. However, this
         // will force asynchronous execution of all HTTP requests, which we don't want.
         Browser.getWindow().setInterval(() -> updateToken(
             Constants.ACCESS_TOKEN_LIFESPAN_SECONDS/2, // Token must be good for X more seconds
@@ -61,13 +63,13 @@ public class SecurityServiceImpl implements SecurityService {
     }
 
     @Override
-    public void login() {
-        keycloak.login();
+    public String getUsername() {
+        return getParsedToken().getPreferredUsername();
     }
 
     @Override
-    public void login(LoginOptions options) {
-        keycloak.login(options);
+    public String getFullName() {
+        return getParsedToken().getName();
     }
 
     @Override
@@ -77,21 +79,6 @@ public class SecurityServiceImpl implements SecurityService {
         Location location = Browser.getWindow().getLocation();
         opts.redirectUri = location.getProtocol() + "//" + location.getHost() + "/" + getAuthenticatedRealm();
         keycloak.logout(opts);
-    }
-
-    @Override
-    public void logout(LogoutOptions options) {
-        keycloak.logout(options);
-    }
-
-    @Override
-    public void register() {
-        keycloak.register();
-    }
-
-    @Override
-    public void register(LoginOptions options) {
-        keycloak.register(options);
     }
 
     @Override
@@ -115,69 +102,42 @@ public class SecurityServiceImpl implements SecurityService {
     }
 
     @Override
-    public boolean isTokenExpired() {
-        return keycloak.isTokenExpired();
+    public String getAuthenticatedRealm() {
+        return keycloak.realm;
     }
 
     @Override
-    public boolean isTokenExpired(int minValiditySeconds) {
-        return keycloak.isTokenExpired(minValiditySeconds);
+    public <OUT> void setCredentials(RequestParams<OUT> requestParams) {
+        // TODO If the periodic refresh of token (see above) is not enough, this is where we could refresh
+        requestParams.withBearerAuth(getToken());
     }
 
     @Override
-    public void clearToken() {
-        keycloak.clearToken();
+    public String setCredentials(String serviceUrl) {
+        // TODO If the periodic refresh of token (see above) is not enough, this is where we could refresh
+        String authenticatedServiceUrl = serviceUrl
+            + "?Auth-Realm=" + getAuthenticatedRealm()
+            + "&Authorization=Bearer " + getToken();
+        return authenticatedServiceUrl;
     }
 
-    @Override
-    public void onTokenExpired(Runnable fn) {
-        keycloak.onTokenExpired(new org.openremote.manager.client.interop.Runnable(){
-            @Override
-            public void run() {
-                fn.run();
-            }
-        });
+    protected String getToken() {
+        return keycloak.token;
     }
 
-    @Override
-    public void onAuthSuccess(Runnable fn) {
-        keycloak.onAuthSuccess = new org.openremote.manager.client.interop.Runnable(){
-            @Override
-            public void run() {
-                fn.run();
-            }
-        };
+    protected AuthToken getParsedToken() {
+        return keycloak.tokenParsed;
     }
 
-    @Override
-    public void onAuthLogout(Runnable fn) {
-        keycloak.onAuthLogout = new org.openremote.manager.client.interop.Runnable(){
-            @Override
-            public void run() {
-                fn.run();
-            }
-        };
+    protected void onAuthSuccess(Runnable fn) {
+        keycloak.onAuthSuccess = () -> fn.run();
     }
 
-    @Override
-    public void updateToken(Consumer<Boolean> successFn, Runnable errorFn) {
-        KeycloakCallback kcCallback = keycloak.updateToken();
-        kcCallback.success(new org.openremote.manager.client.interop.Consumer<Boolean>(){
-            @Override
-            public void accept(Boolean o) {
-                successFn.accept(o);
-            }
-        });
-        kcCallback.error(new org.openremote.manager.client.interop.Runnable(){
-            @Override
-            public void run() {
-                errorFn.run();
-            }
-        });
+    protected void onAuthLogout(Runnable fn) {
+        keycloak.onAuthLogout = () -> fn.run();
     }
 
-    @Override
-    public void updateToken(int minValiditySeconds, Consumer<Boolean> successFn, Runnable errorFn) {
+    protected void updateToken(int minValiditySeconds, Consumer<Boolean> successFn, Runnable errorFn) {
         KeycloakCallback kcCallback = keycloak.updateToken(minValiditySeconds);
         kcCallback.success(new org.openremote.manager.client.interop.Consumer<Boolean>(){
             @Override
@@ -191,25 +151,5 @@ public class SecurityServiceImpl implements SecurityService {
                 errorFn.run();
             }
         });
-    }
-
-    @Override
-    public String getAuthenticatedRealm() {
-        return keycloak.realm;
-    }
-
-    @Override
-    public String getToken() {
-        return keycloak.token;
-    }
-
-    @Override
-    public AuthToken getParsedToken() {
-        return keycloak.tokenParsed;
-    }
-
-    @Override
-    public String getRefreshToken() {
-        return keycloak.refreshToken;
     }
 }

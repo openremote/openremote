@@ -1,24 +1,33 @@
 window.defaultErrorMessage = "Service not available, please try again later.";
 
-// Need this to find out if GWT superdev compilation failed, then abort loading...
-window.checkGwtDebugInterval = window.setInterval(function() {
-    if (document.querySelectorAll("a[target='gwt_dev_mode_log']").length > 0) {
-        window.document.body.style.background = 'inherit';
-        window.document.body.style.opacity = "inherit";
-        window.document.body.style.transition = "inherit";
-        window.handleLoadComplete();
+window.startLoading = function() {
+    console.log("Start loading...");
+    if (!window.document.body.classList.contains("loading")) {
+        window.document.body.classList.add("loading");
     }
-}, 500);
+    // Need this to find out if GWT superdev compilation failed, then abort loading...
+    window.clearInterval(window.checkGwtDebugInterval);
+    window.checkGwtDebugInterval = window.setInterval(function() {
+        if (document.querySelectorAll("a[target='gwt_dev_mode_log']").length > 0) {
+            window.document.body.style.background = 'inherit';
+            window.document.body.style.opacity = "inherit";
+            window.document.body.style.transition = "inherit";
+            window.handleLoadComplete();
+        }
+    }, 500);
+};
 
 window.handleLoadError = function(reason) {
+    console.log("Load error: " + reason);
     handleLoadComplete();
     window.document.body.innerHTML =
         "<div style='padding:1em;'><h1>Error starting application</h1><h5>Resource not loaded: " + reason + "</h5><h3>" + defaultErrorMessage + "</h3></div>";
 };
 
 window.handleLoadComplete = function() {
+    console.log("Load complete...");
     window.document.body.classList.remove("loading");
-    window.clearInterval(window.checkGwtDebugInterval);
+    window.checkGwtDebugInterval && window.clearInterval(window.checkGwtDebugInterval);
 };
 
 window.load = (function () {

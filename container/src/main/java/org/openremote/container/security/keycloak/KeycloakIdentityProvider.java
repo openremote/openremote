@@ -182,8 +182,6 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider{
 
     @Override
     public void secureDeployment(DeploymentInfo deploymentInfo) {
-        deploymentInfo.addOuterHandlerChainWrapper(AuthOverloadHandler::new);
-        deploymentInfo.setSecurityDisabled(false);
         LoginConfig loginConfig = new LoginConfig(SimpleKeycloakServletExtension.AUTH_MECHANISM, "OpenRemote");
         deploymentInfo.setLoginConfig(loginConfig);
         deploymentInfo.addServletExtension(new SimpleKeycloakServletExtension(keycloakConfigResolver));

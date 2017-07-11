@@ -72,7 +72,7 @@ public class HeaderPresenter implements HeaderView.Presenter {
             event -> assetBrowserSelection = event
         );
 
-        view.setUsername(securityService.getParsedToken().getPreferredUsername());
+        view.setUsername(securityService.getUsername());
         eventBus.register(
             UserChangeEvent.class,
             event -> view.setUsername(event.getUsername())

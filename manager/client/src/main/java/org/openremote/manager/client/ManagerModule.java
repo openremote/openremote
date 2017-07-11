@@ -110,11 +110,21 @@ public class ManagerModule extends AbstractGinModule {
     @Provides
     @Singleton
     public SecurityService getSecurityService(CookieService cookieService, EventBus eventBus) {
-        return new SecurityServiceImpl(getKeyCloak(), cookieService, eventBus);
+        return getKeyCloak() != null
+            ? new KeycloakSecurityService(getKeyCloak(), cookieService, eventBus)
+            : new BasicSecurityService(getBasicAuthUsername(), getBasicAuthPassword());
     }
 
     public static native Keycloak getKeyCloak() /*-{
         return $wnd.keycloak;
+    }-*/;
+
+    public static native String getBasicAuthUsername() /*-{
+        return $wnd.basicAuthUsername;
+    }-*/;
+
+    public static native String getBasicAuthPassword() /*-{
+        return $wnd.basicAuthPassword;
     }-*/;
 
     @Provides

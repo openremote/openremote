@@ -1,8 +1,6 @@
 # Demo setup of OpenRemote v3 on Rasperry Pi 3
 #
-# TODO Not finished, doesn't work
-#
-version: '2'
+version: '2.1'
 services:
 
   # The frontend proxy, terminates SSL/TLS connections and forwards them to the Manager backend.
@@ -46,22 +44,26 @@ services:
       TZ: Europe/Zurich
 
       # If developer mode is enabled, all setup tasks will be executed on application startup.
-      # This will clean all data in Keycloak and the Manager database, and then import demo/test
+      # This will clean all data in the Manager database, and then import demo/test
       # data. Some caching and other runtime performance-optimizations will also be disabled.
       DEV_MODE: 'false'
 
       # If you are not running in developer mode, and this is the first time you are starting
       # the application, you can configure which setup tasks you want to execute. Careful,
-      # these tasks will clean and populate Keycloak and the Manager database with demo data!
+      # these tasks will clean and populate the Manager database with demo data!
       SETUP_INIT_CLEAN_DATABASE: 'true'
-      SETUP_KEYCLOAK_ADMIN_PASSWORD: secret
+      SETUP_BASIC_IDENTITY_ADMIN_PASSWORD: secret
       SETUP_IMPORT_DEMO_USERS: 'true'
       SETUP_IMPORT_DEMO_ASSETS: 'true'
       SETUP_IMPORT_DEMO_RULES: 'true'
 
-      # The public host name of this OpenRemote installation. This name is used in bearer tokens
-      # and must be the name you access the web services under.
-      IDENTITY_NETWORK_HOST: localhost
+      # Use basic identity service instead of Keycloak, set master admin password
+      MANAGER_IDENTITY_PROVIDER: basic
+      SETUP_BASIC_IDENTITY_ADMIN_PASSWORD: 'secret'
+
+      # The public host name of this OpenRemote installation. This name must be the name you
+      # access the web services under.
+      IDENTITY_NETWORK_HOST: ${IDENTITY_NETWORK_HOST:-10.0.0.123}
 
       # Set if SSL is enabled on the frontend reverse proxy and all internal proxies should assume https
       IDENTITY_NETWORK_SECURE: 'true'
@@ -93,8 +95,6 @@ services:
     # This service needs access to other services on the Docker network.
     links:
       - postgresql
-# TODO Replace keycloak service
-#      - keycloak
 
     # Configure logging of the container, see config/logging.properties
     logging:

@@ -164,50 +164,36 @@ public class EventServiceImpl implements EventService {
             webSocket = null;
         }
 
-        securityService.updateToken(
-            Constants.ACCESS_TOKEN_LIFESPAN_SECONDS / 2,
-            refreshed -> {
-                // If it wasn't refreshed, it was still valid, in both cases we can continue
-                LOG.fine("Connecting to event websocket: " + serviceUrl);
 
-                String authenticatedServiceUrl = serviceUrl
-                    + "?Auth-Realm=" + securityService.getAuthenticatedRealm()
-                    + "&Authorization=Bearer " + securityService.getToken();
+        LOG.fine("Connecting to event websocket: " + serviceUrl);
 
-                webSocket = Browser.getWindow().newWebSocket(authenticatedServiceUrl);
-                webSocket.setOnopen(evt -> {
-                    if (webSocket.getReadyState() == WebSocket.OPEN) {
-                        LOG.fine("WebSocket open: " + webSocket.getUrl());
-                        eventBus.dispatch(new SessionOpenedEvent());
-                    }
-                });
-                webSocket.setOnclose(evt -> {
-                    CloseEvent closeEvent = (CloseEvent) evt;
-                    if (closeEvent.isWasClean() && closeEvent.getCode() == 1000) {
-                        LOG.fine("WebSocket closed: " + webSocket.getUrl());
-                        eventBus.dispatch(new SessionClosedCleanEvent());
-                    } else {
-                        LOG.fine("WebSocket '" + webSocket.getUrl() + "' closed with error: " + closeEvent.getCode());
-                        eventBus.dispatch(new SessionClosedErrorEvent(
-                            new SessionClosedErrorEvent.Error(closeEvent.getCode(), closeEvent.getReason())
-                        ));
-                    }
-                });
-                webSocket.setOnmessage(evt -> {
-                    elemental.events.MessageEvent messageEvent = (elemental.events.MessageEvent) evt;
-                    String data = messageEvent.getData().toString();
-                    LOG.fine("Received data on WebSocket: " + data);
-                    onDataReceived(data);
-                });
-            },
-            () -> {
-                LOG.fine("Failed to update access token for WebSocket");
+        String authenticatedServiceUrl = securityService.setCredentials(serviceUrl);
+
+        webSocket = Browser.getWindow().newWebSocket(authenticatedServiceUrl);
+        webSocket.setOnopen(evt -> {
+            if (webSocket.getReadyState() == WebSocket.OPEN) {
+                LOG.fine("WebSocket open: " + webSocket.getUrl());
+                eventBus.dispatch(new SessionOpenedEvent());
+            }
+        });
+        webSocket.setOnclose(evt -> {
+            CloseEvent closeEvent = (CloseEvent) evt;
+            if (closeEvent.isWasClean() && closeEvent.getCode() == 1000) {
+                LOG.fine("WebSocket closed: " + webSocket.getUrl());
+                eventBus.dispatch(new SessionClosedCleanEvent());
+            } else {
+                LOG.fine("WebSocket '" + webSocket.getUrl() + "' closed with error: " + closeEvent.getCode());
                 eventBus.dispatch(new SessionClosedErrorEvent(
-                    new SessionClosedErrorEvent.Error(4000, "Failed to update access token")
+                    new SessionClosedErrorEvent.Error(closeEvent.getCode(), closeEvent.getReason())
                 ));
             }
-        );
-
+        });
+        webSocket.setOnmessage(evt -> {
+            elemental.events.MessageEvent messageEvent = (elemental.events.MessageEvent) evt;
+            String data = messageEvent.getData().toString();
+            LOG.fine("Received data on WebSocket: " + data);
+            onDataReceived(data);
+        });
     }
 
     @Override

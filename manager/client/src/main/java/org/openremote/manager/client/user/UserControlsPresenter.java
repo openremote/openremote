@@ -70,8 +70,8 @@ public class UserControlsPresenter implements UserControls.Presenter {
 
     protected void updateView() {
         view.setUserDetails(
-            environment.getSecurityService().getParsedToken().getPreferredUsername(),
-            environment.getSecurityService().getParsedToken().getName(),
+            environment.getSecurityService().getUsername(),
+            environment.getSecurityService().getFullName(),
             managerHistoryMapper.getToken(new UserAccountPlace()),
             environment.getSecurityService().hasResourceRole("manage-account", "account")
         );

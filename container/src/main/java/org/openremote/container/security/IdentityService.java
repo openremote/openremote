@@ -22,6 +22,7 @@ package org.openremote.container.security;
 import io.undertow.servlet.api.DeploymentInfo;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
+import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
 
 import javax.ws.rs.core.UriBuilder;
 import java.util.logging.Logger;
@@ -76,7 +77,16 @@ public abstract class IdentityService implements ContainerService {
 
     public void secureDeployment(DeploymentInfo deploymentInfo) {
         LOG.info("Securing web deployment: " + deploymentInfo.getContextPath());
+        deploymentInfo.addOuterHandlerChainWrapper(AuthOverloadHandler::new);
+        deploymentInfo.setSecurityDisabled(false);
         getIdentityProvider().secureDeployment(deploymentInfo);
+    }
+
+    /**
+     * If Keycloak is enabled, support multi-tenancy.
+     */
+    public boolean isKeycloakEnabled() {
+        return getIdentityProvider() instanceof KeycloakIdentityProvider;
     }
 
     /**

@@ -7,21 +7,20 @@ import org.openremote.container.Container
 import org.openremote.container.ContainerService
 import org.openremote.container.message.MessageBrokerService
 import org.openremote.container.message.MessageBrokerSetupService
-import org.openremote.container.persistence.PersistenceService
-import org.openremote.container.security.IdentityService
 import org.openremote.container.security.keycloak.KeycloakIdentityProvider
 import org.openremote.container.timer.TimerService
 import org.openremote.manager.server.agent.AgentService
 import org.openremote.manager.server.apps.ConsoleAppService
+import org.openremote.manager.server.asset.AssetAttributeLinkingService
 import org.openremote.manager.server.asset.AssetProcessingService
 import org.openremote.manager.server.asset.AssetStorageService
-import org.openremote.manager.server.asset.AssetAttributeLinkingService
 import org.openremote.manager.server.concurrent.ManagerExecutorService
 import org.openremote.manager.server.datapoint.AssetDatapointService
 import org.openremote.manager.server.event.ClientEventService
 import org.openremote.manager.server.i18n.I18NService
 import org.openremote.manager.server.map.MapService
 import org.openremote.manager.server.notification.NotificationService
+import org.openremote.manager.server.persistence.ManagerPersistenceService
 import org.openremote.manager.server.rules.RulesEngine
 import org.openremote.manager.server.rules.RulesService
 import org.openremote.manager.server.rules.RulesetStorageService
@@ -56,7 +55,7 @@ trait ManagerContainerTrait extends ContainerTrait {
                 new TimerService(),
                 new ManagerExecutorService(),
                 new I18NService(),
-                new PersistenceService(),
+                new ManagerPersistenceService(),
                 new MessageBrokerSetupService(),
                 new ManagerIdentityService(),
                 new SetupService(),

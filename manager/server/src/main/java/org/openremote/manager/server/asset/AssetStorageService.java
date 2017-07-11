@@ -95,7 +95,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 return true;
 
             // Restricted users get nothing (they don't have asset trees, just a list of linked assets)
-            if (managerIdentityService.isRestrictedUser(auth.getUserId()))
+            if (managerIdentityService.getIdentityProvider().isRestrictedUser(auth.getUserId()))
                 return false;
 
             // User must have role
@@ -194,7 +194,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 ServerAsset asset = find(
                     event.getAssetId(),
                     true,
-                    managerIdentityService.isRestrictedUser(authContext.getUserId()) // Restricted users get filtered state
+                    managerIdentityService.getIdentityProvider().isRestrictedUser(authContext.getUserId()) // Restricted users get filtered state
                 );
                 if (asset != null) {
                     replyWithAttributeEvents(sessionKey, asset, event.getAttributeNames());
@@ -409,10 +409,12 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         String whereClause = buildWhereClause(query, binders);
         sb.append(whereClause);
         sb.append(buildOrderByString(query));
+        String querySql = sb.toString();
         return em.unwrap(Session.class).doReturningWork(new AbstractReturningWork<List<ServerAsset>>() {
             @Override
             public List<ServerAsset> execute(Connection connection) throws SQLException {
-                PreparedStatement st = connection.prepareStatement(sb.toString());
+                LOG.fine("Executing: " + querySql);
+                PreparedStatement st = connection.prepareStatement(querySql);
                 for (ParameterBinder binder : binders) {
                     binder.accept(st);
                 }

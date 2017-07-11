@@ -24,12 +24,9 @@ import org.keycloak.adapters.KeycloakDeployment;
 import org.keycloak.adapters.rotation.AdapterRSATokenVerifier;
 import org.keycloak.representations.AccessToken;
 import org.openremote.manager.client.interop.keycloak.AuthToken;
-import org.openremote.manager.client.interop.keycloak.LoginOptions;
-import org.openremote.manager.client.interop.keycloak.LogoutOptions;
 import org.openremote.manager.client.service.SecurityService;
+import org.openremote.manager.shared.http.RequestParams;
 import org.openremote.model.Constants;
-
-import java.util.function.Consumer;
 
 /**
  * Does the same job as keycloak.js implementation.
@@ -57,32 +54,17 @@ public class ClientSecurityService implements SecurityService {
     }
 
     @Override
-    public void login() {
-        throw new UnsupportedOperationException();
+    public String getUsername() {
+        return getParsedToken().getPreferredUsername();
     }
 
     @Override
-    public void login(LoginOptions options) {
-        throw new UnsupportedOperationException();
+    public String getFullName() {
+        return getParsedToken().getName();
     }
 
     @Override
     public void logout() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void logout(LogoutOptions options) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void register() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void register(LoginOptions options) {
         throw new UnsupportedOperationException();
     }
 
@@ -110,59 +92,29 @@ public class ClientSecurityService implements SecurityService {
     }
 
     @Override
-    public boolean isTokenExpired() {
-        updateAccessToken();
-        return false;
-    }
-
-    @Override
-    public boolean isTokenExpired(int minValiditySeconds) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void clearToken() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void onTokenExpired(Runnable expiredFn) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void onAuthSuccess(Runnable expiredFn) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void onAuthLogout(Runnable expiredFn) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void updateToken(Consumer<Boolean> successFn, Runnable errorFn) {
-        successFn.accept(true);
-    }
-
-    @Override
-    public void updateToken(int minValiditySeconds, Consumer<Boolean> successFn, Runnable errorFn) {
-        successFn.accept(true);
-    }
-
-    @Override
     public String getAuthenticatedRealm() {
         return keycloakDeployment.getRealm();
     }
 
     @Override
-    public String getToken() {
+    public <OUT> void setCredentials(RequestParams<OUT> requestParams) {
+        requestParams.withBearerAuth(getToken());
+    }
+
+    @Override
+    public String setCredentials(String serviceUrl) {
+        String authenticatedServiceUrl = serviceUrl
+            + "?Auth-Realm=" + getAuthenticatedRealm()
+            + "&Authorization=Bearer " + getToken();
+        return authenticatedServiceUrl;
+    }
+
+    protected String getToken() {
         updateAccessToken();
         return token;
     }
 
-    @Override
-    public AuthToken getParsedToken() {
+    protected AuthToken getParsedToken() {
         updateAccessToken();
         return new AuthToken() {
             @Override
@@ -177,8 +129,4 @@ public class ClientSecurityService implements SecurityService {
         };
     }
 
-    @Override
-    public String getRefreshToken() {
-        throw new UnsupportedOperationException();
-    }
 }

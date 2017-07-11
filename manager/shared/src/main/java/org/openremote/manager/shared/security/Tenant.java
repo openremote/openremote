@@ -31,7 +31,7 @@ import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
 
 /**
- * This can be used (among other things) to query the Keycloak REALM table in JPA queries.
+ * This can be used (among other things) to query the REALM table in JPA queries.
  */
 @Entity
 @Subselect("select * from REALM") // Map this immutable to an SQL view, don't use/create table

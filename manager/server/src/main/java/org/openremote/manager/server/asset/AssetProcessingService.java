@@ -176,7 +176,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                     return false;
                 }
 
-                boolean isRestrictedUser = identityService.isRestrictedUser(auth.getUserId());
+                boolean isRestrictedUser = identityService.getIdentityProvider().isRestrictedUser(auth.getUserId());
 
                 // Client can subscribe to several assets
                 for (String assetId : filter.getEntityId()) {

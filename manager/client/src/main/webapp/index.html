@@ -8,29 +8,12 @@
     <link rel="icon" type="image/png" href="/static/img/favicon.png"/>
 
     <script src="/static/js/loader.js"></script>
-    <link rel="stylesheet" type="text/css" href="/static/css/loader.css" />
-
-    <script src="/auth/js/keycloak.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="/static/css/loader.css"/>
+    <script src="/static/js/auth.js"></script>
 
     <script>
-        document.addEventListener("DOMContentLoaded", function (event) {
-            var keycloakConfig = {
-                url: '/auth',
-                realm: window.location.pathname.split('/')[1],
-                clientId: "openremote"
-            };
-            window.keycloak = Keycloak(keycloakConfig);
-            window.keycloak.init({onLoad: 'login-required'})
-                .success(function (authenticated) {
-                    if (authenticated) {
-                        setTimeout(function() {
-                            startApplication();
-                        }, 0);
-                    } else {
-                        window.keycloak.login();
-                    }
-                })
-                .error(handleLoadError);
+        document.addEventListener("DOMContentLoaded", function () {
+            authenticate(startApplication, handleLoadError);
         });
 
         function startApplication() {
@@ -56,7 +39,7 @@
             }).catch(handleLoadError);
         }
 
-        window.addEventListener('JSAPIReady', function() {
+        window.addEventListener('JSAPIReady', function () {
             console.log("Loading application...");
             Promise.all([
                 load.js("/static/gwt/Manager/Manager.nocache.js")
@@ -65,7 +48,7 @@
             }).catch(handleLoadError);
         });
 
-        window.addEventListener('ManagerReady', function() {
+        window.addEventListener('ManagerReady', function () {
             console.log("Application starting");
             handleLoadComplete();
         });
@@ -73,7 +56,7 @@
     </script>
 
 </head>
-<body class="layout vertical loading">
+<body class="layout vertical loading" onload="startLoading()">
 
 <iframe src="javascript:''"
         id="__gwt_historyFrame"

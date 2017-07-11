@@ -27,8 +27,9 @@ import io.undertow.websockets.jsr.DefaultContainerConfigurator;
 import io.undertow.websockets.jsr.UndertowContainerProvider;
 import io.undertow.websockets.jsr.WebSocketDeploymentInfo;
 import org.keycloak.KeycloakPrincipal;
-import org.keycloak.KeycloakSecurityContext;
 import org.openremote.container.message.MessageBrokerSetupService;
+import org.openremote.container.security.AuthContext;
+import org.openremote.container.security.basic.BasicAuthContext;
 import org.openremote.container.security.keycloak.AccessTokenAuthContext;
 import org.openremote.container.security.IdentityService;
 import org.openremote.container.web.socket.WebsocketAdapter;
@@ -45,9 +46,11 @@ import javax.websocket.HandshakeResponse;
 import javax.websocket.server.HandshakeRequest;
 import javax.websocket.server.ServerEndpointConfig;
 import javax.ws.rs.WebApplicationException;
+import java.security.Principal;
 import java.util.logging.Logger;
 
 import static javax.ws.rs.core.Response.Status.FORBIDDEN;
+import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
 
 public class DefaultWebsocketComponent extends WebsocketComponent {
 
@@ -89,21 +92,26 @@ public class DefaultWebsocketComponent extends WebsocketComponent {
                         @Override
                         public void modifyHandshake(ServerEndpointConfig config, HandshakeRequest request, HandshakeResponse response) {
 
-                            KeycloakPrincipal<KeycloakSecurityContext> keycloakPrincipal =
-                                (KeycloakPrincipal<KeycloakSecurityContext>) request.getUserPrincipal();
-                            if (keycloakPrincipal == null) {
-                                throw new WebApplicationException(
-                                    "Websocket session is not authenticated, can't access user principal", FORBIDDEN
-                                );
+                            Principal principal = request.getUserPrincipal();
+                            if (principal == null) {
+                                throw new WebApplicationException("Request is not authenticated, can't access user principal", FORBIDDEN);
                             }
 
-                            config.getUserProperties().put(
-                                WebsocketConstants.HANDSHAKE_AUTH,
-                                new AccessTokenAuthContext(
+                            AuthContext authContext;
+
+                            if (principal instanceof KeycloakPrincipal) {
+                                KeycloakPrincipal keycloakPrincipal = (KeycloakPrincipal) principal;
+                                authContext = new AccessTokenAuthContext(
                                     keycloakPrincipal.getKeycloakSecurityContext().getRealm(),
                                     keycloakPrincipal.getKeycloakSecurityContext().getToken()
-                                )
-                            );
+                                );
+                            } else if (principal instanceof BasicAuthContext) {
+                                authContext = (BasicAuthContext) principal;
+                            } else {
+                                throw new WebApplicationException("Unsupported user principal type: " + principal, INTERNAL_SERVER_ERROR);
+                            }
+
+                            config.getUserProperties().put(WebsocketConstants.HANDSHAKE_AUTH, authContext);
 
                             super.modifyHandshake(config, request, response);
                         }

@@ -714,7 +714,7 @@ public class RulesEngine<T extends Ruleset> {
             @Override
             public void storeAndNotify(String userId, AlertNotification alert) {
                 if (TenantRuleset.class.isAssignableFrom(rulesetType)) {
-                    boolean userIsInTenant = identityService.isUserInTenant(userId, id);
+                    boolean userIsInTenant = identityService.getIdentityProvider().isUserInTenant(userId, id);
                     if (!userIsInTenant) {
                         throw new IllegalArgumentException("User not in tenant: " + id);
                     }

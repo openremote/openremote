@@ -192,7 +192,7 @@ public class RequestServiceImpl implements RequestService {
                 }
             );
 
-            requestParams.withBearerAuth(securityService.getToken());
+            securityService.setCredentials(requestParams);
 
             if (entityWriter != null) {
                 requestParams.setEntityWriter(entityWriter);

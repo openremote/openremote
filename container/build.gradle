@@ -47,7 +47,9 @@ dependencies {
     compile "org.apache.camel:camel-script:$camelVersion"
     compile "org.apache.camel:camel-groovy:$camelVersion"
 
-    compile "com.fasterxml.uuid:java-uuid-generator:$uuidGeneratorVersion"
+    compile ("com.fasterxml.uuid:java-uuid-generator:$uuidGeneratorVersion") {
+        exclude group: "log4j"
+    }
 
     // Test environment dependencies
     compile "org.glassfish.tyrus:tyrus-client:$tyrusVersion"

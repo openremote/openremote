@@ -20,6 +20,7 @@
 package org.openremote.manager.server.setup.builtin;
 
 import org.openremote.container.Container;
+import org.openremote.manager.server.security.ManagerIdentityService;
 import org.openremote.manager.server.setup.AbstractSetupTasks;
 import org.openremote.manager.server.setup.Setup;
 
@@ -74,23 +75,36 @@ public class BuiltinSetupTasks extends AbstractSetupTasks {
         // If importing demo assets we have to import demo users
         boolean importDemoUsers = importDemoAssets || getBoolean(container.getConfig(), SETUP_IMPORT_DEMO_USERS, container.isDevMode());
 
-        if (cleanDatabase) {
-            addTask(new ManagerCleanSetup(container));
-            addTask(new KeycloakCleanSetup(container));
-            addTask(new KeycloakInitSetup(container));
-            addTask(new ManagerInitSetup(container));
-        }
+        // Basic vs Keycloak identity provider
+        if (container.getService(ManagerIdentityService.class).isKeycloakEnabled()) {
+            if (cleanDatabase) {
+                addTask(new ManagerCleanSetup(container));
+                addTask(new KeycloakCleanSetup(container));
+                addTask(new KeycloakInitSetup(container));
+                addTask(new ManagerInitSetup(container));
+            }
 
-        if (importDemoUsers) {
-            addTask(new KeycloakDemoSetup(container));
-        }
+            if (importDemoUsers) {
+                addTask(new KeycloakDemoSetup(container));
+            }
 
-        if (importDemoAssets) {
-            addTask(new ManagerDemoSetup(container, importDemoScenes));
-        }
+            if (importDemoAssets) {
+                addTask(new ManagerDemoSetup(container, importDemoScenes));
+            }
 
-        if (importDemoRules) {
-            addTask(new RulesDemoSetup(container));
+            if (importDemoRules) {
+                addTask(new RulesDemoSetup(container));
+            }
+        } else {
+            if (cleanDatabase) {
+                addTask(new ManagerCleanSetup(container));
+                addTask(new ManagerInitSetup(container));
+                addTask(new BasicIdentityInitSetup(container));
+            }
+
+            if (importDemoUsers) {
+                addTask(new BasicIdentityDemoSetup(container));
+            }
         }
 
         return getTasks();

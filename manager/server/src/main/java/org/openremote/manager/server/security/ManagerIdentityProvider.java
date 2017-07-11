@@ -49,6 +49,12 @@ public interface ManagerIdentityProvider extends IdentityProvider {
 
     boolean isMasterRealmAdmin(ClientRequestInfo clientRequestInfo, String userId);
 
+    void setRestrictedUser(String userId, boolean restricted);
+
+    boolean isRestrictedUser(String userId);
+
+    boolean isUserInTenant(String userId, String realmId);
+
     Tenant[] getTenants(ClientRequestInfo clientRequestInfo);
 
     Tenant getTenantForRealm(String realm);

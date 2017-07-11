@@ -41,8 +41,6 @@ By default a dummy CA and self-signed certificates are generated for the Docker 
 
 ## Deploying OpenRemote containers
 
-TODO: This doesn't work yet, still have to write a replacement for Keycloak identity service!
-
 The Docker images for OpenRemote can be build on your x86 workstation with the QEMU emulator for the ARM environment. After building the images, you can export and load them onto the Raspberry Pi.
 
 First build the base image:
@@ -60,6 +58,8 @@ docker build -t openremote/rpi-postgresql:latest -f postgresql/rpi3.Dockerfile p
 docker build -t openremote/rpi-manager:latest -f manager/build/install/rpi3.Dockerfile manager/build/install
 ```
 
+TODO: The Manager image uses Oracle JDK by default, which must be licensed if deployed in production! You can switch to the much slower OpenJDK in the `Dockerfile`. We expect a faster OpenJDK to be available with AARCH64 OS.
+
 Copy them to your Raspberry Pi (replace `openremote1` with your `DOCKER_MACHINE_NAME`):
 
 ```
@@ -73,3 +73,5 @@ Deploy the containers, providing the IP/hostname of your Raspberry Pi:
 ```
 IDENTITY_NETWORK_HOST=10.0.0.123 docker-compose -p openremote -f profile/demo_rpi.yml up
 ```
+
+Open the Manager UI on `https://10.0.0.123`, accepting the self-signed demo SSL certificate. Login with `admin` and password `secret`. Edit the profile to change the admin password and other settings.

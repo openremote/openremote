@@ -24,23 +24,23 @@ import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.message.MessageBrokerSetupService;
-import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.server.agent.AgentService;
 import org.openremote.manager.server.apps.ConsoleAppService;
 import org.openremote.manager.server.asset.AssetAttributeLinkingService;
 import org.openremote.manager.server.asset.AssetProcessingService;
 import org.openremote.manager.server.asset.AssetStorageService;
+import org.openremote.manager.server.concurrent.ManagerExecutorService;
 import org.openremote.manager.server.datapoint.AssetDatapointService;
 import org.openremote.manager.server.event.ClientEventService;
 import org.openremote.manager.server.i18n.I18NService;
 import org.openremote.manager.server.map.MapService;
 import org.openremote.manager.server.notification.NotificationService;
+import org.openremote.manager.server.persistence.ManagerPersistenceService;
 import org.openremote.manager.server.rules.RulesService;
 import org.openremote.manager.server.rules.RulesetStorageService;
 import org.openremote.manager.server.security.ManagerIdentityService;
 import org.openremote.manager.server.setup.SetupService;
-import org.openremote.manager.server.concurrent.ManagerExecutorService;
 import org.openremote.manager.server.simulator.SimulatorService;
 import org.openremote.manager.server.web.ManagerWebService;
 
@@ -58,7 +58,7 @@ public class Main {
                     new TimerService(),
                     new ManagerExecutorService(),
                     new I18NService(),
-                    new PersistenceService(),
+                    new ManagerPersistenceService(),
                     new MessageBrokerSetupService(),
                     new ManagerIdentityService(),
                     new SetupService(),

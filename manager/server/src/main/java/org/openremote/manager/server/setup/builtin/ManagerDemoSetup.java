@@ -41,7 +41,6 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
 
 import static org.openremote.model.asset.AssetMeta.*;
@@ -525,7 +524,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
 
         // ################################ Link demo users and assets ###################################
 
-        identityService.setRestrictedUser(keycloakDemoSetup.testuser3Id, true);
+        identityService.getIdentityProvider().setRestrictedUser(keycloakDemoSetup.testuser3Id, true);
         assetStorageService.storeUserAsset(keycloakDemoSetup.testuser3Id, apartment1Id);
         assetStorageService.storeUserAsset(keycloakDemoSetup.testuser3Id, apartment1LivingroomId);
         assetStorageService.storeUserAsset(keycloakDemoSetup.testuser3Id, apartment2Id);

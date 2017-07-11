@@ -19,25 +19,15 @@
  */
 package org.openremote.manager.client.service;
 
-import org.openremote.manager.client.interop.keycloak.AuthToken;
-import org.openremote.manager.client.interop.keycloak.LoginOptions;
-import org.openremote.manager.client.interop.keycloak.LogoutOptions;
-
-import java.util.function.Consumer;
+import org.openremote.manager.shared.http.RequestParams;
 
 public interface SecurityService {
 
-    void login();
+    String getUsername();
 
-    void login(LoginOptions options);
+    String getFullName();
 
     void logout();
-
-    void logout(LogoutOptions options);
-
-    void register();
-
-    void register(LoginOptions options);
 
     /**
      * @return <code>true</code> if the user is authenticated in the "master" realm and has the realm role "admin".
@@ -50,27 +40,9 @@ public interface SecurityService {
 
     boolean hasResourceRoleOrIsSuperUser(String role, String resource);
 
-    boolean isTokenExpired();
-
-    boolean isTokenExpired(int minValiditySeconds);
-
-    void clearToken();
-
-    void onTokenExpired(Runnable expiredFn);
-
-    void onAuthSuccess(Runnable expiredFn);
-
-    void onAuthLogout(Runnable expiredFn);
-
-    void updateToken(Consumer<Boolean> successFn, Runnable errorFn);
-
-    void updateToken(int minValiditySeconds, Consumer<Boolean> successFn, Runnable errorFn);
-
     String getAuthenticatedRealm();
 
-    String getToken();
+    <OUT> void setCredentials(RequestParams<OUT> requestParams);
 
-    AuthToken getParsedToken();
-
-    String getRefreshToken();
+    String setCredentials(String serviceUrl);
 }

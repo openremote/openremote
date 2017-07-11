@@ -20,8 +20,8 @@
 package org.openremote.container.web;
 
 import org.keycloak.KeycloakPrincipal;
-import org.keycloak.KeycloakSecurityContext;
 import org.openremote.container.Container;
+import org.openremote.container.security.basic.BasicAuthContext;
 import org.openremote.container.security.keycloak.AccessTokenAuthContext;
 import org.openremote.container.security.AuthContext;
 
@@ -29,7 +29,10 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.*;
 
+import java.security.Principal;
+
 import static javax.ws.rs.core.Response.Status.FORBIDDEN;
+import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
 
 public class WebResource implements AuthContext {
 
@@ -63,15 +66,22 @@ public class WebResource implements AuthContext {
     @SuppressWarnings("unchecked")
     public AuthContext getAuthContext() {
         // The securityContext is a thread-local proxy, careful when/how you call it
-        KeycloakPrincipal<KeycloakSecurityContext> principal =
-            (KeycloakPrincipal<KeycloakSecurityContext>) securityContext.getUserPrincipal();
+        Principal principal = securityContext.getUserPrincipal();
         if (principal == null) {
             throw new WebApplicationException("Request is not authenticated, can't access user principal", FORBIDDEN);
         }
-        return new AccessTokenAuthContext(
-            principal.getKeycloakSecurityContext().getRealm(),
-            principal.getKeycloakSecurityContext().getToken()
-        );
+
+        if (principal instanceof KeycloakPrincipal) {
+            KeycloakPrincipal keycloakPrincipal = (KeycloakPrincipal) principal;
+            return new AccessTokenAuthContext(
+                keycloakPrincipal.getKeycloakSecurityContext().getRealm(),
+                keycloakPrincipal.getKeycloakSecurityContext().getToken()
+            );
+        } else if (principal instanceof BasicAuthContext) {
+            return (BasicAuthContext) principal;
+        } else {
+            throw new WebApplicationException("Unsupported user principal type: " + principal, INTERNAL_SERVER_ERROR);
+        }
     }
 
     // Convenience methods

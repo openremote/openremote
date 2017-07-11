@@ -174,7 +174,7 @@ public final class AssetRoute {
             }
 
             // Check restricted user
-            if (identityService.isRestrictedUser(authContext.getUserId())) {
+            if (identityService.getIdentityProvider().isRestrictedUser(authContext.getUserId())) {
                 // Must be asset linked to user
                 if (!assetStorageService.isUserAsset(authContext.getUserId(), event.getEntityId())) {
                     throw new AssetProcessingException(Reason.INSUFFICIENT_ACCESS);

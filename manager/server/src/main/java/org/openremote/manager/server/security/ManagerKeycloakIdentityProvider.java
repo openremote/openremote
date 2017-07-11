@@ -50,9 +50,9 @@ import java.util.logging.Logger;
 import static org.openremote.manager.server.util.JsonUtil.convert;
 import static org.openremote.model.Constants.*;
 
-public class ManagerKeycloakProvider extends KeycloakIdentityProvider implements ManagerIdentityProvider {
+public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider implements ManagerIdentityProvider {
 
-    private static final Logger LOG = Logger.getLogger(ManagerKeycloakProvider.class.getName());
+    private static final Logger LOG = Logger.getLogger(ManagerKeycloakIdentityProvider.class.getName());
 
     final boolean devMode;
     final protected PersistenceService persistenceService;
@@ -60,7 +60,7 @@ public class ManagerKeycloakProvider extends KeycloakIdentityProvider implements
     final protected MessageBrokerService messageBrokerService;
     final protected ClientEventService clientEventService;
 
-    public ManagerKeycloakProvider(UriBuilder externalServerUri, Container container) {
+    public ManagerKeycloakIdentityProvider(UriBuilder externalServerUri, Container container) {
         super(KEYCLOAK_CLIENT_ID, externalServerUri, container);
 
         this.devMode = container.isDevMode();
@@ -329,6 +329,42 @@ public class ManagerKeycloakProvider extends KeycloakIdentityProvider implements
         });
     }
 
+    @Override
+    public boolean isRestrictedUser(String userId) {
+        UserConfiguration userConfiguration = getUserConfiguration(userId);
+        return userConfiguration.isRestricted();
+    }
+
+    @Override
+    public void setRestrictedUser(String userId, boolean restricted) {
+        UserConfiguration userConfiguration = getUserConfiguration(userId);
+        userConfiguration.setRestricted(restricted);
+        mergeUserConfiguration(userConfiguration);
+    }
+
+    protected UserConfiguration getUserConfiguration(String userId) {
+        UserConfiguration userConfiguration = persistenceService.doReturningTransaction(em -> em.find(UserConfiguration.class, userId));
+        if (userConfiguration == null) {
+            userConfiguration = new UserConfiguration(userId);
+            userConfiguration = mergeUserConfiguration(userConfiguration);
+        }
+        return userConfiguration;
+    }
+
+    protected UserConfiguration mergeUserConfiguration(UserConfiguration userConfiguration) {
+        if (userConfiguration.getUserId() == null || userConfiguration.getUserId().length() == 0) {
+            throw new IllegalArgumentException("User ID must be set on: " + userConfiguration);
+        }
+        return persistenceService.doReturningTransaction(em -> em.merge(userConfiguration));
+    }
+
+    @Override
+    public boolean isUserInTenant(String userId, String realmId) {
+        return persistenceService.doReturningTransaction(em -> {
+            User user = em.find(User.class, userId);
+            return (user != null && realmId.equals(user.getRealmId()));
+        });
+    }
 
     public void configureRealm(RealmRepresentation realmRepresentation, TenantEmailConfig emailConfig) {
         configureRealm(realmRepresentation, Constants.ACCESS_TOKEN_LIFESPAN_SECONDS);
@@ -387,4 +423,8 @@ public class ManagerKeycloakProvider extends KeycloakIdentityProvider implements
         );
     }
 
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "{}";
+    }
 }

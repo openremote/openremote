@@ -26,7 +26,7 @@ import org.keycloak.representations.idm.ClientRepresentation;
 import org.openremote.container.Container;
 import org.openremote.container.security.AuthForm;
 import org.openremote.manager.server.security.ManagerIdentityService;
-import org.openremote.manager.server.security.ManagerKeycloakProvider;
+import org.openremote.manager.server.security.ManagerKeycloakIdentityProvider;
 import org.openremote.manager.shared.security.TenantEmailConfig;
 
 import static org.openremote.container.util.MapAccess.getBoolean;
@@ -58,7 +58,7 @@ public abstract class AbstractKeycloakSetup implements Setup {
     public static final String SETUP_KEYCLOAK_EMAIL_FROM_DEFAULT = "noreply@demo.tld";
 
     final protected ManagerIdentityService identityService;
-    final protected ManagerKeycloakProvider keycloakProvider;
+    final protected ManagerKeycloakIdentityProvider keycloakProvider;
     final protected SetupService setupService;
     final protected String accessToken;
     final protected RealmResource masterRealmResource;
@@ -68,7 +68,7 @@ public abstract class AbstractKeycloakSetup implements Setup {
 
     public AbstractKeycloakSetup(Container container) {
         this.identityService = container.getService(ManagerIdentityService.class);
-        this.keycloakProvider = ((ManagerKeycloakProvider)identityService.getIdentityProvider());
+        this.keycloakProvider = ((ManagerKeycloakIdentityProvider)identityService.getIdentityProvider());
         this.setupService = container.getService(SetupService.class);
 
 
@@ -97,7 +97,7 @@ public abstract class AbstractKeycloakSetup implements Setup {
         }
     }
 
-    public ManagerKeycloakProvider getKeycloakProvider() {
+    public ManagerKeycloakIdentityProvider getKeycloakProvider() {
         return keycloakProvider;
     }
 

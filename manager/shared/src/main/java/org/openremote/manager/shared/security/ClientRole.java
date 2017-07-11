@@ -22,7 +22,9 @@ package org.openremote.manager.shared.security;
 import org.keycloak.representations.idm.RoleRepresentation;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Roles available for our client application on Keycloak.
@@ -54,6 +56,15 @@ public enum ClientRole {
         WRITE_ASSETS,
         WRITE_RULES
     });
+
+    // Only individual roles, not composites
+    public static final Set<String> ALL_ROLES = new HashSet<String>() {{
+        for (ClientRole clientRole : values()) {
+            if (clientRole.composites == null) {
+                add(clientRole.value);
+            }
+        }
+    }};
 
     final protected String value;
     final protected String description;

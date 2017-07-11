@@ -64,6 +64,7 @@ public interface Database {
                 hikariConfig.setUsername(username);
                 hikariConfig.setPassword(password);
                 hikariConfig.setConnectionTimeout(connectionTimeoutSeconds * 1000);
+                hikariConfig.setInitializationFailTimeout(connectionTimeoutSeconds * 1000);
                 hikariConfig.setMinimumIdle(minIdle);
                 hikariConfig.setMaximumPoolSize(maxPoolSize);
 

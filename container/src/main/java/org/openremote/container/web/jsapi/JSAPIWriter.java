@@ -201,8 +201,7 @@ public class JSAPIWriter {
         printOtherParams(methodMetaData, writer);
         writer.println(" request.setURI(uri);");
         writer.println(" if(params.$username && params.$password)");
-        writer
-            .println("  request.setCredentials(params.$username, params.$password);");
+        writer.println("  request.setCredentials(params.$username, params.$password);");
         writer.println(" if(params.$accepts)");
         writer.println("  request.setAccepts(params.$accepts);");
         if (methodMetaData.getWants() != null) {

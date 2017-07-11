@@ -61,7 +61,16 @@ REST.Request.prototype = {
             document.cookie = encodeURI(this.cookies[i][0])
                 + "=" + encodeURI(this.cookies[i][1]);
         }
-        request.open(this.method, url, this.async, this.username, this.password);
+        if (this.username && this.password) {
+            // TODO Must be async false or Safari will popup 401 dialog
+            // TODO Must set dummy URL username or Chrome will popup 401 dialog but that leads to weird behavior in Safari...
+            request.open(this.method, url, this.async);
+            var credentials = "Basic " + btoa(this.username + ":" + this.password);
+            request.setRequestHeader("Authorization", credentials);
+        } else {
+            request.open(this.method, url, this.async);
+        }
+
         var acceptSet = false;
         var contentTypeSet = false;
         for (var i = 0; i < this.headers.length; i++) {

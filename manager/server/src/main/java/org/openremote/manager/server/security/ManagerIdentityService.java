@@ -24,9 +24,18 @@ import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.IdentityService;
 import org.openremote.container.timer.TimerService;
 import org.openremote.container.web.WebService;
-import org.openremote.manager.shared.security.User;
+
+import java.util.Locale;
+import java.util.logging.Logger;
+
+import static org.openremote.container.util.MapAccess.getString;
 
 public class ManagerIdentityService extends IdentityService {
+
+    private static final Logger LOG = Logger.getLogger(ManagerIdentityService.class.getName());
+
+    public static final String MANAGER_IDENTITY_PROVIDER = "MANAGER_IDENTITY_PROVIDER";
+    public static final String MANAGER_IDENTITY_PROVIDER_DEFAULT = "keycloak";
 
     protected PersistenceService persistenceService;
     protected ManagerIdentityProvider identityProvider;
@@ -44,8 +53,19 @@ public class ManagerIdentityService extends IdentityService {
             new UserResourceImpl(container.getService(TimerService.class), this)
         );
 
-        // TODO Configurable provider
-        this.identityProvider = new ManagerKeycloakProvider(getExternalServerUri(), container);
+        String identityProviderType = getString(container.getConfig(), MANAGER_IDENTITY_PROVIDER, MANAGER_IDENTITY_PROVIDER_DEFAULT);
+        switch (identityProviderType.toLowerCase(Locale.ROOT)) {
+            case "keycloak":
+                LOG.info("Enabling Keycloak identity provider");
+                this.identityProvider = new ManagerKeycloakIdentityProvider(getExternalServerUri(), container);
+                break;
+            case "basic":
+                LOG.info("Enabling basic identity provider");
+                this.identityProvider = new ManagerBasicIdentityProvider(container);
+                break;
+            default:
+                throw new UnsupportedOperationException("Unknown identity provider: " + identityProviderType);
+        }
     }
 
     @Override
@@ -53,47 +73,10 @@ public class ManagerIdentityService extends IdentityService {
         return identityProvider;
     }
 
-    // TODO Should all User operations move to ManagerIdentityProvider?
-
-    public boolean isRestrictedUser(String userId) {
-        UserConfiguration userConfiguration = getUserConfiguration(userId);
-        return userConfiguration.isRestricted();
-    }
-
-    public void setRestrictedUser(String userId, boolean restricted) {
-        UserConfiguration userConfiguration = getUserConfiguration(userId);
-        userConfiguration.setRestricted(restricted);
-        mergeUserConfiguration(userConfiguration);
-    }
-
-    protected UserConfiguration getUserConfiguration(String userId) {
-        UserConfiguration userConfiguration = persistenceService.doReturningTransaction(em -> em.find(UserConfiguration.class, userId));
-        if (userConfiguration == null) {
-            userConfiguration = new UserConfiguration(userId);
-            userConfiguration = mergeUserConfiguration(userConfiguration);
-        }
-        return userConfiguration;
-    }
-
-    protected UserConfiguration mergeUserConfiguration(UserConfiguration userConfiguration) {
-        if (userConfiguration.getUserId() == null || userConfiguration.getUserId().length() == 0) {
-            throw new IllegalArgumentException("User ID must be set on: " + userConfiguration);
-        }
-        return persistenceService.doReturningTransaction(em -> em.merge(userConfiguration));
-    }
-
-    public boolean isUserInTenant(String userId, String realmId) {
-        return persistenceService.doReturningTransaction(em -> {
-            User user = em.find(User.class, userId);
-            return (user != null&& realmId.equals(user.getRealmId()));
-        });
-    }
-
-
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
+            "identityProvider=" + identityProvider +
             '}';
     }
-
 }

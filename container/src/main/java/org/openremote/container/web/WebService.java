@@ -249,7 +249,7 @@ public abstract class WebService implements ContainerService {
             throw new RuntimeException("No identity service deployed, can't enable API security");
         }
 
-        return addServletDeployment(identityService, deploymentInfo, true);
+        return addServletDeployment(identityService, deploymentInfo, resteasyDeployment.isSecurityEnabled());
     }
 
     protected HttpHandler createJsApiHandler(IdentityService identityService, ResteasyDeployment resteasyDeployment) {
@@ -279,9 +279,9 @@ public abstract class WebService implements ContainerService {
     /**
      * Adds a deployment to the default servlet container and returns the started handler.
      *
-     * @param identityService Must not be null if secure deployment is used, source of configuration for the Keycloak extension
+     * @param identityService Must not be null if secure deployment is used
      * @param deploymentInfo  The deployment to add to the default container
-     * @param secure          If Keycloak extension should be enabled for this deployment
+     * @param secure          If authentication/authorization should be enabled for this deployment
      */
     public HttpHandler addServletDeployment(IdentityService identityService, DeploymentInfo deploymentInfo, boolean secure) {
         try {

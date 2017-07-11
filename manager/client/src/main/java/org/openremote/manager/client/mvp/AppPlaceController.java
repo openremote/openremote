@@ -26,9 +26,8 @@ import com.google.gwt.place.shared.PlaceController;
 import com.google.web.bindery.event.shared.UmbrellaException;
 import org.openremote.manager.client.event.GoToPlaceEvent;
 import org.openremote.manager.client.event.WillGoToPlaceEvent;
-import org.openremote.model.event.bus.EventBus;
 import org.openremote.manager.client.service.SecurityService;
-import org.openremote.model.Constants;
+import org.openremote.model.event.bus.EventBus;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -85,19 +84,11 @@ public class AppPlaceController extends PlaceController {
 
     @Override
     public void goTo(Place newPlace) {
-        securityService.updateToken(
-            Constants.ACCESS_TOKEN_LIFESPAN_SECONDS/2,
-            refreshed -> {
-                // If it wasn't refreshed, it was still valid, in both cases we can continue
-                // YOU HAVE MADE A GWT ERROR. THIS HELPS YOU FIND IT.
-                try {
-                    super.goTo(newPlace);
-                } catch (UmbrellaException ex) {
-                    LOG.log(Level.SEVERE, "Error handling place change to: " + newPlace, ex);
-                }
-            },
-            securityService::logout
-        );
+        try {
+            super.goTo(newPlace);
+        } catch (UmbrellaException ex) {
+            LOG.log(Level.SEVERE, "Error handling place change to: " + newPlace, ex);
+        }
     }
 
     public SecurityService getSecurityService() {
