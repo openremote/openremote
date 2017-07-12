@@ -234,7 +234,7 @@ public class MainActivity extends Activity {
         public void postMessage(String jsonMessage) throws JSONException {
             JSONObject reader = new JSONObject(jsonMessage);
             String messageType = reader.getString("type");
-            JSONObject data = reader.getJSONObject("data");
+            JSONObject data = reader.optJSONObject("data");
             switch (messageType) {
                 case "token" :
                     tokenService.saveToken(data.getString("token"), data.getString("refreshToken") , data.getString("idToken"));
