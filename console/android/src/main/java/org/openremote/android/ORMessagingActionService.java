@@ -26,6 +26,10 @@ public class ORMessagingActionService extends IntentService {
 
     @Override
     protected void onHandleIntent(@Nullable Intent intent) {
+
+        Intent it = new Intent(Intent.ACTION_CLOSE_SYSTEM_DIALOGS);
+        this.sendBroadcast(it);
+
         AlertNotification notification = (AlertNotification) intent.getSerializableExtra("notification");
         tokenService.deleteAlert(notification.getId());
 
@@ -44,7 +48,5 @@ public class ORMessagingActionService extends IntentService {
             activityIntent.putExtra("url", intent.getStringExtra("url"));
             startActivity(activityIntent);
         }
-
-
     }
 }

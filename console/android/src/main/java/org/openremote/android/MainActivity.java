@@ -168,6 +168,10 @@ public class MainActivity extends Activity {
             public void onReceivedHttpError(WebView view, WebResourceRequest request, WebResourceResponse errorResponse) {
                 LOG.warning("request url :" + request.getUrl().toString());
                 LOG.warning("error :" + errorResponse.getStatusCode());
+                //avoid display error if failed to refresh token will be redirect to login
+                if (errorResponse.getStatusCode() == 400 && request.getUrl().toString().endsWith("token")) {
+                    return;
+                }
                 errorViewHolder.show(R.string.httpError,R.string.httpErrorExplain,true,true);
             }
 
