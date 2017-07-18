@@ -411,7 +411,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         asset = assetStorageService.find(
                 new AssetQuery()
                         .id(managerDemoSetup.apartment1LivingroomId)
-                        .select(new Select("co2Level", "lastMotionDetected", "motionCount").loadComplete(true))
+                        .select(new Select("co2Level", "lastMotionDetected", "motionSensor").loadComplete(true))
         )
 
         then: "result should match"
@@ -433,14 +433,14 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         asset.getAttribute("co2Level").get().meta.size() == 11
         asset.getAttribute("lastMotionDetected").isPresent()
         asset.getAttribute("lastMotionDetected").get().meta.size() == 4
-        asset.getAttribute("motionCount").isPresent()
-        asset.getAttribute("motionCount").get().meta.size() == 9
+        asset.getAttribute("motionSensor").isPresent()
+        asset.getAttribute("motionSensor").get().meta.size() == 8
 
         when: "a query is executed to select a subset of protected attributes"
         asset = assetStorageService.find(
                 new AssetQuery()
                         .id(managerDemoSetup.apartment1LivingroomId)
-                        .select(new Select("co2Level", "lastMotionDetected", "motionCount").loadComplete(true).filterProtected(true))
+                        .select(new Select("co2Level", "lastMotionDetected", "motionSensor").loadComplete(true).filterProtected(true))
         )
 
         then: "result should contain only matches that are protected"
@@ -462,7 +462,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         asset.getAttribute("co2Level").get().meta.size() == 8
         asset.getAttribute("lastMotionDetected").isPresent()
         asset.getAttribute("lastMotionDetected").get().meta.size() == 3
-        !asset.getAttribute("motionCount").isPresent()
+        !asset.getAttribute("motionSensor").isPresent()
 
         cleanup: "the server should be stopped"
         stopContainer(container)

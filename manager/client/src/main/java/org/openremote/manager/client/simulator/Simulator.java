@@ -22,7 +22,6 @@ package org.openremote.manager.client.simulator;
 import com.google.gwt.dom.client.Style;
 import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.IsWidget;
-import com.google.gwt.user.client.ui.Widget;
 import elemental.client.Browser;
 import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.event.ShowSuccessEvent;
@@ -35,9 +34,7 @@ import org.openremote.model.simulator.SimulatorElement;
 import org.openremote.model.simulator.SimulatorState;
 import org.openremote.model.value.ValueType;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Consumer;
 
 import static org.openremote.manager.client.widget.ValueEditors.*;
@@ -92,7 +89,10 @@ public class Simulator extends FlowPanel implements IsWidget {
         clear();
         formGroups.clear();
 
-        for (SimulatorElement element : simulatorState.getElements()) {
+        List<SimulatorElement> sortedElements = Arrays.asList(simulatorState.getElements());
+        Collections.sort(sortedElements, Comparator.comparing(o -> simulatorState.getElementName(o)));
+
+        for (SimulatorElement element : sortedElements) {
             FormGroup formGroup = new FormGroup();
 
             formGroup.getElement().getStyle().setWidth(80, Style.Unit.PCT);

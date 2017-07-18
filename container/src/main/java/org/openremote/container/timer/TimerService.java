@@ -25,6 +25,7 @@ import org.openremote.container.ContainerService;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.logging.Logger;
 
 import static org.openremote.container.util.MapAccess.getString;
 
@@ -32,6 +33,8 @@ import static org.openremote.container.util.MapAccess.getString;
  * Wall real clock timer or pseudo clock time (for testing).
  */
 public class TimerService implements ContainerService {
+
+    private static final Logger LOG = Logger.getLogger(TimerService.class.getName());
 
     public static final String TIMER_CLOCK_TYPE = "TIMER_CLOCK_TYPE";
     public static final String TIMER_CLOCK_TYPE_DEFAULT = Clock.REAL.toString();
@@ -59,6 +62,8 @@ public class TimerService implements ContainerService {
             @Override
             public void init() {
                 timer.set(System.currentTimeMillis());
+                long current = timer.get();
+                LOG.info("Initialized pseudo clock to: " + (current) + "/" + new Date(current));
             }
 
             @Override

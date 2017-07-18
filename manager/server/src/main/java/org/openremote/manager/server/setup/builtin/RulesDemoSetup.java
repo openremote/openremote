@@ -51,9 +51,9 @@ public class RulesDemoSetup extends AbstractManagerSetup {
         // ################################ Rules demo data ###################################
 
         // Apartment 1
-        try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/DemoApartmentPresenceDetectionCounter.drl")) {
+        try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/DemoApartmentPresenceDetection.drl")) {
             String rules = IOUtils.toString(inputStream, Charset.forName("utf-8"));
-            Ruleset ruleset = new AssetRuleset("Demo Apartment - Presence Detection with motion counter", managerDemoSetup.apartment1Id, rules);
+            Ruleset ruleset = new AssetRuleset("Demo Apartment - Presence Detection with motion sensor", managerDemoSetup.apartment1Id, rules);
             apartmentActionsRulesetId = rulesetStorageService.merge(ruleset).getId();
         }
         try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/DemoApartmentVacationMode.drl")) {
@@ -63,11 +63,6 @@ public class RulesDemoSetup extends AbstractManagerSetup {
         }
 
         // Apartment 2
-        try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/DemoApartmentPresenceDetectionPIR.drl")) {
-            String rules = IOUtils.toString(inputStream, Charset.forName("utf-8"));
-            Ruleset ruleset = new AssetRuleset("Demo Apartment - Presence Detection with motion PIR", managerDemoSetup.apartment2Id, rules);
-            apartmentActionsRulesetId = rulesetStorageService.merge(ruleset).getId();
-        }
         try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/DemoApartmentAllLightsOff.drl")) {
             String rules = IOUtils.toString(inputStream, Charset.forName("utf-8"));
             Ruleset ruleset = new AssetRuleset("Demo Apartment - All Lights Off", managerDemoSetup.apartment2Id, rules);

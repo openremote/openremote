@@ -113,17 +113,16 @@ public abstract class AbstractManagerSetup implements Setup {
         return room;
     }
 
-    protected void addDemoApartmentRoomMotionCounter(ServerAsset room, boolean shouldBeLinked, Supplier<MetaItem[]> agentLinker) {
+    protected void addDemoApartmentRoomMotionSensor(ServerAsset room, boolean shouldBeLinked, Supplier<MetaItem[]> agentLinker) {
         room.addAttributes(
-            new AssetAttribute("motionCount", NUMBER)
+            new AssetAttribute("motionSensor", NUMBER)
                 .setMeta(
-                    new MetaItem(LABEL, Values.create("Motion Count")),
-                    new MetaItem(DESCRIPTION, Values.create("Sensor that increments a counter when motion is detected")),
+                    new MetaItem(LABEL, Values.create("Motion Sensor")),
+                    new MetaItem(DESCRIPTION, Values.create("Value is greater than zero when motion is sensed")),
                     new MetaItem(READ_ONLY, Values.create(true)),
                     new MetaItem(RULE_STATE, Values.create(true)),
                     new MetaItem(RULE_EVENT, Values.create(true)),
-                    new MetaItem(RULE_EVENT_EXPIRES, Values.create("1h")),
-                    new MetaItem(STORE_DATA_POINTS, Values.create(true))
+                    new MetaItem(RULE_EVENT_EXPIRES, Values.create("1h"))
                 ).addMeta(shouldBeLinked ? agentLinker.get() : null),
             new AssetAttribute("motionDetected", AttributeType.BOOLEAN)
                 .setMeta(

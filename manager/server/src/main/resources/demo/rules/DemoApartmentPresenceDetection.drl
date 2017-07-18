@@ -2,29 +2,29 @@ package org.openremote.test.rules;
 
 import java.util.ArrayList;
 import org.openremote.model.*;
-import org.openremote.model.asset.*
-import org.openremote.model.value.Values
-import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.asset.*;
+import org.openremote.model.value.*;
+import org.openremote.model.attribute.*;
 
 global java.util.logging.Logger LOG;
 global org.openremote.model.rules.Assets assets;
 
 /*
-Uses 'motionCount' and optional 'co2Level' of a room asset to set the 'motionDetected',
+Uses 'motionSensor' and optional 'co2Level' of a room asset to set the 'motionDetected',
 'lastMotionDetected', and 'presenceDetected' attributes of the room. Motion detection
-is based on multiple increments of the motion counter over a time window. Presence
+is based on multiple triggers of the motion sensor over a time window. Presence
 detection is based on motion detection, and increasing CO2 level over a time window.
 */
 
-rule "Set motion detected flag of room when motion counter increments"
+rule "Set motion detected flag of room when motion sensor has been triggered"
 when
     // A room were the motion detected flag is not set
     $room: AssetState(type == AssetType.ROOM, attributeName == "motionDetected", valueFalse)
-    // And the motion counter incremented at least 3 times in the last 2 minutes
+    // And the motion sensor has been triggered at least 3 times in the last 2 minutes
     accumulate(
-        AssetEvent(id == $room.id, attributeName == "motionCount", valueGreaterThanOldValue) over window:time(2m);
-        $motionIncrements: count(1);
-        $motionIncrements >= 3
+        AssetEvent(id == $room.id, attributeName == "motionSensor", isValueGreaterThan(0)) over window:time(2m);
+        $motionTriggers: count(1);
+        $motionTriggers >= 3
     )
 then
     // Set the motion detected flag of the room
@@ -33,34 +33,32 @@ then
     );
 end
 
-
-rule "Update the motion detected timestamp when motion counter increments"
+rule "Update the motion detected timestamp when motion sensor has been triggered"
 when
     // A room were the motion detected flag is  set
     $room : AssetState(type == AssetType.ROOM, attributeName == "motionDetected", valueTrue)
-    // And the motion counter increments
-    AssetState(id == $room.id, attributeName == "motionCount", valueGreaterThanOldValue, $lastIncrementTimestamp: valueTimestamp)
-    // And the last counter increment event is newer than\ the recorded last detected time
-    AssetState(id == $room.id, attributeName == "lastMotionDetected", isValueLessThan($lastIncrementTimestamp))
+    // And the motion sensor has been triggered
+    AssetState(id == $room.id, attributeName == "motionSensor", isValueGreaterThan(0), $lastTriggerTimestamp: valueTimestamp)
+    // And the last sensor trigger event is newer than the recorded last detected time
+    AssetState(id == $room.id, attributeName == "lastMotionDetected", isValueLessThan($lastTriggerTimestamp))
 then
-    // Update the last presence detected timestamp to the latest counter increment event
+    // Update the last presence detected timestamp to the latest motion sensor trigger event
     assets.dispatch(
-            new AttributeEvent($room.getId(), "lastMotionDetected", Values.create($lastIncrementTimestamp))
+            new AttributeEvent($room.getId(), "lastMotionDetected", Values.create($lastTriggerTimestamp))
     );
 end
 
-
-rule "Clear motion detected flag of a room if the motion counter doesn't increment"
+rule "Clear motion detected flag of a room if the motion sensor hasn't been triggered"
 when
     // A room were the motion detected flag is set
     $room: AssetState(type == AssetType.ROOM, attributeName == "motionDetected", valueTrue)
-    // And the room has a motion counter
-    AssetState(id == $room.id, attributeName == "motionCount")
-    // And the motion counter was not incremented in the last 15 minutes
+    // And the room has a motion sensor
+    AssetState(id == $room.id, attributeName == "motionSensor")
+    // And the motion sensor was not triggered in the last 15 minutes
     accumulate(
-        AssetEvent(id == $room.id, attributeName == "motionCount", valueGreaterThanOldValue) over window:time(15m);
-        $countMotion: count(1);
-        $countMotion == 0
+        AssetEvent(id == $room.id, attributeName == "motionSensor", isValueGreaterThan(0)) over window:time(15m);
+        $motionTriggers: count(1);
+        $motionTriggers == 0
     )
 then
     // Clear the motion detected flag of the room
@@ -79,8 +77,8 @@ when
     // And the CO2 level increased at least 2 times in the last 11 minutes
     accumulate(
         AssetEvent(id == $room.id, attributeName == "co2Level", valueGreaterThanOldValue) over window:time(11m);
-        $countCO2: count(1);
-        $countCO2 >= 2
+        $increasedCO2: count(1);
+        $increasedCO2 >= 2
     )
 then
     // Set the presence detected flag of the room
@@ -101,8 +99,8 @@ when
     // And the CO2 level was not increased in the last 11 minutes
     accumulate(
         AssetEvent(id == $room.id, attributeName == "co2Level", valueGreaterThanOldValue) over window:time(11m);
-        $countCO2: count(1);
-        $countCO2 == 0
+        $increasedCO2: count(1);
+        $increasedCO2 == 0
     )
 then
     // Clear the presence detected flag of the room

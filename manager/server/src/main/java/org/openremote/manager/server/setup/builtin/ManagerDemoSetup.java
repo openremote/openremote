@@ -362,7 +362,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         apartment1ServiceAgentId = apartment1ServiceAgent.getId();
 
         ServerAsset apartment1Livingroom = createDemoApartmentRoom(apartment1, "Living Room");
-        addDemoApartmentRoomMotionCounter(apartment1Livingroom, true, () -> new MetaItem[]{
+        addDemoApartmentRoomMotionSensor(apartment1Livingroom, true, () -> new MetaItem[]{
             new MetaItem(AGENT_LINK, new AttributeRef(apartment1ServiceAgentId, "apartmentSimulator").toArrayValue()),
             new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME))
         });
