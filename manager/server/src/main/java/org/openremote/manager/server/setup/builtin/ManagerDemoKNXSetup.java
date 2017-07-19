@@ -21,6 +21,7 @@ package org.openremote.manager.server.setup.builtin;
 
 import static org.openremote.model.asset.AssetMeta.DESCRIPTION;
 import static org.openremote.model.asset.AssetMeta.LABEL;
+import static org.openremote.model.asset.AssetMeta.READ_ONLY;
 import static org.openremote.model.asset.AssetType.AGENT;
 import static org.openremote.model.asset.AssetType.BUILDING;
 import static org.openremote.model.asset.AssetType.ROOM;
@@ -98,6 +99,33 @@ public class ManagerDemoKNXSetup extends AbstractManagerSetup {
                         new MetaItem(KNXProtocol.ACTION_GA, Values.create("1/0/13")),
                         new MetaItem(KNXProtocol.STATUS_GA, Values.create("0/4/11")),
                         new MetaItem(KNXProtocol.DPT, Values.create("5.001")),
+                        new MetaItem(AssetMeta.AGENT_LINK, new AttributeRef(knxAgent.getId(), "knxConfig").toArrayValue())
+                    ),
+                new AssetAttribute("Temperature", AttributeType.TEMPERATURE_CELCIUS)
+                    .setMeta(
+                        new MetaItem(LABEL, Values.create("Temperature")),
+                        new MetaItem(DESCRIPTION, Values.create("Temperature given by a KNX sensor")),
+                        new MetaItem(READ_ONLY, Values.create(true)), 
+                        new MetaItem(KNXProtocol.STATUS_GA, Values.create("4/1/10")),
+                        new MetaItem(KNXProtocol.DPT, Values.create("9.001")),
+                        new MetaItem(AssetMeta.AGENT_LINK, new AttributeRef(knxAgent.getId(), "knxConfig").toArrayValue())
+                    ),
+                new AssetAttribute("Presence", AttributeType.BOOLEAN)
+                    .setMeta(
+                        new MetaItem(LABEL, Values.create("Presence")),
+                        new MetaItem(DESCRIPTION, Values.create("KNX presence detector")),
+                        new MetaItem(READ_ONLY, Values.create(true)), 
+                        new MetaItem(KNXProtocol.STATUS_GA, Values.create("4/0/2")),
+                        new MetaItem(KNXProtocol.DPT, Values.create("1.001")),
+                        new MetaItem(AssetMeta.AGENT_LINK, new AttributeRef(knxAgent.getId(), "knxConfig").toArrayValue())
+                    ),
+                new AssetAttribute("WindowStatus", AttributeType.BOOLEAN)
+                    .setMeta(
+                        new MetaItem(LABEL, Values.create("Window status")),
+                        new MetaItem(DESCRIPTION, Values.create("KNX binary input")),
+                        new MetaItem(READ_ONLY, Values.create(true)), 
+                        new MetaItem(KNXProtocol.STATUS_GA, Values.create("4/0/16")),
+                        new MetaItem(KNXProtocol.DPT, Values.create("1.001")),
                         new MetaItem(AssetMeta.AGENT_LINK, new AttributeRef(knxAgent.getId(), "knxConfig").toArrayValue())
                     )
         );

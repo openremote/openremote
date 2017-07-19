@@ -28,6 +28,7 @@ import tuwien.auto.calimero.DataUnitBuilder;
 import tuwien.auto.calimero.DetachEvent;
 import tuwien.auto.calimero.FrameEvent;
 import tuwien.auto.calimero.IndividualAddress;
+import tuwien.auto.calimero.KNXAckTimeoutException;
 import tuwien.auto.calimero.KNXException;
 import tuwien.auto.calimero.datapoint.Datapoint;
 import tuwien.auto.calimero.datapoint.DatapointMap;
@@ -186,12 +187,21 @@ public class KNXConnection implements NetworkLinkListener, ProcessListener {
                         processCommunicator.write(datapoint.getMainAddress(), ((BooleanValue)val).getBoolean());    
                         break;
                     case NUMBER:
-                        processCommunicator.write(datapoint.getMainAddress(),(float) ((NumberValue)val).getNumber(), datapoint.getMainNumber() == 14);
+                        DPTXlator translator  = TranslatorTypes.createTranslator(0, datapoint.getDPT());
+                        translator.setValue(val.toString());
+                        processCommunicator.write(datapoint.getMainAddress(), translator);
                         break;
                     default:
                         break;
                 }
             }
+        } catch (KNXAckTimeoutException acke) {
+            onConnectionStatusChanged(ConnectionStatus.CLOSED);
+            processCommunicator.detach();
+            knxLink.removeLinkListener(this);
+            knxLink.close();
+            knxLink = null;
+            scheduleReconnect();
         } catch (ValueException | KNXException e) {
             LOG.severe(e.getMessage());
         }
