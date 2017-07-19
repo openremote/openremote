@@ -166,11 +166,9 @@ public class AssetDatapointService implements ContainerService, Consumer<AssetSt
                     try (ResultSet rs = st.executeQuery()) {
                         List<NumberDatapoint> result = new ArrayList<>();
                         while (rs.next()) {
-                            result.add(new NumberDatapoint(
-                                    labelFunction.apply(rs.getTimestamp(1)),
-                                    rs.getBigDecimal(2)
-                                )
-                            );
+                            String label = labelFunction.apply(rs.getTimestamp(1));
+                            Number value = rs.getObject(2) != null ? rs.getDouble(2) : null;
+                            result.add(new NumberDatapoint(label, value));
                         }
                         return result.toArray(new NumberDatapoint[result.size()]);
                     }

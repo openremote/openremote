@@ -511,7 +511,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         def assets = assetResource.getCurrentUserAssets(null)
 
         then: "result should match"
-        assets.length == 3
+        assets.length == 4
         Asset apartment1 = assets[0]
         apartment1.id == managerDemoSetup.apartment1Id
         apartment1.name == "Apartment 1"
@@ -528,7 +528,11 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         apartment1Livingroom.id == managerDemoSetup.apartment1LivingroomId
         apartment1Livingroom.name == "Living Room"
 
-        Asset apartment2 = assets[2]
+        Asset apartment1Kitchen = assets[2]
+        apartment1Kitchen.id == managerDemoSetup.apartment1KitchenId
+        apartment1Kitchen.name == "Kitchen"
+
+        Asset apartment2 = assets[3]
         apartment2.id == managerDemoSetup.apartment2Id
         apartment2.name == "Apartment 2"
 
@@ -582,7 +586,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         apartment1Livingroom.id == managerDemoSetup.apartment1LivingroomId
         apartment1Livingroom.name == "Living Room"
         def protectedAttributes = apartment1Livingroom.getAttributesList()
-        protectedAttributes.size() == 7
+        protectedAttributes.size() == 6
         def currentTemperature = apartment1Livingroom.getAttribute("currentTemperature").get()
         currentTemperature.getType().get() == AttributeType.TEMPERATURE_CELCIUS
         !currentTemperature.getValue().isPresent()

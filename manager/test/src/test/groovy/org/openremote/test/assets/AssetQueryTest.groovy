@@ -221,10 +221,11 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         )
 
         then: "result should match"
-        assets.size() == 3
+        assets.size() == 4
         assets.get(0).id == managerDemoSetup.apartment1Id
         assets.get(1).id == managerDemoSetup.apartment1ServiceAgentId
         assets.get(2).id == managerDemoSetup.apartment1LivingroomId
+        assets.get(3).id == managerDemoSetup.apartment1KitchenId
 
         when: "a query is executed"
         assets = assetStorageService.findAll(
@@ -234,8 +235,9 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         )
 
         then: "result should match"
-        assets.size() == 1
+        assets.size() == 2
         assets.get(0).id == managerDemoSetup.apartment1LivingroomId
+        assets.get(1).id == managerDemoSetup.apartment1KitchenId
 
         when: "a query is executed"
         assets = assetStorageService.findAll(
@@ -243,15 +245,16 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         )
 
         then: "result should match"
-        assets.size() == 3
+        assets.size() == 4
         assets.get(0).id == managerDemoSetup.apartment1Id
         assets.get(1).id == managerDemoSetup.apartment1LivingroomId
-        assets.get(1).getAttributesList().size() == 7
+        assets.get(1).getAttributesList().size() == 6
         !assets.get(1).getAttribute("currentTemperature").get().getValue().isPresent()
         assets.get(1).getAttribute("currentTemperature").get().meta.size() == 6
         !assets.get(1).getAttribute("targetTemperature").get().getValue().isPresent()
         assets.get(1).getAttribute("targetTemperature").get().meta.size() == 4
-        assets.get(2).id == managerDemoSetup.apartment2Id
+        assets.get(2).id == managerDemoSetup.apartment1KitchenId
+        assets.get(3).id == managerDemoSetup.apartment2Id
 
         when: "a query is executed"
         assets = assetStorageService.findAll(
@@ -411,7 +414,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         asset = assetStorageService.find(
                 new AssetQuery()
                         .id(managerDemoSetup.apartment1LivingroomId)
-                        .select(new Select("co2Level", "lastMotionDetected", "motionSensor").loadComplete(true))
+                        .select(new Select("co2Level", "lastPresenceDetected", "motionSensor").loadComplete(true))
         )
 
         then: "result should match"
@@ -431,16 +434,16 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         asset.getAttributesList().size() == 3
         asset.getAttribute("co2Level").isPresent()
         asset.getAttribute("co2Level").get().meta.size() == 11
-        asset.getAttribute("lastMotionDetected").isPresent()
-        asset.getAttribute("lastMotionDetected").get().meta.size() == 4
+        asset.getAttribute("lastPresenceDetected").isPresent()
+        asset.getAttribute("lastPresenceDetected").get().meta.size() == 4
         asset.getAttribute("motionSensor").isPresent()
-        asset.getAttribute("motionSensor").get().meta.size() == 8
+        asset.getAttribute("motionSensor").get().meta.size() == 7
 
         when: "a query is executed to select a subset of protected attributes"
         asset = assetStorageService.find(
                 new AssetQuery()
                         .id(managerDemoSetup.apartment1LivingroomId)
-                        .select(new Select("co2Level", "lastMotionDetected", "motionSensor").loadComplete(true).filterProtected(true))
+                        .select(new Select("co2Level", "lastPresenceDetected", "motionSensor").loadComplete(true).filterProtected(true))
         )
 
         then: "result should contain only matches that are protected"
@@ -460,8 +463,8 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         asset.getAttributesList().size() == 2
         asset.getAttribute("co2Level").isPresent()
         asset.getAttribute("co2Level").get().meta.size() == 8
-        asset.getAttribute("lastMotionDetected").isPresent()
-        asset.getAttribute("lastMotionDetected").get().meta.size() == 3
+        asset.getAttribute("lastPresenceDetected").isPresent()
+        asset.getAttribute("lastPresenceDetected").get().meta.size() == 3
         !asset.getAttribute("motionSensor").isPresent()
 
         cleanup: "the server should be stopped"

@@ -118,36 +118,26 @@ public abstract class AbstractManagerSetup implements Setup {
             new AssetAttribute("motionSensor", NUMBER)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Motion Sensor")),
-                    new MetaItem(DESCRIPTION, Values.create("Value is greater than zero when motion is sensed")),
+                    new MetaItem(DESCRIPTION, Values.create("Greater than zero when motion is sensed")),
                     new MetaItem(READ_ONLY, Values.create(true)),
                     new MetaItem(RULE_STATE, Values.create(true)),
-                    new MetaItem(RULE_EVENT, Values.create(true)),
-                    new MetaItem(RULE_EVENT_EXPIRES, Values.create("1h"))
+                    new MetaItem(STORE_DATA_POINTS, Values.create(true))
                 ).addMeta(shouldBeLinked ? agentLinker.get() : null),
-            new AssetAttribute("motionDetected", AttributeType.BOOLEAN)
-                .setMeta(
-                    new MetaItem(LABEL, Values.create("Motion Detected")),
-                    new MetaItem(DESCRIPTION, Values.create("Someone is moving around in the room")),
-                    new MetaItem(RULE_STATE, Values.create(true)),
-                    new MetaItem(PROTECTED, Values.create(true)),
-                    new MetaItem(READ_ONLY, Values.create(true)),
-                    new MetaItem(SHOW_ON_DASHBOARD, Values.create(true))
-                ),
-            new AssetAttribute("lastMotionDetected", TIMESTAMP_MILLIS)
-                .setMeta(
-                    new MetaItem(LABEL, Values.create("Last time someone moved in the room")),
-                    new MetaItem(RULE_STATE, Values.create(true)),
-                    new MetaItem(PROTECTED, Values.create(true)),
-                    new MetaItem(READ_ONLY, Values.create(true))
-                ),
             new AssetAttribute("presenceDetected", AttributeType.BOOLEAN)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Presence Detected")),
-                    new MetaItem(DESCRIPTION, Values.create("Someone is present in the room")),
+                    new MetaItem(DESCRIPTION, Values.create("Someone is moving or resting in the room")),
                     new MetaItem(RULE_STATE, Values.create(true)),
                     new MetaItem(PROTECTED, Values.create(true)),
                     new MetaItem(READ_ONLY, Values.create(true)),
                     new MetaItem(SHOW_ON_DASHBOARD, Values.create(true))
+                ),
+            new AssetAttribute("lastPresenceDetected", TIMESTAMP_MILLIS)
+                .setMeta(
+                    new MetaItem(LABEL, Values.create("Last time someone was present in the room")),
+                    new MetaItem(RULE_STATE, Values.create(true)),
+                    new MetaItem(PROTECTED, Values.create(true)),
+                    new MetaItem(READ_ONLY, Values.create(true))
                 )
         );
     }

@@ -156,6 +156,9 @@ services:
       POSTGRES_USER: openremote
       POSTGRES_PASSWORD: CHANGE_ME_DB_USER_PASSWORD
 
+      # You can open an SQL console on a running container with:
+      # docker exec -it <container ID> psql -U openremote
+
     # Durable data requires a volume mapping on your Docker host
     # volumes:
     #  - /path/to/data/on/my/host:/var/lib/pgsql/data

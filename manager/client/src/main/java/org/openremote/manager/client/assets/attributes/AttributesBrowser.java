@@ -294,13 +294,14 @@ public abstract class AttributesBrowser
         formGroup.addStyleName(environment.getWidgetStyle().HighlightBackground());
         Browser.getWindow().setTimeout(() -> formGroup.removeStyleName(environment.getWidgetStyle().HighlightBackground()), 250);
 
-        // Refresh charts, jump to current time so the new value is visible
+        // Refresh extensions
         FormGroup attributeFormGroup = attributeGroups.get(attribute);
         if (attributeFormGroup != null) {
             attributeFormGroup.forExtension(widget -> {
                 if (widget instanceof DatapointBrowser) {
+                    // Refresh charts, jump to current time so the new value is visible
                     DatapointBrowser datapointBrowser = (DatapointBrowser) widget;
-                    datapointBrowser.refresh(attribute.getValueTimestamp().orElse(System.currentTimeMillis()));
+                    datapointBrowser.refresh(System.currentTimeMillis());
                 }
             });
         }

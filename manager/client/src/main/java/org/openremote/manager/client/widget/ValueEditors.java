@@ -50,9 +50,9 @@ public final class ValueEditors {
     }
 
     /**
-     * Maps a {@link FormGroup} which is typically one editor line to an {@link ValueHolder} and
-     * encapsulates the raw value that should be set on the value holder and the consumer of validation failure
-     * results. If there are no validation failures, the update was successful.
+     * Maps a {@link FormGroup} which is typically one editor line to a {@link ValueHolder} and
+     * encapsulates the raw value that should be set on the value holder and the consumer of
+     * validation failure results. If there are no validation failures, the update was successful.
      */
     private static class ValueUpdate<T> {
         final FormGroup formGroup;
@@ -142,14 +142,7 @@ public final class ValueEditors {
 
         public TimestampLabel(Long timestamp) {
             addStyleName("layout vertical end or-FormInfoLabel or-ValueTimestamp");
-            if (timestamp != null) {
-                setTimestamp(timestamp);
-            }
-        }
-
-        public void setTimestamp(long timestamp) {
-            clear();
-            if (timestamp > 0) {
+            if (timestamp != null && timestamp > 0) {
                 add(new FormOutputText(dateFormat.format(new Date(timestamp))));
                 add(new FormOutputText(timeFormat.format(new Date(timestamp))));
             }
@@ -174,11 +167,8 @@ public final class ValueEditors {
         widgetWrapper.setStyleName("flex layout horizontal center");
         widgetWrapper.add(widget);
         panel.add(widgetWrapper);
-        if (showTimestamp && valueHolder instanceof AbstractValueTimestampHolder) {
-            AbstractValueTimestampHolder timestampHolder = (AbstractValueTimestampHolder) valueHolder;
-            TimestampLabel timestampLabel = new TimestampLabel(timestampHolder.getValueTimestamp().orElse(null));
-            panel.add(timestampLabel);
-        }
+        if (showTimestamp)
+            addTimestampLabel(valueHolder, panel);
         return () -> panel;
     }
 
@@ -203,11 +193,8 @@ public final class ValueEditors {
         widgetWrapper.setStyleName("flex layout horizontal center");
         widgetWrapper.add(widget);
         panel.add(widgetWrapper);
-        if (showTimestamp && valueHolder instanceof AbstractValueTimestampHolder) {
-            AbstractValueTimestampHolder timestampHolder = (AbstractValueTimestampHolder) valueHolder;
-            TimestampLabel timestampLabel = new TimestampLabel(timestampHolder.getValueTimestamp().orElse(null));
-            panel.add(timestampLabel);
-        }
+        if (showTimestamp)
+            addTimestampLabel(valueHolder, panel);
         return () -> panel;
     }
 
@@ -230,11 +217,8 @@ public final class ValueEditors {
         widgetWrapper.setStyleName("flex layout horizontal center");
         widgetWrapper.add(widget);
         panel.add(widgetWrapper);
-        if (showTimestamp && valueHolder instanceof AbstractValueTimestampHolder) {
-            AbstractValueTimestampHolder timestampHolder = (AbstractValueTimestampHolder) valueHolder;
-            TimestampLabel timestampLabel = new TimestampLabel(timestampHolder.getValueTimestamp().orElse(null));
-            panel.add(timestampLabel);
-        }
+        if (showTimestamp)
+            addTimestampLabel(valueHolder, panel);
         return () -> panel;
     }
 
@@ -260,11 +244,8 @@ public final class ValueEditors {
         widgetWrapper.setStyleName("flex layout horizontal center");
         widgetWrapper.add(widget);
         panel.add(widgetWrapper);
-        if (showTimestamp && valueHolder instanceof AbstractValueTimestampHolder) {
-            AbstractValueTimestampHolder timestampHolder = (AbstractValueTimestampHolder) valueHolder;
-            TimestampLabel timestampLabel = new TimestampLabel(timestampHolder.getValueTimestamp().orElse(null));
-            panel.add(timestampLabel);
-        }
+        if (showTimestamp)
+            addTimestampLabel(valueHolder, panel);
         return () -> panel;
     }
 
@@ -291,11 +272,8 @@ public final class ValueEditors {
         widgetWrapper.setStyleName("flex layout horizontal center");
         widgetWrapper.add(widget);
         panel.add(widgetWrapper);
-        if (showTimestamp && valueHolder instanceof AbstractValueTimestampHolder) {
-            AbstractValueTimestampHolder timestampHolder = (AbstractValueTimestampHolder) valueHolder;
-            TimestampLabel timestampLabel = new TimestampLabel(timestampHolder.getValueTimestamp().orElse(null));
-            panel.add(timestampLabel);
-        }
+        if (showTimestamp)
+            addTimestampLabel(valueHolder, panel);
         return () -> panel;
     }
 
@@ -312,6 +290,14 @@ public final class ValueEditors {
         if (validationFailure != null)
             error.append(": ").append(environment.getMessages().validationFailure(validationFailure.name()));
         showValidationError(environment, error.toString());
+    }
+
+    private static void addTimestampLabel(ValueHolder valueHolder, FlowPanel editorPanel) {
+        if (valueHolder instanceof AbstractValueTimestampHolder) {
+            AbstractValueTimestampHolder timestampHolder = (AbstractValueTimestampHolder) valueHolder;
+            TimestampLabel timestampLabel = new TimestampLabel(timestampHolder.getValueTimestamp().orElse(null));
+            editorPanel.add(timestampLabel);
+        }
     }
 
     private static IsWidget createStringEditorWidget(String styleName,
