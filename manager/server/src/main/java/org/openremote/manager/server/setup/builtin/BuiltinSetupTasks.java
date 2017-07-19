@@ -48,6 +48,7 @@ import static org.openremote.container.util.MapAccess.getBoolean;
  * <li>{@link #SETUP_IMPORT_DEMO_ASSETS} depends on {@link #SETUP_IMPORT_DEMO_USERS}</li>
  * <li>{@link #SETUP_IMPORT_DEMO_SCENES} depends on {@link #SETUP_IMPORT_DEMO_ASSETS}</li>
  * <li>{@link #SETUP_IMPORT_DEMO_RULES} depends on {@link #SETUP_IMPORT_DEMO_SCENES}</li>
+ * <li>{@link #SETUP_IMPORT_KNX_DEMO_ASSETS} depends on {@link #SETUP_IMPORT_DEMO_ASSETS}</li>
  * </ul>
  */
 public class BuiltinSetupTasks extends AbstractSetupTasks {
@@ -57,12 +58,16 @@ public class BuiltinSetupTasks extends AbstractSetupTasks {
     public static final String SETUP_IMPORT_DEMO_ASSETS = "SETUP_IMPORT_DEMO_ASSETS";
     public static final String SETUP_IMPORT_DEMO_SCENES = "SETUP_IMPORT_DEMO_SCENES";
     public static final String SETUP_IMPORT_DEMO_RULES = "SETUP_IMPORT_DEMO_RULES";
+    public static final String SETUP_IMPORT_KNX_DEMO_ASSETS = "SETUP_IMPORT_KNX_DEMO_ASSETS";
 
     @Override
     public List<Setup> createTasks(Container container) {
 
         boolean cleanDatabase = getBoolean(container.getConfig(), SETUP_INIT_CLEAN_DATABASE, container.isDevMode());
 
+        // KNX demo assets to test real physical KNX bus. A KNX IP gateway and knx bus is needed 
+        boolean importKNXDemoAssets = getBoolean(container.getConfig(), SETUP_IMPORT_KNX_DEMO_ASSETS, false);
+        
         // Too many rules are difficult to debug, so they are optional
         boolean importDemoRules = getBoolean(container.getConfig(), SETUP_IMPORT_DEMO_RULES, container.isDevMode());
 
@@ -70,7 +75,7 @@ public class BuiltinSetupTasks extends AbstractSetupTasks {
         boolean importDemoScenes = importDemoRules || getBoolean(container.getConfig(), SETUP_IMPORT_DEMO_SCENES, container.isDevMode());
 
         // If importing demo rules we have to import demo assets
-        boolean importDemoAssets = importDemoRules || getBoolean(container.getConfig(), SETUP_IMPORT_DEMO_ASSETS, container.isDevMode());
+        boolean importDemoAssets = importDemoRules || importKNXDemoAssets || getBoolean(container.getConfig(), SETUP_IMPORT_DEMO_ASSETS, container.isDevMode());
 
         // If importing demo assets we have to import demo users
         boolean importDemoUsers = importDemoAssets || getBoolean(container.getConfig(), SETUP_IMPORT_DEMO_USERS, container.isDevMode());
@@ -94,6 +99,10 @@ public class BuiltinSetupTasks extends AbstractSetupTasks {
 
             if (importDemoRules) {
                 addTask(new RulesDemoSetup(container));
+            }
+            
+            if (importKNXDemoAssets) {
+                addTask(new ManagerDemoKNXSetup(container));
             }
         } else {
             if (cleanDatabase) {

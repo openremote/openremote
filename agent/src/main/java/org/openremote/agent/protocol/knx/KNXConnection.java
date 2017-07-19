@@ -1,26 +1,41 @@
 package org.openremote.agent.protocol.knx;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ScheduledFuture;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.apache.commons.lang3.StringUtils;
 import org.openremote.agent.protocol.ConnectionStatus;
 import org.openremote.agent.protocol.ProtocolExecutorService;
 import org.openremote.model.value.BooleanValue;
 import org.openremote.model.value.NumberValue;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueException;
+import org.openremote.model.value.impl.BooleanValueImpl;
+import org.openremote.model.value.impl.NumberValueImpl;
 
 import tuwien.auto.calimero.CloseEvent;
+import tuwien.auto.calimero.DataUnitBuilder;
 import tuwien.auto.calimero.DetachEvent;
 import tuwien.auto.calimero.FrameEvent;
+import tuwien.auto.calimero.IndividualAddress;
 import tuwien.auto.calimero.KNXException;
 import tuwien.auto.calimero.datapoint.Datapoint;
+import tuwien.auto.calimero.datapoint.DatapointMap;
+import tuwien.auto.calimero.datapoint.DatapointModel;
+import tuwien.auto.calimero.datapoint.StateDP;
+import tuwien.auto.calimero.dptxlator.DPTXlator;
+import tuwien.auto.calimero.dptxlator.DPTXlatorBoolean;
+import tuwien.auto.calimero.dptxlator.TranslatorTypes;
 import tuwien.auto.calimero.link.KNXNetworkLink;
 import tuwien.auto.calimero.link.KNXNetworkLinkIP;
 import tuwien.auto.calimero.link.NetworkLinkListener;
@@ -42,17 +57,34 @@ public class KNXConnection implements NetworkLinkListener, ProcessListener {
     
     protected final List<Consumer<ConnectionStatus>> connectionStatusConsumers = new ArrayList<>();
     
-    protected final String gatewayIp;
     protected final ProtocolExecutorService executorService;
     protected final int port = 3671;
+    protected final String connectionType;
     protected KNXNetworkLink knxLink;
     protected ProcessCommunicator processCommunicator;
+    protected DatapointModel<StateDP> datapoints = new DatapointMap<>();
+    protected Map<StateDP, List<Consumer<Value>>> datapointValueConsumers = new HashMap<>();
+
+    protected final String gatewayIp;
+    
+    private int remotePort;
+
+    private boolean useNat;
+
+    private String localKNXAddress;
+
+    private String localIp;
     
     private static final Logger LOG = Logger.getLogger(KNXConnection.class.getName());
     
-    public KNXConnection(String gatewayIp, ProtocolExecutorService executorService) {
+    public KNXConnection(String gatewayIp, String connectionType, ProtocolExecutorService executorService, String localIp, Integer remotePort, Boolean useNat, String localKNXAddress) {
         this.gatewayIp = gatewayIp;
         this.executorService = executorService;
+        this.connectionType =  connectionType;
+        this.localIp = localIp;
+        this.remotePort = remotePort.intValue();
+        this.useNat = useNat.booleanValue();
+        this.localKNXAddress = localKNXAddress;
     }
 
     public synchronized void connect() {
@@ -64,12 +96,21 @@ public class KNXConnection implements NetworkLinkListener, ProcessListener {
         LOG.fine("Connecting");
         onConnectionStatusChanged(ConnectionStatus.CONNECTING);
 
-        
-        final InetSocketAddress remote = new InetSocketAddress(gatewayIp, port);
-        try  {
-            //TODO accept local address, local port, useNat as extra connection params from protocl configuration
-            //final InetSocketAddress localSocket = new InetSocketAddress(InetAddress.getLoopbackAddress(), 0);
-            knxLink = KNXNetworkLinkIP.newTunnelingLink(null, remote, false, TPSettings.TP1);
+        InetSocketAddress localEndPoint = null;
+        InetSocketAddress remoteEndPoint = new InetSocketAddress(this.gatewayIp, this.remotePort);
+        try {
+            TPSettings tpSettings = new TPSettings(new IndividualAddress(this.localKNXAddress));
+            if (StringUtils.isNotBlank(this.localIp)) {
+                localEndPoint = new InetSocketAddress(this.localIp, 0);
+            } else {
+                InetAddress localHost = InetAddress.getLocalHost();
+                localEndPoint = new InetSocketAddress(localHost, 0);
+            }
+            if (this.connectionType.equals("TUNNELLING")) {
+                knxLink = KNXNetworkLinkIP.newTunnelingLink(localEndPoint, remoteEndPoint, this.useNat, tpSettings);
+            } else {
+                knxLink = KNXNetworkLinkIP.newRoutingLink(localEndPoint.getAddress(), remoteEndPoint.getAddress(), tpSettings);
+            }
             
             if (knxLink.isOpen()) {
                 LOG.fine("Successfully connected to: " + gatewayIp + ":" + port);
@@ -86,9 +127,12 @@ public class KNXConnection implements NetworkLinkListener, ProcessListener {
                 scheduleReconnect();
             }
         }
-        catch (final KNXException | InterruptedException | RuntimeException e) {
+        catch (final KNXException | InterruptedException e) {
             LOG.log(Level.INFO, "Connection error", e.getMessage());
             scheduleReconnect();
+        }
+        catch (final UnknownHostException e) {
+            LOG.log(Level.INFO, "Connection error", e.getMessage());
         }
     }
 
@@ -134,7 +178,8 @@ public class KNXConnection implements NetworkLinkListener, ProcessListener {
     public void sendCommand(Datapoint datapoint, Optional<Value> value) {
         try {
             if (this.connectionStatus == ConnectionStatus.CONNECTED && value.isPresent()) {
-                //TODO a more detailed conversion of value to needed KNX datapoint value
+                LOG.fine("Sending to KNX action datapoint '" + datapoint + "': " + value);
+                //TODO a more detailed conversion from OpenRemote value to needed KNX datapoint value
                 Value val = value.get();
                 switch (val.getType()) {
                     case BOOLEAN:
@@ -153,42 +198,59 @@ public class KNXConnection implements NetworkLinkListener, ProcessListener {
     }
     
     public void groupWrite(final ProcessEvent e) { 
-        //TODO listen on groupWrites to statusGA and update attribute
+        if (datapoints.contains(e.getDestination())) {
+            StateDP datapoint = datapoints.get(e.getDestination());
+            final String dpt = datapoint.getDPT();
+            DPTXlator translator = null;
+            try {
+                translator = TranslatorTypes.createTranslator(0, dpt);
+                translator.setData(e.getASDU());
+                LOG.info("Received KNX event: " + translator.getType().getID() + " (" + translator.getType().getDescription() + ") is " + translator.getValue() + " (" + translator.getNumericValue() + ") - " + datapoint.getName());
+                
+                Value value;
+                //TODO a more detailed conversion form KNX datapoint value to OpenRemote value
+                if (translator instanceof DPTXlatorBoolean) {
+                    value = new BooleanValueImpl(Boolean.valueOf(translator.getValue().equals("on")));
+                } else {
+                    value = new NumberValueImpl(translator.getNumericValue());
+                }
+                for (Consumer<Value> consumer : datapointValueConsumers.get(datapoint)) {
+                    consumer.accept(value);
+                }
+            } catch (KNXException ex) {
+                LOG.log(Level.WARNING, "Could translate KNX event: " + e, ex);
+            }
+        }
     }
     
-    public void groupReadRequest(final ProcessEvent e) {  }
+    public void groupReadRequest(final ProcessEvent e) { groupWrite(e);  }
     
     public void groupReadResponse(final ProcessEvent e) { 
-      //TODO listen on readResponses to statusGA and update attribute
+        groupWrite(e);
     }
     
     public void detached(final DetachEvent e) {}
     
-//TODO  when registering statusGA send readRequest for initial status
-//    public synchronized MeasurementRegistration monitorReadGroupAddress(int deviceId, String measurementName, BiConsumer<MeasurementRegistration, Measurement> consumer) {
-//        // Enervalis API v1 cannot provide device info for a list of devices by ID
-//        // (devices would need to be grouped into a device group first) - instead lets
-//        // just poll all devices that this user has access to and extract the ones we're
-//        // interested in - may not be ideal but let's assume we're going to want to monitor
-//        // most of the devices.
-//
-//        // Normalise the measurement name (case insensitive)
-//        measurementName = measurementName.toLowerCase().trim();
-//
-//        // Build registration hash key
-//        String regKey = deviceId + "_" + measurementName;
-//
-//        // Build registration
-//        Datapoint datapoint = new StateD (deviceId, measurementName, consumer);
-//
-//        List<MeasurementRegistration> registrations =
-//            measurementRegistrations.computeIfAbsent(regKey, k -> new ArrayList<>());
-//        registrations.add(registration);
-//
-//        startDevicePolling();
-//        return registration;
-//    }
-    
+    public void monitorStateDP(StateDP datapoint, Consumer<Value> consumer) {
+        this.datapoints.add(datapoint);
+        List<Consumer<Value>> consumers = this.datapointValueConsumers.get(datapoint);
+        if (consumers == null) {
+            consumers = new ArrayList<>();
+            this.datapointValueConsumers.put(datapoint, consumers);
+        }
+        consumers.add(consumer);
+
+        try {
+            LOG.fine("Sending read request to KNX status datapoint '" + datapoint);
+            this.knxLink.sendRequest(datapoint.getMainAddress(), datapoint.getPriority(), DataUnitBuilder.createLengthOptimizedAPDU(0x00, null));
+        } catch (Exception e) {
+            LOG.log(Level.INFO, "Error sending KNX read request for DPT: " + datapoint, e);
+        }
+    }
+  
+    public void stopMonitoringStateDP(StateDP datapoint) {
+        this.datapoints.remove(datapoint);
+    }
     
     @Override
     public void indication(FrameEvent e) {
@@ -233,4 +295,5 @@ public class KNXConnection implements NetworkLinkListener, ProcessListener {
             }
         }, reconnectDelayMilliseconds);
     }
+
 }

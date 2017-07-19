@@ -47,7 +47,6 @@ import tuwien.auto.calimero.server.Launcher
 /**
  * This tests the KNX protocol and protocol implementation.
  */
-@Ignore // TODO Verify test on other machines
 class KNXProtocolTest extends Specification implements ManagerContainerTrait {
 
     def "Check KNX protocol"() {
@@ -77,9 +76,14 @@ class KNXProtocolTest extends Specification implements ManagerContainerTrait {
         knxAgent.setAttributes(
             ProtocolConfiguration.initProtocolConfiguration(new AssetAttribute("knxConfig"), KNXProtocol.PROTOCOL_NAME)
                 .addMeta(
-                    new MetaItem(KNXProtocol.KNX_GATEWAY_IP, Values.create("localhost"))
+                    new MetaItem(KNXProtocol.KNX_GATEWAY_IP, Values.create("localhost")),
+                    new MetaItem(KNXProtocol.KNX_LOCAL_IP, Values.create("localhost"))
                 ),
-            ProtocolConfiguration.initProtocolConfiguration(new AssetAttribute("knxConfigError"), KNXProtocol.PROTOCOL_NAME)
+            ProtocolConfiguration.initProtocolConfiguration(new AssetAttribute("knxConfigError1"), KNXProtocol.PROTOCOL_NAME),
+            ProtocolConfiguration.initProtocolConfiguration(new AssetAttribute("knxConfigError2"), KNXProtocol.PROTOCOL_NAME)
+                .addMeta(
+                    new MetaItem(KNXProtocol.KNX_IP_CONNECTION_TYPE, Values.create("dummy"))
+                )
         )
         knxAgent.setRealmId(Constants.MASTER_REALM)
         knxAgent = assetStorageService.merge(knxAgent)
@@ -89,7 +93,10 @@ class KNXProtocolTest extends Specification implements ManagerContainerTrait {
             assert agentService.getProtocolDeploymentStatus(knxAgent.getAttribute("knxConfig").get().getReferenceOrThrow()) == ConnectionStatus.CONNECTED
         }
         conditions.eventually {
-            assert agentService.getProtocolDeploymentStatus(knxAgent.getAttribute("knxConfigError").get().getReferenceOrThrow()) == ConnectionStatus.ERROR
+            assert agentService.getProtocolDeploymentStatus(knxAgent.getAttribute("knxConfigError1").get().getReferenceOrThrow()) == ConnectionStatus.ERROR
+        }
+        conditions.eventually {
+            assert agentService.getProtocolDeploymentStatus(knxAgent.getAttribute("knxConfigError2").get().getReferenceOrThrow()) == ConnectionStatus.ERROR
         }
 
 
@@ -114,22 +121,22 @@ class KNXProtocolTest extends Specification implements ManagerContainerTrait {
         }
         
         
-        when: "change light1ToggleOnOff value to 'false'"
-        def switchChange = new AttributeEvent(knxThing.getId(), "light1ToggleOnOff", Values.create(false))
+        when: "change light1ToggleOnOff value to 'true'"
+        def switchChange = new AttributeEvent(knxThing.getId(), "light1ToggleOnOff", Values.create(true))
         assetProcessingService.sendAttributeEvent(switchChange)
                 
         then: "the correct data should arrive on KNX bus"
         conditions.eventually {
-           assert knxTestingNetwork.getLastDataReceived().equals("0080") == true
+           assert knxTestingNetwork.getLastDataReceived().equals("0081") == true
         }
 
-        when: "change light1ToggleOnOff value to 'true'"
-        switchChange = new AttributeEvent(knxThing.getId(), "light1ToggleOnOff", Values.create(true))
+        when: "change light1ToggleOnOff value to 'false'"
+        switchChange = new AttributeEvent(knxThing.getId(), "light1ToggleOnOff", Values.create(false))
         assetProcessingService.sendAttributeEvent(switchChange)
                 
         then: "the correct data should arrive on KNX bus"
         conditions.eventually {
-            assert knxTestingNetwork.getLastDataReceived().equals("0081") == true
+            assert knxTestingNetwork.getLastDataReceived().equals("0080") == true
         }
         
         cleanup: "the server should be stopped"
