@@ -17,7 +17,7 @@ declare AlarmTrigger
     roomName : String
 end
 
-// Notify the user every 30 mninutes while alarm is triggered
+// Notify the user every 30 minutes while alarm is triggered
 declare UserNotified
     @role(event)
     @expires(30m)
@@ -39,7 +39,7 @@ rule "Stop alarm when alarm has been triggered and no presence is detected in an
 when
     $residence : AssetState(type == AssetType.RESIDENCE, attributeName == "alarmEnabled")
     $alarmTrigger : AlarmTrigger(residenceId == $residence.id)
-    $room : AssetState(parentId == $residence.id, type == AssetType.ROOM, attributeName == "presenceDetected", valueFalse)
+    not AssetState(parentId == $residence.id, type == AssetType.ROOM, attributeName == "presenceDetected", valueTrue)
 then
     delete($alarmTrigger);
 end

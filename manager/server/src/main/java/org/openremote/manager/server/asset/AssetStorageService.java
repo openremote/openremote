@@ -247,12 +247,11 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 .setParameter("ids", Arrays.asList(ids))
                 .getResultList();
             List<String> names = new ArrayList<>();
-            idLoop:
             for (String id : ids) {
                 for (Object[] tuple: result) {
                     if (tuple[0].equals(id)) {
                         names.add((String) tuple[1]);
-                        break idLoop;
+                        break;
                     }
                 }
             }

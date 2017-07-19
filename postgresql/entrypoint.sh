@@ -15,7 +15,9 @@ if ! [ -f $PGDATA/postgresql.conf ]; then
     gosu postgres ${PG_BIN}/initdb --auth='ident' -E UTF8
     chown -R postgres:postgres ${PGDATA}
 
-    # Allow IPv4 authenticated remote connections
+    # Trust all local connections, allow authenticated IPv4 remote connections
+    echo "local all all trust" > ${PGDATA}/pg_hba.conf
+    echo "host all all 127.0.0.1/32 trust" >> ${PGDATA}/pg_hba.conf
     echo "host all all 0.0.0.0/0 md5" >> ${PGDATA}/pg_hba.conf
     echo "listen_addresses = '0.0.0.0'" >> ${PGDATA}/postgresql.conf
 

@@ -268,16 +268,9 @@ public abstract class AbstractAssetUpdate {
     /**
      * <code>true</code> if this value is not null and that value is null or this value is greater than that value.
      */
-    public boolean isValueGreaterThan(Double that) {
+    public boolean isValueGreaterThan(Number that) {
         Double number = getValueAsNumber();
-        return (number != null && that == null) || (number != null && number > that);
-    }
-
-    /**
-     * <code>true</code> if this value is not null and that value is null or this value is greater than that value.
-     */
-    public boolean isValueGreaterThan(Long that) {
-        return isValueGreaterThan(that != null ? (double) that : null);
+        return (number != null && that == null) || (number != null && number > that.doubleValue());
     }
 
     /**
@@ -290,16 +283,9 @@ public abstract class AbstractAssetUpdate {
     /**
      * <code>true</code> if this value is null and that value is not null or this value is less than that value.
      */
-    public boolean isValueLessThan(Double that) {
+    public boolean isValueLessThan(Number that) {
         Double number = getValueAsNumber();
-        return (number == null && that != null) || (number != null && number < that);
-    }
-
-    /**
-     * <code>true</code> if this value is null and that value is not null or this value is less than that value.
-     */
-    public boolean isValueLessThan(Long that) {
-        return isValueLessThan(that != null ? (double) that : null);
+        return (number == null && that != null) || (number != null && number < that.doubleValue());
     }
 
     /**

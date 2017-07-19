@@ -53,7 +53,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
     final protected boolean importDemoScenes;
 
     // Update these numbers whenever you change a RULE_STATE flag in test data
-    public static final int DEMO_RULE_STATES_APARTMENT_1 = 12;
+    public static final int DEMO_RULE_STATES_APARTMENT_1 = 14;
     public static final int DEMO_RULE_STATES_APARTMENT_2 = 9;
     public static final int DEMO_RULE_STATES_APARTMENT_3 = 0;
     public static final int DEMO_RULE_STATES_SMART_HOME = DEMO_RULE_STATES_APARTMENT_1 + DEMO_RULE_STATES_APARTMENT_2 + DEMO_RULE_STATES_APARTMENT_3;
@@ -76,6 +76,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
     public String apartment1Id;
     public String apartment1ServiceAgentId;
     public String apartment1LivingroomId;
+    public String apartment1KitchenId;
     public String apartment2Id;
     public String apartment3Id;
     public String apartment2LivingroomId;
@@ -351,11 +352,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                 .addMeta(
                     new MetaItem(
                         SimulatorProtocol.CONFIG_MODE,
-                        Values.create(SimulatorProtocol.Mode.WRITE_THROUGH_DELAYED.toString())
-                    ),
-                    new MetaItem(
-                        SimulatorProtocol.CONFIG_WRITE_DELAY_MILLISECONDS,
-                        Values.create(500)
+                        Values.create(SimulatorProtocol.Mode.WRITE_THROUGH_IMMEDIATE.toString())
                     ))
         );
         apartment1ServiceAgent = assetStorageService.merge(apartment1ServiceAgent);
@@ -386,6 +383,15 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         apartment1Livingroom = assetStorageService.merge(apartment1Livingroom);
         apartment1LivingroomId = apartment1Livingroom.getId();
 
+        ServerAsset apartment1Kitchen = createDemoApartmentRoom(apartment1, "Kitchen");
+        addDemoApartmentRoomMotionSensor(apartment1Kitchen, true, () -> new MetaItem[]{
+            new MetaItem(AGENT_LINK, new AttributeRef(apartment1ServiceAgentId, "apartmentSimulator").toArrayValue()),
+            new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME))
+        });
+
+        apartment1Kitchen = assetStorageService.merge(apartment1Kitchen);
+        apartment1KitchenId = apartment1Kitchen.getId();
+
         if (importDemoScenes) {
             Scene[] scenes = new Scene[]{
                 new Scene("homeScene", "Home scene", "HOME", "0 0 7 ? *", false, 21d),
@@ -395,7 +401,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
             };
 
             ServerAsset demoApartmentSceneAgent = createDemoApartmentSceneAgent(
-                apartment1, scenes, apartment1Livingroom
+                apartment1, scenes, apartment1Livingroom, apartment1Kitchen
             );
             demoApartmentSceneAgent = assetStorageService.merge(demoApartmentSceneAgent);
 
@@ -527,6 +533,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         identityService.getIdentityProvider().setRestrictedUser(keycloakDemoSetup.testuser3Id, true);
         assetStorageService.storeUserAsset(keycloakDemoSetup.testuser3Id, apartment1Id);
         assetStorageService.storeUserAsset(keycloakDemoSetup.testuser3Id, apartment1LivingroomId);
+        assetStorageService.storeUserAsset(keycloakDemoSetup.testuser3Id, apartment1KitchenId);
         assetStorageService.storeUserAsset(keycloakDemoSetup.testuser3Id, apartment2Id);
 
         // ################################ Demo assets for 'customerC' realm ###################################
