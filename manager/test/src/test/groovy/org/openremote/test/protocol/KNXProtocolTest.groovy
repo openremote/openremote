@@ -19,6 +19,8 @@
  */
 package org.openremote.test.protocol
 
+import tuwien.auto.calimero.server.knxnetip.DefaultServiceContainer
+
 import static org.openremote.model.asset.AssetMeta.DESCRIPTION
 import static org.openremote.model.asset.AssetMeta.LABEL
 
@@ -56,9 +58,25 @@ class KNXProtocolTest extends Specification implements ManagerContainerTrait {
 
         and: "the KNX emulation server is started"
         def knxEmulationServer = new Launcher("manager/test/src/test/resources/knx-server-config.xml")
+        def sc = knxEmulationServer.xml.svcContainers.remove(0)
+        def sc2 = new DefaultServiceContainer(
+            sc.getName(),
+            NetworkInterface.getByInetAddress(InetAddress.getLoopbackAddress()).name,
+            sc.getControlEndpoint(),
+            sc.getMediumSettings(),
+            sc.reuseControlEndpoint(),
+            sc.isNetworkMonitoringAllowed());
+        knxEmulationServer.xml.svcContainers.add(sc2)
+        def netIf = knxEmulationServer.xml.subnetNetIf.remove(sc)
+        knxEmulationServer.xml.subnetNetIf.put(sc2, netIf)
+        def linkClasses = knxEmulationServer.xml.subnetLinkClasses.remove(sc)
+        knxEmulationServer.xml.subnetLinkClasses.put(sc2, linkClasses)
+        def groupFilters = knxEmulationServer.xml.groupAddressFilters.remove(sc)
+        knxEmulationServer.xml.groupAddressFilters.put(sc2, groupFilters)
+        def addAddresses = knxEmulationServer.xml.additionalAddresses.remove(sc)
+        knxEmulationServer.xml.additionalAddresses.put(sc2, addAddresses)
         def knxServerThread = new Thread(knxEmulationServer);
         knxServerThread.start();
-        
         def knxTestingNetwork = KNXTestingNetworkLink.getInstance();
 
         and: "the container is started"
@@ -142,6 +160,6 @@ class KNXProtocolTest extends Specification implements ManagerContainerTrait {
         cleanup: "the server should be stopped"
         stopContainer(container)
         knxEmulationServer.quit()
-        
+
     }
 }
