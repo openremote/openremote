@@ -102,6 +102,16 @@ class AdminTenantsActivityTest extends Specification implements ManagerContainer
         })
         def placeHistoryMapper = createPlaceHistoryMapper(ManagerHistoryMapper.getAnnotation(WithTokenizers.class))
         def placeController = createPlaceController(securityService, eventBus)
+        def environment = Environment.create(
+                securityService,
+                requestService,
+                Mock(EventService),
+                placeController,
+                placeHistoryMapper,
+                eventBus,
+                managerMessages,
+                new WidgetStyle()
+        )
 
         and: "The views and activities to test"
         def adminViewWidget = Mock(Widget)
@@ -112,7 +122,7 @@ class AdminTenantsActivityTest extends Specification implements ManagerContainer
         }
 
         def adminNavigationView = Mock(AdminNavigation)
-        def adminNavigationPresenter = new AdminNavigationPresenter(adminNavigationView, placeHistoryMapper)
+        def adminNavigationPresenter = new AdminNavigationPresenter(environment, adminNavigationView)
 
         def tenantResource = Stub(TenantResource) {
             _(*_) >> { callResourceProxy(container.JSON, clientTarget, getDelegate()) }
@@ -134,16 +144,6 @@ class AdminTenantsActivityTest extends Specification implements ManagerContainer
         AdminTenantActivity adminTenantActivity
 
         and: "An activity management configuration"
-        def environment = Environment.create(
-                securityService,
-                requestService,
-                Mock(EventService),
-                placeController,
-                placeHistoryMapper,
-                eventBus,
-                managerMessages,
-                new WidgetStyle()
-        )
         def activityDisplay = Mock(AcceptsOneWidget)
         def activityMapper = new ManagerActivityMapper(
                 securityService,

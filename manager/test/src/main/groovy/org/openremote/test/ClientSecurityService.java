@@ -109,6 +109,11 @@ public class ClientSecurityService implements SecurityService {
         return authenticatedServiceUrl;
     }
 
+    @Override
+    public boolean isUserTenantAdminEnabled() {
+        return true;
+    }
+
     protected String getToken() {
         updateAccessToken();
         return token;

@@ -97,4 +97,8 @@ public class BasicSecurityService implements SecurityService {
         return authenticatedServiceUrl;
     }
 
+    @Override
+    public boolean isUserTenantAdminEnabled() {
+        return false;
+    }
 }

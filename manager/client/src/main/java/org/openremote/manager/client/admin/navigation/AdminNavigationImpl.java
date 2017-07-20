@@ -83,4 +83,9 @@ public class AdminNavigationImpl extends Composite implements AdminNavigation {
         }
     }
 
+    @Override
+    public void setUserTenantAdminEnabled(boolean enabled) {
+        usersLink.setVisible(enabled);
+        tenantsLink.setVisible(enabled);
+    }
 }

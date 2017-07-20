@@ -41,4 +41,6 @@ public interface AdminNavigation extends IsWidget {
 
     void onPlaceChange(AdminPlace adminPlace);
 
+    void setUserTenantAdminEnabled(boolean enabled);
+
 }

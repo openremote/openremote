@@ -45,4 +45,6 @@ public interface SecurityService {
     <OUT> void setCredentials(RequestParams<OUT> requestParams);
 
     String setCredentials(String serviceUrl);
+
+    boolean isUserTenantAdminEnabled();
 }

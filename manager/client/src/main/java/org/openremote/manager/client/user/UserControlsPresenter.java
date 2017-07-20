@@ -22,14 +22,10 @@ package org.openremote.manager.client.user;
 import com.google.inject.Inject;
 import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.ManagerHistoryMapper;
-import org.openremote.manager.client.event.UserChangeEvent;
 import org.openremote.manager.client.event.ShowFailureEvent;
-
-import java.util.logging.Logger;
+import org.openremote.manager.client.event.UserChangeEvent;
 
 public class UserControlsPresenter implements UserControls.Presenter {
-
-    private static final Logger LOG = Logger.getLogger(UserControlsPresenter.class.getName());
 
     final protected Environment environment;
     final protected ManagerHistoryMapper managerHistoryMapper;
@@ -74,6 +70,7 @@ public class UserControlsPresenter implements UserControls.Presenter {
             environment.getSecurityService().getFullName(),
             managerHistoryMapper.getToken(new UserAccountPlace()),
             environment.getSecurityService().hasResourceRole("manage-account", "account")
+                && environment.getSecurityService().isUserTenantAdminEnabled()
         );
     }
 

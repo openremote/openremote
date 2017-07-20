@@ -121,6 +121,11 @@ public class KeycloakSecurityService implements SecurityService {
         return authenticatedServiceUrl;
     }
 
+    @Override
+    public boolean isUserTenantAdminEnabled() {
+        return true;
+    }
+
     protected String getToken() {
         return keycloak.token;
     }

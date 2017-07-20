@@ -19,8 +19,8 @@
  */
 package org.openremote.manager.client.admin.navigation;
 
-import com.google.gwt.place.shared.PlaceHistoryMapper;
 import com.google.inject.Inject;
+import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.admin.AdminPlace;
 import org.openremote.manager.client.admin.syslog.AdminSyslogPlace;
 import org.openremote.manager.client.admin.tenant.AdminTenantsPlace;
@@ -28,16 +28,19 @@ import org.openremote.manager.client.admin.users.AdminUsersPlace;
 
 public class AdminNavigationPresenter implements AdminNavigation.Presenter {
 
+    final protected Environment environment;
     final protected AdminNavigation view;
-    final protected PlaceHistoryMapper historyMapper;
 
     @Inject
-    public AdminNavigationPresenter(AdminNavigation view,
-                                    PlaceHistoryMapper historyMapper) {
+    public AdminNavigationPresenter(Environment environment,
+                                    AdminNavigation view) {
+        this.environment = environment;
         this.view = view;
-        this.historyMapper = historyMapper;
 
         view.setPresenter(this);
+        view.setUserTenantAdminEnabled(
+            environment.getSecurityService().isUserTenantAdminEnabled()
+        );
     }
 
     @Override
@@ -47,17 +50,17 @@ public class AdminNavigationPresenter implements AdminNavigation.Presenter {
 
     @Override
     public String getAdminOverviewPlaceToken() {
-        return historyMapper.getToken(new AdminSyslogPlace());
+        return environment.getPlaceHistoryMapper().getToken(new AdminSyslogPlace());
     }
 
     @Override
     public String getAdminTenantsPlaceToken() {
-        return historyMapper.getToken(new AdminTenantsPlace());
+        return environment.getPlaceHistoryMapper().getToken(new AdminTenantsPlace());
     }
 
     @Override
     public String getAdminUsersPlaceToken() {
-        return historyMapper.getToken(new AdminUsersPlace());
+        return environment.getPlaceHistoryMapper().getToken(new AdminUsersPlace());
     }
 
     @Override
