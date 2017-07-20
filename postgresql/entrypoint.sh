@@ -7,9 +7,9 @@ DB_PASS=${POSTGRES_PASSWORD:-}
 
 EXECUTE_SINGLE_COMMAND="gosu postgres ${PG_BIN}/postgres --single -c config_file=${PGDATA}/postgresql.conf -D ${PGDATA}"
 
-# If there is no config file, assume initdb must be called
-if ! [ -f $PGDATA/postgresql.conf ]; then
-    echo "Init database directory (mount a volume on your host to keep data): $PGDATA"
+# If there is no config file, create config, database, user
+if ! [ -f ${PGDATA}/postgresql.conf ]; then
+    echo "Init database directory (mount a volume on your host to keep data): ${PGDATA}"
 
     # Create initial database files
     gosu postgres ${PG_BIN}/initdb --auth='ident' -E UTF8
@@ -23,27 +23,29 @@ if ! [ -f $PGDATA/postgresql.conf ]; then
 
     # Log to stderr
     sed -i 's/^logging_collector = on/logging_collector = off/g' ${PGDATA}/postgresql.conf
-fi
 
-# If POSTGRES_USER is set, create a superuser with POSTGRES_PASSWORD
-if [ -n "${DB_USER}" ]; then
-  if [ -z "${DB_PASS}" ]; then
-    echo "No password specified for user: \"${DB_USER}\""
-    exit 1
-  fi
-    echo "Creating user \"${DB_USER}\"..."
-    echo "CREATE ROLE ${DB_USER} with superuser login PASSWORD '${DB_PASS}';" | ${EXECUTE_SINGLE_COMMAND} >/dev/null
-fi
+    # If POSTGRES_USER is set, create a superuser with POSTGRES_PASSWORD
+    if [ -n "${DB_USER}" ]; then
+      if [ -z "${DB_PASS}" ]; then
+        echo "No password specified for user: \"${DB_USER}\""
+        exit 1
+      fi
+        echo "Creating user \"${DB_USER}\"..."
+        echo "CREATE ROLE ${DB_USER} with superuser login PASSWORD '${DB_PASS}';" | ${EXECUTE_SINGLE_COMMAND} >/dev/null
+    fi
 
-# If POSTGRES_DB is set and not 'postgres', create the database and give POSTGRES_USER full access
-if [ -n "${DB_NAME}" ] && [ "${DB_NAME}" != 'postgres' ]; then
-  echo "Creating database \"${DB_NAME}\"..."
-  echo "CREATE DATABASE ${DB_NAME};" | ${EXECUTE_SINGLE_COMMAND} >/dev/null
+    # If POSTGRES_DB is set and not 'postgres', create the database and give POSTGRES_USER full access
+    if [ -n "${DB_NAME}" ] && [ "${DB_NAME}" != 'postgres' ]; then
+      echo "Creating database \"${DB_NAME}\"..."
+      echo "CREATE DATABASE ${DB_NAME};" | ${EXECUTE_SINGLE_COMMAND} >/dev/null
 
-  if [ -n "${DB_USER}" ]; then
-    echo "Granting access to database \"${DB_NAME}\" for user \"${DB_USER}\"..."
-    echo "GRANT ALL PRIVILEGES ON DATABASE ${DB_NAME} to ${DB_USER};" | ${EXECUTE_SINGLE_COMMAND} >/dev/null
-  fi
+      if [ -n "${DB_USER}" ]; then
+        echo "Granting access to database \"${DB_NAME}\" for user \"${DB_USER}\"..."
+        echo "GRANT ALL PRIVILEGES ON DATABASE ${DB_NAME} to ${DB_USER};" | ${EXECUTE_SINGLE_COMMAND} >/dev/null
+      fi
+    fi
+else
+    echo "Using existing database(s) in: ${PGDATA}"
 fi
 
 echo "Starting database server..."
