@@ -9,15 +9,16 @@
     <string name="OR_REALM">REALM</string>
     <string name="SHARED_PREF_FCM_TOKEN">FCM_TOKEN_KEY</string>
     <string name="SHARED_PREF_DEVICE_ID">FCM_DEVICE_ID_KEY</string>
-    <string name="reload">reload</string>
+    <string name="retry">retry</string>
     <string name="noConnectivity">Network connection not available.</string>
-    <string name="noConnectivityExplain">Can't connect to the OpenRemote service.</string>
+    <string name="noConnectivityExplain">Can\'t connect to the OpenRemote service.</string>
     <string name="SHARED_PREF_OPENED_ALERT">OPENED_ALERT</string>
     <string name="AUTH_URL">/auth</string>
     <string name="SSL_IGNORE">false</string>
+    <string name="DEBUG_LOGGING">false</string>
     <string name="exit">exit</string>
     <string name="fatalError">A fatal error occurred.</string>
     <string name="fatalErrorExplain">OpenRemote service is not available, please try again later.</string>
     <string name="httpError">Invalid response from service.</string>
-    <string name="httpErrorExplain">An error occurred communicating with the OpenRemote server.</string>
+    <string name="httpErrorExplain">Can\'t connect to the OpenRemote service.</string>
 </resources>

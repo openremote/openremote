@@ -1,19 +1,19 @@
-window.authenticate = function (successCallback, errorCallback) {
+window.authenticate = function (realm, successCallback, failureCallback, errorCallback) {
     Promise.all([
         load.js("/auth/js/keycloak.min.js")
     ]).then(function (e) {
         console.log("Keycloak available...");
-        startKeycloakAuthentication(successCallback, errorCallback);
+        startKeycloakAuthentication(realm, successCallback, failureCallback, errorCallback);
     }).catch(function () {
         console.log("Keycloak not available, falling back to basic authentication...");
-        startBasicAuthentication(successCallback, errorCallback);
+        startBasicAuthentication(realm, successCallback, failureCallback, errorCallback);
     })
 };
 
-window.startKeycloakAuthentication = function (successCallback, errorCallback) {
+window.startKeycloakAuthentication = function (realm, successCallback, failureCallback, errorCallback) {
     var keycloakConfig = {
         url: '/auth',
-        realm: window.location.pathname.split('/')[1],
+        realm: realm,
         clientId: "openremote"
     };
     window.keycloak = Keycloak(keycloakConfig);
@@ -21,16 +21,22 @@ window.startKeycloakAuthentication = function (successCallback, errorCallback) {
         .success(function (authenticated) {
             if (authenticated) {
                 console.log("Keycloak authentication successful...");
-                successCallback();
+                if (successCallback) {
+                    successCallback();
+                }
             } else {
-                console.log("Keycloak authentication failed, forcing login...");
-                window.keycloak.login();
+                if (failureCallback) {
+                    failureCallback();
+                } else {
+                    console.log("Keycloak authentication failed, forcing login...");
+                    window.keycloak.login();
+                }
             }
         })
         .error(errorCallback);
 };
 
-window.startBasicAuthentication = function (successCallback, errorCallback) {
+window.startBasicAuthentication = function (realm, successCallback, failureCallback, errorCallback) {
     Promise.all([
         load.js("/static/bower_components/webcomponentsjs/webcomponents-lite.min.js"),
         load.import("/static/bower_components/iron-flex-layout/iron-flex-layout-classes.html"),
@@ -48,27 +54,32 @@ window.startBasicAuthentication = function (successCallback, errorCallback) {
             var username = document.querySelector("#basicAuthForm [name='username']").value;
             var password = document.querySelector("#basicAuthForm [name='password']").value;
             performBasicAuthentication(
+                realm,
                 username,
                 password,
-                function (e) {
-                    if (e === true) {
-                        console.log("Basic authentication successful...");
-                        // Application can grab the credentials from window for its own requests
-                        window.basicAuthUsername = username;
-                        window.basicAuthPassword = password;
-                        document.body.removeChild(authForm);
+                function () {
+                    console.log("Basic authentication successful...");
+                    // Application can grab the credentials from window for its own requests
+                    window.basicAuthUsername = username;
+                    window.basicAuthPassword = password;
+                    document.body.removeChild(authForm);
+                    if (startLoading) {
                         startLoading();
+                    }
+                    if (successCallback) {
                         successCallback();
+                    }
+                },
+                function() {
+                    if (failureCallback) {
+                        failureCallback();
                     } else {
                         console.log("Basic authentication failed, trying again");
                         document.querySelector("#basicAuthForm .basicAuthMessage").style.display = "inherit";
                         document.querySelector("#basicAuthForm .basicAuthMessageText").innerText = "Login failed, invalid username or password.";
                     }
                 },
-                function (e) {
-                    alert("Error sending authentication to service, please try again later.");
-                    console.dir(e);
-                }
+                errorCallback
             );
             return false;
         }
@@ -128,9 +139,11 @@ window.renderBasicAuthForm = function () {
     return authForm;
 };
 
-window.performBasicAuthentication = function (username, password, successCallback, errorCallback) {
-    // Send a request with credentials to a resource that we know returns 200 or 401
+window.performBasicAuthentication = function (realm, username, password, successCallback, failureCallback, errorCallback) {
     try {
+        // Send a request with credentials to a resource that we know returns 200 or 401
+        var url = "/" + realm + "/asset/user/current";
+
         var x = new XMLHttpRequest();
 
         // TODO You all suck
@@ -138,12 +151,12 @@ window.performBasicAuthentication = function (username, password, successCallbac
         var isChrome = !!window.chrome && !!window.chrome.webstore;
         if (isSafari) {
             // Must be async false or Safari will popup 401 dialog
-            x.open("GET", "/master/asset/user/current", false);
+            x.open("GET", url, false);
         } else if (isChrome) {
             // Must set dummy URL username or Chrome will popup 401 dialog
-            x.open("GET", "/master/asset/user/current", true, "dummy");
+            x.open("GET", url, true, "dummy");
         } else {
-            x.open("GET", "/master/asset/user/current", true);
+            x.open("GET", url, true);
         }
 
         var credentials = "Basic " + btoa(username + ":" + password);
@@ -152,9 +165,9 @@ window.performBasicAuthentication = function (username, password, successCallbac
         x.onreadystatechange = function () {
             if (x.readyState > 3) {
                 if (successCallback && x.status === 200) {
-                    successCallback(true);
-                } else if (successCallback && x.status === 401) {
-                    successCallback(false);
+                    successCallback();
+                } else if (failureCallback && x.status === 401) {
+                    failureCallback();
                 } else if (errorCallback) {
                     errorCallback(x);
                 }

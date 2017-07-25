@@ -13,7 +13,8 @@
 
     <script>
         document.addEventListener("DOMContentLoaded", function () {
-            authenticate(startApplication, handleLoadError);
+            var realm = window.location.pathname.split('/')[1];
+            authenticate(realm, startApplication, null, handleLoadError);
         });
 
         function startApplication() {

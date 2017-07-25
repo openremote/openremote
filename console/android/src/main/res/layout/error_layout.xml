@@ -41,9 +41,9 @@
             android:id="@+id/reload"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:onClick="reloadPage"
-            android:text="@string/reload"
-            tools:text="reload" />
+            android:onClick="reloadWebView"
+            android:text="@string/retry"
+            tools:text="retry" />
 
         <Button
             android:id="@+id/exit"

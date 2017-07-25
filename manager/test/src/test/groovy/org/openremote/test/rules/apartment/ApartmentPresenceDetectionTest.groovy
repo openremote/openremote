@@ -52,7 +52,9 @@ class ApartmentPresenceDetectionTest extends Specification implements ManagerCon
             assert apartment1Engine.knowledgeSession.factCount == DEMO_RULE_STATES_APARTMENT_1
         }
 
-        and: "the presence detected flag and timestamp of the room should not be set"
+        and: "the presence detected flag and timestamp should not be set"
+        def apartmentAsset = assetStorageService.find(managerDemoSetup.apartment1Id, true)
+        assert !apartmentAsset.getAttribute("presenceDetected").get().getValue().isPresent()
         def roomAsset = assetStorageService.find(managerDemoSetup.apartment1KitchenId, true)
         assert !roomAsset.getAttribute("presenceDetected").get().getValue().isPresent()
         assert !roomAsset.getAttribute("lastPresenceDetected").get().getValue().isPresent()
@@ -66,9 +68,11 @@ class ApartmentPresenceDetectionTest extends Specification implements ManagerCon
 
         then: "presence should be detected"
         conditions.eventually {
-            def asset = assetStorageService.find(managerDemoSetup.apartment1KitchenId, true)
-            assert asset.getAttribute("presenceDetected").get().getValueAsBoolean().get()
-            assert asset.getAttribute("lastPresenceDetected").get().getValueAsNumber().get() == expectedLastPresenceDetected
+            apartmentAsset = assetStorageService.find(managerDemoSetup.apartment1Id, true)
+            assert apartmentAsset.getAttribute("presenceDetected").get().getValueAsBoolean().get()
+            roomAsset = assetStorageService.find(managerDemoSetup.apartment1KitchenId, true)
+            assert roomAsset.getAttribute("presenceDetected").get().getValueAsBoolean().get()
+            assert roomAsset.getAttribute("lastPresenceDetected").get().getValueAsNumber().get() == expectedLastPresenceDetected
         }
 
         when: "time advances"
@@ -83,9 +87,11 @@ class ApartmentPresenceDetectionTest extends Specification implements ManagerCon
 
         then: "presence should be detected and timestamp updated"
         conditions.eventually {
-            def asset = assetStorageService.find(managerDemoSetup.apartment1KitchenId, true)
-            assert asset.getAttribute("presenceDetected").get().getValueAsBoolean().get()
-            assert asset.getAttribute("lastPresenceDetected").get().getValueAsNumber().get() == expectedLastPresenceDetected
+            apartmentAsset = assetStorageService.find(managerDemoSetup.apartment1Id, true)
+            assert apartmentAsset.getAttribute("presenceDetected").get().getValueAsBoolean().get()
+            roomAsset = assetStorageService.find(managerDemoSetup.apartment1KitchenId, true)
+            assert roomAsset.getAttribute("presenceDetected").get().getValueAsBoolean().get()
+            assert roomAsset.getAttribute("lastPresenceDetected").get().getValueAsNumber().get() == expectedLastPresenceDetected
         }
 
         when: "time advances"
@@ -99,9 +105,11 @@ class ApartmentPresenceDetectionTest extends Specification implements ManagerCon
 
         then: "no presence should be detected but the last timestamp still available"
         conditions.eventually {
-            def asset = assetStorageService.find(managerDemoSetup.apartment1KitchenId, true)
-            assert !asset.getAttribute("presenceDetected").get().getValueAsBoolean().get()
-            assert asset.getAttribute("lastPresenceDetected").get().getValueAsNumber().get() == expectedLastPresenceDetected
+            apartmentAsset = assetStorageService.find(managerDemoSetup.apartment1Id, true)
+            assert !apartmentAsset.getAttribute("presenceDetected").get().getValueAsBoolean().get()
+            roomAsset = assetStorageService.find(managerDemoSetup.apartment1KitchenId, true)
+            assert !roomAsset.getAttribute("presenceDetected").get().getValueAsBoolean().get()
+            assert roomAsset.getAttribute("lastPresenceDetected").get().getValueAsNumber().get() == expectedLastPresenceDetected
         }
 
         cleanup: "the server should be stopped"

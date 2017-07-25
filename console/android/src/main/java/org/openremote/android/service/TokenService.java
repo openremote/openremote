@@ -2,17 +2,16 @@ package org.openremote.android.service;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.os.Build;
 import android.preference.PreferenceManager;
-import android.util.Log;
 
-import org.openremote.android.BuildConfig;
 import org.openremote.android.R;
 
 import java.io.IOException;
 import java.security.cert.CertificateException;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
@@ -31,6 +30,8 @@ import retrofit2.converter.scalars.ScalarsConverterFactory;
 
 
 public class TokenService {
+
+    private static final Logger LOG = Logger.getLogger(TokenService.class.getName());
 
     private final SharedPreferences sharedPref;
     private final String tokenKey;
@@ -66,10 +67,13 @@ public class TokenService {
         String deviceId = sharedPref.getString(deviceIdKey, null);
         if (refreshToken != null && fcmToken != null) {
             sendFCMToken(fcmToken, deviceId);
+        } else {
+            LOG.fine("On create, no refresh or FCM token, skipping update...");
         }
     }
 
     public void saveToken(String token, String refreshToken, String idToken) {
+        LOG.fine("Saving access, refresh, and id tokens");
         SharedPreferences.Editor editor = sharedPref.edit();
         editor.putString(tokenKey, token);
         editor.putString(refreshTokenKey, refreshToken);
@@ -80,9 +84,9 @@ public class TokenService {
         String deviceId = sharedPref.getString(deviceIdKey, null);
         if (fcmToken != null && deviceId != null) {
             sendFCMToken(fcmToken, deviceId);
+        } else {
+            LOG.fine("On save tokens, no device id or FCM token, skipping update...");
         }
-
-
     }
 
     public String getJsonToken() {
@@ -98,7 +102,7 @@ public class TokenService {
         call.enqueue(new Callback<Map<String, String>>() {
             @Override
             public void onResponse(Call<Map<String, String>> call, Response<Map<String, String>> response) {
-                Log.i("TOKEN_SERVICE", "response : " + response.body());
+                LOG.fine("Refresh access token response: " + response.body());
                 if (response.body() != null) {
                     try {
                         callback.onToken("Bearer " + response.body().get("access_token"));
@@ -122,6 +126,8 @@ public class TokenService {
         storeFCMToken(fcmToken, deviceId);
         if (refreshToken_key != null) {
             sendFCMToken(fcmToken, deviceId);
+        } else {
+            LOG.fine("On send or store FCM token, no refresh token key (user never logged in on this device?), skipping update...");
         }
     }
 
@@ -133,6 +139,7 @@ public class TokenService {
     }
 
     private void sendFCMToken(final String fcmToken, final String id) {
+        LOG.fine("Sending FCM token for device id: " + id);
         getAuthorization(new TokenCallback() {
             @Override
             public void onToken(String accessToken) {
@@ -142,8 +149,9 @@ public class TokenService {
                         @Override
                         public void onResponse(Call call, Response response) {
                             if (response.code() != 204) {
-                                Log.e("TOKEN_SERVICE", "save fcm token failed");
+                                LOG.severe("Sending FCM device token failed for device id: " + id  +", response code: " + response.code());
                             } else {
+                                LOG.fine("Sending FCM device token successful for device id: " + id);
                                 SharedPreferences.Editor editor = sharedPref.edit();
                                 editor.remove(fcmTokenKey);
                                 editor.remove(deviceIdKey);
@@ -153,7 +161,7 @@ public class TokenService {
 
                         @Override
                         public void onFailure(Call call, Throwable t) {
-                            Log.e("TOKEN_SERVICE", "save fcm token failed ");
+                            LOG.log(Level.SEVERE, "Sending FCM device token failed for device id: " + id, t);
                         }
                     });
 
@@ -161,7 +169,7 @@ public class TokenService {
 
             @Override
             public void onFailure(Throwable t) {
-                Log.e("TOKEN_SERVICE", "refresh token failed");
+                LOG.log(Level.SEVERE, "Sending FCM device token failed, couldn't get access token, for device id: " + id, t);
             }
         });
 
@@ -198,12 +206,16 @@ public class TokenService {
                 notificationService.deleteNotification(realm, accessToken,id).enqueue(new Callback<Void>() {
                     @Override
                     public void onResponse(Call<Void> call, Response<Void> response) {
-
+                        if (response.code() != 204) {
+                            LOG.severe("Error deleting alert notification: " + id + ", response code: " + response.code());
+                        } else {
+                            LOG.fine("Alert notification deleted successfully: " + id);
+                        }
                     }
 
                     @Override
                     public void onFailure(Call<Void> call, Throwable t) {
-                        Log.e("TOKEN_SERVICE","Error deleting notification",t);
+                        LOG.log(Level.SEVERE, "Error deleting alert notification: " + id, t);
                     }
                 });
 
@@ -211,11 +223,9 @@ public class TokenService {
 
             @Override
             public void onFailure(Throwable t) {
-                Log.e("TOKEN_SERVICE","Error deleting notification",t);
+                LOG.log(Level.SEVERE, "Error deleting notification: " + id, t);
             }
         });
-
-
     }
 
     public void executeAction(final AlertAction alertAction) {
@@ -225,12 +235,16 @@ public class TokenService {
                 notificationService.updateAssetAction(realm, accessToken,alertAction.getAssetId(),alertAction.getAttributeName(),alertAction.getRawJson()).enqueue(new Callback<Void>() {
                     @Override
                     public void onResponse(Call<Void> call, Response<Void> response) {
-
+                        if (response.code() != 204) {
+                            LOG.severe("Error executing asset write: " + alertAction + ", response code: " + response.code());
+                        } else {
+                            LOG.fine("Asset write executed successfully: " + alertAction);
+                        }
                     }
 
                     @Override
                     public void onFailure(Call<Void> call, Throwable t) {
-                        Log.e("TOKEN_SERVICE","Error execute actuator",t);
+                        LOG.log(Level.SEVERE, "Error executing asset write: " + alertAction, t);
                     }
                 });
 
@@ -238,7 +252,7 @@ public class TokenService {
 
             @Override
             public void onFailure(Throwable t) {
-                Log.e("TOKEN_SERVICE","Error execute actuator",t);
+                LOG.log(Level.SEVERE, "Error executing asset write: " + alertAction, t);
             }
         });
 

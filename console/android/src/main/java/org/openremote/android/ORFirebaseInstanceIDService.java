@@ -15,12 +15,12 @@
  */
 package org.openremote.android;
 
-import android.util.Log;
-
 import com.google.firebase.iid.FirebaseInstanceId;
 import com.google.firebase.iid.FirebaseInstanceIdService;
 
 import org.openremote.android.service.TokenService;
+
+import java.util.logging.Logger;
 
 
 /**
@@ -29,7 +29,8 @@ import org.openremote.android.service.TokenService;
  */
 public class ORFirebaseInstanceIDService extends FirebaseInstanceIdService {
 
-    private static final String TAG = "ORFirebaseIIDService";
+    private static final Logger LOG = Logger.getLogger(ORFirebaseInstanceIDService.class.getName());
+
     private TokenService tokenService;
 
     @Override
@@ -39,8 +40,6 @@ public class ORFirebaseInstanceIDService extends FirebaseInstanceIdService {
     }
 
     public ORFirebaseInstanceIDService() {
-
-
     }
 
     /**
@@ -53,7 +52,7 @@ public class ORFirebaseInstanceIDService extends FirebaseInstanceIdService {
     public void onTokenRefresh() {
         // Get updated InstanceID token.
         String refreshedToken = FirebaseInstanceId.getInstance().getToken();
-        Log.d(TAG, "Refreshed token: " + refreshedToken);
+        LOG.fine("Obtained FCM token: " + refreshedToken);
 
         // If you want to send messages to this application instance or
         // manage this apps subscriptions on the server side, send the

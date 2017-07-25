@@ -20,5 +20,14 @@
 package org.openremote.model.notification;
 
 public enum DeliveryStatus {
-    PENDING, DELIVERED
+
+    /**
+     * To be picked up by receiving device.
+     */
+    PENDING,
+
+    /**
+     * Picked up by receiving device.
+     */
+    DELIVERED
 }

@@ -592,7 +592,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         !currentTemperature.getValue().isPresent()
         Meta protectedMeta = currentTemperature.getMeta()
         protectedMeta.size() == 6
-        protectedMeta.stream().filter(isMetaNameEqualTo(AssetMeta.LABEL)).findFirst().get().getValueAsString().get() == "Current Temperature"
+        protectedMeta.stream().filter(isMetaNameEqualTo(AssetMeta.LABEL)).findFirst().get().getValueAsString().get() == "Current temperature"
         protectedMeta.stream().filter(isMetaNameEqualTo(AssetMeta.READ_ONLY)).findFirst().get().getValueAsBoolean().get()
         protectedMeta.stream().filter(isMetaNameEqualTo(AssetMeta.RULE_STATE)).findFirst().get().getValueAsBoolean().get()
         protectedMeta.stream().filter(isMetaNameEqualTo(AssetMeta.STORE_DATA_POINTS)).findFirst().get().getValueAsBoolean().get()

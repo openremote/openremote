@@ -14,7 +14,9 @@ Uses 'motionSensor' and optional 'co2Level' of a room asset to set the 'presence
 and 'lastPresenceDetected' attributes of the room. Presence detection is based on motion
 sensing and if available for a room, increasing CO2 level over a time window. The assumption
 is that the 'motionSensor' is set to 0 or 1, depending on whether motion has been detected
-in a room over a time window that is internal to the sensor (e.g. the last minute).
+in a room over a time window that is internal to the sensor (e.g. the last minute). The
+'presenceDetected' attribute of the apartment is set depending on whether any child room
+assets have presence set.
 */
 
 
@@ -108,3 +110,23 @@ then
 end
 
 
+rule "Set presence detected flag of apartment if presence is detected in any room"
+when
+    $residence : AssetState(type == AssetType.RESIDENCE, attributeName == "presenceDetected", valueFalse)
+    $room : AssetState(parentId == $residence.id, type == AssetType.ROOM, attributeName == "presenceDetected", valueTrue)
+then
+    assets.dispatch(
+            new AttributeEvent($residence.getId(), "presenceDetected", Values.create(true))
+    );
+end
+
+
+rule "Clear presence detected flag of apartment when no presence is detected in any room"
+when
+    $residence : AssetState(type == AssetType.RESIDENCE, attributeName == "presenceDetected", valueTrue)
+    not AssetState(parentId == $residence.id, type == AssetType.ROOM, attributeName == "presenceDetected", valueTrue)
+then
+    assets.dispatch(
+            new AttributeEvent($residence.getId(), "presenceDetected", Values.create(false))
+    );
+end

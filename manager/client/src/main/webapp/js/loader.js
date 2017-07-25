@@ -21,7 +21,7 @@ window.handleLoadError = function(reason) {
     console.log("Load error: " + reason);
     handleLoadComplete();
     window.document.body.innerHTML =
-        "<div style='padding:1em;'><h1>Error starting application</h1><h5>Resource not loaded: " + reason + "</h5><h3>" + defaultErrorMessage + "</h3></div>";
+        "<div style='padding:1em;'><h1>Error starting application</h1><h5>Reason: " + reason + "</h5><h3>" + defaultErrorMessage + "</h3></div>";
 };
 
 window.handleLoadComplete = function() {

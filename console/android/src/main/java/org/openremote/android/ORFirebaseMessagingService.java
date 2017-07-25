@@ -11,7 +11,6 @@ import android.media.RingtoneManager;
 import android.net.Uri;
 import android.preference.PreferenceManager;
 import android.support.v4.app.NotificationCompat;
-import android.util.Log;
 
 import com.google.firebase.messaging.RemoteMessage;
 
@@ -22,6 +21,8 @@ import org.openremote.android.service.TokenService;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -29,14 +30,14 @@ import retrofit2.Response;
 
 public class ORFirebaseMessagingService extends com.google.firebase.messaging.FirebaseMessagingService {
 
-    private static final String TAG = "MyFirebaseMsgService";
+    private static final Logger LOG = Logger.getLogger(ORFirebaseMessagingService.class.getName());
 
     private TokenService tokenService;
 
     public class MyBroadcastReceiver extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
-             Log.i("NOTIFICATION","TODO: Remove Notification");
+             LOG.info("TODO: Remove notification");
         }
 
     }
@@ -67,16 +68,16 @@ public class ORFirebaseMessagingService extends com.google.firebase.messaging.Fi
 
         // TODO(developer): Handle FCM messages here.
         // Not getting messages here? See why this may be: https://goo.gl/39bRNJ
-        Log.d(TAG, "From: " + remoteMessage.getFrom());
+        LOG.fine("Received message from: " + remoteMessage.getFrom());
 
         // Check if message contains a data payload.
         if (remoteMessage.getData().size() > 0) {
-            Log.d(TAG, "Message data payload: " + remoteMessage.getData());
+            LOG.fine("Message data payload: " + remoteMessage.getData());
         }
 
         // Check if message contains a notification payload.
         if (remoteMessage.getNotification() != null) {
-            Log.d(TAG, "Message Notification Body: " + remoteMessage.getNotification().getBody());
+            LOG.fine("Message contains notification body: " + remoteMessage.getNotification().getBody());
         }
 
         tokenService.getAlerts(new Callback<List<AlertNotification>>() {
@@ -93,7 +94,7 @@ public class ORFirebaseMessagingService extends com.google.firebase.messaging.Fi
                         previousAlertIds.add(alertNotification.getId().toString());
                     }
                     actualAlertIds.add(alertNotification.getId().toString());
-                    Log.d("NOTIFICATION", alertNotification.toString());
+                    LOG.fine("Retrieved alert notifications from service: " + alertNotification);
                 }
                 previousAlertIds.retainAll(actualAlertIds);
                 sharedPreferences.edit().putStringSet(getString(R.string.SHARED_PREF_OPENED_ALERT) ,previousAlertIds ).commit();
@@ -101,7 +102,7 @@ public class ORFirebaseMessagingService extends com.google.firebase.messaging.Fi
 
             @Override
             public void onFailure(Call<List<AlertNotification>> call, Throwable t) {
-                Log.e("NOTIFICATION", "Error retriving alert", t);
+                LOG.log(Level.SEVERE, "Error retrieving alert", t);
             }
         });
 
@@ -119,17 +120,16 @@ public class ORFirebaseMessagingService extends com.google.firebase.messaging.Fi
         Intent intent = new Intent(this, ORMessagingActionService.class);
         intent.putExtra("notification", alertNotification);
 
-        PendingIntent pendingIntent = PendingIntent.getService(this, notificationId, intent,
-                PendingIntent.FLAG_ONE_SHOT);
-
+        PendingIntent pendingIntent = PendingIntent.getService(this, notificationId, intent, PendingIntent.FLAG_ONE_SHOT);
 
         Uri defaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
 
         NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this)
                 .setContentTitle(alertNotification.getTitle())
+                .setStyle(new NotificationCompat.BigTextStyle().bigText(alertNotification.getMessage()))
                 .setContentText(alertNotification.getMessage())
                 .setDeleteIntent(pendingIntent)
-                .setSmallIcon(R.drawable.app_icon)
+                .setSmallIcon(R.drawable.notification_icon)
                 .setWhen(0)
                 .setPriority(Notification.PRIORITY_MAX)
                 .setSound(defaultSoundUri);
@@ -141,10 +141,11 @@ public class ORFirebaseMessagingService extends com.google.firebase.messaging.Fi
             actionIntent.putExtra("url", alertNotification.getAppUrl());
             actionIntent.putExtra("notification", alertNotification);
             actionIntent.setAction(Long.toString(System.currentTimeMillis()));
-            PendingIntent actionPendingIntent = PendingIntent.getService(this, notificationId, actionIntent,
-                  pendingIntent.FLAG_ONE_SHOT);
+            PendingIntent actionPendingIntent = PendingIntent.getService(this, notificationId, actionIntent, PendingIntent.FLAG_ONE_SHOT);
             notificationBuilder = notificationBuilder.addAction(new NotificationCompat.Action(R.drawable.empty, alertAction.getTitle(), actionPendingIntent));
         }
+
+        LOG.fine("Showing notification (" + alertNotification.getActions().size() + " actions): " + alertNotification.getMessage());
 
         NotificationManager notificationManager =
                 (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);

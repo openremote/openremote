@@ -153,6 +153,7 @@ public class NotificationService implements ContainerService {
             query.setParameter("id", id);
             query.setParameter("status", DeliveryStatus.DELIVERED);
             query.executeUpdate();
+            // TODO Who is cleaning up the delivered notifications?
         });
     }
 

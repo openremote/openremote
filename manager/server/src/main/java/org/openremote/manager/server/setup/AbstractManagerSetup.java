@@ -81,6 +81,14 @@ public abstract class AbstractManagerSetup implements Setup {
                     new MetaItem(RULE_STATE, Values.create(true)),
                     new MetaItem(SHOW_ON_DASHBOARD, Values.create(true))
                 )),
+            new AssetAttribute("presenceDetected", AttributeType.BOOLEAN)
+                .setMeta(new Meta(
+                    new MetaItem(LABEL, Values.create("Presence detected")),
+                    new MetaItem(DESCRIPTION, Values.create("Presence detected in any room")),
+                    new MetaItem(PROTECTED, Values.create(true)),
+                    new MetaItem(RULE_STATE, Values.create(true)),
+                    new MetaItem(SHOW_ON_DASHBOARD, Values.create(true))
+                )),
             new AssetAttribute("vacationUntil", TIMESTAMP_MILLIS)
                 .setMeta(new Meta(
                     new MetaItem(LABEL, Values.create("Vacation until")),
@@ -117,7 +125,7 @@ public abstract class AbstractManagerSetup implements Setup {
         room.addAttributes(
             new AssetAttribute("motionSensor", NUMBER)
                 .setMeta(
-                    new MetaItem(LABEL, Values.create("Motion Sensor")),
+                    new MetaItem(LABEL, Values.create("Motion sensor")),
                     new MetaItem(DESCRIPTION, Values.create("Greater than zero when motion is sensed")),
                     new MetaItem(READ_ONLY, Values.create(true)),
                     new MetaItem(RULE_STATE, Values.create(true)),
@@ -125,7 +133,7 @@ public abstract class AbstractManagerSetup implements Setup {
                 ).addMeta(shouldBeLinked ? agentLinker.get() : null),
             new AssetAttribute("presenceDetected", AttributeType.BOOLEAN)
                 .setMeta(
-                    new MetaItem(LABEL, Values.create("Presence Detected")),
+                    new MetaItem(LABEL, Values.create("Presence detected")),
                     new MetaItem(DESCRIPTION, Values.create("Someone is moving or resting in the room")),
                     new MetaItem(RULE_STATE, Values.create(true)),
                     new MetaItem(PROTECTED, Values.create(true)),
@@ -146,7 +154,7 @@ public abstract class AbstractManagerSetup implements Setup {
         room.addAttributes(
             new AssetAttribute("co2Level", CO2_PPM)
                 .setMeta(
-                    new MetaItem(LABEL, Values.create("CO2 Level")),
+                    new MetaItem(LABEL, Values.create("CO2 level")),
                     new MetaItem(RULE_STATE, Values.create(true)),
                     new MetaItem(RULE_EVENT, Values.create(true)),
                     new MetaItem(RULE_EVENT_EXPIRES, Values.create("16m")),
@@ -180,7 +188,7 @@ public abstract class AbstractManagerSetup implements Setup {
         room.addAttributes(
             new AssetAttribute("currentTemperature", TEMPERATURE_CELCIUS)
                 .setMeta(
-                    new MetaItem(LABEL, Values.create("Current Temperature")),
+                    new MetaItem(LABEL, Values.create("Current temperature")),
                     new MetaItem(RULE_STATE, Values.create(true)),
                     new MetaItem(PROTECTED, Values.create(true)),
                     new MetaItem(READ_ONLY, Values.create(true)),
@@ -197,7 +205,7 @@ public abstract class AbstractManagerSetup implements Setup {
         room.addAttributes(
             new AssetAttribute("targetTemperature", TEMPERATURE_CELCIUS)
                 .setMeta(
-                    new MetaItem(LABEL, Values.create("Target Temperature")),
+                    new MetaItem(LABEL, Values.create("Target temperature")),
                     new MetaItem(RULE_STATE, Values.create(true)),
                     new MetaItem(PROTECTED, Values.create(true)),
                     new MetaItem(SHOW_ON_DASHBOARD, Values.create(true)),

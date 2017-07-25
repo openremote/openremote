@@ -1,12 +1,13 @@
 package org.openremote.test.rules;
 
 import org.openremote.model.*;
-import org.openremote.model.asset.*
-import org.openremote.model.notification.*
-import org.openremote.model.user.UserQuery
-import org.openremote.model.value.Values
-import org.openremote.model.attribute.AttributeEvent
-import org.openremote.model.attribute.AttributeState;
+import org.openremote.model.asset.*;
+import org.openremote.model.user.*;
+import org.openremote.model.value.*;
+import org.openremote.model.attribute.*;
+import org.openremote.model.notification.*;
+import java.text.SimpleDateFormat;
+import java.util.List;
 
 global java.util.logging.Logger LOG;
 global org.openremote.model.rules.Users users;
@@ -50,15 +51,34 @@ when
     $alarmTrigger : AlarmTrigger(residenceId == $residence.id)
     not(UserNotified(residenceId == $residence.id))
 then
-    AlertNotification alert = new AlertNotification("Alarm triggered!", "Presence was detected in: " + $alarmTrigger.getRoomName());
-        alert.addLinkAction("View security status", "#/Veilig");
-        alert.addActuatorAction("Disarm alarm", $residence.getId(), "alarmEnabled", Values.create(false).toJson());
-    users
+    LOG.fine("Alarm in apartment (room: " + $alarmTrigger.getRoomName() + "): " + $residence);
+
+    String timestamp = new SimpleDateFormat(Constants.DEFAULT_DATETIME_FORMAT).format(
+        drools.getWorkingMemory().getSessionClock().getCurrentTime()
+    );
+    AlertNotification alert = new AlertNotification(
+        "Apartment Alarm", "Aanwezigheid in " + $alarmTrigger.getRoomName() + " (" + timestamp + ")."
+    );
+    alert.addLinkAction("Details", "#/Veilig");
+    alert.addActuatorAction("Alarm uit", $residence.getId(), "alarmEnabled", Values.create(false).toJson());
+
+    List<String> userIds = users
         .query()
         .asset(new UserQuery.AssetPredicate($residence.getId()))
-        .applyResults(userIds -> userIds.forEach(userId -> users.storeAndNotify(userId, alert)));
+        .getResults();
+
+    LOG.fine("Sending alert to apartment users: " + userIds);
+    userIds.forEach(userId -> users.storeAndNotify(userId, alert));
 
     UserNotified userNotified = new UserNotified();
     userNotified.setResidenceId($residence.getId());
     insert(userNotified);
+end
+
+rule "Remove user-was-notified marker when there is no alarm triggered"
+when
+    $userNotified : UserNotified()
+    not AlarmTrigger(residenceId == $userNotified.residenceId)
+then
+    delete($userNotified);
 end

@@ -10,7 +10,6 @@ import android.net.NetworkInfo;
 import android.net.http.SslError;
 import android.os.Build;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
 import android.webkit.JavascriptInterface;
@@ -35,17 +34,12 @@ public class MainActivity extends Activity {
 
     private static final Logger LOG = Logger.getLogger(MainActivity.class.getName());
 
-    private final ConnectivityChangeReceiver connectivityChangeReceiver = new ConnectivityChangeReceiver();
-    private WebView webView;
+    protected final ConnectivityChangeReceiver connectivityChangeReceiver = new ConnectivityChangeReceiver();
+    protected WebView webView;
+    protected ErrorViewHolder errorViewHolder;
 
-    private boolean hasNetwork = false;
-
-    private ErrorViewHolder errorViewHolder;
-
-
-    class ErrorViewHolder {
+    protected class ErrorViewHolder {
         View errorView;
-
         Button btnReload;
         Button btnExit;
         TextView tvErrorTitle;
@@ -59,7 +53,8 @@ public class MainActivity extends Activity {
             tvErrorExplanation = (TextView) errorView.findViewById(R.id.errorExplanation);
         }
 
-        void show(int errorTitle, int errorDescription, boolean canReload, boolean canExit) {
+        public void show(int errorTitle, int errorDescription, boolean canReload, boolean canExit) {
+            LOG.fine("Showing error view");
 
             btnReload.setVisibility(canReload ? View.VISIBLE : View.GONE);
             btnExit.setVisibility(canExit ? View.VISIBLE : View.GONE);
@@ -67,9 +62,13 @@ public class MainActivity extends Activity {
             tvErrorTitle.setText(errorTitle);
             tvErrorExplanation.setText(errorDescription);
             errorView.setVisibility(View.VISIBLE);
+
+            // Stop and clear web view
+            LOG.fine("Clearing web view");
+            webView.loadUrl("about:blank");
         }
 
-        private void hide() {
+        public void hide() {
             errorView.setVisibility(View.GONE);
         }
     }
@@ -89,35 +88,37 @@ public class MainActivity extends Activity {
             WebView.setWebContentsDebuggingEnabled(true);
         }
 
-
         setContentView(R.layout.activity_web);
 
         webView = (WebView) findViewById(R.id.webview);
         if (savedInstanceState != null) {
             webView.restoreState(savedInstanceState);
         } else {
-            loadIndex();
+            initializeWebView();
+            String url = getString(R.string.OR_BASE_SERVER) + getString(R.string.OR_CONSOLE_URL);
+            if (getIntent().hasExtra("url")) {
+                url = url + getIntent().getStringExtra("url");
+            }
+            LOG.fine("Loading web view: " + url);
+            webView.loadUrl(url);
         }
+
         errorViewHolder = new ErrorViewHolder(findViewById(R.id.errorView));
-
-
     }
 
     @Override
     protected void onNewIntent(Intent intent) {
-       if (intent.hasExtra("url")) {
-           webView.loadUrl(getString(R.string.OR_BASE_SERVER) + getString(R.string.OR_CONSOLE_URL) + intent.getStringExtra("url"));
-       }
+        if (intent.hasExtra("url")) {
+            String url = getString(R.string.OR_BASE_SERVER) + getString(R.string.OR_CONSOLE_URL) + intent.getStringExtra("url");
+            LOG.fine("Loading web view: " + url);
+            webView.loadUrl(url);
+        }
     }
-
 
     @Override
     protected void onResume() {
         super.onResume();
-        registerReceiver(
-                connectivityChangeReceiver,
-                new IntentFilter(
-                        ConnectivityManager.CONNECTIVITY_ACTION));
+        registerReceiver(connectivityChangeReceiver, new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION));
     }
 
     @Override
@@ -128,15 +129,17 @@ public class MainActivity extends Activity {
 
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
-        if (event.getAction() == KeyEvent.ACTION_DOWN) {
-            switch (keyCode) {
-                case KeyEvent.KEYCODE_BACK:
-                    if (webView.canGoBack()) {
-                        webView.goBack();
-                    } else {
-                        finish();
-                    }
-                    return true;
+        if (webView != null) {
+            if (event.getAction() == KeyEvent.ACTION_DOWN) {
+                switch (keyCode) {
+                    case KeyEvent.KEYCODE_BACK:
+                        if (webView.canGoBack()) {
+                            webView.goBack();
+                        } else {
+                            finish();
+                        }
+                        return true;
+                }
             }
         }
         return super.onKeyDown(keyCode, event);
@@ -147,7 +150,22 @@ public class MainActivity extends Activity {
         webView.saveState(outState);
     }
 
-    private void loadIndex() {
+    public void reloadWebView(View view) {
+        errorViewHolder.hide();
+        String url = webView.getUrl();
+        if ("about:blank".equals(url))
+            url = getString(R.string.OR_BASE_SERVER) + getString(R.string.OR_CONSOLE_URL);
+        LOG.fine("Reloading web view: " + url);
+        webView.loadUrl(url);
+    }
+
+    public void exitOnClick(View view) {
+        finish();
+        System.exit(0);
+    }
+
+    protected void initializeWebView() {
+        LOG.fine("Initializing web view");
 
         webView.addJavascriptInterface(new WebAppInterface(this), "MobileInterface");
         WebSettings webSettings = webView.getSettings();
@@ -166,63 +184,40 @@ public class MainActivity extends Activity {
         webView.setWebViewClient(new WebViewClient() {
             @Override
             public void onReceivedHttpError(WebView view, WebResourceRequest request, WebResourceResponse errorResponse) {
-                LOG.warning("request url :" + request.getUrl().toString());
-                LOG.warning("error :" + errorResponse.getStatusCode());
-                //avoid display error if failed to refresh token will be redirect to login
-                if (errorResponse.getStatusCode() == 400 && request.getUrl().toString().endsWith("token")) {
-                    return;
-                }
-                errorViewHolder.show(R.string.httpError,R.string.httpErrorExplain,true,true);
+                LOG.warning("Error requesting '" + request.getUrl() + "', response code: " + errorResponse.getStatusCode());
+                errorViewHolder.show(R.string.httpError, R.string.httpErrorExplain, true, true);
             }
 
             @Override
             public void onReceivedSslError(WebView view, SslErrorHandler handler, SslError error) {
                 if (Boolean.parseBoolean(getString(R.string.SSL_IGNORE))) {
+                    LOG.fine("Ignoring SSL certificate error: " + error.getPrimaryError());
                     handler.proceed(); // Ignore SSL certificate errors
                 } else {
-                    LOG.severe("error : something wrong with SSL configuration");
-                    errorViewHolder.show(R.string.httpError,R.string.httpErrorExplain,true,true);
+                    LOG.severe("SSL error: " + error.getPrimaryError());
+                    LOG.severe("SSL certificate: " + error.getCertificate());
+                    errorViewHolder.show(R.string.httpError, R.string.httpErrorExplain, true, true);
                 }
             }
 
             @Override
             public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
-
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                    LOG.warning("request url :" + request.getUrl().toString());
-                    LOG.warning("error :" + error.getErrorCode());
-                    LOG.warning("error :" + error.getDescription());
                     // Remote debugging sessions from Chrome trigger "ERR_CACHE_MISS" that don't hurt, but we should not redirect the view
                     if (isRemoteDebuggingEnabled() && error.getErrorCode() == ERROR_UNKNOWN) {
                         return;
                     }
+                    LOG.warning("Error requesting '" + request.getUrl() + "': " + error.getErrorCode());
                 }
-                errorViewHolder.show(R.string.fatalError,R.string.fatalErrorExplain,false,true);
+                errorViewHolder.show(R.string.fatalError, R.string.fatalErrorExplain, false, true);
             }
         });
         webView.setWebChromeClient(new WebChromeClient());
-        String url = getString(R.string.OR_BASE_SERVER) + getString(R.string.OR_CONSOLE_URL);
-        if (getIntent().hasExtra("url")) {
-            url = url + getIntent().getStringExtra("url");
-        }
-        webView.loadUrl(url);
     }
 
+    protected class WebAppInterface {
 
-
-    public void reloadPage(View view) {
-        errorViewHolder.hide();
-        webView.loadUrl(webView.getUrl());
-    }
-
-    public void exitOnClick(View view) {
-        finish();
-        System.exit(0);
-    }
-
-    private class WebAppInterface {
-
-       private final TokenService tokenService;
+        private final TokenService tokenService;
 
         public WebAppInterface(Activity activity) {
             tokenService = new TokenService(activity);
@@ -233,20 +228,19 @@ public class MainActivity extends Activity {
             tokenService.clearToken();
         }
 
-
         @JavascriptInterface
         public void postMessage(String jsonMessage) throws JSONException {
             JSONObject reader = new JSONObject(jsonMessage);
             String messageType = reader.getString("type");
             JSONObject data = reader.optJSONObject("data");
             switch (messageType) {
-                case "token" :
-                    tokenService.saveToken(data.getString("token"), data.getString("refreshToken") , data.getString("idToken"));
+                case "token":
+                    tokenService.saveToken(data.getString("token"), data.getString("refreshToken"), data.getString("idToken"));
                     break;
                 case "logout":
                     tokenService.clearToken();
                     break;
-                case "status" :
+                case "status":
                     // TODO: status that we want to receive from webview | waiting to know if it's relevant to show error if bad connectivity meybe a conter or timmout retry should be consider
                     // currently
                     // websocket drop with error
@@ -258,7 +252,7 @@ public class MainActivity extends Activity {
         @JavascriptInterface
         public String getMessage(String messageKey) {
             switch (messageKey) {
-                case "token" :
+                case "token":
                     return tokenService.getJsonToken();
                 default:
                     return "{}";
@@ -267,22 +261,20 @@ public class MainActivity extends Activity {
 
     }
 
-
-    private void onConnectivityChanged(boolean connectivity) {
-        this.hasNetwork = connectivity;
+    protected void onConnectivityChanged(boolean connectivity) {
         if (connectivity) {
-            reloadPage(getCurrentFocus());
+            reloadWebView(getCurrentFocus());
         } else {
-            errorViewHolder.show(R.string.noConnectivity,R.string.noConnectivityExplain,false,true);
+            errorViewHolder.show(R.string.noConnectivity, R.string.noConnectivityExplain, false, true);
         }
     }
 
-    private class ConnectivityChangeReceiver extends BroadcastReceiver {
+    protected class ConnectivityChangeReceiver extends BroadcastReceiver {
 
         @Override
         public void onReceive(Context context, Intent intent) {
             ConnectivityManager cm
-                    = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+                = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
 
             NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
             onConnectivityChanged(activeNetwork != null && activeNetwork.isConnectedOrConnecting());
