@@ -301,6 +301,8 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                     asset.setRealmId(parent.getRealmId());
             }
 
+            //TODO if parent and realm are provided, they should match!
+
             // Validate realm
             if (!managerIdentityService.getIdentityProvider().isActiveTenant(asset.getRealmId())) {
                 throw new IllegalStateException("Realm not found/active: " + asset.getRealmId());
