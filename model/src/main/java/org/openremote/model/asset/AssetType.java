@@ -74,6 +74,8 @@ public enum AssetType {
 
     ROOM(ASSET_NAMESPACE + ":room", "cube"),
 
+    PIER(ASSET_NAMESPACE + ":pier", "cube"),
+
     FLIGHT(ASSET_NAMESPACE + ":flight", "plane",
         new AssetAttribute("code", STRING)
             .setMeta(
