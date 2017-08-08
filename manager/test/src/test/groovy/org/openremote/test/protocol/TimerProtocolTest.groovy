@@ -85,7 +85,7 @@ class TimerProtocolTest extends Specification implements ManagerContainerTrait {
             assert jobDetail == null
             assert triggers.isEmpty()
         }
-
+    
         when: "the trigger is re-enabled"
         def enableScene = new AttributeEvent(managerDemoSetup.apartment1Id, "awaySceneEnabledFRIDAY", Values.create(true))
         assetProcessingService.sendAttributeEvent(enableScene)
