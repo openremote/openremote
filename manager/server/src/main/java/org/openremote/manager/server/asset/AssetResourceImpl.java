@@ -134,10 +134,17 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             if (isRestrictedUser()) {
                 return new Asset[0];
             }
+
+            AssetQuery query = new AssetQuery()
+                .parent(new AssetQuery.ParentPredicate(parentId));
+
+            if (requestParams.loadComplete) {
+                query = query.select(new AssetQuery.Select(true));
+            }
+
             if (isSuperUser()) {
                 List<ServerAsset> result = assetStorageService.findAll(
-                    new AssetQuery()
-                        .parent(new AssetQuery.ParentPredicate(parentId))
+                    query
                 );
                 return result.toArray(new Asset[result.size()]);
             } else {
@@ -146,8 +153,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                     throw new WebApplicationException(NOT_FOUND);
                 }
                 List<ServerAsset> result = assetStorageService.findAll(
-                    new AssetQuery()
-                        .parent(new AssetQuery.ParentPredicate(parentId))
+                    query
                         .tenant(new AssetQuery.TenantPredicate(tenant.getId()))
                 );
                 return result.toArray(new Asset[result.size()]);
