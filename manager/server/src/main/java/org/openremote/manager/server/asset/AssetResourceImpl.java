@@ -129,7 +129,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
     }
 
     @Override
-    public Asset[] getChildren(RequestParams requestParams, String parentId) {
+    public Asset[] getChildren(RequestParams requestParams, String parentId, boolean loadComplete) {
         try {
             if (isRestrictedUser()) {
                 return new Asset[0];
@@ -138,7 +138,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             AssetQuery query = new AssetQuery()
                 .parent(new AssetQuery.ParentPredicate(parentId));
 
-            if (requestParams.loadComplete) {
+            if (loadComplete) {
                 query = query.select(new AssetQuery.Select(true));
             }
 

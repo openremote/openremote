@@ -62,10 +62,6 @@ public class RequestParams<OUT> {
     @JsProperty(name = "$async")
     public boolean async;
 
-    @QueryParam("$loadComplete")
-    @JsProperty(name = "$loadComplete")
-    public boolean loadComplete;
-
     @JsIgnore
     public RequestParams() {
     }
@@ -127,11 +123,6 @@ public class RequestParams<OUT> {
 
     public RequestParams<OUT> setAsync(boolean async) {
         this.async = async;
-        return this;
-    }
-
-    public RequestParams<OUT> setLoadComplete(boolean loadComplete) {
-        this.loadComplete = loadComplete;
         return this;
     }
 }

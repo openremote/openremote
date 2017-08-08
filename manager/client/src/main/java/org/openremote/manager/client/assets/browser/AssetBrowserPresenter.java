@@ -243,7 +243,7 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
                 } else if (parent instanceof RootTreeNode) {
                     assetResource.getCurrentUserAssets(requestParams);
                 } else {
-                    assetResource.getChildren(requestParams, parent.getId());
+                    assetResource.getChildren(requestParams, parent.getId(), false);
                 }
             },
             200,

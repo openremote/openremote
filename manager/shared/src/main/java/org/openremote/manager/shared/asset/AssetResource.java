@@ -96,7 +96,7 @@ public interface AssetResource {
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
     @RolesAllowed({"read:assets"})
-    Asset[] getChildren(@BeanParam RequestParams requestParams, @PathParam("assetId") String parentId);
+    Asset[] getChildren(@BeanParam RequestParams requestParams, @PathParam("assetId") String parentId, @QueryParam("loadComplete") boolean loadComplete);
 
     /**
      * Retrieve the asset. Regular users can only access assets in their authenticated realm,
