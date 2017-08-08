@@ -21,6 +21,8 @@ package org.openremote.manager.client.i18n;
 
 import com.google.gwt.i18n.client.LocalizableResource;
 import com.google.gwt.i18n.client.Messages;
+import org.openremote.model.asset.AssetMeta;
+import org.openremote.model.value.ValueType;
 
 @LocalizableResource.DefaultLocale
 public interface ManagerMessages extends Messages {
@@ -229,11 +231,15 @@ public interface ManagerMessages extends Messages {
 
     String and();
 
-    String selectItem();
+    String customItem();
 
     String enterCustomAssetAttributeMetaName();
 
     String selectType();
+
+    String valueTypeDisplayName(@Select String valueType);
+
+    String assetMetaDisplayName(@Select String assetMetaName);
 
     String attributeDeleted(String name);
 
@@ -401,4 +407,9 @@ public interface ManagerMessages extends Messages {
 
     String simulatorStateSubmitted();
 
+    String selectAgent();
+
+    String selectAttribute();
+
+    String selectProtocolConfiguration();
 }

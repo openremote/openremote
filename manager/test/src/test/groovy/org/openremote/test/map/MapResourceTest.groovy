@@ -7,17 +7,17 @@ import spock.lang.Specification
 
 import static org.openremote.container.util.MapAccess.getString
 import static org.openremote.manager.server.setup.AbstractKeycloakSetup.*
-import static org.openremote.model.Constants.*;
+import static org.openremote.model.Constants.*
 
 class MapResourceTest extends Specification implements ManagerContainerTrait {
 
     def "Retrieve map settings"() {
         given: "the server container is started"
-        def serverPort = findEphemeralPort();
+        def serverPort = findEphemeralPort()
         def container = startContainerNoDemoImport(defaultConfig(serverPort), defaultServices())
 
         and: "an authenticated user"
-        def realm = MASTER_REALM;
+        def realm = MASTER_REALM
         def accessToken = authenticate(
                 container,
                 realm,
@@ -27,24 +27,24 @@ class MapResourceTest extends Specification implements ManagerContainerTrait {
         ).token
 
         and: "a test client target"
-        def clientTarget = getClientTarget(serverUri(serverPort), realm, accessToken);
+        def clientTarget = getClientTarget(serverUri(serverPort), realm, accessToken)
 
         and: "the map resource"
-        def mapResource = clientTarget.proxy(MapResource.class);
+        def mapResource = clientTarget.proxy(MapResource.class)
 
         when: "a request has been made"
-        def mapSettings = mapResource.getSettings(null);
+        def mapSettings = mapResource.getSettings(null)
 
         then: "settings should be not-null"
-        mapSettings != null;
+        mapSettings != null
 
         and: "JSON content is valid"
-        def json = new JsonSlurper().parseText(mapSettings.toJson());
-        json.center.size() == 2;
-        json.maxBounds.size() == 4;
-        json.style != null;
+        def json = new JsonSlurper().parseText(mapSettings.toJson())
+        json.center.size() == 2
+        json.maxBounds.size() == 4
+        json.style != null
 
         cleanup: "the server should be stopped"
-        stopContainer(container);
+        stopContainer(container)
     }
 }

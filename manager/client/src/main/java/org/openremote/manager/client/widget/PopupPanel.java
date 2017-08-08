@@ -120,7 +120,7 @@ public class PopupPanel extends SimplePanel implements SourcesPopupEvents,
    * <li>ROLL_DOWN - Expand from the top to the bottom, do not animate hiding</li>
    * </ul>
    */
-  public static enum AnimationType {
+  public enum AnimationType {
     CENTER, ONE_WAY_CORNER, ROLL_DOWN
   }
 

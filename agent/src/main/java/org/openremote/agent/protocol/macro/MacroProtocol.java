@@ -27,10 +27,7 @@ import org.openremote.model.util.Pair;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.Values;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ScheduledFuture;
 import java.util.logging.Logger;
 
@@ -306,7 +303,10 @@ public class MacroProtocol extends AbstractProtocol {
                 .map(MacroAction::toMetaItem)
                 .toArray(MetaItem[]::new);
 
-            updateLinkedProtocolConfiguration(protocolConfiguration, META_MACRO_ACTION, actionMeta);
+            updateLinkedProtocolConfiguration(
+                protocolConfiguration,
+                protocolConfig -> MetaItem.replaceMetaByName(protocolConfig.getMeta(), META_MACRO_ACTION, Arrays.asList(actionMeta))
+            );
         }
     }
 

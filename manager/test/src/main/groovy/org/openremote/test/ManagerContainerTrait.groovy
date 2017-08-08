@@ -85,19 +85,19 @@ trait ManagerContainerTrait extends ContainerTrait {
 
     static Container startContainerNoDemoAssets(Map<String, String> config, Iterable<ContainerService> services) {
         config << [(SETUP_IMPORT_DEMO_ASSETS): "false"]
-        startContainer(config, services);
+        startContainer(config, services)
     }
 
     static Container startContainerWithDemoScenesAndRules(Map<String, String> config, Iterable<ContainerService> services) {
         config << [(SETUP_IMPORT_DEMO_SCENES): "true"]
         config << [(SETUP_IMPORT_DEMO_RULES): "true"]
-        startContainer(config, services);
+        startContainer(config, services)
     }
 
     static Container startContainerNoDemoImport(Map<String, String> config, Iterable<ContainerService> services) {
         config << [(SETUP_IMPORT_DEMO_ASSETS): "false"]
         config << [(SETUP_IMPORT_DEMO_USERS): "false"]
-        startContainer(config, services);
+        startContainer(config, services)
     }
 
     /**

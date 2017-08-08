@@ -19,9 +19,13 @@
  */
 package org.openremote.manager.client.widget;
 
+import com.google.gwt.dom.client.Document;
+import com.google.gwt.event.dom.client.ChangeEvent;
+import com.google.gwt.event.dom.client.ChangeHandler;
 import com.google.gwt.i18n.client.DateTimeFormat;
 import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.IsWidget;
+import com.google.gwt.user.client.ui.ListBox;
 import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.app.dialog.JsonEditor;
 import org.openremote.manager.client.event.ShowFailureEvent;
@@ -29,16 +33,22 @@ import org.openremote.model.AbstractValueTimestampHolder;
 import org.openremote.model.Constants;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.ValueHolder;
+import org.openremote.model.asset.Asset;
+import org.openremote.model.asset.AssetAttribute;
+import org.openremote.model.attribute.AttributeRef;
+import org.openremote.model.util.Pair;
 import org.openremote.model.value.ArrayValue;
 import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.Values;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
+import java.util.function.*;
+
+import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 
 /**
  * Collection of functions and types for {@link Value} editor UI.
@@ -135,6 +145,13 @@ public final class ValueEditors {
         }
     };
 
+    private static ValueUpdater<AttributeRef> ATTRIBUTE_REF_UPDATER = new ValueUpdater<AttributeRef>() {
+        @Override
+        Value createValue(AttributeRef rawValue) throws IllegalArgumentException {
+            return rawValue != null ? rawValue.toArrayValue() : null;
+        }
+    };
+
     private static class TimestampLabel extends FlowPanel {
 
         static protected DateTimeFormat dateFormat = DateTimeFormat.getFormat(Constants.DEFAULT_DATE_FORMAT);
@@ -151,7 +168,6 @@ public final class ValueEditors {
 
     public static IsWidget createStringEditor(ValueHolder valueHolder,
                                               String currentValue,
-                                              String defaultValue,
                                               boolean readOnly,
                                               String styleName,
                                               FormGroup formGroup,
@@ -162,7 +178,7 @@ public final class ValueEditors {
             : null;
         FlowPanel panel = new FlowPanel();
         panel.setStyleName("flex layout horizontal center or-ValueEditor or-StringValueEditor");
-        IsWidget widget = ValueEditors.createStringEditorWidget(styleName, currentValue, defaultValue, updateConsumer);
+        IsWidget widget = ValueEditors.createStringEditorWidget(styleName, currentValue, updateConsumer);
         FlowPanel widgetWrapper = new FlowPanel();
         widgetWrapper.setStyleName("flex layout horizontal center");
         widgetWrapper.add(widget);
@@ -175,7 +191,6 @@ public final class ValueEditors {
 
     public static IsWidget createNumberEditor(ValueHolder valueHolder,
                                               String currentValue,
-                                              String defaultValue,
                                               boolean readOnly,
                                               String styleName,
                                               FormGroup formGroup,
@@ -188,7 +203,7 @@ public final class ValueEditors {
 
         FlowPanel panel = new FlowPanel();
         panel.setStyleName("flex layout horizontal center or-ValueEditor or-NumberValueEditor");
-        IsWidget widget = ValueEditors.createStringEditorWidget(styleName, currentValue, defaultValue, updateConsumer);
+        IsWidget widget = ValueEditors.createStringEditorWidget(styleName, currentValue, updateConsumer);
         FlowPanel widgetWrapper = new FlowPanel();
         widgetWrapper.setStyleName("flex layout horizontal center");
         widgetWrapper.add(widget);
@@ -200,7 +215,6 @@ public final class ValueEditors {
 
     public static IsWidget createBooleanEditor(ValueHolder valueHolder,
                                                Boolean currentValue,
-                                               Boolean defaultValue,
                                                boolean readOnly,
                                                String styleName,
                                                FormGroup formGroup,
@@ -212,7 +226,7 @@ public final class ValueEditors {
 
         FlowPanel panel = new FlowPanel();
         panel.setStyleName("flex layout horizontal center or-ValueEditor or-BooleanValueEditor");
-        IsWidget widget = ValueEditors.createBooleanEditorWidget(styleName, currentValue, defaultValue, updateConsumer);
+        IsWidget widget = ValueEditors.createBooleanEditorWidget(styleName, currentValue, updateConsumer);
         FlowPanel widgetWrapper = new FlowPanel();
         widgetWrapper.setStyleName("flex layout horizontal center");
         widgetWrapper.add(widget);
@@ -224,7 +238,6 @@ public final class ValueEditors {
 
     public static IsWidget createObjectEditor(ValueHolder valueHolder,
                                               ObjectValue currentValue,
-                                              Supplier<Value> resetSupplier,
                                               boolean readOnly,
                                               String label,
                                               String title,
@@ -238,7 +251,7 @@ public final class ValueEditors {
         FlowPanel panel = new FlowPanel();
         panel.setStyleName("flex layout horizontal center or-ValueEditor or-ObjectValueEditor");
         IsWidget widget = createJsonEditorWidget(
-            jsonEditor, label, title, currentValue, updateConsumer, resetSupplier
+            jsonEditor, label, title, currentValue, updateConsumer
         );
         FlowPanel widgetWrapper = new FlowPanel();
         widgetWrapper.setStyleName("flex layout horizontal center");
@@ -249,9 +262,111 @@ public final class ValueEditors {
         return () -> panel;
     }
 
+    public static IsWidget createAttributeRefEditor(ValueHolder valueHolder,
+                                                    boolean readOnly,
+                                                    FormGroup formGroup,
+                                                    BiConsumer<ValueHolder, Consumer<Asset[]>> assetSupplier,
+                                                    BiConsumer<Pair<ValueHolder, Asset>, Consumer<AssetAttribute[]>> attributeSupplier,
+                                                    String assetWatermark,
+                                                    String attributeWatermark,
+                                                    Consumer<List<ValidationFailure>> validationResultConsumer) {
+
+        Consumer<AttributeRef> updateConsumer = !readOnly
+            ? rawValue -> ATTRIBUTE_REF_UPDATER.accept(new ValueUpdate<>(formGroup, valueHolder, validationResultConsumer, rawValue))
+            : null;
+
+        FlowPanel panel = new FlowPanel();
+        panel.setStyleName("flex layout horizontal center or-ValueEditor or-AttributeRefEditor");
+        FlowPanel widgetWrapper = new FlowPanel();
+        widgetWrapper.setStyleName("flex layout horizontal center");
+        panel.add(widgetWrapper);
+
+        List<Asset> assets = new ArrayList<>();
+        FormListBox assetList = new FormListBox();
+        FormListBox attributeList = new FormListBox();
+        String[] existingValue = valueHolder
+            .getValueAsArray()
+            .filter(arr -> arr.length() == 2)
+            .map(arr -> new String[] {arr.getString(0).orElse(null), arr.getString(1).orElse(null)})
+            .orElse(new String[2]);
+        Runnable onAssetListChanged = () -> {
+            int selectedIndex = assetList.getSelectedIndex();
+            attributeList.clear();
+            attributeList.addItem(attributeWatermark);
+            if (selectedIndex == 0) {
+                attributeList.setVisible(false);
+                existingValue[0] = null;
+                existingValue[1] = null;
+            } else {
+                if (!assetList.getSelectedValue().equals(existingValue[0])) {
+                    existingValue[0] = assetList.getSelectedValue();
+                    existingValue[1] = null;
+                }
+
+                attributeSupplier.accept(new Pair<>(valueHolder, assets.get(selectedIndex-1)), attributes -> {
+                    int attributeSelectedIndex = 0;
+
+                    for (int i=0; i<attributes.length; i++) {
+                        AssetAttribute attribute = attributes[i];
+                        attributeList.addItem(attribute.getLabelOrName().orElse(""), attribute.getName().orElse(""));
+                        if (attribute.getName().orElse("").equals(existingValue[1])) {
+                            attributeSelectedIndex = i+1;
+                        }
+                    }
+
+                    attributeList.setSelectedIndex(attributeSelectedIndex);
+                    attributeList.setVisible(true);
+                });
+            }
+            if (updateConsumer != null) {
+                updateConsumer.accept(!isNullOrEmpty(existingValue[0]) && !isNullOrEmpty(existingValue[1]) ? new AttributeRef(existingValue[0], existingValue[1]) : null);
+            }
+        };
+        Runnable onAttributeListChanged = () -> {
+            int selectedIndex = attributeList.getSelectedIndex();
+            if (selectedIndex == 0) {
+                existingValue[1] = null;
+            } else {
+                existingValue[1] = attributeList.getSelectedValue();
+            }
+            if (updateConsumer != null) {
+                updateConsumer.accept(!isNullOrEmpty(existingValue[0]) && !isNullOrEmpty(existingValue[1]) ? new AttributeRef(existingValue[0], existingValue[1]) : null);
+            }
+        };
+
+
+        assetList.addItem(assetWatermark);
+        attributeList.addItem(attributeWatermark);
+        attributeList.setVisible(false);
+
+        assetList.addChangeHandler(event -> onAssetListChanged.run());
+        attributeList.addChangeHandler(event -> onAttributeListChanged.run());
+
+        // Populate asset list
+        assetSupplier.accept(valueHolder, retrievedAssets -> {
+            assets.addAll(Arrays.asList(retrievedAssets));
+            int assetSelectedIndex = 0;
+
+            for (int i=0; i<assets.size(); i++) {
+                Asset asset = assets.get(i);
+                assetList.addItem(asset.getName(), asset.getId());
+                if (asset.getId().equals(existingValue[0])) {
+                    assetSelectedIndex = i+1;
+                }
+            }
+
+            assetList.setSelectedIndex(assetSelectedIndex);
+            onAssetListChanged.run();
+        });
+
+        widgetWrapper.add(assetList);
+        widgetWrapper.add(attributeList);
+
+        return () -> panel;
+    }
+
     public static IsWidget createArrayEditor(ValueHolder valueHolder,
                                              ArrayValue currentValue,
-                                             Supplier<Value> resetSupplier,
                                              boolean readOnly,
                                              String label,
                                              String title,
@@ -266,7 +381,7 @@ public final class ValueEditors {
         FlowPanel panel = new FlowPanel();
         panel.setStyleName("flex layout horizontal center or-ValueEditor or-ArrayValueEditor");
         IsWidget widget = createJsonEditorWidget(
-            jsonEditor, label, title, currentValue, updateConsumer, resetSupplier
+            jsonEditor, label, title, currentValue, updateConsumer
         );
         FlowPanel widgetWrapper = new FlowPanel();
         widgetWrapper.setStyleName("flex layout horizontal center");
@@ -301,15 +416,12 @@ public final class ValueEditors {
     }
 
     private static IsWidget createStringEditorWidget(String styleName,
-                                                     String currentValue,
-                                                     String defaultValue,
+                                                     String value,
                                                      Consumer<String> updateConsumer) {
         FormInputText input = new FormInputText();
         input.addStyleName(styleName);
-        if (currentValue != null) {
-            input.setValue(currentValue);
-        } else if (defaultValue != null) {
-            input.setValue(defaultValue);
+        if (value != null) {
+            input.setValue(value);
         } else if (updateConsumer == null) {
             input.setValue("-");
         }
@@ -326,18 +438,12 @@ public final class ValueEditors {
     }
 
     private static IsWidget createBooleanEditorWidget(String styleName,
-                                                      Boolean currentValue,
-                                                      Boolean defaultValue,
+                                                      Boolean value,
                                                       Consumer<Boolean> updateConsumer) {
         FormCheckBox input = new FormCheckBox();
         input.addStyleName(styleName);
 
-        Boolean value = null;
-        if (currentValue != null) {
-            value = currentValue;
-        } else if (defaultValue != null) {
-            value = defaultValue;
-        } else if (updateConsumer == null) {
+        if (value == null && updateConsumer == null) {
             return new FormOutputText("-");
         }
 
@@ -355,8 +461,7 @@ public final class ValueEditors {
                                                    String label,
                                                    String title,
                                                    Value currentValue,
-                                                   Consumer<Value> updateConsumer,
-                                                   Supplier<Value> resetSupplier) {
+                                                   Consumer<Value> updateConsumer) {
         jsonEditor.setTitle(title);
 
         if (currentValue != null) {
@@ -368,7 +473,7 @@ public final class ValueEditors {
         button.setText(label);
         button.addClickHandler(event -> jsonEditor.show());
 
-        jsonEditor.setOnReset(() -> jsonEditor.setValue(resetSupplier.get()));
+        jsonEditor.setOnReset(() -> jsonEditor.setValue(currentValue));
 
         if (updateConsumer != null) {
             jsonEditor.setOnApply(updateConsumer);

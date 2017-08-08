@@ -6,10 +6,10 @@ class TestUtil {
         def message = "Task"
         def count = 1
         def threadsPerInterval = 1
-        def Closure task
+        Closure task
 
         @Override
-        public String toString() {
+        String toString() {
             return "\"message\": \"" + message + "\"" +
                     ", \"count\": " + count +
                     ", \"threadsPerInterval\": " + threadsPerInterval
@@ -27,7 +27,7 @@ class TestUtil {
         def lastError
 
         @Override
-        public String toString() {
+        String toString() {
             return "{" + execution +
                     ", \"startTimestamp\":" + startTimestamp +
                     ", \"endTimestamp\":" + endTimestamp +
@@ -76,7 +76,7 @@ class TestUtil {
         return report
     }
 
-    public static void main(String[] args) {
+    static void main(String[] args) {
         performTimed
     }
 

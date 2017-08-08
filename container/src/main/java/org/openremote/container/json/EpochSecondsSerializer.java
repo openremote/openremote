@@ -33,7 +33,7 @@ import java.util.Date;
 
 public class EpochSecondsSerializer extends JsonSerializer<Date> {
     @Override
-    public void serialize(Date value, JsonGenerator gen, SerializerProvider serializers) throws IOException, JsonProcessingException {
+    public void serialize(Date value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
         gen.writeNumber(Math.round(((double)value.getTime()) / 1000));
     }
 }

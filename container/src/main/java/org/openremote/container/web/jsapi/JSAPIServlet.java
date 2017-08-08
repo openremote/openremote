@@ -102,7 +102,7 @@ public class JSAPIServlet extends HttpServlet {
             for (Map.Entry<String, ResteasyDeployment> entry : deployments.entrySet()) {
                 ResourceMethodRegistry registry = (ResourceMethodRegistry) entry.getValue().getRegistry();
                 ResteasyProviderFactory providerFactory =
-                    (ResteasyProviderFactory) entry.getValue().getProviderFactory();
+                    entry.getValue().getProviderFactory();
                 ServiceRegistry service = new ServiceRegistry(null, registry, providerFactory, null);
                 services.put(entry.getKey(), service);
             }

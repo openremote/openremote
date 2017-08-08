@@ -50,6 +50,16 @@
 
         .highlightAttribute {
         }
+
+
+        .metaItemNameEditor {
+            min-width: 5em;
+            width: 35em;
+        }
+
+        .metaItemValueEditor {
+
+        }
     </ui:style>
 
     <w:FlexSplitPanel ui:field="splitPanel"

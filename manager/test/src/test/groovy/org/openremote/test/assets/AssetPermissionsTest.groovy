@@ -5,8 +5,10 @@ import org.openremote.manager.server.setup.SetupService
 import org.openremote.manager.server.setup.builtin.KeycloakDemoSetup
 import org.openremote.manager.server.setup.builtin.ManagerDemoSetup
 import org.openremote.manager.shared.asset.AssetResource
+import org.openremote.model.asset.AbstractAssetQuery
 import org.openremote.model.asset.Asset
 import org.openremote.model.asset.AssetMeta
+import org.openremote.model.asset.AssetQuery
 import org.openremote.model.asset.AssetType
 import org.openremote.model.attribute.AttributeType
 import org.openremote.model.attribute.Meta
@@ -54,35 +56,53 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         assets.length == 0
 
         when: "the root assets of the authenticated realm are retrieved"
-        assets = assetResource.getRoot(null, keycloakDemoSetup.masterTenant.id)
+        assets = assetResource.queryAssets(null,
+            new AssetQuery()
+                .tenant(new AbstractAssetQuery.TenantPredicate(keycloakDemoSetup.masterTenant.id))
+                .parent(new AbstractAssetQuery.ParentPredicate(true))
+        )
 
         then: "result should match"
         assets.length == 1
         assets[0].id == managerDemoSetup.smartOfficeId
 
         when: "the child assets of an asset in the authenticated realm are retrieved"
-        assets = assetResource.getChildren(null, assets[0].id)
+        assets = assetResource.queryAssets(null,
+            new AssetQuery()
+                .parent(new AbstractAssetQuery.ParentPredicate(assets[0].id))
+        )
 
         then: "result should match"
         assets.length == 1
         assets[0].id == managerDemoSetup.groundFloorId
 
         when: "the root assets of the authenticated realm are retrieved"
-        assets = assetResource.getRoot(null, null)
+        assets = assetResource.queryAssets(null,
+            new AssetQuery()
+                .tenant(new AbstractAssetQuery.TenantPredicate(keycloakDemoSetup.masterTenant.id))
+                .parent(new AbstractAssetQuery.ParentPredicate(true))
+        )
 
         then: "result should match"
         assets.length == 1
         assets[0].id == managerDemoSetup.smartOfficeId
 
         when: "the root assets of the given realm are retrieved"
-        assets = assetResource.getRoot(null, keycloakDemoSetup.customerATenant.id)
+        assets = assetResource.queryAssets(null,
+            new AssetQuery()
+                .tenant(new AbstractAssetQuery.TenantPredicate(keycloakDemoSetup.customerATenant.id))
+                .parent(new AbstractAssetQuery.ParentPredicate(true))
+        )
 
         then: "result should match"
         assets.length == 1
         assets[0].id == managerDemoSetup.smartHomeId
 
         when: "the child assets of an asset in a foreign realm are retrieved"
-        assets = assetResource.getChildren(null, assets[0].id)
+        assets = assetResource.queryAssets(null,
+            new AssetQuery()
+                .parent(new AbstractAssetQuery.ParentPredicate(assets[0].id))
+        )
 
         then: "result should match"
         assets.length == 3
@@ -233,21 +253,31 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         assets[0].attributesList.size() == 0
 
         when: "the root assets of the authenticated realm are retrieved"
-        assets = assetResource.getRoot(null, keycloakDemoSetup.masterTenant.id)
+        assets = assetResource.queryAssets(null,
+            new AssetQuery()
+                .tenant(new AbstractAssetQuery.TenantPredicate(keycloakDemoSetup.masterTenant.id))
+                .parent(new AbstractAssetQuery.ParentPredicate(true))
+        )
 
         then: "result should match"
         assets.length == 1
         assets[0].id == managerDemoSetup.smartOfficeId
 
         when: "the child assets of an asset in the authenticated realm are retrieved"
-        assets = assetResource.getChildren(null, assets[0].id)
+        assets = assetResource.queryAssets(null,
+            new AssetQuery()
+                .parent(new AbstractAssetQuery.ParentPredicate(assets[0].id))
+        )
 
         then: "result should match"
         assets.length == 1
         assets[0].id == managerDemoSetup.groundFloorId
 
         when: "the root assets of the authenticated realm are retrieved"
-        assets = assetResource.getRoot(null, null)
+        assets = assetResource.queryAssets(null,
+            new AssetQuery()
+                .parent(new AbstractAssetQuery.ParentPredicate(true))
+        )
 
         then: "result should match"
         assets.length == 1
@@ -255,13 +285,20 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         assets[0].realmId == keycloakDemoSetup.masterTenant.id
 
         when: "the root assets of the given realm are retrieved"
-        assets = assetResource.getRoot(null, keycloakDemoSetup.customerATenant.id)
+        assets = assetResource.queryAssets(null,
+            new AssetQuery()
+                .tenant(new AbstractAssetQuery.TenantPredicate(keycloakDemoSetup.customerATenant.id))
+                .parent(new AbstractAssetQuery.ParentPredicate(true))
+        )
 
         then: "result should match"
         assets.length == 0
 
         when: "the child assets of an asset in a foreign realm are retrieved"
-        assets = assetResource.getChildren(null, managerDemoSetup.smartHomeId)
+        assets = assetResource.queryAssets(null,
+            new AssetQuery()
+                .parent(new AbstractAssetQuery.ParentPredicate(managerDemoSetup.smartHomeId))
+        )
 
         then: "result should be empty"
         assets.length == 0
@@ -386,13 +423,20 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         assets[0].attributesList.size() == 0
 
         when: "the root assets of a foreign realm are retrieved"
-        assets = assetResource.getRoot(null, keycloakDemoSetup.masterTenant.id)
+        assets = assetResource.queryAssets(null,
+            new AssetQuery()
+                .tenant(new AbstractAssetQuery.TenantPredicate(keycloakDemoSetup.masterTenant.id))
+                .parent(new AbstractAssetQuery.ParentPredicate(true))
+        )
 
         then: "result should match"
         assets.length == 0
 
         when: "the root assets of the authenticated realm are retrieved"
-        assets = assetResource.getRoot(null, null)
+        assets = assetResource.queryAssets(null,
+            new AssetQuery()
+                .parent(new AbstractAssetQuery.ParentPredicate(true))
+        )
 
         then: "result should match"
         assets.length == 1
@@ -400,13 +444,20 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         assets[0].realmId == keycloakDemoSetup.customerATenant.id
 
         when: "the root assets of the given realm are retrieved"
-        assets = assetResource.getRoot(null, keycloakDemoSetup.customerBTenant.id)
+        assets = assetResource.queryAssets(null,
+            new AssetQuery()
+                .tenant(new AbstractAssetQuery.TenantPredicate(keycloakDemoSetup.customerBTenant.id))
+                .parent(new AbstractAssetQuery.ParentPredicate(true))
+        )
 
         then: "result should match"
         assets.length == 0
 
         when: "the child assets of an asset in a foreign realm are retrieved"
-        assets = assetResource.getChildren(null, managerDemoSetup.thingId)
+        assets = assetResource.queryAssets(null,
+            new AssetQuery()
+                .parent(new AbstractAssetQuery.ParentPredicate(managerDemoSetup.thingId))
+        )
 
         then: "result should be empty"
         assets.length == 0
@@ -537,37 +588,57 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         apartment2.name == "Apartment 2"
 
         when: "the root assets of a foreign realm are retrieved"
-        assets = assetResource.getRoot(null, keycloakDemoSetup.masterTenant.id)
+        assets = assetResource.queryAssets(null,
+            new AssetQuery()
+                .tenant(new AbstractAssetQuery.TenantPredicate(keycloakDemoSetup.masterTenant.id))
+                .parent(new AbstractAssetQuery.ParentPredicate(true))
+        )
 
         then: "result should match"
         assets.length == 0
 
         when: "the root assets of the authenticated realm are retrieved"
-        assets = assetResource.getRoot(null, null)
+        assets = assetResource.queryAssets(null,
+            new AssetQuery()
+                .parent(new AbstractAssetQuery.ParentPredicate(true))
+        )
 
         then: "result should match"
         assets.length == 0
 
         when: "the root assets of the given realm are retrieved"
-        assets = assetResource.getRoot(null, keycloakDemoSetup.customerBTenant.id)
+        assets = assetResource.queryAssets(null,
+            new AssetQuery()
+                .tenant(new AbstractAssetQuery.TenantPredicate(keycloakDemoSetup.customerBTenant.id))
+                .parent(new AbstractAssetQuery.ParentPredicate(true))
+        )
 
         then: "result should match"
         assets.length == 0
 
         when: "the child assets of linked asset are retrieved"
-        assets = assetResource.getChildren(null, managerDemoSetup.apartment1Id)
+        assets = assetResource.queryAssets(null,
+            new AssetQuery()
+                .parent(new AbstractAssetQuery.ParentPredicate(managerDemoSetup.apartment1Id))
+        )
 
         then: "result should match"
         assets.length == 0
 
         when: "the child assets of an asset in the authenticated realm are retrieved"
-        assets = assetResource.getChildren(null, managerDemoSetup.smartHomeId)
+        assets = assetResource.queryAssets(null,
+            new AssetQuery()
+                .parent(new AbstractAssetQuery.ParentPredicate(managerDemoSetup.smartHomeId))
+        )
 
         then: "result should match"
         assets.length == 0
 
         when: "the child assets of an asset in a foreign realm are retrieved"
-        assets = assetResource.getChildren(null, managerDemoSetup.thingId)
+        assets = assetResource.queryAssets(null,
+            new AssetQuery()
+                .parent(new AbstractAssetQuery.ParentPredicate(managerDemoSetup.thingId))
+        )
 
         then: "result should be empty"
         assets.length == 0

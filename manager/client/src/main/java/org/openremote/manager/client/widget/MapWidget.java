@@ -71,7 +71,7 @@ public class MapWidget extends FlowPanel {
             LAYER_CIRCLE.put("paint", paint);
         }
         {
-            ObjectValue layout = Values.createObject();;
+            ObjectValue layout = Values.createObject();
             layout.put("visibility", "visible");
 
             layout.put("text-field", "{title}");

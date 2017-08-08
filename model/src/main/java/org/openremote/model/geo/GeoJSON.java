@@ -25,7 +25,7 @@ import org.openremote.model.value.Values;
 
 public class GeoJSON extends AbstractTypeHolder {
 
-    public static final GeoJSON EMPTY_FEATURE_COLLECTION = new GeoJSON("FeatureCollection").setEmptyFeatures();;
+    public static final GeoJSON EMPTY_FEATURE_COLLECTION = new GeoJSON("FeatureCollection").setEmptyFeatures();
 
     public GeoJSON(String type) {
         super(type);

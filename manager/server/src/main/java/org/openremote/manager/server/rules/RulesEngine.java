@@ -609,7 +609,17 @@ public class RulesEngine<T extends Ruleset> {
 
                     @Override
                     public List<String> getResults() {
-                        return assetStorageService.findAllIds(this);
+                        Include oldValue = this.select.include;
+                        this.select.include = Include.ONLY_ID_AND_NAME;
+                        try {
+                            return assetStorageService
+                                .findAll(this)
+                                .stream()
+                                .map(Asset::getId)
+                                .collect(Collectors.toList());
+                        } finally {
+                            this.select.include = oldValue;
+                        }
                     }
 
                     @Override
@@ -624,14 +634,14 @@ public class RulesEngine<T extends Ruleset> {
                 };
 
                 if (TenantRuleset.class.isAssignableFrom(rulesetType)) {
-                    query.tenantPredicate = new AssetQuery.TenantPredicate(id);
+                    query.tenantPredicate = new AbstractAssetQuery.TenantPredicate(id);
                 }
                 if (AssetRuleset.class.isAssignableFrom(rulesetType)) {
                     ServerAsset restrictedAsset = assetStorageService.find(id, true);
                     if (restrictedAsset == null) {
                         throw new IllegalStateException("Asset is no longer available for this deployment: " + id);
                     }
-                    query.pathPredicate = new AssetQuery.PathPredicate(restrictedAsset.getPath());
+                    query.pathPredicate = new AbstractAssetQuery.PathPredicate(restrictedAsset.getPath());
                 }
                 return query;
             }
@@ -643,7 +653,7 @@ public class RulesEngine<T extends Ruleset> {
                 for (AttributeEvent event : events) {
 
                     // Check if the asset ID of the event can be found in the original query
-                    AssetQuery checkQuery = query();
+                    AbstractAssetQuery checkQuery = query();
                     checkQuery.id = event.getEntityId();
                     if (assetStorageService.find(checkQuery) == null) {
                         throw new IllegalArgumentException(

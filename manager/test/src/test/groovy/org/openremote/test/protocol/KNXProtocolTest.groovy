@@ -65,7 +65,7 @@ class KNXProtocolTest extends Specification implements ManagerContainerTrait {
             sc.getControlEndpoint(),
             sc.getMediumSettings(),
             sc.reuseControlEndpoint(),
-            sc.isNetworkMonitoringAllowed());
+            sc.isNetworkMonitoringAllowed())
         knxEmulationServer.xml.svcContainers.add(sc2)
         def netIf = knxEmulationServer.xml.subnetNetIf.remove(sc)
         knxEmulationServer.xml.subnetNetIf.put(sc2, netIf)
@@ -75,9 +75,9 @@ class KNXProtocolTest extends Specification implements ManagerContainerTrait {
         knxEmulationServer.xml.groupAddressFilters.put(sc2, groupFilters)
         def addAddresses = knxEmulationServer.xml.additionalAddresses.remove(sc)
         knxEmulationServer.xml.additionalAddresses.put(sc2, addAddresses)
-        def knxServerThread = new Thread(knxEmulationServer);
-        knxServerThread.start();
-        def knxTestingNetwork = KNXTestingNetworkLink.getInstance();
+        def knxServerThread = new Thread(knxEmulationServer)
+        knxServerThread.start()
+        def knxTestingNetwork = KNXTestingNetworkLink.getInstance()
 
         and: "the container is started"
         def serverPort = findEphemeralPort()

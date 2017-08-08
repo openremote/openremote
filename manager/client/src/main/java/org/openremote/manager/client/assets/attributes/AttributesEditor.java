@@ -19,28 +19,31 @@
  */
 package org.openremote.manager.client.assets.attributes;
 
-import com.google.gwt.dom.client.Document;
-import com.google.gwt.event.dom.client.DomEvent;
 import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.IsWidget;
 import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.widget.*;
 import org.openremote.model.ValidationFailure;
+import org.openremote.model.ValueHolder;
+import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetMeta;
 import org.openremote.model.attribute.AttributeType;
 import org.openremote.model.attribute.MetaItem;
+import org.openremote.model.util.Pair;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.value.*;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 import static org.openremote.manager.client.widget.ValueEditors.*;
 import static org.openremote.model.attribute.Attribute.ATTRIBUTE_NAME_VALIDATOR;
 import static org.openremote.model.attribute.Attribute.isAttributeNameEqualTo;
+import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 
 public class AttributesEditor
     extends AttributesView<AttributesEditor.Container, AttributesEditor.Style> {
@@ -50,14 +53,21 @@ public class AttributesEditor
     }
 
     public interface Style extends AttributesView.Style {
+        String metaItemNameEditor();
 
+        String metaItemValueEditor();
     }
 
     final protected boolean isCreate;
+    protected final BiConsumer<ValueHolder, Consumer<Asset[]>> assetSupplier;
+    protected final BiConsumer<Pair<ValueHolder, Asset>, Consumer<AssetAttribute[]>> attributeSupplier;
+    protected static final List<ValueType> valueTypes = Arrays.asList(ValueType.values());
 
-    public AttributesEditor(Environment environment, Container container, List<AssetAttribute> attributes, boolean isCreate) {
+    public AttributesEditor(Environment environment, Container container, List<AssetAttribute> attributes, boolean isCreate, BiConsumer<ValueHolder, Consumer<Asset[]>> assetSupplier, BiConsumer<Pair<ValueHolder, Asset>, Consumer<AssetAttribute[]>> attributeSupplier) {
         super(environment, container, attributes);
         this.isCreate = isCreate;
+        this.assetSupplier = assetSupplier;
+        this.attributeSupplier = attributeSupplier;
     }
 
     protected FormLabel createAttributeLabel(AssetAttribute attribute) {
@@ -165,14 +175,13 @@ public class AttributesEditor
 
         public MetaEditor(AssetAttribute attribute) {
             this.attribute = attribute;
-
             add(itemListSectionLabel);
             add(itemListPanel);
             buildItemList();
 
             add(itemEditorSectionLabel);
             add(itemEditorPanel);
-            buildItemEditor();
+            buildNewItemEditor();
         }
 
         protected void buildItemList() {
@@ -187,239 +196,304 @@ public class AttributesEditor
             List<MetaItem> items = attribute.getMeta();
             for (int i = 0; i < items.size(); i++) {
                 MetaItem item = items.get(i);
-                FormGroup formGroup = new FormGroup();
-
-                FormLabel label = new FormLabel(item.getName().orElse(null));
-                label.getElement().getStyle().setWidth(40, com.google.gwt.dom.client.Style.Unit.EM);
-                formGroup.addFormLabel(label);
-
-                FormField formField = new FormField();
-
-                // Determine editor based on value type
-                if (item.getValue().isPresent()) {
-                    ValueType valueType = item.getValue().get().getType();
-                    formField.add(createEditor(item, valueType, false, formGroup));
-                    formGroup.addFormField(formField);
-                } else {
-                    formField.add(noValueItemEditor(item));
-                    formGroup.addFormField(formField);
-                }
-
-                FormGroupActions formGroupActions = new FormGroupActions();
-
-                FormButton deleteButton = new FormButton();
-                deleteButton.setText(container.getMessages().deleteItem());
-                deleteButton.setIcon("remove");
-                int index = i;
-                deleteButton.addClickHandler(clickEvent -> {
-                    attributeGroups.get(attribute).setErrorInExtension(false);
-                    attribute.getMeta().remove(index);
-                    buildItemList();
-                });
-                formGroupActions.add(deleteButton);
-
-                formGroup.addFormGroupActions(formGroupActions);
-
-                itemListPanel.add(formGroup);
+                MetaItemEditor metaItemEditor = new MetaItemEditor(this, item, false);
+                itemListPanel.add(metaItemEditor);
             }
         }
 
-        protected void buildItemEditor() {
-            itemEditorPanel.clear();
-
-            MetaItem item = new MetaItem();
-
-            FormListBox valueTypeListBox = new FormListBox();
-            FormGroup itemNameEditorGroup = createItemNameEditor(item, valueTypeListBox);
-            itemEditorPanel.add(itemNameEditorGroup);
-
-            FormGroup itemValueEditorGroup = createItemValueEditor(item, valueTypeListBox);
-            itemEditorPanel.add(itemValueEditorGroup);
-
-            FormGroupActions formGroupActions = new FormGroupActions();
-            FormButton addButton = new FormButton();
-            addButton.setText(container.getMessages().addItem());
-            addButton.setIcon("plus");
-            addButton.addClickHandler(clickEvent -> {
-
-                // We ask the attribute for validation failures instead of the
-                // item, because the item must be valid in its context
-                List<ValidationFailure> failures = attribute.getMetaItemValidationFailures(item);
-
-                if (failures.isEmpty()) {
-                    itemNameEditorGroup.setError(false);
-                    itemValueEditorGroup.setError(false);
-                    attribute.getMeta().add(item);
-                    buildItemList();
-                    buildItemEditor();
-                } else {
-                    itemNameEditorGroup.setError(true);
-                    itemValueEditorGroup.setError(true);
-                    for (ValidationFailure failure : failures) {
-                        showValidationError(environment, item.getName().orElse(null), failure);
-                    }
-                }
-            });
-            formGroupActions.add(addButton);
-            itemValueEditorGroup.addFormGroupActions(formGroupActions);
+        protected void addItem(MetaItem item) {
+            attribute.getMeta().add(item);
+            MetaItemEditor metaItemEditor = new MetaItemEditor(this, item, false);
+            itemListPanel.add(metaItemEditor);
         }
 
-        protected IsWidget createEditor(MetaItem item, ValueType valueType, boolean isNewMetaItem, FormGroup formGroup) {
-            AttributesEditor.Style style = container.getStyle();
+        protected void removeItem(MetaItemEditor itemEditor) {
+            int index = itemListPanel.getWidgetIndex(itemEditor);
+            itemListPanel.remove(itemEditor);
+            attributeGroups.get(attribute).setErrorInExtension(false);
+            attribute.getMeta().remove(index);
+        }
 
-            // For some meta items we know if we can edit them or not... custom items are always editable
-            boolean isEditable = item.getName().map(AssetMeta::isEditable).orElse(isNewMetaItem);
+        protected void buildNewItemEditor() {
+            MetaItem item = new MetaItem();
+            MetaItemEditor metaItemEditor = new MetaItemEditor(this, item, true);
+            itemEditorPanel.add(metaItemEditor);
+        }
+    }
 
-            Consumer<List<ValidationFailure>> validationResultConsumer =
-                failures -> {
-                    // If we are not creating a new meta item, validate again in context of attribute
-                    if (!isNewMetaItem && failures.isEmpty()) {
-                        failures = attribute.getMetaItemValidationFailures(item);
-                    }
-                    if (!failures.isEmpty()) {
-                        formGroup.setError(true);
+    public class MetaItemEditor extends FormGroup {
+        protected MetaEditor parentEditor;
+        protected MetaItem item;
+        protected FormField field;
+        protected FormListBox nameList;
+        protected FormListBox typeList;
+        protected FormInputText nameInput;
+        protected FormGroupActions formGroupActions;
+        protected IsWidget valueEditor;
+        protected boolean isNewItem;
+
+        public MetaItemEditor(MetaEditor parentEditor, MetaItem item, boolean isNewItem) {
+            this.parentEditor = parentEditor;
+            this.item = item;
+            this.isNewItem = isNewItem;
+            boolean isSuperUser = environment.getSecurityService().isSuperUser();
+            Optional<AssetMeta> currentWellknown = item.getName().flatMap(AssetMeta::getAssetMeta);
+            field = new FormField();
+            this.addFormField(field);
+
+            nameList = new FormListBox();
+            field.add(nameList);
+            nameList.addItem(environment.getMessages().customItem(), "");
+            AssetMeta[] availableMeta = isSuperUser ? AssetMeta.values() : AssetMeta.unRestricted();
+            int selectedNameIndex = 0;
+
+            for (int i=0; i<availableMeta.length; i++) {
+                AssetMeta wellknown = availableMeta[i];
+                nameList.addItem(environment.getMessages().assetMetaDisplayName(wellknown.name()), wellknown.getUrn());
+                if (currentWellknown.map(current -> current.getUrn().equals(wellknown.getUrn())).orElse(false)) {
+                    selectedNameIndex = i+1;
+                }
+            }
+
+            nameList.addChangeHandler(event -> {
+                onNameChanged(true);
+            });
+
+            nameInput = new FormInputText();
+            field.add(nameInput);
+            nameInput.addStyleName(container.getStyle().metaItemNameEditor());
+            nameInput.setPlaceholder(environment.getMessages().enterCustomAssetAttributeMetaName());
+            nameInput.addKeyUpHandler(event -> {
+                if (isNullOrEmpty(nameInput.getValue())) {
+                    item.clearName();
+                } else {
+                    item.setName(nameInput.getValue());
+                }
+                onValidation(item.getValidationFailures());
+            });
+            nameInput.addValueChangeHandler(event -> {
+                if (isNullOrEmpty(event.getValue())) {
+                    item.clearName();
+                } else {
+                    item.setName(event.getValue());
+                }
+                onValidation(item.getValidationFailures());
+            });
+
+            typeList = new FormListBox();
+            field.add(typeList);
+            typeList.addItem(environment.getMessages().selectType(), "");
+            int selectedTypeIndex = 0;
+            ValueType currentValueType = currentWellknown.map(AssetMeta::getValueType).orElse(item.getValue().map(Value::getType).orElse(null));
+            for (int i=0; i<valueTypes.size(); i++) {
+                ValueType valueType = valueTypes.get(i);
+                typeList.addItem(environment.getMessages().valueTypeDisplayName(valueType.name()), valueType.name());
+                if (currentValueType == valueType) {
+                    selectedTypeIndex = i+1;
+                }
+            }
+
+            typeList.addChangeHandler(event -> {
+                onTypeChanged(true);
+            });
+
+            formGroupActions = new FormGroupActions();
+            FormButton button = new FormButton();
+            button.setText(isNewItem ? container.getMessages().addItem() : container.getMessages().deleteItem());
+            button.setIcon(isNewItem ? "plus" : "remove");
+            button.addClickHandler(clickEvent -> {
+                if (isNewItem) {
+                    // We ask the attribute for validation failures instead of the
+                    // item, because the item must be valid in its context
+                    List<ValidationFailure> failures = parentEditor.attribute.getMetaItemValidationFailures(item);
+
+                    if (failures.isEmpty()) {
+                        parentEditor.addItem(item.copy());
+                        this.setError(false);
+                        reset();
+                    } else {
+                        this.setError(true);
                         for (ValidationFailure failure : failures) {
                             showValidationError(environment, item.getName().orElse(null), failure);
                         }
                     }
-                    // Validation failure of meta item marks the attribute form extension as error state
-                    if (!isNewMetaItem) {
-                        attributeGroups.get(attribute).setErrorInExtension(!failures.isEmpty());
-                    }
-                };
-
-            if (valueType.equals(ValueType.STRING)) {
-                String currentValue = item.getValue().map(Object::toString).orElse(null);
-                return createStringEditor(
-                    item, currentValue, null, false, style.stringEditor(), formGroup, false, validationResultConsumer
-                );
-            } else if (valueType.equals(ValueType.NUMBER)) {
-                String currentValue = item.getValue().map(Object::toString).orElse(null);
-                return createNumberEditor(
-                    item, currentValue, null, false, style.numberEditor(), formGroup, false, validationResultConsumer
-                );
-            } else if (valueType.equals(ValueType.BOOLEAN)) {
-                Boolean currentValue = item.getValueAsBoolean().orElse(null);
-                return createBooleanEditor(
-                    item, currentValue, null, false, style.booleanEditor(), formGroup, false, validationResultConsumer
-                );
-            } else if (valueType.equals(ValueType.OBJECT)) {
-                ObjectValue currentValue = item.getValueAsObject().orElse(null);
-                String label = environment.getMessages().jsonObject();
-                String title = environment.getMessages().edit() + " " + environment.getMessages().jsonObject();
-                Supplier<Value> resetSupplier = () -> item.getValue().orElse(null);
-                return createObjectEditor(
-                    attribute, currentValue, resetSupplier, false, label, title, container.getJsonEditor(), formGroup, false, validationResultConsumer
-                );
-            } else if (valueType.equals(ValueType.ARRAY)) {
-                ArrayValue currentValue = item.getValueAsArray().orElse(null);
-                String label = environment.getMessages().jsonArray();
-                String title = environment.getMessages().edit() + " " + environment.getMessages().jsonArray();
-                Supplier<Value> resetSupplier = () -> item.getValue().orElse(null);
-                return createArrayEditor(
-                    attribute, currentValue, resetSupplier, false, label, title, container.getJsonEditor(), formGroup, false, validationResultConsumer
-                );
-            } else {
-                return new FormOutputText(
-                    environment.getMessages().unsupportedMetaItemType(valueType.name())
-                );
-            }
-        }
-
-        /**
-         * This should actually never be called as we don't allow storing of empty meta items. But
-         * because we don't have proper database constraints, who knows...
-         */
-        protected IsWidget noValueItemEditor(MetaItem item) {
-            FormField field = new FormField();
-            field.add(new FormOutputText(environment.getMessages().emptyMetaItem()));
-            return () -> field;
-        }
-
-        protected FormGroup createItemNameEditor(MetaItem item, FormListBox typeListBox) {
-            FormGroup formGroup = new FormGroup();
-
-            FormLabel label = new FormLabel(environment.getMessages().itemName());
-            label.addStyleName("larger");
-            formGroup.addFormLabel(label);
-
-            FormField formField = new FormField();
-            formGroup.addFormField(formField);
-
-            FormListBox wellknownListBox = new FormListBox();
-            wellknownListBox.addItem(environment.getMessages().selectItem());
-            for (AssetMeta wellknown : AssetMeta.editable()) {
-                wellknownListBox.addItem(wellknown.name());
-            }
-            formField.add(wellknownListBox);
-
-            formField.add(new FormOutputText(environment.getMessages().or()));
-
-            FormInputText itemNameInput = new FormInputText();
-            itemNameInput.addStyleName(container.getStyle().stringEditor());
-            itemNameInput.setPlaceholder(environment.getMessages().enterCustomAssetAttributeMetaName());
-            itemNameInput.addValueChangeHandler(event -> item.setName(event.getValue()));
-            formField.add(itemNameInput);
-
-            wellknownListBox.addChangeHandler(event -> {
-                if (wellknownListBox.getSelectedIndex() > 0) {
-                    AssetMeta assetMeta = AssetMeta.editable()[wellknownListBox.getSelectedIndex() - 1];
-                    itemNameInput.setText(assetMeta.getUrn());
-                    item.setName(assetMeta.getUrn());
-                    AssetMeta.EditableType editableType = AssetMeta.EditableType.byValueType(assetMeta.getValueType());
-                    typeListBox.setSelectedIndex(
-                        editableType != null ? editableType.ordinal() + 1 : 0
-                    );
                 } else {
-                    itemNameInput.setText(null);
-                    item.setName(null);
-                    typeListBox.setSelectedIndex(0);
+                    parentEditor.removeItem(this);
                 }
-                DomEvent.fireNativeEvent(Document.get().createChangeEvent(), typeListBox);
             });
+            formGroupActions.add(button);
+            this.addFormGroupActions(formGroupActions);
 
-            return formGroup;
+            nameList.setSelectedIndex(selectedNameIndex);
+            nameInput.setValue(item.getName().orElse(null));
+            typeList.setSelectedIndex(selectedTypeIndex);
+            onNameChanged(false);
         }
 
-        protected FormGroup createItemValueEditor(MetaItem item, FormListBox typeListBox) {
-            FormGroup formGroup = new FormGroup();
+        protected IsWidget createItemValueEditor() {
+            // Determine editor based on name then value type
+            Optional<AssetMeta> assetMeta = AssetMeta.getAssetMeta(item.getName().orElse(null));
+            AttributesEditor.Style style = container.getStyle();
+            ValueType valueType = valueTypes.get(typeList.getSelectedIndex()-1);
 
-            FormLabel label = new FormLabel(environment.getMessages().value());
-            label.addStyleName("larger");
-            formGroup.addFormLabel(label);
+            // Super users can edit any meta items but other users can only edit non-restricted meta items
+            // Individual instances of meta items can be set to restricted by a super user.
+            boolean isEditable = environment.getSecurityService().isSuperUser() ||
+                (item.hasRestrictedFlag() && !item.isRestricted()) ||
+                assetMeta.map(AssetMeta::isRestricted).orElse(true);
 
-            FormField formField = new FormField();
-            formGroup.addFormField(formField);
+            switch(valueType) {
+                case OBJECT:
+                    ObjectValue valueObj = item.getValueAsObject().orElse(null);
+                    String label = environment.getMessages().jsonObject();
+                    String title = environment.getMessages().edit() + " " + environment.getMessages().jsonObject();
+                    return createObjectEditor(
+                        item, valueObj, false, label, title, container.getJsonEditor(), this, false, this::onValidation
+                    );
+                case ARRAY:
+                    if (assetMeta.map(am -> am == AssetMeta.AGENT_LINK).orElse(false)) {
+                        String assetWatermark = environment.getMessages().selectAgent();
+                        String attributeWatermark = environment.getMessages().selectProtocolConfiguration();
+                        return createAttributeRefEditor(item, false, this, assetSupplier, attributeSupplier, assetWatermark, attributeWatermark, this::onValidation);
+                    }
 
-            typeListBox.addItem(environment.getMessages().selectType());
-            for (AssetMeta.EditableType metaEditableType : AssetMeta.EditableType.values()) {
-                typeListBox.addItem(metaEditableType.label, metaEditableType.name());
+                    ArrayValue valueArray = item.getValueAsArray().orElse(null);
+                    label = environment.getMessages().jsonArray();
+                    title = environment.getMessages().edit() + " " + environment.getMessages().jsonArray();
+                    return createArrayEditor(
+                        item, valueArray, false, label, title, container.getJsonEditor(), this, false, this::onValidation
+                    );
+                case STRING:
+                    String valueStr = item.getValue().map(Object::toString).orElse(null);
+                    return createStringEditor(
+                        item, valueStr, false, style.stringEditor(), this, false, this::onValidation
+                    );
+                case NUMBER:
+                    valueStr = item.getValue().map(Object::toString).orElse(null);
+                    return createNumberEditor(
+                        item, valueStr, false, style.numberEditor(), this, false, this::onValidation
+                    );
+                case BOOLEAN:
+                    Boolean valueBool = item.getValueAsBoolean().orElse(null);
+                    return createBooleanEditor(
+                        item, valueBool, false, style.booleanEditor(), this, false, this::onValidation
+                    );
+                default:
+                    return new FormOutputText(
+                        environment.getMessages().unsupportedMetaItemType(valueType.name())
+                    );
             }
-            typeListBox.addChangeHandler(event -> resetItemValueEditor(item, formGroup, formField, typeListBox));
-
-            formField.add(typeListBox);
-
-            // Initial state
-            resetItemValueEditor(item, formGroup, formField, typeListBox);
-
-            return formGroup;
         }
 
-        protected void resetItemValueEditor(MetaItem item, FormGroup formGroup, FormField formField, FormListBox typeListBox) {
-            // Remove the last used editor (last widget in form field)
-            if (formField.getWidgetCount() > 1)
-                formField.remove(formField.getWidget(formField.getWidgetCount() - 1));
+        protected void onValidation(List<ValidationFailure> failures) {
+            // If we are not creating a new meta item, validate again in context of attribute
+            if (!isNewItem && failures.isEmpty()) {
+                failures = parentEditor.attribute.getMetaItemValidationFailures(item);
+            }
+            if (!failures.isEmpty()) {
+                this.setError(true);
+                if (isNewItem) {
+                    formGroupActions.forEach(widget -> {
+                        if (widget instanceof FormButton) {
+                            ((FormButton) widget).setEnabled(false);
+                        }
+                    });
+                }
+                for (ValidationFailure failure : failures) {
+                    showValidationError(environment, item.getName().orElse(null), failure);
+                }
+            } else {
+                this.setError(false);
+                if (isNewItem) {
+                    formGroupActions.forEach(widget -> {
+                        if (widget instanceof FormButton) {
+                            ((FormButton) widget).setEnabled(true);
+                        }
+                    });
+                }
+            }
+            // Validation failure of meta item marks the attribute form extension as error state
+            if (!isNewItem) {
+                FormGroup formGroup = attributeGroups.get(parentEditor.attribute);
+                if (formGroup != null) {
+                    formGroup.setErrorInExtension(!failures.isEmpty());
+                }
+            }
+        }
 
-            // Create and add new editor, default to empty STRING
+        protected void onNameChanged(boolean updateItem) {
+            if (updateItem && nameList.getSelectedIndex() == 0) {
+                nameInput.setValue(null);
+            }
+
+            String urn = nameList.getSelectedIndex() > 0 ? nameList.getSelectedValue() : nameInput.getValue();
+
+            if (updateItem) {
+                item.clearValue();
+                if (isNullOrEmpty(urn)) {
+                    item.clearName();
+                } else {
+                    item.setName(urn);
+                }
+            }
+
+            nameInput.setValue(urn);
+
+            if (nameList.getSelectedIndex() > 0) {
+                nameInput.setVisible(false);
+                typeList.setVisible(false);
+                @SuppressWarnings("ConstantConditions")
+                AssetMeta assetMeta = AssetMeta.getAssetMeta(nameList.getSelectedValue()).get();
+                typeList.setSelectedIndex(valueTypes.indexOf(assetMeta.getValueType()) + 1);
+            } else {
+                nameInput.setVisible(true);
+                typeList.setSelectedIndex(
+                    item.getValue()
+                    .map(Value::getType)
+                    .map(valueType -> valueTypes.indexOf(valueType) + 1)
+                    .orElse(0)
+                );
+                typeList.setVisible(true);
+            }
+
+            onTypeChanged(updateItem);
+        }
+
+        protected void onTypeChanged(boolean updateItem) {
+            Optional<AssetMeta> assetMeta = AssetMeta.getAssetMeta(nameList.getSelectedValue());
+
+            if (updateItem) {
+                item.clearValue();
+                Value initialValue = assetMeta.map(AssetMeta::getInitialValue).orElse(null);
+                ValueType valueType = typeList.getSelectedIndex() > 0 ? valueTypes.get(typeList.getSelectedIndex()-1) : null;
+                if (valueType == ValueType.BOOLEAN && initialValue == null) {
+                    initialValue = Values.create(false);
+                }
+
+                item.setValue(initialValue);
+                onValidation(item.getValidationFailures());
+            }
+            updateValueEditor(assetMeta.map(AssetMeta::isValueFixed).orElse(false));
+        }
+
+        protected void updateValueEditor(boolean hideEditor) {
+            if (valueEditor != null) {
+                field.remove(valueEditor);
+            }
+
+            if (!hideEditor && typeList.getSelectedIndex() > 0) {
+                valueEditor = createItemValueEditor();
+                field.add(valueEditor);
+            }
+        }
+
+        protected void reset() {
+            item.clearName();
             item.clearValue();
-            ValueType valueType = typeListBox.getSelectedIndex() > 0
-                ? AssetMeta.EditableType.valueOf(typeListBox.getSelectedValue()).valueType
-                : ValueType.STRING;
-            if (valueType == ValueType.BOOLEAN) {
-                item.setValue(Values.create(false)); // Special case boolean editor, has an "initial" state, there is always a value
-            }
-            IsWidget editor = createEditor(item, valueType, true, formGroup);
-            formField.add(editor);
+            nameList.setSelectedIndex(0);
+            nameInput.setValue(null);
+            typeList.setSelectedIndex(0);
+            onNameChanged(false);
         }
     }
 }

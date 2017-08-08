@@ -655,7 +655,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
     protected Stream<Pair<ServerAsset, Stream<AssetAttribute>>> findRuleStateAttributes() {
         List<ServerAsset> assets = assetStorageService.findAll(
             new AssetQuery()
-                .select(new AssetQuery.Select(true))
+                .select(new AssetQuery.Select(AssetQuery.Include.ALL))
                 .attributeMeta(
                     new AssetQuery.AttributeMetaPredicate(
                         AssetMeta.RULE_STATE,

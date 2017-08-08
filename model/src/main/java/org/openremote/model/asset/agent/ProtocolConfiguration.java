@@ -50,7 +50,6 @@ final public class ProtocolConfiguration {
             return null;
         }
         isValidProtocolNameOrThrow(protocolName);
-        attribute.setEnabled(true);
         attribute.setReadOnly(true);
         attribute.setType(AttributeType.STRING);
         attribute.setValue(Values.create(protocolName));

@@ -57,7 +57,7 @@ class AdminUsersActivityTest extends Specification implements ManagerContainerTr
         def resultCreateUserHistoryToken = null
 
         and: "An authenticated user and client security service"
-        def realm = MASTER_REALM;
+        def realm = MASTER_REALM
         def accessToken = {
             authenticate(
                     container,
@@ -657,6 +657,6 @@ class AdminUsersActivityTest extends Specification implements ManagerContainerTr
         }
 
         cleanup: "The server should be stopped"
-        stopContainer(container);
+        stopContainer(container)
     }
 }

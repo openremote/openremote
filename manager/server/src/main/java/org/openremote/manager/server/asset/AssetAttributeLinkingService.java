@@ -21,10 +21,7 @@ package org.openremote.manager.server.asset;
 
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
-import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.asset.AssetMeta;
-import org.openremote.model.asset.AssetQuery;
-import org.openremote.model.asset.AssetState;
+import org.openremote.model.asset.*;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.MetaItem;
@@ -279,7 +276,7 @@ public class AssetAttributeLinkingService implements ContainerService, Consumer<
         ServerAsset asset = assetStorageService.find(
             new AssetQuery()
                 .id(attributeRef.getEntityId())
-                .select(new AssetQuery.Select(attributeRef.getAttributeName()).loadComplete(true))
+                .select(new AbstractAssetQuery.Select(AbstractAssetQuery.Include.ALL, false, false, attributeRef.getAttributeName()))
         );
 
         Optional<AssetAttribute> attribute = Optional.empty();

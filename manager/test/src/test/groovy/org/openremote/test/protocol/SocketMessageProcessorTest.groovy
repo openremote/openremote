@@ -41,8 +41,8 @@ class SocketMessageProcessorTest extends Specification implements ManagerContain
         def conditions = new PollingConditions(timeout: 10, delay: 1)
 
         and: "a simple socket echo server"
-        def socketServerPort = findEphemeralPort();
-        def socketServer = new SimpleSocketServer(socketServerPort, true);
+        def socketServerPort = findEphemeralPort()
+        def socketServer = new SimpleSocketServer(socketServerPort, true)
 
         and: "the container is started"
         def serverPort = findEphemeralPort()
@@ -57,7 +57,7 @@ class SocketMessageProcessorTest extends Specification implements ManagerContain
 
             @Override
             protected void decode(ByteBuf buf, List<String> messages) throws Exception {
-                ByteBuf bytes = buf.readBytes(buf.readableBytes());
+                ByteBuf bytes = buf.readBytes(buf.readableBytes())
                 String msg = bytes.toString(CharsetUtil.UTF_8)
                 bytes.release()
                 messages.add(msg)
@@ -71,7 +71,7 @@ class SocketMessageProcessorTest extends Specification implements ManagerContain
 
         and: "we add callback consumers to the message processor"
         def connectionStatus = messageProcessor.getConnectionStatus()
-        String lastMessage;
+        String lastMessage
         messageProcessor.addMessageConsumer({
             message -> lastMessage = message
         })
@@ -193,6 +193,6 @@ class SocketMessageProcessorTest extends Specification implements ManagerContain
         cleanup: "the server should be stopped"
         messageProcessor.disconnect()
         socketServer.stop()
-        stopContainer(container);
+        stopContainer(container)
     }
 }

@@ -26,6 +26,7 @@ import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.util.Pair;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueType;
+import org.openremote.model.value.Values;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -48,7 +49,7 @@ public enum AssetMeta implements HasUniqueResourceName {
      * Marks an attribute of an agent asset as a {@link org.openremote.model.asset.agent.ProtocolConfiguration}.
      * The attribute value is a protocol URN.
      */
-    PROTOCOL_CONFIGURATION(ASSET_META_NAMESPACE + ":protocolConfiguration", new Access(false, false, true), ValueType.BOOLEAN),
+    PROTOCOL_CONFIGURATION(ASSET_META_NAMESPACE + ":protocolConfiguration", new Access(false, false, true), ValueType.BOOLEAN, Values.create(true), true),
 
     /**
      * Links the attribute to an agent's {@link org.openremote.model.asset.agent.ProtocolConfiguration}, connecting it
@@ -70,7 +71,7 @@ public enum AssetMeta implements HasUniqueResourceName {
     /**
      * If there is a dashboard, some kind of attribute overview, should this attribute be shown.
      */
-    SHOW_ON_DASHBOARD(ASSET_META_NAMESPACE + ":showOnDashboard", new Access(true, true, true), ValueType.BOOLEAN),
+    SHOW_ON_DASHBOARD(ASSET_META_NAMESPACE + ":showOnDashboard", new Access(true, true, true), ValueType.BOOLEAN, Values.create(true), true),
 
     /**
      * Format string that can be used to render the attribute value, see https://github.com/alexei/sprintf.js.
@@ -91,17 +92,21 @@ public enum AssetMeta implements HasUniqueResourceName {
      * Marks the attribute as read-only for clients. South-bound changes of the attribute are not possible.
      * North-bound attribute updates made by protocols and changes made by rules are possible.
      */
-    READ_ONLY(ASSET_META_NAMESPACE + ":readOnly", new Access(true, false, true), ValueType.BOOLEAN),
+    READ_ONLY(ASSET_META_NAMESPACE + ":readOnly", new Access(true, false, true), ValueType.BOOLEAN, Values.create(true), true),
 
     /**
      * Marks the attribute as protected and accessible to restricted users, see {@link UserAsset}.
+     * TODO: Shouldn't this mean the opposite if something is protected then you need elevated privileges to access it
      */
-    PROTECTED(ASSET_META_NAMESPACE + ":protected", new Access(false, false, true), ValueType.BOOLEAN),
+    PROTECTED(ASSET_META_NAMESPACE + ":protected", new Access(false, false, true), ValueType.BOOLEAN, Values.create(true), true),
 
+    /**
+     * RT: This wasn't used anywhere and not really sure when it would be useful so removing for now.
+     */
     /**
      * Default value that might be used when editing an attribute.
      */
-    DEFAULT(ASSET_META_NAMESPACE + ":default", new Access(false, false, false), ValueType.STRING),
+    //DEFAULT(ASSET_META_NAMESPACE + ":default", new Access(false, false, false), ValueType.STRING),
 
     /**
      * Minimum range constraint for numeric attribute values.
@@ -126,7 +131,7 @@ public enum AssetMeta implements HasUniqueResourceName {
     /**
      * Should attribute values be stored in time series database
      */
-    STORE_DATA_POINTS(ASSET_META_NAMESPACE + ":storeDataPoints", new Access(true, false, true), ValueType.BOOLEAN),
+    STORE_DATA_POINTS(ASSET_META_NAMESPACE + ":storeDataPoints", new Access(true, false, true), ValueType.BOOLEAN, Values.create(true), true),
 
     /**
      * Should attribute writes be processed by the rules engines as {@link AssetState} facts in knowledge sessions,
@@ -135,7 +140,7 @@ public enum AssetMeta implements HasUniqueResourceName {
      * when the attribute is updated. If you want two types of facts in your rules knowledge session for a single
      * attribute, with state and event behavior, combine this with {@link #RULE_EVENT}.
      */
-    RULE_STATE(ASSET_META_NAMESPACE + ":ruleState", new Access(true, false, true), ValueType.BOOLEAN),
+    RULE_STATE(ASSET_META_NAMESPACE + ":ruleState", new Access(true, false, true), ValueType.BOOLEAN, Values.create(true), true),
 
     /**
      * Should attribute writes be processed by the rules engines as events in knowledge sessions. Any attribute
@@ -144,7 +149,7 @@ public enum AssetMeta implements HasUniqueResourceName {
      * If you want two types of facts in your rules knowledge session for a single attribute, with state and event
      * behavior, combine this with {@link #RULE_STATE}.
      */
-    RULE_EVENT(ASSET_META_NAMESPACE + ":ruleEvent", new Access(true, false, true), ValueType.BOOLEAN),
+    RULE_EVENT(ASSET_META_NAMESPACE + ":ruleEvent", new Access(true, false, true), ValueType.BOOLEAN, Values.create(true), true),
 
     /**
      * Set maximum lifetime of {@link AssetEvent} facts in knowledge sessions, for example "1h30m". The rules
@@ -154,14 +159,14 @@ public enum AssetMeta implements HasUniqueResourceName {
     RULE_EVENT_EXPIRES(ASSET_META_NAMESPACE + ":ruleEventExpires", new Access(true, false, true), ValueType.STRING),
 
     /**
-     * Enable flag to be used by asset attributes that could require this functionality (e.g. {@link org.openremote.model.asset.agent.ProtocolConfiguration})
+     * Disabled flag to be used by asset attributes that could require this functionality (e.g. {@link org.openremote.model.asset.agent.ProtocolConfiguration})
      */
-    ENABLED(ASSET_META_NAMESPACE + ":enabled", new Access(true, false, true), ValueType.BOOLEAN),
+    DISABLED(ASSET_META_NAMESPACE + ":disabled", new Access(true, false, true), ValueType.BOOLEAN, Values.create(true), true),
 
     /**
      * Marks an attribute as being executable so it then supports values of type {@link AttributeExecuteStatus}.
      */
-    EXECUTABLE(ASSET_META_NAMESPACE + ":executable", new Access(true, false, true), ValueType.BOOLEAN);
+    EXECUTABLE(ASSET_META_NAMESPACE + ":executable", new Access(true, false, true), ValueType.BOOLEAN, Values.create(true), true);
 
     public enum AssetMetaValidationFailure implements ValidationFailure {
         VALUE_DOES_NOT_MATCH_ASSET_META_TYPE
@@ -170,11 +175,22 @@ public enum AssetMeta implements HasUniqueResourceName {
     final protected String urn;
     final protected Access access;
     final protected ValueType valueType;
+    final protected Value initialValue;
+    final protected boolean valueFixed;
 
     AssetMeta(String urn, Access access, ValueType valueType) {
+        this(urn, access, valueType, null, false);
+    }
+
+    AssetMeta(String urn, Access access, ValueType valueType, Value initialValue, boolean valueFixed) {
+        if (initialValue != null && initialValue.getType() != valueType) {
+            throw new IllegalStateException("Initial asset meta value must be of the same type as the asset meta");
+        }
         this.urn = urn;
         this.access = access;
         this.valueType = valueType;
+        this.initialValue = initialValue;
+        this.valueFixed = valueFixed;
     }
 
     public String getUrn() {
@@ -187,6 +203,21 @@ public enum AssetMeta implements HasUniqueResourceName {
 
     public ValueType getValueType() {
         return valueType;
+    }
+
+    public Value getInitialValue() {
+        return initialValue;
+    }
+
+    /**
+     * Indicates that the value of this asset meta should not be changed.
+     */
+    public boolean isValueFixed() {
+        return valueFixed;
+    }
+
+    public boolean isRestricted() {
+        return access != null && access.restricted;
     }
 
     /**
@@ -203,10 +234,10 @@ public enum AssetMeta implements HasUniqueResourceName {
         return Optional.empty();
     }
 
-    public static AssetMeta[] editable() {
+    public static AssetMeta[] unRestricted() {
         List<AssetMeta> list = new ArrayList<>();
         for (AssetMeta meta : values()) {
-            if (meta.getAccess().editable)
+            if (!meta.getAccess().restricted)
                 list.add(meta);
         }
 
@@ -215,12 +246,24 @@ public enum AssetMeta implements HasUniqueResourceName {
         return list.toArray(new AssetMeta[list.size()]);
     }
 
-    public static boolean isEditable(String urn) {
-        for (AssetMeta assetMeta : editable()) {
-            if (assetMeta.getUrn().equals(urn))
-                return assetMeta.getAccess().editable;
+    public static AssetMeta[] restricted() {
+        List<AssetMeta> list = new ArrayList<>();
+        for (AssetMeta meta : values()) {
+            if (meta.getAccess().restricted)
+                list.add(meta);
         }
-        return true;
+
+        list.sort(Comparator.comparing(Enum::name));
+
+        return list.toArray(new AssetMeta[list.size()]);
+    }
+
+    public static boolean isRestricted(String urn) {
+        for (AssetMeta assetMeta : restricted()) {
+            if (assetMeta.getUrn().equals(urn))
+                return assetMeta.getAccess().restricted;
+        }
+        return false;
     }
 
     public static Optional<AssetMeta> getAssetMeta(String urn) {
@@ -264,32 +307,6 @@ public enum AssetMeta implements HasUniqueResourceName {
             .orElse(false);
     }
 
-    /**
-     * In theory, meta item values can be of any {@link ValueType}. In practice, these
-     * are the types we can edit/have editor UI for.
-     */
-    public enum EditableType {
-        STRING("Text", ValueType.STRING),
-        NUMBER("Number", ValueType.NUMBER),
-        BOOLEAN("On/Off toggle", ValueType.BOOLEAN);
-
-        EditableType(String label, ValueType valueType) {
-            this.label = label;
-            this.valueType = valueType;
-        }
-
-        public final String label;
-        public final ValueType valueType;
-
-        public static EditableType byValueType(ValueType valueType) {
-            for (EditableType vt : values()) {
-                if (vt.valueType == valueType)
-                    return vt;
-            }
-            return null;
-        }
-    }
-
     public static class Access {
 
         /**
@@ -305,12 +322,12 @@ public enum AssetMeta implements HasUniqueResourceName {
         /**
          * Can a user add this meta item when editing an asset?
          */
-        final public boolean editable;
+        final public boolean restricted;
 
-        public Access(boolean protectedRead, boolean protectedWrite, boolean editable) {
+        public Access(boolean protectedRead, boolean protectedWrite, boolean restricted) {
             this.protectedRead = protectedRead;
             this.protectedWrite = protectedWrite;
-            this.editable = editable;
+            this.restricted = restricted;
         }
     }
 

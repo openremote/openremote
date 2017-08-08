@@ -57,7 +57,7 @@ class AdminTenantsActivityTest extends Specification implements ManagerContainer
         def resultCreateTenantHistoryToken = null
 
         and: "An authenticated user and client security service"
-        def realm = MASTER_REALM;
+        def realm = MASTER_REALM
         def accessToken = {
             authenticate(
                     container,
@@ -130,7 +130,7 @@ class AdminTenantsActivityTest extends Specification implements ManagerContainer
 
         def adminTenantsView = Mock(AdminTenants) {
             setTenants(_) >> {
-                resultTenants = it[0];
+                resultTenants = it[0]
             }
             setCreateTenantHistoryToken(_) >> {
                 resultCreateTenantHistoryToken = it[0]
@@ -248,10 +248,10 @@ class AdminTenantsActivityTest extends Specification implements ManagerContainer
             "Test Name"
         }
         1 * adminTenantView.getTenantRealm() >> {
-            return null; // This will cause a constraint violation
+            return null // This will cause a constraint violation
         }
         1 * adminTenantView.getTenantEnabled() >> {
-            return true;
+            return true
         }
 
         and: "The form errors should be shown"
@@ -276,7 +276,7 @@ class AdminTenantsActivityTest extends Specification implements ManagerContainer
             return "testrealm"
         }
         1 * adminTenantView.getTenantEnabled() >> {
-            return true;
+            return true
         }
 
         and: "The success toast should be shown"
@@ -288,7 +288,7 @@ class AdminTenantsActivityTest extends Specification implements ManagerContainer
         and: "The form should be cleared the activity stopped"
         1 * adminTenantView.setFormBusy(false)
         1 * adminTenantView.setPresenter(null)
-        1 * adminTenantView.clearFormMessages();
+        1 * adminTenantView.clearFormMessages()
         1 * adminTenantView.setTenantDisplayNameError(false)
         1 * adminTenantView.setTenantRealmError(false)
         1 * adminTenantView.setTenantEnabledError(false)
@@ -361,7 +361,7 @@ class AdminTenantsActivityTest extends Specification implements ManagerContainer
             return "master" // Note: This should be a conflict
         }
         1 * adminTenantView.getTenantEnabled() >> {
-            return true;
+            return true
         }
 
         and: "The conflict toast should be shown"
@@ -387,7 +387,7 @@ class AdminTenantsActivityTest extends Specification implements ManagerContainer
             return "testrealm2"
         }
         1 * adminTenantView.getTenantEnabled() >> {
-            return true;
+            return true
         }
 
         and: "The form success should be shown"
@@ -438,6 +438,6 @@ class AdminTenantsActivityTest extends Specification implements ManagerContainer
         }
 
         cleanup: "The server should be stopped"
-        stopContainer(container);
+        stopContainer(container)
     }
 }

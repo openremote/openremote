@@ -152,7 +152,10 @@ public class TimerProtocol extends AbstractProtocol {
                     LOG.finer("Protocol configuration enabled status is already: " + enabled);
                 } else {
                     LOG.fine("Updating protocol configuration enabled status");
-                    updateLinkedProtocolConfiguration(protocolConfiguration, AssetMeta.ENABLED, new MetaItem(AssetMeta.ENABLED, Values.create(enabled)));
+                    updateLinkedProtocolConfiguration(
+                        protocolConfiguration,
+                        protocolConfig -> protocolConfig.setDisabled(!enabled)
+                    );
                 }
                 break;
             case CRON_EXPRESSION:
@@ -255,8 +258,13 @@ public class TimerProtocol extends AbstractProtocol {
 
         updateLinkedProtocolConfiguration(
             getLinkedProtocolConfiguration(state.getAttributeRef()),
-            META_TIMER_CRON_EXPRESSION,
-            new MetaItem(META_TIMER_CRON_EXPRESSION, state.getCurrentValue().orElse(null))
+            protocolConfig -> {
+                MetaItem.replaceMetaByName(
+                    protocolConfig.getMeta(),
+                    META_TIMER_CRON_EXPRESSION,
+                    state.getCurrentValue().orElse(null)
+                );
+            }
         );
     }
 

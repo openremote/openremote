@@ -78,6 +78,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
     protected final Map<AttributeRef, Pair<AssetAttribute, ConnectionStatus>> protocolConfigurations = new HashMap<>();
     protected final Map<String, Protocol> protocols = new HashMap<>();
     protected final List<AttributeRef> linkedAttributes = new ArrayList<>();
+    protected Map<String, Asset> agentMap;
 
     @Override
     public void init(Container container) throws Exception {
@@ -111,9 +112,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
                 }
             );
 
-        List<ServerAsset> agents = assetStorageService.findAll(new AssetQuery()
-            .select(new AssetQuery.Select(true, false))
-            .type(AssetType.AGENT));
+        Collection<Asset> agents = getAgents().values();
         LOG.fine("Deploy all agents in all realms: " + agents.size());
 
         /// For all agents, go through their protocol configurations and find
@@ -425,7 +424,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
         // Get all assets that have attributes that use this protocol configuration
         List<ServerAsset> assets = assetStorageService.findAll(
             new AssetQuery()
-                .select(new AssetQuery.Select(true, false))
+                .select(new AssetQuery.Select(AssetQuery.Include.ALL, false))
                 .attributeMeta(
                     new AssetQuery.AttributeRefPredicate(
                         AssetMeta.AGENT_LINK,
@@ -454,7 +453,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
         // Get all assets that have attributes that use this protocol configuration
         List<ServerAsset> assets = assetStorageService.findAll(
             new AssetQuery()
-                .select(new AssetQuery.Select(true, false))
+                .select(new AssetQuery.Select(AssetQuery.Include.ALL, false))
                 .attributeMeta(
                     new AssetQuery.AttributeRefPredicate(
                         AssetMeta.AGENT_LINK,
@@ -646,5 +645,17 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
             Pair<AssetAttribute, ConnectionStatus> deploymentStatusPair = protocolConfigurations.get(protocolRef);
             return deploymentStatusPair == null ? Optional.empty() : Optional.of(deploymentStatusPair.key);
         }
+    }
+
+    protected synchronized Map<String, Asset> getAgents() {
+        if (agentMap == null) {
+            agentMap = assetStorageService.findAll(new AssetQuery()
+                .select(new AssetQuery.Select(AssetQuery.Include.ALL, false))
+                .type(AssetType.AGENT))
+                .stream()
+                .collect(Collectors.toMap(Asset::getId, agent -> agent));
+        }
+
+        return agentMap;
     }
 }

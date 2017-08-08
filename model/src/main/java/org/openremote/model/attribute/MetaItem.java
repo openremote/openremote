@@ -22,6 +22,7 @@ package org.openremote.model.attribute;
 import org.openremote.model.AbstractValueHolder;
 import org.openremote.model.HasUniqueResourceName;
 import org.openremote.model.ValidationFailure;
+import org.openremote.model.asset.AssetMeta;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Value;
@@ -61,6 +62,12 @@ public class MetaItem extends AbstractValueHolder {
         setValue(value);
     }
 
+    public MetaItem(AssetMeta assetMeta) {
+        super(Values.createObject());
+        setName(assetMeta.getUrn());
+        setValue(assetMeta.getInitialValue());
+    }
+
     public MetaItem(HasUniqueResourceName hasUniqueResourceName, Value value) {
         this(hasUniqueResourceName.getUrn(), value);
     }
@@ -69,8 +76,24 @@ public class MetaItem extends AbstractValueHolder {
         return getObjectValue().getString("name");
     }
 
+    public boolean hasRestrictedFlag() {
+        return getObjectValue().hasKey("restricted");
+    }
+
+    public boolean isRestricted() {
+        return getObjectValue().getBoolean("restricted").orElse(false);
+    }
+
+    public void setRestricted(boolean restricted) {
+        getObjectValue().put("restricted", Values.create(restricted));
+    }
+
     public void setName(String name) {
         getObjectValue().put("name", TextUtil.requireNonNullAndNonEmpty(name));
+    }
+
+    public void clearName() {
+        getObjectValue().remove("name");
     }
 
     @Override

@@ -20,7 +20,7 @@ import java.lang.annotation.Annotation;
 
 public class MethodParamMetaData {
 
-    public static enum MethodParamType {
+    public enum MethodParamType {
         QUERY_PARAMETER, HEADER_PARAMETER, COOKIE_PARAMETER, PATH_PARAMETER, MATRIX_PARAMETER, FORM_PARAMETER, FORM, ENTITY_PARAMETER
     }
 

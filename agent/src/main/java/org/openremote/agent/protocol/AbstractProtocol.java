@@ -26,7 +26,6 @@ import org.openremote.container.message.MessageBrokerContext;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.message.MessageBrokerSetupService;
 import org.openremote.container.timer.TimerService;
-import org.openremote.model.HasUniqueResourceName;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.attribute.AttributeEvent;
@@ -207,19 +206,17 @@ public abstract class AbstractProtocol implements Protocol {
     }
 
     /**
-     * Send an arbitrary {@link AttributeState} through the processing chain
-     * using the current system time as the timestamp. Use {@link #updateLinkedAttribute}
-     * to publish new sensor values, which performs additional verification and uses a
-     * different messaging queue.
+     * Send an arbitrary {@link AttributeState} through the processing chain using the current system time as the
+     * timestamp. Use {@link #updateLinkedAttribute} to publish new sensor values, which performs additional
+     * verification and uses a different messaging queue.
      */
     protected void sendAttributeEvent(AttributeState state) {
         sendAttributeEvent(new AttributeEvent(state, timerService.getCurrentTimeMillis()));
     }
 
     /**
-     * Send an arbitrary {@link AttributeEvent} through the processing chain.
-     * Use {@link #updateLinkedAttribute} to publish new sensor values, which performs
-     * additional verification and uses a different messaging queue.
+     * Send an arbitrary {@link AttributeEvent} through the processing chain. Use {@link #updateLinkedAttribute} to
+     * publish new sensor values, which performs additional verification and uses a different messaging queue.
      */
     protected void sendAttributeEvent(AttributeEvent event) {
         // Don't allow updating linked attributes with this mechanism as it could cause an infinite loop
@@ -248,25 +245,22 @@ public abstract class AbstractProtocol implements Protocol {
     }
 
     /**
-     * Update the value of a linked attribute, with the current system time as event time.
-     * Call this to publish new sensor values.
+     * Update the value of a linked attribute, with the current system time as event time. Call this to publish new
+     * sensor values.
      */
     protected void updateLinkedAttribute(AttributeState state) {
         updateLinkedAttribute(state, timerService.getCurrentTimeMillis());
     }
 
     /**
-     * Update a linked protocol configuration; allows protocols to reconfigure their
-     * own protocol configurations to persist changing data e.g. authorization tokens.
+     * Update a linked protocol configuration; allows protocols to reconfigure their own protocol configurations to
+     * persist changing data e.g. authorization tokens. First this clones the existing protocolConfiguration and calls
+     * the consumer to perform the modification.
      */
-    protected void updateLinkedProtocolConfiguration(AssetAttribute protocolConfiguration, HasUniqueResourceName metaName, MetaItem... newMetaItem) {
-        updateLinkedProtocolConfiguration(protocolConfiguration, metaName.getUrn(), newMetaItem);
-    }
-
-    protected void updateLinkedProtocolConfiguration(AssetAttribute protocolConfiguration, String metaName, MetaItem... newMetaItem) {
+    protected void updateLinkedProtocolConfiguration(AssetAttribute protocolConfiguration, Consumer<AssetAttribute> protocolUpdater) {
         // Clone the protocol configuration rather than modify this one
         AssetAttribute modifiedProtocolConfiguration = protocolConfiguration.deepCopy();
-        MetaItem.replaceMetaByName(modifiedProtocolConfiguration.getMeta(), metaName, Arrays.asList(newMetaItem));
+        protocolUpdater.accept(modifiedProtocolConfiguration);
         assetService.updateProtocolConfiguration(modifiedProtocolConfiguration);
     }
 
@@ -322,8 +316,7 @@ public abstract class AbstractProtocol implements Protocol {
     abstract protected void doUnlinkAttribute(AssetAttribute attribute, AssetAttribute protocolConfiguration);
 
     /**
-     * Attribute event (write) has been requested for an attribute linked to the specified
-     * protocol configuration.
+     * Attribute event (write) has been requested for an attribute linked to the specified protocol configuration.
      */
     abstract protected void processLinkedAttributeWrite(AttributeEvent event, AssetAttribute protocolConfiguration);
 }

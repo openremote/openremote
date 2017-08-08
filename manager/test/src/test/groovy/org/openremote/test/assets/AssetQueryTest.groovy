@@ -15,8 +15,8 @@ import spock.lang.Specification
 import javax.persistence.EntityManager
 import java.util.function.Function
 
-import static org.openremote.model.asset.AssetQuery.*
-import static org.openremote.model.asset.AssetQuery.OrderBy.Property.NAME
+import static org.openremote.model.asset.AbstractAssetQuery.*
+import static org.openremote.model.asset.AbstractAssetQuery.OrderBy.Property.*
 import static org.openremote.model.asset.AssetType.THING
 
 class AssetQueryTest extends Specification implements ManagerContainerTrait {
@@ -29,6 +29,89 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
         def assetStorageService = container.getService(AssetStorageService.class)
         def persistenceService = container.getService(PersistenceService.class)
+
+        when: "an agent filtering query is executed"
+        def assets = assetStorageService.findAll(
+            new AssetQuery()
+                .select(new Select(Include.ONLY_ID_AND_NAME_AND_ATTRIBUTES))
+                .type(AssetType.AGENT)
+                .tenant(new TenantPredicate(keycloakDemoSetup.masterTenant.id))
+        )
+
+        then: "agent assets should be retrieved"
+        assets.size() == 1
+        assets[0].id == managerDemoSetup.agentId
+        assets[0].name == "Demo Agent"
+        assets[0].type == null
+        assets[0].parentId == null
+        assets[0].parentName == null
+        assets[0].parentType == null
+        assets[0].realmId == null
+        assets[0].tenantRealm == null
+        assets[0].tenantDisplayName == null
+        assets[0].coordinates == null
+        assets[0].path == null
+
+        when: "a user filtering query is executed that returns only IDs, names and attribute names"
+        assets = assetStorageService.findAll(
+            new AssetQuery()
+                .select(new Select(Include.ONLY_ID_AND_NAME_AND_ATTRIBUTE_NAMES))
+                .userId(keycloakDemoSetup.testuser3Id)
+        )
+
+        then: "only the users assets should be retrieved"
+        assets.size() == 4
+        assets.get(0).id == managerDemoSetup.apartment1Id
+        assets.get(1).id == managerDemoSetup.apartment1LivingroomId
+        assets.get(1).getAttributesList().size() == 7
+        !assets.get(1).getAttribute("currentTemperature").get().getValue().isPresent()
+        assets.get(1).getAttribute("currentTemperature").get().meta.size() == 1
+        !assets.get(1).getAttribute("targetTemperature").get().getValue().isPresent()
+        assets.get(1).getAttribute("targetTemperature").get().meta.size() == 1
+        assets.get(2).id == managerDemoSetup.apartment1KitchenId
+        assets.get(3).id == managerDemoSetup.apartment2Id
+
+        when: "a recursive query is executed to select asset id, name and attribute names for apartment 1 assets"
+        assets = assetStorageService.findAll(
+            new AssetQuery()
+                .id(managerDemoSetup.smartHomeId)
+                .select(new Select(Include.ONLY_ID_AND_NAME_AND_ATTRIBUTE_NAMES, false, true))
+                .orderBy(new OrderBy(CREATED_ON))
+        )
+
+        then: "result should contain only ids, names and attribute names and label meta"
+        assets.size() == 10
+        assets[0].id == managerDemoSetup.smartHomeId
+        assets[0].name == "Smart Home"
+        assets[1].id == managerDemoSetup.apartment1Id
+        assets[1].version == 0
+        assets[1].createdOn == null
+        assets[1].name == "Apartment 1"
+        assets[1].type == null
+        assets[1].parentId == null
+        assets[1].parentName == null
+        assets[1].parentType == null
+        assets[1].realmId == null
+        assets[1].tenantRealm == null
+        assets[1].tenantDisplayName == null
+        assets[1].coordinates == null
+        assets[1].path == null
+        assets[1].getAttributesList().size() == 4
+        assets[1].getAttribute("alarmEnabled").isPresent()
+        assets[1].getAttribute("vacationUntil").isPresent()
+        assets[1].getAttribute("autoSceneSchedule").isPresent()
+        assets[1].getAttribute("lastExecutedScene").isPresent()
+        assets[1].getAttribute("alarmEnabled").get().meta.size() == 1
+        assets[1].getAttribute("alarmEnabled").get().getMetaItem(AssetMeta.LABEL).isPresent()
+        assets[1].getAttribute("alarmEnabled").get().getLabelOrName().get() == "Alarm enabled"
+        assets[2].id == managerDemoSetup.apartment1ServiceAgentId
+        assets[3].id == managerDemoSetup.apartment1LivingroomId
+        assets[4].id == managerDemoSetup.apartment1KitchenId
+        assets[5].id == managerDemoSetup.apartment2Id
+        assets[6].id == managerDemoSetup.apartment2LivingroomId
+        assets[7].id == managerDemoSetup.apartment2BathroomId
+        assets[8].id == managerDemoSetup.apartment3Id
+        assets[9].id == managerDemoSetup.apartment3LivingroomId
 
         when: "an asset is loaded by identifier through JPA"
         def asset = persistenceService.doReturningTransaction(new Function<EntityManager, ServerAsset>() {
@@ -81,7 +164,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         when: "a query is executed"
         asset = assetStorageService.find(
                 new AssetQuery()
-                        .select(new Select(true, false))
+                        .select(new Select(Include.ALL, false))
                         .id(managerDemoSetup.smartOfficeId)
         )
 
@@ -103,7 +186,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         asset.getAttribute("geoStreet").get().getValueAsString().get() == "Torenallee 20"
 
         when: "a query is executed"
-        def assets = assetStorageService.findAll(
+        assets = assetStorageService.findAll(
                 new AssetQuery()
                         .parent(new ParentPredicate(true))
                         .tenant(new TenantPredicate(keycloakDemoSetup.masterTenant.id))
@@ -129,7 +212,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         when: "a query is executed"
         assets = assetStorageService.findAll(
                 new AssetQuery()
-                        .select(new Select(true, false))
+                        .select(new Select(Include.ALL, false))
                         .parent(new ParentPredicate(true))
                         .tenant(new TenantPredicate(keycloakDemoSetup.masterTenant.id))
         )
@@ -241,7 +324,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
 
         when: "a query is executed"
         assets = assetStorageService.findAll(
-                new AssetQuery().select(new Select(true, true)).userId(keycloakDemoSetup.testuser3Id)
+                new AssetQuery().select(new Select(Include.ALL, true)).userId(keycloakDemoSetup.testuser3Id)
         )
 
         then: "result should match"
@@ -258,7 +341,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
 
         when: "a query is executed"
         assets = assetStorageService.findAll(
-                new AssetQuery().select(new Select(true, true)).userId(keycloakDemoSetup.testuser2Id)
+                new AssetQuery().select(new Select(Include.ALL, true)).userId(keycloakDemoSetup.testuser2Id)
         )
 
         then: "result should match"
@@ -414,7 +497,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         asset = assetStorageService.find(
                 new AssetQuery()
                         .id(managerDemoSetup.apartment1LivingroomId)
-                        .select(new Select("co2Level", "lastPresenceDetected", "motionSensor").loadComplete(true))
+                        .select(new Select(Include.ALL, false, false, "co2Level", "lastPresenceDetected", "motionSensor"))
         )
 
         then: "result should match"
@@ -443,7 +526,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         asset = assetStorageService.find(
                 new AssetQuery()
                         .id(managerDemoSetup.apartment1LivingroomId)
-                        .select(new Select("co2Level", "lastPresenceDetected", "motionSensor").loadComplete(true).filterProtected(true))
+                        .select(new Select(Include.ALL, false, false, "co2Level", "lastPresenceDetected", "motionSensor").filterProtected(true))
         )
 
         then: "result should contain only matches that are protected"

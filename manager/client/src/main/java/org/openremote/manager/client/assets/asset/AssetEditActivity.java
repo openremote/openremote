@@ -21,7 +21,9 @@ package org.openremote.manager.client.assets.asset;
 
 import com.google.gwt.user.client.ui.AcceptsOneWidget;
 import org.openremote.manager.client.Environment;
+import org.openremote.manager.client.assets.AssetArrayMapper;
 import org.openremote.manager.client.assets.AssetMapper;
+import org.openremote.manager.client.assets.AssetQueryMapper;
 import org.openremote.manager.client.assets.AssetsDashboardPlace;
 import org.openremote.manager.client.assets.attributes.AttributesEditor;
 import org.openremote.manager.client.assets.browser.*;
@@ -33,15 +35,21 @@ import org.openremote.manager.shared.asset.AssetResource;
 import org.openremote.manager.shared.map.MapResource;
 import org.openremote.manager.shared.security.Tenant;
 import org.openremote.manager.shared.validation.ConstraintViolation;
-import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.asset.AssetType;
+import org.openremote.model.ValueHolder;
+import org.openremote.model.asset.*;
+import org.openremote.model.asset.agent.AgentLink;
+import org.openremote.model.asset.agent.ProtocolConfiguration;
 import org.openremote.model.attribute.AttributeType;
+import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.event.bus.EventBus;
 import org.openremote.model.event.bus.EventRegistration;
+import org.openremote.model.util.Pair;
 
 import javax.inject.Inject;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -54,9 +62,15 @@ public class AssetEditActivity
     final AssetEdit view;
     final AssetResource assetResource;
     final AssetMapper assetMapper;
+    final AssetArrayMapper assetArrayMapper;
+    final AssetQueryMapper assetQueryMapper;
     final MapResource mapResource;
     final ObjectValueMapper objectValueMapper;
     final protected Consumer<ConstraintViolation[]> validationErrorHandler;
+    protected final List<Consumer<Asset[]>> agentAssetConsumers = new ArrayList<>();
+    protected final List<Consumer<Asset[]>> allAssetConsumers = new ArrayList<>();
+    protected Asset[] agentAssets;
+    protected Asset[] allAssets;
 
     double[] selectedCoordinates;
     AttributesEditor attributesEditor;
@@ -68,12 +82,16 @@ public class AssetEditActivity
                              AssetEdit view,
                              AssetResource assetResource,
                              AssetMapper assetMapper,
+                             AssetArrayMapper assetArrayMapper,
+                             AssetQueryMapper assetQueryMapper,
                              MapResource mapResource,
                              ObjectValueMapper objectValueMapper) {
         super(environment, currentTenant, assetBrowserPresenter);
         this.view = view;
         this.assetResource = assetResource;
         this.assetMapper = assetMapper;
+        this.assetArrayMapper = assetArrayMapper;
+        this.assetQueryMapper = assetQueryMapper;
         this.mapResource = mapResource;
         this.objectValueMapper = objectValueMapper;
 
@@ -273,6 +291,84 @@ public class AssetEditActivity
     }
 
     @Override
+    public void getLinkableAssets(ValueHolder value, Consumer<Asset[]> assetConsumer) {
+        List<Consumer<Asset[]>> consumers;
+        Asset[] retrievedAssets;
+        Consumer<Asset[]> assetStore;
+        AssetQuery query;
+
+        if ((value instanceof MetaItem) && AgentLink.isAgentLink((MetaItem) value)) {
+            consumers = agentAssetConsumers;
+            retrievedAssets = agentAssets;
+            assetStore = assets -> agentAssets = assets;
+            query = new AssetQuery()
+                // There shouldn't be many agents so retrieve their attributes to speed up getting
+                // Protocol Configuration attribute names
+                .select(new AssetQuery.Select(AssetQuery.Include.ONLY_ID_AND_NAME_AND_ATTRIBUTES))
+                // Limit to agents
+                .type(AssetType.AGENT);
+        } else {
+            consumers = allAssetConsumers;
+            retrievedAssets = allAssets;
+            assetStore = assets -> allAssets = assets;
+            // Limit to assets that have the same realm as the asset being edited
+            query = new AssetQuery()
+                .select(new AssetQuery.Select(AssetQuery.Include.ONLY_ID_AND_NAME_AND_ATTRIBUTE_NAMES, true));
+        }
+
+        if (retrievedAssets != null) {
+            // Already retrieved so return results
+            assetConsumer.accept(retrievedAssets);
+            return;
+        }
+
+        consumers.add(assetConsumer);
+
+        if (consumers.size() == 1) {
+            // Do request
+            environment.getRequestService().execute(
+                assetArrayMapper,
+                assetQueryMapper,
+                requestParams -> assetResource.queryAssets(requestParams, query),
+                Collections.singletonList(200),
+                assets -> {
+                    assetStore.accept(assets);
+                    consumers.forEach(consumer -> consumer.accept(assets));
+                    consumers.clear();
+                },
+                exception -> {
+                    Asset[] assets = new Asset[0];
+                    assetStore.accept(assets);
+                    consumers.forEach(consumer -> consumer.accept(assets));
+                    consumers.clear();
+                }
+            );
+        }
+    }
+
+    @Override
+    public void getLinkableAttributes(Pair<ValueHolder, Asset> valueAssetPair, Consumer<AssetAttribute[]> attributeConsumer) {
+        ValueHolder value = valueAssetPair.key;
+        Asset asset = valueAssetPair.value;
+
+        if ((value instanceof MetaItem) && AgentLink.isAgentLink((MetaItem) value)) {
+            // Asset should have fully populated attributes so filter them
+            attributeConsumer.accept(
+                asset.getAttributesStream()
+                    .filter(ProtocolConfiguration::isProtocolConfiguration)
+                    .toArray(AssetAttribute[]::new)
+            );
+        } else {
+            // Asset should just have attribute names and labels loaded so return them
+            attributeConsumer.accept(
+                asset
+                    .getAttributesStream()
+                    .toArray(AssetAttribute[]::new)
+            );
+        }
+    }
+
+    @Override
     public void centerMap() {
         if (selectedCoordinates != null) {
             view.flyTo(selectedCoordinates);
@@ -351,7 +447,9 @@ public class AssetEditActivity
             assetId == null
                 ? asset.getWellKnownType().getDefaultAttributes().collect(Collectors.toList())
                 : asset.getAttributesList(),
-            assetId == null
+            assetId == null,
+            this::getLinkableAssets,
+            this::getLinkableAttributes
         );
         view.setAttributesEditor(attributesEditor);
         attributesEditor.build();

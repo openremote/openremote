@@ -29,7 +29,7 @@ import java.util.Date;
 
 public class EpochSecondsDeserializer extends JsonDeserializer<Date> {
     @Override
-    public Date deserialize(JsonParser p, DeserializationContext ctxt) throws IOException, JsonProcessingException {
+    public Date deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
         String timestamp = p.getText().trim();
         try {
             return new Date(Long.valueOf(timestamp + "000"));

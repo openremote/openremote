@@ -260,21 +260,21 @@ public class AssetAttribute extends Attribute {
     }
 
     /**
-     * Defaults to <code>true</code> if there is no {@link AssetMeta#ENABLED} item.
+     * Defaults to <code>true</code> if there is no {@link AssetMeta#DISABLED} item.
      */
     public boolean isEnabled() {
         return getMetaStream()
-            .filter(isMetaNameEqualTo(ENABLED))
+            .filter(isMetaNameEqualTo(DISABLED))
             .findFirst()
-            .map(metaItem -> metaItem.getValueAsBoolean().orElse(false))
+            .map(metaItem -> !metaItem.getValueAsBoolean().orElse(false))
             .orElse(true);
     }
 
-    public void setEnabled(boolean enabled) {
-        if (!enabled) {
-            replaceMetaByName(getMeta(), ENABLED, Values.create(false));
+    public void setDisabled(boolean disabled) {
+        if (disabled) {
+            replaceMetaByName(getMeta(), DISABLED, Values.create(true));
         } else {
-            getMeta().removeIf(isMetaNameEqualTo(ENABLED));
+            getMeta().removeIf(isMetaNameEqualTo(DISABLED));
         }
     }
 
@@ -392,7 +392,7 @@ public class AssetAttribute extends Attribute {
     //    ---------------------------------------------------
 
     public static Optional<AssetAttribute> attributeFromJson(ObjectValue objectValue, String assetId, String name) {
-        if (objectValue == null || objectValue.keys().length == 0) {
+        if (objectValue == null) {
             return Optional.empty();
         }
 

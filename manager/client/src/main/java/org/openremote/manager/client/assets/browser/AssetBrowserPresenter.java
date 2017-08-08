@@ -24,10 +24,12 @@ import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.admin.TenantArrayMapper;
 import org.openremote.manager.client.assets.AssetArrayMapper;
 import org.openremote.manager.client.assets.AssetMapper;
+import org.openremote.manager.client.assets.AssetQueryMapper;
 import org.openremote.manager.shared.asset.AssetResource;
 import org.openremote.manager.shared.security.Tenant;
 import org.openremote.manager.shared.security.TenantResource;
 import org.openremote.model.asset.Asset;
+import org.openremote.model.asset.AssetQuery;
 import org.openremote.model.asset.AssetTreeModifiedEvent;
 import org.openremote.model.event.bus.EventRegistration;
 
@@ -50,6 +52,7 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
     final AssetBrowser view;
     final AssetResource assetResource;
     final AssetMapper assetMapper;
+    final AssetQueryMapper assetQueryMapper;
     final AssetArrayMapper assetArrayMapper;
     final TenantResource tenantResource;
     final TenantArrayMapper tenantArrayMapper;
@@ -66,6 +69,7 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
                                  AssetBrowser view,
                                  AssetResource assetResource,
                                  AssetMapper assetMapper,
+                                 AssetQueryMapper assetQueryMapper,
                                  AssetArrayMapper assetArrayMapper,
                                  TenantResource tenantResource,
                                  TenantArrayMapper tenantArrayMapper) {
@@ -76,6 +80,7 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
         this.tenantArrayMapper = tenantArrayMapper;
         this.assetResource = assetResource;
         this.assetMapper = assetMapper;
+        this.assetQueryMapper = assetQueryMapper;
         this.assetArrayMapper = assetArrayMapper;
 
         view.setPresenter(this);
@@ -235,18 +240,24 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
         // final Range range = display.getVisibleRange();
         environment.getRequestService().execute(
             assetArrayMapper,
+            assetQueryMapper,
             requestParams -> {
                 // This must be synchronous, so tree selection/searching works
                 requestParams.setAsync(false);
                 if (parent instanceof TenantTreeNode) {
-                    assetResource.getRoot(requestParams, parent.getId());
+                    assetResource.queryAssets(
+                        requestParams,
+                        new AssetQuery()
+                            .tenant(new AssetQuery.TenantPredicate(parent.getId()))
+                            .parent(new AssetQuery.ParentPredicate(true))
+                    );
                 } else if (parent instanceof RootTreeNode) {
                     assetResource.getCurrentUserAssets(requestParams);
                 } else {
-                    assetResource.getChildren(requestParams, parent.getId(), false);
+                    assetResource.queryAssets(requestParams, new AssetQuery().parent(parent.getId()));
                 }
             },
-            200,
+            Collections.singletonList(200),
             assets -> {
                 List<BrowserTreeNode> treeNodes = new ArrayList<>();
                 for (Asset asset : assets) {

@@ -253,7 +253,6 @@ public abstract class AttributesView<
     }
 
     protected IsWidget createAttributeValueEditor(AssetAttribute attribute, FormGroup formGroup) {
-        Optional<MetaItem> defaultValueItem = attribute.getMetaItem(AssetMeta.DEFAULT);
         S style = container.getStyle();
 
         AttributeType attributeType = attribute.getType().orElse(null);
@@ -272,42 +271,37 @@ public abstract class AttributesView<
         IsWidget editor;
         if (attributeType == AttributeType.STRING || attributeType.getValueType() == ValueType.STRING) {
             String currentValue = attribute.getValue().map(Object::toString).orElse(null);
-            String defaultValue = defaultValueItem.flatMap(AbstractValueHolder::getValueAsString).orElse(null);
             editor = createStringEditor(
-                attribute, currentValue, defaultValue, readOnly, style.stringEditor(), formGroup, showTimestamp, validationResultConsumer
+                attribute, currentValue, readOnly, style.stringEditor(), formGroup, showTimestamp, validationResultConsumer
             );
         } else if (attributeType == AttributeType.NUMBER || attributeType.getValueType() == ValueType.NUMBER) {
             String currentValue = attribute.getValue().map(Object::toString).orElse(null);
-            String defaultValue = defaultValueItem.flatMap(AbstractValueHolder::getValueAsString).orElse(null);
             editor = createNumberEditor(
-                attribute, currentValue, defaultValue, readOnly, style.numberEditor(), formGroup, showTimestamp, validationResultConsumer
+                attribute, currentValue, readOnly, style.numberEditor(), formGroup, showTimestamp, validationResultConsumer
             );
         } else if (attributeType == AttributeType.BOOLEAN || attributeType.getValueType() == ValueType.BOOLEAN) {
             Boolean currentValue = attribute.getValueAsBoolean().orElse(null);
-            Boolean defaultValue = defaultValueItem.flatMap(AbstractValueHolder::getValueAsBoolean).orElse(null);
             editor = createBooleanEditor(
-                attribute, currentValue, defaultValue, readOnly, style.booleanEditor(), formGroup, showTimestamp, validationResultConsumer
+                attribute, currentValue, readOnly, style.booleanEditor(), formGroup, showTimestamp, validationResultConsumer
             );
         } else if (attributeType == AttributeType.OBJECT || attributeType.getValueType() == ValueType.OBJECT) {
             ObjectValue currentValue = attribute.getValue().flatMap(Values::getObject).orElse(null);
-            Supplier<Value> resetSupplier = () -> attribute.getValue().orElse(null);
             String label = environment.getMessages().jsonObject();
             String title = !readOnly
                 ? environment.getMessages().edit() + " " + environment.getMessages().jsonObject()
                 : environment.getMessages().jsonObject();
 
             editor = createObjectEditor(
-                attribute, currentValue, resetSupplier, readOnly, label, title, container.getJsonEditor(), formGroup, showTimestamp, validationResultConsumer
+                attribute, currentValue, readOnly, label, title, container.getJsonEditor(), formGroup, showTimestamp, validationResultConsumer
             );
         } else if (attributeType == AttributeType.ARRAY || attributeType.getValueType() == ValueType.ARRAY) {
             ArrayValue currentValue = attribute.getValue().flatMap(Values::getArray).orElse(null);
-            Supplier<Value> resetSupplier = () -> attribute.getValue().orElse(null);
             String label = environment.getMessages().jsonArray();
             String title = !readOnly
                 ? environment.getMessages().edit() + " " + environment.getMessages().jsonArray()
                 : environment.getMessages().jsonArray();
             editor = createArrayEditor(
-                attribute, currentValue, resetSupplier, readOnly, label, title, container.getJsonEditor(), formGroup, showTimestamp, validationResultConsumer
+                attribute, currentValue, readOnly, label, title, container.getJsonEditor(), formGroup, showTimestamp, validationResultConsumer
             );
         } else {
             editor = new FormOutputText(

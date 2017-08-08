@@ -23,12 +23,17 @@ import com.google.gwt.user.client.ui.IsWidget;
 import org.openremote.manager.client.assets.attributes.AttributesEditor;
 import org.openremote.manager.client.assets.browser.BrowserTreeNode;
 import org.openremote.manager.client.widget.FormView;
+import org.openremote.model.ValueHolder;
+import org.openremote.model.asset.Asset;
+import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetType;
 import org.openremote.model.attribute.AttributeType;
 import org.openremote.model.geo.GeoJSON;
+import org.openremote.model.util.Pair;
 import org.openremote.model.value.ObjectValue;
 
 import java.util.Date;
+import java.util.function.Consumer;
 
 public interface AssetEdit extends FormView, IsWidget {
 
@@ -51,6 +56,10 @@ public interface AssetEdit extends FormView, IsWidget {
         void create();
 
         void delete();
+
+        void getLinkableAssets(ValueHolder value, Consumer<Asset[]> assetConsumer);
+
+        void getLinkableAttributes(Pair<ValueHolder, Asset> valueAssetPair, Consumer<AssetAttribute[]> attributeConusmer);
     }
 
     void setAssetViewHistoryToken(String token);

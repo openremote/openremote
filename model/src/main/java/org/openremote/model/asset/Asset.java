@@ -231,7 +231,7 @@ public class Asset implements IdentifiableEntity {
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "CREATED_ON", updatable = false, nullable = false, columnDefinition = "TIMESTAMP WITH TIME ZONE")
     @org.hibernate.annotations.CreationTimestamp
-    protected Date createdOn = new Date();
+    protected Date createdOn;
 
     @NotNull(message = "{Asset.name.NotNull}")
     @Size(min = 3, max = 1023, message = "{Asset.name.Size}")
@@ -554,7 +554,7 @@ public class Asset implements IdentifiableEntity {
             .flatMap(objectValue -> AssetAttribute.attributeFromJson(objectValue, id, name));
     }
 
-    protected void setAttributes(ObjectValue attributes) {
+    public void setAttributes(ObjectValue attributes) {
         this.attributes = attributes;
     }
 

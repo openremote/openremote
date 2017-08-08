@@ -73,9 +73,7 @@ public class PopupToastDisplay implements ToastDisplay {
             Point point = (Point) o;
 
             if (x != point.x) return false;
-            if (y != point.y) return false;
-
-            return true;
+            return y == point.y;
         }
 
         @Override

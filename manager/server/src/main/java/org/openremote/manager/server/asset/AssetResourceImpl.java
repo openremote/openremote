@@ -29,6 +29,7 @@ import org.openremote.manager.shared.http.RequestParams;
 import org.openremote.manager.shared.security.Tenant;
 import org.openremote.model.Constants;
 import org.openremote.model.asset.Asset;
+import org.openremote.model.asset.AbstractAssetQuery;
 import org.openremote.model.asset.AssetQuery;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
@@ -47,11 +48,13 @@ import java.util.logging.Logger;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 import static org.openremote.model.attribute.AttributeEvent.Source.CLIENT;
+import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 
 public class AssetResourceImpl extends ManagerWebResource implements AssetResource {
 
     private static final Logger LOG = Logger.getLogger(AssetResourceImpl.class.getName());
 
+    protected final static Asset[] EMPTY_ASSETS = new Asset[0];
     protected final AssetStorageService assetStorageService;
     protected final MessageBrokerService messageBrokerService;
 
@@ -74,14 +77,14 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             if (!isRestrictedUser()) {
                 List<ServerAsset> result = assetStorageService.findAll(
                     new AssetQuery()
-                        .parent(new AssetQuery.ParentPredicate(true))
-                        .tenant(new AssetQuery.TenantPredicate().realm(getAuthenticatedRealm()))
+                        .parent(new AbstractAssetQuery.ParentPredicate(true))
+                        .tenant(new AbstractAssetQuery.TenantPredicate().realm(getAuthenticatedRealm()))
                 );
                 return result.toArray(new Asset[result.size()]);
             }
 
             List<ServerAsset> assets = assetStorageService.findAll(
-                new AssetQuery().select(new AssetQuery.Select(false, true)).userId(getUserId())
+                new AssetQuery().select(new AbstractAssetQuery.Select(AbstractAssetQuery.Include.ALL_EXCEPT_PATH_AND_ATTRIBUTES, true)).userId(getUserId())
             );
 
             // Filter assets that might have been moved into a different realm and can no longer be accessed by user
@@ -96,68 +99,6 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                 }
             }
             return assets.toArray(new ServerAsset[assets.size()]);
-        } catch (IllegalStateException ex) {
-            throw new WebApplicationException(ex, Response.Status.BAD_REQUEST);
-        }
-    }
-
-    @Override
-    public Asset[] getRoot(RequestParams requestParams, String realmId) {
-        try {
-            Tenant tenant = realmId == null || realmId.length() == 0
-                ? getAuthenticatedTenant()
-                : identityService.getIdentityProvider().getTenantForRealmId(realmId);
-
-            if (tenant == null) {
-                throw new WebApplicationException(NOT_FOUND);
-            }
-
-            if (!isTenantActiveAndAccessible(tenant) || isRestrictedUser()) {
-                return new Asset[0];
-            }
-
-            List<ServerAsset> result = assetStorageService.findAll(
-                new AssetQuery()
-                    .parent(new AssetQuery.ParentPredicate(true))
-                    .tenant(new AssetQuery.TenantPredicate(tenant.getId()))
-            );
-            return result.toArray(new Asset[result.size()]);
-
-        } catch (IllegalStateException ex) {
-            throw new WebApplicationException(ex, Response.Status.BAD_REQUEST);
-        }
-    }
-
-    @Override
-    public Asset[] getChildren(RequestParams requestParams, String parentId, boolean loadComplete) {
-        try {
-            if (isRestrictedUser()) {
-                return new Asset[0];
-            }
-
-            AssetQuery query = new AssetQuery()
-                .parent(new AssetQuery.ParentPredicate(parentId));
-
-            if (loadComplete) {
-                query = query.select(new AssetQuery.Select(true));
-            }
-
-            if (isSuperUser()) {
-                List<ServerAsset> result = assetStorageService.findAll(
-                    query
-                );
-                return result.toArray(new Asset[result.size()]);
-            } else {
-                Tenant tenant = getAuthenticatedTenant();
-                if (tenant == null || !tenant.isActive(timerService.getCurrentTimeMillis())) {
-                    throw new WebApplicationException(NOT_FOUND);
-                }
-                List<ServerAsset> result = assetStorageService.findAll(
-                    query
-                        .tenant(new AssetQuery.TenantPredicate(tenant.getId()))
-                );
-                return result.toArray(new Asset[result.size()]);
-            }
         } catch (IllegalStateException ex) {
             throw new WebApplicationException(ex, Response.Status.BAD_REQUEST);
         }
@@ -344,4 +285,39 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
         }
     }
 
+    @Override
+    public Asset[] queryAssets(RequestParams requestParams, AbstractAssetQuery query) {
+        try {
+            if (query == null || isRestrictedUser()) {
+                return EMPTY_ASSETS;
+            }
+
+            Tenant tenant = query.tenantPredicate != null
+                ? !isNullOrEmpty(query.tenantPredicate.realmId)
+                    ? identityService.getIdentityProvider().getTenantForRealmId(query.tenantPredicate.realmId)
+                    : !isNullOrEmpty(query.tenantPredicate.realm)
+                        ? identityService.getIdentityProvider().getTenantForRealm(query.tenantPredicate.realm)
+                        : getAuthenticatedTenant()
+                : getAuthenticatedTenant();
+
+            if (tenant == null) {
+                throw new WebApplicationException(NOT_FOUND);
+            }
+
+            if (!isTenantActiveAndAccessible(tenant)) {
+                return EMPTY_ASSETS;
+            }
+
+            // This replicates behaviour of old getRoot and getChildren methods
+            if (!isSuperUser() || query.parentPredicate == null || query.parentPredicate.noParent) {
+                query.tenant(new AbstractAssetQuery.TenantPredicate(tenant.getId()));
+            }
+
+            List<ServerAsset> result = assetStorageService.findAll(query);
+            return result.toArray(new Asset[result.size()]);
+
+        } catch (IllegalStateException ex) {
+            throw new WebApplicationException(ex, Response.Status.BAD_REQUEST);
+        }
+    }
 }

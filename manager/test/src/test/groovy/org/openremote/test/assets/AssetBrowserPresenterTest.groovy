@@ -9,6 +9,7 @@ import org.openremote.manager.client.ManagerHistoryMapper
 import org.openremote.manager.client.admin.TenantArrayMapper
 import org.openremote.manager.client.assets.AssetArrayMapper
 import org.openremote.manager.client.assets.AssetMapper
+import org.openremote.manager.client.assets.AssetQueryMapper
 import org.openremote.manager.client.assets.browser.*
 import org.openremote.manager.client.event.SubscriptionFailureEvent
 import org.openremote.manager.client.i18n.ManagerMessages
@@ -26,6 +27,7 @@ import org.openremote.manager.shared.security.Tenant
 import org.openremote.manager.shared.security.TenantResource
 import org.openremote.manager.shared.validation.ConstraintViolationReport
 import org.openremote.model.asset.Asset
+import org.openremote.model.asset.AssetQuery
 import org.openremote.model.asset.AssetTreeModifiedEvent
 import org.openremote.model.event.shared.SharedEvent
 import org.openremote.test.*
@@ -52,7 +54,7 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
 
         and: "an authenticated user and client security service"
-        def realm = MASTER_REALM;
+        def realm = MASTER_REALM
         def accessToken = {
             authenticate(
                     container,
@@ -86,6 +88,7 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
 
         and: "the data mappers for client/server calls"
         def assetMapper = new ClientObjectMapper(container.JSON, Asset.class) as AssetMapper
+        def assetQueryMapper = new ClientObjectMapper(container.JSON, AssetQuery.class) as AssetQueryMapper
         def assetArrayMapper = new ClientObjectMapper(container.JSON, Asset[].class) as AssetArrayMapper
         def tenantArrayMapper = new ClientObjectMapper(container.JSON, Tenant[].class) as TenantArrayMapper
 
@@ -105,14 +108,14 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
         def placeController = createPlaceController(securityService, eventBus)
         def placeHistoryMapper = createPlaceHistoryMapper(ManagerHistoryMapper.getAnnotation(WithTokenizers.class))
         def environment = Environment.create(
-                securityService,
-                requestService,
-                clientEventService,
-                placeController,
-                placeHistoryMapper,
-                eventBus,
-                managerMessages,
-                new WidgetStyle()
+            securityService,
+            requestService,
+            clientEventService,
+            placeController,
+            placeHistoryMapper,
+            eventBus,
+            managerMessages,
+            new WidgetStyle()
         )
 
         and: "The view and presenter to test"
@@ -126,14 +129,15 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
         List<BrowserTreeNode> treeDisplayRowData = null
         HasData<BrowserTreeNode> treeDisplay = Mock(HasData)
         def assetBrowserPresenter = new AssetBrowserPresenter(
-                environment,
-                currentTenant,
-                assetBrowser,
-                assetResource,
-                assetMapper,
-                assetArrayMapper,
-                tenantResource,
-                tenantArrayMapper
+            environment,
+            currentTenant,
+            assetBrowser,
+            assetResource,
+            assetMapper,
+            assetQueryMapper,
+            assetArrayMapper,
+            tenantResource,
+            tenantArrayMapper
         )
 
         when: "the view is attached"
@@ -210,7 +214,7 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
         clientEventService.close()
 
         and : "the server should be stopped"
-        stopContainer(container);
+        stopContainer(container)
     }
 
     def "Browse assets as testuser1"() {
@@ -225,7 +229,7 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
 
         and: "An authenticated user and client security service"
-        def realm = MASTER_REALM;
+        def realm = MASTER_REALM
         def accessToken = {
             authenticate(
                     container,
@@ -259,6 +263,7 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
 
         and: "the data mappers for client/server calls"
         def assetMapper = new ClientObjectMapper(container.JSON, Asset.class) as AssetMapper
+        def assetQueryMapper = new ClientObjectMapper(container.JSON, AssetQuery.class) as AssetQueryMapper
         def assetArrayMapper = new ClientObjectMapper(container.JSON, Asset[].class) as AssetArrayMapper
         def tenantArrayMapper = new ClientObjectMapper(container.JSON, Tenant[].class) as TenantArrayMapper
 
@@ -278,14 +283,14 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
         def placeController = createPlaceController(securityService, eventBus)
         def placeHistoryMapper = createPlaceHistoryMapper(ManagerHistoryMapper.getAnnotation(WithTokenizers.class))
         def environment = Environment.create(
-                securityService,
-                requestService,
-                clientEventService,
-                placeController,
-                placeHistoryMapper,
-                eventBus,
-                managerMessages,
-                new WidgetStyle()
+            securityService,
+            requestService,
+            clientEventService,
+            placeController,
+            placeHistoryMapper,
+            eventBus,
+            managerMessages,
+            new WidgetStyle()
         )
 
         and: "The view and presenter to test"
@@ -299,14 +304,15 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
         List<BrowserTreeNode> treeDisplayRowData = null
         HasData<BrowserTreeNode> treeDisplay = Mock(HasData)
         def assetBrowserPresenter = new AssetBrowserPresenter(
-                environment,
-                currentTenant,
-                assetBrowser,
-                assetResource,
-                assetMapper,
-                assetArrayMapper,
-                tenantResource,
-                tenantArrayMapper
+            environment,
+            currentTenant,
+            assetBrowser,
+            assetResource,
+            assetMapper,
+            assetQueryMapper,
+            assetArrayMapper,
+            tenantResource,
+            tenantArrayMapper
         )
 
         when: "the view is attached"
@@ -389,7 +395,7 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
         clientEventService.close()
 
         and : "the server should be stopped"
-        stopContainer(container);
+        stopContainer(container)
     }
 
     def "Browse assets as testuser3"() {
@@ -402,7 +408,7 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
 
         and: "An authenticated user and client security service"
-        def realm = keycloakDemoSetup.customerATenant.realm;
+        def realm = keycloakDemoSetup.customerATenant.realm
         def accessToken = {
             authenticate(
                     container,
@@ -436,6 +442,7 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
 
         and: "the data mappers for client/server calls"
         def assetMapper = new ClientObjectMapper(container.JSON, Asset.class) as AssetMapper
+        def assetQueryMapper = new ClientObjectMapper(container.JSON, AssetQuery.class) as AssetQueryMapper
         def assetArrayMapper = new ClientObjectMapper(container.JSON, Asset[].class) as AssetArrayMapper
         def tenantArrayMapper = new ClientObjectMapper(container.JSON, Tenant[].class) as TenantArrayMapper
 
@@ -455,14 +462,14 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
         def placeController = createPlaceController(securityService, eventBus)
         def placeHistoryMapper = createPlaceHistoryMapper(ManagerHistoryMapper.getAnnotation(WithTokenizers.class))
         def environment = Environment.create(
-                securityService,
-                requestService,
-                clientEventService,
-                placeController,
-                placeHistoryMapper,
-                eventBus,
-                managerMessages,
-                new WidgetStyle()
+            securityService,
+            requestService,
+            clientEventService,
+            placeController,
+            placeHistoryMapper,
+            eventBus,
+            managerMessages,
+            new WidgetStyle()
         )
 
         and: "The view and presenter to test"
@@ -473,14 +480,15 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
             }
         }
         def assetBrowserPresenter = new AssetBrowserPresenter(
-                environment,
-                currentTenant,
-                assetBrowser,
-                assetResource,
-                assetMapper,
-                assetArrayMapper,
-                tenantResource,
-                tenantArrayMapper
+            environment,
+            currentTenant,
+            assetBrowser,
+            assetResource,
+            assetMapper,
+            assetQueryMapper,
+            assetArrayMapper,
+            tenantResource,
+            tenantArrayMapper
         )
 
         when: "the view is attached"
@@ -498,6 +506,6 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
         clientEventService.close()
 
         and : "the server should be stopped"
-        stopContainer(container);
+        stopContainer(container)
     }
 }

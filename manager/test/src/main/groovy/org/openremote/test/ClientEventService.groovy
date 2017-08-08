@@ -59,7 +59,7 @@ class ClientEventService implements EventService {
                                 // Handle array of events
                                 SharedEvent[] events = objectMapper.readValue(data, SharedEvent[].class)
                                 for (SharedEvent event : events) {
-                                    eventBus.dispatch(event);
+                                    eventBus.dispatch(event)
                                 }
                             } else {
                                 SharedEvent event = objectMapper.readValue(data, SharedEvent.class)

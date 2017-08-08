@@ -117,17 +117,17 @@ public class Simulator extends FlowPanel implements IsWidget {
             if (valueType.equals(ValueType.STRING)) {
                 String currentValue = element.getValue().map(Object::toString).orElse(null);
                  editor = createStringEditor(
-                    element, currentValue, null, false, "or-SimulatorElement", formGroup, false, validationResultConsumer
+                    element, currentValue, false, "or-SimulatorElement", formGroup, false, validationResultConsumer
                 );
             } else if (valueType.equals(ValueType.NUMBER)) {
                 String currentValue = element.getValue().map(Object::toString).orElse(null);
                 editor =  createNumberEditor(
-                    element, currentValue, null, false, "or-SimulatorElement", formGroup, false, validationResultConsumer
+                    element, currentValue, false, "or-SimulatorElement", formGroup, false, validationResultConsumer
                 );
             } else if (valueType.equals(ValueType.BOOLEAN)) {
                 Boolean currentValue = element.getValueAsBoolean().orElse(null);
                 editor =  createBooleanEditor(
-                    element, currentValue, null, false, "or-SimulatorElement", formGroup, false, validationResultConsumer
+                    element, currentValue, false, "or-SimulatorElement", formGroup, false, validationResultConsumer
                 );
                 // TODO Support JSON editors
             } else {

@@ -164,7 +164,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait {
             ProtocolConfiguration.initProtocolConfiguration(new AssetAttribute("mockConfig4"), mockProtocolName)
                 .addMeta(
                     new MetaItem("MOCK_REQUIRED_META", Values.create(true)),
-                    new MetaItem(AssetMeta.ENABLED, Values.create(false))
+                    new MetaItem(AssetMeta.DISABLED, Values.create(true))
                 )
         )
         mockAgent.setRealmId(Constants.MASTER_REALM)

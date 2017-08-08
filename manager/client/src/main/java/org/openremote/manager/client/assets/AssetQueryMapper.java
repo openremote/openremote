@@ -1,5 +1,5 @@
 /*
- * Copyright 2017, OpenRemote Inc.
+ * Copyright 2016, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -17,13 +17,18 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.model.asset;
+package org.openremote.manager.client.assets;
 
-/**
- * This was only done to allow GWT jackson to compile it; don't think GWT jackson
- * likes self referencing generic type parameters but hard to tell as the errors
- * generated are not helpful.
- */
-public class AssetQuery extends AbstractAssetQuery<AssetQuery> {
+import com.github.nmorel.gwtjackson.client.ObjectMapper;
+import com.github.nmorel.gwtjackson.client.annotation.JsonMixIns;
+import org.openremote.manager.client.interop.jackson.DefaultJsonMixin;
+import org.openremote.manager.shared.http.EntityReader;
+import org.openremote.manager.shared.http.EntityWriter;
+import org.openremote.model.asset.AssetQuery;
 
+@JsonMixIns({@JsonMixIns.JsonMixIn(target = AssetQuery.class, mixIn = DefaultJsonMixin.class)})
+public interface AssetQueryMapper
+    extends ObjectMapper<AssetQuery>,
+    EntityReader<AssetQuery>,
+    EntityWriter<AssetQuery> {
 }

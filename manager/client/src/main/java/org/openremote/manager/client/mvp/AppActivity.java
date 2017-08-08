@@ -50,7 +50,7 @@ public abstract class AppActivity<P extends Place>  {
             }
         }
         return init(place);
-    };
+    }
 
     protected abstract AppActivity<P> init(P place);
 

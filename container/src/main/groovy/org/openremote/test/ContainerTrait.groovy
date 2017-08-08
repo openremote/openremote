@@ -46,7 +46,7 @@ import static java.util.concurrent.TimeUnit.SECONDS
 
 trait ContainerTrait {
 
-    private static Container container;
+    private static Container container
 
     static Container startContainer(Map<String, String> config, Iterable<ContainerService> services) {
         container = new Container(config, services)
