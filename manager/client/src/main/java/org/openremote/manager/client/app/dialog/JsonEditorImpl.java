@@ -129,6 +129,7 @@ public class JsonEditorImpl implements JsonEditor {
     @Override
     public void setOnApply(Consumer<Value> onApply) {
         this.onApply = onApply;
+        editor.setReadOnly(onApply == null);
     }
 
     @Override
