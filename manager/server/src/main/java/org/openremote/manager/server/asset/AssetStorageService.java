@@ -35,10 +35,12 @@ import org.openremote.manager.server.event.ClientEventService;
 import org.openremote.manager.server.security.ManagerIdentityService;
 import org.openremote.manager.shared.security.ClientRole;
 import org.openremote.manager.shared.security.Tenant;
+import org.openremote.manager.shared.security.User;
 import org.openremote.model.Constants;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.asset.*;
 import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.util.TextUtil;
 import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.Values;
@@ -262,7 +264,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 .getResultList();
             List<String> names = new ArrayList<>();
             for (String id : ids) {
-                for (Object[] tuple: result) {
+                for (Object[] tuple : result) {
                     if (tuple[0].equals(id)) {
                         names.add((String) tuple[1]);
                         break;
@@ -287,6 +289,25 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
      * @throws IllegalArgumentException if the realm or parent is illegal, or other asset constraint is violated.
      */
     public ServerAsset merge(ServerAsset asset, boolean overrideVersion) {
+        return merge(asset, overrideVersion, null);
+    }
+
+    /**
+     * @param userName the user which this asset needs to be assigned to.
+     * @return The current stored asset state.
+     * @throws IllegalArgumentException if the realm or parent is illegal, or other asset constraint is violated.
+     */
+    public ServerAsset merge(ServerAsset asset, String userName) {
+        return merge(asset, false, userName);
+    }
+
+    /**
+     * @param overrideVersion If <code>true</code>, the merge will override the data in the database, independent of version.
+     * @param userName        the user which this asset needs to be assigned to.
+     * @return The current stored asset state.
+     * @throws IllegalArgumentException if the realm or parent is illegal, or other asset constraint is violated.
+     */
+    public ServerAsset merge(ServerAsset asset, boolean overrideVersion, String userName) {
         return persistenceService.doReturningTransaction(em -> {
 
             // Update all empty attribute timestamps with server-time (a caller which doesn't have a
@@ -346,8 +367,24 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 }
             }
 
+            // If username present
+            User user = null;
+            if (!TextUtil.isNullOrEmpty(userName)) {
+                user = managerIdentityService.getIdentityProvider().getUser(asset.getRealmId(), userName);
+                if (user == null) {
+                    throw new IllegalStateException("User not found:" + userName);
+                }
+            }
+
             LOG.fine("Storing: " + asset);
-            return em.merge(asset);
+
+            ServerAsset updatedAsset = em.merge(asset);
+
+            if (user != null) {
+                em.merge(new UserAsset(user.getId(), updatedAsset.getId()));
+            }
+
+            return updatedAsset;
         });
     }
 
@@ -441,7 +478,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         StringBuilder sb = new StringBuilder();
         boolean recursive = query.select.recursive;
         List<ParameterBinder> binders = new ArrayList<>();
-        sb.append(buildSelectString(query, 1,  binders));
+        sb.append(buildSelectString(query, 1, binders));
         sb.append(buildFromString(query, 1));
         sb.append(buildWhereClause(query, 1, binders));
 
@@ -683,7 +720,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 sb.append(" and P.ASSET_TYPE = ?");
                 final int pos = binders.size() + 1;
                 binders.add(st -> st.setString(pos, query.parentPredicate.type));
-            } else if (level ==1 && query.parentPredicate.noParent) {
+            } else if (level == 1 && query.parentPredicate.noParent) {
                 sb.append(" and A.PARENT_ID is null");
             }
         }

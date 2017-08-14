@@ -288,8 +288,12 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
     @Override
     public Asset[] queryAssets(RequestParams requestParams, AbstractAssetQuery query) {
         try {
-            if (query == null || isRestrictedUser()) {
+            if (query == null) {
                 return EMPTY_ASSETS;
+            }
+
+            if(isRestrictedUser()) {
+                query = query.userId(getUserId());
             }
 
             Tenant tenant = query.tenantPredicate != null

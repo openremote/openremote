@@ -198,6 +198,18 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
     }
 
     @Override
+    public Asset mergeAsset(Asset asset, String userName) {
+        Objects.requireNonNull(asset.getId());
+        Objects.requireNonNull(asset.getParentId());
+        Objects.requireNonNull(userName);
+        LOG.fine("Merging (and overriding existing older version of) with protocol-provided: " + asset);
+        ServerAsset serverAsset = ServerAsset.map(asset, new ServerAsset());
+        // Use the unique identifier provided by the protocol, it manages its own identifier space
+        serverAsset.setId(asset.getId());
+        return assetStorageService.merge(serverAsset, userName);
+    }
+
+    @Override
     public boolean deleteAsset(String assetId) {
         LOG.fine("Deleting protocol-provided: " + assetId);
         return assetStorageService.delete(assetId);

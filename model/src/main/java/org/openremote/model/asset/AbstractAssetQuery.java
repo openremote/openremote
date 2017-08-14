@@ -401,6 +401,7 @@ public class AbstractAssetQuery<CHILD extends AbstractAssetQuery<CHILD>> {
     public StringPredicate type;
     public AttributeMetaPredicate attributeMetaPredicate;
 
+
     // Ordering
     public OrderBy orderBy = new OrderBy(OrderBy.Property.CREATED_ON);
 

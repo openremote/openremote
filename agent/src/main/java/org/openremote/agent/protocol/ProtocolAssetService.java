@@ -43,6 +43,14 @@ public interface ProtocolAssetService extends ContainerService {
     Asset mergeAsset(Asset asset);
 
     /**
+     * Protocols may store assets in the context or update existing assets and assigns the given asset to the given user.
+     * A unique identifier must be set by the protocol implementor, as well as a parent identifier. This operation
+     * stores transient or detached state and returns the current state.
+     * Returns null if user doesn't exist or asset couldn't be assigned.
+     */
+    Asset mergeAsset(Asset asset, String userName);
+
+    /**
      * Protocols may remove assets from the context store.
      *
      * @return <code>false</code> if the delete could not be performed (asset may have children?)

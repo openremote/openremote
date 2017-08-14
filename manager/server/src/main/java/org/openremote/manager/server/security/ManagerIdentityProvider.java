@@ -35,6 +35,8 @@ public interface ManagerIdentityProvider extends IdentityProvider {
 
     User getUser(ClientRequestInfo clientRequestInfo, String realm, String userId);
 
+    User getUser(String realm, String userName);
+
     void updateUser(ClientRequestInfo clientRequestInfo, String realm, String userId, User user);
 
     void createUser(ClientRequestInfo clientRequestInfo, String realm, User user);

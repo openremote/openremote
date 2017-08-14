@@ -623,7 +623,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         )
 
         then: "result should match"
-        assets.length == 0
+        assets.length == 2
 
         when: "the child assets of an asset in the authenticated realm are retrieved"
         assets = assetResource.queryAssets(null,
@@ -632,7 +632,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         )
 
         then: "result should match"
-        assets.length == 0
+        assets.length == 2
 
         when: "the child assets of an asset in a foreign realm are retrieved"
         assets = assetResource.queryAssets(null,

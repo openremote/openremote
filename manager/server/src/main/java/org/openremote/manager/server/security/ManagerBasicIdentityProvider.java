@@ -99,6 +99,11 @@ public class ManagerBasicIdentityProvider extends BasicIdentityProvider implemen
     }
 
     @Override
+    public User getUser(String realm, String userName) {
+        return null;
+    }
+
+    @Override
     public void updateUser(ClientRequestInfo clientRequestInfo, String realm, String userId, User user) {
 
     }

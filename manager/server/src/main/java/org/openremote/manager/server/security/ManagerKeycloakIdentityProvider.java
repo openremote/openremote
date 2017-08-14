@@ -105,6 +105,18 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     }
 
     @Override
+    public User getUser(String realmId, String userName) {
+        return persistenceService.doReturningTransaction(em -> {
+            List<User> result =
+                em.createQuery("select u from User u where u.realmId = :realmId and u.username = :username", User.class)
+                    .setParameter("realmId", realmId)
+                    .setParameter("username", userName)
+                    .getResultList();
+            return result.size() > 0 ? result.get(0) : null;
+        });
+    }
+
+    @Override
     public void updateUser(ClientRequestInfo clientRequestInfo, String realm, String userId, User user) {
         getRealms(clientRequestInfo)
             .realm(realm).users().get(userId).update(
