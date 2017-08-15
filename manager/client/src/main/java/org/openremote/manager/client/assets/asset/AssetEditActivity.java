@@ -54,6 +54,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import static org.openremote.manager.client.http.RequestExceptionHandler.handleRequestException;
+import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 
 public class AssetEditActivity
     extends AbstractAssetActivity<AssetEditPlace>
@@ -307,6 +308,12 @@ public class AssetEditActivity
                 .select(new AssetQuery.Select(AssetQuery.Include.ONLY_ID_AND_NAME_AND_ATTRIBUTES))
                 // Limit to agents
                 .type(AssetType.AGENT);
+
+            // Retrieve agents in the same realm as the asset (if it has been assigned a realm otherwise
+            // the query will be automatically restricted to the logged in users realm)
+            if (!isNullOrEmpty(asset.getRealmId())) {
+                query.tenant(new AbstractAssetQuery.TenantPredicate(asset.getRealmId()));
+            }
         } else {
             consumers = allAssetConsumers;
             retrievedAssets = allAssets;
