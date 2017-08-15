@@ -56,7 +56,7 @@ public class AbstractAssetQuery<CHILD extends AbstractAssetQuery<CHILD>> {
         }
 
         public Select(Include include, boolean filterProtected, boolean recursive) {
-            this(include, filterProtected, recursive, (String[])null);
+            this(include, filterProtected, recursive, (String[]) null);
         }
 
         public Select(Include include, boolean filterProtected, boolean recursive, String... attributeNames) {
@@ -187,25 +187,44 @@ public class AbstractAssetQuery<CHILD extends AbstractAssetQuery<CHILD>> {
         }
     }
 
-    public static class ParentPredicate {
+    public static class AssetPredicate {
         public String id;
         public String type;
+
+        public AssetPredicate() {
+        }
+
+        public AssetPredicate(String id) {
+            this.id = id;
+        }
+
+        public AssetPredicate id(String id) {
+            this.id = id;
+            return this;
+        }
+
+        public AssetPredicate type(String type) {
+            this.type = type;
+            return this;
+        }
+
+        public AssetPredicate type(AssetType type) {
+            return type(type.getValue());
+        }
+    }
+
+    public static class ParentPredicate extends AssetPredicate {
         public boolean noParent;
 
         public ParentPredicate() {
         }
 
         public ParentPredicate(String id) {
-            this.id = id;
+            super(id);
         }
 
         public ParentPredicate(boolean noParent) {
             this.noParent = noParent;
-        }
-
-        public ParentPredicate id(String id) {
-            this.id = id;
-            return this;
         }
 
         public ParentPredicate type(String type) {
@@ -394,6 +413,7 @@ public class AbstractAssetQuery<CHILD extends AbstractAssetQuery<CHILD>> {
     // Restriction predicates
     public String id;
     public StringPredicate namePredicate;
+    public AssetPredicate assetPredicate;
     public ParentPredicate parentPredicate;
     public PathPredicate pathPredicate;
     public TenantPredicate tenantPredicate;
@@ -428,6 +448,19 @@ public class AbstractAssetQuery<CHILD extends AbstractAssetQuery<CHILD>> {
 
     public CHILD name(StringPredicate name) {
         this.namePredicate = name;
+        return (CHILD) this;
+    }
+
+    public CHILD asset(String id) {
+        return asset(new AssetPredicate(id));
+    }
+
+    public CHILD asset(AssetType assetType) {
+        return asset(new AssetPredicate().type(assetType));
+    }
+
+    public CHILD asset(AssetPredicate assetPredicate) {
+        this.assetPredicate = assetPredicate;
         return (CHILD) this;
     }
 

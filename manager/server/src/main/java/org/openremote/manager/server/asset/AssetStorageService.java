@@ -708,6 +708,18 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             binders.add(st -> st.setString(pos, query.namePredicate.prepareValue()));
         }
 
+        if(level == 1 && query.assetPredicate != null) {
+            if(query.assetPredicate.id != null) {
+                sb.append(" and A.ID = ?");
+                final int pos = binders.size() + 1;
+                binders.add(st -> st.setString(pos, query.assetPredicate.id));
+            } else if(query.assetPredicate.type != null) {
+                sb.append(" and A.ASSET_TYPE = ?");
+                final int pos = binders.size() + 1;
+                binders.add(st -> st.setString(pos, query.assetPredicate.type));
+            }
+        }
+
         if (query.parentPredicate != null) {
             // Can only restrict recursive query parent by asset type
             if (level == 1 && query.parentPredicate.id != null) {
