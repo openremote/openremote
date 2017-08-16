@@ -370,7 +370,6 @@ public class AbstractAssetQuery<CHILD extends AbstractAssetQuery<CHILD>> {
             this(new StringPredicate(assetMeta.getUrn()), attributeRef);
         }
     }
-
     public static class OrderBy {
 
         public enum Property {
@@ -413,14 +412,12 @@ public class AbstractAssetQuery<CHILD extends AbstractAssetQuery<CHILD>> {
     // Restriction predicates
     public String id;
     public StringPredicate namePredicate;
-    public AssetPredicate assetPredicate;
     public ParentPredicate parentPredicate;
     public PathPredicate pathPredicate;
     public TenantPredicate tenantPredicate;
     public String userId;
     public StringPredicate type;
     public AttributeMetaPredicate attributeMetaPredicate;
-
 
     // Ordering
     public OrderBy orderBy = new OrderBy(OrderBy.Property.CREATED_ON);
@@ -448,19 +445,6 @@ public class AbstractAssetQuery<CHILD extends AbstractAssetQuery<CHILD>> {
 
     public CHILD name(StringPredicate name) {
         this.namePredicate = name;
-        return (CHILD) this;
-    }
-
-    public CHILD asset(String id) {
-        return asset(new AssetPredicate(id));
-    }
-
-    public CHILD asset(AssetType assetType) {
-        return asset(new AssetPredicate().type(assetType));
-    }
-
-    public CHILD asset(AssetPredicate assetPredicate) {
-        this.assetPredicate = assetPredicate;
         return (CHILD) this;
     }
 
