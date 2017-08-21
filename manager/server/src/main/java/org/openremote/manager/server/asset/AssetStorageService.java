@@ -372,7 +372,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             if (!TextUtil.isNullOrEmpty(userName)) {
                 user = managerIdentityService.getIdentityProvider().getUser(asset.getRealmId(), userName);
                 if (user == null) {
-                    throw new IllegalStateException("User not found:" + userName);
+                    throw new IllegalStateException("User not found: " + userName);
                 }
             }
 

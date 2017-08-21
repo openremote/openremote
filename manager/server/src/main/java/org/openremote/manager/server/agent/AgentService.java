@@ -206,7 +206,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
         ServerAsset serverAsset = ServerAsset.map(asset, new ServerAsset());
         // Use the unique identifier provided by the protocol, it manages its own identifier space
         serverAsset.setId(asset.getId());
-        return assetStorageService.merge(serverAsset, userName);
+        return assetStorageService.merge(serverAsset, true, userName);
     }
 
     @Override
