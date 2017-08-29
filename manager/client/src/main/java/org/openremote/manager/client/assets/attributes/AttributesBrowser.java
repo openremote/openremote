@@ -35,18 +35,16 @@ import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeExecuteStatus;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.AttributeState;
+import org.openremote.model.datapoint.Datapoint;
 import org.openremote.model.datapoint.DatapointInterval;
 import org.openremote.model.datapoint.NumberDatapoint;
 import org.openremote.model.event.bus.EventRegistration;
 import org.openremote.model.simulator.SimulatorState;
-import org.openremote.model.value.ValueType;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.function.Consumer;
-
-import static org.openremote.model.attribute.Attribute.isAttributeTypeEqualTo;
 
 public abstract class AttributesBrowser
     extends AttributesView<AttributesBrowser.Container, AttributesBrowser.Style> {
@@ -308,7 +306,7 @@ public abstract class AttributesBrowser
     }
 
     protected DatapointBrowser createDatapointBrowser(AssetAttribute attribute) {
-        if (attribute.isStoreDatapoints() && isAttributeTypeEqualTo(attribute, ValueType.NUMBER)) {
+        if (Datapoint.isDatapointsCapable(attribute) && attribute.isStoreDatapoints()) {
             return new DatapointBrowser(environment.getMessages(), 675, 200) {
                 @Override
                 protected void queryDatapoints(DatapointInterval interval,

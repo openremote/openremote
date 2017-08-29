@@ -104,6 +104,14 @@ public abstract class Attribute extends AbstractValueTimestampHolder {
         return getObjectValue().getString(TYPE_FIELD_NAME).flatMap(AttributeType::optionalValueOf);
     }
 
+    /**
+     * The below is used in a sufficient number of places to provide it here as a utility method
+     * with a standardised exception message.
+     */
+    public AttributeType getTypeOrThrow() {
+        return getType().orElseThrow(() -> new IllegalStateException("Attribute doesn't have a type"));
+    }
+
     public void setType(AttributeType type) {
         Objects.requireNonNull(type);
         getObjectValue().put(TYPE_FIELD_NAME, Values.create(type.name()));

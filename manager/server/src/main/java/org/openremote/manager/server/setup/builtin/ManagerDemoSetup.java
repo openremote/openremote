@@ -182,6 +182,9 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                         DESCRIPTION,
                         Values.create("Switch for living room light")),
                     new MetaItem(
+                        STORE_DATA_POINTS,
+                        Values.create(true)),
+                    new MetaItem(
                         AGENT_LINK,
                         new AttributeRef(agent.getId(), agentProtocolConfigName).toArrayValue()),
                     new MetaItem(
@@ -246,7 +249,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                         new MetaItem(
                             SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME)),
                         new MetaItem(
-                            STORE_DATA_POINTS.getUrn(), Values.create(true))
+                            STORE_DATA_POINTS, Values.create(true))
                     )
                 )
         );

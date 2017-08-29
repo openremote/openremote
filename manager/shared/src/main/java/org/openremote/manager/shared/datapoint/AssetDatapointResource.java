@@ -34,6 +34,14 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 @JsType(isNative = true)
 public interface AssetDatapointResource {
 
+    /**
+     * Retrieve the historical datapoints of an asset attribute. Regular users can only access assets in their
+     * authenticated realm, the superuser can access assets in other (all) realms. A 403 status is returned if a
+     * regular user tries to access an asset in a realm different than its authenticated realm, or if the user is
+     * restricted and the asset is not linked to the user. A 400 status is returned if the asset attribute does
+     * not have datapoint storage enabled or is not capable of historical datapoints
+     * (see {@link org.openremote.model.datapoint.Datapoint#isDatapointsCapable}).
+     */
     @GET
     @Path("{assetId}/attribute/{attributeName}")
     @Produces(APPLICATION_JSON)

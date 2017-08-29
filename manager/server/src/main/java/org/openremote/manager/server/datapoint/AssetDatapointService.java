@@ -9,9 +9,11 @@ import org.openremote.container.timer.TimerService;
 import org.openremote.container.web.WebService;
 import org.openremote.manager.server.asset.AssetStorageService;
 import org.openremote.manager.server.security.ManagerIdentityService;
-import org.openremote.model.attribute.AttributeRef;
+import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetState;
+import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.datapoint.AssetDatapoint;
+import org.openremote.model.datapoint.Datapoint;
 import org.openremote.model.datapoint.DatapointInterval;
 import org.openremote.model.datapoint.NumberDatapoint;
 import org.postgresql.util.PGInterval;
@@ -58,7 +60,9 @@ public class AssetDatapointService implements ContainerService, Consumer<AssetSt
 
     @Override
     public void accept(AssetState assetState) {
-        if (assetState.getAttribute().isStoreDatapoints() && assetState.getAttribute().getStateEvent().isPresent()) {
+        if (Datapoint.isDatapointsCapable(assetState.getAttribute())
+            && assetState.getAttribute().isStoreDatapoints()
+            && assetState.getAttribute().getStateEvent().isPresent()) {
             LOG.finest("Storing datapoint for: " + assetState);
             AssetDatapoint assetDatapoint = new AssetDatapoint(assetState.getAttribute().getStateEvent().get());
             persistenceService.doTransaction(entityManager -> entityManager.persist(assetDatapoint));
@@ -77,10 +81,13 @@ public class AssetDatapointService implements ContainerService, Consumer<AssetSt
             .getResultList());
     }
 
-    public NumberDatapoint[] aggregateDatapoints(AttributeRef attributeRef,
+    public NumberDatapoint[] aggregateDatapoints(AssetAttribute attribute,
                                                  DatapointInterval datapointInterval,
                                                  long timestamp) {
-        LOG.fine("Aggregating datapoints for: " + attributeRef);
+        LOG.fine("Aggregating datapoints for: " + attribute);
+
+        AttributeRef attributeRef = attribute.getReferenceOrThrow();
+
         return persistenceService.doReturningTransaction(entityManager ->
             entityManager.unwrap(Session.class).doReturningWork(new AbstractReturningWork<NumberDatapoint[]>() {
                 @Override
@@ -128,27 +135,41 @@ public class AssetDatapointService implements ContainerService, Consumer<AssetSt
                             throw new IllegalArgumentException("Can't handle interval: " + datapointInterval);
                     }
 
-                    PreparedStatement st = connection.prepareStatement(
-                        "select TS as X, coalesce(AVG_VALUE, null) as Y " +
-                            " from ( " +
-                            "       select date_trunc(?, GS)::timestamp TS " +
-                            "       from generate_series(to_timestamp(?) - ?, to_timestamp(?), ?) GS " +
-                            "       ) TS " +
-                            "  left join ( " +
-                            "       select " +
-                            "           date_trunc(?, to_timestamp(TIMESTAMP / 1000))::timestamp as TS, " +
-                            "           AVG(VALUE::text::numeric) as AVG_VALUE " +
-                            "         from ASSET_DATAPOINT " +
-                            "         where " +
-                            "           to_timestamp(TIMESTAMP / 1000) >= to_timestamp(?) - ? " +
-                            "           and " +
-                            "           to_timestamp(TIMESTAMP / 1000) <= to_timestamp(?) " +
-                            "           and " +
-                            "           ENTITY_ID = ? and ATTRIBUTE_NAME = ? " +
-                            "         group by TS " +
-                            "  ) DP using (TS) " +
-                            " order by TS asc "
+                    StringBuilder query = new StringBuilder();
+
+                    query.append("select TS as X, coalesce(AVG_VALUE, null) as Y " +
+                        " from ( " +
+                        "       select date_trunc(?, GS)::timestamp TS " +
+                        "       from generate_series(to_timestamp(?) - ?, to_timestamp(?), ?) GS " +
+                        "       ) TS " +
+                        "  left join ( " +
+                        "       select " +
+                        "           date_trunc(?, to_timestamp(TIMESTAMP / 1000))::timestamp as TS, ");
+
+                    switch (attribute.getTypeOrThrow().getValueType()) {
+                        case NUMBER:
+                            query.append(" AVG(VALUE::text::numeric) as AVG_VALUE ");
+                            break;
+                        case BOOLEAN:
+                            query.append(" AVG(case when VALUE::text::boolean is true then 1 else 0 end) as AVG_VALUE ");
+                            break;
+                        default:
+                            throw new IllegalArgumentException("Can't aggregate number datapoints for type of: " + attribute);
+                    }
+
+                    query.append(" from ASSET_DATAPOINT " +
+                        "         where " +
+                        "           to_timestamp(TIMESTAMP / 1000) >= to_timestamp(?) - ? " +
+                        "           and " +
+                        "           to_timestamp(TIMESTAMP / 1000) <= to_timestamp(?) " +
+                        "           and " +
+                        "           ENTITY_ID = ? and ATTRIBUTE_NAME = ? " +
+                        "         group by TS " +
+                        "  ) DP using (TS) " +
+                        " order by TS asc "
                     );
+
+                    PreparedStatement st = connection.prepareStatement(query.toString());
 
                     long timestampSeconds = timestamp / 1000;
                     st.setString(1, truncateX);

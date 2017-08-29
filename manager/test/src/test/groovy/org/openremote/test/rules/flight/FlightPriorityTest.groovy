@@ -22,7 +22,7 @@ class FlightPriorityTest extends Specification implements ManagerContainerTrait 
         given: "the container environment is started"
         def conditions = new PollingConditions(timeout: 15, delay: 1)
         def serverPort = findEphemeralPort()
-        def container = startContainerNoDemoImport(defaultConfig(serverPort), defaultServices())
+        def container = startContainer(defaultConfig(serverPort), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
         def rulesService = container.getService(RulesService.class)

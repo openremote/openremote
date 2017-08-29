@@ -26,19 +26,19 @@ import org.openremote.manager.server.security.ManagerIdentityService;
 import org.openremote.manager.server.web.ManagerWebResource;
 import org.openremote.manager.shared.datapoint.AssetDatapointResource;
 import org.openremote.manager.shared.http.RequestParams;
-import org.openremote.model.attribute.AttributeRef;
+import org.openremote.model.asset.AssetAttribute;
+import org.openremote.model.datapoint.Datapoint;
 import org.openremote.model.datapoint.DatapointInterval;
 import org.openremote.model.datapoint.NumberDatapoint;
-import org.openremote.model.value.ValueType;
 
 import javax.ws.rs.BeanParam;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
-
-import static org.openremote.model.attribute.Attribute.isAttributeNameEqualTo;
-import static org.openremote.model.attribute.Attribute.isAttributeTypeEqualTo;
+import java.util.logging.Logger;
 
 public class AssetDatapointResourceImpl extends ManagerWebResource implements AssetDatapointResource {
+
+    private static final Logger LOG = Logger.getLogger(AssetDatapointResourceImpl.class.getName());
 
     protected final AssetStorageService assetStorageService;
     protected final AssetDatapointService assetDatapointService;
@@ -59,24 +59,32 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
                                                  DatapointInterval interval,
                                                  long timestamp) {
         try {
-            // TODO Security etc.
+
+            if (isRestrictedUser() && !assetStorageService.isUserAsset(getUserId(), assetId)) {
+                throw new WebApplicationException(Response.Status.FORBIDDEN);
+            }
+
             ServerAsset asset = assetStorageService.find(assetId, true);
 
-            // TODO This only supports ValueType.NUMBER attributes
-
-            if (asset == null || asset
-                .getAttributesStream()
-                .noneMatch(
-                    attribute ->
-                        isAttributeNameEqualTo(attribute, attributeName)
-                        && attribute.isStoreDatapoints()
-                        && isAttributeTypeEqualTo(attribute, ValueType.NUMBER)
-                )) {
+            if (asset == null) {
                 throw new WebApplicationException(Response.Status.NOT_FOUND);
             }
 
+            if (!isTenantActiveAndAccessible(asset)) {
+                LOG.fine("Forbidden access for user '" + getUsername() + "': " + asset);
+                throw new WebApplicationException(Response.Status.FORBIDDEN);
+            }
+
+            AssetAttribute attribute = asset.getAttribute(attributeName).orElseThrow(() ->
+                new WebApplicationException(Response.Status.NOT_FOUND)
+            );
+
+            if (!Datapoint.isDatapointsCapable(attribute) || !attribute.isStoreDatapoints()) {
+                throw new WebApplicationException(Response.Status.BAD_REQUEST);
+            }
+
             return assetDatapointService.aggregateDatapoints(
-                new AttributeRef(assetId, attributeName),
+                attribute,
                 interval,
                 timestamp
             );
