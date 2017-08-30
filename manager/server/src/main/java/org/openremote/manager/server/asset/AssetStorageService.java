@@ -768,8 +768,21 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                     sb.append(")");
                 }
             }
-        }
 
+            if (query.attributePredicateArray != null && query.attributePredicateArray.predicates != null) {
+                StringBuilder attributeFilterBuilder = new StringBuilder();
+                for (AssetQuery.AttributePredicate attributePredicate : query.attributePredicateArray.predicates) {
+                    attributeFilterBuilder.append(buildAttributeFilter(attributePredicate, binders));
+                }
+                if (attributeFilterBuilder.length() > 0) {
+                    sb.append(" and A.ID in (select A.ID from");
+                    sb.append(" jsonb_each(A.ATTRIBUTES) as AX");
+                    sb.append(" where true");
+                    sb.append(attributeFilterBuilder.toString());
+                    sb.append(")");
+                }
+            }
+        }
         return sb.toString();
     }
 
@@ -816,6 +829,86 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         }
 
         return attributeMetaBuilder.toString();
+    }
+
+    protected String buildAttributeFilter(AssetQuery.AttributePredicate attributePredicate, List<ParameterBinder> binders) {
+        StringBuilder attributeBuilder = new StringBuilder();
+
+        if (attributePredicate.itemNamePredicate != null) {
+            attributeBuilder.append(attributePredicate.itemNamePredicate.caseSensitive
+                ? " and AX.key"
+                : " and upper(AX.key)"
+            );
+            attributeBuilder.append(attributePredicate.itemNamePredicate.match == AssetQuery.Match.EXACT ? " = ? " : " like ? ");
+            final int pos = binders.size() + 1;
+            binders.add(st -> st.setString(pos, attributePredicate.itemNamePredicate.prepareValue()));
+        }
+        if (attributePredicate.itemValuePredicate != null) {
+            if (attributePredicate.itemValuePredicate instanceof AssetQuery.StringPredicate) {
+                AssetQuery.StringPredicate stringPredicate = (AssetQuery.StringPredicate) attributePredicate.itemValuePredicate;
+                attributeBuilder.append(stringPredicate.caseSensitive
+                    ? " and AX.VALUE #>> '{value}'"
+                    : " and upper(AX.VALUE #>> '{value}')"
+                );
+                attributeBuilder.append(stringPredicate.match == AssetQuery.Match.EXACT ? " = ? " : " like ? ");
+                final int pos = binders.size() + 1;
+                binders.add(st -> st.setString(pos, stringPredicate.prepareValue()));
+            } else if (attributePredicate.itemValuePredicate instanceof AssetQuery.BooleanPredicate) {
+                AssetQuery.BooleanPredicate booleanPredicate = (AssetQuery.BooleanPredicate) attributePredicate.itemValuePredicate;
+                attributeBuilder.append(" and AX.VALUE #> '{value}' = to_jsonb(")
+                    .append(booleanPredicate.predicate)
+                    .append(")");
+            } else if (attributePredicate.itemValuePredicate instanceof AssetQuery.StringArrayPredicate) {
+                AssetQuery.StringArrayPredicate stringArrayPredicate = (AssetQuery.StringArrayPredicate) attributePredicate.itemValuePredicate;
+                for (int i = 0; i < stringArrayPredicate.predicates.length; i++) {
+                    AssetQuery.StringPredicate stringPredicate = stringArrayPredicate.predicates[i];
+                    attributeBuilder.append(stringPredicate.caseSensitive
+                        ? " and AX.VALUE #> '{value}' ->> " + i
+                        : " and upper(AX.VALUE #> '{value}' ->> " + i + ")"
+                    );
+                    attributeBuilder.append(stringPredicate.match == AssetQuery.Match.EXACT ? " = ?" : " like ?");
+                    final int pos = binders.size() + 1;
+                    binders.add(st -> st.setString(pos, stringPredicate.prepareValue()));
+                }
+            } else if (attributePredicate.itemValuePredicate instanceof AssetQuery.DateTimePredicate) {
+                AssetQuery.DateTimePredicate dateTimePredicate = (AssetQuery.DateTimePredicate) attributePredicate.itemValuePredicate;
+                attributeBuilder.append(" and to_timestamp(AX.VALUE #>> '{value}', ?)");
+                final int keyFormatPos = binders.size() + 1;
+                binders.add(st -> st.setString(keyFormatPos, dateTimePredicate.dateFormat));
+
+                final int pos = binders.size() + 1;
+                binders.add(st -> st.setString(pos, dateTimePredicate.value));
+                final int formatPos = binders.size() + 1;
+                binders.add(st -> st.setString(formatPos, dateTimePredicate.dateFormat));
+
+                switch (dateTimePredicate.dateMatch) {
+                    case EXACT:
+                        attributeBuilder.append(" = to_timestamp(?, ?)");
+                        break;
+                    case AFTER:
+                        attributeBuilder.append(" > to_timestamp(?, ?)");
+                        break;
+                    case AFTER_INCLUSIVE:
+                        attributeBuilder.append(" >= to_timestamp(?, ?)");
+                        break;
+                    case BEFORE:
+                        attributeBuilder.append(" < to_timestamp(?, ?)");
+                        break;
+                    case BEFORE_INCLUSIVE:
+                        attributeBuilder.append(" <= to_timestamp(?, ?)");
+                        break;
+                    case BETWEEN:
+                        attributeBuilder.append(" BETWEEN to_timestamp(?, ?) AND to_timestamp(?, ?)");
+                        final int pos2 = binders.size() + 1;
+                        binders.add(st -> st.setString(pos2, dateTimePredicate.rangeValue));
+                        final int formatPos2 = binders.size() + 1;
+                        binders.add(st -> st.setString(formatPos2, dateTimePredicate.dateFormat));
+                        break;
+                }
+            }
+        }
+
+        return attributeBuilder.toString();
     }
 
     protected ServerAsset mapResultTuple(AbstractAssetQuery query, ResultSet rs) throws SQLException {

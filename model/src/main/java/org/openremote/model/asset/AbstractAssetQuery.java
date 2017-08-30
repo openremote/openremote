@@ -19,6 +19,8 @@
  */
 package org.openremote.model.asset;
 
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import org.openremote.model.attribute.AttributeRef;
 
 import java.util.Locale;
@@ -106,6 +108,26 @@ public class AbstractAssetQuery<CHILD extends AbstractAssetQuery<CHILD>> {
         }
     }
 
+    public enum DateMatch {
+        EXACT,
+        BEFORE,
+        BEFORE_INCLUSIVE,
+        AFTER,
+        AFTER_INCLUSIVE,
+        BETWEEN
+    }
+
+    @JsonSubTypes({
+        @JsonSubTypes.Type(value = StringPredicate.class, name = "string"),
+        @JsonSubTypes.Type(value = BooleanPredicate.class, name = "boolean"),
+        @JsonSubTypes.Type(value = StringArrayPredicate.class, name = "string-array"),
+        @JsonSubTypes.Type(value = DateTimePredicate.class, name = "datetime")
+    })
+    @JsonTypeInfo(
+        use = JsonTypeInfo.Id.NAME,
+        include = JsonTypeInfo.As.PROPERTY,
+        property = "predicateType"
+    )
     public interface ValuePredicate {
     }
 
@@ -187,44 +209,67 @@ public class AbstractAssetQuery<CHILD extends AbstractAssetQuery<CHILD>> {
         }
     }
 
-    public static class AssetPredicate {
-        public String id;
-        public String type;
+    public static class DateTimePredicate implements ValuePredicate {
+        public DateMatch dateMatch = DateMatch.EXACT;
+        public String dateFormat = "YYYY-MM-DDTHH24:MI:SS";//postgres dateformat
+        public String value;
+        public String rangeValue;//used when dateMatch is Between as end date
 
-        public AssetPredicate() {
+        public DateTimePredicate() {
         }
 
-        public AssetPredicate(String id) {
-            this.id = id;
+        public DateTimePredicate(DateMatch dateMatch, String value) {
+            this.dateMatch = dateMatch;
+            this.value = value;
         }
 
-        public AssetPredicate id(String id) {
-            this.id = id;
+        public DateTimePredicate(String afterValue, String beforeValue) {
+            this.dateMatch = DateMatch.BETWEEN;
+            this.value = afterValue;
+            this.rangeValue = beforeValue;
+        }
+
+        public DateTimePredicate dateMatch(DateMatch dateMatch) {
+            this.dateMatch = dateMatch;
             return this;
         }
 
-        public AssetPredicate type(String type) {
-            this.type = type;
+        public DateTimePredicate dateFormat(String dateFormat) {
+            this.dateFormat = dateFormat;
             return this;
         }
 
-        public AssetPredicate type(AssetType type) {
-            return type(type.getValue());
+        public DateTimePredicate value(String value) {
+            this.value = value;
+            return this;
+        }
+
+        public DateTimePredicate rangeValue(String beforeValue) {
+            this.dateMatch = DateMatch.BETWEEN;
+            this.rangeValue = beforeValue;
+            return this;
         }
     }
 
-    public static class ParentPredicate extends AssetPredicate {
+    public static class ParentPredicate {
+        public String id;
+        public String type;
         public boolean noParent;
 
         public ParentPredicate() {
         }
 
         public ParentPredicate(String id) {
-            super(id);
+            this.id = id;
         }
 
         public ParentPredicate(boolean noParent) {
             this.noParent = noParent;
+        }
+
+        public ParentPredicate id(String id) {
+            this.id = id;
+            return this;
         }
 
         public ParentPredicate type(String type) {
@@ -370,6 +415,28 @@ public class AbstractAssetQuery<CHILD extends AbstractAssetQuery<CHILD>> {
             this(new StringPredicate(assetMeta.getUrn()), attributeRef);
         }
     }
+
+    public static class AttributePredicate {
+        public StringPredicate itemNamePredicate;
+        public ValuePredicate itemValuePredicate;
+    }
+
+    public static class AttributePredicateArray {
+        public AttributePredicate[] predicates = new AttributePredicate[0];
+
+        public AttributePredicateArray() {
+        }
+
+        public AttributePredicateArray(AttributePredicate... predicates) {
+            this.predicates = predicates;
+        }
+
+        public AttributePredicateArray predicates(AttributePredicate... predicates) {
+            this.predicates = predicates;
+            return this;
+        }
+    }
+
     public static class OrderBy {
 
         public enum Property {
@@ -418,6 +485,7 @@ public class AbstractAssetQuery<CHILD extends AbstractAssetQuery<CHILD>> {
     public String userId;
     public StringPredicate type;
     public AttributeMetaPredicate attributeMetaPredicate;
+    public AttributePredicateArray attributePredicateArray;
 
     // Ordering
     public OrderBy orderBy = new OrderBy(OrderBy.Property.CREATED_ON);
@@ -487,6 +555,11 @@ public class AbstractAssetQuery<CHILD extends AbstractAssetQuery<CHILD>> {
 
     public CHILD attributeMeta(AttributeMetaPredicate attributeMetaPredicate) {
         this.attributeMetaPredicate = attributeMetaPredicate;
+        return (CHILD) this;
+    }
+
+    public CHILD attributes(AttributePredicateArray attributePredicateArray) {
+        this.attributePredicateArray = attributePredicateArray;
         return (CHILD) this;
     }
 
