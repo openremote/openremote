@@ -21,6 +21,8 @@ package org.openremote.manager.client.interop.jackson;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.github.nmorel.gwtjackson.client.AbstractConfiguration;
+import org.openremote.model.ValidationFailure;
+import org.openremote.model.attribute.MetaItemDescriptor;
 import org.openremote.model.value.*;
 
 /**
@@ -30,11 +32,14 @@ public class SerializationConfiguration extends AbstractConfiguration {
 
     @Override
     protected void configure() {
+
         fieldVisibility(JsonAutoDetect.Visibility.ANY);
         getterVisibility(JsonAutoDetect.Visibility.NONE);
         setterVisibility(JsonAutoDetect.Visibility.NONE);
         isGetterVisibility(JsonAutoDetect.Visibility.NONE);
-        creatorVisibility(JsonAutoDetect.Visibility.NONE);
+        creatorVisibility(JsonAutoDetect.Visibility.ANY);
+        type(ValidationFailure.Reason.class).deserializer(ValidationFailureReasonDeserializer.class);
+        type(MetaItemDescriptor.class).deserializer(MetaItemDescriptorDeserializer.class);
         type(Value.class).serializer(ModelValueSerializer.class).deserializer(ModelValueDeserializer.class);
         type(ObjectValue.class).serializer(ModelValueSerializer.class).deserializer(ModelValueDeserializer.class);
         type(ArrayValue.class).serializer(ModelValueSerializer.class).deserializer(ModelValueDeserializer.class);

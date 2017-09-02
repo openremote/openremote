@@ -28,11 +28,13 @@ import org.openremote.container.ContainerService;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.message.MessageBrokerSetupService;
 import org.openremote.container.persistence.PersistenceEvent;
+import org.openremote.container.web.WebService;
 import org.openremote.manager.server.asset.AssetProcessingService;
 import org.openremote.manager.server.asset.AssetStorageService;
 import org.openremote.manager.server.asset.ServerAsset;
 import org.openremote.model.AbstractValueTimestampHolder;
 import org.openremote.model.asset.*;
+import org.openremote.model.asset.agent.Agent;
 import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.asset.agent.ProtocolConfiguration;
 import org.openremote.model.attribute.AttributeEvent;
@@ -78,6 +80,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
     protected final Map<AttributeRef, Pair<AssetAttribute, ConnectionStatus>> protocolConfigurations = new HashMap<>();
     protected final Map<String, Protocol> protocols = new HashMap<>();
     protected final List<AttributeRef> linkedAttributes = new ArrayList<>();
+    protected LocalAgentConnector localAgentConnector;
     protected Map<String, Asset> agentMap;
 
     @Override
@@ -86,6 +89,11 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
         assetProcessingService = container.getService(AssetProcessingService.class);
         assetStorageService = container.getService(AssetStorageService.class);
         messageBrokerService = container.getService(MessageBrokerService.class);
+        localAgentConnector = new LocalAgentConnector(this);
+
+        container.getService(WebService.class).getApiSingletons().add(
+            new AgentResourceImpl(this)
+        );
     }
 
     @Override
@@ -229,14 +237,14 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
 
         switch (persistenceEvent.getCause()) {
             case INSERT:
-
+                addReplaceAgent(agent);
                 agent.getAttributesStream()
                     .filter(ProtocolConfiguration::isProtocolConfiguration)
                     .forEach(this::linkProtocolConfiguration);
 
                 break;
             case UPDATE:
-
+                addReplaceAgent(agent);
                 // Check if any protocol config attributes have been added/removed or modified
                 int attributesIndex = Arrays.asList(persistenceEvent.getPropertyNames()).indexOf("attributes");
                 if (attributesIndex < 0) {
@@ -285,7 +293,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
 
                 break;
             case DELETE:
-
+                removeAgent(agent);
                 // Unlink any attributes that have an agent link to this agent
                 agent.getAttributesStream()
                     .filter(ProtocolConfiguration::isProtocolConfiguration)
@@ -398,7 +406,6 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
     }
 
     protected void linkProtocolConfiguration(AssetAttribute protocolConfiguration) {
-        LOG.fine("Linking all attributes that use protocol attribute: " + protocolConfiguration);
         AttributeRef protocolAttributeRef = protocolConfiguration.getReferenceOrThrow();
         Protocol protocol = getProtocol(protocolConfiguration);
 
@@ -459,7 +466,6 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
     }
 
     protected void unlinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
-        LOG.fine("Unlinking all attributes that use protocol attribute: " + protocolConfiguration);
         AttributeRef protocolAttributeRef = protocolConfiguration.getReferenceOrThrow();
 
         // Get all assets that have attributes that use this protocol configuration
@@ -525,6 +531,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
     }
 
     protected void linkAttributes(AssetAttribute protocolConfiguration, Collection<AssetAttribute> attributes) {
+        LOG.fine("Linking all attributes that use protocol attribute: " + protocolConfiguration);
         Protocol protocol = getProtocol(protocolConfiguration);
 
         if (protocol == null) {
@@ -548,6 +555,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
     }
 
     protected void unlinkAttributes(AssetAttribute protocolConfiguration, Collection<AssetAttribute> attributes) {
+        LOG.fine("Unlinking all attributes that use protocol attribute: " + protocolConfiguration);
         Protocol protocol = getProtocol(protocolConfiguration);
 
         if (protocol == null) {
@@ -659,7 +667,23 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
         }
     }
 
-    protected synchronized Map<String, Asset> getAgents() {
+    public Optional<AgentConnector> getAgentConnector(Asset agent) {
+        if (agent == null || agent.getWellKnownType() != AGENT) {
+            return Optional.empty();
+        }
+
+        return !Agent.hasUrl(agent) ? Optional.of(localAgentConnector) : Optional.empty();
+    }
+
+    protected synchronized void addReplaceAgent(Asset agent) {
+        getAgents().put(agent.getId(), agent);
+    }
+
+    protected synchronized void removeAgent(Asset agent) {
+        getAgents().remove(agent.getId());
+    }
+
+    public synchronized Map<String, Asset> getAgents() {
         if (agentMap == null) {
             agentMap = assetStorageService.findAll(new AssetQuery()
                 .select(new AssetQuery.Select(AssetQuery.Include.ALL, false))

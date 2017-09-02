@@ -100,13 +100,13 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait {
 
                 if (!attribute.getMetaItem("MOCK_ATTRIBUTE_REQUIRED_META").isPresent()) {
                     // This tests exception handling during linking of attributes
-                    throw new IllegalStateException("Attribute is not valid");
+                    throw new IllegalStateException("Attribute is not valid")
                 }
                 protocolLinkedAttributes[protocolConfiguration.getName().orElse("")] << attribute
 
-                def deploymentStatus = getStatus(protocolConfiguration);
+                def deploymentStatus = getStatus(protocolConfiguration)
                 if (deploymentStatus == ConnectionStatus.CONNECTED) {
-                    String attributeName = attribute.getName().orElse("");
+                    String attributeName = attribute.getName().orElse("")
                     if (attributeName.startsWith("lightToggle")) {
                         // Set all lights to on
                         updateLinkedAttribute(new AttributeState(attribute.getReferenceOrThrow(), Values.create(true)))
@@ -135,8 +135,18 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait {
             }
 
             @Override
+            String getVersion() {
+                return "1.0"
+            }
+
+            @Override
             String getProtocolName() {
                 return mockProtocolName
+            }
+
+            @Override
+            String getProtocolDisplayName() {
+                return "Mock"
             }
         }
 

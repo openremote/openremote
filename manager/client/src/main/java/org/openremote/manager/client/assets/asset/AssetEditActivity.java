@@ -19,18 +19,23 @@
  */
 package org.openremote.manager.client.assets.asset;
 
-import com.google.gwt.user.client.ui.AcceptsOneWidget;
+import com.google.gwt.user.client.ui.IsWidget;
+import com.google.inject.Provider;
 import org.openremote.manager.client.Environment;
-import org.openremote.manager.client.assets.AssetArrayMapper;
-import org.openremote.manager.client.assets.AssetMapper;
-import org.openremote.manager.client.assets.AssetQueryMapper;
-import org.openremote.manager.client.assets.AssetsDashboardPlace;
-import org.openremote.manager.client.assets.attributes.AttributesEditor;
-import org.openremote.manager.client.assets.browser.*;
-import org.openremote.manager.client.assets.tenant.AssetsTenantPlace;
+import org.openremote.manager.client.app.dialog.JsonEditor;
+import org.openremote.manager.client.assets.*;
+import org.openremote.manager.client.assets.attributes.*;
+import org.openremote.manager.client.assets.browser.AssetBrowser;
+import org.openremote.manager.client.assets.browser.AssetTreeNode;
+import org.openremote.manager.client.assets.browser.BrowserTreeNode;
+import org.openremote.manager.client.assets.browser.TenantTreeNode;
 import org.openremote.manager.client.event.ShowFailureEvent;
 import org.openremote.manager.client.event.ShowSuccessEvent;
 import org.openremote.manager.client.interop.value.ObjectValueMapper;
+import org.openremote.manager.client.widget.FormButton;
+import org.openremote.manager.client.widget.FormSectionLabel;
+import org.openremote.manager.client.widget.ValueEditors;
+import org.openremote.manager.shared.agent.AgentResource;
 import org.openremote.manager.shared.asset.AssetResource;
 import org.openremote.manager.shared.map.MapResource;
 import org.openremote.manager.shared.security.Tenant;
@@ -39,62 +44,77 @@ import org.openremote.model.ValueHolder;
 import org.openremote.model.asset.*;
 import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.asset.agent.ProtocolConfiguration;
+import org.openremote.model.asset.agent.ProtocolDescriptor;
 import org.openremote.model.attribute.AttributeType;
+import org.openremote.model.attribute.AttributeValidationResult;
 import org.openremote.model.attribute.MetaItem;
-import org.openremote.model.event.bus.EventBus;
-import org.openremote.model.event.bus.EventRegistration;
+import org.openremote.model.attribute.MetaItemDescriptor;
+import org.openremote.model.util.EnumUtil;
 import org.openremote.model.util.Pair;
+import org.openremote.model.value.ValueType;
 
 import javax.inject.Inject;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import static org.openremote.manager.client.http.RequestExceptionHandler.handleRequestException;
+import static org.openremote.manager.client.widget.ValueEditors.createAttributeRefEditor;
+import static org.openremote.model.attribute.Attribute.ATTRIBUTE_NAME_VALIDATOR;
+import static org.openremote.model.attribute.Attribute.isAttributeNameEqualTo;
 import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 
 public class AssetEditActivity
-    extends AbstractAssetActivity<AssetEditPlace>
+    extends AbstractAssetActivity<AssetEdit.Presenter, AssetEdit, AssetEditPlace>
     implements AssetEdit.Presenter {
 
-    final AssetEdit view;
-    final AssetResource assetResource;
-    final AssetMapper assetMapper;
-    final AssetArrayMapper assetArrayMapper;
-    final AssetQueryMapper assetQueryMapper;
-    final MapResource mapResource;
-    final ObjectValueMapper objectValueMapper;
-    final protected Consumer<ConstraintViolation[]> validationErrorHandler;
+    protected final AssetResource assetResource;
+    protected final AgentResource agentResource;
+    protected final AssetMapper assetMapper;
+    protected final AssetArrayMapper assetArrayMapper;
+    protected final AssetQueryMapper assetQueryMapper;
+    protected final ProtocolDescriptorArrayMapper protocolDescriptorArrayMapper;
+    protected final ProtocolDescriptorMapMapper protocolDescriptorMapMapper;
+    protected final AttributeValidationResultMapper attributeValidationResultMapper;
+    protected final AssetAttributeMapper assetAttributeMapper;
+    protected final Consumer<ConstraintViolation[]> validationErrorHandler;
     protected final List<Consumer<Asset[]>> agentAssetConsumers = new ArrayList<>();
     protected final List<Consumer<Asset[]>> allAssetConsumers = new ArrayList<>();
     protected Asset[] agentAssets;
     protected Asset[] allAssets;
-
+    protected List<ProtocolDescriptor> protocolDescriptors = new ArrayList<>();
+    protected List<MetaItemDescriptor> metaItemDescriptors = new ArrayList<>(Arrays.asList(AssetMeta.values()));
     double[] selectedCoordinates;
-    AttributesEditor attributesEditor;
 
     @Inject
     public AssetEditActivity(Environment environment,
                              Tenant currentTenant,
                              AssetBrowser.Presenter assetBrowserPresenter,
+                             Provider<JsonEditor> jsonEditorProvider,
                              AssetEdit view,
                              AssetResource assetResource,
+                             AgentResource agentResource,
                              AssetMapper assetMapper,
                              AssetArrayMapper assetArrayMapper,
                              AssetQueryMapper assetQueryMapper,
+                             ProtocolDescriptorArrayMapper protocolDescriptorArrayMapper,
+                             ProtocolDescriptorMapMapper protocolDescriptorMapMapper,
+                             AttributeValidationResultMapper attributeValidationResultMapper,
+                             AssetAttributeMapper assetAttributeMapper,
                              MapResource mapResource,
                              ObjectValueMapper objectValueMapper) {
-        super(environment, currentTenant, assetBrowserPresenter);
+        super(environment, currentTenant, assetBrowserPresenter, jsonEditorProvider, objectValueMapper, mapResource, true);
+        this.presenter = this;
         this.view = view;
         this.assetResource = assetResource;
+        this.agentResource = agentResource;
         this.assetMapper = assetMapper;
         this.assetArrayMapper = assetArrayMapper;
         this.assetQueryMapper = assetQueryMapper;
-        this.mapResource = mapResource;
-        this.objectValueMapper = objectValueMapper;
+        this.protocolDescriptorArrayMapper = protocolDescriptorArrayMapper;
+        this.protocolDescriptorMapMapper = protocolDescriptorMapMapper;
+        this.attributeValidationResultMapper = attributeValidationResultMapper;
+        this.assetAttributeMapper = assetAttributeMapper;
 
         validationErrorHandler = violations -> {
             for (ConstraintViolation violation : violations) {
@@ -109,68 +129,32 @@ public class AssetEditActivity
             }
             view.setFormBusy(false);
         };
-
-    }
-
-    @Override
-    public void start(AcceptsOneWidget container, EventBus eventBus, Collection<EventRegistration> registrations) {
-        view.setPresenter(this);
-        container.setWidget(view.asWidget());
-
-        registrations.add(eventBus.register(
-            AssetBrowserSelection.class, event -> {
-                if (event.getSelectedNode() instanceof TenantTreeNode) {
-                    environment.getPlaceController().goTo(
-                        new AssetsTenantPlace(event.getSelectedNode().getId())
-                    );
-                } else if (event.getSelectedNode() instanceof AssetTreeNode) {
-                    if (this.assetId == null || !this.assetId.equals(event.getSelectedNode().getId())) {
-                        environment.getPlaceController().goTo(
-                            new AssetEditPlace(event.getSelectedNode().getId())
-                        );
-                    }
-                }
-            }
-        ));
-
-        if (!view.isMapInitialised()) {
-            environment.getRequestService().execute(
-                objectValueMapper,
-                mapResource::getSettings,
-                200,
-                view::initialiseMap,
-                ex -> handleRequestException(ex, environment)
-            );
-        } else {
-            onMapReady();
-        }
-
-        view.setAvailableAttributeTypes(AttributeType.values());
     }
 
     @Override
     public void onStop() {
         super.onStop();
-        if (attributesEditor != null) {
-            attributesEditor.close();
-        }
         clearViewMessages();
         view.setPresenter(null);
     }
 
-
     @Override
-    public void onMapReady() {
-        asset = null;
-        if (assetId != null) {
-            assetBrowserPresenter.loadAsset(assetId, loadedAsset -> {
-                this.asset = loadedAsset;
-                assetBrowserPresenter.selectAsset(asset);
-                startEditAsset();
-            });
-        } else {
-            startCreateAsset();
+    public void start() {
+        if (isNullOrEmpty(assetId)) {
+            assetBrowserPresenter.clearSelection();
+            asset = new Asset();
+            asset.setName("My New Asset");
+            asset.setRealmId(currentTenant.getId());
+            asset.setTenantDisplayName(currentTenant.getDisplayName());
+            asset.setType("urn:mydomain:customtype");
         }
+
+        clearViewMessages();
+        writeAssetToView();
+        writeAttributeTypesToView(() -> {
+            writeAttributesToView();
+            loadParent();
+        });
     }
 
     @Override
@@ -206,65 +190,124 @@ public class AssetEditActivity
     @Override
     public void onAssetTypeSelected(AssetType type) {
         asset.setType(type);
-        writeTypeToView(true);
-        writeAttributesEditorToView();
+        writeAttributeTypesToView(this::writeAttributesToView);
     }
 
     @Override
-    public void addAttribute(String name, int attributeTypeIndex) {
-        if (attributesEditor != null) {
-            view.setNewAttributeError(
-                !attributesEditor.addAttribute(name, attributeTypeIndex >= 0 ? AttributeType.values()[attributeTypeIndex] : null)
-            );
+    public boolean addAttribute(String name, String type) {
+        if (isNullOrEmpty(name) || isNullOrEmpty(type)) {
+            return false;
         }
+
+        if (asset.getAttributesStream().anyMatch(isAttributeNameEqualTo(name))) {
+            showFailureMessage(environment.getMessages().duplicateAttributeName());
+            return false;
+        }
+
+        if (!ATTRIBUTE_NAME_VALIDATOR.test(name)) {
+            showFailureMessage(environment.getMessages().invalidAttributeName());
+            return false;
+        }
+        AssetAttribute attribute;
+
+        Optional<ProtocolDescriptor> protocolDescriptor = protocolDescriptors == null ?
+            Optional.empty() :
+            protocolDescriptors.stream()
+                .filter(pd -> pd.getName().equals(type))
+                .findFirst();
+
+        if (protocolDescriptor.isPresent()) {
+            // This is a protocol configuration add request
+            attribute = protocolDescriptor.get().getConfigurationTemplate().deepCopy();
+        } else {
+            AttributeType attributeType = EnumUtil.enumFromString(AttributeType.class, type).orElse(null);
+
+            if (attributeType == null) {
+                showFailureMessage(environment.getMessages().invalidAttributeType());
+                return false;
+            }
+
+            attribute = new AssetAttribute();
+            attribute.setType(attributeType);
+            attribute.addMeta(attributeType.getDefaultMetaItems());
+        }
+
+        attribute.setName(name);
+
+        // Tell the server to set the timestamp when saving because we don't want to use browser time
+        attribute.setValueTimestamp(0);
+
+        asset.getAttributesList().add(attribute);
+        writeAttributeToView(attribute, true);
+        return true;
+    }
+
+    @Override
+    public void removeAttribute(AssetAttribute attribute) {
+        // Allow deleting any attributes for now
+        asset.getAttributesList().remove(attribute);
+        view.getAttributeViews()
+            .stream()
+            .filter(attributeView -> attributeView.getAttribute() == attribute)
+            .findFirst()
+            .ifPresent(attributeView -> view.removeAttributeViews(Collections.singletonList(attributeView)));
     }
 
     @Override
     public void update() {
         view.setFormBusy(true);
         clearViewMessages();
-        if (attributesEditor != null && !attributesEditor.validateAttributes()) {
-            view.setFormBusy(false);
-            return;
-        }
-        readFromView();
-        environment.getRequestService().execute(
-            assetMapper,
-            requestParams -> assetResource.update(requestParams, assetId, asset),
-            204,
-            () -> {
+        validateAttributes(false, results -> {
+            if (results.stream().anyMatch(result -> !result.isValid())) {
                 view.setFormBusy(false);
-                environment.getEventBus().dispatch(new ShowSuccessEvent(
-                    environment.getMessages().assetUpdated(asset.getName())
-                ));
-                environment.getPlaceController().goTo(new AssetViewPlace(assetId));
-            },
-            ex -> handleRequestException(ex, environment.getEventBus(), environment.getMessages(), validationErrorHandler)
-        );
+                processValidationResults(results);
+            } else {
+                readFromView();
+                environment.getRequestService().execute(
+                    assetMapper,
+                    requestParams -> assetResource.update(requestParams, assetId, asset),
+                    204,
+                    () -> {
+                        view.setFormBusy(false);
+                        environment.getEventBus().dispatch(new ShowSuccessEvent(
+                            environment.getMessages().assetUpdated(asset.getName())
+                        ));
+                        environment.getPlaceController().goTo(new AssetViewPlace(assetId));
+                    },
+                    ex -> {
+                        view.setFormBusy(false);
+                        handleRequestException(ex, environment.getEventBus(), environment.getMessages(), validationErrorHandler);
+                    }
+                );
+            }
+        });
     }
 
     @Override
     public void create() {
         view.setFormBusy(true);
         clearViewMessages();
-        if (attributesEditor != null && !attributesEditor.validateAttributes()) {
-            view.setFormBusy(false);
-            return;
-        }
-        readFromView();
-        environment.getRequestService().execute(
-            assetMapper,
-            requestParams -> assetResource.create(requestParams, asset),
-            204,
-            () -> {
+        validateAttributes(false, results -> {
+            if (results.stream().anyMatch(result -> !result.isValid())) {
                 view.setFormBusy(false);
-                environment.getEventBus().dispatch(new ShowSuccessEvent(
-                    environment.getMessages().assetCreated(asset.getName())
-                ));
-                environment.getPlaceController().goTo(new AssetsDashboardPlace());
-            },
-            ex -> handleRequestException(ex, environment.getEventBus(), environment.getMessages(), validationErrorHandler)
-        );
+                processValidationResults(results);
+            } else {
+                readFromView();
+                environment.getRequestService().execute(
+                    assetMapper,
+                    requestParams -> assetResource.create(requestParams, asset),
+                    204,
+                    () -> {
+                        view.setFormBusy(false);
+                        environment.getEventBus().dispatch(new ShowSuccessEvent(
+                            environment.getMessages().assetCreated(asset.getName())
+                        ));
+                        environment.getPlaceController().goTo(new AssetsDashboardPlace());
+                    },
+                    ex -> handleRequestException(ex, environment.getEventBus(), environment.getMessages(), validationErrorHandler)
+                );
+            }
+        });
     }
 
     @Override
@@ -376,6 +419,24 @@ public class AssetEditActivity
     }
 
     @Override
+    protected IsWidget createValueEditor(ValueHolder valueHolder, ValueType valueType, AttributeView.Style style, Runnable onValueModified) {
+        switch(valueType) {
+            case ARRAY:
+                if (valueHolder instanceof MetaItem) {
+                    Optional<AssetMeta> assetMeta = AssetMeta.getAssetMeta(((MetaItem) valueHolder).getName().orElse(null));
+
+                    if (assetMeta.map(am -> am == AssetMeta.AGENT_LINK).orElse(false)) {
+                        boolean isReadOnly = isValueReadOnly(valueHolder);
+                        String assetWatermark = environment.getMessages().selectAgent();
+                        String attributeWatermark = environment.getMessages().selectProtocolConfiguration();
+                        return createAttributeRefEditor(valueHolder, onValueModified, isReadOnly, this::getLinkableAssets, this::getLinkableAttributes, assetWatermark, attributeWatermark, style.agentLinkEditor());
+                    }
+                }
+        }
+        return super.createValueEditor(valueHolder, valueType, style, onValueModified);
+    }
+
+    @Override
     public void centerMap() {
         if (selectedCoordinates != null) {
             view.flyTo(selectedCoordinates);
@@ -384,82 +445,183 @@ public class AssetEditActivity
         }
     }
 
-    protected void startCreateAsset() {
-        assetBrowserPresenter.clearSelection();
-        asset = new Asset();
-        asset.setName("My New Asset");
-        asset.setRealmId(currentTenant.getId());
-        asset.setTenantDisplayName(currentTenant.getDisplayName());
-        asset.setType("urn:mydomain:customtype");
-        clearViewMessages();
-        writeAssetToView();
-        writeParentToView();
-        writeTypeToView(true);
-        writeAttributesEditorToView();
-        view.setFormBusy(false);
-    }
-
-    protected void startEditAsset() {
-        clearViewMessages();
-        view.setAssetViewHistoryToken(environment.getPlaceHistoryMapper().getToken(new AssetViewPlace(assetId)));
-        writeAssetToView();
-        writeTypeToView(false);
-        writeAttributesEditorToView();
-        if (asset.getParentId() != null) {
-            assetBrowserPresenter.loadAsset(asset.getParentId(), loadedAsset -> {
-                this.parentAsset = loadedAsset;
-                writeParentToView();
-                view.setFormBusy(false);
-            });
-        } else {
-            writeParentToView();
-            view.setFormBusy(false);
-        }
-    }
-
-    protected void writeAssetToView() {
-        view.setName(asset.getName());
-        view.setCreatedOn(asset.getCreatedOn());
-        view.setLocation(asset.getCoordinates());
-        view.showDroppedPin(asset.getGeoFeature(20));
-        view.flyTo(asset.getCoordinates());
+    @Override
+    public void writeAssetToView() {
+        super.writeAssetToView();
         view.enableCreate(assetId == null);
         view.enableUpdate(assetId != null);
         view.enableDelete(assetId != null);
     }
 
-    protected void writeParentToView() {
-        if (parentAsset != null) {
-            view.setParentNode(new AssetTreeNode(parentAsset));
+    @Override
+    protected List<AbstractAttributeViewExtension> createAttributeExtensions(AssetAttribute attribute, AttributeViewImpl view) {
+        List<AbstractAttributeViewExtension> extensions = new ArrayList<>();
+
+        // if this is a protocol configuration then add a protocol link editor first
+        if (ProtocolConfiguration.isProtocolConfiguration(attribute)) {
+            protocolDescriptors
+                .stream()
+                .filter(protocolDescriptor -> protocolDescriptor.getName().equals(attribute.getValueAsString().orElse("")))
+                .findFirst()
+                .ifPresent(
+                    protocolDescriptor -> {
+                        extensions.add(
+                            new ProtocolLinksEditor(environment, this.view.getStyle(), view, attribute, protocolDescriptor, false)
+                        );
+
+                        if (protocolDescriptor.isDeviceDiscovery() || protocolDescriptor.isDeviceImport()) {
+                            extensions.add(
+                                new ProtocolLinksEditor(environment, this.view.getStyle(), view, attribute, protocolDescriptor, true)
+                            );
+                        }
+                    }
+                );
+        }
+
+        extensions.add(new MetaEditor(environment, this.view.getStyle(), view, attribute, () -> protocolDescriptors));
+        return extensions;
+    }
+
+    @Override
+    protected List<FormButton> createAttributeActions(AssetAttribute attribute, AttributeViewImpl view) {
+        FormButton deleteButton = new FormButton();
+        deleteButton.setText(environment.getMessages().deleteAttribute());
+        deleteButton.setIcon("remove");
+        deleteButton.addClickHandler(clickEvent -> {
+            removeAttribute(attribute);
+            attribute.getName()
+                .ifPresent(name ->
+                    showInfo(environment.getMessages().attributeDeleted(name))
+                );
+        });
+
+        return Collections.singletonList(deleteButton);
+    }
+
+    // TODO: Create a richer client side validation mechanism
+    @Override
+    protected void onAttributeModified(AssetAttribute attribute) {
+        // Called when a view has modified the attribute so we need to do validation this is called a lot by value
+        // editors (every key stroke) so use basic client side validation - use full validation before submitting
+        // the asset to the server
+        validateAttribute(true, attribute, result -> processValidationResults(Collections.singletonList(result)));
+    }
+
+    @Override
+    protected void validateAttribute(boolean clientSideOnly, AssetAttribute attribute, Consumer<AttributeValidationResult> resultConsumer) {
+        super.validateAttribute(clientSideOnly, attribute, validationResult -> {
+            if (validationResult.isValid() && attribute.hasMetaItems()) {
+                // Do additional validation on the meta items
+
+                for (int i=0; i<attribute.getMeta().size(); i++) {
+                    MetaItem metaItem = attribute.getMeta().get(i);
+                    int finalI = i;
+                    metaItemDescriptors.stream()
+                        .filter(metaItemDescriptor -> metaItemDescriptor.getUrn().equals(metaItem.getName().orElse("")))
+                        .findFirst()
+                        .flatMap(metaItemDescriptor ->
+                            MetaItemDescriptor.validateValue(metaItem.getValue().orElse(null), metaItemDescriptor)
+                        )
+                        .ifPresent(failure -> validationResult.addMetaFailure(finalI, failure));
+                }
+            }
+
+            if (!clientSideOnly && validationResult.isValid() && ProtocolConfiguration.isProtocolConfiguration(attribute)) {
+                // Ask the server to validate the protocol configuration
+                environment.getRequestService().execute(
+                    attributeValidationResultMapper,
+                    assetAttributeMapper,
+                    requestParams -> agentResource.validateProtocolConfiguration(requestParams, assetId, attribute),
+                    Collections.singletonList(200),
+                    resultConsumer,
+                    ex -> handleRequestException(ex, environment.getEventBus(), environment.getMessages(), validationErrorHandler)
+                );
+            } else {
+                resultConsumer.accept(validationResult);
+            }
+        });
+
+    }
+
+    protected void writeAttributeTypesToView(Runnable onComplete) {
+        view.selectWellKnownType(asset.getWellKnownType());
+        view.setAvailableWellKnownTypes(AssetType.valuesSorted());
+        view.setType(asset.getType());
+        view.setTypeEditable(isNullOrEmpty(assetId));
+
+        // Populate add attributes drop down based on asset type
+        if (asset.getWellKnownType() == AssetType.AGENT && !isNullOrEmpty(asset.getId())) {
+            List<Pair<String, String>> displayNamesAndTypes = new ArrayList<>();
+            displayNamesAndTypes.add(new Pair<>(ValueEditors.EMPTY_LINE, null));
+
+            environment.getRequestService().execute(
+                protocolDescriptorArrayMapper,
+                requestParams -> agentResource.getSupportedProtocols(requestParams, assetId),
+                200,
+                protocolDescriptors -> {
+                    this.protocolDescriptors.addAll(Arrays.asList(protocolDescriptors));
+                    updateMetaItemDescriptors();
+                    view.setFormBusy(false);
+                    Arrays.stream(protocolDescriptors)
+                        .sorted(Comparator.comparing(ProtocolDescriptor::getDisplayName))
+                        .forEach(protocolDescriptor -> displayNamesAndTypes
+                            .add(new Pair<>(protocolDescriptor.getDisplayName(), protocolDescriptor.getName()))
+                        );
+
+                    displayNamesAndTypes.add(new Pair<>(ValueEditors.EMPTY_LINE, null));
+                    displayNamesAndTypes.addAll(attributeTypesToList());
+                    view.setAvailableAttributeTypes(displayNamesAndTypes);
+                    onComplete.run();
+                },
+                ex -> handleRequestException(ex, environment.getEventBus(), environment.getMessages(), validationErrorHandler)
+            );
         } else {
-            view.setParentNode(
-                new TenantTreeNode(
-                    new Tenant(asset.getRealmId(), asset.getTenantRealm(), asset.getTenantDisplayName(), true)
-                )
+            // Get all protocol descriptors for all agents
+            environment.getRequestService().execute(
+                protocolDescriptorMapMapper,
+                agentResource::getAllSupportedProtocols,
+                200,
+                protocolDescriptorMap -> {
+                    protocolDescriptorMap.forEach((id, descriptors) -> {
+                        for (ProtocolDescriptor newDescriptor : descriptors) {
+                            if (this.protocolDescriptors.stream().noneMatch(pd -> pd.getName().equals(newDescriptor.getName()))) {
+                                this.protocolDescriptors.add(newDescriptor);
+                            }
+                        }
+                    });
+                    updateMetaItemDescriptors();
+                    view.setFormBusy(false);
+                    view.setAvailableAttributeTypes(attributeTypesToList());
+                    onComplete.run();
+                },
+                ex -> handleRequestException(ex, environment.getEventBus(), environment.getMessages(), validationErrorHandler)
             );
         }
     }
 
-    protected void writeTypeToView(boolean typeEditable) {
-        view.selectWellKnownType(asset.getWellKnownType());
-        view.setAvailableWellKnownTypes(AssetType.valuesSorted());
-        view.setType(asset.getType());
-        view.setTypeEditable(typeEditable);
+    protected void updateMetaItemDescriptors() {
+        if (protocolDescriptors != null) {
+            for (ProtocolDescriptor descriptor : protocolDescriptors) {
+                if (descriptor.getProtocolConfigurationMetaItems() != null) {
+                    metaItemDescriptors.addAll(descriptor.getProtocolConfigurationMetaItems());
+                }
+                if (descriptor.getLinkedAttributeMetaItems() != null) {
+                    descriptor.getLinkedAttributeMetaItems().forEach(newDescriptor -> {
+                        if (metaItemDescriptors.stream().noneMatch(md -> md.getUrn().equals(newDescriptor.getUrn()))) {
+                            metaItemDescriptors.add(newDescriptor);
+                        }
+                    });
+                }
+            }
+        }
     }
 
-    protected void writeAttributesEditorToView() {
-        attributesEditor = new AttributesEditor(
-            environment,
-            view.getAttributesEditorContainer(),
-            assetId == null
-                ? asset.getWellKnownType().getDefaultAttributes().collect(Collectors.toList())
-                : asset.getAttributesList(),
-            assetId == null,
-            this::getLinkableAssets,
-            this::getLinkableAttributes
-        );
-        view.setAttributesEditor(attributesEditor);
-        attributesEditor.build();
+    protected List<Pair<String, String>> attributeTypesToList() {
+        return Arrays.stream(AttributeType.values())
+            .map(Enum::name)
+            .map(attrType -> new Pair<>(environment.getMessages().attributeType(attrType), attrType))
+            .sorted(Comparator.comparing(a -> a.key))
+            .collect(Collectors.toList());
     }
 
     protected void readFromView() {
@@ -477,9 +639,6 @@ public class AssetEditActivity
         if (selectedCoordinates != null) {
             asset.setCoordinates(selectedCoordinates);
         }
-        asset.setAttributes(
-            attributesEditor != null ? attributesEditor.getAttributes() : null
-        );
     }
 
     protected void clearViewMessages() {
@@ -491,5 +650,4 @@ public class AssetEditActivity
         view.setNameError(false);
         view.setTypeError(false);
     }
-
 }

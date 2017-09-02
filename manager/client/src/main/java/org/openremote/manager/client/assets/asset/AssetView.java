@@ -19,21 +19,9 @@
  */
 package org.openremote.manager.client.assets.asset;
 
-import com.google.gwt.user.client.ui.IsWidget;
-import org.openremote.manager.client.assets.attributes.AttributesBrowser;
-import org.openremote.manager.client.assets.browser.BrowserTreeNode;
-import org.openremote.model.geo.GeoJSON;
-import org.openremote.model.value.ObjectValue;
+public interface AssetView extends AssetBaseView<AssetView.Presenter> {
 
-import java.util.Date;
-
-public interface AssetView extends IsWidget {
-
-    interface Presenter {
-
-        void onMapReady();
-
-        void centerMap();
+    interface Presenter extends AssetBaseView.Presenter {
 
         void enableLiveUpdates(boolean enable);
 
@@ -44,29 +32,5 @@ public interface AssetView extends IsWidget {
 
     void setFormBusy(boolean busy);
 
-    void setAssetEditHistoryToken(String token);
-
-    void setName(String name);
-
-    void setCreatedOn(Date createdOn);
-
-    void setParentNode(BrowserTreeNode treeNode);
-
-    void initialiseMap(ObjectValue mapOptions);
-
-    boolean isMapInitialised();
-
-    void setLocation(double[] coordinates);
-
-    void showDroppedPin(GeoJSON geoFeature);
-
-    void flyTo(double[] coordinates);
-
     void setIconAndType(String icon, String type);
-
-    AttributesBrowser.Container getAttributesBrowserContainer();
-
-    void setAttributesBrowser(AttributesBrowser attributesBrowser);
-
-    boolean isLiveUpdatesEnabled();
 }

@@ -24,8 +24,6 @@ import tuwien.auto.calimero.server.knxnetip.DefaultServiceContainer
 import static org.openremote.model.asset.AssetMeta.DESCRIPTION
 import static org.openremote.model.asset.AssetMeta.LABEL
 
-import org.apache.camel.language.simple.ast.BlockStart
-import org.openremote.agent.protocol.AbstractProtocol
 import org.openremote.agent.protocol.knx.KNXProtocol
 import org.openremote.agent.protocol.ConnectionStatus
 import org.openremote.manager.server.agent.AgentService
@@ -41,7 +39,6 @@ import org.openremote.model.attribute.*
 import org.openremote.model.value.Values
 import org.openremote.test.KNXTestingNetworkLink
 import org.openremote.test.ManagerContainerTrait
-import spock.lang.Ignore
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 import tuwien.auto.calimero.server.Launcher
@@ -94,13 +91,13 @@ class KNXProtocolTest extends Specification implements ManagerContainerTrait {
         knxAgent.setAttributes(
             ProtocolConfiguration.initProtocolConfiguration(new AssetAttribute("knxConfig"), KNXProtocol.PROTOCOL_NAME)
                 .addMeta(
-                    new MetaItem(KNXProtocol.KNX_GATEWAY_IP, Values.create("localhost")),
-                    new MetaItem(KNXProtocol.KNX_LOCAL_IP, Values.create("localhost"))
+                    new MetaItem(KNXProtocol.META_KNX_GATEWAY_IP, Values.create("localhost")),
+                    new MetaItem(KNXProtocol.META_KNX_LOCAL_IP, Values.create("localhost"))
                 ),
             ProtocolConfiguration.initProtocolConfiguration(new AssetAttribute("knxConfigError1"), KNXProtocol.PROTOCOL_NAME),
             ProtocolConfiguration.initProtocolConfiguration(new AssetAttribute("knxConfigError2"), KNXProtocol.PROTOCOL_NAME)
                 .addMeta(
-                    new MetaItem(KNXProtocol.KNX_IP_CONNECTION_TYPE, Values.create("dummy"))
+                    new MetaItem(KNXProtocol.META_KNX_IP_CONNECTION_TYPE, Values.create("dummy"))
                 )
         )
         knxAgent.setRealmId(Constants.MASTER_REALM)
@@ -125,9 +122,9 @@ class KNXProtocolTest extends Specification implements ManagerContainerTrait {
                     .setMeta(
                         new MetaItem(LABEL, Values.create("Light 1 Toggle On/Off")),
                         new MetaItem(DESCRIPTION, Values.create("Light 1 for living room")),
-                        new MetaItem(KNXProtocol.ACTION_GA, Values.create("1/0/17")),
-                        new MetaItem(KNXProtocol.STATUS_GA, Values.create("0/4/14")),
-                        new MetaItem(KNXProtocol.DPT, Values.create("1.001")),
+                        new MetaItem(KNXProtocol.META_KNX_ACTION_GA, Values.create("1/0/17")),
+                        new MetaItem(KNXProtocol.META_KNX_STATUS_GA, Values.create("0/4/14")),
+                        new MetaItem(KNXProtocol.META_KNX_DPT, Values.create("1.001")),
                         new MetaItem(AssetMeta.AGENT_LINK, new AttributeRef(knxAgent.getId(), "knxConfig").toArrayValue())
                     )
         )

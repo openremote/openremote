@@ -21,9 +21,11 @@ package org.openremote.manager.client.widget;
 
 import com.google.gwt.dom.client.Style;
 import com.google.gwt.uibinder.client.UiChild;
-import com.google.gwt.user.client.ui.*;
+import com.google.gwt.user.client.ui.FlowPanel;
+import com.google.gwt.user.client.ui.HasWidgets;
+import com.google.gwt.user.client.ui.IsWidget;
+import com.google.gwt.user.client.ui.Label;
 
-import java.util.function.Consumer;
 import java.util.logging.Logger;
 
 /**
@@ -77,7 +79,7 @@ public class FormGroup extends FlowPanel implements HasWidgets {
     }
 
     @UiChild(tagname = "label", limit = 1)
-    public void addFormLabel(FormLabel formLabel) {
+    public void setFormLabel(FormLabel formLabel) {
         if (this.formLabel != null)
             throw new IllegalStateException("Form label already set");
         this.formLabel = formLabel;
@@ -85,7 +87,7 @@ public class FormGroup extends FlowPanel implements HasWidgets {
     }
 
     @UiChild(tagname = "field", limit = 1)
-    public void addFormField(FormField formField) {
+    public void setFormField(FormField formField) {
         if (this.formField != null)
             throw new IllegalStateException("Form field already set");
         this.formField = formField;
@@ -101,7 +103,10 @@ public class FormGroup extends FlowPanel implements HasWidgets {
     }
 
     @UiChild(tagname = "actions", limit = 1)
-    public void addFormGroupActions(FormGroupActions formGroupActions) {
+    public void setFromGroupActions(FormGroupActions formGroupActions) {
+        if (this.formGroupActions != null) {
+            mainPanel.remove(this.formGroupActions);
+        }
         this.formGroupActions = formGroupActions;
         mainPanel.insert(formGroupActions, mainPanel.getWidgetIndex(toggleExtensionButton));
     }
@@ -122,32 +127,13 @@ public class FormGroup extends FlowPanel implements HasWidgets {
         extensionPanel.add(widget);
     }
 
+    public void clearExtensions() {
+        extensionPanel.clear();
+    }
+
     public void showDisabledExtensionToggle() {
         toggleExtensionButton.setVisible(true);
         toggleExtensionButton.setEnabled(false);
-    }
-
-    public int getExtensionWidgetIndex(Widget widget) {
-        return extensionPanel.getWidgetIndex(widget);
-    }
-
-    public void insertExtension(Widget widget, int beforeIndex) {
-        toggleExtensionButton.setVisible(true);
-        toggleExtensionButton.setEnabled(true);
-        extensionPanel.insert(widget, beforeIndex);
-    }
-
-    public boolean removeExtension(Widget widget) {
-        boolean removed = extensionPanel.remove(widget);
-        if (removed && extensionPanel.getWidgetCount() == 0)
-            toggleExtensionButton.setVisible(false);
-        return removed;
-    }
-
-    public void forExtension(Consumer<Widget> extension) {
-        for (int i = 0; i < extensionPanel.getWidgetCount(); i++) {
-            extension.accept(extensionPanel.getWidget(i));
-        }
     }
 
     public FormLabel getFormLabel() {
@@ -160,6 +146,10 @@ public class FormGroup extends FlowPanel implements HasWidgets {
 
     public Label getInfoLabel() {
         return infoLabel;
+    }
+
+    public FormGroupActions getFormGroupActions() {
+        return formGroupActions;
     }
 
     public Style getStyle() {
@@ -201,9 +191,9 @@ public class FormGroup extends FlowPanel implements HasWidgets {
         }
     }
 
-    public void setOpaque(boolean opaque) {
+    public void setDisabled(boolean disabled) {
         removeStyleName("opaque");
-        if (opaque) {
+        if (disabled) {
             addStyleName("opaque");
         }
     }

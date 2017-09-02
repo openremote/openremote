@@ -26,17 +26,16 @@ import org.openremote.container.message.MessageBrokerContext;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.message.MessageBrokerSetupService;
 import org.openremote.container.timer.TimerService;
+import org.openremote.model.ValidationFailure;
+import org.openremote.model.ValueHolder;
 import org.openremote.model.asset.AssetAttribute;
+import org.openremote.model.asset.AssetMeta;
 import org.openremote.model.asset.agent.AgentLink;
-import org.openremote.model.attribute.AttributeEvent;
-import org.openremote.model.attribute.AttributeRef;
-import org.openremote.model.attribute.AttributeState;
-import org.openremote.model.attribute.MetaItem;
+import org.openremote.model.asset.agent.ProtocolConfiguration;
+import org.openremote.model.attribute.*;
+import org.openremote.model.asset.agent.ProtocolDescriptor;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
 
@@ -290,9 +289,51 @@ public abstract class AbstractProtocol implements Protocol {
     }
 
     @Override
+    public ProtocolDescriptor getProtocolDescriptor() {
+        return new ProtocolDescriptor(
+            getProtocolName(),
+            getProtocolDisplayName(),
+            getVersion(),
+            this instanceof ProtocolConfigurationDiscovery,
+            this instanceof ProtocolConfigurationImport,
+            this instanceof ProtocolDeviceDiscovery,
+            this instanceof ProtocolDeviceImport,
+            getProtocolConfigurationTemplate(),
+            getProtocolConfigurationMetaItemDescriptors(),
+            getLinkedAttributeMetaItemDescriptors()
+        );
+    }
+
+    @Override
+    public AssetAttribute getProtocolConfigurationTemplate() {
+        return ProtocolConfiguration.initProtocolConfiguration(new AssetAttribute(), getProtocolName());
+    }
+
+    @Override
+    public AttributeValidationResult validateProtocolConfiguration(AssetAttribute protocolConfiguration) {
+        AttributeValidationResult result = new AttributeValidationResult(protocolConfiguration.getName().orElse(""));
+
+        if (!ProtocolConfiguration.isProtocolConfiguration(protocolConfiguration)) {
+            result.addMetaFailure(new ValidationFailure(MetaItem.MetaItemFailureReason.META_ITEM_MISSING, AssetMeta.PROTOCOL_CONFIGURATION.name()));
+        }
+        if (!ProtocolConfiguration.isValidProtocolName(protocolConfiguration.getValueAsString().orElse(null))) {
+            result.addAttributeFailure(new ValidationFailure(ValueHolder.ValueFailureReason.VALUE_INVALID));
+        }
+        return result;
+    }
+
+    @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
             '}';
+    }
+
+    protected List<MetaItemDescriptor> getProtocolConfigurationMetaItemDescriptors() {
+        return Collections.emptyList();
+    }
+
+    protected List<MetaItemDescriptor> getLinkedAttributeMetaItemDescriptors() {
+        return Collections.emptyList();
     }
 
     /**

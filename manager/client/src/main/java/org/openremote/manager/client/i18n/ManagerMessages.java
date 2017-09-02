@@ -21,8 +21,6 @@ package org.openremote.manager.client.i18n;
 
 import com.google.gwt.i18n.client.LocalizableResource;
 import com.google.gwt.i18n.client.Messages;
-import org.openremote.model.asset.AssetMeta;
-import org.openremote.model.value.ValueType;
 
 @LocalizableResource.DefaultLocale
 public interface ManagerMessages extends Messages {
@@ -151,8 +149,6 @@ public interface ManagerMessages extends Messages {
 
     String unsupportedValueType(String name);
 
-    String emptyMetaItem();
-
     String loadingAssets();
 
     String assetName();
@@ -191,8 +187,6 @@ public interface ManagerMessages extends Messages {
 
     String invalidAssetParent();
 
-    String invalidAssetAttributes();
-
     String centerMap();
 
     String showHistory();
@@ -227,6 +221,10 @@ public interface ManagerMessages extends Messages {
 
     String metaItems();
 
+    String protocolLinks();
+
+    String deviceDiscovery();
+
     String or();
 
     String and();
@@ -239,7 +237,7 @@ public interface ManagerMessages extends Messages {
 
     String valueTypeDisplayName(@Select String valueType);
 
-    String assetMetaDisplayName(@Select String assetMetaName);
+    String metaItemDisplayName(@Select String metaItemName);
 
     String attributeDeleted(String name);
 
@@ -295,6 +293,8 @@ public interface ManagerMessages extends Messages {
 
     String invalidAttributeName();
 
+    String invalidAttributeType();
+
     String editAsset();
 
     String viewAsset();
@@ -335,11 +335,13 @@ public interface ManagerMessages extends Messages {
 
     String attributeType(@Select String name);
 
-    String validationFailed();
+    String validationFailureOnAttribute(String attributeName);
 
-    String validationFailedFor(String field);
+    String validationFailureOnMetaItem(String attributeName, String metaItemName);
 
-    String validationFailure(@Select String name);
+    String validationFailure(@Optional String parameter, @Select String name);
+
+    String validationFailureParameter(@Select String parameter);
 
     String syslog();
 

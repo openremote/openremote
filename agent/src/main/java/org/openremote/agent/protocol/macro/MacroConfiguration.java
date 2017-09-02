@@ -20,7 +20,11 @@
 package org.openremote.agent.protocol.macro;
 
 import org.openremote.model.AbstractValueHolder;
+import org.openremote.model.ValidationFailure;
+import org.openremote.model.ValueHolder;
 import org.openremote.model.asset.AssetAttribute;
+import org.openremote.model.attribute.AttributeValidationResult;
+import org.openremote.model.attribute.MetaItem;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -31,6 +35,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.openremote.agent.protocol.macro.MacroProtocol.META_MACRO_ACTION;
+import static org.openremote.agent.protocol.macro.MacroProtocol.PROTOCOL_NAME;
 import static org.openremote.model.asset.agent.ProtocolConfiguration.getProtocolName;
 import static org.openremote.model.asset.agent.ProtocolConfiguration.initProtocolConfiguration;
 import static org.openremote.model.attribute.MetaItem.isMetaNameEqualTo;
@@ -56,12 +61,51 @@ final public class MacroConfiguration {
             .orElse(false);
     }
 
-    public static boolean isValidMacroConfiguration(AssetAttribute attribute) {
-        return attribute != null
-            && isMacroConfiguration(attribute)
-            && attribute.getMetaItem(META_MACRO_ACTION).isPresent(); // Must have at least one macro action
+    public static boolean validateMacroConfiguration(AssetAttribute attribute, AttributeValidationResult result) {
+        boolean failure = false;
+
+        if (!isMacroConfiguration(attribute)) {
+            failure = true;
+            if (result != null) {
+                result.addAttributeFailure(new ValidationFailure(ValueHolder.ValueFailureReason.VALUE_MISMATCH, PROTOCOL_NAME));
+            }
+        }
+
+        int actionCount = 0;
+        if (attribute.getMeta() != null && !attribute.getMeta().isEmpty()) {
+            for (int i = 0; i < attribute.getMeta().size(); i++) {
+                MetaItem metaItem = attribute.getMeta().get(i);
+                if (isMetaNameEqualTo(metaItem, META_MACRO_ACTION)) {
+                    actionCount++;
+                    if (!MacroAction.fromValue(metaItem.getValue().orElse(null)).isPresent()) {
+                        failure = true;
+                        if (result == null) {
+                            break;
+                        }
+                        result.addMetaFailure(
+                            i, new ValidationFailure(MetaItem.MetaItemFailureReason.META_ITEM_VALUE_MISMATCH, "Macro Action")
+                        );
+                    }
+                }
+            }
+        }
+
+        if (actionCount == 0) {
+            failure = true;
+            if (result != null) {
+                result.addMetaFailure(
+                    new ValidationFailure(MetaItem.MetaItemFailureReason.META_ITEM_MISSING, META_MACRO_ACTION)
+                );
+            }
+        }
+
+        return !failure;
     }
 
+    public static boolean isValidMacroConfiguration(AssetAttribute attribute) {
+
+        return validateMacroConfiguration(attribute, null);
+    }
 
     public static Stream<MacroAction> getMacroActionsStream(AssetAttribute attribute) {
         return attribute == null ? Stream.empty() :

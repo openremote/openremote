@@ -19,37 +19,30 @@
  */
 package org.openremote.manager.client.assets.asset;
 
-import com.google.gwt.user.client.ui.IsWidget;
-import org.openremote.manager.client.assets.attributes.AttributesEditor;
 import org.openremote.manager.client.assets.browser.BrowserTreeNode;
 import org.openremote.manager.client.widget.FormView;
 import org.openremote.model.ValueHolder;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetType;
-import org.openremote.model.attribute.AttributeType;
-import org.openremote.model.geo.GeoJSON;
 import org.openremote.model.util.Pair;
-import org.openremote.model.value.ObjectValue;
 
-import java.util.Date;
+import java.util.List;
 import java.util.function.Consumer;
 
-public interface AssetEdit extends FormView, IsWidget {
+public interface AssetEdit extends FormView, AssetBaseView<AssetEdit.Presenter> {
 
-    interface Presenter {
-
-        void onMapReady();
+    interface Presenter extends AssetBaseView.Presenter {
 
         void onParentSelection(BrowserTreeNode treeNode);
-
-        void centerMap();
 
         void onMapClicked(double lng, double lat);
 
         void onAssetTypeSelected(AssetType value);
 
-        void addAttribute(String name, int attributeTypeIndex);
+        boolean addAttribute(String name, String type);
+
+        void removeAttribute(AssetAttribute attribute);
 
         void update();
 
@@ -62,33 +55,15 @@ public interface AssetEdit extends FormView, IsWidget {
         void getLinkableAttributes(Pair<ValueHolder, Asset> valueAssetPair, Consumer<AssetAttribute[]> attributeConusmer);
     }
 
-    void setAssetViewHistoryToken(String token);
-
     void setPresenter(Presenter presenter);
-
-    void setName(String name);
 
     String getName();
 
     void setNameError(boolean error);
 
-    void setCreatedOn(Date createdOn);
-
-    void setParentNode(BrowserTreeNode treeNode);
-
-    void initialiseMap(ObjectValue mapOptions);
-
-    boolean isMapInitialised();
-
-    void setLocation(double[] coordinates);
-
     void showMapPopup(double lng, double lat, String text);
 
     void hideMapPopup();
-
-    void showDroppedPin(GeoJSON geoFeature);
-
-    void flyTo(double[] coordinates);
 
     void selectWellKnownType(AssetType assetType);
 
@@ -102,13 +77,7 @@ public interface AssetEdit extends FormView, IsWidget {
 
     void setTypeError(boolean error);
 
-    AttributesEditor.Container getAttributesEditorContainer();
-
-    void setAttributesEditor(AttributesEditor attributesEditor);
-
-    void setAvailableAttributeTypes(AttributeType[] types);
-
-    void setNewAttributeError(boolean error);
+    void setAvailableAttributeTypes(List<Pair<String, String>> displayNamesAndTypes);
 
     void enableCreate(boolean enable);
 

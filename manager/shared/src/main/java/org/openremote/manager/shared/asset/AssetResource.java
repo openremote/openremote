@@ -118,7 +118,7 @@ public interface AssetResource {
      * the system upon insert. Regular users can only create assets in their authenticated realm, the superuser can
      * create assets in other (all) realms. A 403 status is returned if a regular user tries to create an asset in a
      * realm different than its authenticated realm, or if the user is restricted. A 400 status is returned if the
-     * asset's parent or realm doesn't exist.
+     * asset's parent or realm doesn't exist or if an ID is provided and an asset with this ID already exists.
      */
     @POST
     @Consumes(APPLICATION_JSON)

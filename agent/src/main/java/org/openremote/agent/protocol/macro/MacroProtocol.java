@@ -25,6 +25,7 @@ import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.attribute.*;
 import org.openremote.model.util.Pair;
 import org.openremote.model.value.Value;
+import org.openremote.model.value.ValueType;
 import org.openremote.model.value.Values;
 
 import java.util.*;
@@ -34,6 +35,7 @@ import java.util.logging.Logger;
 import static org.openremote.agent.protocol.macro.MacroConfiguration.getMacroActionIndex;
 import static org.openremote.agent.protocol.macro.MacroConfiguration.isValidMacroConfiguration;
 import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
+import static org.openremote.model.util.TextUtil.REGEXP_PATTERN_INTEGER_POSITIVE;
 
 /**
  * This protocol is responsible for executing macros.
@@ -49,8 +51,19 @@ public class MacroProtocol extends AbstractProtocol {
     private static final Logger LOG = Logger.getLogger(MacroProtocol.class.getName());
 
     public static final String PROTOCOL_NAME = PROTOCOL_NAMESPACE + ":macro";
+    public static final String PROTOCOL_DISPLAY_NAME = "Macro";
     public static final String META_MACRO_ACTION = PROTOCOL_NAME + ":action";
     public static final String META_MACRO_ACTION_INDEX = PROTOCOL_NAME + ":actionIndex";
+    protected static final String VERSION = "1.0";
+    protected static final MacroAction EMPTY_ACTION = new MacroAction(new AttributeState(new AttributeRef("ENTITY_ID", "ATTRIBUTE_NAME"), null));
+
+    protected static final List<MetaItemDescriptor> PROTOCOL_META_ITEM_DESCRIPTORS = Collections.singletonList(
+        new MetaItemDescriptorImpl("PROTOCOL_MACRO_ACTION", META_MACRO_ACTION, ValueType.OBJECT, true, null, null, null, EMPTY_ACTION.toObjectValue(), false)
+    );
+
+    protected static final List<MetaItemDescriptor> ATTRIBUTE_META_ITEM_DESCRIPTORS = Collections.singletonList(
+        new MetaItemDescriptorImpl("PROTOCOL_MACRO_ACTION_INDEX", META_MACRO_ACTION_INDEX, ValueType.NUMBER, false, REGEXP_PATTERN_INTEGER_POSITIVE, MetaItemDescriptor.PatternFailure.INTEGER_POSITIVE.name(), null, null, false)
+    );
 
     class MacroExecutionTask {
 
@@ -143,6 +156,41 @@ public class MacroProtocol extends AbstractProtocol {
     @Override
     public String getProtocolName() {
         return PROTOCOL_NAME;
+    }
+
+    @Override
+    public String getProtocolDisplayName() {
+        return PROTOCOL_DISPLAY_NAME;
+    }
+
+    @Override
+    public String getVersion() {
+        return VERSION;
+    }
+
+    @Override
+    public AssetAttribute getProtocolConfigurationTemplate() {
+        return super.getProtocolConfigurationTemplate()
+            .addMeta(new MetaItem(META_MACRO_ACTION, EMPTY_ACTION.toObjectValue()));
+    }
+
+    @Override
+    public AttributeValidationResult validateProtocolConfiguration(AssetAttribute protocolConfiguration) {
+        AttributeValidationResult result = super.validateProtocolConfiguration(protocolConfiguration);
+        if (result.isValid()) {
+            MacroConfiguration.validateMacroConfiguration(protocolConfiguration, result);
+        }
+        return result;
+    }
+
+    @Override
+    protected List<MetaItemDescriptor> getProtocolConfigurationMetaItemDescriptors() {
+        return PROTOCOL_META_ITEM_DESCRIPTORS;
+    }
+
+    @Override
+    protected List<MetaItemDescriptor> getLinkedAttributeMetaItemDescriptors() {
+        return ATTRIBUTE_META_ITEM_DESCRIPTORS;
     }
 
     @Override
@@ -333,4 +381,6 @@ public class MacroProtocol extends AbstractProtocol {
         MacroExecutionTask task = new MacroExecutionTask(attributeRef, actions, repeat);
         task.start();
     }
+
+
 }

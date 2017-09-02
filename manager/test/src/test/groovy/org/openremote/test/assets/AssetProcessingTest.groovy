@@ -69,8 +69,18 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
             }
 
             @Override
+            String getVersion() {
+                return "1.0"
+            }
+
+            @Override
             String getProtocolName() {
                 return mockProtocolName
+            }
+
+            @Override
+            String getProtocolDisplayName() {
+                return "Mock"
             }
         }
 

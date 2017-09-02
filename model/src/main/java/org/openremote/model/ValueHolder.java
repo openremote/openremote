@@ -19,6 +19,7 @@
  */
 package org.openremote.model;
 
+import org.openremote.model.util.Pair;
 import org.openremote.model.value.ArrayValue;
 import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Value;
@@ -30,6 +31,22 @@ import java.util.Optional;
  * Holds a {@link Value}.
  */
 public interface ValueHolder {
+
+    enum ValueFailureReason implements ValidationFailure.Reason {
+        VALUE_PERCENTAGE_OUT_OF_RANGE,
+        VALUE_INVALID_COLOR_FORMAT,
+        VALUE_TEMPERATURE_OUT_OF_RANGE,
+        VALUE_NUMBER_OUT_OF_RANGE,
+        VALUE_INVALID,
+        VALUE_MISMATCH,
+        VALUE_EXPECTED_NUMBER,
+        VALUE_EXPECTED_INTEGER,
+        VALUE_EXPECTED_DOUBLE,
+        VALUE_EXPECTED_OBJECT,
+        VALUE_EXPECTED_ARRAY,
+        VALUE_EXPECTED_BOOLEAN,
+        VALUE_EXPECTED_STRING
+    }
 
     void clearValue();
 

@@ -34,7 +34,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Predicate;
 
-import static org.openremote.model.attribute.MetaItem.MetaItemValidationFailure.*;
+import static org.openremote.model.attribute.MetaItem.MetaItemFailureReason.META_ITEM_NAME_IS_REQUIRED;
+import static org.openremote.model.attribute.MetaItem.MetaItemFailureReason.META_ITEM_VALUE_IS_REQUIRED;
 
 /**
  * A named arbitrary {@link Value}. A meta item must have a value to be stored.
@@ -43,9 +44,12 @@ import static org.openremote.model.attribute.MetaItem.MetaItemValidationFailure.
  */
 public class MetaItem extends AbstractValueHolder {
 
-    public enum MetaItemValidationFailure implements ValidationFailure {
-        NAME_IS_REQUIRED,
-        VALUE_IS_REQUIRED
+    public enum MetaItemFailureReason implements ValidationFailure.Reason {
+        META_ITEM_NAME_IS_REQUIRED,
+        META_ITEM_VALUE_IS_REQUIRED,
+        META_ITEM_MISSING,
+        META_ITEM_DUPLICATION,
+        META_ITEM_VALUE_MISMATCH
     }
 
     public MetaItem() {
@@ -101,11 +105,11 @@ public class MetaItem extends AbstractValueHolder {
         List<ValidationFailure> failures = super.getValidationFailures();
 
         if (!getName().isPresent())
-            failures.add(NAME_IS_REQUIRED);
+            failures.add(new ValidationFailure(META_ITEM_NAME_IS_REQUIRED));
 
         // Meta items must have a value, unlike attributes
         if (!getValue().isPresent()) {
-            failures.add(VALUE_IS_REQUIRED);
+            failures.add(new ValidationFailure(META_ITEM_VALUE_IS_REQUIRED));
         }
 
         return failures;

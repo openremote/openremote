@@ -25,12 +25,15 @@ import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetMeta;
 import org.openremote.model.asset.AssetType;
 import org.openremote.model.asset.agent.ProtocolConfiguration;
+import org.openremote.model.attribute.AttributeValidationResult;
+import org.openremote.model.asset.agent.ProtocolDescriptor;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeType;
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.value.ValueType;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.function.Consumer;
 
 /**
@@ -132,7 +135,20 @@ public interface Protocol extends ContainerService {
     // Message queue for communicating from protocol to asset/thing layer (sensor changed, trigger asset attribute update)
     String SENSOR_QUEUE = "seda://SensorQueue?waitForTaskToComplete=NEVER&purgeWhenStopping=true&discardIfNoConsumers=false&size=1000";
 
+    /**
+     * Get the name for this protocol
+     */
     String getProtocolName();
+
+    /**
+     * Get the display friendly name for this protocol
+     */
+    String getProtocolDisplayName();
+
+    /**
+     * Get the version number for this protocol
+     */
+    String getVersion();
 
     /**
      * Links attributes to their protocolConfiguration; the protocolConfiguration would have
@@ -162,4 +178,22 @@ public interface Protocol extends ContainerService {
      * or removed.
      */
     void unlinkProtocolConfiguration(AssetAttribute protocolConfiguration);
+
+    /**
+     * Get a {@link ProtocolDescriptor} for this protocol.
+     */
+    ProtocolDescriptor getProtocolDescriptor();
+
+    /**
+     * Create an empty {@link ProtocolConfiguration} attribute that contains the required meta items needed
+     * by the protocol. The purpose of this is to populate the UI when adding a new protocol configuration
+     * for this protocol.
+     */
+    AssetAttribute getProtocolConfigurationTemplate();
+
+    /**
+     * Validate the supplied {@link ProtocolConfiguration} attribute against this protocol (should indicate that the
+     * protocol configuration is well formed but not necessarily that it connects to a working system).
+     */
+    AttributeValidationResult validateProtocolConfiguration(AssetAttribute protocolConfiguration);
 }

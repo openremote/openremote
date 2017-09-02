@@ -24,11 +24,16 @@ import com.google.gwt.i18n.client.DateTimeFormat;
 import com.google.gwt.text.shared.AbstractRenderer;
 import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.Label;
-import org.openremote.manager.client.i18n.ManagerMessages;
+import org.openremote.manager.client.Environment;
+import org.openremote.manager.client.assets.attributes.AbstractAttributeViewExtension;
+import org.openremote.manager.client.assets.attributes.AttributeView;
+import org.openremote.manager.client.assets.attributes.AttributeViewImpl;
 import org.openremote.manager.client.interop.chartjs.Chart;
 import org.openremote.manager.client.interop.chartjs.ChartUtil;
 import org.openremote.manager.client.widget.*;
 import org.openremote.model.Constants;
+import org.openremote.model.asset.AssetAttribute;
+import org.openremote.model.attribute.AttributeValidationResult;
 import org.openremote.model.datapoint.DatapointInterval;
 import org.openremote.model.datapoint.NumberDatapoint;
 
@@ -39,9 +44,9 @@ import java.util.function.Consumer;
 import static com.google.gwt.dom.client.Style.Unit.EM;
 import static com.google.gwt.dom.client.Style.Unit.PX;
 
-public abstract class DatapointBrowser extends FlowPanel {
+public abstract class DatapointBrowser extends AbstractAttributeViewExtension {
 
-    final ManagerMessages messages;
+    final Environment environment;
     final int width;
     final int height;
 
@@ -53,26 +58,46 @@ public abstract class DatapointBrowser extends FlowPanel {
     FormOutputText timeOutput;
     FormButton nextButton;
 
-    public DatapointBrowser(ManagerMessages messages, int width, int height) {
-        this(messages, width, height, DatapointInterval.HOUR, System.currentTimeMillis());
+    public DatapointBrowser(Environment environment, AttributeView.Style style, AttributeViewImpl parentView, AssetAttribute attribute, int width, int height) {
+        this(environment, style, parentView, attribute, width, height, DatapointInterval.HOUR, System.currentTimeMillis());
     }
 
-    public DatapointBrowser(ManagerMessages messages, int width, int height, DatapointInterval interval, long timestamp) {
-        this.messages = messages;
+    public DatapointBrowser(Environment environment, AttributeView.Style style, AttributeViewImpl parentView, AssetAttribute attribute, int width, int height, DatapointInterval interval, long timestamp) {
+        super(environment, style, parentView, attribute, environment.getMessages().historicalData());
+        this.environment = environment;
         this.width = width;
         this.height = height;
         this.interval = interval;
         this.timestamp = timestamp;
 
         setStyleName("layout vertical center or-DatapointBrowser");
+    }
 
-        addAttachHandler(event -> {
-            if (event.isAttached()) {
-                createChart();
-            } else {
-                destroyChart();
-            }
-        });
+    @Override
+    protected void onAttach() {
+        super.onAttach();
+        createChart();
+    }
+
+    @Override
+    protected void onDetach() {
+        super.onDetach();
+        destroyChart();
+    }
+
+    @Override
+    public void onValidationStateChange(AttributeValidationResult validationResult) {
+
+    }
+
+    @Override
+    public void onAttributeChanged() {
+
+    }
+
+    @Override
+    public void setBusy(boolean busy) {
+
     }
 
     public void refresh(long timestamp) {
@@ -105,7 +130,7 @@ public abstract class DatapointBrowser extends FlowPanel {
 
         Canvas canvas = Canvas.createIfSupported();
         if (canvas == null) {
-            add(new Label(messages.canvasNotSupported()));
+            add(new Label(environment.getMessages().canvasNotSupported()));
             return;
         }
 
@@ -125,17 +150,17 @@ public abstract class DatapointBrowser extends FlowPanel {
         FormGroup controlFormGroup = new FormGroup();
         controlForm.add(controlFormGroup);
 
-        FormLabel controlFormLabel = new FormLabel(messages.showChartAggregatedFor());
+        FormLabel controlFormLabel = new FormLabel(environment.getMessages().showChartAggregatedFor());
         controlFormLabel.addStyleName("end-justified");
-        controlFormGroup.addFormLabel(controlFormLabel);
+        controlFormGroup.setFormLabel(controlFormLabel);
 
         FormField controlFormField = new FormField();
-        controlFormGroup.addFormField(controlFormField);
+        controlFormGroup.setFormField(controlFormField);
         intervalListBox = new FormValueListBox<>(
             new AbstractRenderer<DatapointInterval>() {
                 @Override
                 public String render(DatapointInterval interval) {
-                    return messages.datapointInterval(interval.name());
+                    return environment.getMessages().datapointInterval(interval.name());
                 }
             }
         );
@@ -151,17 +176,17 @@ public abstract class DatapointBrowser extends FlowPanel {
         controlFormField.add(timeOutput);
 
         FormGroupActions controlFormActions = new FormGroupActions();
-        controlFormGroup.addFormGroupActions(controlFormActions);
+        controlFormGroup.setFromGroupActions(controlFormActions);
 
         FormButton previousButton = new FormButton();
         previousButton.setIcon("arrow-circle-left");
-        previousButton.setText(messages.previous());
+        previousButton.setText(environment.getMessages().previous());
         previousButton.addClickHandler(event -> refresh(calculateTimestamp(true)));
         controlFormActions.add(previousButton);
 
         nextButton = new FormButton();
         nextButton.setIcon("arrow-circle-right");
-        nextButton.setText(messages.next());
+        nextButton.setText(environment.getMessages().next());
         nextButton.addClickHandler(event -> refresh(calculateTimestamp(false)));
         controlFormActions.add(nextButton);
 

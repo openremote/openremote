@@ -47,9 +47,10 @@ public class NumberValueImpl extends ValueImpl implements NumberValue {
             return "null";
         }
         String toReturn = String.valueOf(number);
-        if (toReturn.endsWith(".0")) {
-            toReturn = toReturn.substring(0, toReturn.length() - 2);
-        }
+        // RT - Not sure why this is here but it affects regex pattern validation so removing
+//        if (toReturn.endsWith(".0")) {
+//            toReturn = toReturn.substring(0, toReturn.length() - 2);
+//        }
         return toReturn;
     }
 

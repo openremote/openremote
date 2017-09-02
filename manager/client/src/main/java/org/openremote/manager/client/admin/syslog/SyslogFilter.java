@@ -45,10 +45,10 @@ public abstract class SyslogFilter extends FlowPanel {
 
         FormLabel showLastLabel = new FormLabel(messages.showLast());
         showLastLabel.addStyleName("inline");
-        formGroup.addFormLabel(showLastLabel);
+        formGroup.setFormLabel(showLastLabel);
 
         FormField field = new FormField();
-        formGroup.addFormField(field);
+        formGroup.setFormField(field);
         FlowPanel fieldPanel = new FlowPanel();
         field.add(fieldPanel);
 
@@ -70,7 +70,7 @@ public abstract class SyslogFilter extends FlowPanel {
         fieldPanel.add(eventsLabel);
 
         FormGroupActions actions = new FormGroupActions();
-        formGroup.addFormGroupActions(actions);
+        formGroup.setFromGroupActions(actions);
 
         pauseButton = new FormButton(messages.pauseLog());
         pauseButton.setIcon("pause");

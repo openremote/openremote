@@ -45,9 +45,9 @@ public abstract class AssetSelector extends FormGroup {
         this.managerMessages = managerMessages;
         this.selectionConsumer = selectionConsumer;
         this.enableClearSelection = enableClearSelection;
-        addFormLabel(label);
-        addFormField(field);
-        addFormGroupActions(actions);
+        setFormLabel(label);
+        setFormField(field);
+        setFromGroupActions(actions);
         addInfolabel(infoLabel);
         field.add(fieldContainer);
         fieldContainer.setStyleName("layout vertical");

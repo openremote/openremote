@@ -268,10 +268,10 @@ public class RulesEditorImpl extends FormViewImpl implements RulesEditor {
     }
 
     protected void setOpaque(boolean opaque) {
-        nameGroup.setOpaque(opaque);
-        optionsGroup.setOpaque(opaque);
+        nameGroup.setDisabled(opaque);
+        optionsGroup.setDisabled(opaque);
         rulesTextArea.setOpaque(opaque);
-        submitButtonGroup.setOpaque(opaque);
+        submitButtonGroup.setDisabled(opaque);
     }
 
 }

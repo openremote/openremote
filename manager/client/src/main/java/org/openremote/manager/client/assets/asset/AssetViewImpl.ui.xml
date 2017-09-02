@@ -15,14 +15,11 @@
             margin: 0 0 1em 1em;
             height: 15em;
         }
-    </ui:style>
 
-    <ui:style field="attributesBrowserStyle"
-              type="org.openremote.manager.client.assets.asset.AssetViewImpl.AttributesBrowserStyle">
         .stringEditor {
-            min-width: 5em;
-            width: 100%;
-        }
+                     min-width: 5em;
+                     width: 100%;
+                 }
 
         .numberEditor {
             min-width: 5em;
@@ -39,11 +36,23 @@
         .highlightAttribute {
             border-left: 4px solid;
         }
+
+        .metaItemValueEditor {
+
+        }
+
+        .metaItemNameEditor {
+
+        }
+
+        .agentLinkEditor {
+
+        }
     </ui:style>
 
     <w:FlexSplitPanel ui:field="splitPanel"
                       handleStyle="{widgetStyle.SplitPanelHandle}"
-                      firstPanelWidth="300"
+                      firstPanelWidth="250"
                       firstPanelMinWidth="0"
                       secondPanelMinWidth="400">
 
@@ -167,7 +176,7 @@
 
                     </g:HTMLPanel>
 
-                    <g:FlowPanel ui:field="attributesBrowserContainer"
+                    <g:FlowPanel ui:field="attributeViewContainer"
                                  addStyleNames="flex layout vertical {widgetStyle.MainContent} {widgetStyle.FormList}"/>
 
                 </w:Form>

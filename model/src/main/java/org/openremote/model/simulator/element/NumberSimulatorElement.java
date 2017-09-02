@@ -29,10 +29,6 @@ import java.util.List;
 
 public class NumberSimulatorElement extends SimulatorElement {
 
-    public enum ValueValidationFailure implements ValidationFailure {
-        NUMBER_OUT_OF_RANGE
-    }
-
     public static final String ELEMENT_NAME = "number";
     public static final String ELEMENT_NAME_RANGE = "range";
 
@@ -66,7 +62,7 @@ public class NumberSimulatorElement extends SimulatorElement {
         if (elementValue != null) {
             if ((getMin() != null && Values.getNumber(elementValue).filter(v -> v < getMin()).isPresent())
                 && (getMax() != null && Values.getNumber(elementValue).filter(v -> v > getMax()).isPresent())) {
-                failures.add(ValueValidationFailure.NUMBER_OUT_OF_RANGE);
+                failures.add(new ValidationFailure(ValueFailureReason.VALUE_NUMBER_OUT_OF_RANGE, getMin() + "-" + getMax()));
             }
         }
         return failures;

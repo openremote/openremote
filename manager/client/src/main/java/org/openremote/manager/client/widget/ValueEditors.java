@@ -19,13 +19,9 @@
  */
 package org.openremote.manager.client.widget;
 
-import com.google.gwt.dom.client.Document;
-import com.google.gwt.event.dom.client.ChangeEvent;
-import com.google.gwt.event.dom.client.ChangeHandler;
 import com.google.gwt.i18n.client.DateTimeFormat;
 import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.IsWidget;
-import com.google.gwt.user.client.ui.ListBox;
 import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.app.dialog.JsonEditor;
 import org.openremote.manager.client.event.ShowFailureEvent;
@@ -46,7 +42,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
-import java.util.function.*;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 
@@ -55,8 +52,8 @@ import static org.openremote.model.util.TextUtil.isNullOrEmpty;
  */
 public final class ValueEditors {
 
-    public enum ConversionValidationFailure implements ValidationFailure {
-        NOT_A_VALID_NUMBER
+    public enum ConversionFailureReason implements ValidationFailure.Reason {
+        CONVERSION_NOT_A_VALID_NUMBER
     }
 
     /**
@@ -65,15 +62,13 @@ public final class ValueEditors {
      * validation failure results. If there are no validation failures, the update was successful.
      */
     private static class ValueUpdate<T> {
-        final FormGroup formGroup;
         final ValueHolder valueHolder;
-        final Consumer<List<ValidationFailure>> resultConsumer;
+        final Runnable onValueModified;
         final T rawValue;
 
-        public ValueUpdate(FormGroup formGroup, ValueHolder valueHolder, Consumer<List<ValidationFailure>> resultConsumer, T rawValue) {
-            this.formGroup = formGroup;
+        public ValueUpdate(ValueHolder valueHolder, Runnable onValueModified, T rawValue) {
             this.valueHolder = valueHolder;
-            this.resultConsumer = resultConsumer;
+            this.onValueModified = onValueModified;
             this.rawValue = rawValue;
         }
     }
@@ -85,8 +80,6 @@ public final class ValueEditors {
 
         @Override
         public void accept(ValueUpdate<T> valueUpdate) {
-            valueUpdate.formGroup.setError(false);
-            List<ValidationFailure> failures = new ArrayList<>();
             try {
                 valueUpdate.valueHolder.setValue(
                     valueUpdate.rawValue != null ? createValue(valueUpdate.rawValue) : null
@@ -97,21 +90,17 @@ public final class ValueEditors {
                     AbstractValueTimestampHolder timestampHolder = (AbstractValueTimestampHolder) valueUpdate.valueHolder;
                     timestampHolder.setValueTimestamp(0);
                 }
-
-                failures.addAll(valueUpdate.valueHolder.getValidationFailures());
-            } catch (IllegalArgumentException ex) {
-                failures.add(ex::getMessage);
+            } catch (Exception e) {
+                // Remove the current value
+                valueUpdate.valueHolder.clearValue();
             }
-            if (!failures.isEmpty()) {
-                valueUpdate.formGroup.setError(true);
-            }
-            if (valueUpdate.resultConsumer != null) {
-                valueUpdate.resultConsumer.accept(failures);
-            }
+            valueUpdate.onValueModified.run();
         }
 
         abstract Value createValue(T rawValue) throws IllegalArgumentException;
     }
+
+    public static final String EMPTY_LINE = "----------------------";
 
     private static ValueUpdater<String> STRING_UPDATER = new ValueUpdater<String>() {
         @Override
@@ -126,7 +115,7 @@ public final class ValueEditors {
             try {
                 return Values.create(Double.valueOf(rawValue));
             } catch (NumberFormatException ex) {
-                throw new IllegalArgumentException(ConversionValidationFailure.NOT_A_VALID_NUMBER.name());
+                throw new IllegalArgumentException(ConversionFailureReason.CONVERSION_NOT_A_VALID_NUMBER.name());
             }
         }
     };
@@ -167,18 +156,17 @@ public final class ValueEditors {
     }
 
     public static IsWidget createStringEditor(ValueHolder valueHolder,
-                                              String currentValue,
+                                              Runnable onValueModified,
                                               boolean readOnly,
-                                              String styleName,
-                                              FormGroup formGroup,
                                               boolean showTimestamp,
-                                              Consumer<List<ValidationFailure>> validationResultConsumer) {
+                                              String currentValue,
+                                              String styleName) {
         Consumer<String> updateConsumer = !readOnly
-            ? rawValue -> STRING_UPDATER.accept(new ValueUpdate<>(formGroup, valueHolder, validationResultConsumer, rawValue))
+            ? rawValue -> STRING_UPDATER.accept(new ValueUpdate<>(valueHolder, onValueModified, rawValue))
             : null;
         FlowPanel panel = new FlowPanel();
         panel.setStyleName("flex layout horizontal center or-ValueEditor or-StringValueEditor");
-        IsWidget widget = ValueEditors.createStringEditorWidget(styleName, currentValue, updateConsumer);
+        IsWidget widget = ValueEditors.createStringEditorWidget(styleName, readOnly, currentValue, updateConsumer);
         FlowPanel widgetWrapper = new FlowPanel();
         widgetWrapper.setStyleName("flex layout horizontal center");
         widgetWrapper.add(widget);
@@ -190,20 +178,19 @@ public final class ValueEditors {
 
 
     public static IsWidget createNumberEditor(ValueHolder valueHolder,
-                                              String currentValue,
+                                              Runnable onValueModified,
                                               boolean readOnly,
-                                              String styleName,
-                                              FormGroup formGroup,
                                               boolean showTimestamp,
-                                              Consumer<List<ValidationFailure>> validationResultConsumer) {
+                                              String currentValue,
+                                              String styleName) {
 
         Consumer<String> updateConsumer = !readOnly
-            ? rawValue -> DOUBLE_UPDATER.accept(new ValueUpdate<>(formGroup, valueHolder, validationResultConsumer, rawValue))
+            ? rawValue -> DOUBLE_UPDATER.accept(new ValueUpdate<>(valueHolder, onValueModified, rawValue))
             : null;
 
         FlowPanel panel = new FlowPanel();
         panel.setStyleName("flex layout horizontal center or-ValueEditor or-NumberValueEditor");
-        IsWidget widget = ValueEditors.createStringEditorWidget(styleName, currentValue, updateConsumer);
+        IsWidget widget = createStringEditorWidget(styleName, readOnly, currentValue, updateConsumer);
         FlowPanel widgetWrapper = new FlowPanel();
         widgetWrapper.setStyleName("flex layout horizontal center");
         widgetWrapper.add(widget);
@@ -214,19 +201,18 @@ public final class ValueEditors {
     }
 
     public static IsWidget createBooleanEditor(ValueHolder valueHolder,
-                                               Boolean currentValue,
+                                               Runnable onValueModified,
                                                boolean readOnly,
-                                               String styleName,
-                                               FormGroup formGroup,
                                                boolean showTimestamp,
-                                               Consumer<List<ValidationFailure>> validationResultConsumer) {
+                                               Boolean currentValue,
+                                               String styleName) {
         Consumer<Boolean> updateConsumer = !readOnly
-            ? rawValue -> BOOLEAN_UPDATER.accept(new ValueUpdate<>(formGroup, valueHolder, validationResultConsumer, rawValue))
+            ? rawValue -> BOOLEAN_UPDATER.accept(new ValueUpdate<>(valueHolder, onValueModified, rawValue))
             : null;
 
         FlowPanel panel = new FlowPanel();
         panel.setStyleName("flex layout horizontal center or-ValueEditor or-BooleanValueEditor");
-        IsWidget widget = ValueEditors.createBooleanEditorWidget(styleName, currentValue, updateConsumer);
+        IsWidget widget = ValueEditors.createBooleanEditorWidget(styleName, readOnly, currentValue, updateConsumer);
         FlowPanel widgetWrapper = new FlowPanel();
         widgetWrapper.setStyleName("flex layout horizontal center");
         widgetWrapper.add(widget);
@@ -237,21 +223,20 @@ public final class ValueEditors {
     }
 
     public static IsWidget createObjectEditor(ValueHolder valueHolder,
-                                              ObjectValue currentValue,
+                                              Runnable onValueModified,
                                               boolean readOnly,
+                                              boolean showTimestamp,
+                                              ObjectValue currentValue,
                                               String label,
                                               String title,
-                                              JsonEditor jsonEditor,
-                                              FormGroup formGroup,
-                                              boolean showTimestamp,
-                                              Consumer<List<ValidationFailure>> validationResultConsumer) {
+                                              JsonEditor jsonEditor) {
         Consumer<Value> updateConsumer = !readOnly
-            ? rawValue -> VALUE_UPDATER.accept(new ValueUpdate<>(formGroup, valueHolder, validationResultConsumer, rawValue))
+            ? rawValue -> VALUE_UPDATER.accept(new ValueUpdate<>(valueHolder, onValueModified, rawValue))
             : null;
         FlowPanel panel = new FlowPanel();
         panel.setStyleName("flex layout horizontal center or-ValueEditor or-ObjectValueEditor");
         IsWidget widget = createJsonEditorWidget(
-            jsonEditor, label, title, currentValue, updateConsumer
+            jsonEditor, readOnly, label, title, currentValue, updateConsumer
         );
         FlowPanel widgetWrapper = new FlowPanel();
         widgetWrapper.setStyleName("flex layout horizontal center");
@@ -263,16 +248,16 @@ public final class ValueEditors {
     }
 
     public static IsWidget createAttributeRefEditor(ValueHolder valueHolder,
+                                                    Runnable onValueModified,
                                                     boolean readOnly,
-                                                    FormGroup formGroup,
                                                     BiConsumer<ValueHolder, Consumer<Asset[]>> assetSupplier,
                                                     BiConsumer<Pair<ValueHolder, Asset>, Consumer<AssetAttribute[]>> attributeSupplier,
                                                     String assetWatermark,
                                                     String attributeWatermark,
-                                                    Consumer<List<ValidationFailure>> validationResultConsumer) {
+                                                    String styleName) {
 
         Consumer<AttributeRef> updateConsumer = !readOnly
-            ? rawValue -> ATTRIBUTE_REF_UPDATER.accept(new ValueUpdate<>(formGroup, valueHolder, validationResultConsumer, rawValue))
+            ? rawValue -> ATTRIBUTE_REF_UPDATER.accept(new ValueUpdate<>(valueHolder, onValueModified, rawValue))
             : null;
 
         FlowPanel panel = new FlowPanel();
@@ -283,7 +268,9 @@ public final class ValueEditors {
 
         List<Asset> assets = new ArrayList<>();
         FormListBox assetList = new FormListBox();
+        assetList.setEnabled(!readOnly);
         FormListBox attributeList = new FormListBox();
+        attributeList.setEnabled(!readOnly);
         String[] existingValue = valueHolder
             .getValueAsArray()
             .filter(arr -> arr.length() == 2)
@@ -366,22 +353,21 @@ public final class ValueEditors {
     }
 
     public static IsWidget createArrayEditor(ValueHolder valueHolder,
-                                             ArrayValue currentValue,
+                                             Runnable onValueModified,
                                              boolean readOnly,
+                                             boolean showTimestamp,
+                                             ArrayValue currentValue,
                                              String label,
                                              String title,
-                                             JsonEditor jsonEditor,
-                                             FormGroup formGroup,
-                                             boolean showTimestamp,
-                                             Consumer<List<ValidationFailure>> validationResultConsumer) {
+                                             JsonEditor jsonEditor) {
         Consumer<Value> updateConsumer = !readOnly
-            ? rawValue -> VALUE_UPDATER.accept(new ValueUpdate<>(formGroup, valueHolder, validationResultConsumer, rawValue))
+            ? rawValue -> VALUE_UPDATER.accept(new ValueUpdate<>(valueHolder, onValueModified, rawValue))
             : null;
 
         FlowPanel panel = new FlowPanel();
         panel.setStyleName("flex layout horizontal center or-ValueEditor or-ArrayValueEditor");
         IsWidget widget = createJsonEditorWidget(
-            jsonEditor, label, title, currentValue, updateConsumer
+            jsonEditor, readOnly, label, title, currentValue, updateConsumer
         );
         FlowPanel widgetWrapper = new FlowPanel();
         widgetWrapper.setStyleName("flex layout horizontal center");
@@ -390,21 +376,6 @@ public final class ValueEditors {
         if (showTimestamp)
             addTimestampLabel(valueHolder, panel);
         return () -> panel;
-    }
-
-    public static void showValidationError(Environment environment, String error) {
-        environment.getEventBus().dispatch(new ShowFailureEvent(error, 5000));
-    }
-
-    public static void showValidationError(Environment environment, String fieldLabel, ValidationFailure validationFailure) {
-        StringBuilder error = new StringBuilder();
-        if (fieldLabel != null)
-            error.append(environment.getMessages().validationFailedFor(fieldLabel));
-        else
-            error.append(environment.getMessages().validationFailed());
-        if (validationFailure != null)
-            error.append(": ").append(environment.getMessages().validationFailure(validationFailure.name()));
-        showValidationError(environment, error.toString());
     }
 
     private static void addTimestampLabel(ValueHolder valueHolder, FlowPanel editorPanel) {
@@ -416,6 +387,7 @@ public final class ValueEditors {
     }
 
     private static IsWidget createStringEditorWidget(String styleName,
+                                                     boolean readOnly,
                                                      String value,
                                                      Consumer<String> updateConsumer) {
         FormInputText input = new FormInputText();
@@ -425,7 +397,7 @@ public final class ValueEditors {
         } else if (updateConsumer == null) {
             input.setValue("-");
         }
-        if (updateConsumer != null) {
+        if (updateConsumer != null && !readOnly) {
             // Both keyup and change (e.g. after pasting) must be used
             input.addKeyUpHandler(event ->
                 updateConsumer.accept(input.getValue() == null || input.getValue().length() == 0 ? null : input.getValue()));
@@ -438,10 +410,12 @@ public final class ValueEditors {
     }
 
     private static IsWidget createBooleanEditorWidget(String styleName,
+                                                      boolean readOnly,
                                                       Boolean value,
                                                       Consumer<Boolean> updateConsumer) {
         FormCheckBox input = new FormCheckBox();
         input.addStyleName(styleName);
+        input.setEnabled(!readOnly);
 
         if (value == null && updateConsumer == null) {
             return new FormOutputText("-");
@@ -458,6 +432,7 @@ public final class ValueEditors {
     }
 
     private static IsWidget createJsonEditorWidget(JsonEditor jsonEditor,
+                                                   boolean readOnly,
                                                    String label,
                                                    String title,
                                                    Value currentValue,
@@ -475,7 +450,7 @@ public final class ValueEditors {
 
         jsonEditor.setOnReset(() -> jsonEditor.setValue(currentValue));
 
-        if (updateConsumer != null) {
+        if (updateConsumer != null && !readOnly) {
             jsonEditor.setOnApply(updateConsumer);
         }
         return button;

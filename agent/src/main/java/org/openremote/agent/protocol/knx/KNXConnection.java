@@ -254,7 +254,7 @@ public class KNXConnection implements NetworkLinkListener, ProcessListener {
             LOG.fine("Sending read request to KNX status datapoint '" + datapoint);
             this.knxLink.sendRequest(datapoint.getMainAddress(), datapoint.getPriority(), DataUnitBuilder.createLengthOptimizedAPDU(0x00, null));
         } catch (Exception e) {
-            LOG.log(Level.INFO, "Error sending KNX read request for DPT: " + datapoint, e);
+            LOG.log(Level.INFO, "Error sending KNX read request for META_KNX_DPT: " + datapoint, e);
         }
     }
   

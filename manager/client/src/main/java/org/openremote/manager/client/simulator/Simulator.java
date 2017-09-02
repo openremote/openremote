@@ -19,15 +19,21 @@
  */
 package org.openremote.manager.client.simulator;
 
-import com.google.gwt.dom.client.Style;
-import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.IsWidget;
 import elemental.client.Browser;
 import org.openremote.manager.client.Environment;
+import org.openremote.manager.client.assets.attributes.AbstractAttributeViewExtension;
+import org.openremote.manager.client.assets.attributes.AttributeView;
+import org.openremote.manager.client.assets.attributes.AttributeViewImpl;
 import org.openremote.manager.client.event.ShowSuccessEvent;
-import org.openremote.manager.client.widget.*;
+import org.openremote.manager.client.widget.FormButton;
+import org.openremote.manager.client.widget.FormField;
+import org.openremote.manager.client.widget.FormGroup;
+import org.openremote.manager.client.widget.FormLabel;
 import org.openremote.model.ValidationFailure;
+import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.attribute.AttributeRef;
+import org.openremote.model.attribute.AttributeValidationResult;
 import org.openremote.model.event.bus.EventRegistration;
 import org.openremote.model.simulator.RequestSimulatorState;
 import org.openremote.model.simulator.SimulatorElement;
@@ -35,11 +41,8 @@ import org.openremote.model.simulator.SimulatorState;
 import org.openremote.model.value.ValueType;
 
 import java.util.*;
-import java.util.function.Consumer;
 
-import static org.openremote.manager.client.widget.ValueEditors.*;
-
-public class Simulator extends FlowPanel implements IsWidget {
+public class Simulator extends AbstractAttributeViewExtension {
 
     final protected Environment environment;
     final protected AttributeRef protocolConfiguration;
@@ -48,22 +51,29 @@ public class Simulator extends FlowPanel implements IsWidget {
     protected EventRegistration<SimulatorState> eventRegistration;
     protected SimulatorState simulatorState;
     protected Map<AttributeRef, FormGroup> formGroups = new HashMap<>();
+    final protected AttributeView.Style style;
 
-    public Simulator(Environment environment, AttributeRef protocolConfiguration, Runnable onCreate, Runnable onClose) {
+    public Simulator(Environment environment, AttributeView.Style style, AttributeViewImpl parentView, AssetAttribute attribute, AttributeRef protocolConfiguration, Runnable onCreate, Runnable onClose) {
+        super(environment, style, parentView, attribute, environment.getMessages().simulator());
         this.environment = environment;
+        this.style = style;
         this.protocolConfiguration = protocolConfiguration;
         this.onCreate = onCreate;
         this.onClose = onClose;
 
         setStyleName("layout vertical center or-Simulator");
+    }
 
-        addAttachHandler(event -> {
-            if (event.isAttached()) {
-                createSimulator();
-            } else {
-                destroySimulator();
-            }
-        });
+    @Override
+    protected void onAttach() {
+        super.onAttach();
+        createSimulator();
+    }
+
+    @Override
+    protected void onDetach() {
+        super.onDetach();
+        destroySimulator();
     }
 
     protected void createSimulator() {
@@ -90,67 +100,45 @@ public class Simulator extends FlowPanel implements IsWidget {
         formGroups.clear();
 
         List<SimulatorElement> sortedElements = Arrays.asList(simulatorState.getElements());
-        Collections.sort(sortedElements, Comparator.comparing(o -> simulatorState.getElementName(o)));
+        sortedElements.sort(Comparator.comparing(o -> simulatorState.getElementName(o)));
 
         for (SimulatorElement element : sortedElements) {
             FormGroup formGroup = new FormGroup();
 
-            formGroup.getElement().getStyle().setWidth(80, Style.Unit.PCT);
+            formGroup.getElement().getStyle().setWidth(80, com.google.gwt.dom.client.Style.Unit.PCT);
 
             String elementName = simulatorState.getElementName(element);
             FormLabel formLabel = new FormLabel(elementName);
             formLabel.addStyleName("larger");
-            formGroup.addFormLabel(formLabel);
+            formGroup.setFormLabel(formLabel);
 
             FormField formField = new FormField();
-            formGroup.addFormField(formField);
+            formGroup.setFormField(formField);
 
-            Consumer<List<ValidationFailure>> validationResultConsumer =
-                failures -> {
-                    for (ValidationFailure failure : failures) {
-                        showValidationError(environment, elementName, failure);
-                    }
-                };
+            // Don't push simulator value validation up to the presenter as it is a special case that should
+            // just be evaluated in-situ and shouldn't invalidate the parent attribute
+            Runnable onModified = () -> {
+                List<ValidationFailure> failures = element.getValidationFailures();
+                formGroup.setError(failures != null && !failures.isEmpty());
+            };
 
-            IsWidget editor;
             ValueType valueType = element.getExpectedType().getValueType();
-            if (valueType.equals(ValueType.STRING)) {
-                String currentValue = element.getValue().map(Object::toString).orElse(null);
-                 editor = createStringEditor(
-                    element, currentValue, false, "or-SimulatorElement", formGroup, false, validationResultConsumer
-                );
-            } else if (valueType.equals(ValueType.NUMBER)) {
-                String currentValue = element.getValue().map(Object::toString).orElse(null);
-                editor =  createNumberEditor(
-                    element, currentValue, false, "or-SimulatorElement", formGroup, false, validationResultConsumer
-                );
-            } else if (valueType.equals(ValueType.BOOLEAN)) {
-                Boolean currentValue = element.getValueAsBoolean().orElse(null);
-                editor =  createBooleanEditor(
-                    element, currentValue, false, "or-SimulatorElement", formGroup, false, validationResultConsumer
-                );
-                // TODO Support JSON editors
-            } else {
-                editor= new FormOutputText(
-                    environment.getMessages().unsupportedValueType(valueType.name())
-                );
-            }
+            IsWidget editor = valueEditorSupplier.createValueEditor(element, valueType, style, onModified);
             formField.add(editor);
-
             formGroups.put(element.getAttributeRef(), formGroup);
             add(formGroup);
         }
 
         FormGroup submitGroup = new FormGroup();
-        submitGroup.getElement().getStyle().setWidth(80, Style.Unit.PCT);
+        submitGroup.getElement().getStyle().setWidth(80, com.google.gwt.dom.client.Style.Unit.PCT);
 
         FormField submitField = new FormField();
-        submitGroup.addFormField(submitField);
+        submitGroup.setFormField(submitField);
 
         FormButton writeButton = new FormButton(environment.getMessages().writeSimulatorState());
         writeButton.setPrimary(true);
         writeButton.addClickHandler(event -> {
-            if (validateElements()) {
+            if (isValid()) {
                 environment.getEventService().dispatch(simulatorState);
                 environment.getEventBus().dispatch(
                     new ShowSuccessEvent(environment.getMessages().simulatorStateSubmitted())
@@ -171,29 +159,24 @@ public class Simulator extends FlowPanel implements IsWidget {
         }, 250);
     }
 
-    protected boolean validateElements() {
-        boolean isValid = true;
-        for (SimulatorElement element : simulatorState.getElements()) {
-            if (!validateElement(element))
-                isValid = false;
-        }
-        if (!isValid) {
-            showValidationError(environment, environment.getMessages().invalidValues());
-        }
-        return isValid;
+    protected boolean isValid() {
+        return formGroups.values()
+            .stream()
+            .noneMatch(FormGroup::isError);
     }
 
-    public boolean validateElement(SimulatorElement element) {
-        // If there is already an error displayed, don't do other validation
-        FormGroup formGroup = formGroups.get(element.getAttributeRef());
-        if (formGroup.isError()) {
-            return false;
-        }
-        List<ValidationFailure> failures = element.getValidationFailures();
-        if (!failures.isEmpty()) {
-            formGroups.get(element.getAttributeRef()).setError(true);
-        }
-        return true;
+    @Override
+    public void onValidationStateChange(AttributeValidationResult validationResult) {
+        // Ignore any validation on the parent attribute
     }
 
+    @Override
+    public void onAttributeChanged() {
+        // the host attribute change doesn't impact the simulator
+    }
+
+    @Override
+    public void setBusy(boolean busy) {
+
+    }
 }

@@ -19,26 +19,463 @@
  */
 package org.openremote.manager.client.assets.asset;
 
+import com.google.gwt.place.shared.Place;
+import com.google.gwt.user.client.ui.AcceptsOneWidget;
+import com.google.gwt.user.client.ui.IsWidget;
+import com.google.inject.Provider;
 import org.openremote.manager.client.Environment;
+import org.openremote.manager.client.app.dialog.JsonEditor;
 import org.openremote.manager.client.assets.AssetBrowsingActivity;
+import org.openremote.manager.client.assets.attributes.AbstractAttributeViewExtension;
+import org.openremote.manager.client.assets.attributes.AttributeView;
+import org.openremote.manager.client.assets.attributes.AttributeViewImpl;
+import org.openremote.manager.client.assets.attributes.MetaEditor;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
+import org.openremote.manager.client.assets.browser.AssetBrowserSelection;
+import org.openremote.manager.client.assets.browser.AssetTreeNode;
+import org.openremote.manager.client.assets.browser.TenantTreeNode;
+import org.openremote.manager.client.assets.tenant.AssetsTenantPlace;
+import org.openremote.manager.client.event.ShowFailureEvent;
+import org.openremote.manager.client.event.ShowInfoEvent;
+import org.openremote.manager.client.event.ShowSuccessEvent;
+import org.openremote.manager.client.interop.value.ObjectValueMapper;
 import org.openremote.manager.client.mvp.AppActivity;
+import org.openremote.manager.client.widget.FormButton;
+import org.openremote.manager.client.widget.FormOutputText;
+import org.openremote.manager.shared.map.MapResource;
 import org.openremote.manager.shared.security.Tenant;
+import org.openremote.model.ValidationFailure;
+import org.openremote.model.ValueHolder;
 import org.openremote.model.asset.Asset;
+import org.openremote.model.asset.AssetAttribute;
+import org.openremote.model.asset.AssetMeta;
+import org.openremote.model.asset.agent.ProtocolConfiguration;
+import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.attribute.AttributeState;
+import org.openremote.model.attribute.AttributeValidationResult;
+import org.openremote.model.attribute.MetaItem;
+import org.openremote.model.event.bus.EventBus;
+import org.openremote.model.event.bus.EventRegistration;
+import org.openremote.model.value.ArrayValue;
+import org.openremote.model.value.ObjectValue;
+import org.openremote.model.value.ValueType;
 
-public abstract class AbstractAssetActivity<PLACE extends AssetPlace> extends AssetBrowsingActivity<PLACE> {
+import java.util.*;
+import java.util.function.Consumer;
 
+import static org.openremote.manager.client.http.RequestExceptionHandler.handleRequestException;
+import static org.openremote.manager.client.widget.ValueEditors.*;
+import static org.openremote.model.util.TextUtil.isNullOrEmpty;
+
+public abstract class AbstractAssetActivity<V extends AssetBaseView.Presenter, U extends AssetBaseView<V>, PLACE extends AssetPlace> extends AssetBrowsingActivity<PLACE> implements AssetBaseView.Presenter {
+
+    protected final List<AttributeView> attributeViews = new ArrayList<>();
+    protected final Provider<JsonEditor> jsonEditorProvider;
+    protected final boolean editMode;
+    protected final ObjectValueMapper objectValueMapper;
+    protected final MapResource mapResource;
     protected String assetId;
     protected Asset asset;
     protected Asset parentAsset;
+    protected Collection<EventRegistration> registrations;
+    protected U view;
+    protected V presenter;
 
-    public AbstractAssetActivity(Environment environment, Tenant currentTenant, AssetBrowser.Presenter assetBrowserPresenter) {
+    public AbstractAssetActivity(Environment environment,
+                                 Tenant currentTenant,
+                                 AssetBrowser.Presenter assetBrowserPresenter,
+                                 Provider<JsonEditor> jsonEditorProvider,
+                                 ObjectValueMapper objectValueMapper,
+                                 MapResource mapResource,
+                                 boolean editMode) {
         super(environment, currentTenant, assetBrowserPresenter);
+        this.objectValueMapper = objectValueMapper;
+        this.mapResource = mapResource;
+        this.editMode = editMode;
+        this.jsonEditorProvider = jsonEditorProvider;
     }
 
     @Override
     protected AppActivity<PLACE> init(PLACE place) {
         this.assetId = place.getAssetId();
         return this;
+    }
+
+    @Override
+    public void start(AcceptsOneWidget container, EventBus eventBus, Collection<EventRegistration> registrations) {
+        this.registrations = registrations;
+        view.setPresenter(presenter);
+        container.setWidget(view.asWidget());
+
+        registrations.add(eventBus.register(
+            AssetBrowserSelection.class, event -> {
+                if (event.getSelectedNode() instanceof TenantTreeNode) {
+                    environment.getPlaceController().goTo(
+                        new AssetsTenantPlace(event.getSelectedNode().getId())
+                    );
+                } else if (event.getSelectedNode() instanceof AssetTreeNode) {
+                    if (this.assetId == null || !this.assetId.equals(event.getSelectedNode().getId())) {
+                        this.assetId = event.getSelectedNode().getId();
+                        environment.getPlaceController().goTo(
+                            getPlace(editMode)
+                        );
+                    }
+                }
+            }
+        ));
+
+        if (!view.isMapInitialised()) {
+            environment.getRequestService().execute(
+                objectValueMapper,
+                mapResource::getSettings,
+                200,
+                view::initialiseMap,
+                ex -> handleRequestException(ex, environment)
+            );
+        } else {
+            onMapReady();
+        }
+    }
+
+    @Override
+    public void onMapReady() {
+        asset = null;
+        if (!isNullOrEmpty(assetId)) {
+            assetBrowserPresenter.loadAsset(assetId, loadedAsset -> {
+                this.asset = loadedAsset;
+                assetBrowserPresenter.selectAsset(asset);
+                view.setHistoryToken(environment.getPlaceHistoryMapper().getToken(getPlace(!editMode)));
+                start();
+            });
+        } else {
+            start();
+        }
+    }
+
+    @Override
+    public Place getPlace(boolean editPlace) {
+        return editPlace ? new AssetEditPlace(assetId) : new AssetViewPlace(assetId);
+    }
+
+    @Override
+    public void loadParent() {
+        // TODO This fails if the user is restricted, can't just load parent and assume we have access
+        if (asset.getParentId() != null) {
+            assetBrowserPresenter.loadAsset(asset.getParentId(), loadedParentAsset -> {
+                this.parentAsset = loadedParentAsset;
+                writeParentToView();
+                view.setFormBusy(false);
+            });
+        } else {
+            writeParentToView();
+            view.setFormBusy(false);
+        }
+    }
+
+    @Override
+    public void writeParentToView() {
+        if (parentAsset != null) {
+            view.setParentNode(new AssetTreeNode(parentAsset));
+        } else {
+            view.setParentNode(
+                new TenantTreeNode(
+                    new Tenant(asset.getRealmId(), asset.getTenantRealm(), asset.getTenantDisplayName(), true)
+                )
+            );
+        }
+    }
+
+    @Override
+    public void writeAssetToView() {
+        view.setName(asset.getName());
+        view.setCreatedOn(asset.getCreatedOn());
+        view.setLocation(asset.getCoordinates());
+        view.showDroppedPin(asset.getGeoFeature(20));
+        view.flyTo(asset.getCoordinates());
+    }
+
+    @Override
+    public void writeAttributesToView() {
+        if (asset != null && asset.getAttributesList().size() > 0) {
+            for (AssetAttribute attribute : asset.getAttributesList()) {
+                writeAttributeToView(attribute, false);
+            }
+        }
+
+        view.setAttributeViews(attributeViews);
+        validateAttributes(true, this::processValidationResults);
+    }
+
+    protected void writeAttributeToView(AssetAttribute attribute, boolean addToView) {
+        AttributeView attributeView = createAttributeView(attribute);
+        attributeViews.add(attributeView);
+
+        if (addToView) {
+            view.addAttributeViews(Collections.singletonList(attributeView));
+            validateAttribute(true, attribute, result -> processValidationResults(Collections.singletonList(result)));
+        }
+    }
+
+    protected AttributeView createAttributeView(AssetAttribute attribute) {
+
+        AttributeViewImpl attributeView = new AttributeViewImpl(environment,
+            view.getStyle(),
+            attribute);
+
+        attributeView.setAttributeActions(createAttributeActions(attribute, attributeView));
+
+        List<AbstractAttributeViewExtension> extensions = createAttributeExtensions(attribute, attributeView);
+        if (extensions != null && !extensions.isEmpty()) {
+            extensions.forEach(this::linkAttributeView);
+        }
+
+        attributeView.setAttributeExtensions(extensions);
+        linkAttributeView(attributeView);
+        return attributeView;
+    }
+
+    abstract protected List<AbstractAttributeViewExtension> createAttributeExtensions(AssetAttribute attribute, AttributeViewImpl view);
+
+    abstract protected List<FormButton> createAttributeActions(AssetAttribute attribute, AttributeViewImpl view);
+
+    protected void linkAttributeView(AttributeView attributeView) {
+        attributeView.setValueEditorSupplier(this::createValueEditor);
+        attributeView.setEditMode(editMode);
+        attributeView.setAttributeModifiedCallback(this::onAttributeModified);
+        attributeView.setValidationErrorConsumer(this::showValidationError);
+    }
+
+    /**
+     * Attribute view action button is requesting the value be written to the server
+     */
+    protected void writeAttributeValue(AssetAttribute attribute) {
+
+        getAttributeView(attribute)
+            .ifPresent(
+                attributeView -> {
+
+                    attributeView.setBusy(true);
+                    validateAttribute(false, attribute, result -> {
+
+                        // Notify the view of the result
+                        attributeView.onValidationStateChange(result);
+                        attributeView.setBusy(false);
+
+                        if (result.isValid()) {
+                            attribute
+                                .getReference()
+                                .map(attributeRef -> new AttributeState(attributeRef, attribute.getValue().orElse(null)))
+                                .map(attributeState -> new AttributeEvent(attributeState, attribute.getValueTimestamp().orElse(0L)))
+                                .ifPresent(attributeEvent -> {
+                                    environment.getEventService().dispatch(attributeEvent);
+                                    if (attribute.isExecutable()) {
+                                        showSuccess(environment
+                                            .getMessages()
+                                            .commandRequestSent(attribute.getLabelOrName().orElse("")));
+                                    } else {
+                                        showSuccess(
+                                            environment
+                                                .getMessages()
+                                                .attributeWriteSent(attribute.getLabelOrName().orElse("")));
+                                    }
+                                });
+                        }
+                    });
+                }
+            );
+
+    }
+
+    protected void validateAttributes(boolean clientSideOnly, Consumer<List<AttributeValidationResult>> resultsConsumer) {
+        if (asset.getAttributesList().isEmpty()) {
+            resultsConsumer.accept(Collections.emptyList());
+            return;
+        }
+
+        List<AttributeValidationResult> results = new ArrayList<>(asset.getAttributesList().size());
+        Consumer<AttributeValidationResult> resultConsumer = attributeValidationResult -> {
+            results.add(attributeValidationResult);
+            if (results.size() == asset.getAttributesList().size()) {
+                resultsConsumer.accept(results);
+            }
+        };
+
+        asset.getAttributesList().forEach(attribute -> validateAttribute(clientSideOnly, attribute, resultConsumer));
+    }
+
+    protected void validateAttribute(boolean clientSideOny, AssetAttribute attribute, Consumer<AttributeValidationResult> resultConsumer) {
+        List<ValidationFailure> attributeFailures = attribute.getValidationFailures(false);
+        Map<Integer, List<ValidationFailure>> metaFailures = new HashMap<>(attribute.getMeta().size());
+        String attributeName = attribute.getName().orElseThrow(() -> new IllegalStateException("Attribute name cannot be null"));
+
+        for (int i=0; i<attribute.getMeta().size(); i++) {
+            MetaItem item = attribute.getMeta().get(i);
+            List<ValidationFailure> metaItemFailures = attribute.getMetaItemValidationFailures(item);
+
+            if (metaItemFailures.isEmpty()) {
+                // Look for meta descriptor and do additional validation
+                AssetMeta.getAssetMeta(item.getName().orElse(""))
+                    .flatMap(assetMeta -> assetMeta.validateValue(item.getValue().orElse(null)))
+                    .ifPresent(metaItemFailures::add);
+            }
+
+            if (!metaItemFailures.isEmpty()) {
+                metaFailures.put(i, metaItemFailures);
+            }
+        }
+
+        resultConsumer.accept(new AttributeValidationResult(attributeName, attributeFailures, metaFailures));
+    }
+
+    protected void processValidationResults(List<AttributeValidationResult> results) {
+        // Update each of the attribute views (the views are responsible for displaying any failure messages)
+        view.setFormBusy(false);
+
+        results.forEach(result -> {
+            view.getAttributeViews()
+                .stream()
+                .filter(attrView -> attrView
+                        .getAttribute()
+                        .getName()
+                        .map(name -> name.equals(result.getAttributeName())).orElse(false))
+                .findFirst()
+                .ifPresent(attrView -> {
+                    attrView.onValidationStateChange(result);
+                });
+        });
+    }
+
+    protected Optional<AttributeView> getAttributeView(AssetAttribute attribute) {
+        return attributeViews
+            .stream()
+            .filter(attributeView -> attributeView.getAttribute() == attribute)
+            .findFirst();
+    }
+
+    protected void showInfo(String text) {
+        environment.getEventBus().dispatch(new ShowInfoEvent(text));
+    }
+
+    protected void showSuccess(String text) {
+        environment.getEventBus().dispatch(new ShowSuccessEvent(text));
+    }
+
+    protected boolean isValueReadOnly(ValueHolder valueHolder) {
+
+        // Meta item value is read only if value is fixed
+        if (valueHolder instanceof MetaItem) {
+            return ((MetaItem) valueHolder).getName()
+                .flatMap(AssetMeta::getAssetMeta)
+                .map(AssetMeta::isValueFixed)
+                .orElse(false);
+        }
+
+        if (valueHolder instanceof AssetAttribute) {
+            // Attribute Value is read only if it is readonly or a protocol configuration
+            AssetAttribute attribute = (AssetAttribute) valueHolder;
+            return attribute.isReadOnly() || ProtocolConfiguration.isProtocolConfiguration(attribute);
+        }
+
+        return false;
+    }
+
+    protected boolean isShowTimestamp(ValueHolder valueHolder) {
+        return !editMode && (valueHolder instanceof AssetAttribute);
+    }
+
+    abstract protected void onAttributeModified(AssetAttribute attribute);
+
+    /**
+     * Creates editors for {@link ValueHolder}s.
+     * <p>
+     * Custom {@link MetaItem}s don't contain any value type information so we need this provided based on user's
+     * type selection.
+     * <p>
+     * NOTE: The value holder can also be the attribute (e.g. when creating an editor for the attribute value).
+     */
+    protected IsWidget createValueEditor(ValueHolder valueHolder, ValueType valueType, AttributeView.Style style, Runnable onValueModified) {
+
+        // TODO: Implement support for setting access permissions on individual meta item instances
+//            // Super users can edit any meta items but other users can only edit non-restricted meta items
+//            // Individual instances of meta items can be set to restricted by a super user.
+//            boolean isEditable = environment.getSecurityService().isSuperUser() ||
+//                (item.hasRestrictedFlag() && !item.isRestricted()) ||
+//                assetMeta.map(AssetMeta::isRestricted).orElse(true);
+
+        boolean isReadOnly = isValueReadOnly(valueHolder);
+        boolean showTimestamp = isShowTimestamp(valueHolder);
+
+        switch(valueType) {
+            case OBJECT:
+                ObjectValue currentValueObj = valueHolder.getValueAsObject().orElse(null);
+                String label = environment.getMessages().jsonObject();
+                String title = environment.getMessages().edit() + " " + environment.getMessages().jsonObject();
+                return createObjectEditor(
+                    valueHolder, onValueModified, isReadOnly, showTimestamp, currentValueObj, label, title, jsonEditorProvider.get()
+                );
+            case ARRAY:
+                ArrayValue currentValueArray = valueHolder.getValueAsArray().orElse(null);
+                label = environment.getMessages().jsonArray();
+                title = environment.getMessages().edit() + " " + environment.getMessages().jsonArray();
+                return createArrayEditor(
+                    valueHolder, onValueModified, isReadOnly, showTimestamp, currentValueArray, label, title, jsonEditorProvider.get()
+                );
+            case STRING:
+                String currentValueStr = valueHolder.getValueAsString().orElse(null);
+                return createStringEditor(
+                    valueHolder, onValueModified, isReadOnly, showTimestamp, currentValueStr, style.stringEditor()
+                );
+            case NUMBER:
+                Optional<Double> currentValueNumber = valueHolder.getValueAsNumber();
+                return createNumberEditor(
+                    valueHolder, onValueModified, isReadOnly, showTimestamp, currentValueNumber.map(Object::toString).orElse(null), style.numberEditor()
+                );
+            case BOOLEAN:
+                Boolean currentValueBool = valueHolder.getValueAsBoolean().orElse(null);
+                return createBooleanEditor(
+                    valueHolder, onValueModified, isReadOnly, showTimestamp, currentValueBool, style.booleanEditor()
+                );
+            default:
+                return new FormOutputText(valueHolder instanceof MetaItem ?
+                    environment.getMessages().unsupportedMetaItemType(valueType.name()) :
+                    environment.getMessages().unsupportedValueType(valueType.name())
+                );
+        }
+    }
+
+    public void showValidationError(String attributeName, String metaItemName, ValidationFailure validationFailure) {
+        StringBuilder error = new StringBuilder();
+
+        if (!isNullOrEmpty(metaItemName)) {
+            error.append(
+                environment.getMessages().validationFailureOnMetaItem(
+                    attributeName,
+                    metaItemName
+                )
+            );
+        } else {
+            error.append(environment.getMessages().validationFailureOnAttribute(
+                attributeName
+            ));
+        }
+
+        error.append(": ");
+
+        String parameterStr = validationFailure.getParameter()
+            .map(parameter -> {
+                String str = environment.getMessages().validationFailureParameter(parameter);
+                return isNullOrEmpty(str) ? parameter : str;
+            })
+            .orElse(null);
+
+        error.append(
+            environment.getMessages().validationFailure(parameterStr, validationFailure.getReason().name())
+        );
+
+        showFailureMessage(error.toString());
+    }
+
+    public void showFailureMessage(String failureMessage) {
+        environment.getEventBus().dispatch(new ShowFailureEvent(failureMessage, 5000));
     }
 }

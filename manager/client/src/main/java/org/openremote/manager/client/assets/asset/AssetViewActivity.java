@@ -19,51 +19,64 @@
  */
 package org.openremote.manager.client.assets.asset;
 
-import com.google.gwt.user.client.ui.AcceptsOneWidget;
+import com.google.inject.Provider;
 import org.openremote.manager.client.Environment;
+import org.openremote.manager.client.app.dialog.JsonEditor;
 import org.openremote.manager.client.assets.AssetMapper;
-import org.openremote.manager.client.assets.attributes.AttributesBrowser;
+import org.openremote.manager.client.assets.attributes.AbstractAttributeViewExtension;
+import org.openremote.manager.client.assets.attributes.AttributeView;
+import org.openremote.manager.client.assets.attributes.AttributeViewImpl;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
-import org.openremote.manager.client.assets.browser.AssetBrowserSelection;
-import org.openremote.manager.client.assets.browser.AssetTreeNode;
-import org.openremote.manager.client.assets.browser.TenantTreeNode;
-import org.openremote.manager.client.assets.tenant.AssetsTenantPlace;
+import org.openremote.manager.client.datapoint.DatapointBrowser;
 import org.openremote.manager.client.datapoint.NumberDatapointArrayMapper;
 import org.openremote.manager.client.interop.value.ObjectValueMapper;
+import org.openremote.manager.client.simulator.Simulator;
+import org.openremote.manager.client.widget.FormButton;
 import org.openremote.manager.shared.asset.AssetResource;
 import org.openremote.manager.shared.datapoint.AssetDatapointResource;
 import org.openremote.manager.shared.map.MapResource;
 import org.openremote.manager.shared.security.Tenant;
+import org.openremote.model.Constants;
 import org.openremote.model.asset.AssetAttribute;
+import org.openremote.model.asset.ReadAssetAttributesEvent;
+import org.openremote.model.asset.agent.ProtocolConfiguration;
+import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.attribute.AttributeExecuteStatus;
+import org.openremote.model.attribute.AttributeRef;
+import org.openremote.model.datapoint.Datapoint;
 import org.openremote.model.datapoint.DatapointInterval;
 import org.openremote.model.datapoint.NumberDatapoint;
-import org.openremote.model.event.bus.EventBus;
-import org.openremote.model.event.bus.EventRegistration;
+import org.openremote.model.simulator.SimulatorState;
+import org.openremote.model.value.ValueType;
 
 import javax.inject.Inject;
-import java.util.Collection;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 import java.util.function.Consumer;
 
 import static org.openremote.manager.client.http.RequestExceptionHandler.handleRequestException;
+import static org.openremote.model.attribute.Attribute.isAttributeTypeEqualTo;
+import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 
 public class AssetViewActivity
-    extends AbstractAssetActivity<AssetViewPlace>
+    extends AbstractAssetActivity<AssetView.Presenter, AssetView, AssetViewPlace>
     implements AssetView.Presenter {
 
-    final AssetView view;
+    protected final static String READ_BUTTON_CLASS = "or-internal-read-button";
     final AssetResource assetResource;
     final AssetMapper assetMapper;
     final AssetDatapointResource assetDatapointResource;
     final NumberDatapointArrayMapper numberDatapointArrayMapper;
-    final MapResource mapResource;
-    final ObjectValueMapper objectValueMapper;
-
-    AttributesBrowser attributesBrowser;
+    final protected List<AttributeRef> activeSimulators = new ArrayList<>();
+    protected static boolean liveUpdates;
 
     @Inject
     public AssetViewActivity(Environment environment,
                              Tenant currentTenant,
                              AssetBrowser.Presenter assetBrowserPresenter,
+                             Provider<JsonEditor> jsonEditorProvider,
                              AssetView view,
                              AssetResource assetResource,
                              AssetMapper assetMapper,
@@ -71,81 +84,45 @@ public class AssetViewActivity
                              NumberDatapointArrayMapper numberDatapointArrayMapper,
                              MapResource mapResource,
                              ObjectValueMapper objectValueMapper) {
-        super(environment, currentTenant, assetBrowserPresenter);
+        super(environment, currentTenant, assetBrowserPresenter, jsonEditorProvider, objectValueMapper, mapResource, false);
+        this.presenter = this;
         this.view = view;
         this.assetResource = assetResource;
         this.assetMapper = assetMapper;
         this.assetDatapointResource = assetDatapointResource;
         this.numberDatapointArrayMapper = numberDatapointArrayMapper;
-        this.mapResource = mapResource;
-        this.objectValueMapper = objectValueMapper;
-    }
-
-    @Override
-    public void start(AcceptsOneWidget container, EventBus eventBus, Collection<EventRegistration> registrations) {
-        view.setPresenter(this);
-        container.setWidget(view.asWidget());
-
-        registrations.add(eventBus.register(
-            AssetBrowserSelection.class, event -> {
-                if (event.getSelectedNode() instanceof TenantTreeNode) {
-                    environment.getPlaceController().goTo(
-                        new AssetsTenantPlace(event.getSelectedNode().getId())
-                    );
-                } else if (event.getSelectedNode() instanceof AssetTreeNode) {
-                    if (this.assetId == null || !this.assetId.equals(event.getSelectedNode().getId())) {
-                        environment.getPlaceController().goTo(
-                            new AssetViewPlace(event.getSelectedNode().getId())
-                        );
-                    }
-                }
-            }
-        ));
-
-        if (!view.isMapInitialised()) {
-            environment.getRequestService().execute(
-                objectValueMapper,
-                mapResource::getSettings,
-                200,
-                view::initialiseMap,
-                ex -> handleRequestException(ex, environment)
-            );
-        } else {
-            onMapReady();
-        }
     }
 
     @Override
     public void onStop() {
         super.onStop();
-        if (attributesBrowser != null) {
-            attributesBrowser.close();
-        }
+
+        subscribeLiveUpdates(false);
+
+        view.removeAttributeViews(attributeViews);
         view.setPresenter(null);
     }
 
     @Override
-    public void onMapReady() {
-        asset = null;
-        if (assetId != null) {
-            assetBrowserPresenter.loadAsset(assetId, loadedAsset -> {
-                this.asset = loadedAsset;
-                assetBrowserPresenter.selectAsset(asset);
-                writeAssetToView();
-                writeAttributesBrowserToView();
-                // TODO This fails if the user is restricted, can't just load parent and assume we have access
-                if (asset.getParentId() != null) {
-                    assetBrowserPresenter.loadAsset(asset.getParentId(), loadedParentAsset -> {
-                        this.parentAsset = loadedParentAsset;
-                        writeParentToView();
-                        view.setFormBusy(false);
-                    });
-                } else {
-                    writeParentToView();
-                    view.setFormBusy(false);
-                }
-            });
+    public void start() {
+        if (asset == null) {
+            // Something went wrong loading the asset
+            return;
         }
+
+        if (liveUpdates) {
+            subscribeLiveUpdates(true);
+        }
+
+        registrations.add(environment.getEventBus().register(
+            AttributeEvent.class,
+            this::onAttributeEvent
+        ));
+
+
+        writeAssetToView();
+        writeAttributesToView();
+        loadParent();
     }
 
     @Override
@@ -155,65 +132,239 @@ public class AssetViewActivity
 
     @Override
     public void enableLiveUpdates(boolean enable) {
-        if (attributesBrowser != null) {
-            attributesBrowser.subscribeToLiveUpdates(enable);
+        liveUpdates = enable;
+
+        // TODO: make this a bit more efficient
+        for (AttributeView attributeView : attributeViews) {
+            if (attributeView instanceof AttributeViewImpl) {
+                ((AttributeViewImpl)attributeView).getActionButtons().forEach(button -> {
+                    if (button.getStyleName().contains(READ_BUTTON_CLASS)) {
+                        (button).setEnabled(!enable);
+                    }
+                });
+            }
+        }
+
+        if (enable) {
+            // Poll all values once so we have some state
+            readAllAttributeValues();
+        }
+
+        subscribeLiveUpdates(true);
+    }
+
+    protected void subscribeLiveUpdates(boolean subscribe) {
+        if (subscribe) {
+            // TODO: Can the event service and bus be unified
+            // TODO: return event handle so we can unregister on stop
+            environment.getEventService().subscribe(
+                AttributeEvent.class,
+                new AttributeEvent.EntityIdFilter(asset.getId())
+            );
+        } else {
+            environment.getEventService().unsubscribe(
+                AttributeEvent.class
+            );
         }
     }
 
     @Override
     public void refresh() {
-        if (attributesBrowser != null) {
-            attributesBrowser.readAllAttributeValues();
+        for (AttributeView attributeView : attributeViews) {
+            attributeView.onAttributeChanged();
         }
     }
 
-    protected void writeAssetToView() {
-        view.setAssetEditHistoryToken(environment.getPlaceHistoryMapper().getToken(new AssetEditPlace(assetId)));
-        view.setName(asset.getName());
-        view.setCreatedOn(asset.getCreatedOn());
-        view.setLocation(asset.getCoordinates());
-        view.showDroppedPin(asset.getGeoFeature(20));
-        view.flyTo(asset.getCoordinates());
+    @Override
+    protected void onAttributeModified(AssetAttribute attribute) {
+        // Called when a view has modified the attribute so we need to do validation
+        validateAttribute(true, attribute, result -> processValidationResults(Collections.singletonList(result)));
+    }
+
+    protected void onAttributeEvent(AttributeEvent attributeEvent) {
+        for (AttributeView attributeView : attributeViews) {
+            AssetAttribute assetAttribute = attributeView.getAttribute();
+            Optional<AttributeRef> assetAttributeRef = assetAttribute.getReference();
+
+            if (assetAttributeRef.map(ref -> ref.equals(attributeEvent.getAttributeRef())).orElse(false)) {
+                assetAttribute.setValue(attributeEvent.getValue().orElse(null), attributeEvent.getTimestamp());
+                attributeView.onAttributeChanged();
+                break;
+            }
+        }
+    }
+
+    @Override
+    public void writeAssetToView() {
+        super.writeAssetToView();
         view.setIconAndType(asset.getWellKnownType().getIcon(), asset.getType());
     }
 
-    protected void writeParentToView() {
-        if (parentAsset != null) {
-            view.setParentNode(new AssetTreeNode(parentAsset));
+    protected List<FormButton> createAttributeActions(AssetAttribute attribute, AttributeViewImpl view) {
+        List<FormButton> actionButtons = new ArrayList<>();
+
+        if (attribute.isExecutable()) {
+            // A command is executed by writing a special value
+            FormButton startButton = new FormButton();
+            startButton.setEnabled(!attribute.isReadOnly());
+            startButton.setText(environment.getMessages().start());
+            startButton.setPrimary(true);
+            startButton.setIcon("play-circle");
+            startButton.addClickHandler(clickEvent -> {
+                attribute.setValue(AttributeExecuteStatus.REQUEST_START.asValue());
+                writeAttributeValue(attribute);
+            });
+            actionButtons.add(startButton);
+
+            FormButton repeatButton = new FormButton();
+            repeatButton.setEnabled(!attribute.isReadOnly());
+            repeatButton.setText(environment.getMessages().repeat());
+            repeatButton.setPrimary(true);
+            repeatButton.setIcon("repeat");
+            repeatButton.addClickHandler(clickEvent -> {
+                attribute.setValue(AttributeExecuteStatus.REQUEST_REPEATING.asValue());
+                writeAttributeValue(attribute);
+            });
+            actionButtons.add(repeatButton);
+
+            FormButton cancelButton = new FormButton();
+            cancelButton.setEnabled(!attribute.isReadOnly());
+            cancelButton.setText(environment.getMessages().cancel());
+            cancelButton.setPrimary(true);
+            cancelButton.setIcon("stop-circle");
+            cancelButton.addClickHandler(clickEvent -> {
+                attribute.setValue(AttributeExecuteStatus.REQUEST_CANCEL.asValue());
+                writeAttributeValue(attribute);
+            });
+            actionButtons.add(cancelButton);
+
+            FormButton readStatusButton = new FormButton();
+            readStatusButton.setText(environment.getMessages().getStatus());
+            readStatusButton.setIcon("cloud-download");
+            readStatusButton.addStyleName(READ_BUTTON_CLASS);
+            readStatusButton.setEnabled(!liveUpdates);
+            readStatusButton.addClickHandler(clickEvent -> readAttributeValue(attribute));
+            actionButtons.add(readStatusButton);
+
         } else {
-            view.setParentNode(
-                new TenantTreeNode(
-                    new Tenant(asset.getRealmId(), asset.getTenantRealm(), asset.getTenantDisplayName(), true)
-                )
+            // Default read/write actions
+            FormButton writeValueButton = new FormButton();
+            writeValueButton.setEnabled(!attribute.isReadOnly());
+            writeValueButton.setText(environment.getMessages().write());
+            writeValueButton.setPrimary(true);
+            writeValueButton.setIcon("cloud-upload");
+            writeValueButton.addClickHandler(clickEvent -> writeAttributeValue(attribute));
+            actionButtons.add(writeValueButton);
+
+            FormButton readValueButton = new FormButton();
+            readValueButton.addStyleName(READ_BUTTON_CLASS);
+            readValueButton.setText(environment.getMessages().read());
+            readValueButton.setIcon("cloud-download");
+            readValueButton.setEnabled(!liveUpdates);
+            readValueButton.addClickHandler(clickEvent -> readAttributeValue(attribute));
+            actionButtons.add(readValueButton);
+        }
+
+        return actionButtons;
+    }
+
+    protected List<AbstractAttributeViewExtension> createAttributeExtensions(AssetAttribute attribute, AttributeViewImpl view) {
+        List<AbstractAttributeViewExtension> viewExtensions = new ArrayList<>();
+
+        if (Datapoint.isDatapointsCapable(attribute) && attribute.isStoreDatapoints()) {
+            viewExtensions.add(
+                createDatapointBrowser(attribute, view)
+            );
+        }
+
+        if (environment.getSecurityService().isSuperUser() &&
+            ProtocolConfiguration.isProtocolConfiguration(attribute) &&
+            ProtocolConfiguration.getProtocolName(attribute)
+                .map(name -> name.equals(Constants.PROTOCOL_NAMESPACE + ":simulator"))
+                .orElse(false)) {
+            viewExtensions.add(
+                createSimulator(attribute, view)
+            );
+        }
+
+        return viewExtensions;
+    }
+
+    protected void readAllAttributeValues() {
+        environment.getEventService().dispatch(
+            new ReadAssetAttributesEvent(asset.getId())
+        );
+    }
+
+    protected void readAttributeValue(AssetAttribute attribute) {
+        attribute.getReference().ifPresent(attributeRef ->
+            environment.getEventService().dispatch(
+                new ReadAssetAttributesEvent(attributeRef.getEntityId(), attributeRef.getAttributeName())
+            )
+        );
+    }
+
+    /*###########################################################################################*/
+    /*####                             EXTENSIONS BELOW                                      ####*/
+    /*###########################################################################################*/
+
+    protected DatapointBrowser createDatapointBrowser(AssetAttribute attribute, AttributeViewImpl view) {
+        return new DatapointBrowser(environment, this.view.getStyle(), view, attribute, 675, 200) {
+            @SuppressWarnings("ConstantConditions")
+            @Override
+            protected void queryDatapoints(DatapointInterval interval,
+                                           long timestamp,
+                                           Consumer<NumberDatapoint[]> consumer) {
+                queryDataPoints(attribute.getName().get(), interval, timestamp, consumer);
+            }
+        };
+    }
+
+    protected void queryDataPoints(String attributeName, DatapointInterval interval, long timestamp, Consumer<NumberDatapoint[]> consumer) {
+        if (!isNullOrEmpty(attributeName)) {
+            environment.getRequestService().execute(
+                numberDatapointArrayMapper,
+                requestParams -> assetDatapointResource.getNumberDatapoints(
+                    requestParams, this.asset.getId(), attributeName, interval, timestamp
+                ),
+                200,
+                consumer,
+                ex -> handleRequestException(ex, environment)
             );
         }
     }
 
-    protected void writeAttributesBrowserToView() {
-        attributesBrowser = new AttributesBrowser(
-            environment,
-            view.getAttributesBrowserContainer(),
-            asset
-        ) {
-            @Override
-            protected void getNumberDatapoints(AssetAttribute attribute,
-                                               DatapointInterval interval,
-                                               long timestamp,
-                                               Consumer<NumberDatapoint[]> consumer) {
-                environment.getRequestService().execute(
-                    numberDatapointArrayMapper,
-                    requestParams -> assetDatapointResource.getNumberDatapoints(
-                        requestParams, assetId, attribute.getName().orElse(null), interval, timestamp
-                    ),
-                    200,
-                    consumer,
-                    ex -> handleRequestException(ex, environment)
-                );
+    protected Simulator createSimulator(AssetAttribute attribute, AttributeViewImpl view) {
+        AttributeRef protocolConfigurationRef = attribute.getReferenceOrThrow();
 
+        return new Simulator(
+            environment,
+            this.view.getStyle(),
+            view,
+            attribute,
+            protocolConfigurationRef,
+            () -> {
+                activeSimulators.add(protocolConfigurationRef);
+                updateSimulatorSubscription();
+            },
+            () -> {
+                activeSimulators.remove(protocolConfigurationRef);
+                updateSimulatorSubscription();
             }
-        };
-        view.setAttributesBrowser(attributesBrowser);
-        attributesBrowser.build();
-        attributesBrowser.subscribeToLiveUpdates(view.isLiveUpdatesEnabled());
+        );
     }
+
+    protected void updateSimulatorSubscription() {
+        if (activeSimulators.size() > 0) {
+            environment.getEventService().subscribe(
+                SimulatorState.class, new SimulatorState.ConfigurationFilter(
+                    activeSimulators.toArray(new AttributeRef[activeSimulators.size()])
+                )
+            );
+        } else {
+            environment.getEventService().unsubscribe(SimulatorState.class);
+        }
+    }
+
+
 }

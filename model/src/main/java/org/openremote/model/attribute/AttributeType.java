@@ -20,6 +20,7 @@
 package org.openremote.model.attribute;
 
 import org.openremote.model.ValidationFailure;
+import org.openremote.model.ValueHolder;
 import org.openremote.model.asset.AssetMeta;
 import org.openremote.model.rules.Ruleset;
 import org.openremote.model.rules.template.TemplateFilter;
@@ -31,7 +32,8 @@ import java.util.Optional;
 import java.util.function.Function;
 
 import static org.openremote.model.asset.AssetMeta.FORMAT;
-import static org.openremote.model.attribute.AttributeType.AttributeTypeValidationFailure.*;
+import static org.openremote.model.attribute.AttributeType.AttributeTypeFailureReason.ATTRIBUTE_TYPE_INVALID_TEMPLATE_FILTER;
+import static org.openremote.model.attribute.AttributeType.AttributeTypeFailureReason.ATTRIBUTE_TYPE_VALUE_DOES_NOT_MATCH;
 
 /**
  * The type of an {@link Attribute}, how its {@link Value} should be
@@ -63,13 +65,13 @@ public enum AttributeType {
     RULES_TEMPLATE_FILTER("filter", ValueType.ARRAY, value ->
         TemplateFilter.fromModelValue("test", value).isPresent()
             ? Optional.empty()
-            : Optional.of(INVALID_TEMPLATE_FILTER)
+            : Optional.of(new ValidationFailure(ATTRIBUTE_TYPE_INVALID_TEMPLATE_FILTER))
     ),
 
     PERCENTAGE("percent", ValueType.NUMBER,
         value -> Values.getNumber(value)
             .filter(number -> number < 0 || number > 100)
-            .map(number -> PERCENTAGE_OUT_OF_RANGE),
+            .map(number -> new ValidationFailure(ValueHolder.ValueFailureReason.VALUE_PERCENTAGE_OUT_OF_RANGE)),
         new MetaItem(AssetMeta.RANGE_MIN, Values.create(0)),
         new MetaItem(AssetMeta.RANGE_MAX, Values.create(100)),
         new MetaItem(AssetMeta.FORMAT, Values.create("%3d %%"))
@@ -81,33 +83,33 @@ public enum AttributeType {
 
     COLOR_RGB("paint-brush", ValueType.ARRAY, value -> Values.getArray(value)
         .filter(array -> array.length() != 3)
-        .map(array -> WRONG_COLOR_FORMAT)
+        .map(array -> new ValidationFailure(ValueHolder.ValueFailureReason.VALUE_INVALID_COLOR_FORMAT))
     ),
 
     COLOR_ARGB("paint-brush", ValueType.ARRAY, value -> Values.getArray(value)
         .filter(array -> array.length() != 4)
-        .map(array -> WRONG_COLOR_FORMAT)
+        .map(array -> new ValidationFailure(ValueHolder.ValueFailureReason.VALUE_INVALID_COLOR_FORMAT))
     ),
 
     COLOR_HEX("paint-brush", ValueType.STRING, value -> Values.getString(value)
         .filter(s -> !s.matches("[a-fA-F0-9]{6}"))
-        .map(array -> WRONG_COLOR_FORMAT)
+        .map(array -> new ValidationFailure(ValueHolder.ValueFailureReason.VALUE_INVALID_COLOR_FORMAT))
     ),
 
     TEMPERATURE_CELCIUS("thermometer", ValueType.NUMBER, value -> Values.getNumber(value)
         .filter(n -> n < -273.15)
-        .map(n -> TEMPERATURE_OUT_OF_RANGE),
+        .map(n -> new ValidationFailure(ValueHolder.ValueFailureReason.VALUE_TEMPERATURE_OUT_OF_RANGE)),
         new MetaItem(FORMAT, Values.create("%0.1f C"))
     ),
 
     TEMPERATURE_KELVIN("thermometer", ValueType.NUMBER, value -> Values.getNumber(value)
         .filter(n -> n < 0)
-        .map(n -> TEMPERATURE_OUT_OF_RANGE)
+        .map(n -> new ValidationFailure(ValueHolder.ValueFailureReason.VALUE_TEMPERATURE_OUT_OF_RANGE))
     ),
 
     TEMPERATURE_FAHRENHEIT("thermometer", ValueType.NUMBER, value -> Values.getNumber(value)
         .filter(n -> n < -459.67)
-        .map(n -> TEMPERATURE_OUT_OF_RANGE)
+        .map(n -> new ValidationFailure(ValueHolder.ValueFailureReason.VALUE_TEMPERATURE_OUT_OF_RANGE))
     ),
 
     DISTANCE_M("arrows-h", ValueType.NUMBER, value -> Optional.empty(),
@@ -140,7 +142,7 @@ public enum AttributeType {
 
     HUMIDITY_PERCENTAGE("tint", ValueType.NUMBER, value -> Values.getNumber(value)
         .filter(number -> number < 0 || number > 100)
-        .map(number -> PERCENTAGE_OUT_OF_RANGE),
+        .map(number -> new ValidationFailure(ValueHolder.ValueFailureReason.VALUE_PERCENTAGE_OUT_OF_RANGE)),
         new MetaItem(AssetMeta.RANGE_MIN, Values.create(0)),
         new MetaItem(AssetMeta.RANGE_MAX, Values.create(100)),
         new MetaItem(FORMAT, Values.create("%3d %%"))
@@ -160,7 +162,7 @@ public enum AttributeType {
 
     CHARGE_PERCENTAGE("battery-full", ValueType.NUMBER, value -> Values.getNumber(value)
         .filter(number -> number < 0 || number > 100)
-        .map(number -> PERCENTAGE_OUT_OF_RANGE),
+        .map(number -> new ValidationFailure(ValueHolder.ValueFailureReason.VALUE_PERCENTAGE_OUT_OF_RANGE)),
         new MetaItem(AssetMeta.RANGE_MIN, Values.create(0)),
         new MetaItem(AssetMeta.RANGE_MAX, Values.create(100)),
         new MetaItem(FORMAT, Values.create("%3d %%"))
@@ -202,12 +204,9 @@ public enum AttributeType {
 
     public static final String DEFAULT_ICON = "circle-thin";
 
-    public enum AttributeTypeValidationFailure implements ValidationFailure {
-        VALUE_DOES_NOT_MATCH_ATTRIBUTE_TYPE,
-        PERCENTAGE_OUT_OF_RANGE,
-        INVALID_TEMPLATE_FILTER,
-        WRONG_COLOR_FORMAT,
-        TEMPERATURE_OUT_OF_RANGE
+    public enum AttributeTypeFailureReason implements ValidationFailure.Reason {
+        ATTRIBUTE_TYPE_VALUE_DOES_NOT_MATCH,
+        ATTRIBUTE_TYPE_INVALID_TEMPLATE_FILTER
     }
 
     final protected String icon;
@@ -215,17 +214,13 @@ public enum AttributeType {
     final protected Function<Value, Optional<ValidationFailure>> validator;
     final protected MetaItem[] defaultMetaItems;
 
-    AttributeType(ValueType valueType, Function<Value, Optional<ValidationFailure>> validator, MetaItem... defaultMetaItems) {
-        this(DEFAULT_ICON, valueType, validator, defaultMetaItems);
-    }
-
     AttributeType(String icon, ValueType valueType, Function<Value, Optional<ValidationFailure>> validator, MetaItem... defaultMetaItems) {
         this.icon = icon;
         this.valueType = valueType;
         this.validator = value -> {
             // Always perform some basic validation
             if (value != null && getValueType() != value.getType())
-                return Optional.of(VALUE_DOES_NOT_MATCH_ATTRIBUTE_TYPE);
+                return Optional.of(new ValidationFailure(ATTRIBUTE_TYPE_VALUE_DOES_NOT_MATCH, getValueType().name()));
 
             // Custom attribute type validation
             return validator.apply(value);
@@ -247,13 +242,5 @@ public enum AttributeType {
 
     public Optional<ValidationFailure> isValidValue(Value value) {
         return validator.apply(value);
-    }
-
-    public static Optional<AttributeType> optionalValueOf(String name) {
-        try {
-            return Optional.of(valueOf(name));
-        } catch (Exception ex) {
-            return Optional.empty();
-        }
     }
 }

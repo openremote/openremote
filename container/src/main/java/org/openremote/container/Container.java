@@ -64,11 +64,9 @@ public class Container {
         .configure(SerializationFeature.WRITE_NULL_MAP_VALUES, false)
         .configure(SerializationFeature.WRITE_EMPTY_JSON_ARRAYS, false)
         .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+        .setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE)
         .setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY)
-        .setVisibility(PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE)
-        .setVisibility(PropertyAccessor.SETTER, JsonAutoDetect.Visibility.NONE)
-        .setVisibility(PropertyAccessor.IS_GETTER, JsonAutoDetect.Visibility.NONE)
-        .setVisibility(PropertyAccessor.CREATOR, JsonAutoDetect.Visibility.NONE)
+        .setVisibility(PropertyAccessor.CREATOR, JsonAutoDetect.Visibility.ANY)
         .registerModule(new ModelValueModule());
 
     protected final Map<String, String> config = new HashMap<>();

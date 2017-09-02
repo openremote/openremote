@@ -21,9 +21,15 @@ package org.openremote.manager.client.assets.browser;
 
 import com.google.gwt.user.client.ui.IsWidget;
 import com.google.gwt.view.client.HasData;
+import org.openremote.model.ValidationFailure;
+import org.openremote.model.ValueHolder;
 import org.openremote.model.asset.Asset;
+import org.openremote.model.util.Pair;
+import org.openremote.model.value.Value;
 
+import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 /**
  * Browse tenants and assets in a tree view.
@@ -60,7 +66,6 @@ public interface AssetBrowser extends IsWidget {
          * If not-null, the presenter will send selection change events to this instead of the event bus.
          */
         void useSelector(AssetSelector assetSelector);
-
     }
 
     void setPresenter(Presenter presenter);

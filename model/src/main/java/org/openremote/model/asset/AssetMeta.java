@@ -19,11 +19,11 @@
  */
 package org.openremote.model.asset;
 
-import org.openremote.model.HasUniqueResourceName;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.attribute.AttributeExecuteStatus;
+import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.MetaItem;
-import org.openremote.model.util.Pair;
+import org.openremote.model.attribute.MetaItemDescriptor;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueType;
 import org.openremote.model.value.Values;
@@ -32,9 +32,11 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
 
 import static org.openremote.model.Constants.ASSET_META_NAMESPACE;
-import static org.openremote.model.asset.AssetMeta.AssetMetaValidationFailure.VALUE_DOES_NOT_MATCH_ASSET_META_TYPE;
+import static org.openremote.model.attribute.MetaItem.MetaItemFailureReason.META_ITEM_VALUE_MISMATCH;
+import static org.openremote.model.util.TextUtil.REGEXP_PATTERN_DOUBLE;
 import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 
 /**
@@ -43,95 +45,204 @@ import static org.openremote.model.util.TextUtil.isNullOrEmpty;
  * <p>
  * TODO https://people.eecs.berkeley.edu/~arka/papers/buildsys2015_metadatasurvey.pdf
  */
-public enum AssetMeta implements HasUniqueResourceName {
+public enum AssetMeta implements MetaItemDescriptor {
 
     /**
      * Marks an attribute of an agent asset as a {@link org.openremote.model.asset.agent.ProtocolConfiguration}.
      * The attribute value is a protocol URN.
      */
-    PROTOCOL_CONFIGURATION(ASSET_META_NAMESPACE + ":protocolConfiguration", new Access(false, false, true), ValueType.BOOLEAN, Values.create(true), true),
+    PROTOCOL_CONFIGURATION(
+        ASSET_META_NAMESPACE + ":protocolConfiguration", new Access(false, false, true),
+        ValueType.BOOLEAN,
+        null,
+        null,
+        Values.create(true),
+        true),
 
     /**
      * Links the attribute to an agent's {@link org.openremote.model.asset.agent.ProtocolConfiguration}, connecting it
      * to a sensor and/or actuator.
      */
-    AGENT_LINK(ASSET_META_NAMESPACE + ":agentLink", new Access(false, false, true), ValueType.ARRAY),
+    AGENT_LINK(
+        ASSET_META_NAMESPACE + ":agentLink",
+        new Access(false, false, true),
+        ValueType.ARRAY,
+        null,
+        null,
+        null,
+        false,
+        value ->
+        Optional.ofNullable(AttributeRef.isAttributeRef(value)
+            ? null
+            : new ValidationFailure(META_ITEM_VALUE_MISMATCH, AttributeRef.class.getSimpleName()))
+    ),
 
     /**
      * Links the attribute to another attribute, so an attribute event on the attribute triggers the same attribute
      * event on the linked attribute.
      */
-    ATTRIBUTE_LINK(ASSET_META_NAMESPACE + ":attributeLink", new Access(false, false, true), ValueType.OBJECT),
+    ATTRIBUTE_LINK(
+        ASSET_META_NAMESPACE + ":attributeLink",
+        new Access(false, false, true),
+        ValueType.OBJECT,
+        null,
+        null,
+        null,
+        false),
 
     /**
      * A human-friendly string that can be displayed in UI instead of the raw attribute name.
      */
-    LABEL(ASSET_META_NAMESPACE + ":label", new Access(true, true, true), ValueType.STRING),
+    LABEL(
+        ASSET_META_NAMESPACE + ":label",
+        new Access(true, true, true),
+        ValueType.STRING,
+        null,
+        null,
+        null,
+        false),
 
     /**
      * If there is a dashboard, some kind of attribute overview, should this attribute be shown.
      */
-    SHOW_ON_DASHBOARD(ASSET_META_NAMESPACE + ":showOnDashboard", new Access(true, true, true), ValueType.BOOLEAN, Values.create(true), true),
+    SHOW_ON_DASHBOARD(
+        ASSET_META_NAMESPACE + ":showOnDashboard",
+        new Access(true, true, true),
+        ValueType.BOOLEAN,
+        null,
+        null,
+        Values.create(true),
+        true),
 
     /**
      * Format string that can be used to render the attribute value, see https://github.com/alexei/sprintf.js.
      */
-    FORMAT(ASSET_META_NAMESPACE + ":format", new Access(true, false, true), ValueType.STRING),
+    FORMAT(
+        ASSET_META_NAMESPACE + ":format",
+        new Access(true, false, true),
+        ValueType.STRING,
+        null,
+        null,
+        null,
+        false),
 
     /**
      * A human-friendly string describing the purpose of an attribute, useful when rendering editors.
      */
-    DESCRIPTION(ASSET_META_NAMESPACE + ":description", new Access(true, false, true), ValueType.STRING),
+    DESCRIPTION(
+        ASSET_META_NAMESPACE + ":description",
+        new Access(true, false, true),
+        ValueType.STRING,
+        null,
+        null,
+        null,
+        false),
 
     /**
      * Points to semantic description of the attribute, typically a URI.
      */
-    ABOUT(ASSET_META_NAMESPACE + ":about", new Access(true, false, true), ValueType.STRING),
+    ABOUT(
+        ASSET_META_NAMESPACE + ":about",
+        new Access(true, false, true),
+        ValueType.STRING,
+        null,
+        null,
+        null,
+        false),
 
     /**
      * Marks the attribute as read-only for clients. South-bound changes of the attribute are not possible.
      * North-bound attribute updates made by protocols and changes made by rules are possible.
      */
-    READ_ONLY(ASSET_META_NAMESPACE + ":readOnly", new Access(true, false, true), ValueType.BOOLEAN, Values.create(true), true),
+    READ_ONLY(
+        ASSET_META_NAMESPACE + ":readOnly",
+        new Access(true, false, true),
+        ValueType.BOOLEAN,
+        null,
+        null,
+        Values.create(true),
+        true),
 
     /**
      * Marks the attribute as protected and accessible to restricted users, see {@link UserAsset}.
      * TODO: Shouldn't this mean the opposite if something is protected then you need elevated privileges to access it
      */
-    PROTECTED(ASSET_META_NAMESPACE + ":protected", new Access(false, false, true), ValueType.BOOLEAN, Values.create(true), true),
+    PROTECTED(
+        ASSET_META_NAMESPACE + ":protected",
+        new Access(false, false, true),
+        ValueType.BOOLEAN,
+        null,
+        null,
+        Values.create(true),
+        true),
 
-    /**
-     * RT: This wasn't used anywhere and not really sure when it would be useful so removing for now.
-     */
-    /**
-     * Default value that might be used when editing an attribute.
-     */
+//    /**
+//     * RT: This wasn't used anywhere and not really sure when it would be useful so removing for now.
+//     */
+//    /**
+//     * Default value that might be used when editing an attribute.
+//     */
     //DEFAULT(ASSET_META_NAMESPACE + ":default", new Access(false, false, false), ValueType.STRING),
 
     /**
      * Minimum range constraint for numeric attribute values.
      */
-    RANGE_MIN(ASSET_META_NAMESPACE + ":rangeMin", new Access(true, false, true), ValueType.NUMBER),
+    RANGE_MIN(
+        ASSET_META_NAMESPACE + ":rangeMin",
+        new Access(true, false, true),
+        ValueType.NUMBER,
+        REGEXP_PATTERN_DOUBLE,
+        PatternFailure.DOUBLE.name(),
+        null,
+        false),
 
     /**
      * Maximum range constraint for numeric attribute values.
      */
-    RANGE_MAX(ASSET_META_NAMESPACE + ":rangeMax", new Access(true, false, true), ValueType.NUMBER),
+    RANGE_MAX(
+        ASSET_META_NAMESPACE + ":rangeMax",
+        new Access(true, false, true),
+        ValueType.NUMBER,
+        REGEXP_PATTERN_DOUBLE,
+        PatternFailure.DOUBLE.name(),
+        null,
+        false),
 
     /**
      * Step increment/decrement constraint for numeric attribute values.
      */
-    STEP(ASSET_META_NAMESPACE + ":step", new Access(true, false, true), ValueType.NUMBER),
+    STEP(
+        ASSET_META_NAMESPACE + ":step",
+        new Access(true, false, true),
+        ValueType.NUMBER,
+        REGEXP_PATTERN_DOUBLE,
+        PatternFailure.DOUBLE.name(),
+        null,
+        false),
 
     /**
      * Regex (Java syntax) constraint for string attribute values.
      */
-    PATTERN(ASSET_META_NAMESPACE + ":pattern", new Access(true, false, true), ValueType.STRING),
+    PATTERN(
+        ASSET_META_NAMESPACE + ":pattern",
+        new Access(true, false, true),
+        ValueType.STRING,
+        null,
+        null,
+        null,
+        false),
 
     /**
      * Should attribute values be stored in time series database
      */
-    STORE_DATA_POINTS(ASSET_META_NAMESPACE + ":storeDataPoints", new Access(true, false, true), ValueType.BOOLEAN, Values.create(true), true),
+    STORE_DATA_POINTS(
+        ASSET_META_NAMESPACE + ":storeDataPoints",
+        new Access(true, false, true),
+        ValueType.BOOLEAN,
+        null,
+        null,
+        Values.create(true),
+        true),
 
     /**
      * Should attribute writes be processed by the rules engines as {@link AssetState} facts in knowledge sessions,
@@ -140,7 +251,14 @@ public enum AssetMeta implements HasUniqueResourceName {
      * when the attribute is updated. If you want two types of facts in your rules knowledge session for a single
      * attribute, with state and event behavior, combine this with {@link #RULE_EVENT}.
      */
-    RULE_STATE(ASSET_META_NAMESPACE + ":ruleState", new Access(true, false, true), ValueType.BOOLEAN, Values.create(true), true),
+    RULE_STATE(
+        ASSET_META_NAMESPACE + ":ruleState",
+        new Access(true, false, true),
+        ValueType.BOOLEAN,
+        null,
+        null,
+        Values.create(true),
+        true),
 
     /**
      * Should attribute writes be processed by the rules engines as events in knowledge sessions. Any attribute
@@ -149,48 +267,80 @@ public enum AssetMeta implements HasUniqueResourceName {
      * If you want two types of facts in your rules knowledge session for a single attribute, with state and event
      * behavior, combine this with {@link #RULE_STATE}.
      */
-    RULE_EVENT(ASSET_META_NAMESPACE + ":ruleEvent", new Access(true, false, true), ValueType.BOOLEAN, Values.create(true), true),
+    RULE_EVENT(
+        ASSET_META_NAMESPACE + ":ruleEvent",
+        new Access(true, false, true),
+        ValueType.BOOLEAN,
+        null,
+        null,
+        Values.create(true),
+        true),
 
     /**
      * Set maximum lifetime of {@link AssetEvent} facts in knowledge sessions, for example "1h30m". The rules
      * engine will remove {@link AssetEvent} facts from the rules sessions if they are older than this value
      * (using event source timestamp, not event processing time).
      */
-    RULE_EVENT_EXPIRES(ASSET_META_NAMESPACE + ":ruleEventExpires", new Access(true, false, true), ValueType.STRING),
+    RULE_EVENT_EXPIRES(
+        ASSET_META_NAMESPACE + ":ruleEventExpires",
+        new Access(true, false, true),
+        ValueType.STRING,
+        "^([+-])?((\\d+)[Dd])?\\s*((\\d+)[Hh])?\\s*((\\d+)[Mm])?\\s*((\\d+)[Ss])?\\s*((\\d+)([Mm][Ss])?)?$", // From DROOLS
+        PatternFailure.DAYS_HOURS_MINS_SECONDS.name(),
+        null,
+        false),
 
     /**
      * Disabled flag to be used by asset attributes that could require this functionality (e.g. {@link org.openremote.model.asset.agent.ProtocolConfiguration})
      */
-    DISABLED(ASSET_META_NAMESPACE + ":disabled", new Access(true, false, true), ValueType.BOOLEAN, Values.create(true), true),
+    DISABLED(
+        ASSET_META_NAMESPACE + ":disabled",
+        new Access(true, false, true),
+        ValueType.BOOLEAN,
+        null,
+        null,
+        Values.create(true),
+        true),
 
     /**
      * Marks an attribute as being executable so it then supports values of type {@link AttributeExecuteStatus}.
      */
-    EXECUTABLE(ASSET_META_NAMESPACE + ":executable", new Access(true, false, true), ValueType.BOOLEAN, Values.create(true), true);
-
-    public enum AssetMetaValidationFailure implements ValidationFailure {
-        VALUE_DOES_NOT_MATCH_ASSET_META_TYPE
-    }
+    EXECUTABLE(
+        ASSET_META_NAMESPACE + ":executable",
+        new Access(true, false, true),
+        ValueType.BOOLEAN,
+        null,
+        null,
+        Values.create(true),
+        true);
 
     final protected String urn;
     final protected Access access;
     final protected ValueType valueType;
     final protected Value initialValue;
     final protected boolean valueFixed;
+    final protected Integer maxPerAttribute = 1; // All asset meta so far are single instance
+    final protected boolean required = false; // All asset meta so far are not mandatory
+    final protected String pattern;
+    final protected String patternFailureMessage;
+    final protected Function<Value, Optional<ValidationFailure>> validator;
 
-    AssetMeta(String urn, Access access, ValueType valueType) {
-        this(urn, access, valueType, null, false);
+    AssetMeta(String urn, Access access, ValueType valueType, String pattern, String patternFailureMessage, Value initialValue, boolean valueFixed) {
+        this(urn, access, valueType, pattern, patternFailureMessage, initialValue, valueFixed, null);
     }
 
-    AssetMeta(String urn, Access access, ValueType valueType, Value initialValue, boolean valueFixed) {
+    AssetMeta(String urn, Access access, ValueType valueType, String pattern, String patternFailureMessage, Value initialValue, boolean valueFixed, Function<Value, Optional<ValidationFailure>> validator) {
         if (initialValue != null && initialValue.getType() != valueType) {
             throw new IllegalStateException("Initial asset meta value must be of the same type as the asset meta");
         }
+        this.validator = validator;
         this.urn = urn;
         this.access = access;
         this.valueType = valueType;
         this.initialValue = initialValue;
         this.valueFixed = valueFixed;
+        this.pattern = pattern;
+        this.patternFailureMessage = patternFailureMessage;
     }
 
     public String getUrn() {
@@ -203,6 +353,32 @@ public enum AssetMeta implements HasUniqueResourceName {
 
     public ValueType getValueType() {
         return valueType;
+    }
+
+    @Override
+    public boolean isRequired() {
+        return required;
+    }
+
+    @Override
+    public String getPattern() {
+        return pattern;
+    }
+
+    public String getPatternFailureMessage() {
+        return patternFailureMessage;
+    }
+
+    @Override
+    public Integer getMaxPerAttribute() {
+        return maxPerAttribute;
+    }
+
+    @Override
+    public Optional<ValidationFailure> validateValue(Value value) {
+        return Optional.ofNullable(MetaItemDescriptor
+            .validateValue(value, this)
+            .orElse(validator != null ? validator.apply(value).orElse(null) : null));
     }
 
     public Value getInitialValue() {
@@ -218,20 +394,6 @@ public enum AssetMeta implements HasUniqueResourceName {
 
     public boolean isRestricted() {
         return access != null && access.restricted;
-    }
-
-    /**
-     * If this is a well-known item, the value must match the defined type.
-     * Third-party items are always valid.
-     */
-    public Optional<ValidationFailure> isValidValue(Value value) {
-        if (value == null) {
-            return Optional.empty();
-        }
-        if (getValueType() != value.getType()) {
-            return Optional.of(VALUE_DOES_NOT_MATCH_ASSET_META_TYPE);
-        }
-        return Optional.empty();
     }
 
     public static AssetMeta[] unRestricted() {
@@ -275,14 +437,6 @@ public enum AssetMeta implements HasUniqueResourceName {
                 return Optional.of(assetMeta);
         }
         return Optional.empty();
-    }
-
-    public static Optional<ValidationFailure> getValidationFailure(MetaItem item) {
-        return item.getName()
-            .flatMap(AssetMeta::getAssetMeta)
-            .map(assetMeta -> new Pair<>(assetMeta, item.getValue()))
-            .filter(pair -> pair.value.isPresent())
-            .flatMap(pair -> pair.key.isValidValue(pair.value.get()));
     }
 
     /**

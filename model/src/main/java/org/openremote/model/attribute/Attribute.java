@@ -19,20 +19,20 @@
  */
 package org.openremote.model.attribute;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.gwt.regexp.shared.RegExp;
 import org.openremote.model.AbstractValueTimestampHolder;
 import org.openremote.model.HasUniqueResourceName;
 import org.openremote.model.ValidationFailure;
-import org.openremote.model.value.ObjectValue;
-import org.openremote.model.value.Value;
-import org.openremote.model.value.ValueType;
-import org.openremote.model.value.Values;
+import org.openremote.model.util.EnumUtil;
+import org.openremote.model.value.*;
 
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-import static org.openremote.model.attribute.Attribute.AttributeValidationFailure.*;
+import static org.openremote.model.attribute.Attribute.AttributeFailureReason.*;
 import static org.openremote.model.attribute.MetaItem.isMetaNameEqualTo;
 import static org.openremote.model.util.TextUtil.requireNonNullAndNonEmpty;
 
@@ -41,10 +41,10 @@ import static org.openremote.model.util.TextUtil.requireNonNullAndNonEmpty;
  */
 public abstract class Attribute extends AbstractValueTimestampHolder {
 
-    public enum AttributeValidationFailure implements ValidationFailure {
-        INVALID_ATTRIBUTE_NAME,
-        MISSING_ATTRIBUTE_TYPE,
-        MISSING_ATTRIBUTE_VALUE_TIMESTAMP
+    public enum AttributeFailureReason implements ValidationFailure.Reason {
+        ATTRIBUTE_NAME_INVALID,
+        ATTRIBUTE_TYPE_MISSING,
+        ATTRIBUTE_VALUE_TIMESTAMP_MISSING
     }
 
     /**
@@ -59,6 +59,10 @@ public abstract class Attribute extends AbstractValueTimestampHolder {
     public static final String TYPE_FIELD_NAME = "type";
     public static final String META_FIELD_NAME = "meta";
 
+    @JsonIgnore
+    protected Meta meta;
+
+    @JsonProperty
     protected String name;
 
     protected Attribute(ObjectValue objectValue) {
@@ -87,8 +91,15 @@ public abstract class Attribute extends AbstractValueTimestampHolder {
         setValue(value);
     }
 
+    @JsonIgnore
     public Optional<String> getName() {
         return Optional.ofNullable(name);
+    }
+
+    // Only here for GWT jackson
+    @JsonProperty("name")
+    private String getNamePrivate() {
+        return name;
     }
 
     public void setName(String name) {
@@ -101,7 +112,7 @@ public abstract class Attribute extends AbstractValueTimestampHolder {
     }
 
     public Optional<AttributeType> getType() {
-        return getObjectValue().getString(TYPE_FIELD_NAME).flatMap(AttributeType::optionalValueOf);
+        return getObjectValue().getString(TYPE_FIELD_NAME).flatMap(name -> EnumUtil.enumFromString(AttributeType.class, name));
     }
 
     /**
@@ -128,15 +139,17 @@ public abstract class Attribute extends AbstractValueTimestampHolder {
     }
 
     public Meta getMeta() {
-        if (!getObjectValue().hasKey(META_FIELD_NAME)) {
-            // Create array object so don't have to call setMeta
-            // can just update the collection like normal POJO behaviour
-            getObjectValue().put(META_FIELD_NAME, Values.createArray());
+        if (meta == null) {
+            return new Meta(getObjectValue()
+                .getArray(META_FIELD_NAME)
+                .orElseGet(() -> {
+                    ArrayValue arr = Values.createArray();
+                    getObjectValue().put(META_FIELD_NAME, arr);
+                    return arr;
+                })
+            );
         }
-        return new Meta(getObjectValue()
-            .getArray(META_FIELD_NAME)
-            .orElseThrow(() -> new IllegalStateException("Attribute " + META_FIELD_NAME + "' field is not an array"))
-        );
+        return meta;
     }
 
     public Stream<MetaItem> getMetaStream() {
@@ -162,18 +175,19 @@ public abstract class Attribute extends AbstractValueTimestampHolder {
     }
 
     public void setMeta(List<MetaItem> metaItems) {
-        if (metaItems != null) {
-            Meta meta;
-            if (metaItems instanceof Meta) {
-                meta = (Meta) metaItems;
-            } else {
-                meta = new Meta();
-                meta.addAll(metaItems);
-            }
-            getObjectValue().put(META_FIELD_NAME, meta.getArrayValue());
+        Meta meta;
+        if (metaItems == null) {
+            // Don't allow nulling meta
+            meta = new Meta();
+        } else if (metaItems instanceof Meta) {
+            meta = (Meta) metaItems;
         } else {
-            getObjectValue().remove(META_FIELD_NAME);
+            meta = new Meta();
+            meta.addAll(metaItems);
         }
+
+        this.meta = meta;
+        getObjectValue().put(META_FIELD_NAME, meta.getArrayValue());
     }
 
     public Attribute setMeta(Meta meta) {
@@ -188,23 +202,29 @@ public abstract class Attribute extends AbstractValueTimestampHolder {
 
     @Override
     public List<ValidationFailure> getValidationFailures() {
+        return getValidationFailures(true);
+    }
+
+    public List<ValidationFailure> getValidationFailures(boolean includeMeta) {
         List<ValidationFailure> failures = super.getValidationFailures();
 
         if (!getName().isPresent() || !ATTRIBUTE_NAME_VALIDATOR.test(getName().get()))
-            failures.add(INVALID_ATTRIBUTE_NAME);
+            failures.add(new ValidationFailure(ATTRIBUTE_NAME_INVALID));
 
         if (!getType().isPresent())
-            failures.add(MISSING_ATTRIBUTE_TYPE);
+            failures.add(new ValidationFailure(ATTRIBUTE_TYPE_MISSING));
 
         if (!getValueTimestamp().isPresent())
-            failures.add(MISSING_ATTRIBUTE_VALUE_TIMESTAMP);
+            failures.add(new ValidationFailure(ATTRIBUTE_VALUE_TIMESTAMP_MISSING));
 
         // Value can be empty, if it's not it must validate with the type
         getValue().flatMap(value ->
             getType().flatMap(attributeType -> attributeType.isValidValue(value))
         ).ifPresent(failures::add);
 
-        failures.addAll(getMetaItemsValidationFailures());
+        if (includeMeta) {
+            failures.addAll(getMetaItemsValidationFailures());
+        }
 
         return failures;
     }

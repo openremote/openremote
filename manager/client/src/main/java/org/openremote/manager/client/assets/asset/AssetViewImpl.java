@@ -29,10 +29,11 @@ import com.google.gwt.uibinder.client.UiHandler;
 import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.HTMLPanel;
-import com.google.gwt.user.client.ui.InsertPanel;
+import com.google.gwt.user.client.ui.Label;
 import com.google.inject.Provider;
+import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.app.dialog.JsonEditor;
-import org.openremote.manager.client.assets.attributes.AttributesBrowser;
+import org.openremote.manager.client.assets.attributes.AttributeView;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.assets.browser.AssetSelector;
 import org.openremote.manager.client.assets.browser.BrowserTreeNode;
@@ -40,36 +41,44 @@ import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.style.WidgetStyle;
 import org.openremote.manager.client.widget.*;
 import org.openremote.model.Constants;
+import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetType;
+import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.event.bus.EventRegistration;
 import org.openremote.model.geo.GeoJSON;
 import org.openremote.model.value.ObjectValue;
 
 import javax.inject.Inject;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 public class AssetViewImpl extends Composite implements AssetView {
 
     interface UI extends UiBinder<FlexSplitPanel, AssetViewImpl> {
     }
 
-    interface Style extends CssResource {
+    interface Style extends CssResource, AttributeView.Style {
 
         String navItem();
 
         String mapWidget();
-    }
-
-    interface AttributesBrowserStyle extends CssResource, AttributesBrowser.Style {
-
-        String numberEditor();
 
         String stringEditor();
+
+        String numberEditor();
 
         String booleanEditor();
 
         String regularAttribute();
 
         String highlightAttribute();
+
+        String metaItemValueEditor();
+
+        String metaItemNameEditor();
+
+        String agentLinkEditor();
     }
 
     @UiField
@@ -80,9 +89,6 @@ public class AssetViewImpl extends Composite implements AssetView {
 
     @UiField
     Style style;
-
-    @UiField
-    AttributesBrowserStyle attributesBrowserStyle;
 
     @UiField
     FlexSplitPanel splitPanel;
@@ -136,20 +142,25 @@ public class AssetViewImpl extends Composite implements AssetView {
     PushButton liveUpdatesOffButton;
 
     @UiField
-    FlowPanel attributesBrowserContainer;
+    FlowPanel attributeViewContainer;
 
     /* ############################################################################ */
 
     final AssetBrowser assetBrowser;
     final Provider<JsonEditor> jsonEditorProvider;
-    Presenter presenter;
-    AttributesBrowser attributesBrowser;
+    final Environment environment;
+    final List<AttributeView> attributeViews = new ArrayList<>();
+    protected Presenter presenter;
+    protected Asset asset;
+    protected EventRegistration<AttributeEvent> eventRegistration;
 
     @Inject
     public AssetViewImpl(AssetBrowser assetBrowser,
+                         Environment environment,
                          Provider<JsonEditor> jsonEditorProvider) {
         this.assetBrowser = assetBrowser;
         this.jsonEditorProvider = jsonEditorProvider;
+        this.environment = environment;
 
         UI ui = GWT.create(UI.class);
         initWidget(ui.createAndBindUi(this));
@@ -176,8 +187,14 @@ public class AssetViewImpl extends Composite implements AssetView {
         locationOutput.setCoordinates(null, null);
         mapWidget.setVisible(false);
         showDroppedPin(GeoJSON.EMPTY_FEATURE_COLLECTION);
-        attributesBrowserContainer.clear();
-        attributesBrowser = null;
+
+        if (eventRegistration != null) {
+            environment.getEventBus().remove(eventRegistration);
+            eventRegistration = null;
+        }
+
+        attributeViews.clear();
+        attributeViewContainer.clear();
 
         if (presenter != null) {
             assetBrowser.asWidget().removeFromParent();
@@ -201,8 +218,18 @@ public class AssetViewImpl extends Composite implements AssetView {
     /* ############################################################################ */
 
     @Override
-    public void setAssetEditHistoryToken(String token) {
+    public void setHistoryToken(String token) {
         editAssetLink.setTargetHistoryToken(token);
+    }
+
+    @Override
+    public AttributeView.Style getStyle() {
+        return style;
+    }
+
+    @Override
+    public void setAsset(Asset asset) {
+        this.asset = asset;
     }
 
     @Override
@@ -264,13 +291,29 @@ public class AssetViewImpl extends Composite implements AssetView {
         }
     }
 
-    @UiHandler("centerMapButton")
-    void centerMapClicked(ClickEvent e) {
-        if (presenter != null)
-            presenter.centerMap();
+    @Override
+    public void setAttributeViews(List<AttributeView> attributeViews) {
+        this.attributeViews.clear();
+        this.attributeViews.addAll(attributeViews);
+        refreshAttributeViewContainer();
     }
 
-    /* ############################################################################ */
+    @Override
+    public void addAttributeViews(List<AttributeView> attributeViews) {
+        this.attributeViews.addAll(attributeViews);
+        refreshAttributeViewContainer();
+    }
+
+    @Override
+    public void removeAttributeViews(List<AttributeView> attributeViews) {
+        this.attributeViews.removeAll(attributeViews);
+        refreshAttributeViewContainer();
+    }
+
+    @Override
+    public List<AttributeView> getAttributeViews() {
+        return attributeViews;
+    }
 
     @Override
     public void setIconAndType(String icon, String type) {
@@ -284,47 +327,46 @@ public class AssetViewImpl extends Composite implements AssetView {
         }
     }
 
-    @Override
-    public AttributesBrowser.Container getAttributesBrowserContainer() {
-        return new AttributesBrowser.Container() {
+    protected void refreshAttributeViewContainer() {
+        attributeViewContainer.clear();
 
-            @Override
-            public AttributesBrowser.Style getStyle() {
-                return attributesBrowserStyle;
-            }
-
-            @Override
-            public InsertPanel getPanel() {
-                return attributesBrowserContainer;
-            }
-
-            @Override
-            public JsonEditor getJsonEditor() {
-                return jsonEditorProvider.get();
-            }
-
-            @Override
-            public ManagerMessages getMessages() {
-                return managerMessages;
-            }
-        };
+        if (attributeViews.size() == 0) {
+            Label emptyLabel = new Label(environment.getMessages().noAttributes());
+            emptyLabel.addStyleName(environment.getWidgetStyle().FormListEmptyMessage());
+            attributeViewContainer.add(emptyLabel);
+        } else {
+            sortAttributeViews();
+            attributeViews.forEach(
+                attributeView -> attributeViewContainer.add(attributeView)
+            );
+        }
     }
 
-    @Override
-    public void setAttributesBrowser(AttributesBrowser browser) {
-        this.attributesBrowser = browser;
-        attributesBrowserContainer.clear();
+    protected void sortAttributeViews() {
+        // Executable commands first, then sort by label/name ascending
+        attributeViews.sort((o1, o2) -> {
+            if (o1.getAttribute().isExecutable() && !o2.getAttribute().isExecutable()) {
+                return -1;
+            } else if (!o1.getAttribute().isExecutable() && o2.getAttribute().isExecutable()) {
+                return 1;
+            } else {
+                return o1.getAttribute().getLabelOrName().orElse("").compareTo(o2.getAttribute().getLabelOrName().orElse(""));
+            }
+        });
+    }
+
+    /* ############################################################################ */
+
+    @UiHandler("centerMapButton")
+    void centerMapClicked(ClickEvent e) {
+        if (presenter != null)
+            presenter.centerMap();
     }
 
     @UiHandler("refreshButton")
     public void onRefreshButtonClicked(ClickEvent e) {
         if (presenter != null)
             presenter.refresh();
-    }
-
-    @Override
-    public boolean isLiveUpdatesEnabled() {
-        return liveUpdatesOnButton.isVisible();
     }
 
     @UiHandler("liveUpdatesOnButton")

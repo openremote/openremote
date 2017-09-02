@@ -50,8 +50,8 @@ public enum ConnectionStatus {
     /**
      * Disabled.
      * <p>
-     * For protocol configurations this generally means that it is not enabled (i.e. it has a
-     * {@link org.openremote.model.asset.AssetMeta#ENABLED} {@link MetaItem} with a value of <code>false</code>).
+     * For protocol configurations this generally means that it is disabled (i.e. it has a
+     * {@link org.openremote.model.asset.AssetMeta#DISABLED} {@link MetaItem} with a value of <code>true</code>).
      */
     DISABLED,
 

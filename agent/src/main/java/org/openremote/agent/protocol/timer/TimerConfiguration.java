@@ -20,8 +20,13 @@
 package org.openremote.agent.protocol.timer;
 
 import org.openremote.model.AbstractValueHolder;
+import org.openremote.model.ValidationFailure;
+import org.openremote.model.ValueHolder;
+import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.attribute.AttributeState;
+import org.openremote.model.attribute.AttributeValidationResult;
+import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.value.Values;
 
 import java.util.Optional;
@@ -52,6 +57,69 @@ final public class TimerConfiguration {
         return getProtocolName(attribute)
             .map(TimerProtocol.PROTOCOL_NAME::equals)
             .orElse(false);
+    }
+
+    public static boolean validateTimerConfiguration(AssetAttribute attribute, AttributeValidationResult result) {
+        boolean failure = false;
+
+        if (!isTimerConfiguration(attribute)) {
+            failure = true;
+            if (result != null) {
+                result.addAttributeFailure(new ValidationFailure(ValueHolder.ValueFailureReason.VALUE_MISMATCH, PROTOCOL_NAME));
+            }
+        }
+
+        boolean actionFound = false;
+        boolean cronFound = false;
+
+        if (attribute.getMeta() != null && !attribute.getMeta().isEmpty()) {
+            for (int i = 0; i < attribute.getMeta().size(); i++) {
+                MetaItem metaItem = attribute.getMeta().get(i);
+                if (isMetaNameEqualTo(metaItem, META_TIMER_ACTION)) {
+                    actionFound = true;
+                    if (!getAction(metaItem).isPresent()) {
+                        failure = true;
+                        if (result == null) {
+                            break;
+                        }
+                        result.addMetaFailure(
+                            i, new ValidationFailure(MetaItem.MetaItemFailureReason.META_ITEM_VALUE_MISMATCH, "Timer Action")
+                        );
+                    }
+                } else if (isMetaNameEqualTo(metaItem, META_TIMER_CRON_EXPRESSION)) {
+                    cronFound = true;
+                    if (!metaItem.getValueAsString().map(TimerProtocol::createCronExpression).isPresent()) {
+                        failure = true;
+                        if (result == null) {
+                            break;
+                        }
+                        result.addMetaFailure(
+                            i, new ValidationFailure(MetaItem.MetaItemFailureReason.META_ITEM_VALUE_MISMATCH, "Timer Cron Expression")
+                        );
+                    }
+                }
+            }
+        }
+
+        if (!cronFound) {
+            failure = true;
+            if (result != null) {
+                result.addMetaFailure(
+                    new ValidationFailure(MetaItem.MetaItemFailureReason.META_ITEM_MISSING, META_TIMER_CRON_EXPRESSION)
+                );
+            }
+        }
+
+        if (!actionFound) {
+            failure = true;
+            if (result != null) {
+                result.addMetaFailure(
+                    new ValidationFailure(MetaItem.MetaItemFailureReason.META_ITEM_MISSING, META_TIMER_ACTION)
+                );
+            }
+        }
+
+        return !failure;
     }
 
     public static boolean isValidTimerConfiguration(AssetAttribute attribute) {
@@ -103,7 +171,11 @@ final public class TimerConfiguration {
     public static Optional<AttributeState> getAction(AssetAttribute attribute) {
         return attribute == null ? Optional.empty() : attribute
             .getMetaItem(META_TIMER_ACTION)
-            .flatMap(AbstractValueHolder::getValueAsObject)
+            .flatMap(TimerConfiguration::getAction);
+    }
+
+    public static Optional<AttributeState> getAction(MetaItem metaItem) {
+        return metaItem.getValueAsObject()
             .flatMap(AttributeState::fromValue);
     }
 

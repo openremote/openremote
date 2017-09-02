@@ -19,11 +19,64 @@
  */
 package org.openremote.model;
 
+import com.fasterxml.jackson.annotation.*;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
+import java.util.Optional;
+
 /**
- * Unified naming of value holder validation failures. Names are supposed to be
- * unique so user-readable strings can be created from names with I18N mapping.
+ * Unified naming of value holder validation failures. {@link Reason} names are supposed to be
+ * unique so user-readable strings can be created from names with I18N mapping. The parameter can be
+ * used to convey more specific failure information (is dependent on I18N implementation) e.g. Missing
+ * meta item 'my.custom.meta.item'.
  */
-public interface ValidationFailure {
-    
-    String name();
+public class ValidationFailure {
+
+    @JsonSerialize(as = Reason.class)
+    @JsonDeserialize(as = ReasonImpl.class)
+    public interface Reason {
+        @JsonProperty("name")
+        String name();
+    }
+
+    public static class ReasonImpl implements Reason {
+        @JsonProperty("name")
+        protected final String name;
+
+        @JsonCreator
+        public ReasonImpl(@JsonProperty("name") String name) {
+            this.name = name;
+        }
+
+        @Override
+        public String name() {
+            return name;
+        }
+    }
+
+    @JsonProperty
+    protected Reason reason;
+    @JsonProperty // This is called param because GWT Jackson is crap at resolving annotations
+    protected String param;
+
+    public ValidationFailure(Reason reason) {
+        this(reason, null);
+    }
+
+    @JsonCreator
+    public ValidationFailure(@JsonProperty("reason") Reason reason, @JsonProperty("param") String parameter) {
+        this.reason = reason;
+        this.param = parameter;
+    }
+
+    @JsonIgnore
+    public Reason getReason() {
+        return reason;
+    }
+
+    @JsonIgnore
+    public Optional<String> getParameter() {
+        return Optional.ofNullable(param);
+    }
 }

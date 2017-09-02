@@ -32,8 +32,12 @@ public class UpnpProtocol extends AbstractProtocol {
     private static final Logger LOG = Logger.getLogger(UpnpProtocol.class.getName());
 
     public static final String PROTOCOL_NAME = PROTOCOL_NAMESPACE + ":upnp";
+    public static final String PROTOCOL_DISPLAY_NAME = "UPnP";
+
+    protected static final String VERSION = "1.0";
 
     static protected UpnpService INSTANCE = null;
+
     final protected RegistryListener registryListener = new DefaultRegistryListener() {
         @Override
         public void deviceAdded(Registry registry, Device device) {
@@ -56,6 +60,16 @@ public class UpnpProtocol extends AbstractProtocol {
     @Override
     public String getProtocolName() {
         return PROTOCOL_NAME;
+    }
+
+    @Override
+    public String getProtocolDisplayName() {
+        return PROTOCOL_DISPLAY_NAME;
+    }
+
+    @Override
+    public String getVersion() {
+        return VERSION;
     }
 
     @Override
@@ -180,5 +194,4 @@ public class UpnpProtocol extends AbstractProtocol {
             device.getIdentity().getUdn().getIdentifierString()
         ).toString();
     }
-
 }

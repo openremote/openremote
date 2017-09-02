@@ -19,6 +19,7 @@
  */
 package org.openremote.model.asset.agent;
 
+import org.openremote.model.ValidationFailure;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.attribute.AttributeType;
 import org.openremote.model.attribute.MetaItem;
@@ -41,6 +42,10 @@ import static org.openremote.model.attribute.MetaItem.isMetaNameEqualTo;
  * Protocol-specific settings and details are managed as {@link MetaItem} of the attribute.
  */
 final public class ProtocolConfiguration {
+
+    public enum ValidationFailureReason implements ValidationFailure.Reason {
+        VALUE_NOT_A_VALID_PROTOCOL_URN
+    }
 
     private ProtocolConfiguration() {
     }
@@ -73,7 +78,6 @@ final public class ProtocolConfiguration {
 
     public static boolean isProtocolConfiguration(AssetAttribute attribute) {
         return getProtocolName(attribute).isPresent()
-            && attribute.getMetaStream().anyMatch(isMetaNameEqualTo(PROTOCOL_CONFIGURATION))
             && attribute.getMetaStream().filter(isMetaNameEqualTo(PROTOCOL_CONFIGURATION))
             .findFirst()
             .map(metaItem -> metaItem.getValueAsBoolean().orElse(false))
@@ -81,6 +85,10 @@ final public class ProtocolConfiguration {
     }
 
     public static Optional<String> getProtocolName(AssetAttribute attribute) {
+        if (attribute == null) {
+            return Optional.empty();
+        }
+
         return attribute
             .getValueAsString()
             .map(name -> isValidProtocolName(name) ? name : null);

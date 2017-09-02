@@ -19,6 +19,8 @@
  */
 package org.openremote.model.asset;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.openremote.model.AbstractValueHolder;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.attribute.*;
@@ -31,7 +33,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import static org.openremote.model.asset.AssetMeta.*;
@@ -88,6 +89,7 @@ public class AssetAttribute extends Attribute {
         setAssetId(assetId);
     }
 
+    @JsonIgnore
     public Optional<String> getAssetId() {
         return Optional.ofNullable(assetId);
     }
@@ -119,12 +121,7 @@ public class AssetAttribute extends Attribute {
 
     @Override
     public List<ValidationFailure> getMetaItemValidationFailures(MetaItem item) {
-        List<ValidationFailure> failures = super.getMetaItemValidationFailures(item);
-
-        // Validate well-known meta items
-        AssetMeta.getValidationFailure(item).ifPresent(failures::add);
-
-        return failures;
+        return super.getMetaItemValidationFailures(item);
     }
 
     @Override
@@ -374,8 +371,8 @@ public class AssetAttribute extends Attribute {
 
     public AssetAttribute deepCopy() {
         AssetAttribute copy = new AssetAttribute(getObjectValue().deepCopy());
-        copy.assetId = assetId;
         copy.name = name;
+        copy.assetId = assetId;
         return copy;
     }
 

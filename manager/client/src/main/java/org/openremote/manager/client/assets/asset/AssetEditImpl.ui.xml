@@ -26,16 +26,12 @@
 
         .newAttributeFormGroup {
 
-
         }
-    </ui:style>
 
-    <ui:style field="attributesEditorStyle"
-              type="org.openremote.manager.client.assets.asset.AssetEditImpl.AttributesEditorStyle">
         .stringEditor {
-            min-width: 5em;
-            width: 100%;
-        }
+             min-width: 5em;
+             width: 100%;
+         }
 
         .numberEditor {
             min-width: 5em;
@@ -54,17 +50,22 @@
 
         .metaItemNameEditor {
             min-width: 5em;
-            width: 35em;
+            width: 40%;
+            max-width: 30em;
         }
 
         .metaItemValueEditor {
+            min-width: 5em;
+        }
+
+        .agentLinkEditor {
 
         }
     </ui:style>
 
     <w:FlexSplitPanel ui:field="splitPanel"
                       handleStyle="{widgetStyle.SplitPanelHandle}"
-                      firstPanelWidth="200"
+                      firstPanelWidth="250"
                       firstPanelMinWidth="0"
                       secondPanelMinWidth="400">
 
@@ -230,7 +231,7 @@
 
                     </g:HTMLPanel>
 
-                    <g:FlowPanel ui:field="attributesEditorContainer"
+                    <g:FlowPanel ui:field="attributeViewContainer"
                                  styleName="flex layout vertical {widgetStyle.MainContent} {widgetStyle.FormList}"/>
 
                     <g:HTMLPanel styleName="flex-none layout vertical {widgetStyle.MainContent}">

@@ -27,35 +27,35 @@ import com.google.gwt.text.shared.AbstractRenderer;
 import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
 import com.google.gwt.uibinder.client.UiHandler;
-import com.google.gwt.user.client.ui.*;
+import com.google.gwt.user.client.ui.FlowPanel;
+import com.google.gwt.user.client.ui.HTMLPanel;
+import com.google.gwt.user.client.ui.Label;
+import com.google.gwt.user.client.ui.TextBox;
 import com.google.inject.Provider;
+import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.app.dialog.Confirmation;
 import org.openremote.manager.client.app.dialog.JsonEditor;
-import org.openremote.manager.client.assets.attributes.AttributesEditor;
+import org.openremote.manager.client.assets.attributes.AttributeView;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.assets.browser.AssetSelector;
 import org.openremote.manager.client.assets.browser.BrowserTreeNode;
-import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.widget.*;
-import org.openremote.manager.client.widget.Hyperlink;
-import org.openremote.manager.client.widget.PushButton;
 import org.openremote.model.Constants;
+import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetType;
-import org.openremote.model.attribute.AttributeType;
 import org.openremote.model.geo.GeoJSON;
+import org.openremote.model.util.Pair;
 import org.openremote.model.value.ObjectValue;
 
 import javax.inject.Inject;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
+import java.util.*;
 
 public class AssetEditImpl extends FormViewImpl implements AssetEdit {
 
     interface UI extends UiBinder<FlexSplitPanel, AssetEditImpl> {
     }
 
-    interface Style extends CssResource {
+    interface Style extends CssResource, AttributeView.Style {
 
         String navItem();
 
@@ -64,26 +64,28 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
         String mapWidget();
 
         String nameInput();
-    }
 
-    interface AttributesEditorStyle extends CssResource, AttributesEditor.Style {
-
-        String numberEditor();
+        String newAttributeFormGroup();
 
         String stringEditor();
+
+        String numberEditor();
 
         String booleanEditor();
 
         String regularAttribute();
 
         String highlightAttribute();
+
+        String metaItemNameEditor();
+
+        String metaItemValueEditor();
+
+        String agentLinkEditor();
     }
 
     @UiField
     Style style;
-
-    @UiField
-    AttributesEditorStyle attributesEditorStyle;
 
     @UiField
     FlexSplitPanel splitPanel;
@@ -137,7 +139,7 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
     @UiField
     Label customTypeInfoLabel;
     @UiField
-    FlowPanel attributesEditorContainer;
+    FlowPanel attributeViewContainer;
 
     /* ############################################################################ */
 
@@ -163,23 +165,26 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
 
     final AssetBrowser assetBrowser;
     final Provider<JsonEditor> jsonEditorProvider;
+    final Environment environment;
     Presenter presenter;
-    AttributesEditor attributesEditor;
+    Asset asset;
+    final List<AttributeView> attributeViews = new ArrayList<>();
 
     @Inject
     public AssetEditImpl(AssetBrowser assetBrowser,
                          Provider<Confirmation> confirmationDialogProvider,
                          Provider<JsonEditor> jsonEditorProvider,
-                         ManagerMessages managerMessages) {
+                         Environment environment) {
         super(confirmationDialogProvider);
         this.jsonEditorProvider = jsonEditorProvider;
         this.assetBrowser = assetBrowser;
+        this.environment = environment;
 
         parentAssetSelector = new AssetSelector(
             assetBrowser.getPresenter(),
-            managerMessages,
-            managerMessages.parentAsset(),
-            managerMessages.selectAssetDescription(),
+            environment.getMessages(),
+            environment.getMessages().parentAsset(),
+            environment.getMessages().selectAssetDescription(),
             false,
             treeNode -> {
                 if (presenter != null) {
@@ -189,14 +194,14 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
         ) {
             @Override
             public void beginSelection() {
-                AssetEditImpl.this.setOpaque(true);
+                AssetEditImpl.this.setDisabled(true);
                 super.beginSelection();
             }
 
             @Override
             public void endSelection() {
                 super.endSelection();
-                AssetEditImpl.this.setOpaque(false);
+                AssetEditImpl.this.setDisabled(false);
             }
         };
 
@@ -206,7 +211,7 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
                 public String render(AssetType assetType) {
                     if (assetType == null)
                         assetType = AssetType.CUSTOM;
-                    return managerMessages.assetTypeLabel(assetType.name());
+                    return environment.getMessages().assetTypeLabel(assetType.name());
                 }
             }
         );
@@ -250,9 +255,9 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
         customTypeInfoLabel.setVisible(false);
         showDroppedPin(GeoJSON.EMPTY_FEATURE_COLLECTION);
         hideMapPopup();
-        setOpaque(false);
-        attributesEditorContainer.clear();
-        attributesEditor = null;
+        setDisabled(false);
+        attributeViewContainer.clear();
+        attributeViews.clear();
         newAttributeFormGroup.setError(false);
         newAttributeNameInputText.setValue(null);
         newAttributeTypeListBox.clear();
@@ -261,6 +266,11 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
             assetBrowser.asWidget().removeFromParent();
             sidebarContainer.add(assetBrowser.asWidget());
         }
+    }
+
+    @Override
+    public AttributeView.Style getStyle() {
+        return style;
     }
 
     @Override
@@ -275,14 +285,20 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
                 && viewAssetLink.getTargetHistoryToken().length() > 0
                 && !busy
         );
+        addAttributeButton.setEnabled(!busy);
     }
 
     @Override
-    public void setAssetViewHistoryToken(String token) {
+    public void setHistoryToken(String token) {
         viewAssetLink.setTargetHistoryToken(token);
     }
 
     /* ############################################################################ */
+
+    @Override
+    public void setAsset(Asset asset) {
+        this.asset = asset;
+    }
 
     @Override
     public void setName(String name) {
@@ -365,6 +381,50 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
         }
     }
 
+    @Override
+    public void setAttributeViews(List<AttributeView> attributeViews) {
+        this.attributeViews.clear();
+        this.attributeViews.addAll(attributeViews);
+        refreshAttributeViewContainer();
+    }
+
+    @Override
+    public void addAttributeViews(List<AttributeView> attributeViews) {
+        this.attributeViews.addAll(attributeViews);
+        refreshAttributeViewContainer();
+    }
+
+    @Override
+    public void removeAttributeViews(List<AttributeView> attributeViews) {
+        this.attributeViews.removeAll(attributeViews);
+        refreshAttributeViewContainer();
+    }
+
+    @Override
+    public List<AttributeView> getAttributeViews() {
+        return attributeViews;
+    }
+
+    protected void refreshAttributeViewContainer() {
+        attributeViewContainer.clear();
+
+        if (attributeViews.size() == 0) {
+            Label emptyLabel = new Label(environment.getMessages().noAttributes());
+            emptyLabel.addStyleName(environment.getWidgetStyle().FormListEmptyMessage());
+            attributeViewContainer.add(emptyLabel);
+        } else {
+            sortAttributeViews();
+            attributeViews.forEach(
+                attributeView -> attributeViewContainer.add(attributeView)
+            );
+        }
+    }
+
+    protected void sortAttributeViews() {
+        // Sort by label/name ascending
+        attributeViews.sort(Comparator.comparing(o -> o.getAttribute().getLabelOrName().orElse("")));
+    }
+
     @UiHandler("centerMapButton")
     void centerMapClicked(ClickEvent e) {
         if (presenter != null)
@@ -413,56 +473,28 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
     }
 
     @Override
-    public AttributesEditor.Container getAttributesEditorContainer() {
-        return new AttributesEditor.Container() {
-            @Override
-            public AttributesEditor.Style getStyle() {
-                return attributesEditorStyle;
-            }
-
-            @Override
-            public InsertPanel getPanel() {
-                return attributesEditorContainer;
-            }
-
-            @Override
-            public JsonEditor getJsonEditor() {
-                return jsonEditorProvider.get();
-            }
-
-            @Override
-            public ManagerMessages getMessages() {
-                return managerMessages;
-            }
-        };
-    }
-
-    @Override
-    public void setAttributesEditor(AttributesEditor editor) {
-        this.attributesEditor = editor;
-        attributesEditorContainer.clear();
-    }
-
-    @Override
-    public void setNewAttributeError(boolean error) {
-        newAttributeFormGroup.setError(error);
-    }
-
-    @Override
-    public void setAvailableAttributeTypes(AttributeType[] types) {
+    public void setAvailableAttributeTypes(List<Pair<String,String>> displayNamesAndTypes) {
         newAttributeTypeListBox.clear();
-        newAttributeTypeListBox.addItem(managerMessages.selectType());
-        for (AttributeType attributeType: types) {
-            newAttributeTypeListBox.addItem(
-                managerMessages.attributeType(attributeType.name())
-            );
-        }
+        newAttributeTypeListBox.addItem(managerMessages.selectType(), "");
+        displayNamesAndTypes.forEach(
+            displayNameAndType ->
+                newAttributeTypeListBox.addItem(
+                    displayNameAndType.key, displayNameAndType.value
+                )
+        );
     }
 
     @UiHandler("addAttributeButton")
     public void addAttributeButtonClicked(ClickEvent e) {
-        if (presenter != null)
-            presenter.addAttribute(newAttributeNameInputText.getValue(), newAttributeTypeListBox.getSelectedIndex()-1);
+        if (presenter != null) {
+            if (presenter.addAttribute(
+                newAttributeNameInputText.getValue(),
+                newAttributeTypeListBox.getSelectedValue()
+            )) {
+                newAttributeNameInputText.setValue(null);
+                newAttributeTypeListBox.setSelectedIndex(0);
+            }
+        }
     }
 
     /* ############################################################################ */
@@ -507,15 +539,15 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
 
     /* ############################################################################ */
 
-    protected void setOpaque(boolean opaque) {
-        nameGroup.setOpaque(opaque);
-        createdOnGroup.setOpaque(opaque);
-        locationGroup.setOpaque(opaque);
-        mapWidget.setOpaque(opaque);
-        typeGroup.setOpaque(opaque);
-        if (attributesEditor != null)
-            attributesEditor.setOpaque(opaque);
-        newAttributeFormGroup.setOpaque(opaque);
-        submitButtonGroup.setOpaque(opaque);
+    protected void setDisabled(boolean disabled) {
+        nameGroup.setDisabled(disabled);
+        createdOnGroup.setDisabled(disabled);
+        locationGroup.setDisabled(disabled);
+        mapWidget.setOpaque(disabled);
+        typeGroup.setDisabled(disabled);
+        newAttributeFormGroup.setDisabled(disabled);
+        submitButtonGroup.setDisabled(disabled);
+
+        attributeViews.forEach(attributeView -> attributeView.setDisabled(disabled));
     }
 }

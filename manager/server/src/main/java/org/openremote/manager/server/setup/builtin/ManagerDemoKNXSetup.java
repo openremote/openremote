@@ -39,8 +39,6 @@ import org.openremote.model.attribute.AttributeType;
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.value.Values;
 
-import com.vividsolutions.jts.geom.Coordinate;
-
 public class ManagerDemoKNXSetup extends AbstractManagerSetup {
 
     public String masterRealmId;
@@ -66,7 +64,7 @@ public class ManagerDemoKNXSetup extends AbstractManagerSetup {
         knxAgent.setAttributes(
             initProtocolConfiguration(new AssetAttribute("knxConfig"), KNXProtocol.PROTOCOL_NAME)
                 .addMeta(
-                    new MetaItem(KNXProtocol.KNX_GATEWAY_IP, Values.create("192.168.100.10"))
+                    new MetaItem(KNXProtocol.META_KNX_GATEWAY_IP, Values.create("192.168.100.10"))
                 )
         );
         knxAgent.setRealmId(masterTenant.getId());
@@ -78,27 +76,27 @@ public class ManagerDemoKNXSetup extends AbstractManagerSetup {
                     .setMeta(
                         new MetaItem(LABEL, Values.create("Light 1 (Switch)")),
                         new MetaItem(DESCRIPTION, Values.create("Light 1 connected to a KNX switch actuator")),
-                        new MetaItem(KNXProtocol.ACTION_GA, Values.create("1/0/17")),
-                        new MetaItem(KNXProtocol.STATUS_GA, Values.create("0/4/14")),
-                        new MetaItem(KNXProtocol.DPT, Values.create("1.001")),
+                        new MetaItem(KNXProtocol.META_KNX_ACTION_GA, Values.create("1/0/17")),
+                        new MetaItem(KNXProtocol.META_KNX_STATUS_GA, Values.create("0/4/14")),
+                        new MetaItem(KNXProtocol.META_KNX_DPT, Values.create("1.001")),
                         new MetaItem(AssetMeta.AGENT_LINK, new AttributeRef(knxAgent.getId(), "knxConfig").toArrayValue())
                     ),
                 new AssetAttribute("Light2_Switch", AttributeType.BOOLEAN)
                     .setMeta(
                         new MetaItem(LABEL, Values.create("Light 2 (Switch)")),
                         new MetaItem(DESCRIPTION, Values.create("Light 2 connected to a KNX dimming actuator")),
-                        new MetaItem(KNXProtocol.ACTION_GA, Values.create("1/0/11")),
-                        new MetaItem(KNXProtocol.STATUS_GA, Values.create("0/4/10")),
-                        new MetaItem(KNXProtocol.DPT, Values.create("1.001")),
+                        new MetaItem(KNXProtocol.META_KNX_ACTION_GA, Values.create("1/0/11")),
+                        new MetaItem(KNXProtocol.META_KNX_STATUS_GA, Values.create("0/4/10")),
+                        new MetaItem(KNXProtocol.META_KNX_DPT, Values.create("1.001")),
                         new MetaItem(AssetMeta.AGENT_LINK, new AttributeRef(knxAgent.getId(), "knxConfig").toArrayValue())
                     ),
                 new AssetAttribute("Light2_Dimming", AttributeType.PERCENTAGE)
                     .setMeta(
                         new MetaItem(LABEL, Values.create("Light 2 (Dimming)")),
                         new MetaItem(DESCRIPTION, Values.create("Light 2 connected to a KNX dimming actuator")),
-                        new MetaItem(KNXProtocol.ACTION_GA, Values.create("1/0/13")),
-                        new MetaItem(KNXProtocol.STATUS_GA, Values.create("0/4/11")),
-                        new MetaItem(KNXProtocol.DPT, Values.create("5.001")),
+                        new MetaItem(KNXProtocol.META_KNX_ACTION_GA, Values.create("1/0/13")),
+                        new MetaItem(KNXProtocol.META_KNX_STATUS_GA, Values.create("0/4/11")),
+                        new MetaItem(KNXProtocol.META_KNX_DPT, Values.create("5.001")),
                         new MetaItem(AssetMeta.AGENT_LINK, new AttributeRef(knxAgent.getId(), "knxConfig").toArrayValue())
                     ),
                 new AssetAttribute("Temperature", AttributeType.TEMPERATURE_CELCIUS)
@@ -106,8 +104,8 @@ public class ManagerDemoKNXSetup extends AbstractManagerSetup {
                         new MetaItem(LABEL, Values.create("Temperature")),
                         new MetaItem(DESCRIPTION, Values.create("Temperature given by a KNX sensor")),
                         new MetaItem(READ_ONLY, Values.create(true)), 
-                        new MetaItem(KNXProtocol.STATUS_GA, Values.create("4/1/10")),
-                        new MetaItem(KNXProtocol.DPT, Values.create("9.001")),
+                        new MetaItem(KNXProtocol.META_KNX_STATUS_GA, Values.create("4/1/10")),
+                        new MetaItem(KNXProtocol.META_KNX_DPT, Values.create("9.001")),
                         new MetaItem(AssetMeta.AGENT_LINK, new AttributeRef(knxAgent.getId(), "knxConfig").toArrayValue())
                     ),
                 new AssetAttribute("Presence", AttributeType.BOOLEAN)
@@ -115,8 +113,8 @@ public class ManagerDemoKNXSetup extends AbstractManagerSetup {
                         new MetaItem(LABEL, Values.create("Presence")),
                         new MetaItem(DESCRIPTION, Values.create("KNX presence detector")),
                         new MetaItem(READ_ONLY, Values.create(true)), 
-                        new MetaItem(KNXProtocol.STATUS_GA, Values.create("4/0/2")),
-                        new MetaItem(KNXProtocol.DPT, Values.create("1.001")),
+                        new MetaItem(KNXProtocol.META_KNX_STATUS_GA, Values.create("4/0/2")),
+                        new MetaItem(KNXProtocol.META_KNX_DPT, Values.create("1.001")),
                         new MetaItem(AssetMeta.AGENT_LINK, new AttributeRef(knxAgent.getId(), "knxConfig").toArrayValue())
                     ),
                 new AssetAttribute("WindowStatus", AttributeType.BOOLEAN)
@@ -124,8 +122,8 @@ public class ManagerDemoKNXSetup extends AbstractManagerSetup {
                         new MetaItem(LABEL, Values.create("Window status")),
                         new MetaItem(DESCRIPTION, Values.create("KNX binary input")),
                         new MetaItem(READ_ONLY, Values.create(true)), 
-                        new MetaItem(KNXProtocol.STATUS_GA, Values.create("4/0/16")),
-                        new MetaItem(KNXProtocol.DPT, Values.create("1.001")),
+                        new MetaItem(KNXProtocol.META_KNX_STATUS_GA, Values.create("4/0/16")),
+                        new MetaItem(KNXProtocol.META_KNX_DPT, Values.create("1.001")),
                         new MetaItem(AssetMeta.AGENT_LINK, new AttributeRef(knxAgent.getId(), "knxConfig").toArrayValue())
                     )
         );

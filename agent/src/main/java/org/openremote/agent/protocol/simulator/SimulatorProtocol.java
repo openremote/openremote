@@ -21,18 +21,17 @@ package org.openremote.agent.protocol.simulator;
 
 import org.openremote.agent.protocol.AbstractProtocol;
 import org.openremote.agent.protocol.ConnectionStatus;
-import org.openremote.model.simulator.element.ColorSimulatorElement;
-import org.openremote.model.simulator.element.NumberSimulatorElement;
-import org.openremote.model.simulator.SimulatorElement;
-import org.openremote.model.simulator.element.SwitchSimulatorElement;
 import org.openremote.model.AbstractValueHolder;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.attribute.AttributeEvent;
-import org.openremote.model.attribute.AttributeRef;
-import org.openremote.model.attribute.AttributeState;
+import org.openremote.model.attribute.*;
+import org.openremote.model.simulator.SimulatorElement;
 import org.openremote.model.simulator.SimulatorState;
+import org.openremote.model.simulator.element.ColorSimulatorElement;
+import org.openremote.model.simulator.element.NumberSimulatorElement;
+import org.openremote.model.simulator.element.SwitchSimulatorElement;
 import org.openremote.model.value.Value;
+import org.openremote.model.value.ValueType;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -42,6 +41,7 @@ import java.util.stream.Collectors;
 import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
 import static org.openremote.model.asset.AssetMeta.RANGE_MAX;
 import static org.openremote.model.asset.AssetMeta.RANGE_MIN;
+import static org.openremote.model.util.TextUtil.REGEXP_PATTERN_INTEGER_POSITIVE;
 
 public class SimulatorProtocol extends AbstractProtocol {
 
@@ -98,6 +98,7 @@ public class SimulatorProtocol extends AbstractProtocol {
     public static final int DEFAULT_WRITE_DELAY = 1000;
 
     public static final String PROTOCOL_NAME = PROTOCOL_NAMESPACE + ":simulator";
+    public static final String PROTOCOL_DISPLAY_NAME = "Simulator";
 
     /**
      * Required meta item, the simulator element that should be used, see subclasses of {@link SimulatorElement}.
@@ -115,9 +116,54 @@ public class SimulatorProtocol extends AbstractProtocol {
      */
     public static final String CONFIG_WRITE_DELAY_MILLISECONDS = PROTOCOL_NAME + ":delayMilliseconds";
 
+    protected static final String VERSION = "1.0";
+
     static final protected Map<AttributeRef, Instance> instances = new HashMap<>();
     static final protected Map<AttributeRef, AttributeRef> attributeInstanceMap = new HashMap<>();
     static final protected Map<AttributeRef, SimulatorElement> elements = new HashMap<>();
+
+    protected static final List<MetaItemDescriptor> PROTOCOL_META_ITEM_DESCRIPTORS = Arrays.asList(
+        new MetaItemDescriptorImpl("PROTOCOL_SIMULATOR_MODE",
+            CONFIG_MODE,
+            ValueType.STRING,
+            false,
+            "^(WRITE_THROUGH_IMMEDIATE|WRITE_THROUGH_DELAYED|MANUAL)$",
+            "WRITE_THROUGH_IMMEDIATE|WRITE_THROUGH_DELAYED|MANUAL",
+            null,
+            null,
+            false),
+        new MetaItemDescriptorImpl(
+            "PROTOCOL_SIMULATOR_WRITE_DELAY",
+            CONFIG_WRITE_DELAY_MILLISECONDS,
+            ValueType.NUMBER,
+            false,
+            REGEXP_PATTERN_INTEGER_POSITIVE,
+            MetaItemDescriptor.PatternFailure.INTEGER_POSITIVE.name(),
+            null,
+            null,
+            false)
+    );
+
+    protected static final List<MetaItemDescriptor> ATTRIBUTE_META_ITEM_DESCRIPTORS = Collections.singletonList(
+        new MetaItemDescriptorImpl(
+            "PROTOCOL_SIMULATOR_ELEMENT",
+            SIMULATOR_ELEMENT,
+            ValueType.STRING,
+            true,
+            "^(" +
+                SwitchSimulatorElement.ELEMENT_NAME.toUpperCase(Locale.ROOT) + "|" +
+                NumberSimulatorElement.ELEMENT_NAME.toUpperCase(Locale.ROOT) + "|" +
+                NumberSimulatorElement.ELEMENT_NAME_RANGE.toUpperCase(Locale.ROOT) + "|" +
+                ColorSimulatorElement.ELEMENT_NAME.toUpperCase(Locale.ROOT) +
+                ")$",
+            SwitchSimulatorElement.ELEMENT_NAME.toUpperCase(Locale.ROOT) + "|" +
+                NumberSimulatorElement.ELEMENT_NAME.toUpperCase(Locale.ROOT) + "|" +
+                NumberSimulatorElement.ELEMENT_NAME_RANGE.toUpperCase(Locale.ROOT) + "|" +
+                ColorSimulatorElement.ELEMENT_NAME.toUpperCase(Locale.ROOT),
+            null,
+            null,
+            false)
+    );
 
     // TODO This is not nice, find a better way how the protocol can talk to the service (through message bus?)
     protected Consumer<AttributeRef> protocolConfigurationValuesChangedHandler;
@@ -125,6 +171,26 @@ public class SimulatorProtocol extends AbstractProtocol {
     @Override
     public String getProtocolName() {
         return PROTOCOL_NAME;
+    }
+
+    @Override
+    public String getProtocolDisplayName() {
+        return PROTOCOL_DISPLAY_NAME;
+    }
+
+    @Override
+    public String getVersion() {
+        return VERSION;
+    }
+
+    @Override
+    protected List<MetaItemDescriptor> getProtocolConfigurationMetaItemDescriptors() {
+        return PROTOCOL_META_ITEM_DESCRIPTORS;
+    }
+
+    @Override
+    protected List<MetaItemDescriptor> getLinkedAttributeMetaItemDescriptors() {
+        return ATTRIBUTE_META_ITEM_DESCRIPTORS;
     }
 
     @Override
@@ -351,7 +417,8 @@ public class SimulatorProtocol extends AbstractProtocol {
 
             Optional<Value> oldValue = element.getValue();
             element.setValue(attributeState.getCurrentValue().orElse(null));
-            List<ValidationFailure> failures =element.getValidationFailures();
+            List<ValidationFailure> failures = element.getValidationFailures();
+
             if (!failures.isEmpty()) {
                 // Reset to old value
                 oldValue.ifPresent(element::setValue);

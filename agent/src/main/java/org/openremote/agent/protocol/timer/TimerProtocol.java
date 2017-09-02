@@ -23,25 +23,22 @@ import org.openremote.agent.protocol.AbstractProtocol;
 import org.openremote.agent.protocol.ConnectionStatus;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetMeta;
-import org.openremote.model.attribute.AttributeEvent;
-import org.openremote.model.attribute.AttributeRef;
-import org.openremote.model.attribute.AttributeState;
-import org.openremote.model.attribute.MetaItem;
+import org.openremote.model.attribute.*;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.value.Value;
+import org.openremote.model.value.ValueType;
 import org.openremote.model.value.Values;
 import org.quartz.CronExpression;
 
 import javax.ws.rs.NotSupportedException;
 import java.text.ParseException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.logging.Logger;
 
 import static java.util.logging.Level.FINER;
 import static org.openremote.agent.protocol.timer.TimerConfiguration.*;
 import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
+import static org.openremote.model.util.TextUtil.REGEXP_PATTERN_CRON_EXPRESSION;
 
 /**
  * This protocol can be used to trigger an {@link AttributeEvent} using a cron based timer.
@@ -62,15 +59,92 @@ public class TimerProtocol extends AbstractProtocol {
     private static final Logger LOG = Logger.getLogger(TimerProtocol.class.getName());
 
     public static final String PROTOCOL_NAME = PROTOCOL_NAMESPACE + ":timer";
+    public static final String PROTOCOL_DISPLAY_NAME = "Timer";
     public static final String META_TIMER_CRON_EXPRESSION = PROTOCOL_NAME + ":cronExpression";
     public static final String META_TIMER_ACTION = PROTOCOL_NAME + ":action";
     public static final String META_TIMER_VALUE_LINK = PROTOCOL_NAME + ":link";
+    protected static final String VERSION = "1.0";
+
+    protected static final List<MetaItemDescriptor> PROTOCOL_META_ITEM_DESCRIPTORS = Arrays.asList(
+        new MetaItemDescriptorImpl("PROTOCOL_TIMER_CRON",
+            META_TIMER_CRON_EXPRESSION,
+            ValueType.STRING,
+            true,
+            REGEXP_PATTERN_CRON_EXPRESSION,
+            MetaItemDescriptor.PatternFailure.CRON_EXPRESSION.name(),
+            null,
+            null,
+            false),
+        new MetaItemDescriptorImpl(
+            "PROTOCOL_TIMER_ACTION",
+            META_TIMER_ACTION,
+            ValueType.OBJECT,
+            true,
+            null,
+            null,
+            null,
+            null,
+            false)
+    );
+
+    protected static final List<MetaItemDescriptor> ATTRIBUTE_META_ITEM_DESCRIPTORS = Collections.singletonList(
+        new MetaItemDescriptorImpl(
+            "PROTOCOL_TIMER_LINK",
+            META_TIMER_VALUE_LINK,
+            ValueType.STRING,
+            true,
+            "^(?i)(" +
+                TimerValue.ENABLED + "|" +
+                TimerValue.CRON_EXPRESSION + "|" +
+                TimerValue.TIME +
+                ")$",
+            TimerValue.ENABLED + "|" +
+                TimerValue.CRON_EXPRESSION + "|" +
+                TimerValue.TIME,
+            null,
+            null,
+            false)
+    );
+
     protected final Map<AttributeRef, CronExpressionParser> cronExpressionMap = new HashMap<>();
     protected CronScheduler cronScheduler;
 
     @Override
     public String getProtocolName() {
         return PROTOCOL_NAME;
+    }
+
+    @Override
+    public String getProtocolDisplayName() {
+        return PROTOCOL_DISPLAY_NAME;
+    }
+
+    @Override
+    public AssetAttribute getProtocolConfigurationTemplate() {
+        return super.getProtocolConfigurationTemplate()
+            .addMeta(
+                new MetaItem(META_TIMER_CRON_EXPRESSION, null),
+                new MetaItem(META_TIMER_ACTION, null)
+            );
+    }
+
+    @Override
+    public AttributeValidationResult validateProtocolConfiguration(AssetAttribute protocolConfiguration) {
+        AttributeValidationResult result = super.validateProtocolConfiguration(protocolConfiguration);
+        if (result.isValid()) {
+            TimerConfiguration.validateTimerConfiguration(protocolConfiguration, result);
+        }
+        return result;
+    }
+
+    @Override
+    protected List<MetaItemDescriptor> getProtocolConfigurationMetaItemDescriptors() {
+        return PROTOCOL_META_ITEM_DESCRIPTORS;
+    }
+
+    @Override
+    protected List<MetaItemDescriptor> getLinkedAttributeMetaItemDescriptors() {
+        return ATTRIBUTE_META_ITEM_DESCRIPTORS;
     }
 
     @Override
@@ -281,6 +355,11 @@ public class TimerProtocol extends AbstractProtocol {
         synchronized (cronExpressionMap) {
             return cronExpressionMap.get(timerRef);
         }
+    }
+
+    @Override
+    public String getVersion() {
+        return VERSION;
     }
 
     protected static String getTimerId(AttributeRef timerRef) {

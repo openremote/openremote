@@ -19,12 +19,14 @@
  */
 package org.openremote.model.asset;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.hibernate.annotations.Formula;
 import org.openremote.model.IdentifiableEntity;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.geo.GeoJSON;
 import org.openremote.model.geo.GeoJSONFeature;
 import org.openremote.model.geo.GeoJSONGeometry;
+import org.openremote.model.util.ObservableList;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Values;
@@ -34,11 +36,9 @@ import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Predicate;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -264,6 +264,10 @@ public class Asset implements IdentifiableEntity {
     @Transient
     protected double[] coordinates;
 
+    @Transient
+    @JsonIgnore
+    protected ObservableList<AssetAttribute> attributeList;
+
     // The following are expensive to query, so if they are null, they might not have been loaded
 
     @Formula("get_asset_tree_path(ID)")
@@ -331,10 +335,6 @@ public class Asset implements IdentifiableEntity {
 
 
     public void addAttributes(AssetAttribute... attributes) throws IllegalArgumentException {
-        if (this.attributes == null) {
-            this.attributes = Values.createObject();
-        }
-
         Arrays.asList(attributes).forEach(
             attribute -> {
                 if (getAttributesStream().anyMatch(attr -> isAttributeNameEqualTo(attr, attribute.getName().orElse(null)))) {
@@ -354,18 +354,14 @@ public class Asset implements IdentifiableEntity {
             throw new IllegalArgumentException("Attribute cannot be null and must have a name and type");
 
         attribute.assetId = getId();
-        if (attributes == null) {
-            attributes = Values.createObject();
-        }
-        attributes.put(attribute.getName().get(), attribute.getObjectValue());
+        List<AssetAttribute> attributeList = getAttributesList();
+        attributeList.removeIf(attr -> attr.getName().orElse("").equals(attribute.getName().orElse("")));
+        attributeList.add(attribute);
     }
 
     public void removeAttribute(String name) {
-        if (attributes == null) {
-            return;
-        }
-
-        attributes.remove(name);
+        List<AssetAttribute> attributeList = getAttributesList();
+        attributeList.removeIf(attr -> attr.getName().orElse("").equals(name));
     }
 
     public String getId() {
@@ -538,11 +534,16 @@ public class Asset implements IdentifiableEntity {
     }
 
     public Stream<AssetAttribute> getAttributesStream() {
-        return attributesFromJson(attributes, id);
+        return getAttributesList().stream();
     }
 
     public List<AssetAttribute> getAttributesList() {
-        return getAttributesStream().collect(Collectors.toList());
+        if (attributeList == null) {
+            attributeList = new ObservableList<>(attributesFromJson(attributes, id).collect(Collectors.toList()), () -> {
+                this.attributes = attributesToJson(attributeList).orElse(Values.createObject());
+            });
+        }
+        return attributeList;
     }
 
     public boolean hasAttribute(String name) {
@@ -555,11 +556,12 @@ public class Asset implements IdentifiableEntity {
     }
 
     public void setAttributes(ObjectValue attributes) {
-        this.attributes = attributes;
+        setAttributes(attributesFromJson(attributes, id).collect(Collectors.toList()));
     }
 
     public void setAttributes(List<AssetAttribute> attributes) {
-        this.attributes = attributesToJson(attributes).orElse(Values.createObject());
+        ((ObservableList)getAttributesList()).clear(false);
+        getAttributesList().addAll(attributes);
     }
 
     public void setAttributes(AssetAttribute... attributes) {
@@ -642,8 +644,6 @@ public class Asset implements IdentifiableEntity {
         if (asset == null)
             return;
 
-        List<AssetAttribute> attributes = asset.getAttributesList();
-        attributes.removeIf(filter);
-        asset.setAttributes(attributes);
+        asset.getAttributesList().removeIf(filter);
     }
 }
