@@ -29,7 +29,6 @@ import org.openremote.manager.client.assets.AssetBrowsingActivity;
 import org.openremote.manager.client.assets.attributes.AbstractAttributeViewExtension;
 import org.openremote.manager.client.assets.attributes.AttributeView;
 import org.openremote.manager.client.assets.attributes.AttributeViewImpl;
-import org.openremote.manager.client.assets.attributes.MetaEditor;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.assets.browser.AssetBrowserSelection;
 import org.openremote.manager.client.assets.browser.AssetTreeNode;
@@ -264,7 +263,11 @@ public abstract class AbstractAssetActivity<V extends AssetBaseView.Presenter, U
                         if (result.isValid()) {
                             attribute
                                 .getReference()
-                                .map(attributeRef -> new AttributeState(attributeRef, attribute.getValue().orElse(null)))
+                                .map(attributeRef -> {
+                                    // Clear timestamp and let the server set it
+                                    attribute.setValueTimestamp(0);
+                                    return new AttributeState(attributeRef, attribute.getValue().orElse(null));
+                                })
                                 .map(attributeState -> new AttributeEvent(attributeState, attribute.getValueTimestamp().orElse(0L)))
                                 .ifPresent(attributeEvent -> {
                                     environment.getEventService().dispatch(attributeEvent);
