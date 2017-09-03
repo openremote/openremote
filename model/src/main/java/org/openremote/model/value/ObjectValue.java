@@ -60,6 +60,8 @@ public interface ObjectValue extends Value {
 
     boolean hasKey(String key);
 
+    boolean hasKeys();
+
     ObjectValue put(String key, Value value);
 
     ObjectValue put(String key, String value);

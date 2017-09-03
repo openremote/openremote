@@ -96,6 +96,11 @@ public class ObjectValueImpl extends ValueImpl implements ObjectValue {
     }
 
     @Override
+    public boolean hasKeys() {
+        return !map.isEmpty();
+    }
+
+    @Override
     public ObjectValue put(String key, Value value) {
         if (value == null) {
             map.remove(key);

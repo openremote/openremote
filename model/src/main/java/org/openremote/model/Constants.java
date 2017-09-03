@@ -32,6 +32,7 @@ public interface Constants {
     String PERSISTENCE_JSON_VALUE_TYPE = "json_value";
     String PERSISTENCE_JSON_OBJECT_TYPE = "json_object";
     String PERSISTENCE_JSON_ARRAY_TYPE = "json_array";
+    String PERSISTENCE_STRING_ARRAY_TYPE = "string_array";
     String NAMESPACE = "urn:openremote";
     String PROTOCOL_NAMESPACE = NAMESPACE + ":protocol";
     String ASSET_NAMESPACE = NAMESPACE + ":asset";
