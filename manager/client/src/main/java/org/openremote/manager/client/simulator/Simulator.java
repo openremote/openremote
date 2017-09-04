@@ -61,7 +61,7 @@ public class Simulator extends AbstractAttributeViewExtension {
         this.onCreate = onCreate;
         this.onClose = onClose;
 
-        setStyleName("layout vertical center or-Simulator");
+        setStyleName("layout vertical or-Simulator");
     }
 
     @Override
@@ -97,6 +97,7 @@ public class Simulator extends AbstractAttributeViewExtension {
 
     protected void writeView() {
         clear();
+        addLabel(environment.getMessages().simulator());
         formGroups.clear();
 
         List<SimulatorElement> sortedElements = Arrays.asList(simulatorState.getElements());
@@ -104,8 +105,6 @@ public class Simulator extends AbstractAttributeViewExtension {
 
         for (SimulatorElement element : sortedElements) {
             FormGroup formGroup = new FormGroup();
-
-            formGroup.getElement().getStyle().setWidth(80, com.google.gwt.dom.client.Style.Unit.PCT);
 
             String elementName = simulatorState.getElementName(element);
             FormLabel formLabel = new FormLabel(elementName);

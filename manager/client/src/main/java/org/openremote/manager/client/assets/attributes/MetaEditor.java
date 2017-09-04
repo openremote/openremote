@@ -125,6 +125,7 @@ public class MetaEditor extends AbstractAttributeViewExtension {
             valueTypes.stream()
                 .map(Enum::name)
                 .map(valueType -> new Pair<>(environment.getMessages().valueTypeDisplayName(valueType), valueType))
+                .sorted(Comparator.comparing(typeEntry -> typeEntry.key))
                 .forEach(typeEntry -> typeList.addItem(typeEntry.key, typeEntry.value));
 
             typeList.addChangeHandler(event -> onTypeChanged(true));

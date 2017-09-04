@@ -70,7 +70,7 @@ public class TimerProtocol extends AbstractProtocol {
             META_TIMER_CRON_EXPRESSION,
             ValueType.STRING,
             true,
-            REGEXP_PATTERN_CRON_EXPRESSION,
+            null, // TODO Should use TextUtil.REGEXP_PATTERN_CRON_EXPRESSION
             MetaItemDescriptor.PatternFailure.CRON_EXPRESSION.name(),
             null,
             null,
@@ -93,7 +93,7 @@ public class TimerProtocol extends AbstractProtocol {
             META_TIMER_VALUE_LINK,
             ValueType.STRING,
             true,
-            "^(?i)(" +
+            "^(" +
                 TimerValue.ENABLED + "|" +
                 TimerValue.CRON_EXPRESSION + "|" +
                 TimerValue.TIME +

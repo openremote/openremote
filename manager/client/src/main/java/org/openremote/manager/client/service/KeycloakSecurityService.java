@@ -44,11 +44,13 @@ public class KeycloakSecurityService implements SecurityService {
                                    EventBus eventBus) {
         this.keycloak = keycloak;
 
-        onAuthSuccess(() -> eventBus.dispatch(
-            new UserChangeEvent(getParsedToken().getPreferredUsername())
-        ));
+        onAuthSuccess(() -> {
+            LOG.info("On authentication, user changed: " + getParsedToken().getPreferredUsername());
+            eventBus.dispatch(new UserChangeEvent(getParsedToken().getPreferredUsername()));
+        });
 
         onAuthLogout(() -> {
+            LOG.info("Keycloak logout (session expired?)");
             eventBus.dispatch(new UserChangeEvent(null));
         });
 

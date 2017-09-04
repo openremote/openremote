@@ -70,7 +70,7 @@ public abstract class DatapointBrowser extends AbstractAttributeViewExtension {
         this.interval = interval;
         this.timestamp = timestamp;
 
-        setStyleName("layout vertical center or-DatapointBrowser");
+        setStyleName("layout vertical or-DatapointBrowser");
     }
 
     @Override
@@ -139,12 +139,14 @@ public abstract class DatapointBrowser extends AbstractAttributeViewExtension {
         FlowPanel canvasContainer = new FlowPanel();
         canvasContainer.setWidth(width + "px");
         canvasContainer.setHeight(height + "px");
+        canvasContainer.getElement().getStyle().setProperty("margin", "0 auto");
         canvasContainer.add(canvas);
         add(canvasContainer);
 
         Form controlForm = new Form();
         controlForm.getElement().getStyle().setWidth(width, PX);
         controlForm.getElement().getStyle().setMarginTop(0.4, EM);
+        controlForm.getElement().getStyle().setProperty("margin", "0 auto");
         add(controlForm);
 
         FormGroup controlFormGroup = new FormGroup();

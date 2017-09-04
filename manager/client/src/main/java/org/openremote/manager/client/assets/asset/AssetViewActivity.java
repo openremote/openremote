@@ -47,7 +47,6 @@ import org.openremote.model.datapoint.Datapoint;
 import org.openremote.model.datapoint.DatapointInterval;
 import org.openremote.model.datapoint.NumberDatapoint;
 import org.openremote.model.simulator.SimulatorState;
-import org.openremote.model.value.ValueType;
 
 import javax.inject.Inject;
 import java.util.ArrayList;
@@ -57,7 +56,6 @@ import java.util.Optional;
 import java.util.function.Consumer;
 
 import static org.openremote.manager.client.http.RequestExceptionHandler.handleRequestException;
-import static org.openremote.model.attribute.Attribute.isAttributeTypeEqualTo;
 import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 
 public class AssetViewActivity

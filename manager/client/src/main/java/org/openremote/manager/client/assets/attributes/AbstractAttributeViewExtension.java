@@ -22,7 +22,6 @@ package org.openremote.manager.client.assets.attributes;
 import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.widget.FormSection;
 import org.openremote.model.ValidationFailure;
-import org.openremote.model.ValueHolder;
 import org.openremote.model.asset.AssetAttribute;
 
 import java.util.function.Consumer;

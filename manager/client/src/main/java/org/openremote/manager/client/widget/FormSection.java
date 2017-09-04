@@ -20,9 +20,6 @@
 package org.openremote.manager.client.widget;
 
 import com.google.gwt.user.client.ui.FlowPanel;
-import com.google.gwt.user.client.ui.IsWidget;
-
-import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 
 /**
  * Represents a {@link FormSectionLabel} and one or more {@link com.google.gwt.user.client.ui.Widget}s to be displayed
@@ -32,6 +29,10 @@ public class FormSection extends FlowPanel {
     protected FormSectionLabel label = new FormSectionLabel();
 
     public FormSection(String label) {
+        addLabel(label);
+    }
+
+    public void addLabel(String label) {
         this.label.setText(label);
         add(this.label);
     }

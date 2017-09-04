@@ -28,6 +28,7 @@ import org.openremote.model.attribute.MetaItemDescriptor;
 import java.util.List;
 
 public class ProtocolDescriptor {
+
     protected String name;
     protected String displayName;
     protected String version;

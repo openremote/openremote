@@ -199,7 +199,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                         new MetaItem(
                             SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME_RANGE)),
                         new MetaItem(
-                            SimulatorProtocol.CONFIG_MODE, Values.create(true))
+                            SimulatorProtocol.CONFIG_MODE, Values.create(SimulatorProtocol.Mode.WRITE_THROUGH_DELAYED.toString()))
                     )
                 ),
             new AssetAttribute("light1Color", COLOR_RGB, new ColorRGB(88, 123, 88).asArrayValue())

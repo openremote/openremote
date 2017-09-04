@@ -218,7 +218,7 @@ class AdminUsersActivityTest extends Specification implements ManagerContainerTr
 
         and: "The view should have received the tenants and selected realm"
         conditions.eventually {
-            assert resultTenants.length == 4
+            assert resultTenants.length == 3
             assert resultSelectedRealm == null
         }
 
@@ -244,7 +244,7 @@ class AdminUsersActivityTest extends Specification implements ManagerContainerTr
 
         and: "The view should have received the tenants, selected realm, and users"
         conditions.eventually {
-            assert resultTenants.length == 4
+            assert resultTenants.length == 3
             assert resultSelectedRealm == MASTER_REALM
             assert resultUsers.length == 2
         }
@@ -651,7 +651,7 @@ class AdminUsersActivityTest extends Specification implements ManagerContainerTr
 
         and: "The view should have received the tenants and users"
         conditions.eventually {
-            assert resultTenants.length == 4
+            assert resultTenants.length == 3
             assert resultSelectedRealm == MASTER_REALM
             assert resultUsers.length == 2
         }
