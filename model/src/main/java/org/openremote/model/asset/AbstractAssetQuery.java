@@ -108,6 +108,19 @@ public class AbstractAssetQuery<CHILD extends AbstractAssetQuery<CHILD>> {
         }
     }
 
+    public enum NumberMatch {
+        EXACT,
+        GREATER_THEN,
+        GREATER_EQUALS,
+        LESS_THEN,
+        LESS_EQUALS
+    }
+
+    public enum NumberType {
+        DOUBLE,
+        INTEGER
+    }
+
     public enum DateMatch {
         EXACT,
         BEFORE,
@@ -121,7 +134,8 @@ public class AbstractAssetQuery<CHILD extends AbstractAssetQuery<CHILD>> {
         @JsonSubTypes.Type(value = StringPredicate.class, name = "string"),
         @JsonSubTypes.Type(value = BooleanPredicate.class, name = "boolean"),
         @JsonSubTypes.Type(value = StringArrayPredicate.class, name = "string-array"),
-        @JsonSubTypes.Type(value = DateTimePredicate.class, name = "datetime")
+        @JsonSubTypes.Type(value = DateTimePredicate.class, name = "datetime"),
+        @JsonSubTypes.Type(value = NumberPredicate.class, name = "number")
     })
     @JsonTypeInfo(
         use = JsonTypeInfo.Id.NAME,
@@ -247,6 +261,50 @@ public class AbstractAssetQuery<CHILD extends AbstractAssetQuery<CHILD>> {
         public DateTimePredicate rangeValue(String beforeValue) {
             this.dateMatch = DateMatch.BETWEEN;
             this.rangeValue = beforeValue;
+            return this;
+        }
+    }
+
+    public static class NumberPredicate implements ValuePredicate {
+        public double predicate;
+        public NumberMatch numberMatch = NumberMatch.EXACT;
+        public NumberType numberType = NumberType.DOUBLE;
+
+        public NumberPredicate() {
+        }
+
+        public NumberPredicate(double predicate) {
+            this.predicate = predicate;
+        }
+
+        public NumberPredicate(double predicate, NumberMatch numberMatch) {
+            this.predicate = predicate;
+            this.numberMatch = numberMatch;
+        }
+
+        public NumberPredicate(double predicate, NumberType numberType) {
+            this.predicate = predicate;
+            this.numberType = numberType;
+        }
+
+        public NumberPredicate(double predicate, NumberMatch numberMatch, NumberType numberType) {
+            this.predicate = predicate;
+            this.numberMatch = numberMatch;
+            this.numberType = numberType;
+        }
+
+        public NumberPredicate predicate(double predicate) {
+            this.predicate = predicate;
+            return this;
+        }
+
+        public NumberPredicate numberMatch(NumberMatch numberMatch) {
+            this.numberMatch = numberMatch;
+            return this;
+        }
+
+        public NumberPredicate numberType(NumberType numberType) {
+            this.numberType = numberType;
             return this;
         }
     }
@@ -419,6 +477,44 @@ public class AbstractAssetQuery<CHILD extends AbstractAssetQuery<CHILD>> {
     public static class AttributePredicate {
         public StringPredicate itemNamePredicate;
         public ValuePredicate itemValuePredicate;
+
+        public AttributePredicate() {
+        }
+
+        public AttributePredicate(StringPredicate itemNamePredicate) {
+            this.itemNamePredicate = itemNamePredicate;
+        }
+
+        public AttributePredicate(AssetMeta assetMeta) {
+            this.itemNamePredicate = new StringPredicate(assetMeta.getUrn());
+        }
+
+        public AttributePredicate(ValuePredicate itemValuePredicate) {
+            this.itemValuePredicate = itemValuePredicate;
+        }
+
+        public AttributePredicate(StringPredicate itemNamePredicate, ValuePredicate itemValuePredicate) {
+            this.itemNamePredicate = itemNamePredicate;
+            this.itemValuePredicate = itemValuePredicate;
+        }
+
+        public AttributePredicate(AssetMeta assetMeta, ValuePredicate itemValuePredicate) {
+            this(new StringPredicate(assetMeta.getUrn()), itemValuePredicate);
+        }
+
+        public AttributePredicate itemName(StringPredicate itemNamePredicate) {
+            this.itemNamePredicate = itemNamePredicate;
+            return this;
+        }
+
+        public AttributePredicate itemName(AssetMeta assetMeta) {
+            return itemName(new StringPredicate(assetMeta.getUrn()));
+        }
+
+        public AttributePredicate itemValue(ValuePredicate itemValuePredicate) {
+            this.itemValuePredicate = itemValuePredicate;
+            return this;
+        }
     }
 
     public static class AttributePredicateArray {

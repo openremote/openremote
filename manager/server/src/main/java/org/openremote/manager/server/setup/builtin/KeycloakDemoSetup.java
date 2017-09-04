@@ -53,7 +53,6 @@ public class KeycloakDemoSetup extends AbstractKeycloakSetup {
     public Tenant masterTenant;
     public Tenant customerATenant;
     public Tenant customerBTenant;
-    public Tenant customerCTenant;
 
     public KeycloakDemoSetup(Container container) {
         super(container);
@@ -78,13 +77,6 @@ public class KeycloakDemoSetup extends AbstractKeycloakSetup {
         customerB.setEnabled(true);
         keycloakProvider.createTenant(new ClientRequestInfo(null, accessToken), customerB, emailConfig);
         customerBTenant = keycloakProvider.getTenantForRealm(customerB.getRealm());
-
-        Tenant customerC = new Tenant();
-        customerC.setRealm("customerC");
-        customerC.setDisplayName("Customer C");
-        customerC.setEnabled(true);
-        keycloakProvider.createTenant(new ClientRequestInfo(null, accessToken), customerC, emailConfig);
-        customerCTenant = keycloakProvider.getTenantForRealm(customerC.getRealm());
 
         // Users
 

@@ -27,7 +27,8 @@ import java.util.stream.Stream;
 
 import static org.openremote.model.Constants.ASSET_NAMESPACE;
 import static org.openremote.model.asset.AssetMeta.*;
-import static org.openremote.model.attribute.AttributeType.*;
+import static org.openremote.model.attribute.AttributeType.NUMBER;
+import static org.openremote.model.attribute.AttributeType.STRING;
 
 /**
  * Asset type is an arbitrary string. It should be URI. This enum contains
@@ -73,88 +74,6 @@ public enum AssetType {
     RESIDENCE(ASSET_NAMESPACE + ":residence", "cubes"),
 
     ROOM(ASSET_NAMESPACE + ":room", "cube"),
-
-    PIER(ASSET_NAMESPACE + ":pier", "cube",
-        new AssetAttribute("flights", ARRAY)
-            .setMeta(
-                new MetaItem(LABEL, Values.create("Flights"))
-            )
-    ),
-
-    FLIGHT(ASSET_NAMESPACE + ":flight", "plane",
-        new AssetAttribute("code", STRING)
-            .setMeta(
-                new MetaItem(LABEL, Values.create("Flight Code"))
-            ),
-        new AssetAttribute("airline", STRING)
-            .setMeta(
-                new MetaItem(LABEL, Values.create("Airline"))
-            ),
-        new AssetAttribute("planeRegistration", STRING)
-            .setMeta(
-                new MetaItem(LABEL, Values.create("Plane Registration"))
-            ),
-        new AssetAttribute("planeType", STRING)
-            .setMeta(
-                new MetaItem(LABEL, Values.create("Plane Type"))
-            ),
-        new AssetAttribute("passengerCapacity", STRING)
-            .setMeta(
-                new MetaItem(LABEL, Values.create("Passenger Capacity"))
-            ),
-        new AssetAttribute("originAirport", STRING)
-            .setMeta(
-                new MetaItem(LABEL, Values.create("Origin Airport"))
-            ),
-        new AssetAttribute("originCountry", STRING)
-            .setMeta(
-                new MetaItem(LABEL, Values.create("Origin Country"))
-            ),
-        new AssetAttribute("originRegion", STRING)
-            .setMeta(
-                new MetaItem(LABEL, Values.create("Origin Region"))
-            ),
-        new AssetAttribute("destinationAirport", STRING)
-            .setMeta(
-                new MetaItem(LABEL, Values.create("Destination Airport"))
-            ),
-        new AssetAttribute("destinationCountry", STRING)
-            .setMeta(
-                new MetaItem(LABEL, Values.create("Destination Country"))
-            ),
-        new AssetAttribute("destinationRegion", STRING)
-            .setMeta(
-                new MetaItem(LABEL, Values.create("Destination Region"))
-            ),
-        new AssetAttribute("departureDateTime", DATETIME)
-            .setMeta(
-                new MetaItem(LABEL, Values.create("Departure Time"))
-            ),
-        new AssetAttribute("departureGate", STRING)
-            .setMeta(
-                new MetaItem(LABEL, Values.create("Departure Gate"))
-            ),
-        new AssetAttribute("departurePier", STRING)
-            .setMeta(
-                new MetaItem(LABEL, Values.create("Departure Pier"))
-            ),
-        new AssetAttribute("arrivalDateTime", DATETIME)
-            .setMeta(
-                new MetaItem(LABEL, Values.create("Arrival Time"))
-            ),
-        new AssetAttribute("arrivalGate", STRING)
-            .setMeta(
-                new MetaItem(LABEL, Values.create("Arrival Gate"))
-            ),
-        new AssetAttribute("arrivalPier", STRING)
-            .setMeta(
-                new MetaItem(LABEL, Values.create("Arrival Pier"))
-            ),
-        new AssetAttribute("priority", BOOLEAN)
-            .setMeta(
-                new MetaItem(LABEL, Values.create("Priority"))
-            )
-    ),
 
     AGENT(ASSET_NAMESPACE + ":agent", "gears"),
 

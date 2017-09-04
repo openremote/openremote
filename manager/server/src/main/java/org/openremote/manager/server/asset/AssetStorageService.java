@@ -770,16 +770,17 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             }
 
             if (query.attributePredicateArray != null && query.attributePredicateArray.predicates != null) {
-                StringBuilder attributeFilterBuilder = new StringBuilder();
                 for (AssetQuery.AttributePredicate attributePredicate : query.attributePredicateArray.predicates) {
+                    StringBuilder attributeFilterBuilder = new StringBuilder();
                     attributeFilterBuilder.append(buildAttributeFilter(attributePredicate, binders));
-                }
-                if (attributeFilterBuilder.length() > 0) {
-                    sb.append(" and A.ID in (select A.ID from");
-                    sb.append(" jsonb_each(A.ATTRIBUTES) as AX");
-                    sb.append(" where true");
-                    sb.append(attributeFilterBuilder.toString());
-                    sb.append(")");
+
+                    if (attributeFilterBuilder.length() > 0) {
+                        sb.append(" and A.ID in (select A.ID from");
+                        sb.append(" jsonb_each(A.ATTRIBUTES) as AX");
+                        sb.append(" where true");
+                        sb.append(attributeFilterBuilder.toString());
+                        sb.append(")");
+                    }
                 }
             }
         }
@@ -905,6 +906,39 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                         binders.add(st -> st.setString(formatPos2, dateTimePredicate.dateFormat));
                         break;
                 }
+            } else if (attributePredicate.itemValuePredicate instanceof AssetQuery.NumberPredicate) {
+                AssetQuery.NumberPredicate numberPredicate = (AssetQuery.NumberPredicate) attributePredicate.itemValuePredicate;
+
+                switch (numberPredicate.numberMatch) {
+                    case EXACT:
+                    default:
+                        attributeBuilder.append(" and (AX.VALUE #>> '{value}')::numeric = ?");
+                        break;
+                    case GREATER_THEN:
+                        attributeBuilder.append(" and (AX.VALUE #>> '{value}')::numeric > ?");
+                        break;
+                    case GREATER_EQUALS:
+                        attributeBuilder.append(" and (AX.VALUE #>> '{value}')::numeric >= ?");
+                        break;
+                    case LESS_THEN:
+                        attributeBuilder.append(" and (AX.VALUE #>> '{value}')::numeric < ?");
+                        break;
+                    case LESS_EQUALS:
+                        attributeBuilder.append(" and (AX.VALUE #>> '{value}')::numeric <= ?");
+                        break;
+                }
+
+                final int pos = binders.size() + 1;
+                switch (numberPredicate.numberType) {
+                    case DOUBLE:
+                    default:
+                        binders.add(st -> st.setDouble(pos, numberPredicate.predicate));
+                        break;
+                    case INTEGER:
+                        binders.add(st -> st.setInt(pos, (int) numberPredicate.predicate));
+                        break;
+                }
+
             }
         }
 

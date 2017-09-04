@@ -21,20 +21,16 @@ package org.openremote.manager.server.setup.builtin;
 
 import com.vividsolutions.jts.geom.Coordinate;
 import org.openremote.agent.protocol.simulator.SimulatorProtocol;
-import org.openremote.model.simulator.element.ColorSimulatorElement;
-import org.openremote.model.simulator.element.NumberSimulatorElement;
-import org.openremote.model.simulator.element.SwitchSimulatorElement;
 import org.openremote.container.Container;
 import org.openremote.manager.server.asset.ServerAsset;
 import org.openremote.manager.server.setup.AbstractManagerSetup;
 import org.openremote.manager.shared.security.Tenant;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetState;
-import org.openremote.model.asset.AssetType;
 import org.openremote.model.attribute.*;
-import org.openremote.model.rules.template.TemplateFilter;
-import org.openremote.model.rules.template.AttributeValueConstraintPattern;
-import org.openremote.model.value.ValueComparator;
+import org.openremote.model.simulator.element.ColorSimulatorElement;
+import org.openremote.model.simulator.element.NumberSimulatorElement;
+import org.openremote.model.simulator.element.SwitchSimulatorElement;
 import org.openremote.model.value.Values;
 
 import java.time.LocalDateTime;
@@ -58,13 +54,13 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
     public static final int DEMO_RULE_STATES_APARTMENT_3 = 0;
     public static final int DEMO_RULE_STATES_SMART_HOME = DEMO_RULE_STATES_APARTMENT_1 + DEMO_RULE_STATES_APARTMENT_2 + DEMO_RULE_STATES_APARTMENT_3;
     public static final int DEMO_RULE_STATES_CUSTOMER_A = DEMO_RULE_STATES_SMART_HOME;
-    public static final int DEMO_RULE_STATES_CUSTOMER_C = 12;
-    public static final int DEMO_RULE_STATES_GLOBAL = DEMO_RULE_STATES_CUSTOMER_A + DEMO_RULE_STATES_CUSTOMER_C;
+
+    public static final int DEMO_RULE_STATES_GLOBAL = DEMO_RULE_STATES_CUSTOMER_A;
 
     public static final int DEMO_RULE_STATES_APARTMENT_1_WITH_SCENES = DEMO_RULE_STATES_APARTMENT_1 + 28;
     public static final int DEMO_RULE_STATES_SMART_HOME_WITH_SCENES = DEMO_RULE_STATES_APARTMENT_1_WITH_SCENES + DEMO_RULE_STATES_APARTMENT_2 + DEMO_RULE_STATES_APARTMENT_3;
     public static final int DEMO_RULE_STATES_CUSTOMER_A_WITH_SCENES = DEMO_RULE_STATES_SMART_HOME_WITH_SCENES;
-    public static final int DEMO_RULE_STATES_GLOBAL_WITH_SCENES = DEMO_RULE_STATES_CUSTOMER_A_WITH_SCENES + DEMO_RULE_STATES_CUSTOMER_C;
+    public static final int DEMO_RULE_STATES_GLOBAL_WITH_SCENES = DEMO_RULE_STATES_CUSTOMER_A_WITH_SCENES;
 
     public String smartOfficeId;
     public String groundFloorId;
@@ -84,12 +80,6 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
     public String apartment3LivingroomId;
     public String masterRealmId;
     public String customerARealmId;
-    public String customerCRealmId;
-    public String flight1Id;
-    public String flight2Id;
-    public String flight3Id;
-    public String flight4Id;
-    public String flightPriorityFiltersId;
 
     public ManagerDemoSetup(Container container, boolean importDemoScenes) {
         super(container);
@@ -102,10 +92,8 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         KeycloakDemoSetup keycloakDemoSetup = setupService.getTaskOfType(KeycloakDemoSetup.class);
         Tenant masterTenant = keycloakDemoSetup.masterTenant;
         Tenant customerATenant = keycloakDemoSetup.customerATenant;
-        Tenant customerCTenant = keycloakDemoSetup.customerCTenant;
         masterRealmId = masterTenant.getId();
         customerARealmId = customerATenant.getId();
-        customerCRealmId = customerCTenant.getId();
 
         // ################################ Demo assets for 'master' realm ###################################
 
@@ -538,181 +526,5 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         assetStorageService.storeUserAsset(keycloakDemoSetup.testuser3Id, apartment1LivingroomId);
         assetStorageService.storeUserAsset(keycloakDemoSetup.testuser3Id, apartment1KitchenId);
         assetStorageService.storeUserAsset(keycloakDemoSetup.testuser3Id, apartment2Id);
-
-        // ################################ Demo assets for 'customerC' realm ###################################
-
-        ServerAsset flight1 = new ServerAsset("Flight 1", AssetType.FLIGHT);
-        flight1.setRealmId(customerCTenant.getId());
-        flight1.setAttributes(
-            new AssetAttribute("airline", STRING, Values.create("Some Airline"))
-                .setMeta(
-                    new MetaItem(LABEL, Values.create("Airline"))
-                ),
-            new AssetAttribute("originAirport", STRING, Values.create("ZRH"))
-                .setMeta(
-                    new MetaItem(LABEL, Values.create("Origin Airport"))
-                ),
-            new AssetAttribute("originCountry", STRING, Values.create("Switzerland"))
-                .setMeta(
-                    new MetaItem(LABEL, Values.create("Origin Country")),
-                    new MetaItem(RULE_STATE, Values.create(true))
-                ),
-            new AssetAttribute("destinationAirport", STRING, Values.create("AMS"))
-                .setMeta(
-                    new MetaItem(LABEL, Values.create("Destination Airport"))
-                ),
-            new AssetAttribute("destinationCountry", STRING, Values.create("Netherlands"))
-                .setMeta(
-                    new MetaItem(LABEL, Values.create("Destination Country"))
-                ),
-            new AssetAttribute("passengerCapacity", NUMBER, Values.create(150))
-                .setMeta(
-                    new MetaItem(LABEL, Values.create("Passenger Capacity")),
-                    new MetaItem(RULE_STATE, Values.create(true))
-                ),
-            new AssetAttribute("priority", BOOLEAN, Values.create(false))
-                .setMeta(
-                    new MetaItem(LABEL, Values.create("Priority")),
-                    new MetaItem(RULE_STATE, Values.create(true))
-                )
-        );
-        flight1 = assetStorageService.merge(flight1);
-        flight1Id = flight1.getId();
-
-        ServerAsset flight2 = new ServerAsset("Flight 2", AssetType.FLIGHT);
-        flight2.setRealmId(customerCTenant.getId());
-        flight2.setAttributes(
-            new AssetAttribute("airline", STRING, Values.create("Other Airline"))
-                .setMeta(
-                    new MetaItem(LABEL, Values.create("Airline"))
-                ),
-            new AssetAttribute("originAirport", STRING, Values.create("VLC"))
-                .setMeta(
-                    new MetaItem(LABEL, Values.create("Origin Airport"))
-                ),
-            new AssetAttribute("originCountry", STRING, Values.create("Spain"))
-                .setMeta(
-                    new MetaItem(LABEL, Values.create("Origin Country")),
-                    new MetaItem(RULE_STATE, Values.create(true))
-                ),
-            new AssetAttribute("destinationAirport", STRING, Values.create("AMS"))
-                .setMeta(
-                    new MetaItem(LABEL, Values.create("Destination Airport"))
-                ),
-            new AssetAttribute("destinationCountry", STRING, Values.create("Netherlands"))
-                .setMeta(
-                    new MetaItem(LABEL, Values.create("Destination Country"))
-                ),
-            new AssetAttribute("passengerCapacity", NUMBER, Values.create(230))
-                .setMeta(
-                    new MetaItem(LABEL, Values.create("Passenger Capacity")),
-                    new MetaItem(RULE_STATE, Values.create(true))
-                ),
-            new AssetAttribute("priority", BOOLEAN, Values.create(false))
-                .setMeta(
-                    new MetaItem(LABEL, Values.create("Priority")),
-                    new MetaItem(RULE_STATE, Values.create(true))
-                )
-        );
-        flight2 = assetStorageService.merge(flight2);
-        flight2Id = flight2.getId();
-
-        ServerAsset flight3 = new ServerAsset("Flight 3", AssetType.FLIGHT);
-        flight3.setRealmId(customerCTenant.getId());
-        flight3.setAttributes(
-            new AssetAttribute("airline", STRING, Values.create("Third Airline"))
-                .setMeta(
-                    new MetaItem(LABEL, Values.create("Airline"))
-                ),
-            new AssetAttribute("originAirport", STRING, Values.create("HEM"))
-                .setMeta(
-                    new MetaItem(LABEL, Values.create("Origin Airport"))
-                ),
-            new AssetAttribute("originCountry", STRING, Values.create("Finland"))
-                .setMeta(
-                    new MetaItem(LABEL, Values.create("Origin Country")),
-                    new MetaItem(RULE_STATE, Values.create(true))
-                ),
-            new AssetAttribute("destinationAirport", STRING, Values.create("AMS"))
-                .setMeta(
-                    new MetaItem(LABEL, Values.create("Destination Airport"))
-                ),
-            new AssetAttribute("destinationCountry", STRING, Values.create("Netherlands"))
-                .setMeta(
-                    new MetaItem(LABEL, Values.create("Destination Country"))
-                ),
-            new AssetAttribute("passengerCapacity", NUMBER, Values.create(180))
-                .setMeta(
-                    new MetaItem(LABEL, Values.create("Passenger Capacity")),
-                    new MetaItem(RULE_STATE, Values.create(true))
-                ),
-            new AssetAttribute("priority", BOOLEAN, Values.create(false))
-                .setMeta(
-                    new MetaItem(LABEL, Values.create("Priority")),
-                    new MetaItem(RULE_STATE, Values.create(true))
-                )
-        );
-        flight3 = assetStorageService.merge(flight3);
-        flight3Id = flight3.getId();
-
-        ServerAsset flight4 = new ServerAsset("Flight 4", AssetType.FLIGHT);
-        flight4.setRealmId(customerCTenant.getId());
-        flight4.setAttributes(
-            new AssetAttribute("airline", STRING, Values.create("Some Airline"))
-                .setMeta(
-                    new MetaItem(LABEL, Values.create("Airline"))
-                ),
-            new AssetAttribute("originAirport", STRING, Values.create("ZRH"))
-                .setMeta(
-                    new MetaItem(LABEL, Values.create("Origin Airport"))
-                ),
-            new AssetAttribute("originCountry", STRING, Values.create("Switzerland"))
-                .setMeta(
-                    new MetaItem(LABEL, Values.create("Origin Country")),
-                    new MetaItem(RULE_STATE, Values.create(true))
-                ),
-            new AssetAttribute("destinationAirport", STRING, Values.create("AMS"))
-                .setMeta(
-                    new MetaItem(LABEL, Values.create("Destination Airport"))
-                ),
-            new AssetAttribute("destinationCountry", STRING, Values.create("Netherlands"))
-                .setMeta(
-                    new MetaItem(LABEL, Values.create("Destination Country"))
-                ),
-            new AssetAttribute("passengerCapacity", NUMBER, Values.create(300))
-                .setMeta(
-                    new MetaItem(LABEL, Values.create("Passenger Capacity")),
-                    new MetaItem(RULE_STATE, Values.create(true))
-                ),
-            new AssetAttribute("priority", BOOLEAN, Values.create(false))
-                .setMeta(
-                    new MetaItem(LABEL, Values.create("Priority")),
-                    new MetaItem(RULE_STATE, Values.create(true))
-                )
-        );
-        flight4 = assetStorageService.merge(flight4);
-        flight4Id = flight4.getId();
-
-        ServerAsset flightPriorityFilters = new ServerAsset("Flight Priority Filters", AssetType.THING);
-        flightPriorityFilters.setRealmId(customerCTenant.getId());
-        flightPriorityFilters.setAttributes(
-            new AssetAttribute(
-                "originSwitzerland",
-                RULES_TEMPLATE_FILTER,
-                new TemplateFilter(
-                    new AttributeValueConstraintPattern(
-                        "originCountry", new AttributeValueConstraint(ValueComparator.EQUALS_IGNORE_CASE, Values.create("switzerland"))
-                    ),
-                    new AttributeValueConstraintPattern(
-                        "passengerCapacity", new AttributeValueConstraint(ValueComparator.GREATER_EQUAL_THAN, Values.create(300))
-                    )
-                ).toModelValue()
-            ).setMeta(
-                new MetaItem(LABEL, Values.create("Filter Origin Switzerland"))
-            )
-        );
-        flightPriorityFilters = assetStorageService.merge(flightPriorityFilters);
-        flightPriorityFiltersId = flightPriorityFilters.getId();
-
     }
 }

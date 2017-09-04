@@ -16,7 +16,8 @@ import javax.persistence.EntityManager
 import java.util.function.Function
 
 import static org.openremote.model.asset.AbstractAssetQuery.*
-import static org.openremote.model.asset.AbstractAssetQuery.OrderBy.Property.*
+import static org.openremote.model.asset.AbstractAssetQuery.OrderBy.Property.CREATED_ON
+import static org.openremote.model.asset.AbstractAssetQuery.OrderBy.Property.NAME
 import static org.openremote.model.asset.AssetType.THING
 
 class AssetQueryTest extends Specification implements ManagerContainerTrait {
@@ -32,10 +33,10 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
 
         when: "an agent filtering query is executed"
         def assets = assetStorageService.findAll(
-            new AssetQuery()
-                .select(new Select(Include.ONLY_ID_AND_NAME_AND_ATTRIBUTES))
-                .type(AssetType.AGENT)
-                .tenant(new TenantPredicate(keycloakDemoSetup.masterTenant.id))
+                new AssetQuery()
+                        .select(new Select(Include.ONLY_ID_AND_NAME_AND_ATTRIBUTES))
+                        .type(AssetType.AGENT)
+                        .tenant(new TenantPredicate(keycloakDemoSetup.masterTenant.id))
         )
 
         then: "agent assets should be retrieved"
@@ -54,9 +55,9 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
 
         when: "a user filtering query is executed that returns only IDs, names and attribute names"
         assets = assetStorageService.findAll(
-            new AssetQuery()
-                .select(new Select(Include.ONLY_ID_AND_NAME_AND_ATTRIBUTE_NAMES))
-                .userId(keycloakDemoSetup.testuser3Id)
+                new AssetQuery()
+                        .select(new Select(Include.ONLY_ID_AND_NAME_AND_ATTRIBUTE_NAMES))
+                        .userId(keycloakDemoSetup.testuser3Id)
         )
 
         then: "only the users assets should be retrieved"
@@ -73,10 +74,10 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
 
         when: "a recursive query is executed to select asset id, name and attribute names for apartment 1 assets"
         assets = assetStorageService.findAll(
-            new AssetQuery()
-                .id(managerDemoSetup.smartHomeId)
-                .select(new Select(Include.ONLY_ID_AND_NAME_AND_ATTRIBUTE_NAMES, false, true))
-                .orderBy(new OrderBy(CREATED_ON))
+                new AssetQuery()
+                        .id(managerDemoSetup.smartHomeId)
+                        .select(new Select(Include.ONLY_ID_AND_NAME_AND_ATTRIBUTE_NAMES, false, true))
+                        .orderBy(new OrderBy(CREATED_ON))
         )
 
         then: "result should contain only ids, names and attribute names and label meta"
@@ -550,6 +551,25 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         asset.getAttribute("lastPresenceDetected").isPresent()
         asset.getAttribute("lastPresenceDetected").get().meta.size() == 3
         !asset.getAttribute("motionSensor").isPresent()
+
+        when: "a query is executed to select an asset with an attribute of a certain value"
+        AttributePredicate[] filter = [
+                [new StringPredicate("windowOpen"), new BooleanPredicate(false)],
+                [new StringPredicate("co2Level"), new NumberPredicate(340, NumberMatch.GREATER_THEN, NumberType.INTEGER)]
+        ]
+        asset = assetStorageService.find(
+                new AssetQuery()
+                        .select(new Select(Include.ONLY_ID_AND_NAME_AND_ATTRIBUTES))
+                        .attributes(new AttributePredicateArray(filter)
+                )
+        )
+
+        then: "result should contain an Asset with the expected values"
+        assert asset != null
+        assert asset.getAttribute("windowOpen").isPresent()
+        assert !asset.getAttribute("windowOpen").get().valueAsBoolean.get()
+        assert asset.getAttribute("co2Level").isPresent()
+        assert asset.getAttribute("co2Level").get().valueAsNumber.get() == 350
 
         cleanup: "the server should be stopped"
         stopContainer(container)

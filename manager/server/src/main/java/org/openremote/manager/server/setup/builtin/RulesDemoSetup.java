@@ -24,7 +24,6 @@ import org.openremote.container.Container;
 import org.openremote.manager.server.setup.AbstractManagerSetup;
 import org.openremote.model.rules.AssetRuleset;
 import org.openremote.model.rules.Ruleset;
-import org.openremote.model.rules.TenantRuleset;
 
 import java.io.InputStream;
 import java.nio.charset.Charset;
@@ -68,13 +67,5 @@ public class RulesDemoSetup extends AbstractManagerSetup {
             Ruleset ruleset = new AssetRuleset("Demo Apartment - All Lights Off", managerDemoSetup.apartment2Id, rules);
             apartmentActionsRulesetId = rulesetStorageService.merge(ruleset).getId();
         }
-
-        // Flights
-        try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/flight/DemoFlightPriorityFilter.drlt")) {
-            String rules = IOUtils.toString(inputStream, Charset.forName("utf-8"));
-            Ruleset ruleset = new TenantRuleset("Demo Flights - Mark flights as priority", keycloakDemoSetup.customerCTenant.getId(), rules, managerDemoSetup.flightPriorityFiltersId);
-            rulesetStorageService.merge(ruleset);
-        }
-
     }
 }
