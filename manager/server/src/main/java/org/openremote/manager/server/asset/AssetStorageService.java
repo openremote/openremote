@@ -882,20 +882,20 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 final int formatPos = binders.size() + 1;
                 binders.add(st -> st.setString(formatPos, dateTimePredicate.dateFormat));
 
-                switch (dateTimePredicate.dateMatch) {
+                switch (dateTimePredicate.operatorMatch) {
                     case EXACT:
                         attributeBuilder.append(" = to_timestamp(?, ?)");
                         break;
-                    case AFTER:
+                    case GREATER_THEN:
                         attributeBuilder.append(" > to_timestamp(?, ?)");
                         break;
-                    case AFTER_INCLUSIVE:
+                    case GREATER_EQUALS:
                         attributeBuilder.append(" >= to_timestamp(?, ?)");
                         break;
-                    case BEFORE:
+                    case LESS_THEN:
                         attributeBuilder.append(" < to_timestamp(?, ?)");
                         break;
-                    case BEFORE_INCLUSIVE:
+                    case LESS_EQUALS:
                         attributeBuilder.append(" <= to_timestamp(?, ?)");
                         break;
                     case BETWEEN:
@@ -908,23 +908,26 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 }
             } else if (attributePredicate.itemValuePredicate instanceof AssetQuery.NumberPredicate) {
                 AssetQuery.NumberPredicate numberPredicate = (AssetQuery.NumberPredicate) attributePredicate.itemValuePredicate;
-
-                switch (numberPredicate.numberMatch) {
+                attributeBuilder.append(" and (AX.VALUE #>> '{value}')::numeric");
+                switch (numberPredicate.operatorMatch) {
                     case EXACT:
                     default:
-                        attributeBuilder.append(" and (AX.VALUE #>> '{value}')::numeric = ?");
+                        attributeBuilder.append(" = ?");
                         break;
                     case GREATER_THEN:
-                        attributeBuilder.append(" and (AX.VALUE #>> '{value}')::numeric > ?");
+                        attributeBuilder.append(" > ?");
                         break;
                     case GREATER_EQUALS:
-                        attributeBuilder.append(" and (AX.VALUE #>> '{value}')::numeric >= ?");
+                        attributeBuilder.append(" >= ?");
                         break;
                     case LESS_THEN:
-                        attributeBuilder.append(" and (AX.VALUE #>> '{value}')::numeric < ?");
+                        attributeBuilder.append(" < ?");
                         break;
                     case LESS_EQUALS:
-                        attributeBuilder.append(" and (AX.VALUE #>> '{value}')::numeric <= ?");
+                        attributeBuilder.append(" <= ?");
+                        break;
+                    case BETWEEN:
+                        attributeBuilder.append(" BETWEEN ? AND ?");
                         break;
                 }
 
@@ -932,13 +935,20 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 switch (numberPredicate.numberType) {
                     case DOUBLE:
                     default:
-                        binders.add(st -> st.setDouble(pos, numberPredicate.predicate));
+                        binders.add(st -> st.setDouble(pos, numberPredicate.value));
+                        if (numberPredicate.operatorMatch == AbstractAssetQuery.OperatorMatch.BETWEEN) {
+                            final int pos2 = binders.size() + 1;
+                            binders.add(st -> st.setDouble(pos, numberPredicate.rangeValue));
+                        }
                         break;
                     case INTEGER:
-                        binders.add(st -> st.setInt(pos, (int) numberPredicate.predicate));
+                        binders.add(st -> st.setInt(pos, (int) numberPredicate.value));
+                        if (numberPredicate.operatorMatch == AbstractAssetQuery.OperatorMatch.BETWEEN) {
+                            final int pos2 = binders.size() + 1;
+                            binders.add(st -> st.setInt(pos2, (int) numberPredicate.rangeValue));
+                        }
                         break;
                 }
-
             }
         }
 

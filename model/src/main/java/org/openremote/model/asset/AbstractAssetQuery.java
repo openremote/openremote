@@ -108,26 +108,18 @@ public class AbstractAssetQuery<CHILD extends AbstractAssetQuery<CHILD>> {
         }
     }
 
-    public enum NumberMatch {
+    public enum OperatorMatch {
         EXACT,
         GREATER_THEN,
         GREATER_EQUALS,
         LESS_THEN,
-        LESS_EQUALS
+        LESS_EQUALS,
+        BETWEEN
     }
 
     public enum NumberType {
         DOUBLE,
         INTEGER
-    }
-
-    public enum DateMatch {
-        EXACT,
-        BEFORE,
-        BEFORE_INCLUSIVE,
-        AFTER,
-        AFTER_INCLUSIVE,
-        BETWEEN
     }
 
     @JsonSubTypes({
@@ -224,27 +216,27 @@ public class AbstractAssetQuery<CHILD extends AbstractAssetQuery<CHILD>> {
     }
 
     public static class DateTimePredicate implements ValuePredicate {
-        public DateMatch dateMatch = DateMatch.EXACT;
+        public OperatorMatch operatorMatch = OperatorMatch.EXACT;
         public String dateFormat = "YYYY-MM-DDTHH24:MI:SS";//postgres dateformat
         public String value;
-        public String rangeValue;//used when dateMatch is Between as end date
+        public String rangeValue;//used when operatorMatch is Between as end date
 
         public DateTimePredicate() {
         }
 
-        public DateTimePredicate(DateMatch dateMatch, String value) {
-            this.dateMatch = dateMatch;
+        public DateTimePredicate(OperatorMatch operatorMatch, String value) {
+            this.operatorMatch = operatorMatch;
             this.value = value;
         }
 
         public DateTimePredicate(String afterValue, String beforeValue) {
-            this.dateMatch = DateMatch.BETWEEN;
+            this.operatorMatch = OperatorMatch.BETWEEN;
             this.value = afterValue;
             this.rangeValue = beforeValue;
         }
 
-        public DateTimePredicate dateMatch(DateMatch dateMatch) {
-            this.dateMatch = dateMatch;
+        public DateTimePredicate dateMatch(OperatorMatch dateMatch) {
+            this.operatorMatch = dateMatch;
             return this;
         }
 
@@ -259,52 +251,59 @@ public class AbstractAssetQuery<CHILD extends AbstractAssetQuery<CHILD>> {
         }
 
         public DateTimePredicate rangeValue(String beforeValue) {
-            this.dateMatch = DateMatch.BETWEEN;
+            this.operatorMatch = OperatorMatch.BETWEEN;
             this.rangeValue = beforeValue;
             return this;
         }
     }
 
     public static class NumberPredicate implements ValuePredicate {
-        public double predicate;
-        public NumberMatch numberMatch = NumberMatch.EXACT;
+        public double value;
+        public double rangeValue; //used when operatorMatch is Between as second value
+        public OperatorMatch operatorMatch = OperatorMatch.EXACT;
         public NumberType numberType = NumberType.DOUBLE;
 
         public NumberPredicate() {
         }
 
-        public NumberPredicate(double predicate) {
-            this.predicate = predicate;
+        public NumberPredicate(double value) {
+            this.value = value;
         }
 
-        public NumberPredicate(double predicate, NumberMatch numberMatch) {
-            this.predicate = predicate;
-            this.numberMatch = numberMatch;
+        public NumberPredicate(double value, OperatorMatch operatorMatch) {
+            this.value = value;
+            this.operatorMatch = operatorMatch;
         }
 
-        public NumberPredicate(double predicate, NumberType numberType) {
-            this.predicate = predicate;
+        public NumberPredicate(double value, NumberType numberType) {
+            this.value = value;
             this.numberType = numberType;
         }
 
-        public NumberPredicate(double predicate, NumberMatch numberMatch, NumberType numberType) {
-            this.predicate = predicate;
-            this.numberMatch = numberMatch;
+        public NumberPredicate(double value, OperatorMatch operatorMatch, NumberType numberType) {
+            this.value = value;
+            this.operatorMatch = operatorMatch;
             this.numberType = numberType;
         }
 
         public NumberPredicate predicate(double predicate) {
-            this.predicate = predicate;
+            this.value = predicate;
             return this;
         }
 
-        public NumberPredicate numberMatch(NumberMatch numberMatch) {
-            this.numberMatch = numberMatch;
+        public NumberPredicate numberMatch(OperatorMatch operatorMatch) {
+            this.operatorMatch = operatorMatch;
             return this;
         }
 
         public NumberPredicate numberType(NumberType numberType) {
             this.numberType = numberType;
+            return this;
+        }
+
+        public NumberPredicate rangeValue(double rangeValue) {
+            this.operatorMatch = OperatorMatch.BETWEEN;
+            this.rangeValue = rangeValue;
             return this;
         }
     }

@@ -555,7 +555,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         when: "a query is executed to select an asset with an attribute of a certain value"
         AttributePredicate[] filter = [
                 [new StringPredicate("windowOpen"), new BooleanPredicate(false)],
-                [new StringPredicate("co2Level"), new NumberPredicate(340, NumberMatch.GREATER_THEN, NumberType.INTEGER)]
+                [new StringPredicate("co2Level"), new NumberPredicate(340, OperatorMatch.GREATER_THEN, NumberType.INTEGER)]
         ]
         asset = assetStorageService.find(
                 new AssetQuery()
