@@ -26,7 +26,7 @@ class ApartmentPresenceDetectionTest extends Specification implements ManagerCon
     def "Presence detection with motion sensor"() {
 
         given: "the container environment is started"
-        def conditions = new PollingConditions(timeout: 10, delay: 1)
+        def conditions = new PollingConditions(timeout: 100, delay: 1)
         def serverPort = findEphemeralPort()
         def container = startContainerWithPseudoClock(defaultConfig(serverPort), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
@@ -227,4 +227,38 @@ class ApartmentPresenceDetectionTest extends Specification implements ManagerCon
         cleanup: "the server should be stopped"
         stopContainer(container)
     }
+
+    def "Presence prediction rules compilation"() {
+
+        given: "the container environment is started"
+        def conditions = new PollingConditions(timeout: 100, delay: 1)
+        def serverPort = findEphemeralPort()
+        def container = startContainerWithPseudoClock(defaultConfig(serverPort), defaultServices())
+        def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
+        def rulesService = container.getService(RulesService.class)
+        def assetStorageService = container.getService(AssetStorageService.class)
+        def rulesetStorageService = container.getService(RulesetStorageService.class)
+        def simulatorProtocol = container.getService(SimulatorProtocol.class)
+        RulesEngine apartment1Engine = null
+
+        and: "some rules"
+        Ruleset ruleset = new AssetRuleset(
+                "Demo Apartment - Presence Detection with motion sensor",
+                managerDemoSetup.apartment1Id,
+                getClass().getResource("/demo/rules/DemoApartmentPresencePrediction.drl").text
+        )
+        rulesetStorageService.merge(ruleset)
+
+        expect: "the rule engines to become available and be running"
+        conditions.eventually {
+            apartment1Engine = rulesService.assetEngines.get(managerDemoSetup.apartment1Id)
+            assert apartment1Engine != null
+            assert apartment1Engine.isRunning()
+//            assert apartment1Engine.knowledgeSession.factCount == DEMO_RULE_STATES_APARTMENT_1
+        }
+
+        cleanup: "the server should be stopped"
+        stopContainer(container)
+    }
+
 }

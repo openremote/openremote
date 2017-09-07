@@ -71,6 +71,17 @@ public class Util {
     }
 
     /**
+     * @param timestamp Epoch time
+     * @return The timestamp formatted as 'EEE' or <code>null</code> if the timestamp is <= 0.
+     */
+    public static String formatDayOfWeek(long timestamp) {
+        if (timestamp <= 0)
+            return null;
+        SimpleDateFormat sdf = new SimpleDateFormat("EEE");
+        return (sdf.format(new Date(timestamp)));
+    }
+
+    /**
      * @param o       A timestamp string as 'HH:mm' or '-'.
      * @param minutes The minutes to increment/decrement from timestamp.
      * @return Timestamp string as 'HH:mm', modified with the given minutes or the current time + 60 minutes if
