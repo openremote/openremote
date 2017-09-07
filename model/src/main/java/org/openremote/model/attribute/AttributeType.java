@@ -79,6 +79,14 @@ public enum AttributeType {
 
     TIMESTAMP_MILLIS("clock-o", ValueType.NUMBER, value -> Optional.empty()),
 
+    TIME_SECONDS("clock-o", ValueType.NUMBER, value -> Optional.empty(),
+        new MetaItem(FORMAT, Values.create("%0.1f s"))
+    ),
+
+    TIME_MINUTES("clock-o", ValueType.NUMBER, value -> Optional.empty(),
+        new MetaItem(FORMAT, Values.create("%0.1f min"))
+    ),
+
     DATETIME("calendar", ValueType.STRING, value -> Optional.empty()),
 
     COLOR_RGB("paint-brush", ValueType.ARRAY, value -> Values.getArray(value)
@@ -99,7 +107,8 @@ public enum AttributeType {
     TEMPERATURE_CELCIUS("thermometer", ValueType.NUMBER, value -> Values.getNumber(value)
         .filter(n -> n < -273.15)
         .map(n -> new ValidationFailure(ValueHolder.ValueFailureReason.VALUE_TEMPERATURE_OUT_OF_RANGE)),
-        new MetaItem(FORMAT, Values.create("%0.1f C"))
+            new MetaItem(FORMAT, Values.create("%0.1f C")
+        )
     ),
 
     TEMPERATURE_KELVIN("thermometer", ValueType.NUMBER, value -> Values.getNumber(value)
@@ -110,6 +119,14 @@ public enum AttributeType {
     TEMPERATURE_FAHRENHEIT("thermometer", ValueType.NUMBER, value -> Values.getNumber(value)
         .filter(n -> n < -459.67)
         .map(n -> new ValidationFailure(ValueHolder.ValueFailureReason.VALUE_TEMPERATURE_OUT_OF_RANGE))
+    ),
+
+    RAINFALL("tint", ValueType.NUMBER, value -> Optional.empty(),
+        new MetaItem(FORMAT, Values.create("%0.1f mm/h"))
+    ),
+
+    BRIGHTNESS_LUX("sun-o", ValueType.NUMBER, value -> Optional.empty(),
+        new MetaItem(FORMAT, Values.create("%d lx"))
     ),
 
     DISTANCE_M("arrows-h", ValueType.NUMBER, value -> Optional.empty(),
@@ -134,6 +151,18 @@ public enum AttributeType {
 
     DISTANCE_YARD("arrows-h", ValueType.NUMBER, value -> Optional.empty(),
         new MetaItem(FORMAT, Values.create("%0.5f yd"))
+    ),
+
+    SPEED_MS("rocket", ValueType.NUMBER, value -> Optional.empty(),
+        new MetaItem(FORMAT, Values.create("%0.3f ms"))
+    ),
+
+    SPEED_KPH("rocket", ValueType.NUMBER, value -> Optional.empty(),
+        new MetaItem(FORMAT, Values.create("%0.1f km/h"))
+    ),
+
+    SPEED_MPH("rocket", ValueType.NUMBER, value -> Optional.empty(),
+        new MetaItem(FORMAT, Values.create("%0.1f mi/h"))
     ),
 
     CO2_PPM("leaf", ValueType.NUMBER, value -> Optional.empty(),
