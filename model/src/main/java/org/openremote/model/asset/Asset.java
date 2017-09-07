@@ -338,7 +338,7 @@ public class Asset implements IdentifiableEntity {
         Arrays.asList(attributes).forEach(
             attribute -> {
                 if (getAttributesStream().anyMatch(attr -> isAttributeNameEqualTo(attr, attribute.getName().orElse(null)))) {
-                    throw new IllegalArgumentException("Attribute by this name already exists");
+                    throw new IllegalArgumentException("Attribute by this name already exists: " + attribute.getName().orElse(""));
                 }
 
                 replaceAttribute(attribute);

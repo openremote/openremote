@@ -141,16 +141,6 @@ public interface AssetResource {
     void delete(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId);
 
     /**
-     * Retrieve the child assets of the given parent asset (if parent is null then root assets are retrieved). If the
-     * authenticated user is the superuser, parent and child assets can be in any realm. Otherwise, assets must in the
-     * same realm as the authenticated user. An empty result is returned if the user does not have access to the assets
-     * or if the user is restricted. Note that the assets returned from this operation are not completely loaded and the
-     * {@link Asset#path} and {@link Asset#attributes} are empty. Call {@link #get} to retrieve all asset details.
-     * <p>
-     * Optionally return all decedents by setting the recursive query parameter to true.
-     */
-
-    /**
      * Retrieve assets using an {@link AbstractAssetQuery}.
      * <p>
      * If the authenticated user is the superuser then assets referenced in the query or returned by the query can be in

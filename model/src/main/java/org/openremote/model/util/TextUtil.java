@@ -218,4 +218,41 @@ public class TextUtil {
     public static boolean isValidURN(String name) {
         return URN_VALIDATOR.test(name);
     }
+
+    public static String toLowerCamelCase(String s) {
+        return toCamelCase(s, false, false);
+    }
+
+    public static String toUpperCamelCase(String s) {
+        return toCamelCase(s, true, false);
+    }
+
+    private static String toCamelCase(String s, boolean upper, boolean convertUnderscoreToSpace) {
+        String[] parts = s.split("_");
+        StringBuilder camelCaseString = new StringBuilder();
+        int i=0;
+        for (String part : parts) {
+            if (!isNullOrEmpty(part)) {
+                if (!upper && i == 0) {
+                    camelCaseString.append(s.toLowerCase(Locale.ROOT));
+                } else {
+                    camelCaseString.append(toProperCase(part));
+                }
+                if (convertUnderscoreToSpace && i>0) {
+                    camelCaseString.append(" ");
+                }
+                i++;
+            }
+        }
+        return camelCaseString.toString();
+    }
+
+    public static String toProperCase(String s) {
+        return s.substring(0, 1).toUpperCase() +
+            s.substring(1).toLowerCase();
+    }
+
+    public static String toProperCase(String s, boolean convertUnderscoreToSpace) {
+        return toCamelCase(s, true, convertUnderscoreToSpace);
+    }
 }
