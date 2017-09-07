@@ -21,11 +21,12 @@ package org.openremote.agent.protocol;
 
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
+import org.openremote.model.file.FileInfo;
 
 /**
- * To be used by protocols that support device discovery.
+ * To be used by protocols that support device import from one or more protocol specific files.
  * <p>
- * The discovery process should return an array of {@link Asset}s that represent the physical devices
+ * The import process should return an array of {@link Asset}s that represent the physical devices
  * connected to a particular {@link org.openremote.model.asset.agent.ProtocolConfiguration}. The device
  * assets should contain all the appropriate {@link AssetAttribute}s needed for interacting with the
  * device. Each {@link AssetAttribute} should be of the correct type and have any required
@@ -37,10 +38,12 @@ import org.openremote.model.asset.AssetAttribute;
  * automatically if omitted.
  * </b>
  */
-public interface ProtocolDeviceDiscovery {
+public interface ProtocolLinkedAttributeImport {
 
     /**
-     * Get discovered devices for the specified {@link org.openremote.model.asset.agent.ProtocolConfiguration}.
+     * Import devices for the specified {@link org.openremote.model.asset.agent.ProtocolConfiguration}
+     * using the supplied {@link FileInfo}.
+     * @throws IllegalStateException when there is an issue processing the provided {@link FileInfo}
      */
-    Asset[] getDevicesByDiscovery(AssetAttribute protocolConfiguration);
+    Asset[] discoverLinkedAssetAttributes(AssetAttribute protocolConfiguration, FileInfo fileInfo) throws IllegalStateException;
 }

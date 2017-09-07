@@ -22,13 +22,14 @@ package org.openremote.manager.shared.agent;
 import jsinterop.annotations.JsType;
 import org.openremote.manager.shared.http.RequestParams;
 import org.openremote.manager.shared.http.SuccessStatusCode;
+import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.agent.ProtocolDescriptor;
 import org.openremote.model.attribute.AttributeValidationResult;
+import org.openremote.model.file.FileInfo;
 
 import javax.annotation.security.RolesAllowed;
 import javax.ws.rs.*;
-
 import java.util.Map;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
@@ -95,5 +96,48 @@ public interface AgentResource {
         @BeanParam RequestParams requestParams,
         @PathParam("agentId") String agentId,
         AssetAttribute protocolConfiguration
+    );
+
+    /**
+     * Get discovered linked attributes for the specified {@link org.openremote.model.asset.agent.Agent}
+     * and {@link org.openremote.model.asset.agent.ProtocolConfiguration}.
+     * <p>
+     * Currently this request will automatically add the found {@link Asset}s to the DB as well as returning
+     * them in the response. The {@param parentId} is used to set where in the {@link Asset} tree the new assets are
+     * inserted.
+     */
+    @GET
+    @Path("discover/{agentId}/{protocolConfigurationName}")
+    @Consumes(APPLICATION_JSON)
+    @Produces(APPLICATION_JSON)
+    @SuccessStatusCode(200)
+    Asset[] getDiscoveredLinkedAttributes(
+        @BeanParam RequestParams requestParams,
+        @PathParam("agentId") String agentId,
+        @PathParam("protocolConfigurationName") String protocolConfigurationName,
+        @QueryParam("parentId") String parentId
+    );
+
+    /**
+     * Get discovered linked attributes for the specified {@link org.openremote.model.asset.agent.Agent}
+     * and {@link org.openremote.model.asset.agent.ProtocolConfiguration} using the supplied {@link FileInfo}.
+     * <p>
+     * Currently this request will automatically add the found {@link Asset}s to the DB as well as returning
+     * them in the response. The {@param parentId} is used to set where in the {@link Asset} tree the new assets are
+     * inserted.
+     * <b>NOTE:</b> The {@link FileInfo} should be a file that the protocol understands.
+     */
+    @POST
+    @Path("discover/{agentId}/{protocolConfigurationName}")
+    @Consumes(APPLICATION_JSON)
+    @Produces(APPLICATION_JSON)
+    @SuccessStatusCode(200)
+    // TODO: File upload should use standard multipart mechanism
+    Asset[] getDiscoveredLinkedAttributes(
+        @BeanParam RequestParams requestParams,
+        @PathParam("agentId") String agentId,
+        @PathParam("protocolConfigurationName") String protocolConfigurationName,
+        @QueryParam("parentId") String parentId,
+        FileInfo fileInfo
     );
 }

@@ -19,31 +19,45 @@
  */
 package org.openremote.manager.server.agent;
 
+import org.openremote.container.timer.TimerService;
 import org.openremote.manager.server.asset.AssetResourceImpl;
+import org.openremote.manager.server.asset.AssetStorageService;
 import org.openremote.manager.server.asset.ServerAsset;
-import org.openremote.manager.server.web.ManagerWebService;
+import org.openremote.manager.server.security.ManagerIdentityService;
+import org.openremote.manager.server.web.ManagerWebResource;
 import org.openremote.manager.shared.agent.AgentResource;
 import org.openremote.manager.shared.http.RequestParams;
+import org.openremote.manager.shared.security.Tenant;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetType;
 import org.openremote.model.asset.agent.ProtocolDescriptor;
+import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.AttributeValidationResult;
-import org.openremote.model.util.Pair;
+import org.openremote.model.file.FileInfo;
 
+import javax.ws.rs.*;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class AgentResourceImpl extends ManagerWebService implements AgentResource {
+import static org.openremote.model.util.TextUtil.isNullOrEmpty;
+
+public class AgentResourceImpl extends ManagerWebResource implements AgentResource {
 
     private static final Logger LOG = Logger.getLogger(AssetResourceImpl.class.getName());
-    protected AgentService agentService;
+    protected final AgentService agentService;
+    protected final AssetStorageService assetStorageService;
 
-    public AgentResourceImpl(AgentService agentService) {
+    public AgentResourceImpl(TimerService timerService,
+                             ManagerIdentityService identityService,
+                             AssetStorageService assetStorageService,
+                             AgentService agentService) {
+        super(timerService, identityService);
         this.agentService = agentService;
+        this.assetStorageService = assetStorageService;
     }
 
     @Override
@@ -68,8 +82,7 @@ public class AgentResourceImpl extends ManagerWebService implements AgentResourc
     @Override
     public Map<String, ProtocolDescriptor[]> getAllSupportedProtocols(RequestParams requestParams) {
         Map<String, ProtocolDescriptor[]> agentDescriptorMap = new HashMap<>(agentService.getAgents().size());
-        agentService.getAgents().forEach((id, agent) -> {
-
+        agentService.getAgents().forEach((id, agent) ->
             agentDescriptorMap.put(
                 id,
                 agentService.getAgentConnector(agent)
@@ -81,8 +94,7 @@ public class AgentResourceImpl extends ManagerWebService implements AgentResourc
                         LOG.warning("Agent connector not found for agent ID: " + id);
                         return new IllegalStateException("Agent connector not found or returned invalid response");
                     })
-            );
-        });
+            ));
 
         return agentDescriptorMap;
     }
@@ -95,7 +107,7 @@ public class AgentResourceImpl extends ManagerWebService implements AgentResourc
     @Override
     public AttributeValidationResult validateProtocolConfiguration(RequestParams requestParams, String agentId, AssetAttribute protocolConfiguration) {
         return findAgent(agentId)
-            .flatMap(agent -> agentService.getAgentConnector(agent))
+            .flatMap(agentService::getAgentConnector)
             .map(agentConnector -> {
                 LOG.finer("Asking connector '" + agentConnector.getClass().getSimpleName() + "' to validate protocol configuration: " + protocolConfiguration);
                 return agentConnector.validateProtocolConfiguration(protocolConfiguration);
@@ -104,6 +116,58 @@ public class AgentResourceImpl extends ManagerWebService implements AgentResourc
                 LOG.warning("Agent connector not found for agent ID: " + agentId);
                 return new IllegalStateException("Agent connector not found or returned invalid response");
             });
+    }
+
+    @Override
+    public Asset[] getDiscoveredLinkedAttributes(RequestParams requestParams, String agentId, String protocolConfigurationName, String parentId) {
+        AttributeRef protocolConfigRef = new AttributeRef(agentId, protocolConfigurationName);
+        AgentConnector agentConnector = findAgent(agentId)
+            .flatMap(agentService::getAgentConnector)
+            .orElseThrow(() -> new NotFoundException("Agent connector not found for: " + agentId));
+
+        LOG.finer("Asking connector '" + agentConnector.getClass().getSimpleName() + "' to do linked attribute discovery for protocol configuration: " + protocolConfigRef);
+        try {
+            // TODO: Allow user to select which assets/attributes are actually added to the DB
+            Asset[] assets = agentConnector.getDiscoveredLinkedAttributes(protocolConfigRef);
+            persistAssets(assets, parentId);
+            return assets;
+        } catch (IllegalArgumentException e) {
+            LOG.log(Level.WARNING, e.getMessage(), e);
+            throw new NotFoundException(e.getMessage());
+        } catch (UnsupportedOperationException e) {
+            LOG.log(Level.WARNING, e.getMessage(), e);
+            throw new NotSupportedException(e.getMessage());
+        }
+    }
+
+    @Override
+    public Asset[] getDiscoveredLinkedAttributes(RequestParams requestParams, String agentId, String protocolConfigurationName, String parentId, FileInfo fileInfo) {
+        AttributeRef protocolConfigRef = new AttributeRef(agentId, protocolConfigurationName);
+        AgentConnector agentConnector = findAgent(agentId)
+            .flatMap(agentService::getAgentConnector)
+            .orElseThrow(() -> new NotFoundException("Agent connector not found for: " + agentId));
+
+        if (fileInfo == null || fileInfo.getContents() == null) {
+            throw new BadRequestException("A file must be provided for import");
+        }
+
+        LOG.finer("Asking connector '" + agentConnector.getClass().getSimpleName() + "' to do linked attribute discovery using uploaded file for protocol configuration: " + protocolConfigRef);
+
+        try {
+            // TODO: Allow user to select which assets/attributes are actually added to the DB
+            Asset[] assets = agentConnector.getDiscoveredLinkedAttributes(protocolConfigRef, fileInfo);
+            persistAssets(assets, parentId);
+            return assets;
+        } catch (IllegalArgumentException e) {
+            LOG.log(Level.WARNING, e.getMessage(), e);
+            throw new NotFoundException(e.getMessage());
+        } catch (UnsupportedOperationException e) {
+            LOG.log(Level.WARNING, e.getMessage(), e);
+            throw new NotSupportedException(e.getMessage());
+        } catch (IllegalStateException e) {
+            LOG.log(Level.SEVERE, e.getMessage(), e);
+            throw new InternalServerErrorException(e.getMessage());
+        }
     }
 
     protected Optional<Asset> findAgent(String agentId) {
@@ -115,5 +179,42 @@ public class AgentResourceImpl extends ManagerWebService implements AgentResourc
             throw new IllegalArgumentException("Agent not found");
         }
         return Optional.of(agent);
+    }
+
+    protected void persistAssets(Asset[] assets, String parentId) {
+        if (assets == null || assets.length == 0) {
+            LOG.info("No assets to import");
+            return;
+        }
+
+        if (isRestrictedUser()) {
+            throw new ForbiddenException("User is restricted");
+        }
+
+        // Assets must be added in the same realm as the user (unless super user)
+        Asset parentAsset = isNullOrEmpty(parentId) ? null : assetStorageService.find(parentId);
+
+        if (parentAsset == null && !isNullOrEmpty(parentId)) {
+            // Either invalid asset or user doesn't have access to it
+            LOG.info("User is trying to import with an invalid or inaccessible parent");
+            throw new BadRequestException("Parent either doesn't exist or is not accessible");
+        }
+
+        Tenant tenant = parentAsset != null ? identityService.getIdentityProvider().getTenantForRealmId(parentAsset.getRealmId()) : getAuthenticatedTenant();
+
+        if (!isTenantActiveAndAccessible(tenant)) {
+            String msg = "The requested parent asset is in an inaccessible realm: " + tenant.getRealm();
+            LOG.fine(msg);
+            throw new ForbiddenException(msg);
+        }
+
+        for (int i=0; i< assets.length; i++) {
+            Asset asset = assets[i];
+            asset.setId(null);
+            asset.setParent(parentAsset);
+            asset.setRealmId(tenant.getId());
+            ServerAsset serverAsset = ServerAsset.map(asset, new ServerAsset());
+            assets[i] = assetStorageService.merge(serverAsset);
+        }
     }
 }

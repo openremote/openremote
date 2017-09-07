@@ -28,10 +28,12 @@ import org.openremote.container.ContainerService;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.message.MessageBrokerSetupService;
 import org.openremote.container.persistence.PersistenceEvent;
+import org.openremote.container.timer.TimerService;
 import org.openremote.container.web.WebService;
 import org.openremote.manager.server.asset.AssetProcessingService;
 import org.openremote.manager.server.asset.AssetStorageService;
 import org.openremote.manager.server.asset.ServerAsset;
+import org.openremote.manager.server.security.ManagerIdentityService;
 import org.openremote.model.AbstractValueTimestampHolder;
 import org.openremote.model.asset.*;
 import org.openremote.model.asset.agent.Agent;
@@ -92,7 +94,11 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
         localAgentConnector = new LocalAgentConnector(this);
 
         container.getService(WebService.class).getApiSingletons().add(
-            new AgentResourceImpl(this)
+            new AgentResourceImpl(
+                container.getService(TimerService.class),
+                container.getService(ManagerIdentityService.class),
+                assetStorageService,
+                this)
         );
     }
 

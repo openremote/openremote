@@ -296,8 +296,8 @@ public abstract class AbstractProtocol implements Protocol {
             getVersion(),
             this instanceof ProtocolConfigurationDiscovery,
             this instanceof ProtocolConfigurationImport,
-            this instanceof ProtocolDeviceDiscovery,
-            this instanceof ProtocolDeviceImport,
+            this instanceof ProtocolLinkedAttributeDiscovery,
+            this instanceof ProtocolLinkedAttributeImport,
             getProtocolConfigurationTemplate(),
             getProtocolConfigurationMetaItemDescriptors(),
             getLinkedAttributeMetaItemDescriptors()

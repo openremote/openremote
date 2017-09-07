@@ -22,14 +22,38 @@ package org.openremote.manager.server.agent;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.agent.ProtocolDescriptor;
+import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.AttributeValidationResult;
+import org.openremote.model.file.FileInfo;
 
 /**
  * This is an interface for communicating with an agent. It
  * should be stateless and re-usable.
  */
 public interface AgentConnector {
+
     ProtocolDescriptor[] getProtocolDescriptors(Asset agent);
 
     AttributeValidationResult validateProtocolConfiguration(AssetAttribute protocolConfiguration);
+
+    /**
+     * Ask the protocol for discovered linked {@link AssetAttribute}s.
+     * <p>
+     * <b>NOTE:</b>The protocol must implement {@link org.openremote.agent.protocol.ProtocolLinkedAttributeDiscovery}
+     *
+     * @throws IllegalArgumentException when the protocol cannot be found for this {@link org.openremote.model.asset.agent.ProtocolConfiguration} reference
+     * @throws UnsupportedOperationException when the protocol doesn't implement {@link org.openremote.agent.protocol.ProtocolLinkedAttributeDiscovery}
+     */
+    Asset[] getDiscoveredLinkedAttributes(AttributeRef protocolConfigurationRef) throws IllegalArgumentException, UnsupportedOperationException;
+
+    /**
+     * Ask the protocol for discovered linked {@link AssetAttribute}s using the supplied file (protocol specific file).
+     * <p>
+     * <b>NOTE:</b>The protocol must implement {@link org.openremote.agent.protocol.ProtocolLinkedAttributeImport}
+     *
+     * @throws IllegalArgumentException when the protocol cannot be found for this {@link org.openremote.model.asset.agent.ProtocolConfiguration} reference
+     * @throws UnsupportedOperationException when the protocol doesn't implement {@link org.openremote.agent.protocol.ProtocolLinkedAttributeDiscovery}
+     * @throws IllegalStateException thrown by the protocol if an error occurs processing the supplied {@link FileInfo}
+     */
+    Asset[] getDiscoveredLinkedAttributes(AttributeRef protocolConfigurationRef, FileInfo fileInfo) throws  IllegalArgumentException, UnsupportedOperationException, IllegalStateException;
 }

@@ -19,20 +19,42 @@
  */
 package org.openremote.model.file;
 
-public class FileInfo {
-    protected String name;
-    protected byte[] contents;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.gwt.user.server.Base64Utils;
 
-    public FileInfo(String name, byte[] contents) {
+import java.io.UnsupportedEncodingException;
+
+public class FileInfo {
+    protected final String name;
+    protected final String contents;
+    protected final boolean binary;
+
+    @JsonCreator
+    public FileInfo(@JsonProperty("name") String name, @JsonProperty("contents") String contents, @JsonProperty("binary") boolean binary) {
         this.name = name;
         this.contents = contents;
+        this.binary = binary;
     }
 
     public String getName() {
         return name;
     }
 
-    public byte[] getContents() {
+    public byte[] getBytes() {
+        try {
+            return binary ? Base64Utils.fromBase64(contents) : contents.getBytes("UTF8");
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+            return new byte[0];
+        }
+    }
+
+    public String getContents() {
         return contents;
+    }
+
+    public boolean isBinary() {
+        return binary;
     }
 }

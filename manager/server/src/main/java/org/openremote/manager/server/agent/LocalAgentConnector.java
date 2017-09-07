@@ -20,17 +20,26 @@
 package org.openremote.manager.server.agent;
 
 import org.openremote.agent.protocol.Protocol;
+import org.openremote.agent.protocol.ProtocolLinkedAttributeDiscovery;
+import org.openremote.agent.protocol.ProtocolLinkedAttributeImport;
+import org.openremote.manager.server.asset.AssetResourceImpl;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.agent.ProtocolConfiguration;
 import org.openremote.model.asset.agent.ProtocolDescriptor;
+import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.AttributeValidationResult;
+import org.openremote.model.file.FileInfo;
+import org.openremote.model.util.Pair;
 
 import java.util.Collections;
+import java.util.Optional;
+import java.util.logging.Logger;
 
 public class LocalAgentConnector implements AgentConnector {
 
+    private static final Logger LOG = Logger.getLogger(LocalAgentConnector.class.getName());
     protected AgentService agentService;
 
     public LocalAgentConnector(AgentService agentService) {
@@ -60,5 +69,63 @@ public class LocalAgentConnector implements AgentConnector {
                         ProtocolConfiguration.ValidationFailureReason.VALUE_NOT_A_VALID_PROTOCOL_URN
                     )),
                 null));
+    }
+
+    @Override
+    public Asset[] getDiscoveredLinkedAttributes(AttributeRef protocolConfigurationRef) throws IllegalArgumentException, UnsupportedOperationException {
+        Optional<Pair<Protocol, AssetAttribute>> protocolAndConfigOptional = getProtocolAndConfig(protocolConfigurationRef);
+
+        if (!protocolAndConfigOptional.isPresent()) {
+            throw new IllegalArgumentException("Protocol not found for: " + protocolConfigurationRef);
+        }
+
+        // Check protocol is of correct type
+        if (!(protocolAndConfigOptional.get().key instanceof ProtocolLinkedAttributeDiscovery)) {
+            LOG.info("Protocol not of type '" + ProtocolLinkedAttributeDiscovery.class.getSimpleName() + "'");
+            throw new UnsupportedOperationException("Protocol doesn't support linked attribute discovery:" + protocolAndConfigOptional.get().key.getProtocolDisplayName());
+        }
+
+        return protocolAndConfigOptional
+            .map(protocolAndConfig -> {
+                ProtocolLinkedAttributeDiscovery discoveryProtocol = (ProtocolLinkedAttributeDiscovery)protocolAndConfig.key;
+                return discoveryProtocol.discoverLinkedAssetAttributes(protocolAndConfig.value);
+            })
+            .orElse(new Asset[0]);
+    }
+
+    @Override
+    public Asset[] getDiscoveredLinkedAttributes(AttributeRef protocolConfigurationRef, FileInfo fileInfo) throws IllegalArgumentException, UnsupportedOperationException, IllegalStateException {
+        Optional<Pair<Protocol, AssetAttribute>> protocolAndConfigOptional = getProtocolAndConfig(protocolConfigurationRef);
+
+        if (!protocolAndConfigOptional.isPresent()) {
+            throw new IllegalArgumentException("Protocol not found for: " + protocolConfigurationRef);
+        }
+
+        Pair<Protocol, AssetAttribute> protocolAndConfig = protocolAndConfigOptional.get();
+
+        // Check protocol is of correct type
+        if (!(protocolAndConfigOptional.get().key instanceof ProtocolLinkedAttributeImport)) {
+            LOG.info("Protocol not of type '" + ProtocolLinkedAttributeImport.class.getSimpleName() + "'");
+            throw new UnsupportedOperationException("Protocol doesn't support linked attribute import:" + protocolAndConfigOptional.get().key.getProtocolDisplayName());
+        }
+
+        ProtocolLinkedAttributeImport discoveryProtocol = (ProtocolLinkedAttributeImport)protocolAndConfig.key;
+        return discoveryProtocol.discoverLinkedAssetAttributes(protocolAndConfig.value, fileInfo);
+    }
+
+    protected Optional<Pair<Protocol,AssetAttribute>> getProtocolAndConfig(AttributeRef protocolConfigurationRef) {
+        return agentService.getProtocolConfiguration(protocolConfigurationRef)
+            .map(protocolConfig ->
+                // Find protocol
+                agentService.protocols
+                    .values()
+                    .stream()
+                    .filter(protocol -> protocol.getProtocolName().equals(protocolConfig.getValueAsString().orElse(null)))
+                    .findFirst()
+                    .map(protocol -> new Pair<>(protocol, protocolConfig))
+                    .orElseGet(() -> {
+                        LOG.info("Failed to find protocol configuration and protocol for: " + protocolConfigurationRef);
+                        return null;
+                    }));
     }
 }

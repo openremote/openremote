@@ -19,15 +19,21 @@
  */
 package org.openremote.agent.protocol;
 
+import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
 
 /**
- * To be used by protocols that support {@link org.openremote.model.asset.agent.ProtocolConfiguration} discovery.
+ * To be used by protocols that support linked {@link AssetAttribute} discovery.
+ * <p>
+ * The discovery process should return {@link AssetAttribute}s that contain the necessary {@link org.openremote.model.attribute.MetaItem}s
+ * to establish a link to the specified {@link org.openremote.model.asset.agent.ProtocolConfiguration}.
+ * <p>
+ * The returned {@link AssetAttribute}s must be logically grouped into {@link Asset}s.
  */
-public interface ProtocolConfigurationDiscovery {
+public interface ProtocolLinkedAttributeDiscovery {
 
     /**
-     * Get discovered {@link org.openremote.model.asset.agent.ProtocolConfiguration}s.
+     * Discover all linked {@link AssetAttribute}s for the specified {@link org.openremote.model.asset.agent.ProtocolConfiguration}.
      */
-    AssetAttribute[] discoverProtocolConfigurations();
+    Asset[] discoverLinkedAssetAttributes(AssetAttribute protocolConfiguration);
 }
