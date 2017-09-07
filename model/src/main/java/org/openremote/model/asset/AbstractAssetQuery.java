@@ -217,7 +217,7 @@ public class AbstractAssetQuery<CHILD extends AbstractAssetQuery<CHILD>> {
 
     public static class DateTimePredicate implements ValuePredicate {
         public OperatorMatch operatorMatch = OperatorMatch.EXACT;
-        public String dateFormat = "YYYY-MM-DDTHH24:MI:SS";//postgres dateformat
+        public String dateFormat = "YYYY-MM-DD HH24:MI:SS";//postgres dateformat
         public String value;
         public String rangeValue;//used when operatorMatch is Between as end date
 
