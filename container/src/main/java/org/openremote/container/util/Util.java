@@ -1,5 +1,7 @@
 package org.openremote.container.util;
 
+import org.apache.commons.codec.binary.Base64;
+
 import java.lang.reflect.Array;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -132,5 +134,25 @@ public class Util {
         Double d = parseDouble(o);
         d = d + shift;
         return (String.format("%.1f", d) + suffix);
+    }
+
+    public static byte[] decodeBase64(String base64String) {
+        if (base64String == null) {
+            return null;
+        }
+
+        if (base64String.length() == 0) {
+            return new byte[0];
+        }
+
+        // Could be data URL encoded so look for comma in first 50 chars
+        int searchLength = Math.min(50, base64String.length());
+        String str = base64String.substring(0, searchLength-1);
+        int commaIndex = str.indexOf(',');
+        if (commaIndex >=0) {
+            base64String = base64String.substring(commaIndex+1);
+        }
+
+        return Base64.decodeBase64(base64String);
     }
 }

@@ -107,11 +107,11 @@ public interface AgentResource {
      * inserted.
      */
     @GET
-    @Path("discover/{agentId}/{protocolConfigurationName}")
+    @Path("search/{agentId}/{protocolConfigurationName}")
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
-    Asset[] getDiscoveredLinkedAttributes(
+    Asset[] searchForLinkedAttributes(
         @BeanParam RequestParams requestParams,
         @PathParam("agentId") String agentId,
         @PathParam("protocolConfigurationName") String protocolConfigurationName,
@@ -129,12 +129,12 @@ public interface AgentResource {
      * <b>NOTE:</b> The {@link FileInfo} should be a file that the protocol understands.
      */
     @POST
-    @Path("discover/{agentId}/{protocolConfigurationName}")
+    @Path("import/{agentId}/{protocolConfigurationName}")
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
     // TODO: File upload should use standard multipart mechanism
-    Asset[] getDiscoveredLinkedAttributes(
+    Asset[] importLinkedAttributes(
         @BeanParam RequestParams requestParams,
         @PathParam("agentId") String agentId,
         @PathParam("protocolConfigurationName") String protocolConfigurationName,

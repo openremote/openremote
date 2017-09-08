@@ -60,7 +60,7 @@ public class RequestParams<OUT> {
     public Request.InternalCallback callback;
 
     @JsProperty(name = "$async")
-    public boolean async;
+    public boolean async = true; // Default to async request
 
     @JsIgnore
     public RequestParams() {

@@ -139,7 +139,7 @@ public class RulesEditorImpl extends FormViewImpl implements RulesEditor {
 
         rulesFileUpload.getFileUpload().addChangeHandler(event -> {
             rulesFileUpload.getElement().removeClassName("error");
-            JsArray files = (JsArray) rulesFileUpload.getElement().getPropertyJSO("files");
+            JsArray files = (JsArray) rulesFileUpload.getFileUpload().getElement().getPropertyJSO("files");
             if (files.length() != 1)
                 return;
             Blob file = (Blob) files.get(0);

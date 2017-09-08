@@ -11,11 +11,14 @@ import java.util.logging.Logger;
 
 import org.openremote.agent.protocol.AbstractProtocol;
 import org.openremote.agent.protocol.ConnectionStatus;
+import org.openremote.agent.protocol.ProtocolLinkedAttributeImport;
 import org.openremote.model.AbstractValueHolder;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.ValueHolder;
+import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.attribute.*;
+import org.openremote.model.file.FileInfo;
 import org.openremote.model.util.Pair;
 import org.openremote.model.value.Value;
 
@@ -28,9 +31,9 @@ import tuwien.auto.calimero.datapoint.Datapoint;
 import tuwien.auto.calimero.datapoint.StateDP;
 
 /**
- * This protocol is used to connecto to a KNX bus via an IP interface.
+ * This protocol is used to connect to a KNX bus via an IP interface.
  */
-public class KNXProtocol extends AbstractProtocol {
+public class KNXProtocol extends AbstractProtocol implements ProtocolLinkedAttributeImport {
 
     private static final Logger LOG = Logger.getLogger(KNXProtocol.class.getName());
 
@@ -412,5 +415,11 @@ public class KNXProtocol extends AbstractProtocol {
         }
 
         return clientStillUsed;
+    }
+
+    @Override
+    public Asset[] discoverLinkedAssetAttributes(AssetAttribute protocolConfiguration, FileInfo fileInfo) throws IllegalStateException {
+        // TODO: implement discovery using provided file info
+        return new Asset[0];
     }
 }

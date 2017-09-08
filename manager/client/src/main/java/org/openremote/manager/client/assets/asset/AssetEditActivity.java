@@ -31,6 +31,7 @@ import org.openremote.manager.client.assets.browser.BrowserTreeNode;
 import org.openremote.manager.client.assets.browser.TenantTreeNode;
 import org.openremote.manager.client.event.ShowFailureEvent;
 import org.openremote.manager.client.event.ShowSuccessEvent;
+import org.openremote.manager.client.interop.jackson.FileInfoMapper;
 import org.openremote.manager.client.interop.value.ObjectValueMapper;
 import org.openremote.manager.client.widget.FormButton;
 import org.openremote.manager.client.widget.ValueEditors;
@@ -75,6 +76,7 @@ public class AssetEditActivity
     protected final AssetQueryMapper assetQueryMapper;
     protected final ProtocolDescriptorArrayMapper protocolDescriptorArrayMapper;
     protected final ProtocolDescriptorMapMapper protocolDescriptorMapMapper;
+    protected final FileInfoMapper fileInfoMapper;
     protected final AttributeValidationResultMapper attributeValidationResultMapper;
     protected final AssetAttributeMapper assetAttributeMapper;
     protected final Consumer<ConstraintViolation[]> validationErrorHandler;
@@ -102,6 +104,7 @@ public class AssetEditActivity
                              ProtocolDescriptorMapMapper protocolDescriptorMapMapper,
                              AttributeValidationResultMapper attributeValidationResultMapper,
                              AssetAttributeMapper assetAttributeMapper,
+                             FileInfoMapper fileInfoMapper,
                              MapResource mapResource,
                              ObjectValueMapper objectValueMapper) {
         super(environment, currentTenant, assetBrowserPresenter, jsonEditorProvider, objectValueMapper, mapResource, true);
@@ -117,6 +120,7 @@ public class AssetEditActivity
         this.protocolDescriptorMapMapper = protocolDescriptorMapMapper;
         this.attributeValidationResultMapper = attributeValidationResultMapper;
         this.assetAttributeMapper = assetAttributeMapper;
+        this.fileInfoMapper = fileInfoMapper;
 
         validationErrorHandler = violations -> {
             for (ConstraintViolation violation : violations) {
@@ -663,6 +667,41 @@ public class AssetEditActivity
     }
 
     protected void doProtocolDiscovery(ProtocolDiscoveryView.DiscoveryRequest request, Runnable callback) {
+        showInfo(environment.getMessages().protocolLinkDiscoveryStarted());
 
+        environment.getRequestService().execute(
+            assetArrayMapper,
+            fileInfoMapper,
+            requestParams -> {
+                if (request.getFileInfo() != null) {
+                    agentResource.importLinkedAttributes(
+                        requestParams, assetId,
+                        request.getProtocolConfigurationName(),
+                        request.getParentId(),
+                        request.getRealmId(),
+                        request.getFileInfo()
+                    );
+                } else {
+                    agentResource.searchForLinkedAttributes(
+                        requestParams, assetId,
+                        request.getProtocolConfigurationName(),
+                        request.getParentId(),
+                        request.getRealmId()
+                    );
+                }
+            },
+            Collections.singletonList(200),
+            discoveredAssets -> {
+                updateMetaItemDescriptors();
+                view.setFormBusy(false);
+                view.setAvailableAttributeTypes(attributeTypesToList());
+                showSuccess(environment.getMessages().protocolLinkDiscoverySuccess(discoveredAssets.length));
+                callback.run();
+            },
+            ex -> {
+                handleRequestException(ex, environment.getEventBus(), environment.getMessages(), validationErrorHandler);
+                callback.run();
+            }
+        );
     }
 }

@@ -48,7 +48,7 @@ import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 
 public class AgentResourceImpl extends ManagerWebResource implements AgentResource {
 
-    private static final Logger LOG = Logger.getLogger(AssetResourceImpl.class.getName());
+    private static final Logger LOG = Logger.getLogger(AgentResourceImpl.class.getName());
     protected final AgentService agentService;
     protected final AssetStorageService assetStorageService;
 
@@ -120,7 +120,7 @@ public class AgentResourceImpl extends ManagerWebResource implements AgentResour
     }
 
     @Override
-    public Asset[] getDiscoveredLinkedAttributes(RequestParams requestParams, String agentId, String protocolConfigurationName, String parentId, String realmId) {
+    public Asset[] searchForLinkedAttributes(RequestParams requestParams, String agentId, String protocolConfigurationName, String parentId, String realmId) {
         AttributeRef protocolConfigRef = new AttributeRef(agentId, protocolConfigurationName);
         AgentConnector agentConnector = findAgent(agentId)
             .flatMap(agentService::getAgentConnector)
@@ -145,7 +145,7 @@ public class AgentResourceImpl extends ManagerWebResource implements AgentResour
     }
 
     @Override
-    public Asset[] getDiscoveredLinkedAttributes(RequestParams requestParams, String agentId, String protocolConfigurationName, String parentId, String realmId, FileInfo fileInfo) {
+    public Asset[] importLinkedAttributes(RequestParams requestParams, String agentId, String protocolConfigurationName, String parentId, String realmId, FileInfo fileInfo) {
         AttributeRef protocolConfigRef = new AttributeRef(agentId, protocolConfigurationName);
         AgentConnector agentConnector = findAgent(agentId)
             .flatMap(agentService::getAgentConnector)

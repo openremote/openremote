@@ -31,10 +31,7 @@ import org.openremote.manager.client.assets.browser.AssetSelector;
 import org.openremote.manager.client.assets.browser.AssetTreeNode;
 import org.openremote.manager.client.assets.browser.TenantTreeNode;
 import org.openremote.manager.client.interop.BiConsumer;
-import org.openremote.manager.client.widget.FormGroup;
-import org.openremote.manager.client.widget.FormGroupActions;
-import org.openremote.manager.client.widget.FormInlineLabel;
-import org.openremote.manager.client.widget.FormLabel;
+import org.openremote.manager.client.widget.*;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.agent.ProtocolDescriptor;
 import org.openremote.model.attribute.AttributeValidationResult;
@@ -77,6 +74,8 @@ public class ProtocolDiscoveryView extends AbstractAttributeViewExtension {
     protected final BiConsumer<DiscoveryRequest, Runnable> discoveryRequestConsumer;
     protected String importRealmId;
     protected String importParentId;
+    protected FileUploadLabelled fileUpload;
+    protected FormGroup importGroup;
 
     public ProtocolDiscoveryView(
         Environment environment,
@@ -112,53 +111,46 @@ public class ProtocolDiscoveryView extends AbstractAttributeViewExtension {
         ) {
             @Override
             public void beginSelection() {
-                ProtocolDiscoveryView.this.setDisabled(true);
+                importGroup.setDisabled(true);
                 super.beginSelection();
             }
 
             @Override
             public void endSelection() {
                 super.endSelection();
-                ProtocolDiscoveryView.this.setDisabled(false);
+                importGroup.setDisabled(false);
             }
         };
 
         add(assetSelector);
 
         if (protocolDescriptor.isDeviceImport()) {
-            FormGroup importGroup = new FormGroup();
+            importGroup = new FormGroup();
             importGroup.setFormLabel(new FormLabel(environment.getMessages().importProtocolLinks()));
             FormGroupActions actions = new FormGroupActions();
-            FileUpload fileUpload = new FileUpload();
-            fileUpload.setVisible(false);
+            fileUpload = new FileUploadLabelled();
+            fileUpload.setIcon("upload");
+            fileUpload.getElement().addClassName(environment.getWidgetStyle().FormControl());
+            fileUpload.getElement().addClassName(environment.getWidgetStyle().FormFileUploadLabel());
+            fileUpload.setText(environment.getMessages().uploadProtocolFile());
 
-            fileUpload.addChangeHandler(event -> {
-                JsArray files = (JsArray) fileUpload.getElement().getPropertyJSO("files");
+            fileUpload.getFileUpload().addChangeHandler(event -> {
+                JsArray files = (JsArray) fileUpload.getFileUpload().getElement().getPropertyJSO("files");
                 if (files.length() != 1) {
                     return;
                 }
-                // Base64 encode non-text files
                 Blob file = (Blob) files.get(0);
                 final FileReader reader = Browser.getWindow().newFileReader();
                 if (file.getType().matches("text.*")) {
-                    reader.setOnloadend(evt -> doDiscoveryImport(reader.getResult().toString(), false));
+                    reader.setOnloadend(evt -> doDiscoveryImport(fileUpload.getFileUpload().getFilename(), reader.getResult().toString(), false));
                     reader.readAsText(file, "UTF-8");
                 } else {
-                    reader.setOnloadend(evt -> doDiscoveryImport(reader.getResult().toString(), true));
+                    reader.setOnloadend(evt -> doDiscoveryImport(fileUpload.getFileUpload().getFilename(), reader.getResult().toString(), true));
                     reader.readAsDataURL(file);
                 }
             });
 
-            FormInlineLabel label = new FormInlineLabel(environment.getMessages().uploadProtocolFile());
-            label.setIcon("upload");
-            FlowPanel fileUploadWrapper = new FlowPanel();
-            fileUploadWrapper.getElement().getStyle().setDisplay(com.google.gwt.dom.client.Style.Display.INLINE);
-            fileUploadWrapper.addStyleName(environment.getWidgetStyle().FormControl());
-            fileUploadWrapper.addStyleName(environment.getWidgetStyle().FormFileUploadLabel());
-            fileUploadWrapper.add(fileUpload);
-            fileUploadWrapper.add(label);
-
-            actions.add(fileUploadWrapper);
+            actions.add(fileUpload);
             importGroup.setFromGroupActions(actions);
             add(importGroup);
         }
@@ -179,7 +171,18 @@ public class ProtocolDiscoveryView extends AbstractAttributeViewExtension {
 
     }
 
-    protected void doDiscoveryImport(String data, boolean binary) {
+    protected void doDiscoveryImport(String name, String data, boolean binary) {
+        fileUpload.clearInput();
+        setDisabled(true);
+        fileUpload.setText(environment.getMessages().importInProgress());
 
+        FileInfo fileInfo = new FileInfo(name, data, binary);
+        DiscoveryRequest discoveryRequest = new DiscoveryRequest(attribute.getName().orElse(""), importParentId, importRealmId, fileInfo);
+        if (discoveryRequestConsumer != null) {
+            discoveryRequestConsumer.accept(discoveryRequest, () -> {
+                fileUpload.setText(environment.getMessages().uploadProtocolFile());
+                setDisabled(false);
+            });
+        }
     }
 }

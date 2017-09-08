@@ -1,5 +1,5 @@
 /*
- * Copyright 2017, OpenRemote Inc.
+ * Copyright 2016, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -17,31 +17,17 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.client.widget;
+package org.openremote.manager.client.interop.jackson;
 
-import com.google.gwt.user.client.ui.FlowPanel;
+import com.github.nmorel.gwtjackson.client.ObjectMapper;
+import com.github.nmorel.gwtjackson.client.annotation.JsonMixIns;
+import org.openremote.manager.shared.http.EntityReader;
+import org.openremote.manager.shared.http.EntityWriter;
+import org.openremote.model.asset.AssetQuery;
+import org.openremote.model.file.FileInfo;
 
-/**
- * Represents a {@link FormSectionLabel} and one or more {@link com.google.gwt.user.client.ui.Widget}s to be displayed
- * inside a {@link FormGroup}.
- */
-public class FormSection extends FlowPanel {
-    protected FormSectionLabel label = new FormSectionLabel();
-
-    public FormSection(String label) {
-        setStyleName("or-FormSection");
-        addLabel(label);
-    }
-
-    public void addLabel(String label) {
-        this.label.setText(label);
-        add(this.label);
-    }
-
-    public void setDisabled(boolean disabled) {
-        removeStyleName("opaque");
-        if (disabled) {
-            addStyleName("opaque");
-        }
-    }
+@JsonMixIns({@JsonMixIns.JsonMixIn(target = FileInfo.class, mixIn = DefaultJsonMixin.class)})
+public interface FileInfoMapper
+    extends ObjectMapper<FileInfo>,
+    EntityWriter<FileInfo> {
 }

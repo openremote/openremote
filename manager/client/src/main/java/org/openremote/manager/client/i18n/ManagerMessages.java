@@ -231,6 +231,8 @@ public interface ManagerMessages extends Messages {
 
     String uploadProtocolFile();
 
+    String importInProgress();
+
     String or();
 
     String and();
@@ -420,4 +422,10 @@ public interface ManagerMessages extends Messages {
     String selectAttribute();
 
     String selectProtocolConfiguration();
+
+    String protocolLinkDiscoveryStarted();
+
+    String protocolLinkDiscoverySuccess(@PluralCount int assetCount);
+
+    String protocolLinkDiscoveryFailure(int failureCode);
 }

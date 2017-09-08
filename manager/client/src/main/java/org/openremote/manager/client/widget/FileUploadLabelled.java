@@ -21,9 +21,11 @@ package org.openremote.manager.client.widget;
 
 import com.google.gwt.dom.client.Document;
 import com.google.gwt.dom.client.Element;
+import com.google.gwt.dom.client.FormElement;
 import com.google.gwt.dom.client.LabelElement;
 import com.google.gwt.user.client.ui.ComplexPanel;
 import com.google.gwt.user.client.ui.FileUpload;
+import com.google.gwt.user.client.ui.FormPanel;
 
 /**
  * This creates a customisable File upload widget (need to use a label wrapper otherwise the invisible
@@ -35,6 +37,7 @@ public class FileUploadLabelled extends ComplexPanel {
     protected FileUpload fileUpload;
     protected FormInlineLabel label;
     Element wrapper;
+    FormElement parentForm;
 
     public FileUploadLabelled() {
         wrapper = Document.get().createElement(LabelElement.TAG);
@@ -43,6 +46,21 @@ public class FileUploadLabelled extends ComplexPanel {
         add(fileUpload, wrapper);
         label = new FormInlineLabel();
         add(label, wrapper);
+    }
+
+    @Override
+    protected void onAttach() {
+        super.onAttach();
+
+        parentForm = getParentForm();
+        if (parentForm == null) {
+            // wrap the input in a form to allow resetting the input
+            FormPanel form = new FormPanel();
+            add(form, wrapper);
+            parentForm = form.getElement().cast();
+            fileUpload.removeFromParent();
+            form.add(fileUpload);
+        }
     }
 
     public FileUpload getFileUpload() {
@@ -63,5 +81,22 @@ public class FileUploadLabelled extends ComplexPanel {
 
     public void setClass(String clss) {
         wrapper.setClassName(clss);
+    }
+
+    public void clearInput() {
+        if (parentForm != null) {
+            parentForm.reset();
+        } else {
+            // This probably won't work due to browser protection but is a backup option
+            fileUpload.getElement().setAttribute("value", "");
+        }
+    }
+
+    protected FormElement getParentForm() {
+        Element parent = wrapper.getParentElement();
+        while (parent != null && !parent.hasTagName("form")) {
+            parent = parent.getParentElement();
+        }
+        return (FormElement)parent;
     }
 }
