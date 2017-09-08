@@ -64,9 +64,7 @@ public class RulesEditorImpl extends FormViewImpl implements RulesEditor {
 
     FormButton rulesFileDownload;
     @UiField
-    LabelElement rulesFileUploadLabel;
-    @UiField
-    FileUpload rulesFileUpload;
+    FileUploadLabelled rulesFileUpload;
 
     @UiField
     FormGroup optionsGroup;
@@ -139,21 +137,21 @@ public class RulesEditorImpl extends FormViewImpl implements RulesEditor {
             Browser.getDocument().getBody().removeChild(downloadAnchor);
         });
 
-        rulesFileUpload.addChangeHandler(event -> {
-            rulesFileUploadLabel.removeClassName("error");
+        rulesFileUpload.getFileUpload().addChangeHandler(event -> {
+            rulesFileUpload.getElement().removeClassName("error");
             JsArray files = (JsArray) rulesFileUpload.getElement().getPropertyJSO("files");
             if (files.length() != 1)
                 return;
             Blob file = (Blob) files.get(0);
-            if (file.getType().matches("text.*") || rulesFileUpload.getFilename().endsWith(".drl")) {
+            if (file.getType().matches("text.*") || rulesFileUpload.getFileUpload().getFilename().endsWith(".drl")) {
                 final FileReader reader = Browser.getWindow().newFileReader();
                 reader.setOnloadend(evt -> setRules(reader.getResult().toString()));
                 reader.readAsText(file, "UTF-8");
             } else {
-                if (!rulesFileUploadLabel.hasClassName("error")) {
-                    rulesFileUploadLabel.addClassName("error");
+                if (!rulesFileUpload.getElement().hasClassName("error")) {
+                    rulesFileUpload.getElement().addClassName("error");
                     Browser.getWindow().setTimeout(() -> {
-                        rulesFileUploadLabel.removeClassName("error");
+                        rulesFileUpload.getElement().removeClassName("error");
                     }, 1000);
                 }
             }

@@ -93,13 +93,7 @@
                                     <w:FormButton ui:field="rulesFileDownload"
                                                   icon="download"
                                                   text="{managerMessages.downloadRulesFile}"/>
-                                    <g:HTMLPanel>
-                                        <label ui:field="rulesFileUploadLabel"
-                                               class="{widgetStyle.FormControl} {widgetStyle.FormFileUploadLabel}">
-                                            <g:FileUpload ui:field="rulesFileUpload"/>
-                                            <w:FormInlineLabel icon="upload" text="{managerMessages.uploadRulesFile}"/>
-                                        </label>
-                                    </g:HTMLPanel>
+                                    <w:FileUploadLabelled class="{widgetStyle.FormControl} {widgetStyle.FormFileUploadLabel}" ui:field="rulesFileUpload" icon="upload" text="{managerMessages.uploadRulesFile}" />
                                 </w:FormGroupActions>
                             </w:actions>
                         </w:FormGroup>

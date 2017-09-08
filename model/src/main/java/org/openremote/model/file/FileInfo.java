@@ -21,7 +21,6 @@ package org.openremote.model.file;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.gwt.user.server.Base64Utils;
 
 import java.io.UnsupportedEncodingException;
 
@@ -39,15 +38,6 @@ public class FileInfo {
 
     public String getName() {
         return name;
-    }
-
-    public byte[] getBytes() {
-        try {
-            return binary ? Base64Utils.fromBase64(contents) : contents.getBytes("UTF8");
-        } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
-            return new byte[0];
-        }
     }
 
     public String getContents() {

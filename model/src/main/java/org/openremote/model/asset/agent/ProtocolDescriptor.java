@@ -46,7 +46,7 @@ public class ProtocolDescriptor {
                               @JsonProperty("version") String version,
                               @JsonProperty("configurationDiscovery") boolean configurationDiscovery,
                               @JsonProperty("configurationImport") boolean configurationImport,
-                              @JsonProperty("deviceDiscovery") boolean deviceDiscovery,
+                              @JsonProperty("protocolLinkDiscovery") boolean deviceDiscovery,
                               @JsonProperty("deviceImport") boolean deviceImport,
                               @JsonProperty("configurationTemplate") AssetAttribute configurationTemplate,
                               @JsonProperty("protocolConfigurationMetaItems") List<MetaItemDescriptor> protocolConfigurationMetaItems,

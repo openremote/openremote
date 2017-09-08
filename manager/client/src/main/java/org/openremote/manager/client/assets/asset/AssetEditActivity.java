@@ -33,7 +33,6 @@ import org.openremote.manager.client.event.ShowFailureEvent;
 import org.openremote.manager.client.event.ShowSuccessEvent;
 import org.openremote.manager.client.interop.value.ObjectValueMapper;
 import org.openremote.manager.client.widget.FormButton;
-import org.openremote.manager.client.widget.FormSectionLabel;
 import org.openremote.manager.client.widget.ValueEditors;
 import org.openremote.manager.shared.agent.AgentResource;
 import org.openremote.manager.shared.asset.AssetResource;
@@ -68,6 +67,7 @@ public class AssetEditActivity
     extends AbstractAssetActivity<AssetEdit.Presenter, AssetEdit, AssetEditPlace>
     implements AssetEdit.Presenter {
 
+    protected final AssetBrowser assetBrowser;
     protected final AssetResource assetResource;
     protected final AgentResource agentResource;
     protected final AssetMapper assetMapper;
@@ -92,6 +92,7 @@ public class AssetEditActivity
                              AssetBrowser.Presenter assetBrowserPresenter,
                              Provider<JsonEditor> jsonEditorProvider,
                              AssetEdit view,
+                             AssetBrowser assetBrowser,
                              AssetResource assetResource,
                              AgentResource agentResource,
                              AssetMapper assetMapper,
@@ -106,6 +107,7 @@ public class AssetEditActivity
         super(environment, currentTenant, assetBrowserPresenter, jsonEditorProvider, objectValueMapper, mapResource, true);
         this.presenter = this;
         this.view = view;
+        this.assetBrowser = assetBrowser;
         this.assetResource = assetResource;
         this.agentResource = agentResource;
         this.assetMapper = assetMapper;
@@ -465,13 +467,22 @@ public class AssetEditActivity
                 .findFirst()
                 .ifPresent(
                     protocolDescriptor -> {
-                        extensions.add(
-                            new ProtocolLinksEditor(environment, this.view.getStyle(), view, attribute, protocolDescriptor, false)
-                        );
+                        // This is too much work for now just auto import the assets
+//                        extensions.add(
+//                            new ProtocolLinksEditor(environment, this.view.getStyle(), view, attribute, protocolDescriptor, false)
+//                        );
 
                         if (protocolDescriptor.isDeviceDiscovery() || protocolDescriptor.isDeviceImport()) {
                             extensions.add(
-                                new ProtocolLinksEditor(environment, this.view.getStyle(), view, attribute, protocolDescriptor, true)
+                                new ProtocolDiscoveryView(
+                                    environment,
+                                    this.view.getStyle(),
+                                    view,
+                                    attribute,
+                                    assetBrowser,
+                                    protocolDescriptor,
+                                    this::doProtocolDiscovery
+                                )
                             );
                         }
                     }
@@ -649,5 +660,9 @@ public class AssetEditActivity
     protected void clearViewFieldErrors() {
         view.setNameError(false);
         view.setTypeError(false);
+    }
+
+    protected void doProtocolDiscovery(ProtocolDiscoveryView.DiscoveryRequest request, Runnable callback) {
+
     }
 }

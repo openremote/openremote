@@ -223,7 +223,13 @@ public interface ManagerMessages extends Messages {
 
     String protocolLinks();
 
-    String deviceDiscovery();
+    String protocolLinkDiscovery();
+
+    String importProtocolLinks();
+
+    String searchProtocolLinks();
+
+    String uploadProtocolFile();
 
     String or();
 

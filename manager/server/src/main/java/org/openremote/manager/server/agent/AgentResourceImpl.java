@@ -35,6 +35,7 @@ import org.openremote.model.asset.agent.ProtocolDescriptor;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.AttributeValidationResult;
 import org.openremote.model.file.FileInfo;
+import org.openremote.model.util.Pair;
 
 import javax.ws.rs.*;
 import java.util.HashMap;
@@ -119,17 +120,20 @@ public class AgentResourceImpl extends ManagerWebResource implements AgentResour
     }
 
     @Override
-    public Asset[] getDiscoveredLinkedAttributes(RequestParams requestParams, String agentId, String protocolConfigurationName, String parentId) {
+    public Asset[] getDiscoveredLinkedAttributes(RequestParams requestParams, String agentId, String protocolConfigurationName, String parentId, String realmId) {
         AttributeRef protocolConfigRef = new AttributeRef(agentId, protocolConfigurationName);
         AgentConnector agentConnector = findAgent(agentId)
             .flatMap(agentService::getAgentConnector)
             .orElseThrow(() -> new NotFoundException("Agent connector not found for: " + agentId));
 
+        Pair<Asset, String> parentAndRealmId = getParentAssetAndRealmId(parentId, realmId);
+
         LOG.finer("Asking connector '" + agentConnector.getClass().getSimpleName() + "' to do linked attribute discovery for protocol configuration: " + protocolConfigRef);
+
         try {
             // TODO: Allow user to select which assets/attributes are actually added to the DB
             Asset[] assets = agentConnector.getDiscoveredLinkedAttributes(protocolConfigRef);
-            persistAssets(assets, parentId);
+            persistAssets(assets, parentAndRealmId.key, parentAndRealmId.value);
             return assets;
         } catch (IllegalArgumentException e) {
             LOG.log(Level.WARNING, e.getMessage(), e);
@@ -141,7 +145,7 @@ public class AgentResourceImpl extends ManagerWebResource implements AgentResour
     }
 
     @Override
-    public Asset[] getDiscoveredLinkedAttributes(RequestParams requestParams, String agentId, String protocolConfigurationName, String parentId, FileInfo fileInfo) {
+    public Asset[] getDiscoveredLinkedAttributes(RequestParams requestParams, String agentId, String protocolConfigurationName, String parentId, String realmId, FileInfo fileInfo) {
         AttributeRef protocolConfigRef = new AttributeRef(agentId, protocolConfigurationName);
         AgentConnector agentConnector = findAgent(agentId)
             .flatMap(agentService::getAgentConnector)
@@ -151,12 +155,14 @@ public class AgentResourceImpl extends ManagerWebResource implements AgentResour
             throw new BadRequestException("A file must be provided for import");
         }
 
+        Pair<Asset, String> parentAndRealmId = getParentAssetAndRealmId(parentId, realmId);
+
         LOG.finer("Asking connector '" + agentConnector.getClass().getSimpleName() + "' to do linked attribute discovery using uploaded file for protocol configuration: " + protocolConfigRef);
 
         try {
             // TODO: Allow user to select which assets/attributes are actually added to the DB
             Asset[] assets = agentConnector.getDiscoveredLinkedAttributes(protocolConfigRef, fileInfo);
-            persistAssets(assets, parentId);
+            persistAssets(assets, parentAndRealmId.key, parentAndRealmId.value);
             return assets;
         } catch (IllegalArgumentException e) {
             LOG.log(Level.WARNING, e.getMessage(), e);
@@ -181,12 +187,10 @@ public class AgentResourceImpl extends ManagerWebResource implements AgentResour
         return Optional.of(agent);
     }
 
-    protected void persistAssets(Asset[] assets, String parentId) {
-        if (assets == null || assets.length == 0) {
-            LOG.info("No assets to import");
-            return;
-        }
-
+    /**
+     * Parent takes priority over realm ID (only super user can add to other realms)
+     */
+    protected Pair<Asset, String> getParentAssetAndRealmId(String parentId, String realmId) {
         if (isRestrictedUser()) {
             throw new ForbiddenException("User is restricted");
         }
@@ -200,19 +204,32 @@ public class AgentResourceImpl extends ManagerWebResource implements AgentResour
             throw new BadRequestException("Parent either doesn't exist or is not accessible");
         }
 
-        Tenant tenant = parentAsset != null ? identityService.getIdentityProvider().getTenantForRealmId(parentAsset.getRealmId()) : getAuthenticatedTenant();
+        Tenant tenant = parentAsset != null ?
+            identityService.getIdentityProvider().getTenantForRealmId(parentAsset.getRealmId()) :
+            !isNullOrEmpty(realmId) ?
+                identityService.getIdentityProvider().getTenantForRealmId(realmId) :
+                getAuthenticatedTenant();
 
         if (!isTenantActiveAndAccessible(tenant)) {
-            String msg = "The requested parent asset is in an inaccessible realm: " + tenant.getRealm();
+            String msg = "The requested parent asset or realm is inaccessible";
             LOG.fine(msg);
             throw new ForbiddenException(msg);
+        }
+
+        return new Pair<>(parentAsset, tenant.getId());
+    }
+
+    protected void persistAssets(Asset[] assets, Asset parentAsset, String realmId) {
+        if (assets == null || assets.length == 0) {
+            LOG.info("No assets to import");
+            return;
         }
 
         for (int i=0; i< assets.length; i++) {
             Asset asset = assets[i];
             asset.setId(null);
             asset.setParent(parentAsset);
-            asset.setRealmId(tenant.getId());
+            asset.setRealmId(realmId);
             ServerAsset serverAsset = ServerAsset.map(asset, new ServerAsset());
             assets[i] = assetStorageService.merge(serverAsset);
         }

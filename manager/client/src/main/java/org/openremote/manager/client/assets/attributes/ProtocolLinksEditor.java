@@ -19,11 +19,9 @@
  */
 package org.openremote.manager.client.assets.attributes;
 
-import com.google.gwt.dom.client.Style;
 import com.google.gwt.user.client.ui.Grid;
 import com.google.gwt.user.client.ui.Label;
 import org.openremote.manager.client.Environment;
-import org.openremote.manager.client.widget.FormSectionLabel;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.agent.ProtocolDescriptor;
 import org.openremote.model.attribute.AttributeValidationResult;
@@ -42,7 +40,7 @@ public class ProtocolLinksEditor extends AbstractAttributeViewExtension {
         ProtocolDescriptor protocolDescriptor,
         boolean discovery) {
 
-        super(environment, style, parentView, attribute, discovery ? environment.getMessages().deviceDiscovery() : environment.getMessages().protocolLinks());
+        super(environment, style, parentView, attribute, discovery ? environment.getMessages().protocolLinkDiscovery() : environment.getMessages().protocolLinks());
         this.protocolDescriptor = protocolDescriptor;
         this.discovery = discovery;
 
