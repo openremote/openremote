@@ -26,12 +26,9 @@ import elemental.client.Browser;
 import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.widget.*;
 import org.openremote.model.ValidationFailure;
-import org.openremote.model.ValueHolder;
 import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.asset.AssetMeta;
 import org.openremote.model.attribute.AttributeType;
 import org.openremote.model.attribute.AttributeValidationResult;
-import org.openremote.model.attribute.MetaItem;
 
 import java.util.List;
 import java.util.Optional;
@@ -62,6 +59,8 @@ public class AttributeViewImpl extends FormGroup implements AttributeView {
 
         addStyleName("flex-none");
         addStyleName(environment.getWidgetStyle().FormListItem());
+
+        showDisabledExtensionToggle();
 
         FormLabel formLabel = new FormLabel();
         formLabel.addStyleName("larger");

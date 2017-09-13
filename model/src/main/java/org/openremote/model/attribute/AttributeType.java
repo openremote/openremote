@@ -154,7 +154,7 @@ public enum AttributeType {
     ),
 
     SPEED_MS("rocket", ValueType.NUMBER, value -> Optional.empty(),
-        new MetaItem(FORMAT, Values.create("%0.3f ms"))
+        new MetaItem(FORMAT, Values.create("%0.3f m/s"))
     ),
 
     SPEED_KPH("rocket", ValueType.NUMBER, value -> Optional.empty(),

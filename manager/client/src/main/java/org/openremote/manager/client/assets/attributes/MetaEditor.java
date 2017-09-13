@@ -122,7 +122,7 @@ public class MetaEditor extends AbstractAttributeViewExtension {
             field.add(typeList);
             typeList.addItem(environment.getMessages().selectType(), "");
 
-            valueTypes.stream()
+            Arrays.stream(ValueType.values())
                 .map(Enum::name)
                 .map(valueType -> new Pair<>(environment.getMessages().valueTypeDisplayName(valueType), valueType))
                 .sorted(Comparator.comparing(typeEntry -> typeEntry.key))
@@ -152,7 +152,7 @@ public class MetaEditor extends AbstractAttributeViewExtension {
 
         protected IsWidget createItemValueEditor() {
             return valueEditorSupplier.createValueEditor(item,
-                valueTypes.get(typeList.getSelectedIndex()-1),
+                ValueType.valueOf(typeList.getSelectedValue()),
                 style,
                 this::onModified);
         }
@@ -169,15 +169,9 @@ public class MetaEditor extends AbstractAttributeViewExtension {
 
             this.currentDescriptor = currentMetaItemDescriptor.orElse(null);
 
-            int typeIndex = currentMetaItemDescriptor
-                .map(MetaItemDescriptor::getValueType)
-                .map(valueType -> valueTypes.indexOf(valueType) + 1)
-                .orElseGet(() ->
-                    item.getValue()
-                        .map(Value::getType)
-                        .map(valueType -> valueTypes.indexOf(valueType) + 1)
-                        .orElse(1)
-                );
+            Optional<ValueType> valueType = currentMetaItemDescriptor.map(MetaItemDescriptor::getValueType);
+            if (!valueType.isPresent())
+                valueType = item.getValue().map(Value::getType);
 
             if (updateItem) {
                 item.clearValue();
@@ -190,7 +184,7 @@ public class MetaEditor extends AbstractAttributeViewExtension {
 
             nameInput.setVisible(!currentMetaItemDescriptor.isPresent());
             typeList.setVisible(!currentMetaItemDescriptor.isPresent());
-            typeList.setSelectedIndex(typeIndex);
+            valueType.ifPresent(vt -> typeList.selectItem(vt.name()));
             onTypeChanged(updateItem);
         }
 
@@ -260,7 +254,6 @@ public class MetaEditor extends AbstractAttributeViewExtension {
         }
     }
 
-    protected static final List<ValueType> valueTypes = Arrays.asList(ValueType.values());
     protected final AssetAttribute attribute;
     final protected FlowPanel itemListPanel = new FlowPanel();
     final protected FlowPanel itemEditorPanel = new FlowPanel();
@@ -495,7 +488,7 @@ public class MetaEditor extends AbstractAttributeViewExtension {
         String parameter = failure.getParameter().orElse(null);
 
         // Convert certain errors to something more meaningful
-        if (reason == META_ITEM_VALUE_IS_REQUIRED) {
+        if (reason == META_ITEM_VALUE_IS_REQUIRED && valueType != null) {
 
             switch (valueType) {
                 case OBJECT:

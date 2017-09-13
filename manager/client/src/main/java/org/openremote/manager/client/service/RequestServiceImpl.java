@@ -94,7 +94,7 @@ public class RequestServiceImpl implements RequestService {
                               int expectedStatusCode,
                               Consumer<OUT> onResponse,
                               Consumer<RequestException> onException) {
-        execute(entityReader, null, onRequest, Collections.singletonList(expectedStatusCode), onResponse, onException);
+        execute(entityReader, null, onRequest, new Integer[] {expectedStatusCode}, onResponse, onException);
     }
 
     @Override
@@ -103,7 +103,7 @@ public class RequestServiceImpl implements RequestService {
                               Integer[] expectedStatusCodes,
                               Consumer<OUT> onResponse,
                               Consumer<RequestException> onException) {
-        execute(entityReader, null, onRequest, Arrays.asList(expectedStatusCodes), onResponse, onException);
+        execute(entityReader, null, onRequest, expectedStatusCodes, onResponse, onException);
     }
 
     @Override
@@ -112,14 +112,24 @@ public class RequestServiceImpl implements RequestService {
                              int expectedStatusCode,
                              Runnable onResponse,
                              Consumer<RequestException> onException) {
-        this.execute(null, entityWriter, onRequest, Collections.singletonList(expectedStatusCode), out -> onResponse.run(), onException);
+        execute(null, entityWriter, onRequest, new Integer[] {expectedStatusCode}, out -> onResponse.run(), onException);
     }
 
     @Override
     public <IN, OUT> void execute(EntityReader<OUT> entityReader,
                                   EntityWriter<IN> entityWriter,
                                   Consumer<RequestParams<OUT>> onRequest,
-                                  List<Integer> expectedStatusCodes,
+                                  int expectedStatusCode,
+                                  Consumer<OUT> onResponse,
+                                  Consumer<RequestException> onException) {
+        execute(entityReader, entityWriter, onRequest, new Integer[] {expectedStatusCode}, onResponse, onException);
+    }
+
+    @Override
+    public <IN, OUT> void execute(EntityReader<OUT> entityReader,
+                                  EntityWriter<IN> entityWriter,
+                                  Consumer<RequestParams<OUT>> onRequest,
+                                  Integer[] expectedStatusCodes,
                                   Consumer<OUT> onResponse,
                                   Consumer<RequestException> onException) {
 
@@ -168,7 +178,8 @@ public class RequestServiceImpl implements RequestService {
                         LOG.fine("Received response status: " + responseCode);
                     }
 
-                    if (!expectedStatusCodes.contains(ANY_STATUS_CODE) && !expectedStatusCodes.contains(responseCode)) {
+                    List<Integer> expectedStatusCodesList = Arrays.asList(expectedStatusCodes);
+                    if (!expectedStatusCodesList.contains(ANY_STATUS_CODE) && !expectedStatusCodesList.contains(responseCode)) {
                         onException.accept(new UnexpectedStatusRequestException(responseCode, expectedStatusCodes));
                         return;
                     }

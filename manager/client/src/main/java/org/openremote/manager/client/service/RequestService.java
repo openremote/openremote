@@ -24,7 +24,6 @@ import org.openremote.manager.shared.http.EntityWriter;
 import org.openremote.manager.shared.http.RequestException;
 import org.openremote.manager.shared.http.RequestParams;
 
-import java.util.List;
 import java.util.function.Consumer;
 
 public interface RequestService {
@@ -57,7 +56,14 @@ public interface RequestService {
     <IN, OUT> void execute(EntityReader<OUT> entityReader,
                            EntityWriter<IN> entityWriter,
                            Consumer<RequestParams<OUT>> onRequest,
-                           List<Integer> expectedStatusCodes,
+                           int expectedStatusCodes,
+                           Consumer<OUT> onResponse,
+                           Consumer<RequestException> onException);
+
+    <IN, OUT> void execute(EntityReader<OUT> entityReader,
+                           EntityWriter<IN> entityWriter,
+                           Consumer<RequestParams<OUT>> onRequest,
+                           Integer[] expectedStatusCodes,
                            Consumer<OUT> onResponse,
                            Consumer<RequestException> onException);
 }

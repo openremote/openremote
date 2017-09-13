@@ -46,8 +46,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
         when: "an asset is created in the authenticated realm"
         def testAsset = new Asset("Test Room", AssetType.ROOM, null, keycloakDemoSetup.masterTenant.id)
         testAsset.setId(Generators.randomBasedGenerator().generate().toString())
-        assetResource.create(null, testAsset)
-        testAsset = assetResource.get(null, testAsset.getId())
+        testAsset = assetResource.create(null, testAsset)
 
         then: "the asset should exist"
         testAsset.name == "Test Room"

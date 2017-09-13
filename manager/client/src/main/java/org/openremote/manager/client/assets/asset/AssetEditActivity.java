@@ -301,14 +301,14 @@ public class AssetEditActivity
                 readFromView();
                 environment.getRequestService().execute(
                     assetMapper,
+                    assetMapper,
                     requestParams -> assetResource.create(requestParams, asset),
-                    204,
-                    () -> {
-                        view.setFormBusy(false);
+                    200,
+                    createdAsset -> {
                         environment.getEventBus().dispatch(new ShowSuccessEvent(
-                            environment.getMessages().assetCreated(asset.getName())
+                            environment.getMessages().assetCreated(createdAsset.getName())
                         ));
-                        environment.getPlaceController().goTo(new AssetsDashboardPlace());
+                        environment.getPlaceController().goTo(new AssetViewPlace(createdAsset.getId()));
                     },
                     ex -> handleRequestException(ex, environment.getEventBus(), environment.getMessages(), validationErrorHandler)
                 );
@@ -386,7 +386,7 @@ public class AssetEditActivity
                 assetArrayMapper,
                 assetQueryMapper,
                 requestParams -> assetResource.queryAssets(requestParams, query),
-                Collections.singletonList(200),
+                200,
                 assets -> {
                     assetStore.accept(assets);
                     consumers.forEach(consumer -> consumer.accept(assets));
@@ -426,7 +426,7 @@ public class AssetEditActivity
 
     @Override
     protected IsWidget createValueEditor(ValueHolder valueHolder, ValueType valueType, AttributeView.Style style, Runnable onValueModified) {
-        switch(valueType) {
+        switch (valueType) {
             case ARRAY:
                 if (valueHolder instanceof MetaItem) {
                     Optional<AssetMeta> assetMeta = AssetMeta.getAssetMeta(((MetaItem) valueHolder).getName().orElse(null));
@@ -528,7 +528,7 @@ public class AssetEditActivity
             if (validationResult.isValid() && attribute.hasMetaItems()) {
                 // Do additional validation on the meta items
 
-                for (int i=0; i<attribute.getMeta().size(); i++) {
+                for (int i = 0; i < attribute.getMeta().size(); i++) {
                     MetaItem metaItem = attribute.getMeta().get(i);
                     int finalI = i;
                     metaItemDescriptors.stream()
@@ -547,7 +547,7 @@ public class AssetEditActivity
                     attributeValidationResultMapper,
                     assetAttributeMapper,
                     requestParams -> agentResource.validateProtocolConfiguration(requestParams, assetId, attribute),
-                    Collections.singletonList(200),
+                    200,
                     resultConsumer,
                     ex -> handleRequestException(ex, environment.getEventBus(), environment.getMessages(), validationErrorHandler)
                 );
@@ -690,7 +690,7 @@ public class AssetEditActivity
                     );
                 }
             },
-            Collections.singletonList(200),
+            200,
             discoveredAssets -> {
                 updateMetaItemDescriptors();
                 view.setFormBusy(false);

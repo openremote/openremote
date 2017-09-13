@@ -123,7 +123,7 @@ abstract public class FormTree extends CellTree {
         }
     }
 
-    protected void getNodeOpenMap(TreeNode treeNode, Map<String, Boolean> openMap) {
+    public void getNodeOpenMap(TreeNode treeNode, Map<String, Boolean> openMap) {
         if (treeNode == null) {
             return;
         }

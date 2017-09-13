@@ -46,7 +46,7 @@ public interface RequestExceptionHandler {
             UnexpectedStatusRequestException unexpectedEx = (UnexpectedStatusRequestException) ex;
             msg = managerMessages.unexpectedResponseStatus(
                 unexpectedEx.getStatusCode(),
-                Arrays.toString(unexpectedEx.getExpectedStatusCodes().toArray())
+                Arrays.toString(unexpectedEx.getExpectedStatusCodes())
             );
         } else if (ex instanceof BadRequestException) {
             msg = managerMessages.badRequest();

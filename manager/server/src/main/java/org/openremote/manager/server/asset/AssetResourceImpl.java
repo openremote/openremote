@@ -227,7 +227,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
     }
 
     @Override
-    public void create(RequestParams requestParams, Asset asset) {
+    public Asset create(RequestParams requestParams, Asset asset) {
         try {
             if (isRestrictedUser()) {
                 throw new WebApplicationException(Response.Status.FORBIDDEN);
@@ -256,7 +256,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                 serverAsset.setId(asset.getId());
             }
 
-            assetStorageService.merge(serverAsset);
+            return assetStorageService.merge(serverAsset);
 
         } catch (IllegalStateException ex) {
             throw new WebApplicationException(ex, Response.Status.BAD_REQUEST);

@@ -123,9 +123,9 @@ public interface AssetResource {
     @POST
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
-    @SuccessStatusCode(204)
+    @SuccessStatusCode(200)
     @RolesAllowed({"write:assets"})
-    void create(@BeanParam RequestParams requestParams, @Valid Asset asset);
+    Asset create(@BeanParam RequestParams requestParams, @Valid Asset asset);
 
     /**
      * Deletes an asset. Regular users can only delete assets in their authenticated realm, the superuser can delete

@@ -257,7 +257,7 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
                     assetResource.queryAssets(requestParams, new AssetQuery().parent(parent.getId()));
                 }
             },
-            Collections.singletonList(200),
+            200,
             assets -> {
                 List<BrowserTreeNode> treeNodes = new ArrayList<>();
                 for (Asset asset : assets) {

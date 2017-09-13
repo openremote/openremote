@@ -32,4 +32,12 @@ public class FormListBox extends ListBox {
         super(element);
         setStyleName("or-FormControl or-FormListBox");
     }
+
+    public void selectItem(String value) {
+        for (int i = 0; i < getItemCount(); i++) {
+            if (getValue(i).equals(value)) {
+                setSelectedIndex(i);
+            }
+        }
+    }
 }

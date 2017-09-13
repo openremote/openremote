@@ -19,21 +19,19 @@
  */
 package org.openremote.manager.shared.http;
 
-import java.util.List;
-
 public class UnexpectedStatusRequestException extends RequestException {
 
-    protected List<Integer> expectedStatusCodes;
+    protected Integer[] expectedStatusCodes;
 
     public UnexpectedStatusRequestException() {
     }
 
-    public UnexpectedStatusRequestException(int statusCode, List<Integer> expectedStatusCodes) {
+    public UnexpectedStatusRequestException(int statusCode, Integer[] expectedStatusCodes) {
         super(statusCode);
         this.expectedStatusCodes = expectedStatusCodes;
     }
 
-    public List<Integer> getExpectedStatusCodes() {
+    public Integer[] getExpectedStatusCodes() {
         return expectedStatusCodes;
     }
 }
