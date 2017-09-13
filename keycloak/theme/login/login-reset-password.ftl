@@ -11,7 +11,7 @@
                         <label for="username" class="${properties.kcLabelClass!}"><#if !realm.loginWithEmailAllowed>${msg("username")}<#elseif !realm.registrationEmailAsUsername>${msg("usernameOrEmail")}<#else>${msg("email")}</#if></label>
                 </div>
                 <div class="or-FormField">
-                        <input type="text" id="username" name="username" autofocus/>
+                        <input class="or-FormControl or-FormInputText" type="text" id="username" name="username" autofocus/>
                 </div>
             </div>
             <div class="layout horizontal center-center or-FormGroup">
