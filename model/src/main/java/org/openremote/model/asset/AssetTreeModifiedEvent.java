@@ -31,9 +31,9 @@ import org.openremote.model.event.shared.SharedEvent;
  * <li>Tenant addition, removal, or name change</li>
  * <li>Asset addition, removal, or name change</li>
  * <li>Moving of assets between parent assets or tenants</li>
+ * <li>Creation of a child asset</li>
  * </ul>
  * <p>
- * If a tenant is modified, the {@link #assetId} property will be <code>null</code>.
  */
 public class AssetTreeModifiedEvent extends SharedEvent {
 
@@ -74,6 +74,7 @@ public class AssetTreeModifiedEvent extends SharedEvent {
 
     protected String realmId;
     protected String assetId;
+    protected boolean newAssetChildren;
 
     protected AssetTreeModifiedEvent() {
     }
@@ -84,15 +85,30 @@ public class AssetTreeModifiedEvent extends SharedEvent {
         this.assetId = assetId;
     }
 
-    public AssetTreeModifiedEvent(long timestamp, String assetId) {
-        super(timestamp);
-        this.assetId = assetId;
+    public AssetTreeModifiedEvent(long timestamp, String realmId, String parentId, boolean newAssetChildren) {
+        this(timestamp, realmId, parentId);
+        this.newAssetChildren = newAssetChildren;
     }
 
+    public AssetTreeModifiedEvent(long timestamp, String realmId, boolean newAssetChildren) {
+        this(timestamp, realmId, null);
+        this.newAssetChildren = newAssetChildren;
+    }
+
+    /**
+     * @return The identifier of the realm/tenant for tenant and asset addition, removal, name change
+     * and relocation of in the tree events. For creation of child asset events, this is the identifier
+     * of the realm of a newly created root asset.
+     */
     public String getRealmId() {
         return realmId;
     }
 
+    /**
+     * @return The identifier of the asset for asset addition, removal, name change, and
+     * relocation in the tree events. For creation of child asset events, this is the
+     * identifier of the parent asset. Empty if a tenant was modified and/or no asset was affected.
+     */
     public String getAssetId() {
         return assetId;
     }
@@ -101,11 +117,23 @@ public class AssetTreeModifiedEvent extends SharedEvent {
         return getRealmId() != null && getAssetId() == null;
     }
 
+    /**
+     * @return <code>true</code> if child assets were added to parent {@link #assetId} or {@link #realmId}.
+     */
+    public boolean isNewAssetChildren() {
+        return newAssetChildren;
+    }
+
+    public void setNewAssetChildren(boolean newAssetChildren) {
+        this.newAssetChildren = newAssetChildren;
+    }
+
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
             "realmId='" + realmId + '\'' +
             ", assetId='" + assetId + '\'' +
+            ", newAssetChildren=" + newAssetChildren +
             '}';
     }
 }

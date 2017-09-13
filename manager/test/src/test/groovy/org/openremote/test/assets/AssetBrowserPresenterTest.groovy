@@ -16,6 +16,7 @@ import org.openremote.manager.client.i18n.ManagerMessages
 import org.openremote.manager.client.service.RequestServiceImpl
 import org.openremote.manager.client.style.WidgetStyle
 import org.openremote.manager.server.asset.AssetStorageService
+import org.openremote.manager.server.asset.ServerAsset
 import org.openremote.manager.server.security.ManagerIdentityService
 import org.openremote.manager.server.setup.AbstractKeycloakSetup
 import org.openremote.manager.server.setup.SetupService
@@ -29,6 +30,7 @@ import org.openremote.manager.shared.validation.ConstraintViolationReport
 import org.openremote.model.asset.Asset
 import org.openremote.model.asset.AssetQuery
 import org.openremote.model.asset.AssetTreeModifiedEvent
+import org.openremote.model.asset.AssetType
 import org.openremote.model.event.shared.SharedEvent
 import org.openremote.test.*
 import spock.lang.Specification
@@ -108,14 +110,14 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
         def placeController = createPlaceController(securityService, eventBus)
         def placeHistoryMapper = createPlaceHistoryMapper(ManagerHistoryMapper.getAnnotation(WithTokenizers.class))
         def environment = Environment.create(
-            securityService,
-            requestService,
-            clientEventService,
-            placeController,
-            placeHistoryMapper,
-            eventBus,
-            managerMessages,
-            new WidgetStyle()
+                securityService,
+                requestService,
+                clientEventService,
+                placeController,
+                placeHistoryMapper,
+                eventBus,
+                managerMessages,
+                new WidgetStyle()
         )
 
         and: "The view and presenter to test"
@@ -129,15 +131,15 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
         List<BrowserTreeNode> treeDisplayRowData = null
         HasData<BrowserTreeNode> treeDisplay = Mock(HasData)
         def assetBrowserPresenter = new AssetBrowserPresenter(
-            environment,
-            currentTenant,
-            assetBrowser,
-            assetResource,
-            assetMapper,
-            assetQueryMapper,
-            assetArrayMapper,
-            tenantResource,
-            tenantArrayMapper
+                environment,
+                currentTenant,
+                assetBrowser,
+                assetResource,
+                assetMapper,
+                assetQueryMapper,
+                assetArrayMapper,
+                tenantResource,
+                tenantArrayMapper
         )
 
         when: "the view is attached"
@@ -207,10 +209,37 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
         then: "the asset tree should be refreshed"
         1 * assetBrowser.refresh(managerDemoSetup.smartOfficeId)
 
+        when: "an asset is created in the database"
+        collectedSharedEvents.clear()
+        asset = new ServerAsset("My Test Asset", AssetType.THING, asset)
+        asset = assetStorageService.merge(asset)
+
+        then: "a tree modified event should be received from the server"
+        conditions.eventually {
+            assert collectedSharedEvents.size() == 2
+            // The inserted new asset
+            assert collectedSharedEvents.any {
+                (it instanceof AssetTreeModifiedEvent
+                        && it.realmId == keycloakDemoSetup.masterTenant.id
+                        && it.assetId == asset.id
+                        && !it.newAssetChildren)
+            }
+            // The parent which has a new child asset
+            assert collectedSharedEvents.any {
+                (it instanceof AssetTreeModifiedEvent
+                        && it.realmId == keycloakDemoSetup.masterTenant.id
+                        && it.assetId == managerDemoSetup.smartOfficeId
+                        && it.newAssetChildren)
+            }
+        }
+
+        then: "the asset tree should be refreshed"
+        1 * assetBrowser.refresh(asset.id, managerDemoSetup.smartOfficeId)
+
         cleanup: "the client should be stopped"
         clientEventService.close()
 
-        and : "the server should be stopped"
+        and: "the server should be stopped"
         stopContainer(container)
     }
 
@@ -280,14 +309,14 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
         def placeController = createPlaceController(securityService, eventBus)
         def placeHistoryMapper = createPlaceHistoryMapper(ManagerHistoryMapper.getAnnotation(WithTokenizers.class))
         def environment = Environment.create(
-            securityService,
-            requestService,
-            clientEventService,
-            placeController,
-            placeHistoryMapper,
-            eventBus,
-            managerMessages,
-            new WidgetStyle()
+                securityService,
+                requestService,
+                clientEventService,
+                placeController,
+                placeHistoryMapper,
+                eventBus,
+                managerMessages,
+                new WidgetStyle()
         )
 
         and: "The view and presenter to test"
@@ -301,15 +330,15 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
         List<BrowserTreeNode> treeDisplayRowData = null
         HasData<BrowserTreeNode> treeDisplay = Mock(HasData)
         def assetBrowserPresenter = new AssetBrowserPresenter(
-            environment,
-            currentTenant,
-            assetBrowser,
-            assetResource,
-            assetMapper,
-            assetQueryMapper,
-            assetArrayMapper,
-            tenantResource,
-            tenantArrayMapper
+                environment,
+                currentTenant,
+                assetBrowser,
+                assetResource,
+                assetMapper,
+                assetQueryMapper,
+                assetArrayMapper,
+                tenantResource,
+                tenantArrayMapper
         )
 
         when: "the view is attached"
@@ -391,7 +420,7 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
         cleanup: "the client should be stopped"
         clientEventService.close()
 
-        and : "the server should be stopped"
+        and: "the server should be stopped"
         stopContainer(container)
     }
 
@@ -459,14 +488,14 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
         def placeController = createPlaceController(securityService, eventBus)
         def placeHistoryMapper = createPlaceHistoryMapper(ManagerHistoryMapper.getAnnotation(WithTokenizers.class))
         def environment = Environment.create(
-            securityService,
-            requestService,
-            clientEventService,
-            placeController,
-            placeHistoryMapper,
-            eventBus,
-            managerMessages,
-            new WidgetStyle()
+                securityService,
+                requestService,
+                clientEventService,
+                placeController,
+                placeHistoryMapper,
+                eventBus,
+                managerMessages,
+                new WidgetStyle()
         )
 
         and: "The view and presenter to test"
@@ -477,15 +506,15 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
             }
         }
         def assetBrowserPresenter = new AssetBrowserPresenter(
-            environment,
-            currentTenant,
-            assetBrowser,
-            assetResource,
-            assetMapper,
-            assetQueryMapper,
-            assetArrayMapper,
-            tenantResource,
-            tenantArrayMapper
+                environment,
+                currentTenant,
+                assetBrowser,
+                assetResource,
+                assetMapper,
+                assetQueryMapper,
+                assetArrayMapper,
+                tenantResource,
+                tenantArrayMapper
         )
 
         when: "the view is attached"
@@ -502,7 +531,7 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
         cleanup: "the client should be stopped"
         clientEventService.close()
 
-        and : "the server should be stopped"
+        and: "the server should be stopped"
         stopContainer(container)
     }
 }

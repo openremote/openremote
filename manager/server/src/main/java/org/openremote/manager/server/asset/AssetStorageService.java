@@ -1042,6 +1042,17 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 clientEventService.publishEvent(
                     new AssetTreeModifiedEvent(timerService.getCurrentTimeMillis(), asset.getRealmId(), asset.getId())
                 );
+                if (asset.getParentId() != null) {
+                    // Child asset created
+                    clientEventService.publishEvent(
+                        new AssetTreeModifiedEvent(timerService.getCurrentTimeMillis(), asset.getRealmId(), asset.getParentId(), true)
+                    );
+                } else {
+                    // Child asset created (root asset)
+                    clientEventService.publishEvent(
+                        new AssetTreeModifiedEvent(timerService.getCurrentTimeMillis(), asset.getRealmId(), true)
+                    );
+                }
                 break;
             case UPDATE:
 

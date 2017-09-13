@@ -89,8 +89,13 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
             AssetTreeModifiedEvent.class,
             event -> {
                 String modifiedNodeId = event.isTenantModified() ? event.getRealmId() : event.getAssetId();
-                LOG.fine("Asset tree modified on server, refreshing tree due to modified node: " + modifiedNodeId);
-                view.refresh(modifiedNodeId);
+                if (event.isNewAssetChildren()) {
+                    LOG.fine("Asset tree modified on server, forcing open due to new child asset: " + modifiedNodeId);
+                    view.refresh(event.getAssetId(), modifiedNodeId);
+                } else {
+                    LOG.fine("Asset tree modified on server, refreshing tree due to modified node: " + modifiedNodeId);
+                    view.refresh(modifiedNodeId);
+                }
             }
         );
     }

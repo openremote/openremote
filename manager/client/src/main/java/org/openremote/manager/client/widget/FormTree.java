@@ -98,10 +98,16 @@ abstract public class FormTree extends CellTree {
     }
 
     public void refresh() {
+        refresh(null);
+    }
+
+    public void refresh(String forceOpenNodeId) {
         Map<String, Boolean> openMap = new HashMap<>();
         TreeNode root = getRootTreeNode();
         getNodeOpenMap(root, openMap);
         openMap.put(getTreeNodeId(root), true);
+        if (forceOpenNodeId != null)
+            openMap.put(forceOpenNodeId, true);
         refresh(root, openMap);
     }
 

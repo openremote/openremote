@@ -21,15 +21,9 @@ package org.openremote.manager.client.assets.browser;
 
 import com.google.gwt.user.client.ui.IsWidget;
 import com.google.gwt.view.client.HasData;
-import org.openremote.model.ValidationFailure;
-import org.openremote.model.ValueHolder;
 import org.openremote.model.asset.Asset;
-import org.openremote.model.util.Pair;
-import org.openremote.model.value.Value;
 
-import java.util.List;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 /**
  * Browse tenants and assets in a tree view.
@@ -77,4 +71,6 @@ public interface AssetBrowser extends IsWidget {
     void clearSelection();
 
     void refresh(String modifiedNodeId);
+
+    void refresh(String modifiedNodeId, String forceNodeOpenId);
 }
