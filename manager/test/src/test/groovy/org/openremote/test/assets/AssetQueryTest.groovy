@@ -1,5 +1,6 @@
 package org.openremote.test.assets
 
+import org.openremote.container.Container
 import org.openremote.container.persistence.PersistenceService
 import org.openremote.manager.server.asset.AssetStorageService
 import org.openremote.manager.server.asset.ServerAsset
@@ -10,6 +11,7 @@ import org.openremote.model.asset.AssetMeta
 import org.openremote.model.asset.AssetQuery
 import org.openremote.model.asset.AssetType
 import org.openremote.test.ManagerContainerTrait
+import spock.lang.Shared
 import spock.lang.Specification
 
 import javax.persistence.EntityManager
@@ -22,14 +24,31 @@ import static org.openremote.model.asset.AssetType.THING
 
 class AssetQueryTest extends Specification implements ManagerContainerTrait {
 
-    def "Query assets"() {
+    // Apparently there is a limit to the size of Spock tests, if all this code is put inside the test then it fails
+    // to compile - we should use setupSpec more frequently and break up tests into smaller chunks to avoid this issue
+
+    @Shared
+    static Container container
+    @Shared
+    static ManagerDemoSetup managerDemoSetup
+    @Shared
+    static KeycloakDemoSetup keycloakDemoSetup
+    @Shared
+    static AssetStorageService assetStorageService
+    @Shared
+    static PersistenceService persistenceService
+
+    def setupSpec() {
         given: "the server container is started"
         def serverPort = findEphemeralPort()
-        def container = startContainer(defaultConfig(serverPort), defaultServices())
-        def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
-        def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
-        def assetStorageService = container.getService(AssetStorageService.class)
-        def persistenceService = container.getService(PersistenceService.class)
+        container = startContainer(defaultConfig(serverPort), defaultServices())
+        managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
+        keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
+        assetStorageService = container.getService(AssetStorageService.class)
+        persistenceService = container.getService(PersistenceService.class)
+    }
+
+    def "Query assets"() {
 
         when: "an agent filtering query is executed"
         def assets = assetStorageService.findAll(
@@ -65,6 +84,27 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets.get(0).id == managerDemoSetup.apartment1Id
         assets.get(1).id == managerDemoSetup.apartment1LivingroomId
         assets.get(1).getAttributesList().size() == 7
+        assets.get(1).getAttribute("motionSensor").isPresent()
+        !assets.get(1).getAttribute("currentTemperature").get().getValue().isPresent()
+        assets.get(1).getAttribute("currentTemperature").get().meta.size() == 1
+        !assets.get(1).getAttribute("targetTemperature").get().getValue().isPresent()
+        assets.get(1).getAttribute("targetTemperature").get().meta.size() == 1
+        assets.get(2).id == managerDemoSetup.apartment1KitchenId
+        assets.get(3).id == managerDemoSetup.apartment2Id
+
+        when: "a user filtering query is executed that returns only IDs, names and attribute names and limits to protected attributes and meta"
+        assets = assetStorageService.findAll(
+            new AssetQuery()
+                .select(new Select(Include.ONLY_ID_AND_NAME_AND_ATTRIBUTE_NAMES, true))
+                .userId(keycloakDemoSetup.testuser3Id)
+        )
+
+        then: "only the users assets should be retrieved"
+        assets.size() == 4
+        assets.get(0).id == managerDemoSetup.apartment1Id
+        assets.get(1).id == managerDemoSetup.apartment1LivingroomId
+        assets.get(1).getAttributesList().size() == 6
+        !assets.get(1).getAttribute("motionSensor").isPresent()
         !assets.get(1).getAttribute("currentTemperature").get().getValue().isPresent()
         assets.get(1).getAttribute("currentTemperature").get().meta.size() == 1
         !assets.get(1).getAttribute("targetTemperature").get().getValue().isPresent()

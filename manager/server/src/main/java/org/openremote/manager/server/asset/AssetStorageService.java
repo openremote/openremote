@@ -85,7 +85,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     protected static final String protectedAssetMetaClause; // Maybe these should be in the DB
 
     static {
-        StringBuilder sb = new StringBuilder("('");
+        StringBuilder sb = new StringBuilder(" ('");
         sb.append(
             String.join(
                 "','",
@@ -569,15 +569,19 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             sb.append(" where AM.VALUE #>> '{name}' = '");
             sb.append(AssetMeta.LABEL.getUrn());
             sb.append("'))) from jsonb_each(A.attributes) as AX");
+            if (filterProtected) {
+                // Use implicit inner join on meta array set to only select attributes with a protected=true meta item
+                sb.append(", jsonb_array_elements(AX.VALUE #> '{meta}') as AM");
+            }
         } else if (filterProtected) {
             // Use sub-select for processing the attributes the meta inside each attribute is replaced with filtered meta
-            sb.append("select json_object_agg(AX.key, jsonb_set(AX.value, '{meta}', AMF.value, false)) from jsonb_each(A.attributes) as AX ");
+            sb.append("select json_object_agg(AX.key, jsonb_set(AX.value, '{meta}', AMF.value, false)) from jsonb_each(A.attributes) as AX");
             // Use implicit inner join on meta array set to only select attributes with a protected=true meta item
-            sb.append(", jsonb_array_elements(AX.VALUE #> '{meta}') as AM ");
+            sb.append(", jsonb_array_elements(AX.VALUE #> '{meta}') as AM");
             // Use subquery to filter out meta items not marked as protected
-            sb.append("INNER JOIN LATERAL (");
-            sb.append("select jsonb_agg(AM.value) AS VALUE from jsonb_array_elements(AX.VALUE #> '{meta}') as AM ");
-            sb.append("where AM.VALUE #>> '{name}' IN ");
+            sb.append(" INNER JOIN LATERAL (");
+            sb.append("select jsonb_agg(AM.value) AS VALUE from jsonb_array_elements(AX.VALUE #> '{meta}') as AM");
+            sb.append(" where AM.VALUE #>> '{name}' IN");
             sb.append(protectedAssetMetaClause);
             sb.append(") as AMF ON true");
         } else {
