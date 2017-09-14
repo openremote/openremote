@@ -1,0 +1,19 @@
+task copyPubkey(type: Copy) {
+    onlyIf {
+        System.env['SSH_PUBKEY'] != null && file(System.env['SSH_PUBKEY']).exists()
+    }
+    from file("${System.env.SSH_PUBKEY}")
+    into "${project.buildDir}/install"
+    rename { "openremote-ssh.pub" }
+}
+
+task prepareImage(type: Copy) {
+    dependsOn resolveTask(":manager:prepareImage"), resolveTask(":platform:rpi3:copyPubkey")
+    from "${project.projectDir}/pi64"
+    into "${project.buildDir}/install"
+}
+
+task clean() {
+    delete project.buildDir
+}
+

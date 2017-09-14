@@ -1,0 +1,27 @@
+#!/bin/bash -e
+{
+
+# Uncomment this line if you use Wifi
+#/usr/bin/wpa_passphrase 'MY_SSID' 'MY_PASSWORD' >> /etc/wpa/wpa_supplicant.conf
+
+echo "Prepare user/login openremote"
+usermod -m -d /home/openremote -l openremote pi
+groupmod -n openremote pi
+rm /etc/sudoers.d/010_pi-nopasswd
+echo 'openremote ALL=NOPASSWD: ALL' > /etc/sudoers.d/user-openremote
+
+if [ -f /boot/openremote-ssh.pub ]; then
+    echo "Disabling password authentication, using provided SSH public key"
+    mkdir -p /home/openremote/.ssh/
+    cp /boot/openremote-ssh.pub /home/openremote/.ssh/authorized_keys
+    chown -R openremote:openremote /home/openremote/.ssh
+    #sed -i 's/^#PasswordAuthentication.*/PasswordAuthentication no/g' /etc/ssh/sshd_config
+    systemctl restart sshd
+    rm /boot/openremote-ssh.pub
+fi
+
+echo "Preparing install script"
+mv /boot/openremote-*.sh /home/openremote/
+chmod +x /home/openremote/openremote-*.sh
+
+} >> /var/log/setup.log 2>&1
