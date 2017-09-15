@@ -1,27 +1,16 @@
 package org.openremote.agent.protocol.knx;
 
-import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
-import static org.openremote.model.attribute.MetaItem.isMetaNameEqualTo;
-import static org.openremote.model.util.TextUtil.REGEXP_PATTERN_INTEGER_POSITIVE_NON_ZERO;
-import static org.openremote.model.util.TextUtil.isNullOrEmpty;
-
-import java.util.*;
-import java.util.function.Consumer;
-import java.util.logging.Logger;
-
 import org.openremote.agent.protocol.AbstractProtocol;
 import org.openremote.agent.protocol.ConnectionStatus;
 import org.openremote.agent.protocol.ProtocolLinkedAttributeImport;
 import org.openremote.model.AbstractValueHolder;
 import org.openremote.model.ValidationFailure;
-import org.openremote.model.ValueHolder;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.attribute.*;
 import org.openremote.model.file.FileInfo;
 import org.openremote.model.util.Pair;
 import org.openremote.model.value.Value;
-
 import org.openremote.model.value.ValueType;
 import org.openremote.model.value.Values;
 import tuwien.auto.calimero.GroupAddress;
@@ -29,6 +18,15 @@ import tuwien.auto.calimero.KNXFormatException;
 import tuwien.auto.calimero.datapoint.CommandDP;
 import tuwien.auto.calimero.datapoint.Datapoint;
 import tuwien.auto.calimero.datapoint.StateDP;
+
+import java.util.*;
+import java.util.function.Consumer;
+import java.util.logging.Logger;
+
+import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
+import static org.openremote.model.attribute.MetaItem.isMetaNameEqualTo;
+import static org.openremote.model.util.TextUtil.REGEXP_PATTERN_INTEGER_POSITIVE_NON_ZERO;
+import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 
 /**
  * This protocol is used to connect to a KNX bus via an IP interface.
@@ -86,11 +84,11 @@ public class KNXProtocol extends AbstractProtocol implements ProtocolLinkedAttri
 
     protected static final String VERSION = "1.0";
 
-    public static final String REGEXP_GROUP_ADDRESS = "^\\d\\.\\d\\.\\d$";
+    public static final String REGEXP_GROUP_ADDRESS = "^\\d/\\d/\\d$";
     public static final String REGEXP_DPT = "^\\d{1,2}\\.\\d{1,3}$";
     public static final String PATTERN_FAILURE_CONNECTION_TYPE = "TUNNELLING|ROUTING";
     public static final String PATTERN_FAILURE_DPT = "KNX DPT (e.g. 1.001)";
-    public static final String PATTERN_FAILURE_GROUP_ADDRESS = "KNX Group Address (e.g. 1.1.1)";
+    public static final String PATTERN_FAILURE_GROUP_ADDRESS = "KNX Group Address (e.g. 1/1/1)";
 
     protected static final List<MetaItemDescriptor> PROTOCOL_CONFIG_META_ITEM_DESCRIPTORS = Arrays.asList(
         new MetaItemDescriptorImpl("PROTOCOL_KNX_IP", META_KNX_GATEWAY_IP, ValueType.STRING, false, null, null, 1, null, false),
@@ -103,8 +101,8 @@ public class KNXProtocol extends AbstractProtocol implements ProtocolLinkedAttri
 
     protected static final List<MetaItemDescriptor> ATTRIBUTE_META_ITEM_DESCRIPTORS = Arrays.asList(
         new MetaItemDescriptorImpl("PROTOCOL_KNX_DPT", META_KNX_DPT, ValueType.STRING, true, REGEXP_DPT, PATTERN_FAILURE_DPT, 1, null, false),
-        new MetaItemDescriptorImpl("PROTOCOL_KNX_STATUS_GA", META_KNX_STATUS_GA, ValueType.NUMBER, false, REGEXP_GROUP_ADDRESS, PATTERN_FAILURE_GROUP_ADDRESS, 1, null, false),
-        new MetaItemDescriptorImpl("PROTOCOL_KNX_ACTION_GA", META_KNX_ACTION_GA, ValueType.NUMBER, false, REGEXP_GROUP_ADDRESS, PATTERN_FAILURE_GROUP_ADDRESS, 1, Values.create(false), false)
+        new MetaItemDescriptorImpl("PROTOCOL_KNX_STATUS_GA", META_KNX_STATUS_GA, ValueType.STRING, false, REGEXP_GROUP_ADDRESS, PATTERN_FAILURE_GROUP_ADDRESS, 1, null, false),
+        new MetaItemDescriptorImpl("PROTOCOL_KNX_ACTION_GA", META_KNX_ACTION_GA, ValueType.STRING, false, REGEXP_GROUP_ADDRESS, PATTERN_FAILURE_GROUP_ADDRESS, 1, Values.create(false), false)
     );
 
     final protected Map<String, KNXConnection> knxConnections = new HashMap<>();
@@ -158,7 +156,7 @@ public class KNXProtocol extends AbstractProtocol implements ProtocolLinkedAttri
                         ipFound = true;
                         if (isNullOrEmpty(actionMetaItem.getValueAsString().orElse(null))) {
                             result.addMetaFailure(
-                                new ValidationFailure(ValueHolder.ValueFailureReason.VALUE_EXPECTED_STRING)
+                                new ValidationFailure(MetaItem.MetaItemFailureReason.META_ITEM_VALUE_IS_REQUIRED, ValueType.STRING.name())
                             );
                         }
                     }
