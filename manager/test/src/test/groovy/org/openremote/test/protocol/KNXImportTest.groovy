@@ -1,0 +1,129 @@
+/*
+ * Copyright 2017, OpenRemote Inc.
+ *
+ * See the CONTRIBUTORS.txt file in the distribution for a
+ * full listing of individual contributors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.openremote.test.protocol
+
+
+import tuwien.auto.calimero.server.knxnetip.DefaultServiceContainer
+
+import static org.openremote.model.asset.AssetMeta.DESCRIPTION
+import static org.openremote.model.asset.AssetMeta.LABEL
+import static org.openremote.model.Constants.*
+import static org.openremote.manager.server.setup.AbstractKeycloakSetup.SETUP_KEYCLOAK_ADMIN_PASSWORD
+import static org.openremote.manager.server.setup.AbstractKeycloakSetup.SETUP_KEYCLOAK_ADMIN_PASSWORD_DEFAULT
+import static org.openremote.container.util.MapAccess.getString
+
+import org.apache.camel.language.simple.ast.BlockStart
+import org.openremote.agent.protocol.AbstractProtocol
+import org.openremote.agent.protocol.knx.KNXProtocol
+import org.openremote.agent.protocol.ConnectionStatus
+import org.openremote.manager.server.agent.AgentService
+import org.openremote.manager.server.asset.AssetProcessingService
+import org.openremote.manager.server.asset.AssetStorageService
+import org.openremote.manager.server.asset.ServerAsset
+import org.openremote.manager.shared.agent.AgentResource
+import org.openremote.model.Constants
+import org.openremote.model.asset.AssetAttribute
+import org.openremote.model.asset.AssetMeta
+import org.openremote.model.asset.AssetType
+import org.openremote.model.asset.agent.ProtocolConfiguration
+import org.openremote.model.attribute.*
+import org.openremote.model.value.Values
+import org.openremote.model.file.FileInfo
+import org.openremote.test.KNXTestingNetworkLink
+import org.openremote.test.ManagerContainerTrait
+import spock.lang.Ignore
+import spock.lang.Specification
+import spock.util.concurrent.PollingConditions
+import java.util.Base64
+
+
+import java.nio.file.Files
+
+/**
+ * This tests the KNX protocol import routine
+ */
+class KNXImportTest extends Specification implements ManagerContainerTrait {
+
+    def "Check KNX protocol import"() {
+
+        given: "expected conditions"
+        def conditions = new PollingConditions(timeout: 10, initialDelay: 1, delay: 1)
+
+        and: "the container is started"
+        def serverPort = findEphemeralPort()
+        def container = startContainerNoDemoImport(defaultConfig(serverPort), defaultServices())
+        def assetStorageService = container.getService(AssetStorageService.class)
+        def agentService = container.getService(AgentService.class)
+        def assetProcessingService = container.getService(AssetProcessingService.class)
+        def knxProtocol = container.getService(KNXProtocol.class)
+        
+        when: "a KNX agent that uses the KNX protocol is created. to test the import we don't need a valid protocol configuration"
+        def knxAgent = new ServerAsset()
+        knxAgent.setName("KNX Agent")
+        knxAgent.setType(AssetType.AGENT)
+        knxAgent.setAttributes(
+            ProtocolConfiguration.initProtocolConfiguration(new AssetAttribute("knxConfigError1"), KNXProtocol.PROTOCOL_NAME)
+        )
+        knxAgent.setRealmId(Constants.MASTER_REALM)
+        knxAgent = assetStorageService.merge(knxAgent)
+
+        then: "the protocol configurations should be linked and their deployment status should be available in the agent service"
+        conditions.eventually {
+            assert agentService.getProtocolDeploymentStatus(knxAgent.getAttribute("knxConfigError1").get().getReferenceOrThrow()) == ConnectionStatus.ERROR
+        }
+
+        when: "an authenticated admin user"
+        def accessToken = authenticate(
+            container,
+            MASTER_REALM,
+            KEYCLOAK_CLIENT_ID,
+            MASTER_REALM_ADMIN_USER,
+            getString(container.getConfig(), SETUP_KEYCLOAK_ADMIN_PASSWORD, SETUP_KEYCLOAK_ADMIN_PASSWORD_DEFAULT)
+        ).token
+        
+        and: "the agent resource"
+        def agentResource = getClientTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AgentResource.class)
+
+        and: "the container is running"
+        container.isRunning()
+
+        then: "the container should settle down and the agent should be deployed"
+        conditions.eventually {
+            assert agentService.getAgents().containsKey(knxAgent.id)
+            assert noEventProcessedIn(assetProcessingService, 500)
+        }
+        
+        when: "discovery is requested with a ETS project file"
+        byte[] data = Files.readAllBytes(new File("manager/test/src/test/resources/knx-import-testproject.knxproj").toPath());
+        String base64Content =","+ Base64.getEncoder().encodeToString(data)
+        def fileInfo = new FileInfo("knx-import-testproject.knxproj", base64Content, true)
+        def assets = agentResource.importLinkedAttributes(null, knxAgent.getId(), "knxConfigError1", null, null, fileInfo)
+        
+        then: "the new things and attributes should be created"
+        conditions.eventually {
+            assert assets.length == 10
+            //TODO
+        }
+        
+        cleanup: "the server should be stopped"
+        stopContainer(container)
+
+    }
+}

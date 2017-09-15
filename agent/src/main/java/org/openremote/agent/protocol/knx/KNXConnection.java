@@ -220,7 +220,7 @@ public class KNXConnection implements NetworkLinkListener, ProcessListener {
                 Value value;
                 //TODO a more detailed conversion form KNX datapoint value to OpenRemote value
                 if (translator instanceof DPTXlatorBoolean) {
-                    value = new BooleanValueImpl(Boolean.valueOf(translator.getValue().equals("on")));
+                    value = new BooleanValueImpl(((DPTXlatorBoolean)translator).getValueBoolean());
                 } else {
                     value = new NumberValueImpl(translator.getNumericValue());
                 }

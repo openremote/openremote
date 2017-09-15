@@ -1,32 +1,66 @@
 package org.openremote.agent.protocol.knx;
 
+import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
+import static org.openremote.model.attribute.MetaItem.isMetaNameEqualTo;
+import static org.openremote.model.util.TextUtil.REGEXP_PATTERN_INTEGER_POSITIVE_NON_ZERO;
+import static org.openremote.model.util.TextUtil.isNullOrEmpty;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.function.Consumer;
+import java.util.logging.Logger;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
+
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.stream.StreamResult;
+import javax.xml.transform.stream.StreamSource;
+
+import org.apache.commons.io.IOUtils;
 import org.openremote.agent.protocol.AbstractProtocol;
 import org.openremote.agent.protocol.ConnectionStatus;
 import org.openremote.agent.protocol.ProtocolLinkedAttributeImport;
+import org.openremote.container.util.Util;
 import org.openremote.model.AbstractValueHolder;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.attribute.*;
+import org.openremote.model.asset.AssetMeta;
+import org.openremote.model.asset.AssetType;
+import org.openremote.model.asset.agent.AgentLink;
+import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.attribute.AttributeRef;
+import org.openremote.model.attribute.AttributeState;
+import org.openremote.model.attribute.AttributeType;
+import org.openremote.model.attribute.AttributeValidationResult;
+import org.openremote.model.attribute.MetaItem;
+import org.openremote.model.attribute.MetaItemDescriptor;
+import org.openremote.model.attribute.MetaItemDescriptorImpl;
 import org.openremote.model.file.FileInfo;
 import org.openremote.model.util.Pair;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueType;
 import org.openremote.model.value.Values;
+
 import tuwien.auto.calimero.GroupAddress;
+import tuwien.auto.calimero.KNXException;
 import tuwien.auto.calimero.KNXFormatException;
 import tuwien.auto.calimero.datapoint.CommandDP;
 import tuwien.auto.calimero.datapoint.Datapoint;
+import tuwien.auto.calimero.datapoint.DatapointMap;
 import tuwien.auto.calimero.datapoint.StateDP;
-
-import java.util.*;
-import java.util.function.Consumer;
-import java.util.logging.Logger;
-
-import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
-import static org.openremote.model.attribute.MetaItem.isMetaNameEqualTo;
-import static org.openremote.model.util.TextUtil.REGEXP_PATTERN_INTEGER_POSITIVE_NON_ZERO;
-import static org.openremote.model.util.TextUtil.isNullOrEmpty;
+import tuwien.auto.calimero.dptxlator.DPTXlator;
+import tuwien.auto.calimero.dptxlator.DPTXlatorBoolean;
+import tuwien.auto.calimero.dptxlator.TranslatorTypes;
+import tuwien.auto.calimero.xml.KNXMLException;
+import tuwien.auto.calimero.xml.XmlInputFactory;
+import tuwien.auto.calimero.xml.XmlReader;
 
 /**
  * This protocol is used to connect to a KNX bus via an IP interface.
@@ -84,7 +118,8 @@ public class KNXProtocol extends AbstractProtocol implements ProtocolLinkedAttri
 
     protected static final String VERSION = "1.0";
 
-    public static final String REGEXP_GROUP_ADDRESS = "^\\d/\\d/\\d$";
+    public static final String REGEXP_GROUP_ADDRESS = "^\\d{1,3}/\\d{1,3}/\\d{1,3}$";
+    public static final String REGEXP_BUS_ADDRESS = "^\\d\\.\\d\\.\\d$";
     public static final String REGEXP_DPT = "^\\d{1,2}\\.\\d{1,3}$";
     public static final String PATTERN_FAILURE_CONNECTION_TYPE = "TUNNELLING|ROUTING";
     public static final String PATTERN_FAILURE_DPT = "KNX DPT (e.g. 1.001)";
@@ -95,7 +130,7 @@ public class KNXProtocol extends AbstractProtocol implements ProtocolLinkedAttri
         new MetaItemDescriptorImpl("PROTOCOL_KNX_PORT", META_KNX_GATEWAY_PORT, ValueType.NUMBER, false, REGEXP_PATTERN_INTEGER_POSITIVE_NON_ZERO, MetaItemDescriptor.PatternFailure.INTEGER_POSITIVE_NON_ZERO.name(), 1, null, false),
         new MetaItemDescriptorImpl("PROTOCOL_KNX_USENAT", META_KNX_GATEWAY_USENAT, ValueType.BOOLEAN, false, null, null, 1, Values.create(false), false),
         new MetaItemDescriptorImpl("PROTOCOL_KNX_CONNECTION_TYPE", META_KNX_IP_CONNECTION_TYPE, ValueType.STRING, false, "^(TUNNELLING|ROUTING)$", PATTERN_FAILURE_CONNECTION_TYPE, 1, Values.create("TUNNELLING"), false),
-        new MetaItemDescriptorImpl("PROTOCOL_KNX_LOCAL_BUS_ADDRESS", META_KNX_LOCAL_BUS_ADDRESS, ValueType.STRING, false, REGEXP_GROUP_ADDRESS, "0.0.0", 1, null, false),
+        new MetaItemDescriptorImpl("PROTOCOL_KNX_LOCAL_BUS_ADDRESS", META_KNX_LOCAL_BUS_ADDRESS, ValueType.STRING, false, REGEXP_BUS_ADDRESS, "0.0.0", 1, null, false),
         new MetaItemDescriptorImpl("PROTOCOL_KNX_LOCAL_IP", META_KNX_LOCAL_IP, ValueType.STRING, false, null, null, 1, null, false)
     );
 
@@ -417,7 +452,97 @@ public class KNXProtocol extends AbstractProtocol implements ProtocolLinkedAttri
 
     @Override
     public Asset[] discoverLinkedAssetAttributes(AssetAttribute protocolConfiguration, FileInfo fileInfo) throws IllegalStateException {
-        // TODO: implement discovery using provided file info
-        return new Asset[0];
+        try {
+            
+            String xmlData = null;
+            byte[] data = Util.decodeBase64(fileInfo.getContents());
+            ZipInputStream zin = new ZipInputStream(new ByteArrayInputStream(data));
+            ZipEntry zipEntry = zin.getNextEntry();
+            while (zipEntry != null) {
+                if (zipEntry.getName().endsWith("/0.xml")) {
+                    xmlData = IOUtils.toString(zin, "UTF-8");
+                    break;
+                }
+                zipEntry = zin.getNextEntry();
+            }
+
+            // Create a transform factory instance.
+            System.setProperty("javax.xml.transform.TransformerFactory", "net.sf.saxon.TransformerFactoryImpl");
+            TransformerFactory tfactory = TransformerFactory.newInstance();
+
+            // Create a transformer for the stylesheet.
+            Transformer transformer = tfactory.newTransformer(new StreamSource(this.getClass().getResourceAsStream("/ets_calimero_group_name.xsl")));
+
+            // Set the URIResolver
+            transformer.setURIResolver(new EtsFileUriResolver(data));
+
+            // Transform the source XML into byte array
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            transformer.transform(new StreamSource(new ByteArrayInputStream(xmlData.getBytes())), new StreamResult(bos));
+            byte[] result = bos.toByteArray();
+
+            // we use a map of state-based datapoints and read from the transformed xml
+            final DatapointMap<StateDP> datapoints = new DatapointMap<>();
+            try (final XmlReader r = XmlInputFactory.newInstance().createXMLStreamReader(new ByteArrayInputStream(result))) {
+                datapoints.load(r);
+            } catch (final KNXMLException e) {
+                LOG.warning("Error loading parsed ETS file: " + e.getMessage());
+            }
+
+            MetaItem agentLink = AgentLink.asAgentLinkMetaItem(protocolConfiguration.getReferenceOrThrow());
+            Map<String, Asset> createdAssets = new HashMap<>();
+            for (StateDP dp : datapoints.getDatapoints()) {
+                if (dp.getName().endsWith("#A")) {
+                    createAsset(dp, false, agentLink, createdAssets);
+                } else if (dp.getName().endsWith("#S")) {
+                    createAsset(dp, true, agentLink, createdAssets);
+                } else {
+                    LOG.info("Only group addresses ending on #A or #S will be imported. Ignoring: " + dp.getName());
+                }
+            }
+            
+            return createdAssets.values().toArray(new Asset[createdAssets.values().size()]);
+            
+        } catch (Exception e) {
+            throw new IllegalStateException("ETS import error", e);
+        }
     }
+    
+    protected Asset createAsset(StateDP datapoint, boolean isStatusGA, MetaItem agentLink, Map<String, Asset> createdAssets) throws KNXException {
+        String name = datapoint.getName().substring(0, datapoint.getName().length()-3);
+        String assetName = name.replaceAll(" -.*-", "");
+        Asset asset;
+        if (createdAssets.containsKey(assetName)) {
+            asset = createdAssets.get(assetName);
+        } else {
+            asset = new Asset(assetName, AssetType.THING);
+        }
+
+        String attrName = assetName.replaceAll(" ", "");
+        //TODO a more detailed conversion form KNX datapoint value to OpenRemote value
+        DPTXlator translator = TranslatorTypes.createTranslator(0, datapoint.getDPT());
+        AttributeType type;
+        if (translator instanceof DPTXlatorBoolean) {
+            type = AttributeType.BOOLEAN;
+        } else {
+            type = AttributeType.NUMBER;
+        }
+        AssetAttribute attr = asset.getAttribute(attrName).orElse(new AssetAttribute(attrName, type).setMeta(
+                        new MetaItem(AssetMeta.LABEL, Values.create(name)), 
+                        new MetaItem(KNXProtocol.META_KNX_DPT, Values.create(datapoint.getDPT())),
+                        agentLink
+        ));
+        if (isStatusGA) {
+            attr.addMeta(new MetaItem(KNXProtocol.META_KNX_STATUS_GA, Values.create(datapoint.getMainAddress().toString())));
+        } else {
+            attr.addMeta(new MetaItem(KNXProtocol.META_KNX_ACTION_GA, Values.create(datapoint.getMainAddress().toString())));
+        }
+
+        if (!asset.hasAttribute(attrName)) {
+            asset.addAttributes(attr);
+        }
+        createdAssets.put(assetName, asset);
+        return asset;
+    }
+
 }
