@@ -33,6 +33,8 @@ import org.openremote.manager.client.event.ShowFailureEvent;
 import org.openremote.manager.client.event.ShowSuccessEvent;
 import org.openremote.manager.client.interop.jackson.FileInfoMapper;
 import org.openremote.manager.client.interop.value.ObjectValueMapper;
+import org.openremote.manager.client.widget.AttributeLinkEditor;
+import org.openremote.manager.client.widget.AttributeRefEditor;
 import org.openremote.manager.client.widget.FormButton;
 import org.openremote.manager.client.widget.ValueEditors;
 import org.openremote.manager.shared.agent.AgentResource;
@@ -45,23 +47,22 @@ import org.openremote.model.asset.*;
 import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.asset.agent.ProtocolConfiguration;
 import org.openremote.model.asset.agent.ProtocolDescriptor;
-import org.openremote.model.attribute.AttributeType;
-import org.openremote.model.attribute.AttributeValidationResult;
-import org.openremote.model.attribute.MetaItem;
-import org.openremote.model.attribute.MetaItemDescriptor;
+import org.openremote.model.attribute.*;
 import org.openremote.model.util.EnumUtil;
 import org.openremote.model.util.Pair;
+import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueType;
 
 import javax.inject.Inject;
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static org.openremote.manager.client.http.RequestExceptionHandler.handleRequestException;
-import static org.openremote.manager.client.widget.ValueEditors.createAttributeRefEditor;
 import static org.openremote.model.attribute.Attribute.ATTRIBUTE_NAME_VALIDATOR;
 import static org.openremote.model.attribute.Attribute.isAttributeNameEqualTo;
+import static org.openremote.model.attribute.MetaItem.isMetaNameEqualTo;
 import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 
 public class AssetEditActivity
@@ -80,10 +81,6 @@ public class AssetEditActivity
     protected final AttributeValidationResultMapper attributeValidationResultMapper;
     protected final AssetAttributeMapper assetAttributeMapper;
     protected final Consumer<ConstraintViolation[]> validationErrorHandler;
-    protected final List<Consumer<Asset[]>> agentAssetConsumers = new ArrayList<>();
-    protected final List<Consumer<Asset[]>> allAssetConsumers = new ArrayList<>();
-    protected Asset[] agentAssets;
-    protected Asset[] allAssets;
     protected List<ProtocolDescriptor> protocolDescriptors = new ArrayList<>();
     protected List<MetaItemDescriptor> metaItemDescriptors = new ArrayList<>(Arrays.asList(AssetMeta.values()));
     double[] selectedCoordinates;
@@ -341,19 +338,12 @@ public class AssetEditActivity
     }
 
     @Override
-    public void getLinkableAssets(ValueHolder value, Consumer<Asset[]> assetConsumer) {
-        List<Consumer<Asset[]>> consumers;
-        Asset[] retrievedAssets;
-        Consumer<Asset[]> assetStore;
+    public void getLinkableAssetsAndAttributes(ValueHolder valueHolder, Consumer<Map<AttributeRefEditor.AssetInfo, List<AttributeRefEditor.AttributeInfo>>> assetAttributeConsumer) {
         AssetQuery query;
+        Predicate<AssetAttribute> attributeFilter = null;
 
-        if ((value instanceof MetaItem) && AgentLink.isAgentLink((MetaItem) value)) {
-            consumers = agentAssetConsumers;
-            retrievedAssets = agentAssets;
-            assetStore = assets -> agentAssets = assets;
+        if ((valueHolder instanceof MetaItem) && AgentLink.isAgentLink((MetaItem) valueHolder)) {
             query = new AssetQuery()
-                // There shouldn't be many agents so retrieve their attributes to speed up getting
-                // Protocol Configuration attribute names
                 .select(new AssetQuery.Select(AssetQuery.Include.ONLY_ID_AND_NAME_AND_ATTRIBUTES))
                 // Limit to agents
                 .type(AssetType.AGENT);
@@ -363,83 +353,96 @@ public class AssetEditActivity
             if (!isNullOrEmpty(asset.getRealmId())) {
                 query.tenant(new AbstractAssetQuery.TenantPredicate(asset.getRealmId()));
             }
+
+            attributeFilter = ProtocolConfiguration::isProtocolConfiguration;
         } else {
-            consumers = allAssetConsumers;
-            retrievedAssets = allAssets;
-            assetStore = assets -> allAssets = assets;
-            // Limit to assets that have the same realm as the asset being edited
             query = new AssetQuery()
                 .select(new AssetQuery.Select(AssetQuery.Include.ONLY_ID_AND_NAME_AND_ATTRIBUTE_NAMES, true));
+
+            // Limit to assets that have the same realm as the asset being edited (if it has been assigned a realm
+            // otherwise the query will be automatically restricted to the logged in users realm)
+            if (!isNullOrEmpty(asset.getRealmId())) {
+                query.tenant(new AbstractAssetQuery.TenantPredicate(asset.getRealmId()));
+            }
         }
 
-        if (retrievedAssets != null) {
-            // Already retrieved so return results
-            assetConsumer.accept(retrievedAssets);
-            return;
-        }
+        // Do request
+        final Predicate<AssetAttribute> finalAttributeFilter = attributeFilter;
+        environment.getRequestService().execute(
+            assetArrayMapper,
+            assetQueryMapper,
+            requestParams -> assetResource.queryAssets(requestParams, query),
+            200,
+            assets -> {
+                Map<AttributeRefEditor.AssetInfo, List<AttributeRefEditor.AttributeInfo>> assetAttributeMap = Arrays
+                    .stream(assets)
+                    .filter(asset -> !asset.getAttributesList().isEmpty())
+                    .collect(Collectors.toMap(
+                        asset -> new AttributeRefEditor.AssetInfo(asset.getName(), asset.getId()),
+                        asset ->
+                            asset.getAttributesStream()
+                                .filter(attribute -> finalAttributeFilter == null || finalAttributeFilter.test(attribute))
+                                .map(attribute ->
+                                    new AttributeRefEditor.AttributeInfo(
+                                        attribute.getName().orElse(null),
+                                        attribute.getLabelOrName().orElse(null)
+                                    )
+                                )
+                                .collect(Collectors.toList())
 
-        consumers.add(assetConsumer);
+                    ));
 
-        if (consumers.size() == 1) {
-            // Do request
-            environment.getRequestService().execute(
-                assetArrayMapper,
-                assetQueryMapper,
-                requestParams -> assetResource.queryAssets(requestParams, query),
-                200,
-                assets -> {
-                    assetStore.accept(assets);
-                    consumers.forEach(consumer -> consumer.accept(assets));
-                    consumers.clear();
-                },
-                exception -> {
-                    Asset[] assets = new Asset[0];
-                    assetStore.accept(assets);
-                    consumers.forEach(consumer -> consumer.accept(assets));
-                    consumers.clear();
-                }
-            );
-        }
+                assetAttributeConsumer.accept(assetAttributeMap);
+            },
+            exception -> assetAttributeConsumer.accept(new HashMap<>())
+        );
     }
 
     @Override
-    public void getLinkableAttributes(Pair<ValueHolder, Asset> valueAssetPair, Consumer<AssetAttribute[]> attributeConsumer) {
-        ValueHolder value = valueAssetPair.key;
-        Asset asset = valueAssetPair.value;
-
-        if ((value instanceof MetaItem) && AgentLink.isAgentLink((MetaItem) value)) {
-            // Asset should have fully populated attributes so filter them
-            attributeConsumer.accept(
-                asset.getAttributesStream()
-                    .filter(ProtocolConfiguration::isProtocolConfiguration)
-                    .toArray(AssetAttribute[]::new)
-            );
-        } else {
-            // Asset should just have attribute names and labels loaded so return them
-            attributeConsumer.accept(
-                asset
-                    .getAttributesStream()
-                    .toArray(AssetAttribute[]::new)
-            );
-        }
-    }
-
-    @Override
-    protected IsWidget createValueEditor(ValueHolder valueHolder, ValueType valueType, AttributeView.Style style, Runnable onValueModified) {
+    protected IsWidget createValueEditor(ValueHolder valueHolder, ValueType valueType, AttributeView.Style style, AttributeView parentView, Consumer<Value> onValueModified) {
         switch (valueType) {
             case ARRAY:
                 if (valueHolder instanceof MetaItem) {
-                    Optional<AssetMeta> assetMeta = AssetMeta.getAssetMeta(((MetaItem) valueHolder).getName().orElse(null));
-
-                    if (assetMeta.map(am -> am == AssetMeta.AGENT_LINK).orElse(false)) {
+                    if (isMetaNameEqualTo((MetaItem)valueHolder, AssetMeta.AGENT_LINK)) {
                         boolean isReadOnly = isValueReadOnly(valueHolder);
                         String assetWatermark = environment.getMessages().selectAgent();
                         String attributeWatermark = environment.getMessages().selectProtocolConfiguration();
-                        return createAttributeRefEditor(valueHolder, onValueModified, isReadOnly, this::getLinkableAssets, this::getLinkableAttributes, assetWatermark, attributeWatermark, style.agentLinkEditor());
+                        return new AttributeRefEditor(
+                            valueHolder.getValue().flatMap(AttributeRef::fromValue).orElse(null),
+                            attrRef -> onValueModified.accept(attrRef != null ? attrRef.toArrayValue() : null),
+                            isReadOnly,
+                            assetAttributeConsumer -> getLinkableAssetsAndAttributes(valueHolder, assetAttributeConsumer),
+                            assetWatermark,
+                            attributeWatermark,
+                            style.agentLinkEditor()
+                        );
+                    }
+                }
+                break;
+            case OBJECT:
+                if (valueHolder instanceof MetaItem) {
+                    if (isMetaNameEqualTo((MetaItem)valueHolder, AssetMeta.ATTRIBUTE_LINK)) {
+                        boolean isReadOnly = isValueReadOnly(valueHolder);
+                        String assetWatermark = environment.getMessages().selectAsset();
+                        String attributeWatermark = environment.getMessages().selectAttribute();
+                        return new AttributeLinkEditor(
+                            environment,
+                            style,
+                            parentView,
+                            this::createValueEditor,
+                            this::showValidationError,
+                            valueHolder.getValue().flatMap(AttributeLink::fromValue).orElse(null),
+                            attrLink -> onValueModified.accept(attrLink != null ? attrLink.toObjectValue() : null),
+                            isReadOnly,
+                            assetAttributeConsumer -> getLinkableAssetsAndAttributes(valueHolder, assetAttributeConsumer),
+                            assetWatermark,
+                            attributeWatermark,
+                            style.agentLinkEditor()
+                        );
                     }
                 }
         }
-        return super.createValueEditor(valueHolder, valueType, style, onValueModified);
+        return super.createValueEditor(valueHolder, valueType, style, parentView, onValueModified);
     }
 
     @Override
@@ -493,7 +496,7 @@ public class AssetEditActivity
                 );
         }
 
-        extensions.add(new MetaEditor(environment, this.view.getStyle(), view, attribute, () -> protocolDescriptors));
+        extensions.add(new MetaEditor(environment, this.view.getStyle(), environment.getMessages().metaItems(), environment.getMessages().newMetaItems(), view, attribute, () -> protocolDescriptors));
         return extensions;
     }
 
@@ -525,21 +528,6 @@ public class AssetEditActivity
     @Override
     protected void validateAttribute(boolean clientSideOnly, AssetAttribute attribute, Consumer<AttributeValidationResult> resultConsumer) {
         super.validateAttribute(clientSideOnly, attribute, validationResult -> {
-            if (validationResult.isValid() && attribute.hasMetaItems()) {
-                // Do additional validation on the meta items
-
-                for (int i = 0; i < attribute.getMeta().size(); i++) {
-                    MetaItem metaItem = attribute.getMeta().get(i);
-                    int finalI = i;
-                    metaItemDescriptors.stream()
-                        .filter(metaItemDescriptor -> metaItemDescriptor.getUrn().equals(metaItem.getName().orElse("")))
-                        .findFirst()
-                        .flatMap(metaItemDescriptor ->
-                            MetaItemDescriptor.validateValue(metaItem.getValue().orElse(null), metaItemDescriptor)
-                        )
-                        .ifPresent(failure -> validationResult.addMetaFailure(finalI, failure));
-                }
-            }
 
             if (!clientSideOnly && validationResult.isValid() && ProtocolConfiguration.isProtocolConfiguration(attribute)) {
                 // Ask the server to validate the protocol configuration
@@ -556,6 +544,13 @@ public class AssetEditActivity
             }
         });
 
+    }
+
+    @Override
+    protected Optional<MetaItemDescriptor> getMetaItemDescriptor(MetaItem item) {
+        return metaItemDescriptors.stream()
+            .filter(metaItemDescriptor -> metaItemDescriptor.getUrn().equals(item.getName().orElse("")))
+            .findFirst();
     }
 
     protected void writeAttributeTypesToView(Runnable onComplete) {

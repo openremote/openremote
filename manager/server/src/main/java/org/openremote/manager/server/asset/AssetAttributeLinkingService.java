@@ -23,6 +23,7 @@ import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.model.asset.*;
 import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.attribute.AttributeLink;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.util.Pair;
@@ -46,13 +47,13 @@ import static org.openremote.model.attribute.MetaItem.isMetaNameEqualTo;
  * By default the exact value of the attribute is forwarded unless a key exists in the converter JSON Object that
  * matches the value as a string (note matches are case sensitive so booleans should be lower case i.e. true or false);
  * in that case the value of the key is forwarded instead. There are several special conversions available by using
- * the value of a {@link Converter} as the value. This allows for example a button press to toggle a boolean
+ * the value of a {@link AttributeLink.ConverterType} as the value. This allows for example a button press to toggle a boolean
  * attribute or for a particular value to be ignored.
  * <p>
  * To convert null values the converter key of "NULL" can be used.
  * <p>
  * <b>
- * NOTE: State converters (e.g. {@link Converter#TOGGLE}, {@link Converter#INCREMENT}, {@link Converter#DECREMENT}) are
+ * NOTE: State converters (e.g. {@link AttributeLink.ConverterType#TOGGLE}, {@link AttributeLink.ConverterType#INCREMENT}, {@link AttributeLink.ConverterType#DECREMENT}) are
  * not synchronised so if the initiating attribute (the one with the {@link AssetMeta#ATTRIBUTE_LINK} meta items)
  * generates multiple attribute events in a short period of time then the value pushed to the linked attribute may not
  * be correct.
@@ -87,57 +88,6 @@ import static org.openremote.model.attribute.MetaItem.isMetaNameEqualTo;
 // TODO: Improve AssetAttributeLinkingService so that outbound events are synchronsied with inbound
 public class AssetAttributeLinkingService implements ContainerService, Consumer<AssetState> {
 
-    public enum Converter {
-
-        /**
-         * Ignore this value (do not send to the linked attribute)
-         */
-        IGNORE("@IGNORE"),
-
-        /**
-         * Send a null vale to the linked attribute
-         */
-        NULL("@NULL"),
-
-        /**
-         * Toggle the value of the linked attribute; the linked attribute's type must be
-         * {@link org.openremote.model.attribute.AttributeType#BOOLEAN}
-         */
-        TOGGLE("@TOGGLE"),
-
-        /**
-         * Increment the value of the linked attribute; the linked attribute's type must be
-         * {@link org.openremote.model.attribute.AttributeType#NUMBER}
-         */
-        INCREMENT("@INCREMENT"),
-
-        /**
-         * Decrement the value of the linked attribute; the linked attribute's type must be
-         * {@link org.openremote.model.attribute.AttributeType#NUMBER}
-         */
-        DECREMENT("@DECREMENT");
-
-        private String value;
-        // Prevents cloning of values each time fromString is called
-        private static final Converter[] copyOfValues = values();
-
-        Converter(String value) {
-            this.value = value;
-        }
-
-        public String getValue() {
-            return value;
-        }
-
-        public static Optional<Converter> fromString(String value) {
-            for (Converter converter : copyOfValues) {
-                if (converter.getValue().equalsIgnoreCase(value))
-                    return Optional.of(converter);
-            }
-            return Optional.empty();
-        }
-    }
-
     private static final Logger LOG = Logger.getLogger(AssetAttributeLinkingService.class.getName());
     protected AssetProcessingService assetProcessingService;
     protected AssetStorageService assetStorageService;
@@ -170,11 +120,11 @@ public class AssetAttributeLinkingService implements ContainerService, Consumer<
         assetProcessingService.sendAttributeEvent(attributeEvent);
     }
 
-    protected void processLinkedAttributeUpdate(MetaItem attributeLink, AssetState assetState) {
+    protected void processLinkedAttributeUpdate(MetaItem metaItem, AssetState assetState) {
         LOG.fine("Processing attribute event for linked attribute");
-        Optional<Pair<AttributeRef, Optional<ObjectValue>>> linkAndConverter = getAttributeLinkAndConverter(attributeLink);
+        Optional<AttributeLink> attributeLink = metaItem.getValue().flatMap(AttributeLink::fromValue);
 
-        if (!linkAndConverter.isPresent()) {
+        if (!attributeLink.isPresent()) {
             LOG.info("Invalid attribute link on: " + assetState.getAttributeRef());
             return;
         }
@@ -182,8 +132,7 @@ public class AssetAttributeLinkingService implements ContainerService, Consumer<
         // Convert the value as required
         Pair<Boolean, Value> sendConvertedValue = convertValueForLinkedAttribute(
             assetState.getValue(),
-            linkAndConverter.get().key,
-            linkAndConverter.get().value,
+            attributeLink.get(),
             assetStorageService
         );
 
@@ -192,47 +141,34 @@ public class AssetAttributeLinkingService implements ContainerService, Consumer<
             return;
         }
 
-        sendAttributeEvent(new AttributeEvent(linkAndConverter.get().key, sendConvertedValue.value));
+        sendAttributeEvent(new AttributeEvent(attributeLink.get().getAttributeRef(), sendConvertedValue.value));
     }
 
-    protected static Optional<Pair<AttributeRef, Optional<ObjectValue>>> getAttributeLinkAndConverter(MetaItem metaItem) {
-        return metaItem
-            .getValueAsObject()
-            .map(obj -> {
-                Optional<AttributeRef> ref = AttributeRef.fromValue(obj.get("attributeRef").orElse(null));
-                Optional<ObjectValue> converter = obj.getObject("converter");
-
-                return ref
-                    .map(attributeRef -> new Pair<>(attributeRef, converter))
-                    .orElse(null);
-            });
-    }
-
-    protected static Pair<Boolean, Value> convertValueForLinkedAttribute(Value originalValue, AttributeRef linkedAttributeRef, Optional<ObjectValue> converter, AssetStorageService assetStorageService) {
-        return converter
+    protected static Pair<Boolean, Value> convertValueForLinkedAttribute(Value originalValue, AttributeLink attributeLink, AssetStorageService assetStorageService) {
+        return attributeLink.getConverter()
             .map(
-                conv -> {
+                converter -> {
                     String converterKey = originalValue == null ? "NULL": originalValue.toString();
-                    Optional<Value> converterValue = conv.get(converterKey);
+                    Optional<Value> converterValue = converter.get(converterKey);
                     // Convert the value
                     return converterValue
                         .map(value ->
                             getSpecialConverter(value)
-                                .map(c -> doSpecialConversion(c, linkedAttributeRef, assetStorageService))
+                                .map(c -> doSpecialConversion(c, attributeLink.getAttributeRef(), assetStorageService))
                                 .orElse(new Pair<>(true, value))) // use the converter value as the new value
                         .orElseGet(() -> new Pair<>(true, originalValue)); // use the original value
                 })
             .orElse(new Pair<>(true, originalValue)); // use the original value
     }
 
-    protected static Optional<Converter> getSpecialConverter(Value value) {
+    protected static Optional<AttributeLink.ConverterType> getSpecialConverter(Value value) {
         if (value.getType() == ValueType.STRING) {
-            return Converter.fromString(value.toString());
+            return AttributeLink.ConverterType.fromValue(value.toString());
         }
         return Optional.empty();
     }
 
-    protected static Pair<Boolean, Value> doSpecialConversion(Converter converter, AttributeRef linkedAttributeRef, AssetStorageService assetStorageService) {
+    protected static Pair<Boolean, Value> doSpecialConversion(AttributeLink.ConverterType converter, AttributeRef linkedAttributeRef, AssetStorageService assetStorageService) {
         switch (converter) {
             case IGNORE:
                 LOG.fine("Converter set to ignore value so not forwarding to linked attribute");
@@ -261,7 +197,7 @@ public class AssetAttributeLinkingService implements ContainerService, Consumer<
                         LOG.fine("Cannot increment/decrement attribute value as attribute is not of type NUMBER: " + linkedAttributeRef);
                         return new Pair<>(false, null);
                     }
-                    int change = converter == Converter.INCREMENT ? +1 : -1;
+                    int change = converter == AttributeLink.ConverterType.INCREMENT ? +1 : -1;
                     return new Pair<>(true, Values.create(((NumberValue)currentValue).getNumber() + change));
                 } catch (NoSuchElementException e) {
                     LOG.fine("The attribute doesn't exist so ignoring increment/decrement value request: " + linkedAttributeRef);
@@ -279,7 +215,7 @@ public class AssetAttributeLinkingService implements ContainerService, Consumer<
                 .select(new AbstractAssetQuery.Select(AbstractAssetQuery.Include.ALL, false, false, attributeRef.getAttributeName()))
         );
 
-        Optional<AssetAttribute> attribute = Optional.empty();
+        Optional<AssetAttribute> attribute;
         if (asset == null || !(attribute = asset.getAttribute(attributeRef.getAttributeName())).isPresent()) {
             throw new NoSuchElementException("Attribute or asset could not be found: " + attributeRef);
         }

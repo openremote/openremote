@@ -19,20 +19,15 @@
  */
 package org.openremote.model.attribute;
 
-
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.google.gwt.regexp.shared.RegExp;
 import org.openremote.model.HasUniqueResourceName;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueType;
 
 import java.util.Optional;
-
-import static org.openremote.model.attribute.MetaItem.MetaItemFailureReason.META_ITEM_VALUE_IS_REQUIRED;
-import static org.openremote.model.attribute.MetaItem.MetaItemFailureReason.META_ITEM_VALUE_MISMATCH;
-import static org.openremote.model.util.TextUtil.isNullOrEmpty;
+import java.util.function.Function;
 
 @JsonSerialize(as = MetaItemDescriptorImpl.class)
 @JsonDeserialize(as = MetaItemDescriptorImpl.class)
@@ -52,38 +47,6 @@ public interface MetaItemDescriptor extends HasUniqueResourceName {
         DOUBLE_NEGATIVE_NON_ZERO,
         CRON_EXPRESSION,
         DAYS_HOURS_MINS_SECONDS
-    }
-
-    /**
-     * Validate meta item value using meta item descriptor
-     */
-    static Optional<ValidationFailure> validateValue(Value value, MetaItemDescriptor metaItemDescriptor) {
-        if (metaItemDescriptor == null) {
-            return Optional.empty();
-        }
-
-        if (value == null) {
-            return Optional.of(new ValidationFailure(META_ITEM_VALUE_IS_REQUIRED));
-        }
-
-        if (metaItemDescriptor.getValueType() != value.getType()) {
-            return Optional.of(new ValidationFailure(META_ITEM_VALUE_MISMATCH, metaItemDescriptor.getValueType().name()));
-        }
-
-        if (!isNullOrEmpty(metaItemDescriptor.getPattern())) {
-            String valueStr = value.toString();
-
-            if (isNullOrEmpty(valueStr)) {
-                return Optional.of(new ValidationFailure(MetaItem.MetaItemFailureReason.META_ITEM_VALUE_IS_REQUIRED));
-            }
-
-            // Do case insensitive regex (can't include this flag in the pattern like in normal java)
-            if (!RegExp.compile(metaItemDescriptor.getPattern(), "i").test(valueStr)) {
-                return Optional.of(new ValidationFailure(MetaItem.MetaItemFailureReason.META_ITEM_VALUE_MISMATCH, metaItemDescriptor.getPatternFailureMessage()));
-            }
-        }
-
-        return Optional.empty();
     }
 
     String name();
@@ -126,7 +89,8 @@ public interface MetaItemDescriptor extends HasUniqueResourceName {
     boolean isValueFixed();
 
     /**
-     * Validate the supplied {@link MetaItem} against this {@link MetaItemDescriptor}
+     * Get optional validation function; this allows {@link MetaItemDescriptor} implementations to do more advanced
+     * validation. If defined this takes priority over all other value checks
      */
-    Optional<ValidationFailure> validateValue(Value value);
+    Optional<Function<Value, Optional<ValidationFailure>>> getValidator();
 }

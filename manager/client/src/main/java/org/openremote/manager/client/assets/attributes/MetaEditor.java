@@ -24,7 +24,6 @@ import com.google.gwt.user.client.ui.IsWidget;
 import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.widget.*;
 import org.openremote.model.ValidationFailure;
-import org.openremote.model.ValueHolder;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetMeta;
 import org.openremote.model.asset.agent.AgentLink;
@@ -40,8 +39,9 @@ import org.openremote.model.value.Values;
 
 import java.util.*;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
-import static org.openremote.model.attribute.MetaItem.MetaItemFailureReason.META_ITEM_VALUE_IS_REQUIRED;
 import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 
 public class MetaEditor extends AbstractAttributeViewExtension {
@@ -53,20 +53,19 @@ public class MetaEditor extends AbstractAttributeViewExtension {
         protected FormListBox nameList;
         protected FormListBox typeList;
         protected FormInputText nameInput;
-        protected FormGroupActions formGroupActions;
         protected IsWidget valueEditor;
-        protected boolean isNewItem;
+        protected boolean newItem;
         protected MetaItemDescriptor currentDescriptor;
 
-        public MetaItemEditor(MetaEditor parentEditor, MetaItem item, boolean isNewItem) {
+        public MetaItemEditor(MetaEditor parentEditor, MetaItem item, boolean newItem) {
             this.parentEditor = parentEditor;
             this.item = item;
-            this.isNewItem = isNewItem;
+            this.newItem = newItem;
             field = new FormField();
             this.setFormField(field);
 
             // Don't show protocol configuration item in main section
-            if (!isNewItem && item.getName()
+            if (!newItem && item.getName()
                 .map(name -> AssetMeta.PROTOCOL_CONFIGURATION.getUrn().equals(name))
                 .orElse(false)) {
                 setVisible(false);
@@ -99,15 +98,14 @@ public class MetaEditor extends AbstractAttributeViewExtension {
             nameInput = new FormInputText();
             field.add(nameInput);
             nameInput.addStyleName(style.metaItemNameEditor());
-            nameInput.setPlaceholder(environment.getMessages().enterCustomAssetAttributeMetaName());
+            nameInput.setPlaceholder(getCustomNameWatermark());
             nameInput.addKeyUpHandler(event -> {
                 if (isNullOrEmpty(nameInput.getValue())) {
                     item.clearName();
                 } else {
                     item.setName(nameInput.getValue());
                 }
-                notifyAttributeModified();
-                notifyAttributeModified();
+                validateItem(this);
             });
             nameInput.addValueChangeHandler(event -> {
                 if (isNullOrEmpty(event.getValue())) {
@@ -115,27 +113,24 @@ public class MetaEditor extends AbstractAttributeViewExtension {
                 } else {
                     item.setName(event.getValue());
                 }
-                notifyAttributeModified();
+                validateItem(this);
             });
 
             typeList = new FormListBox();
             field.add(typeList);
-            typeList.addItem(environment.getMessages().selectType(), "");
 
-            valueTypes.stream()
-                .map(Enum::name)
-                .map(valueType -> new Pair<>(environment.getMessages().valueTypeDisplayName(valueType), valueType))
-                .sorted(Comparator.comparing(typeEntry -> typeEntry.key))
-                .forEach(typeEntry -> typeList.addItem(typeEntry.key, typeEntry.value));
+            populateTypeList(this);
 
-            typeList.addChangeHandler(event -> onTypeChanged(true));
+            typeList.addChangeHandler(event -> onMetaItemTypeChanged(this, true));
 
-            formGroupActions = new FormGroupActions();
+            FormGroupActions formGroupActions = new FormGroupActions();
             FormButton button = new FormButton();
-            button.setText(isNewItem ? environment.getMessages().addItem() : environment.getMessages().deleteItem());
-            button.setIcon(isNewItem ? "plus" : "remove");
+            button.setText(newItem ? getAddButtonLabel() : getDeleteButtonLabel());
+            // This has to be after setText otherwise get strange behaviour due to faces of push button
+            button.setEnabled(!newItem);
+            button.setIcon(newItem ? "plus" : "remove");
             button.addClickHandler(clickEvent -> {
-                if (isNewItem) {
+                if (newItem) {
                     if (parentEditor.addItem(item.copy(), false)) {
                         reset();
                     }
@@ -150,11 +145,28 @@ public class MetaEditor extends AbstractAttributeViewExtension {
             onNameChanged(false);
         }
 
-        protected IsWidget createItemValueEditor() {
-            return valueEditorSupplier.createValueEditor(item,
-                EnumUtil.enumFromString(ValueType.class, typeList.getSelectedValue()).orElse(ValueType.STRING),
-                style,
-                this::onModified);
+        public FormListBox getNameList() {
+            return nameList;
+        }
+
+        public FormListBox getTypeList() {
+            return typeList;
+        }
+
+        public FormField getField() {
+            return field;
+        }
+
+        public MetaItem getItem() {
+            return item;
+        }
+
+        public boolean isNewItem() {
+            return newItem;
+        }
+
+        public Optional<MetaItemDescriptor> getCurrentDescriptor() {
+            return Optional.ofNullable(currentDescriptor);
         }
 
         protected void onNameChanged(boolean updateItem) {
@@ -191,63 +203,27 @@ public class MetaEditor extends AbstractAttributeViewExtension {
             nameInput.setVisible(!currentMetaItemDescriptor.isPresent());
             typeList.setVisible(!currentMetaItemDescriptor.isPresent());
             typeList.selectItem(typeListValue);
-            onTypeChanged(updateItem);
+            onMetaItemTypeChanged(this, updateItem);
         }
 
-        protected void onTypeChanged(boolean updateItem) {
-            Optional<AssetMeta> assetMeta = AssetMeta.getAssetMeta(nameList.getSelectedValue());
-
-            if (updateItem) {
-                item.clearValue();
-                Value initialValue = assetMeta.map(AssetMeta::getInitialValue).orElse(null);
-                ValueType valueType = EnumUtil.enumFromString(ValueType.class, typeList.getSelectedValue()).orElse(null);
-                if (valueType == ValueType.BOOLEAN && initialValue == null) {
-                    initialValue = Values.create(false);
-                }
-
-                item.setValue(initialValue);
-                onModified();
-            }
-            updateValueEditor();
-        }
-
-        protected void updateValueEditor() {
+        public void updateValueEditor() {
             if (valueEditor != null) {
                 field.remove(valueEditor);
+                valueEditor = null;
             }
 
             if (typeList.getSelectedIndex() > 0) {
-                valueEditor = createItemValueEditor();
-                field.add(valueEditor);
+                valueEditor = createItemValueEditor(this);
+                if (valueEditor != null) {
+                    field.add(valueEditor);
+                }
             }
         }
 
-        protected void onModified() {
-            if (isNewItem) {
-                // Do basic validation on new meta item in situ
-                List<ValidationFailure> failures = item.getValidationFailures();
-                boolean hasFailures = failures != null && !failures.isEmpty();
-
-                if (!hasFailures && currentDescriptor != null) {
-                    ValidationFailure failure = item.getValue()
-                        .flatMap(currentDescriptor::validateValue)
-                        .orElse(null);
-                    if (failure != null) {
-                        failures = Collections.singletonList(failure);
-                    }
-                }
-
-                formGroupActions.forEach(widget -> {
-                    if (widget instanceof FormButton) {
-                        ((FormButton) widget).setEnabled(!hasFailures);
-                    }
-                });
-                updateEditorFailures(this, failures);
-            } else {
-                // Presenter will notify us of failures in the context of the whole attribute as well as any asset meta
-                // type mismatching etc.
-                notifyAttributeModified();
-            }
+        public void onModified(Value newValue) {
+            // Push new value into the meta item
+            item.setValue(newValue);
+            validateItem(this);
         }
 
         protected void reset() {
@@ -256,7 +232,26 @@ public class MetaEditor extends AbstractAttributeViewExtension {
             nameList.setSelectedIndex(0);
             nameInput.setValue(null);
             typeList.setSelectedIndex(0);
+            if (newItem) {
+                formGroupActions.forEach(widget -> {
+                    if (widget instanceof FormButton) {
+                        ((FormButton) widget).setEnabled(!errorInField);
+                    }
+                });
+            }
             onNameChanged(false);
+        }
+
+        @Override
+        public void setError(boolean errorInField) {
+            super.setError(errorInField);
+            if (newItem) {
+                formGroupActions.forEach(widget -> {
+                    if (widget instanceof FormButton) {
+                        ((FormButton) widget).setEnabled(!errorInField);
+                    }
+                });
+            }
         }
     }
 
@@ -269,8 +264,8 @@ public class MetaEditor extends AbstractAttributeViewExtension {
     protected boolean isProtocolConfiguration;
     protected AttributeValidationResult lastValidationResult;
 
-    public MetaEditor(Environment environment, AttributeView.Style style, AttributeView parentView, AssetAttribute attribute, Supplier<List<ProtocolDescriptor>> protocolDescriptorSupplier) {
-        super(environment, style, parentView, attribute, environment.getMessages().metaItems());
+    public MetaEditor(Environment environment, AttributeView.Style style, String existingItemsHeader, String newItemsHeader, AttributeView parentView, AssetAttribute attribute, Supplier<List<ProtocolDescriptor>> protocolDescriptorSupplier) {
+        super(environment, style, parentView, attribute, existingItemsHeader);
         this.attribute = attribute;
         this.style = style;
         isProtocolConfiguration = attribute.hasMetaItem(AssetMeta.PROTOCOL_CONFIGURATION);
@@ -317,7 +312,7 @@ public class MetaEditor extends AbstractAttributeViewExtension {
             .sorted(Comparator.comparing(MetaItemDescriptor::name))
             .toArray(MetaItemDescriptor[]::new);
 
-        itemEditorSectionLabel = new FormSectionLabel(environment.getMessages().newItem());
+        itemEditorSectionLabel = new FormSectionLabel(newItemsHeader);
         add(itemListPanel);
         add(itemEditorSectionLabel);
         add(itemEditorPanel);
@@ -339,10 +334,78 @@ public class MetaEditor extends AbstractAttributeViewExtension {
         }
     }
 
+    protected String getCustomNameWatermark() {
+        return environment.getMessages().enterCustomAssetAttributeMetaName();
+    }
+
+    protected String getTypeWatermark() {
+        return environment.getMessages().selectType();
+    }
+
+    protected String getAddButtonLabel() {
+        return environment.getMessages().addItem();
+    }
+
+    protected List<MetaItemEditor> getExistingItemEditors() {
+        return IntStream.range(0, itemListPanel.getWidgetCount())
+            .mapToObj(i -> (MetaItemEditor)itemListPanel.getWidget(i))
+            .collect(Collectors.toList());
+    }
+
+    protected String getDeleteButtonLabel() {
+        return environment.getMessages().deleteItem();
+    }
+
+    protected void populateTypeList(MetaItemEditor itemEditor) {
+        itemEditor.typeList.addItem(getTypeWatermark(), "");
+
+        valueTypes.stream()
+            .map(Enum::name)
+            .map(valueType -> new Pair<>(environment.getMessages().valueTypeDisplayName(valueType), valueType))
+            .sorted(Comparator.comparing(typeEntry -> typeEntry.key))
+            .forEach(typeEntry -> itemEditor.typeList.addItem(typeEntry.key, typeEntry.value));
+    }
+
+    protected IsWidget createItemValueEditor(MetaItemEditor itemEditor) {
+        return valueEditorSupplier.createValueEditor(itemEditor.item,
+            EnumUtil.enumFromString(ValueType.class, itemEditor.typeList.getSelectedValue()).orElse(ValueType.STRING),
+            style,
+            parentView,
+            itemEditor::onModified);
+    }
+
+    protected void onMetaItemTypeChanged(MetaItemEditor itemEditor, boolean updateItem) {
+        Optional<AssetMeta> assetMeta = AssetMeta.getAssetMeta(itemEditor.nameList.getSelectedValue());
+
+        if (updateItem) {
+            itemEditor.item.clearValue();
+            Value initialValue = assetMeta.map(AssetMeta::getInitialValue).orElse(null);
+            ValueType valueType = EnumUtil.enumFromString(ValueType.class, itemEditor.typeList.getSelectedValue()).orElse(null);
+            if (valueType == ValueType.BOOLEAN && initialValue == null) {
+                initialValue = Values.create(false);
+            }
+
+            itemEditor.onModified(initialValue);
+        }
+        itemEditor.updateValueEditor();
+    }
+
+    protected void validateItem(MetaItemEditor itemEditor) {
+        if (itemEditor.newItem) {
+            // Do basic validation on new meta item in situ
+            List<ValidationFailure> failures = itemEditor.getItem().getValidationFailures(itemEditor.getCurrentDescriptor());
+            updateEditorFailures(itemEditor, failures);
+        } else {
+            // Presenter will notify us of failures in the context of the whole attribute as well as any asset meta
+            // type mismatching etc.
+            notifyAttributeModified();
+        }
+    }
+
     protected void buildNewItemEditor() {
         itemEditorPanel.clear();
         MetaItem item = new MetaItem();
-        MetaItemEditor metaItemEditor = new MetaItemEditor(this, item, true);
+        MetaItemEditor metaItemEditor = createMetaItemEditor(item, true);
         itemEditorPanel.add(metaItemEditor);
     }
 
@@ -381,7 +444,7 @@ public class MetaEditor extends AbstractAttributeViewExtension {
         }
 
         int index = itemListPanel.getWidgetCount();
-        MetaItemEditor metaItemEditor = new MetaItemEditor(this, item, false);
+        MetaItemEditor metaItemEditor = createMetaItemEditor(item, false);
         itemListPanel.add(metaItemEditor);
 
         // Check if we have a validation failure for this editor
@@ -392,6 +455,10 @@ public class MetaEditor extends AbstractAttributeViewExtension {
             }
         }
         return true;
+    }
+
+    protected MetaItemEditor createMetaItemEditor(MetaItem item, boolean isNewItem) {
+        return new MetaItemEditor(this, item, isNewItem);
     }
 
     protected void removeItem(MetaItemEditor itemEditor) {
@@ -408,75 +475,72 @@ public class MetaEditor extends AbstractAttributeViewExtension {
         lastValidationResult = validationResult;
         boolean hasMetaFailures = validationResult.getMetaFailures() != null;
 
-        for (int i = 0; i < itemListPanel.getWidgetCount(); i++) {
-            MetaItemEditor editor = (MetaItemEditor) itemListPanel.getWidget(i);
-            List<ValidationFailure> failures = !hasMetaFailures ? null : validationResult.getMetaFailures().get(i);
-            updateEditorFailures(editor, failures);
-        }
-
-        if (hasMetaFailures) {
-            if (itemListPanel.getWidgetCount() == 0) {
-                // Editor hasn't been attached to the view yet but still show toast messages
-                validationResult.getMetaFailures().forEach((index, failures) ->
-                    showMetaItemFailure(attribute.getMeta().get(index), Optional.empty(), failures)
-                );
-            } else if (validationResult.getMetaFailures().containsKey(-1)) {
-                // Check for missing meta item messages
-                List<ValidationFailure> failures = validationResult.getMetaFailures().get(-1);
-                if (failures != null) {
-                    failures.forEach(failure ->
-                        showValidationError(
-                            attribute.getName().orElse(""),
-                            null,
-                            new ValidationFailure(
-                                failure.getReason(),
-                                failure.getParameter()
-                                    .map(parameter ->
-                                        // Parameter should be meta item name URN
-                                        getMetaItemDescriptor(parameter)
-                                            .map(metaItemDescriptor -> getMetaItemDisplayName(environment, metaItemDescriptor.name()))
-                                            .orElse(parameter)
-                                    )
-                                    .orElse("")
-                            )
-                        )
-                    );
+        List<MetaItemEditor> editors = getExistingItemEditors();
+        IntStream.range(0, editors.size())
+            .forEach(i -> {
+                MetaItemEditor editor = editors.get(i);
+                    List<ValidationFailure> failures = !hasMetaFailures ? null : validationResult.getMetaFailures().get(i);
+                    updateEditorFailures(editor, failures);
                 }
+            );
+
+        // Check for missing meta item messages
+        if (validationResult.getMetaFailures() != null && validationResult.getMetaFailures().containsKey(-1)) {
+            List<ValidationFailure> failures = validationResult.getMetaFailures().get(-1);
+            if (failures != null) {
+                failures.forEach(failure ->
+                    showValidationError(
+                        attribute.getName().orElse(""),
+                        null,
+                        new ValidationFailure(
+                            failure.getReason(),
+                            failure.getParameter()
+                                .map(parameter ->
+                                    // Parameter should be meta item name URN
+                                    getMetaItemDescriptor(parameter)
+                                        .map(metaItemDescriptor -> getMetaItemDisplayName(environment, metaItemDescriptor.name()))
+                                        .orElse(parameter)
+                                )
+                                .orElse("")
+                        )
+                    )
+                );
             }
         }
     }
 
-    protected void updateEditorFailures(MetaItemEditor editor, List<ValidationFailure> failures) {
+    protected void updateEditorFailures(MetaItemEditor metaItemEditor, List<ValidationFailure> failures) {
         boolean hasFailures = failures != null && !failures.isEmpty();
-        editor.setError(hasFailures);
+        metaItemEditor.setError(hasFailures);
 
         if (hasFailures) {
-            Optional<ValueType> valueType = EnumUtil.enumFromString(ValueType.class, editor.typeList.getSelectedValue());
-            showMetaItemFailure(editor.item, valueType, failures);
+            showMetaItemFailure(metaItemEditor, failures);
         }
     }
 
-    protected void showMetaItemFailure(MetaItem metaItem, Optional<ValueType> valueType, List<ValidationFailure> failures) {
-        Optional<MetaItemDescriptor> optionalMetaItemDescriptor = metaItem.getName()
-            .flatMap(this::getMetaItemDescriptor);
-
-        String displayName = optionalMetaItemDescriptor
-            .map(metaItemDescriptor -> getMetaItemDisplayName(environment, metaItemDescriptor.name()))
-            .orElse(metaItem.getName().orElse(""));
-
+    protected void showMetaItemFailure(MetaItemEditor metaItemEditor, List<ValidationFailure> failures) {
         if (failures != null) {
-            failures.forEach(failure ->
+            Optional<MetaItemDescriptor> optionalMetaItemDescriptor = metaItemEditor.getCurrentDescriptor();
+            String displayName = optionalMetaItemDescriptor
+                .map(metaItemDescriptor -> getMetaItemDisplayName(environment, metaItemDescriptor.name()))
+                .orElse(metaItemEditor.getItem().getName().orElse(""));
+
+            failures.forEach(failure -> {
+                if (failure.getReason() == MetaItem.MetaItemFailureReason.META_ITEM_VALUE_IS_REQUIRED) {
+                    // Substitute in value type info
+                    String parameter = EnumUtil.enumFromString(ValueType.class, metaItemEditor.getTypeList().getSelectedValue())
+                        .map(Enum::name)
+                        .orElse("Value");
+
+                    failure = new ValidationFailure(failure.getReason(), parameter);
+                }
+
                 showValidationError(
                     attribute.getName().orElse(""),
                     displayName,
-                    mapValidationFailure(
-                        failure,
-                        valueType.orElse(optionalMetaItemDescriptor
-                            .map(MetaItemDescriptor::getValueType)
-                            .orElse(null))
-                    )
-                )
-            );
+                    failure
+                );
+            });
         }
     }
 
@@ -484,40 +548,6 @@ public class MetaEditor extends AbstractAttributeViewExtension {
         return Arrays.stream(metaItemDescriptors)
             .filter(metaItemDescriptor -> metaItemDescriptor.getUrn().equals(metaItemName))
             .findFirst();
-    }
-
-    /**
-     * This allows descriptor value type to be used to provide more specific meta item value messages
-     */
-    protected ValidationFailure mapValidationFailure(ValidationFailure failure, ValueType valueType) {
-        ValidationFailure validationFailure = failure;
-        ValidationFailure.Reason reason = failure.getReason();
-        String parameter = failure.getParameter().orElse(null);
-
-        // Convert certain errors to something more meaningful
-        if (reason == META_ITEM_VALUE_IS_REQUIRED && valueType != null) {
-
-            switch (valueType) {
-                case OBJECT:
-                    reason = ValueHolder.ValueFailureReason.VALUE_EXPECTED_OBJECT;
-                    break;
-                case ARRAY:
-                    reason = ValueHolder.ValueFailureReason.VALUE_EXPECTED_ARRAY;
-                    break;
-                case STRING:
-                    reason = ValueHolder.ValueFailureReason.VALUE_EXPECTED_STRING;
-                    break;
-                case NUMBER:
-                    reason = ValueHolder.ValueFailureReason.VALUE_EXPECTED_NUMBER;
-                    break;
-                case BOOLEAN:
-                    reason = ValueHolder.ValueFailureReason.VALUE_EXPECTED_BOOLEAN;
-                    break;
-            }
-            validationFailure = new ValidationFailure(reason, parameter);
-        }
-
-        return validationFailure;
     }
 
     @Override

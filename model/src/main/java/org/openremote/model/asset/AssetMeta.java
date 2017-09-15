@@ -20,10 +20,7 @@
 package org.openremote.model.asset;
 
 import org.openremote.model.ValidationFailure;
-import org.openremote.model.attribute.AttributeExecuteStatus;
-import org.openremote.model.attribute.AttributeRef;
-import org.openremote.model.attribute.MetaItem;
-import org.openremote.model.attribute.MetaItemDescriptor;
+import org.openremote.model.attribute.*;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueType;
 import org.openremote.model.value.Values;
@@ -88,7 +85,12 @@ public enum AssetMeta implements MetaItemDescriptor {
         null,
         null,
         null,
-        false),
+        false,
+        value ->
+            Optional.ofNullable(AttributeLink.isAttributeLink(value)
+                ? null
+                : new ValidationFailure(META_ITEM_VALUE_MISMATCH, AttributeLink.class.getSimpleName()))
+    ),
 
     /**
      * A human-friendly string that can be displayed in UI instead of the raw attribute name.
@@ -375,10 +377,8 @@ public enum AssetMeta implements MetaItemDescriptor {
     }
 
     @Override
-    public Optional<ValidationFailure> validateValue(Value value) {
-        return Optional.ofNullable(MetaItemDescriptor
-            .validateValue(value, this)
-            .orElse(validator != null ? validator.apply(value).orElse(null) : null));
+    public Optional<Function<Value, Optional<ValidationFailure>>> getValidator() {
+        return Optional.ofNullable(validator);
     }
 
     public Value getInitialValue() {

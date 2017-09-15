@@ -233,16 +233,14 @@ public abstract class Attribute extends AbstractValueTimestampHolder {
         List<ValidationFailure> failures = new ArrayList<>();
         if (hasMetaItems()) {
             for (MetaItem metaItem : getMeta()) {
-                failures.addAll(getMetaItemValidationFailures(metaItem));
+                failures.addAll(getMetaItemValidationFailures(metaItem, Optional.empty()));
             }
         }
         return failures;
     }
 
-    public List<ValidationFailure> getMetaItemValidationFailures(MetaItem item) {
-        List<ValidationFailure> failures = new ArrayList<>();
-        failures.addAll(item.getValidationFailures());
-        return failures;
+    public List<ValidationFailure> getMetaItemValidationFailures(MetaItem item, Optional<MetaItemDescriptor> metaItemDescriptor) {
+        return item.getValidationFailures(metaItemDescriptor);
     }
 
     //    ---------------------------------------------------

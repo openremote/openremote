@@ -211,7 +211,7 @@ public interface ManagerMessages extends Messages {
 
     String deleteItem();
 
-    String newItem();
+    String newMetaItems();
 
     String addItem();
 
@@ -428,4 +428,20 @@ public interface ManagerMessages extends Messages {
     String protocolLinkDiscoverySuccess(@PluralCount int assetCount);
 
     String protocolLinkDiscoveryFailure(int failureCode);
+
+    String attributeLinkConverterValues();
+
+    String attributeLinkNewConverterValue();
+
+    String enterConverterValue();
+
+    String selectConverter();
+
+    String customConverter();
+
+    String converterType(@Select String type);
+
+    String addConverterValue();
+
+    String deleteConverterValue();
 }

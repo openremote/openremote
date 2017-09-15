@@ -19,7 +19,6 @@
  */
 package org.openremote.model;
 
-import org.openremote.model.util.Pair;
 import org.openremote.model.value.ArrayValue;
 import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Value;
@@ -39,13 +38,7 @@ public interface ValueHolder {
         VALUE_NUMBER_OUT_OF_RANGE,
         VALUE_INVALID,
         VALUE_MISMATCH,
-        VALUE_EXPECTED_NUMBER,
-        VALUE_EXPECTED_INTEGER,
-        VALUE_EXPECTED_DOUBLE,
-        VALUE_EXPECTED_OBJECT,
-        VALUE_EXPECTED_ARRAY,
-        VALUE_EXPECTED_BOOLEAN,
-        VALUE_EXPECTED_STRING
+        VALUE_REQUIRED
     }
 
     void clearValue();

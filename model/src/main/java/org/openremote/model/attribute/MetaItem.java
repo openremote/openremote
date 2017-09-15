@@ -19,6 +19,7 @@
  */
 package org.openremote.model.attribute;
 
+import com.google.gwt.regexp.shared.RegExp;
 import org.openremote.model.AbstractValueHolder;
 import org.openremote.model.HasUniqueResourceName;
 import org.openremote.model.ValidationFailure;
@@ -36,6 +37,8 @@ import java.util.function.Predicate;
 
 import static org.openremote.model.attribute.MetaItem.MetaItemFailureReason.META_ITEM_NAME_IS_REQUIRED;
 import static org.openremote.model.attribute.MetaItem.MetaItemFailureReason.META_ITEM_VALUE_IS_REQUIRED;
+import static org.openremote.model.attribute.MetaItem.MetaItemFailureReason.META_ITEM_VALUE_MISMATCH;
+import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 
 /**
  * A named arbitrary {@link Value}. A meta item must have a value to be stored.
@@ -102,13 +105,59 @@ public class MetaItem extends AbstractValueHolder {
 
     @Override
     public List<ValidationFailure> getValidationFailures() {
+        return getValidationFailures(Optional.empty());
+    }
+
+    public List<ValidationFailure> getValidationFailures(Optional<MetaItemDescriptor> metaItemDescriptor) {
+
         List<ValidationFailure> failures = super.getValidationFailures();
 
+        // Check name
         if (!getName().isPresent())
             failures.add(new ValidationFailure(META_ITEM_NAME_IS_REQUIRED));
 
-        // Meta items must have a value, unlike attributes
-        if (!getValue().isPresent()) {
+        // MetaItemDescriptor validation takes priority
+        metaItemDescriptor
+            .ifPresent(descriptor ->
+                descriptor.getValidator()
+                    .map(validator ->
+                        validator.apply(getValue().orElse(null))
+                            .map(failures::add)
+                            .orElse(true)
+                    )
+                    .orElseGet(
+                        () -> {
+                            if (!getValue().isPresent()) {
+                                failures.add(new ValidationFailure(META_ITEM_VALUE_IS_REQUIRED, descriptor.getValueType().name())
+                                );
+                            }
+
+                            if (getValue().map(Value::getType).map(type -> descriptor.getValueType() != type).orElse(true)) {
+                                failures.add(new ValidationFailure(META_ITEM_VALUE_MISMATCH, descriptor.getValueType().name()));
+                                return true;
+                            }
+
+                            if (getValue().isPresent() && !isNullOrEmpty(descriptor.getPattern())) {
+                                String valueStr = getValue().get().toString();
+
+                                if (isNullOrEmpty(valueStr)) {
+                                    failures.add(new ValidationFailure(MetaItemFailureReason.META_ITEM_VALUE_IS_REQUIRED, descriptor.getValueType().name()));
+                                    return true;
+                                }
+
+                                // Do case insensitive regex (can't include this flag in the pattern like in normal java)
+                                if (!RegExp.compile(descriptor.getPattern(), "i").test(valueStr)) {
+                                    failures.add(new ValidationFailure(MetaItemFailureReason.META_ITEM_VALUE_MISMATCH, descriptor.getPatternFailureMessage()));
+                                    return true;
+                                }
+                            }
+
+                            // Here because Optional doesn't support ifAbsent
+                            return true;
+                        }
+                    ));
+
+        if (!metaItemDescriptor.isPresent() && !getValue().isPresent()) {
             failures.add(new ValidationFailure(META_ITEM_VALUE_IS_REQUIRED));
         }
 

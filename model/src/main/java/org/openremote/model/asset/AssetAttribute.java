@@ -20,7 +20,6 @@
 package org.openremote.model.asset;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import org.openremote.model.AbstractValueHolder;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.attribute.*;
@@ -120,8 +119,8 @@ public class AssetAttribute extends Attribute {
     }
 
     @Override
-    public List<ValidationFailure> getMetaItemValidationFailures(MetaItem item) {
-        return super.getMetaItemValidationFailures(item);
+    public List<ValidationFailure> getMetaItemValidationFailures(MetaItem item, Optional<MetaItemDescriptor> metaItemDescriptor) {
+        return super.getMetaItemValidationFailures(item, metaItemDescriptor);
     }
 
     @Override

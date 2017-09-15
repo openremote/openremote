@@ -25,10 +25,10 @@ import com.google.gwt.user.client.ui.Widget;
 import elemental.client.Browser;
 import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.widget.*;
-import org.openremote.model.ValidationFailure;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.attribute.AttributeType;
 import org.openremote.model.attribute.AttributeValidationResult;
+import org.openremote.model.value.Value;
 
 import java.util.List;
 import java.util.Optional;
@@ -168,7 +168,10 @@ public class AttributeViewImpl extends FormGroup implements AttributeView {
         return this;
     }
 
-    protected void notifyAttributeModified() {
+    protected void notifyAttributeModified(Value newValue) {
+        // Push new value into the attribute
+        attribute.setValue(newValue, 0);
+
         if (attributeModifiedCallback != null) {
             attributeModifiedCallback.accept(attribute);
         }
@@ -178,6 +181,7 @@ public class AttributeViewImpl extends FormGroup implements AttributeView {
         return valueEditorSupplier.createValueEditor(attribute,
             attribute.getType().map(AttributeType::getValueType).orElse(null),
             style,
+            null,
             this::notifyAttributeModified);
     }
 
@@ -240,11 +244,5 @@ public class AttributeViewImpl extends FormGroup implements AttributeView {
         getInfoLabel().setText(infoText.toString());
 
         getFormField().add(createAttributeValueEditor());
-    }
-
-    public void showValidationError(String attributeName, String metaItemName, ValidationFailure validationFailure) {
-        if (validationErrorConsumer != null) {
-            validationErrorConsumer.accept(attributeName, metaItemName, validationFailure);
-        }
     }
 }

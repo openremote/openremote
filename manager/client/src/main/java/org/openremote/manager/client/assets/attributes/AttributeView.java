@@ -24,6 +24,7 @@ import org.openremote.model.ValidationFailure;
 import org.openremote.model.ValueHolder;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.attribute.AttributeValidationResult;
+import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueType;
 
 import java.util.function.Consumer;
@@ -41,7 +42,7 @@ public interface AttributeView extends IsWidget {
 
     @FunctionalInterface
     interface ValueEditorSupplier {
-        IsWidget createValueEditor(ValueHolder valueHolder, ValueType valueType, AttributeView.Style style, Runnable onValueModified);
+        IsWidget createValueEditor(ValueHolder valueHolder, ValueType valueType, AttributeView.Style style, AttributeView parentView, Consumer<Value> onValueModified);
     }
 
     interface Style {

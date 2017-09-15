@@ -20,14 +20,15 @@
 package org.openremote.manager.client.assets.asset;
 
 import org.openremote.manager.client.assets.browser.BrowserTreeNode;
+import org.openremote.manager.client.widget.AttributeRefEditor;
 import org.openremote.manager.client.widget.FormView;
 import org.openremote.model.ValueHolder;
-import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetType;
 import org.openremote.model.util.Pair;
 
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 
 public interface AssetEdit extends FormView, AssetBaseView<AssetEdit.Presenter> {
@@ -50,9 +51,7 @@ public interface AssetEdit extends FormView, AssetBaseView<AssetEdit.Presenter> 
 
         void delete();
 
-        void getLinkableAssets(ValueHolder value, Consumer<Asset[]> assetConsumer);
-
-        void getLinkableAttributes(Pair<ValueHolder, Asset> valueAssetPair, Consumer<AssetAttribute[]> attributeConusmer);
+        void getLinkableAssetsAndAttributes(ValueHolder valueHolder, Consumer<Map<AttributeRefEditor.AssetInfo, List<AttributeRefEditor.AttributeInfo>>> assetAttributeConsumer);
     }
 
     void setPresenter(Presenter presenter);

@@ -38,9 +38,11 @@ import org.openremote.model.event.bus.EventRegistration;
 import org.openremote.model.simulator.RequestSimulatorState;
 import org.openremote.model.simulator.SimulatorElement;
 import org.openremote.model.simulator.SimulatorState;
+import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueType;
 
 import java.util.*;
+import java.util.function.Consumer;
 
 public class Simulator extends AbstractAttributeViewExtension {
 
@@ -116,13 +118,14 @@ public class Simulator extends AbstractAttributeViewExtension {
 
             // Don't push simulator value validation up to the presenter as it is a special case that should
             // just be evaluated in-situ and shouldn't invalidate the parent attribute
-            Runnable onModified = () -> {
+            Consumer<Value> onModified = value -> {
+                element.setValue(value);
                 List<ValidationFailure> failures = element.getValidationFailures();
                 formGroup.setError(failures != null && !failures.isEmpty());
             };
 
             ValueType valueType = element.getExpectedType().getValueType();
-            IsWidget editor = valueEditorSupplier.createValueEditor(element, valueType, style, onModified);
+            IsWidget editor = valueEditorSupplier.createValueEditor(element, valueType, style, parentView, onModified);
             formField.add(editor);
             formGroups.put(element.getAttributeRef(), formGroup);
             add(formGroup);

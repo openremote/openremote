@@ -49,15 +49,10 @@ import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetMeta;
 import org.openremote.model.asset.agent.ProtocolConfiguration;
-import org.openremote.model.attribute.AttributeEvent;
-import org.openremote.model.attribute.AttributeState;
-import org.openremote.model.attribute.AttributeValidationResult;
-import org.openremote.model.attribute.MetaItem;
+import org.openremote.model.attribute.*;
 import org.openremote.model.event.bus.EventBus;
 import org.openremote.model.event.bus.EventRegistration;
-import org.openremote.model.value.ArrayValue;
-import org.openremote.model.value.ObjectValue;
-import org.openremote.model.value.ValueType;
+import org.openremote.model.value.*;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -313,14 +308,7 @@ public abstract class AbstractAssetActivity<V extends AssetBaseView.Presenter, U
 
         for (int i=0; i<attribute.getMeta().size(); i++) {
             MetaItem item = attribute.getMeta().get(i);
-            List<ValidationFailure> metaItemFailures = attribute.getMetaItemValidationFailures(item);
-
-            if (metaItemFailures.isEmpty()) {
-                // Look for meta descriptor and do additional validation
-                AssetMeta.getAssetMeta(item.getName().orElse(""))
-                    .flatMap(assetMeta -> assetMeta.validateValue(item.getValue().orElse(null)))
-                    .ifPresent(metaItemFailures::add);
-            }
+            List<ValidationFailure> metaItemFailures = attribute.getMetaItemValidationFailures(item, getMetaItemDescriptor(item));
 
             if (!metaItemFailures.isEmpty()) {
                 metaFailures.put(i, metaItemFailures);
@@ -330,22 +318,24 @@ public abstract class AbstractAssetActivity<V extends AssetBaseView.Presenter, U
         resultConsumer.accept(new AttributeValidationResult(attributeName, attributeFailures, metaFailures));
     }
 
+    protected Optional<MetaItemDescriptor> getMetaItemDescriptor(MetaItem item) {
+        return AssetMeta
+            .getAssetMeta(item.getName().orElse(""))
+            .map(assetMeta -> (MetaItemDescriptor)assetMeta);
+    }
+
     protected void processValidationResults(List<AttributeValidationResult> results) {
         // Update each of the attribute views (the views are responsible for displaying any failure messages)
         view.setFormBusy(false);
 
-        results.forEach(result -> {
-            view.getAttributeViews()
-                .stream()
-                .filter(attrView -> attrView
-                        .getAttribute()
-                        .getName()
-                        .map(name -> name.equals(result.getAttributeName())).orElse(false))
-                .findFirst()
-                .ifPresent(attrView -> {
-                    attrView.onValidationStateChange(result);
-                });
-        });
+        results.forEach(result -> view.getAttributeViews()
+            .stream()
+            .filter(attrView -> attrView
+                    .getAttribute()
+                    .getName()
+                    .map(name -> name.equals(result.getAttributeName())).orElse(false))
+            .findFirst()
+            .ifPresent(attrView -> attrView.onValidationStateChange(result)));
     }
 
     protected Optional<AttributeView> getAttributeView(AssetAttribute attribute) {
@@ -382,8 +372,10 @@ public abstract class AbstractAssetActivity<V extends AssetBaseView.Presenter, U
         return false;
     }
 
-    protected boolean isShowTimestamp(ValueHolder valueHolder) {
-        return !editMode && (valueHolder instanceof AssetAttribute);
+    protected Optional<Long> getTimestamp(ValueHolder valueHolder) {
+        return !editMode || !(valueHolder instanceof AssetAttribute) ?
+            Optional.empty() :
+            ((AssetAttribute)valueHolder).getValueTimestamp();
     }
 
     abstract protected void onAttributeModified(AssetAttribute attribute);
@@ -393,10 +385,8 @@ public abstract class AbstractAssetActivity<V extends AssetBaseView.Presenter, U
      * <p>
      * Custom {@link MetaItem}s don't contain any value type information so we need this provided based on user's
      * type selection.
-     * <p>
-     * NOTE: The value holder can also be the attribute (e.g. when creating an editor for the attribute value).
      */
-    protected IsWidget createValueEditor(ValueHolder valueHolder, ValueType valueType, AttributeView.Style style, Runnable onValueModified) {
+    protected IsWidget createValueEditor(ValueHolder valueHolder, ValueType valueType, AttributeView.Style style, AttributeView parentView, Consumer<Value> onValueModified) {
 
         // TODO: Implement support for setting access permissions on individual meta item instances
 //            // Super users can edit any meta items but other users can only edit non-restricted meta items
@@ -406,7 +396,7 @@ public abstract class AbstractAssetActivity<V extends AssetBaseView.Presenter, U
 //                assetMeta.map(AssetMeta::isRestricted).orElse(true);
 
         boolean isReadOnly = isValueReadOnly(valueHolder);
-        boolean showTimestamp = isShowTimestamp(valueHolder);
+        Optional<Long> timestamp = getTimestamp(valueHolder);
 
         switch(valueType) {
             case OBJECT:
@@ -414,29 +404,53 @@ public abstract class AbstractAssetActivity<V extends AssetBaseView.Presenter, U
                 String label = environment.getMessages().jsonObject();
                 String title = environment.getMessages().edit() + " " + environment.getMessages().jsonObject();
                 return createObjectEditor(
-                    valueHolder, onValueModified, isReadOnly, showTimestamp, currentValueObj, label, title, jsonEditorProvider.get()
+                    currentValueObj,
+                    onValueModified::accept,
+                    timestamp,
+                    isReadOnly,
+                    label,
+                    title,
+                    jsonEditorProvider.get()
                 );
             case ARRAY:
                 ArrayValue currentValueArray = valueHolder.getValueAsArray().orElse(null);
                 label = environment.getMessages().jsonArray();
                 title = environment.getMessages().edit() + " " + environment.getMessages().jsonArray();
                 return createArrayEditor(
-                    valueHolder, onValueModified, isReadOnly, showTimestamp, currentValueArray, label, title, jsonEditorProvider.get()
+                    currentValueArray,
+                    onValueModified::accept,
+                    timestamp,
+                    isReadOnly,
+                    label,
+                    title,
+                    jsonEditorProvider.get()
                 );
             case STRING:
-                String currentValueStr = valueHolder.getValueAsString().orElse(null);
+                StringValue currentValueStr = (StringValue)valueHolder.getValue().orElse(null);
                 return createStringEditor(
-                    valueHolder, onValueModified, isReadOnly, showTimestamp, currentValueStr, style.stringEditor()
+                    currentValueStr,
+                    onValueModified::accept,
+                    timestamp,
+                    isReadOnly,
+                    style.stringEditor()
                 );
             case NUMBER:
-                Optional<Double> currentValueNumber = valueHolder.getValueAsNumber();
+                NumberValue currentValueNumber = (NumberValue)valueHolder.getValue().orElse(null);
                 return createNumberEditor(
-                    valueHolder, onValueModified, isReadOnly, showTimestamp, currentValueNumber.map(Object::toString).orElse(null), style.numberEditor()
+                    currentValueNumber,
+                    onValueModified::accept,
+                    timestamp,
+                    isReadOnly,
+                    style.numberEditor()
                 );
             case BOOLEAN:
-                Boolean currentValueBool = valueHolder.getValueAsBoolean().orElse(null);
+                BooleanValue currentValueBool = (BooleanValue)valueHolder.getValue().orElse(null);
                 return createBooleanEditor(
-                    valueHolder, onValueModified, isReadOnly, showTimestamp, currentValueBool, style.booleanEditor()
+                    currentValueBool,
+                    onValueModified::accept,
+                    timestamp,
+                    isReadOnly,
+                    style.booleanEditor()
                 );
             default:
                 return new FormOutputText(valueHolder instanceof MetaItem ?
@@ -469,7 +483,7 @@ public abstract class AbstractAssetActivity<V extends AssetBaseView.Presenter, U
                 String str = environment.getMessages().validationFailureParameter(parameter);
                 return isNullOrEmpty(str) ? parameter : str;
             })
-            .orElse(null);
+            .orElse("Value");
 
         error.append(
             environment.getMessages().validationFailure(parameterStr, validationFailure.getReason().name())

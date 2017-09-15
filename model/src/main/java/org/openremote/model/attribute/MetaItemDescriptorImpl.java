@@ -20,12 +20,14 @@
 package org.openremote.model.attribute;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueType;
 
 import java.util.Optional;
+import java.util.function.Function;
 
 public class MetaItemDescriptorImpl implements MetaItemDescriptor {
 
@@ -105,8 +107,9 @@ public class MetaItemDescriptorImpl implements MetaItemDescriptor {
         return valueFixed;
     }
 
+    @JsonIgnore
     @Override
-    public Optional<ValidationFailure> validateValue(Value value) {
-        return MetaItemDescriptor.validateValue(value, this);
+    public Optional<Function<Value, Optional<ValidationFailure>>> getValidator() {
+        return Optional.empty();
     }
 }

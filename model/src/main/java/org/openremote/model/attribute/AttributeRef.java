@@ -104,6 +104,7 @@ public class AttributeRef {
             ).isPresent();
     }
 
+    @SuppressWarnings("ConstantConditions")
     public static Optional<AttributeRef> fromValue(Value value) {
         return Values.getArray(value)
             .filter(AttributeRef::isAttributeRef)
