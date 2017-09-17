@@ -147,6 +147,10 @@ class KNXImportTest extends Specification implements ManagerContainerTrait {
         def metaItem2 = attribute.getMetaItem(KNXProtocol.META_KNX_ACTION_GA).get()
         metaItem2 != null
         metaItem2.getValueAsString().get() == "5/0/0"
+        def metaItem3 = attribute.getMetaItem(KNXProtocol.META_KNX_DPT).get()
+        metaItem3 != null
+        metaItem3.getValueAsString().get() == "9.001"
+        
         
         cleanup: "the server should be stopped"
         stopContainer(container)
