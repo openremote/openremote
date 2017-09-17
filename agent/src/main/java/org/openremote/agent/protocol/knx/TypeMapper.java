@@ -1,18 +1,18 @@
 package org.openremote.agent.protocol.knx;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.openremote.model.attribute.AttributeType;
 import org.openremote.model.value.Value;
+import org.openremote.model.value.impl.BooleanValueImpl;
+import org.openremote.model.value.impl.NumberValueImpl;
+import org.openremote.model.value.impl.StringValueImpl;
 
-import tuwien.auto.calimero.KNXException;
-import tuwien.auto.calimero.KNXFormatException;
-import tuwien.auto.calimero.KNXIllegalArgumentException;
 import tuwien.auto.calimero.datapoint.Datapoint;
-import tuwien.auto.calimero.dptxlator.DPT;
 import tuwien.auto.calimero.dptxlator.DPTXlator;
 import tuwien.auto.calimero.dptxlator.DPTXlator1BitControlled;
 import tuwien.auto.calimero.dptxlator.DPTXlator2ByteFloat;
@@ -167,225 +167,59 @@ public class TypeMapper {
         typeToDptMap.put(AttributeType.COLOR_RGB, DPTXlatorRGB.DPT_RGB.getID());
     }
 
-    public String toDPTValue(AttributeType type, String dptID) {
+    public static DPTXlator toDPTXlator(Datapoint datapoint, Value value) throws Exception {
 
-        DPT dpt;
-        int mainNumber = getMainNumber(dptID);
-        if (mainNumber == -1) {
-            LOG.warning("toDPTValue couldn't identify mainnumber in dptID: " + dptID);
-            return null;
+        DPTXlator translator = TranslatorTypes.createTranslator(0, datapoint.getDPT());
+
+        if (translator instanceof DPTXlatorBoolean && value instanceof BooleanValueImpl) {
+            ((DPTXlatorBoolean) translator).setValue(((BooleanValueImpl) value).getBoolean());
+        } else if (translator instanceof DPTXlator8BitUnsigned && value instanceof NumberValueImpl) {
+            ((DPTXlator8BitUnsigned) translator).setValue((int) ((NumberValueImpl) value).getNumber());
+        } else {
+            // TODO depending on the DPT and the value, a more sophisticated translation is needed
+            translator.setValue(value.toString());
         }
-
-        try {
-            DPTXlator translator = TranslatorTypes.createTranslator(mainNumber, dptID);
-            dpt = translator.getType();
-
-        } catch (KNXException e) {
-            e.printStackTrace();
-            return null;
-        }
-
-        // // check for HSBType first, because it extends PercentType as well
-        // if (type == AttributeType.COLOR_RGB) {
-        // Color color = ((HSBType) type).toColor();
-        //
-        // return "r:" + Integer.toString(color.getRed()) + " g:" + Integer.toString(color.getGreen()) + " b:"
-        // + Integer.toString(color.getBlue());
-        // } else if (type instanceof OnOffType) {
-        // return type.equals(OnOffType.OFF) ? dpt.getLowerValue() : dpt.getUpperValue();
-        // } else if (type instanceof UpDownType) {
-        // return type.equals(UpDownType.UP) ? dpt.getLowerValue() : dpt.getUpperValue();
-        // } else if (type instanceof IncreaseDecreaseType) {
-        // DPT valueDPT = ((DPTXlator3BitControlled.DPT3BitControlled) dpt).getControlDPT();
-        // return type.equals(IncreaseDecreaseType.DECREASE) ? valueDPT.getLowerValue() + " 5"
-        // : valueDPT.getUpperValue() + " 5";
-        // } else if (type instanceof OpenClosedType) {
-        // return type.equals(OpenClosedType.CLOSED) ? dpt.getLowerValue() : dpt.getUpperValue();
-        // } else if (type instanceof StopMoveType) {
-        // return type.equals(StopMoveType.STOP) ? dpt.getLowerValue() : dpt.getUpperValue();
-        // } else if (type instanceof PercentType) {
-        // return type.toString();
-        // } else if (type instanceof DecimalType) {
-        // switch (mainNumber) {
-        // case 2:
-        // DPT valueDPT = ((DPTXlator1BitControlled.DPT1BitControlled) dpt).getValueDPT();
-        // switch (((DecimalType) type).intValue()) {
-        // case 0:
-        // return "0 " + valueDPT.getLowerValue();
-        // case 1:
-        // return "0 " + valueDPT.getUpperValue();
-        // case 2:
-        // return "1 " + valueDPT.getLowerValue();
-        // default:
-        // return "1 " + valueDPT.getUpperValue();
-        // }
-        // case 18:
-        // int intVal = ((DecimalType) type).intValue();
-        // if (intVal > 63) {
-        // return "learn " + (intVal - 0x80);
-        // } else {
-        // return "activate " + intVal;
-        // }
-        // default:
-        // return type.toString();
-        // }
-        // } else if (type instanceof StringType) {
-        // return type.toString();
-        // } else if (type instanceof DateTimeType) {
-        // return formatDateTime((DateTimeType) type, dptID);
-        // }
-
-        // logger.debug("toDPTValue: Couldn't get value for {} dpt id {} (no mapping).", type, dptID);
-
-        return null;
+        return translator;
     }
 
-    public Value toValue(Datapoint datapoint, byte[] data) {
-        try {
-            DPTXlator translator = TranslatorTypes.createTranslator(datapoint.getMainNumber(), datapoint.getDPT());
-            translator.setData(data);
-            String value = translator.getValue();
+    public static Value toORValue(Datapoint datapoint, byte[] data) throws Exception {
 
-            String id = translator.getType().getID();
-            LOG.fine("toValue datapoint DPT = " + datapoint.getDPT());
+        DPTXlator translator = TranslatorTypes.createTranslator(0, datapoint.getDPT());
+        translator.setData(data);
+        LOG.info("Received KNX data: " + translator.getType().getID() + " (" + translator.getType().getDescription() + ") is " + translator.getValue()
+                        + " (" + translator.getNumericValue() + ") - " + datapoint.getName());
+        Value value;
 
-            int mainNumber = getMainNumber(id);
-            if (mainNumber == -1) {
-                LOG.warning("toValue: couldn't identify mainnumber in dptID: " + id);
-                return null;
-            }
-            int subNumber = getSubNumber(id);
-            if (subNumber == -1) {
-                LOG.warning("toType: couldn't identify sub number in dptID: " + id);
-                return null;
-            }
-            // /*
-            // * Following code section deals with specific mapping of values from KNX to openHAB types were the String
-            // * received from the DPTXlator is not sufficient to set the openHAB type or has bugs
-            // */
-            // switch (mainNumber) {
-            // case 1:
-            // DPTXlatorBoolean translatorBoolean = (DPTXlatorBoolean) translator;
-            // return new BooleanValueImpl(translatorBoolean.getValueBoolean());
-            //
-            // case 2:
-            // DPTXlator1BitControlled translator1BitControlled = (DPTXlator1BitControlled) translator;
-            // int decValue = (translator1BitControlled.getControlBit() ? 2 : 0)
-            // + (translator1BitControlled.getValueBit() ? 1 : 0);
-            // return new NumberValueImpl(decValue);
-            // case 18:
-            // DPTXlatorSceneControl translatorSceneControl = (DPTXlatorSceneControl) translator;
-            // int decimalValue = translatorSceneControl.getSceneNumber();
-            // if (value.startsWith("learn")) {
-            // decimalValue += 0x80;
-            // }
-            // value = String.valueOf(decimalValue);
-            // break;
-            // }
-            //
-            // Class<? extends Type> typeClass = toAttributeType(id);
-            // if (typeClass == null) {
-            // return null;
-            // }
-            //
-            // if (typeClass.equals(PercentType.class)) {
-            // return PercentType.valueOf(value.split(" ")[0]);
-            // }
-            // if (typeClass.equals(AttributeType.NUMBER)) {
-            // return DecimalType.valueOf(value.split(" ")[0]);
-            // }
-            // if (typeClass.equals(StringType.class)) {
-            // return StringType.valueOf(value);
-            // }
-            //
-            // if (typeClass.equals(DateTimeType.class)) {
-            // String date = formatDateTime(value, datapoint.getDPT());
-            // if ((date == null) || (date.isEmpty())) {
-            // logger.debug("toType: KNX clock msg ignored: date object null or empty {}.", date);
-            // return null;
-            // } else {
-            // return DateTimeType.valueOf(date);
-            // }
-            // }
-            //
-            // if (typeClass.equals(HSBType.class)) {
-            // // value has format of "r:<red value> g:<green value> b:<blue value>"
-            // int r = Integer.parseInt(value.split(" ")[0].split(":")[1]);
-            // int g = Integer.parseInt(value.split(" ")[1].split(":")[1]);
-            // int b = Integer.parseInt(value.split(" ")[2].split(":")[1]);
-            //
-            // Color color = new Color(r, g, b);
-            // return new HSBType(color);
-            // }
-        } catch (KNXFormatException kfe) {
-            LOG.info("Translator couldn't parse data for datapoint type '" + datapoint.getDPT() + "' (KNXFormatException).");
-        } catch (KNXIllegalArgumentException kiae) {
-            LOG.info("Translator couldn't parse data for datapoint type '" + datapoint.getDPT() + "' (KNXIllegalArgumentException).");
-        } catch (KNXException e) {
-            LOG.log(Level.WARNING, "Failed creating a translator for datapoint type '" + datapoint.getDPT() + "'.", e);
+        if (translator instanceof DPTXlatorBoolean) {
+            value = new BooleanValueImpl(((DPTXlatorBoolean) translator).getValueBoolean());
+        } else if (translator instanceof DPTXlator2ByteFloat) {
+            value = new NumberValueImpl(new BigDecimal(translator.getNumericValue()).setScale(2, RoundingMode.HALF_UP).doubleValue());
+        } else if (translator instanceof DPTXlator8BitUnsigned) {
+            value = new NumberValueImpl(translator.getNumericValue());
+        } else {
+            // TODO depending on the DPTXlator a more sophisticated translation to value is needed
+            value = new StringValueImpl(translator.getValue());
         }
 
-        return null;
+        return value;
     }
 
-    static public AttributeType toAttributeType(String dptId) {
-        LOG.finer("toTypeClass looking for dptId = " + dptId);
-        return dptToTypeMap.get(dptId);
+    static public AttributeType toAttributeType(Datapoint datapoint) {
+        LOG.finer("toTypeClass looking for dptId = " + datapoint.getDPT());
+        AttributeType t = dptToTypeMap.get(datapoint.getDPT());
+        if (t == null) {
+            if (datapoint.getMainNumber() == 1) {
+                t = AttributeType.BOOLEAN;
+            } else {
+                t = AttributeType.STRING;
+            }
+        }
+        return t;
     }
 
     static public String toDPTid(AttributeType type) {
+        // TODO we might need to support more different DPT types
         return typeToDptMap.get(type);
     }
 
-    /**
-     * Retrieves sub number from a DTP ID such as "14.001"
-     *
-     * @param dptID
-     *            String with DPT ID
-     * @return sub number or -1
-     */
-    private int getSubNumber(String dptID) {
-        int result = -1;
-        if (dptID == null) {
-            throw new IllegalArgumentException("Parameter dptID cannot be null");
-        }
-
-        int dptSepratorPosition = dptID.indexOf('.');
-        if (dptSepratorPosition > 0) {
-            try {
-                result = Integer.parseInt(dptID.substring(dptSepratorPosition + 1, dptID.length()));
-            } catch (NumberFormatException nfe) {
-                LOG.warning("toType couldn't identify main and/or sub number in dptID (NumberFormatException): " + dptID);
-            } catch (IndexOutOfBoundsException ioobe) {
-                LOG.warning("toType couldn't identify main and/or sub number in dptID (IndexOutOfBoundsException): " + dptID);
-            }
-        }
-        return result;
-    }
-
-    /**
-     * Retrieves main number from a DTP ID such as "14.001"
-     *
-     * @param dptID
-     *            String with DPT ID
-     * @return main number or -1
-     */
-    private int getMainNumber(String dptID) {
-        int result = -1;
-        if (dptID == null) {
-            throw new IllegalArgumentException("Parameter dptID cannot be null");
-        }
-
-        int dptSepratorPosition = dptID.indexOf('.');
-        if (dptSepratorPosition > 0) {
-            try {
-                result = Integer.parseInt(dptID.substring(0, dptSepratorPosition));
-            } catch (NumberFormatException nfe) {
-                LOG.warning("toType couldn't identify main and/or sub number in dptID (NumberFormatException): " + dptID);
-            } catch (IndexOutOfBoundsException ioobe) {
-                LOG.warning("toType couldn't identify main and/or sub number in dptID (IndexOutOfBoundsException): " + dptID);
-            }
-        }
-        return result;
-    }
 }

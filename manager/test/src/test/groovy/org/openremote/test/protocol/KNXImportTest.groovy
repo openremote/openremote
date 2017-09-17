@@ -42,10 +42,12 @@ import org.openremote.model.Constants
 import org.openremote.model.asset.AssetAttribute
 import org.openremote.model.asset.AssetMeta
 import org.openremote.model.asset.AssetType
+import org.openremote.model.asset.agent.AgentLink
 import org.openremote.model.asset.agent.ProtocolConfiguration
 import org.openremote.model.attribute.*
 import org.openremote.model.value.Values
 import org.openremote.model.file.FileInfo
+import org.openremote.model.util.TextUtil
 import org.openremote.test.KNXTestingNetworkLink
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Ignore
@@ -118,9 +120,33 @@ class KNXImportTest extends Specification implements ManagerContainerTrait {
         
         then: "the new things and attributes should be created"
         conditions.eventually {
-            assert assets.length == 10
-            //TODO
+            assert assets != null
+            assert assets.length == 13
+            assert assets.each {
+                !TextUtil.isNullOrEmpty(it.id) &&
+                    !TextUtil.isNullOrEmpty(it.getName()) &&
+                    !it.getAttributesList().isEmpty() &&
+                    it.getAttributesStream().allMatch({attr ->
+                        AgentLink.getAgentLink(attr)
+                            .map({agentLink -> agentLink.entityId == knxAgent.id && agentLink.attributeName == "knxConfigError1"})
+                            .orElse(false)
+                    })
+    
+            }
         }
+        
+        and: "a given asset should have the correct attributes (Target Temperature)"
+        def asset = assets.find {it.name == "Target Temperature"}
+        assert asset != null
+        assert asset.getAttributesList().size() == 1
+        def attribute = asset.getAttribute("TargetTemperature").get()
+        assert attribute != null
+        def metaItem = attribute.getMetaItem(KNXProtocol.META_KNX_STATUS_GA).get()
+        assert metaItem != null
+        assert metaItem.getValueAsString().get() == "5/0/4"
+        def metaItem2 = attribute.getMetaItem(KNXProtocol.META_KNX_ACTION_GA).get()
+        metaItem2 != null
+        metaItem2.getValueAsString().get() == "5/0/0"
         
         cleanup: "the server should be stopped"
         stopContainer(container)

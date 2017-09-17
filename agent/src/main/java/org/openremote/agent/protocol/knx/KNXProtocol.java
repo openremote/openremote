@@ -120,7 +120,7 @@ public class KNXProtocol extends AbstractProtocol implements ProtocolLinkedAttri
 
     public static final String REGEXP_GROUP_ADDRESS = "^\\d{1,3}/\\d{1,3}/\\d{1,3}$";
     public static final String REGEXP_BUS_ADDRESS = "^\\d\\.\\d\\.\\d$";
-    public static final String REGEXP_DPT = "^\\d{1,2}\\.\\d{1,3}$";
+    public static final String REGEXP_DPT = "^\\d{1,3}\\.\\d{1,3}$";
     public static final String PATTERN_FAILURE_CONNECTION_TYPE = "TUNNELLING|ROUTING";
     public static final String PATTERN_FAILURE_DPT = "KNX DPT (e.g. 1.001)";
     public static final String PATTERN_FAILURE_GROUP_ADDRESS = "KNX Group Address (e.g. 1/1/1)";
@@ -519,14 +519,8 @@ public class KNXProtocol extends AbstractProtocol implements ProtocolLinkedAttri
         }
 
         String attrName = assetName.replaceAll(" ", "");
-        //TODO a more detailed conversion form KNX datapoint value to OpenRemote value
-        DPTXlator translator = TranslatorTypes.createTranslator(0, datapoint.getDPT());
-        AttributeType type;
-        if (translator instanceof DPTXlatorBoolean) {
-            type = AttributeType.BOOLEAN;
-        } else {
-            type = AttributeType.NUMBER;
-        }
+        AttributeType type = TypeMapper.toAttributeType(datapoint);
+
         AssetAttribute attr = asset.getAttribute(attrName).orElse(new AssetAttribute(attrName, type).setMeta(
                         new MetaItem(AssetMeta.LABEL, Values.create(name)), 
                         new MetaItem(KNXProtocol.META_KNX_DPT, Values.create(datapoint.getDPT())),

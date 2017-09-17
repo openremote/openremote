@@ -16,12 +16,7 @@ import java.util.logging.Logger;
 import org.apache.commons.lang3.StringUtils;
 import org.openremote.agent.protocol.ConnectionStatus;
 import org.openremote.agent.protocol.ProtocolExecutorService;
-import org.openremote.model.value.BooleanValue;
-import org.openremote.model.value.NumberValue;
 import org.openremote.model.value.Value;
-import org.openremote.model.value.ValueException;
-import org.openremote.model.value.impl.BooleanValueImpl;
-import org.openremote.model.value.impl.NumberValueImpl;
 
 import tuwien.auto.calimero.CloseEvent;
 import tuwien.auto.calimero.DataUnitBuilder;
@@ -35,8 +30,6 @@ import tuwien.auto.calimero.datapoint.DatapointMap;
 import tuwien.auto.calimero.datapoint.DatapointModel;
 import tuwien.auto.calimero.datapoint.StateDP;
 import tuwien.auto.calimero.dptxlator.DPTXlator;
-import tuwien.auto.calimero.dptxlator.DPTXlatorBoolean;
-import tuwien.auto.calimero.dptxlator.TranslatorTypes;
 import tuwien.auto.calimero.link.KNXNetworkLink;
 import tuwien.auto.calimero.link.KNXNetworkLinkIP;
 import tuwien.auto.calimero.link.NetworkLinkListener;
@@ -180,20 +173,9 @@ public class KNXConnection implements NetworkLinkListener, ProcessListener {
         try {
             if (this.connectionStatus == ConnectionStatus.CONNECTED && value.isPresent()) {
                 LOG.fine("Sending to KNX action datapoint '" + datapoint + "': " + value);
-                //TODO a more detailed conversion from OpenRemote value to needed KNX datapoint value
                 Value val = value.get();
-                switch (val.getType()) {
-                    case BOOLEAN:
-                        processCommunicator.write(datapoint.getMainAddress(), ((BooleanValue)val).getBoolean());    
-                        break;
-                    case NUMBER:
-                        DPTXlator translator  = TranslatorTypes.createTranslator(0, datapoint.getDPT());
-                        translator.setValue(val.toString());
-                        processCommunicator.write(datapoint.getMainAddress(), translator);
-                        break;
-                    default:
-                        break;
-                }
+                DPTXlator translator = TypeMapper.toDPTXlator(datapoint, val);
+                processCommunicator.write(datapoint.getMainAddress(), translator);
             }
         } catch (KNXAckTimeoutException acke) {
             onConnectionStatusChanged(ConnectionStatus.CLOSED);
@@ -202,32 +184,20 @@ public class KNXConnection implements NetworkLinkListener, ProcessListener {
             knxLink.close();
             knxLink = null;
             scheduleReconnect();
-        } catch (ValueException | KNXException e) {
+        } catch (Exception e) {
             LOG.severe(e.getMessage());
         }
     }
     
     public void groupWrite(final ProcessEvent e) { 
         if (datapoints.contains(e.getDestination())) {
-            StateDP datapoint = datapoints.get(e.getDestination());
-            final String dpt = datapoint.getDPT();
-            DPTXlator translator = null;
+            Datapoint datapoint = datapoints.get(e.getDestination());
             try {
-                translator = TranslatorTypes.createTranslator(0, dpt);
-                translator.setData(e.getASDU());
-                LOG.info("Received KNX event: " + translator.getType().getID() + " (" + translator.getType().getDescription() + ") is " + translator.getValue() + " (" + translator.getNumericValue() + ") - " + datapoint.getName());
-                
-                Value value;
-                //TODO a more detailed conversion form KNX datapoint value to OpenRemote value
-                if (translator instanceof DPTXlatorBoolean) {
-                    value = new BooleanValueImpl(((DPTXlatorBoolean)translator).getValueBoolean());
-                } else {
-                    value = new NumberValueImpl(translator.getNumericValue());
-                }
+                Value value = TypeMapper.toORValue(datapoint, e.getASDU());
                 for (Consumer<Value> consumer : datapointValueConsumers.get(datapoint)) {
                     consumer.accept(value);
                 }
-            } catch (KNXException ex) {
+            } catch (Exception ex) {
                 LOG.log(Level.WARNING, "Could translate KNX event: " + e, ex);
             }
         }
