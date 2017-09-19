@@ -28,25 +28,25 @@ import org.openremote.manager.shared.asset.AssetResource;
 import org.openremote.manager.shared.http.RequestParams;
 import org.openremote.manager.shared.security.Tenant;
 import org.openremote.model.Constants;
-import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AbstractAssetQuery;
+import org.openremote.model.asset.Asset;
+import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetQuery;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
+import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueException;
 import org.openremote.model.value.Values;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.logging.Logger;
 
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.NOT_FOUND;
+import static org.openremote.model.asset.AssetMeta.PROTECTED;
 import static org.openremote.model.attribute.AttributeEvent.Source.CLIENT;
 import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 
@@ -143,14 +143,55 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                 if (!assetStorageService.isUserAsset(getUserId(), assetId)) {
                     throw new WebApplicationException(Response.Status.FORBIDDEN);
                 }
-                // TODO Implement restricted user asset updates, what do we want to allow to update?
-                throw new UnsupportedOperationException("TODO Implement asset updates for restricted users");
+
+                serverAsset = assetStorageService.find(assetId, true);
+
+                if (serverAsset == null)
+                    throw new WebApplicationException(NOT_FOUND);
+
+                //Add/Update check
+                for (AssetAttribute updatedAttribute : asset.getAttributesList()) {
+                    //Restricted users may only add protected attributes
+                    if (!updatedAttribute.isProtected()) {
+                        updatedAttribute.addMeta(new MetaItem(PROTECTED, Values.create(true)));
+                    }
+                    String updatedAttributeName = updatedAttribute
+                        .getName()
+                        .orElseThrow(() -> new WebApplicationException("No name supplied for attribute(s)", BAD_REQUEST));
+                    Optional<AssetAttribute> serverAttribute = serverAsset.getAttribute(updatedAttributeName);
+
+                    //Check if attribute is present on the asset in storage
+                    if (serverAttribute.isPresent()) {
+                        AssetAttribute attr = serverAttribute.get();
+                        if (attr.isProtected() && !attr.isReadOnly()) {
+                            //If attribute isn't protected and not readonly, then update
+                            serverAsset.replaceAttribute(updatedAttribute);
+                        } else {
+                            throw new WebApplicationException(String.format("No permission to update attribute %s", updatedAttributeName), Response.Status.CONFLICT);
+                        }
+                    } else {
+                        //If not present, then add the attribute
+                        serverAsset.addAttributes(updatedAttribute);
+                    }
+                }
+                //Removal check
+                for (AssetAttribute serverAttribute : serverAsset.getAttributesList()) {
+                    //Check if asset is missing attributes
+                    if (serverAttribute.getName().isPresent() && !asset.hasAttribute(serverAttribute.getName().get())) {
+                        if (serverAttribute.isProtected() && !serverAttribute.isReadOnly()) {
+                            //If attribute isn't protected and not readonly, then remove
+                            serverAsset.removeAttribute(serverAttribute.getName().get());
+                        } else {
+                            throw new WebApplicationException(String.format("No permission to remove attribute %s", serverAttribute.getName().get()), Response.Status.CONFLICT);
+                        }
+                    }
+                }
             } else {
                 serverAsset = assetStorageService.find(assetId, true);
-            }
 
-            if (serverAsset == null)
-                throw new WebApplicationException(NOT_FOUND);
+                if (serverAsset == null)
+                    throw new WebApplicationException(NOT_FOUND);
+            }
 
             Tenant tenant = identityService.getIdentityProvider().getTenantForRealmId(asset.getRealmId());
             if (tenant == null)
@@ -163,15 +204,15 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             }
 
             // Map into server-side asset, do not allow to change the type
-            ServerAsset updatedAsset = ServerAsset.map(asset, serverAsset, null, serverAsset.getType(), null);
+            serverAsset = ServerAsset.map(asset, serverAsset, null, serverAsset.getType(), null);
 
             // Check new realm
-            if (!isTenantActiveAndAccessible(updatedAsset)) {
-                LOG.fine("Forbidden access for user '" + getUsername() + "', can't update: " + updatedAsset);
+            if (!isTenantActiveAndAccessible(serverAsset)) {
+                LOG.fine("Forbidden access for user '" + getUsername() + "', can't update: " + serverAsset);
                 throw new WebApplicationException(Response.Status.FORBIDDEN);
             }
 
-            assetStorageService.merge(updatedAsset);
+            assetStorageService.merge(serverAsset);
 
         } catch (IllegalStateException ex) {
             throw new WebApplicationException(ex, Response.Status.BAD_REQUEST);
@@ -292,16 +333,16 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                 return EMPTY_ASSETS;
             }
 
-            if(isRestrictedUser()) {
+            if (isRestrictedUser()) {
                 query = query.userId(getUserId());
             }
 
             Tenant tenant = query.tenantPredicate != null
                 ? !isNullOrEmpty(query.tenantPredicate.realmId)
-                    ? identityService.getIdentityProvider().getTenantForRealmId(query.tenantPredicate.realmId)
-                    : !isNullOrEmpty(query.tenantPredicate.realm)
-                        ? identityService.getIdentityProvider().getTenantForRealm(query.tenantPredicate.realm)
-                        : getAuthenticatedTenant()
+                ? identityService.getIdentityProvider().getTenantForRealmId(query.tenantPredicate.realmId)
+                : !isNullOrEmpty(query.tenantPredicate.realm)
+                ? identityService.getIdentityProvider().getTenantForRealm(query.tenantPredicate.realm)
+                : getAuthenticatedTenant()
                 : getAuthenticatedTenant();
 
             if (tenant == null) {
