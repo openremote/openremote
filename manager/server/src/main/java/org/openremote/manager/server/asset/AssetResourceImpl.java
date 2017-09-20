@@ -35,6 +35,7 @@ import org.openremote.model.asset.AssetQuery;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.MetaItem;
+import org.openremote.model.util.TextUtil;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueException;
 import org.openremote.model.value.Values;
@@ -149,6 +150,11 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                 if (serverAsset == null)
                     throw new WebApplicationException(NOT_FOUND);
 
+                //Restricted users don't have permission to update an asset to become a root asset
+                if (TextUtil.isNullOrEmpty(asset.getParentId())) {
+                    throw new WebApplicationException("ParentId is missing", BAD_REQUEST);
+                }
+
                 //Add/Update check
                 for (AssetAttribute updatedAttribute : asset.getAttributesList()) {
                     //Restricted users may only add protected attributes
@@ -167,7 +173,25 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                             //If attribute isn't protected and not readonly, then update
                             serverAsset.replaceAttribute(updatedAttribute);
                         } else {
-                            throw new WebApplicationException(String.format("No permission to update attribute %s", updatedAttributeName), Response.Status.CONFLICT);
+                            // Check if meta items are equal.
+                            attr.getMeta().forEach(metaItem -> {
+                                metaItem.getName().ifPresent(metaName -> {
+                                    updatedAttribute.getMetaItem(metaName).ifPresent(updateMetaItem -> {
+                                        if (!updateMetaItem.equals(metaItem)) {
+                                            throw new WebApplicationException(String.format("No permission to update attribute %s", updatedAttributeName), Response.Status.CONFLICT);
+                                        }
+                                    });
+                                });
+                            });
+
+                            // Check if value is equal
+                            attr.getValue().ifPresent(value -> {
+                                updatedAttribute.getValue().ifPresent(updatedValue -> {
+                                    if (!value.equals(updatedValue)) {
+                                        throw new WebApplicationException(String.format("No permission to update attribute %s", updatedAttributeName), Response.Status.CONFLICT);
+                                    }
+                                });
+                            });
                         }
                     } else {
                         //If not present, then add the attribute
@@ -178,11 +202,13 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                 for (AssetAttribute serverAttribute : serverAsset.getAttributesList()) {
                     //Check if asset is missing attributes
                     if (serverAttribute.getName().isPresent() && !asset.hasAttribute(serverAttribute.getName().get())) {
-                        if (serverAttribute.isProtected() && !serverAttribute.isReadOnly()) {
-                            //If attribute isn't protected and not readonly, then remove
-                            serverAsset.removeAttribute(serverAttribute.getName().get());
-                        } else {
-                            throw new WebApplicationException(String.format("No permission to remove attribute %s", serverAttribute.getName().get()), Response.Status.CONFLICT);
+                        if (serverAttribute.isProtected()) {
+                            if (!serverAttribute.isReadOnly()) {
+                                //If attribute isn't protected and not readonly, then remove
+                                serverAsset.removeAttribute(serverAttribute.getName().get());
+                            } else {
+                                throw new WebApplicationException(String.format("No permission to remove attribute %s", serverAttribute.getName().get()), Response.Status.CONFLICT);
+                            }
                         }
                     }
                 }
@@ -203,16 +229,22 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                 throw new WebApplicationException(Response.Status.FORBIDDEN);
             }
 
-            // Map into server-side asset, do not allow to change the type
-            serverAsset = ServerAsset.map(asset, serverAsset, null, serverAsset.getType(), null);
+            ServerAsset updatedAsset;
+            // When restricted user the asset is mapped manually
+            if (!isRestrictedUser()) {
+                // Map into server-side asset, do not allow to change the type
+                updatedAsset = ServerAsset.map(asset, serverAsset, null, serverAsset.getType(), null);
+            } else {
+                updatedAsset = serverAsset;
+            }
 
             // Check new realm
-            if (!isTenantActiveAndAccessible(serverAsset)) {
+            if (!isTenantActiveAndAccessible(updatedAsset)) {
                 LOG.fine("Forbidden access for user '" + getUsername() + "', can't update: " + serverAsset);
                 throw new WebApplicationException(Response.Status.FORBIDDEN);
             }
 
-            assetStorageService.merge(serverAsset);
+            assetStorageService.merge(updatedAsset, isRestrictedUser() ? getUsername() : null);
 
         } catch (IllegalStateException ex) {
             throw new WebApplicationException(ex, Response.Status.BAD_REQUEST);

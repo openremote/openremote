@@ -5,13 +5,10 @@ import org.openremote.manager.server.setup.SetupService
 import org.openremote.manager.server.setup.builtin.KeycloakDemoSetup
 import org.openremote.manager.server.setup.builtin.ManagerDemoSetup
 import org.openremote.manager.shared.asset.AssetResource
-import org.openremote.model.asset.AbstractAssetQuery
-import org.openremote.model.asset.Asset
-import org.openremote.model.asset.AssetMeta
-import org.openremote.model.asset.AssetQuery
-import org.openremote.model.asset.AssetType
+import org.openremote.model.asset.*
 import org.openremote.model.attribute.AttributeType
 import org.openremote.model.attribute.Meta
+import org.openremote.model.attribute.MetaItem
 import org.openremote.model.value.Values
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
@@ -23,6 +20,9 @@ import static org.openremote.container.util.MapAccess.getString
 import static org.openremote.manager.server.setup.AbstractKeycloakSetup.SETUP_KEYCLOAK_ADMIN_PASSWORD
 import static org.openremote.manager.server.setup.AbstractKeycloakSetup.SETUP_KEYCLOAK_ADMIN_PASSWORD_DEFAULT
 import static org.openremote.model.Constants.*
+import static org.openremote.model.asset.AssetMeta.LABEL
+import static org.openremote.model.attribute.AttributeType.NUMBER
+import static org.openremote.model.attribute.AttributeType.TEMPERATURE_CELCIUS
 import static org.openremote.model.attribute.MetaItem.isMetaNameEqualTo
 
 class AssetPermissionsTest extends Specification implements ManagerContainerTrait {
@@ -57,9 +57,9 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
 
         when: "the root assets of the authenticated realm are retrieved"
         assets = assetResource.queryAssets(null,
-            new AssetQuery()
-                .tenant(new AbstractAssetQuery.TenantPredicate(keycloakDemoSetup.masterTenant.id))
-                .parent(new AbstractAssetQuery.ParentPredicate(true))
+                new AssetQuery()
+                        .tenant(new AbstractAssetQuery.TenantPredicate(keycloakDemoSetup.masterTenant.id))
+                        .parent(new AbstractAssetQuery.ParentPredicate(true))
         )
 
         then: "result should match"
@@ -68,8 +68,8 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
 
         when: "the child assets of an asset in the authenticated realm are retrieved"
         assets = assetResource.queryAssets(null,
-            new AssetQuery()
-                .parent(new AbstractAssetQuery.ParentPredicate(assets[0].id))
+                new AssetQuery()
+                        .parent(new AbstractAssetQuery.ParentPredicate(assets[0].id))
         )
 
         then: "result should match"
@@ -78,9 +78,9 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
 
         when: "the root assets of the authenticated realm are retrieved"
         assets = assetResource.queryAssets(null,
-            new AssetQuery()
-                .tenant(new AbstractAssetQuery.TenantPredicate(keycloakDemoSetup.masterTenant.id))
-                .parent(new AbstractAssetQuery.ParentPredicate(true))
+                new AssetQuery()
+                        .tenant(new AbstractAssetQuery.TenantPredicate(keycloakDemoSetup.masterTenant.id))
+                        .parent(new AbstractAssetQuery.ParentPredicate(true))
         )
 
         then: "result should match"
@@ -89,9 +89,9 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
 
         when: "the root assets of the given realm are retrieved"
         assets = assetResource.queryAssets(null,
-            new AssetQuery()
-                .tenant(new AbstractAssetQuery.TenantPredicate(keycloakDemoSetup.customerATenant.id))
-                .parent(new AbstractAssetQuery.ParentPredicate(true))
+                new AssetQuery()
+                        .tenant(new AbstractAssetQuery.TenantPredicate(keycloakDemoSetup.customerATenant.id))
+                        .parent(new AbstractAssetQuery.ParentPredicate(true))
         )
 
         then: "result should match"
@@ -100,8 +100,8 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
 
         when: "the child assets of an asset in a foreign realm are retrieved"
         assets = assetResource.queryAssets(null,
-            new AssetQuery()
-                .parent(new AbstractAssetQuery.ParentPredicate(assets[0].id))
+                new AssetQuery()
+                        .parent(new AbstractAssetQuery.ParentPredicate(assets[0].id))
         )
 
         then: "result should match"
@@ -254,9 +254,9 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
 
         when: "the root assets of the authenticated realm are retrieved"
         assets = assetResource.queryAssets(null,
-            new AssetQuery()
-                .tenant(new AbstractAssetQuery.TenantPredicate(keycloakDemoSetup.masterTenant.id))
-                .parent(new AbstractAssetQuery.ParentPredicate(true))
+                new AssetQuery()
+                        .tenant(new AbstractAssetQuery.TenantPredicate(keycloakDemoSetup.masterTenant.id))
+                        .parent(new AbstractAssetQuery.ParentPredicate(true))
         )
 
         then: "result should match"
@@ -265,8 +265,8 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
 
         when: "the child assets of an asset in the authenticated realm are retrieved"
         assets = assetResource.queryAssets(null,
-            new AssetQuery()
-                .parent(new AbstractAssetQuery.ParentPredicate(assets[0].id))
+                new AssetQuery()
+                        .parent(new AbstractAssetQuery.ParentPredicate(assets[0].id))
         )
 
         then: "result should match"
@@ -275,8 +275,8 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
 
         when: "the root assets of the authenticated realm are retrieved"
         assets = assetResource.queryAssets(null,
-            new AssetQuery()
-                .parent(new AbstractAssetQuery.ParentPredicate(true))
+                new AssetQuery()
+                        .parent(new AbstractAssetQuery.ParentPredicate(true))
         )
 
         then: "result should match"
@@ -286,9 +286,9 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
 
         when: "the root assets of the given realm are retrieved"
         assets = assetResource.queryAssets(null,
-            new AssetQuery()
-                .tenant(new AbstractAssetQuery.TenantPredicate(keycloakDemoSetup.customerATenant.id))
-                .parent(new AbstractAssetQuery.ParentPredicate(true))
+                new AssetQuery()
+                        .tenant(new AbstractAssetQuery.TenantPredicate(keycloakDemoSetup.customerATenant.id))
+                        .parent(new AbstractAssetQuery.ParentPredicate(true))
         )
 
         then: "result should match"
@@ -296,8 +296,8 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
 
         when: "the child assets of an asset in a foreign realm are retrieved"
         assets = assetResource.queryAssets(null,
-            new AssetQuery()
-                .parent(new AbstractAssetQuery.ParentPredicate(managerDemoSetup.smartHomeId))
+                new AssetQuery()
+                        .parent(new AbstractAssetQuery.ParentPredicate(managerDemoSetup.smartHomeId))
         )
 
         then: "result should be empty"
@@ -424,9 +424,9 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
 
         when: "the root assets of a foreign realm are retrieved"
         assets = assetResource.queryAssets(null,
-            new AssetQuery()
-                .tenant(new AbstractAssetQuery.TenantPredicate(keycloakDemoSetup.masterTenant.id))
-                .parent(new AbstractAssetQuery.ParentPredicate(true))
+                new AssetQuery()
+                        .tenant(new AbstractAssetQuery.TenantPredicate(keycloakDemoSetup.masterTenant.id))
+                        .parent(new AbstractAssetQuery.ParentPredicate(true))
         )
 
         then: "result should match"
@@ -434,8 +434,8 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
 
         when: "the root assets of the authenticated realm are retrieved"
         assets = assetResource.queryAssets(null,
-            new AssetQuery()
-                .parent(new AbstractAssetQuery.ParentPredicate(true))
+                new AssetQuery()
+                        .parent(new AbstractAssetQuery.ParentPredicate(true))
         )
 
         then: "result should match"
@@ -445,9 +445,9 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
 
         when: "the root assets of the given realm are retrieved"
         assets = assetResource.queryAssets(null,
-            new AssetQuery()
-                .tenant(new AbstractAssetQuery.TenantPredicate(keycloakDemoSetup.customerBTenant.id))
-                .parent(new AbstractAssetQuery.ParentPredicate(true))
+                new AssetQuery()
+                        .tenant(new AbstractAssetQuery.TenantPredicate(keycloakDemoSetup.customerBTenant.id))
+                        .parent(new AbstractAssetQuery.ParentPredicate(true))
         )
 
         then: "result should match"
@@ -455,8 +455,8 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
 
         when: "the child assets of an asset in a foreign realm are retrieved"
         assets = assetResource.queryAssets(null,
-            new AssetQuery()
-                .parent(new AbstractAssetQuery.ParentPredicate(managerDemoSetup.thingId))
+                new AssetQuery()
+                        .parent(new AbstractAssetQuery.ParentPredicate(managerDemoSetup.thingId))
         )
 
         then: "result should be empty"
@@ -589,9 +589,9 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
 
         when: "the root assets of a foreign realm are retrieved"
         assets = assetResource.queryAssets(null,
-            new AssetQuery()
-                .tenant(new AbstractAssetQuery.TenantPredicate(keycloakDemoSetup.masterTenant.id))
-                .parent(new AbstractAssetQuery.ParentPredicate(true))
+                new AssetQuery()
+                        .tenant(new AbstractAssetQuery.TenantPredicate(keycloakDemoSetup.masterTenant.id))
+                        .parent(new AbstractAssetQuery.ParentPredicate(true))
         )
 
         then: "result should match"
@@ -599,8 +599,8 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
 
         when: "the root assets of the authenticated realm are retrieved"
         assets = assetResource.queryAssets(null,
-            new AssetQuery()
-                .parent(new AbstractAssetQuery.ParentPredicate(true))
+                new AssetQuery()
+                        .parent(new AbstractAssetQuery.ParentPredicate(true))
         )
 
         then: "result should match"
@@ -608,9 +608,9 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
 
         when: "the root assets of the given realm are retrieved"
         assets = assetResource.queryAssets(null,
-            new AssetQuery()
-                .tenant(new AbstractAssetQuery.TenantPredicate(keycloakDemoSetup.customerBTenant.id))
-                .parent(new AbstractAssetQuery.ParentPredicate(true))
+                new AssetQuery()
+                        .tenant(new AbstractAssetQuery.TenantPredicate(keycloakDemoSetup.customerBTenant.id))
+                        .parent(new AbstractAssetQuery.ParentPredicate(true))
         )
 
         then: "result should match"
@@ -618,8 +618,8 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
 
         when: "the child assets of linked asset are retrieved"
         assets = assetResource.queryAssets(null,
-            new AssetQuery()
-                .parent(new AbstractAssetQuery.ParentPredicate(managerDemoSetup.apartment1Id))
+                new AssetQuery()
+                        .parent(new AbstractAssetQuery.ParentPredicate(managerDemoSetup.apartment1Id))
         )
 
         then: "result should match"
@@ -627,8 +627,8 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
 
         when: "the child assets of an asset in the authenticated realm are retrieved"
         assets = assetResource.queryAssets(null,
-            new AssetQuery()
-                .parent(new AbstractAssetQuery.ParentPredicate(managerDemoSetup.smartHomeId))
+                new AssetQuery()
+                        .parent(new AbstractAssetQuery.ParentPredicate(managerDemoSetup.smartHomeId))
         )
 
         then: "result should match"
@@ -636,8 +636,8 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
 
         when: "the child assets of an asset in a foreign realm are retrieved"
         assets = assetResource.queryAssets(null,
-            new AssetQuery()
-                .parent(new AbstractAssetQuery.ParentPredicate(managerDemoSetup.thingId))
+                new AssetQuery()
+                        .parent(new AbstractAssetQuery.ParentPredicate(managerDemoSetup.thingId))
         )
 
         then: "result should be empty"
@@ -693,9 +693,9 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         testAsset.setParentId(null)
         assetResource.update(null, testAsset.id, testAsset)
 
-        then: "a TODO error should occur"
+        then: "a bad request error should occur"
         ex = thrown()
-        ex.response.status == 500
+        ex.response.status == 400
 
         when: "an asset is created in the authenticated realm"
         testAsset = new Asset("Test Room", AssetType.ROOM, null, keycloakDemoSetup.customerATenant.id)
@@ -771,6 +771,43 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         then: "access should be forbidden"
         ex = thrown()
         ex.response.status == 403
+
+        when: "an non-protected asset attribute is updated"
+        testAsset = assetResource.get(null, managerDemoSetup.apartment1LivingroomId)
+        testAsset.replaceAttribute(new AssetAttribute("motionSensor", NUMBER)
+                .addMeta(new MetaItem(LABEL, Values.create("Motion Sensor")))
+        )
+        assetResource.update(null, testAsset.id, testAsset)
+
+        then: "a conflict error should occur"
+        ex = thrown()
+        ex.response.status == 409
+
+        when: "an readonly asset attribute is updated"
+        testAsset = assetResource.get(null, managerDemoSetup.apartment1LivingroomId)
+        testAsset.replaceAttribute(new AssetAttribute("currentTemperature", TEMPERATURE_CELCIUS)
+                .addMeta(new MetaItem(LABEL, Values.create("Current Temperature")))
+        )
+        assetResource.update(null, testAsset.id, testAsset)
+
+        then: "a conflict error should occur"
+        ex = thrown()
+        ex.response.status == 409
+
+        when: "an asset attribute is updated"
+        testAsset = assetResource.get(null, managerDemoSetup.apartment1LivingroomId)
+        testAsset.replaceAttribute(new AssetAttribute("targetTemperature", TEMPERATURE_CELCIUS)
+                .addMeta(new MetaItem(LABEL, Values.create("Target Temperature")))
+        )
+        assetResource.update(null, testAsset.id, testAsset)
+
+        then: "no error should occur"
+        def updatedAsset = assetResource.get(null, managerDemoSetup.apartment1LivingroomId)
+        def updatedAttribute = updatedAsset.getAttribute("targetTemperature")
+        assert updatedAttribute.isPresent()
+        def updatedMetaItem = updatedAttribute.get().getMetaItem(LABEL)
+        assert updatedMetaItem.isPresent()
+        assert updatedMetaItem.get().valueAsString.get() == "Target Temperature"
 
         cleanup: "the server should be stopped"
         stopContainer(container)
