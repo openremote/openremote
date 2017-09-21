@@ -123,7 +123,7 @@ class KNXImportTest extends Specification implements ManagerContainerTrait {
         then: "the new things and attributes should be created"
         conditions.eventually {
             assert assets != null
-            assert assets.length == 13
+            assert assets.length == 12
             assert assets.each {
                 !TextUtil.isNullOrEmpty(it.id) &&
                     !TextUtil.isNullOrEmpty(it.getName()) &&

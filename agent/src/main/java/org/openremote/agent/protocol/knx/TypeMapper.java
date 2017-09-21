@@ -8,6 +8,7 @@ import java.util.logging.Logger;
 
 import org.openremote.model.attribute.AttributeType;
 import org.openremote.model.value.Value;
+import org.openremote.model.value.impl.ArrayValueImpl;
 import org.openremote.model.value.impl.BooleanValueImpl;
 import org.openremote.model.value.impl.NumberValueImpl;
 import org.openremote.model.value.impl.StringValueImpl;
@@ -175,6 +176,9 @@ public class TypeMapper {
             ((DPTXlatorBoolean) translator).setValue(((BooleanValueImpl) value).getBoolean());
         } else if (translator instanceof DPTXlator8BitUnsigned && value instanceof NumberValueImpl) {
             ((DPTXlator8BitUnsigned) translator).setValue((int) ((NumberValueImpl) value).getNumber());
+        } else if (translator instanceof DPTXlatorRGB && value instanceof ArrayValueImpl) {
+            ArrayValueImpl arrayValue = (ArrayValueImpl) value;
+            ((DPTXlatorRGB) translator).setValue(arrayValue.getNumber(0).get().intValue(), arrayValue.getNumber(1).get().intValue(), arrayValue.getNumber(2).get().intValue());
         } else {
             // TODO depending on the DPT and the value, a more sophisticated translation is needed
             translator.setValue(value.toString());
