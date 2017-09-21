@@ -20,8 +20,6 @@
 package org.openremote.manager.client.assets.attributes;
 
 import com.google.gwt.core.client.JsArray;
-import com.google.gwt.user.client.ui.FileUpload;
-import com.google.gwt.user.client.ui.FlowPanel;
 import elemental.client.Browser;
 import elemental.html.Blob;
 import elemental.html.FileReader;
@@ -75,7 +73,6 @@ public class ProtocolDiscoveryView extends AbstractAttributeViewExtension {
     protected String importRealmId;
     protected String importParentId;
     protected FileUploadLabelled fileUpload;
-    protected FormGroup importGroup;
 
     public ProtocolDiscoveryView(
         Environment environment,
@@ -93,7 +90,7 @@ public class ProtocolDiscoveryView extends AbstractAttributeViewExtension {
         this.assetSelector = new AssetSelector(
             assetBrowser.getPresenter(),
             environment.getMessages(),
-            environment.getMessages().parentAsset(),
+            environment.getMessages().protocolLinkDiscoveryParent(),
             environment.getMessages().selectAssetDescription(),
             true,
             treeNode -> {
@@ -111,22 +108,23 @@ public class ProtocolDiscoveryView extends AbstractAttributeViewExtension {
         ) {
             @Override
             public void beginSelection() {
-                importGroup.setDisabled(true);
+                fileUpload.setDisabled(true);
                 super.beginSelection();
             }
 
             @Override
             public void endSelection() {
                 super.endSelection();
-                importGroup.setDisabled(false);
+                fileUpload.setDisabled(false);
             }
         };
+
+        assetSelector.setAlignStart(false);
+        assetSelector.getFormLabel().addStyleName("larger");
 
         add(assetSelector);
 
         if (protocolDescriptor.isDeviceImport()) {
-            importGroup = new FormGroup();
-            importGroup.setFormLabel(new FormLabel(environment.getMessages().importProtocolLinks()));
             FormGroupActions actions = new FormGroupActions();
             fileUpload = new FileUploadLabelled();
             fileUpload.setIcon("upload");
@@ -151,8 +149,7 @@ public class ProtocolDiscoveryView extends AbstractAttributeViewExtension {
             });
 
             actions.add(fileUpload);
-            importGroup.setFromGroupActions(actions);
-            add(importGroup);
+            assetSelector.getFormGroupActions().add(fileUpload);
         }
     }
 

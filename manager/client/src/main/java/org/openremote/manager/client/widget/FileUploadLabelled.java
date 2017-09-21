@@ -92,6 +92,14 @@ public class FileUploadLabelled extends ComplexPanel {
         }
     }
 
+    public void setDisabled(boolean disabled) {
+        if (disabled) {
+            getElement().setAttribute("disabled", "");
+        } else {
+            getElement().removeAttribute("disabled");
+        }
+    }
+
     protected FormElement getParentForm() {
         Element parent = wrapper.getParentElement();
         while (parent != null && !parent.hasTagName("form")) {

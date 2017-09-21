@@ -11,7 +11,7 @@ import java.util.function.Consumer;
  * Shows a browser tree node in a form group and encapsulates the process of
  * changing it by selecting a new node in the asset browser tree.
  */
-public abstract class AssetSelector extends FormGroup {
+public class AssetSelector extends FormGroup {
 
     final AssetBrowser.Presenter assetBrowserPresenter;
     final ManagerMessages managerMessages;
@@ -84,7 +84,9 @@ public abstract class AssetSelector extends FormGroup {
         originalNode = null;
         selectedNode = null;
         outputTenantDisplayName.setText(null);
-        outputAssetName.setText(null);
+        outputTenantDisplayName.setVisible(false);
+        outputAssetName.setVisible(true);
+        outputAssetName.setText(managerMessages.noAssetSelected());
         infoLabel.setVisible(false);
         selectAssetButton.setVisible(true);
         clearSelectionButton.setVisible(false);

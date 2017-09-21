@@ -266,6 +266,7 @@ public class MetaEditor extends AbstractAttributeViewExtension {
 
     public MetaEditor(Environment environment, AttributeView.Style style, String existingItemsHeader, String newItemsHeader, AttributeView parentView, AssetAttribute attribute, Supplier<List<ProtocolDescriptor>> protocolDescriptorSupplier) {
         super(environment, style, parentView, attribute, existingItemsHeader);
+        setLabelVisible(false);
         this.attribute = attribute;
         this.style = style;
         isProtocolConfiguration = attribute.hasMetaItem(AssetMeta.PROTOCOL_CONFIGURATION);
@@ -447,6 +448,8 @@ public class MetaEditor extends AbstractAttributeViewExtension {
         MetaItemEditor metaItemEditor = createMetaItemEditor(item, false);
         itemListPanel.add(metaItemEditor);
 
+        setLabelVisible(itemListPanel.getWidgetCount() > 0);
+
         // Check if we have a validation failure for this editor
         if (lastValidationResult != null && lastValidationResult.getMetaFailures() != null) {
             List<ValidationFailure> failures = lastValidationResult.getMetaFailures().get(index);
@@ -464,6 +467,9 @@ public class MetaEditor extends AbstractAttributeViewExtension {
     protected void removeItem(MetaItemEditor itemEditor) {
         int index = itemListPanel.getWidgetIndex(itemEditor);
         itemListPanel.remove(itemEditor);
+
+        setLabelVisible(itemListPanel.getWidgetCount() > 0);
+
         attribute.getMeta().remove(index);
 
         // Notify the presenter that the attribute has changed

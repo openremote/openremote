@@ -225,9 +225,7 @@ public interface ManagerMessages extends Messages {
 
     String protocolLinkDiscovery();
 
-    String importProtocolLinks();
-
-    String searchProtocolLinks();
+    String protocolLinkDiscoveryParent();
 
     String uploadProtocolFile();
 

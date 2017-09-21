@@ -44,4 +44,8 @@ public class FormSection extends FlowPanel {
             addStyleName("opaque");
         }
     }
+
+    public void setLabelVisible(boolean visible) {
+        label.setVisible(visible);
+    }
 }
