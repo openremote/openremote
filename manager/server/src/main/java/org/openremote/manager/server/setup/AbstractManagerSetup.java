@@ -87,6 +87,7 @@ public abstract class AbstractManagerSetup implements Setup {
                     new MetaItem(DESCRIPTION, Values.create("Presence detected in any room")),
                     new MetaItem(PROTECTED, Values.create(true)),
                     new MetaItem(RULE_STATE, Values.create(true)),
+                    new MetaItem(STORE_DATA_POINTS, Values.create(true)),
                     new MetaItem(SHOW_ON_DASHBOARD, Values.create(true))
                 )),
             new AssetAttribute("vacationUntil", TIMESTAMP_MILLIS)
