@@ -466,12 +466,18 @@ public class KNXProtocol extends AbstractProtocol implements ProtocolLinkedAttri
                 zipEntry = zin.getNextEntry();
             }
 
+            if (isNullOrEmpty(xmlData)) {
+                String msg = "Failed to find '0.xml' in project file";
+                LOG.info(msg);
+                throw new IllegalStateException(msg);
+            }
+
             // Create a transform factory instance.
             System.setProperty("javax.xml.transform.TransformerFactory", "net.sf.saxon.TransformerFactoryImpl");
             TransformerFactory tfactory = TransformerFactory.newInstance();
 
             // Create a transformer for the stylesheet.
-            Transformer transformer = tfactory.newTransformer(new StreamSource(this.getClass().getResourceAsStream("/ets_calimero_group_name.xsl")));
+            Transformer transformer = tfactory.newTransformer(new StreamSource(this.getClass().getResourceAsStream("/org/openremote/agent/protocol/knx/ets_calimero_group_name.xsl")));
 
             // Set the URIResolver
             transformer.setURIResolver(new EtsFileUriResolver(data));
@@ -486,7 +492,9 @@ public class KNXProtocol extends AbstractProtocol implements ProtocolLinkedAttri
             try (final XmlReader r = XmlInputFactory.newInstance().createXMLStreamReader(new ByteArrayInputStream(result))) {
                 datapoints.load(r);
             } catch (final KNXMLException e) {
-                LOG.warning("Error loading parsed ETS file: " + e.getMessage());
+                String msg = "Error loading parsed ETS file: " + e.getMessage();
+                LOG.warning(msg);
+                throw new IllegalStateException(msg, e);
             }
 
             MetaItem agentLink = AgentLink.asAgentLinkMetaItem(protocolConfiguration.getReferenceOrThrow());
@@ -496,8 +504,11 @@ public class KNXProtocol extends AbstractProtocol implements ProtocolLinkedAttri
                     createAsset(dp, false, agentLink, createdAssets);
                 } else if (dp.getName().endsWith("#S")) {
                     createAsset(dp, true, agentLink, createdAssets);
+                } else if (dp.getName().endsWith("#SA") || dp.getName().endsWith("#AS")) {
+                    createAsset(dp, false, agentLink, createdAssets);
+                    createAsset(dp, true, agentLink, createdAssets);
                 } else {
-                    LOG.info("Only group addresses ending on #A or #S will be imported. Ignoring: " + dp.getName());
+                    LOG.info("Only group addresses ending on #A, #S, #AS or #SA will be imported. Ignoring: " + dp.getName());
                 }
             }
             
