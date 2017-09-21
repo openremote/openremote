@@ -54,7 +54,8 @@ class KNXProtocolTest extends Specification implements ManagerContainerTrait {
         def conditions = new PollingConditions(timeout: 10, initialDelay: 1, delay: 1)
 
         and: "the KNX emulation server is started"
-        def knxEmulationServer = new Launcher("manager/test/src/test/resources/knx-server-config.xml")
+        def configUri = getClass().getResource("/org/openremote/test/protocol/knx/knx-server-config.xml").toURI().toString()
+        def knxEmulationServer = new Launcher(configUri)
         def sc = knxEmulationServer.xml.svcContainers.remove(0)
         def sc2 = new DefaultServiceContainer(
             sc.getName(),
