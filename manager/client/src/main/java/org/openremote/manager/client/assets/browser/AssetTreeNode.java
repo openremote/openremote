@@ -42,7 +42,9 @@ public class AssetTreeNode extends BrowserTreeNode {
 
     @Override
     public boolean isLeaf() {
-        return Asset.isAssetTypeEqualTo(asset, AssetType.THING);
+        return false;
+        // RT: Removed as mentioned in #43
+        //return Asset.isAssetTypeEqualTo(asset, AssetType.THING);
     }
 
     @Override

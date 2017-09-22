@@ -49,7 +49,12 @@ public class AttributeEvent extends SharedEvent {
          * consequence. Protocols can also create events for internal processing,
          * to update any assets' state.
          */
-        INTERNAL,
+        INTERNAL, // This needs to be more fine grained
+
+        /**
+         *
+         */
+        ATTRIBUTE_LINKING_SERVICE,
 
         /**
          * The event is a value change on a sensor, created by a protocol.

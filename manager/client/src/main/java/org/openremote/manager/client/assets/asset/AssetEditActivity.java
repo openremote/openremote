@@ -60,6 +60,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static org.openremote.manager.client.http.RequestExceptionHandler.handleRequestException;
+import static org.openremote.model.asset.AssetAttribute.attributesFromJson;
 import static org.openremote.model.attribute.Attribute.ATTRIBUTE_NAME_VALIDATOR;
 import static org.openremote.model.attribute.Attribute.isAttributeNameEqualTo;
 import static org.openremote.model.attribute.MetaItem.isMetaNameEqualTo;
@@ -84,6 +85,7 @@ public class AssetEditActivity
     protected List<ProtocolDescriptor> protocolDescriptors = new ArrayList<>();
     protected List<MetaItemDescriptor> metaItemDescriptors = new ArrayList<>(Arrays.asList(AssetMeta.values()));
     double[] selectedCoordinates;
+    protected List<AssetAttribute> initialAssetAttributes;
 
     @Inject
     public AssetEditActivity(Environment environment,
@@ -149,8 +151,10 @@ public class AssetEditActivity
             asset.setName("My New Asset");
             asset.setRealmId(currentTenant.getId());
             asset.setTenantDisplayName(currentTenant.getDisplayName());
-            asset.setType("urn:mydomain:customtype");
+            asset.setType(AssetType.THING);
         }
+
+        initialAssetAttributes = attributesFromJson(asset.getAttributes(), assetId).collect(Collectors.toList());
 
         clearViewMessages();
         writeAssetToView();
@@ -479,7 +483,10 @@ public class AssetEditActivity
 //                            new ProtocolLinksEditor(environment, this.view.getStyle(), view, attribute, protocolDescriptor, false)
 //                        );
 
-                        if (protocolDescriptor.isDeviceDiscovery() || protocolDescriptor.isDeviceImport()) {
+                        // Only add the import extension if the attribute existed when edit first started
+                        boolean existingAttribute = initialAssetAttributes.stream().anyMatch(initialAttribute -> initialAttribute.getName().equals(attribute.getName()));
+
+                        if (existingAttribute && (protocolDescriptor.isDeviceDiscovery() || protocolDescriptor.isDeviceImport())) {
                             extensions.add(
                                 new ProtocolDiscoveryView(
                                     environment,
