@@ -357,7 +357,7 @@ public class AssetEditActivity
             attributeFilter = ProtocolConfiguration::isProtocolConfiguration;
         } else {
             query = new AssetQuery()
-                .select(new AssetQuery.Select(AssetQuery.Include.ONLY_ID_AND_NAME_AND_ATTRIBUTE_NAMES, true));
+                .select(new AssetQuery.Select(AssetQuery.Include.ONLY_ID_AND_NAME_AND_ATTRIBUTE_NAMES));
 
             // Limit to assets that have the same realm as the asset being edited (if it has been assigned a realm
             // otherwise the query will be automatically restricted to the logged in users realm)
