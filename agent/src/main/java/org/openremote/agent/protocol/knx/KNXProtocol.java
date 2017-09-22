@@ -164,7 +164,7 @@ public class KNXProtocol extends AbstractProtocol implements ProtocolLinkedAttri
     public AssetAttribute getProtocolConfigurationTemplate() {
         return super.getProtocolConfigurationTemplate()
             .addMeta(
-                new MetaItem(META_KNX_IP_CONNECTION_TYPE, null),
+                new MetaItem(META_KNX_IP_CONNECTION_TYPE, Values.create("TUNNELLING")),
                 new MetaItem(META_KNX_GATEWAY_IP, null)
             );
     }

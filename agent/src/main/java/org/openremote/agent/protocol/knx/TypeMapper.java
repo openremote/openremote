@@ -1,37 +1,19 @@
 package org.openremote.agent.protocol.knx;
 
+import org.openremote.model.attribute.AttributeType;
+import org.openremote.model.value.ArrayValue;
+import org.openremote.model.value.Value;
+import org.openremote.model.value.ValueType;
+import org.openremote.model.value.Values;
+import org.openremote.model.value.impl.NumberValueImpl;
+import tuwien.auto.calimero.datapoint.Datapoint;
+import tuwien.auto.calimero.dptxlator.*;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
-
-import org.openremote.model.attribute.AttributeType;
-import org.openremote.model.value.Value;
-import org.openremote.model.value.impl.ArrayValueImpl;
-import org.openremote.model.value.impl.BooleanValueImpl;
-import org.openremote.model.value.impl.NumberValueImpl;
-import org.openremote.model.value.impl.StringValueImpl;
-
-import tuwien.auto.calimero.datapoint.Datapoint;
-import tuwien.auto.calimero.dptxlator.DPTXlator;
-import tuwien.auto.calimero.dptxlator.DPTXlator1BitControlled;
-import tuwien.auto.calimero.dptxlator.DPTXlator2ByteFloat;
-import tuwien.auto.calimero.dptxlator.DPTXlator2ByteUnsigned;
-import tuwien.auto.calimero.dptxlator.DPTXlator4ByteFloat;
-import tuwien.auto.calimero.dptxlator.DPTXlator4ByteSigned;
-import tuwien.auto.calimero.dptxlator.DPTXlator4ByteUnsigned;
-import tuwien.auto.calimero.dptxlator.DPTXlator8BitSigned;
-import tuwien.auto.calimero.dptxlator.DPTXlator8BitUnsigned;
-import tuwien.auto.calimero.dptxlator.DPTXlatorBoolean;
-import tuwien.auto.calimero.dptxlator.DPTXlatorDate;
-import tuwien.auto.calimero.dptxlator.DPTXlatorDateTime;
-import tuwien.auto.calimero.dptxlator.DPTXlatorRGB;
-import tuwien.auto.calimero.dptxlator.DPTXlatorSceneControl;
-import tuwien.auto.calimero.dptxlator.DPTXlatorSceneNumber;
-import tuwien.auto.calimero.dptxlator.DPTXlatorString;
-import tuwien.auto.calimero.dptxlator.DPTXlatorTime;
-import tuwien.auto.calimero.dptxlator.TranslatorTypes;
 
 public class TypeMapper {
 
@@ -44,7 +26,7 @@ public class TypeMapper {
     static private Map<AttributeType, String> typeToDptMap;
 
     static {
-        dptToTypeMap = new HashMap<String, AttributeType>();
+        dptToTypeMap = new HashMap<>();
 
         // Main number 1
         dptToTypeMap.put(DPTXlatorBoolean.DPT_SWITCH.getID(), AttributeType.BOOLEAN);
@@ -159,7 +141,7 @@ public class TypeMapper {
         // Datapoint Types "RGB Color", Main number 232
         dptToTypeMap.put(DPTXlatorRGB.DPT_RGB.getID(), AttributeType.COLOR_RGB);
 
-        typeToDptMap = new HashMap<AttributeType, String>();
+        typeToDptMap = new HashMap<>();
         typeToDptMap.put(AttributeType.BOOLEAN, DPTXlatorBoolean.DPT_SWITCH.getID());
         typeToDptMap.put(AttributeType.PERCENTAGE, DPTXlator8BitUnsigned.DPT_SCALING.getID());
         typeToDptMap.put(AttributeType.NUMBER, DPTXlator2ByteFloat.DPT_TEMPERATURE.getID());
@@ -168,16 +150,17 @@ public class TypeMapper {
         typeToDptMap.put(AttributeType.COLOR_RGB, DPTXlatorRGB.DPT_RGB.getID());
     }
 
+    @SuppressWarnings("ConstantConditions")
     public static DPTXlator toDPTXlator(Datapoint datapoint, Value value) throws Exception {
 
         DPTXlator translator = TranslatorTypes.createTranslator(0, datapoint.getDPT());
 
-        if (translator instanceof DPTXlatorBoolean && value instanceof BooleanValueImpl) {
-            ((DPTXlatorBoolean) translator).setValue(((BooleanValueImpl) value).getBoolean());
-        } else if (translator instanceof DPTXlator8BitUnsigned && value instanceof NumberValueImpl) {
-            ((DPTXlator8BitUnsigned) translator).setValue((int) ((NumberValueImpl) value).getNumber());
-        } else if (translator instanceof DPTXlatorRGB && value instanceof ArrayValueImpl) {
-            ArrayValueImpl arrayValue = (ArrayValueImpl) value;
+        if (translator instanceof DPTXlatorBoolean && value != null && value.getType() == ValueType.BOOLEAN) {
+            ((DPTXlatorBoolean) translator).setValue(Values.getBoolean(value).get());
+        } else if (translator instanceof DPTXlator8BitUnsigned && value != null && value.getType() == ValueType.NUMBER) {
+            ((DPTXlator8BitUnsigned) translator).setValue(Values.getIntegerCoerced(value).orElse(0));
+        } else if (translator instanceof DPTXlatorRGB &&  value != null && value.getType() == ValueType.ARRAY) {
+            ArrayValue arrayValue = Values.getArray(value).get();
             ((DPTXlatorRGB) translator).setValue(arrayValue.getNumber(0).get().intValue(), arrayValue.getNumber(1).get().intValue(), arrayValue.getNumber(2).get().intValue());
         } else {
             // TODO depending on the DPT and the value, a more sophisticated translation is needed
@@ -195,14 +178,14 @@ public class TypeMapper {
         Value value;
 
         if (translator instanceof DPTXlatorBoolean) {
-            value = new BooleanValueImpl(((DPTXlatorBoolean) translator).getValueBoolean());
+            value = Values.create(((DPTXlatorBoolean) translator).getValueBoolean());
         } else if (translator instanceof DPTXlator2ByteFloat) {
             value = new NumberValueImpl(new BigDecimal(translator.getNumericValue()).setScale(2, RoundingMode.HALF_UP).doubleValue());
         } else if (translator instanceof DPTXlator8BitUnsigned) {
             value = new NumberValueImpl(translator.getNumericValue());
         } else {
             // TODO depending on the DPTXlator a more sophisticated translation to value is needed
-            value = new StringValueImpl(translator.getValue());
+            value = Values.create(translator.getValue());
         }
 
         return value;
