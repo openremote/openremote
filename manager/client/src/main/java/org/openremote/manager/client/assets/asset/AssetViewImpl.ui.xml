@@ -17,9 +17,9 @@
         }
 
         .stringEditor {
-                     min-width: 5em;
-                     width: 100%;
-                 }
+             min-width: 5em;
+             width: 100%;
+         }
 
         .numberEditor {
             min-width: 5em;
@@ -29,12 +29,10 @@
         .booleanEditor {
         }
 
-        .regularAttribute {
-            border-left: 4px solid;
-        }
-
+        .regularAttribute,
         .highlightAttribute {
-            border-left: 4px solid;
+            border-left-width: 4px;
+            border-left-style: solid;
         }
 
         .metaItemValueEditor {

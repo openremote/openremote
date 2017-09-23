@@ -51,7 +51,6 @@ window.load = (function () {
                         element.async = true;
                         break;
                     case 'link':
-                        element.type = 'text/css';
                         element.rel = rel;
                         attr = 'href';
                         parent = 'head';

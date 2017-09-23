@@ -19,16 +19,18 @@
     <script src="/static//js/loader.js"></script>
     <link rel="stylesheet" type="text/css" href="/static/css/loader.css" />
 
+    <link rel="import" href="/static/css/style.html">
+    <link rel="import" href="/static/css/theme.html">
+    <custom-style>
+        <style include="global-style global-theme"></style>
+    </custom-style>
+
     <script>
         document.addEventListener("DOMContentLoaded", function (event) {
             setTimeout(function() {
                 Promise.all([
-                    load.js("/static/bower_components/webcomponentsjs/webcomponents-lite.min.js"),
-                    load.import("/static/bower_components/iron-flex-layout/iron-flex-layout-classes.html"),
+                    load.js("/static/bower_components/webcomponentsjs/webcomponents-loader.js"),
                     load.css("/static/bower_components/font-awesome/css/font-awesome.css"),
-
-                    load.import("/static/css/style.html"),
-                    load.import("/static/css/theme.html")
                 ]).then(function () {
                     console.log("Application resources loaded, starting...");
                     handleLoadComplete();
