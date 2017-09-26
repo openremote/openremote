@@ -139,7 +139,7 @@ public class AttributeViewImpl extends FormGroup implements AttributeView {
     }
 
     @Override
-    public void onAttributeChanged() {
+    public void onAttributeChanged(long timestamp) {
         if (!editMode) {
             getFormField().clear();
             getFormField().add(createAttributeValueEditor());
@@ -149,7 +149,7 @@ public class AttributeViewImpl extends FormGroup implements AttributeView {
             Browser.getWindow().setTimeout(() -> removeStyleName(environment.getWidgetStyle().HighlightBackground()), 250);
 
             // Notify extensions
-            getExtensions().forEach(AttributeView::onAttributeChanged);
+            getExtensions().forEach(ext -> ext.onAttributeChanged(timestamp));
         }
     }
 

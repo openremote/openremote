@@ -26,6 +26,8 @@ import org.openremote.manager.client.assets.asset.*;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.assets.browser.AssetBrowserImpl;
 import org.openremote.manager.client.assets.browser.AssetBrowserPresenter;
+import org.openremote.manager.client.assets.navigation.AssetNavigation;
+import org.openremote.manager.client.assets.navigation.AssetNavigationImpl;
 import org.openremote.manager.client.assets.tenant.AssetsTenant;
 import org.openremote.manager.client.assets.tenant.AssetsTenantActivity;
 import org.openremote.manager.client.assets.tenant.AssetsTenantImpl;
@@ -46,11 +48,16 @@ public class AssetsModule extends AbstractGinModule {
         bind(AssetsTenant.class).to(AssetsTenantImpl.class).in(Singleton.class);
         bind(AssetsTenantActivity.class);
 
+        bind(AssetNavigation.class).to(AssetNavigationImpl.class).in(Singleton.class);
+
         bind(AssetView.class).to(AssetViewImpl.class).in(Singleton.class);
         bind(AssetViewActivity.class);
 
         bind(AssetEdit.class).to(AssetEditImpl.class).in(Singleton.class);
         bind(AssetEditActivity.class);
+
+        bind(AssetLinkUsers.class).to(AssetLinkUsersImpl.class).in(Singleton.class);
+        bind(AssetLinkUsersActivity.class);
     }
 
     @Provides

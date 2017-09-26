@@ -27,10 +27,7 @@ import com.google.gwt.text.shared.AbstractRenderer;
 import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
 import com.google.gwt.uibinder.client.UiHandler;
-import com.google.gwt.user.client.ui.FlowPanel;
-import com.google.gwt.user.client.ui.HTMLPanel;
-import com.google.gwt.user.client.ui.Label;
-import com.google.gwt.user.client.ui.TextBox;
+import com.google.gwt.user.client.ui.*;
 import com.google.inject.Provider;
 import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.app.dialog.Confirmation;
@@ -39,7 +36,9 @@ import org.openremote.manager.client.assets.attributes.AttributeView;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.assets.browser.AssetSelector;
 import org.openremote.manager.client.assets.browser.BrowserTreeNode;
+import org.openremote.manager.client.assets.navigation.AssetNavigation;
 import org.openremote.manager.client.widget.*;
+import org.openremote.manager.client.widget.PushButton;
 import org.openremote.model.Constants;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetType;
@@ -94,13 +93,10 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
     HTMLPanel sidebarContainer;
 
     @UiField
+    SimplePanel assetNavigationContainer;
+
+    @UiField
     Headline headline;
-
-    @UiField
-    Hyperlink viewAssetLink;
-
-    @UiField
-    Hyperlink createAssetLink;
 
     /* ############################################################################ */
 
@@ -164,6 +160,7 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
     PushButton deleteButton;
 
     final AssetBrowser assetBrowser;
+    final AssetNavigation assetNavigation;
     final Provider<JsonEditor> jsonEditorProvider;
     final Environment environment;
     Presenter presenter;
@@ -172,12 +169,14 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
 
     @Inject
     public AssetEditImpl(AssetBrowser assetBrowser,
+                         AssetNavigation assetNavigation,
                          Provider<Confirmation> confirmationDialogProvider,
                          Provider<JsonEditor> jsonEditorProvider,
                          Environment environment) {
         super(confirmationDialogProvider);
         this.jsonEditorProvider = jsonEditorProvider;
         this.assetBrowser = assetBrowser;
+        this.assetNavigation = assetNavigation;
         this.environment = environment;
 
         parentAssetSelector = new AssetSelector(
@@ -235,9 +234,6 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
         // Restore initial state of view
         sidebarContainer.clear();
         headline.setText(null);
-        viewAssetLink.setVisible(false);
-        viewAssetLink.setTargetHistoryToken("");
-        createAssetLink.setVisible(false);
         setFormBusy(true);
         nameGroup.setError(false);
         nameInput.setReadOnly(false);
@@ -265,7 +261,14 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
         if (presenter != null) {
             assetBrowser.asWidget().removeFromParent();
             sidebarContainer.add(assetBrowser.asWidget());
+            assetNavigation.asWidget().removeFromParent();
+            assetNavigationContainer.add(assetNavigation.asWidget());
         }
+    }
+
+    @Override
+    public AssetNavigation getAssetNavigation() {
+        return assetNavigation;
     }
 
     @Override
@@ -280,17 +283,7 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
         mapWidget.setVisible(!busy);
         if (!busy)
             mapWidget.resize();
-        viewAssetLink.setVisible(
-            viewAssetLink.getTargetHistoryToken() != null
-                && viewAssetLink.getTargetHistoryToken().length() > 0
-                && !busy
-        );
         addAttributeButton.setEnabled(!busy);
-    }
-
-    @Override
-    public void setHistoryToken(String token) {
-        viewAssetLink.setTargetHistoryToken(token);
     }
 
     /* ############################################################################ */
@@ -503,15 +496,12 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
     public void enableCreate(boolean enable) {
         createButton.setVisible(enable);
         headline.setText(enable ? managerMessages.createAsset() : managerMessages.editAsset());
-        createAssetLink.setVisible(!enable);
     }
 
     @Override
     public void enableUpdate(boolean enable) {
-        viewAssetLink.setVisible(enable);
         updateButton.setVisible(enable);
         headline.setText(enable ? managerMessages.editAsset() : managerMessages.createAsset());
-        createAssetLink.setVisible(enable);
     }
 
     @Override

@@ -24,6 +24,7 @@ import com.google.gwt.i18n.client.DateTimeFormat;
 import com.google.gwt.text.shared.AbstractRenderer;
 import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.Label;
+import elemental.client.Browser;
 import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.assets.attributes.AbstractAttributeViewExtension;
 import org.openremote.manager.client.assets.attributes.AttributeView;
@@ -91,8 +92,8 @@ public abstract class DatapointBrowser extends AbstractAttributeViewExtension {
     }
 
     @Override
-    public void onAttributeChanged() {
-
+    public void onAttributeChanged(long timestamp) {
+        refresh(timestamp);
     }
 
     @Override
@@ -194,7 +195,8 @@ public abstract class DatapointBrowser extends AbstractAttributeViewExtension {
 
         chart = ChartUtil.createLineChart(canvas.getContext2d());
 
-        refresh(timestamp);
+        // TODO: Ugly, sometimes the chart is not ready (chart == undefined but !null in Java...) so we wait a bit
+        Browser.getWindow().setTimeout(() -> refresh(timestamp), 50);
     }
 
     protected long calculateTimestamp(boolean subtract) {

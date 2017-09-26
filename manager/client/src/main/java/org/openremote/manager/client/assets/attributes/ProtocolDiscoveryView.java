@@ -159,7 +159,7 @@ public class ProtocolDiscoveryView extends AbstractAttributeViewExtension {
     }
 
     @Override
-    public void onAttributeChanged() {
+    public void onAttributeChanged(long timestamp) {
 
     }
 

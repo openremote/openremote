@@ -19,11 +19,10 @@
  */
 package org.openremote.manager.client.assets.asset;
 
-import com.google.gwt.place.shared.Place;
 import com.google.gwt.user.client.ui.IsWidget;
 import org.openremote.manager.client.assets.attributes.AttributeView;
-import org.openremote.manager.client.assets.browser.AssetBrowserSelection;
 import org.openremote.manager.client.assets.browser.BrowserTreeNode;
+import org.openremote.manager.client.assets.navigation.AssetNavigation;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.geo.GeoJSON;
 import org.openremote.model.value.ObjectValue;
@@ -34,7 +33,6 @@ import java.util.List;
 public interface AssetBaseView<P extends AssetBaseView.Presenter> extends IsWidget {
 
     interface Presenter {
-        Place getPlace(boolean editPlace);
 
         void onMapReady();
 
@@ -53,6 +51,8 @@ public interface AssetBaseView<P extends AssetBaseView.Presenter> extends IsWidg
 
     void setPresenter(P presenter);
 
+    AssetNavigation getAssetNavigation();
+
     AttributeView.Style getStyle();
 
     void setFormBusy(boolean busy);
@@ -64,8 +64,6 @@ public interface AssetBaseView<P extends AssetBaseView.Presenter> extends IsWidg
     void setCreatedOn(Date createdOn);
 
     void setParentNode(BrowserTreeNode treeNode);
-
-    void setHistoryToken(String token);
 
     void initialiseMap(ObjectValue mapOptions);
 

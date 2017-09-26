@@ -35,12 +35,6 @@
                             visible="false"
                             text="{managerMessages.viewAsset}"/>
 
-                    <w:Hyperlink
-                            addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem}"
-                            icon="plus-square"
-                            targetHistoryToken="assetEdit:"
-                            text="{managerMessages.createAsset}"/>
-
                 </g:HTMLPanel>
 
                 <w:MapWidget ui:field="mapWidget" addStyleNames="flex"/>

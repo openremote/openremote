@@ -93,12 +93,8 @@ public class AssetViewActivity
 
     @Override
     public void onStop() {
-        super.onStop();
-
         subscribeLiveUpdates(false);
-
-        view.removeAttributeViews(attributeViews);
-        view.setPresenter(null);
+        super.onStop();
     }
 
     @Override
@@ -169,7 +165,7 @@ public class AssetViewActivity
     @Override
     public void refresh() {
         for (AttributeView attributeView : attributeViews) {
-            attributeView.onAttributeChanged();
+            attributeView.onAttributeChanged(System.currentTimeMillis());
         }
     }
 
@@ -186,7 +182,7 @@ public class AssetViewActivity
 
             if (assetAttributeRef.map(ref -> ref.equals(attributeEvent.getAttributeRef())).orElse(false)) {
                 assetAttribute.setValue(attributeEvent.getValue().orElse(null), attributeEvent.getTimestamp());
-                attributeView.onAttributeChanged();
+                attributeView.onAttributeChanged(System.currentTimeMillis());
                 break;
             }
         }

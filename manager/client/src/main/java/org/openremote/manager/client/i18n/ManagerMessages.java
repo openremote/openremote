@@ -442,4 +442,6 @@ public interface ManagerMessages extends Messages {
     String addConverterValue();
 
     String deleteConverterValue();
+
+    String linkAssetUsers();
 }

@@ -26,10 +26,7 @@ import com.google.gwt.resources.client.CssResource;
 import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
 import com.google.gwt.uibinder.client.UiHandler;
-import com.google.gwt.user.client.ui.Composite;
-import com.google.gwt.user.client.ui.FlowPanel;
-import com.google.gwt.user.client.ui.HTMLPanel;
-import com.google.gwt.user.client.ui.Label;
+import com.google.gwt.user.client.ui.*;
 import com.google.inject.Provider;
 import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.app.dialog.JsonEditor;
@@ -37,9 +34,11 @@ import org.openremote.manager.client.assets.attributes.AttributeView;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.assets.browser.AssetSelector;
 import org.openremote.manager.client.assets.browser.BrowserTreeNode;
+import org.openremote.manager.client.assets.navigation.AssetNavigation;
 import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.style.WidgetStyle;
 import org.openremote.manager.client.widget.*;
+import org.openremote.manager.client.widget.PushButton;
 import org.openremote.model.Constants;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetType;
@@ -97,10 +96,10 @@ public class AssetViewImpl extends Composite implements AssetView {
     HTMLPanel sidebarContainer;
 
     @UiField
-    Headline headline;
+    SimplePanel assetNavigationContainer;
 
     @UiField
-    Hyperlink editAssetLink;
+    Headline headline;
 
     /* ############################################################################ */
 
@@ -133,13 +132,12 @@ public class AssetViewImpl extends Composite implements AssetView {
 
     /* ############################################################################ */
 
-    @UiField
-    PushButton refreshButton;
+    FlowPanel liveUpdatesNavItem = new FlowPanel();
+    PushButton liveUpdatesOnButton = new PushButton();
+    PushButton liveUpdatesOffButton = new PushButton();
+    PushButton refreshButton = new PushButton();
 
-    @UiField
-    PushButton liveUpdatesOnButton;
-    @UiField
-    PushButton liveUpdatesOffButton;
+    /* ############################################################################ */
 
     @UiField
     FlowPanel attributeViewContainer;
@@ -147,6 +145,7 @@ public class AssetViewImpl extends Composite implements AssetView {
     /* ############################################################################ */
 
     final AssetBrowser assetBrowser;
+    final AssetNavigation assetNavigation;
     final Provider<JsonEditor> jsonEditorProvider;
     final Environment environment;
     final List<AttributeView> attributeViews = new ArrayList<>();
@@ -156,9 +155,11 @@ public class AssetViewImpl extends Composite implements AssetView {
 
     @Inject
     public AssetViewImpl(AssetBrowser assetBrowser,
+                         AssetNavigation assetNavigation,
                          Environment environment,
                          Provider<JsonEditor> jsonEditorProvider) {
         this.assetBrowser = assetBrowser;
+        this.assetNavigation = assetNavigation;
         this.jsonEditorProvider = jsonEditorProvider;
         this.environment = environment;
 
@@ -166,6 +167,42 @@ public class AssetViewImpl extends Composite implements AssetView {
         initWidget(ui.createAndBindUi(this));
 
         splitPanel.setOnResize(() -> mapWidget.resize());
+
+        liveUpdatesOnButton.setText(managerMessages.showLiveUpdates());
+        liveUpdatesOnButton.setVisible(false);
+        liveUpdatesOnButton.addStyleName(style.navItem());
+        liveUpdatesOnButton.addStyleName(widgetStyle.SecondaryNavItem());
+        liveUpdatesOnButton.addStyleName("primary");
+        liveUpdatesOnButton.setIcon("check-square");
+        liveUpdatesOnButton.addClickHandler(event -> {
+            if (presenter != null)
+                presenter.enableLiveUpdates(false);
+            liveUpdatesOnButton.setVisible(false);
+            liveUpdatesOffButton.setVisible(true);
+        });
+
+        liveUpdatesOffButton.setText(managerMessages.showLiveUpdates());
+        liveUpdatesOffButton.addStyleName(style.navItem());
+        liveUpdatesOffButton.addStyleName(widgetStyle.SecondaryNavItem());
+        liveUpdatesOffButton.setIcon("square-o");
+        liveUpdatesOffButton.addClickHandler(event -> {
+            if (presenter != null)
+                presenter.enableLiveUpdates(true);
+            liveUpdatesOnButton.setVisible(true);
+            liveUpdatesOffButton.setVisible(false);
+        });
+
+        liveUpdatesNavItem.add(liveUpdatesOnButton);
+        liveUpdatesNavItem.add(liveUpdatesOffButton);
+
+        refreshButton.setText(managerMessages.refreshAllAttributes());
+        refreshButton.addStyleName(style.navItem());
+        refreshButton.addStyleName(widgetStyle.SecondaryNavItem());
+        refreshButton.setIcon("refresh");
+        refreshButton.addClickHandler(event -> {
+            if (presenter != null)
+                presenter.refresh();
+        });
 
         setFormBusy(true);
     }
@@ -179,7 +216,7 @@ public class AssetViewImpl extends Composite implements AssetView {
         setFormBusy(true);
         headline.setText(null);
         headline.setSub(null);
-        editAssetLink.setVisible(false);
+        // Live updates button state is not reset, it's static for AssetViewActivity
         createdOnOutput.setText(null);
         tenantDisplayName.setText(null);
         parentAssetName.setText(null);
@@ -199,7 +236,16 @@ public class AssetViewImpl extends Composite implements AssetView {
         if (presenter != null) {
             assetBrowser.asWidget().removeFromParent();
             sidebarContainer.add(assetBrowser.asWidget());
+            assetNavigation.asWidget().removeFromParent();
+            assetNavigationContainer.add(assetNavigation.asWidget());
+            assetNavigation.addNavItem(liveUpdatesNavItem.asWidget());
+            assetNavigation.addNavItem(refreshButton.asWidget());
         }
+    }
+
+    @Override
+    public AssetNavigation getAssetNavigation() {
+        return assetNavigation;
     }
 
     @Override
@@ -212,15 +258,9 @@ public class AssetViewImpl extends Composite implements AssetView {
         } else {
             mapWidget.setVisible(false);
         }
-        editAssetLink.setVisible(!busy);
     }
 
     /* ############################################################################ */
-
-    @Override
-    public void setHistoryToken(String token) {
-        editAssetLink.setTargetHistoryToken(token);
-    }
 
     @Override
     public AttributeView.Style getStyle() {
@@ -361,27 +401,5 @@ public class AssetViewImpl extends Composite implements AssetView {
     void centerMapClicked(ClickEvent e) {
         if (presenter != null)
             presenter.centerMap();
-    }
-
-    @UiHandler("refreshButton")
-    public void onRefreshButtonClicked(ClickEvent e) {
-        if (presenter != null)
-            presenter.refresh();
-    }
-
-    @UiHandler("liveUpdatesOnButton")
-    public void onLiveUpdatesOnButtonClicked(ClickEvent e) {
-        if (presenter != null)
-            presenter.enableLiveUpdates(false);
-        liveUpdatesOnButton.setVisible(false);
-        liveUpdatesOffButton.setVisible(true);
-    }
-
-    @UiHandler("liveUpdatesOffButton")
-    public void onLiveUpdatesOffButtonClicked(ClickEvent e) {
-        if (presenter != null)
-            presenter.enableLiveUpdates(true);
-        liveUpdatesOnButton.setVisible(true);
-        liveUpdatesOffButton.setVisible(false);
     }
 }

@@ -40,6 +40,8 @@ public interface AssetBrowser extends IsWidget {
 
         void onViewDetached();
 
+        void setCreateAsset(boolean createAsset);
+
         void loadAsset(String id, Consumer<Asset> assetConsumer);
 
         void loadNodeChildren(BrowserTreeNode parent, HasData<BrowserTreeNode> display);
@@ -65,6 +67,8 @@ public interface AssetBrowser extends IsWidget {
     void setPresenter(Presenter presenter);
 
     Presenter getPresenter();
+
+    void setCreateAsset(boolean createAsset);
 
     void showAndSelectNode(String[] path, BrowserTreeNode treeNode, boolean scrollIntoView);
 

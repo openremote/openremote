@@ -1,7 +1,6 @@
 <ui:UiBinder xmlns:ui="urn:ui:com.google.gwt.uibinder"
              xmlns:g="urn:import:com.google.gwt.user.client.ui"
-             xmlns:w="urn:import:org.openremote.manager.client.widget"
-             xmlns:assetBrowser="urn:import:org.openremote.manager.client.assets.browser">
+             xmlns:w="urn:import:org.openremote.manager.client.widget">
 
     <ui:with field="managerMessages" type="org.openremote.manager.client.i18n.ManagerMessages"/>
     <ui:with field="widgetStyle" type="org.openremote.manager.client.style.WidgetStyle"/>
@@ -63,48 +62,8 @@
 
         <w:second>
             <g:HTMLPanel styleName="flex layout vertical">
-                <g:HTMLPanel
-                        styleName="layout horizontal center end-justified {widgetStyle.SecondaryNavHorizontal}">
 
-                    <!--
-                                        <w:Hyperlink
-                                                addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem}"
-                                                icon="dashboard"
-                                                targetHistoryToken="assets:"
-                                                text="{managerMessages.showDashboard}"/>
-                    -->
-
-                    <w:PushButton
-                            ui:field="liveUpdatesOnButton"
-                            visible="false"
-                            addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem} primary"
-                            icon="check-square"
-                            text="{managerMessages.showLiveUpdates}"/>
-                    <w:PushButton
-                            ui:field="liveUpdatesOffButton"
-                            addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem}"
-                            icon="square-o"
-                            text="{managerMessages.showLiveUpdates}"/>
-
-                    <w:PushButton
-                            ui:field="refreshButton"
-                            addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem}"
-                            icon="refresh"
-                            text="{managerMessages.refreshAllAttributes}"/>
-
-                    <w:Hyperlink
-                            ui:field="editAssetLink"
-                            addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem}"
-                            icon="edit"
-                            visible="false"
-                            text="{managerMessages.editAsset}"/>
-
-                    <w:Hyperlink
-                            addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem}"
-                            icon="plus-square"
-                            targetHistoryToken="assetEdit:"
-                            text="{managerMessages.createAsset}"/>
-                </g:HTMLPanel>
+                <g:SimplePanel ui:field="assetNavigationContainer"/>
 
                 <w:Form ui:field="form" addStyleNames="flex">
 

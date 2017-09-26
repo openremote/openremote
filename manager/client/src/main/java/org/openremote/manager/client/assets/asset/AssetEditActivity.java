@@ -138,9 +138,8 @@ public class AssetEditActivity
 
     @Override
     public void onStop() {
-        super.onStop();
         clearViewMessages();
-        view.setPresenter(null);
+        super.onStop();
     }
 
     @Override

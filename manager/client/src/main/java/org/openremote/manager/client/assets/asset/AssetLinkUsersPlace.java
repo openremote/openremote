@@ -22,24 +22,23 @@ package org.openremote.manager.client.assets.asset;
 import com.google.gwt.place.shared.PlaceTokenizer;
 import com.google.gwt.place.shared.Prefix;
 
-public class AssetViewPlace extends AssetPlace {
+public class AssetLinkUsersPlace extends AssetPlace {
 
-    public AssetViewPlace(String assetId) {
+    public AssetLinkUsersPlace(String assetId) {
         super(assetId);
     }
 
-    @Prefix("asset")
-    public static class Tokenizer implements PlaceTokenizer<AssetViewPlace> {
+    @Prefix("assetLinkUsers")
+    public static class Tokenizer implements PlaceTokenizer<AssetLinkUsersPlace> {
 
         @Override
-        public AssetViewPlace getPlace(String token) {
-            return new AssetViewPlace(token != null && token.length() > 0 ? token : null);
+        public AssetLinkUsersPlace getPlace(String token) {
+            return new AssetLinkUsersPlace(token != null && token.length() > 0 ? token : null);
         }
 
         @Override
-        public String getToken(AssetViewPlace place) {
+        public String getToken(AssetLinkUsersPlace place) {
             return place.getAssetId() != null ? place.getAssetId() : "";
         }
     }
-
 }

@@ -76,32 +76,8 @@
 
         <w:second>
             <g:HTMLPanel styleName="flex layout vertical">
-                <div class="layout horizontal center end-justified {widgetStyle.SecondaryNavHorizontal}">
 
-                    <!--
-                                        <w:Hyperlink
-                                                addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem}"
-                                                icon="dashboard"
-                                                targetHistoryToken="assets:"
-                                                text="{managerMessages.showDashboard}"/>
-                    -->
-
-                    <w:Hyperlink
-                            ui:field="viewAssetLink"
-                            addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem}"
-                            icon="eye"
-                            visible="false"
-                            text="{managerMessages.viewAsset}"/>
-
-                    <w:Hyperlink
-                            ui:field="createAssetLink"
-                            addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem}"
-                            icon="plus-square"
-                            visible="false"
-                            targetHistoryToken="assetEdit:"
-                            text="{managerMessages.createAsset}"/>
-
-                </div>
+                <g:SimplePanel ui:field="assetNavigationContainer"/>
 
                 <w:Form ui:field="form" addStyleNames="flex">
 
