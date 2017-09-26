@@ -151,6 +151,10 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                     throw new WebApplicationException(NOT_FOUND);
 
                 //Restricted users don't have permission to update an asset to become a root asset
+                if (TextUtil.isNullOrEmpty(asset.getRealmId())) {
+                    throw new WebApplicationException("RealmId is missing", BAD_REQUEST);
+                }
+
                 if (TextUtil.isNullOrEmpty(asset.getParentId())) {
                     throw new WebApplicationException("ParentId is missing", BAD_REQUEST);
                 }
@@ -169,32 +173,35 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                     //Check if attribute is present on the asset in storage
                     if (serverAttribute.isPresent()) {
                         AssetAttribute attr = serverAttribute.get();
-                        if (attr.isProtected() && !attr.isReadOnly()) {
-                            //If attribute isn't protected and not readonly, then update
+
+                        //TODO remove readonly check
+                        //attr is not protected -> CONFLICT attribute already present(private)
+                        //attr is protected:
+                        //-can set value
+                        //-can update metaItems -> user can add/update/delete items that are restricted write else BAD REQUEST
+                        // merge the metaItems if they are already present
+                        // if restricted read client should have received the metaItem, list those metaItems
+                        // and restricted write, then the metaItem can be changed, if not, then it can't be updated
+                        // Invert if else
+                        if (attr.isProtected()) {
+                            //If attribute isn't protected, then update
+
+                            attr.getMeta().stream().filter(metaItem -> metaItem.isProtectedRead()).forEach(metaItem -> {
+                                if(!metaItem.isProtectedWrite()) {
+                                    throw new WebApplicationException("MetaItems should be protected write", BAD_REQUEST);
+                                }
+                            });
                             serverAsset.replaceAttribute(updatedAttribute);
                         } else {
-                            // Check if meta items are equal.
-                            attr.getMeta().forEach(metaItem -> {
-                                metaItem.getName().ifPresent(metaName -> {
-                                    updatedAttribute.getMetaItem(metaName).ifPresent(updateMetaItem -> {
-                                        if (!updateMetaItem.equals(metaItem)) {
-                                            throw new WebApplicationException(String.format("No permission to update attribute %s", updatedAttributeName), Response.Status.CONFLICT);
-                                        }
-                                    });
-                                });
-                            });
-
-                            // Check if value is equal
-                            attr.getValue().ifPresent(value -> {
-                                updatedAttribute.getValue().ifPresent(updatedValue -> {
-                                    if (!value.equals(updatedValue)) {
-                                        throw new WebApplicationException(String.format("No permission to update attribute %s", updatedAttributeName), Response.Status.CONFLICT);
-                                    }
-                                });
-                            });
+                            throw new WebApplicationException("Attribute is already present as private", Response.Status.CONFLICT);
                         }
                     } else {
                         //If not present, then add the attribute
+                        for(MetaItem item : updatedAttribute.getMeta()) {
+                            if(!item.isProtectedWrite()) {
+                                throw new WebApplicationException("MetaItems should be protected write", BAD_REQUEST);
+                            }
+                        }
                         serverAsset.addAttributes(updatedAttribute);
                     }
                 }
@@ -203,12 +210,10 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                     //Check if asset is missing attributes
                     if (serverAttribute.getName().isPresent() && !asset.hasAttribute(serverAttribute.getName().get())) {
                         if (serverAttribute.isProtected()) {
-                            if (!serverAttribute.isReadOnly()) {
-                                //If attribute isn't protected and not readonly, then remove
-                                serverAsset.removeAttribute(serverAttribute.getName().get());
-                            } else {
-                                throw new WebApplicationException(String.format("No permission to remove attribute %s", serverAttribute.getName().get()), Response.Status.CONFLICT);
-                            }
+                            //If attribute isn't protected and not readonly, then remove
+                            serverAsset.removeAttribute(serverAttribute.getName().get());
+                        } else {
+                            throw new WebApplicationException(String.format("No permission to remove attribute %s", serverAttribute.getName().get()), Response.Status.CONFLICT);
                         }
                     }
                 }
@@ -219,6 +224,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                     throw new WebApplicationException(NOT_FOUND);
             }
 
+            //TODO move checks to optimise flow. Check if it could be easier
             Tenant tenant = identityService.getIdentityProvider().getTenantForRealmId(asset.getRealmId());
             if (tenant == null)
                 throw new WebApplicationException(BAD_REQUEST);

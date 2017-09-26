@@ -809,6 +809,8 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         assert updatedMetaItem.isPresent()
         assert updatedMetaItem.get().valueAsString.get() == "Target Temperature"
 
+        //TODO add tests for changed update function
+
         cleanup: "the server should be stopped"
         stopContainer(container)
     }

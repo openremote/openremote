@@ -35,9 +35,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Predicate;
 
-import static org.openremote.model.attribute.MetaItem.MetaItemFailureReason.META_ITEM_NAME_IS_REQUIRED;
-import static org.openremote.model.attribute.MetaItem.MetaItemFailureReason.META_ITEM_VALUE_IS_REQUIRED;
-import static org.openremote.model.attribute.MetaItem.MetaItemFailureReason.META_ITEM_VALUE_MISMATCH;
+import static org.openremote.model.attribute.MetaItem.MetaItemFailureReason.*;
 import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 
 /**
@@ -81,6 +79,14 @@ public class MetaItem extends AbstractValueHolder {
 
     public Optional<String> getName() {
         return getObjectValue().getString("name");
+    }
+
+    public boolean isProtectedRead() {
+        return getObjectValue().getBoolean("protectedRead").orElse(false);
+    }
+
+    public boolean isProtectedWrite() {
+        return getObjectValue().getBoolean("protectedWrite").orElse(false);
     }
 
     public boolean hasRestrictedFlag() {

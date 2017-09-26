@@ -22,8 +22,8 @@ package org.openremote.manager.shared.asset;
 import jsinterop.annotations.JsType;
 import org.openremote.manager.shared.http.RequestParams;
 import org.openremote.manager.shared.http.SuccessStatusCode;
-import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AbstractAssetQuery;
+import org.openremote.model.asset.Asset;
 
 import javax.annotation.security.RolesAllowed;
 import javax.validation.Valid;
@@ -80,6 +80,7 @@ public interface AssetResource {
     @RolesAllowed({"read:assets"})
     Asset get(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId);
 
+    //TODO update docs
     /**
      * Updates the asset. Regular users can only update assets in their authenticated realm, the superuser can update
      * assets in other (all) realms. A 403 status is returned if a regular user tries to update an asset in a realm
