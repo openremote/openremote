@@ -197,11 +197,11 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                         }
                     } else {
                         //If not present, then add the attribute
-                        for(MetaItem item : updatedAttribute.getMeta()) {
-                            if(!item.isProtectedWrite()) {
-                                throw new WebApplicationException("MetaItems should be protected write", BAD_REQUEST);
-                            }
-                        }
+//                        for(MetaItem item : updatedAttribute.getMeta()) {
+//                            if(!item.isProtectedWrite()) {
+//                                throw new WebApplicationException("MetaItems should be protected write", BAD_REQUEST);
+//                            }
+//                        }
                         serverAsset.addAttributes(updatedAttribute);
                     }
                 }
