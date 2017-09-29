@@ -237,6 +237,7 @@ public class RulesEngine<T extends Ruleset> {
         LOG.info("Adding ruleset: " + ruleset);
 
         boolean addSuccessful = false;
+        error = null;
 
         try {
             // If the ruleset references a template asset, compile it as a template
