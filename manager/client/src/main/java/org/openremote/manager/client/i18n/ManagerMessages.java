@@ -423,7 +423,7 @@ public interface ManagerMessages extends Messages {
 
     String protocolLinkDiscoveryStarted();
 
-    String protocolLinkDiscoverySuccess(@PluralCount int assetCount);
+    String protocolLinkDiscoverySuccess(int assetCount);
 
     String protocolLinkDiscoveryFailure(int failureCode);
 
