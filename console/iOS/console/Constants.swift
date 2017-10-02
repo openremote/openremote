@@ -26,26 +26,6 @@ enum AccesTokenResult<String>
     case Failure(NSError?)
 }
 
-enum Server {
-    static let scheme = "https"
-    // static let hostURL = "192.168.1.145:8080"
-    static let hostURL = "blok61.openremote.io"
-    static let initialPath = "console/\(Server.realm)/"
-    static let navigationPath = "console/\(Server.realm)/"
-    static let realm = "blok61"
-    static let apiTestResource = String(format:"\(Server.scheme)://%@/%@/notification/alert",Server.hostURL,Server.realm)
-
-    static let registerDeviceResource = String(format:"\(Server.scheme)://%@/%@/notification/token",Server.hostURL,Server.realm)
-    static let deleteNotifiedAlertResource = String(format:"\(Server.scheme)://%@/%@/notification/alert/",Server.hostURL,Server.realm)
-}
-
-enum Client {
-    static let clientId = "openremote"
-}
-
-enum FCM {
-    static let serverKey = "Dummy"
-}
 enum DefaultsKey {
     static let token = "token"
     static let refreshToken = "refreshToken"
@@ -56,10 +36,6 @@ enum DefaultsKey {
 enum NotificationsNames {
     static let isAuthenticated = "isAuthenticated"
     static let isdeviceIdSent = "isdeviceIdSent"
-}
-
-enum AppGroup {
-    static let entitlement = "group.org.openremote.console"
 }
 
 enum Notifications {
