@@ -155,6 +155,40 @@ class AssetAttributeLinkingTest extends Specification implements ManagerContaine
             assert asset2.getAttribute("counter").get().getValueAsNumber().get() == 0.0
         }
 
+        /* TODO Test has timing issues, fails in line 182 when run from CLI gradle clean build, works in IDE!
+        when: "the linked attribute is linked back to the source attribute (to create circular reference)"
+        def converterLoop = Values.createObject()
+        converterLoop.put("TRUE", "PRESSED")
+        converterLoop.put("FALSE", "PRESSED")
+        def attributeLinkLoop = Values.createObject()
+        attributeLinkLoop.put("attributeRef", new AttributeRef(asset1.id, "button").toArrayValue())
+        attributeLinkLoop.put("converter", converterLoop)
+        asset2.getAttribute("lightOnOff").get().addMeta(new MetaItem(AssetMeta.ATTRIBUTE_LINK, attributeLinkLoop))
+        asset2 = assetStorageService.merge(asset2)
+
+        and: "the button is pressed for a short period"
+        buttonPressed = new AttributeEvent(
+            new AttributeState(new AttributeRef(asset1.id, "button"), Values.create("PRESSED"))
+        )
+        assetProcessingService.sendAttributeEvent(buttonPressed)
+        Thread.sleep(10)
+        buttonReleased = new AttributeEvent(
+            new AttributeState(new AttributeRef(asset1.id, "button"), Values.create("RELEASED"))
+        )
+        assetProcessingService.sendAttributeEvent(buttonReleased)
+
+        then: "the linked attribute value should be toggled on"
+        conditions.eventually {
+            asset2 = assetStorageService.find(asset2.id, true)
+            assert asset2.getAttribute("lightOnOff").get().getValueAsBoolean().get()
+        }
+
+        and: "no more events should be processed"
+        conditions.eventually {
+            assert noEventProcessedIn(assetProcessingService, 500)
+        }
+        */
+
         cleanup: "the server should be stopped"
         stopContainer(container)
     }

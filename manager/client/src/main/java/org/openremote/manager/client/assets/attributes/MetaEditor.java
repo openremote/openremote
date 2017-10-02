@@ -557,7 +557,7 @@ public class MetaEditor extends AbstractAttributeViewExtension {
     }
 
     @Override
-    public void onAttributeChanged() {
+    public void onAttributeChanged(long timestamp) {
         onAttach();
     }
 

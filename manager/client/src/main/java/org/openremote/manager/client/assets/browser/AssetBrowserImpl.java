@@ -31,6 +31,7 @@ import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.style.FormTreeStyle;
 import org.openremote.manager.client.style.WidgetStyle;
 import org.openremote.manager.client.widget.FormInputText;
+import org.openremote.manager.client.widget.Hyperlink;
 import org.openremote.manager.client.widget.PushButton;
 
 import javax.inject.Inject;
@@ -51,9 +52,6 @@ public class AssetBrowserImpl extends Composite implements AssetBrowser {
     WidgetStyle widgetStyle;
 
     @UiField
-    SimplePanel assetTreeContainer;
-
-    @UiField
     FormInputText searchInput;
 
     @UiField
@@ -61,6 +59,12 @@ public class AssetBrowserImpl extends Composite implements AssetBrowser {
 
     @UiField
     PushButton sortButton;
+
+    @UiField
+    Hyperlink createAssetLink;
+
+    @UiField
+    SimplePanel assetTreeContainer;
 
     final FormTreeStyle formTreeStyle;
 
@@ -96,6 +100,14 @@ public class AssetBrowserImpl extends Composite implements AssetBrowser {
     @Override
     public Presenter getPresenter() {
         return presenter;
+    }
+
+
+    @Override
+    public void setCreateAsset(boolean createAsset) {
+        createAssetLink.removeStyleName("active");
+        if (createAsset)
+            createAssetLink.addStyleName("active");
     }
 
     @Override

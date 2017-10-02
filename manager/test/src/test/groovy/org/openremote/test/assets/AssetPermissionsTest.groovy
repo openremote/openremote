@@ -657,7 +657,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         apartment1Livingroom.id == managerDemoSetup.apartment1LivingroomId
         apartment1Livingroom.name == "Living Room"
         def protectedAttributes = apartment1Livingroom.getAttributesList()
-        protectedAttributes.size() == 6
+        protectedAttributes.size() == 7
         def currentTemperature = apartment1Livingroom.getAttribute("currentTemperature").get()
         currentTemperature.getType().get() == AttributeType.TEMPERATURE_CELCIUS
         !currentTemperature.getValue().isPresent()
@@ -783,22 +783,24 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         ex = thrown()
         ex.response.status == 409
 
-        when: "an readonly asset attribute is updated"
+        when: "an non protected writable meta item is added"
         testAsset = assetResource.get(null, managerDemoSetup.apartment1LivingroomId)
         testAsset.replaceAttribute(new AssetAttribute("currentTemperature", TEMPERATURE_CELCIUS)
-                .addMeta(new MetaItem(LABEL, Values.create("Current Temperature")))
+                .addMeta(new MetaItem(AssetMeta.PATTERN))
         )
         assetResource.update(null, testAsset.id, testAsset)
 
-        then: "a conflict error should occur"
+        then: "a bad request error should occur"
         ex = thrown()
-        ex.response.status == 409
+        ex.response.status == 400
 
         when: "an asset attribute is updated"
         testAsset = assetResource.get(null, managerDemoSetup.apartment1LivingroomId)
-        testAsset.replaceAttribute(new AssetAttribute("targetTemperature", TEMPERATURE_CELCIUS)
-                .addMeta(new MetaItem(LABEL, Values.create("Target Temperature")))
-        )
+        def temperatureAttr = testAsset.attributesStream.filter { assetAttr -> assetAttr.name.get().equalsIgnoreCase("targetTemperature") }.findFirst().orElse(null)
+        assert temperatureAttr != null
+        def labelMeta = temperatureAttr.getMetaItem(LABEL).orElse(null)
+        assert labelMeta != null
+        labelMeta.setValue(Values.create("Target Temperature"))
         assetResource.update(null, testAsset.id, testAsset)
 
         then: "no error should occur"

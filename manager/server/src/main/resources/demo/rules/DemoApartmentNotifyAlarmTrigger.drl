@@ -29,6 +29,7 @@ rule "Trigger alarm when alarm is enabled and presence is detected in any room"
 when
     $residence : AssetState(type == AssetType.RESIDENCE, attributeName == "alarmEnabled", valueTrue)
     $room : AssetState(parentId == $residence.id, type == AssetType.ROOM, attributeName == "presenceDetected", valueTrue)
+    not AlarmTrigger(residenceId == $residence.id) // we don't need more than one trigger per apartment
 then
     AlarmTrigger trigger =new AlarmTrigger();
     trigger.setResidenceId($residence.getId());
@@ -38,7 +39,7 @@ end
 
 rule "Stop alarm when alarm has been triggered and no presence is detected in any room"
 when
-    $residence : AssetState(type == AssetType.RESIDENCE, attributeName == "alarmEnabled")
+    $residence : AssetState(type == AssetType.RESIDENCE) // retract trigger always so they don't leak
     $alarmTrigger : AlarmTrigger(residenceId == $residence.id)
     not AssetState(parentId == $residence.id, type == AssetType.ROOM, attributeName == "presenceDetected", valueTrue)
 then
@@ -47,7 +48,7 @@ end
 
 rule "Alert user when alarm has been triggered and not done so already"
 when
-    $residence : AssetState(type == AssetType.RESIDENCE, attributeName == "alarmEnabled")
+    $residence : AssetState(type == AssetType.RESIDENCE, attributeName == "alarmEnabled", valueTrue)
     $alarmTrigger : AlarmTrigger(residenceId == $residence.id)
     not(UserNotified(residenceId == $residence.id))
 then
@@ -73,12 +74,21 @@ then
     UserNotified userNotified = new UserNotified();
     userNotified.setResidenceId($residence.getId());
     insert(userNotified);
+    delete($alarmTrigger); // For sure we don't want to notify user on the same trigger.
 end
 
-rule "Remove user-was-notified marker when there is no alarm triggered"
+rule "Retract alarm triggers and alerts when alarm disabled"
 when
-    $userNotified : UserNotified()
-    not AlarmTrigger(residenceId == $userNotified.residenceId)
+    $residence : AssetState(type == AssetType.RESIDENCE, attributeName == "alarmEnabled", valueFalse)
+    $alarmTrigger : AlarmTrigger(residenceId == $residence.id)
+then
+    delete($alarmTrigger);
+end
+
+rule "Retract user notified and alerts when alarm disabled"
+when
+    $residence : AssetState(type == AssetType.RESIDENCE, attributeName == "alarmEnabled", valueFalse)
+    $userNotified : UserNotified(residenceId == $residence.id)
 then
     delete($userNotified);
 end

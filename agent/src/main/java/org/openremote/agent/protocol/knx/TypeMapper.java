@@ -5,7 +5,6 @@ import org.openremote.model.value.ArrayValue;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueType;
 import org.openremote.model.value.Values;
-import org.openremote.model.value.impl.NumberValueImpl;
 import tuwien.auto.calimero.datapoint.Datapoint;
 import tuwien.auto.calimero.dptxlator.*;
 
@@ -180,9 +179,9 @@ public class TypeMapper {
         if (translator instanceof DPTXlatorBoolean) {
             value = Values.create(((DPTXlatorBoolean) translator).getValueBoolean());
         } else if (translator instanceof DPTXlator2ByteFloat) {
-            value = new NumberValueImpl(new BigDecimal(translator.getNumericValue()).setScale(2, RoundingMode.HALF_UP).doubleValue());
+            value = Values.create(new BigDecimal(translator.getNumericValue()).setScale(2, RoundingMode.HALF_UP).doubleValue());
         } else if (translator instanceof DPTXlator8BitUnsigned) {
-            value = new NumberValueImpl(translator.getNumericValue());
+            value = Values.create(translator.getNumericValue());
         } else {
             // TODO depending on the DPTXlator a more sophisticated translation to value is needed
             value = Values.create(translator.getValue());

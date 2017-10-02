@@ -33,7 +33,9 @@ import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.assets.browser.AssetBrowserSelection;
 import org.openremote.manager.client.assets.browser.AssetTreeNode;
 import org.openremote.manager.client.assets.browser.TenantTreeNode;
+import org.openremote.manager.client.assets.navigation.AssetNavigation;
 import org.openremote.manager.client.assets.tenant.AssetsTenantPlace;
+import org.openremote.manager.client.event.GoToPlaceEvent;
 import org.openremote.manager.client.event.ShowFailureEvent;
 import org.openremote.manager.client.event.ShowInfoEvent;
 import org.openremote.manager.client.event.ShowSuccessEvent;
@@ -61,13 +63,16 @@ import static org.openremote.manager.client.http.RequestExceptionHandler.handleR
 import static org.openremote.manager.client.widget.ValueEditors.*;
 import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 
-public abstract class AbstractAssetActivity<V extends AssetBaseView.Presenter, U extends AssetBaseView<V>, PLACE extends AssetPlace> extends AssetBrowsingActivity<PLACE> implements AssetBaseView.Presenter {
+public abstract class AbstractAssetActivity<V
+    extends AssetBaseView.Presenter, U extends AssetBaseView<V>, PLACE extends AssetPlace> extends AssetBrowsingActivity<PLACE>
+    implements AssetBaseView.Presenter, AssetNavigation.Presenter {
 
     protected final List<AttributeView> attributeViews = new ArrayList<>();
     protected final Provider<JsonEditor> jsonEditorProvider;
     protected final boolean editMode;
     protected final ObjectValueMapper objectValueMapper;
     protected final MapResource mapResource;
+    protected AssetPlace activePlace;
     protected String assetId;
     protected Asset asset;
     protected Asset parentAsset;
@@ -91,7 +96,9 @@ public abstract class AbstractAssetActivity<V extends AssetBaseView.Presenter, U
 
     @Override
     protected AppActivity<PLACE> init(PLACE place) {
+        this.activePlace = place;
         this.assetId = place.getAssetId();
+        assetBrowserPresenter.setCreateAsset(place instanceof AssetEditPlace && this.assetId == null);
         return this;
     }
 
@@ -99,6 +106,7 @@ public abstract class AbstractAssetActivity<V extends AssetBaseView.Presenter, U
     public void start(AcceptsOneWidget container, EventBus eventBus, Collection<EventRegistration> registrations) {
         this.registrations = registrations;
         view.setPresenter(presenter);
+        view.getAssetNavigation().setPresenter(this);
         container.setWidget(view.asWidget());
 
         registrations.add(eventBus.register(
@@ -108,11 +116,26 @@ public abstract class AbstractAssetActivity<V extends AssetBaseView.Presenter, U
                         new AssetsTenantPlace(event.getSelectedNode().getId())
                     );
                 } else if (event.getSelectedNode() instanceof AssetTreeNode) {
-                    if (this.assetId == null || !this.assetId.equals(event.getSelectedNode().getId())) {
-                        this.assetId = event.getSelectedNode().getId();
-                        environment.getPlaceController().goTo(
-                            getPlace(editMode)
-                        );
+                    String selectedAssetId = event.getSelectedNode().getId();
+                    if (this.assetId == null || !this.assetId.equals(selectedAssetId)) {
+                        if (!editMode || assetId == null) {
+                            environment.getPlaceController().goTo(new AssetViewPlace(selectedAssetId));
+                        } else {
+                            environment.getPlaceController().goTo(new AssetEditPlace(selectedAssetId));
+                        }
+                    }
+                }
+            }
+        ));
+
+        registrations.add(eventBus.register(
+            GoToPlaceEvent.class,
+            event -> {
+                assetBrowserPresenter.setCreateAsset(false);
+                if (event.getPlace() instanceof AssetEditPlace) {
+                    AssetEditPlace place = (AssetEditPlace) event.getPlace();
+                    if (place.getAssetId() == null) {
+                        assetBrowserPresenter.setCreateAsset(true);
                     }
                 }
             }
@@ -132,23 +155,24 @@ public abstract class AbstractAssetActivity<V extends AssetBaseView.Presenter, U
     }
 
     @Override
+    public void onStop() {
+        super.onStop();
+        view.setPresenter(null);
+        view.getAssetNavigation().setPresenter(null);
+    }
+
+    @Override
     public void onMapReady() {
         asset = null;
         if (!isNullOrEmpty(assetId)) {
             assetBrowserPresenter.loadAsset(assetId, loadedAsset -> {
                 this.asset = loadedAsset;
                 assetBrowserPresenter.selectAsset(asset);
-                view.setHistoryToken(environment.getPlaceHistoryMapper().getToken(getPlace(!editMode)));
                 start();
             });
         } else {
             start();
         }
-    }
-
-    @Override
-    public Place getPlace(boolean editPlace) {
-        return editPlace ? new AssetEditPlace(assetId) : new AssetViewPlace(assetId);
     }
 
     @Override
@@ -181,6 +205,7 @@ public abstract class AbstractAssetActivity<V extends AssetBaseView.Presenter, U
 
     @Override
     public void writeAssetToView() {
+        view.getAssetNavigation().setEnabled(assetId != null);
         view.setName(asset.getName());
         view.setCreatedOn(asset.getCreatedOn());
         view.setLocation(asset.getCoordinates());
@@ -198,6 +223,27 @@ public abstract class AbstractAssetActivity<V extends AssetBaseView.Presenter, U
 
         view.setAttributeViews(attributeViews);
         validateAttributes(true, this::processValidationResults);
+    }
+
+
+    @Override
+    public String getAssetViewPlaceToken() {
+        return environment.getPlaceHistoryMapper().getToken(new AssetViewPlace(assetId));
+    }
+
+    @Override
+    public String getAssetEditPlaceToken() {
+        return environment.getPlaceHistoryMapper().getToken(new AssetEditPlace(assetId));
+    }
+
+    @Override
+    public String getAssetLinkUsersPlaceToken() {
+        return environment.getPlaceHistoryMapper().getToken(new AssetLinkUsersPlace(assetId));
+    }
+
+    @Override
+    public AssetPlace getActivePlace() {
+        return activePlace;
     }
 
     protected void writeAttributeToView(AssetAttribute attribute, boolean addToView) {
@@ -373,7 +419,7 @@ public abstract class AbstractAssetActivity<V extends AssetBaseView.Presenter, U
     }
 
     protected Optional<Long> getTimestamp(ValueHolder valueHolder) {
-        return !editMode || !(valueHolder instanceof AssetAttribute) ?
+        return editMode || !(valueHolder instanceof AssetAttribute) ?
             Optional.empty() :
             ((AssetAttribute)valueHolder).getValueTimestamp();
     }

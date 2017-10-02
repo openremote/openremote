@@ -29,6 +29,7 @@ import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.util.Pair;
 import org.openremote.model.value.*;
 
+import java.util.Locale;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -108,6 +109,11 @@ public class AssetAttributeLinkingService implements ContainerService, Consumer<
 
     @Override
     public void accept(AssetState assetState) {
+        if (assetState.getSource() == AttributeEvent.Source.ATTRIBUTE_LINKING_SERVICE) {
+            LOG.fine("Attribute update came from this service so ignoring to avoid infinite loops: " + assetState);
+            return;
+        }
+
         assetState
             .getAttribute()
             .getMetaStream()
@@ -117,7 +123,7 @@ public class AssetAttributeLinkingService implements ContainerService, Consumer<
 
     protected void sendAttributeEvent(AttributeEvent attributeEvent) {
         LOG.fine("Sending attribute event for linked attribute: " + attributeEvent);
-        assetProcessingService.sendAttributeEvent(attributeEvent);
+        assetProcessingService.sendAttributeEvent(attributeEvent, AttributeEvent.Source.ATTRIBUTE_LINKING_SERVICE);
     }
 
     protected void processLinkedAttributeUpdate(MetaItem metaItem, AssetState assetState) {
@@ -148,7 +154,7 @@ public class AssetAttributeLinkingService implements ContainerService, Consumer<
         return attributeLink.getConverter()
             .map(
                 converter -> {
-                    String converterKey = originalValue == null ? "NULL": originalValue.toString();
+                    String converterKey = originalValue == null ? "NULL": originalValue.toString().toUpperCase(Locale.ROOT);
                     Optional<Value> converterValue = converter.get(converterKey);
                     // Convert the value
                     return converterValue

@@ -6,10 +6,6 @@
     <ui:with field="widgetStyle" type="org.openremote.manager.client.style.WidgetStyle"/>
 
     <ui:style>
-        .rulesControls {
-
-        }
-
         .navItem {
             margin: 0 1em;
         }
@@ -31,22 +27,7 @@
             <g:HTMLPanel styleName="flex layout vertical">
 
                 <g:HTMLPanel
-                        styleName="layout horizontal center end-justified {style.rulesControls} {widgetStyle.SecondaryNavHorizontal}">
-
-<!--
-                    <w:Hyperlink
-                            addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem}"
-                            icon="dashboard"
-                            targetHistoryToken="assets:"
-                            text="{managerMessages.showDashboard}"/>
--->
-
-                    <w:Hyperlink
-                            addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem}"
-                            icon="plus-square"
-                            targetHistoryToken="assetEdit:"
-                            text="{managerMessages.createAsset}"/>
-
+                        styleName="layout horizontal center end-justified {widgetStyle.SecondaryNavHorizontal}">
                 </g:HTMLPanel>
 
                 <g:HTMLPanel styleName="flex {widgetStyle.MainContent}">

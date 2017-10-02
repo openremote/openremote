@@ -97,7 +97,7 @@ public abstract class AbstractManagerSetup implements Setup {
                     new MetaItem(PROTECTED, Values.create(true)),
                     new MetaItem(RULE_STATE, Values.create(true))
                 )),
-            new AssetAttribute("autoSceneSchedule", AttributeType.BOOLEAN, Values.create(false))
+            new AssetAttribute("autoSceneSchedule", AttributeType.BOOLEAN, Values.create(true))
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Automatic scene schedule")),
                     new MetaItem(DESCRIPTION, Values.create("Predict presence and automatically adjust scene schedule")),
@@ -130,6 +130,7 @@ public abstract class AbstractManagerSetup implements Setup {
                     new MetaItem(DESCRIPTION, Values.create("Greater than zero when motion is sensed")),
                     new MetaItem(READ_ONLY, Values.create(true)),
                     new MetaItem(RULE_STATE, Values.create(true)),
+                    new MetaItem(RULE_EVENT, Values.create(true)),
                     new MetaItem(STORE_DATA_POINTS, Values.create(true))
                 ).addMeta(shouldBeLinked ? agentLinker.get() : null),
             new AssetAttribute("presenceDetected", AttributeType.BOOLEAN)
@@ -141,6 +142,13 @@ public abstract class AbstractManagerSetup implements Setup {
                     new MetaItem(READ_ONLY, Values.create(true)),
                     new MetaItem(STORE_DATA_POINTS, Values.create(true)),
                     new MetaItem(SHOW_ON_DASHBOARD, Values.create(true))
+                ),
+            new AssetAttribute("firstPresenceDetected", TIMESTAMP_MILLIS)
+                .setMeta(
+                    new MetaItem(LABEL, Values.create("First time someone was present in the room")),
+                    new MetaItem(RULE_STATE, Values.create(true)),
+                    new MetaItem(PROTECTED, Values.create(true)),
+                    new MetaItem(READ_ONLY, Values.create(true))
                 ),
             new AssetAttribute("lastPresenceDetected", TIMESTAMP_MILLIS)
                 .setMeta(

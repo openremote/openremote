@@ -94,7 +94,7 @@ public interface AttributeView extends IsWidget {
     /**
      * Called by the presenter when the attribute has changed outside of the system (i.e. it has changed on the server).
      */
-    void onAttributeChanged();
+    void onAttributeChanged(long timestamp);
 
     /**
      * Called by the presenter to indicate that some operation that affects the attribute linked to the view is pending

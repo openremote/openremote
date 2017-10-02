@@ -28,14 +28,12 @@ import org.openremote.manager.shared.asset.AssetResource;
 import org.openremote.manager.shared.http.RequestParams;
 import org.openremote.manager.shared.security.Tenant;
 import org.openremote.model.Constants;
-import org.openremote.model.asset.AbstractAssetQuery;
-import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.asset.AssetQuery;
+import org.openremote.model.asset.*;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.util.TextUtil;
+import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueException;
 import org.openremote.model.value.Values;
@@ -48,7 +46,10 @@ import java.util.logging.Logger;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 import static org.openremote.model.asset.AssetMeta.PROTECTED;
+import static org.openremote.model.asset.AssetMeta.isMetaItemProtectedWritable;
 import static org.openremote.model.attribute.AttributeEvent.Source.CLIENT;
+import static org.openremote.model.attribute.MetaItem.isMetaNameEqualTo;
+import static org.openremote.model.attribute.MetaItem.mergeMeta;
 import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 
 public class AssetResourceImpl extends ManagerWebResource implements AssetResource {
@@ -151,6 +152,10 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                     throw new WebApplicationException(NOT_FOUND);
 
                 //Restricted users don't have permission to update an asset to become a root asset
+                if (TextUtil.isNullOrEmpty(asset.getRealmId())) {
+                    throw new WebApplicationException("RealmId is missing", BAD_REQUEST);
+                }
+
                 if (TextUtil.isNullOrEmpty(asset.getParentId())) {
                     throw new WebApplicationException("ParentId is missing", BAD_REQUEST);
                 }
@@ -169,32 +174,36 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                     //Check if attribute is present on the asset in storage
                     if (serverAttribute.isPresent()) {
                         AssetAttribute attr = serverAttribute.get();
-                        if (attr.isProtected() && !attr.isReadOnly()) {
-                            //If attribute isn't protected and not readonly, then update
-                            serverAsset.replaceAttribute(updatedAttribute);
-                        } else {
-                            // Check if meta items are equal.
-                            attr.getMeta().forEach(metaItem -> {
-                                metaItem.getName().ifPresent(metaName -> {
-                                    updatedAttribute.getMetaItem(metaName).ifPresent(updateMetaItem -> {
-                                        if (!updateMetaItem.equals(metaItem)) {
-                                            throw new WebApplicationException(String.format("No permission to update attribute %s", updatedAttributeName), Response.Status.CONFLICT);
-                                        }
-                                    });
-                                });
-                            });
 
-                            // Check if value is equal
-                            attr.getValue().ifPresent(value -> {
-                                updatedAttribute.getValue().ifPresent(updatedValue -> {
-                                    if (!value.equals(updatedValue)) {
-                                        throw new WebApplicationException(String.format("No permission to update attribute %s", updatedAttributeName), Response.Status.CONFLICT);
+                        if (attr.isProtected()) {
+                            //If attribute isn't protected, then update
+                            attr.getMeta().stream().filter(AssetMeta::isMetaItemProtectedReadable).forEach(metaItem -> {
+                                Optional<MetaItem> updatedMetaItem = updatedAttribute.getMeta().stream().filter(isMetaNameEqualTo(metaItem.getName().orElse(null))).findFirst();
+                                updatedMetaItem.ifPresent(newMetaItem -> {
+                                    ObjectValue newValue = newMetaItem.getObjectValue();
+                                    if (newValue != null) {
+                                        ObjectValue oldValue = metaItem.getObjectValue();
+                                        if (oldValue == null || !newValue.equalsIgnoreKeys(oldValue)) {
+                                            if (!isMetaItemProtectedWritable(metaItem)) {
+                                                throw new WebApplicationException("MetaItems should be protected write", BAD_REQUEST);
+                                            }
+                                        }
                                     }
                                 });
                             });
+                            mergeMeta(attr.getMeta(), updatedAttribute.getMeta());
+                            updatedAttribute.setMeta(attr.getMeta());
+                            serverAsset.replaceAttribute(updatedAttribute);
+                        } else {
+                            throw new WebApplicationException("Attribute is already present as private", Response.Status.CONFLICT);
                         }
                     } else {
                         //If not present, then add the attribute
+                        updatedAttribute.getMeta().stream().filter(AssetMeta::isMetaItemProtectedReadable).forEach(metaItem -> {
+                            if (!isMetaItemProtectedWritable(metaItem)) {
+                                throw new WebApplicationException("MetaItems should be protected write", BAD_REQUEST);
+                            }
+                        });
                         serverAsset.addAttributes(updatedAttribute);
                     }
                 }
@@ -203,12 +212,8 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                     //Check if asset is missing attributes
                     if (serverAttribute.getName().isPresent() && !asset.hasAttribute(serverAttribute.getName().get())) {
                         if (serverAttribute.isProtected()) {
-                            if (!serverAttribute.isReadOnly()) {
-                                //If attribute isn't protected and not readonly, then remove
-                                serverAsset.removeAttribute(serverAttribute.getName().get());
-                            } else {
-                                throw new WebApplicationException(String.format("No permission to remove attribute %s", serverAttribute.getName().get()), Response.Status.CONFLICT);
-                            }
+                            //If attribute isn't protected, then remove
+                            serverAsset.removeAttribute(serverAttribute.getName().get());
                         }
                     }
                 }
@@ -219,6 +224,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                     throw new WebApplicationException(NOT_FOUND);
             }
 
+            //TODO move checks to optimise flow. Check if it could be easier
             Tenant tenant = identityService.getIdentityProvider().getTenantForRealmId(asset.getRealmId());
             if (tenant == null)
                 throw new WebApplicationException(BAD_REQUEST);

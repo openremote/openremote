@@ -17,7 +17,7 @@ window.startKeycloakAuthentication = function (realm, successCallback, failureCa
         clientId: "openremote"
     };
     window.keycloak = Keycloak(keycloakConfig);
-    window.keycloak.init({onLoad: 'login-required'})
+    window.keycloak.init()
         .success(function (authenticated) {
             if (authenticated) {
                 console.log("Keycloak authentication successful...");

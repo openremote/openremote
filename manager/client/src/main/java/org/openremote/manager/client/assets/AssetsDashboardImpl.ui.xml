@@ -26,13 +26,6 @@
 
                 <g:HTMLPanel
                         styleName="layout horizontal center end-justified {widgetStyle.SecondaryNavHorizontal}">
-
-                    <w:Hyperlink
-                            addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem}"
-                            icon="plus-square"
-                            targetHistoryToken="assetEdit:"
-                            text="{managerMessages.createAsset}"/>
-
                 </g:HTMLPanel>
 
                 <g:HTMLPanel styleName="flex {widgetStyle.MainContent}">

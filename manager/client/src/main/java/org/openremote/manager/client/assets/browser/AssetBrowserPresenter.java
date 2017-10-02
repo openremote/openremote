@@ -31,7 +31,6 @@ import org.openremote.manager.shared.security.TenantResource;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetQuery;
 import org.openremote.model.asset.AssetTreeModifiedEvent;
-import org.openremote.model.event.bus.EventRegistration;
 
 import javax.inject.Inject;
 import java.util.ArrayList;
@@ -61,7 +60,6 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
     BrowserTreeNode selectedNode;
     String[] selectedNodePath;
     AssetSelector assetSelector;
-    EventRegistration<AssetTreeModifiedEvent> assetModifiedEventEventRegistration;
 
     @Inject
     public AssetBrowserPresenter(Environment environment,
@@ -85,7 +83,7 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
 
         view.setPresenter(this);
 
-        assetModifiedEventEventRegistration = environment.getEventBus().register(
+        environment.getEventBus().register(
             AssetTreeModifiedEvent.class,
             event -> {
                 String modifiedNodeId = event.isTenantModified() ? event.getRealmId() : event.getAssetId();
@@ -113,6 +111,11 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
     @Override
     public void onViewDetached() {
         environment.getEventService().unsubscribe(AssetTreeModifiedEvent.class);
+    }
+
+    @Override
+    public void setCreateAsset(boolean createAsset) {
+        view.setCreateAsset(createAsset);
     }
 
     @Override

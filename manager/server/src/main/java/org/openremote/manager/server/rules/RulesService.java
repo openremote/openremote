@@ -339,6 +339,11 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
                     updateAssetState(assetState, true);
                 });
 
+                //TODO
+                //find out if any attribute is of type FILTER_TEMPLATE
+                //use the rulesetsStorage to find the rulesets and call processRulesSetsChange on those
+                //UPDATE AND DELETE
+
                 break;
 
             case DELETE:
@@ -353,6 +358,9 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
                         LOG.fine("Asset was persisted (" + persistenceEvent.getCause() + "), retracting fact: " + assetState);
                         retractAssetState(assetState);
                     });
+
+                //TODO
+
                 break;
         }
     }

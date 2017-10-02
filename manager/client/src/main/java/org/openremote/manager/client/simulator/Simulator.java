@@ -173,7 +173,7 @@ public class Simulator extends AbstractAttributeViewExtension {
     }
 
     @Override
-    public void onAttributeChanged() {
+    public void onAttributeChanged(long timestamp) {
         // the host attribute change doesn't impact the simulator
     }
 

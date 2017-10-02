@@ -252,11 +252,14 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
      * Send internal attribute change events into the {@link #ASSET_QUEUE}.
      */
     public void sendAttributeEvent(AttributeEvent attributeEvent) {
+        sendAttributeEvent(attributeEvent, INTERNAL);
+    }
+    public void sendAttributeEvent(AttributeEvent attributeEvent, AttributeEvent.Source source) {
         // Set event source time if not already set
         if (attributeEvent.getTimestamp() <= 0) {
             attributeEvent.setTimestamp(timerService.getCurrentTimeMillis());
         }
-        messageBrokerService.getProducerTemplate().sendBodyAndHeader(ASSET_QUEUE, attributeEvent, HEADER_SOURCE, INTERNAL);
+        messageBrokerService.getProducerTemplate().sendBodyAndHeader(ASSET_QUEUE, attributeEvent, HEADER_SOURCE, source);
     }
 
     /**
@@ -267,6 +270,9 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
     protected void processAssetState(Exchange exchange) {
         AssetState assetState = exchange.getIn().getHeader(HEADER_ASSET_STATE, AssetState.class);
         LOG.fine(">>> Processing start: " + assetState);
+        // Need to record time here otherwise an infinite loop generated inside one of the processors means the timestamp
+        // is not updated so tests can't then detect the problem.
+        lastProcessedEventTimestamp = System.currentTimeMillis();
         processorLoop:
         for (Consumer<AssetState> processor : processors) {
             try {
@@ -296,7 +302,6 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                 assetState.getId(), assetState.getAttributeName(), assetState.getValue(), timerService.getCurrentTimeMillis()
             ));
         }
-        lastProcessedEventTimestamp = System.currentTimeMillis();
         LOG.fine("<<< Processing complete: " + assetState);
     }
 
