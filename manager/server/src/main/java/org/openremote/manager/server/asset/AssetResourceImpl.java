@@ -28,14 +28,12 @@ import org.openremote.manager.shared.asset.AssetResource;
 import org.openremote.manager.shared.http.RequestParams;
 import org.openremote.manager.shared.security.Tenant;
 import org.openremote.model.Constants;
-import org.openremote.model.asset.AbstractAssetQuery;
-import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.asset.AssetQuery;
+import org.openremote.model.asset.*;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.util.TextUtil;
+import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueException;
 import org.openremote.model.value.Values;
@@ -48,7 +46,10 @@ import java.util.logging.Logger;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 import static org.openremote.model.asset.AssetMeta.PROTECTED;
+import static org.openremote.model.asset.AssetMeta.isMetaItemProtectedWritable;
 import static org.openremote.model.attribute.AttributeEvent.Source.CLIENT;
+import static org.openremote.model.attribute.MetaItem.isMetaNameEqualTo;
+import static org.openremote.model.attribute.MetaItem.mergeMeta;
 import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 
 public class AssetResourceImpl extends ManagerWebResource implements AssetResource {
@@ -174,34 +175,35 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                     if (serverAttribute.isPresent()) {
                         AssetAttribute attr = serverAttribute.get();
 
-                        //TODO remove readonly check
-                        //attr is not protected -> CONFLICT attribute already present(private)
-                        //attr is protected:
-                        //-can set value
-                        //-can update metaItems -> user can add/update/delete items that are restricted write else BAD REQUEST
-                        // merge the metaItems if they are already present
-                        // if restricted read client should have received the metaItem, list those metaItems
-                        // and restricted write, then the metaItem can be changed, if not, then it can't be updated
-                        // Invert if else
                         if (attr.isProtected()) {
                             //If attribute isn't protected, then update
-
-                            attr.getMeta().stream().filter(metaItem -> metaItem.isProtectedRead()).forEach(metaItem -> {
-                                if(!metaItem.isProtectedWrite()) {
-                                    throw new WebApplicationException("MetaItems should be protected write", BAD_REQUEST);
-                                }
+                            attr.getMeta().stream().filter(AssetMeta::isMetaItemProtectedReadable).forEach(metaItem -> {
+                                Optional<MetaItem> updatedMetaItem = updatedAttribute.getMeta().stream().filter(isMetaNameEqualTo(metaItem.getName().orElse(null))).findFirst();
+                                updatedMetaItem.ifPresent(newMetaItem -> {
+                                    ObjectValue newValue = newMetaItem.getObjectValue();
+                                    if (newValue != null) {
+                                        ObjectValue oldValue = metaItem.getObjectValue();
+                                        if (oldValue == null || !newValue.equalsIgnoreKeys(oldValue)) {
+                                            if (!isMetaItemProtectedWritable(metaItem)) {
+                                                throw new WebApplicationException("MetaItems should be protected write", BAD_REQUEST);
+                                            }
+                                        }
+                                    }
+                                });
                             });
+                            mergeMeta(attr.getMeta(), updatedAttribute.getMeta());
+                            updatedAttribute.setMeta(attr.getMeta());
                             serverAsset.replaceAttribute(updatedAttribute);
                         } else {
                             throw new WebApplicationException("Attribute is already present as private", Response.Status.CONFLICT);
                         }
                     } else {
                         //If not present, then add the attribute
-//                        for(MetaItem item : updatedAttribute.getMeta()) {
-//                            if(!item.isProtectedWrite()) {
-//                                throw new WebApplicationException("MetaItems should be protected write", BAD_REQUEST);
-//                            }
-//                        }
+                        updatedAttribute.getMeta().stream().filter(AssetMeta::isMetaItemProtectedReadable).forEach(metaItem -> {
+                            if (!isMetaItemProtectedWritable(metaItem)) {
+                                throw new WebApplicationException("MetaItems should be protected write", BAD_REQUEST);
+                            }
+                        });
                         serverAsset.addAttributes(updatedAttribute);
                     }
                 }
@@ -210,10 +212,8 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                     //Check if asset is missing attributes
                     if (serverAttribute.getName().isPresent() && !asset.hasAttribute(serverAttribute.getName().get())) {
                         if (serverAttribute.isProtected()) {
-                            //If attribute isn't protected and not readonly, then remove
+                            //If attribute isn't protected, then remove
                             serverAsset.removeAttribute(serverAttribute.getName().get());
-                        } else {
-                            throw new WebApplicationException(String.format("No permission to remove attribute %s", serverAttribute.getName().get()), Response.Status.CONFLICT);
                         }
                     }
                 }

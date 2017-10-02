@@ -81,14 +81,6 @@ public class MetaItem extends AbstractValueHolder {
         return getObjectValue().getString("name");
     }
 
-    public boolean isProtectedRead() {
-        return getObjectValue().getBoolean("protectedRead").orElse(false);
-    }
-
-    public boolean isProtectedWrite() {
-        return getObjectValue().getBoolean("protectedWrite").orElse(false);
-    }
-
     public boolean hasRestrictedFlag() {
         return getObjectValue().hasKey("restricted");
     }
@@ -245,6 +237,24 @@ public class MetaItem extends AbstractValueHolder {
             .stream()
             .map(value -> new MetaItem(name, value))
             .forEach(metaItems::add);
+    }
+
+    /**
+     * Merges two Collections of MetaItem
+     *
+     * @param metaItems    the original collection. The new values will be added to this collection
+     * @param newMetaItems the collection with new values
+     * @param <T>
+     */
+    public static <T extends Collection<MetaItem>> void mergeMeta(T metaItems, T newMetaItems) {
+        metaItems.forEach(metaItem -> {
+            Optional<MetaItem> newMetaItem = newMetaItems.stream().filter(isMetaNameEqualTo(metaItem.getName().orElse(null))).findFirst();
+            newMetaItem.ifPresent(nMetaItem -> {
+                metaItem.setRestricted(nMetaItem.isRestricted());
+                metaItem.setValue(nMetaItem.getValue().orElse(null));
+            });
+        });
+        newMetaItems.stream().filter(newMetaItem -> !metaItems.contains(newMetaItem)).forEach(metaItems::add);
     }
 
     public static <T extends Collection<MetaItem>> void replaceMetaByName(T metaItems, HasUniqueResourceName hasUniqueResourceName, MetaItem newMetaItem) {
