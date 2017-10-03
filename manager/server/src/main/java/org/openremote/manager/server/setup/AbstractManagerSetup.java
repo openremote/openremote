@@ -111,7 +111,15 @@ public abstract class AbstractManagerSetup implements Setup {
                     new MetaItem(READ_ONLY, Values.create(true)),
                     new MetaItem(RULE_STATE, Values.create(true)),
                     new MetaItem(SHOW_ON_DASHBOARD, Values.create(true))
-                )
+                ),
+        new AssetAttribute("lastDetectedScene", AttributeType.STRING, Values.create("home"))
+            .setMeta(
+                new MetaItem(LABEL, Values.create("Last detecteded scene by rules")),
+                new MetaItem(PROTECTED, Values.create(true)),
+                new MetaItem(READ_ONLY, Values.create(true)),
+                new MetaItem(RULE_STATE, Values.create(true)),
+                new MetaItem(SHOW_ON_DASHBOARD, Values.create(true))
+            )
         );
         return apartment;
     }
