@@ -81,18 +81,6 @@ public class MetaItem extends AbstractValueHolder {
         return getObjectValue().getString("name");
     }
 
-    public boolean hasRestrictedFlag() {
-        return getObjectValue().hasKey("restricted");
-    }
-
-    public boolean isRestricted() {
-        return getObjectValue().getBoolean("restricted").orElse(false);
-    }
-
-    public void setRestricted(boolean restricted) {
-        getObjectValue().put("restricted", Values.create(restricted));
-    }
-
     public void setName(String name) {
         getObjectValue().put("name", TextUtil.requireNonNullAndNonEmpty(name));
     }
@@ -240,21 +228,24 @@ public class MetaItem extends AbstractValueHolder {
     }
 
     /**
-     * Merges two Collections of MetaItem
+     * Merges two Collections of MetaItem of items that are write protected true.
      *
-     * @param metaItems    the original collection. The new values will be added to this collection
-     * @param newMetaItems the collection with new values
+     * @param metaItems     the original collection. The new values will be added to this collection
+     * @param newMetaItems  the collection with new values
+     * @param removeMissing if set to true, then the missing items from newMetaItems will be removed from metaItems
      * @param <T>
      */
-    public static <T extends Collection<MetaItem>> void mergeMeta(T metaItems, T newMetaItems) {
+    public static <T extends Collection<MetaItem>> void mergeMeta(T metaItems, T newMetaItems, boolean removeMissing) {
         metaItems.forEach(metaItem -> {
             Optional<MetaItem> newMetaItem = newMetaItems.stream().filter(isMetaNameEqualTo(metaItem.getName().orElse(null))).findFirst();
             newMetaItem.ifPresent(nMetaItem -> {
-                metaItem.setRestricted(nMetaItem.isRestricted());
                 metaItem.setValue(nMetaItem.getValue().orElse(null));
             });
         });
         newMetaItems.stream().filter(newMetaItem -> !metaItems.contains(newMetaItem)).forEach(metaItems::add);
+        if (removeMissing) {
+            metaItems.stream().filter(metaItem -> !newMetaItems.contains(metaItem)).forEach(metaItems::remove);
+        }
     }
 
     public static <T extends Collection<MetaItem>> void replaceMetaByName(T metaItems, HasUniqueResourceName hasUniqueResourceName, MetaItem newMetaItem) {

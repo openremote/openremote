@@ -19,6 +19,8 @@
  */
 package org.openremote.manager.server.asset;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import org.openremote.container.Container;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.server.security.ManagerIdentityService;
@@ -28,12 +30,12 @@ import org.openremote.manager.shared.asset.AssetResource;
 import org.openremote.manager.shared.http.RequestParams;
 import org.openremote.manager.shared.security.Tenant;
 import org.openremote.model.Constants;
+import org.openremote.model.ValidationFailure;
 import org.openremote.model.asset.*;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.util.TextUtil;
-import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueException;
 import org.openremote.model.value.Values;
@@ -46,9 +48,7 @@ import java.util.logging.Logger;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 import static org.openremote.model.asset.AssetMeta.PROTECTED;
-import static org.openremote.model.asset.AssetMeta.isMetaItemProtectedWritable;
 import static org.openremote.model.attribute.AttributeEvent.Source.CLIENT;
-import static org.openremote.model.attribute.MetaItem.isMetaNameEqualTo;
 import static org.openremote.model.attribute.MetaItem.mergeMeta;
 import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 
@@ -166,6 +166,12 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                     if (!updatedAttribute.isProtected()) {
                         updatedAttribute.addMeta(new MetaItem(PROTECTED, Values.create(true)));
                     }
+
+                    Optional<Long> timestamp = updatedAttribute.getValueTimestamp();
+                    if (!timestamp.isPresent() || timestamp.get() <= 0) {
+                        updatedAttribute.setValueTimestamp(timerService.getCurrentTimeMillis());
+                    }
+
                     String updatedAttributeName = updatedAttribute
                         .getName()
                         .orElseThrow(() -> new WebApplicationException("No name supplied for attribute(s)", BAD_REQUEST));
@@ -176,22 +182,22 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                         AssetAttribute attr = serverAttribute.get();
 
                         if (attr.isProtected()) {
-                            //If attribute isn't protected, then update
-                            attr.getMeta().stream().filter(AssetMeta::isMetaItemProtectedReadable).forEach(metaItem -> {
-                                Optional<MetaItem> updatedMetaItem = updatedAttribute.getMeta().stream().filter(isMetaNameEqualTo(metaItem.getName().orElse(null))).findFirst();
-                                updatedMetaItem.ifPresent(newMetaItem -> {
-                                    ObjectValue newValue = newMetaItem.getObjectValue();
-                                    if (newValue != null) {
-                                        ObjectValue oldValue = metaItem.getObjectValue();
-                                        if (oldValue == null || !newValue.equalsIgnoreKeys(oldValue)) {
-                                            if (!isMetaItemProtectedWritable(metaItem)) {
-                                                throw new WebApplicationException("MetaItems should be protected write", BAD_REQUEST);
-                                            }
-                                        }
+                            List<ValidationFailure> validationFailures = updatedAttribute.getValidationFailures();
+                            if (!validationFailures.isEmpty()) {
+                                LOG.fine(String.format("MetaItems validation failures: %s", Container.JSON.writeValueAsString(validationFailures)));
+                                throw new WebApplicationException(String.format("MetaItems validation failures: %s", Container.JSON.writeValueAsString(validationFailures)), BAD_REQUEST);
+                            }
+                            //check if non protected write items are modified
+                            updatedAttribute.getMetaStream().filter(metaItem -> !AssetMeta.isMetaItemProtectedWritable(metaItem)).forEach(metaItem -> {
+                                attr.getMetaItem(metaItem.getName().orElse(null)).ifPresent(serverMetaItem -> {
+                                    if (!metaItem.getObjectValue().equalsIgnoreKeys(serverMetaItem.getObjectValue())) {
+                                        throw new WebApplicationException("MetaItems should be protected write", BAD_REQUEST);
                                     }
                                 });
+
                             });
-                            mergeMeta(attr.getMeta(), updatedAttribute.getMeta());
+
+                            mergeMeta(attr.getMeta(), updatedAttribute.getMeta(), false);
                             updatedAttribute.setMeta(attr.getMeta());
                             serverAsset.replaceAttribute(updatedAttribute);
                         } else {
@@ -199,24 +205,18 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                         }
                     } else {
                         //If not present, then add the attribute
-                        updatedAttribute.getMeta().stream().filter(AssetMeta::isMetaItemProtectedReadable).forEach(metaItem -> {
-                            if (!isMetaItemProtectedWritable(metaItem)) {
-                                throw new WebApplicationException("MetaItems should be protected write", BAD_REQUEST);
-                            }
-                        });
+                        if (updatedAttribute.getMetaStream().filter(metaItem ->
+                            !metaItem.getName().orElseThrow(() -> new IllegalStateException("No name found on meta item")).equalsIgnoreCase(PROTECTED.getUrn()))
+                            .anyMatch(metaItem -> !AssetMeta.isMetaItemProtectedWritable(metaItem))) {
+                            throw new WebApplicationException("MetaItems should be protected write", BAD_REQUEST);
+                        }
                         serverAsset.addAttributes(updatedAttribute);
                     }
                 }
                 //Removal check
-                for (AssetAttribute serverAttribute : serverAsset.getAttributesList()) {
-                    //Check if asset is missing attributes
-                    if (serverAttribute.getName().isPresent() && !asset.hasAttribute(serverAttribute.getName().get())) {
-                        if (serverAttribute.isProtected()) {
-                            //If attribute isn't protected, then remove
-                            serverAsset.removeAttribute(serverAttribute.getName().get());
-                        }
-                    }
-                }
+                serverAsset.getAttributesList().removeIf(serverAttribute ->
+                    serverAttribute.getName().isPresent() && !asset.hasAttribute(serverAttribute.getName().get()) && serverAttribute.isProtected()
+                );
             } else {
                 serverAsset = assetStorageService.find(assetId, true);
 
@@ -254,6 +254,8 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
 
         } catch (IllegalStateException ex) {
             throw new WebApplicationException(ex, Response.Status.BAD_REQUEST);
+        } catch (JsonProcessingException ex) {
+            throw new WebApplicationException(ex, Response.Status.INTERNAL_SERVER_ERROR);
         }
     }
 

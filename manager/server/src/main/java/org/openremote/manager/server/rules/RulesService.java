@@ -38,6 +38,7 @@ import org.openremote.manager.shared.security.Tenant;
 import org.openremote.model.AbstractValueTimestampHolder;
 import org.openremote.model.asset.*;
 import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.attribute.AttributeType;
 import org.openremote.model.rules.AssetRuleset;
 import org.openremote.model.rules.GlobalRuleset;
 import org.openremote.model.rules.Ruleset;
@@ -338,12 +339,6 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
                     LOG.fine("Asset was persisted (" + persistenceEvent.getCause() + "), updating: " + assetState);
                     updateAssetState(assetState, true);
                 });
-
-                //TODO
-                //find out if any attribute is of type FILTER_TEMPLATE
-                //use the rulesetsStorage to find the rulesets and call processRulesSetsChange on those
-                //UPDATE AND DELETE
-
                 break;
 
             case DELETE:
@@ -358,10 +353,23 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
                         LOG.fine("Asset was persisted (" + persistenceEvent.getCause() + "), retracting fact: " + assetState);
                         retractAssetState(assetState);
                     });
-
-                //TODO
-
                 break;
+        }
+
+        if (persistenceEvent.getCause() != PersistenceEvent.Cause.INSERT) {
+            if (asset.getAttributesStream().anyMatch(attribute -> attribute.getTypeOrThrow() == AttributeType.RULES_TEMPLATE_FILTER)) {
+                rulesetStorageService.findTemplatedAssetRulesets(asset.getRealmId(), asset.getId()).forEach(assetRuleset -> {
+                    processRulesetChange(assetRuleset, persistenceEvent.getCause());
+                });
+
+                rulesetStorageService.findTemplatedTenantRulesets(asset.getRealmId(), asset.getId()).forEach(tenantRuleset -> {
+                    processRulesetChange(tenantRuleset, persistenceEvent.getCause());
+                });
+
+                rulesetStorageService.findTemplatedGlobalRulesets(asset.getId()).forEach(globalRuleset -> {
+                    processRulesetChange(globalRuleset, persistenceEvent.getCause());
+                });
+            }
         }
     }
 
@@ -432,7 +440,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
             );
         }
 
-        globalEngine.addRuleset(ruleset);
+        globalEngine.addRuleset(ruleset, true);
         return created ? globalEngine : null;
     }
 
@@ -468,7 +476,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
                 );
             });
 
-        deployment.addRuleset(ruleset);
+        deployment.addRuleset(ruleset, true);
 
         return created[0] ? deployment : null;
     }
@@ -534,7 +542,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
                 );
             });
 
-        deployment.addRuleset(ruleset);
+        deployment.addRuleset(ruleset, true);
         return created[0] ? deployment : null;
     }
 

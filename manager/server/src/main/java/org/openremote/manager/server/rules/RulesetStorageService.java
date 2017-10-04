@@ -134,6 +134,25 @@ public class RulesetStorageService implements ContainerService {
     /**
      * @return Fully populated rulesets including {@link Ruleset#rules} property.
      */
+    public List<GlobalRuleset> findTemplatedGlobalRulesets(String templateAssetId) {
+        return persistenceService.doReturningTransaction(entityManager ->
+            entityManager.createQuery(
+                "select new org.openremote.model.rules.GlobalRuleset(" +
+                    "rs.id, rs.version, rs.createdOn, rs.lastModified, rs.name, rs.enabled, rs.templateAssetId, rs.rules, rs.assetId, a.realmId" +
+                    ") " +
+                    "from GlobalRuleset rs, Asset a " +
+                    "where rs.assetId = a.id " +
+                    "and rs.enabled = true and rs.templateAssetId is not null and rs.templateAssetId = :templateAssetId",
+                GlobalRuleset.class
+            )
+                .setParameter("templateAssetId", templateAssetId)
+                .getResultList()
+        );
+    }
+
+    /**
+     * @return Fully populated rulesets including {@link Ruleset#rules} property.
+     */
     public List<TenantRuleset> findEnabledTenantRulesets() {
         return persistenceService.doReturningTransaction(entityManager ->
             entityManager.createQuery(
@@ -160,6 +179,25 @@ public class RulesetStorageService implements ContainerService {
                     "where rs.enabled = true and rs.realmId = :realmId",
                 TenantRuleset.class
             ).setParameter("realmId", realmId).getResultList()
+        );
+    }
+
+    /**
+     * @return Fully populated rulesets including {@link Ruleset#rules} property.
+     */
+    public List<TenantRuleset> findTemplatedTenantRulesets(String realmId, String templateAssetId) {
+        return persistenceService.doReturningTransaction(entityManager ->
+            entityManager.createQuery(
+                "select new org.openremote.model.rules.TenantRuleset(" +
+                    "rs.id, rs.version, rs.createdOn, rs.lastModified, rs.name, rs.enabled, rs.templateAssetId, rs.rules, rs.realmId" +
+                    ") " +
+                    "from TenantRuleset rs " +
+                    "where rs.realmId = :realmId " +
+                    "and rs.enabled = true and rs.templateAssetId is not null and rs.templateAssetId = :templateAssetId",
+                TenantRuleset.class
+            ).setParameter("realmId", realmId)
+                .setParameter("templateAssetId", templateAssetId)
+                .getResultList()
         );
     }
 
@@ -214,6 +252,25 @@ public class RulesetStorageService implements ContainerService {
                     "and rs.enabled = true",
                 AssetRuleset.class
             ).setParameter("realmId", realmId).getResultList()
+        );
+    }
+
+    /**
+     * @return Fully populated rulesets including {@link Ruleset#rules} property.
+     */
+    public List<AssetRuleset> findTemplatedAssetRulesets(String realmId, String templateAssetId) {
+        return persistenceService.doReturningTransaction(entityManager ->
+            entityManager.createQuery(
+                "select new org.openremote.model.rules.AssetRuleset(" +
+                    "rs.id, rs.version, rs.createdOn, rs.lastModified, rs.name, rs.enabled, rs.templateAssetId, rs.rules, rs.assetId, a.realmId" +
+                    ") " +
+                    "from AssetRuleset rs, Asset a " +
+                    "where rs.assetId = a.id and a.realmId = :realmId " +
+                    "and rs.enabled = true and rs.templateAssetId is not null and rs.templateAssetId = :templateAssetId",
+                AssetRuleset.class
+            ).setParameter("realmId", realmId)
+                .setParameter("templateAssetId", templateAssetId)
+                .getResultList()
         );
     }
 

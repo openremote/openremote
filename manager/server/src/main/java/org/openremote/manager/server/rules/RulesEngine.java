@@ -51,15 +51,10 @@ import org.openremote.manager.server.concurrent.ManagerExecutorService;
 import org.openremote.manager.server.notification.NotificationService;
 import org.openremote.manager.server.security.ManagerIdentityService;
 import org.openremote.model.asset.*;
-import org.openremote.model.attribute.AttributeType;
-import org.openremote.model.rules.AssetRuleset;
-import org.openremote.model.rules.GlobalRuleset;
-import org.openremote.model.rules.Ruleset;
-import org.openremote.model.rules.TenantRuleset;
 import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.attribute.AttributeType;
 import org.openremote.model.notification.AlertNotification;
-import org.openremote.model.rules.Assets;
-import org.openremote.model.rules.Users;
+import org.openremote.model.rules.*;
 import org.openremote.model.rules.template.TemplateFilter;
 import org.openremote.model.user.UserQuery;
 import org.openremote.model.util.Pair;
@@ -94,7 +89,7 @@ public class RulesEngine<T extends Ruleset> {
     final protected AssetProcessingService assetProcessingService;
     final protected ManagerIdentityService identityService;
     final protected Class<T> rulesetType;
-    final protected String id;
+    final protected String id;//If globalRuleSet then null if tenantRuleSet then realmId if assetRuleSet then assetId
     final protected Function<RulesEngine, AgendaEventListener> rulesEngineListeners;
 
     protected final Map<Long, T> rulesets = new LinkedHashMap<>();
@@ -198,7 +193,7 @@ public class RulesEngine<T extends Ruleset> {
      *
      * @return Whether or not the ruleset deployed successfully
      */
-    public synchronized boolean addRuleset(T ruleset) {
+    public synchronized boolean addRuleset(T ruleset, boolean forceUpdate) {
         if (ruleset == null || ruleset.getRules() == null || ruleset.getRules().isEmpty()) {
             // Assume it's a success if deploying an empty ruleset
             LOG.finest("Ruleset is empty so no rules to deploy");
@@ -211,7 +206,7 @@ public class RulesEngine<T extends Ruleset> {
 
         T existingRuleset = rulesets.get(ruleset.getId());
 
-        if (existingRuleset != null && existingRuleset.getVersion() == ruleset.getVersion()) {
+        if (!forceUpdate && existingRuleset != null && existingRuleset.getVersion() == ruleset.getVersion()) {
             LOG.fine("Ruleset version already deployed so ignoring");
             return true;
         }
