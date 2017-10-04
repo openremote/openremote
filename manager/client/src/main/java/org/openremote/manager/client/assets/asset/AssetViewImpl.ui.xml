@@ -36,6 +36,10 @@
             border-left: 4px solid;
         }
 
+        .highlightAttributeError {
+            border-left: 4px solid;
+        }
+
         .metaItemValueEditor {
 
         }

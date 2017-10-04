@@ -19,7 +19,7 @@
  */
 package org.openremote.test.protocol.velbus
 
-import org.openremote.agent.protocol.ConnectionStatus
+import org.openremote.model.asset.agent.ConnectionStatus
 import org.openremote.agent.protocol.velbus.VelbusNetwork
 import org.openremote.agent.protocol.velbus.VelbusPacket
 import org.openremote.agent.protocol.velbus.device.*

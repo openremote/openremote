@@ -22,7 +22,6 @@ package org.openremote.manager.server.agent;
 import org.openremote.agent.protocol.Protocol;
 import org.openremote.agent.protocol.ProtocolLinkedAttributeDiscovery;
 import org.openremote.agent.protocol.ProtocolLinkedAttributeImport;
-import org.openremote.manager.server.asset.AssetResourceImpl;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;

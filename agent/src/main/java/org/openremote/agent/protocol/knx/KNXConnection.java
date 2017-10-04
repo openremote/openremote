@@ -14,7 +14,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.apache.commons.lang3.StringUtils;
-import org.openremote.agent.protocol.ConnectionStatus;
+import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.agent.protocol.ProtocolExecutorService;
 import org.openremote.model.value.Value;
 

@@ -81,6 +81,11 @@ public abstract class AbstractAttributeViewExtension extends FormSection impleme
         super.setDisabled(disabled);
     }
 
+    @Override
+    public void setHighlightError(boolean highlightError) {
+        // TODO Ability for extensions to display some error highlight/visual marker
+    }
+
     public void showValidationError(String attributeName, String metaItemName, ValidationFailure validationFailure) {
         if (validationErrorConsumer != null) {
             validationErrorConsumer.accept(attributeName, metaItemName, validationFailure);

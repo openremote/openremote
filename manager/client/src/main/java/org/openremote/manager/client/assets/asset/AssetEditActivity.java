@@ -44,6 +44,8 @@ import org.openremote.manager.shared.security.Tenant;
 import org.openremote.manager.shared.validation.ConstraintViolation;
 import org.openremote.model.ValueHolder;
 import org.openremote.model.asset.*;
+import org.openremote.model.asset.AbstractAssetQuery.AttributeMetaPredicate;
+import org.openremote.model.asset.AbstractAssetQuery.BooleanPredicate;
 import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.asset.agent.ProtocolConfiguration;
 import org.openremote.model.asset.agent.ProtocolDescriptor;
@@ -345,6 +347,7 @@ public class AssetEditActivity
         AssetQuery query;
         Predicate<AssetAttribute> attributeFilter = null;
 
+        // Is it agent or attribute link?
         if ((valueHolder instanceof MetaItem) && AgentLink.isAgentLink((MetaItem) valueHolder)) {
             query = new AssetQuery()
                 .select(new AssetQuery.Select(AssetQuery.Include.ONLY_ID_AND_NAME_AND_ATTRIBUTES))
@@ -357,6 +360,10 @@ public class AssetEditActivity
                 query.tenant(new AbstractAssetQuery.TenantPredicate(asset.getRealmId()));
             }
 
+            // Agents must have protocol configurations
+            query.attributeMeta(new AttributeMetaPredicate(AssetMeta.PROTOCOL_CONFIGURATION, new BooleanPredicate(true)));
+
+            // Only show protocol configurations
             attributeFilter = ProtocolConfiguration::isProtocolConfiguration;
         } else {
             query = new AssetQuery()
@@ -424,7 +431,7 @@ public class AssetEditActivity
                 break;
             case OBJECT:
                 if (valueHolder instanceof MetaItem) {
-                    if (isMetaNameEqualTo((MetaItem)valueHolder, AssetMeta.ATTRIBUTE_LINK)) {
+                    if (isMetaNameEqualTo((MetaItem) valueHolder, AssetMeta.ATTRIBUTE_LINK)) {
                         boolean isReadOnly = isValueReadOnly(valueHolder);
                         String assetWatermark = environment.getMessages().selectAsset();
                         String attributeWatermark = environment.getMessages().selectAttribute();

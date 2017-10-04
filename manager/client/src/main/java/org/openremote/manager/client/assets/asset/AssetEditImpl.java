@@ -64,8 +64,6 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
 
         String nameInput();
 
-        String newAttributeFormGroup();
-
         String stringEditor();
 
         String numberEditor();
@@ -75,6 +73,8 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
         String regularAttribute();
 
         String highlightAttribute();
+
+        String highlightAttributeError();
 
         String metaItemNameEditor();
 

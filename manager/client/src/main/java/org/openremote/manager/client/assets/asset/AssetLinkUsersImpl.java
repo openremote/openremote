@@ -68,6 +68,8 @@ public class AssetLinkUsersImpl extends FormViewImpl implements AssetLinkUsers {
 
         String highlightAttribute();
 
+        String highlightAttributeError();
+
         String agentLinkEditor();
     }
 

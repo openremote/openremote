@@ -20,7 +20,8 @@
 package org.openremote.manager.server.agent;
 
 import org.apache.camel.builder.RouteBuilder;
-import org.openremote.agent.protocol.ConnectionStatus;
+import org.openremote.manager.server.event.ClientEventService;
+import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.agent.protocol.Protocol;
 import org.openremote.agent.protocol.ProtocolAssetService;
 import org.openremote.container.Container;
@@ -52,7 +53,7 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.openremote.agent.protocol.ConnectionStatus.*;
+import static org.openremote.model.asset.agent.ConnectionStatus.*;
 import static org.openremote.agent.protocol.Protocol.ACTUATOR_TOPIC;
 import static org.openremote.agent.protocol.Protocol.SENSOR_QUEUE;
 import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_TOPIC;
@@ -79,6 +80,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
     protected AssetProcessingService assetProcessingService;
     protected AssetStorageService assetStorageService;
     protected MessageBrokerService messageBrokerService;
+    protected ClientEventService clientEventService;
     protected final Map<AttributeRef, Pair<AssetAttribute, ConnectionStatus>> protocolConfigurations = new HashMap<>();
     protected final Map<String, Protocol> protocols = new HashMap<>();
     protected final List<AttributeRef> linkedAttributes = new ArrayList<>();
@@ -91,6 +93,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
         assetProcessingService = container.getService(AssetProcessingService.class);
         assetStorageService = container.getService(AssetStorageService.class);
         messageBrokerService = container.getService(MessageBrokerService.class);
+        clientEventService = container.getService(ClientEventService.class);
         localAgentConnector = new LocalAgentConnector(this);
 
         container.getService(WebService.class).getApiSingletons().add(
@@ -520,6 +523,12 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
             Pair<AssetAttribute, ConnectionStatus> protocolDeploymentInfo = protocolConfigurations.get(protocolRef);
             if (protocolDeploymentInfo != null) {
                 protocolDeploymentInfo.value = connectionStatus;
+
+                clientEventService.publishEvent(
+                    new AssetTreeModifiedEvent(timerService.getCurrentTimeMillis(), asset.getRealmId(), asset.getId())
+                );
+
+
             }
         }
     }

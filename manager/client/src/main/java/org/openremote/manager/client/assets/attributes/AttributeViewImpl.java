@@ -46,6 +46,7 @@ public class AttributeViewImpl extends FormGroup implements AttributeView {
     protected AssetAttribute attribute;
     protected List<FormButton> attributeActions;
     protected List<AbstractAttributeViewExtension> attributeExtensions;
+    protected boolean highlightError;
     protected boolean editMode;
     protected ValueEditorSupplier valueEditorSupplier;
     protected ValidationErrorConsumer validationErrorConsumer;
@@ -168,6 +169,11 @@ public class AttributeViewImpl extends FormGroup implements AttributeView {
         return this;
     }
 
+    @Override
+    public void setHighlightError(boolean highlightError) {
+        this.highlightError = highlightError;
+    }
+
     protected void notifyAttributeModified(Value newValue) {
         // Push new value into the attribute
         attribute.setValue(newValue, 0);
@@ -196,6 +202,7 @@ public class AttributeViewImpl extends FormGroup implements AttributeView {
 
     protected void refresh() {
         removeStyleName(style.highlightAttribute());
+        removeStyleName(style.highlightAttributeError());
         removeStyleName(environment.getWidgetStyle().HighlightBorder());
         removeStyleName(style.regularAttribute());
         removeStyleName(environment.getWidgetStyle().RegularBorder());
@@ -208,7 +215,10 @@ public class AttributeViewImpl extends FormGroup implements AttributeView {
             return;
         }
 
-        if (attribute.hasAgentLink() || attribute.isProtocolConfiguration()) {
+        if (highlightError) {
+            addStyleName(style.highlightAttributeError());
+            addStyleName(environment.getWidgetStyle().HighlightBorder());
+        } else if (attribute.hasAgentLink() || attribute.isProtocolConfiguration()) {
             addStyleName(style.highlightAttribute());
             addStyleName(environment.getWidgetStyle().HighlightBorder());
         } else {

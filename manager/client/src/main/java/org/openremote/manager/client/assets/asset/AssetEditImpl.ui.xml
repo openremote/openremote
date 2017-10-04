@@ -24,10 +24,6 @@
             height: 17em;
         }
 
-        .newAttributeFormGroup {
-
-        }
-
         .stringEditor {
              min-width: 5em;
              width: 100%;
@@ -47,6 +43,8 @@
         .highlightAttribute {
         }
 
+        .highlightAttributeError {
+        }
 
         .metaItemNameEditor {
             min-width: 5em;

@@ -19,6 +19,8 @@
  */
 package org.openremote.agent.protocol;
 
+import org.openremote.model.asset.agent.ConnectionStatus;
+
 import java.util.function.Consumer;
 
 /**

@@ -24,6 +24,7 @@ import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetMeta;
 import org.openremote.model.asset.AssetType;
+import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.asset.agent.ProtocolConfiguration;
 import org.openremote.model.attribute.AttributeValidationResult;
 import org.openremote.model.asset.agent.ProtocolDescriptor;
@@ -33,7 +34,6 @@ import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.value.ValueType;
 
 import java.util.Collection;
-import java.util.List;
 import java.util.function.Consumer;
 
 /**

@@ -20,7 +20,7 @@
 package org.openremote.test.protocol
 
 import org.openremote.agent.protocol.AbstractProtocol
-import org.openremote.agent.protocol.ConnectionStatus
+import org.openremote.model.asset.agent.ConnectionStatus
 import org.openremote.manager.server.agent.AgentService
 import org.openremote.manager.server.asset.AssetProcessingService
 import org.openremote.manager.server.asset.AssetStorageService

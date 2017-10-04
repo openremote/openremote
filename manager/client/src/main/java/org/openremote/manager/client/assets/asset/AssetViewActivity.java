@@ -128,7 +128,6 @@ public class AssetViewActivity
     public void enableLiveUpdates(boolean enable) {
         liveUpdates = enable;
 
-        // TODO: make this a bit more efficient
         for (AttributeView attributeView : attributeViews) {
             if (attributeView instanceof AttributeViewImpl) {
                 ((AttributeViewImpl)attributeView).getActionButtons().forEach(button -> {
@@ -149,8 +148,6 @@ public class AssetViewActivity
 
     protected void subscribeLiveUpdates(boolean subscribe) {
         if (subscribe) {
-            // TODO: Can the event service and bus be unified
-            // TODO: return event handle so we can unregister on stop
             environment.getEventService().subscribe(
                 AttributeEvent.class,
                 new AttributeEvent.EntityIdFilter(asset.getId())

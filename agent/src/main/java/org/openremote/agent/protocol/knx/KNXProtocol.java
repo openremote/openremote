@@ -24,7 +24,7 @@ import javax.xml.transform.stream.StreamSource;
 
 import org.apache.commons.io.IOUtils;
 import org.openremote.agent.protocol.AbstractProtocol;
-import org.openremote.agent.protocol.ConnectionStatus;
+import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.agent.protocol.ProtocolLinkedAttributeImport;
 import org.openremote.container.util.Util;
 import org.openremote.model.AbstractValueHolder;
@@ -55,9 +55,6 @@ import tuwien.auto.calimero.datapoint.CommandDP;
 import tuwien.auto.calimero.datapoint.Datapoint;
 import tuwien.auto.calimero.datapoint.DatapointMap;
 import tuwien.auto.calimero.datapoint.StateDP;
-import tuwien.auto.calimero.dptxlator.DPTXlator;
-import tuwien.auto.calimero.dptxlator.DPTXlatorBoolean;
-import tuwien.auto.calimero.dptxlator.TranslatorTypes;
 import tuwien.auto.calimero.xml.KNXMLException;
 import tuwien.auto.calimero.xml.XmlInputFactory;
 import tuwien.auto.calimero.xml.XmlReader;

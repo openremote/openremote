@@ -17,13 +17,13 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.agent.protocol;
+package org.openremote.model.asset.agent;
 
 import org.openremote.model.attribute.MetaItem;
 
 /**
  * Indicates the status of a protocol configuration (i.e. protocol instance); but can also be used internally by a
- * protocol if desired such as in {@link MessageProcessor}.
+ * protocol if desired.
  */
 public enum ConnectionStatus {
 

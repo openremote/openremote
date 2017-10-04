@@ -57,6 +57,8 @@ public interface AttributeView extends IsWidget {
 
         String highlightAttribute();
 
+        String highlightAttributeError();
+
         String metaItemNameEditor();
 
         String metaItemValueEditor();
@@ -111,4 +113,9 @@ public interface AttributeView extends IsWidget {
      * Indicates if current activity is edit mode or view mode.
      */
     void setEditMode(boolean editMode);
+
+    /**
+     * Highlight the attribute as having an error.
+     */
+    void setHighlightError(boolean highlightError);
 }

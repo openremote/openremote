@@ -73,6 +73,8 @@ public class AssetViewImpl extends Composite implements AssetView {
 
         String highlightAttribute();
 
+        String highlightAttributeError();
+
         String metaItemValueEditor();
 
         String metaItemNameEditor();

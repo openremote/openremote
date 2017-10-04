@@ -24,6 +24,7 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import org.openremote.model.asset.AssetTreeModifiedEvent;
 import org.openremote.model.asset.ReadAssetAttributesEvent;
+import org.openremote.model.asset.agent.AgentStatusEvent;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.event.Event;
 import org.openremote.model.simulator.RequestSimulatorState;
@@ -41,6 +42,7 @@ import org.openremote.model.syslog.SyslogEvent;
     @JsonSubTypes.Type(value = AssetTreeModifiedEvent.class, name = "asset-tree-modified"),
     @JsonSubTypes.Type(value = SimulatorState.class, name = "simulator-state"),
     @JsonSubTypes.Type(value = RequestSimulatorState.class, name = "request-simulator-state")
+    @JsonSubTypes.Type(value = AgentStatusEvent.class, name = "agent-status")
 })
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.NAME,

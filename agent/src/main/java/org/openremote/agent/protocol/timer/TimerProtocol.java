@@ -20,7 +20,7 @@
 package org.openremote.agent.protocol.timer;
 
 import org.openremote.agent.protocol.AbstractProtocol;
-import org.openremote.agent.protocol.ConnectionStatus;
+import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetMeta;
 import org.openremote.model.attribute.*;
@@ -38,7 +38,6 @@ import java.util.logging.Logger;
 import static java.util.logging.Level.FINER;
 import static org.openremote.agent.protocol.timer.TimerConfiguration.*;
 import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
-import static org.openremote.model.util.TextUtil.REGEXP_PATTERN_CRON_EXPRESSION;
 
 /**
  * This protocol can be used to trigger an {@link AttributeEvent} using a cron based timer.

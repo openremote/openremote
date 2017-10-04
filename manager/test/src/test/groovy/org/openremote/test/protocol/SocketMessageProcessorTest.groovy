@@ -22,7 +22,7 @@ package org.openremote.test.protocol
 import io.netty.buffer.ByteBuf
 import io.netty.util.CharsetUtil
 import org.openremote.agent.protocol.AbstractSocketMessageProcessor
-import org.openremote.agent.protocol.ConnectionStatus
+import org.openremote.model.asset.agent.ConnectionStatus
 import org.openremote.manager.server.concurrent.ManagerExecutorService
 import org.openremote.test.ManagerContainerTrait
 import org.openremote.test.SimpleSocketServer
