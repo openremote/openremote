@@ -41,7 +41,7 @@ import org.openremote.model.syslog.SyslogEvent;
     @JsonSubTypes.Type(value = ReadAssetAttributesEvent.class, name = "read-asset-attributes"),
     @JsonSubTypes.Type(value = AssetTreeModifiedEvent.class, name = "asset-tree-modified"),
     @JsonSubTypes.Type(value = SimulatorState.class, name = "simulator-state"),
-    @JsonSubTypes.Type(value = RequestSimulatorState.class, name = "request-simulator-state")
+    @JsonSubTypes.Type(value = RequestSimulatorState.class, name = "request-simulator-state"),
     @JsonSubTypes.Type(value = AgentStatusEvent.class, name = "agent-status")
 })
 @JsonTypeInfo(

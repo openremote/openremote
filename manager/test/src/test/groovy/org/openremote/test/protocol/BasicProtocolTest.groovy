@@ -20,6 +20,7 @@
 package org.openremote.test.protocol
 
 import org.openremote.agent.protocol.AbstractProtocol
+import org.openremote.model.asset.agent.AgentStatusEvent
 import org.openremote.model.asset.agent.ConnectionStatus
 import org.openremote.manager.server.agent.AgentService
 import org.openremote.manager.server.asset.AssetProcessingService
@@ -31,15 +32,26 @@ import org.openremote.model.asset.AssetMeta
 import org.openremote.model.asset.AssetType
 import org.openremote.model.asset.agent.ProtocolConfiguration
 import org.openremote.model.attribute.*
+import org.openremote.model.event.shared.SharedEvent
 import org.openremote.model.value.Values
+import org.openremote.test.ClientEventService
+import org.openremote.test.GwtClientTrait
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
+import static org.openremote.container.util.MapAccess.getString
+import static org.openremote.manager.server.event.ClientEventService.WEBSOCKET_EVENTS
+import static org.openremote.manager.server.setup.AbstractKeycloakSetup.SETUP_KEYCLOAK_ADMIN_PASSWORD
+import static org.openremote.manager.server.setup.AbstractKeycloakSetup.SETUP_KEYCLOAK_ADMIN_PASSWORD_DEFAULT
+import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID
+import static org.openremote.model.Constants.MASTER_REALM
+import static org.openremote.model.Constants.MASTER_REALM_ADMIN_USER
+
 /**
  * This tests the basic protocol interface and abstract protocol implementation.
  */
-class BasicProtocolTest extends Specification implements ManagerContainerTrait {
+class BasicProtocolTest extends Specification implements ManagerContainerTrait, GwtClientTrait {
 
     def "Check abstract protocol linking/un-linking"() {
 
@@ -180,6 +192,24 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait {
         mockAgent.setRealmId(Constants.MASTER_REALM)
         mockAgent = assetStorageService.merge(mockAgent)
 
+        and: "a client websocket connection and attached event bus and service"
+        def accessToken = {
+            authenticate(
+                    container,
+                    MASTER_REALM,
+                    KEYCLOAK_CLIENT_ID,
+                    MASTER_REALM_ADMIN_USER,
+                    getString(container.getConfig(), SETUP_KEYCLOAK_ADMIN_PASSWORD, SETUP_KEYCLOAK_ADMIN_PASSWORD_DEFAULT)
+            ).token
+        }
+        List<SharedEvent> collectedSharedEvents = []
+        def eventBus = createEventBus(collectedSharedEvents)
+        def clientEventService = new ClientEventService(eventBus, container.JSON)
+        def websocketSession = connect(createWebsocketClient(), clientEventService.endpoint, serverUri(serverPort), WEBSOCKET_EVENTS, MASTER_REALM, accessToken.call())
+
+        and: "a subscription is made to the flight priority filters"
+        clientEventService.subscribe(AgentStatusEvent.class)
+
         then: "the protocol configurations should be linked and their deployment status should be available in the agent service"
         conditions.eventually {
             assert protocolLinkedConfigurations.size() == 4
@@ -191,10 +221,35 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait {
             assert config2 != null
             assert config3 != null
             assert config4 != null
-            assert agentService.getProtocolDeploymentStatus(config1.getReferenceOrThrow()) == ConnectionStatus.CONNECTED
-            assert agentService.getProtocolDeploymentStatus(config2.getReferenceOrThrow()) == ConnectionStatus.ERROR
-            assert agentService.getProtocolDeploymentStatus(config3.getReferenceOrThrow()) == ConnectionStatus.ERROR
-            assert agentService.getProtocolDeploymentStatus(config4.getReferenceOrThrow()) == ConnectionStatus.DISABLED
+            assert agentService.getProtocolConnectionStatus(config1.getReferenceOrThrow()) == ConnectionStatus.CONNECTED
+            assert agentService.getProtocolConnectionStatus(config2.getReferenceOrThrow()) == ConnectionStatus.ERROR
+            assert agentService.getProtocolConnectionStatus(config3.getReferenceOrThrow()) == ConnectionStatus.ERROR
+            assert agentService.getProtocolConnectionStatus(config4.getReferenceOrThrow()) == ConnectionStatus.DISABLED
+            assert collectedSharedEvents[0] instanceof AgentStatusEvent
+            assert (collectedSharedEvents[0] as AgentStatusEvent).agentId == mockAgent.id
+            assert (collectedSharedEvents[0] as AgentStatusEvent).protocolConfigurationName == "mockConfig1"
+            assert (collectedSharedEvents[0] as AgentStatusEvent).connectionStatus == ConnectionStatus.CONNECTING
+            assert (collectedSharedEvents[1] as AgentStatusEvent).agentId == mockAgent.id
+            assert (collectedSharedEvents[1] as AgentStatusEvent).protocolConfigurationName == "mockConfig1"
+            assert (collectedSharedEvents[1] as AgentStatusEvent).connectionStatus == ConnectionStatus.CONNECTED
+            assert (collectedSharedEvents[2] as AgentStatusEvent).agentId == mockAgent.id
+            assert (collectedSharedEvents[2] as AgentStatusEvent).protocolConfigurationName == "mockConfig2"
+            assert (collectedSharedEvents[2] as AgentStatusEvent).connectionStatus == ConnectionStatus.CONNECTING
+            assert (collectedSharedEvents[3] as AgentStatusEvent).agentId == mockAgent.id
+            assert (collectedSharedEvents[3] as AgentStatusEvent).protocolConfigurationName == "mockConfig2"
+            assert (collectedSharedEvents[3] as AgentStatusEvent).connectionStatus == ConnectionStatus.ERROR
+            assert (collectedSharedEvents[4] as AgentStatusEvent).agentId == mockAgent.id
+            assert (collectedSharedEvents[4] as AgentStatusEvent).protocolConfigurationName == "mockConfig3"
+            assert (collectedSharedEvents[4] as AgentStatusEvent).connectionStatus == ConnectionStatus.CONNECTING
+            assert (collectedSharedEvents[5] as AgentStatusEvent).agentId == mockAgent.id
+            assert (collectedSharedEvents[5] as AgentStatusEvent).protocolConfigurationName == "mockConfig3"
+            assert (collectedSharedEvents[5] as AgentStatusEvent).connectionStatus == ConnectionStatus.ERROR
+            assert (collectedSharedEvents[6] as AgentStatusEvent).agentId == mockAgent.id
+            assert (collectedSharedEvents[6] as AgentStatusEvent).protocolConfigurationName == "mockConfig4"
+            assert (collectedSharedEvents[6] as AgentStatusEvent).connectionStatus == ConnectionStatus.CONNECTING
+            assert (collectedSharedEvents[7] as AgentStatusEvent).agentId == mockAgent.id
+            assert (collectedSharedEvents[7] as AgentStatusEvent).protocolConfigurationName == "mockConfig4"
+            assert (collectedSharedEvents[7] as AgentStatusEvent).connectionStatus == ConnectionStatus.DISABLED
         }
 
         when: "a mock thing asset is created that links to the mock protocol configurations"
@@ -384,7 +439,10 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait {
             assert mockThing.getAttribute("tempTarget1").get().getValueAsNumber().orElse(0d) == 30d
         }
 
-        cleanup: "the server should be stopped"
+        cleanup: "the client should be stopped"
+        clientEventService.close()
+
+        and: "the server should be stopped"
         stopContainer(container)
     }
 }

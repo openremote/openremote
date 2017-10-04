@@ -25,16 +25,17 @@ import org.openremote.agent.protocol.ProtocolLinkedAttributeImport;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.asset.agent.ProtocolConfiguration;
-import org.openremote.model.asset.agent.ProtocolDescriptor;
+import org.openremote.model.asset.agent.*;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.AttributeValidationResult;
 import org.openremote.model.file.FileInfo;
 import org.openremote.model.util.Pair;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 public class LocalAgentConnector implements AgentConnector {
 
@@ -43,6 +44,17 @@ public class LocalAgentConnector implements AgentConnector {
 
     public LocalAgentConnector(AgentService agentService) {
         this.agentService = agentService;
+    }
+
+    @Override
+    public List<AgentStatusEvent> getConnectionStatus(Asset agent) {
+        return agentService.getAgents().entrySet().stream()
+            .filter(entry -> entry.getKey().equals(agent.getId()))
+            .flatMap(entry -> Agent.getProtocolConfigurations(entry.getValue()).stream())
+            .map(AssetAttribute::getReferenceOrThrow)
+            .map(protocolConfigurationRef -> new Pair<>(protocolConfigurationRef, agentService.getProtocolConnectionStatus(protocolConfigurationRef)))
+            .map(pair -> new AgentStatusEvent(agentService.timerService.getCurrentTimeMillis(), pair.key, pair.value))
+            .collect(Collectors.toList());
     }
 
     @Override

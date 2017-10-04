@@ -444,4 +444,8 @@ public interface ManagerMessages extends Messages {
     String deleteConverterValue();
 
     String linkAssetUsers();
+
+    String waitingForStatus();
+
+    String noAttributesLinkedToSimulator();
 }

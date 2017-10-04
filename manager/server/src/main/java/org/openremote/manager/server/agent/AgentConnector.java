@@ -21,16 +21,21 @@ package org.openremote.manager.server.agent;
 
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
+import org.openremote.model.asset.agent.AgentStatusEvent;
 import org.openremote.model.asset.agent.ProtocolDescriptor;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.AttributeValidationResult;
 import org.openremote.model.file.FileInfo;
+
+import java.util.List;
 
 /**
  * This is an interface for communicating with an agent. It
  * should be stateless and re-usable.
  */
 public interface AgentConnector {
+
+    List<AgentStatusEvent> getConnectionStatus(Asset agent);
 
     ProtocolDescriptor[] getProtocolDescriptors(Asset agent);
 
@@ -56,4 +61,5 @@ public interface AgentConnector {
      * @throws IllegalStateException thrown by the protocol if an error occurs processing the supplied {@link FileInfo}
      */
     Asset[] getDiscoveredLinkedAttributes(AttributeRef protocolConfigurationRef, FileInfo fileInfo) throws  IllegalArgumentException, UnsupportedOperationException, IllegalStateException;
+
 }

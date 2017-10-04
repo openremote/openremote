@@ -37,13 +37,7 @@
         .booleanEditor {
         }
 
-        .regularAttribute {
-        }
-
-        .highlightAttribute {
-        }
-
-        .highlightAttributeError {
+        .attributeView {
         }
 
         .metaItemNameEditor {

@@ -106,13 +106,13 @@ class KNXProtocolTest extends Specification implements ManagerContainerTrait {
 
         then: "the protocol configurations should be linked and their deployment status should be available in the agent service"
         conditions.eventually {
-            assert agentService.getProtocolDeploymentStatus(knxAgent.getAttribute("knxConfig").get().getReferenceOrThrow()) == ConnectionStatus.CONNECTED
+            assert agentService.getProtocolConnectionStatus(knxAgent.getAttribute("knxConfig").get().getReferenceOrThrow()) == ConnectionStatus.CONNECTED
         }
         conditions.eventually {
-            assert agentService.getProtocolDeploymentStatus(knxAgent.getAttribute("knxConfigError1").get().getReferenceOrThrow()) == ConnectionStatus.ERROR
+            assert agentService.getProtocolConnectionStatus(knxAgent.getAttribute("knxConfigError1").get().getReferenceOrThrow()) == ConnectionStatus.ERROR
         }
         conditions.eventually {
-            assert agentService.getProtocolDeploymentStatus(knxAgent.getAttribute("knxConfigError2").get().getReferenceOrThrow()) == ConnectionStatus.ERROR
+            assert agentService.getProtocolConnectionStatus(knxAgent.getAttribute("knxConfigError2").get().getReferenceOrThrow()) == ConnectionStatus.ERROR
         }
 
 

@@ -64,13 +64,9 @@ public class AssetLinkUsersImpl extends FormViewImpl implements AssetLinkUsers {
 
         String metaItemNameEditor();
 
-        String regularAttribute();
-
-        String highlightAttribute();
-
-        String highlightAttributeError();
-
         String agentLinkEditor();
+
+        String attributeView();
     }
 
     @UiField

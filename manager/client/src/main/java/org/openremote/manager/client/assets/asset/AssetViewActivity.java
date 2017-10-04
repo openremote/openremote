@@ -22,6 +22,7 @@ package org.openremote.manager.client.assets.asset;
 import com.google.inject.Provider;
 import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.app.dialog.JsonEditor;
+import org.openremote.manager.client.assets.AgentStatusEventMapper;
 import org.openremote.manager.client.assets.AssetMapper;
 import org.openremote.manager.client.assets.attributes.AbstractAttributeViewExtension;
 import org.openremote.manager.client.assets.attributes.AttributeView;
@@ -32,13 +33,17 @@ import org.openremote.manager.client.datapoint.NumberDatapointArrayMapper;
 import org.openremote.manager.client.interop.value.ObjectValueMapper;
 import org.openremote.manager.client.simulator.Simulator;
 import org.openremote.manager.client.widget.FormButton;
+import org.openremote.manager.shared.agent.AgentResource;
 import org.openremote.manager.shared.asset.AssetResource;
 import org.openremote.manager.shared.datapoint.AssetDatapointResource;
 import org.openremote.manager.shared.map.MapResource;
 import org.openremote.manager.shared.security.Tenant;
 import org.openremote.model.Constants;
 import org.openremote.model.asset.AssetAttribute;
+import org.openremote.model.asset.AssetType;
 import org.openremote.model.asset.ReadAssetAttributesEvent;
+import org.openremote.model.asset.agent.AgentLink;
+import org.openremote.model.asset.agent.AgentStatusEvent;
 import org.openremote.model.asset.agent.ProtocolConfiguration;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeExecuteStatus;
@@ -65,6 +70,8 @@ public class AssetViewActivity
     protected final static String READ_BUTTON_CLASS = "or-internal-read-button";
     final AssetResource assetResource;
     final AssetMapper assetMapper;
+    final AgentResource agentResource;
+    final AgentStatusEventMapper agentStatusEventMapper;
     final AssetDatapointResource assetDatapointResource;
     final NumberDatapointArrayMapper numberDatapointArrayMapper;
     final protected List<AttributeRef> activeSimulators = new ArrayList<>();
@@ -78,15 +85,19 @@ public class AssetViewActivity
                              AssetView view,
                              AssetResource assetResource,
                              AssetMapper assetMapper,
+                             AgentResource agentResource,
+                             AgentStatusEventMapper agentStatusEventMapper,
                              AssetDatapointResource assetDatapointResource,
                              NumberDatapointArrayMapper numberDatapointArrayMapper,
                              MapResource mapResource,
                              ObjectValueMapper objectValueMapper) {
         super(environment, currentTenant, assetBrowserPresenter, jsonEditorProvider, objectValueMapper, mapResource, false);
+        this.agentStatusEventMapper = agentStatusEventMapper;
         this.presenter = this;
         this.view = view;
         this.assetResource = assetResource;
         this.assetMapper = assetMapper;
+        this.agentResource = agentResource;
         this.assetDatapointResource = assetDatapointResource;
         this.numberDatapointArrayMapper = numberDatapointArrayMapper;
     }
@@ -94,6 +105,9 @@ public class AssetViewActivity
     @Override
     public void onStop() {
         subscribeLiveUpdates(false);
+        if (asset.getWellKnownType() == AssetType.AGENT) {
+            subscribeAgentStatus(false);
+        }
         super.onStop();
     }
 
@@ -108,15 +122,38 @@ public class AssetViewActivity
             subscribeLiveUpdates(true);
         }
 
+        // If this is an agent or an asset with attributes linked to an agent, start polling all agents status
+        if (asset.getWellKnownType() == AssetType.AGENT
+            || asset.getAttributesStream().anyMatch(attribute -> AgentLink.getAgentLink(attribute).isPresent())) {
+            subscribeAgentStatus(true);
+        }
+
         registrations.add(environment.getEventBus().register(
             AttributeEvent.class,
             this::onAttributeEvent
         ));
 
-
         writeAssetToView();
         writeAttributesToView();
         loadParent();
+
+        // Receive all agent status events for any agent
+        // TODO Improve security? We should only be able to
+        registrations.add(environment.getEventBus().register(
+            AgentStatusEvent.class,
+            this::onAgentStatusEvent
+        ));
+
+        if (asset.getWellKnownType() == AssetType.AGENT) {
+            fetchAgentStatus(assetId);
+        } else {
+            asset.getAttributesStream()
+                .map(AgentLink::getAgentLink)
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .map(AttributeRef::getEntityId)
+                .forEach(this::fetchAgentStatus);
+        }
     }
 
     @Override
@@ -130,7 +167,7 @@ public class AssetViewActivity
 
         for (AttributeView attributeView : attributeViews) {
             if (attributeView instanceof AttributeViewImpl) {
-                ((AttributeViewImpl)attributeView).getActionButtons().forEach(button -> {
+                ((AttributeViewImpl) attributeView).getActionButtons().forEach(button -> {
                     if (button.getStyleName().contains(READ_BUTTON_CLASS)) {
                         (button).setEnabled(!enable);
                     }
@@ -159,6 +196,14 @@ public class AssetViewActivity
         }
     }
 
+    protected void subscribeAgentStatus(boolean subscribe) {
+        if (subscribe) {
+            environment.getEventService().subscribe(AgentStatusEvent.class);
+        } else {
+            environment.getEventService().unsubscribe(AgentStatusEvent.class);
+        }
+    }
+
     @Override
     public void refresh() {
         for (AttributeView attributeView : attributeViews) {
@@ -183,6 +228,43 @@ public class AssetViewActivity
                 break;
             }
         }
+    }
+
+    protected void onAgentStatusEvent(AgentStatusEvent event) {
+        for (AttributeView attributeView : attributeViews) {
+            AssetAttribute assetAttribute = attributeView.getAttribute();
+            Optional<AttributeRef> assetAttributeRef = assetAttribute.getReference();
+
+            if (asset.getWellKnownType() == AssetType.AGENT) {
+                if (assetAttributeRef.map(ref -> ref.equals(event.getProtocolConfiguration())).orElse(false)) {
+                    attributeView.setStatus(event.getConnectionStatus());
+                    break;
+                }
+            } else {
+                if (AgentLink.getAgentLink(assetAttribute)
+                    .filter(agentLink -> agentLink.equals(event.getProtocolConfiguration()))
+                    .map(agentLink -> {
+                        attributeView.setStatus(event.getConnectionStatus());
+                        return true;
+                    }).orElse(false))
+                    break;
+            }
+
+        }
+    }
+
+    protected void fetchAgentStatus(String agentId) {
+        environment.getRequestService().execute(
+            agentStatusEventMapper,
+            requestParams -> agentResource.getAgentStatus(requestParams, agentId),
+            200,
+            agentStatuses -> {
+                for (AgentStatusEvent event : agentStatuses) {
+                    onAgentStatusEvent(event);
+                }
+            },
+            ex -> handleRequestException(ex, environment.getEventBus(), environment.getMessages())
+        );
     }
 
     @Override

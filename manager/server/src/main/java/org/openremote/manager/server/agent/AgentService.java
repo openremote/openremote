@@ -21,7 +21,9 @@ package org.openremote.manager.server.agent;
 
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.manager.server.event.ClientEventService;
-import org.openremote.model.asset.agent.ConnectionStatus;
+import org.openremote.manager.shared.security.ClientRole;
+import org.openremote.model.Constants;
+import org.openremote.model.asset.agent.*;
 import org.openremote.agent.protocol.Protocol;
 import org.openremote.agent.protocol.ProtocolAssetService;
 import org.openremote.container.Container;
@@ -37,9 +39,6 @@ import org.openremote.manager.server.asset.ServerAsset;
 import org.openremote.manager.server.security.ManagerIdentityService;
 import org.openremote.model.AbstractValueTimestampHolder;
 import org.openremote.model.asset.*;
-import org.openremote.model.asset.agent.Agent;
-import org.openremote.model.asset.agent.AgentLink;
-import org.openremote.model.asset.agent.ProtocolConfiguration;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.util.Pair;
@@ -76,7 +75,8 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
 
     private static final Logger LOG = Logger.getLogger(AgentService.class.getName());
 
-    protected Container container;
+    protected TimerService timerService;
+    protected ManagerIdentityService identityService;
     protected AssetProcessingService assetProcessingService;
     protected AssetStorageService assetStorageService;
     protected MessageBrokerService messageBrokerService;
@@ -89,12 +89,33 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
 
     @Override
     public void init(Container container) throws Exception {
-        this.container = container;
+        timerService = container.getService(TimerService.class);
+        identityService = container.getService(ManagerIdentityService.class);
         assetProcessingService = container.getService(AssetProcessingService.class);
         assetStorageService = container.getService(AssetStorageService.class);
         messageBrokerService = container.getService(MessageBrokerService.class);
         clientEventService = container.getService(ClientEventService.class);
         localAgentConnector = new LocalAgentConnector(this);
+
+        clientEventService.addSubscriptionAuthorizer((auth, subscription) -> {
+            if (!subscription.isEventType(AgentStatusEvent.class))
+                return false;
+
+            // Superuser can get all
+            if (auth.isSuperUser())
+                return true;
+
+            // Restricted users get nothing
+            if (identityService.getIdentityProvider().isRestrictedUser(auth.getUserId()))
+                return false;
+
+            // User must have role
+            if (!auth.hasResourceRole(ClientRole.READ_ASSETS.getValue(), Constants.KEYCLOAK_CLIENT_ID)) {
+                return false;
+            }
+
+            return true;
+        });
 
         container.getService(WebService.class).getApiSingletons().add(
             new AgentResourceImpl(
@@ -426,7 +447,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
         synchronized (protocolConfigurations) {
             // Create a consumer callback for deployment status updates
             Consumer<ConnectionStatus> deploymentStatusConsumer = status ->
-                publishProtocolDeploymentStatus(protocolAttributeRef, status);
+                publishProtocolConnectionStatus(protocolAttributeRef, status);
 
             // Store the info
             protocolConfigurations.put(
@@ -435,7 +456,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
             );
 
             // Set status to linking
-            publishProtocolDeploymentStatus(protocolAttributeRef, CONNECTING);
+            publishProtocolConnectionStatus(protocolAttributeRef, CONNECTING);
 
             // Link the protocol configuration to the protocol
             try {
@@ -443,7 +464,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
             } catch (Exception e) {
                 LOG.log(Level.SEVERE, "Protocol threw an exception during protocol configuration linking", e);
                 // Set status to error
-                publishProtocolDeploymentStatus(protocolAttributeRef, ERROR);
+                publishProtocolConnectionStatus(protocolAttributeRef, ERROR);
                 // Cannot continue to link attributes;
                 return;
             }
@@ -511,29 +532,27 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
             }
 
             // Set status to disconnected
-            publishProtocolDeploymentStatus(protocolAttributeRef, DISCONNECTED);
+            publishProtocolConnectionStatus(protocolAttributeRef, DISCONNECTED);
             protocolConfigurations.remove(protocolAttributeRef);
         }
     }
 
-    // TODO: Implement mechanism for publishing/subscribing to protocolconfiguration deployment status
-    protected void publishProtocolDeploymentStatus(AttributeRef protocolRef, ConnectionStatus connectionStatus) {
-        LOG.fine("Protocol status updated to '" + connectionStatus + "': " + protocolRef);
+    protected void publishProtocolConnectionStatus(AttributeRef protocolRef, ConnectionStatus connectionStatus) {
+        LOG.info("Agent protocol status updated to " + connectionStatus + ": " + protocolRef);
         synchronized (protocolConfigurations) {
             Pair<AssetAttribute, ConnectionStatus> protocolDeploymentInfo = protocolConfigurations.get(protocolRef);
             if (protocolDeploymentInfo != null) {
                 protocolDeploymentInfo.value = connectionStatus;
 
+                // Notify clients
                 clientEventService.publishEvent(
-                    new AssetTreeModifiedEvent(timerService.getCurrentTimeMillis(), asset.getRealmId(), asset.getId())
+                    new AgentStatusEvent(timerService.getCurrentTimeMillis(), protocolRef, connectionStatus)
                 );
-
-
             }
         }
     }
 
-    public ConnectionStatus getProtocolDeploymentStatus(AttributeRef protocolRef) {
+    public ConnectionStatus getProtocolConnectionStatus(AttributeRef protocolRef) {
         synchronized (protocolConfigurations) {
             return Optional.ofNullable(protocolConfigurations.get(protocolRef))
                 .map(pair -> pair.value)
@@ -565,7 +584,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
         } catch (Exception ex) {
             LOG.log(Level.SEVERE, "Ignoring error on linking attributes to protocol: " + protocol.getProtocolName(), ex);
             // Update the status of this protocol configuration to error
-            publishProtocolDeploymentStatus(protocolConfiguration.getReferenceOrThrow(), ERROR);
+            publishProtocolConnectionStatus(protocolConfiguration.getReferenceOrThrow(), ERROR);
         }
     }
 
@@ -589,7 +608,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
         } catch (Exception ex) {
             LOG.log(Level.SEVERE, "Ignoring error on unlinking attributes from protocol: " + protocol.getProtocolName(), ex);
             // Update the status of this protocol configuration to error
-            publishProtocolDeploymentStatus(protocolConfiguration.getReferenceOrThrow(), ERROR);
+            publishProtocolConnectionStatus(protocolConfiguration.getReferenceOrThrow(), ERROR);
         }
     }
 

@@ -28,16 +28,8 @@
         .booleanEditor {
         }
 
-        .regularAttribute {
-            border-left: 4px solid;
-        }
-
-        .highlightAttribute {
-            border-left: 4px solid;
-        }
-
-        .highlightAttributeError {
-            border-left: 4px solid;
+        .attributeView {
+            border-left: 8px solid;
         }
 
         .metaItemValueEditor {

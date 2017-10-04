@@ -119,7 +119,9 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 return false;
 
             // User must have role
-            auth.hasResourceRole(ClientRole.READ_ASSETS.getValue(), Constants.KEYCLOAK_CLIENT_ID);
+            if (!auth.hasResourceRole(ClientRole.READ_ASSETS.getValue(), Constants.KEYCLOAK_CLIENT_ID)) {
+                return false;
+            }
 
             // Ensure filter matches authenticated realm
             if (subscription.getFilter() instanceof AssetTreeModifiedEvent.TenantFilter) {
@@ -257,6 +259,9 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     }
 
     public List<String> findNames(String... ids) {
+        if (ids == null || ids.length == 0)
+            return new ArrayList<>();
+
         // TODO: Do this in a loop in reasonably sized batches
         return persistenceService.doReturningTransaction(em -> {
             List<Object[]> result = em.createQuery("select a.id, a.name from Asset a where a.id in :ids")

@@ -69,17 +69,13 @@ public class AssetViewImpl extends Composite implements AssetView {
 
         String booleanEditor();
 
-        String regularAttribute();
-
-        String highlightAttribute();
-
-        String highlightAttributeError();
-
         String metaItemValueEditor();
 
         String metaItemNameEditor();
 
         String agentLinkEditor();
+
+        String attributeView();
     }
 
     @UiField

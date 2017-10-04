@@ -26,10 +26,7 @@ import org.openremote.manager.client.assets.attributes.AbstractAttributeViewExte
 import org.openremote.manager.client.assets.attributes.AttributeView;
 import org.openremote.manager.client.assets.attributes.AttributeViewImpl;
 import org.openremote.manager.client.event.ShowSuccessEvent;
-import org.openremote.manager.client.widget.FormButton;
-import org.openremote.manager.client.widget.FormField;
-import org.openremote.manager.client.widget.FormGroup;
-import org.openremote.manager.client.widget.FormLabel;
+import org.openremote.manager.client.widget.*;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.attribute.AttributeRef;
@@ -131,25 +128,29 @@ public class Simulator extends AbstractAttributeViewExtension {
             add(formGroup);
         }
 
-        FormGroup submitGroup = new FormGroup();
-        submitGroup.getElement().getStyle().setWidth(80, com.google.gwt.dom.client.Style.Unit.PCT);
+        if (sortedElements.size() > 0) {
+            FormGroup submitGroup = new FormGroup();
+            submitGroup.getElement().getStyle().setWidth(80, com.google.gwt.dom.client.Style.Unit.PCT);
 
-        FormField submitField = new FormField();
-        submitGroup.setFormField(submitField);
+            FormField submitField = new FormField();
+            submitGroup.setFormField(submitField);
 
-        FormButton writeButton = new FormButton(environment.getMessages().writeSimulatorState());
-        writeButton.setPrimary(true);
-        writeButton.addClickHandler(event -> {
-            if (isValid()) {
-                environment.getEventService().dispatch(simulatorState);
-                environment.getEventBus().dispatch(
-                    new ShowSuccessEvent(environment.getMessages().simulatorStateSubmitted())
-                );
-            }
-        });
-        submitField.add(writeButton);
+            FormButton writeButton = new FormButton(environment.getMessages().writeSimulatorState());
+            writeButton.setPrimary(true);
+            writeButton.addClickHandler(event -> {
+                if (isValid()) {
+                    environment.getEventService().dispatch(simulatorState);
+                    environment.getEventBus().dispatch(
+                        new ShowSuccessEvent(environment.getMessages().simulatorStateSubmitted())
+                    );
+                }
+            });
+            submitField.add(writeButton);
 
-        add(submitGroup);
+            add(submitGroup);
+        } else {
+            add(new FormInlineLabel(environment.getMessages().noAttributesLinkedToSimulator()));
+        }
 
         // "Blink" the editor so users know there might be a new value
         for (FormGroup formGroup : formGroups.values()) {

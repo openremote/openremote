@@ -397,15 +397,23 @@ public class WidgetStyle {
         return "or-HighlightBackground";
     }
 
-    public String HighlightBorder() {
-        return "or-HighlightBorder";
-    }
-
-    public String RegularBorder() {
-        return "or-RegularBorder";
-    }
-
     public String JsonEditor() {
         return "or-JsonEditor";
+    }
+
+    public String BorderRed() {
+        return "or-BorderRed";
+    }
+
+    public String BorderGreen() {
+        return "or-BorderGreen";
+    }
+
+    public String BorderYellow() {
+        return "or-BorderYellow";
+    }
+
+    public String BorderDefault() {
+        return "or-BorderDefault";
     }
 }

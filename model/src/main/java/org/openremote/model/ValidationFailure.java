@@ -79,4 +79,12 @@ public class ValidationFailure {
     public Optional<String> getParameter() {
         return Optional.ofNullable(param);
     }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "{" +
+            "reason=" + reason +
+            ", param='" + param + '\'' +
+            '}';
+    }
 }

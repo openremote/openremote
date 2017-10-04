@@ -27,15 +27,7 @@
         .booleanEditor {
         }
 
-        .regularAttribute {
-            border-left: 4px solid;
-        }
-
-        .highlightAttribute {
-            border-left: 4px solid;
-        }
-
-        .highlightAttributeError {
+        .attributeView {
             border-left: 4px solid;
         }
 

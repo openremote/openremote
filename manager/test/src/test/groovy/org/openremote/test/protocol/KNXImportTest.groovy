@@ -72,7 +72,7 @@ class KNXImportTest extends Specification implements ManagerContainerTrait {
 
         then: "the protocol configurations should be linked and their deployment status should be available in the agent service"
         conditions.eventually {
-            assert agentService.getProtocolDeploymentStatus(knxAgent.getAttribute("knxConfigError1").get().getReferenceOrThrow()) == ConnectionStatus.ERROR
+            assert agentService.getProtocolConnectionStatus(knxAgent.getAttribute("knxConfigError1").get().getReferenceOrThrow()) == ConnectionStatus.ERROR
         }
 
         when: "an authenticated admin user"

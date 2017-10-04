@@ -19,7 +19,7 @@
  */
 package org.openremote.model.asset.agent;
 
-import org.openremote.model.event.shared.EventFilter;
+import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.event.shared.SharedEvent;
 
 /**
@@ -28,68 +28,31 @@ import org.openremote.model.event.shared.SharedEvent;
  */
 public class AgentStatusEvent extends SharedEvent {
 
-    protected String realmId;
-    protected String assetId;
-    protected boolean newAssetChildren;
+    protected AttributeRef protocolConfiguration;
+    protected ConnectionStatus connectionStatus;
 
     protected AgentStatusEvent() {
     }
 
-    public AgentStatusEvent(long timestamp, String realmId, String assetId) {
+    public AgentStatusEvent(long timestamp, AttributeRef protocolConfiguration, ConnectionStatus connectionStatus) {
         super(timestamp);
-        this.realmId = realmId;
-        this.assetId = assetId;
+        this.protocolConfiguration = protocolConfiguration;
+        this.connectionStatus = connectionStatus;
     }
 
-    public AgentStatusEvent(long timestamp, String realmId, String parentId, boolean newAssetChildren) {
-        this(timestamp, realmId, parentId);
-        this.newAssetChildren = newAssetChildren;
+    public AttributeRef getProtocolConfiguration() {
+        return protocolConfiguration;
     }
 
-    public AgentStatusEvent(long timestamp, String realmId, boolean newAssetChildren) {
-        this(timestamp, realmId, null);
-        this.newAssetChildren = newAssetChildren;
-    }
-
-    /**
-     * @return The identifier of the realm/tenant for tenant and asset addition, removal, name change
-     * and relocation of in the tree events. For creation of child asset events, this is the identifier
-     * of the realm of a newly created root asset.
-     */
-    public String getRealmId() {
-        return realmId;
-    }
-
-    /**
-     * @return The identifier of the asset for asset addition, removal, name change, and
-     * relocation in the tree events. For creation of child asset events, this is the
-     * identifier of the parent asset. Empty if a tenant was modified and/or no asset was affected.
-     */
-    public String getAssetId() {
-        return assetId;
-    }
-
-    public boolean isTenantModified() {
-        return getRealmId() != null && getAssetId() == null;
-    }
-
-    /**
-     * @return <code>true</code> if child assets were added to parent {@link #assetId} or {@link #realmId}.
-     */
-    public boolean isNewAssetChildren() {
-        return newAssetChildren;
-    }
-
-    public void setNewAssetChildren(boolean newAssetChildren) {
-        this.newAssetChildren = newAssetChildren;
+    public ConnectionStatus getConnectionStatus() {
+        return connectionStatus;
     }
 
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
-            "realmId='" + realmId + '\'' +
-            ", assetId='" + assetId + '\'' +
-            ", newAssetChildren=" + newAssetChildren +
+            "protocolConfiguration=" + protocolConfiguration +
+            ", connectionStatus=" + connectionStatus +
             '}';
     }
 }
