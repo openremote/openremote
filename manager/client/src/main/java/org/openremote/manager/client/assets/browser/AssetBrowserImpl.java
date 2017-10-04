@@ -30,6 +30,7 @@ import com.google.gwt.user.client.ui.SimplePanel;
 import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.style.FormTreeStyle;
 import org.openremote.manager.client.style.WidgetStyle;
+import org.openremote.manager.client.util.Timeout;
 import org.openremote.manager.client.widget.FormInputText;
 import org.openremote.manager.client.widget.Hyperlink;
 import org.openremote.manager.client.widget.PushButton;
@@ -165,7 +166,10 @@ public class AssetBrowserImpl extends Composite implements AssetBrowser {
         if (forceRebuild) {
             createAssetTree();
         } else {
-            assetTree.refresh(forceNodeOpenId);
+            // When many tree modifications happen in a short period, refreshing the tree is
+            // too expensive. Wait 2 seconds before actually executing the refresh, only
+            // reacting to the "latest" modification event
+            Timeout.debounce("AssetTreeRefresh", () -> assetTree.refresh(forceNodeOpenId), 2000);
         }
     }
 
