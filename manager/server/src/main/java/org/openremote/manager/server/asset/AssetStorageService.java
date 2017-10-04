@@ -331,12 +331,14 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 if (parent.pathContains(asset.getId()))
                     throw new IllegalStateException("Invalid parent");
 
-                // ... and if we don't have a realm identifier, use the parent's
-                if (asset.getRealmId() == null)
+                // .. the parent should be in the same realm
+                if (asset.getRealmId() != null && !parent.getRealmId().equals(asset.getRealmId())) {
+                    throw new IllegalStateException("Parent not in same realm as asset: " + asset.getRealmId());
+                } else if (asset.getRealmId() == null) {
+                    // ... and if we don't have a realm identifier, use the parent's
                     asset.setRealmId(parent.getRealmId());
+                }
             }
-
-            //TODO if parent and realm are provided, they should match!
 
             // Validate realm
             if (!managerIdentityService.getIdentityProvider().isActiveTenant(asset.getRealmId())) {

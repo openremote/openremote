@@ -131,6 +131,15 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
         ex = thrown()
         ex.response.status == 400
 
+        when: "an asset is updated with a parent in a different realm"
+        testAsset = assetResource.get(null, testAsset.getId())
+        testAsset.setParentId(managerDemoSetup.smartHomeId)
+        assetResource.update(null, testAsset.id, testAsset)
+
+        then: "the request should be bad"
+        ex = thrown()
+        ex.response.status == 400
+
         when: "an asset is deleted but has children"
         assetResource.delete(null, managerDemoSetup.apartment1Id)
 
