@@ -20,13 +20,14 @@
 package org.openremote.model.asset.agent;
 
 import org.openremote.model.attribute.AttributeRef;
-import org.openremote.model.event.shared.SharedEvent;
+import org.openremote.model.event.shared.TenantScopedEvent;
 
 /**
  * Published by the server when a a protocol configuration of an
  * agent changes its {@link ConnectionStatus}.
  */
-public class AgentStatusEvent extends SharedEvent {
+public class AgentStatusEvent extends TenantScopedEvent {
+
 
     protected AttributeRef protocolConfiguration;
     protected ConnectionStatus connectionStatus;
@@ -34,8 +35,8 @@ public class AgentStatusEvent extends SharedEvent {
     protected AgentStatusEvent() {
     }
 
-    public AgentStatusEvent(long timestamp, AttributeRef protocolConfiguration, ConnectionStatus connectionStatus) {
-        super(timestamp);
+    public AgentStatusEvent(long timestamp, String realmId, AttributeRef protocolConfiguration, ConnectionStatus connectionStatus) {
+        super(timestamp, realmId);
         this.protocolConfiguration = protocolConfiguration;
         this.connectionStatus = connectionStatus;
     }
@@ -51,7 +52,8 @@ public class AgentStatusEvent extends SharedEvent {
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
-            "protocolConfiguration=" + protocolConfiguration +
+            "realmId =" + realmId +
+            ", protocolConfiguration=" + protocolConfiguration +
             ", connectionStatus=" + connectionStatus +
             '}';
     }

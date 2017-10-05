@@ -51,6 +51,7 @@ import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.datapoint.Datapoint;
 import org.openremote.model.datapoint.DatapointInterval;
 import org.openremote.model.datapoint.NumberDatapoint;
+import org.openremote.model.event.shared.TenantFilter;
 import org.openremote.model.simulator.SimulatorState;
 
 import javax.inject.Inject;
@@ -137,8 +138,6 @@ public class AssetViewActivity
         writeAttributesToView();
         loadParent();
 
-        // Receive all agent status events for any agent
-        // TODO Improve security? We should only be able to
         registrations.add(environment.getEventBus().register(
             AgentStatusEvent.class,
             this::onAgentStatusEvent
@@ -198,7 +197,7 @@ public class AssetViewActivity
 
     protected void subscribeAgentStatus(boolean subscribe) {
         if (subscribe) {
-            environment.getEventService().subscribe(AgentStatusEvent.class);
+            environment.getEventService().subscribe(AgentStatusEvent.class, new TenantFilter<>(asset.getRealmId()));
         } else {
             environment.getEventService().unsubscribe(AgentStatusEvent.class);
         }

@@ -34,10 +34,12 @@ import org.openremote.model.asset.agent.AgentStatusEvent;
 import org.openremote.model.asset.agent.ProtocolDescriptor;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.AttributeValidationResult;
+import org.openremote.model.event.shared.TenantFilter;
 import org.openremote.model.file.FileInfo;
 import org.openremote.model.util.Pair;
 
 import javax.ws.rs.*;
+import javax.ws.rs.core.Response;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -73,6 +75,20 @@ public class AgentResourceImpl extends ManagerWebResource implements AgentResour
 
     @Override
     public List<AgentStatusEvent> getAgentStatus(RequestParams requestParams, String agentId) {
+
+        if (!identityService.getIdentityProvider().canSubscribeWith(
+            getAuthContext(),
+            new TenantFilter<AgentStatusEvent>() {
+                @Override
+                public boolean apply(AgentStatusEvent event) {
+                    return event.getRealmId().equals(getAuthenticatedTenant().getId());
+                }
+            }
+        )) {
+            LOG.fine("Forbidden access for user '" + getUsername() + "', can't get agent status of: " + agentId);
+            throw new WebApplicationException(Response.Status.FORBIDDEN);
+        }
+
         return withAgentConnector(agentId, agentConnector -> {
             LOG.finer("Asking connector '" + agentConnector.getClass().getSimpleName() + "' for connection status");
             return agentConnector.value.getConnectionStatus(agentConnector.key);

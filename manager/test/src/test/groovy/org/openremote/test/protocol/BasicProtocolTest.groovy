@@ -226,29 +226,29 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait, 
             assert agentService.getProtocolConnectionStatus(config3.getReferenceOrThrow()) == ConnectionStatus.ERROR
             assert agentService.getProtocolConnectionStatus(config4.getReferenceOrThrow()) == ConnectionStatus.DISABLED
             assert collectedSharedEvents[0] instanceof AgentStatusEvent
-            assert (collectedSharedEvents[0] as AgentStatusEvent).agentId == mockAgent.id
-            assert (collectedSharedEvents[0] as AgentStatusEvent).protocolConfigurationName == "mockConfig1"
+            assert (collectedSharedEvents[0] as AgentStatusEvent).protocolConfiguration.entityId == mockAgent.id
+            assert (collectedSharedEvents[0] as AgentStatusEvent).protocolConfiguration.attributeName == "mockConfig1"
             assert (collectedSharedEvents[0] as AgentStatusEvent).connectionStatus == ConnectionStatus.CONNECTING
-            assert (collectedSharedEvents[1] as AgentStatusEvent).agentId == mockAgent.id
-            assert (collectedSharedEvents[1] as AgentStatusEvent).protocolConfigurationName == "mockConfig1"
+            assert (collectedSharedEvents[1] as AgentStatusEvent).protocolConfiguration.entityId == mockAgent.id
+            assert (collectedSharedEvents[1] as AgentStatusEvent).protocolConfiguration.attributeName == "mockConfig1"
             assert (collectedSharedEvents[1] as AgentStatusEvent).connectionStatus == ConnectionStatus.CONNECTED
-            assert (collectedSharedEvents[2] as AgentStatusEvent).agentId == mockAgent.id
-            assert (collectedSharedEvents[2] as AgentStatusEvent).protocolConfigurationName == "mockConfig2"
+            assert (collectedSharedEvents[2] as AgentStatusEvent).protocolConfiguration.entityId == mockAgent.id
+            assert (collectedSharedEvents[2] as AgentStatusEvent).protocolConfiguration.attributeName == "mockConfig2"
             assert (collectedSharedEvents[2] as AgentStatusEvent).connectionStatus == ConnectionStatus.CONNECTING
-            assert (collectedSharedEvents[3] as AgentStatusEvent).agentId == mockAgent.id
-            assert (collectedSharedEvents[3] as AgentStatusEvent).protocolConfigurationName == "mockConfig2"
+            assert (collectedSharedEvents[3] as AgentStatusEvent).protocolConfiguration.entityId == mockAgent.id
+            assert (collectedSharedEvents[3] as AgentStatusEvent).protocolConfiguration.attributeName == "mockConfig2"
             assert (collectedSharedEvents[3] as AgentStatusEvent).connectionStatus == ConnectionStatus.ERROR
-            assert (collectedSharedEvents[4] as AgentStatusEvent).agentId == mockAgent.id
-            assert (collectedSharedEvents[4] as AgentStatusEvent).protocolConfigurationName == "mockConfig3"
+            assert (collectedSharedEvents[4] as AgentStatusEvent).protocolConfiguration.entityId == mockAgent.id
+            assert (collectedSharedEvents[4] as AgentStatusEvent).protocolConfiguration.attributeName == "mockConfig3"
             assert (collectedSharedEvents[4] as AgentStatusEvent).connectionStatus == ConnectionStatus.CONNECTING
-            assert (collectedSharedEvents[5] as AgentStatusEvent).agentId == mockAgent.id
-            assert (collectedSharedEvents[5] as AgentStatusEvent).protocolConfigurationName == "mockConfig3"
+            assert (collectedSharedEvents[5] as AgentStatusEvent).protocolConfiguration.entityId == mockAgent.id
+            assert (collectedSharedEvents[5] as AgentStatusEvent).protocolConfiguration.attributeName == "mockConfig3"
             assert (collectedSharedEvents[5] as AgentStatusEvent).connectionStatus == ConnectionStatus.ERROR
-            assert (collectedSharedEvents[6] as AgentStatusEvent).agentId == mockAgent.id
-            assert (collectedSharedEvents[6] as AgentStatusEvent).protocolConfigurationName == "mockConfig4"
+            assert (collectedSharedEvents[6] as AgentStatusEvent).protocolConfiguration.entityId == mockAgent.id
+            assert (collectedSharedEvents[6] as AgentStatusEvent).protocolConfiguration.attributeName == "mockConfig4"
             assert (collectedSharedEvents[6] as AgentStatusEvent).connectionStatus == ConnectionStatus.CONNECTING
-            assert (collectedSharedEvents[7] as AgentStatusEvent).agentId == mockAgent.id
-            assert (collectedSharedEvents[7] as AgentStatusEvent).protocolConfigurationName == "mockConfig4"
+            assert (collectedSharedEvents[7] as AgentStatusEvent).protocolConfiguration.entityId == mockAgent.id
+            assert (collectedSharedEvents[7] as AgentStatusEvent).protocolConfiguration.attributeName == "mockConfig4"
             assert (collectedSharedEvents[7] as AgentStatusEvent).connectionStatus == ConnectionStatus.DISABLED
         }
 

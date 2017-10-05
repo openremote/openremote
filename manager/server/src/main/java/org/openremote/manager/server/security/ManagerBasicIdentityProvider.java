@@ -30,6 +30,8 @@ import org.openremote.manager.server.persistence.ManagerPersistenceService;
 import org.openremote.manager.shared.security.*;
 import org.openremote.model.Constants;
 import org.openremote.model.asset.Asset;
+import org.openremote.model.event.shared.TenantFilter;
+import org.openremote.model.event.shared.TenantScopedEvent;
 
 import javax.persistence.NoResultException;
 import javax.persistence.NonUniqueResultException;
@@ -208,6 +210,12 @@ public class ManagerBasicIdentityProvider extends BasicIdentityProvider implemen
     @Override
     public boolean isActiveTenant(String realmId) {
         return Objects.equals(realmId, Constants.MASTER_REALM);
+    }
+
+    @Override
+    public boolean canSubscribeWith(AuthContext auth, TenantFilter filter, ClientRole... requiredRoles) {
+        // TODO Doesn't really respect the description of the interface
+        return auth.isSuperUser();
     }
 
     @Override

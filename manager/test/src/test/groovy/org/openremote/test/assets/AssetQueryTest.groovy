@@ -83,7 +83,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets.size() == 4
         assets.get(0).id == managerDemoSetup.apartment1Id
         assets.get(1).id == managerDemoSetup.apartment1LivingroomId
-        assets.get(1).getAttributesList().size() == 7
+        assets.get(1).getAttributesList().size() == 8
         assets.get(1).getAttribute("motionSensor").isPresent()
         !assets.get(1).getAttribute("currentTemperature").get().getValue().isPresent()
         assets.get(1).getAttribute("currentTemperature").get().meta.size() == 1
@@ -103,7 +103,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets.size() == 4
         assets.get(0).id == managerDemoSetup.apartment1Id
         assets.get(1).id == managerDemoSetup.apartment1LivingroomId
-        assets.get(1).getAttributesList().size() == 6
+        assets.get(1).getAttributesList().size() == 7
         !assets.get(1).getAttribute("motionSensor").isPresent()
         !assets.get(1).getAttribute("currentTemperature").get().getValue().isPresent()
         assets.get(1).getAttribute("currentTemperature").get().meta.size() == 1
@@ -137,7 +137,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets[1].tenantDisplayName == null
         assets[1].coordinates == null
         assets[1].path == null
-        assets[1].getAttributesList().size() == 5
+        assets[1].getAttributesList().size() == 6
         assets[1].getAttribute("alarmEnabled").isPresent()
         assets[1].getAttribute("vacationUntil").isPresent()
         assets[1].getAttribute("autoSceneSchedule").isPresent()
@@ -373,7 +373,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets.size() == 4
         assets.get(0).id == managerDemoSetup.apartment1Id
         assets.get(1).id == managerDemoSetup.apartment1LivingroomId
-        assets.get(1).getAttributesList().size() == 6
+        assets.get(1).getAttributesList().size() == 7
         !assets.get(1).getAttribute("currentTemperature").get().getValue().isPresent()
         assets.get(1).getAttribute("currentTemperature").get().meta.size() == 6
         !assets.get(1).getAttribute("targetTemperature").get().getValue().isPresent()
@@ -562,7 +562,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         asset.getAttribute("lastPresenceDetected").isPresent()
         asset.getAttribute("lastPresenceDetected").get().meta.size() == 4
         asset.getAttribute("motionSensor").isPresent()
-        asset.getAttribute("motionSensor").get().meta.size() == 7
+        asset.getAttribute("motionSensor").get().meta.size() == 8
 
         when: "a query is executed to select a subset of protected attributes"
         asset = assetStorageService.find(

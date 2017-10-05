@@ -31,9 +31,7 @@ import org.openremote.model.attribute.AttributeValidationResult;
 import org.openremote.model.file.FileInfo;
 import org.openremote.model.util.Pair;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
@@ -48,13 +46,20 @@ public class LocalAgentConnector implements AgentConnector {
 
     @Override
     public List<AgentStatusEvent> getConnectionStatus(Asset agent) {
-        return agentService.getAgents().entrySet().stream()
+        Optional<Asset> foundAgent = agentService.getAgents().entrySet().stream()
             .filter(entry -> entry.getKey().equals(agent.getId()))
-            .flatMap(entry -> Agent.getProtocolConfigurations(entry.getValue()).stream())
+            .map(Map.Entry::getValue)
+            .findFirst();
+        return foundAgent.map(asset -> Agent.getProtocolConfigurations(asset).stream()
             .map(AssetAttribute::getReferenceOrThrow)
             .map(protocolConfigurationRef -> new Pair<>(protocolConfigurationRef, agentService.getProtocolConnectionStatus(protocolConfigurationRef)))
-            .map(pair -> new AgentStatusEvent(agentService.timerService.getCurrentTimeMillis(), pair.key, pair.value))
-            .collect(Collectors.toList());
+            .map(pair -> new AgentStatusEvent(
+                agentService.timerService.getCurrentTimeMillis(),
+                asset.getRealmId(),
+                pair.key,
+                pair.value)
+            )
+            .collect(Collectors.toList())).orElseGet(ArrayList::new);
     }
 
     @Override

@@ -20,10 +20,6 @@
 package org.openremote.manager.server.agent;
 
 import org.apache.camel.builder.RouteBuilder;
-import org.openremote.manager.server.event.ClientEventService;
-import org.openremote.manager.shared.security.ClientRole;
-import org.openremote.model.Constants;
-import org.openremote.model.asset.agent.*;
 import org.openremote.agent.protocol.Protocol;
 import org.openremote.agent.protocol.ProtocolAssetService;
 import org.openremote.container.Container;
@@ -36,11 +32,15 @@ import org.openremote.container.web.WebService;
 import org.openremote.manager.server.asset.AssetProcessingService;
 import org.openremote.manager.server.asset.AssetStorageService;
 import org.openremote.manager.server.asset.ServerAsset;
+import org.openremote.manager.server.event.ClientEventService;
 import org.openremote.manager.server.security.ManagerIdentityService;
+import org.openremote.manager.shared.security.ClientRole;
 import org.openremote.model.AbstractValueTimestampHolder;
 import org.openremote.model.asset.*;
+import org.openremote.model.asset.agent.*;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
+import org.openremote.model.event.shared.TenantFilter;
 import org.openremote.model.util.Pair;
 import org.openremote.model.value.ObjectValue;
 
@@ -52,7 +52,6 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.openremote.model.asset.agent.ConnectionStatus.*;
 import static org.openremote.agent.protocol.Protocol.ACTUATOR_TOPIC;
 import static org.openremote.agent.protocol.Protocol.SENSOR_QUEUE;
 import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_TOPIC;
@@ -62,6 +61,7 @@ import static org.openremote.manager.server.asset.AssetRoute.isPersistenceEventF
 import static org.openremote.model.asset.AssetAttribute.attributesFromJson;
 import static org.openremote.model.asset.AssetType.AGENT;
 import static org.openremote.model.asset.agent.AgentLink.getAgentLink;
+import static org.openremote.model.asset.agent.ConnectionStatus.*;
 import static org.openremote.model.attribute.AttributeEvent.HEADER_SOURCE;
 import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 import static org.openremote.model.util.TextUtil.isValidURN;
@@ -100,21 +100,11 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
         clientEventService.addSubscriptionAuthorizer((auth, subscription) -> {
             if (!subscription.isEventType(AgentStatusEvent.class))
                 return false;
-
-            // Superuser can get all
-            if (auth.isSuperUser())
-                return true;
-
-            // Restricted users get nothing
-            if (identityService.getIdentityProvider().isRestrictedUser(auth.getUserId()))
-                return false;
-
-            // User must have role
-            if (!auth.hasResourceRole(ClientRole.READ_ASSETS.getValue(), Constants.KEYCLOAK_CLIENT_ID)) {
-                return false;
-            }
-
-            return true;
+            return identityService.getIdentityProvider().canSubscribeWith(
+                auth,
+                subscription.getFilter() instanceof TenantFilter ? ((TenantFilter) subscription.getFilter()) : null,
+                ClientRole.READ_ASSETS
+            );
         });
 
         container.getService(WebService.class).getApiSingletons().add(
@@ -546,7 +536,12 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
 
                 // Notify clients
                 clientEventService.publishEvent(
-                    new AgentStatusEvent(timerService.getCurrentTimeMillis(), protocolRef, connectionStatus)
+                    new AgentStatusEvent(
+                        timerService.getCurrentTimeMillis(),
+                        agentMap.get(protocolRef.getEntityId()).getRealmId(),
+                        protocolRef,
+                        connectionStatus
+                    )
                 );
             }
         }

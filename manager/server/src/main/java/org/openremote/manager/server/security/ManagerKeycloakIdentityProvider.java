@@ -39,6 +39,9 @@ import org.openremote.manager.shared.security.*;
 import org.openremote.model.Constants;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetTreeModifiedEvent;
+import org.openremote.model.event.shared.EventFilter;
+import org.openremote.model.event.shared.TenantFilter;
+import org.openremote.model.event.shared.TenantScopedEvent;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
@@ -376,6 +379,38 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             User user = em.find(User.class, userId);
             return (user != null && realmId.equals(user.getRealmId()));
         });
+    }
+
+    @Override
+    public boolean canSubscribeWith(AuthContext auth, TenantFilter filter, ClientRole... requiredRoles) {
+        // Superuser can always subscribe
+        if (auth.isSuperUser())
+            return true;
+
+        // Restricted users get nothing
+        if (isRestrictedUser(auth.getUserId()))
+            return false;
+
+        // User must have role
+        if (requiredRoles != null) {
+            for (ClientRole requiredRole : requiredRoles) {
+                if (!auth.hasResourceRole(requiredRole.getValue(), Constants.KEYCLOAK_CLIENT_ID)) {
+                    return false;
+                }
+            }
+        }
+
+        // Ensure filter matches authenticated realm
+        if (filter != null) {
+            Tenant authenticatedTenant = getTenantForRealm(auth.getAuthenticatedRealm());
+            if (authenticatedTenant == null)
+                return false;
+            if (filter.getRealmId().equals(authenticatedTenant.getId()))
+                return true;
+        }
+
+        return false;
+
     }
 
     public void configureRealm(RealmRepresentation realmRepresentation, TenantEmailConfig emailConfig) {

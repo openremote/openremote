@@ -34,12 +34,12 @@ import org.openremote.container.web.WebService;
 import org.openremote.manager.server.event.ClientEventService;
 import org.openremote.manager.server.security.ManagerIdentityService;
 import org.openremote.manager.shared.security.ClientRole;
-import org.openremote.manager.shared.security.Tenant;
 import org.openremote.manager.shared.security.User;
 import org.openremote.model.Constants;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.asset.*;
 import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.event.shared.TenantFilter;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Value;
@@ -80,7 +80,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
     protected TimerService timerService;
     protected PersistenceService persistenceService;
-    protected ManagerIdentityService managerIdentityService;
+    protected ManagerIdentityService identityService;
     protected ClientEventService clientEventService;
     protected static final String protectedAssetMetaClause; // Maybe these should be in the DB
 
@@ -103,46 +103,23 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     public void init(Container container) throws Exception {
         timerService = container.getService(TimerService.class);
         persistenceService = container.getService(PersistenceService.class);
-        managerIdentityService = container.getService(ManagerIdentityService.class);
+        identityService = container.getService(ManagerIdentityService.class);
         clientEventService = container.getService(ClientEventService.class);
 
         clientEventService.addSubscriptionAuthorizer((auth, subscription) -> {
             if (!subscription.isEventType(AssetTreeModifiedEvent.class))
                 return false;
-
-            // Superuser can get all
-            if (auth.isSuperUser())
-                return true;
-
-            // Restricted users get nothing (they don't have asset trees, just a list of linked assets)
-            if (managerIdentityService.getIdentityProvider().isRestrictedUser(auth.getUserId()))
-                return false;
-
-            // User must have role
-            if (!auth.hasResourceRole(ClientRole.READ_ASSETS.getValue(), Constants.KEYCLOAK_CLIENT_ID)) {
-                return false;
-            }
-
-            // Ensure filter matches authenticated realm
-            if (subscription.getFilter() instanceof AssetTreeModifiedEvent.TenantFilter) {
-                AssetTreeModifiedEvent.TenantFilter filter =
-                    (AssetTreeModifiedEvent.TenantFilter) subscription.getFilter();
-
-                Tenant authenticatedTenant =
-                    managerIdentityService.getIdentityProvider().getTenantForRealm(auth.getAuthenticatedRealm());
-                if (authenticatedTenant == null)
-                    return false;
-                if (filter.getRealmId().equals(authenticatedTenant.getId()))
-                    return true;
-            }
-
-            return false;
+            return identityService.getIdentityProvider().canSubscribeWith(
+                auth,
+                subscription.getFilter() instanceof TenantFilter ? ((TenantFilter) subscription.getFilter()) : null,
+                ClientRole.READ_ASSETS
+            );
         });
 
         container.getService(WebService.class).getApiSingletons().add(
             new AssetResourceImpl(
                 container.getService(TimerService.class),
-                managerIdentityService,
+                identityService,
                 this,
                 container.getService(MessageBrokerService.class)
             )
@@ -216,7 +193,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 ServerAsset asset = find(
                     event.getAssetId(),
                     true,
-                    managerIdentityService.getIdentityProvider().isRestrictedUser(authContext.getUserId()) // Restricted users get filtered state
+                    identityService.getIdentityProvider().isRestrictedUser(authContext.getUserId()) // Restricted users get filtered state
                 );
                 if (asset != null) {
                     replyWithAttributeEvents(sessionKey, asset, event.getAttributeNames());
@@ -346,7 +323,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             }
 
             // Validate realm
-            if (!managerIdentityService.getIdentityProvider().isActiveTenant(asset.getRealmId())) {
+            if (!identityService.getIdentityProvider().isActiveTenant(asset.getRealmId())) {
                 throw new IllegalStateException("Realm not found/active: " + asset.getRealmId());
             }
 
@@ -377,7 +354,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             // If username present
             User user = null;
             if (!TextUtil.isNullOrEmpty(userName)) {
-                user = managerIdentityService.getIdentityProvider().getUser(asset.getRealmId(), userName);
+                user = identityService.getIdentityProvider().getUser(asset.getRealmId(), userName);
                 if (user == null) {
                     throw new IllegalStateException("User not found: " + userName);
                 }

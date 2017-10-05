@@ -32,6 +32,7 @@ import org.openremote.model.asset.AssetQuery
 import org.openremote.model.asset.AssetTreeModifiedEvent
 import org.openremote.model.asset.AssetType
 import org.openremote.model.event.shared.SharedEvent
+import org.openremote.model.event.shared.TenantFilter
 import org.openremote.test.*
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
@@ -407,7 +408,7 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
         collectedSharedEvents.clear()
         clientEventService.subscribe(
                 AssetTreeModifiedEvent.class,
-                new AssetTreeModifiedEvent.TenantFilter(keycloakDemoSetup.customerATenant.id)
+                new TenantFilter(keycloakDemoSetup.customerATenant.id)
         )
 
         then: "the server should return a failure"

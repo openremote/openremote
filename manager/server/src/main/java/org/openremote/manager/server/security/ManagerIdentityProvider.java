@@ -24,6 +24,8 @@ import org.openremote.container.security.IdentityProvider;
 import org.openremote.container.web.ClientRequestInfo;
 import org.openremote.manager.shared.security.*;
 import org.openremote.model.asset.Asset;
+import org.openremote.model.event.shared.TenantFilter;
+import org.openremote.model.event.shared.TenantScopedEvent;
 
 /**
  * SPI for implementations used by {@link ManagerIdentityService}, provides CRUD of
@@ -78,4 +80,12 @@ public interface ManagerIdentityProvider extends IdentityProvider {
     String[] getActiveTenantIds();
 
     boolean isActiveTenant(String realmId);
+
+    /**
+     * Superusers can subscribe to all events, regular users must be in the same realm as the filter and any
+     * required roles must match. If the authenticated party is a restricted user, this returns <code>false.</code>
+     *
+     * @return <code>true</code> if the authenticated party can subscribe to events with the given filter.
+     */
+    boolean canSubscribeWith(AuthContext auth, TenantFilter filter, ClientRole... requiredRoles);
 }
