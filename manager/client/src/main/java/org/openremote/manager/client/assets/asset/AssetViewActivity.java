@@ -106,7 +106,7 @@ public class AssetViewActivity
     @Override
     public void onStop() {
         subscribeLiveUpdates(false);
-        if (asset.getWellKnownType() == AssetType.AGENT) {
+        if (isAgentOrHasAgentLinks()) {
             subscribeAgentStatus(false);
         }
         super.onStop();
@@ -124,8 +124,7 @@ public class AssetViewActivity
         }
 
         // If this is an agent or an asset with attributes linked to an agent, start polling all agents status
-        if (asset.getWellKnownType() == AssetType.AGENT
-            || asset.getAttributesStream().anyMatch(attribute -> AgentLink.getAgentLink(attribute).isPresent())) {
+        if (isAgentOrHasAgentLinks()) {
             subscribeAgentStatus(true);
         }
 
@@ -143,6 +142,7 @@ public class AssetViewActivity
             this::onAgentStatusEvent
         ));
 
+        // Fetch initial agent status
         if (asset.getWellKnownType() == AssetType.AGENT) {
             fetchAgentStatus(assetId);
         } else {
@@ -151,8 +151,14 @@ public class AssetViewActivity
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .map(AttributeRef::getEntityId)
+                .distinct()
                 .forEach(this::fetchAgentStatus);
         }
+    }
+
+    protected boolean isAgentOrHasAgentLinks() {
+        return asset.getWellKnownType() == AssetType.AGENT
+            || asset.getAttributesStream().anyMatch(attribute -> AgentLink.getAgentLink(attribute).isPresent());
     }
 
     @Override
@@ -237,16 +243,13 @@ public class AssetViewActivity
             if (asset.getWellKnownType() == AssetType.AGENT) {
                 if (assetAttributeRef.map(ref -> ref.equals(event.getProtocolConfiguration())).orElse(false)) {
                     attributeView.setStatus(event.getConnectionStatus());
-                    break;
                 }
             } else {
-                if (AgentLink.getAgentLink(assetAttribute)
+                AgentLink.getAgentLink(assetAttribute)
                     .filter(agentLink -> agentLink.equals(event.getProtocolConfiguration()))
-                    .map(agentLink -> {
+                    .ifPresent(agentLink -> {
                         attributeView.setStatus(event.getConnectionStatus());
-                        return true;
-                    }).orElse(false))
-                    break;
+                    });
             }
 
         }

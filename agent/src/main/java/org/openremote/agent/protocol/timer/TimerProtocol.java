@@ -173,6 +173,7 @@ public class TimerProtocol extends AbstractProtocol {
         }
 
         if (protocolConfiguration.isEnabled()) {
+            updateStatus(protocolRef, ConnectionStatus.CONNECTED);
             CronExpression cronExpression = createCronExpression(expressionParser.buildCronExpression());
             if (cronExpression != null) {
                 getCronScheduler()
@@ -181,6 +182,8 @@ public class TimerProtocol extends AbstractProtocol {
                         cronExpression,
                         () -> doTriggerAction(protocolConfiguration)
                     );
+            } else {
+                updateStatus(protocolRef, ConnectionStatus.DISABLED);
             }
         }
     }
