@@ -70,12 +70,11 @@ public class KNXConnection implements NetworkLinkListener, ProcessListener {
     }
 
     public synchronized void connect() {
-        if (connectionStatus != ConnectionStatus.DISCONNECTED && connectionStatus != ConnectionStatus.WAITING) {
-            LOG.finest("Must be disconnected before calling connect");
+        if (connectionStatus == ConnectionStatus.CONNECTED || connectionStatus == ConnectionStatus.CONNECTING) {
+            LOG.finest("Already connected or connection in progress");
             return;
         }
 
-        LOG.fine("Connecting");
         onConnectionStatusChanged(ConnectionStatus.CONNECTING);
 
         InetSocketAddress localEndPoint;
@@ -246,8 +245,10 @@ public class KNXConnection implements NetworkLinkListener, ProcessListener {
     protected void onConnectionError() {
         onConnectionStatusChanged(ConnectionStatus.ERROR);
         processCommunicator.detach();
-        knxLink.removeLinkListener(this);
-        knxLink.close();
+        if (knxLink != null) {
+            knxLink.removeLinkListener(this);
+            knxLink.close();
+        }
         knxLink = null;
 
         // Clear out the group address states
