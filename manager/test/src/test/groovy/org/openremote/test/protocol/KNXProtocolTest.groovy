@@ -109,10 +109,10 @@ class KNXProtocolTest extends Specification implements ManagerContainerTrait {
             assert agentService.getProtocolConnectionStatus(knxAgent.getAttribute("knxConfig").get().getReferenceOrThrow()) == ConnectionStatus.CONNECTED
         }
         conditions.eventually {
-            assert agentService.getProtocolConnectionStatus(knxAgent.getAttribute("knxConfigError1").get().getReferenceOrThrow()) == ConnectionStatus.ERROR
+            assert agentService.getProtocolConnectionStatus(knxAgent.getAttribute("knxConfigError1").get().getReferenceOrThrow()) == ConnectionStatus.ERROR_CONFIGURATION
         }
         conditions.eventually {
-            assert agentService.getProtocolConnectionStatus(knxAgent.getAttribute("knxConfigError2").get().getReferenceOrThrow()) == ConnectionStatus.ERROR
+            assert agentService.getProtocolConnectionStatus(knxAgent.getAttribute("knxConfigError2").get().getReferenceOrThrow()) == ConnectionStatus.ERROR_CONFIGURATION
         }
 
 

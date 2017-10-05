@@ -72,6 +72,11 @@ public enum ConnectionStatus {
     ERROR_AUTHENTICATION,
 
     /**
+     * A configuration related error has occurred.
+     */
+    ERROR_CONFIGURATION,
+
+    /**
      * A general error has occurred that prevents normal operation.
      */
     ERROR

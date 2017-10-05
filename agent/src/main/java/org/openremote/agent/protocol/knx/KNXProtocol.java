@@ -220,14 +220,15 @@ public class KNXProtocol extends AbstractProtocol implements ProtocolLinkedAttri
         String connectionType = protocolConfiguration.getMetaItem(META_KNX_IP_CONNECTION_TYPE).flatMap(AbstractValueHolder::getValueAsString).orElse("TUNNELLING");
         if (!connectionType.equals("TUNNELLING") && !connectionType.equals("ROUTING")) {
             LOG.severe("KNX connectionType can either be 'TUNNELLING' or 'ROUTING' for protocol configuration: " + protocolConfiguration);
-            updateStatus(protocolConfiguration.getReferenceOrThrow(), ConnectionStatus.ERROR);
+            updateStatus(protocolConfiguration.getReferenceOrThrow(), ConnectionStatus.ERROR_CONFIGURATION);
             return;
         }
         
         Optional<String> gatewayIpParam = protocolConfiguration.getMetaItem(META_KNX_GATEWAY_IP).flatMap(AbstractValueHolder::getValueAsString);
-        if (!gatewayIpParam.isPresent() && connectionType.equals("TUNNELLING")) {
-            LOG.severe("No KNX gateway IP address provided for TUNNELLING mode for protocol configuration: " + protocolConfiguration);
-            updateStatus(protocolConfiguration.getReferenceOrThrow(), ConnectionStatus.ERROR);
+        // RT: KNXConnection constructor implies gateway IP is always required so removed TUNNELLING only check here
+        if (!gatewayIpParam.isPresent()) {
+            LOG.severe("No KNX gateway IP address provided for protocol configuration: " + protocolConfiguration);
+            updateStatus(protocolConfiguration.getReferenceOrThrow(), ConnectionStatus.ERROR_CONFIGURATION);
             return;
         }
 
@@ -244,9 +245,7 @@ public class KNXProtocol extends AbstractProtocol implements ProtocolLinkedAttri
         AttributeRef protocolRef = protocolConfiguration.getReferenceOrThrow();
 
         synchronized (knxConnections) {
-            Consumer<ConnectionStatus> statusConsumer = status -> {
-                updateStatus(protocolRef, status);
-            };
+            Consumer<ConnectionStatus> statusConsumer = status -> updateStatus(protocolRef, status);
 
             KNXConnection knxConnection = knxConnections.computeIfAbsent(
                             gatewayIpParam.get(), gatewayIp ->
@@ -396,10 +395,8 @@ public class KNXProtocol extends AbstractProtocol implements ProtocolLinkedAttri
                 return;
             }
 
-            StateDP datapoint = new StateDP(new GroupAddress(groupAddress), attributeRef.getAttributeName());
-            datapoint.setDPT(0, dpt);
-            
-            knxConnection.monitorStateDP(datapoint, value -> handleKNXValueChange(attributeRef, value));
+            StateDP datapoint = new StateDP(new GroupAddress(groupAddress), attributeRef.getAttributeName(), 0, dpt);
+            knxConnection.addDatapointValueConsumer(datapoint, value -> handleKNXValueChange(attributeRef, value));
            
             attributeStatusMap.put(attributeRef, new Pair<>(knxConnection, datapoint));
             LOG.info("Attribute registered for status updates: " + attributeRef + " with datapoint: " + datapoint);
@@ -415,7 +412,7 @@ public class KNXProtocol extends AbstractProtocol implements ProtocolLinkedAttri
         synchronized (attributeStatusMap) {
             Pair<KNXConnection, StateDP> controlInfo = attributeStatusMap.remove(attributeRef);
             if (controlInfo != null) {
-                controlInfo.key.stopMonitoringStateDP(controlInfo.value);
+                controlInfo.key.removeDatapointValueConsumer(controlInfo.value);
             }
         }
     }
@@ -425,12 +422,6 @@ public class KNXProtocol extends AbstractProtocol implements ProtocolLinkedAttri
         return attributeActionMap;
     }
 
-    
-    public Map<AttributeRef, Pair<KNXConnection, StateDP>> getAttributeStatusMap() {
-        return attributeStatusMap;
-    }
-    
-    
     protected boolean isKNXConnectionStillUsed(KNXConnection knxConnection) {
         boolean clientStillUsed;
 
@@ -516,7 +507,7 @@ public class KNXProtocol extends AbstractProtocol implements ProtocolLinkedAttri
         }
     }
     
-    protected Asset createAsset(StateDP datapoint, boolean isStatusGA, MetaItem agentLink, Map<String, Asset> createdAssets) throws KNXException {
+    protected void createAsset(StateDP datapoint, boolean isStatusGA, MetaItem agentLink, Map<String, Asset> createdAssets) throws KNXException {
         String name = datapoint.getName().substring(0, datapoint.getName().length()-3);
         String assetName = name.replaceAll(" -.*-", "");
         Asset asset;
@@ -544,7 +535,6 @@ public class KNXProtocol extends AbstractProtocol implements ProtocolLinkedAttri
             asset.addAttributes(attr);
         }
         createdAssets.put(assetName, asset);
-        return asset;
     }
 
 }
