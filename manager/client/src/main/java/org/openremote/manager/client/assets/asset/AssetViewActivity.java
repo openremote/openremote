@@ -185,7 +185,7 @@ public class AssetViewActivity
             readAllAttributeValues();
         }
 
-        subscribeLiveUpdates(true);
+        subscribeLiveUpdates(enable);
     }
 
     protected void subscribeLiveUpdates(boolean subscribe) {
