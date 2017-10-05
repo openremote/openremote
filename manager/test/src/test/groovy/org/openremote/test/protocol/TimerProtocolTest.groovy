@@ -26,7 +26,7 @@ class TimerProtocolTest extends Specification implements ManagerContainerTrait {
     def "Check timer protocol agent and device asset deployment"() {
 
         given: "expected conditions"
-        def conditions = new PollingConditions(timeout: 15, initialDelay: 0)
+        def conditions = new PollingConditions(timeout: 20, initialDelay: 0)
 
         when: "the container starts"
         def serverPort = findEphemeralPort()

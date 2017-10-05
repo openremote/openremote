@@ -100,7 +100,7 @@ class KNXImportTest extends Specification implements ManagerContainerTrait {
         def knxProjectFileResource = getClass().getResourceAsStream(
             "/org/openremote/test/protocol/knx/knx-import-testproject.knxproj"
         )
-        String base64Content =","+ Base64.getEncoder().encodeToString(knxProjectFileResource.bytes)
+        String base64Content = Base64.getEncoder().encodeToString(knxProjectFileResource.bytes)
         def fileInfo = new FileInfo("knx-import-testproject.knxproj", base64Content, true)
         def assets = agentResource.importLinkedAttributes(null, knxAgent.getId(), "knxConfigError1", null, null, fileInfo)
         

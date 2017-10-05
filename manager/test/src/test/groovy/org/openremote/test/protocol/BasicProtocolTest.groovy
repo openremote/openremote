@@ -169,7 +169,25 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait, 
         def agentService = container.getService(AgentService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
 
-        when: "a mock agent that uses the mock protocol is created with a valid protocol configuration"
+        when: "a client websocket connection and attached event bus and service"
+        def accessToken = {
+            authenticate(
+                container,
+                MASTER_REALM,
+                KEYCLOAK_CLIENT_ID,
+                MASTER_REALM_ADMIN_USER,
+                getString(container.getConfig(), SETUP_KEYCLOAK_ADMIN_PASSWORD, SETUP_KEYCLOAK_ADMIN_PASSWORD_DEFAULT)
+            ).token
+        }
+        List<SharedEvent> collectedSharedEvents = []
+        def eventBus = createEventBus(collectedSharedEvents)
+        def clientEventService = new ClientEventService(eventBus, container.JSON)
+        def websocketSession = connect(createWebsocketClient(), clientEventService.endpoint, serverUri(serverPort), WEBSOCKET_EVENTS, MASTER_REALM, accessToken.call())
+
+        and: "a subscription is made to the agent status event"
+        clientEventService.subscribe(AgentStatusEvent.class)
+
+        and: "a mock agent that uses the mock protocol is created with several protocol configurations"
         def mockAgent = new ServerAsset()
         mockAgent.setName("Mock Agent")
         mockAgent.setType(AssetType.AGENT)
@@ -192,24 +210,6 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait, 
         mockAgent.setRealmId(Constants.MASTER_REALM)
         mockAgent = assetStorageService.merge(mockAgent)
 
-        and: "a client websocket connection and attached event bus and service"
-        def accessToken = {
-            authenticate(
-                    container,
-                    MASTER_REALM,
-                    KEYCLOAK_CLIENT_ID,
-                    MASTER_REALM_ADMIN_USER,
-                    getString(container.getConfig(), SETUP_KEYCLOAK_ADMIN_PASSWORD, SETUP_KEYCLOAK_ADMIN_PASSWORD_DEFAULT)
-            ).token
-        }
-        List<SharedEvent> collectedSharedEvents = []
-        def eventBus = createEventBus(collectedSharedEvents)
-        def clientEventService = new ClientEventService(eventBus, container.JSON)
-        def websocketSession = connect(createWebsocketClient(), clientEventService.endpoint, serverUri(serverPort), WEBSOCKET_EVENTS, MASTER_REALM, accessToken.call())
-
-        and: "a subscription is made to the flight priority filters"
-        clientEventService.subscribe(AgentStatusEvent.class)
-
         then: "the protocol configurations should be linked and their deployment status should be available in the agent service"
         conditions.eventually {
             assert protocolLinkedConfigurations.size() == 4
@@ -225,6 +225,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait, 
             assert agentService.getProtocolConnectionStatus(config2.getReferenceOrThrow()) == ConnectionStatus.ERROR
             assert agentService.getProtocolConnectionStatus(config3.getReferenceOrThrow()) == ConnectionStatus.ERROR
             assert agentService.getProtocolConnectionStatus(config4.getReferenceOrThrow()) == ConnectionStatus.DISABLED
+            assert !collectedSharedEvents.isEmpty()
             assert collectedSharedEvents[0] instanceof AgentStatusEvent
             assert (collectedSharedEvents[0] as AgentStatusEvent).protocolConfiguration.entityId == mockAgent.id
             assert (collectedSharedEvents[0] as AgentStatusEvent).protocolConfiguration.attributeName == "mockConfig1"
