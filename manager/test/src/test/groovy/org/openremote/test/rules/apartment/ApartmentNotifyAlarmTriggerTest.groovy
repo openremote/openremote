@@ -82,7 +82,7 @@ class ApartmentNotifyAlarmTriggerTest extends Specification implements ManagerCo
         notificationResource.storeDeviceToken(null, "device123", "token123", "ANDROID")
 
         then: "the tokens should be in the database"
-        notificationService.findDeviceToken("device123", keycloakDemoSetup.testuser3Id) == "token123"
+        notificationService.findDeviceToken("device123", keycloakDemoSetup.testuser3Id).get().token == "token123"
 
         when: "the alarm is enabled"
         setPseudoClocksToRealTime(container, apartment1Engine)

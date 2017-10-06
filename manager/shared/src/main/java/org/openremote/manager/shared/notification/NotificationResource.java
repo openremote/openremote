@@ -49,6 +49,16 @@ public interface NotificationResource {
                           @FormParam("token") String token,
                           @FormParam("device_type") String deviceType);
 
+    /**
+     * Only the superuser can call this operation.
+     */
+    @GET
+    @Path("token/{userId}")
+    @Produces(APPLICATION_JSON)
+    @RolesAllowed({"read:admin"})
+    List<DeviceNotificationToken> getDeviceTokens(@BeanParam RequestParams requestParams,
+                                                  @PathParam("userId") String userId);
+
     @POST
     @Path("alert")
     @SuccessStatusCode(204)

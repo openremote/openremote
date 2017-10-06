@@ -21,6 +21,8 @@ import org.openremote.manager.client.style.WidgetStyle
 import org.openremote.manager.server.setup.AbstractKeycloakSetup
 import org.openremote.manager.server.setup.SetupService
 import org.openremote.manager.shared.http.EntityReader
+import org.openremote.manager.shared.notification.DeviceNotificationToken
+import org.openremote.manager.shared.notification.NotificationResource
 import org.openremote.manager.shared.security.*
 import org.openremote.manager.shared.validation.ConstraintViolationReport
 import org.openremote.model.event.Event
@@ -140,6 +142,9 @@ class AdminUsersActivityTest extends Specification implements ManagerContainerTr
         def userResource = Stub(UserResource) {
             _(*_) >> { callResourceProxy(container.JSON, clientTarget, getDelegate()) }
         }
+        def notificationResource = Stub(NotificationResource) {
+            _(*_) >> { callResourceProxy(container.JSON, clientTarget, getDelegate()) }
+        }
 
         def adminUsersView = Mock(AdminUsers) {
             setTenants(_, _) >> { Tenant[] tenants, String selectedRealm ->
@@ -161,6 +166,7 @@ class AdminUsersActivityTest extends Specification implements ManagerContainerTr
         def userMapper = new ClientObjectMapper(container.JSON, User.class) as UserMapper
         def credentialMapper = new ClientObjectMapper(container.JSON, Credential.class) as CredentialMapper
         def roleArrayMapper = new ClientObjectMapper(container.JSON, Role[].class) as RoleArrayMapper
+        def notificationTokenMapper = new ClientObjectMapper(container.JSON, List.class) as DeviceNotificationTokenMapper
         AdminUserActivity adminUserActivity
 
         and: "An activity management configuration"
@@ -193,7 +199,7 @@ class AdminUsersActivityTest extends Specification implements ManagerContainerTr
                 },
                 {
                     adminUserActivity = new AdminUserActivity(
-                            environment, adminView, adminNavigationPresenter, adminUserView, userResource, userMapper, credentialMapper, roleArrayMapper
+                            environment, adminView, adminNavigationPresenter, adminUserView, userResource, userMapper, credentialMapper, roleArrayMapper, notificationResource, notificationTokenMapper
                     )
                     return adminUserActivity
                 },

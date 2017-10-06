@@ -21,16 +21,21 @@ package org.openremote.manager.server.notification;
 
 import org.openremote.container.web.WebResource;
 import org.openremote.manager.shared.http.RequestParams;
+import org.openremote.manager.shared.notification.DeviceNotificationToken;
 import org.openremote.model.notification.AlertNotification;
 import org.openremote.manager.shared.notification.NotificationResource;
 
 import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.Response;
 
 import java.util.List;
+import java.util.logging.Logger;
 
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 
 public class NotificationResourceImpl extends WebResource implements NotificationResource {
+
+    private static final Logger LOG = Logger.getLogger(NotificationResourceImpl.class.getName());
 
     final protected NotificationService notificationService;
 
@@ -44,6 +49,15 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
             throw new WebApplicationException("Missing token or device identifier", BAD_REQUEST);
         }
         notificationService.storeDeviceToken(deviceId, getUserId(), token, deviceType);
+    }
+
+    @Override
+    public List<DeviceNotificationToken> getDeviceTokens(RequestParams requestParams, String userId) {
+        if (!isSuperUser()) {
+            LOG.fine("Forbidden access for user '" + getUsername() + "', can't get device tokens for user: " + userId);
+            throw new WebApplicationException(Response.Status.FORBIDDEN);
+        }
+        return notificationService.findAllTokenForUser(userId);
     }
 
     @Override

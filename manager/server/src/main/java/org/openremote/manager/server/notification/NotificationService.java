@@ -25,7 +25,9 @@ import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.persistence.PersistenceService;
+import org.openremote.container.timer.TimerService;
 import org.openremote.container.web.WebService;
+import org.openremote.manager.shared.notification.DeviceNotificationToken;
 import org.openremote.model.notification.AlertNotification;
 import org.openremote.model.notification.DeliveryStatus;
 import org.openremote.model.user.UserQuery;
@@ -35,7 +37,9 @@ import javax.persistence.Query;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.Invocation;
 import javax.ws.rs.core.Response;
+import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -47,18 +51,20 @@ public class NotificationService implements ContainerService {
     public static final String NOTIFICATION_FIREBASE_URL = "NOTIFICATION_FIREBASE_URL";
     public static final String NOTIFICATION_FIREBASE_URL_DEFAULT = "https://fcm.googleapis.com/fcm/send";
 
+    protected TimerService timerService;
     protected PersistenceService persistenceService;
     protected ResteasyWebTarget firebaseTarget;
     private String fcmKey;
 
     @Override
     public void init(Container container) throws Exception {
+        this.timerService = container.getService(TimerService.class);
+        this.persistenceService = container.getService(PersistenceService.class);
 
         fcmKey = container.getConfig().get(NOTIFICATION_FIREBASE_API_KEY);
         if (fcmKey == null) {
             LOG.info(NOTIFICATION_FIREBASE_API_KEY + " not defined, can not send notifications to user devices");
         }
-        this.persistenceService = container.getService(PersistenceService.class);
 
         container.getService(WebService.class).getApiSingletons().add(
             new NotificationResourceImpl(this)
@@ -80,21 +86,24 @@ public class NotificationService implements ContainerService {
         persistenceService.doTransaction(entityManager -> {
             DeviceNotificationToken.Id id = new DeviceNotificationToken.Id(deviceId, userId);
             DeviceNotificationToken deviceToken = new DeviceNotificationToken(id, token, deviceType);
+            deviceToken.setUpdatedOn(new Date(timerService.getCurrentTimeMillis()));
             entityManager.merge(deviceToken);
         });
     }
 
-    public String findDeviceToken(String deviceId, String userId) {
+    public Optional<DeviceNotificationToken> findDeviceToken(String deviceId, String userId) {
         return persistenceService.doReturningTransaction(entityManager -> {
             DeviceNotificationToken.Id id = new DeviceNotificationToken.Id(deviceId, userId);
             DeviceNotificationToken deviceToken = entityManager.find(DeviceNotificationToken.class, id);
-            return deviceToken != null ? deviceToken.getToken() : null;
+            return Optional.ofNullable(deviceToken);
         });
     }
 
     public List<DeviceNotificationToken> findAllTokenForUser(String userId) {
         return persistenceService.doReturningTransaction(entityManager -> {
-            Query query = entityManager.createQuery("SELECT dnt FROM DeviceNotificationToken dnt WHERE dnt.id.userId =:userId");
+            Query query = entityManager.createQuery(
+                "SELECT dnt FROM DeviceNotificationToken dnt WHERE dnt.id.userId =:userId order by dnt.updatedOn desc"
+            );
             query.setParameter("userId", userId);
             return query.getResultList();
         });

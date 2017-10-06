@@ -28,6 +28,7 @@ import org.openremote.manager.client.admin.navigation.AdminNavigationPresenter;
 import org.openremote.manager.client.admin.syslog.*;
 import org.openremote.manager.client.admin.tenant.*;
 import org.openremote.manager.client.admin.users.*;
+import org.openremote.manager.shared.notification.NotificationResource;
 import org.openremote.manager.shared.security.UserResource;
 import org.openremote.manager.shared.syslog.SyslogResource;
 
@@ -64,6 +65,12 @@ public class AdminModule extends AbstractGinModule {
     @Singleton
     public native UserResource getUserResource()  /*-{
         return $wnd.UserResource;
+    }-*/;
+
+    @Provides
+    @Singleton
+    public native NotificationResource getNotificationResource()  /*-{
+        return $wnd.NotificationResource;
     }-*/;
 
 }

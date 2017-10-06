@@ -27,6 +27,7 @@ import com.google.gwt.uibinder.client.UiField;
 import com.google.gwt.uibinder.client.UiHandler;
 import com.google.gwt.user.client.ui.*;
 import com.google.inject.Provider;
+import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.app.dialog.Confirmation;
 import org.openremote.manager.client.widget.FormCheckBox;
 import org.openremote.manager.client.widget.FormGroup;
@@ -91,6 +92,9 @@ public class AdminUserImpl extends FormViewImpl implements AdminUser {
     FlowPanel rolesPanel;
 
     @UiField
+    FlowPanel registeredDevicesContainer;
+
+    @UiField
     PushButton updateButton;
 
     @UiField
@@ -107,10 +111,13 @@ public class AdminUserImpl extends FormViewImpl implements AdminUser {
     protected Presenter presenter;
 
     @Inject
-    public AdminUserImpl(Provider<Confirmation> confirmationDialogProvider) {
+    public AdminUserImpl(Environment environment,
+                         Provider<Confirmation> confirmationDialogProvider) {
         super(confirmationDialogProvider);
         UI ui = GWT.create(UI.class);
         initWidget(ui.createAndBindUi(this));
+
+        clearRegisteredDevices(false);
     }
 
     @Override
@@ -124,6 +131,7 @@ public class AdminUserImpl extends FormViewImpl implements AdminUser {
             enabledCheckBox.setValue(false);
             resetPasswordInput.setValue(null);
             resetPasswordControlInput.setValue(null);
+            clearRegisteredDevices(false);
         }
     }
 
@@ -288,11 +296,13 @@ public class AdminUserImpl extends FormViewImpl implements AdminUser {
     @Override
     public void enableCreate(boolean enable) {
         createButton.setVisible(enable);
+        clearRegisteredDevices(!enable);
     }
 
     @Override
     public void enableUpdate(boolean enable) {
         updateButton.setVisible(enable);
+        clearRegisteredDevices(enable);
     }
 
     @Override
@@ -322,5 +332,14 @@ public class AdminUserImpl extends FormViewImpl implements AdminUser {
     void cancelClicked(ClickEvent e) {
         if (presenter != null)
             presenter.cancel();
+    }
+
+    protected void clearRegisteredDevices(boolean addEmptyMessage) {
+        registeredDevicesContainer.clear();
+        if (addEmptyMessage) {
+            Label emptyLabel = new Label(managerMessages.noRegisteredDevices());
+            emptyLabel.addStyleName(widgetStyle.FormListEmptyMessage());
+            registeredDevicesContainer.add(emptyLabel);
+        }
     }
 }

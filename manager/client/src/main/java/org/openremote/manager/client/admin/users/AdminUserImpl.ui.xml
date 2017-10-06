@@ -21,7 +21,7 @@
         <w:Form ui:field="form" addStyleNames="flex">
 
             <g:HTMLPanel ui:field="mainContent"
-                         styleName="flex layout vertical {widgetStyle.MainContent} scrollable">
+                         styleName="flex-none layout vertical {widgetStyle.MainContent}">
 
                 <g:FlowPanel
                         styleName="layout horizontal {style.formMessages} {widgetStyle.FormMessages} success"
@@ -144,6 +144,9 @@
                 </w:FormGroup>
 
             </g:HTMLPanel>
+
+            <g:FlowPanel ui:field="registeredDevicesContainer"
+                         styleName="flex layout vertical {widgetStyle.MainContent} {widgetStyle.FormList}"/>
 
             <g:FlowPanel styleName="flex-none layout vertical {widgetStyle.MainContent}">
                 <w:FormGroup>

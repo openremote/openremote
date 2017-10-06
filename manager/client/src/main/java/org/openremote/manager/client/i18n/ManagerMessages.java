@@ -448,4 +448,6 @@ public interface ManagerMessages extends Messages {
     String waitingForStatus();
 
     String noAttributesLinkedToSimulator();
+
+    String noRegisteredDevices();
 }

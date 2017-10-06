@@ -1,5 +1,6 @@
 package org.openremote.test.user
 
+import org.openremote.container.timer.TimerService
 import org.openremote.manager.server.notification.NotificationService
 import org.openremote.manager.server.setup.SetupService
 import org.openremote.manager.server.setup.builtin.KeycloakDemoSetup
@@ -12,7 +13,12 @@ import org.openremote.model.user.UserQuery
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 
+import static org.openremote.container.util.MapAccess.getString
+import static org.openremote.manager.server.setup.AbstractKeycloakSetup.SETUP_KEYCLOAK_ADMIN_PASSWORD
+import static org.openremote.manager.server.setup.AbstractKeycloakSetup.SETUP_KEYCLOAK_ADMIN_PASSWORD_DEFAULT
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID
+import static org.openremote.model.Constants.MASTER_REALM
+import static org.openremote.model.Constants.MASTER_REALM_ADMIN_USER
 
 class NotificationServiceTest extends Specification implements ManagerContainerTrait {
 
@@ -35,6 +41,15 @@ class NotificationServiceTest extends Specification implements ManagerContainerT
                 "testuser3"
         ).token
 
+        and: "an authenticated superuser"
+        def adminAccessToken = authenticate(
+                container,
+                MASTER_REALM,
+                KEYCLOAK_CLIENT_ID,
+                MASTER_REALM_ADMIN_USER,
+                getString(container.getConfig(), SETUP_KEYCLOAK_ADMIN_PASSWORD, SETUP_KEYCLOAK_ADMIN_PASSWORD_DEFAULT)
+        ).token
+
         def notificationAlert = new AlertNotification(
                 title: "The Title",
                 appUrl: '#test',
@@ -48,7 +63,10 @@ class NotificationServiceTest extends Specification implements ManagerContainerT
         notificationAlert.addAction(alertAction)
 
         and: "the notification resource"
+        // For user operations
         def notificationResource = getClientTarget(serverUri(serverPort), realm, accessToken).proxy(NotificationResource.class)
+        // For superuser operations
+        def adminNotificationResource = getClientTarget(serverUri(serverPort), MASTER_REALM, adminAccessToken).proxy(NotificationResource.class)
 
         expect: "there should be no user registered to receive notifications"
         notificationService.findAllUsersWithToken().isEmpty()
@@ -58,8 +76,15 @@ class NotificationServiceTest extends Specification implements ManagerContainerT
         notificationResource.storeDeviceToken(null, "device456", "token456", "ANDROID")
 
         then: "the tokens should be in the database"
-        notificationService.findDeviceToken("device123", keycloakDemoSetup.testuser3Id) == "token123"
-        notificationService.findDeviceToken("device456", keycloakDemoSetup.testuser3Id) == "token456"
+        def tokens = adminNotificationResource.getDeviceTokens(null, keycloakDemoSetup.testuser3Id)
+        tokens[0].id.deviceId == "device456"
+        tokens[0].deviceType == "ANDROID"
+        tokens[0].token == "token456"
+        tokens[0].updatedOn.time <= container.getService(TimerService.class).currentTimeMillis
+        tokens[1].id.deviceId == "device123"
+        tokens[1].deviceType == "ANDROID"
+        tokens[1].token == "token123"
+        tokens[1].updatedOn.time <= container.getService(TimerService.class).currentTimeMillis
 
         and: "test user must be registered to receive notifications"
         notificationService.findAllUsersWithToken().size() == 1
@@ -86,7 +111,8 @@ class NotificationServiceTest extends Specification implements ManagerContainerT
         notificationResource.storeDeviceToken(null, "device456", "token789", "ANDROID")
 
         then: "the updated token should be in the database"
-        notificationService.findDeviceToken("device456", keycloakDemoSetup.testuser3Id) == "token789"
+        def thirdToken = notificationService.findDeviceToken("device456", keycloakDemoSetup.testuser3Id)
+        thirdToken.get().token == "token789"
         notificationService.findAllTokenForUser(keycloakDemoSetup.testuser3Id).size() == 2
 
         when: "the Alert Notification is stored"

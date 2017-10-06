@@ -17,13 +17,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.server.notification;
+package org.openremote.manager.shared.notification;
 
-import javax.persistence.Column;
-import javax.persistence.EmbeddedId;
-import javax.persistence.Entity;
-import javax.persistence.Table;
+import javax.persistence.*;
 import java.io.Serializable;
+import java.util.Date;
 
 @Entity
 @Table(name = "DEVICE_NOTIFICATION_TOKEN")
@@ -88,8 +86,12 @@ public class DeviceNotificationToken {
     @Column(name = "TOKEN", nullable = false, length = 4096)
     protected String token;
 
-    @Column(name = "DEVICE_TYPE", nullable = true)
+    @Column(name = "DEVICE_TYPE")
     protected String deviceType;
+
+    @Temporal(TemporalType.TIMESTAMP)
+    @Column(name = "UPDATED_ON", updatable = false, nullable = false, columnDefinition = "TIMESTAMP WITH TIME ZONE")
+    protected Date updatedOn;
 
     public DeviceNotificationToken() {
     }
@@ -124,12 +126,21 @@ public class DeviceNotificationToken {
         this.deviceType = deviceType;
     }
 
+    public Date getUpdatedOn() {
+        return updatedOn;
+    }
+
+    public void setUpdatedOn(Date updatedOn) {
+        this.updatedOn = updatedOn;
+    }
+
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
             "id=" + id +
             ", token='" + token + '\'' +
             ", deviceType='" + deviceType + '\'' +
+            ", updatedOn=" + updatedOn +
             '}';
     }
 }

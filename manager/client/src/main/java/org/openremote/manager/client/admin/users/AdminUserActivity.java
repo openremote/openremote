@@ -25,6 +25,7 @@ import org.openremote.manager.client.admin.*;
 import org.openremote.manager.client.admin.navigation.AdminNavigation;
 import org.openremote.manager.client.event.ShowSuccessEvent;
 import org.openremote.manager.client.mvp.AppActivity;
+import org.openremote.manager.shared.notification.NotificationResource;
 import org.openremote.manager.shared.security.Credential;
 import org.openremote.manager.shared.security.Role;
 import org.openremote.manager.shared.security.User;
@@ -39,6 +40,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.logging.Logger;
 
 import static org.openremote.manager.client.http.RequestExceptionHandler.handleRequestException;
 
@@ -46,11 +48,15 @@ public class AdminUserActivity
     extends AbstractAdminActivity<AdminUserPlace, AdminUser>
     implements AdminUser.Presenter {
 
+    private static final Logger LOG = Logger.getLogger(AdminUserActivity.class.getName());
+
     final protected Environment environment;
     final protected UserResource userResource;
     final protected UserMapper userMapper;
     final protected CredentialMapper credentialMapper;
     final protected RoleArrayMapper roleArrayMapper;
+    final protected NotificationResource notificationResource;
+    final protected DeviceNotificationTokenMapper deviceNotificationTokenMapper;
 
     final protected Consumer<ConstraintViolation[]> validationErrorHandler = violations -> {
         for (ConstraintViolation violation : violations) {
@@ -92,13 +98,17 @@ public class AdminUserActivity
                              UserResource userResource,
                              UserMapper userMapper,
                              CredentialMapper credentialMapper,
-                             RoleArrayMapper roleArrayMapper) {
+                             RoleArrayMapper roleArrayMapper,
+                             NotificationResource notificationResource,
+                             DeviceNotificationTokenMapper deviceNotificationTokenMapper) {
         super(adminView, adminNavigationPresenter, view);
         this.environment = environment;
         this.userResource = userResource;
         this.userMapper = userMapper;
         this.credentialMapper = credentialMapper;
         this.roleArrayMapper = roleArrayMapper;
+        this.notificationResource = notificationResource;
+        this.deviceNotificationTokenMapper = deviceNotificationTokenMapper;
     }
 
     @Override
@@ -297,7 +307,7 @@ public class AdminUserActivity
             user -> {
                 this.user = user;
                 this.realm = user.getRealm();
-                loadRoles(() -> {
+                loadRoles(() -> loadDeviceRegistrations(() -> {
                     writeToView();
                     adminContent.setFormBusy(false);
                     adminContent.enableCreate(false);
@@ -305,7 +315,7 @@ public class AdminUserActivity
                     adminContent.enableDelete(true);
                     adminContent.enableResetPassword(true);
                     adminContent.setUsernameEditEnabled(false);
-                });
+                }));
             },
             ex -> handleRequestException(ex, environment)
         );
@@ -322,6 +332,19 @@ public class AdminUserActivity
                 roleList.sort((o1, o2) -> o1.getName().compareToIgnoreCase(o2.getName()));
                 this.roles = roleList.toArray(new Role[roleList.size()]);
                 adminContent.enableRoles(true);
+                onComplete.run();
+            },
+            ex -> handleRequestException(ex, environment)
+        );
+    }
+
+    protected void loadDeviceRegistrations(Runnable onComplete) {
+        environment.getRequestService().execute(
+            deviceNotificationTokenMapper,
+            requestParams -> notificationResource.getDeviceTokens(requestParams, userId),
+            200,
+            deviceNotificationTokens -> {
+                // TODO Display device tokens
                 onComplete.run();
             },
             ex -> handleRequestException(ex, environment)
