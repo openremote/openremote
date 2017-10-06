@@ -129,6 +129,8 @@ public abstract class DatapointBrowser extends AbstractAttributeViewExtension {
 
     protected void createChart() {
 
+        addLabel(environment.getMessages().historicalData());
+
         Canvas canvas = Canvas.createIfSupported();
         if (canvas == null) {
             add(new Label(environment.getMessages().canvasNotSupported()));
