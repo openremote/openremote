@@ -42,7 +42,7 @@ public class AttributeValueConstraint {
         this.valueComparator = valueComparator;
         this.value = value;
         if (!valueComparator.isApplicable(value.getType())) {
-            throw new IllegalArgumentException("Comparator " + valueComparator + " can not be applied on: " + value);
+            throw new IllegalArgumentException("Comparator " + valueComparator + " can not be applied on value type " + value.getType() + ": " + value);
         }
     }
 
@@ -87,10 +87,10 @@ public class AttributeValueConstraint {
         return Values.getObject(value)
             .filter(v -> v.getString("valueComparator").isPresent())
             .filter(v -> v.get("value").isPresent())
-            .flatMap(objectValue -> objectValue
-                .getString("valueComparator")
-                .flatMap(ValueComparator::fromString)
-                .map(comparator -> new AttributeValueConstraint(comparator, objectValue.get("value").get()))
+            .flatMap(v ->
+                v.getString("valueComparator")
+                    .flatMap(ValueComparator::fromString)
+                    .map(comparator -> new AttributeValueConstraint(comparator, v.get("value").get()))
             );
     }
 }

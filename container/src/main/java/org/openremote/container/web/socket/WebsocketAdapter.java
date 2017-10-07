@@ -74,7 +74,7 @@ public class WebsocketAdapter extends Endpoint {
         super.onError(session, thr);
         
         // Ignore connection reset
-        if (!(thr instanceof IOException && !thr.getMessage().equals("Connection reset by peer"))) {
+        if (!(thr instanceof IOException && thr.getMessage().equals("Connection reset by peer"))) {
             if (LOG.isLoggable(Level.INFO))
                 LOG.log(Level.INFO, "Websocket session error: " + session.getId(), thr);
         }

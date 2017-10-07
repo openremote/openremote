@@ -240,6 +240,8 @@ public class RulesEngine<T extends Ruleset> {
                 ? compileTemplate(ruleset.getTemplateAssetId(), ruleset.getRules())
                 : ruleset.getRules();
 
+            LOG.fine("Final ruleset DRL: " + drl);
+
             // ID will be unique within the scope of a rules engine as ruleset will all be of same type
             kfs.write("src/main/resources/" + ruleset.getId() + ".drl", drl);
 
@@ -441,6 +443,7 @@ public class RulesEngine<T extends Ruleset> {
                 for (AssetState assetState : initialState) {
                     insertAssetState(assetState);
                 }
+                LOG.info("On " + this + ", inserted initial asset states: " + initialState.size());
             } catch (Exception ex) {
                 // This is called in a background timer thread, we must log here or the exception is swallowed
                 LOG.log(Level.SEVERE, "On " + this + ", inserting initial asset states failed", ex);
