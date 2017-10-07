@@ -130,7 +130,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
 
     // TODO: Some of these options should be configurable depending on expected load etc.
     // Message topic for communicating individual asset attribute changes
-    public static final String ASSET_QUEUE = "seda://AssetQueue?waitForTaskToComplete=IfReplyExpected&timeout=10000&purgeWhenStopping=true&discardIfNoConsumers=false&size=1000";
+    public static final String ASSET_QUEUE = "seda://AssetQueue?waitForTaskToComplete=IfReplyExpected&timeout=10000&purgeWhenStopping=true&discardIfNoConsumers=false&size=25000";
 
     protected TimerService timerService;
     protected ManagerIdentityService identityService;
