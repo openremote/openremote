@@ -462,7 +462,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                 ),
             new AssetAttribute("windowOpen", AttributeType.BOOLEAN, Values.create(false))
                 .setMeta(
-                    new MetaItem(LABEL, Values.create("Window Open"))
+                    new MetaItem(PROTECTED, Values.create(true))
                 )
         );
         apartment2Livingroom = assetStorageService.merge(apartment2Livingroom);

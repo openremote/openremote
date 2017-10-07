@@ -138,15 +138,12 @@ public class RulesetStorageService implements ContainerService {
         return persistenceService.doReturningTransaction(entityManager ->
             entityManager.createQuery(
                 "select new org.openremote.model.rules.GlobalRuleset(" +
-                    "rs.id, rs.version, rs.createdOn, rs.lastModified, rs.name, rs.enabled, rs.templateAssetId, rs.rules, rs.assetId, a.realmId" +
+                    "rs.id, rs.version, rs.createdOn, rs.lastModified, rs.name, rs.enabled, rs.templateAssetId, rs.rules" +
                     ") " +
-                    "from GlobalRuleset rs, Asset a " +
-                    "where rs.assetId = a.id " +
-                    "and rs.enabled = true and rs.templateAssetId is not null and rs.templateAssetId = :templateAssetId",
+                    "from GlobalRuleset rs " +
+                    "where rs.enabled = true and rs.templateAssetId is not null and rs.templateAssetId = :templateAssetId",
                 GlobalRuleset.class
-            )
-                .setParameter("templateAssetId", templateAssetId)
-                .getResultList()
+            ).setParameter("templateAssetId", templateAssetId).getResultList()
         );
     }
 

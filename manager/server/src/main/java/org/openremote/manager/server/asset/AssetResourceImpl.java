@@ -375,6 +375,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
 
             if (isRestrictedUser()) {
                 query = query.userId(getUserId());
+                query.select.filterProtected(true);
             }
 
             Tenant tenant = query.tenantPredicate != null

@@ -24,9 +24,6 @@ import static org.openremote.model.asset.AssetType.THING
 
 class AssetQueryTest extends Specification implements ManagerContainerTrait {
 
-    // Apparently there is a limit to the size of Spock tests, if all this code is put inside the test then it fails
-    // to compile - we should use setupSpec more frequently and break up tests into smaller chunks to avoid this issue
-
     @Shared
     static Container container
     @Shared
@@ -48,7 +45,12 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         persistenceService = container.getService(PersistenceService.class)
     }
 
-    def "Query assets"() {
+    def cleanupSpec() {
+        given: "the server should be stopped"
+        stopContainer(container)
+    }
+
+    def "Query assets 1"() {
 
         when: "an agent filtering query is executed"
         def assets = assetStorageService.findAll(
@@ -111,6 +113,21 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets.get(1).getAttribute("targetTemperature").get().meta.size() == 1
         assets.get(2).id == managerDemoSetup.apartment1KitchenId
         assets.get(3).id == managerDemoSetup.apartment2Id
+
+        when: "a query is executed that returns a protected attribute without any other meta items"
+        assets = assetStorageService.findAll(
+            new AssetQuery()
+                .select(new Select(Include.ALL_EXCEPT_PATH, true))
+                .id(managerDemoSetup.apartment2LivingroomId)
+        )
+
+        then: "only one asset should be retrieved"
+        assets.size() == 1
+        assets.get(0).id == managerDemoSetup.apartment2LivingroomId
+        assets.get(0).getAttributesList().size() == 1
+        assets.get(0).getAttribute("windowOpen").isPresent()
+        !assets.get(0).getAttribute("windowOpen").get().getValueAsBoolean().get()
+        !assets.get(0).getAttribute("windowOpen").get().hasMetaItems()
 
         when: "a recursive query is executed to select asset id, name and attribute names for apartment 1 assets"
         assets = assetStorageService.findAll(
@@ -396,8 +413,13 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         !assetStorageService.isUserAsset(keycloakDemoSetup.testuser3Id, managerDemoSetup.apartment3Id)
         !assetStorageService.isUserAsset(keycloakDemoSetup.testuser3Id, managerDemoSetup.smartOfficeId)
 
+    }
+
+    // Specs too large, split up features
+    def "Query assets 2"() {
+
         when: "a query is executed"
-        assets = assetStorageService.findAll(
+        def assets = assetStorageService.findAll(
                 new AssetQuery().type(AssetType.AGENT)
         )
 
@@ -536,7 +558,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets.get(0).id == managerDemoSetup.thingId
 
         when: "a query is executed to select a subset of attributes"
-        asset = assetStorageService.find(
+        def asset = assetStorageService.find(
                 new AssetQuery()
                         .id(managerDemoSetup.apartment1LivingroomId)
                         .select(new Select(Include.ALL, false, false, "co2Level", "lastPresenceDetected", "motionSensor"))
@@ -611,7 +633,5 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assert asset.getAttribute("co2Level").isPresent()
         assert asset.getAttribute("co2Level").get().valueAsNumber.get() == 350
 
-        cleanup: "the server should be stopped"
-        stopContainer(container)
     }
 }

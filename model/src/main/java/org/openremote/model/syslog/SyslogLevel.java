@@ -21,7 +21,6 @@ package org.openremote.model.syslog;
 
 public enum SyslogLevel {
 
-    DEBUG("bug"),
     INFO("info-circle"),
     WARN("exclamation-circle"),
     ERROR("exclamation-triangle");
@@ -43,9 +42,8 @@ public enum SyslogLevel {
             return WARN;
         } else if (level == 800 || level == 700) {
             return INFO;
-        } else if (level <= 500) {
-            return DEBUG;
         }
+        // Ignore FINE, FINER, FINEST because we shouldn't store or publish debug logging (too much data)
         return null;
     }
 

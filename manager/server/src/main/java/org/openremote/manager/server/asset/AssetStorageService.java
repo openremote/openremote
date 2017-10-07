@@ -559,7 +559,8 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             }
         } else if (filterProtected) {
             // Use sub-select for processing the attributes the meta inside each attribute is replaced with filtered meta
-            sb.append("select json_object_agg(AX.key, jsonb_set(AX.value, '{meta}', AMF.value, false)) from jsonb_each(A.attributes) as AX");
+            // (coalesce null to empty array because jsonb_set() with null will clear the whole object)
+            sb.append("select json_object_agg(AX.key, jsonb_set(AX.value, '{meta}', coalesce(AMF.VALUE, jsonb_build_array()), false)) from jsonb_each(A.attributes) as AX");
             // Use implicit inner join on meta array set to only select attributes with a protected=true meta item
             sb.append(", jsonb_array_elements(AX.VALUE #> '{meta}') as AM");
             // Use subquery to filter out meta items not marked as protected
