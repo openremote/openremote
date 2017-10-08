@@ -31,7 +31,6 @@ import org.openremote.manager.shared.security.*;
 import org.openremote.model.Constants;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.event.shared.TenantFilter;
-import org.openremote.model.event.shared.TenantScopedEvent;
 
 import javax.persistence.NoResultException;
 import javax.persistence.NonUniqueResultException;

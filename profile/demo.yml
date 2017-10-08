@@ -8,7 +8,6 @@ version: '2'
 services:
 
   # The frontend proxy, terminates SSL/TLS connections and forwards them to the Manager backend.
-  # TODO Document how to install sidecar letsencrypt container for production certificates, with shared volume mapping.
   haproxy:
 
     # Use installed or pull the latest image from Docker Hub.
@@ -98,8 +97,43 @@ services:
       # NOTIFICATION_FIREBASE_URL: https://fcm.googleapis.com/fcm/send
       # NOTIFICATION_FIREBASE_API_KEY = '...'
 
-      # Optional: Override built-in logging.properties with a file of your choice
+      # Optional: Override built-in logging.properties with a file of your choice.
       # LOGGING_CONFIG_FILE: /my/manager/logging.properties
+
+      # Optional: Provide a path to the map tiles database file (see https://openmaptiles.com/).
+      # MAP_TILES_PATH: 'deployment/manager/mapdata.mbtiles'
+
+      # Optional: Override the map settings such as center location and zoom when opening the
+      # manager's map, as well as other style details and colours.
+      # MAP_SETTINGS_PATH: 'deployment/manager/mapsettings.json'
+
+      # The number of threads and therefore rules engines that can be instantiated (default unlimited).
+      # RULES_THREADS_MAX: 32
+
+      # The number of threads and therefore background tasks that can be executed at the same
+      # time. Used by scheduled, usually short-lived and non-blocking tasks, such as protocols
+      # polling a remote service at regular interval, or the internal checks for expired client
+      # subscriptions on the event bus (default depends on detected CPU cores).
+      # SCHEDULED_TASKS_THREADS_MAX: 4
+
+      # When asset attributes are enabled for rule events, each value update will be an event fact
+      # in a rules knowledge session. You can set the global default expiration time span, after which
+      # rule event facts are retracted automatically. Default is 1 hour.
+      # RULE_EVENT_EXPIRES: '1h'
+
+      # The identity provider implementation to use for managing user identities, roles, and
+      # access authorization. The default is Keycloak, which requires a separate service but
+      # provides full multi-tenancy identity and role management. The basic provider supports
+      # only superusers and their text passwords, managed in a simple database table.
+      # MANAGER_IDENTITY_PROVIDER: 'basic'
+      # SETUP_BASIC_IDENTITY_ADMIN_PASSWORD: 'secret'
+
+      # Location of the static manager (UI and API) resources
+      # MANAGER_DOCROOT: 'manager/client/src/main/webapp'
+
+      # Location of the static console applications, each subdirectory must have the name of
+      # a realm to which the console app belongs.
+      # CONSOLE_DOCROOT: 'deployment/manager/resources_console'
 
     # This service needs access to other services on the Docker network.
     links:

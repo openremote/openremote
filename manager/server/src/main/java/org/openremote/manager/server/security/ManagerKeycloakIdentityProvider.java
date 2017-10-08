@@ -39,9 +39,7 @@ import org.openremote.manager.shared.security.*;
 import org.openremote.model.Constants;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetTreeModifiedEvent;
-import org.openremote.model.event.shared.EventFilter;
 import org.openremote.model.event.shared.TenantFilter;
-import org.openremote.model.event.shared.TenantScopedEvent;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;

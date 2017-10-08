@@ -25,7 +25,6 @@ import org.openremote.container.web.ClientRequestInfo;
 import org.openremote.manager.shared.security.*;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.event.shared.TenantFilter;
-import org.openremote.model.event.shared.TenantScopedEvent;
 
 /**
  * SPI for implementations used by {@link ManagerIdentityService}, provides CRUD of
