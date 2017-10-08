@@ -59,6 +59,17 @@ public interface NotificationResource {
     List<DeviceNotificationToken> getDeviceTokens(@BeanParam RequestParams requestParams,
                                                   @PathParam("userId") String userId);
 
+    /**
+     * Only the superuser can call this operation.
+     */
+    @DELETE
+    @Path("token/{userId}/device/{deviceId}")
+    @Produces(APPLICATION_JSON)
+    @RolesAllowed({"write:admin"})
+    void deleteDeviceToken(@BeanParam RequestParams requestParams,
+                           @PathParam("userId") String userId,
+                           @PathParam("deviceId") String deviceId);
+
     @POST
     @Path("alert")
     @SuccessStatusCode(204)

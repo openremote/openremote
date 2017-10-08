@@ -25,6 +25,7 @@ import org.openremote.manager.client.admin.*;
 import org.openremote.manager.client.admin.navigation.AdminNavigation;
 import org.openremote.manager.client.event.ShowSuccessEvent;
 import org.openremote.manager.client.mvp.AppActivity;
+import org.openremote.manager.shared.notification.DeviceNotificationToken;
 import org.openremote.manager.shared.notification.NotificationResource;
 import org.openremote.manager.shared.security.Credential;
 import org.openremote.manager.shared.security.Role;
@@ -137,16 +138,16 @@ public class AdminUserActivity
         adminContent.enableDelete(false);
         adminContent.enableResetPassword(false);
         adminContent.enableRoles(false);
-        adminContent.setUsernameEditEnabled(false);
+        adminContent.setEditMode(false);
 
         if (userId != null) {
+            adminContent.setEditMode(true);
             loadUser();
         } else {
             user = new User();
             user.setRealm(realm);
             writeToView();
             adminContent.enableCreate(true);
-            adminContent.setUsernameEditEnabled(true);
         }
     }
 
@@ -269,6 +270,21 @@ public class AdminUserActivity
     }
 
     @Override
+    public void onDeviceRegistrationDelete(DeviceNotificationToken.Id id) {
+        environment.getRequestService().execute(
+            requestParams -> notificationResource.deleteDeviceToken(requestParams, id.getUserId(), id.getDeviceId()),
+            204,
+            () -> {
+                adminContent.removeDeviceRegistration(id);
+                environment.getEventBus().dispatch(new ShowSuccessEvent(
+                    environment.getMessages().registeredDeviceDeleted(id.getDeviceId())
+                ));
+            },
+            ex -> handleRequestException(ex, environment)
+        );
+    }
+
+    @Override
     public void delete() {
         adminContent.showConfirmation(
             environment.getMessages().confirmation(),
@@ -314,7 +330,6 @@ public class AdminUserActivity
                     adminContent.enableUpdate(true);
                     adminContent.enableDelete(true);
                     adminContent.enableResetPassword(true);
-                    adminContent.setUsernameEditEnabled(false);
                 }));
             },
             ex -> handleRequestException(ex, environment)
@@ -344,7 +359,7 @@ public class AdminUserActivity
             requestParams -> notificationResource.getDeviceTokens(requestParams, userId),
             200,
             deviceNotificationTokens -> {
-                // TODO Display device tokens
+                adminContent.setDeviceRegistrations(deviceNotificationTokens);
                 onComplete.run();
             },
             ex -> handleRequestException(ex, environment)

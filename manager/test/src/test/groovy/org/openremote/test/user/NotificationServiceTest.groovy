@@ -77,6 +77,7 @@ class NotificationServiceTest extends Specification implements ManagerContainerT
 
         then: "the tokens should be in the database"
         def tokens = adminNotificationResource.getDeviceTokens(null, keycloakDemoSetup.testuser3Id)
+        tokens.size() == 2
         tokens[0].id.deviceId == "device456"
         tokens[0].deviceType == "ANDROID"
         tokens[0].token == "token456"
@@ -127,6 +128,16 @@ class NotificationServiceTest extends Specification implements ManagerContainerT
 
         then: "there should be no alert"
         notificationResource.getAlertNotification().size() == 0
+
+        when: "a device registration is removed"
+        adminNotificationResource.deleteDeviceToken(null, keycloakDemoSetup.testuser3Id, "device456")
+        tokens = adminNotificationResource.getDeviceTokens(null, keycloakDemoSetup.testuser3Id)
+
+        then: "only the other registration should be present"
+        tokens.size() == 1
+        tokens[0].id.deviceId == "device123"
+        tokens[0].deviceType == "ANDROID"
+        tokens[0].token == "token123"
 
         cleanup: "the server should be stopped"
         stopContainer(container)

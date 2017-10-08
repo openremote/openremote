@@ -450,4 +450,16 @@ public interface ManagerMessages extends Messages {
     String noAttributesLinkedToSimulator();
 
     String noRegisteredDevices();
+
+    String registeredDeviceId();
+
+    String deleteRegistration();
+
+    String registeredDeviceType();
+
+    String registeredDeviceLastLogin();
+
+    String registeredDeviceNotificationToken();
+
+    String registeredDeviceDeleted(String deviceId);
 }

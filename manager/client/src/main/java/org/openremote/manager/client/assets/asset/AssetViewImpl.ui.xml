@@ -12,13 +12,13 @@
 
         .mapWidget {
             margin: 0 0 1em 1em;
-            height: 15em;
+            height: 14em;
         }
 
         .stringEditor {
-                     min-width: 5em;
-                     width: 100%;
-                 }
+            min-width: 5em;
+            width: 100%;
+        }
 
         .numberEditor {
             min-width: 5em;

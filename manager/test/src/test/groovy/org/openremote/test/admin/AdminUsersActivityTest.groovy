@@ -21,7 +21,6 @@ import org.openremote.manager.client.style.WidgetStyle
 import org.openremote.manager.server.setup.AbstractKeycloakSetup
 import org.openremote.manager.server.setup.SetupService
 import org.openremote.manager.shared.http.EntityReader
-import org.openremote.manager.shared.notification.DeviceNotificationToken
 import org.openremote.manager.shared.notification.NotificationResource
 import org.openremote.manager.shared.security.*
 import org.openremote.manager.shared.validation.ConstraintViolationReport
@@ -302,14 +301,13 @@ class AdminUsersActivityTest extends Specification implements ManagerContainerTr
         1 * adminUserView.enableDelete(false)
         1 * adminUserView.enableResetPassword(false)
         1 * adminUserView.enableRoles(false)
-        1 * adminUserView.setUsernameEditEnabled(false)
+        1 * adminUserView.setEditMode(false)
         1 * adminUserView.setUsername(null)
         1 * adminUserView.setFirstName(null)
         1 * adminUserView.setLastName(null)
         1 * adminUserView.setEmail(null)
         1 * adminUserView.setUserEnabled(null)
         1 * adminUserView.enableCreate(true)
-        1 * adminUserView.setUsernameEditEnabled(true)
 
         when: "The user clicks the Create button"
         resultEvents = []
@@ -451,7 +449,8 @@ class AdminUsersActivityTest extends Specification implements ManagerContainerTr
         1 * adminUserView.enableDelete(false)
         1 * adminUserView.enableResetPassword(false)
         1 * adminUserView.enableRoles(false)
-        1 * adminUserView.setUsernameEditEnabled(false)
+        1 * adminUserView.setEditMode(false)
+        1 * adminUserView.setEditMode(true)
 
         and: "The user should be loaded"
         1 * adminUserView.enableRoles(true)
@@ -488,7 +487,6 @@ class AdminUsersActivityTest extends Specification implements ManagerContainerTr
         1 * adminUserView.enableUpdate(true)
         1 * adminUserView.enableDelete(true)
         1 * adminUserView.enableResetPassword(true)
-        1 * adminUserView.setUsernameEditEnabled(false)
 
         when: "The user selects a composite role"
         adminUserActivity.onRoleAssigned(blockingResult.readRoleId, true)

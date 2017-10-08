@@ -91,6 +91,16 @@ public class NotificationService implements ContainerService {
         });
     }
 
+    public void deleteDeviceToken(String deviceId, String userId) {
+        persistenceService.doTransaction(entityManager -> {
+            DeviceNotificationToken.Id id = new DeviceNotificationToken.Id(deviceId, userId);
+            DeviceNotificationToken deviceToken = entityManager.find(DeviceNotificationToken.class, id);
+            if (deviceToken != null) {
+                entityManager.remove(deviceToken);
+            }
+        });
+    }
+
     public Optional<DeviceNotificationToken> findDeviceToken(String deviceId, String userId) {
         return persistenceService.doReturningTransaction(entityManager -> {
             DeviceNotificationToken.Id id = new DeviceNotificationToken.Id(deviceId, userId);

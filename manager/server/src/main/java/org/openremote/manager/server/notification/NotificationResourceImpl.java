@@ -61,6 +61,15 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
     }
 
     @Override
+    public void deleteDeviceToken(RequestParams requestParams, String userId, String deviceId) {
+        if (!isSuperUser()) {
+            LOG.fine("Forbidden access for user '" + getUsername() + "', can't delete device token  for user: " + userId);
+            throw new WebApplicationException(Response.Status.FORBIDDEN);
+        }
+        notificationService.deleteDeviceToken(deviceId, userId);
+    }
+
+    @Override
     public void storeAlertNotification(AlertNotification alertNotification) {
         if (alertNotification == null) {
             throw new WebApplicationException("Missing alertNotification", BAD_REQUEST);

@@ -21,12 +21,17 @@ package org.openremote.manager.client.admin.users;
 
 import org.openremote.manager.client.admin.AdminContent;
 import org.openremote.manager.client.widget.FormView;
+import org.openremote.manager.shared.notification.DeviceNotificationToken;
+
+import java.util.List;
 
 public interface AdminUser extends AdminContent, FormView {
 
     interface Presenter {
 
         void onRoleAssigned(String id, boolean assigned);
+
+        void onDeviceRegistrationDelete(DeviceNotificationToken.Id id);
 
         void create();
 
@@ -39,13 +44,13 @@ public interface AdminUser extends AdminContent, FormView {
 
     void setPresenter(Presenter presenter);
 
+    void setEditMode(boolean show);
+
     void setUsername(String username);
 
     String getUsername();
 
     void setUsernameError(boolean error);
-
-    void setUsernameEditEnabled(boolean enabled);
 
     void setFirstName(String firstName);
 
@@ -90,6 +95,10 @@ public interface AdminUser extends AdminContent, FormView {
     void addRole(String id, String label, boolean composite, boolean assigned);
 
     void toggleRoleAssigned(String id, boolean assigned);
+
+    void setDeviceRegistrations(List<DeviceNotificationToken> deviceNotificationTokens);
+
+    void removeDeviceRegistration(DeviceNotificationToken.Id id);
 
     void enableCreate(boolean enable);
 

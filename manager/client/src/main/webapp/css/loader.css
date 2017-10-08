@@ -13,7 +13,7 @@ body {
 }
 
 @keyframes loading {
-    0% { background-color: #fff; }
-    100% { background-color: #ccc; }
+    0% { background-color: #ccc; }
+    100% { background-color: #919194; }
 }
 
