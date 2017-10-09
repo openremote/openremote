@@ -53,6 +53,8 @@ public class AdminModule extends AbstractGinModule {
         bind(AdminUsersActivity.class);
         bind(AdminUser.class).to(AdminUserImpl.class).in(Singleton.class);
         bind(AdminUserActivity.class);
+
+        bind(AdminUserNotificationEditor.class).to(AdminUserNotificationEditorImpl.class).in(Singleton.class);
     }
 
     @Provides

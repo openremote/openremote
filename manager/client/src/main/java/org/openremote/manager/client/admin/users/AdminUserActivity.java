@@ -34,6 +34,9 @@ import org.openremote.manager.shared.security.UserResource;
 import org.openremote.manager.shared.validation.ConstraintViolation;
 import org.openremote.model.event.bus.EventBus;
 import org.openremote.model.event.bus.EventRegistration;
+import org.openremote.model.notification.ActionType;
+import org.openremote.model.notification.AlertAction;
+import org.openremote.model.notification.AlertNotification;
 
 import javax.inject.Inject;
 import java.util.ArrayList;
@@ -56,7 +59,9 @@ public class AdminUserActivity
     final protected UserMapper userMapper;
     final protected CredentialMapper credentialMapper;
     final protected RoleArrayMapper roleArrayMapper;
+    final protected AdminUserNotificationEditor notificationEditor;
     final protected NotificationResource notificationResource;
+    final protected AlertNotificationMapper alertNotificationMapper;
     final protected DeviceNotificationTokenMapper deviceNotificationTokenMapper;
 
     final protected Consumer<ConstraintViolation[]> validationErrorHandler = violations -> {
@@ -90,6 +95,7 @@ public class AdminUserActivity
     protected String userId;
     protected User user;
     protected Role[] roles = new Role[0];
+    protected AlertNotification alertNotification;
 
     @Inject
     public AdminUserActivity(Environment environment,
@@ -100,7 +106,9 @@ public class AdminUserActivity
                              UserMapper userMapper,
                              CredentialMapper credentialMapper,
                              RoleArrayMapper roleArrayMapper,
+                             AdminUserNotificationEditor notificationEditor,
                              NotificationResource notificationResource,
+                             AlertNotificationMapper alertNotificationMapper,
                              DeviceNotificationTokenMapper deviceNotificationTokenMapper) {
         super(adminView, adminNavigationPresenter, view);
         this.environment = environment;
@@ -108,7 +116,9 @@ public class AdminUserActivity
         this.userMapper = userMapper;
         this.credentialMapper = credentialMapper;
         this.roleArrayMapper = roleArrayMapper;
+        this.notificationEditor = notificationEditor;
         this.notificationResource = notificationResource;
+        this.alertNotificationMapper = alertNotificationMapper;
         this.deviceNotificationTokenMapper = deviceNotificationTokenMapper;
     }
 
@@ -154,6 +164,7 @@ public class AdminUserActivity
     @Override
     public void onStop() {
         super.onStop();
+        notificationEditor.reset();
         adminContent.setPresenter(null);
         adminContent.clearRoles();
         adminContent.clearFormMessages();
@@ -270,8 +281,44 @@ public class AdminUserActivity
     }
 
     @Override
+    public void onSendNotification() {
+        // Keep it so we can send it again later
+        if (this.alertNotification == null)
+            this.alertNotification = createDefaultNotification();
+
+        notificationEditor.setAlertNotification(this.alertNotification);
+        notificationEditor.setOnSend(updatedNotification -> {
+            this.alertNotification = updatedNotification;
+            environment.getRequestService().execute(
+                alertNotificationMapper,
+                requestParams -> notificationResource.storeAlertNotificationForUser(requestParams, userId, this.alertNotification),
+                204,
+                () -> environment.getEventBus().dispatch(new ShowSuccessEvent(
+                    environment.getMessages().notificationSentToUser()
+                )),
+                ex -> handleRequestException(ex, environment)
+            );
+        });
+        notificationEditor.show();
+    }
+
+    protected AlertNotification createDefaultNotification() {
+        AlertNotification alertNotification = new AlertNotification(
+            "Hello User",
+            "This is a test message.",
+            "/#"
+        );
+        AlertAction alertAction = new AlertAction();
+        alertAction.setTitle(environment.getMessages().notificationOpenApplicationDetails());
+        alertAction.setActionType(ActionType.LINK);
+        alertNotification.addAction(alertAction);
+        return alertNotification;
+    }
+
+    @Override
     public void onDeviceRegistrationDelete(DeviceNotificationToken.Id id) {
         environment.getRequestService().execute(
+
             requestParams -> notificationResource.deleteDeviceToken(requestParams, id.getUserId(), id.getDeviceId()),
             204,
             () -> {

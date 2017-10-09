@@ -70,6 +70,12 @@ public class AlertNotification {
         this.message = message;
     }
 
+    public AlertNotification(String title, String message, String appUrl) {
+        this.title = title;
+        this.message = message;
+        this.appUrl = appUrl;
+    }
+
     /*  Actuator  */
 
     public Long getId() {
@@ -144,5 +150,18 @@ public class AlertNotification {
 
     public void setDeliveryStatus(DeliveryStatus deliveryStatus) {
         this.deliveryStatus = deliveryStatus;
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "{" +
+            "id=" + id +
+            ", title='" + title + '\'' +
+            ", message='" + message + '\'' +
+            ", actions=" + actions +
+            ", appUrl='" + appUrl + '\'' +
+            ", userId='" + userId + '\'' +
+            ", deliveryStatus=" + deliveryStatus +
+            '}';
     }
 }

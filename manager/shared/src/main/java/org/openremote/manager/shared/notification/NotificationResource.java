@@ -27,7 +27,6 @@ import org.openremote.model.notification.AlertNotification;
 import javax.annotation.security.RolesAllowed;
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
-
 import java.util.List;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
@@ -75,7 +74,20 @@ public interface NotificationResource {
     @SuccessStatusCode(204)
     @Consumes(APPLICATION_JSON)
     @RolesAllowed({"write:user"})
-    void storeAlertNotification(AlertNotification alertNotification);
+    void storeAlertNotification(@BeanParam RequestParams requestParams,
+                                AlertNotification alertNotification);
+
+    /**
+     * Only the superuser can call this operation.
+     */
+    @POST
+    @Path("alert/{userId}")
+    @SuccessStatusCode(204)
+    @Consumes(APPLICATION_JSON)
+    @RolesAllowed({"write:admin"})
+    void storeAlertNotificationForUser(@BeanParam RequestParams requestParams,
+                                       @PathParam("userId") String userId,
+                                       AlertNotification alertNotification);
 
     @GET
     @Path("alert")

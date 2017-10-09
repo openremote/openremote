@@ -29,6 +29,8 @@ public interface AdminUser extends AdminContent, FormView {
 
     interface Presenter {
 
+        void onSendNotification();
+
         void onRoleAssigned(String id, boolean assigned);
 
         void onDeviceRegistrationDelete(DeviceNotificationToken.Id id);

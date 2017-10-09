@@ -117,7 +117,7 @@ class NotificationServiceTest extends Specification implements ManagerContainerT
         notificationService.findAllTokenForUser(keycloakDemoSetup.testuser3Id).size() == 2
 
         when: "the Alert Notification is stored"
-        notificationResource.storeAlertNotification(notificationAlert)
+        notificationResource.storeAlertNotification(null, notificationAlert)
         def alerts = notificationResource.getAlertNotification()
 
         then: "it should be one alert notification pending"

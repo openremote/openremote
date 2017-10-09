@@ -6,6 +6,10 @@
     <ui:with field="widgetStyle" type="org.openremote.manager.client.style.WidgetStyle"/>
 
     <ui:style>
+        .navItem {
+            margin: 0 1em;
+        }
+
         .formMessages {
             max-width: 30em;
         }
@@ -15,6 +19,13 @@
 
         <g:HTMLPanel
                 styleName="layout horizontal center end-justified {widgetStyle.SecondaryNavHorizontal}">
+
+            <w:PushButton
+                    ui:field="sendNotificationButton"
+                    addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem}"
+                    icon="send"
+                    visible="false"
+                    text="{managerMessages.sendNotification}"/>
 
         </g:HTMLPanel>
 

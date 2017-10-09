@@ -462,4 +462,18 @@ public interface ManagerMessages extends Messages {
     String registeredDeviceNotificationToken();
 
     String registeredDeviceDeleted(String deviceId);
+
+    String sendNotification();
+
+    String title();
+
+    String message();
+
+    String notificationAppUrl();
+
+    String enterTitleMessageAppurlForNotification();
+
+    String notificationSentToUser();
+
+    String notificationOpenApplicationDetails();
 }

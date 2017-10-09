@@ -54,6 +54,9 @@ public class AdminUserImpl extends FormViewImpl implements AdminUser {
     }
 
     @UiField
+    PushButton sendNotificationButton;
+
+    @UiField
     FormGroup usernameGroup;
     @UiField
     TextBox usernameInput;
@@ -125,6 +128,12 @@ public class AdminUserImpl extends FormViewImpl implements AdminUser {
         UI ui = GWT.create(UI.class);
         initWidget(ui.createAndBindUi(this));
 
+        sendNotificationButton.addClickHandler(event -> {
+            if (presenter != null) {
+                presenter.onSendNotification();
+            }
+        });
+
         clearRegisteredDevices(false);
     }
 
@@ -132,6 +141,7 @@ public class AdminUserImpl extends FormViewImpl implements AdminUser {
     public void setPresenter(Presenter presenter) {
         this.presenter = presenter;
         if (presenter == null) {
+            sendNotificationButton.setVisible(false);
             usernameInput.setValue(null);
             firstNameInput.setValue(null);
             lastNameInput.setValue(null);
@@ -305,6 +315,7 @@ public class AdminUserImpl extends FormViewImpl implements AdminUser {
     @Override
     public void setDeviceRegistrations(List<DeviceNotificationToken> deviceNotificationTokens) {
         clearRegisteredDevices(deviceNotificationTokens.size() == 0);
+        sendNotificationButton.setVisible(deviceNotificationTokens.size() > 0);
         for (DeviceNotificationToken deviceNotificationToken : deviceNotificationTokens) {
             registeredDevicesContainer.add(new DeviceRegistrationItem(deviceNotificationToken));
         }
@@ -319,6 +330,7 @@ public class AdminUserImpl extends FormViewImpl implements AdminUser {
                     registeredDevicesContainer.remove(i);
             }
         }
+        sendNotificationButton.setVisible(registeredDevicesContainer.getWidgetCount() > 0);
         clearRegisteredDevices(registeredDevicesContainer.getWidgetCount() == 0);
     }
 
@@ -362,7 +374,7 @@ public class AdminUserImpl extends FormViewImpl implements AdminUser {
     }
 
     protected void clearRegisteredDevices(boolean addEmptyMessage) {
-        registeredDevicesContainer.clear();
+       registeredDevicesContainer.clear();
         if (addEmptyMessage) {
             Label emptyLabel = new Label(managerMessages.noRegisteredDevices());
             emptyLabel.addStyleName(widgetStyle.FormListEmptyMessage());

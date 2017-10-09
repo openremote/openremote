@@ -401,6 +401,10 @@ public class WidgetStyle {
         return "or-JsonEditor";
     }
 
+    public String AdminNotificationEditor() {
+        return "or-AdminNotificationEditor";
+    }
+
     public String BorderRed() {
         return "or-BorderRed";
     }

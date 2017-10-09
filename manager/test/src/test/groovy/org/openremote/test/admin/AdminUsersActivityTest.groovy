@@ -26,6 +26,7 @@ import org.openremote.manager.shared.security.*
 import org.openremote.manager.shared.validation.ConstraintViolationReport
 import org.openremote.model.event.Event
 import org.openremote.model.event.bus.EventListener
+import org.openremote.model.notification.AlertNotification
 import org.openremote.test.ClientObjectMapper
 import org.openremote.test.ClientSecurityService
 import org.openremote.test.GwtClientTrait
@@ -162,10 +163,12 @@ class AdminUsersActivityTest extends Specification implements ManagerContainerTr
         AdminUsersActivity adminUsersActivity
 
         def adminUserView = Mock(AdminUser)
+        def notificationEditor = Mock(AdminUserNotificationEditor)
         def userMapper = new ClientObjectMapper(container.JSON, User.class) as UserMapper
         def credentialMapper = new ClientObjectMapper(container.JSON, Credential.class) as CredentialMapper
         def roleArrayMapper = new ClientObjectMapper(container.JSON, Role[].class) as RoleArrayMapper
         def notificationTokenMapper = new ClientObjectMapper(container.JSON, List.class) as DeviceNotificationTokenMapper
+        def alertNotificationMapper = new ClientObjectMapper(container.JSON, AlertNotification.class) as AlertNotificationMapper
         AdminUserActivity adminUserActivity
 
         and: "An activity management configuration"
@@ -198,7 +201,7 @@ class AdminUsersActivityTest extends Specification implements ManagerContainerTr
                 },
                 {
                     adminUserActivity = new AdminUserActivity(
-                            environment, adminView, adminNavigationPresenter, adminUserView, userResource, userMapper, credentialMapper, roleArrayMapper, notificationResource, notificationTokenMapper
+                            environment, adminView, adminNavigationPresenter, adminUserView, userResource, userMapper, credentialMapper, roleArrayMapper, notificationEditor, notificationResource, alertNotificationMapper, notificationTokenMapper
                     )
                     return adminUserActivity
                 },
