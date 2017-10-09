@@ -416,21 +416,22 @@ public class AdminUserImpl extends FormViewImpl implements AdminUser {
             typeLoginPanel.setStyleName("layout horizontal wrap");
             add(typeLoginPanel);
 
-            if (deviceNotificationToken.getDeviceType() != null) {
-                FormGroup deviceTypeGroup = new FormGroup();
-                FormField deviceTypeField = new FormField();
-                FormLabel deviceTypeLabel = new FormLabel(managerMessages.registeredDeviceType());
-                deviceTypeLabel.addStyleName("larger");
-                deviceTypeGroup.setFormLabel(deviceTypeLabel);
-                deviceTypeGroup.setFormField(deviceTypeField);
-                FormOutputText deviceTypeOutput = new FormOutputText(deviceNotificationToken.getDeviceType());
-                deviceTypeField.add(deviceTypeOutput);
-                typeLoginPanel.add(deviceTypeGroup);
-            }
+            FormGroup deviceTypeGroup = new FormGroup();
+            FormField deviceTypeField = new FormField();
+            FormLabel deviceTypeLabel = new FormLabel(managerMessages.registeredDeviceType());
+            deviceTypeLabel.addStyleName("larger");
+            deviceTypeGroup.setFormLabel(deviceTypeLabel);
+            deviceTypeGroup.setFormField(deviceTypeField);
+            FormOutputText deviceTypeOutput = new FormOutputText(
+                deviceNotificationToken.getDeviceType() != null ? deviceNotificationToken.getDeviceType() : "-"
+            );
+            deviceTypeField.add(deviceTypeOutput);
+            typeLoginPanel.add(deviceTypeGroup);
 
             FormGroup lastLoginGroup = new FormGroup();
             FormField lastLoginField = new FormField();
             FormLabel lastLoginLabel = new FormLabel(managerMessages.registeredDeviceLastLogin());
+            lastLoginLabel.addStyleName("larger");
             lastLoginGroup.setFormLabel(lastLoginLabel);
             lastLoginGroup.setFormField(lastLoginField);
             FormOutputText lastLoginOutput = new FormOutputText(
