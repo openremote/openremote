@@ -154,6 +154,25 @@ public class ArrayValueImpl extends ValueImpl implements ArrayValue {
     }
 
     @Override
+    public boolean contains(String string, boolean ignoreCase) {
+        if (ignoreCase) {
+            return values.stream().anyMatch(val -> Values.getString(val).orElseThrow(() -> new ValueException("Value should be string")).equalsIgnoreCase(string));
+        } else {
+            return values.contains(factory.create(string));
+        }
+    }
+
+    @Override
+    public boolean contains(String string) {
+        return contains(string, false);
+    }
+
+    @Override
+    public boolean contains(double number) {
+        return values.contains(factory.create(number));
+    }
+
+    @Override
     public String toJson() throws ValueException {
         return ValueUtil.stringify(this);
     }

@@ -44,7 +44,11 @@ public enum ValueComparator implements BiFunction<Value, Value, Boolean> {
 
     LESS_THAN(applyNumberComparison((a, b) -> a < b), renderNumberComparison("<"), ValueType.NUMBER),
 
-    LESS_EQUAL_THAN(applyNumberComparison((a, b) -> a <= b), renderNumberComparison("<="), ValueType.NUMBER);
+    LESS_EQUAL_THAN(applyNumberComparison((a, b) -> a <= b), renderNumberComparison("<="), ValueType.NUMBER),
+
+    CONTAINS(applyContains(false, false), renderContains(false, false), ValueType.STRING, ValueType.NUMBER),
+
+    CONTAINS_IGNORE_CASE(applyContains(true, false), renderContains(true, false), ValueType.STRING);
 
     final protected ValueType[] applicableTypes;
     final protected BiFunction<Value, Value, Boolean> operation;
@@ -93,6 +97,22 @@ public enum ValueComparator implements BiFunction<Value, Value, Boolean> {
         };
     }
 
+    static protected BiFunction<Value, Value, Boolean> applyContains(boolean ignoreCase, boolean negate) {
+        return (arrayValue, value) -> {
+            ArrayValue array = Values.getArray(arrayValue).orElseThrow(() -> new ValueException("Not an array: " + arrayValue));
+            switch (value.getType()) {
+                case STRING:
+                    String s = Values.getString(value).orElseThrow(() -> new ValueException("Not a string: " + value));
+                    return negate != array.contains(s, ignoreCase);
+                case NUMBER:
+                    Double n = Values.getNumber(value).orElseThrow(() -> new ValueException("Not a number: " + value));
+                    return negate != array.contains(n);
+                default:
+                    return false;
+            }
+        };
+    }
+
     static protected Function<Value, String> renderEquals(boolean ignoreCase, boolean negate) {
         return value -> {
             switch (value.getType()) {
@@ -123,6 +143,24 @@ public enum ValueComparator implements BiFunction<Value, Value, Boolean> {
             }
         };
     }
+
+    static protected Function<Value, String> renderContains(boolean ignoreCase, boolean negate) {
+        return value -> {
+            switch (value.getType()) {
+                case STRING:
+                    String s = Values.getString(value).orElseThrow(() -> new ValueException("Not a string: " + value));
+                    return ignoreCase
+                        ? (negate ? "!" : "") + "valueAsArray.contains(\"" + escapeString(s) + "\", true)"
+                        : (negate ? "!" : "") + "valueAsArray.contains(\"" + escapeString(s) + "\")";
+                case NUMBER:
+                    Double n = Values.getNumber(value).orElseThrow(() -> new ValueException("Not a number: " + value));
+                    return (negate ? "!" : "") + "valueAsArray.contains(" + n + ")";
+                default:
+                    return "";
+            }
+        };
+    }
+
 
     @Override
     public Boolean apply(Value value, Value value2) {

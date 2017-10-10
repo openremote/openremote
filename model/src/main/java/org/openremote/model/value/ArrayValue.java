@@ -55,4 +55,10 @@ public interface ArrayValue extends Value {
     ArrayValue addAll(Value... values);
 
     ArrayValue deepCopy();
+
+    boolean contains(String string, boolean ignoreCase);
+
+    boolean contains(String string);
+
+    boolean contains(double number);
 }
