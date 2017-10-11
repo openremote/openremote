@@ -150,12 +150,22 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         then: "no rule engines should have fired after a few seconds"
         new PollingConditions(initialDelay: 3).eventually assertNoRulesFired
 
-        when: "an old (stale) attribute event is pushed into the system"
+        when: "the same attribute event is pushed into the system (same timestamp as last asset state)"
         resetRulesExecutionListeners()
         assetProcessingService.sendAttributeEvent(apartment2LivingRoomPresenceDetectedChange)
 
-        then: "no rule engines should have fired after a few seconds"
-        new PollingConditions(initialDelay: 3).eventually assertNoRulesFired
+        then: "the rule engines in scope should fire the 'All' rule but not the 'All changed' rule"
+        conditions.eventually {
+            assert globalEngineFiredRules.size() == 1
+            assert globalEngineFiredRules[0] == "All"
+            assert masterEngineFiredRules.size() == 0
+            assert customerAEngineFiredRules.size() == 1
+            assert customerAEngineFiredRules[0] == "All"
+            assert smartHomeEngineFiredRules.size() == 0
+            assert apartment2EngineFiredRules.size() == 1
+            assert apartment2EngineFiredRules[0] == "All"
+            assert apartment3EngineFiredRules.size() == 0
+        }
 
         when: "an attribute event with the same value as current value is pushed into the system"
         resetRulesExecutionListeners()

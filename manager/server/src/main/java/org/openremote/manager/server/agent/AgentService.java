@@ -154,10 +154,12 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
 
     @Override
     public void stop(Container container) throws Exception {
+        /* TODO Accessing the database while shutting down is not a good thing, it will hang if the JDBC pool is shutting down
         synchronized (protocolConfigurations) {
             new ArrayList<>(protocolConfigurations.values())
                 .forEach(protocolConfigAndConsumer -> unlinkProtocolConfiguration(protocolConfigAndConsumer.key));
         }
+        */
     }
 
     @Override

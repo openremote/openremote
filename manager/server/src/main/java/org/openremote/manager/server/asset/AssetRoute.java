@@ -236,7 +236,7 @@ public final class AssetRoute {
             // Check the last update timestamp of the attribute, ignoring any event that is older than last update
             // TODO This means we drop out-of-sequence events but accept events with the same source timestamp
             // TODO Several attribute events can occur in the same millisecond, then order of application is undefined
-            lastStateEvent.map(Event::getTimestamp).filter(t -> t > 0 && eventTime <= t).ifPresent(
+            lastStateEvent.map(Event::getTimestamp).filter(t -> t >= 0 && eventTime < t).ifPresent(
                 lastStateTime -> {
                     throw new AssetProcessingException(
                         Reason.EVENT_OUTDATED,
