@@ -77,7 +77,13 @@ public enum AttributeType {
         new MetaItem(AssetMeta.FORMAT, Values.create("%3d %%"))
     ),
 
-    TIMESTAMP_MILLIS("clock-o", ValueType.NUMBER, value -> Optional.empty()),
+    TIMESTAMP_MILLIS("clock-o", ValueType.NUMBER, value -> Optional.empty(),
+        new MetaItem(FORMAT, Values.create("%d ms"))
+    ),
+
+    TIMESTAMP_SECONDS("clock-o", ValueType.NUMBER, value -> Optional.empty(),
+        new MetaItem(FORMAT, Values.create("%d s"))
+    ),
 
     TIME_SECONDS("clock-o", ValueType.NUMBER, value -> Optional.empty(),
         new MetaItem(FORMAT, Values.create("%0.1f s"))
