@@ -38,6 +38,7 @@ import java.time.DayOfWeek;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static org.openremote.agent.protocol.macro.MacroProtocol.META_MACRO_ACTION_INDEX;
@@ -228,6 +229,61 @@ public abstract class AbstractManagerSetup implements Setup {
                     new MetaItem(PROTECTED, Values.create(true)),
                     new MetaItem(SHOW_ON_DASHBOARD, Values.create(true)),
                     new MetaItem(FORMAT, Values.create("%0.1f C"))
+                ).addMeta(shouldBeLinked ? agentLinker.get() : null)
+        );
+    }
+
+    protected void addDemoApartmentSmartSwitch(ServerAsset room,
+                                               String switchAttributePrefix,
+                                               String switchLabelPrefix,
+                                               boolean shouldBeLinked,
+                                               // Integer represents attribute number:
+                                               // 0 = On/Off
+                                               // 1 = Start time
+                                               // 2 = Stop time
+                                               // 3 = Smart enabled
+                                               Function<Integer, MetaItem[]> agentLinker) {
+
+        room.addAttributes(
+            // On/Off
+            new AssetAttribute(switchAttributePrefix + "OnOff", BOOLEAN)
+                .setMeta(
+                    new MetaItem(LABEL, Values.create(switchLabelPrefix + " on/off")),
+                    new MetaItem(PROTECTED, Values.create(true))
+                ).addMeta(shouldBeLinked ? agentLinker.apply(0) : null),
+            // Start time
+            new AssetAttribute(switchAttributePrefix + "StartTime", TIMESTAMP_SECONDS)
+                .setMeta(
+                    new MetaItem(LABEL, Values.create(switchLabelPrefix + " earliest start time")),
+                    new MetaItem(PROTECTED, Values.create(true))
+                ).addMeta(shouldBeLinked ? agentLinker.apply(1) : null),
+            // Stop time
+            new AssetAttribute(switchAttributePrefix + "StopTime", TIMESTAMP_SECONDS)
+                .setMeta(
+                    new MetaItem(LABEL, Values.create(switchLabelPrefix + " latest stop time")),
+                    new MetaItem(PROTECTED, Values.create(true))
+                ).addMeta(shouldBeLinked ? agentLinker.apply(2) : null),
+            // Smart enabled
+            new AssetAttribute(switchAttributePrefix + "SmartEnabled", BOOLEAN)
+                .setMeta(
+                    new MetaItem(LABEL, Values.create(switchLabelPrefix + " smart control enabled")),
+                    new MetaItem(PROTECTED, Values.create(true))
+                ).addMeta(shouldBeLinked ? agentLinker.apply(3) : null)
+        );
+    }
+
+    protected void addDemoApartmentVentilation(ServerAsset apartment,
+                                               boolean shouldBeLinked,
+                                               Supplier<MetaItem[]> agentLinker) {
+        apartment.addAttributes(
+            new AssetAttribute("ventilationLevel", NUMBER)
+                .setMeta(
+                    new MetaItem(LABEL, Values.create("Ventilation level")),
+                    new MetaItem(RANGE_MIN, Values.create(0)),
+                    new MetaItem(RANGE_MAX, Values.create(255)),
+                    new MetaItem(RULE_STATE, Values.create(true)),
+                    new MetaItem(PROTECTED, Values.create(true)),
+                    new MetaItem(FORMAT, Values.create("%d"))
                 ).addMeta(shouldBeLinked ? agentLinker.get() : null)
         );
     }
