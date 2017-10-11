@@ -48,7 +48,6 @@ import static org.openremote.container.util.MapAccess.getBoolean;
  * <li>{@link #SETUP_IMPORT_DEMO_ASSETS} depends on {@link #SETUP_IMPORT_DEMO_USERS}</li>
  * <li>{@link #SETUP_IMPORT_DEMO_SCENES} depends on {@link #SETUP_IMPORT_DEMO_ASSETS}</li>
  * <li>{@link #SETUP_IMPORT_DEMO_RULES} depends on {@link #SETUP_IMPORT_DEMO_SCENES}</li>
- * <li>{@link #SETUP_IMPORT_KNX_DEMO_ASSETS} depends on {@link #SETUP_IMPORT_DEMO_ASSETS}</li>
  * </ul>
  */
 public class BuiltinSetupTasks extends AbstractSetupTasks {
@@ -58,60 +57,72 @@ public class BuiltinSetupTasks extends AbstractSetupTasks {
     public static final String SETUP_IMPORT_DEMO_ASSETS = "SETUP_IMPORT_DEMO_ASSETS";
     public static final String SETUP_IMPORT_DEMO_SCENES = "SETUP_IMPORT_DEMO_SCENES";
     public static final String SETUP_IMPORT_DEMO_RULES = "SETUP_IMPORT_DEMO_RULES";
-    public static final String SETUP_IMPORT_KNX_DEMO_ASSETS = "SETUP_IMPORT_KNX_DEMO_ASSETS";
+    public static final String SETUP_IMPORT_DEMO_AGENT = "SETUP_IMPORT_DEMO_AGENT";
+
+    protected boolean isCleanDatabase(Container container) {
+        return getBoolean(container.getConfig(), SETUP_INIT_CLEAN_DATABASE, container.isDevMode());
+    }
+
+    // Demo agent to demo protocols.
+    protected boolean isImportDemoAgent(Container container) {
+        return getBoolean(container.getConfig(), SETUP_IMPORT_DEMO_AGENT, false);
+    }
+
+    // Too many rules are difficult to debug, so they are optional
+    protected boolean isImportDemoRules(Container container) {
+        return getBoolean(container.getConfig(), SETUP_IMPORT_DEMO_RULES, container.isDevMode());
+    }
+
+    // If importing demo rules we have to import demo scenes
+    protected boolean isImportDemoScenes(Container container) {
+        return isImportDemoRules(container) || getBoolean(container.getConfig(), SETUP_IMPORT_DEMO_SCENES, container.isDevMode());
+    }
+
+    // If importing demo rules we have to import demo assets
+    protected boolean isImportDemoAssets(Container container) {
+        return isImportDemoRules(container) || getBoolean(container.getConfig(), SETUP_IMPORT_DEMO_ASSETS, container.isDevMode());
+    }
+
+    // If importing demo assets we have to import demo users
+    protected boolean isImportDemoUsers(Container container) {
+        return isImportDemoAssets(container) || getBoolean(container.getConfig(), SETUP_IMPORT_DEMO_USERS, container.isDevMode());
+    }
 
     @Override
     public List<Setup> createTasks(Container container) {
 
-        boolean cleanDatabase = getBoolean(container.getConfig(), SETUP_INIT_CLEAN_DATABASE, container.isDevMode());
-
-        // KNX demo assets to test real physical KNX bus. A KNX IP gateway and knx bus is needed 
-        boolean importKNXDemoAssets = getBoolean(container.getConfig(), SETUP_IMPORT_KNX_DEMO_ASSETS, false);
-        
-        // Too many rules are difficult to debug, so they are optional
-        boolean importDemoRules = getBoolean(container.getConfig(), SETUP_IMPORT_DEMO_RULES, container.isDevMode());
-
-        // If importing demo rules we have to import demo scenes
-        boolean importDemoScenes = importDemoRules || getBoolean(container.getConfig(), SETUP_IMPORT_DEMO_SCENES, container.isDevMode());
-
-        // If importing demo rules we have to import demo assets
-        boolean importDemoAssets = importDemoRules || importKNXDemoAssets || getBoolean(container.getConfig(), SETUP_IMPORT_DEMO_ASSETS, container.isDevMode());
-
-        // If importing demo assets we have to import demo users
-        boolean importDemoUsers = importDemoAssets || getBoolean(container.getConfig(), SETUP_IMPORT_DEMO_USERS, container.isDevMode());
-
         // Basic vs Keycloak identity provider
         if (container.getService(ManagerIdentityService.class).isKeycloakEnabled()) {
-            if (cleanDatabase) {
+            if (isCleanDatabase(container)) {
                 addTask(new ManagerCleanSetup(container));
                 addTask(new KeycloakCleanSetup(container));
                 addTask(new KeycloakInitSetup(container));
                 addTask(new ManagerInitSetup(container));
             }
 
-            if (importDemoUsers) {
+            if (isImportDemoUsers(container)) {
                 addTask(new KeycloakDemoSetup(container));
             }
 
-            if (importDemoAssets) {
-                addTask(new ManagerDemoSetup(container, importDemoScenes));
+            if (isImportDemoAssets(container)) {
+                addTask(new ManagerDemoSetup(container, isImportDemoScenes(container)));
             }
 
-            if (importDemoRules) {
+            if (isImportDemoRules(container)) {
                 addTask(new RulesDemoSetup(container));
             }
             
-            if (importKNXDemoAssets) {
-                addTask(new ManagerDemoKNXSetup(container));
+            if (isImportDemoAgent(container)) {
+                addTask(new ManagerDemoAgentSetup(container));
             }
         } else {
-            if (cleanDatabase) {
+            if (isCleanDatabase(container)) {
                 addTask(new ManagerCleanSetup(container));
                 addTask(new ManagerInitSetup(container));
                 addTask(new BasicIdentityInitSetup(container));
             }
 
-            if (importDemoUsers) {
+            if (isImportDemoUsers(container)) {
                 addTask(new BasicIdentityDemoSetup(container));
             }
         }
