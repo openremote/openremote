@@ -7,6 +7,7 @@ import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -440,21 +441,22 @@ public class KNXProtocol extends AbstractProtocol implements ProtocolLinkedAttri
 
     @Override
     public Asset[] discoverLinkedAssetAttributes(AssetAttribute protocolConfiguration, FileInfo fileInfo) throws IllegalStateException {
+        ZipInputStream zin = null;
+
         try {
-            
-            String xmlData = null;
+            boolean fileFound = false;
             byte[] data = Util.decodeBase64(fileInfo.getContents());
-            ZipInputStream zin = new ZipInputStream(new ByteArrayInputStream(data));
+            zin = new ZipInputStream(new ByteArrayInputStream(data));
             ZipEntry zipEntry = zin.getNextEntry();
             while (zipEntry != null) {
                 if (zipEntry.getName().endsWith("/0.xml")) {
-                    xmlData = IOUtils.toString(zin, "UTF-8");
+                    fileFound = true;
                     break;
                 }
                 zipEntry = zin.getNextEntry();
             }
 
-            if (isNullOrEmpty(xmlData)) {
+            if (!fileFound) {
                 String msg = "Failed to find '0.xml' in project file";
                 LOG.info(msg);
                 throw new IllegalStateException(msg);
@@ -472,7 +474,7 @@ public class KNXProtocol extends AbstractProtocol implements ProtocolLinkedAttri
 
             // Transform the source XML into byte array
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
-            transformer.transform(new StreamSource(new ByteArrayInputStream(xmlData.getBytes())), new StreamResult(bos));
+            transformer.transform(new StreamSource(zin), new StreamResult(bos));
             byte[] result = bos.toByteArray();
 
             // we use a map of state-based datapoints and read from the transformed xml
@@ -504,6 +506,14 @@ public class KNXProtocol extends AbstractProtocol implements ProtocolLinkedAttri
             
         } catch (Exception e) {
             throw new IllegalStateException("ETS import error", e);
+        } finally {
+            if (zin != null) {
+                try {
+                    zin.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
         }
     }
     
