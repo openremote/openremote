@@ -54,7 +54,7 @@ class TimerProtocolTest extends Specification implements ManagerContainerTrait {
             assert timerProtocol.cronScheduler != null
             assert timerProtocol.cronScheduler.scheduler != null
             assert timerProtocol.cronScheduler.scheduler.isStarted()
-            assert timerProtocol.cronScheduler.scheduler.getJobKeys(GroupMatcher.anyJobGroup()).size() == 28
+            assert timerProtocol.cronScheduler.scheduler.getJobKeys(GroupMatcher.anyJobGroup()).size() >= 28
         }
 
         and: "the quartz job has the correct time"

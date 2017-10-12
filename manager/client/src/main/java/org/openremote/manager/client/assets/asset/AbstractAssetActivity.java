@@ -237,11 +237,6 @@ public abstract class AbstractAssetActivity<V
     }
 
     @Override
-    public String getAssetLinkUsersPlaceToken() {
-        return environment.getPlaceHistoryMapper().getToken(new AssetLinkUsersPlace(assetId));
-    }
-
-    @Override
     public AssetPlace getActivePlace() {
         return activePlace;
     }

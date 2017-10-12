@@ -24,6 +24,7 @@ import org.openremote.manager.shared.http.RequestParams;
 import org.openremote.manager.shared.http.SuccessStatusCode;
 import org.openremote.model.asset.AbstractAssetQuery;
 import org.openremote.model.asset.Asset;
+import org.openremote.model.asset.UserAsset;
 
 import javax.annotation.security.RolesAllowed;
 import javax.validation.Valid;
@@ -45,9 +46,10 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
  * A <em>restricted</em> user is linked to a subset of assets within its authenticated realm and
  * may have roles that allow read and/or write access to protected asset details (see
  * {@link org.openremote.model.asset.UserAsset}).
+ * </li> </ul>
  * <p>
  * The only operations a restricted user is able to perform are {@link #getCurrentUserAssets}, {@link #get}, {@link
- * #update}, and {@link #writeAttributeValue}. </li> </ul>
+ * #update}, and {@link #writeAttributeValue}.
  */
 @Path("asset")
 @JsType(isNative = true)
@@ -68,6 +70,63 @@ public interface AssetResource {
     Asset[] getCurrentUserAssets(@BeanParam RequestParams requestParams);
 
     /**
+     * Retrieve links between assets and users.
+     * <p>
+     * The <code>realmId</code> parameter is required, <code>userId</code> and <code>assetId</code> can be null.
+     * <p>
+     * If the authenticated user is the superuser, assigned assets from any realm can be retrieved. Otherwise the
+     * authenticated realm must be the same as the given realm. A 403 status is returned if a regular user tries to
+     * get asset/user links in a realm different than its authenticated realm, or if the user is restricted. A 404
+     * status is returned if the realm doesn't exist. A 400 status code is returned if the given user is not in
+     * the given realm. An empty result is returned if the user or asset doesn't exist.
+     * <p>
+     * TODO: We could return the assets of a restricted user
+     */
+    @GET
+    @Path("user/link")
+    @Produces(APPLICATION_JSON)
+    @SuccessStatusCode(200)
+    @RolesAllowed({"read:assets"})
+    UserAsset[] getUserAssetLinks(@BeanParam RequestParams requestParams,
+                                  @QueryParam("realmId") String realmId,
+                                  @QueryParam("userId") String userId,
+                                  @QueryParam("assetId") String assetId);
+
+    /**
+     * Create a link between asset and user.
+     * <p>
+     * If the authenticated user is the superuser, asset/user links in any realm can be created. Otherwise assets
+     * must be in the same realm as the authenticated user. A 403 status is returned if a regular user tries to create
+     * an asset/user link in a realm different than its authenticated realm, or if the user is restricted. A
+     * 400 status is returned if the user or asset or realm doesn't exist, or if the user is not in the realm.
+     */
+    @POST
+    @Path("user/link")
+    @Consumes(APPLICATION_JSON)
+    @SuccessStatusCode(200)
+    @RolesAllowed({"write:assets"})
+    void createUserAsset(@BeanParam RequestParams requestParams, UserAsset userAsset);
+
+    /**
+     * Delete a link between asset and user.
+     * <p>
+     * The <code>realmId</code> is required.
+     * <p>
+     * If the authenticated user is the superuser, asset/user links from any realm can be deleted. Otherwise assets
+     * must be in the same realm as the authenticated user. A 403 status is returned if a regular user tries to delete
+     * an asset/user link in a realm different than its authenticated realm, or if the user is restricted. A
+     * 400 status is returned if the user or asset or realm doesn't exist.
+     */
+    @DELETE
+    @Path("link/{realmId}/{userId}/{assetId}")
+    @SuccessStatusCode(204)
+    @RolesAllowed({"write:assets"})
+    void deleteUserAsset(@BeanParam RequestParams requestParams,
+                         @PathParam("realmId") String realmId,
+                         @PathParam("userId") String userId,
+                         @PathParam("assetId") String assetId);
+
+    /**
      * Retrieve the asset. Regular users can only access assets in their authenticated realm, the superuser can access
      * assets in other (all) realms. A 403 status is returned if a regular user tries to access an asset in a realm
      * different than its authenticated realm, or if the user is restricted and the asset is not linked to the user. All
@@ -80,8 +139,9 @@ public interface AssetResource {
     @RolesAllowed({"read:assets"})
     Asset get(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId);
 
-    //TODO update docs
     /**
+     * TODO Update docs, how restricted user handling is actually implemented
+     * <p>
      * Updates the asset. Regular users can only update assets in their authenticated realm, the superuser can update
      * assets in other (all) realms. A 403 status is returned if a regular user tries to update an asset in a realm
      * different than its authenticated realm, or if the user is restricted and the asset is not linked to the user. A

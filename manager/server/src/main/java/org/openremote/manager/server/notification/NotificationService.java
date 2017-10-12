@@ -213,7 +213,7 @@ public class NotificationService implements ContainerService {
             sb.append("join User u on u.id = dnt.id.userId");
         }
         if (query.assetPredicate != null) {
-            sb.append("join UserAsset us on us.userId = dnt.id.userId ");
+            sb.append("join UserAsset ua on ua.id.userId = dnt.id.userId ");
         }
 
         return sb.toString();
@@ -228,7 +228,7 @@ public class NotificationService implements ContainerService {
             sb.append("AND u.realmId = :realmId");
         }
         if (query.assetPredicate != null) {
-            sb.append("AND us.assetId = :assetId ");
+            sb.append("AND ua.id.assetId = :assetId ");
         }
 
         return sb.toString();

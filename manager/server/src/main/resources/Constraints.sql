@@ -24,3 +24,6 @@ alter table USER_ASSET
 
 alter table USER_ASSET
   add foreign key (ASSET_ID) references ASSET (ID) on delete cascade;
+
+alter table USER_ASSET
+  add foreign key (REALM_ID) references REALM (ID) on delete cascade;

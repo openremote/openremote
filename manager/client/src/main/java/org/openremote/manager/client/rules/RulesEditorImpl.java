@@ -103,6 +103,7 @@ public class RulesEditorImpl extends FormViewImpl implements RulesEditor {
             managerMessages,
             managerMessages.templateAsset(),
             managerMessages.selectAssetDescription(),
+            false,
             true,
             treeNode -> {
                 if (presenter != null) {

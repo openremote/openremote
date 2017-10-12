@@ -197,11 +197,6 @@ public abstract class AbstractRulesEditorActivity<T extends Ruleset, PLACE exten
     public void onTemplateAssetSelection(BrowserTreeNode treeNode) {
         if (treeNode == null) {
             templateAsset = null;
-        } else if (treeNode instanceof TenantTreeNode) {
-            environment.getEventBus().dispatch(
-                new ShowFailureEvent(environment.getMessages().invalidTemplateAsset(), 3000)
-            );
-            writeTemplateAssetToView();
         } else if (treeNode instanceof AssetTreeNode){
             assetBrowserPresenter.loadAsset(treeNode.getId(), loadedAsset -> {
                 templateAsset = loadedAsset;

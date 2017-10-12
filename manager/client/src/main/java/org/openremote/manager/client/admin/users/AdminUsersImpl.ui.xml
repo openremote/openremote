@@ -17,19 +17,16 @@
 
     <ui:style field="usersTableStyle" type="org.openremote.manager.client.admin.users.AdminUsersTable.Style">
         .usernameColumn {
-            width: 10em;
+            width: 100%;
         }
 
         .firstNameColumn {
-            width: 12em;
         }
 
         .lastNameColumn {
-            width: 12em;
         }
 
         .enabledColumn {
-            width: 4em;
         }
     </ui:style>
 
@@ -70,8 +67,6 @@
                      addStyleNames="{style.noUsersLabel} {widgetStyle.FormMessages} info"
                      visible="false"
                      text="{managerMessages.noUserFound}"/>
-
-            <g:SimplePanel ui:field="tableContainer" visible="false"/>
 
         </g:HTMLPanel>
 

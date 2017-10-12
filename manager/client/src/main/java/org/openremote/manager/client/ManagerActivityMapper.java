@@ -76,7 +76,6 @@ public class ManagerActivityMapper implements AppActivityMapper {
     protected final Provider<AssetsTenantActivity> assetsTenantActivityProvider;
     protected final Provider<AssetViewActivity> assetViewActivityProvider;
     protected final Provider<AssetEditActivity> assetEditActivityProvider;
-    protected final Provider<AssetLinkUsersActivity> assetLinkUsersActivityProvider;
     protected final Provider<MapActivity> mapActivityProvider;
     protected final Provider<GlobalRulesListActivity> globalRulesActivityProvider;
     protected final Provider<GlobalRulesEditorActivity> globalRulesEditorActivityProvider;
@@ -100,7 +99,6 @@ public class ManagerActivityMapper implements AppActivityMapper {
                                  Provider<AssetsTenantActivity> assetsTenantActivityProvider,
                                  Provider<AssetViewActivity> assetViewActivityProvider,
                                  Provider<AssetEditActivity> assetEditActivityProvider,
-                                 Provider<AssetLinkUsersActivity> assetLinkUsersActivityProvider,
                                  Provider<MapActivity> mapActivityProvider,
                                  Provider<GlobalRulesListActivity> globalRulesActivityProvider,
                                  Provider<GlobalRulesEditorActivity> globalRulesEditorActivityProvider,
@@ -122,7 +120,6 @@ public class ManagerActivityMapper implements AppActivityMapper {
         this.assetsTenantActivityProvider = assetsTenantActivityProvider;
         this.assetViewActivityProvider = assetViewActivityProvider;
         this.assetEditActivityProvider = assetEditActivityProvider;
-        this.assetLinkUsersActivityProvider = assetLinkUsersActivityProvider;
         this.mapActivityProvider = mapActivityProvider;
         this.globalRulesActivityProvider = globalRulesActivityProvider;
         this.globalRulesEditorActivityProvider = globalRulesEditorActivityProvider;
@@ -152,9 +149,6 @@ public class ManagerActivityMapper implements AppActivityMapper {
             }
             if (place instanceof AssetEditPlace) {
                 return assetEditActivityProvider.get().init(securityService, (AssetEditPlace) place);
-            }
-            if (place instanceof AssetLinkUsersPlace) {
-                return assetLinkUsersActivityProvider.get().init(securityService, (AssetLinkUsersPlace) place);
             }
             if (place instanceof MapPlace) {
                 return mapActivityProvider.get().init(securityService, (MapPlace) place);

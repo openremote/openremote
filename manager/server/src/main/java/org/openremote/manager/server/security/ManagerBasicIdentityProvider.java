@@ -140,18 +140,12 @@ public class ManagerBasicIdentityProvider extends BasicIdentityProvider implemen
     }
 
     @Override
-    public void setRestrictedUser(String userId, boolean restricted) {
-
-    }
-
-    @Override
     public boolean isRestrictedUser(String userId) {
         return false;
     }
 
     @Override
     public boolean isUserInTenant(String userId, String realmId) {
-        // TODO
         return true;
     }
 

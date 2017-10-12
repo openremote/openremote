@@ -55,9 +55,6 @@ public class AssetsModule extends AbstractGinModule {
 
         bind(AssetEdit.class).to(AssetEditImpl.class).in(Singleton.class);
         bind(AssetEditActivity.class);
-
-        bind(AssetLinkUsers.class).to(AssetLinkUsersImpl.class).in(Singleton.class);
-        bind(AssetLinkUsersActivity.class);
     }
 
     @Provides

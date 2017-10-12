@@ -19,8 +19,11 @@
  */
 package org.openremote.model.asset;
 
+import org.hibernate.annotations.Formula;
+
 import javax.persistence.*;
 import java.io.Serializable;
+import java.util.Date;
 
 /**
  * An asset can be linked to many users, and a user can have links to many assets.
@@ -40,60 +43,132 @@ import java.io.Serializable;
  * </li>
  * </ul>
  * Asset attribute data can be protected with {@link AssetMeta#PROTECTED} and {@link AssetMeta.Access},
- * it is filtered in {@link AbstractAssetAttributes#filterProtected}.
+ * it is filtered in {@link AssetQuery.Select#filterProtected}.
  */
 @Entity
 @Table(name = "USER_ASSET")
-@IdClass(UserAsset.class)
-public class UserAsset implements Serializable {
+public class UserAsset {
 
-    @Id
-    @Column(name = "USER_ID", length = 36)
-    protected String userId;
+    public static class Id implements Serializable {
+        @Column(name = "REALM_ID", length = 36)
+        protected String realmId;
 
-    @Id
-    @Column(name = "ASSET_ID", length = 36)
-    protected String assetId;
+        @Column(name = "USER_ID", length = 36)
+        protected String userId;
+
+        @Column(name = "ASSET_ID", length = 36)
+        protected String assetId;
+
+        protected Id() {
+        }
+
+        public Id(String realmId, String userId, String assetId) {
+            this.realmId = realmId;
+            this.userId = userId;
+            this.assetId = assetId;
+        }
+
+        public String getRealmId() {
+            return realmId;
+        }
+
+        public String getUserId() {
+            return userId;
+        }
+
+        public String getAssetId() {
+            return assetId;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            Id id = (Id) o;
+
+            if (!realmId.equals(id.realmId)) return false;
+            if (!userId.equals(id.userId)) return false;
+            return assetId.equals(id.assetId);
+        }
+
+        @Override
+        public int hashCode() {
+            int result = realmId.hashCode();
+            result = 31 * result + userId.hashCode();
+            result = 31 * result + assetId.hashCode();
+            return result;
+        }
+
+        @Override
+        public String toString() {
+            return getClass().getSimpleName() + "{" +
+                "realmId='" + realmId + '\'' +
+                ", userId='" + userId + '\'' +
+                ", assetId='" + assetId + '\'' +
+                '}';
+        }
+    }
+
+    @EmbeddedId
+    protected Id id;
+
+    @Temporal(TemporalType.TIMESTAMP)
+    @Column(name = "CREATED_ON", updatable = false, nullable = false, columnDefinition = "TIMESTAMP WITH TIME ZONE")
+    protected Date createdOn;
+
+    @Formula("(select a.NAME from ASSET a where a.ID = ASSET_ID)")
+    protected String assetName;
+
+    @Formula("(select pa.NAME from ASSET a left outer join ASSET pa on a.PARENT_ID = pa.ID where a.ID = ASSET_ID)")
+    protected String parentAssetName;
+
+    @Formula("(select u.USERNAME ||  ' (' || u.FIRST_NAME || ' ' || u.LAST_NAME || ')' from USER_ENTITY u where u.ID = USER_ID)")
+    protected String userFullName;
 
     protected UserAsset() {
     }
 
-    public UserAsset(String userId, String assetId) {
-        this.userId = userId;
-        this.assetId = assetId;
+    public UserAsset(Id id) {
+        this.id = id;
     }
 
-    public String getUserId() {
-        return userId;
+    public UserAsset(String realmId, String userId, String assetId) {
+        this(new UserAsset.Id(realmId, userId, assetId));
     }
 
-    public String getAssetId() {
-        return assetId;
+    public Id getId() {
+        return id;
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        UserAsset userAsset = (UserAsset) o;
-
-        if (!userId.equals(userAsset.userId)) return false;
-        return assetId.equals(userAsset.assetId);
+    public String getAssetName() {
+        return assetName;
     }
 
-    @Override
-    public int hashCode() {
-        int result = userId.hashCode();
-        result = 31 * result + assetId.hashCode();
-        return result;
+    public String getParentAssetName() {
+        return parentAssetName;
+    }
+
+    public String getUserFullName() {
+        return userFullName;
+    }
+
+    public Date getCreatedOn() {
+        return createdOn;
+    }
+
+    public void setCreatedOn(Date createdOn) {
+        this.createdOn = createdOn;
     }
 
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
-            "userId='" + userId + '\'' +
-            ", assetId='" + assetId + '\'' +
+            "id=" + id +
+            ", createdOn=" + createdOn +
+            ", assetName='" + assetName + '\'' +
+            ", parentAssetName='" + parentAssetName + '\'' +
+            ", userFullName='" + userFullName + '\'' +
             '}';
     }
 }

@@ -33,6 +33,7 @@ import org.openremote.manager.client.event.ShowFailureEvent;
 import org.openremote.manager.client.event.ShowSuccessEvent;
 import org.openremote.manager.client.interop.jackson.FileInfoMapper;
 import org.openremote.manager.client.interop.value.ObjectValueMapper;
+import org.openremote.manager.client.util.JsUtil;
 import org.openremote.manager.client.widget.AttributeLinkEditor;
 import org.openremote.manager.client.widget.AttributeRefEditor;
 import org.openremote.manager.client.widget.FormButton;

@@ -90,7 +90,7 @@ public class DeviceNotificationToken {
     protected String deviceType;
 
     @Temporal(TemporalType.TIMESTAMP)
-    @Column(name = "UPDATED_ON", updatable = false, nullable = false, columnDefinition = "TIMESTAMP WITH TIME ZONE")
+    @Column(name = "UPDATED_ON", nullable = false, columnDefinition = "TIMESTAMP WITH TIME ZONE")
     protected Date updatedOn;
 
     public DeviceNotificationToken() {

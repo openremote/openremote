@@ -27,7 +27,6 @@ import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.HTMLPanel;
 import com.google.gwt.user.client.ui.IsWidget;
 import org.openremote.manager.client.assets.asset.AssetEditPlace;
-import org.openremote.manager.client.assets.asset.AssetLinkUsersPlace;
 import org.openremote.manager.client.assets.asset.AssetPlace;
 import org.openremote.manager.client.assets.asset.AssetViewPlace;
 import org.openremote.manager.client.widget.Hyperlink;
@@ -50,9 +49,6 @@ public class AssetNavigationImpl extends Composite implements AssetNavigation {
     @UiField
     Hyperlink editAssetLink;
 
-    @UiField
-    Hyperlink linkAssetUsersLink;
-
     @Inject
     public AssetNavigationImpl() {
         UI ui = GWT.create(UI.class);
@@ -65,27 +61,22 @@ public class AssetNavigationImpl extends Composite implements AssetNavigation {
 
         viewAssetLink.removeStyleName("active");
         editAssetLink.removeStyleName("active");
-        linkAssetUsersLink.removeStyleName("active");
 
         if (presenter == null) {
             navItemContainer.clear();
             viewAssetLink.setTargetHistoryToken("");
             editAssetLink.setTargetHistoryToken("");
-            linkAssetUsersLink.setTargetHistoryToken("");
             return;
         }
 
         viewAssetLink.setTargetHistoryToken(presenter.getAssetViewPlaceToken());
         editAssetLink.setTargetHistoryToken(presenter.getAssetEditPlaceToken());
-        linkAssetUsersLink.setTargetHistoryToken(presenter.getAssetLinkUsersPlaceToken());
 
         AssetPlace place = presenter.getActivePlace();
         if (place instanceof AssetViewPlace) {
             viewAssetLink.addStyleName("active");
         } else if (place instanceof AssetEditPlace) {
             editAssetLink.addStyleName("active");
-        } else if (place instanceof AssetLinkUsersPlace) {
-            linkAssetUsersLink.addStyleName("active");
         }
     }
 
@@ -98,6 +89,5 @@ public class AssetNavigationImpl extends Composite implements AssetNavigation {
     public void setEnabled(boolean enabled) {
         viewAssetLink.setVisible(enabled);
         editAssetLink.setVisible(enabled);
-        linkAssetUsersLink.setVisible(enabled);
     }
 }

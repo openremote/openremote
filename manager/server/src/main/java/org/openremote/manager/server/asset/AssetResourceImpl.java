@@ -45,8 +45,7 @@ import javax.ws.rs.core.Response;
 import java.util.*;
 import java.util.logging.Logger;
 
-import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
-import static javax.ws.rs.core.Response.Status.NOT_FOUND;
+import static javax.ws.rs.core.Response.Status.*;
 import static org.openremote.model.asset.AssetMeta.PROTECTED;
 import static org.openremote.model.attribute.AttributeEvent.Source.CLIENT;
 import static org.openremote.model.attribute.MetaItem.mergeMeta;
@@ -107,6 +106,73 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
     }
 
     @Override
+    public UserAsset[] getUserAssetLinks(RequestParams requestParams, String realmId, String userId, String assetId) {
+        try {
+            if (realmId == null)
+                throw new WebApplicationException(BAD_REQUEST);
+
+            Tenant tenant = identityService.getIdentityProvider().getTenantForRealmId(realmId);
+            if (tenant == null)
+                throw new WebApplicationException(NOT_FOUND);
+
+            if (!isSuperUser() && (isRestrictedUser() && !getAuthenticatedTenant().getId().equals(tenant.getId())))
+                throw new WebApplicationException(FORBIDDEN);
+
+            if (userId != null && !identityService.getIdentityProvider().isUserInTenant(userId, realmId))
+                throw new WebApplicationException(BAD_REQUEST);
+
+            return assetStorageService.findUserAssets(realmId, userId, assetId).toArray(new UserAsset[0]);
+
+        } catch (IllegalStateException ex) {
+            throw new WebApplicationException(ex, Response.Status.BAD_REQUEST);
+        }
+    }
+
+
+    @Override
+    public void createUserAsset(RequestParams requestParams, UserAsset userAsset) {
+        String realmId = userAsset.getId().getRealmId();
+        String userId = userAsset.getId().getUserId();
+        String assetId = userAsset.getId().getAssetId();
+
+        if (!identityService.getIdentityProvider().isUserInTenant(userId, realmId))
+            throw new WebApplicationException(BAD_REQUEST);
+
+        ServerAsset asset;
+        if ((asset = assetStorageService.find(assetId)) == null || !asset.getRealmId().equals(realmId)) {
+            throw new WebApplicationException(BAD_REQUEST);
+        }
+
+        if (isSuperUser()) {
+            assetStorageService.storeUserAsset(userAsset);
+            return;
+        }
+
+        if (isRestrictedUser()
+            || !getAuthenticatedTenant().getId().equals(realmId))
+            throw new WebApplicationException(FORBIDDEN);
+
+        assetStorageService.storeUserAsset(userAsset);
+    }
+
+    @Override
+    public void deleteUserAsset(RequestParams requestParams, String realmId, String userId, String assetId) {
+        if (!identityService.getIdentityProvider().isUserInTenant(userId, realmId))
+            throw new WebApplicationException(BAD_REQUEST);
+
+        if (isSuperUser()) {
+            assetStorageService.deleteUserAsset(realmId, userId, assetId);
+            return;
+        }
+
+        if (isRestrictedUser()
+            || !getAuthenticatedTenant().getId().equals(realmId))
+            throw new WebApplicationException(FORBIDDEN);
+
+        assetStorageService.deleteUserAsset(realmId, userId, assetId);
+    }
+
+    @Override
     public Asset get(RequestParams requestParams, String assetId) {
         try {
             ServerAsset asset;
@@ -152,11 +218,11 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                     throw new WebApplicationException(NOT_FOUND);
 
                 //Restricted users don't have permission to update an asset to become a root asset
-                if (TextUtil.isNullOrEmpty(asset.getRealmId())) {
+                if (isNullOrEmpty(asset.getRealmId())) {
                     throw new WebApplicationException("RealmId is missing", BAD_REQUEST);
                 }
 
-                if (TextUtil.isNullOrEmpty(asset.getParentId())) {
+                if (isNullOrEmpty(asset.getParentId())) {
                     throw new WebApplicationException("ParentId is missing", BAD_REQUEST);
                 }
 

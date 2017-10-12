@@ -17,16 +17,18 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.client.assets.asset;
+package org.openremote.manager.client.assets.tenant;
 
-import org.openremote.manager.client.widget.FormView;
+import com.github.nmorel.gwtjackson.client.ObjectMapper;
+import com.github.nmorel.gwtjackson.client.annotation.JsonMixIns;
+import org.openremote.manager.client.interop.jackson.DefaultJsonMixin;
+import org.openremote.manager.shared.http.EntityReader;
+import org.openremote.manager.shared.http.EntityWriter;
+import org.openremote.model.asset.UserAsset;
 
-public interface AssetLinkUsers extends FormView, AssetBaseView<AssetLinkUsers.Presenter> {
-
-    interface Presenter extends AssetBaseView.Presenter {
-    }
-
-    void setPresenter(Presenter presenter);
-
-
+@JsonMixIns({@JsonMixIns.JsonMixIn(target = UserAsset.class, mixIn = DefaultJsonMixin.class)})
+public interface UserAssetArrayMapper
+    extends ObjectMapper<UserAsset[]>,
+    EntityReader<UserAsset[]>,
+    EntityWriter<UserAsset[]> {
 }

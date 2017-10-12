@@ -27,6 +27,7 @@ import org.openremote.manager.server.setup.AbstractManagerSetup;
 import org.openremote.manager.shared.security.Tenant;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetState;
+import org.openremote.model.asset.UserAsset;
 import org.openremote.model.attribute.*;
 import org.openremote.model.simulator.element.ColorSimulatorElement;
 import org.openremote.model.simulator.element.NumberSimulatorElement;
@@ -521,10 +522,9 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
 
         // ################################ Link demo users and assets ###################################
 
-        identityService.getIdentityProvider().setRestrictedUser(keycloakDemoSetup.testuser3Id, true);
-        assetStorageService.storeUserAsset(keycloakDemoSetup.testuser3Id, apartment1Id);
-        assetStorageService.storeUserAsset(keycloakDemoSetup.testuser3Id, apartment1LivingroomId);
-        assetStorageService.storeUserAsset(keycloakDemoSetup.testuser3Id, apartment1KitchenId);
-        assetStorageService.storeUserAsset(keycloakDemoSetup.testuser3Id, apartment2Id);
+        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.customerATenant.getId(), keycloakDemoSetup.testuser3Id, apartment1Id));
+        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.customerATenant.getId(), keycloakDemoSetup.testuser3Id, apartment1LivingroomId));
+        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.customerATenant.getId(), keycloakDemoSetup.testuser3Id, apartment1KitchenId));
+        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.customerATenant.getId(), keycloakDemoSetup.testuser3Id, apartment2Id));
     }
 }

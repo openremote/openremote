@@ -76,6 +76,7 @@ public abstract class AbstractRulesList<P extends RulesList.Presenter<R>, R exte
                 }
             }
         );
+        table.setVisible(false);
         mainContent.add(table);
     }
 

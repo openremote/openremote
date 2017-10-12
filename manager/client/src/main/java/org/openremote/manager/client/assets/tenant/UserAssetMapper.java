@@ -17,28 +17,18 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.client.assets.asset;
+package org.openremote.manager.client.assets.tenant;
 
-import com.google.gwt.place.shared.PlaceTokenizer;
-import com.google.gwt.place.shared.Prefix;
+import com.github.nmorel.gwtjackson.client.ObjectMapper;
+import com.github.nmorel.gwtjackson.client.annotation.JsonMixIns;
+import org.openremote.manager.client.interop.jackson.DefaultJsonMixin;
+import org.openremote.manager.shared.http.EntityReader;
+import org.openremote.manager.shared.http.EntityWriter;
+import org.openremote.model.asset.UserAsset;
 
-public class AssetLinkUsersPlace extends AssetPlace {
-
-    public AssetLinkUsersPlace(String assetId) {
-        super(assetId);
-    }
-
-    @Prefix("assetLinkUsers")
-    public static class Tokenizer implements PlaceTokenizer<AssetLinkUsersPlace> {
-
-        @Override
-        public AssetLinkUsersPlace getPlace(String token) {
-            return new AssetLinkUsersPlace(token != null && token.length() > 0 ? token : null);
-        }
-
-        @Override
-        public String getToken(AssetLinkUsersPlace place) {
-            return place.getAssetId() != null ? place.getAssetId() : "";
-        }
-    }
+@JsonMixIns({@JsonMixIns.JsonMixIn(target = UserAsset.class, mixIn = DefaultJsonMixin.class)})
+public interface UserAssetMapper
+    extends ObjectMapper<UserAsset>,
+    EntityReader<UserAsset>,
+    EntityWriter<UserAsset> {
 }

@@ -38,7 +38,6 @@ import org.keycloak.representations.idm.ClientRepresentation;
 import org.keycloak.representations.idm.PublishedRealmRepresentation;
 import org.keycloak.representations.idm.RealmRepresentation;
 import org.openremote.container.Container;
-import org.openremote.container.security.AuthOverloadHandler;
 import org.openremote.container.security.IdentityProvider;
 import org.openremote.container.web.ClientRequestInfo;
 import org.openremote.container.web.ProxyWebClientBuilder;
@@ -49,7 +48,6 @@ import javax.ws.rs.NotFoundException;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;

@@ -39,13 +39,6 @@
                 visible="false"
                 text="{managerMessages.editAsset}"/>
 
-        <w:Hyperlink
-                ui:field="linkAssetUsersLink"
-                addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem}"
-                icon="vcard"
-                visible="false"
-                text="{managerMessages.linkAssetUsers}"/>
-
     </g:HTMLPanel>
 
 </ui:UiBinder>

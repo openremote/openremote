@@ -285,8 +285,8 @@ public class WidgetStyle {
         return "or-FormTableSortedHeaderDescending";
     }
 
-    public String FormTableWidget() {
-        return "or-FormTableWidget";
+    public String FormTable() {
+        return "or-FormTable";
     }
 
     public String FormTreeEmptyMessage() {

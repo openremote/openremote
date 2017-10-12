@@ -375,8 +375,6 @@ public interface ManagerMessages extends Messages {
 
     String templateAsset();
 
-    String invalidTemplateAsset();
-
     String noAssetSelected();
 
     String clearSelection();
@@ -476,4 +474,24 @@ public interface ManagerMessages extends Messages {
     String notificationSentToUser();
 
     String notificationOpenApplicationDetails();
+
+    String withUser();
+
+    String linkAsset();
+
+    String createAssetLink();
+
+    String noUserSelected();
+
+    String noAssetUserLinks();
+
+    String asset();
+
+    String deleteLink();
+
+    String linkedToUser();
+
+    String userAssetLinkCreated();
+
+    String userAssetLinkDeleted();
 }

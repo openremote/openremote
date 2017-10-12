@@ -30,8 +30,6 @@ public interface AssetNavigation extends IsWidget {
 
         String getAssetEditPlaceToken();
 
-        String getAssetLinkUsersPlaceToken();
-
         AssetPlace getActivePlace();
     }
 

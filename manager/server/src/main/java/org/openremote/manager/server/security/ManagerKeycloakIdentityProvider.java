@@ -344,31 +344,8 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
 
     @Override
     public boolean isRestrictedUser(String userId) {
-        UserConfiguration userConfiguration = getUserConfiguration(userId);
-        return userConfiguration.isRestricted();
-    }
-
-    @Override
-    public void setRestrictedUser(String userId, boolean restricted) {
-        UserConfiguration userConfiguration = getUserConfiguration(userId);
-        userConfiguration.setRestricted(restricted);
-        mergeUserConfiguration(userConfiguration);
-    }
-
-    protected UserConfiguration getUserConfiguration(String userId) {
         UserConfiguration userConfiguration = persistenceService.doReturningTransaction(em -> em.find(UserConfiguration.class, userId));
-        if (userConfiguration == null) {
-            userConfiguration = new UserConfiguration(userId);
-            userConfiguration = mergeUserConfiguration(userConfiguration);
-        }
-        return userConfiguration;
-    }
-
-    protected UserConfiguration mergeUserConfiguration(UserConfiguration userConfiguration) {
-        if (userConfiguration.getUserId() == null || userConfiguration.getUserId().length() == 0) {
-            throw new IllegalArgumentException("User ID must be set on: " + userConfiguration);
-        }
-        return persistenceService.doReturningTransaction(em -> em.merge(userConfiguration));
+        return userConfiguration != null && userConfiguration.isRestricted();
     }
 
     @Override

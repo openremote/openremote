@@ -33,6 +33,7 @@ import org.openremote.container.timer.TimerService;
 import org.openremote.container.web.WebService;
 import org.openremote.manager.server.event.ClientEventService;
 import org.openremote.manager.server.security.ManagerIdentityService;
+import org.openremote.manager.server.security.UserConfiguration;
 import org.openremote.manager.shared.security.ClientRole;
 import org.openremote.manager.shared.security.User;
 import org.openremote.model.Constants;
@@ -47,8 +48,10 @@ import org.openremote.model.value.Values;
 import org.postgresql.util.PGobject;
 
 import javax.persistence.EntityManager;
+import javax.persistence.NoResultException;
 import java.sql.*;
 import java.util.*;
+import java.util.Date;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -57,6 +60,7 @@ import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_
 import static org.openremote.manager.server.asset.AssetRoute.isPersistenceEventForEntityType;
 import static org.openremote.manager.server.event.ClientEventService.CLIENT_EVENT_TOPIC;
 import static org.openremote.manager.server.event.ClientEventService.getSessionKey;
+import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 
 public class AssetStorageService extends RouteBuilder implements ContainerService, Consumer<AssetState> {
 
@@ -365,7 +369,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             ServerAsset updatedAsset = em.merge(asset);
 
             if (user != null) {
-                em.merge(new UserAsset(user.getId(), updatedAsset.getId()));
+                storeUserAsset(em, new UserAsset(user.getRealmId(), user.getId(), updatedAsset.getId()));
             }
 
             return updatedAsset;
@@ -393,16 +397,95 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
     public boolean isUserAsset(String userId, String assetId) {
         return persistenceService.doReturningTransaction(entityManager -> {
-            UserAsset userAsset = entityManager.find(UserAsset.class, new UserAsset(userId, assetId));
-            return userAsset != null;
+            try {
+                return entityManager.createQuery(
+                    "select count(ua) from UserAsset ua where ua.id.userId = :userId and ua.id.assetId = :assetId",
+                    Long.class)
+                    .setParameter("userId", userId)
+                    .setParameter("assetId", assetId)
+                    .getSingleResult() > 0;
+            } catch (NoResultException ex) {
+                return false;
+            }
         });
     }
 
-    public void storeUserAsset(String userId, String assetId) {
-        persistenceService.doTransaction(entityManager -> {
-            UserAsset userAsset = new UserAsset(userId, assetId);
-            entityManager.merge(userAsset);
+    public List<UserAsset> findUserAssets(String realmId, String userId, String assetId) {
+        return persistenceService.doReturningTransaction(entityManager -> {
+            if (isNullOrEmpty(userId) && isNullOrEmpty(assetId)) {
+                return entityManager.createQuery(
+                    "select ua from UserAsset ua where ua.id.realmId = :realmId order by ua.createdOn desc", UserAsset.class
+                ).setParameter("realmId", realmId).getResultList();
+            } else if (isNullOrEmpty(assetId)) {
+                return entityManager.createQuery(
+                    "select ua from UserAsset ua where ua.id.realmId = :realmId and ua.id.userId = :userId order by ua.createdOn desc", UserAsset.class
+                ).setParameter("realmId", realmId).setParameter("userId", userId).getResultList();
+
+            } else if (isNullOrEmpty(userId)){
+                return entityManager.createQuery(
+                    "select ua from UserAsset ua where ua.id.realmId = :realmId and ua.id.assetId = :assetId order by ua.createdOn desc", UserAsset.class
+                ).setParameter("realmId", realmId).setParameter("assetId", assetId).getResultList();
+            } else {
+                return entityManager.createQuery(
+                    "select ua from UserAsset ua where ua.id.realmId = :realmId and ua.id.userId = :userId and ua.id.assetId = :assetId order by ua.createdOn desc", UserAsset.class
+                ).setParameter("realmId", realmId).setParameter("userId", userId).setParameter("assetId", assetId).getResultList();
+            }
         });
+    }
+
+    /**
+     * Also marks the user as restricted, manages {@link UserConfiguration#isRestricted()}.
+     */
+    public void storeUserAsset(UserAsset userAsset) {
+        persistenceService.doTransaction(entityManager -> storeUserAsset(entityManager, userAsset));
+    }
+
+    /**
+     * Also marks the user as unrestricted if no assets are linked to the user, manages {@link UserConfiguration#isRestricted()}.
+     */
+    public void deleteUserAsset(String realmId, String userId, String assetId) {
+        persistenceService.doTransaction(entityManager -> {
+            UserAsset userAsset = entityManager.find(UserAsset.class, new UserAsset.Id(realmId, userId, assetId));
+            if (userAsset != null)
+                entityManager.remove(userAsset);
+
+            // If there are no more assets linked to this user
+            long count = entityManager.createQuery(
+                "select count(ua) from UserAsset ua where ua.id.userId = :userId", Long.class
+            ).setParameter("userId", userId).getSingleResult();
+            if (count == 0) {
+                // The user must be configured as not restricted
+                UserConfiguration userConfiguration = getUserConfiguration(entityManager, userAsset.getId().getUserId());
+                userConfiguration.setRestricted(false);
+                mergeUserConfiguration(entityManager, userConfiguration);
+            }
+        });
+    }
+
+    protected void storeUserAsset(EntityManager entityManager, UserAsset userAsset) {
+        // The user must be configured as restricted
+        UserConfiguration userConfiguration = getUserConfiguration(entityManager, userAsset.getId().getUserId());
+        userConfiguration.setRestricted(true);
+        mergeUserConfiguration(entityManager, userConfiguration);
+
+        userAsset.setCreatedOn(new Date(timerService.getCurrentTimeMillis()));
+        entityManager.merge(userAsset);
+    }
+
+    protected UserConfiguration getUserConfiguration(EntityManager em, String userId) {
+        UserConfiguration userConfiguration = em.find(UserConfiguration.class, userId);
+        if (userConfiguration == null) {
+            userConfiguration = new UserConfiguration(userId);
+            userConfiguration = mergeUserConfiguration(em, userConfiguration);
+        }
+        return userConfiguration;
+    }
+
+    protected UserConfiguration mergeUserConfiguration(EntityManager em, UserConfiguration userConfiguration) {
+        if (userConfiguration.getUserId() == null || userConfiguration.getUserId().length() == 0) {
+            throw new IllegalArgumentException("User ID must be set on: " + userConfiguration);
+        }
+        return em.merge(userConfiguration);
     }
 
     /* ####################################################################################### */
