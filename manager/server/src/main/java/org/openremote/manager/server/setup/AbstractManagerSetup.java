@@ -284,6 +284,12 @@ public abstract class AbstractManagerSetup implements Setup {
                     new MetaItem(RULE_STATE, Values.create(true)),
                     new MetaItem(PROTECTED, Values.create(true)),
                     new MetaItem(FORMAT, Values.create("%d"))
+                ).addMeta(shouldBeLinked ? agentLinker.get() : null),
+            new AssetAttribute("ventilationAuto", BOOLEAN)
+                .setMeta(
+                    new MetaItem(LABEL, Values.create("Ventilation auto")),
+                    new MetaItem(RULE_STATE, Values.create(true)),
+                    new MetaItem(PROTECTED, Values.create(true))
                 ).addMeta(shouldBeLinked ? agentLinker.get() : null)
         );
     }
