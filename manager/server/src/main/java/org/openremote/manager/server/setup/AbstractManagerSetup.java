@@ -290,7 +290,7 @@ public abstract class AbstractManagerSetup implements Setup {
                     new MetaItem(LABEL, Values.create("Ventilation auto")),
                     new MetaItem(RULE_STATE, Values.create(true)),
                     new MetaItem(PROTECTED, Values.create(true))
-                ).addMeta(shouldBeLinked ? agentLinker.get() : null)
+                )
         );
     }
 
