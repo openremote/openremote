@@ -99,7 +99,7 @@ public class TypeMapper {
         // Datapoint Types "Time", Main number 10
         dptToTypeMap.put(DPTXlatorTime.DPT_TIMEOFDAY.getID(), AttributeType.DATETIME);
 
-        // Datapoint Types “Date”", Main number 11
+        // Datapoint Types "Date", Main number 11
         dptToTypeMap.put(DPTXlatorDate.DPT_DATE.getID(), AttributeType.DATETIME);
 
         // Datapoint Types "4-Octet Unsigned Value", Main number 12

@@ -140,6 +140,7 @@ public class CounterProcessor extends FeatureProcessor {
         return null;
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public boolean processReceivedPacket(VelbusDevice device, VelbusPacket packet) {
 
