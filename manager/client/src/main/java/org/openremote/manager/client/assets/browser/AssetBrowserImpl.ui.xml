@@ -38,6 +38,7 @@
         <g:HTMLPanel
                 styleName="layout horizontal center {widgetStyle.SecondaryNavHorizontal}">
 
+            <!-- TODO Depends on AssetQuery/Rules Designer work
             <w:FormInputText ui:field="searchInput"
                              addStyleNames="flex {style.navItemFirst} {style.searchInput} {widgetStyle.SecondaryNavItem}"
                              autofocus="true"
@@ -55,6 +56,7 @@
                           text="{managerMessages.sort}"
                           icon="sort"
                           tabIndex="99999"/>
+          -->
 
         </g:HTMLPanel>
 
