@@ -140,7 +140,7 @@ public class MetaEditor extends AbstractAttributeViewExtension {
             });
 
             formGroupActions.add(button);
-            this.setFromGroupActions(formGroupActions);
+            this.setFormGroupActions(formGroupActions);
             nameInput.setValue(item.getName().orElse(null));
             onNameChanged(false);
         }

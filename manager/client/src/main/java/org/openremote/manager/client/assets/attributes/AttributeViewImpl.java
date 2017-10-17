@@ -76,7 +76,7 @@ public class AttributeViewImpl extends FormGroup implements AttributeView {
         setFormField(formField);
 
         FormGroupActions formGroupActions = new FormGroupActions();
-        setFromGroupActions(formGroupActions);
+        setFormGroupActions(formGroupActions);
     }
 
     public void setAttributeActions(List<FormButton> attributeActions) {

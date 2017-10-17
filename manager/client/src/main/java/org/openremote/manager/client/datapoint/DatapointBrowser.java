@@ -181,7 +181,7 @@ public abstract class DatapointBrowser extends AbstractAttributeViewExtension {
         controlFormField.add(timeOutput);
 
         FormGroupActions controlFormActions = new FormGroupActions();
-        controlFormGroup.setFromGroupActions(controlFormActions);
+        controlFormGroup.setFormGroupActions(controlFormActions);
 
         FormButton previousButton = new FormButton();
         previousButton.setIcon("arrow-circle-left");

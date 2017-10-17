@@ -70,7 +70,7 @@ public abstract class SyslogFilter extends FlowPanel {
         fieldPanel.add(eventsLabel);
 
         FormGroupActions actions = new FormGroupActions();
-        formGroup.setFromGroupActions(actions);
+        formGroup.setFormGroupActions(actions);
 
         pauseButton = new FormButton(messages.pauseLog());
         pauseButton.setIcon("pause");

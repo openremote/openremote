@@ -212,7 +212,7 @@ public class AssetsTenantImpl extends FormViewImpl implements AssetsTenant {
 
             FormGroup assetGroup = new FormGroup();
             assetGroup.setAlignStart(true);
-            assetGroup.setFromGroupActions(new FormGroupActions());
+            assetGroup.setFormGroupActions(new FormGroupActions());
             FormField assetField = new FormField();
             FormLabel assetLabel = new FormLabel(managerMessages.asset());
             assetGroup.setFormLabel(assetLabel);
@@ -225,6 +225,15 @@ public class AssetsTenantImpl extends FormViewImpl implements AssetsTenant {
             FormOutputText assetNameText = new FormOutputText(userAsset.getAssetName());
             namesPanel.add(assetNameText);
             add(assetGroup);
+
+            FormButton editUserButton = new FormButton();
+            editUserButton.setIcon("user");
+            editUserButton.setText(managerMessages.editUser());
+            editUserButton.addClickHandler(event -> {
+                if (presenter != null)
+                    presenter.onEditUser(userAsset.getId());
+            });
+            assetGroup.getFormGroupActions().add(editUserButton);
 
             FormButton deleteButton = new FormButton();
             deleteButton.setDanger(true);

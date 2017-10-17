@@ -386,7 +386,7 @@ public class AdminUserImpl extends FormViewImpl implements AdminUser {
             setStyleName("flex-none layout vertical or-FormListItem");
 
             FormGroup deviceIdGroup = new FormGroup();
-            deviceIdGroup.setFromGroupActions(new FormGroupActions());
+            deviceIdGroup.setFormGroupActions(new FormGroupActions());
             FormField deviceIdField = new FormField();
             FormLabel deviceIdLabel = new FormLabel(managerMessages.registeredDeviceId());
             deviceIdLabel.addStyleName("larger");
@@ -436,7 +436,7 @@ public class AdminUserImpl extends FormViewImpl implements AdminUser {
             typeLoginPanel.add(lastLoginGroup);
 
             FormGroup notificationTokenGroup = new FormGroup();
-            notificationTokenGroup.setFromGroupActions(new FormGroupActions());
+            notificationTokenGroup.setFormGroupActions(new FormGroupActions());
             FormField notificationTokenField = new FormField();
             FormLabel notificationTokenLabel = new FormLabel(managerMessages.registeredDeviceNotificationToken());
             notificationTokenLabel.addStyleName("larger");

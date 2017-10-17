@@ -59,7 +59,7 @@ public class AssetSelector extends FormGroup {
         this.enableClearSelection = enableClearSelection;
         setFormLabel(label);
         setFormField(field);
-        setFromGroupActions(actions);
+        setFormGroupActions(actions);
         addInfolabel(infoLabel);
         field.add(fieldContainer);
         fieldContainer.setStyleName("flex layout vertical");

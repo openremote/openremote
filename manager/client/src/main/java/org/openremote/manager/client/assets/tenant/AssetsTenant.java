@@ -36,6 +36,8 @@ public interface AssetsTenant extends FormView, IsWidget {
         void onCreateAssetLink();
 
         void onDeleteAssetLink(UserAsset.Id id);
+
+        void onEditUser(UserAsset.Id id);
     }
 
     void setPresenter(Presenter presenter);
