@@ -16,6 +16,9 @@
 
     <link rel="icon" type="image/png" href="/static/img/favicon.png" />
 
+    <!-- Promise API polyfill on IE 11  -->
+    <script src="/static/3rdparty/es6-promise.js"></script>
+
     <script src="/static//js/loader.js"></script>
     <link rel="stylesheet" type="text/css" href="/static/css/loader.css" />
 

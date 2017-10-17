@@ -17,14 +17,9 @@
     <link rel="icon" type="image/png" href="/static/img/favicon.png" />
 
     <script src="/static/js/loader.js"></script>
-    
-    <!-- Automatically provides/replaces `Promise` if missing or broken. -->
-	<script src="https://cdn.jsdelivr.net/npm/es6-promise@4/dist/es6-promise.js"></script>
-	<script src="https://cdn.jsdelivr.net/npm/es6-promise@4/dist/es6-promise.auto.js"></script> 
 
-	<!-- Minified version of `es6-promise-auto` below. -->
-	<script src="https://cdn.jsdelivr.net/npm/es6-promise@4/dist/es6-promise.min.js"></script>
-	<script src="https://cdn.jsdelivr.net/npm/es6-promise@4/dist/es6-promise.auto.min.js"></script> 
+    <!-- Promise API polyfill on IE 11  -->
+    <script src="/static/3rdparty/es6-promise.js"></script>
 
     <link rel="stylesheet" type="text/css" href="/static/css/loader.css" />
 
