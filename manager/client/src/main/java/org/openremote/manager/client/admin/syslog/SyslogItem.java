@@ -26,7 +26,6 @@ import com.google.gwt.dom.client.Element;
 import com.google.gwt.i18n.client.DateTimeFormat;
 import com.google.gwt.safehtml.client.SafeHtmlTemplates;
 import com.google.gwt.safehtml.shared.SafeHtml;
-import com.google.gwt.user.client.DOM;
 import org.openremote.model.Constants;
 import org.openremote.model.syslog.SyslogEvent;
 
@@ -46,7 +45,7 @@ public class SyslogItem {
                 "<span style=\"font-size:smaller; margin-left: 1em;\">{2}</span>" +
                 "<span class=\"flex layout horizontal end-justified\" style=\"font-size:smaller; margin-left: 1em;\">{3}</span>" +
                 "</div>" +
-                "<div style=\"font-size:smaller;\">{4}</div>"
+                "<div style=\"font-size:smaller;white-space:pre-line;\">{4}</div>"
         )
         SafeHtml eventTemplate(String icon, String level, String category, String date, String message);
     }

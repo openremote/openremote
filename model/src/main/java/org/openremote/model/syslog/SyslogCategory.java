@@ -45,7 +45,8 @@ public enum SyslogCategory {
         "Rules",
         false,
         "RulesService",
-        "RulesEngine"
+        "RulesEngine",
+        "RuleExecutionLogger"
     ),
     PROTOCOL(
         "Protocol",
