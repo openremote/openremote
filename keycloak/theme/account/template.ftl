@@ -52,19 +52,15 @@
         <div class="layout horizontal center end-justified or-SecondaryNavHorizontal">
         </div>
 
-        <div class="flex or-MainContent">
+        <#if message?has_content>
+            <div style="max-width: 30em;" class="layout horizontal or-FormMessages ${message.type}">
+                <#if message.type=='success' ><div class="or-MessagesIcon fa fa-check"></div></#if>
+                <#if message.type=='error' ><div class="or-MessagesIcon fa fa-warning"></div></#if>
+            ${message.summary}
+            </div>
+        </#if>
 
-
-            <#if message?has_content>
-                <div style="max-width: 30em;" class="layout horizontal or-FormMessages ${message.type}">
-                    <#if message.type=='success' ><div class="or-MessagesIcon fa fa-check"></div></#if>
-                    <#if message.type=='error' ><div class="or-MessagesIcon fa fa-warning"></div></#if>
-                ${message.summary}
-                </div>
-            </#if>
-
-            <#nested "content">
-        </div>
+        <#nested "content">
     </div>
 
 </body>

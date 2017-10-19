@@ -84,17 +84,20 @@ public class AdminUsersActivity
 
         adminContent.setPresenter(this);
 
+        adminContent.setFormBusy(true);
         environment.getRequestService().execute(
             tenantArrayMapper,
             tenantResource::getAll,
             200,
             tenants -> {
                 adminContent.setTenants(tenants, realm);
+                adminContent.setFormBusy(false);
             },
             ex -> handleRequestException(ex, environment)
         );
 
         if (realm != null) {
+            adminContent.setFormBusy(true);
             environment.getRequestService().execute(
                 userArrayMapper,
                 requestParams -> userResource.getAll(requestParams, realm),
@@ -104,6 +107,7 @@ public class AdminUsersActivity
                     adminContent.setCreateUserHistoryToken(
                         environment.getPlaceHistoryMapper().getToken(new AdminUserPlace(realm))
                     );
+                    adminContent.setFormBusy(false);
                 },
                 ex -> handleRequestException(ex, environment)
             );

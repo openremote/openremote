@@ -39,11 +39,8 @@ import javax.inject.Inject;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Logger;
 
 public class AdminUserImpl extends FormViewImpl implements AdminUser {
-
-    private static final Logger LOG = Logger.getLogger(AdminUserImpl.class.getName());
 
     interface UI extends UiBinder<HTMLPanel, AdminUserImpl> {
     }
@@ -119,7 +116,7 @@ public class AdminUserImpl extends FormViewImpl implements AdminUser {
     @Inject
     public AdminUserImpl(Environment environment,
                          Provider<Confirmation> confirmationDialogProvider) {
-        super(confirmationDialogProvider);
+        super(confirmationDialogProvider, environment.getWidgetStyle());
         UI ui = GWT.create(UI.class);
         initWidget(ui.createAndBindUi(this));
 

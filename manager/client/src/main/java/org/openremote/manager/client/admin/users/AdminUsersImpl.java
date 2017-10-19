@@ -22,10 +22,14 @@ package org.openremote.manager.client.admin.users;
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
-import com.google.gwt.user.client.ui.*;
-import org.openremote.manager.client.i18n.ManagerMessages;
+import com.google.gwt.user.client.ui.HTMLPanel;
+import com.google.gwt.user.client.ui.Label;
+import com.google.gwt.user.client.ui.ListBox;
+import com.google.inject.Provider;
+import org.openremote.manager.client.app.dialog.Confirmation;
 import org.openremote.manager.client.style.FormTableStyle;
 import org.openremote.manager.client.style.WidgetStyle;
+import org.openremote.manager.client.widget.FormViewImpl;
 import org.openremote.manager.client.widget.Hyperlink;
 import org.openremote.manager.shared.security.Tenant;
 import org.openremote.manager.shared.security.User;
@@ -34,16 +38,10 @@ import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-public class AdminUsersImpl extends Composite implements AdminUsers {
+public class AdminUsersImpl extends FormViewImpl implements AdminUsers {
 
     interface UI extends UiBinder<HTMLPanel, AdminUsersImpl> {
     }
-
-    @UiField
-    protected ManagerMessages managerMessages;
-
-    @UiField
-    protected WidgetStyle widgetStyle;
 
     @UiField
     AdminUsersTable.Style usersTableStyle;
@@ -64,7 +62,10 @@ public class AdminUsersImpl extends Composite implements AdminUsers {
     Presenter presenter;
 
     @Inject
-    public AdminUsersImpl(FormTableStyle formTableStyle) {
+    public AdminUsersImpl(Provider<Confirmation> confirmationDialogProvider,
+                          WidgetStyle widgetStyle,
+                          FormTableStyle formTableStyle) {
+        super(confirmationDialogProvider, widgetStyle);
         UI ui = GWT.create(UI.class);
         initWidget(ui.createAndBindUi(this));
 

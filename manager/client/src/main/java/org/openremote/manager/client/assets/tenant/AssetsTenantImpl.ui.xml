@@ -6,12 +6,6 @@
     <ui:with field="managerMessages" type="org.openremote.manager.client.i18n.ManagerMessages"/>
     <ui:with field="widgetStyle" type="org.openremote.manager.client.style.WidgetStyle"/>
 
-    <ui:style>
-        .formMessages {
-            max-width: 30em;
-        }
-    </ui:style>
-
     <w:FlexSplitPanel handleStyle="{widgetStyle.SplitPanelHandle}"
                       firstPanelWidth="250"
                       firstPanelMinWidth="0"
@@ -29,25 +23,11 @@
 
                 <w:Form ui:field="form" addStyleNames="flex">
 
-                    <g:FlowPanel
-                            styleName="flex-none layout horizontal {style.formMessages} {widgetStyle.FormMessages} success"
-                            visible="false">
-                        <w:IconLabel icon="check"
-                                     addStyleNames="{widgetStyle.MessagesIcon}"/>
-                        <g:FlowPanel ui:field="formMessagesSuccess"/>
-                    </g:FlowPanel>
-
-                    <g:FlowPanel
-                            styleName="flex-none layout horizontal {style.formMessages} {widgetStyle.FormMessages} error"
-                            visible="false">
-                        <w:IconLabel icon="warning"
-                                     addStyleNames="{widgetStyle.MessagesIcon}"/>
-                        <g:FlowPanel ui:field="formMessagesError"/>
-                    </g:FlowPanel>
-
                     <g:HTMLPanel styleName="flex-none layout vertical {widgetStyle.MainContent}">
 
-                        <w:Headline ui:field="headline" icon="group"/>
+                        <w:Headline ui:field="headline"
+                                    sub="{managerMessages.linkAssetUsers}"
+                                    icon="group"/>
 
                         <assetBrowser:AssetSelector ui:field="assetSelector"/>
 
@@ -79,7 +59,6 @@
                                  styleName="flex layout vertical {widgetStyle.MainContent} {widgetStyle.FormList}"/>
 
                 </w:Form>
-
 
             </g:HTMLPanel>
 

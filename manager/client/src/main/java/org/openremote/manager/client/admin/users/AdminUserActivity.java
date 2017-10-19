@@ -44,15 +44,12 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.Consumer;
-import java.util.logging.Logger;
 
 import static org.openremote.manager.client.http.RequestExceptionHandler.handleRequestException;
 
 public class AdminUserActivity
     extends AbstractAdminActivity<AdminUserPlace, AdminUser>
     implements AdminUser.Presenter {
-
-    private static final Logger LOG = Logger.getLogger(AdminUserActivity.class.getName());
 
     final protected Environment environment;
     final protected UserResource userResource;

@@ -20,12 +20,11 @@
 package org.openremote.manager.client.admin.users;
 
 import org.openremote.manager.client.admin.AdminContent;
-import org.openremote.manager.client.widget.FormView;
 import org.openremote.manager.shared.notification.DeviceNotificationToken;
 
 import java.util.List;
 
-public interface AdminUser extends AdminContent, FormView {
+public interface AdminUser extends AdminContent {
 
     interface Presenter {
 

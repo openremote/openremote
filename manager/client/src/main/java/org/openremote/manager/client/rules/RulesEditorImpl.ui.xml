@@ -52,22 +52,6 @@
 
                         <w:Headline ui:field="headline" icon="edit"/>
 
-                        <g:FlowPanel
-                                styleName="flex-none layout horizontal {style.formMessages} {widgetStyle.FormMessages} success"
-                                visible="false">
-                            <w:IconLabel icon="check"
-                                         addStyleNames="{widgetStyle.MessagesIcon}"/>
-                            <g:FlowPanel ui:field="formMessagesSuccess"/>
-                        </g:FlowPanel>
-
-                        <g:FlowPanel
-                                styleName="flex-none layout horizontal {style.formMessages} {widgetStyle.FormMessages} error"
-                                visible="false">
-                            <w:IconLabel icon="warning"
-                                         addStyleNames="{widgetStyle.MessagesIcon}"/>
-                            <g:FlowPanel ui:field="formMessagesError"/>
-                        </g:FlowPanel>
-
                         <w:FormGroup ui:field="nameGroup">
                             <w:label>
                                 <w:FormLabel text="{managerMessages.rulesetName}"/>

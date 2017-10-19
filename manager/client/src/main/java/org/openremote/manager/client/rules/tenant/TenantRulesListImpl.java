@@ -48,12 +48,6 @@ public class TenantRulesListImpl
     }
 
     @Override
-    protected void onPresenterReset() {
-        super.onPresenterReset();
-        headline.setText(null);
-    }
-
-    @Override
     public void setRealmLabel(String label) {
         headline.setText(label);
     }

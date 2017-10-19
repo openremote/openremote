@@ -158,7 +158,9 @@ public class AdminTenantActivity
             204,
             () -> {
                 adminContent.setFormBusy(false);
-                adminContent.addFormMessageSuccess(environment.getMessages().tenantUpdated(tenant.getDisplayName()));
+                environment.getEventBus().dispatch(new ShowSuccessEvent(
+                    environment.getMessages().tenantUpdated(tenant.getDisplayName())
+                ));
                 this.realm = tenant.getRealm();
             },
             ex -> handleRequestException(ex, environment.getEventBus(), environment.getMessages(), validationErrorHandler)

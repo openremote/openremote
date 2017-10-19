@@ -75,7 +75,7 @@ public class AssetsTenantImpl extends FormViewImpl implements AssetsTenant {
     public AssetsTenantImpl(AssetBrowser assetBrowser,
                             Provider<Confirmation> confirmationDialogProvider,
                             Environment environment) {
-        super(confirmationDialogProvider);
+        super(confirmationDialogProvider, environment.getWidgetStyle());
         this.assetBrowser = assetBrowser;
 
         assetSelector = new AssetSelector(
@@ -123,8 +123,6 @@ public class AssetsTenantImpl extends FormViewImpl implements AssetsTenant {
         // Reset state
         sidebarContainer.clear();
         headline.setText(null);
-        headline.setSub(managerMessages.linkAssetUsers());
-        headline.setVisible(false);
 
         assetSelector.init();
 
@@ -148,7 +146,6 @@ public class AssetsTenantImpl extends FormViewImpl implements AssetsTenant {
     @Override
     public void setTenantName(String name) {
         headline.setText(name);
-        headline.setVisible(true);
     }
 
     @Override

@@ -62,11 +62,12 @@
                              styleName="flex {widgetStyle.MainContent}">
 
                     <w:Headline ui:field="headline" icon="chain"
+                                text="{managerMessages.loadingDotdotdot}"
                                 sub="{managerMessages.manageAssetRulesets}"/>
 
                     <g:Label ui:field="noRulesetsLabel"
                              addStyleNames="{widgetStyle.FormMessages} info"
-                             visible="true"
+                             visible="false"
                              text="{managerMessages.noRulesetsFound}"/>
 
                 </g:HTMLPanel>

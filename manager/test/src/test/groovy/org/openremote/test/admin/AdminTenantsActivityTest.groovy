@@ -392,7 +392,12 @@ class AdminTenantsActivityTest extends Specification implements ManagerContainer
 
         and: "The form success should be shown"
         1 * adminTenantView.setFormBusy(false)
-        1 * adminTenantView.addFormMessageSuccess("TestMessageTenantUpdated:Test Name2")
+
+        and: "The success toast should be shown"
+        conditions.eventually {
+            assert resultEvents[0] instanceof ShowSuccessEvent
+            assert resultEvents[0].text == "TestMessageTenantUpdated:Test Name2"
+        }
 
         when: "The user clicks the Delete button"
         resultEvents = []

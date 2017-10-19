@@ -66,11 +66,15 @@ public class AdminTenantsActivity
         super.start(container, eventBus, registrations);
         adminContent.setPresenter(this);
 
+        adminContent.setFormBusy(true);
         environment.getRequestService().execute(
             tenantArrayMapper,
             tenantResource::getAll,
             200,
-            adminContent::setTenants,
+            tenants -> {
+                adminContent.setTenants(tenants);
+                adminContent.setFormBusy(false);
+            },
             ex -> handleRequestException(ex, environment)
         );
 

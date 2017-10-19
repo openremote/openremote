@@ -19,11 +19,8 @@
  */
 package org.openremote.manager.client.widget;
 
-import com.google.gwt.dom.client.Document;
 import com.google.gwt.uibinder.client.UiField;
 import com.google.gwt.user.client.ui.Composite;
-import com.google.gwt.user.client.ui.FlowPanel;
-import com.google.gwt.user.client.ui.InlineLabel;
 import com.google.inject.Provider;
 import org.openremote.manager.client.app.dialog.Confirmation;
 import org.openremote.manager.client.i18n.ManagerMessages;
@@ -42,14 +39,17 @@ public class FormViewImpl extends Composite implements FormView {
     @UiField
     public Form form;
 
-    @UiField
-    public FlowPanel formMessagesSuccess;
+    public FormMessages formMessagesSuccess;
+    public FormMessages formMessagesError;
 
-    @UiField
-    public FlowPanel formMessagesError;
-
-    public FormViewImpl(Provider<Confirmation> confirmationDialogProvider) {
+    public FormViewImpl(Provider<Confirmation> confirmationDialogProvider, WidgetStyle widgetStyle) {
         this.confirmationDialogProvider = confirmationDialogProvider;
+
+        this.formMessagesSuccess = new FormMessages(widgetStyle, true);
+        this.formMessagesError = new FormMessages(widgetStyle, false);
+
+        formMessagesSuccess.setVisible(false);
+        formMessagesError.setVisible(false);
     }
 
     @Override
@@ -59,28 +59,22 @@ public class FormViewImpl extends Composite implements FormView {
 
     @Override
     public void addFormMessageError(String message) {
-        formMessagesError.add(new InlineLabel(message));
-        formMessagesError.getElement().appendChild(Document.get().createBRElement());
-        formMessagesError.getParent().setVisible(true);
+        formMessagesError.appendMessage(form, message);
     }
 
     @Override
     public void addFormMessageSuccess(String message) {
-        formMessagesSuccess.add(new InlineLabel(message));
-        formMessagesSuccess.getElement().appendChild(Document.get().createBRElement());
-        formMessagesSuccess.getParent().setVisible(true);
+        formMessagesSuccess.appendMessage(form, message);
     }
 
     @Override
     public void clearFormMessagesError() {
         formMessagesError.clear();
-        formMessagesError.getParent().setVisible(false);
     }
 
     @Override
     public void clearFormMessagesSuccess() {
         formMessagesSuccess.clear();
-        formMessagesSuccess.getParent().setVisible(false);
     }
 
     @Override

@@ -20,7 +20,6 @@
 package org.openremote.manager.client.assets.browser;
 
 import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.AssetType;
 
 public class AssetTreeNode extends BrowserTreeNode {
 

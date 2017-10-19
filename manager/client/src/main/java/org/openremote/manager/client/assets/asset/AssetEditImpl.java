@@ -56,10 +56,6 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
 
     interface Style extends CssResource, AttributeView.Style {
 
-        String navItem();
-
-        String formMessages();
-
         String mapWidget();
 
         String nameInput();
@@ -169,7 +165,7 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
                          Provider<Confirmation> confirmationDialogProvider,
                          Provider<JsonEditor> jsonEditorProvider,
                          Environment environment) {
-        super(confirmationDialogProvider);
+        super(confirmationDialogProvider, environment.getWidgetStyle());
         this.jsonEditorProvider = jsonEditorProvider;
         this.assetBrowser = assetBrowser;
         this.assetNavigation = assetNavigation;

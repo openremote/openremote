@@ -19,7 +19,9 @@
  */
 package org.openremote.manager.client.widget;
 
-public interface FormView {
+import com.google.gwt.user.client.ui.IsWidget;
+
+public interface FormView extends IsWidget {
 
     void setFormBusy(boolean busy);
 

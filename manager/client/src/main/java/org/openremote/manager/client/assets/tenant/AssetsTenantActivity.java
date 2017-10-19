@@ -27,6 +27,7 @@ import org.openremote.manager.client.admin.users.AdminUserPlace;
 import org.openremote.manager.client.assets.AssetBrowsingActivity;
 import org.openremote.manager.client.assets.asset.AssetViewPlace;
 import org.openremote.manager.client.assets.browser.*;
+import org.openremote.manager.client.event.ShowFailureEvent;
 import org.openremote.manager.client.event.ShowSuccessEvent;
 import org.openremote.manager.client.mvp.AppActivity;
 import org.openremote.manager.shared.asset.AssetResource;
@@ -43,6 +44,7 @@ import java.util.Arrays;
 import java.util.Collection;
 
 import static org.openremote.manager.client.http.RequestExceptionHandler.handleRequestException;
+import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 
 public class AssetsTenantActivity extends AssetBrowsingActivity<AssetsTenantPlace> implements AssetsTenant.Presenter {
 
@@ -137,7 +139,16 @@ public class AssetsTenantActivity extends AssetBrowsingActivity<AssetsTenantPlac
             this.selectedAssetId = null;
             view.setCreateAssetLinkEnabled(false);
         } else {
-            this.selectedAssetId = treeNode.getId();
+            AssetTreeNode assetTreeNode = (AssetTreeNode) treeNode;
+            if (!assetTreeNode.getAsset().getRealmId().equals(this.realmId)) {
+                environment.getEventBus().dispatch(new ShowFailureEvent(
+                    environment.getMessages().assetNotInTenant(this.tenant.getDisplayName()), 2000
+                ));
+                this.selectedAssetId = null;
+                view.setCreateAssetLinkEnabled(false);
+                return;
+            }
+            this.selectedAssetId = assetTreeNode.getId();
             if (this.selectedUserId != null)
                 view.setCreateAssetLinkEnabled(true);
         }
@@ -191,6 +202,7 @@ public class AssetsTenantActivity extends AssetBrowsingActivity<AssetsTenantPlac
     }
 
     protected void loadTenant() {
+        view.setFormBusy(true);
         if (this.realmId == null)
             return;
         environment.getRequestService().execute(
@@ -200,8 +212,10 @@ public class AssetsTenantActivity extends AssetBrowsingActivity<AssetsTenantPlac
             tenant -> {
                 this.tenant = tenant;
                 loadUsers(() -> {
+                    assetBrowserPresenter.selectTenant(tenant.getId());
                     writeTenantToView();
                     loadUserAssets();
+                    view.setFormBusy(false);
                 });
             },
             ex -> handleRequestException(ex, environment)
@@ -209,6 +223,7 @@ public class AssetsTenantActivity extends AssetBrowsingActivity<AssetsTenantPlac
     }
 
     protected void loadUsers(Runnable onComplete) {
+        view.setFormBusy(true);
         environment.getRequestService().execute(
             userArrayMapper,
             requestParams -> userResource.getAll(requestParams, this.tenant.getRealm()),
@@ -216,6 +231,7 @@ public class AssetsTenantActivity extends AssetBrowsingActivity<AssetsTenantPlac
             users -> {
                 this.users = users;
                 writeUsersToView();
+                view.setFormBusy(false);
                 onComplete.run();
             },
             ex -> handleRequestException(ex, environment)

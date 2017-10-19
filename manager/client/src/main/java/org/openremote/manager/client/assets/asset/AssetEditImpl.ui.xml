@@ -7,14 +7,6 @@
     <ui:with field="widgetStyle" type="org.openremote.manager.client.style.WidgetStyle"/>
 
     <ui:style field="style" type="org.openremote.manager.client.assets.asset.AssetEditImpl.Style">
-        .navItem {
-            margin: 0 1em;
-        }
-
-        .formMessages {
-            max-width: 30em;
-        }
-
         .nameInput {
             min-width: 22em;
         }
@@ -80,22 +72,6 @@
                             <div class="layout vertical">
 
                                 <w:Headline ui:field="headline" icon="edit"/>
-
-                                <g:FlowPanel
-                                        styleName="flex-none layout horizontal {style.formMessages} {widgetStyle.FormMessages} success"
-                                        visible="false">
-                                    <w:IconLabel icon="check"
-                                                 addStyleNames="{widgetStyle.MessagesIcon}"/>
-                                    <g:FlowPanel ui:field="formMessagesSuccess"/>
-                                </g:FlowPanel>
-
-                                <g:FlowPanel
-                                        styleName="flex-none layout horizontal {style.formMessages} {widgetStyle.FormMessages} error"
-                                        visible="false">
-                                    <w:IconLabel icon="warning"
-                                                 addStyleNames="{widgetStyle.MessagesIcon}"/>
-                                    <g:FlowPanel ui:field="formMessagesError"/>
-                                </g:FlowPanel>
 
                                 <w:FormGroup ui:field="nameGroup">
                                     <w:label>

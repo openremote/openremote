@@ -48,12 +48,6 @@ public class AssetRulesListImpl
     }
 
     @Override
-    protected void onPresenterReset() {
-        super.onPresenterReset();
-        headline.setText(null);
-    }
-
-    @Override
     public void setAssetLabel(String label) {
         headline.setText(label);
     }

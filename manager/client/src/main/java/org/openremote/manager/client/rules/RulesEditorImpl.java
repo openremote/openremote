@@ -21,23 +21,21 @@ package org.openremote.manager.client.rules;
 
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.core.client.JsArray;
-import com.google.gwt.dom.client.LabelElement;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
 import com.google.gwt.uibinder.client.UiHandler;
-import com.google.gwt.user.client.ui.FileUpload;
 import com.google.gwt.user.client.ui.HTMLPanel;
 import com.google.inject.Provider;
 import elemental.client.Browser;
 import elemental.html.AnchorElement;
 import elemental.html.Blob;
 import elemental.html.FileReader;
+import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.app.dialog.Confirmation;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.assets.browser.AssetSelector;
 import org.openremote.manager.client.assets.browser.AssetTreeNode;
-import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.widget.*;
 
 import javax.inject.Inject;
@@ -94,15 +92,15 @@ public class RulesEditorImpl extends FormViewImpl implements RulesEditor {
     @Inject
     public RulesEditorImpl(Provider<Confirmation> confirmationDialogProvider,
                            AssetBrowser assetBrowser,
-                           ManagerMessages managerMessages) {
-        super(confirmationDialogProvider);
+                           Environment environment) {
+        super(confirmationDialogProvider, environment.getWidgetStyle());
         this.assetBrowser = assetBrowser;
 
         templateAssetSelector = new AssetSelector(
             assetBrowser.getPresenter(),
-            managerMessages,
-            managerMessages.templateAsset(),
-            managerMessages.selectAssetDescription(),
+            environment.getMessages(),
+            environment.getMessages().templateAsset(),
+            environment.getMessages().selectAssetDescription(),
             false,
             true,
             treeNode -> {

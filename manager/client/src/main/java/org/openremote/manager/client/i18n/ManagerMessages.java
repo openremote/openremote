@@ -494,4 +494,6 @@ public interface ManagerMessages extends Messages {
     String userAssetLinkCreated();
 
     String userAssetLinkDeleted();
+
+    String assetNotInTenant(String displayName);
 }

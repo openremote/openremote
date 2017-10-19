@@ -44,13 +44,14 @@
 
         </g:HTMLPanel>
 
-        <g:HTMLPanel ui:field="mainContent"
-                     styleName="flex {widgetStyle.MainContent}">
+        <w:Form ui:field="form" addStyleNames="flex">
 
-            <w:Headline icon="user"
-                        text="{managerMessages.manageUsers}"/>
+            <g:HTMLPanel ui:field="mainContent"
+                         styleName="flex {widgetStyle.MainContent}">
 
-            <w:Form>
+                <w:Headline icon="user"
+                            text="{managerMessages.manageUsers}"/>
+
                 <w:FormGroup>
                     <w:field>
                         <w:FormField>
@@ -61,14 +62,14 @@
                     </w:field>
                 </w:FormGroup>
 
-            </w:Form>
+                <g:Label ui:field="noUsersLabel"
+                         addStyleNames="{style.noUsersLabel} {widgetStyle.FormMessages} info"
+                         visible="false"
+                         text="{managerMessages.noUserFound}"/>
 
-            <g:Label ui:field="noUsersLabel"
-                     addStyleNames="{style.noUsersLabel} {widgetStyle.FormMessages} info"
-                     visible="false"
-                     text="{managerMessages.noUserFound}"/>
+            </g:HTMLPanel>
 
-        </g:HTMLPanel>
+        </w:Form>
 
     </g:HTMLPanel>
 

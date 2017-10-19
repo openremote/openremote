@@ -95,9 +95,9 @@ public abstract class AbstractRulesList<P extends RulesList.Presenter<R>, R exte
 
     protected void onPresenterReset() {
         sidebarContainer.clear();
-        headline.setText(null);
+        headline.setText(managerMessages.loadingDotdotdot());
         setCreateRulesetHistoryToken("");
-        noRulesetsLabel.setVisible(true);
+        noRulesetsLabel.setVisible(false);
         table.setVisible(false);
         table.setRowData(new ArrayList<>());
         table.flush();

@@ -17,7 +17,7 @@
 
     <ui:style field="tenantsTableStyle" type="org.openremote.manager.client.admin.tenant.AdminTenantsTable.Style">
         .nameColumn {
-            width: 15em;
+            width: 100%;
         }
 
         .realmColumn {
@@ -43,19 +43,22 @@
 
         </g:HTMLPanel>
 
-        <g:HTMLPanel ui:field="mainContent"
-                     styleName="flex {widgetStyle.MainContent}">
+        <w:Form ui:field="form" addStyleNames="flex">
 
-            <w:Headline icon="group"
-                        text="{managerMessages.manageTenants}"/>
+            <g:HTMLPanel ui:field="mainContent"
+                         styleName="flex {widgetStyle.MainContent}">
 
-            <g:Label ui:field="noTenantsLabel"
-                     addStyleNames="{style.noTenantsLabel} {widgetStyle.FormMessages} info"
-                     visible="true"
-                     text="{managerMessages.noTenantsFound}"/>
+                <w:Headline icon="group"
+                            text="{managerMessages.manageTenants}"/>
 
-        </g:HTMLPanel>
+                <g:Label ui:field="noTenantsLabel"
+                         addStyleNames="{style.noTenantsLabel} {widgetStyle.FormMessages} info"
+                         visible="true"
+                         text="{managerMessages.noTenantsFound}"/>
 
+            </g:HTMLPanel>
+
+        </w:Form>
     </g:HTMLPanel>
 
 </ui:UiBinder>
