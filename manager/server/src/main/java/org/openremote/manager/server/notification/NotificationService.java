@@ -140,13 +140,13 @@ public class NotificationService implements ContainerService {
             for (DeviceNotificationToken notificationToken : allTokenForUser) {
                 try {
                     Invocation.Builder builder = firebaseTarget.request().header("Authorization", "key=" + fcmKey);
-                    Notification notification = new Notification("_", true);
+                    Notification notification = new Notification("_");
 
                     FCMBaseMessage message;
                     if ("ANDROID".equals(notificationToken.getDeviceType())) {
                         message = new FCMBaseMessage(notificationToken.getToken());
                     } else {
-                        message = new FCMMessage(notification, true, "high", notificationToken.getToken());
+                        message = new FCMMessage(notification, true, true, "high", notificationToken.getToken());
                     }
                     LOG.fine("Sending notification message to device of user '" + userId + "': " + message);
                     Response response = builder.post(Entity.entity(message, "application/json"));

@@ -24,13 +24,11 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public class Notification {
 
     protected String body;
-    protected boolean mutableContent;
     protected String clickAction = "openremoteNotification";
 
-    public Notification(String body, boolean mutableContent) {
+    public Notification(String body) {
         super();
         this.body = body;
-        this.mutableContent = mutableContent;
     }
 
     public String getBody() {
@@ -41,15 +39,6 @@ public class Notification {
         this.body = body;
     }
 
-    @JsonProperty("mutable-content")
-    public boolean getMutableContent() {
-        return mutableContent;
-    }
-
-    public void setMutableContent(boolean mutableContent) {
-        this.mutableContent = mutableContent;
-    }
-
     public String getClickAction() {
         return clickAction;
     }
@@ -58,7 +47,6 @@ public class Notification {
     public String toString() {
         return getClass().getSimpleName() + "{" +
             "body='" + body + '\'' +
-            ", mutable-content=" + mutableContent +
             ", clickAction='" + clickAction + '\'' +
             '}';
     }
