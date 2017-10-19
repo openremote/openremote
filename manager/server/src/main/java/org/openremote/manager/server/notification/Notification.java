@@ -19,6 +19,8 @@
  */
 package org.openremote.manager.server.notification;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class Notification {
 
     protected String body;
@@ -39,6 +41,7 @@ public class Notification {
         this.body = body;
     }
 
+    @JsonProperty("mutable-content")
     public boolean getMutableContent() {
         return mutableContent;
     }
@@ -55,7 +58,7 @@ public class Notification {
     public String toString() {
         return getClass().getSimpleName() + "{" +
             "body='" + body + '\'' +
-            ", mutableContent=" + mutableContent +
+            ", mutable-content=" + mutableContent +
             ", clickAction='" + clickAction + '\'' +
             '}';
     }
