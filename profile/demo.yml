@@ -140,6 +140,15 @@ services:
       - postgresql
       - keycloak
 
+    # Override entrypoint for custom JVM options
+    # entrypoint:
+    #  - "java"
+    #  - "-Xmx1024m"
+    #  - "-XX:+PrintGCDetails"
+    #  - "-cp"
+    #  - "/opt/app/lib/*"
+    #  - "org.openremote.manager.server.Main"
+
     # Configure logging of the container, see config/logging.properties
     logging:
         options:
