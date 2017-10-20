@@ -19,6 +19,7 @@
  */
 package org.openremote.container.persistence;
 
+import org.apache.camel.CamelExecutionException;
 import org.apache.camel.ExchangePattern;
 import org.hibernate.CallbackException;
 import org.hibernate.EmptyInterceptor;
@@ -31,6 +32,7 @@ import javax.transaction.Synchronization;
 import java.io.Serializable;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -105,13 +107,18 @@ public class PersistenceEventInterceptor extends EmptyInterceptor {
                         return;
 
                     for (PersistenceEvent persistenceEvent : persistenceEvents) {
-                        messageBrokerService.getProducerTemplate().sendBodyAndHeader(
-                            PersistenceEvent.PERSISTENCE_TOPIC,
-                            ExchangePattern.InOnly,
-                            persistenceEvent,
-                            PersistenceEvent.HEADER_ENTITY_TYPE,
-                            persistenceEvent.getEntity().getClass()
-                        );
+                        try {
+                            messageBrokerService.getProducerTemplate().sendBodyAndHeader(
+                                PersistenceEvent.PERSISTENCE_TOPIC,
+                                ExchangePattern.InOnly,
+                                persistenceEvent,
+                                PersistenceEvent.HEADER_ENTITY_TYPE,
+                                persistenceEvent.getEntity().getClass()
+                            );
+                        } catch (CamelExecutionException ex) {
+                            // TODO Better error handling?
+                            LOG.log(Level.SEVERE, "Error dispatching: " + persistenceEvent + " - " + ex, ex);
+                        }
                     }
                 } finally {
                     persistenceEvents.clear();
