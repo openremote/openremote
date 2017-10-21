@@ -99,6 +99,7 @@
                                             <w:FormButton ui:field="showHistoryButton"
                                                           text="{managerMessages.showHistory}"
                                                           enabled="false"
+                                                          visible="false"
                                                           icon="history"/>
                                         </w:FormGroupActions>
                                     </w:actions>

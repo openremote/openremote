@@ -51,6 +51,8 @@ dependencies {
         exclude group: "log4j"
     }
 
+    compile "org.cyclopsgroup:jmxterm:$jmxtermVersion"
+
     // Test environment dependencies
     compile "org.glassfish.tyrus:tyrus-client:$tyrusVersion"
     compile "org.glassfish.tyrus:tyrus-container-grizzly-client:$tyrusVersion"

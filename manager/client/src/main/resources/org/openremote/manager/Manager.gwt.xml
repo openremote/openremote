@@ -1,5 +1,4 @@
-<!DOCTYPE module PUBLIC "-//Google Inc.//DTD Google Web Toolkit 2.0//EN"
-        "http://google-web-toolkit.googlecode.com/svn/releases/2.0/distro-source/core/src/gwt-module.dtd">
+<!DOCTYPE module PUBLIC "-//Google Inc.//DTD Google Web Toolkit 2.0//EN" "http://gwtproject.org/doctype/2.8.0/gwt-module.dtd">
 
 <module rename-to="Manager">
 
@@ -36,13 +35,17 @@
                                    value="org.openremote.manager.client.interop.jackson.SerializationConfiguration"/>
 
     <replace-with class="org.openremote.manager.client.interop.jackson.JsonDeserializationContextBuilder">
-        <when-type-assignable class="com.github.nmorel.gwtjackson.client.JsonDeserializationContext.Builder" />
+        <when-type-assignable class="com.github.nmorel.gwtjackson.client.JsonDeserializationContext.Builder"/>
     </replace-with>
 
     <!-- ##################################################################### -->
 
     <source path="shared"/>
     <source path="client"/>
+
+    <!-- ##################################################################### -->
+
+    <collapse-all-properties/>
 
     <!-- ##################################################################### -->
 
