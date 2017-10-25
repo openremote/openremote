@@ -357,18 +357,43 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
         }
 
         if (persistenceEvent.getCause() != PersistenceEvent.Cause.INSERT) {
-            if (asset.getAttributesStream().anyMatch(attribute -> attribute.getTypeOrThrow() == AttributeType.RULES_TEMPLATE_FILTER)) {
-                rulesetStorageService.findTemplatedAssetRulesets(asset.getRealmId(), asset.getId()).forEach(assetRuleset -> {
-                    processRulesetChange(assetRuleset, persistenceEvent.getCause());
-                });
 
-                rulesetStorageService.findTemplatedTenantRulesets(asset.getRealmId(), asset.getId()).forEach(tenantRuleset -> {
-                    processRulesetChange(tenantRuleset, persistenceEvent.getCause());
-                });
+            int attributesIndex = Arrays.asList(persistenceEvent.getPropertyNames()).indexOf("attributes");
+            if (attributesIndex < 0) {
+                return;
+            }
 
-                rulesetStorageService.findTemplatedGlobalRulesets(asset.getId()).forEach(globalRuleset -> {
-                    processRulesetChange(globalRuleset, persistenceEvent.getCause());
-                });
+            // Get old template filter attributes and new ones
+            // If new collection doesn't contain them, then they are deleted and need to be processed too
+            List<AssetAttribute> oldTemplateFilterAttributes = persistenceEvent.getPreviousState() != null ? //can be null when insert
+                attributesFromJson(
+                    (ObjectValue) persistenceEvent.getPreviousState()[attributesIndex],
+                    asset.getId()
+                ).filter(attribute -> attribute.getTypeOrThrow() == AttributeType.RULES_TEMPLATE_FILTER)
+                    .collect(Collectors.toList()) : new ArrayList<>();
+
+            List<AssetAttribute> newTemplateFilterAttributes = persistenceEvent.getCurrentState() != null ? // can be null when delete
+                attributesFromJson(
+                    (ObjectValue) persistenceEvent.getCurrentState()[attributesIndex],
+                    asset.getId()
+                ).filter(attribute -> attribute.getTypeOrThrow() == AttributeType.RULES_TEMPLATE_FILTER)
+                    .collect(Collectors.toList()) : new ArrayList<>();
+
+            if (!oldTemplateFilterAttributes.isEmpty() || !newTemplateFilterAttributes.isEmpty()) {
+                rulesetStorageService.findTemplatedAssetRulesets(asset.getRealmId(), asset.getId())
+                    .forEach(assetRuleset -> {
+                        processRulesetChange(assetRuleset, persistenceEvent.getCause());
+                    });
+
+                rulesetStorageService.findTemplatedTenantRulesets(asset.getRealmId(), asset.getId())
+                    .forEach(tenantRuleset -> {
+                        processRulesetChange(tenantRuleset, persistenceEvent.getCause());
+                    });
+
+                rulesetStorageService.findTemplatedGlobalRulesets(asset.getId())
+                    .forEach(globalRuleset -> {
+                        processRulesetChange(globalRuleset, persistenceEvent.getCause());
+                    });
             }
         }
     }
