@@ -34,24 +34,27 @@ dependencies {
     compile "org.postgresql:postgresql:$postgresJdbcVersion"
     compile "com.zaxxer:HikariCP:$hikaricpVersion"
     compile "org.hibernate:hibernate-core:$hibernateVersion"
-    compile ("org.hibernate:hibernate-spatial:$hibernateVersion") {
+    compile("org.hibernate:hibernate-spatial:$hibernateVersion") {
         exclude group: "org.slf4j"
     }
     compile "org.hibernate:hibernate-validator:$hibernateValidatorVersion"
     compile "org.glassfish.web:javax.el:$javaxELVersion"
 
     compile "org.apache.camel:camel-core:$camelVersion"
-    compile "org.apache.camel:camel-servlet:$camelVersion"
-    compile "org.apache.camel:camel-ahc-ws:$camelVersion"
+    compile("org.apache.camel:camel-ahc-ws:$camelVersion") {
+        exclude group: "javax.servlet"
+    }
     compile "org.apache.camel:camel-jackson:$camelVersion"
     compile "org.apache.camel:camel-script:$camelVersion"
     compile "org.apache.camel:camel-groovy:$camelVersion"
 
-    compile ("com.fasterxml.uuid:java-uuid-generator:$uuidGeneratorVersion") {
+    compile("com.fasterxml.uuid:java-uuid-generator:$uuidGeneratorVersion") {
         exclude group: "log4j"
     }
 
-    compile "org.cyclopsgroup:jmxterm:$jmxtermVersion"
+    compile("org.cyclopsgroup:jmxterm:$jmxtermVersion") {
+        exclude group: "javax.servlet"
+    }
 
     // Test environment dependencies
     compile "org.glassfish.tyrus:tyrus-client:$tyrusVersion"

@@ -11,7 +11,6 @@ dependencies {
 
     compile resolveProject(":manager:shared")
 
-    compile "com.google.gwt:gwt-user:$gwtVersion"
     compile "com.google.gwt:gwt-elemental:$gwtVersion"
     compile("com.google.gwt.inject:gin:$ginVersion")
     compile files(['lib/gwt-jackson-0.14.3-SNAPSHOT.jar'])
