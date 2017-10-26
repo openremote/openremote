@@ -88,6 +88,7 @@ public abstract class AbstractManagerSetup implements Setup {
                     new MetaItem(DESCRIPTION, Values.create("Presence detected in any room")),
                     new MetaItem(PROTECTED, Values.create(true)),
                     new MetaItem(RULE_STATE, Values.create(true)),
+                    new MetaItem(RULE_EVENT, Values.create(true)),
                     new MetaItem(STORE_DATA_POINTS, Values.create(true)),
                     new MetaItem(SHOW_ON_DASHBOARD, Values.create(true))
                 )),
@@ -147,8 +148,8 @@ public abstract class AbstractManagerSetup implements Setup {
                     new MetaItem(LABEL, Values.create("Presence detected")),
                     new MetaItem(DESCRIPTION, Values.create("Someone is moving or resting in the room")),
                     new MetaItem(RULE_STATE, Values.create(true)),
+                    new MetaItem(RULE_EVENT, Values.create(true)),
                     new MetaItem(PROTECTED, Values.create(true)),
-                    new MetaItem(READ_ONLY, Values.create(true)),
                     new MetaItem(STORE_DATA_POINTS, Values.create(true)),
                     new MetaItem(SHOW_ON_DASHBOARD, Values.create(true))
                 ),
@@ -156,15 +157,13 @@ public abstract class AbstractManagerSetup implements Setup {
                 .setMeta(
                     new MetaItem(LABEL, Values.create("First time someone was present in the room")),
                     new MetaItem(RULE_STATE, Values.create(true)),
-                    new MetaItem(PROTECTED, Values.create(true)),
-                    new MetaItem(READ_ONLY, Values.create(true))
+                    new MetaItem(PROTECTED, Values.create(true))
                 ),
             new AssetAttribute("lastPresenceDetected", TIMESTAMP_MILLIS)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Last time someone was present in the room")),
                     new MetaItem(RULE_STATE, Values.create(true)),
-                    new MetaItem(PROTECTED, Values.create(true)),
-                    new MetaItem(READ_ONLY, Values.create(true))
+                    new MetaItem(PROTECTED, Values.create(true))
                 )
         );
     }

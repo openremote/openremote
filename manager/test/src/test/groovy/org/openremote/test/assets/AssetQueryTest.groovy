@@ -582,7 +582,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         asset.getAttribute("co2Level").isPresent()
         asset.getAttribute("co2Level").get().meta.size() == 11
         asset.getAttribute("lastPresenceDetected").isPresent()
-        asset.getAttribute("lastPresenceDetected").get().meta.size() == 4
+        asset.getAttribute("lastPresenceDetected").get().meta.size() == 3
         asset.getAttribute("motionSensor").isPresent()
         asset.getAttribute("motionSensor").get().meta.size() == 8
 
@@ -611,7 +611,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         asset.getAttribute("co2Level").isPresent()
         asset.getAttribute("co2Level").get().meta.size() == 8
         asset.getAttribute("lastPresenceDetected").isPresent()
-        asset.getAttribute("lastPresenceDetected").get().meta.size() == 3
+        asset.getAttribute("lastPresenceDetected").get().meta.size() == 2
         !asset.getAttribute("motionSensor").isPresent()
 
         when: "a query is executed to select an asset with an attribute of a certain value"
