@@ -288,7 +288,7 @@ public class AdminUserActivity
             this.alertNotification = updatedNotification;
             environment.getRequestService().execute(
                 alertNotificationMapper,
-                requestParams -> notificationResource.storeAlertNotificationForUser(requestParams, userId, this.alertNotification),
+                requestParams -> notificationResource.storeNotificationForUser(requestParams, userId, this.alertNotification),
                 204,
                 () -> environment.getEventBus().dispatch(new ShowSuccessEvent(
                     environment.getMessages().notificationSentToUser()

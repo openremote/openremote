@@ -109,7 +109,7 @@ class ApartmentNotifyAlarmTriggerTest extends Specification implements ManagerCo
 
         and: "the user should be notified"
         conditions.eventually {
-            def alerts = notificationResource.getAlertNotification()
+            def alerts = notificationResource.getPendingNotificationsOfCurrentUser()
             assert alerts.size() == 1
             assert alerts[0].title == "Apartment Alarm"
             assert alerts[0].message.startsWith("Aanwezigheid in Living Room")
@@ -129,7 +129,7 @@ class ApartmentNotifyAlarmTriggerTest extends Specification implements ManagerCo
         conditions.eventually {
             def asset = assetStorageService.find(managerDemoSetup.apartment1LivingroomId, true)
             assert asset.getAttribute("co2Level").get().valueAsInteger.orElse(null) == 444
-            def alerts = notificationResource.getAlertNotification()
+            def alerts = notificationResource.getPendingNotificationsOfCurrentUser()
             assert alerts.size() == 1
         }
 
@@ -138,7 +138,7 @@ class ApartmentNotifyAlarmTriggerTest extends Specification implements ManagerCo
 
         then: "we notify again and now have two notifications pending"
         conditions.eventually {
-            def alerts = notificationResource.getAlertNotification()
+            def alerts = notificationResource.getPendingNotificationsOfCurrentUser()
             assert alerts.size() == 2
         }
 
@@ -159,7 +159,7 @@ class ApartmentNotifyAlarmTriggerTest extends Specification implements ManagerCo
 
         then: "we have still only two notifications pending"
         conditions.eventually {
-            def alerts = notificationResource.getAlertNotification()
+            def alerts = notificationResource.getPendingNotificationsOfCurrentUser()
             assert alerts.size() == 2
         }
 

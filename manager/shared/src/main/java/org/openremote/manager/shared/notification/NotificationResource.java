@@ -74,30 +74,52 @@ public interface NotificationResource {
     @SuccessStatusCode(204)
     @Consumes(APPLICATION_JSON)
     @RolesAllowed({"write:user"})
-    void storeAlertNotification(@BeanParam RequestParams requestParams,
-                                AlertNotification alertNotification);
+    void storeNotificationForCurrentUser(@BeanParam RequestParams requestParams,
+                                         AlertNotification alertNotification);
 
     /**
      * Only the superuser can call this operation.
      */
     @POST
-    @Path("alert/{userId}")
+    @Path("alert/user/{userId}")
     @SuccessStatusCode(204)
     @Consumes(APPLICATION_JSON)
     @RolesAllowed({"write:admin"})
-    void storeAlertNotificationForUser(@BeanParam RequestParams requestParams,
-                                       @PathParam("userId") String userId,
-                                       AlertNotification alertNotification);
+    void storeNotificationForUser(@BeanParam RequestParams requestParams,
+                                  @PathParam("userId") String userId,
+                                  AlertNotification alertNotification);
+
+    /**
+     * Only the superuser can call this operation.
+     */
+    @GET
+    @Path("alert/user/{userId}")
+    @SuccessStatusCode(200)
+    @Produces(APPLICATION_JSON)
+    @RolesAllowed({"read:admin"})
+    List<AlertNotification> getNotificationsOfUser(@BeanParam RequestParams requestParams,
+                                                   @PathParam("userId") String userId);
+
+    /**
+     * Only the superuser can call this operation.
+     */
+    @DELETE
+    @Path("alert/user/{userId}")
+    @SuccessStatusCode(204)
+    @RolesAllowed({"write:admin"})
+    void removeNotificationOfUser(@BeanParam RequestParams requestParams,
+                                  @PathParam("userId") String userId);
 
     @GET
     @Path("alert")
     @Produces(APPLICATION_JSON)
     @RolesAllowed({"write:user"})
-    List<AlertNotification> getAlertNotification();
+    List<AlertNotification> getPendingNotificationsOfCurrentUser(@BeanParam RequestParams requestParams);
 
     @DELETE
     @Path("alert/{alertId}")
     @SuccessStatusCode(204)
     @RolesAllowed({"write:user"})
-    void removeAlertNotification(@PathParam("alertId") Long id);
+    void ackPendingNotificationOfCurrentUser(@BeanParam RequestParams requestParams,
+                                             @PathParam("alertId") Long id);
 }

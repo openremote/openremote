@@ -13,6 +13,8 @@ import org.openremote.model.user.UserQuery
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 
+import javax.ws.rs.WebApplicationException
+
 import static org.openremote.container.util.MapAccess.getString
 import static org.openremote.manager.server.setup.AbstractKeycloakSetup.SETUP_KEYCLOAK_ADMIN_PASSWORD
 import static org.openremote.manager.server.setup.AbstractKeycloakSetup.SETUP_KEYCLOAK_ADMIN_PASSWORD_DEFAULT
@@ -33,12 +35,19 @@ class NotificationServiceTest extends Specification implements ManagerContainerT
 
         and: "an authenticated test user"
         def realm = "customerA"
-        def accessToken = authenticate(
+        def testuser3AccessToken = authenticate(
                 container,
                 realm,
                 KEYCLOAK_CLIENT_ID,
                 "testuser3",
                 "testuser3"
+        ).token
+        def testuser2AccessToken = authenticate(
+                container,
+                realm,
+                KEYCLOAK_CLIENT_ID,
+                "testuser2",
+                "testuser2"
         ).token
 
         and: "an authenticated superuser"
@@ -64,7 +73,9 @@ class NotificationServiceTest extends Specification implements ManagerContainerT
 
         and: "the notification resource"
         // For user operations
-        def notificationResource = getClientTarget(serverUri(serverPort), realm, accessToken).proxy(NotificationResource.class)
+        def testuser3NotificationResource = getClientTarget(serverUri(serverPort), realm, testuser3AccessToken).proxy(NotificationResource.class)
+        def testuser2NotificationResource = getClientTarget(serverUri(serverPort), realm, testuser2AccessToken).proxy(NotificationResource.class)
+
         // For superuser operations
         def adminNotificationResource = getClientTarget(serverUri(serverPort), MASTER_REALM, adminAccessToken).proxy(NotificationResource.class)
 
@@ -72,8 +83,8 @@ class NotificationServiceTest extends Specification implements ManagerContainerT
         notificationService.findAllUsersWithToken().isEmpty()
 
         when: "the notification tokens of some devices are stored"
-        notificationResource.storeDeviceToken(null, "device123", "token123", "ANDROID")
-        notificationResource.storeDeviceToken(null, "device456", "token456", "ANDROID")
+        testuser3NotificationResource.storeDeviceToken(null, "device123", "token123", "ANDROID")
+        testuser3NotificationResource.storeDeviceToken(null, "device456", "token456", "ANDROID")
 
         then: "the tokens should be in the database"
         def tokens = adminNotificationResource.getDeviceTokens(null, keycloakDemoSetup.testuser3Id)
@@ -109,7 +120,7 @@ class NotificationServiceTest extends Specification implements ManagerContainerT
         notificationService.findAllUsersWithToken(new UserQuery().asset(new UserQuery.AssetPredicate().id(managerDemoSetup.apartment3Id))).isEmpty()
 
         when: "the notification token of some device is updated"
-        notificationResource.storeDeviceToken(null, "device456", "token789", "ANDROID")
+        testuser3NotificationResource.storeDeviceToken(null, "device456", "token789", "ANDROID")
 
         then: "the updated token should be in the database"
         def thirdToken = notificationService.findDeviceToken("device456", keycloakDemoSetup.testuser3Id)
@@ -117,17 +128,24 @@ class NotificationServiceTest extends Specification implements ManagerContainerT
         notificationService.findAllTokenForUser(keycloakDemoSetup.testuser3Id).size() == 2
 
         when: "the Alert Notification is stored"
-        notificationResource.storeAlertNotification(null, notificationAlert)
-        def alerts = notificationResource.getAlertNotification()
+        testuser3NotificationResource.storeNotificationForCurrentUser(null, notificationAlert)
+        def alerts = testuser3NotificationResource.getPendingNotificationsOfCurrentUser(null)
 
         then: "it should be one alert notification pending"
         alerts.size() == 1
 
+        when: "a user tries to acknowledge an alert notification she doesn't own"
+        testuser2NotificationResource.ackPendingNotificationOfCurrentUser(null, alerts.get(0).id)
+
+        then: "an exception should be thrown"
+        WebApplicationException ex = thrown()
+        ex.response.status == 403
+
         when: "the alert Notification is acknowledged"
-        notificationResource.removeAlertNotification(alerts.get(0).id)
+        testuser3NotificationResource.ackPendingNotificationOfCurrentUser(null, alerts.get(0).id)
 
         then: "there should be no alert"
-        notificationResource.getAlertNotification().size() == 0
+        testuser3NotificationResource.getPendingNotificationsOfCurrentUser(null).size() == 0
 
         when: "a device registration is removed"
         adminNotificationResource.deleteDeviceToken(null, keycloakDemoSetup.testuser3Id, "device456")

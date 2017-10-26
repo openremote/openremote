@@ -19,7 +19,6 @@
  */
 package org.openremote.manager.server.notification;
 
-import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
@@ -27,7 +26,6 @@ import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.timer.TimerService;
-import org.openremote.container.util.Util;
 import org.openremote.container.web.WebService;
 import org.openremote.manager.shared.notification.DeviceNotificationToken;
 import org.openremote.model.notification.AlertNotification;
@@ -36,6 +34,7 @@ import org.openremote.model.user.UserQuery;
 
 import javax.persistence.EntityManager;
 import javax.persistence.Query;
+import javax.persistence.TypedQuery;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.Invocation;
 import javax.ws.rs.core.Response;
@@ -167,6 +166,18 @@ public class NotificationService implements ContainerService {
             query.setParameter("userId", userId);
             query.setParameter("deliveryStatus", DeliveryStatus.PENDING);
             return query.getResultList();
+        });
+    }
+
+    public boolean isPendingAlertForUserId(Long alertId, String userId) {
+        return persistenceService.doReturningTransaction(entityManager -> {
+            TypedQuery<Long> query = entityManager.createQuery(
+                "SELECT count(an) FROM AlertNotification an WHERE an.id = :alertId and an.userId =:userId and an.deliveryStatus = :deliveryStatus"
+                , Long.class);
+            query.setParameter("alertId", alertId);
+            query.setParameter("userId", userId);
+            query.setParameter("deliveryStatus", DeliveryStatus.PENDING);
+            return query.getSingleResult() > 0;
         });
     }
 

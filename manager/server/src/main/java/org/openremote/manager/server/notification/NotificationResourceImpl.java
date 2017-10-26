@@ -22,16 +22,16 @@ package org.openremote.manager.server.notification;
 import org.openremote.container.web.WebResource;
 import org.openremote.manager.shared.http.RequestParams;
 import org.openremote.manager.shared.notification.DeviceNotificationToken;
-import org.openremote.model.notification.AlertNotification;
 import org.openremote.manager.shared.notification.NotificationResource;
+import org.openremote.model.notification.AlertNotification;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
-
 import java.util.List;
 import java.util.logging.Logger;
 
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
+import static javax.ws.rs.core.Response.Status.FORBIDDEN;
 
 public class NotificationResourceImpl extends WebResource implements NotificationResource {
 
@@ -70,7 +70,7 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
     }
 
     @Override
-    public void storeAlertNotification(RequestParams requestParams, AlertNotification alertNotification) {
+    public void storeNotificationForCurrentUser(RequestParams requestParams, AlertNotification alertNotification) {
         if (alertNotification == null) {
             throw new WebApplicationException("Missing alertNotification", BAD_REQUEST);
         }
@@ -78,7 +78,7 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
     }
 
     @Override
-    public void storeAlertNotificationForUser(RequestParams requestParams, String userId, AlertNotification alertNotification) {
+    public void storeNotificationForUser(RequestParams requestParams, String userId, AlertNotification alertNotification) {
         if (alertNotification == null) {
             throw new WebApplicationException("Missing alertNotification", BAD_REQUEST);
         }
@@ -86,14 +86,28 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
     }
 
     @Override
-    public List<AlertNotification> getAlertNotification() {
+    public List<AlertNotification> getNotificationsOfUser(RequestParams requestParams, String userId) {
+        return null;
+        // TODO
+    }
+
+    @Override
+    public void removeNotificationOfUser(RequestParams requestParams, String userId) {
+        // TODO
+    }
+
+    @Override
+    public List<AlertNotification> getPendingNotificationsOfCurrentUser(RequestParams requestParams) {
         return notificationService.getPendingAlertForUserId(getUserId());
     }
 
     @Override
-    public void removeAlertNotification(Long id) {
+    public void ackPendingNotificationOfCurrentUser(RequestParams requestParams, Long id) {
         if (id == null) {
             throw new WebApplicationException("Missing alert id", BAD_REQUEST);
+        }
+        if (!notificationService.isPendingAlertForUserId(id, getUserId())) {
+            throw new WebApplicationException(FORBIDDEN);
         }
         notificationService.removeAlertNotification(id);
     }
