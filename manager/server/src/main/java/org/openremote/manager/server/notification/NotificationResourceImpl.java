@@ -24,6 +24,7 @@ import org.openremote.manager.shared.http.RequestParams;
 import org.openremote.manager.shared.notification.DeviceNotificationToken;
 import org.openremote.manager.shared.notification.NotificationResource;
 import org.openremote.model.notification.AlertNotification;
+import org.openremote.model.notification.DeliveryStatus;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
@@ -79,36 +80,56 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
 
     @Override
     public void storeNotificationForUser(RequestParams requestParams, String userId, AlertNotification alertNotification) {
+        if (!isSuperUser()) {
+            LOG.fine("Forbidden access for user '" + getUsername() + "', can't store notification for user: " + userId);
+            throw new WebApplicationException(Response.Status.FORBIDDEN);
+        }
         if (alertNotification == null) {
-            throw new WebApplicationException("Missing alertNotification", BAD_REQUEST);
+            throw new WebApplicationException("Missing AlertNotification entity", BAD_REQUEST);
         }
         notificationService.storeAndNotify(userId, alertNotification);
     }
 
     @Override
-    public List<AlertNotification> getNotificationsOfUser(RequestParams requestParams, String userId) {
-        return null;
-        // TODO
+    public AlertNotification[] getNotificationsOfUser(RequestParams requestParams, String userId) {
+        if (!isSuperUser()) {
+            LOG.fine("Forbidden access for user '" + getUsername() + "', can't get notifications of user: " + userId);
+            throw new WebApplicationException(Response.Status.FORBIDDEN);
+        }
+        return notificationService.getNotificationsOfUser(userId).toArray(new AlertNotification[0]);
     }
 
     @Override
-    public void removeNotificationOfUser(RequestParams requestParams, String userId) {
-        // TODO
+    public void removeNotificationsOfUser(RequestParams requestParams, String userId) {
+        if (!isSuperUser()) {
+            LOG.fine("Forbidden access for user '" + getUsername() + "', can't remove notifications of user: " + userId);
+            throw new WebApplicationException(Response.Status.FORBIDDEN);
+        }
+        notificationService.removeNotificationsOfUser(userId);
     }
 
     @Override
-    public List<AlertNotification> getPendingNotificationsOfCurrentUser(RequestParams requestParams) {
-        return notificationService.getPendingAlertForUserId(getUserId());
+    public void removeNotification(RequestParams requestParams, String userId, Long id) {
+        if (!isSuperUser()) {
+            LOG.fine("Forbidden access for user '" + getUsername() + "', can't remove notification of user: " + userId);
+            throw new WebApplicationException(Response.Status.FORBIDDEN);
+        }
+        notificationService.removeNotification(userId, id);
     }
 
     @Override
-    public void ackPendingNotificationOfCurrentUser(RequestParams requestParams, Long id) {
+    public List<AlertNotification> getQueuedNotificationsOfCurrentUser(RequestParams requestParams) {
+        return notificationService.getNotificationsOfUser(getUserId(), DeliveryStatus.QUEUED);
+    }
+
+    @Override
+    public void ackNotificationOfCurrentUser(RequestParams requestParams, Long id) {
         if (id == null) {
             throw new WebApplicationException("Missing alert id", BAD_REQUEST);
         }
-        if (!notificationService.isPendingAlertForUserId(id, getUserId())) {
+        if (!isSuperUser() && !notificationService.isQueuedNotificationForUser(id, getUserId())) {
             throw new WebApplicationException(FORBIDDEN);
         }
-        notificationService.removeAlertNotification(id);
+        notificationService.setAcknowledged(id);
     }
 }

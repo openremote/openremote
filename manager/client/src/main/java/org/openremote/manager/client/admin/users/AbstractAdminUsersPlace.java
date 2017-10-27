@@ -1,5 +1,5 @@
 /*
- * Copyright 2017, OpenRemote Inc.
+ * Copyright 2016, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -17,37 +17,42 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.server.notification;
+package org.openremote.manager.client.admin.users;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import org.openremote.manager.client.admin.AdminPlace;
 
-public class Notification {
+public abstract class AbstractAdminUsersPlace extends AdminPlace {
 
-    protected String body;
-    protected String clickAction = "openremoteNotification";
+    final String realm;
+    final String userId;
 
-    public Notification(String body) {
-        super();
-        this.body = body;
+    public AbstractAdminUsersPlace() {
+        this(null);
     }
 
-    public String getBody() {
-        return body;
+    protected AbstractAdminUsersPlace(String realm) {
+        this.realm = realm;
+        this.userId = null;
     }
 
-    public void setBody(String body) {
-        this.body = body;
+    protected AbstractAdminUsersPlace(String realm, String userId) {
+        this.realm = realm;
+        this.userId = userId;
     }
 
-    public String getClickAction() {
-        return clickAction;
+    public String getRealm() {
+        return realm;
+    }
+
+    public String getUserId() {
+        return userId;
     }
 
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
-            "body='" + body + '\'' +
-            ", clickAction='" + clickAction + '\'' +
-            '}';
+            "realm='" + realm + '\'' +
+            ", userId='" + userId + '\'' +
+            "}";
     }
 }

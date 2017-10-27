@@ -9,7 +9,9 @@ dependencies {
     compile "org.hibernate.javax.persistence:hibernate-jpa-2.1-api:$javaxPersistenceVersion"
     compile "org.hibernate:hibernate-core:$hibernateVersion"
     compile "org.jboss.logging:jboss-logging-annotations:$jbossLoggingAnnotationsVersion"
-    compile "org.kie:kie-api:$droolsVersion"
+    compile("org.kie:kie-api:$droolsVersion") {
+        exclude group: "org.slf4j"
+    }
 }
 
 jar {

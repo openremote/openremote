@@ -26,6 +26,7 @@ import org.openremote.manager.client.admin.AdminView;
 import org.openremote.manager.client.admin.TenantArrayMapper;
 import org.openremote.manager.client.admin.UserArrayMapper;
 import org.openremote.manager.client.admin.navigation.AdminNavigation;
+import org.openremote.manager.client.admin.users.edit.AdminUserEditPlace;
 import org.openremote.model.event.bus.EventBus;
 import org.openremote.model.event.bus.EventRegistration;
 import org.openremote.manager.client.mvp.AppActivity;
@@ -104,9 +105,6 @@ public class AdminUsersActivity
                 200,
                 users -> {
                     adminContent.setUsers(users);
-                    adminContent.setCreateUserHistoryToken(
-                        environment.getPlaceHistoryMapper().getToken(new AdminUserPlace(realm))
-                    );
                     adminContent.setFormBusy(false);
                 },
                 ex -> handleRequestException(ex, environment)
@@ -127,6 +125,6 @@ public class AdminUsersActivity
 
     @Override
     public void onUserSelected(User user) {
-        environment.getPlaceController().goTo(new AdminUserPlace(realm, user.getId()));
+        environment.getPlaceController().goTo(new AdminUserEditPlace(realm, user.getId()));
     }
 }

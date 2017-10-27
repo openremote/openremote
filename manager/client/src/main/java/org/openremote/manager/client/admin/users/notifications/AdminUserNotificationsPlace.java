@@ -17,55 +17,40 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.client.admin.users;
+package org.openremote.manager.client.admin.users.notifications;
 
 import com.google.gwt.place.shared.PlaceTokenizer;
 import com.google.gwt.place.shared.Prefix;
-import org.openremote.manager.client.admin.AdminPlace;
+import org.openremote.manager.client.admin.users.AbstractAdminUsersPlace;
 
-public class AdminUserPlace extends AdminPlace {
+public class AdminUserNotificationsPlace extends AbstractAdminUsersPlace {
 
-    final String realm;
-    final String userId;
-
-    public AdminUserPlace(String realm) {
-        this.realm = realm;
-        this.userId = null;
+    public AdminUserNotificationsPlace(AbstractAdminUsersPlace place) {
+        super(place.getRealm(), place.getUserId());
     }
 
-    public AdminUserPlace(String realm, String userId) {
-        this.realm = realm;
-        this.userId = userId;
+    public AdminUserNotificationsPlace(String realm, String userId) {
+        super(realm, userId);
     }
 
-    public String getRealm() {
-        return realm;
-    }
-
-    public String getUserId() {
-        return userId;
-    }
-
-    @Prefix("user")
-    public static class Tokenizer implements PlaceTokenizer<AdminUserPlace> {
+    @Prefix("adminUserNotifications")
+    public static class Tokenizer implements PlaceTokenizer<AdminUserNotificationsPlace> {
 
         @Override
-        public AdminUserPlace getPlace(String token) {
+        public AdminUserNotificationsPlace getPlace(String token) {
             if (token == null) {
                 throw new IllegalArgumentException("Invalid empty token");
             }
             String[] fields = token.split(":");
-            if (fields.length == 1) {
-                return new AdminUserPlace(fields[0]);
-            } else if (fields.length == 2) {
-                return new AdminUserPlace(fields[0], fields[1]);
+            if (fields.length == 2) {
+                return new AdminUserNotificationsPlace(fields[0], fields[1]);
             } else {
                 throw new IllegalArgumentException("Invalid token: " + token);
             }
         }
 
         @Override
-        public String getToken(AdminUserPlace place) {
+        public String getToken(AdminUserNotificationsPlace place) {
             if (place.getRealm() == null) {
                 return "";
             }
@@ -73,11 +58,4 @@ public class AdminUserPlace extends AdminPlace {
         }
     }
 
-    @Override
-    public String toString() {
-        return getClass().getSimpleName() + "{" +
-            "realm='" + realm + '\'' +
-            ", userId='" + userId + '\'' +
-            "}";
-    }
 }

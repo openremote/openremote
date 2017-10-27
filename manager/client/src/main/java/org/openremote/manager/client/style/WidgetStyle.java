@@ -41,10 +41,6 @@ public class WidgetStyle {
         return "or-SecondaryNav";
     }
 
-    public String SecondaryNavHorizontal() {
-        return "or-SecondaryNavHorizontal";
-    }
-
     public String SecondaryNavItem() {
         return "or-SecondaryNavItem";
     }

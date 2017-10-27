@@ -17,11 +17,10 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.client.admin.users;
+package org.openremote.manager.client.admin.users.notifications;
 
 import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.InlineLabel;
-import com.google.gwt.user.client.ui.TextArea;
 import org.openremote.manager.client.app.dialog.Dialog;
 import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.style.WidgetStyle;
@@ -41,7 +40,7 @@ public class AdminUserNotificationEditorImpl implements AdminUserNotificationEdi
 
     final protected FlowPanel errorPanel = new FlowPanel();
     final protected FormInputText notificationTitleInput = new FormInputText();
-    final protected TextArea notificationMessageInput = new TextArea();
+    final protected FormTextArea notificationMessageInput = new FormTextArea();
     final protected FormInputText notificationAppUrlInput = new FormInputText();
 
     AlertNotification alertNotification;
@@ -112,7 +111,7 @@ public class AdminUserNotificationEditorImpl implements AdminUserNotificationEdi
         messageGroup.setFormLabel(messageLabel);
         FormField messageField = new FormField();
         messageGroup.setFormField(messageField);
-        notificationMessageInput.addStyleName("flex");
+        notificationMessageInput.addStyleName("flex border");
         notificationMessageInput.setHeight("5em");
         notificationMessageInput.getElement().getStyle().setProperty("resize", "none");
         messageField.add(notificationMessageInput);

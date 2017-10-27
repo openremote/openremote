@@ -17,28 +17,38 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.server.notification;
+package org.openremote.manager.client.widget;
 
-public class FCMBaseMessage {
+import com.google.gwt.user.client.ui.FlowPanel;
+import com.google.gwt.user.client.ui.Widget;
 
-    protected String to;
+public class SecondaryNavigation extends FlowPanel {
 
-    public FCMBaseMessage(String to) {
-        this.to = to;
+    public SecondaryNavigation() {
+        setHorizontal();
     }
 
-    public String getTo() {
-        return to;
+    protected void setHorizontal() {
+        setStyleName("layout horizontal center end-justified or-SecondaryNav");
     }
 
-    public void setTo(String to) {
-        this.to = to;
+    public void setVertical(boolean vertical) {
+        if (vertical) {
+            setStyleName("layout vertical or-SecondaryNav");
+        } else {
+            setHorizontal();
+        }
     }
 
     @Override
-    public String toString() {
-        return getClass().getSimpleName() + "{" +
-            "to='" + to + '\'' +
-            '}';
+    public void add(Widget w) {
+        super.add(w);
+        w.addStyleName("or-SecondaryNavItem");
+    }
+
+    protected void reset(Hyperlink hyperlink) {
+        hyperlink.removeStyleName("active");
+        hyperlink.setVisible(false);
+        hyperlink.setTargetHistoryToken("");
     }
 }

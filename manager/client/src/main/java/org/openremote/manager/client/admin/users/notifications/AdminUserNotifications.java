@@ -1,5 +1,5 @@
 /*
- * Copyright 2017, OpenRemote Inc.
+ * Copyright 2016, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -17,21 +17,34 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.client.admin.users;
+package org.openremote.manager.client.admin.users.notifications;
 
+import org.openremote.manager.client.admin.AdminContent;
+import org.openremote.manager.client.admin.users.AbstractAdminUsersPlace;
 import org.openremote.model.notification.AlertNotification;
 
-import java.util.function.Consumer;
+public interface AdminUserNotifications extends AdminContent {
 
-public interface AdminUserNotificationEditor {
+    interface Presenter {
 
-    void reset();
+        AbstractAdminUsersPlace getPlace();
 
-    void setAlertNotification(AlertNotification notification);
+        void onRefresh();
 
-    void setOnSend(Consumer<AlertNotification> onSend);
+        void onSendNotification();
 
-    void setOnClose(Runnable onClose);
+        void onNotificationDelete(Long id);
 
-    void show();
+        void onNotificationsDelete();
+
+    }
+
+    void setPresenter(Presenter presenter);
+
+    void setUsername(String username);
+
+    void setNotifications(AlertNotification[] notifications);
+
+    void removeNotification(Long id);
+
 }

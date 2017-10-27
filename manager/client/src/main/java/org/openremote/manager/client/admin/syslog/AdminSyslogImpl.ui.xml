@@ -19,7 +19,7 @@
     <g:HTMLPanel styleName="flex layout vertical">
 
         <g:HTMLPanel
-                styleName="flex-none layout horizontal center end-justified {widgetStyle.SecondaryNavHorizontal}">
+                styleName="flex-none layout horizontal center end-justified {widgetStyle.SecondaryNav}">
 
         </g:HTMLPanel>
 

@@ -1,33 +1,14 @@
 <ui:UiBinder xmlns:ui="urn:ui:com.google.gwt.uibinder"
              xmlns:g="urn:import:com.google.gwt.user.client.ui"
-             xmlns:w="urn:import:org.openremote.manager.client.widget">
+             xmlns:w="urn:import:org.openremote.manager.client.widget"
+             xmlns:adminUsers="urn:import:org.openremote.manager.client.admin.users">
 
     <ui:with field="managerMessages" type="org.openremote.manager.client.i18n.ManagerMessages"/>
     <ui:with field="widgetStyle" type="org.openremote.manager.client.style.WidgetStyle"/>
 
-    <ui:style>
-        .navItem {
-            margin: 0 1em;
-        }
-
-        .formMessages {
-            max-width: 30em;
-        }
-    </ui:style>
-
     <g:HTMLPanel styleName="flex layout vertical">
 
-        <g:HTMLPanel
-                styleName="layout horizontal center end-justified {widgetStyle.SecondaryNavHorizontal}">
-
-            <w:PushButton
-                    ui:field="sendNotificationButton"
-                    addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem}"
-                    icon="send"
-                    visible="false"
-                    text="{managerMessages.sendNotification}"/>
-
-        </g:HTMLPanel>
+        <adminUsers:AdminUsersNavigation ui:field="adminUsersNavigation"/>
 
         <w:Form ui:field="form" addStyleNames="flex">
 
@@ -36,17 +17,6 @@
 
                 <w:Headline icon="edit"
                             text="{managerMessages.editUser}"/>
-
-                <w:FormGroup ui:field="enabledGroup">
-                    <w:label>
-                        <w:FormLabel text="{managerMessages.enabled}" addStyleNames="larger"/>
-                    </w:label>
-                    <w:field>
-                        <w:FormField>
-                            <w:FormCheckBox ui:field="enabledCheckBox"/>
-                        </w:FormField>
-                    </w:field>
-                </w:FormGroup>
 
                 <div class="layout horizontal center wrap">
                     <w:FormGroup ui:field="usernameGroup" addStyleNames="flex">
@@ -93,6 +63,17 @@
                         </w:field>
                     </w:FormGroup>
                 </div>
+
+                <w:FormGroup ui:field="enabledGroup">
+                    <w:label>
+                        <w:FormLabel text="{managerMessages.enabled}" addStyleNames="larger"/>
+                    </w:label>
+                    <w:field>
+                        <w:FormField>
+                            <w:FormCheckBox ui:field="enabledCheckBox"/>
+                        </w:FormField>
+                    </w:field>
+                </w:FormGroup>
 
                 <g:Label ui:field="resetPasswordNote"
                          styleName="{widgetStyle.FormMessages} info"
@@ -155,7 +136,9 @@
                                           visible="false" icon="save"/>
                             <w:FormButton ui:field="deleteButton" danger="true" text="{managerMessages.deleteUser}"
                                           visible="false" icon="trash"/>
-                            <w:FormButton ui:field="cancelButton" text="{managerMessages.cancel}" icon="close"/>
+                            <w:FormButton ui:field="refreshDeviceRegistrations"
+                                          text="{managerMessages.refreshDeviceRegistrations}"
+                                          icon="refresh"/>
                         </w:FormField>
                     </w:field>
                 </w:FormGroup>

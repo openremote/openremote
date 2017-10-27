@@ -2,6 +2,7 @@ package org.openremote.test.rules.apartment
 
 import org.openremote.manager.server.asset.AssetProcessingService
 import org.openremote.manager.server.asset.AssetStorageService
+import org.openremote.manager.server.notification.FCMDeliveryService
 import org.openremote.manager.server.notification.NotificationService
 import org.openremote.manager.server.rules.RulesEngine
 import org.openremote.manager.server.rules.RulesService
@@ -38,9 +39,18 @@ class ApartmentNotifyAlarmTriggerTest extends Specification implements ManagerCo
         def rulesService = container.getService(RulesService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
         def assetStorageService = container.getService(AssetStorageService.class)
-        def notificationService = container.getService(NotificationService.class)
         def rulesetStorageService = container.getService(RulesetStorageService.class)
         RulesEngine apartment1Engine
+
+        and: "a mock FCM delivery service"
+        def mockFCMDeliveryService = Spy(FCMDeliveryService, constructorArgs: [container]) {
+            // Always "deliver" to FCM
+            sendPickupSignalThroughFCM(*_) >> {
+                return true
+            }
+        }
+        def notificationService = container.getService(NotificationService)
+        notificationService.fcmDeliveryService = mockFCMDeliveryService
 
         and: "some rules"
         Ruleset ruleset = new AssetRuleset(
@@ -109,7 +119,7 @@ class ApartmentNotifyAlarmTriggerTest extends Specification implements ManagerCo
 
         and: "the user should be notified"
         conditions.eventually {
-            def alerts = notificationResource.getPendingNotificationsOfCurrentUser()
+            def alerts = notificationResource.getQueuedNotificationsOfCurrentUser(null)
             assert alerts.size() == 1
             assert alerts[0].title == "Apartment Alarm"
             assert alerts[0].message.startsWith("Aanwezigheid in Living Room")
@@ -129,7 +139,7 @@ class ApartmentNotifyAlarmTriggerTest extends Specification implements ManagerCo
         conditions.eventually {
             def asset = assetStorageService.find(managerDemoSetup.apartment1LivingroomId, true)
             assert asset.getAttribute("co2Level").get().valueAsInteger.orElse(null) == 444
-            def alerts = notificationResource.getPendingNotificationsOfCurrentUser()
+            def alerts = notificationResource.getQueuedNotificationsOfCurrentUser(null)
             assert alerts.size() == 1
         }
 
@@ -138,7 +148,7 @@ class ApartmentNotifyAlarmTriggerTest extends Specification implements ManagerCo
 
         then: "we notify again and now have two notifications pending"
         conditions.eventually {
-            def alerts = notificationResource.getPendingNotificationsOfCurrentUser()
+            def alerts = notificationResource.getQueuedNotificationsOfCurrentUser(null)
             assert alerts.size() == 2
         }
 
@@ -159,7 +169,7 @@ class ApartmentNotifyAlarmTriggerTest extends Specification implements ManagerCo
 
         then: "we have still only two notifications pending"
         conditions.eventually {
-            def alerts = notificationResource.getPendingNotificationsOfCurrentUser()
+            def alerts = notificationResource.getQueuedNotificationsOfCurrentUser(null)
             assert alerts.size() == 2
         }
 

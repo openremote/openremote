@@ -10,7 +10,13 @@ import org.openremote.manager.client.ManagerHistoryMapper
 import org.openremote.manager.client.admin.*
 import org.openremote.manager.client.admin.navigation.AdminNavigation
 import org.openremote.manager.client.admin.navigation.AdminNavigationPresenter
-import org.openremote.manager.client.admin.users.*
+import org.openremote.manager.client.admin.users.AbstractAdminUsersPlace
+import org.openremote.manager.client.admin.users.AdminUsers
+import org.openremote.manager.client.admin.users.AdminUsersActivity
+import org.openremote.manager.client.admin.users.AdminUsersPlace
+import org.openremote.manager.client.admin.users.edit.AdminUserEdit
+import org.openremote.manager.client.admin.users.edit.AdminUserEditActivity
+import org.openremote.manager.client.admin.users.edit.AdminUserEditPlace
 import org.openremote.manager.client.event.GoToPlaceEvent
 import org.openremote.manager.client.event.ShowSuccessEvent
 import org.openremote.manager.client.event.WillGoToPlaceEvent
@@ -26,7 +32,6 @@ import org.openremote.manager.shared.security.*
 import org.openremote.manager.shared.validation.ConstraintViolationReport
 import org.openremote.model.event.Event
 import org.openremote.model.event.bus.EventListener
-import org.openremote.model.notification.AlertNotification
 import org.openremote.test.ClientObjectMapper
 import org.openremote.test.ClientSecurityService
 import org.openremote.test.GwtClientTrait
@@ -56,7 +61,6 @@ class AdminUsersActivityTest extends Specification implements ManagerContainerTr
         def resultTenants = []
         def resultUsers = []
         def resultSelectedRealm = null
-        def resultCreateUserHistoryToken = null
 
         and: "An authenticated user and client security service"
         def realm = MASTER_REALM
@@ -154,22 +158,17 @@ class AdminUsersActivityTest extends Specification implements ManagerContainerTr
             setUsers(_) >> {
                 resultUsers = it[0]
             }
-            setCreateUserHistoryToken(_) >> {
-                resultCreateUserHistoryToken = it[0]
-            }
         }
         def tenantArrayMapper = new ClientObjectMapper(container.JSON, Tenant[].class) as TenantArrayMapper
         def userArrayMapper = new ClientObjectMapper(container.JSON, User[].class) as UserArrayMapper
         AdminUsersActivity adminUsersActivity
 
-        def adminUserView = Mock(AdminUser)
-        def notificationEditor = Mock(AdminUserNotificationEditor)
+        def adminUserView = Mock(AdminUserEdit)
         def userMapper = new ClientObjectMapper(container.JSON, User.class) as UserMapper
         def credentialMapper = new ClientObjectMapper(container.JSON, Credential.class) as CredentialMapper
         def roleArrayMapper = new ClientObjectMapper(container.JSON, Role[].class) as RoleArrayMapper
-        def notificationTokenMapper = new ClientObjectMapper(container.JSON, List.class) as DeviceNotificationTokenMapper
-        def alertNotificationMapper = new ClientObjectMapper(container.JSON, AlertNotification.class) as AlertNotificationMapper
-        AdminUserActivity adminUserActivity
+        def deviceTokenMapper = new ClientObjectMapper(container.JSON, List.class) as DeviceNotificationTokenMapper
+        AdminUserEditActivity adminUserActivity
 
         and: "An activity management configuration"
         def activityDisplay = Mock(AcceptsOneWidget)
@@ -199,11 +198,12 @@ class AdminUsersActivityTest extends Specification implements ManagerContainerTr
                     return adminUsersActivity
                 },
                 {
-                    adminUserActivity = new AdminUserActivity(
-                            environment, adminView, adminNavigationPresenter, adminUserView, userResource, userMapper, credentialMapper, roleArrayMapper, notificationEditor, notificationResource, alertNotificationMapper, notificationTokenMapper
+                    adminUserActivity = new AdminUserEditActivity(
+                            environment, adminView, adminNavigationPresenter, adminUserView, userResource, userMapper, credentialMapper, roleArrayMapper, notificationResource, deviceTokenMapper
                     )
                     return adminUserActivity
                 },
+                {},
                 {}
         )
         startActivityManager(activityDisplay, activityMapper, eventBus)
@@ -234,7 +234,6 @@ class AdminUsersActivityTest extends Specification implements ManagerContainerTr
         resultEvents = []
         resultTenants = []
         resultUsers = []
-        resultCreateUserHistoryToken = null
         resultSelectedRealm = null
         adminUsersActivity != null
         adminUsersActivity.onTenantSelected(MASTER_REALM)
@@ -258,11 +257,12 @@ class AdminUsersActivityTest extends Specification implements ManagerContainerTr
         }
 
         when: "The user clicks Create User"
+        def place = new AdminUserEditPlace(resultEvents[1].place)
         resultEvents = []
         resultTenants = []
         resultUsers = []
         resultSelectedRealm = null
-        placeController.goTo(placeHistoryMapper.getPlace(resultCreateUserHistoryToken))
+        placeController.goTo(place)
 
         then: "The activity should be stopped"
         1 * adminUsersView.setPresenter(null)
@@ -271,14 +271,14 @@ class AdminUsersActivityTest extends Specification implements ManagerContainerTr
         and: "The admin user activity should be shown with the selected realm"
         conditions.eventually {
             assert resultEvents[0] instanceof WillGoToPlaceEvent
-            assert resultEvents[0].place instanceof AdminUserPlace
+            assert resultEvents[0].place instanceof AdminUserEditPlace
             assert resultEvents[1] instanceof GoToPlaceEvent
-            assert resultEvents[1].place instanceof AdminUserPlace
+            assert resultEvents[1].place instanceof AdminUserEditPlace
             assert resultEvents[1].place.realm == MASTER_REALM
         }
 
         and: "The admin navigation view should have the right place set"
-        1 * adminNavigationView.onPlaceChange(_ as AdminUserPlace)
+        1 * adminNavigationView.onPlaceChange(_ as AdminUserEditPlace)
 
         and: "The activity display should be set to admin view"
         1 * activityDisplay.setWidget(adminViewWidget)
@@ -287,7 +287,7 @@ class AdminUsersActivityTest extends Specification implements ManagerContainerTr
         1 * adminView.setContent(adminUserView)
 
         and: "The admin user view should have the right activity set as presenter"
-        1 * adminUserView.setPresenter(_ as AdminUserActivity)
+        1 * adminUserView.setPresenter(_ as AdminUserEditActivity)
 
         and: "The admin user form should be cleared"
         1 * adminUserView.clearRoles()
@@ -430,9 +430,9 @@ class AdminUsersActivityTest extends Specification implements ManagerContainerTr
         then: "The admin user activity should be shown"
         conditions.eventually {
             assert resultEvents[0] instanceof WillGoToPlaceEvent
-            assert resultEvents[0].place instanceof AdminUserPlace
+            assert resultEvents[0].place instanceof AbstractAdminUsersPlace
             assert resultEvents[1] instanceof GoToPlaceEvent
-            assert resultEvents[1].place instanceof AdminUserPlace
+            assert resultEvents[1].place instanceof AbstractAdminUsersPlace
             assert resultEvents[1].place.realm == MASTER_REALM
             assert resultEvents[1].place.userId == selectedUser.id
         }

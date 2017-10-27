@@ -36,7 +36,7 @@
                  addStyleNames="{style.view}">
 
         <g:HTMLPanel
-                styleName="layout horizontal center {widgetStyle.SecondaryNavHorizontal}">
+                styleName="layout horizontal center {widgetStyle.SecondaryNav}">
 
             <!-- TODO Depends on AssetQuery/Rules Designer work
             <w:FormInputText ui:field="searchInput"
@@ -61,7 +61,7 @@
         </g:HTMLPanel>
 
         <g:HTMLPanel
-                styleName="layout horizontal center {widgetStyle.SecondaryNavHorizontal}">
+                styleName="layout horizontal center {widgetStyle.SecondaryNav}">
 
             <w:Hyperlink
                     ui:field="createAssetLink"

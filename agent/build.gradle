@@ -9,7 +9,9 @@ dependencies {
     compile "org.drools:drools-decisiontables:$droolsVersion"
 
     compile "com.luckycatlabs:SunriseSunsetCalculator:$sunriseSunsetCalculatorVersion"
-    compile "org.quartz-scheduler:quartz:$quartzVersion"
+    compile("org.quartz-scheduler:quartz:$quartzVersion") {
+        exclude group: "c3p0"
+    }
 
     compile("com.github.calimero:calimero-core:$calimeroVersion") {
         // Libraries should not depend on a logging implementation and/or alpha versions!

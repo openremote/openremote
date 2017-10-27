@@ -27,6 +27,8 @@ public interface AdminUsers extends AdminContent {
 
     interface Presenter {
 
+        AbstractAdminUsersPlace getPlace();
+
         void onTenantSelected(String realm);
 
         void onUserSelected(User user);
@@ -36,8 +38,6 @@ public interface AdminUsers extends AdminContent {
     void setPresenter(Presenter presenter);
 
     void setTenants(Tenant[] tenants, String selectedRealm);
-
-    void setCreateUserHistoryToken(String token);
 
     void setUsers(User[] users);
 

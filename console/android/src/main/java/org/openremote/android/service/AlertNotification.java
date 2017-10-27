@@ -2,12 +2,15 @@ package org.openremote.android.service;
 
 
 import java.io.Serializable;
+import java.util.Date;
 import java.util.List;
 
 public class AlertNotification implements Serializable {
     private Long id;
 
     private String title;
+
+    private Date createdOn;
 
     private String message;
 
@@ -18,7 +21,6 @@ public class AlertNotification implements Serializable {
     private String userId;
 
     private DeliveryStatus deliveryStatus;
-
 
     public Long getId() {
         return id;
@@ -34,6 +36,14 @@ public class AlertNotification implements Serializable {
 
     public void setTitle(String title) {
         this.title = title;
+    }
+
+    public Date getCreatedOn() {
+        return createdOn;
+    }
+
+    public void setCreatedOn(Date createdOn) {
+        this.createdOn = createdOn;
     }
 
     public String getMessage() {
@@ -81,6 +91,7 @@ public class AlertNotification implements Serializable {
         return "AlertNotification{" +
                 "id=" + id +
                 ", title='" + title + '\'' +
+                ", createdOn='" + createdOn + '\'' +
                 ", message='" + message + '\'' +
                 ", actions=" + actions +
                 ", appUrl='" + appUrl + '\'' +

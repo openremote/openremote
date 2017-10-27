@@ -1,5 +1,5 @@
 /*
- * Copyright 2016, OpenRemote Inc.
+ * Copyright 2017, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.client.admin.users;
+package org.openremote.manager.client.admin.users.edit;
 
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.dom.client.Style;
@@ -29,6 +29,7 @@ import com.google.gwt.uibinder.client.UiHandler;
 import com.google.gwt.user.client.ui.*;
 import com.google.inject.Provider;
 import org.openremote.manager.client.Environment;
+import org.openremote.manager.client.admin.users.AdminUsersNavigation;
 import org.openremote.manager.client.app.dialog.Confirmation;
 import org.openremote.manager.client.widget.*;
 import org.openremote.manager.client.widget.PushButton;
@@ -40,13 +41,13 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-public class AdminUserImpl extends FormViewImpl implements AdminUser {
+public class AdminUserEditImpl extends FormViewImpl implements AdminUserEdit {
 
-    interface UI extends UiBinder<HTMLPanel, AdminUserImpl> {
+    interface UI extends UiBinder<HTMLPanel, AdminUserEditImpl> {
     }
 
-    @UiField
-    PushButton sendNotificationButton;
+    @UiField(provided = true)
+    AdminUsersNavigation adminUsersNavigation;
 
     @UiField
     FormGroup usernameGroup;
@@ -107,24 +108,22 @@ public class AdminUserImpl extends FormViewImpl implements AdminUser {
     PushButton deleteButton;
 
     @UiField
-    PushButton cancelButton;
+    FormButton refreshDeviceRegistrations;
 
     final protected Map<String, FormCheckBox> roles = new LinkedHashMap<>();
 
     protected Presenter presenter;
 
     @Inject
-    public AdminUserImpl(Environment environment,
-                         Provider<Confirmation> confirmationDialogProvider) {
+    public AdminUserEditImpl(Environment environment,
+                             Provider<Confirmation> confirmationDialogProvider,
+                             AdminUsersNavigation adminUsersNavigation) {
         super(confirmationDialogProvider, environment.getWidgetStyle());
+
+        this.adminUsersNavigation = adminUsersNavigation;
+
         UI ui = GWT.create(UI.class);
         initWidget(ui.createAndBindUi(this));
-
-        sendNotificationButton.addClickHandler(event -> {
-            if (presenter != null) {
-                presenter.onSendNotification();
-            }
-        });
 
         clearRegisteredDevices(false);
     }
@@ -133,7 +132,8 @@ public class AdminUserImpl extends FormViewImpl implements AdminUser {
     public void setPresenter(Presenter presenter) {
         this.presenter = presenter;
         if (presenter == null) {
-            sendNotificationButton.setVisible(false);
+            adminUsersNavigation.setVisible(false);
+            adminUsersNavigation.reset();
             usernameInput.setValue(null);
             firstNameInput.setValue(null);
             lastNameInput.setValue(null);
@@ -142,6 +142,9 @@ public class AdminUserImpl extends FormViewImpl implements AdminUser {
             resetPasswordInput.setValue(null);
             resetPasswordControlInput.setValue(null);
             clearRegisteredDevices(false);
+        } else {
+            adminUsersNavigation.setActive(presenter.getPlace());
+            adminUsersNavigation.setVisible(true);
         }
     }
 
@@ -307,7 +310,6 @@ public class AdminUserImpl extends FormViewImpl implements AdminUser {
     @Override
     public void setDeviceRegistrations(List<DeviceNotificationToken> deviceNotificationTokens) {
         clearRegisteredDevices(deviceNotificationTokens.size() == 0);
-        sendNotificationButton.setVisible(deviceNotificationTokens.size() > 0);
         for (DeviceNotificationToken deviceNotificationToken : deviceNotificationTokens) {
             registeredDevicesContainer.add(new DeviceRegistrationItem(deviceNotificationToken));
         }
@@ -322,8 +324,9 @@ public class AdminUserImpl extends FormViewImpl implements AdminUser {
                     registeredDevicesContainer.remove(i);
             }
         }
-        sendNotificationButton.setVisible(registeredDevicesContainer.getWidgetCount() > 0);
-        clearRegisteredDevices(registeredDevicesContainer.getWidgetCount() == 0);
+        if (registeredDevicesContainer.getWidgetCount() == 0) {
+            clearRegisteredDevices(true);
+        }
     }
 
     @Override
@@ -359,10 +362,10 @@ public class AdminUserImpl extends FormViewImpl implements AdminUser {
             presenter.delete();
     }
 
-    @UiHandler("cancelButton")
-    void cancelClicked(ClickEvent e) {
+    @UiHandler("refreshDeviceRegistrations")
+    void refreshDeviceRegistrationsClicked(ClickEvent e) {
         if (presenter != null)
-            presenter.cancel();
+            presenter.onDeviceRegistrationsRefresh();
     }
 
     protected void clearRegisteredDevices(boolean addEmptyMessage) {
@@ -420,6 +423,7 @@ public class AdminUserImpl extends FormViewImpl implements AdminUser {
             deviceTypeField.add(deviceTypeOutput);
             typeLoginPanel.add(deviceTypeGroup);
 
+            // TODO The label says "first login" because we still don't capture last login on service/from consoles
             FormGroup lastLoginGroup = new FormGroup();
             FormField lastLoginField = new FormField();
             FormLabel lastLoginLabel = new FormLabel(managerMessages.registeredDeviceLastLogin());

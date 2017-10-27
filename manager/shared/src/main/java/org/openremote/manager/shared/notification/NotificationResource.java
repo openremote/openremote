@@ -97,8 +97,8 @@ public interface NotificationResource {
     @SuccessStatusCode(200)
     @Produces(APPLICATION_JSON)
     @RolesAllowed({"read:admin"})
-    List<AlertNotification> getNotificationsOfUser(@BeanParam RequestParams requestParams,
-                                                   @PathParam("userId") String userId);
+    AlertNotification[] getNotificationsOfUser(@BeanParam RequestParams requestParams,
+                                               @PathParam("userId") String userId);
 
     /**
      * Only the superuser can call this operation.
@@ -107,19 +107,30 @@ public interface NotificationResource {
     @Path("alert/user/{userId}")
     @SuccessStatusCode(204)
     @RolesAllowed({"write:admin"})
-    void removeNotificationOfUser(@BeanParam RequestParams requestParams,
-                                  @PathParam("userId") String userId);
+    void removeNotificationsOfUser(@BeanParam RequestParams requestParams,
+                                   @PathParam("userId") String userId);
+
+    /**
+     * Only the superuser can call this operation.
+     */
+    @DELETE
+    @Path("alert/user/{userId}/{alertId}")
+    @SuccessStatusCode(204)
+    @RolesAllowed({"write:admin"})
+    void removeNotification(@BeanParam RequestParams requestParams,
+                            @PathParam("userId") String userId,
+                            @PathParam("alertId") Long id);
 
     @GET
     @Path("alert")
     @Produces(APPLICATION_JSON)
     @RolesAllowed({"write:user"})
-    List<AlertNotification> getPendingNotificationsOfCurrentUser(@BeanParam RequestParams requestParams);
+    List<AlertNotification> getQueuedNotificationsOfCurrentUser(@BeanParam RequestParams requestParams);
 
     @DELETE
     @Path("alert/{alertId}")
     @SuccessStatusCode(204)
     @RolesAllowed({"write:user"})
-    void ackPendingNotificationOfCurrentUser(@BeanParam RequestParams requestParams,
-                                             @PathParam("alertId") Long id);
+    void ackNotificationOfCurrentUser(@BeanParam RequestParams requestParams,
+                                      @PathParam("alertId") Long id);
 }

@@ -134,6 +134,10 @@ public class User {
         this.enabled = enabled;
     }
 
+    public String getFullName() {
+        return getUsername() + " (" + getFirstName() + " " + getLastName() + ")";
+    }
+
     @Override
     public String toString() {
         return getClass().getName() + "{" +

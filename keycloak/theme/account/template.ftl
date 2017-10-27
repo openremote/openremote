@@ -49,7 +49,7 @@
 
     <div class="flex layout vertical">
 
-        <div class="layout horizontal center end-justified or-SecondaryNavHorizontal">
+        <div class="layout horizontal center end-justified or-SecondaryNav">
         </div>
 
         <#if message?has_content>

@@ -25,9 +25,15 @@ import com.google.inject.Singleton;
 import org.openremote.manager.client.admin.navigation.AdminNavigation;
 import org.openremote.manager.client.admin.navigation.AdminNavigationImpl;
 import org.openremote.manager.client.admin.navigation.AdminNavigationPresenter;
-import org.openremote.manager.client.admin.syslog.*;
+import org.openremote.manager.client.admin.syslog.AdminSyslog;
+import org.openremote.manager.client.admin.syslog.AdminSyslogActivity;
+import org.openremote.manager.client.admin.syslog.AdminSyslogImpl;
 import org.openremote.manager.client.admin.tenant.*;
 import org.openremote.manager.client.admin.users.*;
+import org.openremote.manager.client.admin.users.edit.AdminUserEdit;
+import org.openremote.manager.client.admin.users.edit.AdminUserEditActivity;
+import org.openremote.manager.client.admin.users.edit.AdminUserEditImpl;
+import org.openremote.manager.client.admin.users.notifications.*;
 import org.openremote.manager.shared.notification.NotificationResource;
 import org.openremote.manager.shared.security.UserResource;
 import org.openremote.manager.shared.syslog.SyslogResource;
@@ -51,9 +57,12 @@ public class AdminModule extends AbstractGinModule {
 
         bind(AdminUsers.class).to(AdminUsersImpl.class).in(Singleton.class);
         bind(AdminUsersActivity.class);
-        bind(AdminUser.class).to(AdminUserImpl.class).in(Singleton.class);
-        bind(AdminUserActivity.class);
 
+        bind(AdminUserEdit.class).to(AdminUserEditImpl.class).in(Singleton.class);
+        bind(AdminUserEditActivity.class);
+
+        bind(AdminUserNotifications.class).to(AdminUserNotificationsImpl.class).in(Singleton.class);
+        bind(AdminUserNotificationsActivity.class);
         bind(AdminUserNotificationEditor.class).to(AdminUserNotificationEditorImpl.class).in(Singleton.class);
     }
 

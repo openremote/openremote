@@ -26,7 +26,10 @@ dependencies {
 
     compile "junit:junit:$junitVersion"
     compile "org.spockframework:spock-core:$spockVersion"
-    compile "com.github.calimero:calimero-server:$calimeroVersion"
+    compile("com.github.calimero:calimero-server:$calimeroVersion") {
+        // Libraries should not depend on a logging implementation and/or alpha versions!
+        exclude group: "org.slf4j"
+    }
 }
 
 test {

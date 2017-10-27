@@ -18,7 +18,7 @@
             <g:HTMLPanel styleName="flex layout vertical">
 
                 <g:HTMLPanel
-                        styleName="layout horizontal center end-justified {widgetStyle.SecondaryNavHorizontal}">
+                        styleName="layout horizontal center end-justified {widgetStyle.SecondaryNav}">
                 </g:HTMLPanel>
 
                 <w:Form ui:field="form" addStyleNames="flex">

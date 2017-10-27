@@ -23,7 +23,7 @@ import com.google.gwt.user.client.ui.AcceptsOneWidget;
 import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.TenantMapper;
 import org.openremote.manager.client.admin.UserArrayMapper;
-import org.openremote.manager.client.admin.users.AdminUserPlace;
+import org.openremote.manager.client.admin.users.edit.AdminUserEditPlace;
 import org.openremote.manager.client.assets.AssetBrowsingActivity;
 import org.openremote.manager.client.assets.asset.AssetViewPlace;
 import org.openremote.manager.client.assets.browser.*;
@@ -44,7 +44,6 @@ import java.util.Arrays;
 import java.util.Collection;
 
 import static org.openremote.manager.client.http.RequestExceptionHandler.handleRequestException;
-import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 
 public class AssetsTenantActivity extends AssetBrowsingActivity<AssetsTenantPlace> implements AssetsTenant.Presenter {
 
@@ -197,7 +196,7 @@ public class AssetsTenantActivity extends AssetBrowsingActivity<AssetsTenantPlac
     @Override
     public void onEditUser(UserAsset.Id id) {
         environment.getPlaceController().goTo(
-            new AdminUserPlace(tenant.getRealm(), id.getUserId())
+            new AdminUserEditPlace(tenant.getRealm(), id.getUserId())
         );
     }
 

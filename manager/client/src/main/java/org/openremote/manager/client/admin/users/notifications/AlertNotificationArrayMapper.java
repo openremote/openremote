@@ -17,22 +17,16 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.model.notification;
+package org.openremote.manager.client.admin.users.notifications;
 
-public enum DeliveryStatus {
+import com.github.nmorel.gwtjackson.client.ObjectMapper;
+import com.github.nmorel.gwtjackson.client.annotation.JsonMixIns;
+import org.openremote.manager.client.interop.jackson.DefaultJsonMixin;
+import org.openremote.manager.shared.http.EntityReader;
+import org.openremote.model.notification.AlertNotification;
 
-    /**
-     * Not delivered to queue.
-     */
-    PENDING,
-
-    /**
-     * Delivered to queue for at least one device, device should soon pick it up.
-     */
-    QUEUED,
-
-    /**
-     * Picked up by receiving device and dismissed by user.
-     */
-    ACKNOWLEDGED
+@JsonMixIns({@JsonMixIns.JsonMixIn(target = AlertNotification.class, mixIn = DefaultJsonMixin.class)})
+public interface AlertNotificationArrayMapper
+    extends ObjectMapper<AlertNotification[]>,
+    EntityReader<AlertNotification[]> {
 }

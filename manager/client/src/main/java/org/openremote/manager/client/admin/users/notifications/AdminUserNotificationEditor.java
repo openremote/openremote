@@ -17,16 +17,21 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.client.admin;
+package org.openremote.manager.client.admin.users.notifications;
 
-import com.github.nmorel.gwtjackson.client.ObjectMapper;
-import com.github.nmorel.gwtjackson.client.annotation.JsonMixIns;
-import org.openremote.manager.client.interop.jackson.DefaultJsonMixin;
-import org.openremote.manager.shared.http.EntityWriter;
 import org.openremote.model.notification.AlertNotification;
 
-@JsonMixIns({@JsonMixIns.JsonMixIn(target = AlertNotification.class, mixIn = DefaultJsonMixin.class)})
-public interface AlertNotificationMapper
-    extends ObjectMapper<AlertNotification>,
-    EntityWriter<AlertNotification> {
+import java.util.function.Consumer;
+
+public interface AdminUserNotificationEditor {
+
+    void reset();
+
+    void setAlertNotification(AlertNotification notification);
+
+    void setOnSend(Consumer<AlertNotification> onSend);
+
+    void setOnClose(Runnable onClose);
+
+    void show();
 }

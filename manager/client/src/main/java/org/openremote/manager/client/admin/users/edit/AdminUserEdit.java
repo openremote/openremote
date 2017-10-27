@@ -17,30 +17,31 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.client.admin.users;
+package org.openremote.manager.client.admin.users.edit;
 
 import org.openremote.manager.client.admin.AdminContent;
+import org.openremote.manager.client.admin.users.AbstractAdminUsersPlace;
 import org.openremote.manager.shared.notification.DeviceNotificationToken;
 
 import java.util.List;
 
-public interface AdminUser extends AdminContent {
+public interface AdminUserEdit extends AdminContent {
 
     interface Presenter {
 
-        void onSendNotification();
+        AbstractAdminUsersPlace getPlace();
 
         void onRoleAssigned(String id, boolean assigned);
 
         void onDeviceRegistrationDelete(DeviceNotificationToken.Id id);
+
+        void onDeviceRegistrationsRefresh();
 
         void create();
 
         void update();
 
         void delete();
-
-        void cancel();
     }
 
     void setPresenter(Presenter presenter);

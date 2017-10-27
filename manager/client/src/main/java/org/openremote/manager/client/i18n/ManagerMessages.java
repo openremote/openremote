@@ -496,4 +496,28 @@ public interface ManagerMessages extends Messages {
     String userAssetLinkDeleted();
 
     String assetNotInTenant(String displayName);
+
+    String notifications();
+
+    String manageNotifications();
+
+    String allUsers();
+
+    String noNotifications();
+
+    String notificationDeleted(Long id);
+
+    String deleteNotification();
+
+    String deliveryStatus();
+
+    String action();
+
+    String notificationsDeleted();
+
+    String refresh();
+
+    String deleteNotifications();
+
+    String refreshDeviceRegistrations();
 }

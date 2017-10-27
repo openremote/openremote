@@ -17,12 +17,13 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.client.admin.users;
+package org.openremote.manager.client.admin.users.edit;
 
 import com.google.gwt.user.client.ui.AcceptsOneWidget;
 import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.admin.*;
 import org.openremote.manager.client.admin.navigation.AdminNavigation;
+import org.openremote.manager.client.admin.users.AdminUsersPlace;
 import org.openremote.manager.client.event.ShowSuccessEvent;
 import org.openremote.manager.client.mvp.AppActivity;
 import org.openremote.manager.shared.notification.DeviceNotificationToken;
@@ -34,9 +35,6 @@ import org.openremote.manager.shared.security.UserResource;
 import org.openremote.manager.shared.validation.ConstraintViolation;
 import org.openremote.model.event.bus.EventBus;
 import org.openremote.model.event.bus.EventRegistration;
-import org.openremote.model.notification.ActionType;
-import org.openremote.model.notification.AlertAction;
-import org.openremote.model.notification.AlertNotification;
 
 import javax.inject.Inject;
 import java.util.ArrayList;
@@ -47,18 +45,16 @@ import java.util.function.Consumer;
 
 import static org.openremote.manager.client.http.RequestExceptionHandler.handleRequestException;
 
-public class AdminUserActivity
-    extends AbstractAdminActivity<AdminUserPlace, AdminUser>
-    implements AdminUser.Presenter {
+public class AdminUserEditActivity
+    extends AbstractAdminActivity<AdminUserEditPlace, AdminUserEdit>
+    implements AdminUserEdit.Presenter {
 
     final protected Environment environment;
     final protected UserResource userResource;
     final protected UserMapper userMapper;
     final protected CredentialMapper credentialMapper;
     final protected RoleArrayMapper roleArrayMapper;
-    final protected AdminUserNotificationEditor notificationEditor;
     final protected NotificationResource notificationResource;
-    final protected AlertNotificationMapper alertNotificationMapper;
     final protected DeviceNotificationTokenMapper deviceNotificationTokenMapper;
 
     final protected Consumer<ConstraintViolation[]> validationErrorHandler = violations -> {
@@ -88,34 +84,30 @@ public class AdminUserActivity
         adminContent.setFormBusy(false);
     };
 
+    protected AdminUserEditPlace place;
     protected String realm;
     protected String userId;
     protected User user;
     protected Role[] roles = new Role[0];
-    protected AlertNotification alertNotification;
 
     @Inject
-    public AdminUserActivity(Environment environment,
-                             AdminView adminView,
-                             AdminNavigation.Presenter adminNavigationPresenter,
-                             AdminUser view,
-                             UserResource userResource,
-                             UserMapper userMapper,
-                             CredentialMapper credentialMapper,
-                             RoleArrayMapper roleArrayMapper,
-                             AdminUserNotificationEditor notificationEditor,
-                             NotificationResource notificationResource,
-                             AlertNotificationMapper alertNotificationMapper,
-                             DeviceNotificationTokenMapper deviceNotificationTokenMapper) {
+    public AdminUserEditActivity(Environment environment,
+                                 AdminView adminView,
+                                 AdminNavigation.Presenter adminNavigationPresenter,
+                                 AdminUserEdit view,
+                                 UserResource userResource,
+                                 UserMapper userMapper,
+                                 CredentialMapper credentialMapper,
+                                 RoleArrayMapper roleArrayMapper,
+                                 NotificationResource notificationResource,
+                                 DeviceNotificationTokenMapper deviceNotificationTokenMapper) {
         super(adminView, adminNavigationPresenter, view);
         this.environment = environment;
         this.userResource = userResource;
         this.userMapper = userMapper;
         this.credentialMapper = credentialMapper;
         this.roleArrayMapper = roleArrayMapper;
-        this.notificationEditor = notificationEditor;
         this.notificationResource = notificationResource;
-        this.alertNotificationMapper = alertNotificationMapper;
         this.deviceNotificationTokenMapper = deviceNotificationTokenMapper;
     }
 
@@ -125,7 +117,7 @@ public class AdminUserActivity
     }
 
     @Override
-    protected AppActivity<AdminUserPlace> init(AdminUserPlace place) {
+    protected AppActivity<AdminUserEditPlace> init(AdminUserEditPlace place) {
         realm = place.getRealm();
         userId = place.getUserId();
         return super.init(place);
@@ -161,7 +153,6 @@ public class AdminUserActivity
     @Override
     public void onStop() {
         super.onStop();
-        notificationEditor.reset();
         adminContent.setPresenter(null);
         adminContent.clearRoles();
         adminContent.clearFormMessages();
@@ -278,44 +269,8 @@ public class AdminUserActivity
     }
 
     @Override
-    public void onSendNotification() {
-        // Keep it so we can send it again later
-        if (this.alertNotification == null)
-            this.alertNotification = createDefaultNotification();
-
-        notificationEditor.setAlertNotification(this.alertNotification);
-        notificationEditor.setOnSend(updatedNotification -> {
-            this.alertNotification = updatedNotification;
-            environment.getRequestService().execute(
-                alertNotificationMapper,
-                requestParams -> notificationResource.storeNotificationForUser(requestParams, userId, this.alertNotification),
-                204,
-                () -> environment.getEventBus().dispatch(new ShowSuccessEvent(
-                    environment.getMessages().notificationSentToUser()
-                )),
-                ex -> handleRequestException(ex, environment)
-            );
-        });
-        notificationEditor.show();
-    }
-
-    protected AlertNotification createDefaultNotification() {
-        AlertNotification alertNotification = new AlertNotification(
-            "Hello User",
-            "This is a test message.",
-            "/#"
-        );
-        AlertAction alertAction = new AlertAction();
-        alertAction.setTitle(environment.getMessages().notificationOpenApplicationDetails());
-        alertAction.setActionType(ActionType.LINK);
-        alertNotification.addAction(alertAction);
-        return alertNotification;
-    }
-
-    @Override
     public void onDeviceRegistrationDelete(DeviceNotificationToken.Id id) {
         environment.getRequestService().execute(
-
             requestParams -> notificationResource.deleteDeviceToken(requestParams, id.getUserId(), id.getDeviceId()),
             204,
             () -> {
@@ -326,6 +281,11 @@ public class AdminUserActivity
             },
             ex -> handleRequestException(ex, environment)
         );
+    }
+
+    @Override
+    public void onDeviceRegistrationsRefresh() {
+        loadDeviceRegistrations(() -> {});
     }
 
     @Override
@@ -351,11 +311,6 @@ public class AdminUserActivity
                 );
             }
         );
-    }
-
-    @Override
-    public void cancel() {
-        environment.getPlaceController().goTo(new AdminUsersPlace(realm));
     }
 
     protected void loadUser() {

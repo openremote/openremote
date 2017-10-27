@@ -17,22 +17,35 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.model.notification;
+package org.openremote.manager.server.notification;
 
-public enum DeliveryStatus {
+public class FCMNotification {
 
-    /**
-     * Not delivered to queue.
-     */
-    PENDING,
+    protected String body;
+    protected String clickAction = "openremoteNotification";
 
-    /**
-     * Delivered to queue for at least one device, device should soon pick it up.
-     */
-    QUEUED,
+    public FCMNotification(String body) {
+        super();
+        this.body = body;
+    }
 
-    /**
-     * Picked up by receiving device and dismissed by user.
-     */
-    ACKNOWLEDGED
+    public String getBody() {
+        return body;
+    }
+
+    public void setBody(String body) {
+        this.body = body;
+    }
+
+    public String getClickAction() {
+        return clickAction;
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "{" +
+            "body='" + body + '\'' +
+            ", clickAction='" + clickAction + '\'' +
+            '}';
+    }
 }
