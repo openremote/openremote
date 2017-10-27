@@ -28,7 +28,7 @@ public class FormTextArea extends TextArea {
 
     public FormTextArea() {
         super();
-        setStyleName("or-FormControl or-FormTextArea");
+        setStyleName("flex or-FormControl or-FormTextArea");
     }
 
     public boolean isSpellcheck() {
@@ -53,6 +53,16 @@ public class FormTextArea extends TextArea {
         if (opaque) {
             addStyleName("opaque");
         }
+    }
+
+    public void setResizable(boolean resizable) {
+        getElement().getStyle().setProperty("resize", resizable ? "auto" : "none");
+    }
+
+    public void setBorder(boolean border) {
+        getElement().removeClassName("border");
+        if (border)
+            getElement().addClassName("border");
     }
 
 }

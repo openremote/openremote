@@ -520,4 +520,6 @@ public interface ManagerMessages extends Messages {
     String deleteNotifications();
 
     String refreshDeviceRegistrations();
+
+    String tenant();
 }

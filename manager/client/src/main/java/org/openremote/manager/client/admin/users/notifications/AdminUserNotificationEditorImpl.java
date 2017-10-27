@@ -111,9 +111,9 @@ public class AdminUserNotificationEditorImpl implements AdminUserNotificationEdi
         messageGroup.setFormLabel(messageLabel);
         FormField messageField = new FormField();
         messageGroup.setFormField(messageField);
-        notificationMessageInput.addStyleName("flex border");
         notificationMessageInput.setHeight("5em");
-        notificationMessageInput.getElement().getStyle().setProperty("resize", "none");
+        notificationMessageInput.setResizable(false);
+        notificationMessageInput.setBorder(true);
         messageField.add(notificationMessageInput);
         dialog.getContentPanel().add(messageGroup);
 

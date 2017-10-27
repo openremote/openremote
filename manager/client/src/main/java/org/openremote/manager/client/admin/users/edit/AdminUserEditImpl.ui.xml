@@ -15,7 +15,8 @@
             <g:HTMLPanel ui:field="mainContent"
                          styleName="flex-none layout vertical {widgetStyle.MainContent}">
 
-                <w:Headline icon="edit"
+                <w:Headline ui:field="headline"
+                            icon="edit"
                             text="{managerMessages.editUser}"/>
 
                 <div class="layout horizontal center wrap">

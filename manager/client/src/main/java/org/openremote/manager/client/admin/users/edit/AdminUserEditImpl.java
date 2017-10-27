@@ -50,6 +50,9 @@ public class AdminUserEditImpl extends FormViewImpl implements AdminUserEdit {
     AdminUsersNavigation adminUsersNavigation;
 
     @UiField
+    Headline headline;
+
+    @UiField
     FormGroup usernameGroup;
     @UiField
     TextBox usernameInput;
@@ -134,6 +137,7 @@ public class AdminUserEditImpl extends FormViewImpl implements AdminUserEdit {
         if (presenter == null) {
             adminUsersNavigation.setVisible(false);
             adminUsersNavigation.reset();
+            headline.setSub(null);
             usernameInput.setValue(null);
             firstNameInput.setValue(null);
             lastNameInput.setValue(null);
@@ -142,10 +146,16 @@ public class AdminUserEditImpl extends FormViewImpl implements AdminUserEdit {
             resetPasswordInput.setValue(null);
             resetPasswordControlInput.setValue(null);
             clearRegisteredDevices(false);
+            refreshDeviceRegistrations.setVisible(false);
         } else {
             adminUsersNavigation.setActive(presenter.getPlace());
             adminUsersNavigation.setVisible(true);
         }
+    }
+
+    @Override
+    public void setTenantName(String realm) {
+        headline.setSub(managerMessages.tenant() + ": " + realm);
     }
 
     @Override
@@ -167,6 +177,7 @@ public class AdminUserEditImpl extends FormViewImpl implements AdminUserEdit {
     public void setEditMode(boolean editMode) {
         usernameInput.setEnabled(!editMode);
         clearRegisteredDevices(editMode);
+        refreshDeviceRegistrations.setVisible(editMode);
     }
 
     @Override

@@ -48,6 +48,8 @@ public interface AdminUserEdit extends AdminContent {
 
     void setEditMode(boolean show);
 
+    void setTenantName(String realm);
+
     void setUsername(String username);
 
     String getUsername();

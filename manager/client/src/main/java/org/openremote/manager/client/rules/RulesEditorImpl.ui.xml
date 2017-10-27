@@ -86,9 +86,7 @@
                     </g:HTMLPanel>
 
                     <g:HTMLPanel addStyleNames="flex layout vertical {style.rulesTextArea} {widgetStyle.MainContent}">
-                        <w:FormTextArea ui:field="rulesTextArea"
-                                        spellcheck="false"
-                                        addStyleNames="flex"/>
+                        <w:FormTextArea ui:field="rulesTextArea" spellcheck="false"/>
                     </g:HTMLPanel>
 
                     <g:HTMLPanel addStyleNames="flex-none layout vertical {widgetStyle.MainContent}">

@@ -366,6 +366,7 @@ public class AdminUserEditActivity
     }
 
     protected void writeToView() {
+        adminContent.setTenantName(realm);
         adminContent.setUsername(user.getUsername());
         adminContent.setFirstName(user.getFirstName());
         adminContent.setLastName(user.getLastName());

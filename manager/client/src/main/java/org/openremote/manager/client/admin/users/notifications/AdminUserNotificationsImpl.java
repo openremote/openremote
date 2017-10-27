@@ -205,9 +205,9 @@ public class AdminUserNotificationsImpl extends FormViewImpl implements AdminUse
             messageGroup.setFormField(messageField);
             FormTextArea messageTxt = new FormTextArea();
             messageTxt.setReadOnly(true);
-            messageTxt.addStyleName("flex border");
             messageTxt.setHeight("3em");
-            messageTxt.getElement().getStyle().setProperty("resize", "none");
+            messageTxt.setResizable(false);
+            messageTxt.setBorder(true);
             messageTxt.setText(notification.getMessage());
             messageField.add(messageTxt);
             add(messageGroup);
@@ -221,9 +221,9 @@ public class AdminUserNotificationsImpl extends FormViewImpl implements AdminUse
                     actionGroup.setFormField(actionField);
                     FormTextArea actionTxt = new FormTextArea();
                     actionTxt.setReadOnly(true);
-                    actionTxt.addStyleName("flex border");
+                    actionTxt.setResizable(false);
+                    actionTxt.setBorder(true);
                     actionTxt.setHeight("3em");
-                    actionTxt.getElement().getStyle().setProperty("resize", "none");
                     actionTxt.setText(action.toJson());
                     actionField.add(actionTxt);
                     add(actionGroup);
