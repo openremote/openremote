@@ -43,8 +43,8 @@
 <body class="layout horizontal loading">
 
     <div class="layout vertical or-SecondaryNav">
-        <div style="margin: 0 1em; padding-top: 2.8em !important" class="or-SecondaryNavItem <#if active=='account'>active</#if>"><div class="fa fa-user" style="width: 1em; margin-right:0.4em;"></div><a href="${url.accountUrl}">${msg("account")}</a></div>
-        <#if features.passwordUpdateSupported><div style="margin: 0 1em;" class="or-SecondaryNavItem <#if active=='password'>active</#if>"><div class="fa fa-key" style="width: 1em; margin-right:0.4em;"></div><a href="${url.passwordUrl}">${msg("password")}</a></div></#if>
+        <div class="or-SecondaryNavItem <#if active=='account'>active</#if>"><div class="fa fa-user" style="width: 1em; margin-right:0.4em;"></div><a href="${url.accountUrl}">${msg("account")}</a></div>
+        <#if features.passwordUpdateSupported><div class="or-SecondaryNavItem <#if active=='password'>active</#if>"><div class="fa fa-key" style="width: 1em; margin-right:0.4em;"></div><a href="${url.passwordUrl}">${msg("password")}</a></div></#if>
     </div>
 
     <div class="flex layout vertical">
