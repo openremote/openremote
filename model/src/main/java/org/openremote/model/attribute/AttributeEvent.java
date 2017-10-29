@@ -52,7 +52,8 @@ public class AttributeEvent extends SharedEvent {
         INTERNAL, // This needs to be more fine grained
 
         /**
-         *
+         * An attribute event has been created by the linking service, which enables
+         * writing the same value onto another, linked attribute.
          */
         ATTRIBUTE_LINKING_SERVICE,
 

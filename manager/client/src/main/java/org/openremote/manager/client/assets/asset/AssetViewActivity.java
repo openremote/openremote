@@ -157,8 +157,10 @@ public class AssetViewActivity
     }
 
     protected boolean isAgentOrHasAgentLinks() {
-        return asset.getWellKnownType() == AssetType.AGENT
-            || asset.getAttributesStream().anyMatch(attribute -> AgentLink.getAgentLink(attribute).isPresent());
+        return asset != null && (
+            asset.getWellKnownType() == AssetType.AGENT
+                || asset.getAttributesStream().anyMatch(attribute -> AgentLink.getAgentLink(attribute).isPresent())
+        );
     }
 
     @Override

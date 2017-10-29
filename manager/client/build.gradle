@@ -44,7 +44,7 @@ task compileGwt(dependsOn: classes, type: JavaExec) {
         [configurations.gwtDev,
          sourceSets.main.java.srcDirs,
          sourceSets.main.output.resourcesDir,
-         sourceSets.main.output.classesDir,
+         sourceSets.main.output.classesDirs,
          sourceSets.main.compileClasspath]
     }
     maxHeapSize = "1024M"
@@ -104,7 +104,7 @@ task gwtSuperDev(dependsOn: classes, type: JavaExec) {
         [configurations.gwtDev,
          sourceSets.main.java.srcDirs,
          sourceSets.main.output.resourcesDir,
-         sourceSets.main.output.classesDir,
+         sourceSets.main.output.classesDirs,
          sourceSets.main.compileClasspath]
     }
     maxHeapSize = "1024M"
