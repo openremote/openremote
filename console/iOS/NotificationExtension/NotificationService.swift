@@ -70,19 +70,17 @@ class NotificationService: UNNotificationServiceExtension, URLSessionDelegate {
                                                 bestAttemptContent.userInfo["alertId"] = detailedJson["id"]
                                                 let actions = detailedJson["actions"] as! [[String : Any]]
                                                 var notificationActions = [UNNotificationAction]()
-                                                for var i in (0..<actions.count) {
+                                                for i in (0..<actions.count) {
                                                     let actionTitle = actions[i]["title"]! as! String
                                                     let actionType = actions[i]["type"]! as! String
                                                     switch actionType {
                                                     case ActionType.ACTION_ACTUATOR :
                                                         bestAttemptContent.userInfo["actions"] = actions[i]
-                                                        
                                                         notificationActions.append(UNNotificationAction(identifier: actionType, title: actionTitle, options: UNNotificationActionOptions.destructive))
                                                     case ActionType.ACTION_DEEP_LINK :
                                                         notificationActions.append(UNNotificationAction(identifier: actionType, title: actionTitle, options: UNNotificationActionOptions.foreground))
                                                     default : break
                                                     }
-                                                    i += 1
                                                 }
                                                 let categoryName = "openremoteNotification"
                                                 let category = UNNotificationCategory(identifier: categoryName, actions: notificationActions, intentIdentifiers: [], options: [])
