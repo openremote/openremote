@@ -29,11 +29,8 @@ class ViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        let notificationName = Notification.Name(NotificationsNames.isAuthenticated)
-        NotificationCenter.default.addObserver(self, selector: #selector(isAuthenticated), name: notificationName, object: nil)
         let deviceIdSentName = Notification.Name(NotificationsNames.isdeviceIdSent)
         NotificationCenter.default.addObserver(self, selector: #selector(isdeviceIdSent), name: deviceIdSentName, object: nil)
-
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -58,19 +55,11 @@ class ViewController: UIViewController {
     }
     
     func showLoginPage() {
-        if (TokenManager.sharedInstance.hasToken && !TokenManager.sharedInstance.didLogOut) {
-            isInError = false
-            if (self.presentedViewController == nil) {
-                self.present(orViewController, animated: true, completion: nil)
-            }
-        } else {
-            TokenManager.sharedInstance.authenticate()
+        // This is some leftover from the initial way the app was architected, must be eventually cleaned up
+        
+        if (self.presentedViewController == nil) {
+            self.present(orViewController, animated: true, completion: nil)
         }
-    }
-    
-    func isAuthenticated() {
-        TokenManager.sharedInstance.didLogOut = false
-        TokenManager.sharedInstance.sendDeviceId()
     }
     
     func isdeviceIdSent() {
@@ -90,6 +79,3 @@ class ViewController: UIViewController {
         self.orViewController.updateAssetAttribute(assetId: assetId, attributeName: attributeName, rawJson: rawJson)
     }
 }
-
-
-

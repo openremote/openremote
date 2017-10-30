@@ -40,39 +40,29 @@ class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMessageHa
     }
     
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
-        let defaults = UserDefaults(suiteName: AppGroup.entitlement)
         let jsonDictionnary = message.body as? [String : Any]
         let type = jsonDictionnary?["type"] as! String
-        switch (type){
+        switch (type) {
         case "token":
-            let tokenJsonDictionnary = jsonDictionnary?["value"] as? [String : String]
-            if (tokenJsonDictionnary?["token"] != nil &&
-                tokenJsonDictionnary?["refreshToken"] != nil &&
-                tokenJsonDictionnary?["idToken"] != nil){
-                let offlineToken = tokenJsonDictionnary?["token"]! ?? nil
-                let refreshToken = tokenJsonDictionnary?["refreshToken"]! ?? nil
-                let idToken = tokenJsonDictionnary?["idToken"]! ?? nil
-                defaults?.set(offlineToken, forKey: DefaultsKey.token)
-                defaults?.set(refreshToken, forKey: DefaultsKey.refreshToken)
-                defaults?.set(idToken, forKey: DefaultsKey.idToken)
-            }
+            let tokenJsonDictionnary = jsonDictionnary?["data"] as? [String : String]
+            TokenManager.sharedInstance.storeTokens(tokenJsonDictionnary: tokenJsonDictionnary)
             
         default:
             print("Unknown message type: \(type )")
         }
-
+        
     }
     
     func webView(_ webView: WKWebView, runJavaScriptAlertPanelWithMessage message: String, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping () -> Void) {
         NSLog("error %@", message)
-        TokenManager.sharedInstance.resetToken()
+        TokenManager.sharedInstance.resetTokenAndAuthenticate()
         self.dismiss(animated: true, completion: nil)
         completionHandler()
     }
     
     func webView(_ webView: WKWebView, runJavaScriptTextInputPanelWithPrompt prompt: String, defaultText: String?, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping (String?) -> Void) {
         var exec_template : String? = nil
-        switch (prompt){
+        switch (prompt) {
         case "token":
             if TokenManager.sharedInstance.offlineToken != nil && TokenManager.sharedInstance.refreshToken != nil && TokenManager.sharedInstance.idToken != nil {
                 exec_template = "{ \"token\": \"\(TokenManager.sharedInstance.offlineToken ?? "null")\", \"refreshToken\": \"\(TokenManager.sharedInstance.refreshToken ?? "null")\",\"idToken\": \"\(TokenManager.sharedInstance.idToken ?? "null")\"}"
@@ -87,7 +77,7 @@ class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMessageHa
     
     func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
         if (navigationAction.request.url?.absoluteString.contains("logout"))! {
-            TokenManager.sharedInstance.didLogOut = true
+            TokenManager.sharedInstance.logout()
             decisionHandler(.cancel)
             self.dismiss(animated: false, completion: nil)
         } else {

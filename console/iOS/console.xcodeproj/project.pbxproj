@@ -21,8 +21,6 @@
 		FA1D73F61E53392F00F6240A /* ORViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA1D73F51E53392F00F6240A /* ORViewController.swift */; };
 		FA2D48311E560B7500C95665 /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA2D48301E560B7500C95665 /* Constants.swift */; };
 		FAA226B81E71563F009A8FEC /* TokenManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = FAA226B71E71563F009A8FEC /* TokenManager.swift */; };
-		FAA226BA1E715ED6009A8FEC /* TokenManagerView.xib in Resources */ = {isa = PBXBuildFile; fileRef = FAA226B91E715ED6009A8FEC /* TokenManagerView.xib */; };
-		FAA226BC1E7163D9009A8FEC /* TokenManagerViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = FAA226BB1E7163D9009A8FEC /* TokenManagerViewController.swift */; };
 		FABC54E81E7AEBD300B7B718 /* Reachability.m in Sources */ = {isa = PBXBuildFile; fileRef = FABC54E71E7AEBD300B7B718 /* Reachability.m */; };
 		FAFF2E2D1E7A95120076BDE3 /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = FAFF2E2C1E7A95120076BDE3 /* NotificationService.swift */; };
 		FAFF2E311E7A95120076BDE3 /* NotificationExtension.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = FAFF2E2A1E7A95120076BDE3 /* NotificationExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -69,8 +67,6 @@
 		FA2D48301E560B7500C95665 /* Constants.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Constants.swift; sourceTree = "<group>"; };
 		FA3297A91E8A4AE5008B77D3 /* NotificationExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = NotificationExtension.entitlements; sourceTree = "<group>"; };
 		FAA226B71E71563F009A8FEC /* TokenManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TokenManager.swift; sourceTree = "<group>"; };
-		FAA226B91E715ED6009A8FEC /* TokenManagerView.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = TokenManagerView.xib; sourceTree = "<group>"; };
-		FAA226BB1E7163D9009A8FEC /* TokenManagerViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TokenManagerViewController.swift; sourceTree = "<group>"; };
 		FAAFD0B41E77EB6E00F01155 /* console.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = console.entitlements; sourceTree = "<group>"; };
 		FABC54E51E7AEBD200B7B718 /* console-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "console-Bridging-Header.h"; sourceTree = "<group>"; };
 		FABC54E61E7AEBD300B7B718 /* Reachability.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Reachability.h; sourceTree = "<group>"; };
@@ -165,8 +161,6 @@
 				FABC54E61E7AEBD300B7B718 /* Reachability.h */,
 				FABC54E71E7AEBD300B7B718 /* Reachability.m */,
 				FAA226B71E71563F009A8FEC /* TokenManager.swift */,
-				FAA226B91E715ED6009A8FEC /* TokenManagerView.xib */,
-				FAA226BB1E7163D9009A8FEC /* TokenManagerViewController.swift */,
 				FABC54E51E7AEBD200B7B718 /* console-Bridging-Header.h */,
 			);
 			name = utils;
@@ -285,7 +279,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				FAA226BA1E715ED6009A8FEC /* TokenManagerView.xib in Resources */,
 				FA1D73EC1E53374E00F6240A /* LaunchScreen.storyboard in Resources */,
 				FA1D73E91E53374E00F6240A /* Assets.xcassets in Resources */,
 				FA1D73E71E53374E00F6240A /* Main.storyboard in Resources */,
@@ -354,7 +347,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				FAA226BC1E7163D9009A8FEC /* TokenManagerViewController.swift in Sources */,
 				FA2D48311E560B7500C95665 /* Constants.swift in Sources */,
 				06B097EA1EA902CF00DF5C43 /* ErrorManager.swift in Sources */,
 				FA1D73E41E53374E00F6240A /* ViewController.swift in Sources */,
