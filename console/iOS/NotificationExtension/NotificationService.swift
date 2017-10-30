@@ -21,10 +21,10 @@
 import UserNotifications
 
 class NotificationService: UNNotificationServiceExtension, URLSessionDelegate {
-
+    
     var contentHandler: ((UNNotificationContent) -> Void)?
     var bestAttemptContent: UNMutableNotificationContent?
-
+    
     override func didReceive(_ request: UNNotificationRequest, withContentHandler contentHandler: @escaping (UNNotificationContent) -> Void) {
         self.contentHandler = contentHandler
         bestAttemptContent = (request.content.mutableCopy() as? UNMutableNotificationContent)
@@ -34,8 +34,8 @@ class NotificationService: UNNotificationServiceExtension, URLSessionDelegate {
             let defaults = UserDefaults(suiteName: AppGroup.entitlement)
             
             defaults?.synchronize()
-
-            guard let tkurlRequest = URL(string:String(format: "\(Server.scheme)://%@/auth/realms/%@/protocol/openid-connect/token",Server.hostURL,Server.realm))
+            
+            guard let tkurlRequest = URL(string:String(format: "\(Server.scheme)://%@/auth/realms/%@/protocol/openid-connect/token", Server.hostURL, Server.realm))
                 else { return }
             let tkRequest = NSMutableURLRequest(url: tkurlRequest)
             tkRequest.addValue("application/x-www-form-urlencoded", forHTTPHeaderField:"Content-Type");
@@ -45,7 +45,7 @@ class NotificationService: UNNotificationServiceExtension, URLSessionDelegate {
             let sessionConfiguration = URLSessionConfiguration.default
             let session = URLSession(configuration: sessionConfiguration, delegate: self, delegateQueue: nil)
             let req = session.dataTask(with: tkRequest as URLRequest, completionHandler: { (data, response, error) in
-                if (data != nil){
+                if (data != nil) {
                     do {
                         let jsonDictionnary: Dictionary = try JSONSerialization.jsonObject(with: data!, options: []) as! [String:Any]
                         if ((jsonDictionnary["access_token"]) != nil) {
@@ -63,34 +63,33 @@ class NotificationService: UNNotificationServiceExtension, URLSessionDelegate {
                                             //print(String(data: data!, encoding: .utf8) ?? "")
                                             let json = try JSONSerialization.jsonObject(with: data!) as? [[String: Any]]
                                             if (json?.count)! > 0 {
-                                            let detailedJson = (json?[0])! as [String: Any]
-                                            bestAttemptContent.title = detailedJson["title"] as! String
-                                            bestAttemptContent.body = detailedJson["message"] as! String
-                                            bestAttemptContent.userInfo["appUrl"] = detailedJson["appUrl"]
-                                            bestAttemptContent.userInfo["alertId"] = detailedJson["id"]
-                                            let actions = detailedJson["actions"] as! [[String : Any]]
-                                            var notificationActions = [UNNotificationAction]()
-                                            for var i in (0..<actions.count) {
-                                                let actionTitle = actions[i]["title"]! as! String
-                                                let actionType = actions[i]["type"]! as! String
-                                                switch actionType {
-                                                case ActionType.ACTION_ACTUATOR :
-                                                    bestAttemptContent.userInfo["actions"] = actions[i]
-
-                                                    notificationActions.append(UNNotificationAction(identifier: actionType, title: actionTitle, options: UNNotificationActionOptions.destructive))
-                                                case ActionType.ACTION_DEEP_LINK :
-                                                    notificationActions.append(UNNotificationAction(identifier: actionType, title: actionTitle, options: UNNotificationActionOptions.foreground))
-                                                default : break
-                                                    
-                                                }
+                                                let detailedJson = (json?[0])! as [String: Any]
+                                                bestAttemptContent.title = detailedJson["title"] as! String
+                                                bestAttemptContent.body = detailedJson["message"] as! String
+                                                bestAttemptContent.userInfo["appUrl"] = detailedJson["appUrl"]
+                                                bestAttemptContent.userInfo["alertId"] = detailedJson["id"]
+                                                let actions = detailedJson["actions"] as! [[String : Any]]
+                                                var notificationActions = [UNNotificationAction]()
+                                                for var i in (0..<actions.count) {
+                                                    let actionTitle = actions[i]["title"]! as! String
+                                                    let actionType = actions[i]["type"]! as! String
+                                                    switch actionType {
+                                                    case ActionType.ACTION_ACTUATOR :
+                                                        bestAttemptContent.userInfo["actions"] = actions[i]
+                                                        
+                                                        notificationActions.append(UNNotificationAction(identifier: actionType, title: actionTitle, options: UNNotificationActionOptions.destructive))
+                                                    case ActionType.ACTION_DEEP_LINK :
+                                                        notificationActions.append(UNNotificationAction(identifier: actionType, title: actionTitle, options: UNNotificationActionOptions.foreground))
+                                                    default : break
+                                                    }
                                                     i += 1
-                                            }
-                                            let categoryName = "openremoteNotification"
-                                            let category = UNNotificationCategory(identifier: categoryName, actions: notificationActions, intentIdentifiers: [], options: [])
-                                            let categories : Set = [category]
-                                            UNUserNotificationCenter.current().setNotificationCategories(categories)
+                                                }
+                                                let categoryName = "openremoteNotification"
+                                                let category = UNNotificationCategory(identifier: categoryName, actions: notificationActions, intentIdentifiers: [], options: [])
+                                                let categories : Set = [category]
+                                                UNUserNotificationCenter.current().setNotificationCategories(categories)
                                             } else {
-                                                    bestAttemptContent.body = "could not deserialize JSON"
+                                                bestAttemptContent.body = "could not deserialize JSON"
                                             }
                                         } catch  {
                                             bestAttemptContent.body = "could not deserialize JSON"
@@ -122,7 +121,7 @@ class NotificationService: UNNotificationServiceExtension, URLSessionDelegate {
                 }
             })
             req.resume()
-
+            
         }
     }
     
@@ -144,7 +143,6 @@ class NotificationService: UNNotificationServiceExtension, URLSessionDelegate {
             } else {
                 completionHandler(.performDefaultHandling,nil)
             }
-            
         }
     }
 }

@@ -89,7 +89,7 @@ class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMessageHa
         if let response = navigationResponse.response as? HTTPURLResponse {
             if response.statusCode != 200 && response.statusCode != 204 {
                 decisionHandler(.cancel)
-                NSLog("error http status : %@  message : %@",response.statusCode,response.description)
+                NSLog("error http status : %@  message : %@", response.statusCode, response.description)
                 let error = NSError(domain: "", code: 0, userInfo:  [
                     NSLocalizedDescriptionKey :  NSLocalizedString("HTTPErrorReturned", value: "Connection Error", comment: "")
                     ])
@@ -144,7 +144,6 @@ class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMessageHa
             } else {
                 completionHandler(.performDefaultHandling, nil)
             }
-            
         }
     }
     
@@ -183,7 +182,7 @@ class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMessageHa
                 UIApplication.shared.isNetworkActivityIndicatorVisible = false
                 ErrorManager.showError(error: error!)
             case .Success(let accessToken) :
-                guard let urlRequest = URL(string: String(String(format: "\(Server.scheme)://%@/%@/asset/%@/attribute/%@", Server.hostURL, Server.realm, assetId,attributeName))) else { return }
+                guard let urlRequest = URL(string: String(String(format: "\(Server.scheme)://%@/%@/asset/%@/attribute/%@", Server.hostURL, Server.realm, assetId, attributeName))) else { return }
                 let request = NSMutableURLRequest(url: urlRequest)
                 request.httpMethod = "PUT"
                 request.addValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -207,5 +206,4 @@ class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMessageHa
             }
         }
     }
-    
 }

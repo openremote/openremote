@@ -115,86 +115,79 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         switch response.actionIdentifier {
         case ActionType.ACTION_DEEP_LINK :
             if let urlToOpen = response.notification.request.content.userInfo["appUrl"] { // until now we are considering anchor name (without the #)
-                guard let urlRequest = URL(string:String(format: "%@://%@/%@%@",Server.scheme, Server.hostURL, Server.navigationPath, urlToOpen as! String)) else { return }
+                guard let urlRequest = URL(string:String(format: "%@://%@/%@%@", Server.scheme, Server.hostURL, Server.navigationPath, urlToOpen as! String)) else { return }
                 (self.window?.rootViewController as! ViewController).loadUrl(url:urlRequest)
-                NSLog("Action asked : %@",response.actionIdentifier)
+                NSLog("Action asked : %@", response.actionIdentifier)
             }
         case ActionType.ACTION_ACTUATOR :
-            NSLog("Action asked : %@",response.actionIdentifier)
+            NSLog("Action asked : %@", response.actionIdentifier)
             
             if let actions = response.notification.request.content.userInfo["actions"] {
                 assetId = (actions as! Dictionary<String,String>)["assetId"]!
-                attributeName =  (actions as! Dictionary<String,String>)["attributeName"]!
-                rawJson =  (actions as! Dictionary<String,String>)["rawJson"]!
+                attributeName = (actions as! Dictionary<String,String>)["attributeName"]!
+                rawJson = (actions as! Dictionary<String,String>)["rawJson"]!
             }
             
             (self.window?.rootViewController as! ViewController).updateAssetAttribute(assetId : assetId, attributeName : attributeName, rawJson : rawJson)
         default : break
         }
         if let alertId = response.notification.request.content.userInfo["alertId"] {
-
-        TokenManager.sharedInstance.getAccessToken { (accessTokenResult) in
-            switch accessTokenResult {
-            case .Failure(let error) :
-                UIApplication.shared.isNetworkActivityIndicatorVisible = false
-                ErrorManager.showError(error: error!)
-            case .Success(let accessToken) :
-                guard let urlRequest = URL(string: String(format:"%@%i", Server.deleteNotifiedAlertResource, alertId as! Int)) else { return }
-                let request = NSMutableURLRequest(url: urlRequest)
-                request.addValue("application/x-www-form-urlencoded", forHTTPHeaderField:"Content-Type");
-                request.httpMethod = "DELETE"
-                let postString = String(format:"token=%@&device_id=%@", TokenManager.sharedInstance.deviceId!, (UIDevice.current.identifierForVendor?.uuidString)!)
-                request.httpBody = postString.data(using: .utf8)
-                request.addValue(String(format:"Bearer %@", accessToken!), forHTTPHeaderField: "Authorization")
-                let sessionConfiguration = URLSessionConfiguration.default
-                let session = URLSession(configuration: sessionConfiguration, delegate: self, delegateQueue: nil)
-                let reqDataTask = session.dataTask(with: request as URLRequest, completionHandler: { (data, response, error) in
-                    DispatchQueue.main.async {
-                        UIApplication.shared.isNetworkActivityIndicatorVisible = false
-                        if (error != nil) {
-                            NSLog("error %@", (error! as NSError).localizedDescription)
-                            let error = NSError(domain: "", code: 0, userInfo:  [
-                                NSLocalizedDescriptionKey :  NSLocalizedString("ErrorCallingAPI", value: "Could not get data", comment: "")
-                                ])
-                            ErrorManager.showError(error: error)
-                        } else {
-                            if let httpStatus = response as? HTTPURLResponse , httpStatus.statusCode != 204 {
+            TokenManager.sharedInstance.getAccessToken { (accessTokenResult) in
+                switch accessTokenResult {
+                case .Failure(let error) :
+                    UIApplication.shared.isNetworkActivityIndicatorVisible = false
+                    ErrorManager.showError(error: error!)
+                case .Success(let accessToken) :
+                    guard let urlRequest = URL(string: String(format:"%@%i", Server.deleteNotifiedAlertResource, alertId as! Int)) else { return }
+                    let request = NSMutableURLRequest(url: urlRequest)
+                    request.addValue("application/x-www-form-urlencoded", forHTTPHeaderField:"Content-Type");
+                    request.httpMethod = "DELETE"
+                    let postString = String(format:"token=%@&device_id=%@", TokenManager.sharedInstance.deviceId!, (UIDevice.current.identifierForVendor?.uuidString)!)
+                    request.httpBody = postString.data(using: .utf8)
+                    request.addValue(String(format:"Bearer %@", accessToken!), forHTTPHeaderField: "Authorization")
+                    let sessionConfiguration = URLSessionConfiguration.default
+                    let session = URLSession(configuration: sessionConfiguration, delegate: self, delegateQueue: nil)
+                    let reqDataTask = session.dataTask(with: request as URLRequest, completionHandler: { (data, response, error) in
+                        DispatchQueue.main.async {
+                            UIApplication.shared.isNetworkActivityIndicatorVisible = false
+                            if (error != nil) {
+                                NSLog("error %@", (error! as NSError).localizedDescription)
                                 let error = NSError(domain: "", code: 0, userInfo:  [
-                                    NSLocalizedDescriptionKey :  NSLocalizedString("ErrorSendingDeviceId", value: "Could not delete server alert", comment: "")
+                                    NSLocalizedDescriptionKey :  NSLocalizedString("ErrorCallingAPI", value: "Could not get data", comment: "")
                                     ])
                                 ErrorManager.showError(error: error)
                             } else {
-                                NSLog("Deleted notification alert %i",alertId as! Int)
+                                if let httpStatus = response as? HTTPURLResponse , httpStatus.statusCode != 204 {
+                                    let error = NSError(domain: "", code: 0, userInfo:  [
+                                        NSLocalizedDescriptionKey :  NSLocalizedString("ErrorSendingDeviceId", value: "Could not delete server alert", comment: "")
+                                        ])
+                                    ErrorManager.showError(error: error)
+                                } else {
+                                    NSLog("Deleted notification alert %i",alertId as! Int)
+                                }
                             }
                         }
-                    }
-                })
-                reqDataTask.resume()
+                    })
+                    reqDataTask.resume()
+                }
             }
-        
-        }
-        completionHandler()
+            completionHandler()
         }
     }
     
     
     func application(_ application: UIApplication, open url: URL, sourceApplication: String?, annotation: Any) -> Bool {
-            return true
+        return true
     }
     
-    
-    func connectToFcm()
-    {
+    func connectToFcm() {
         FIRMessaging.messaging().connect { (error) in
-            if (error != nil)
-            {
+            if (error != nil) {
                 if let token = FIRInstanceID.instanceID().token() {
                     NSLog("Connected to FCM. Token is %@",token as String)
                     TokenManager.sharedInstance.storeDeviceId(token: token)
                 }
-            }
-            else
-            {
+            } else {
                 if let token = FIRInstanceID.instanceID().token() {
                     NSLog("Connected to FCM. Token is %@",token as String)
                     TokenManager.sharedInstance.storeDeviceId(token: token)
@@ -203,8 +196,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         }
     }
     
-    func tokenRefreshNotification(notification: NSNotification)
-    {
+    func tokenRefreshNotification(notification: NSNotification) {
         // Connect to FCM since connection may have failed when attempted before having a token.
         connectToFcm()
     }
@@ -258,6 +250,3 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         }
     }
 }
-
-
-
