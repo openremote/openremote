@@ -415,14 +415,6 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         apartment2 = assetStorageService.merge(apartment2);
         apartment2Id = apartment2.getId();
 
-        /* TODO Experimental
-        ServerAsset apartment2UpnpAgent= new ServerAsset("UPnP Agent", AGENT, apartment2);
-        apartment2UpnpAgent.setAttributes(
-            initProtocolConfiguration(new AssetAttribute("upnpConfig1"), UpnpProtocol.PROTOCOL_NAME)
-        );
-        apartment2UpnpAgent = assetStorageService.merge(apartment2UpnpAgent);
-        */
-
         ServerAsset apartment2Livingroom = new ServerAsset("Living Room", ROOM, apartment2);
         apartment2Livingroom.setLocation(apartment2.getLocation());
         apartment2Livingroom.setAttributes(
