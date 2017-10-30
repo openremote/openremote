@@ -46,7 +46,7 @@ An instance of the application in developer mode can be started with:
 
 ```
 ./gradlew clean prepareImage
-docker-compose -p ordev \
+docker-compose -p openremote \
     -f profile/postgresql_dev.yml \
     -f profile/keycloak_dev.yml \
     -f profile/manager_dev.yml \
@@ -57,7 +57,7 @@ docker-compose -p ordev \
 Stop the containers with:
 
 ```
-docker-compose -p ordev \
+docker-compose -p openremote \
     -f profile/postgresql_dev.yml \
     -f profile/keycloak_dev.yml \
     -f profile/manager_dev.yml \
