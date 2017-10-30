@@ -270,7 +270,7 @@ public class RulesetResourceImpl extends ManagerWebResource implements RulesetRe
     }
 
     @Override
-    public void deletAssetRuleset(@BeanParam RequestParams requestParams, Long id) {
+    public void deleteAssetRuleset(@BeanParam RequestParams requestParams, Long id) {
         AssetRuleset ruleset = rulesetStorageService.findById(AssetRuleset.class, id);
         if (ruleset == null) {
             return;

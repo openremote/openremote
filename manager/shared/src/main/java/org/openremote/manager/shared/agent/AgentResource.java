@@ -56,6 +56,7 @@ public interface AgentResource {
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
     @RolesAllowed({"read:assets"})
+    @SuppressWarnings("unusable-by-js")
     ProtocolDescriptor[] getSupportedProtocols(
         @BeanParam RequestParams requestParams,
         @PathParam("agentId") String agentId
@@ -69,6 +70,7 @@ public interface AgentResource {
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
     @RolesAllowed({"read:assets"})
+    @SuppressWarnings("unusable-by-js")
     List<AgentStatusEvent> getAgentStatus(
         @BeanParam RequestParams requestParams,
         @PathParam("agentId") String agentId
@@ -82,6 +84,7 @@ public interface AgentResource {
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
     @RolesAllowed({"read:assets"})
+    @SuppressWarnings("unusable-by-js")
     Map<String, ProtocolDescriptor[]> getAllSupportedProtocols(
         @BeanParam RequestParams requestParams
     );
@@ -94,6 +97,7 @@ public interface AgentResource {
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
     @RolesAllowed({"read:assets"})
+    @SuppressWarnings("unusable-by-js")
     AssetAttribute[] getDiscoveredProtocolConfigurations(
         @BeanParam RequestParams requestParams,
         @PathParam("agentId") String agentId,
@@ -108,6 +112,7 @@ public interface AgentResource {
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
+    @SuppressWarnings("unusable-by-js")
     AttributeValidationResult validateProtocolConfiguration(
         @BeanParam RequestParams requestParams,
         @PathParam("agentId") String agentId,
@@ -127,6 +132,7 @@ public interface AgentResource {
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
+    @SuppressWarnings("unusable-by-js")
     Asset[] searchForLinkedAttributes(
         @BeanParam RequestParams requestParams,
         @PathParam("agentId") String agentId,
@@ -149,6 +155,7 @@ public interface AgentResource {
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
+    @SuppressWarnings("unusable-by-js")
     // TODO: File upload should use standard multipart mechanism
     Asset[] importLinkedAttributes(
         @BeanParam RequestParams requestParams,

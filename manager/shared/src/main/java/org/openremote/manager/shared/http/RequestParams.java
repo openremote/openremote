@@ -24,7 +24,6 @@ import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
 
 import javax.ws.rs.HeaderParam;
-import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 

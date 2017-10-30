@@ -39,12 +39,14 @@ public interface SyslogResource {
     @Path("event")
     @Produces(APPLICATION_JSON)
     @RolesAllowed({"read:admin"})
+    @SuppressWarnings("unusable-by-js")
     SyslogEvent[] getEvents(@BeanParam RequestParams requestParams, @QueryParam("level") SyslogLevel level, @QueryParam("limit") Integer limit);
 
     @DELETE
     @Path("event")
     @SuccessStatusCode(204)
     @RolesAllowed({"write:admin"})
+    @SuppressWarnings("unusable-by-js")
     void clearEvents(@BeanParam RequestParams requestParams);
 
     @GET
@@ -52,6 +54,7 @@ public interface SyslogResource {
     @SuccessStatusCode(200)
     @Consumes(APPLICATION_JSON)
     @RolesAllowed({"read:admin"})
+    @SuppressWarnings("unusable-by-js")
     SyslogConfig getConfig(@BeanParam RequestParams requestParams);
 
     @PUT
@@ -59,6 +62,7 @@ public interface SyslogResource {
     @SuccessStatusCode(204)
     @Consumes(APPLICATION_JSON)
     @RolesAllowed({"write:admin"})
+    @SuppressWarnings("unusable-by-js")
     void updateConfig(@BeanParam RequestParams requestParams, @Valid SyslogConfig config);
 
 }

@@ -44,6 +44,7 @@ public interface TenantResource {
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
     @RolesAllowed("read:admin")
+    @SuppressWarnings("unusable-by-js")
     Tenant[] getAll(@BeanParam RequestParams requestParams);
 
     /**
@@ -53,6 +54,7 @@ public interface TenantResource {
     @Path("{realm}")
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
+    @SuppressWarnings("unusable-by-js")
     Tenant get(@BeanParam RequestParams requestParams, @PathParam("realm") String realm);
 
     /**
@@ -62,6 +64,7 @@ public interface TenantResource {
     @Path("for/{realmId}")
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
+    @SuppressWarnings("unusable-by-js")
     Tenant getForRealmId(@BeanParam RequestParams requestParams, @PathParam("realmId") String realmId);
 
     @PUT
@@ -70,6 +73,7 @@ public interface TenantResource {
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(204)
     @RolesAllowed("write:admin")
+    @SuppressWarnings("unusable-by-js")
     void update(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @Valid Tenant tenant);
 
     @POST
@@ -77,6 +81,7 @@ public interface TenantResource {
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(204)
     @RolesAllowed("write:admin")
+    @SuppressWarnings("unusable-by-js")
     void create(@BeanParam RequestParams requestParams, @Valid Tenant tenant);
 
     @DELETE
@@ -84,5 +89,6 @@ public interface TenantResource {
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(204)
     @RolesAllowed("write:admin")
+    @SuppressWarnings("unusable-by-js")
     void delete(@BeanParam RequestParams requestParams, @PathParam("realm") String realm);
 }

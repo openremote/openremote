@@ -264,7 +264,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex.response.status == 404
 
         when: "an asset ruleset is deleted"
-        rulesetResource.deletAssetRuleset(null, rulesetId)
+        rulesetResource.deleteAssetRuleset(null, rulesetId)
         rulesetResource.getAssetRuleset(null, rulesetId)
 
         then: "the result should be not found"
@@ -502,7 +502,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex.response.status == 404
 
         when: "an asset ruleset is deleted"
-        rulesetResource.deletAssetRuleset(null, rulesetId)
+        rulesetResource.deleteAssetRuleset(null, rulesetId)
         rulesetResource.getAssetRuleset(null, rulesetId)
 
         then: "the result should be not found"
@@ -651,7 +651,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex.response.status == 403
 
         when: "a tenant ruleset is deleted"
-        rulesetResource.deletAssetRuleset(null, 1234567890l)
+        rulesetResource.deleteAssetRuleset(null, 1234567890l)
 
         then: "access should be forbidden"
         ex = thrown()
@@ -855,7 +855,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex.response.status == 404
 
         when: "an asset ruleset is deleted"
-        rulesetResource.deletAssetRuleset(null, rulesetId)
+        rulesetResource.deleteAssetRuleset(null, rulesetId)
         rulesetResource.getAssetRuleset(null, rulesetId)
 
         then: "the result should be not found"

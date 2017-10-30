@@ -44,6 +44,7 @@ public interface RulesetResource {
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
     @RolesAllowed({"read:rules"})
+    @SuppressWarnings("unusable-by-js")
     GlobalRuleset[] getGlobalRulesets(@BeanParam RequestParams requestParams);
 
     /**
@@ -56,6 +57,7 @@ public interface RulesetResource {
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
     @RolesAllowed({"read:rules"})
+    @SuppressWarnings("unusable-by-js")
     TenantRuleset[] getTenantRulesets(@BeanParam RequestParams requestParams, @PathParam("realmId") String realmId);
 
     /**
@@ -69,6 +71,7 @@ public interface RulesetResource {
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
     @RolesAllowed({"read:rules"})
+    @SuppressWarnings("unusable-by-js")
     AssetRuleset[] getAssetRulesets(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId);
 
     /* ################################################################################################# */
@@ -82,6 +85,7 @@ public interface RulesetResource {
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(204)
     @RolesAllowed({"write:rules"})
+    @SuppressWarnings("unusable-by-js")
     void createGlobalRuleset(@BeanParam RequestParams requestParams, @Valid GlobalRuleset ruleset);
 
     /**
@@ -93,6 +97,7 @@ public interface RulesetResource {
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
     @RolesAllowed({"read:rules"})
+    @SuppressWarnings("unusable-by-js")
     GlobalRuleset getGlobalRuleset(@BeanParam RequestParams requestParams, @PathParam("id") Long id);
 
     /**
@@ -104,6 +109,7 @@ public interface RulesetResource {
     @Consumes(APPLICATION_JSON)
     @SuccessStatusCode(204)
     @RolesAllowed({"write:rules"})
+    @SuppressWarnings("unusable-by-js")
     void updateGlobalRuleset(@BeanParam RequestParams requestParams, @PathParam("id") Long id, @Valid GlobalRuleset ruleset);
 
     /**
@@ -115,6 +121,7 @@ public interface RulesetResource {
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(204)
     @RolesAllowed({"write:rules"})
+    @SuppressWarnings("unusable-by-js")
     void deleteGlobalRuleset(@BeanParam RequestParams requestParams, @PathParam("id") Long id);
 
     /* ################################################################################################# */
@@ -130,6 +137,7 @@ public interface RulesetResource {
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(204)
     @RolesAllowed({"write:rules"})
+    @SuppressWarnings("unusable-by-js")
     void createTenantRuleset(@BeanParam RequestParams requestParams, @Valid TenantRuleset ruleset);
 
     /**
@@ -142,6 +150,7 @@ public interface RulesetResource {
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
     @RolesAllowed({"read:rules"})
+    @SuppressWarnings("unusable-by-js")
     TenantRuleset getTenantRuleset(@BeanParam RequestParams requestParams, @PathParam("id") Long id);
 
     /**
@@ -154,6 +163,7 @@ public interface RulesetResource {
     @Consumes(APPLICATION_JSON)
     @SuccessStatusCode(204)
     @RolesAllowed({"write:rules"})
+    @SuppressWarnings("unusable-by-js")
     void updateTenantRuleset(@BeanParam RequestParams requestParams, @PathParam("id") Long id, @Valid TenantRuleset ruleset);
 
     /**
@@ -166,6 +176,7 @@ public interface RulesetResource {
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(204)
     @RolesAllowed({"write:rules"})
+    @SuppressWarnings("unusable-by-js")
     void updateTenantRuleset(@BeanParam RequestParams requestParams, @PathParam("id") Long id);
 
     /* ################################################################################################# */
@@ -181,6 +192,7 @@ public interface RulesetResource {
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(204)
     @RolesAllowed({"write:rules"})
+    @SuppressWarnings("unusable-by-js")
     void createAssetRuleset(@BeanParam RequestParams requestParams, @Valid AssetRuleset ruleset);
 
     /**
@@ -193,6 +205,7 @@ public interface RulesetResource {
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
     @RolesAllowed({"write:rules"})
+    @SuppressWarnings("unusable-by-js")
     AssetRuleset getAssetRuleset(@BeanParam RequestParams requestParams, @PathParam("id") Long id);
 
     /**
@@ -205,6 +218,7 @@ public interface RulesetResource {
     @Consumes(APPLICATION_JSON)
     @SuccessStatusCode(204)
     @RolesAllowed({"write:rules"})
+    @SuppressWarnings("unusable-by-js")
     void updateAssetRuleset(@BeanParam RequestParams requestParams, @PathParam("id") Long id, @Valid AssetRuleset ruleset);
 
     /**
@@ -217,6 +231,7 @@ public interface RulesetResource {
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(204)
     @RolesAllowed({"write:rules"})
-    void deletAssetRuleset(@BeanParam RequestParams requestParams, @PathParam("id") Long id);
+    @SuppressWarnings("unusable-by-js")
+    void deleteAssetRuleset(@BeanParam RequestParams requestParams, @PathParam("id") Long id);
 
 }
