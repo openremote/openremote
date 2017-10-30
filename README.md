@@ -23,6 +23,7 @@ Access the manager UI and API on https://localhost/ with username `admin` and pa
 You can build the Docker images from source with:
 
 ```
+(cd deployment/manager/resources_console/customerA/ && bower prune && bower update)
 ./gradlew clean prepareImage
 docker build -t openremote/haproxy:latest haproxy
 docker build -t openremote/letsencrypt:latest letsencrypt

@@ -5,8 +5,9 @@ dependencies {
 
     compile resolveProject(":container")
 
-    compile "org.drools:drools-compiler:$droolsVersion"
-    compile "org.drools:drools-decisiontables:$droolsVersion"
+    compile "io.netty:netty-transport-rxtx:$nettyVersion"
+    compile "io.netty:netty-codec:$nettyVersion"
+    compile "com.neuronrobotics:nrjavaserial:$nrjavaserialVersion"
 
     compile "com.luckycatlabs:SunriseSunsetCalculator:$sunriseSunsetCalculatorVersion"
     compile("org.quartz-scheduler:quartz:$quartzVersion") {
@@ -25,7 +26,5 @@ dependencies {
 
     compile "org.fourthline.cling:cling-core:$clingVersion"
 
-    compile "com.neuronrobotics:nrjavaserial:$nrjavaserialVersion"
-    
     compile "net.sf.saxon:Saxon-HE:$saxonHEVersion"
 }

@@ -9,6 +9,13 @@ dependencies {
     compile resolveProject(":agent")
     compile resolveProject(":manager:shared")
 
+    compile("org.drools:drools-compiler:$droolsVersion") {
+        exclude group: "com.thoughtworks.xstream"
+    }
+    compile("org.drools:drools-decisiontables:$droolsVersion") {
+        exclude group: "org.apache.poi"
+    }
+
     compile "org.xerial:sqlite-jdbc:$sqliteVersion"
 }
 
