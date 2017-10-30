@@ -16,9 +16,9 @@
         }
 
         .stringEditor {
-            min-width: 5em;
-            width: 100%;
-        }
+                     min-width: 5em;
+                     width: 100%;
+                 }
 
         .numberEditor {
             min-width: 5em;

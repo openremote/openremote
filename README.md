@@ -23,6 +23,7 @@ Access the manager UI and API on https://localhost/ with username `admin` and pa
 You can build the Docker images from source with:
 
 ```
+(cd manager/client/src/main/webapp && bower prune && bower update)
 (cd deployment/manager/resources_console/customerA/ && bower prune && bower update)
 ./gradlew clean prepareImage
 docker build -t openremote/haproxy:latest haproxy
@@ -45,6 +46,7 @@ docker push openremote/manager:latest
 An instance of the application in developer mode can be started with:
 
 ```
+(cd manager/client/src/main/webapp && bower prune && bower update)
 ./gradlew clean prepareImage
 docker-compose -p openremote \
     -f profile/postgresql_dev.yml \
