@@ -19,6 +19,9 @@
  */
 package org.openremote.container.persistence;
 
+import org.flywaydb.core.Flyway;
+import org.flywaydb.core.api.MigrationInfo;
+import org.flywaydb.core.api.MigrationVersion;
 import org.hibernate.Session;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.openremote.container.Container;
@@ -59,12 +62,16 @@ public class PersistenceService implements ContainerService {
     public static final int DATABASE_MAX_POOL_SIZE_DEFAULT = 20;
     public static final String DATABASE_CONNECTION_TIMEOUT_SECONDS = "DATABASE_CONNECTION_TIMEOUT_SECONDS";
     public static final int DATABASE_CONNECTION_TIMEOUT_SECONDS_DEFAULT = 300;
+    public static final String DATABASE_BASELINE = "DATABASE_BASELINE";
+    public static final String DATABASE_BASELINE_DEFAULT = "1";
+    public static final String DATABASE_BASELINE_DESCRIPTION = "<< OpenRemote BaseLine >>";
 
     protected MessageBrokerService messageBrokerService;
     protected Database database;
     protected String persistenceUnitName;
     protected Map<String, Object> persistenceUnitProperties;
     protected EntityManagerFactory entityManagerFactory;
+    protected Flyway flyway;
 
     @Override
     public void init(Container container) throws Exception {
@@ -99,6 +106,15 @@ public class PersistenceService implements ContainerService {
         int connectionTimeoutSeconds = getInteger(container.getConfig(), DATABASE_CONNECTION_TIMEOUT_SECONDS, DATABASE_CONNECTION_TIMEOUT_SECONDS_DEFAULT);
         LOG.info("Opening database connection: " + connectionUrl);
         database.open(persistenceUnitProperties, connectionUrl, databaseUsername, databasePassword, connectionTimeoutSeconds, databaseMinPoolSize, databaseMaxPoolSize);
+
+        String baselineVersion = getString(container.getConfig(), DATABASE_BASELINE, DATABASE_BASELINE_DEFAULT);
+
+        flyway = new Flyway();
+        flyway.setDataSource(connectionUrl, databaseUsername, databasePassword);
+        flyway.setLocations("classpath:org/openremote/container/persistence/migrations");
+        flyway.setBaselineVersion(MigrationVersion.fromVersion(baselineVersion));
+        flyway.setBaselineDescription(DATABASE_BASELINE_DESCRIPTION);
+        flyway.baseline();
     }
 
     @Override
@@ -135,7 +151,16 @@ public class PersistenceService implements ContainerService {
     }
 
     public void createSchema() {
+
         generateSchema("create");
+    }
+
+    public void updateSchema() {
+        for (MigrationInfo i : flyway.info().all()) {
+            LOG.info("Migrate task: " + i.getVersion() + " : "
+                + i.getDescription() + " from file: " + i.getScript());
+        }
+        flyway.migrate();
     }
 
     public void dropSchema() {
