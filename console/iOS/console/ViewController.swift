@@ -62,11 +62,11 @@ class ViewController: UIViewController {
         }
     }
     
-    func isdeviceIdSent() {
+    @objc func isdeviceIdSent() {
         showLoginPage()
     }
     
-    func login() {
+    @objc func login() {
         self.loginButton.removeFromSuperview()
         self.showLoginPage()
     }

@@ -40,10 +40,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
             options: authOptions,
             completionHandler: {_, _ in })
         
-        FIRApp.configure()
+        FirebaseApp.configure()
         
         application.registerForRemoteNotifications()
-        NotificationCenter.default.addObserver(self, selector: #selector(self.tokenRefreshNotification), name: NSNotification.Name.firInstanceIDTokenRefresh, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(self.tokenRefreshNotification), name: NSNotification.Name.InstanceIDTokenRefresh, object: nil)
         NotificationCenter.default.addObserver(self,
                                                selector: #selector(self.reachabilityChanged(note:)),
                                                name: NSNotification.Name.reachabilityChanged,
@@ -94,7 +94,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     }
     
     func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
-        FIRInstanceID.instanceID().setAPNSToken(deviceToken, type: FIRInstanceIDAPNSTokenType.unknown)        
+        Messaging.messaging().apnsToken = deviceToken
     }
     
     func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable : Any], fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
@@ -181,14 +181,14 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     }
     
     func connectToFcm() {
-        FIRMessaging.messaging().connect { (error) in
+        Messaging.messaging().connect { (error) in
             if (error != nil) {
-                if let token = FIRInstanceID.instanceID().token() {
+                if let token = InstanceID.instanceID().token() {
                     NSLog("Connected to FCM. Token is %@",token as String)
                     TokenManager.sharedInstance.storeDeviceId(token: token)
                 }
             } else {
-                if let token = FIRInstanceID.instanceID().token() {
+                if let token = InstanceID.instanceID().token() {
                     NSLog("Connected to FCM. Token is %@",token as String)
                     TokenManager.sharedInstance.storeDeviceId(token: token)
                 }
@@ -196,12 +196,12 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         }
     }
     
-    func tokenRefreshNotification(notification: NSNotification) {
+    @objc func tokenRefreshNotification(notification: NSNotification) {
         // Connect to FCM since connection may have failed when attempted before having a token.
         connectToFcm()
     }
     
-    func reachabilityChanged(note: NSNotification) {
+    @objc func reachabilityChanged(note: NSNotification) {
         if let reachability = note.object as? Reachability {
             updateReachabilityStatus(reachability: reachability)
         }
