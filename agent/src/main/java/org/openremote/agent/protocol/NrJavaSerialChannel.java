@@ -22,14 +22,11 @@ package org.openremote.agent.protocol;
 import gnu.io.NRSerialPort;
 import gnu.io.SerialPort;
 import io.netty.channel.ConnectTimeoutException;
-import io.netty.channel.rxtx.RxtxChannel;
 
 import java.net.SocketAddress;
-import java.nio.channels.ConnectionPendingException;
 
-import static io.netty.channel.rxtx.RxtxChannelOption.*;
-
-public class NrJavaSerialChannel extends RxtxChannel {
+@SuppressWarnings("deprecation")
+public class NrJavaSerialChannel extends io.netty.channel.rxtx.RxtxChannel {
 
     private boolean open = true;
     protected SerialPort serialPort;
@@ -50,20 +47,20 @@ public class NrJavaSerialChannel extends RxtxChannel {
             // No exception is thrown on connect failure so throw one
             throw new ConnectTimeoutException("Failed to establish connection to COM port: " + remote.value());
         }
-        serialPort.enableReceiveTimeout(config().getOption(READ_TIMEOUT));
+        serialPort.enableReceiveTimeout(config().getOption(io.netty.channel.rxtx.RxtxChannelOption.READ_TIMEOUT));
         deviceAddress = remote;
     }
 
     @Override
     protected void doInit() throws Exception {
         serialPort.setSerialPortParams(
-            config().getOption(BAUD_RATE),
-            config().getOption(DATA_BITS).value(),
-            config().getOption(STOP_BITS).value(),
-            config().getOption(PARITY_BIT).value()
+            config().getOption(io.netty.channel.rxtx.RxtxChannelOption.BAUD_RATE),
+            config().getOption(io.netty.channel.rxtx.RxtxChannelOption.DATA_BITS).value(),
+            config().getOption(io.netty.channel.rxtx.RxtxChannelOption.STOP_BITS).value(),
+            config().getOption(io.netty.channel.rxtx.RxtxChannelOption.PARITY_BIT).value()
         );
-        serialPort.setDTR(config().getOption(DTR));
-        serialPort.setRTS(config().getOption(RTS));
+        serialPort.setDTR(config().getOption(io.netty.channel.rxtx.RxtxChannelOption.DTR));
+        serialPort.setRTS(config().getOption(io.netty.channel.rxtx.RxtxChannelOption.RTS));
 
         activate(serialPort.getInputStream(), serialPort.getOutputStream());
     }

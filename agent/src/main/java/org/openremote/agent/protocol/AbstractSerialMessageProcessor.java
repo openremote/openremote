@@ -20,28 +20,17 @@
 package org.openremote.agent.protocol;
 
 import io.netty.channel.Channel;
-import io.netty.channel.EventLoopGroup;
-import io.netty.channel.ThreadPerChannelEventLoopGroup;
-import io.netty.channel.local.LocalEventLoopGroup;
 import io.netty.channel.oio.OioEventLoopGroup;
-import io.netty.channel.rxtx.RxtxChannel;
-import io.netty.channel.rxtx.RxtxDeviceAddress;
-import io.netty.channel.socket.nio.NioSocketChannel;
-import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TextUtil;
 
 import java.net.SocketAddress;
 import java.util.Objects;
-import java.util.logging.Logger;
-
-import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 
 /**
  * This is a {@link MessageProcessor} implementation for serial ports.
  */
 public abstract class AbstractSerialMessageProcessor<T> extends AbstractNettyMessageProcessor<T> {
 
-    private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, AbstractSerialMessageProcessor.class);
     protected String port;
     protected int baudRate;
 
@@ -68,8 +57,9 @@ public abstract class AbstractSerialMessageProcessor<T> extends AbstractNettyMes
         return port;
     }
 
+    @SuppressWarnings("deprecation")
     @Override
-    protected EventLoopGroup getWorkerGroup() {
+    protected io.netty.channel.EventLoopGroup getWorkerGroup() {
         return new OioEventLoopGroup(1);
     }
 }

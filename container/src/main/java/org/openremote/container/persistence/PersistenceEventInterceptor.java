@@ -50,10 +50,10 @@ public class PersistenceEventInterceptor extends EmptyInterceptor {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public boolean onSave(Object entity, Serializable id,
                           Object[] state, String[] propertyNames, Type[] types)
         throws CallbackException {
-        //noinspection unchecked
         persistenceEvents.add(new PersistenceEvent(
             PersistenceEvent.Cause.INSERT,
             entity,
@@ -64,11 +64,11 @@ public class PersistenceEventInterceptor extends EmptyInterceptor {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public boolean onFlushDirty(Object entity, Serializable id,
                                 Object[] currentState, Object[] previousState,
                                 String[] propertyNames, Type[] types)
         throws CallbackException {
-        //noinspection unchecked
         persistenceEvents.add(new PersistenceEvent(
             PersistenceEvent.Cause.UPDATE,
             entity,
@@ -80,11 +80,11 @@ public class PersistenceEventInterceptor extends EmptyInterceptor {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public void onDelete(Object entity, Serializable id,
                          Object[] state,
                          String[] propertyNames,
                          Type[] types) {
-        //noinspection unchecked
         persistenceEvents.add(new PersistenceEvent(
             PersistenceEvent.Cause.DELETE,
             entity,

@@ -28,7 +28,7 @@ import java.util.Locale;
 /**
  * Encapsulate asset query restriction, projection, and ordering of results.
  */
-
+@SuppressWarnings("unchecked")
 public class AbstractAssetQuery<CHILD extends AbstractAssetQuery<CHILD>> {
 
     public enum Include {

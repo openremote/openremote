@@ -24,7 +24,6 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import io.undertow.server.handlers.ResponseCodeHandler;
 import io.undertow.server.handlers.proxy.ProxyHandler;
-import io.undertow.server.handlers.proxy.SimpleProxyClientProvider;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.LoginConfig;
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
@@ -106,6 +105,7 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider{
     // This will pass authentication ("NOT ATTEMPTED" state), but later fail any role authorization
     final protected KeycloakDeployment notAuthenticatedKeycloakDeployment = new KeycloakDeployment();
 
+    @SuppressWarnings("deprecation")
     public KeycloakIdentityProvider(String clientId, UriBuilder externalServerUri, Container container) {
         this.clientId = clientId;
         this.externalServerUri = externalServerUri;
@@ -158,7 +158,7 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider{
         };
 
         authProxyHandler = new ProxyHandler(
-            new SimpleProxyClientProvider(keycloakServiceUri.clone().replacePath("").build()),
+            new io.undertow.server.handlers.proxy.SimpleProxyClientProvider(keycloakServiceUri.clone().replacePath("").build()),
             getInteger(container.getConfig(), KEYCLOAK_REQUEST_TIMEOUT, KEYCLOAK_REQUEST_TIMEOUT_DEFAULT),
             ResponseCodeHandler.HANDLE_404
         ).setReuseXForwarded(true);

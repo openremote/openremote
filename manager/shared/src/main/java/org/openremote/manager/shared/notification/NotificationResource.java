@@ -43,6 +43,7 @@ public interface NotificationResource {
     @SuccessStatusCode(204)
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
     @RolesAllowed({"write:user"})
+    @SuppressWarnings("unusable-by-js")
     void storeDeviceToken(@BeanParam RequestParams requestParams,
                           @FormParam("device_id") String deviceId,
                           @FormParam("token") String token,
@@ -55,6 +56,7 @@ public interface NotificationResource {
     @Path("token/{userId}")
     @Produces(APPLICATION_JSON)
     @RolesAllowed({"read:admin"})
+    @SuppressWarnings("unusable-by-js")
     List<DeviceNotificationToken> getDeviceTokens(@BeanParam RequestParams requestParams,
                                                   @PathParam("userId") String userId);
 
@@ -65,6 +67,7 @@ public interface NotificationResource {
     @Path("token/{userId}/device/{deviceId}")
     @Produces(APPLICATION_JSON)
     @RolesAllowed({"write:admin"})
+    @SuppressWarnings("unusable-by-js")
     void deleteDeviceToken(@BeanParam RequestParams requestParams,
                            @PathParam("userId") String userId,
                            @PathParam("deviceId") String deviceId);
@@ -74,6 +77,7 @@ public interface NotificationResource {
     @SuccessStatusCode(204)
     @Consumes(APPLICATION_JSON)
     @RolesAllowed({"write:user"})
+    @SuppressWarnings("unusable-by-js")
     void storeNotificationForCurrentUser(@BeanParam RequestParams requestParams,
                                          AlertNotification alertNotification);
 
@@ -85,6 +89,7 @@ public interface NotificationResource {
     @SuccessStatusCode(204)
     @Consumes(APPLICATION_JSON)
     @RolesAllowed({"write:admin"})
+    @SuppressWarnings("unusable-by-js")
     void storeNotificationForUser(@BeanParam RequestParams requestParams,
                                   @PathParam("userId") String userId,
                                   AlertNotification alertNotification);
@@ -97,6 +102,7 @@ public interface NotificationResource {
     @SuccessStatusCode(200)
     @Produces(APPLICATION_JSON)
     @RolesAllowed({"read:admin"})
+    @SuppressWarnings("unusable-by-js")
     AlertNotification[] getNotificationsOfUser(@BeanParam RequestParams requestParams,
                                                @PathParam("userId") String userId);
 
@@ -107,6 +113,7 @@ public interface NotificationResource {
     @Path("alert/user/{userId}")
     @SuccessStatusCode(204)
     @RolesAllowed({"write:admin"})
+    @SuppressWarnings("unusable-by-js")
     void removeNotificationsOfUser(@BeanParam RequestParams requestParams,
                                    @PathParam("userId") String userId);
 
@@ -117,6 +124,7 @@ public interface NotificationResource {
     @Path("alert/user/{userId}/{alertId}")
     @SuccessStatusCode(204)
     @RolesAllowed({"write:admin"})
+    @SuppressWarnings("unusable-by-js")
     void removeNotification(@BeanParam RequestParams requestParams,
                             @PathParam("userId") String userId,
                             @PathParam("alertId") Long id);
@@ -125,12 +133,14 @@ public interface NotificationResource {
     @Path("alert")
     @Produces(APPLICATION_JSON)
     @RolesAllowed({"write:user"})
+    @SuppressWarnings("unusable-by-js")
     List<AlertNotification> getQueuedNotificationsOfCurrentUser(@BeanParam RequestParams requestParams);
 
     @DELETE
     @Path("alert/{alertId}")
     @SuccessStatusCode(204)
     @RolesAllowed({"write:user"})
+    @SuppressWarnings("unusable-by-js")
     void ackNotificationOfCurrentUser(@BeanParam RequestParams requestParams,
                                       @PathParam("alertId") Long id);
 }

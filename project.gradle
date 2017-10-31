@@ -29,10 +29,13 @@ plugins.withType(JavaPlugin).whenPluginAdded {
     // Use Java 8
     tasks.withType(JavaCompile) {
         sourceCompatibility = "1.8"
-        // TODO Tyring to disable compiler warnings, none of this crap works
-        // options.compilerArgs += ["-XDignore.symbol.file", "-Xdoclint:none", "-Xlint:none", "-nowarn"]
-        // options.fork = true
-        // options.forkOptions.executable = 'javac'
+        def warnLogFile = file("$buildDir/${name}Warnings.log")
+        logging.addStandardErrorListener(new StandardOutputListener(){
+            void onOutput(CharSequence output){
+                warnLogFile << output
+            }
+        })
+        options.compilerArgs += ["-Xlint:unchecked", "-Xlint:deprecation"]
     }
 
     // JAR/ZIP base name is the fully qualified subproject name

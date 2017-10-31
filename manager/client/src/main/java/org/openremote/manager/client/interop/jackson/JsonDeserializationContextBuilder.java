@@ -23,6 +23,7 @@ import com.github.nmorel.gwtjackson.client.JsonDeserializationContext;
 
 public class JsonDeserializationContextBuilder extends JsonDeserializationContext.Builder {
 
+    @SuppressWarnings("deprecation")
     public JsonDeserializationContextBuilder() {
         failOnUnknownProperties(false);
     }

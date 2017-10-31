@@ -7,7 +7,10 @@ import org.apache.http.config.RegistryBuilder;
 import org.apache.http.conn.HttpClientConnectionManager;
 import org.apache.http.conn.socket.ConnectionSocketFactory;
 import org.apache.http.conn.socket.PlainConnectionSocketFactory;
-import org.apache.http.conn.ssl.*;
+import org.apache.http.conn.ssl.DefaultHostnameVerifier;
+import org.apache.http.conn.ssl.NoopHostnameVerifier;
+import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
+import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.conn.BasicHttpClientConnectionManager;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
@@ -17,12 +20,10 @@ import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
 import org.jboss.resteasy.client.jaxrs.engines.ApacheHttpClient43Engine;
 import org.jboss.resteasy.client.jaxrs.engines.PassthroughTrustManager;
 import org.jboss.resteasy.client.jaxrs.engines.factory.ApacheHttpClient4EngineFactory;
-import org.jboss.resteasy.client.jaxrs.i18n.Messages;
 
 import javax.net.ssl.*;
 import java.io.IOException;
 import java.security.SecureRandom;
-import java.security.cert.X509Certificate;
 
 /**
  * This tremendous code was copied from Resteasy. Make the private static SPI public again. Sad.
@@ -37,6 +38,7 @@ public class ExtensibleResteasyClientBuilder extends ResteasyClientBuilder {
         return super.build();
     }
 
+    @SuppressWarnings("deprecation")
     @Override
     public ResteasyClient buildOld() {
         throw new UnsupportedOperationException("Just don't...");
@@ -159,27 +161,11 @@ public class ExtensibleResteasyClientBuilder extends ResteasyClientBuilder {
         }
     }
 
-    public static class VerifierWrapper implements X509HostnameVerifier {
+    public static class VerifierWrapper implements HostnameVerifier {
         protected HostnameVerifier verifier;
 
         VerifierWrapper(HostnameVerifier verifier) {
             this.verifier = verifier;
-        }
-
-        @Override
-        public void verify(String host, SSLSocket ssl) throws IOException {
-            if (!verifier.verify(host, ssl.getSession()))
-                throw new SSLException(Messages.MESSAGES.hostnameVerificationFailure());
-        }
-
-        @Override
-        public void verify(String host, X509Certificate cert) throws SSLException {
-            throw new SSLException(Messages.MESSAGES.verificationPathNotImplemented());
-        }
-
-        @Override
-        public void verify(String host, String[] cns, String[] subjectAlts) throws SSLException {
-            throw new SSLException(Messages.MESSAGES.verificationPathNotImplemented());
         }
 
         @Override

@@ -24,6 +24,7 @@ import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsType;
 
 @JsType(isNative = true, namespace = JsPackage.GLOBAL, name = "Promise")
+@SuppressWarnings("unchecked")
 public class Promise<T,U> {
 
     public Promise(BiConsumer<Consumer<T>,Consumer<U>> fn) {}

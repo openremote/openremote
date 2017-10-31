@@ -1,5 +1,5 @@
 /*
- * Copyright 2016, OpenRemote Inc.
+ * Copyright 2017, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -17,21 +17,23 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.client.interop.mapbox;
+package org.openremote.container.persistence.migrations;
 
-import elemental2.dom.Event;
-import jsinterop.annotations.JsProperty;
-import jsinterop.annotations.JsType;
+import org.flywaydb.core.api.migration.jdbc.JdbcMigration;
 
-@JsType(isNative = true)
-public class EventData {
+import java.sql.Connection;
+import java.sql.PreparedStatement;
 
-    @JsProperty
-    public native Event getOriginalEvent();
+public class V0_1_2__ExampleMigration implements JdbcMigration {
+    @Override
+    public void migrate(Connection connection) throws Exception {
+        PreparedStatement statement =
+            connection.prepareStatement("ALTER TABLE public.asset ADD COLUMN test_column varchar(50)");
 
-    @JsProperty
-    public native Point getPoint();
-
-    @JsProperty
-    public native LngLat getLngLat();
+        try {
+            statement.execute();
+        } finally {
+            statement.close();
+        }
+    }
 }

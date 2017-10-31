@@ -90,11 +90,13 @@ public class JSAPIServlet extends HttpServlet {
 
     }
 
+    @SuppressWarnings("unchecked")
     public void scanResources() throws Exception {
 
         ServletConfig config = getServletConfig();
         ServletContext servletContext = config.getServletContext();
-        Map<String, ResteasyDeployment> deployments = (Map<String, ResteasyDeployment>) servletContext.getAttribute(ResteasyContextParameters.RESTEASY_DEPLOYMENTS);
+        Map<String, ResteasyDeployment> deployments =
+            (Map<String, ResteasyDeployment>) servletContext.getAttribute(ResteasyContextParameters.RESTEASY_DEPLOYMENTS);
 
         if (deployments == null) return;
         synchronized (this) {

@@ -35,7 +35,6 @@ import org.openremote.model.asset.*;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.MetaItem;
-import org.openremote.model.util.TextUtil;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueException;
 import org.openremote.model.value.Values;

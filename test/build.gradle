@@ -13,7 +13,6 @@ dependencies {
 
     compile "org.glassfish.tyrus:tyrus-client:$tyrusVersion"
     compile "org.glassfish.tyrus:tyrus-container-grizzly-client:$tyrusVersion"
-    compile "org.glassfish.web:javax.el:$javaxELVersion"
     compile "org.objenesis:objenesis:$objenesisVersion"
 
     // We must have this on the regular classpath because we do weird

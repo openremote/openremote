@@ -100,6 +100,7 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public void onViewAttached() {
         environment.getEventService().subscribe(
             AssetTreeModifiedEvent.class,

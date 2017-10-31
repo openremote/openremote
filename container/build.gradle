@@ -34,6 +34,7 @@ dependencies {
     compile "org.keycloak:keycloak-admin-client:$keycloakVersion"
 
     compile "org.postgresql:postgresql:$postgresJdbcVersion"
+    compile "org.flywaydb:flyway-core:$flywaydbVersion"
     compile "com.zaxxer:HikariCP:$hikaricpVersion"
     compile "org.hibernate:hibernate-core:$hibernateVersion"
     compile("org.hibernate:hibernate-spatial:$hibernateVersion") {

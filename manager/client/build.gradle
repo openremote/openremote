@@ -15,6 +15,7 @@ dependencies {
     compile("com.google.gwt.inject:gin:$ginVersion")
     compile files(['lib/gwt-jackson-0.14.3-SNAPSHOT.jar'])
     //compile "com.github.nmorel.gwtjackson:gwt-jackson:$gwtJacksonVersion"
+    compile "org.jboss.gwt.elemento:elemento-core:0.6.1"
 
     // This is not on regular classpath, only used when compiling GWT/running codeserver
     gwtDev files(['lib/javapoet-1.0.0.jar', 'lib/jackson-annotations-2.8.6-sources.jar'])
@@ -84,12 +85,11 @@ task compileGwt(dependsOn: classes, type: JavaExec) {
     args = [
             "org.openremote.manager.Manager", // The production GWT module
             "-war", gwtOutputDir,
-            "-logLevel", "INFO",
+            "-logLevel", "ERROR",
             "-localWorkers", "2",
             "-extra", gwtExtraDir,
             "-generateJsInteropExports",
-            "-logLevel", "INFO",
-            "-style", "PRETTY"
+            "-style", "OBFUSCATED"
     ]
 }
 

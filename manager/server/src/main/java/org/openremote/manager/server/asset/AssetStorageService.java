@@ -245,7 +245,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
         // TODO: Do this in a loop in reasonably sized batches
         return persistenceService.doReturningTransaction(em -> {
-            List<Object[]> result = em.createQuery("select a.id, a.name from Asset a where a.id in :ids")
+            List<Object[]> result = em.createQuery("select a.id, a.name from Asset a where a.id in :ids", Object[].class)
                 .setParameter("ids", Arrays.asList(ids))
                 .getResultList();
             List<String> names = new ArrayList<>();

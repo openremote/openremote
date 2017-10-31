@@ -47,6 +47,7 @@ public interface AssetDatapointResource {
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
     @RolesAllowed({"read:assets"})
+    @SuppressWarnings("unusable-by-js")
     NumberDatapoint[] getNumberDatapoints(@BeanParam RequestParams requestParams,
                                           @PathParam("assetId") String assetId,
                                           @PathParam("attributeName") String attributeName,

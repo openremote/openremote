@@ -59,6 +59,7 @@ public class Container {
     public static final String DEV_MODE = "DEV_MODE";
     public static final boolean DEV_MODE_DEFAULT = true;
 
+    @SuppressWarnings("deprecation")
     public static final ObjectMapper JSON = new ObjectMapper()
         .setSerializationInclusion(JsonInclude.Include.NON_NULL)
         .configure(SerializationFeature.WRITE_NULL_MAP_VALUES, false)
@@ -180,12 +181,12 @@ public class Container {
         }
     }
 
+    @SuppressWarnings("unchecked")
     public <T extends ContainerService> Collection<T> getServices(Class<T> type) {
         synchronized (services) {
             Set<T> result = new HashSet<>();
             for (ContainerService containerService : services.values()) {
                 if (type.isAssignableFrom(containerService.getClass())) {
-                    //noinspection unchecked
                     result.add((T) containerService);
                 }
             }
@@ -201,14 +202,13 @@ public class Container {
      * Get a service instance matching the specified type exactly, or if that yields
      * no result, try to get the first service instance that has a matching interface.
      */
+    @SuppressWarnings("unchecked")
     public <T extends ContainerService> T getService(Class<T> type) {
         synchronized (services) {
-            //noinspection unchecked
             T service = (T) services.get(type);
             if (service == null) {
                 for (ContainerService containerService : services.values()) {
                     if (type.isAssignableFrom(containerService.getClass())) {
-                        //noinspection unchecked
                         service = (T) containerService;
                         break;
                     }

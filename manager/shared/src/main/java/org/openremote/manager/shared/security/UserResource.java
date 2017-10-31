@@ -45,6 +45,7 @@ public interface UserResource {
     @Path("{realm}")
     @SuccessStatusCode(200)
     @RolesAllowed("read:admin")
+    @SuppressWarnings("unusable-by-js")
     User[] getAll(@BeanParam RequestParams requestParams, @PathParam("realm") String realm);
 
     @GET
@@ -52,6 +53,7 @@ public interface UserResource {
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
     @RolesAllowed("read:admin")
+    @SuppressWarnings("unusable-by-js")
     User get(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @PathParam("userId") String userId);
 
     @PUT
@@ -60,6 +62,7 @@ public interface UserResource {
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(204)
     @RolesAllowed("write:admin")
+    @SuppressWarnings("unusable-by-js")
     void update(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @PathParam("userId") String userId, @Valid User user);
 
     @POST
@@ -68,6 +71,7 @@ public interface UserResource {
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(204)
     @RolesAllowed("write:admin")
+    @SuppressWarnings("unusable-by-js")
     void create(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @Valid User user);
 
     @DELETE
@@ -75,6 +79,7 @@ public interface UserResource {
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(204)
     @RolesAllowed("write:admin")
+    @SuppressWarnings("unusable-by-js")
     void delete(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @PathParam("userId") String userId);
 
     @PUT
@@ -83,6 +88,7 @@ public interface UserResource {
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
     @RolesAllowed("write:admin")
+    @SuppressWarnings("unusable-by-js")
     void resetPassword(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @PathParam("userId") String userId, Credential credential);
 
     @GET
@@ -90,6 +96,7 @@ public interface UserResource {
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
     @RolesAllowed("read:admin")
+    @SuppressWarnings("unusable-by-js")
     Role[] getRoles(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @PathParam("userId") String userId);
 
     @PUT
@@ -97,5 +104,6 @@ public interface UserResource {
     @Consumes(APPLICATION_JSON)
     @SuccessStatusCode(204)
     @RolesAllowed("write:admin")
+    @SuppressWarnings("unusable-by-js")
     void updateRoles(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @PathParam("userId") String userId, Role[] roles);
 }
