@@ -22,7 +22,7 @@ package org.openremote.container.persistence;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import org.hibernate.cfg.AvailableSettings;
-import org.hibernate.spatial.dialect.postgis.PostgisDialect;
+import org.hibernate.spatial.dialect.postgis.PostgisPG95Dialect;
 import org.openremote.container.concurrent.ContainerThreadFactory;
 
 import java.util.HashMap;
@@ -51,7 +51,7 @@ public interface Database {
             @Override
             public Map<String, Object> createProperties() {
                 Map<String, Object> properties = new HashMap<>();
-                properties.put(AvailableSettings.DIALECT, PostgisDialect.class.getName());
+                properties.put(AvailableSettings.DIALECT, PostgisPG95Dialect.class.getName());
                 return properties;
             }
 

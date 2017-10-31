@@ -35,10 +35,10 @@ public abstract class AbstractSetupTasks implements SetupTasks {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public <S extends Setup> S getTaskOfType(Class<S> setupType) {
         for (Setup task : tasks) {
             if (setupType.isAssignableFrom(task.getClass()))
-                //noinspection unchecked
                 return (S) task;
         }
         throw new IllegalStateException("No setup task found of type: " + setupType);

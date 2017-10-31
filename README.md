@@ -47,6 +47,7 @@ An instance of the application in developer mode can be started with:
 
 ```
 (cd manager/client/src/main/webapp && bower prune && bower update)
+(cd deployment/manager/resources_console/customerA/ && bower prune && bower update)
 ./gradlew clean prepareImage
 docker-compose -p openremote \
     -f profile/postgresql_dev.yml \

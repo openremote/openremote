@@ -155,6 +155,7 @@ public class NotificationService implements ContainerService {
         );
     }
 
+    @SuppressWarnings("unchecked")
     public List<String> findAllUsersWithToken(UserQuery userQuery) {
         return persistenceService.doReturningTransaction(entityManager -> {
             Query query = entityManager.createQuery("SELECT DISTINCT dnt.id.userId " + buildFromString(userQuery) + buildWhereString(userQuery));

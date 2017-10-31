@@ -39,6 +39,7 @@ abstract public class FormTree extends CellTree {
          * and loading/expanding the tree while resolving. The returned node values are the path that
          * was taken while descending the tree, the starting node's value is first.
          */
+        @SuppressWarnings("unchecked")
         public List<T> resolvePath(List<P> path, TreeNode startingNode) {
             List<T> entityPath = new ArrayList<>();
             if (path.size() == 0)
@@ -52,7 +53,6 @@ abstract public class FormTree extends CellTree {
                     entityPath.clear();
                 } else {
                     // Otherwise, add the starting node value as the first element
-                    //noinspection unchecked
                     entityPath.add(0, (T) startingNode.getValue());
                 }
             }

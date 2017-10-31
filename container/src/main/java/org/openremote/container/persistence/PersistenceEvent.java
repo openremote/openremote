@@ -71,12 +71,14 @@ public class PersistenceEvent<T> {
         return previousState;
     }
 
-    public <T> T getPreviousState(String propertyName) {
-        return getPreviousState() != null ? (T) getPreviousState()[getPropertyIndex(propertyName)] : null;
+    @SuppressWarnings("unchecked")
+    public <E> E getPreviousState(String propertyName) {
+        return getPreviousState() != null ? (E) getPreviousState()[getPropertyIndex(propertyName)] : null;
     }
 
-    public <T> T getCurrentState(String propertyName) {
-        return (T) getCurrentState()[getPropertyIndex(propertyName)];
+    @SuppressWarnings("unchecked")
+    public <E> E getCurrentState(String propertyName) {
+        return (E) getCurrentState()[getPropertyIndex(propertyName)];
     }
 
     protected int getPropertyIndex(String propertyName) {

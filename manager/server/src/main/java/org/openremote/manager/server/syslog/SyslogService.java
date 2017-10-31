@@ -159,10 +159,10 @@ public class SyslogService extends Handler implements ContainerService {
         if (persistenceService == null)
             return new ArrayList<>();
         return persistenceService.doReturningTransaction(em -> {
-            List list = em.createQuery("select e from SyslogEvent e where e.level >= :level order by e.timestamp desc")
-                .setParameter("level", level)
-                .setMaxResults(limit)
-                .getResultList();
+            List<SyslogEvent> list = em.createQuery(
+                "select e from SyslogEvent e where e.level >= :level order by e.timestamp desc",
+                SyslogEvent.class
+            ).setParameter("level", level).setMaxResults(limit).getResultList();
             Collections.reverse(list);
             return list;
         });

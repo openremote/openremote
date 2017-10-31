@@ -20,17 +20,15 @@
 package org.openremote.container.message;
 
 import org.apache.camel.Processor;
-import org.apache.camel.builder.LoggingErrorHandlerBuilder;
-import org.apache.camel.impl.DefaultShutdownStrategy;
 import org.apache.camel.impl.DefaultStreamCachingStrategy;
 import org.apache.camel.spi.*;
-import org.apache.camel.util.ObjectHelper;
+import org.apache.camel.util.StringHelper;
 import org.apache.camel.util.concurrent.CamelThreadFactory;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
-import org.openremote.container.security.IdentityService;
 import org.openremote.container.concurrent.ContainerExecutor;
 import org.openremote.container.concurrent.ContainerScheduledExecutor;
+import org.openremote.container.security.IdentityService;
 import org.openremote.container.web.DefaultWebsocketComponent;
 import org.openremote.container.web.WebService;
 import org.openremote.container.web.socket.WebsocketComponent;
@@ -41,6 +39,7 @@ import java.util.concurrent.ThreadFactory;
 
 import static org.openremote.container.util.MapAccess.getString;
 
+@SuppressWarnings("deprecation")
 public class MessageBrokerSetupService implements ContainerService {
 
     public static final String WEBSOCKET_PATH = "/websocket";
@@ -87,8 +86,8 @@ public class MessageBrokerSetupService implements ContainerService {
                 if (threadFactory instanceof CamelThreadFactory) {
                     CamelThreadFactory factory = (CamelThreadFactory) threadFactory;
                     String camelName = factory.getName();
-                    camelName = camelName.contains("://") ? ObjectHelper.after(camelName, "://") : camelName;
-                    camelName = camelName.contains("?") ? ObjectHelper.before(camelName, "?") : camelName;
+                    camelName = camelName.contains("://") ? StringHelper.after(camelName, "://") : camelName;
+                    camelName = camelName.contains("?") ? StringHelper.before(camelName, "?") : camelName;
                     name = name + "-" + camelName;
                 }
                 return name;
@@ -113,7 +112,7 @@ public class MessageBrokerSetupService implements ContainerService {
         streamCachingStrategy.setSpoolThreshold(524288); // Half megabyte
         context.setStreamCachingStrategy(streamCachingStrategy);
 
-        context.setErrorHandlerBuilder(new LoggingErrorHandlerBuilder() {
+        context.setErrorHandlerBuilder(new org.apache.camel.builder.LoggingErrorHandlerBuilder() {
             @Override
             public Processor createErrorHandler(RouteContext routeContext, Processor processor) {
                 // TODO: Custom error handler?
