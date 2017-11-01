@@ -167,7 +167,9 @@ public class MainActivity extends Activity {
     protected void initializeWebView() {
         LOG.fine("Initializing web view");
 
-        webView.addJavascriptInterface(new WebAppInterface(this), "MobileInterface");
+        final WebAppInterface webAppInterface = new WebAppInterface(this);
+
+        webView.addJavascriptInterface(webAppInterface, "MobileInterface");
         WebSettings webSettings = webView.getSettings();
         webSettings.setJavaScriptEnabled(true);
         webSettings.setAppCacheEnabled(true);
@@ -184,6 +186,11 @@ public class MainActivity extends Activity {
         webView.setWebViewClient(new WebViewClient() {
             @Override
             public void onReceivedHttpError(WebView view, WebResourceRequest request, WebResourceResponse errorResponse) {
+                if (request.getUrl().getLastPathSegment().equals("token") && request.getMethod().equals("POST")) {
+                    webAppInterface.tokenService.clearToken();
+                    reloadWebView(getCurrentFocus());
+                    return;
+                }
                 LOG.warning("Error requesting '" + request.getUrl() + "', response code: " + errorResponse.getStatusCode());
                 errorViewHolder.show(R.string.httpError, R.string.httpErrorExplain, true, true);
             }
@@ -274,7 +281,7 @@ public class MainActivity extends Activity {
         @Override
         public void onReceive(Context context, Intent intent) {
             ConnectivityManager cm
-                = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+                    = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
 
             NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
             onConnectivityChanged(activeNetwork != null && activeNetwork.isConnectedOrConnecting());
