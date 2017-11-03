@@ -5,7 +5,9 @@
 #
 # Install Docker Community edition (https://docker.com/) on Windows, macOS, or Linux.
 #
-# Start the stack with: docker-compose -p openremote -f profile/deploy.yml up
+# Start the stack with: docker-compose -p openremote -f profile/demo.yml up
+#
+# Note that the demo.yml extends this configuration and declares dependencies between the services.
 #
 # All persistent data is stored on your Docker host in the '${DEPLOYMENT_DIRECTORY:-../deployment}' directory.
 #
@@ -53,6 +55,7 @@ services:
     # Always restart the service
     restart: always
 
+  # A sidecar container that manages the SSL certificates for haproxy
   letsencrypt:
     build:
       context: '../letsencrypt'

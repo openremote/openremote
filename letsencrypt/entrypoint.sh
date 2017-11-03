@@ -261,7 +261,8 @@ function init {
     auto_renew
     cron_auto_renewal
   else
-    # Do nothing but don't let the container exist so the stack stays healthy
+    # Do nothing but don't let the container exit so the stack stays healthy
+    log_info "Not renewing dummy certificate for localhost, waiting forever..."
     /bin/bash -c "trap : TERM INT; sleep infinity & wait"
   fi
 

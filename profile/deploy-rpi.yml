@@ -9,7 +9,7 @@ services:
       file: deploy.yml
       service: haproxy
 
-  letsenctrypt:
+  letsencrypt:
     extends:
       file: deploy.yml
       service: letsencrypt
