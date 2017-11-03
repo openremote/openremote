@@ -703,8 +703,8 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             query.select.include != AssetQuery.Include.ONLY_ID_AND_NAME_AND_ATTRIBUTES;
 
         if ((!recursive || level == 3) && (includeRealmInfo || query.tenantPredicate != null)) {
-            sb.append("join REALM R on R.ID = A.REALM_ID ");
-            sb.append("join REALM_ATTRIBUTE RA on RA.REALM_ID = R.ID and RA.NAME = 'displayName' ");
+            sb.append("join PUBLIC.REALM R on R.ID = A.REALM_ID ");
+            sb.append("join PUBLIC.REALM_ATTRIBUTE RA on RA.REALM_ID = R.ID and RA.NAME = 'displayName' ");
         }
 
         if ((!recursive || level == 3) && query.id == null && query.userId != null) {

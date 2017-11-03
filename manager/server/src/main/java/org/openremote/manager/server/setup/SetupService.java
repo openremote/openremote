@@ -47,16 +47,10 @@ public class SetupService implements ContainerService {
     final protected List<Setup> setupList = new ArrayList<>();
 
     // Make demo/test data accessible from Groovy/Java code
-    protected SetupTasks setupTasks;
+    public SetupTasks setupTasks;
 
     @Override
     public void init(Container container) throws Exception {
-        // Setup runs last, when everything is initialized and started
-    }
-
-    @Override
-    public void start(Container container) {
-
         ServiceLoader.load(SetupTasks.class).forEach(
             discoveredSetupTasks -> {
                 if (setupTasks != null) {
@@ -66,7 +60,7 @@ public class SetupService implements ContainerService {
                             + discoveredSetupTasks.getClass().getName()
                     );
                 }
-                LOG.info("Enabling setup tasks: " + discoveredSetupTasks.getClass().getName());
+                LOG.info("Found setup tasks: " + discoveredSetupTasks.getClass().getName());
                 setupTasks = discoveredSetupTasks;
             }
         );
@@ -80,11 +74,27 @@ public class SetupService implements ContainerService {
 
         try {
             if (setupList.size() > 0) {
-                LOG.info("--- EXECUTING SETUP TASKS ---");
+                LOG.info("--- EXECUTING INIT TASKS ---");
                 for (Setup setup : setupList) {
-                    setup.execute();
+                    setup.onInit();
                 }
-                LOG.info("--- SETUP TASKS COMPLETED SUCCESSFULLY ---");
+                LOG.info("--- INIT TASKS COMPLETED SUCCESSFULLY ---");
+            }
+        } catch (Exception ex) {
+            throw new RuntimeException("Error setting up application", ex);
+        }
+    }
+
+    @Override
+    public void start(Container container) {
+
+        try {
+            if (setupList.size() > 0) {
+                LOG.info("--- EXECUTING START TASKS ---");
+                for (Setup setup : setupList) {
+                    setup.onStart();
+                }
+                LOG.info("--- START TASKS COMPLETED SUCCESSFULLY ---");
             }
         } catch (Exception ex) {
             throw new RuntimeException("Error setting up application", ex);

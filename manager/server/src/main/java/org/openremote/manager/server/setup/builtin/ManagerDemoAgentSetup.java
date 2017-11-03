@@ -77,7 +77,7 @@ public class ManagerDemoAgentSetup extends AbstractManagerSetup {
     }
 
     @Override
-    public void execute() throws Exception {
+    public void onStart() throws Exception {
 
         KeycloakDemoSetup keycloakDemoSetup = setupService.getTaskOfType(KeycloakDemoSetup.class);
         Tenant masterTenant = keycloakDemoSetup.masterTenant;

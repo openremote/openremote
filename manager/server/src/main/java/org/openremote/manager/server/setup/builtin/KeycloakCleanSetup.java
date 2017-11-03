@@ -40,7 +40,8 @@ public class KeycloakCleanSetup extends AbstractKeycloakSetup {
     }
 
     @Override
-    public void execute() {
+    public void onStart() throws Exception {
+        super.onStart();
 
         // Delete all realms that are not the master realm
         LOG.info("Deleting all non-master realms");

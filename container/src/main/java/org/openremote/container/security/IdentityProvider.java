@@ -26,6 +26,8 @@ import io.undertow.servlet.api.DeploymentInfo;
  */
 public interface IdentityProvider {
 
+    void init();
+
     void start();
 
     void stop();

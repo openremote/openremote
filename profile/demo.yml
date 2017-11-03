@@ -5,38 +5,43 @@
 #
 # Install Docker Community edition (https://docker.com/) on Windows, macOS, or Linux.
 #
-# Start the stack with:
+# Start a transient demo stack with:
 #
 #   docker-compose -p openremote -f profile/demo.yml up
 #
 # For full documentation, see deploy.yml
 #
-# This configuration does not store SSL certificate data and allow changes to the
-# proxy configuration. You can map a Docker volume or host directory to access/store
-# these files.
+# Steps to create a permanent installation:
 #
-# This configuration expects manager deployment-specific data such as map tiles, console
-# application static resources (HTML, JS, CSS), and other configuration files
-# to be available in the '../deployment' directory. To set a custom deployment
-# directory, use env variable DEPLOYMENT_DIRECTORY.
+# 1. DO NOT FORGET TO CHANGE KEYCLOAK_PASSWORD!
+# 2. Consider setting a custom DOMAINNAME, see deploy.yml
+# 3. Understand how persistent data and volume mappings work, see below
+# 4. Execute once:
 #
-# This configuration stores postgresql data in a Docker volume. You manage this volume
-# independently from your stack with with 'docker volume ls', 'docker volume rm', etc.
-# Alternatively, you can store postgresql data in a directory on your host.
+#   SETUP_WIPE_CLEAN_INSTALL=true \
+#   KEYCLOAK_PASSWORD=secret \
+#   docker-compose -p openremote -f profile/demo.yml up
+#
+# This creates the initial database and optionally imports some examples. Inspect the
+# running installation and ensure it's working. You are now ready to restart the stack
+# without the clean wipe option. Passwords can be changed in the application.
+#
+# Database schemas will be upgraded to new versions of the services automatically, you do
+# not have to wipe all data to install a new version of OpenRemote.
 #
 version: '2.2'
 
 # If you enable volume mappings in services, you need this. Otherwise, remove the volumes
 volumes:
-#  proxy-data:
-#    name: proxy-data
-#  manager-data:
-#    name: manager-data
+  #proxy-data:
+  #manager-data:
   postgresql-data:
-    name: postgresql-data
 
 services:
 
+  # This configuration does not store SSL certificate data and allow changes to the
+  # proxy configuration, it is configured for deployment on localhost. You can map a
+  # Docker volume or host directory to access/store these files.
   proxy:
     extends:
       file: deploy.yml
@@ -49,6 +54,10 @@ services:
       # - ${DEPLOYMENT_DIRECTORY:-../deployment}/proxy:/deployment
       # - proxy-data:/deployment
 
+  # This configuration expects manager deployment-specific data such as map tiles,
+  # console application static resources (HTML, JS, CSS), and other configuration files
+  # to be available in the '../deployment' directory. To set a custom deployment
+  # directory, use env variable DEPLOYMENT_DIRECTORY.
   manager:
     extends:
       file: deploy.yml
@@ -60,6 +69,12 @@ services:
       # Store data either in host-mapped directory or a named Docker volume
       - ${DEPLOYMENT_DIRECTORY:-../deployment}/manager:/deployment
       # - manager-data:/deployment
+    environment:
+      # This switch can wipe all your Manager and Keycloak data, this is the factory reset!
+      SETUP_WIPE_CLEAN_INSTALL: 'true'
+      # When you are ready to permanently install your project, replace it with the next lines...
+      # SETUP_WIPE_CLEAN_INSTALL: # Allow override on CLI
+      # KEYCLOAK_PASSWORD: # Allow override on CLI
 
   keycloak:
     extends:
@@ -68,7 +83,15 @@ services:
     depends_on:
       postgresql:
         condition: service_healthy
+    environment:
+      # CHANGE THIS PASSWORD BEFORE STARTING THE STACK! THIS IS ONLY FOR DEMO!
+      KEYCLOAK_PASSWORD: secret
+      # When you are ready to permanently install your project, replace it with the next line ...
+      # KEYCLOAK_PASSWORD: # Allow override on CLI
 
+  # This configuration stores postgresql data in a Docker volume. You manage this volume
+  # independently from your stack with with 'docker volume ls', 'docker volume rm', etc.
+  # Alternatively, you can store postgresql data in a directory on your host.
   postgresql:
     extends:
       file: deploy.yml

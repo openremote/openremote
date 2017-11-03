@@ -1,6 +1,12 @@
 # Profile for doing development on the consoles and keycloak theme only.
 # Starts haproxy, letsencrypt, keycloak with theme volumed mapped and postgres and exposes haproxy to localhost.
 version: '2.2'
+
+volumes:
+  proxy-data:
+  #manager-data:
+  postgresql-data:
+
 services:
 
   proxy:
@@ -10,13 +16,13 @@ services:
     depends_on:
       manager:
         condition: service_healthy
+    volumes:
+      - proxy-data:/deployment
 
   manager:
     extends:
       file: deploy.yml
       service: manager
-    volumes:
-      - ../deployment/manager:/deployment
     environment:
       DEV_MODE: 'true'
     depends_on:
@@ -41,3 +47,5 @@ services:
     extends:
       file: deploy.yml
       service: postgresql
+    volumes:
+      - postgresql-data:/deployment

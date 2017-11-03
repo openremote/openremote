@@ -17,24 +17,26 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.server.setup.builtin;
+package org.openremote.manager.server.setup.database;
 
-import org.openremote.container.Container;
-import org.openremote.manager.server.setup.AbstractManagerSetup;
+import org.flywaydb.core.api.migration.jdbc.JdbcMigration;
 
-import java.util.logging.Logger;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
 
-public class ManagerUpdateSetup extends AbstractManagerSetup {
+/**
+ * TODO An example in the right place
+ */
+public class Disabled_V20171031_03__Migration { // implements JdbcMigration {
 
-    private static final Logger LOG = Logger.getLogger(ManagerUpdateSetup.class.getName());
-
-    public ManagerUpdateSetup(Container container) {
-        super(container);
-    }
-
-    @Override
-    public void execute() throws Exception {
-        LOG.info("Updating database schema");
-        persistenceService.updateSchema();
+    // @Override
+    public void migrate(Connection connection) throws Exception {
+        /* TODO: Enable to migrate beyond 3.0.0 when SQL files are not good enough
+        try (PreparedStatement statement = connection.prepareStatement(
+            "alter table openremote.ASSET add column TEST_COLUMN varchar(50)"
+        )) {
+            statement.execute();
+        }
+        */
     }
 }

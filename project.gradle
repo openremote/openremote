@@ -23,6 +23,17 @@ apply plugin: "eclipse"
 // subproject, not for its children!)
 version = hasProperty("openremoteVersion") ? openremoteVersion : projectVersion
 
+// Add bower tasks
+task bowerPrune(type: Exec){
+    commandLine "bower", "prune"
+    standardOutput = new ByteArrayOutputStream()
+}
+
+task bowerUpdate(type: Exec){
+    commandLine "bower", "update"
+    standardOutput = new ByteArrayOutputStream()
+}
+
 // Configure Java build
 plugins.withType(JavaPlugin).whenPluginAdded {
 
@@ -30,8 +41,8 @@ plugins.withType(JavaPlugin).whenPluginAdded {
     tasks.withType(JavaCompile) {
         sourceCompatibility = "1.8"
         def warnLogFile = file("$buildDir/${name}Warnings.log")
-        logging.addStandardErrorListener(new StandardOutputListener(){
-            void onOutput(CharSequence output){
+        logging.addStandardErrorListener(new StandardOutputListener() {
+            void onOutput(CharSequence output) {
                 warnLogFile << output
             }
         })
@@ -61,3 +72,4 @@ ext {
     resolveProject = this.&resolveProject
     resolveTask = this.&resolveTask
 }
+

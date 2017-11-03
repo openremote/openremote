@@ -77,14 +77,11 @@ services:
       # data. Some caching and other runtime performance-optimizations will also be disabled.
       DEV_MODE: 'false'
 
-      # If you are not running in developer mode, and this is the first time you are starting
-      # the application, you can configure which setup tasks you want to execute. Careful,
-      # these tasks will clean and populate Keycloak and the Manager database with demo data!
-      SETUP_INIT_CLEAN_DATABASE: 'true'
-      SETUP_KEYCLOAK_ADMIN_PASSWORD: secret
-      SETUP_IMPORT_DEMO_USERS: 'true'
-      SETUP_IMPORT_DEMO_ASSETS: 'true'
-      SETUP_IMPORT_DEMO_RULES: 'true'
+      # This switch can wipe all your Manager and Keycloak data, this is the factory reset!
+      SETUP_WIPE_CLEAN_INSTALL: 'true'
+      # When you are ready to permanently install your project, replace it with the next lines...
+      # SETUP_WIPE_CLEAN_INSTALL: # Allow override on CLI
+      # KEYCLOAK_PASSWORD: # Allow override on CLI
 
       # Optional: Configure SMTP smart host for Keycloak, to send password reset emails etc.
       #SETUP_KEYCLOAK_EMAIL_HOST: smtp-host.demo.tld
@@ -94,6 +91,26 @@ services:
       #SETUP_KEYCLOAK_EMAIL_AUTH: 'true'
       #SETUP_KEYCLOAK_EMAIL_TLS: 'true'
       #SETUP_KEYCLOAK_EMAIL_FROM: 'noreply@demo.tld'
+
+      # Other demo data can be imported as needed, these examples only use the simulator protocol.
+      SETUP_IMPORT_DEMO_USERS: 'true'
+      SETUP_IMPORT_DEMO_ASSETS: 'true'
+      SETUP_IMPORT_DEMO_RULES: 'true'
+
+      # Create a demo agent with example configurations for all built-in protocols:
+      #
+      # - KNX IP gateway
+      # - Velbus IP gateway or serial bridge
+      # - UPnP (asset discovery only)
+      #
+      SETUP_IMPORT_DEMO_AGENT: 'true'
+      SETUP_IMPORT_DEMO_AGENT_KNX: 'false'
+      #SETUP_IMPORT_DEMO_AGENT_KNX_GATEWAY_IP: '10.0.0.11'
+      #SETUP_IMPORT_DEMO_AGENT_KNX_LOCAL_IP: '10.0.0.12'
+      SETUP_IMPORT_DEMO_AGENT_VELBUS: 'false'
+      #SETUP_IMPORT_DEMO_AGENT_VELBUS_COM_PORT: 'COM3'
+      SETUP_IMPORT_DEMO_AGENT_UPNP: 'false'
+      # TODO: Additional docker settings are necessary to use com ports and multicast from within containers
 
       # The public host name of this OpenRemote installation. This name is used in bearer tokens
       # and must be the name you access the web services under. If you change proxy#DOMAINNAME, also
@@ -156,7 +173,7 @@ services:
       # access authorization. The default is Keycloak, which requires a separate service but
       # provides full multi-tenancy identity and role management. The basic provider supports
       # only superusers and their text passwords, managed in a simple database table.
-      # MANAGER_IDENTITY_PROVIDER: 'basic'
+      # IDENTITY_PROVIDER: 'basic'
       # SETUP_BASIC_IDENTITY_ADMIN_PASSWORD: 'secret'
 
       # Location of the static manager (UI and API) resources, you don't need to override this
@@ -203,10 +220,10 @@ services:
       # The master realm superuser, you should not change this.
       KEYCLOAK_USER: admin
 
-      # Change the admin root password if you make this application publicly accessible! Note
-      # that imported demo data uses the admin account and also creates test users. Importing will
-      # be broken if you change the password only here! Demo data should not be imported in production.
+      # CHANGE THIS PASSWORD BEFORE STARTING THE STACK! THIS IS ONLY FOR DEMO!
       KEYCLOAK_PASSWORD: secret
+      # When you are ready to permanently install your project, replace it with the next line ...
+      # KEYCLOAK_PASSWORD: # Allow override on CLI
 
       # Configure how Keycloak connects to the database
       POSTGRES_DATABASE: openremote
@@ -235,7 +252,8 @@ services:
 
       # Create database and user if there is no data. For production, run
       # this once with your volume mapping for the data directory (see demo.yml),
-      # then remove the variables and restart to preserve the stored data
+      # then remove the variables and restart to preserve the stored data. It
+      # doesn't hurt if you don't remove it, an existing will never be reconfigured.
       POSTGRES_DB: openremote
       POSTGRES_USER: openremote
       POSTGRES_PASSWORD: CHANGE_ME_DB_USER_PASSWORD

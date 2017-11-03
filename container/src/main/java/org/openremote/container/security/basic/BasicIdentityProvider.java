@@ -25,13 +25,33 @@ import io.undertow.security.idm.IdentityManager;
 import io.undertow.security.idm.PasswordCredential;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.LoginConfig;
+import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.IdentityProvider;
+import org.openremote.model.Constants;
 
+import javax.persistence.NoResultException;
+import javax.persistence.NonUniqueResultException;
+import java.security.Principal;
+import java.util.Set;
 import java.util.logging.Logger;
 
 public abstract class BasicIdentityProvider implements IdentityProvider {
 
     private static final Logger LOG = Logger.getLogger(BasicIdentityProvider.class.getName());
+
+    final protected PersistenceService persistenceService;
+
+    public BasicIdentityProvider(PersistenceService persistenceService) {
+        this.persistenceService = persistenceService;
+        this.persistenceService.getDefaultSchemaLocations().add(
+            "classpath:org/openremote/container/persistence/schema/basicidentityprovider"
+        );
+    }
+
+    @Override
+    public void init() {
+
+    }
 
     @Override
     public void start() {
@@ -71,5 +91,42 @@ public abstract class BasicIdentityProvider implements IdentityProvider {
         });
     }
 
-    abstract protected Account verifyAccount(String username, char[] password);
+    protected Account verifyAccount(String username, char[] password) {
+        LOG.fine("Authentication attempt, querying user: " + username);
+        Object[] idAndPassword = persistenceService.doReturningTransaction(em -> {
+                try {
+                    return (Object[]) em.createNativeQuery(
+                        "select U.ID, U.PASSWORD from USER_ENTITY U where U.USERNAME = :username"
+                    ).setParameter("username", username).getSingleResult();
+                } catch (NoResultException | NonUniqueResultException ex) {
+                    return null;
+                }
+            }
+        );
+        if (idAndPassword == null) {
+            LOG.fine("Authentication failed, no such user: " + username);
+            return null;
+        }
+        LOG.fine("Authentication attempt, verifying password: " + username);
+        if (!PasswordStorage.verifyPassword(password, idAndPassword[1].toString())) {
+            LOG.fine("Authentication failed, invalid password: " + username);
+            return null;
+        }
+
+        LOG.fine("Authentication successful: " + username);
+        final BasicAuthContext principal = new BasicAuthContext(Constants.MASTER_REALM, idAndPassword[0].toString(), username);
+        return new Account() {
+            @Override
+            public Principal getPrincipal() {
+                return principal;
+            }
+
+            @Override
+            public Set<String> getRoles() {
+                return getDefaultRoles();
+            }
+        };
+    }
+
+    abstract protected Set<String> getDefaultRoles();
 }

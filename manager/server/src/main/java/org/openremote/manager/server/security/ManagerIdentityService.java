@@ -20,7 +20,6 @@
 package org.openremote.manager.server.security;
 
 import org.openremote.container.Container;
-import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.IdentityService;
 import org.openremote.container.timer.TimerService;
 import org.openremote.container.web.WebService;
@@ -28,23 +27,15 @@ import org.openremote.container.web.WebService;
 import java.util.Locale;
 import java.util.logging.Logger;
 
-import static org.openremote.container.util.MapAccess.getString;
-
 public class ManagerIdentityService extends IdentityService {
 
     private static final Logger LOG = Logger.getLogger(ManagerIdentityService.class.getName());
 
-    public static final String MANAGER_IDENTITY_PROVIDER = "MANAGER_IDENTITY_PROVIDER";
-    public static final String MANAGER_IDENTITY_PROVIDER_DEFAULT = "keycloak";
-
-    protected PersistenceService persistenceService;
     protected ManagerIdentityProvider identityProvider;
 
     @Override
     public void init(Container container) throws Exception {
         super.init(container);
-
-        this.persistenceService = container.getService(PersistenceService.class);
 
         container.getService(WebService.class).getApiSingletons().add(
             new TenantResourceImpl(container.getService(TimerService.class), this)
@@ -53,23 +44,28 @@ public class ManagerIdentityService extends IdentityService {
             new UserResourceImpl(container.getService(TimerService.class), this)
         );
 
-        String identityProviderType = getString(container.getConfig(), MANAGER_IDENTITY_PROVIDER, MANAGER_IDENTITY_PROVIDER_DEFAULT);
-        switch (identityProviderType.toLowerCase(Locale.ROOT)) {
-            case "keycloak":
-                LOG.info("Enabling Keycloak identity provider");
-                this.identityProvider = new ManagerKeycloakIdentityProvider(getExternalServerUri(), container);
-                break;
-            case "basic":
-                LOG.info("Enabling basic identity provider");
-                this.identityProvider = new ManagerBasicIdentityProvider(container);
-                break;
-            default:
-                throw new UnsupportedOperationException("Unknown identity provider: " + identityProviderType);
-        }
+    }
+
+    public ManagerIdentityProvider getIdentityProvider() {
+        return identityProvider;
     }
 
     @Override
-    public ManagerIdentityProvider getIdentityProvider() {
+    public ManagerIdentityProvider createIdentityProvider(Container container, String identityProviderType) {
+        if (identityProvider == null) {
+            switch (identityProviderType.toLowerCase(Locale.ROOT)) {
+                case "keycloak":
+                    LOG.info("Enabling Keycloak identity provider");
+                    this.identityProvider = new ManagerKeycloakIdentityProvider(getExternalServerUri(), container);
+                    break;
+                case "basic":
+                    LOG.info("Enabling basic identity provider");
+                    this.identityProvider = new ManagerBasicIdentityProvider(container);
+                    break;
+                default:
+                    throw new UnsupportedOperationException("Unknown identity provider: " + identityProviderType);
+            }
+        }
         return identityProvider;
     }
 

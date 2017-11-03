@@ -259,7 +259,6 @@ public class RulesEngine<T extends Ruleset> {
                 // If compilation failed, remove rules from FileSystem so it won't fail on next pass here if any
                 kfs.delete("src/main/resources/" + ruleset.getId());
             } else {
-                LOG.info("Added ruleset: " + ruleset);
                 addSuccessful = true;
             }
         } catch (Exception e) {

@@ -20,22 +20,20 @@
 package org.openremote.manager.server.setup.builtin;
 
 import org.openremote.container.Container;
+import org.openremote.manager.server.persistence.ManagerPersistenceService;
 import org.openremote.manager.server.setup.AbstractManagerSetup;
-
-import java.util.logging.Logger;
 
 public class ManagerCleanSetup extends AbstractManagerSetup {
 
-    private static final Logger LOG = Logger.getLogger(ManagerCleanSetup.class.getName());
+    final protected  ManagerPersistenceService persistenceService;
 
     public ManagerCleanSetup(Container container) {
         super(container);
+        this.persistenceService = container.getService(ManagerPersistenceService.class);
     }
 
     @Override
-    public void execute() throws Exception {
-        LOG.info("Dropping database schema and all data");
-        persistenceService.dropSchema();
-        LOG.info("### NOTE: The message 'relation ... does not exist' is normal and can be ignored!");
+    public void onInit() throws Exception {
+        persistenceService.setForceClean(true);
     }
 }

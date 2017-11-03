@@ -19,35 +19,14 @@
  */
 package org.openremote.manager.server.persistence;
 
-import org.openremote.container.Container;
 import org.openremote.container.persistence.PersistenceService;
-import org.openremote.manager.server.security.ManagerIdentityService;
-import org.openremote.model.util.TextUtil;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class ManagerPersistenceService extends PersistenceService {
 
     @Override
-    public void start(Container container) throws Exception {
-
-        // Before schema is generated, execute this
-        persistenceUnitProperties.put("javax.persistence.schema-generation.create-source", "script-then-metadata");
-        persistenceUnitProperties.put("javax.persistence.schema-generation.create-script-source", "Extensions.sql");
-
-        // After schema is generated, execute this
-        List<String> importFiles = new ArrayList<>();
-        if (!container.getService(ManagerIdentityService.class).isKeycloakEnabled()) {
-            importFiles.add("BasicIdentityProvider.sql");
-        }
-        importFiles.add("GetAssetTreePath.sql");
-        importFiles.add("Constraints.sql");
-        persistenceUnitProperties.put(
-            "hibernate.hbm2ddl.import_files",
-            TextUtil.toCommaSeparated(importFiles.toArray(new String[importFiles.size()]))
-        );
-
-        super.start(container);
+    protected void appendSchemaLocations(List<String> locations) {
+        locations.add("classpath:org/openremote/manager/server/setup/database");
     }
 }

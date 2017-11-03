@@ -13,8 +13,8 @@ import spock.lang.Specification
 import javax.ws.rs.WebApplicationException
 
 import static org.openremote.container.util.MapAccess.getString
-import static org.openremote.manager.server.setup.AbstractKeycloakSetup.SETUP_KEYCLOAK_ADMIN_PASSWORD
-import static org.openremote.manager.server.setup.AbstractKeycloakSetup.SETUP_KEYCLOAK_ADMIN_PASSWORD_DEFAULT
+import static org.openremote.manager.server.setup.AbstractKeycloakSetup.KEYCLOAK_PASSWORD
+import static org.openremote.manager.server.setup.AbstractKeycloakSetup.KEYCLOAK_PASSWORD_DEFAULT
 import static org.openremote.model.Constants.*
 
 class AssetUserLinkingTest extends Specification implements ManagerContainerTrait {
@@ -34,7 +34,7 @@ class AssetUserLinkingTest extends Specification implements ManagerContainerTrai
                 MASTER_REALM,
                 KEYCLOAK_CLIENT_ID,
                 MASTER_REALM_ADMIN_USER,
-                getString(container.getConfig(), SETUP_KEYCLOAK_ADMIN_PASSWORD, SETUP_KEYCLOAK_ADMIN_PASSWORD_DEFAULT)
+                getString(container.getConfig(), KEYCLOAK_PASSWORD, KEYCLOAK_PASSWORD_DEFAULT)
         ).token
 
         and: "the asset resource"
@@ -43,9 +43,9 @@ class AssetUserLinkingTest extends Specification implements ManagerContainerTrai
         /* ############################################## READ ####################################### */
 
         expect: "some users to be restricted"
-        !identityService.identityProvider.isRestrictedUser(keycloakDemoSetup.testuser1Id)
-        !identityService.identityProvider.isRestrictedUser(keycloakDemoSetup.testuser2Id)
-        identityService.identityProvider.isRestrictedUser(keycloakDemoSetup.testuser3Id)
+        !identityService.initIdentityProvider.isRestrictedUser(keycloakDemoSetup.testuser1Id)
+        !identityService.initIdentityProvider.isRestrictedUser(keycloakDemoSetup.testuser2Id)
+        identityService.initIdentityProvider.isRestrictedUser(keycloakDemoSetup.testuser3Id)
 
         when: "all user assets are retrieved of a realm"
         def userAssets = assetResource.getUserAssetLinks(null, keycloakDemoSetup.customerATenant.id, null, null)
@@ -147,7 +147,7 @@ class AssetUserLinkingTest extends Specification implements ManagerContainerTrai
         userAssets = assetResource.getUserAssetLinks(null, keycloakDemoSetup.customerATenant.id, keycloakDemoSetup.testuser2Id, null)
 
         then: "result should match"
-        identityService.identityProvider.isRestrictedUser(keycloakDemoSetup.testuser2Id)
+        identityService.initIdentityProvider.isRestrictedUser(keycloakDemoSetup.testuser2Id)
         userAssets.length == 1
         userAssets.any {
             it.id.realmId == keycloakDemoSetup.customerATenant.id &&
@@ -164,7 +164,7 @@ class AssetUserLinkingTest extends Specification implements ManagerContainerTrai
         userAssets = assetResource.getUserAssetLinks(null, keycloakDemoSetup.customerATenant.id, keycloakDemoSetup.testuser2Id, null)
 
         then: "result should match"
-        !identityService.identityProvider.isRestrictedUser(keycloakDemoSetup.testuser2Id)
+        !identityService.initIdentityProvider.isRestrictedUser(keycloakDemoSetup.testuser2Id)
         userAssets.length == 0
 
         cleanup: "the server should be stopped"

@@ -43,7 +43,7 @@ import static org.openremote.container.util.MapAccess.getBoolean;
  * Setup tasks are configured via the config hash map supplied in the
  * {@link Container} constructor. Available config options are:
   * <ul>
- * <li>{@link #SETUP_INIT_CLEAN_DATABASE}</li>
+ * <li>{@link #SETUP_WIPE_CLEAN_INSTALL}</li>
  * <li>{@link #SETUP_IMPORT_DEMO_USERS}</li>
  * <li>{@link #SETUP_IMPORT_DEMO_ASSETS} depends on {@link #SETUP_IMPORT_DEMO_USERS}</li>
  * <li>{@link #SETUP_IMPORT_DEMO_SCENES} depends on {@link #SETUP_IMPORT_DEMO_ASSETS}</li>
@@ -52,15 +52,15 @@ import static org.openremote.container.util.MapAccess.getBoolean;
  */
 public class BuiltinSetupTasks extends AbstractSetupTasks {
 
-    public static final String SETUP_INIT_CLEAN_DATABASE = "SETUP_INIT_CLEAN_DATABASE";
+    public static final String SETUP_WIPE_CLEAN_INSTALL = "SETUP_WIPE_CLEAN_INSTALL";
     public static final String SETUP_IMPORT_DEMO_USERS = "SETUP_IMPORT_DEMO_USERS";
     public static final String SETUP_IMPORT_DEMO_ASSETS = "SETUP_IMPORT_DEMO_ASSETS";
     public static final String SETUP_IMPORT_DEMO_SCENES = "SETUP_IMPORT_DEMO_SCENES";
     public static final String SETUP_IMPORT_DEMO_RULES = "SETUP_IMPORT_DEMO_RULES";
     public static final String SETUP_IMPORT_DEMO_AGENT = "SETUP_IMPORT_DEMO_AGENT";
 
-    protected boolean isCleanDatabase(Container container) {
-        return getBoolean(container.getConfig(), SETUP_INIT_CLEAN_DATABASE, container.isDevMode());
+    protected boolean isSetupWipeCleanInstall(Container container) {
+        return getBoolean(container.getConfig(), SETUP_WIPE_CLEAN_INSTALL, container.isDevMode());
     }
 
     // Demo agent to demo protocols.
@@ -93,11 +93,10 @@ public class BuiltinSetupTasks extends AbstractSetupTasks {
 
         // Basic vs Keycloak identity provider
         if (container.getService(ManagerIdentityService.class).isKeycloakEnabled()) {
-            if (isCleanDatabase(container)) {
+            if (isSetupWipeCleanInstall(container)) {
                 addTask(new ManagerCleanSetup(container));
                 addTask(new KeycloakCleanSetup(container));
                 addTask(new KeycloakInitSetup(container));
-                addTask(new ManagerInitSetup(container));
             }
 
             if (isImportDemoUsers(container)) {
@@ -116,9 +115,8 @@ public class BuiltinSetupTasks extends AbstractSetupTasks {
                 addTask(new ManagerDemoAgentSetup(container));
             }
         } else {
-            if (isCleanDatabase(container)) {
+            if (isSetupWipeCleanInstall(container)) {
                 addTask(new ManagerCleanSetup(container));
-                addTask(new ManagerInitSetup(container));
                 addTask(new BasicIdentityInitSetup(container));
             }
 

@@ -166,10 +166,14 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider{
     }
 
     @Override
-    public void start() {
+    public void init() {
         // TODO Not a great way to block startup while we wait for other services (Hystrix?)
         waitForKeycloak();
         LOG.info("Keycloak identity provider available: " + keycloakServiceUri.build());
+    }
+
+    @Override
+    public void start() {
     }
 
     @Override

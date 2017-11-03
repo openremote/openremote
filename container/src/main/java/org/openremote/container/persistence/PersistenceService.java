@@ -21,7 +21,6 @@ package org.openremote.container.persistence;
 
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.MigrationInfo;
-import org.flywaydb.core.api.MigrationVersion;
 import org.hibernate.Session;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.openremote.container.Container;
@@ -32,7 +31,9 @@ import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.EntityTransaction;
 import javax.persistence.Persistence;
-import java.util.HashMap;
+import javax.ws.rs.core.UriBuilder;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -42,9 +43,21 @@ import java.util.logging.Logger;
 import static org.openremote.container.util.MapAccess.getInteger;
 import static org.openremote.container.util.MapAccess.getString;
 
+/**
+ * Uses the SQL database schema {@link #SCHEMA_NAME} for all operations.
+ */
 public class PersistenceService implements ContainerService {
 
     private static final Logger LOG = Logger.getLogger(PersistenceService.class.getName());
+
+    /**
+     * We must use a different schema than Keycloak to store our tables, or FlywayDB
+     * will wipe Keycloak tables. And since Keycloak doesn't call CREATE SCHEMA IF NOT EXISTS
+     * on startup (Liquibase is not as good as FlywayDB? They both seem to suck... can't exclude
+     * database artifacts from wipe/migrate in FlywayDB...) you must have it in the 'public'
+     * schema. Hence we need a different schema here.
+     */
+    public static final String SCHEMA_NAME = "openremote";
 
     public static final String PERSISTENCE_UNIT_NAME = "PERSISTENCE_UNIT_NAME";
     public static final String PERSISTENCE_UNIT_NAME_DEFAULT = "OpenRemotePU";
@@ -62,16 +75,16 @@ public class PersistenceService implements ContainerService {
     public static final int DATABASE_MAX_POOL_SIZE_DEFAULT = 20;
     public static final String DATABASE_CONNECTION_TIMEOUT_SECONDS = "DATABASE_CONNECTION_TIMEOUT_SECONDS";
     public static final int DATABASE_CONNECTION_TIMEOUT_SECONDS_DEFAULT = 300;
-    public static final String DATABASE_BASELINE = "DATABASE_BASELINE";
-    public static final String DATABASE_BASELINE_DEFAULT = "1";
-    public static final String DATABASE_BASELINE_DESCRIPTION = "<< OpenRemote BaseLine >>";
 
     protected MessageBrokerService messageBrokerService;
     protected Database database;
     protected String persistenceUnitName;
     protected Map<String, Object> persistenceUnitProperties;
     protected EntityManagerFactory entityManagerFactory;
+
     protected Flyway flyway;
+    protected boolean forceClean;
+    protected List<String> defaultSchemaLocations = new ArrayList<>();
 
     @Override
     public void init(Container container) throws Exception {
@@ -85,8 +98,6 @@ public class PersistenceService implements ContainerService {
 
         persistenceUnitProperties = database.createProperties();
 
-        openDatabase(container, database);
-
         if (messageBrokerService != null) {
             persistenceUnitProperties.put(
                 org.hibernate.cfg.AvailableSettings.SESSION_SCOPED_INTERCEPTOR,
@@ -99,6 +110,7 @@ public class PersistenceService implements ContainerService {
 
     protected void openDatabase(Container container, Database database) {
         String connectionUrl = getString(container.getConfig(), DATABASE_CONNECTION_URL, DATABASE_CONNECTION_URL_DEFAULT);
+        connectionUrl = UriBuilder.fromUri(connectionUrl).replaceQueryParam("currentSchema", SCHEMA_NAME).build().toString();
         String databaseUsername = getString(container.getConfig(), DATABASE_USERNAME, DATABASE_USERNAME_DEFAULT);
         String databasePassword = getString(container.getConfig(), DATABASE_PASSWORD, DATABASE_PASSWORD_DEFAULT);
         int databaseMinPoolSize = getInteger(container.getConfig(), DATABASE_MIN_POOL_SIZE, DATABASE_MIN_POOL_SIZE_DEFAULT);
@@ -107,18 +119,12 @@ public class PersistenceService implements ContainerService {
         LOG.info("Opening database connection: " + connectionUrl);
         database.open(persistenceUnitProperties, connectionUrl, databaseUsername, databasePassword, connectionTimeoutSeconds, databaseMinPoolSize, databaseMaxPoolSize);
 
-        String baselineVersion = getString(container.getConfig(), DATABASE_BASELINE, DATABASE_BASELINE_DEFAULT);
-
-        flyway = new Flyway();
-        flyway.setDataSource(connectionUrl, databaseUsername, databasePassword);
-        flyway.setLocations("classpath:org/openremote/container/persistence/migrations");
-        flyway.setBaselineVersion(MigrationVersion.fromVersion(baselineVersion));
-        flyway.setBaselineDescription(DATABASE_BASELINE_DESCRIPTION);
-        flyway.baseline();
+        prepareSchema(connectionUrl, databaseUsername, databasePassword);
     }
 
     @Override
     public void start(Container container) throws Exception {
+        openDatabase(container, database);
         this.entityManagerFactory =
             Persistence.createEntityManagerFactory(persistenceUnitName, persistenceUnitProperties);
     }
@@ -134,6 +140,13 @@ public class PersistenceService implements ContainerService {
         }
     }
 
+    public boolean isForceClean() {
+        return forceClean;
+    }
+
+    public void setForceClean(boolean forceClean) {
+        this.forceClean = forceClean;
+    }
 
     public EntityManager createEntityManager() {
         EntityManager entityManager = getEntityManagerFactory().createEntityManager();
@@ -148,23 +161,6 @@ public class PersistenceService implements ContainerService {
         }
 
         return entityManager;
-    }
-
-    public void createSchema() {
-
-        generateSchema("create");
-    }
-
-    public void updateSchema() {
-        for (MigrationInfo i : flyway.info().all()) {
-            LOG.info("Migrate task: " + i.getVersion() + " : "
-                + i.getDescription() + " from file: " + i.getScript());
-        }
-        flyway.migrate();
-    }
-
-    public void dropSchema() {
-        generateSchema("drop");
     }
 
     public void doTransaction(Consumer<EntityManager> entityManagerConsumer) {
@@ -202,14 +198,36 @@ public class PersistenceService implements ContainerService {
         return entityManagerFactory;
     }
 
-    protected void generateSchema(String action) {
-        // Take exiting EMF properties, override the schema generation setting on a copy
-        Map<String, Object> createSchemaProperties = new HashMap<>(persistenceUnitProperties);
-        createSchemaProperties.put(
-            "javax.persistence.schema-generation.database.action",
-            action
-        );
-        Persistence.generateSchema(persistenceUnitName, createSchemaProperties);
+    public List<String> getDefaultSchemaLocations() {
+        return defaultSchemaLocations;
+    }
+
+    protected void prepareSchema(String connectionUrl, String databaseUsername, String databasePassword) {
+        LOG.fine("Preparing database schema");
+        flyway = new Flyway();
+        flyway.setDataSource(connectionUrl, databaseUsername, databasePassword);
+        flyway.setSchemas(SCHEMA_NAME);
+        List<String> locations = new ArrayList<>();
+        appendSchemaLocations(locations);
+        flyway.setLocations(locations.toArray(new String[locations.size()]));
+
+        if (forceClean) {
+            LOG.warning("!!! Cleaning database !!!");
+            flyway.clean();
+        } else {
+            LOG.fine("Not cleaning, using existing database");
+        }
+
+        for (MigrationInfo i : flyway.info().pending()) {
+            LOG.info("Pending task: " + i.getVersion() + ", " + i.getDescription() + ", " + i.getScript());
+        }
+        int applied = flyway.migrate();
+        LOG.info("Applied database schema migrations: " + applied);
+        flyway.validate();
+    }
+
+    protected void appendSchemaLocations(List<String> locations) {
+        locations.addAll(defaultSchemaLocations);
     }
 
     @Override

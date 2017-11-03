@@ -9,13 +9,13 @@ ENV LOGGING_CONFIG_FILE /deployment/logging.properties
 ENV MAP_TILES_PATH /deployment/mapdata.mbtiles
 ENV MAP_SETTINGS_PATH /deployment/mapsettings.json
 
-ADD server /opt/app
-ADD client /opt/app
-
 EXPOSE 8080
+
+HEALTHCHECK --interval=3s --timeout=3s --start-period=2s --retries=30 CMD curl --fail http://localhost:8080 || exit 1
 
 WORKDIR /opt/app
 
-HEALTHCHECK --interval=3s --timeout=3s --start-period=2s --retries=30 CMD curl --fail http://localhost:8080 || exit 1
+ADD server /opt/app
+ADD client /opt/app
 
 ENTRYPOINT ["java", "-cp", "/opt/app/lib/*", "org.openremote.manager.server.Main"]

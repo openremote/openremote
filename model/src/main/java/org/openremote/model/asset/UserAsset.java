@@ -123,7 +123,7 @@ public class UserAsset {
     @Formula("(select pa.NAME from ASSET a left outer join ASSET pa on a.PARENT_ID = pa.ID where a.ID = ASSET_ID)")
     protected String parentAssetName;
 
-    @Formula("(select u.USERNAME ||  ' (' || u.FIRST_NAME || ' ' || u.LAST_NAME || ')' from USER_ENTITY u where u.ID = USER_ID)")
+    @Formula("(select u.USERNAME ||  ' (' || u.FIRST_NAME || ' ' || u.LAST_NAME || ')' from PUBLIC.USER_ENTITY u where u.ID = USER_ID)")
     protected String userFullName;
 
     protected UserAsset() {

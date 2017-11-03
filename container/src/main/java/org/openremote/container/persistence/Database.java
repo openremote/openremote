@@ -61,6 +61,7 @@ public interface Database {
                 hikariConfig.setThreadFactory(new ContainerThreadFactory("Database Connections"));
                 hikariConfig.setDataSourceClassName("org.postgresql.ds.PGSimpleDataSource");
                 hikariConfig.addDataSourceProperty("url", connectionUrl);
+                hikariConfig.addDataSourceProperty("currentSchema", "persistence");
                 hikariConfig.setUsername(username);
                 hikariConfig.setPassword(password);
                 hikariConfig.setConnectionTimeout(connectionTimeoutSeconds * 1000);

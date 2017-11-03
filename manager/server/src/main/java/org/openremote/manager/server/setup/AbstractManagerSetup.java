@@ -24,10 +24,10 @@ import org.openremote.agent.protocol.macro.MacroAction;
 import org.openremote.agent.protocol.macro.MacroProtocol;
 import org.openremote.agent.protocol.timer.TimerValue;
 import org.openremote.container.Container;
-import org.openremote.container.persistence.PersistenceService;
 import org.openremote.manager.server.asset.AssetStorageService;
 import org.openremote.manager.server.asset.ServerAsset;
 import org.openremote.manager.server.datapoint.AssetDatapointService;
+import org.openremote.manager.server.persistence.ManagerPersistenceService;
 import org.openremote.manager.server.rules.RulesetStorageService;
 import org.openremote.manager.server.security.ManagerIdentityService;
 import org.openremote.model.asset.AssetAttribute;
@@ -51,7 +51,7 @@ import static org.openremote.model.attribute.AttributeType.*;
 
 public abstract class AbstractManagerSetup implements Setup {
 
-    final protected PersistenceService persistenceService;
+    final protected ManagerPersistenceService persistenceService;
     final protected ManagerIdentityService identityService;
     final protected AssetStorageService assetStorageService;
     final protected AssetDatapointService assetDatapointService;
@@ -60,7 +60,7 @@ public abstract class AbstractManagerSetup implements Setup {
     final protected SetupService setupService;
 
     public AbstractManagerSetup(Container container) {
-        this.persistenceService = container.getService(PersistenceService.class);
+        this.persistenceService = container.getService(ManagerPersistenceService.class);
         this.identityService = container.getService(ManagerIdentityService.class);
         this.assetStorageService = container.getService(AssetStorageService.class);
         this.assetDatapointService = container.getService(AssetDatapointService.class);
