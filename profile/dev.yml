@@ -1,6 +1,10 @@
 # Profile for doing development on all services.
 # Starts keycloak with theme volumed mapped and postgres and exposes them to localhost.
-version: '2.1'
+version: '2.2'
+
+volumes:
+  postgresql-data:
+
 services:
 
   keycloak:
@@ -25,3 +29,5 @@ services:
       service: postgresql
     ports:
       - "5432:5432"
+    volumes:
+      - postgresql-data:/data

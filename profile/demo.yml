@@ -15,7 +15,10 @@
 #
 # This file defines the services to run and their dependencies only.
 #
-version: '2.1'
+version: '2.2'
+
+volumes:
+  data:
 
 services:
 

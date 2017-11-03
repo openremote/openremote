@@ -32,7 +32,6 @@ RUN curl -L -o /usr/local/bin/gosu https://github.com/tianon/gosu/releases/downl
 # Prepare data directory
 ENV PGDATA /data
 RUN mkdir -p "$PGDATA" && chown -R postgres:postgres "$PGDATA"
-VOLUME ${PGDATA}
 
 # Some defaults
 ENV PG_BIN=/usr/pgsql-${PG_VERSION}/bin

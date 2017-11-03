@@ -11,7 +11,7 @@
 #
 # All persistent data is stored on your Docker host in the '${DEPLOYMENT_DIRECTORY:-../deployment}' directory.
 #
-version: '2.1'
+version: '2.2'
 
 services:
 
