@@ -12,10 +12,13 @@ fi
 if [ -n "${LE_RSA_KEY_SIZE}" ]; then
   LE_EXTRA_ARGS+=" --rsa-key-size ${LE_RSA_KEY_SIZE}"
 fi
-LE_CERT_ROOT="/deployment/letsencrypt/live"
+
+LE_WORK_DIR="/deployment/letsencrypt"
+LE_CERT_ROOT="${LE_WORK_DIR}/live"
+LE_WEB_ROOT="/deployment/acme-webroot"
 LE_ARCHIVE_ROOT="/deployment/letsencrypt/archive"
 LE_RENEWAL_CONFIG_ROOT="/deployment/letsencrypt/renewal"
-LE_CMD="/usr/bin/certbot certonly ${LE_EXTRA_ARGS}"
+LE_CMD="/usr/bin/certbot certonly --config-dir ${LE_WORK_DIR} -w ${LE_WEB_ROOT} ${LE_EXTRA_ARGS}"
 
 # Configure haproxy
 CERT_FILE="/opt/selfsigned/localhost.pem"
@@ -24,6 +27,7 @@ if [ -n "${DOMAINNAME}" ] && [ "${DOMAINNAME}" != "localhost" ]; then
 fi
 export CERT_FILE=${CERT_FILE}
 
+# Assume
 if [ ! -f ${CERT_FILE} ]; then
   HAPROXY_CONFIG="/etc/haproxy/haproxy-init.cfg"
 else
@@ -67,7 +71,7 @@ function run_proxy {
     cron_auto_renewal_init
 
     # Wait if config or certificates were changed, block this execution
-    while inotifywait -q -r --exclude '\.git/' -e modify,create,delete,move,move_self $HAPROXY_CONFIG $LE_CERT_ROOT; do
+    while inotifywait -q -r --exclude '\.git/' -e modify,create,delete,move,move_self $HAPROXY_CONFIG $LE_WORK_DIR; do
       if [ -f $HAPROXY_PID_FILE ]; then
         log_info "Restarting HAProxy due to config changes..."
 
