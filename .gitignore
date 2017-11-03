@@ -25,5 +25,5 @@ console/iOS/Pods
 
 # Ignore build/runtime only data
 deployment/manager/consoles/*/bower_components
-deployment/haproxy
+deployment/proxy
 deployment/postgresql

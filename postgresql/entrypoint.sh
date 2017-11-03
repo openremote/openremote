@@ -48,10 +48,8 @@ else
     echo "Using existing database(s) in: ${PGDATA}"
 fi
 
-# Set permissions as on windows permissions will be too relaxed for postgreSQL
+# Set permissions as on windows permissions will be too relaxed for postgreSQL (even in Docker volume)
 chmod -R 0700 ${PGDATA}
 
 echo "Starting database server..."
 exec gosu postgres ${PG_BIN}/postgres "$@"
-#gosu postgres ${PG_BIN}/pg_ctl start -w "$@"
-#/bin/bash -c "trap : TERM INT; sleep infinity & wait"

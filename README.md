@@ -39,8 +39,7 @@ Perform a clean build and run all tests (before committing):
 ```
 docker-compose -p openremote -f profile/dev.yml up -d
 ./gradlew clean build installDist
-docker build -t openremote/haproxy:latest haproxy
-docker build -t openremote/letsencrypt:latest letsencrypt
+docker build -t openremote/proxy:latest haproxy
 docker build -t openremote/postgresql:latest postgresql
 docker build -t openremote/keycloak:latest keycloak
 docker build -t openremote/manager:latest manager/build/install
@@ -49,8 +48,7 @@ docker build -t openremote/manager:latest manager/build/install
 Push images to [Docker Hub](https://hub.docker.com/u/openremote):
 
 ```
-docker push openremote/haproxy:latest
-docker push openremote/letsencrypt:latest
+docker push openremote/proxy:latest
 docker push openremote/postgresql:latest
 docker push openremote/keycloak:latest
 docker push openremote/manager:latest

@@ -5,30 +5,26 @@
 #
 # Install Docker Community edition (https://docker.com/) on Windows, macOS, or Linux.
 #
-# Start the stack with: docker-compose -p openremote -f profile/demo.yml up
+# Start the stack with:
 #
-# Note that the demo.yml extends this configuration and declares dependencies between the services.
+#   docker-compose -p openremote -f profile/demo.yml up
 #
-# All persistent data is stored on your Docker host in the '${DEPLOYMENT_DIRECTORY:-../deployment}' directory.
+# Note that you must extend this configuration to complete it with service
+# dependencies and volume mappings, see demo.yml.
 #
 version: '2.2'
 
 services:
 
   # The frontend proxy, terminates SSL/TLS connections and forwards them to the Manager backend.
-  haproxy:
+  proxy:
 
     # Image will be built when not already in the cache or when `--build` option is supplied to `docker-compose up`
     build:
-      context: '../haproxy'
+      context: '../proxy'
 
     # Image will be pulled when using the `docker-compose pull` command or `docker-compose up --no-build`
-    image: openremote/haproxy:latest
-
-    # Following volumes allow HAProxy to work with letsencrypt
-    volumes:
-      - ${DEPLOYMENT_DIRECTORY:-../deployment}/haproxy/letsencrypt:/etc/letsencrypt
-      - ${DEPLOYMENT_DIRECTORY:-../deployment}/haproxy/acme-webroot:/var/acme-webroot
+    image: openremote/proxy:latest
 
     environment:
 
@@ -38,9 +34,17 @@ services:
 
       # The public host name of this OpenRemote installation. This is used to resolve the SSL
       # certificate chain and manage your certificates. The localhost has a baked in self-signed
-      # certificate. If you change this name, also change letsencrypt#DOMAINNAME and don't forget
-      # to adjust manager#IDENTITY_NETWORK_HOST.
+      # certificate. If you change this name, also adjust manager#IDENTITY_NETWORK_HOST.
       #DOMAINNAME: localhost
+
+      # Provide your own email address for your SSL certificates!
+      LE_EMAIL: 'devnull@openremote.io'
+
+      # --staging requests fake certificates to avoid hitting limits during testing
+      #LE_EXTRA_ARGS: '--staging --logs-dir=/etc/letsencrypt'
+
+    # Run proxy, obtain and automatically renew SSL certificates if DOMAINNAME is not localhost (see help)
+    command: run
 
     # Expose a public web service mapped to ports on the host.
     ports:
@@ -53,45 +57,7 @@ services:
             max-size: 10m
 
     # Always restart the service
-    restart: always
-
-  # A sidecar container that manages the SSL certificates for haproxy
-  letsencrypt:
-    build:
-      context: '../letsencrypt'
-
-    image: 'openremote/letsencrypt'
-
-    # Following volumes allow HAProxy to work with letsencrypt
-    volumes:
-      - ${DEPLOYMENT_DIRECTORY:-../deployment}/haproxy/letsencrypt:/etc/letsencrypt
-      - ${DEPLOYMENT_DIRECTORY:-../deployment}/haproxy/acme-webroot:/var/acme-webroot
-
-    environment:
-
-      # It is important that all services have the same timezone and are time synchronized.
-      TZ: Europe/Zurich
-
-      # The public host name of this OpenRemote installation. This is used to resolve the SSL
-      # certificate chain and manage your certificates. The localhost has a baked in self-signed
-      # certificate. If you change this name, also change letsencrypt#DOMAINNAME and don't forget
-      # to adjust manager#IDENTITY_NETWORK_HOST.
-      #DOMAINNAME: localhost
-
-      # Provide your own email address for your SSL certificates!
-      LE_EMAIL: 'devnull@openremote.io'
-
-      # --staging requests fake certificates to avoid hitting limits during testing
-      #LE_EXTRA_ARGS: '--staging --logs-dir=/etc/letsencrypt'
-
-    logging:
-        options:
-            max-size: 10m
-
     restart: on-failure
-
-    # Obtain and automatically renew SSL certificates if DOMAINNAME is not localhost
-    command: cron-auto-renewal-init
 
   # The API gateway and Manager web application.
   manager:
@@ -101,10 +67,6 @@ services:
 
     # Image will be pulled when using the `docker-compose pull` command or `docker-compose up --no-build`
     image: openremote/manager:latest
-
-    # Manager persistent data (other than database data)
-    volumes:
-      - ${DEPLOYMENT_DIRECTORY:-../deployment}/manager:/deployment
 
     environment:
 
@@ -134,8 +96,8 @@ services:
       #SETUP_KEYCLOAK_EMAIL_FROM: 'noreply@demo.tld'
 
       # The public host name of this OpenRemote installation. This name is used in bearer tokens
-      # and must be the name you access the web services under. If you change haproxy#DOMAINNAME
-      # and letsencrypt#DOMAINNAME, also change this to match.
+      # and must be the name you access the web services under. If you change proxy#DOMAINNAME, also
+      # change this to match.
       #IDENTITY_NETWORK_HOST: localhost
 
       # Set if SSL is enabled on the frontend reverse proxy and all internal proxies should assume https
@@ -242,9 +204,8 @@ services:
       KEYCLOAK_USER: admin
 
       # Change the admin root password if you make this application publicly accessible! Note
-      # that imported demo data uses the admin account and also creates a 'test' user with
-      # password 'test'. Importing will be broken if you change the password only here.
-      # Demo data should not be imported in production.
+      # that imported demo data uses the admin account and also creates test users. Importing will
+      # be broken if you change the password only here! Demo data should not be imported in production.
       KEYCLOAK_PASSWORD: secret
 
       # Configure how Keycloak connects to the database
@@ -269,16 +230,12 @@ services:
     # Image will be pulled when using the `docker-compose pull` command or `docker-compose up --no-build`
     image: openremote/postgresql:latest
 
-    # Keep data in a persistent volume
-    volumes:
-      - ${DEPLOYMENT_DIRECTORY:-../deployment}/postgresql:/data
-
     environment:
       TZ: Europe/Zurich
 
-      # Create transient database and user. For production, run this once
-      # with your volume mapping for the data directory, then remove the
-      # variables and restart to preserve the stored data
+      # Create database and user if there is no data. For production, run
+      # this once with your volume mapping for the data directory (see demo.yml),
+      # then remove the variables and restart to preserve the stored data
       POSTGRES_DB: openremote
       POSTGRES_USER: openremote
       POSTGRES_PASSWORD: CHANGE_ME_DB_USER_PASSWORD

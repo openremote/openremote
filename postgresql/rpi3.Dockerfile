@@ -29,7 +29,7 @@ RUN curl -L -o /usr/local/bin/gosu https://github.com/tianon/gosu/releases/downl
 RUN [ "cross-build-end" ]
 
 # Prepare data directory
-ENV PGDATA /data
+ENV PGDATA /deployment
 RUN mkdir -p "$PGDATA" && chown -R postgres:postgres "$PGDATA"
 VOLUME ${PGDATA}
 

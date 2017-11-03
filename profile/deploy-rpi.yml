@@ -4,15 +4,10 @@ version: '2.1'
 
 services:
 
-  haproxy:
+  proxy:
     extends:
       file: deploy.yml
-      service: haproxy
-
-  letsencrypt:
-    extends:
-      file: deploy.yml
-      service: letsencrypt
+      service: proxy
 
   postgresql:
     extends:

@@ -1,6 +1,8 @@
 FROM centos:7
 
-RUN yum update -y && yum -y install epel-release && yum -y install rsyslog inotify-tools make gcc pcre-devel openssl-devel readline-devel && yum clean all
+RUN yum update -y && yum -y install epel-release && \
+    yum -y install rsyslog inotify-tools make gcc pcre-devel openssl-devel readline-devel certbot cronie && \
+    yum clean all
 
 ARG HA_PROXY_MINOR_VERSION=1.7
 ARG HA_PROXY_VERSION=1.7.5
@@ -8,6 +10,7 @@ ARG LUA_VERSION=5.3.4
 ARG ACME_PLUGIN_VERSION=0.1.1
 ARG DOMAINNAME
 ENV DOMAINNAME=${DOMAINNAME:-localhost}
+ENV TERM xterm
 
 RUN mkdir /tmp/lua && cd /tmp/lua \
     && curl -sSL https://www.lua.org/ftp/lua-${LUA_VERSION}.tar.gz -o lua.tar.gz \
@@ -33,8 +36,7 @@ ADD haproxy-init.cfg /etc/haproxy/haproxy-init.cfg
 ADD haproxy.cfg /etc/haproxy/haproxy.cfg
 ADD selfsigned /opt/selfsigned
 
-VOLUME /etc/letsencrypt
-VOLUME /var/acme-webroot
+ADD cli.ini /root/.config/letsencrypt/
 
 EXPOSE 80 443
 
@@ -43,3 +45,4 @@ HEALTHCHECK --interval=3s --timeout=3s --start-period=2s --retries=30 CMD curl -
 COPY entrypoint.sh /
 RUN chmod +x /entrypoint.sh
 ENTRYPOINT ["/entrypoint.sh"]
+CMD ["run"]

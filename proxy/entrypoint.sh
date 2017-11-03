@@ -1,9 +1,10 @@
 #!/bin/bash
 
-if ! [ -f /var/run/crond.pid ]; then
-    crond
-fi
+# Create directories
+mkdir -p /deployment/acme-webroot
+mkdir -p /deployment/letsencrypt/live
 
+# Configure letsencrypt
 if [ -n "${LE_EMAIL}" ]; then
   LE_EXTRA_ARGS+=" --email ${LE_EMAIL}"
 fi
@@ -11,23 +12,84 @@ fi
 if [ -n "${LE_RSA_KEY_SIZE}" ]; then
   LE_EXTRA_ARGS+=" --rsa-key-size ${LE_RSA_KEY_SIZE}"
 fi
-
-LE_CERT_ROOT="/etc/letsencrypt/live"
-LE_ARCHIVE_ROOT="/etc/letsencrypt/archive"
-LE_RENEWAL_CONFIG_ROOT="/etc/letsencrypt/renewal"
+LE_CERT_ROOT="/deployment/letsencrypt/live"
+LE_ARCHIVE_ROOT="/deployment/letsencrypt/archive"
+LE_RENEWAL_CONFIG_ROOT="/deployment/letsencrypt/renewal"
 LE_CMD="/usr/bin/certbot certonly ${LE_EXTRA_ARGS}"
+
+# Configure haproxy
+CERT_FILE="/opt/selfsigned/localhost.pem"
+if [ -n "${DOMAINNAME}" ] && [ "${DOMAINNAME}" != "localhost" ]; then
+  CERT_FILE="/deployment/letsencrypt/live/${DOMAINNAME}/haproxy.pem"
+fi
+export CERT_FILE=${CERT_FILE}
+
+if [ ! -f ${CERT_FILE} ]; then
+  HAPROXY_CONFIG="/etc/haproxy/haproxy-init.cfg"
+else
+  HAPROXY_CONFIG="/etc/haproxy/haproxy.cfg"
+fi
+HAPROXY_PID_FILE="/var/run/haproxy.pid"
+HAPROXY_CMD="haproxy -f ${HAPROXY_CONFIG} ${HAPROXY_USER_PARAMS} -D -p ${HAPROXY_PID_FILE}"
+HAPROXY_CHECK_CONFIG_CMD="haproxy -f ${HAPROXY_CONFIG} -c"
 
 function print_help {
   echo "Available commands:"
   echo ""
-  echo "help              - Show this help"
-  echo "list              - List configured domains and their certificate's status"
-  echo "add               - Add a new domain and create a certificate for it"
-  echo "renew             - Renew the certificate for an existing domain. Allows to add additional domain names."
-  echo "remove            - Remove and existing domain and its certificate"
-  echo "cron-auto-renewal - Run the cron job automatically renewing all certificates"
-  echo "auto-renew        - Try to automatically renew all installed certificates"
-  echo "print-pin         - Print the public key pin for a given domain for usage with HPKP"
+  echo "help                    - Show this help"
+  echo "run                     - Run proxy in foreground and monitor config changes, executes check and cron-auto-renewal-init"
+  echo "check                   - Check proxy configuration only"
+  echo "list                    - List configured domains and their certificate's status"
+  echo "add                     - Add a new domain and create a certificate for it"
+  echo "renew                   - Renew the certificate for an existing domain. Allows to add additional domain names."
+  echo "remove                  - Remove and existing domain and its certificate"
+  echo "cron-auto-renewal       - Run the cron job automatically renewing all certificates"
+  echo "cron-auto-renewal-init  - Obtain missing certificates and automatically renew afterwards"
+  echo "auto-renew              - Try to automatically renew all installed certificates"
+  echo "print-pin               - Print the public key pin for a given domain for usage with HPKP"
+}
+
+function check_proxy {
+    log_info "Checking HAProxy configuration: $HAPROXY_CONFIG"
+    $HAPROXY_CHECK_CONFIG_CMD
+}
+
+function run_proxy {
+    # Start rsyslogd
+    rsyslogd
+
+    check_proxy
+
+    $HAPROXY_CMD
+    if [[ $? != 0 ]] || test -t 0; then exit $?; fi
+    log_info "HAProxy started with $HAPROXY_CONFIG config, pid $(cat $HAPROXY_PID_FILE)."
+
+    cron_auto_renewal_init
+
+    # Wait if config or certificates were changed, block this execution
+    while inotifywait -q -r --exclude '\.git/' -e modify,create,delete,move,move_self $HAPROXY_CONFIG $LE_CERT_ROOT; do
+      if [ -f $HAPROXY_PID_FILE ]; then
+        log_info "Restarting HAProxy due to config changes..."
+
+        # Wait for the certificate to be present before restarting or might interrupt cert generation/renewal
+        log_info "Waiting for certificate '${CERT_FILE}' to exist..."
+        while ! ls -l "${CERT_FILE}" >/dev/null 2>&1; do sleep 0.1; done
+        log_info "Certificate '${CERT_FILE}' now exists!"
+        HAPROXY_CONFIG="/etc/haproxy/haproxy.cfg"
+        HAPROXY_CMD="haproxy -f ${HAPROXY_CONFIG} ${HAPROXY_USER_PARAMS} -D -p ${HAPROXY_PID_FILE}"
+        HAPROXY_CHECK_CONFIG_CMD="haproxy -f ${HAPROXY_CONFIG} -c"
+
+        if $HAPROXY_CHECK_CONFIG_CMD; then
+          $HAPROXY_CMD -sf $(cat $HAPROXY_PID_FILE)
+          log_info "HAProxy restarted, pid $(cat $HAPROXY_PID_FILE)." && log
+        else
+          log_info "HAProxy config invalid, not restarting..."
+        fi
+      else
+        log_error"Error: no $HAPROXY_PID_FILE present, HAProxy exited."
+        break
+      fi
+    done
 }
 
 function add {
@@ -248,8 +310,8 @@ function die {
     exit 1
 }
 
-function init {
-  log_info "Executing init at $(date -R)"
+function cron_auto_renewal_init {
+  log_info "Executing cron_auto_renewal_init at $(date -R)"
 
   if [ -n "${DOMAINNAME}" ] && [ "${DOMAINNAME}" != "localhost" ]; then
     if [ ! -d "${LE_CERT_ROOT}/${DOMAINNAME}" ]; then
@@ -258,39 +320,53 @@ function init {
       add ${DOMAINNAME}
     fi
 
+    # TODO Multiple domains
+    #  while IFS= read -r -d '' domain_dir; do
+    #    DOMAINNAME=$(basename ${domain_dir})
+    #    log_info "Checking domain '${DOMAINNAME}'..."
+    #
+    #    if [ -f "${domain_dir}/cert.pem" ]; then
+    #      log_info "Certificate exists"
+    #    else
+    #      log_info "Certificate doesn't exist so attempting to add it..."
+    #      log_info "Removing domain dir otherwise add will fail..."
+    #      log_info "CALL ADD ${DOMAINNAME}"
+    #      rm -rf ${domain_dir}
+    #      add ${DOMAINNAME}
+    #    fi
+    #
+    #  done < <(find ${LE_CERT_ROOT} -mindepth 1 -maxdepth 1 -type d -print0)
+
     auto_renew
     cron_auto_renewal
-  else
-    # Do nothing but don't let the container exit so the stack stays healthy
-    log_info "Not renewing dummy certificate for localhost, waiting forever..."
-    /bin/bash -c "trap : TERM INT; sleep infinity & wait"
-  fi
 
-#  while IFS= read -r -d '' domain_dir; do
-#    DOMAINNAME=$(basename ${domain_dir})
-#    log_info "Checking domain '${DOMAINNAME}'..."
-#
-#    if [ -f "${domain_dir}/cert.pem" ]; then
-#      log_info "Certificate exists"
-#    else
-#      log_info "Certificate doesn't exist so attempting to add it..."
-#      log_info "Removing domain dir otherwise add will fail..."
-#      log_info "CALL ADD ${DOMAINNAME}"
-#      rm -rf ${domain_dir}
-#      add ${DOMAINNAME}
-#    fi
-#
-#  done < <(find ${LE_CERT_ROOT} -mindepth 1 -maxdepth 1 -type d -print0)
+  else
+    log_info "Not renewing dummy certificate for localhost"
+  fi
 }
 
 function cron_auto_renewal {
-  # CRON_TIME can be set via environment
-  # If not defined, the default is daily
-  CRON_TIME=${CRON_TIME:-@daily}
-  log_info "Running cron job with execution time ${CRON_TIME}"
-  log_info "${CRON_TIME} root /entrypoint.sh auto-renew >> /var/log/cron.log 2>&1" > /etc/cron.d/letsencrypt
-  touch /var/log/cron.log && tail -f /var/log/cron.log
+    # CRON_TIME can be set via environment
+    # If not defined, the default is daily
+    CRON_TIME=${CRON_TIME:-@daily}
+    log_info "Scheduling cron job with execution time ${CRON_TIME}"
+    log_info "${CRON_TIME} root /entrypoint.sh auto-renew >> /var/log/cron.log 2>&1" > /etc/cron.d/letsencrypt
+
+    # Start crond if not running
+    if ! [ -f /var/run/crond.pid ]; then
+        crond
+    fi
 }
+
+log_info "DOMAINNAME: ${DOMAINNAME}"
+log_info "HAPROXY_CERT_FILE: ${CERT_FILE}"
+log_info "HAPROXY_CONFIG: ${HAPROXY_CONFIG}"
+log_info "HAPROXY_CMD: ${HAPROXY_CMD}"
+log_info "HAPROXY_USER_PARAMS: ${HAPROXY_USER_PARAMS}"
+log_info "LE_CERT_ROOT: ${LE_CERT_ROOT}"
+log_info "LE_ARCHIVE_ROOT: ${LE_ARCHIVE_ROOT}"
+log_info "LE_RENEWAL_CONFIG_ROOT: ${LE_RENEWAL_CONFIG_ROOT}"
+log_info "LE_CMD: ${LE_CMD}"
 
 if [ $# -eq 0 ]
 then
@@ -301,7 +377,11 @@ fi
 CMD="${1}"
 shift
 
-if [ "${CMD}" = "add"  ]; then
+if [ "${CMD}" = "run"  ]; then
+  run_proxy "${@}"
+elif [ "${CMD}" = "check" ]; then
+  check_proxy "${@}"
+elif [ "${CMD}" = "add" ]; then
   add "${@}"
 elif [ "${CMD}" = "list" ]; then
   list "${@}"
@@ -318,10 +398,7 @@ elif [ "${CMD}" = "cron-auto-renewal" ]; then
 elif [ "${CMD}" = "print-pin" ]; then
   print_pin "${@}"
 elif [ "${CMD}" = "cron-auto-renewal-init" ]; then
-  # THIS IS A CUSTOM MODE THAT WILL INITIALISE CERTIFICATES FOR ALL DIRECTORIES
-  # IN THE LE_CERT_ROOT SO FOLDERS CAN JUST BE CREATED USING DOCKER AND THEN LETSENCRYPT
-  # WILL INITIALISE THE CERTIFICATES AND CREATE CRON JOB TO AUTO RENEW THEM
-  init
+  cron_auto_renewal_init
 else
-  die "Unknown command ${CMD}"
+  die "Unknown command: ${CMD}"
 fi

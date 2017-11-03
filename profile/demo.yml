@@ -5,38 +5,49 @@
 #
 # Install Docker Community edition (https://docker.com/) on Windows, macOS, or Linux.
 #
-# Start the stack with: docker-compose -p openremote -f profile/demo.yml up
+# Start the stack with:
 #
-# All persistent data is stored on your Docker host in the '../deployment' directory. To
-# keep your data, set a custom directory with env variable DEPLOYMENT_DIRECTORY and disable
-# SETUP_INIT_CLEAN_DATABASE.
+#   docker-compose -p openremote -f profile/demo.yml up
 #
 # For full documentation, see deploy.yml
 #
-# This file defines the services to run and their dependencies only.
+# This configuration does not store SSL certificate data and allow changes to the
+# proxy configuration. You can map a Docker volume or host directory to access/store
+# these files.
+#
+# This configuration expects manager deployment-specific data such as map tiles, console
+# application static resources (HTML, JS, CSS), and other configuration files
+# to be available in the '../deployment' directory. To set a custom deployment
+# directory, use env variable DEPLOYMENT_DIRECTORY.
+#
+# This configuration stores postgresql data in a Docker volume. You manage this volume
+# independently from your stack with with 'docker volume ls', 'docker volume rm', etc.
+# Alternatively, you can store postgresql data in a directory on your host.
 #
 version: '2.2'
 
+# If you enable volume mappings in services, you need this. Otherwise, remove the volumes
 volumes:
-  data:
+#  proxy-data:
+#    name: proxy-data
+#  manager-data:
+#    name: manager-data
+  postgresql-data:
+    name: postgresql-data
 
 services:
 
-  haproxy:
+  proxy:
     extends:
       file: deploy.yml
-      service: haproxy
+      service: proxy
     depends_on:
       manager:
         condition: service_healthy
-
-  letsencrypt:
-    extends:
-      file: deploy.yml
-      service: letsencrypt
-    depends_on:
-      haproxy:
-        condition: service_healthy
+    # volumes:
+      # Store data either in host-mapped directory or a named Docker volume
+      # - ${DEPLOYMENT_DIRECTORY:-../deployment}/proxy:/deployment
+      # - proxy-data:/deployment
 
   manager:
     extends:
@@ -45,6 +56,10 @@ services:
     depends_on:
       keycloak:
         condition: service_healthy
+    volumes:
+      # Store data either in host-mapped directory or a named Docker volume
+      - ${DEPLOYMENT_DIRECTORY:-../deployment}/manager:/deployment
+      # - manager-data:/deployment
 
   keycloak:
     extends:
@@ -58,3 +73,7 @@ services:
     extends:
       file: deploy.yml
       service: postgresql
+    volumes:
+      # Store data either in host-mapped directory or a named Docker volume
+      # - ${DEPLOYMENT_DIRECTORY:-../deployment}/postgresql:/deployment
+      - postgresql-data:/deployment
