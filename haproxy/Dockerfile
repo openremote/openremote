@@ -6,6 +6,8 @@ ARG HA_PROXY_MINOR_VERSION=1.7
 ARG HA_PROXY_VERSION=1.7.5
 ARG LUA_VERSION=5.3.4
 ARG ACME_PLUGIN_VERSION=0.1.1
+ARG DOMAINNAME
+ENV DOMAINNAME=${DOMAINNAME:-localhost}
 
 RUN mkdir /tmp/lua && cd /tmp/lua \
     && curl -sSL https://www.lua.org/ftp/lua-${LUA_VERSION}.tar.gz -o lua.tar.gz \
@@ -24,14 +26,19 @@ RUN mkdir /etc/haproxy && cd /etc/haproxy \
     && tar xvf acme-plugin.tar.gz --strip-components=1 --no-anchored acme-http01-webroot.lua \
     && rm *.tar.gz && cd
 
+RUN mkdir /opt/selfsigned
+
 ADD rsyslog.conf /etc/rsyslog.conf
 ADD haproxy-init.cfg /etc/haproxy/haproxy-init.cfg
-ADD demo /etc/haproxy/demo
+ADD haproxy.cfg /etc/haproxy/haproxy.cfg
+ADD selfsigned /opt/selfsigned
 
 VOLUME /etc/letsencrypt
 VOLUME /var/acme-webroot
 
 EXPOSE 80 443
+
+HEALTHCHECK --interval=3s --timeout=3s --start-period=2s --retries=30 CMD curl --fail http://localhost:80 || exit 1
 
 COPY entrypoint.sh /
 RUN chmod +x /entrypoint.sh

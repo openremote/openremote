@@ -1,0 +1,30 @@
+# Demo setup of OpenRemote v3 on Rasperry Pi 3
+#
+version: '2.1'
+
+services:
+
+  haproxy:
+    extends:
+      file: deploy.yml
+      service: haproxy
+
+  letsenctrypt:
+    extends:
+      file: deploy.yml
+      service: letsencrypt
+
+  postgresql:
+    extends:
+      file: deploy.yml
+      service: postgresql
+
+  manager:
+    extends:
+      file: deploy.yml
+      service: manager
+    image: openremote/rpi-manager:latest
+    environment:
+      # Use basic identity service instead of Keycloak, set master admin password
+      MANAGER_IDENTITY_PROVIDER: basic
+      SETUP_BASIC_IDENTITY_ADMIN_PASSWORD: 'secret'

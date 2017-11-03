@@ -24,10 +24,10 @@ ENV JAVA_HOME /usr/lib/jvm/java-8-oracle
 RUN [ "cross-build-end" ]
 
 ENV MANAGER_DOCROOT webapp
-ENV CONSOLE_DOCROOT deployment/resources_console
-ENV LOGGING_CONFIG_FILE deployment/logging.properties
-ENV MAP_TILES_PATH deployment/mapdata.mbtiles
-ENV MAP_SETTINGS_PATH deployment/mapsettings.json
+ENV CONSOLE_DOCROOT /deployment/consoles
+ENV LOGGING_CONFIG_FILE /deployment/logging.properties
+ENV MAP_TILES_PATH /deployment/mapdata.mbtiles
+ENV MAP_SETTINGS_PATH /deployment/mapsettings.json
 
 ADD server /opt/app
 ADD client /opt/app
@@ -35,5 +35,7 @@ ADD client /opt/app
 EXPOSE 8080
 
 WORKDIR /opt/app
+
+HEALTHCHECK --interval=3s --timeout=3s --start-period=2s --retries=30 CMD curl --fail http://localhost:8080 || exit 1
 
 ENTRYPOINT ["java", "-cp", "/opt/app/lib/*", "org.openremote.manager.server.Main"]

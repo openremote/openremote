@@ -49,4 +49,5 @@ else
 fi
 
 echo "Starting database server..."
-gosu postgres ${PG_BIN}/postgres "$@"
+gosu postgres ${PG_BIN}/pg_ctl start -w "$@"
+/bin/bash -c "trap : TERM INT; sleep infinity & wait"

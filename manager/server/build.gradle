@@ -18,22 +18,3 @@ dependencies {
 
     compile "org.xerial:sqlite-jdbc:$sqliteVersion"
 }
-
-distributions {
-    main {
-        contents {
-            // Copy the root (!) project's deployment/configuration files into the Docker image
-            from("${rootDir}/deployment/manager") {
-                into "deployment"
-            }
-        }
-    }
-}
-
-installDist {
-    into "${resolveProject(":manager").buildDir}/install/$distributions.main.baseName"
-    doLast {
-        // Delete the useless start scripts, they have a hardcoded classpath
-        delete "${resolveProject(":manager").buildDir}/install/server/bin"
-    }
-}

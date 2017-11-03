@@ -1,3 +1,7 @@
+plugins {
+    id 'com.craigburke.client-dependencies' version '1.4.0'
+}
+
 evaluationDependsOn(resolveProject(":manager:shared").path)
 
 apply plugin: "java"
@@ -20,6 +24,34 @@ dependencies {
     // This is not on regular classpath, only used when compiling GWT/running codeserver
     gwtDev files(['lib/javapoet-1.0.0.jar', 'lib/jackson-annotations-2.8.6-sources.jar'])
     gwtDev "com.google.gwt:gwt-dev:$gwtVersion"
+}
+
+clientDependencies {
+    cacheDir = "${System.getProperty('java.io.tmpdir')}/openremote-build-client-cache"
+    installDir "src/main/webapp/bower_components"
+    defaultCopy = {
+        include '**'
+        exclude "**/.*", "node_modules", "bower_components", "test", "tests", "src"
+    }
+    registry 'bowerIO', type: 'bower', url: 'https://registry.bower.io'
+
+    // If you get git failures, you run into the request rate limit on github.com, to get a
+    // better rate generate a personal access token and put it in ~/.gradle/gradle.properties
+    githubToken = project.hasProperty('githubToken') ? project.githubToken : ''
+    // which didn't work for me, so set it on ./gradlew -PgithubUsername=...
+    githubUsername = project.hasProperty('githubUsername') ? project.githubUsername : '' // <1>
+    githubPassword = project.hasProperty('githubPassword') ? project.githubPassword : '' // <2>
+
+    bowerIO {
+        "polymer"(project.property("polymerVersion"))
+        "iron-flex-layout"(project.property("ironFlexLayoutVersion"))
+        "font-awesome"(project.property("fontAwesomeVersion"))
+        "chart.js"(project.property("chartjsVersion"))
+        // TODO No idea why this doesn't work
+        // "sprintf"("^1.1.1")
+        // TODO They don't publish to bower
+        // "mapbox-gl-js"("^0.35.0")
+    }
 }
 
 def gwtOutputDir = "${project.buildDir}/gwt/out"
@@ -162,5 +194,6 @@ distributions {
 }
 
 installDist {
-    into "${resolveProject(":manager").buildDir}/install/$distributions.main.baseName"
+    // Download JS dependencies
+    dependsOn "clientRefresh"
 }

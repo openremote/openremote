@@ -22,4 +22,8 @@ out/
 manager/.factorypath
 console/iOS/DerivedData
 console/iOS/Pods
-deployment/manager/resources_console/*/bower_components
+
+# Ignore build/runtime only data
+deployment/manager/consoles/*/bower_components
+deployment/haproxy
+deployment/postgresql

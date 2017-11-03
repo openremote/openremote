@@ -1,0 +1,292 @@
+# OpenRemote v3
+#
+# By default running this profile installs the stack on https://localhost using a
+# self-signed SSL certificate, with username 'admin' and password 'secret'.
+#
+# Install Docker Community edition (https://docker.com/) on Windows, macOS, or Linux.
+#
+# Start the stack with: docker-compose -p openremote -f profile/deploy.yml up
+#
+# All persistent data is stored on your Docker host in the '${DEPLOYMENT_DIRECTORY:-../deployment}' directory.
+#
+version: '2.1'
+
+services:
+
+  # The frontend proxy, terminates SSL/TLS connections and forwards them to the Manager backend.
+  haproxy:
+
+    # Image will be built when not already in the cache or when `--build` option is supplied to `docker-compose up`
+    build:
+      context: '../haproxy'
+
+    # Image will be pulled when using the `docker-compose pull` command or `docker-compose up --no-build`
+    image: openremote/haproxy:latest
+
+    # Following volumes allow HAProxy to work with letsencrypt
+    volumes:
+      - ${DEPLOYMENT_DIRECTORY:-../deployment}/haproxy/letsencrypt:/etc/letsencrypt
+      - ${DEPLOYMENT_DIRECTORY:-../deployment}/haproxy/acme-webroot:/var/acme-webroot
+
+    environment:
+
+      # It is important that all services have the same timezone and are time synchronized.
+      # Bearer tokens are only valid for minutes, and authentication fails if Keycloak drifts.
+      TZ: Europe/Zurich
+
+      # The public host name of this OpenRemote installation. This is used to resolve the SSL
+      # certificate chain and manage your certificates. The localhost has a baked in self-signed
+      # certificate. If you change this name, also change letsencrypt#DOMAINNAME and don't forget
+      # to adjust manager#IDENTITY_NETWORK_HOST.
+      #DOMAINNAME: localhost
+
+    # Expose a public web service mapped to ports on the host.
+    ports:
+      - "80:80"
+      - "443:443"
+
+    # Configure logging of the container
+    logging:
+        options:
+            max-size: 10m
+
+    # Always restart the service
+    restart: always
+
+  letsencrypt:
+    build:
+      context: '../letsencrypt'
+
+    image: 'openremote/letsencrypt'
+
+    # Following volumes allow HAProxy to work with letsencrypt
+    volumes:
+      - ${DEPLOYMENT_DIRECTORY:-../deployment}/haproxy/letsencrypt:/etc/letsencrypt
+      - ${DEPLOYMENT_DIRECTORY:-../deployment}/haproxy/acme-webroot:/var/acme-webroot
+
+    environment:
+
+      # It is important that all services have the same timezone and are time synchronized.
+      TZ: Europe/Zurich
+
+      # The public host name of this OpenRemote installation. This is used to resolve the SSL
+      # certificate chain and manage your certificates. The localhost has a baked in self-signed
+      # certificate. If you change this name, also change letsencrypt#DOMAINNAME and don't forget
+      # to adjust manager#IDENTITY_NETWORK_HOST.
+      #DOMAINNAME: localhost
+
+      # Provide your own email address for your SSL certificates!
+      LE_EMAIL: 'devnull@openremote.io'
+
+      # --staging requests fake certificates to avoid hitting limits during testing
+      #LE_EXTRA_ARGS: '--staging --logs-dir=/etc/letsencrypt'
+
+    logging:
+        options:
+            max-size: 10m
+
+    restart: on-failure
+
+    # Obtain and automatically renew SSL certificates if DOMAINNAME is not localhost
+    command: cron-auto-renewal-init
+
+  # The API gateway and Manager web application.
+  manager:
+
+    # Image will be built when not already in the cache or when `--build` option is supplied to `docker-compose up`
+    build: '../manager/build/install/manager'
+
+    # Image will be pulled when using the `docker-compose pull` command or `docker-compose up --no-build`
+    image: openremote/manager:latest
+
+    # Manager persistent data (other than database data)
+    volumes:
+      - ${DEPLOYMENT_DIRECTORY:-../deployment}/manager:/deployment
+
+    environment:
+
+      TZ: Europe/Zurich
+
+      # If developer mode is enabled, all setup tasks will be executed on application startup.
+      # This will clean all data in Keycloak and the Manager database, and then import demo/test
+      # data. Some caching and other runtime performance-optimizations will also be disabled.
+      DEV_MODE: 'false'
+
+      # If you are not running in developer mode, and this is the first time you are starting
+      # the application, you can configure which setup tasks you want to execute. Careful,
+      # these tasks will clean and populate Keycloak and the Manager database with demo data!
+      SETUP_INIT_CLEAN_DATABASE: 'true'
+      SETUP_KEYCLOAK_ADMIN_PASSWORD: secret
+      SETUP_IMPORT_DEMO_USERS: 'true'
+      SETUP_IMPORT_DEMO_ASSETS: 'true'
+      SETUP_IMPORT_DEMO_RULES: 'true'
+
+      # Optional: Configure SMTP smart host for Keycloak, to send password reset emails etc.
+      #SETUP_KEYCLOAK_EMAIL_HOST: smtp-host.demo.tld
+      #SETUP_KEYCLOAK_EMAIL_USER: 'smtp-user'
+      #SETUP_KEYCLOAK_EMAIL_PASSWORD: 'smtp-password'
+      #SETUP_KEYCLOAK_EMAIL_PORT: 25
+      #SETUP_KEYCLOAK_EMAIL_AUTH: 'true'
+      #SETUP_KEYCLOAK_EMAIL_TLS: 'true'
+      #SETUP_KEYCLOAK_EMAIL_FROM: 'noreply@demo.tld'
+
+      # The public host name of this OpenRemote installation. This name is used in bearer tokens
+      # and must be the name you access the web services under. If you change haproxy#DOMAINNAME
+      # and letsencrypt#DOMAINNAME, also change this to match.
+      #IDENTITY_NETWORK_HOST: localhost
+
+      # Set if SSL is enabled on the frontend reverse proxy and all internal proxies should assume https
+      IDENTITY_NETWORK_SECURE: 'true'
+
+      # The public port of this OpenRemote installation.
+      IDENTITY_NETWORK_WEBSERVER_PORT: 443
+
+      # The service-internal JDBC connection URL for the database service.
+      DATABASE_CONNECTION_URL: jdbc:postgresql://postgresql/openremote
+
+      # The database connection settings, passwords should be changed in production!
+      DATABASE_USERNAME: openremote
+      DATABASE_PASSWORD: CHANGE_ME_DB_USER_PASSWORD
+      DATABASE_MIN_POOL_SIZE: 5
+      DATABASE_MAX_POOL_SIZE: 20
+      DATABASE_CONNECTION_TIMEOUT_SECONDS: 300
+
+      # The service-internal host name and port of the identity provider.
+      KEYCLOAK_HOST: keycloak
+      KEYCLOAK_PORT: 8080
+
+      # Optional: Console applications can register for push notifications through FCM.
+      # NOTIFICATION_FIREBASE_URL: https://fcm.googleapis.com/fcm/send
+      # NOTIFICATION_FIREBASE_API_KEY = '...'
+
+      # Optional: Custom location of the static console applications, each subdirectory must
+      # have the name of a realm to which the console app belongs.
+      # CONSOLE_DOCROOT: '/deployment/consoles'
+
+      # Optional: Override built-in logging.properties with a file of your choice.
+      # LOGGING_CONFIG_FILE: '/deployment/logging.properties'
+
+      # Optional: Provide a path to the map tiles database file (see https://openmaptiles.com/).
+      # MAP_TILES_PATH: '/deployment/mapdata.mbtiles'
+
+      # Optional: Override the map settings such as center location and zoom when opening the
+      # manager's map, as well as other style details and colours.
+      # MAP_SETTINGS_PATH: '/deployment/mapsettings.json'
+
+      # The number of threads and therefore rules engines that can be instantiated (default unlimited).
+      # RULES_THREADS_MAX: 32
+
+      # The number of threads and therefore background tasks that can be executed at the same
+      # time. Used by scheduled, usually short-lived and non-blocking tasks, such as protocols
+      # polling a remote service at regular interval, or the internal checks for expired client
+      # subscriptions on the event bus (default depends on detected CPU cores).
+      # SCHEDULED_TASKS_THREADS_MAX: 4
+
+      # When asset attributes are enabled for rule events, each value update will be an event fact
+      # in a rules knowledge session. You can set the global default expiration time span, after which
+      # rule event facts are retracted automatically. Default is 1 hour.
+      # RULE_EVENT_EXPIRES: '1h'
+
+      # The identity provider implementation to use for managing user identities, roles, and
+      # access authorization. The default is Keycloak, which requires a separate service but
+      # provides full multi-tenancy identity and role management. The basic provider supports
+      # only superusers and their text passwords, managed in a simple database table.
+      # MANAGER_IDENTITY_PROVIDER: 'basic'
+      # SETUP_BASIC_IDENTITY_ADMIN_PASSWORD: 'secret'
+
+      # Location of the static manager (UI and API) resources, you don't need to override this
+      # unless you want to deploy a modified version of the Manager UI.
+      # MANAGER_DOCROOT: 'manager/client/src/main/webapp'
+
+    # Override entrypoint for custom JVM options
+    #
+    # You should always set maximum memory limits, as the JVM will compute default heap size
+    # by looking at RAM on the host (taking a quarter of that usually), not whatever limits
+    # you set on the Docker container!
+    #
+    # entrypoint:
+    #  - "java"
+    #  - "-Xmx1024m"
+    #  - "-XX:+PrintGCDetails"
+    #  - "-cp"
+    #  - "/opt/app/lib/*"
+    #  - "org.openremote.manager.server.Main"
+
+    # Configure logging of the container, see deployment/logging.properties
+    logging:
+        options:
+            max-size: 10m
+
+    # Always restart the service
+    restart: always
+
+  # Keycloak identity provider
+  keycloak:
+
+    # Image will be built when not already in the cache or when `--build` option is supplied to `docker-compose up`
+    build: '../keycloak'
+
+    # Image will be pulled when using the `docker-compose pull` command or `docker-compose up --no-build`
+    image: openremote/keycloak:latest
+
+    environment:
+      TZ: Europe/Zurich
+
+      # Switch to DEBUG to diagnose Keycloak problems.
+      KEYCLOAK_LOGLEVEL: INFO
+
+      # The master realm superuser, you should not change this.
+      KEYCLOAK_USER: admin
+
+      # Change the admin root password if you make this application publicly accessible! Note
+      # that imported demo data uses the admin account and also creates a 'test' user with
+      # password 'test'. Importing will be broken if you change the password only here.
+      # Demo data should not be imported in production.
+      KEYCLOAK_PASSWORD: secret
+
+      # Configure how Keycloak connects to the database
+      POSTGRES_DATABASE: openremote
+      POSTGRES_USER: openremote
+      POSTGRES_PASSWORD: CHANGE_ME_DB_USER_PASSWORD
+
+    # Configure logging of the container
+    logging:
+        options:
+            max-size: 10m
+
+    # Always restart the service
+    restart: always
+
+  # PostgreSQL DBMS
+  postgresql:
+
+    # Image will be built when not already in the cache or when `--build` option is supplied to `docker-compose up`
+    build: '../postgresql'
+
+    # Image will be pulled when using the `docker-compose pull` command or `docker-compose up --no-build`
+    image: openremote/postgresql:latest
+
+    # Keep data in a persistent volume
+    volumes:
+      - ${DEPLOYMENT_DIRECTORY:-../deployment}/postgresql:/data
+
+    environment:
+      TZ: Europe/Zurich
+
+      # Create transient database and user. For production, run this once
+      # with your volume mapping for the data directory, then remove the
+      # variables and restart to preserve the stored data
+      POSTGRES_DB: openremote
+      POSTGRES_USER: openremote
+      POSTGRES_PASSWORD: CHANGE_ME_DB_USER_PASSWORD
+
+      # You can open an SQL console on a running container with:
+      # docker exec -it <container ID> psql -U openremote
+
+    # Configure logging of the container
+    logging:
+        options:
+            max-size: 10m
+
+    # Always restart the service
+    restart: always

@@ -1,0 +1,27 @@
+# Profile for doing development on all services.
+# Starts keycloak with theme volumed mapped and postgres and exposes them to localhost.
+version: '2.1'
+services:
+
+  keycloak:
+    extends:
+      file: deploy.yml
+      service: keycloak
+    ports:
+      - "8081:8080"
+    build:
+      context: ../keycloak
+      dockerfile: dev.Dockerfile
+    image: openremote/keycloak_dev:latest
+    volumes:
+      - ../keycloak/theme:/opt/jboss/keycloak/themes/openremote
+    depends_on:
+      postgresql:
+        condition: service_healthy
+
+  postgresql:
+    extends:
+      file: deploy.yml
+      service: postgresql
+    ports:
+      - "5432:5432"

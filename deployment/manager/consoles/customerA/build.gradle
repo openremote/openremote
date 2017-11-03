@@ -1,0 +1,30 @@
+plugins {
+    id 'com.craigburke.client-dependencies' version '1.4.0'
+}
+clientDependencies {
+    cacheDir = "${System.getProperty('java.io.tmpdir')}/openremote-build-client-cache"
+    installDir "bower_components"
+    defaultCopy = {
+        include '**'
+        exclude "**/.*", "node_modules", "bower_components", "test", "tests", "src"
+    }
+    registry 'bowerIO', type: 'bower', url: 'https://registry.bower.io'
+
+    // If you get git failures, you run into the request rate limit on github.com, to get a
+    // better rate generate a personal access token and put it in ~/.gradle/gradle.properties
+    githubToken = project.hasProperty('githubToken') ? project.githubToken : ''
+    // which didn't work for me, so set it on ./gradlew -PgithubUsername=...
+    githubUsername = project.hasProperty('githubUsername') ? project.githubUsername : '' // <1>
+    githubPassword = project.hasProperty('githubPassword') ? project.githubPassword : '' // <2>
+
+    bowerIO {
+        "polymer"(project.property("polymerVersion"))
+        "iron-flex-layout"(project.property("ironFlexLayoutVersion"))
+        "font-awesome"(project.property("fontAwesomeVersion"))
+    }
+}
+
+task installDist {
+    // Download JS dependencies
+    dependsOn "clientRefresh"
+}

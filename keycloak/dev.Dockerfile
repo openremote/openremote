@@ -18,10 +18,7 @@ RUN java -jar /usr/share/java/saxon.jar -s:/opt/jboss/keycloak/standalone/config
 
 RUN rm /opt/jboss/keycloak/*.xsl
 
-USER root
-ADD wait-for-it.sh /opt/wait-for-it.sh
-RUN chmod +x /opt/wait-for-it.sh
-USER jboss
+HEALTHCHECK --interval=3s --timeout=3s --start-period=2s --retries=30 CMD curl --fail http://localhost:8080/auth || exit 1
 
-ENTRYPOINT ["/opt/wait-for-it.sh", "postgresql:5432", "-t", "360", "--strict", "--", "/opt/jboss/docker-entrypoint.sh"]
+ENTRYPOINT ["/opt/jboss/docker-entrypoint.sh"]
 CMD ["-b", "0.0.0.0"]

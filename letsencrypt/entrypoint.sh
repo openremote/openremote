@@ -45,7 +45,7 @@ function add {
     exit 3
   fi
 
-  echo "Adding domain \"${DOMAINNAME}\"..."
+  log_info "Adding domain \"${DOMAINNAME}\"..."
 
   DOMAIN_ARGS="-d ${DOMAINNAME}"
   for name in ${@}; do
@@ -63,9 +63,11 @@ function add {
    mv "/tmp/haproxy.pem" "${DOMAIN_FOLDER}/haproxy.pem"
 
   if [ $? -ne 0 ]; then
-   >&2 echo "failed to create haproxy.pem file!"
+   >&2 log_error "failed to create haproxy.pem file!"
    exit 2
   fi
+
+  log_info "Added domain \"${DOMAINNAME}\"..."
 }
 
 function renew {
@@ -83,7 +85,7 @@ function renew {
     exit 6
   fi
 
-  echo "Renewing domain \"${DOMAINNAME}\"..."
+  log_info "Renewing domain \"${DOMAINNAME}\"..."
 
   DOMAIN_ARGS="-d ${DOMAINNAME}"
   for name in ${@}; do
@@ -97,7 +99,7 @@ function renew {
   LE_RESULT=$?
 
   if [ ${LE_RESULT} -ne 0 ]; then
-   >&2 echo "letsencrypt returned error code ${LE_RESULT}"
+   >&2 log_error "letsencrypt returned error code ${LE_RESULT}"
    return ${LE_RESULT}
   fi
 
@@ -108,15 +110,17 @@ function renew {
    mv "/tmp/haproxy.pem" "${DOMAIN_FOLDER}/haproxy.pem"
 
   if [ $? -ne 0 ]; then
-   >&2 echo "failed to create haproxy.pem file!"
+   >&2 log_error "failed to create haproxy.pem file!"
    return 2
   fi
+
+  log_info "Renewed domain \"${DOMAINNAME}\"..."
 }
 
 # check certificate expiration and run certificate issue requests
 # for those that expire in under 4 weeks
 function auto_renew {
-  echo "Executing auto renew at $(date -R)"
+  log_info "Executing auto renew at $(date -R)"
   renewed_certs=()
   exitcode=0
   while IFS= read -r -d '' cert; do
@@ -197,6 +201,8 @@ function remove {
     exit -1
   fi
 
+  log_info "Removing domain \"${DOMAINNAME}\"..."
+
   DOMAINNAME=$1
   DOMAIN_LIVE_FOLDER="${LE_CERT_ROOT}/${DOMAINNAME}"
   DOMAIN_ARCHIVE_FOLDER="${LE_ARCHIVE_ROOT}/${DOMAINNAME}"
@@ -211,29 +217,78 @@ function remove {
   rm -rf ${DOMAIN_ARCHIVE_FOLDER} || die "Failed to remove domain archive directory ${DOMAIN_ARCHIVE_FOLDER}"
   rm -f ${DOMAIN_RENEWAL_CONFIG} || die "Failed to remove domain renewal config ${DOMAIN_RENEWAL_CONFIG}"
 
-  echo "Domain ${DOMAIN} removed successfully."
+  log_info "Removed domain \"${DOMAINNAME}\"..."
 }
 
 function log_error {
   if [ -n "${LOGFILE}" ]
   then
-    echo "[error] ${1}\n" >> ${LOGFILE}
+    if [[ "$@" ]]; then echo "[ERROR][`date +'%Y-%m-%d %T'`] $@\n" >> ${LOGFILE};
+    else echo; fi
+    >&2 echo "[ERROR][`date +'%Y-%m-%d %T'`] $@"
+  else
+    echo "[ERROR][`date +'%Y-%m-%d %T'`] $@"
   fi
-  >&2 echo "[error] ${1}"
+
 }
 
 function log_info {
   if [ -n "${LOGFILE}" ]
   then
-    echo "[info] ${1}\n" >> ${`LOGFILE`}
+    if [[ "$@" ]]; then echo "[INFO][`date +'%Y-%m-%d %T'`] $@\n" >> ${LOGFILE};
+    else echo; fi
+    >&2 echo "[INFO][`date +'%Y-%m-%d %T'`] $@"
   else
-    echo "[info] ${1}"
+    echo "[INFO][`date +'%Y-%m-%d %T'`] $@"
   fi
 }
 
 function die {
     echo >&2 "$@"
     exit 1
+}
+
+function init {
+  log_info "Executing init at $(date -R)"
+
+  if [ -n "${DOMAINNAME}" ] && [ "${DOMAINNAME}" != "localhost" ]; then
+    if [ ! -d "${LE_CERT_ROOT}/${DOMAINNAME}" ]; then
+      log_info "Initialising certificate for '${DOMAINNAME}'..."
+      rm -rf "${LE_CERT_ROOT}/${DOMAINNAME}"
+      add ${DOMAINNAME}
+    fi
+
+    auto_renew
+    cron_auto_renewal
+  else
+    # Do nothing but don't let the container exist so the stack stays healthy
+    /bin/bash -c "trap : TERM INT; sleep infinity & wait"
+  fi
+
+#  while IFS= read -r -d '' domain_dir; do
+#    DOMAINNAME=$(basename ${domain_dir})
+#    log_info "Checking domain '${DOMAINNAME}'..."
+#
+#    if [ -f "${domain_dir}/cert.pem" ]; then
+#      log_info "Certificate exists"
+#    else
+#      log_info "Certificate doesn't exist so attempting to add it..."
+#      log_info "Removing domain dir otherwise add will fail..."
+#      log_info "CALL ADD ${DOMAINNAME}"
+#      rm -rf ${domain_dir}
+#      add ${DOMAINNAME}
+#    fi
+#
+#  done < <(find ${LE_CERT_ROOT} -mindepth 1 -maxdepth 1 -type d -print0)
+}
+
+function cron_auto_renewal {
+  # CRON_TIME can be set via environment
+  # If not defined, the default is daily
+  CRON_TIME=${CRON_TIME:-@daily}
+  log_info "Running cron job with execution time ${CRON_TIME}"
+  log_info "${CRON_TIME} root /entrypoint.sh auto-renew >> /var/log/cron.log 2>&1" > /etc/cron.d/letsencrypt
+  touch /var/log/cron.log && tail -f /var/log/cron.log
 }
 
 if [ $# -eq 0 ]
@@ -258,14 +313,14 @@ elif [ "${CMD}" = "auto-renew" ]; then
 elif [ "${CMD}" = "help" ]; then
   print_help "${@}"
 elif [ "${CMD}" = "cron-auto-renewal" ]; then
-  # CRON_TIME can be set via environment
-  # If not defined, the default is daily
-  CRON_TIME=${CRON_TIME:-@daily}
-  echo "Running cron job with execution time ${CRON_TIME}"
-  echo "${CRON_TIME} root /entrypoint.sh auto-renew >> /var/log/cron.log 2>&1" > /etc/cron.d/letsencrypt
-  touch /var/log/cron.log && tail -f /var/log/cron.log
+  cron_auto_renewal
 elif [ "${CMD}" = "print-pin" ]; then
   print_pin "${@}"
+elif [ "${CMD}" = "cron-auto-renewal-init" ]; then
+  # THIS IS A CUSTOM MODE THAT WILL INITIALISE CERTIFICATES FOR ALL DIRECTORIES
+  # IN THE LE_CERT_ROOT SO FOLDERS CAN JUST BE CREATED USING DOCKER AND THEN LETSENCRYPT
+  # WILL INITIALISE THE CERTIFICATES AND CREATE CRON JOB TO AUTO RENEW THEM
+  init
 else
   die "Unknown command ${CMD}"
 fi

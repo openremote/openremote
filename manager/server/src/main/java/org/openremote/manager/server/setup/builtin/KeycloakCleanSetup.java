@@ -20,6 +20,7 @@
 package org.openremote.manager.server.setup.builtin;
 
 import org.keycloak.admin.client.resource.RealmsResource;
+import org.keycloak.admin.client.resource.UserResource;
 import org.keycloak.representations.idm.ClientRepresentation;
 import org.keycloak.representations.idm.RealmRepresentation;
 import org.openremote.container.Container;
@@ -63,10 +64,10 @@ public class KeycloakCleanSetup extends AbstractKeycloakSetup {
         // Find out if there are any users except the admin, delete them
         masterUsersResource.search(null, null, null).stream()
             .filter(userRepresentation -> !userRepresentation.getUsername().equals(MASTER_REALM_ADMIN_USER))
-            .map(userRepresentation -> masterUsersResource.get(userRepresentation.getId()))
-            .forEach(userResource -> {
-                LOG.info("Deleting user: " + userResource);
-                userResource.remove();
-            });
+            .map(userRepresentation -> {
+                LOG.info("Deleting user: " + userRepresentation);
+                return masterUsersResource.get(userRepresentation.getId());
+            })
+            .forEach(UserResource::remove);
     }
 }

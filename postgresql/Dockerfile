@@ -30,7 +30,7 @@ RUN curl -L -o /usr/local/bin/gosu https://github.com/tianon/gosu/releases/downl
 	&& gosu nobody true
 
 # Prepare data directory
-ENV PGDATA /var/lib/postgresql/data/
+ENV PGDATA /data
 RUN mkdir -p "$PGDATA" && chown -R postgres:postgres "$PGDATA"
 VOLUME ${PGDATA}
 
@@ -40,6 +40,8 @@ ENV PATH $PATH:$PG_BIN
 ENV LANG en_US.utf8
 
 EXPOSE 5432
+
+HEALTHCHECK --interval=3s --timeout=3s --start-period=2s --retries=30 CMD gosu postgres pg_isready
 
 COPY entrypoint.sh /
 RUN chmod +x /entrypoint.sh

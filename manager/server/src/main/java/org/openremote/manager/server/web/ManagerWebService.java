@@ -41,7 +41,7 @@ public class ManagerWebService extends WebService {
     public static final String MANAGER_DOCROOT = "MANAGER_DOCROOT";
     public static final String MANAGER_DOCROOT_DEFAULT = "manager/client/src/main/webapp";
     public static final String CONSOLE_DOCROOT = "CONSOLE_DOCROOT";
-    public static final String CONSOLE_DOCROOT_DEFAULT = "deployment/manager/resources_console";
+    public static final String CONSOLE_DOCROOT_DEFAULT = "deployment/manager/consoles";
 
     public static final String MANAGER_PATH = "/static";
     public static final String CONSOLE_PATH = "/console";
