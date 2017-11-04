@@ -210,7 +210,7 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
         def apartment3Engine = rulesService.assetEngines.get(managerDemoSetup.apartment3Id)
         def customerATenant = keycloakDemoSetup.customerATenant
         customerATenant.setEnabled(false)
-        identityService.initIdentityProvider.updateTenant(new ClientRequestInfo(null, accessToken), customerATenant.getRealm(), customerATenant)
+        identityService.getIdentityProvider().updateTenant(new ClientRequestInfo(null, accessToken), customerATenant.getRealm(), customerATenant)
 
         then: "the tenants rule engine should stop and all asset rule engines in this realm should also stop"
         conditions.eventually {
@@ -236,7 +236,7 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
 
         when: "the disabled tenant is re-enabled"
         customerATenant.setEnabled(true)
-        identityService.initIdentityProvider.updateTenant(new ClientRequestInfo(null, accessToken), customerATenant.getRealm(), customerATenant)
+        identityService.getIdentityProvider().updateTenant(new ClientRequestInfo(null, accessToken), customerATenant.getRealm(), customerATenant)
 
         then: "the tenants rule engine should start and all asset rule engines from this realm should also start"
         conditions.eventually {

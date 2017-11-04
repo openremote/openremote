@@ -43,9 +43,9 @@ class AssetUserLinkingTest extends Specification implements ManagerContainerTrai
         /* ############################################## READ ####################################### */
 
         expect: "some users to be restricted"
-        !identityService.initIdentityProvider.isRestrictedUser(keycloakDemoSetup.testuser1Id)
-        !identityService.initIdentityProvider.isRestrictedUser(keycloakDemoSetup.testuser2Id)
-        identityService.initIdentityProvider.isRestrictedUser(keycloakDemoSetup.testuser3Id)
+        !identityService.getIdentityProvider().isRestrictedUser(keycloakDemoSetup.testuser1Id)
+        !identityService.getIdentityProvider().isRestrictedUser(keycloakDemoSetup.testuser2Id)
+        identityService.getIdentityProvider().isRestrictedUser(keycloakDemoSetup.testuser3Id)
 
         when: "all user assets are retrieved of a realm"
         def userAssets = assetResource.getUserAssetLinks(null, keycloakDemoSetup.customerATenant.id, null, null)
@@ -147,7 +147,7 @@ class AssetUserLinkingTest extends Specification implements ManagerContainerTrai
         userAssets = assetResource.getUserAssetLinks(null, keycloakDemoSetup.customerATenant.id, keycloakDemoSetup.testuser2Id, null)
 
         then: "result should match"
-        identityService.initIdentityProvider.isRestrictedUser(keycloakDemoSetup.testuser2Id)
+        identityService.getIdentityProvider().isRestrictedUser(keycloakDemoSetup.testuser2Id)
         userAssets.length == 1
         userAssets.any {
             it.id.realmId == keycloakDemoSetup.customerATenant.id &&
@@ -164,7 +164,7 @@ class AssetUserLinkingTest extends Specification implements ManagerContainerTrai
         userAssets = assetResource.getUserAssetLinks(null, keycloakDemoSetup.customerATenant.id, keycloakDemoSetup.testuser2Id, null)
 
         then: "result should match"
-        !identityService.initIdentityProvider.isRestrictedUser(keycloakDemoSetup.testuser2Id)
+        !identityService.getIdentityProvider().isRestrictedUser(keycloakDemoSetup.testuser2Id)
         userAssets.length == 0
 
         cleanup: "the server should be stopped"

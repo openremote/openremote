@@ -68,7 +68,7 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
             ).token
         }
         def securityService = new ClientSecurityService(keycloakProvider.getKeycloakDeployment(realm, KEYCLOAK_CLIENT_ID), accessToken)
-        def currentTenant = identityService.initIdentityProvider.getTenantForRealm(realm)
+        def currentTenant = identityService.getIdentityProvider().getTenantForRealm(realm)
 
         and: "a client request service and target"
         def constraintViolationReader = new ClientObjectMapper(container.JSON, ConstraintViolationReport.class) as EntityReader<ConstraintViolationReport>
@@ -238,7 +238,7 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
         1 * assetBrowser.refresh(asset.id, managerDemoSetup.smartOfficeId)
 
         cleanup: "the client should be stopped"
-        clientEventService.close()
+        if (clientEventService != null) clientEventService.close()
 
         and: "the server should be stopped"
         stopContainer(container)
@@ -267,7 +267,7 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
             ).token
         }
         def securityService = new ClientSecurityService(keycloakProvider.getKeycloakDeployment(realm, KEYCLOAK_CLIENT_ID), accessToken)
-        def currentTenant = identityService.initIdentityProvider.getTenantForRealm(realm)
+        def currentTenant = identityService.getIdentityProvider().getTenantForRealm(realm)
 
         and: "a client request service and target"
         def constraintViolationReader = new ClientObjectMapper(container.JSON, ConstraintViolationReport.class) as EntityReader<ConstraintViolationReport>
@@ -419,7 +419,7 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
         }
 
         cleanup: "the client should be stopped"
-        clientEventService.close()
+        if (clientEventService != null) clientEventService.close()
 
         and: "the server should be stopped"
         stopContainer(container)
@@ -446,7 +446,7 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
             ).token
         }
         def securityService = new ClientSecurityService(keycloakProvider.getKeycloakDeployment(realm, KEYCLOAK_CLIENT_ID), accessToken)
-        def currentTenant = identityService.initIdentityProvider.getTenantForRealm(realm)
+        def currentTenant = identityService.getIdentityProvider().getTenantForRealm(realm)
 
         and: "a client request service and target"
         def constraintViolationReader = new ClientObjectMapper(container.JSON, ConstraintViolationReport.class) as EntityReader<ConstraintViolationReport>
@@ -530,7 +530,7 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
         }
 
         cleanup: "the client should be stopped"
-        clientEventService.close()
+        if (clientEventService != null) clientEventService.close()
 
         and: "the server should be stopped"
         stopContainer(container)

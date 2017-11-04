@@ -441,7 +441,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait, 
         }
 
         cleanup: "the client should be stopped"
-        clientEventService.close()
+        if (clientEventService != null) clientEventService.close()
 
         and: "the server should be stopped"
         stopContainer(container)
