@@ -14,7 +14,7 @@
 # Steps to create a permanent installation:
 #
 # 1. DO NOT FORGET TO CHANGE KEYCLOAK_PASSWORD!
-# 2. Consider setting a custom DOMAINNAME, see deploy.yml
+# 2. Consider setting a custom DOMAINNAME, LE_EMAIL, and IDENTITY_NETWORK_HOST, see deploy.yml
 # 3. Understand how persistent data and volume mappings work, see below
 # 4. Execute once:
 #
@@ -28,6 +28,8 @@
 #
 # Database schemas will be upgraded to new versions of the services automatically, you do
 # not have to wipe all data to install a new version of OpenRemote.
+#
+# Your extension JAR files should be in the manager's ../deployment/extensions/ directory.
 #
 version: '2.2'
 
@@ -55,9 +57,9 @@ services:
       # - proxy-data:/deployment
 
   # This configuration expects manager deployment-specific data such as map tiles,
-  # console application static resources (HTML, JS, CSS), and other configuration files
-  # to be available in the '../deployment' directory. To set a custom deployment
-  # directory, use env variable DEPLOYMENT_DIRECTORY.
+  # console application static resources (HTML, JS, CSS), extensions, and other
+  # configuration files to be available in the '../deployment' directory. To set
+  # a custom deployment# directory, use env variable DEPLOYMENT_DIRECTORY.
   manager:
     extends:
       file: deploy.yml
@@ -70,6 +72,9 @@ services:
       - ${DEPLOYMENT_DIRECTORY:-../deployment}/manager:/deployment
       # - manager-data:/deployment
     environment:
+      # Override built-in logging.properties with a file of your choice.
+      LOGGING_CONFIG_FILE: '/deployment/logging.properties'
+
       # This switch can wipe all your Manager and Keycloak data, this is the factory reset!
       SETUP_WIPE_CLEAN_INSTALL: 'true'
       # When you are ready to permanently install your project, replace it with the next lines...

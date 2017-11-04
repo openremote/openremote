@@ -34,9 +34,10 @@ To keep your data, backup the `deployment` directory and start the stack with `S
 
 More configuration options of the images are documented [in the deploy.yml profile](https://github.com/openremote/openremote/blob/master/profile/deploy.yml).
 
-Perform a clean build and run all tests (before committing):
+Perform a clean build, delete all data volumes (!), and run all tests (before committing):
 
 ```
+docker volume prune
 docker-compose -p openremote -f profile/dev.yml up -d
 ./gradlew clean build installDist
 docker build -t openremote/proxy:latest haproxy

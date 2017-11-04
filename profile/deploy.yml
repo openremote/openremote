@@ -43,6 +43,9 @@ services:
       # --staging requests fake certificates to avoid hitting limits during testing
       #LE_EXTRA_ARGS: '--staging --logs-dir=/etc/letsencrypt'
 
+      # Customize log output
+      PROXY_LOGLEVEL: 'notice'
+
     # Run proxy, obtain and automatically renew SSL certificates if DOMAINNAME is not localhost (see help)
     command: run
 
@@ -145,9 +148,6 @@ services:
       # have the name of a realm to which the console app belongs.
       # CONSOLE_DOCROOT: '/deployment/consoles'
 
-      # Optional: Override built-in logging.properties with a file of your choice.
-      # LOGGING_CONFIG_FILE: '/deployment/logging.properties'
-
       # Optional: Provide a path to the map tiles database file (see https://openmaptiles.com/).
       # MAP_TILES_PATH: '/deployment/mapdata.mbtiles'
 
@@ -180,19 +180,8 @@ services:
       # unless you want to deploy a modified version of the Manager UI.
       # MANAGER_DOCROOT: 'manager/client/src/main/webapp'
 
-    # Override entrypoint for custom JVM options
-    #
-    # You should always set maximum memory limits, as the JVM will compute default heap size
-    # by looking at RAM on the host (taking a quarter of that usually), not whatever limits
-    # you set on the Docker container!
-    #
-    # entrypoint:
-    #  - "java"
-    #  - "-Xmx1024m"
-    #  - "-XX:+PrintGCDetails"
-    #  - "-cp"
-    #  - "/opt/app/lib/*"
-    #  - "org.openremote.manager.server.Main"
+      # Custom JVM options (default max heap size is 1GB)
+      # JAVA_OPTS: '-Xmx1g -XX:+PrintGCDetails'
 
     # Configure logging of the container, see deployment/logging.properties
     logging:

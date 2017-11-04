@@ -18,6 +18,21 @@ repositories {
 // Eclipse needs help
 apply plugin: "eclipse"
 
+// Intellij needs help
+apply plugin: 'idea'
+// Use the same output directories in IDE as in gradle
+idea {
+    module {
+        outputDir file('build/classes/main')
+        testOutputDir file('build/classes/test')
+    }
+}
+if(project.convention.findPlugin(JavaPluginConvention)) {
+    // Change the output directory for the main and test source sets back to the old path
+    sourceSets.main.output.classesDirs = new File(buildDir, "classes/main")
+    sourceSets.test.output.classesDirs = new File(buildDir, "classes/test")
+}
+
 // Configure versions in gradle.properties (putting a gradle.properties file
 // in a subproject only overrides root properties of same name for the actual
 // subproject, not for its children!)

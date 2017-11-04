@@ -29,14 +29,11 @@ import org.openremote.model.Constants;
 import javax.ws.rs.core.UriBuilder;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
 import static org.openremote.container.util.MapAccess.getString;
 
 public class ManagerWebService extends WebService {
-
-    private static final Logger LOG = Logger.getLogger(ManagerWebService.class.getName());
 
     public static final String MANAGER_DOCROOT = "MANAGER_DOCROOT";
     public static final String MANAGER_DOCROOT_DEFAULT = "manager/client/src/main/webapp";

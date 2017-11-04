@@ -26,6 +26,7 @@ if [ -n "${DOMAINNAME}" ] && [ "${DOMAINNAME}" != "localhost" ]; then
   CERT_FILE="/deployment/letsencrypt/live/${DOMAINNAME}/haproxy.pem"
 fi
 export CERT_FILE=${CERT_FILE}
+export PROXY_LOGLEVEL=${PROXY_LOGLEVEL}
 
 # Assume
 if [ ! -f ${CERT_FILE} ]; then

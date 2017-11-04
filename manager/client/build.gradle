@@ -22,7 +22,7 @@ dependencies {
     gwtDev "com.google.gwt:gwt-dev:$gwtVersion"
 }
 
-def gwtOutputDir = "${project.buildDir}/gwt/out"
+def gwtOutputDir = "${project.buildDir}/gwt/output"
 def gwtExtraDir = "${project.buildDir}/gwt/extra"
 def gwtWorkDir = "${project.buildDir}/gwt/work"
 def gwtCacheDir = "${project.buildDir}/gwt/cache"

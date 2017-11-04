@@ -11,6 +11,7 @@ ARG ACME_PLUGIN_VERSION=0.1.1
 ARG DOMAINNAME
 ENV DOMAINNAME=${DOMAINNAME:-localhost}
 ENV TERM xterm
+ENV PROXY_LOGLEVEL notice
 
 RUN mkdir /tmp/lua && cd /tmp/lua \
     && curl -sSL https://www.lua.org/ftp/lua-${LUA_VERSION}.tar.gz -o lua.tar.gz \
