@@ -20,9 +20,6 @@ ADD rsyslog.conf /etc/rsyslog.conf
 ADD haproxy-init.cfg /etc/haproxy/haproxy-init.cfg
 ADD demo /etc/haproxy/demo
 
-VOLUME /etc/letsencrypt
-VOLUME /var/acme-webroot
-
 EXPOSE 80 443
 
 COPY entrypoint.sh /

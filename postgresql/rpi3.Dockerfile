@@ -31,7 +31,6 @@ RUN [ "cross-build-end" ]
 # Prepare data directory
 ENV PGDATA /deployment
 RUN mkdir -p "$PGDATA" && chown -R postgres:postgres "$PGDATA"
-VOLUME ${PGDATA}
 
 # Some defaults
 ENV PG_BIN=/usr/lib/postgresql/${PG_VERSION}/bin

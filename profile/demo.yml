@@ -14,8 +14,13 @@
 # Steps to create a permanent installation:
 #
 # 1. DO NOT FORGET TO CHANGE KEYCLOAK_PASSWORD!
+#
 # 2. Consider setting a custom DOMAINNAME, LE_EMAIL, and IDENTITY_NETWORK_HOST, see deploy.yml
-# 3. Understand how persistent data and volume mappings work, see below
+#
+# 3. Understand how bind mounts and volume mappings work, see below and read:
+#     https://docs.docker.com/engine/admin/volumes/bind-mounts/
+#     https://docs.docker.com/engine/admin/volumes/volumes/#choose-the--v-or-mount-flag
+#
 # 4. Execute once:
 #
 #   SETUP_WIPE_CLEAN_INSTALL=true \
