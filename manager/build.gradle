@@ -24,3 +24,7 @@ installDist {
         delete "${buildDir}/install/$distributions.main.baseName/server/bin"
     }
 }
+
+clean {
+    delete = "$projectDir/build"
+}

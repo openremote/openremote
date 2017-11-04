@@ -18,12 +18,15 @@ out/
 *.iws
 .idea/
 
-# TODO when is this used?
-manager/.factorypath
+bower_components/
+
 console/iOS/DerivedData
 console/iOS/Pods
 
+manager/client/src/main/webapp/gwt/
+manager/client/.externalToolBuilders/
+manager/.factorypath
+
 # Ignore build/runtime only data
-deployment/manager/consoles/*/bower_components
-deployment/proxy
-deployment/postgresql
+deployment/proxy/
+deployment/postgresql/
