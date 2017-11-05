@@ -171,7 +171,7 @@ public class MapService implements ContainerService {
             vectorTiles.put("minzoom", Integer.valueOf(resultMap.get("minzoom")));
             vectorTiles.put("attribution", resultMap.get("attribution"));
         } catch (Exception ex) {
-            throw new RuntimeException(ex);
+            throw new RuntimeException("Error opening database: " + this, ex);
         } finally {
             closeQuietly(query, result);
         }
@@ -225,7 +225,8 @@ public class MapService implements ContainerService {
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
-            "mapSettingsPath=" + mapSettingsPath +
+            "mapTilesPath=" + mapTilesPath +
+            ", mapSettingsPath=" + mapSettingsPath +
             '}';
     }
 }

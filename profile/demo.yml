@@ -73,7 +73,7 @@ services:
     depends_on:
       keycloak:
         condition: service_healthy
-    volumes:
+    # volumes:
       # Use local deployment data in host-mapped directory for easy development. The
       # ../deployment directory is the one which will be baked into the managers image.
       # - ${DEPLOYMENT_DIRECTORY:-../deployment}/manager:/deployment
@@ -83,13 +83,12 @@ services:
       # giving you a default configuration to modify. Access the volume with:
       #
       # docker run --rm -it -v openremote_manager-data:/deployment centos:7 /bin/bash
+      # > ls -la /deployment
       #
-      - manager-data:/deployment
-
+      # To use a volume, enable this:
+      #
+      # - manager-data:/deployment
     environment:
-      # Override built-in logging.properties with a file of your choice.
-      LOGGING_CONFIG_FILE: '/deployment/logging.properties'
-
       # This switch can wipe all your Manager and Keycloak data, this is the factory reset!
       SETUP_WIPE_CLEAN_INSTALL: 'true'
       # When you are ready to permanently install your project, replace it with the next lines...

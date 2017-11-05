@@ -1,6 +1,9 @@
+#
 # Demo setup of OpenRemote v3 on Rasperry Pi 3
 #
-version: '2.1'
+# TODO: Needs updating for fast JDK9 aarch32 JVM, or JDK8 aarch64 JVM
+#
+version: '2.2'
 
 services:
 

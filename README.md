@@ -12,14 +12,36 @@ If you want to try OpenRemote v2, [read the OpenRemote v2 documentation](https:/
 
 We work with Java, Groovy, JavaScript, Gradle, Docker, and a wide range of APIs and protocol implementations. Clone or checkout this project and send us pull requests.
 
-First, checkout this project.
+First, checkout this project or at a minimum, get the Docker Compose [profiles](profile/).
 
-A demo can be started with downloaded dependencies and images (install [Docker Community Edition](https://www.docker.com/)):
+You'll need [Docker Community Edition](https://www.docker.com/) for Windows, macOS, or Linux.
+
+Also see our [developer guide](https://github.com/openremote/openremote/wiki) for more details.
+
+### Starting a demo stack
+
+A demo stack can be started with downloaded dependencies and images (you only have to get the [profiles](profile/)):
 
 ```
-./gradlew clean installDist
 docker-compose -p openremote -f profile/demo.yml up --no-build
 ```
+
+Access the manager UI and API on https://localhost/ with username `admin` and password `secret`. Accept the 'insecure' self-signed SSL certificate.
+
+Stop the stack and remove all unused data volumes (on your host!) with:
+
+```
+docker-compose -p openremote -f profile/demo.yml down
+docker volume prune
+```
+
+More configuration options of the images are documented [in the deploy.yml profile](https://github.com/openremote/openremote/blob/master/profile/deploy.yml).
+
+### Preserving demo data
+
+To keep your data, don't delete the Docker volumes `openremote_manger-data` and `openremote_postgresql-data` between restarts. You must also change `SETUP_WIPE_CLEAN_INSTALL` to `false` in `demo.yml`!
+
+### Building images from source
 
 If you want to build the images instead of downloading them, execute:
 
@@ -28,22 +50,28 @@ If you want to build the images instead of downloading them, execute:
 docker-compose -p openremote -f profile/demo.yml up --build
 ```
 
-Access the manager UI and API on https://localhost/ with username `admin` and password `secret` (accept the 'insecure' self-signed SSL certificate).
+### Using `dev` profiles
 
-To keep your data, backup the `deployment` directory and start the stack with `SETUP_INIT_CLEAN_DATABASE=false docker-compose ... up`. You can specify an alternative deployment directory with `DEPLOYMENT_DIRECTORY=/my/data docker-compose ... up`.
+Also consider using the `dev` profiles if you want to change code, they will run required services in the background for various development/build tasks. The whole stack in development mode can be started with:
 
-More configuration options of the images are documented [in the deploy.yml profile](https://github.com/openremote/openremote/blob/master/profile/deploy.yml).
+```
+./gradlew clean installDist
+docker-compose -p openremote -f profile/dev.yml up --build
+```
 
-Perform a clean build, delete all data volumes (!), and run all tests (before committing):
+### Committing changes
+
+Perform a clean build, delete all data volumes (!), and run all tests before committing:
 
 ```
 docker volume prune
-docker-compose -p openremote -f profile/dev.yml up -d
+docker-compose -p openremote -f profile/dev-testing.yml up -d
 ./gradlew clean build installDist
 docker build -t openremote/proxy:latest haproxy
 docker build -t openremote/postgresql:latest postgresql
 docker build -t openremote/keycloak:latest keycloak
-docker build -t openremote/manager:latest manager/build/install
+docker build -t openremote/manager:latest manager/build/install/manager
+docker-compose -p openremote -f profile/dev-testing.yml down
 ```
 
 Push images to [Docker Hub](https://hub.docker.com/u/openremote):

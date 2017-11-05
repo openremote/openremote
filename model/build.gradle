@@ -18,4 +18,5 @@ dependencies {
 
 jar {
     from sourceSets.main.allJava
+    archivesBaseName = "openremote-${project.name}"
 }

@@ -18,3 +18,7 @@ dependencies {
 
     compile "org.xerial:sqlite-jdbc:$sqliteVersion"
 }
+
+jar {
+    archivesBaseName = "openremote-manager-${project.name}"
+}

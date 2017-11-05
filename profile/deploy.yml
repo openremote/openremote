@@ -1,8 +1,5 @@
 # OpenRemote v3
 #
-# By default running this profile installs the stack on https://localhost using a
-# self-signed SSL certificate, with username 'admin' and password 'secret'.
-#
 # Install Docker Community edition (https://docker.com/) on Windows, macOS, or Linux.
 #
 # Start the stack with:
@@ -148,12 +145,18 @@ services:
       # have the name of a realm to which the console app belongs.
       # CONSOLES_DOCROOT: '/deployment/consoles'
 
+      # Optional: Custom location of the Manager UI customisations.
+      # UI_DOCROOT: '/deployment/ui'
+
       # Optional: Provide a path to the map tiles database file (see https://openmaptiles.com/).
       # MAP_TILES_PATH: '/deployment/map/mapdata.mbtiles'
 
       # Optional: Override the map settings such as center location and zoom when opening the
       # manager's map, as well as other style details and colours.
       # MAP_SETTINGS_PATH: '/deployment/map/mapsettings.json'
+
+      # Override logging.properties with a file of your choice.
+      # LOGGING_CONFIG_FILE: '/deployment/logging.properties'
 
       # The number of threads and therefore rules engines that can be instantiated (default unlimited).
       # RULES_THREADS_MAX: 32

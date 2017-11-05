@@ -33,8 +33,9 @@ public class LogUtil {
     /**
      * If system property <code>java.util.logging.config.file</code> has not been set, try to load the
      * logging configuration specified in environment variable <code>LOGGING_CONFIG_FILE</code> as a file.
-     * If this also wasn't set, load the given default logging configuration from the classpath.
-     *
+     * If this wasn't set, try to find the file <code>/deployment/logging.properties</code>.
+     * If this also wasn't found, load the given default logging configuration from the classpath.
+     * <p>
      * This method should be called in a <code>static { ... }</code> block in the "first" class of your
      * application (typically where your <code>main()</code> method is located).
      */
@@ -49,14 +50,23 @@ public class LogUtil {
                 } catch (Exception ex) {
                     throw new ExceptionInInitializerError(ex);
                 }
-                // Or load a default configuration from the classpath
             } else {
-                try (InputStream is = Container.class.getClassLoader().getResourceAsStream(defaultLoggingProperties)) {
-                    if (is != null) {
+                // Try to find /deployment/logging.properties
+                if (Files.isReadable(Paths.get("/deployment/logging.properties"))) {
+                    try (InputStream is = Files.newInputStream(Paths.get("/deployment/logging.properties"))) {
                         LogManager.getLogManager().readConfiguration(is);
+                    } catch (Exception ex) {
+                        throw new ExceptionInInitializerError(ex);
                     }
-                } catch (Exception ex) {
-                    throw new ExceptionInInitializerError(ex);
+                } else {
+                    // Or load a default configuration from the classpath
+                    try (InputStream is = Container.class.getClassLoader().getResourceAsStream(defaultLoggingProperties)) {
+                        if (is != null) {
+                            LogManager.getLogManager().readConfiguration(is);
+                        }
+                    } catch (Exception ex) {
+                        throw new ExceptionInInitializerError(ex);
+                    }
                 }
             }
         }
