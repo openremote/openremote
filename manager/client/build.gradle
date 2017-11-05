@@ -153,7 +153,7 @@ distributions {
                 into "webapp"
                 exclude "gwt", "build.gradle", "bower.json"
             }
-            /* You can comment out this block to skip GWT compilation for testing the build
+            /* You can comment out this block to skip GWT compilation for fast testing the build
             */
             from(compileGwt.outputs) {
                 into "webapp/gwt"

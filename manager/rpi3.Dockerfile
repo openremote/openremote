@@ -24,10 +24,11 @@ ENV JAVA_HOME /usr/lib/jvm/java-8-oracle
 RUN [ "cross-build-end" ]
 
 ENV MANAGER_DOCROOT webapp
-ENV CONSOLE_DOCROOT /deployment/consoles
+ENV CONSOLES_DOCROOT /deployment/consoles
+ENV UI_DOCROOT /deployment/ui
 ENV LOGGING_CONFIG_FILE /deployment/logging.properties
-ENV MAP_TILES_PATH /deployment/mapdata.mbtiles
-ENV MAP_SETTINGS_PATH /deployment/mapsettings.json
+ENV MAP_TILES_PATH /deployment/map/mapdata.mbtiles
+ENV MAP_SETTINGS_PATH /deployment/map/mapsettings.json
 
 EXPOSE 8080
 

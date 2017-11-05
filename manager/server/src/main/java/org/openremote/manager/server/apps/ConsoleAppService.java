@@ -62,7 +62,7 @@ public class ConsoleAppService implements ContainerService {
 
     public ConsoleApp[] getInstalled() throws Exception {
         List<ConsoleApp> result = new ArrayList<>();
-        Files.list(managerWebService.getConsoleDocRoot()).forEach(path -> {
+        Files.list(managerWebService.getConsolesDocRoot()).forEach(path -> {
             String directoryName = path.getFileName().toString();
             Tenant tenant = identityService.getIdentityProvider().getTenantForRealm(directoryName);
             if (tenant.isActive(timerService.getCurrentTimeMillis()) && tenant.getDisplayName() != null) {

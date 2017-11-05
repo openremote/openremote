@@ -146,14 +146,14 @@ services:
 
       # Optional: Custom location of the static console applications, each subdirectory must
       # have the name of a realm to which the console app belongs.
-      # CONSOLE_DOCROOT: '/deployment/consoles'
+      # CONSOLES_DOCROOT: '/deployment/consoles'
 
       # Optional: Provide a path to the map tiles database file (see https://openmaptiles.com/).
-      # MAP_TILES_PATH: '/deployment/mapdata.mbtiles'
+      # MAP_TILES_PATH: '/deployment/map/mapdata.mbtiles'
 
       # Optional: Override the map settings such as center location and zoom when opening the
       # manager's map, as well as other style details and colours.
-      # MAP_SETTINGS_PATH: '/deployment/mapsettings.json'
+      # MAP_SETTINGS_PATH: '/deployment/map/mapsettings.json'
 
       # The number of threads and therefore rules engines that can be instantiated (default unlimited).
       # RULES_THREADS_MAX: 32

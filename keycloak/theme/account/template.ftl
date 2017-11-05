@@ -24,8 +24,9 @@
 
     <link rel="import" href="/static/css/style.html">
     <link rel="import" href="/static/css/theme.html">
+    <link rel="import" href="/ui/colors.html">
     <custom-style>
-        <style include="global-style global-theme"></style>
+        <style include="global-style global-theme colors"></style>
     </custom-style>
 
     <script>

@@ -47,9 +47,9 @@ public class MapService implements ContainerService {
     private static final Logger LOG = Logger.getLogger(MapService.class.getName());
 
     public static final String MAP_TILES_PATH = "MAP_TILES_PATH";
-    public static final String MAP_TILES_PATH_DEFAULT = "deployment/manager/mapdata.mbtiles";
+    public static final String MAP_TILES_PATH_DEFAULT = "deployment/manager/map/mapdata.mbtiles";
     public static final String MAP_SETTINGS_PATH = "MAP_SETTINGS_PATH";
-    public static final String MAP_SETTINGS_PATH_DEFAULT = "deployment/manager/mapsettings.json";
+    public static final String MAP_SETTINGS_PATH_DEFAULT = "deployment/manager/map/mapsettings.json";
 
     // Shared SQL connection is fine concurrently in SQLite
     protected Connection connection;

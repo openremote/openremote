@@ -20,6 +20,7 @@
 # 3. Understand how bind mounts and volume mappings work, see below and read:
 #     https://docs.docker.com/engine/admin/volumes/bind-mounts/
 #     https://docs.docker.com/engine/admin/volumes/volumes/#choose-the--v-or-mount-flag
+#     Survival guide: docker volume ls|rm|prune
 #
 # 4. Execute once:
 #
@@ -41,14 +42,15 @@ version: '2.2'
 # If you enable volume mappings in services, you need this. Otherwise, remove the volumes
 volumes:
   #proxy-data:
-  #manager-data:
+  manager-data:
   postgresql-data:
 
 services:
 
   # This configuration does not store SSL certificate data and allow changes to the
-  # proxy configuration, it is configured for deployment on localhost. You can map a
-  # Docker volume or host directory to access/store these files.
+  # proxy configuration, it is only configured for deployment on localhost. You can
+  # map a Docker volume or host directory to access/store proxy configuration files
+  # and SSL certificates.
   proxy:
     extends:
       file: deploy.yml
@@ -61,10 +63,9 @@ services:
       # - ${DEPLOYMENT_DIRECTORY:-../deployment}/proxy:/deployment
       # - proxy-data:/deployment
 
-  # This configuration expects manager deployment-specific data such as map tiles,
+  # This configuration uses the manager's deployment-specific data such as map tiles,
   # console application static resources (HTML, JS, CSS), extensions, and other
-  # configuration files to be available in the '../deployment' directory. To set
-  # a custom deployment# directory, use env variable DEPLOYMENT_DIRECTORY.
+  # configuration files which were baked into the managers image.
   manager:
     extends:
       file: deploy.yml
@@ -73,9 +74,18 @@ services:
       keycloak:
         condition: service_healthy
     volumes:
-      # Store data either in host-mapped directory or a named Docker volume
-      - ${DEPLOYMENT_DIRECTORY:-../deployment}/manager:/deployment
-      # - manager-data:/deployment
+      # Use local deployment data in host-mapped directory for easy development. The
+      # ../deployment directory is the one which will be baked into the managers image.
+      # - ${DEPLOYMENT_DIRECTORY:-../deployment}/manager:/deployment
+
+      # Use a named volume. When the volume is empty on startup, the files in the manager
+      # image's /deployment directory will be copied into the empty volume, thus
+      # giving you a default configuration to modify. Access the volume with:
+      #
+      # docker run --rm -it -v openremote_manager-data:/deployment centos:7 /bin/bash
+      #
+      - manager-data:/deployment
+
     environment:
       # Override built-in logging.properties with a file of your choice.
       LOGGING_CONFIG_FILE: '/deployment/logging.properties'
