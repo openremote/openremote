@@ -32,16 +32,19 @@ services:
     extends:
       file: deploy.yml
       service: manager
-    environment:
-      DEV_MODE: 'true'
     depends_on:
       keycloak:
         condition: service_healthy
+    # Access directly if needed
+    ports:
+      - "8080:8080"
     volumes:
       # Use local deployment data in host-mapped directory for easy development. The
       # ../deployment directory is the one which will be baked into the managers image.
       - ${DEPLOYMENT_DIRECTORY:-../deployment}/manager:/deployment
     environment:
+      # Always wipe and enable dev optimizations
+      DEV_MODE: 'true'
       # This switch can wipe all your Manager and Keycloak data, this is the factory reset!
       SETUP_WIPE_CLEAN_INSTALL: 'true'
 
@@ -49,12 +52,13 @@ services:
     extends:
       file: deploy.yml
       service: keycloak
-    ports:
-      - "8081:8080"
     build:
       context: ../keycloak
       dockerfile: dev.Dockerfile
     image: openremote/keycloak_dev:latest
+    # Access directly if needed
+    ports:
+      - "8081:8080"
     volumes:
       - ../keycloak/theme:/opt/jboss/keycloak/themes/openremote
     depends_on:
@@ -65,6 +69,9 @@ services:
     extends:
       file: deploy.yml
       service: postgresql
+    # Access directly if needed
+    ports:
+      - "8081:8080"
     ports:
       - "5432:5432"
     volumes:

@@ -2,7 +2,7 @@ FROM centos:7
 
 RUN yum update -y && yum -y install java-1.8.0-openjdk-devel && yum clean all
 ENV JAVA_HOME /usr/lib/jvm/java
-ENV JAVA_OPTS -Xmx1024m
+ENV JAVA_OPTS -Xmx1g
 
 ENV MANAGER_DOCROOT webapp
 ENV CONSOLES_DOCROOT /deployment/consoles
@@ -23,4 +23,4 @@ RUN mkdir -p /deployment/extensions
 ADD server /opt/app
 ADD client /opt/app
 
-ENTRYPOINT java $JAVA_OPTS -cp /opt/app/lib/*:/deployment/extensions org.openremote.manager.server.Main
+ENTRYPOINT java $JAVA_OPTS -cp /opt/app/lib/*:/deployment/extensions/* org.openremote.manager.server.Main

@@ -20,6 +20,7 @@ RUN echo "deb http://ppa.launchpad.net/webupd8team/java/ubuntu trusty main" | te
     apt-get clean  && \
     rm -rf /var/lib/apt/lists/*
 ENV JAVA_HOME /usr/lib/jvm/java-8-oracle
+ENV JAVA_OPTS -Xmx500m
 
 RUN [ "cross-build-end" ]
 
@@ -39,4 +40,4 @@ WORKDIR /opt/app
 ADD server /opt/app
 ADD client /opt/app
 
-ENTRYPOINT ["java", "-cp", "/opt/app/lib/*", "org.openremote.manager.server.Main"]
+ENTRYPOINT java $JAVA_OPTS -cp /opt/app/lib/*:/deployment/extensions/* org.openremote.manager.server.Main
