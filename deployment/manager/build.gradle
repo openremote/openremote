@@ -1,0 +1,28 @@
+// Checks each console directory and if it is a gradle project (i.e. has a build.gradle) this task assumes that it will
+// handle copying required files to the managerDeploymentDir itself; otherwise the entire console directory is copied.
+
+ext.isManagedConsole = {consoleDir ->
+    return findProject("consoles:${consoleDir.path}") != null
+}
+
+task copyExcludingConsoles(type: Copy) {
+    from '.'
+    exclude 'build.gradle'
+    exclude 'consoles'
+    into managerDeploymentDir
+}
+
+task installDist(type: Copy)  {
+    dependsOn 'copyExcludingConsoles'
+    from 'consoles'
+    into managerDeploymentDir
+    include {
+        fileTreeElement ->
+            def consoleDir = fileTreeElement.directory && fileTreeElement.relativePath.parent == RelativePath.EMPTY_ROOT
+            // If it's a console directory check if it is self managed (i.e. has a build.gradle) if it is then don't
+            // include it
+            return !consoleDir || !isManagedConsole(fileTreeElement)
+        }
+}
+
+
