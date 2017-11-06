@@ -117,5 +117,8 @@ services:
       service: postgresql
     volumes:
       # Store data either in host-mapped directory or a named Docker volume
+      #
+      # If you use a directory, it must be owned by user:group 5432:5432 and mode 700!
+      #
       # - ${DEPLOYMENT_DIRECTORY:-../deployment}/postgresql:/deployment
       - postgresql-data:/deployment
