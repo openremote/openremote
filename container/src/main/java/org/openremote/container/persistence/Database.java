@@ -30,6 +30,8 @@ import java.util.Map;
 
 public interface Database {
 
+    String PROPERTY_POOL_NAME = Database.class.getName() + ".POOL_NAME";
+
     /**
      * @return Persistence unit properties you want to use for this database (e.g. Hibernate dialect already set), will be passed into {@link #open}.
      */
@@ -58,6 +60,8 @@ public interface Database {
             @Override
             public void open(Map<String, Object> properties, String connectionUrl, String username, String password, int connectionTimeoutSeconds, int minIdle, int maxPoolSize) {
                 hikariConfig = new HikariConfig();
+                hikariConfig.setRegisterMbeans(true);
+                hikariConfig.setPoolName(properties.containsKey(PROPERTY_POOL_NAME)? properties.get(PROPERTY_POOL_NAME).toString() : "or-pool");
                 hikariConfig.setThreadFactory(new ContainerThreadFactory("Database Connections"));
                 hikariConfig.setDataSourceClassName("org.postgresql.ds.PGSimpleDataSource");
                 hikariConfig.addDataSourceProperty("url", connectionUrl);
