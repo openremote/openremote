@@ -63,7 +63,9 @@ class NotificationService: UNNotificationServiceExtension, URLSessionDelegate {
                                             //print(String(data: data!, encoding: .utf8) ?? "")
                                             let json = try JSONSerialization.jsonObject(with: data!) as? [[String: Any]]
                                             if (json?.count)! > 0 {
+                                                let categoryName = "openremoteNotification"
                                                 let detailedJson = (json?[0])! as [String: Any]
+                                                bestAttemptContent.categoryIdentifier = categoryName
                                                 bestAttemptContent.title = detailedJson["title"] as! String
                                                 bestAttemptContent.body = detailedJson["message"] as! String
                                                 bestAttemptContent.userInfo["appUrl"] = detailedJson["appUrl"]
@@ -82,7 +84,6 @@ class NotificationService: UNNotificationServiceExtension, URLSessionDelegate {
                                                     default : break
                                                     }
                                                 }
-                                                let categoryName = "openremoteNotification"
                                                 let category = UNNotificationCategory(identifier: categoryName, actions: notificationActions, intentIdentifiers: [], options: [])
                                                 let categories : Set = [category]
                                                 UNUserNotificationCenter.current().setNotificationCategories(categories)
