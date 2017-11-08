@@ -17,8 +17,8 @@ import spock.util.concurrent.PollingConditions
 import javax.ws.rs.WebApplicationException
 
 import static org.openremote.container.util.MapAccess.getString
-import static org.openremote.manager.server.setup.AbstractKeycloakSetup.SETUP_KEYCLOAK_ADMIN_PASSWORD
-import static org.openremote.manager.server.setup.AbstractKeycloakSetup.SETUP_KEYCLOAK_ADMIN_PASSWORD_DEFAULT
+import static org.openremote.manager.server.setup.AbstractKeycloakSetup.KEYCLOAK_PASSWORD
+import static org.openremote.manager.server.setup.AbstractKeycloakSetup.KEYCLOAK_PASSWORD_DEFAULT
 import static org.openremote.model.Constants.*
 import static org.openremote.model.asset.AssetMeta.LABEL
 import static org.openremote.model.attribute.AttributeType.NUMBER
@@ -41,7 +41,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
                 MASTER_REALM,
                 KEYCLOAK_CLIENT_ID,
                 MASTER_REALM_ADMIN_USER,
-                getString(container.getConfig(), SETUP_KEYCLOAK_ADMIN_PASSWORD, SETUP_KEYCLOAK_ADMIN_PASSWORD_DEFAULT)
+                getString(container.getConfig(), KEYCLOAK_PASSWORD, KEYCLOAK_PASSWORD_DEFAULT)
         ).token
 
         and: "the asset resource"

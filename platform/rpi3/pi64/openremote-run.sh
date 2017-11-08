@@ -10,14 +10,14 @@ export DEV_MODE=true
 # If you are not running in developer mode, and this is the first time you are starting
 # the application, you can configure which setup tasks you want to execute. Careful,
 # these tasks will clean and populate the Manager database with demo data!
-export SETUP_INIT_CLEAN_DATABASE=true
+export SETUP_WIPE_CLEAN_INSTALL=true
 export SETUP_BASIC_IDENTITY_ADMIN_PASSWORD=${SETUP_BASIC_IDENTITY_ADMIN_PASSWORD:-"secret"}
 export SETUP_IMPORT_DEMO_USERS=true
 export SETUP_IMPORT_DEMO_ASSETS=true
 export SETUP_IMPORT_DEMO_RULES=true
 
 # Use basic identity service instead of Keycloak, set master admin password
-export MANAGER_IDENTITY_PROVIDER=basic
+export IDENTITY_PROVIDER=basic
 
 # The public host name of this OpenRemote installation. This name must be the name you
 # access the web services under.
@@ -44,9 +44,10 @@ export DATABASE_CONNECTION_TIMEOUT_SECONDS=300
 
 # Paths
 export MANAGER_DOCROOT=${BASE_PATH}/client/webapp
-export CONSOLE_DOCROOT=${BASE_PATH}/server/deployment/resources_console
-export LOGGING_CONFIG_FILE=${BASE_PATH}/server/deployment/logging.properties
-export MAP_TILES_PATH=${BASE_PATH}/server/deployment/mapdata.mbtiles
-export MAP_SETTINGS_PATH=${BASE_PATH}/server/deployment/mapsettings.json
+export CONSOLES_DOCROOT=${BASE_PATH}/server/deployment/manager/consoles
+export UI_DOCROOT=${BASE_PATH}/server/deployment/manager/ui
+export LOGGING_CONFIG_FILE=${BASE_PATH}/server/deployment/manager/logging.properties
+export MAP_TILES_PATH=${BASE_PATH}/server/deployment/manager/map/mapdata.mbtiles
+export MAP_SETTINGS_PATH=${BASE_PATH}/server/deployment/manager/map/mapsettings.json
 
 java -cp "${BASE_PATH}/server/lib/*" org.openremote.manager.server.Main

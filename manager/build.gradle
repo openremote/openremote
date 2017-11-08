@@ -1,12 +1,35 @@
 evaluationDependsOnChildren()
 
-task prepareImage(type: Copy) {
-    dependsOn resolveTask(":manager:server:installDist"), resolveTask(":manager:client:installDist")
-    from "${project.projectDir}"
-    into "${project.buildDir}/install"
-    include("*Dockerfile")
+apply plugin: "distribution"
+
+distributions {
+    main {
+        contents {
+            from (project.projectDir) {
+                include("*Dockerfile")
+            }
+            from (resolveTask(":manager:server:installDist")) {
+                into "server"
+            }
+            from (resolveTask(":manager:client:installDist")) {
+                into "client"
+            }
+            // Populate the /deployment directory in the Manager image
+            from (resolveProject(":deployment:manager").projectDir) {
+                into "deployment"
+                exclude "**/build.gradle", "**/bower.json"
+            }
+        }
+    }
 }
 
-task clean() {
-    delete project.buildDir
+installDist {
+    doLast {
+        // Delete the useless start scripts, they have a hardcoded classpath
+        delete "${buildDir}/install/$distributions.main.baseName/server/bin"
+    }
+}
+
+clean {
+    delete = "$projectDir/build"
 }

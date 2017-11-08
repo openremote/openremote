@@ -20,20 +20,24 @@ RUN echo "deb http://ppa.launchpad.net/webupd8team/java/ubuntu trusty main" | te
     apt-get clean  && \
     rm -rf /var/lib/apt/lists/*
 ENV JAVA_HOME /usr/lib/jvm/java-8-oracle
+ENV JAVA_OPTS -Xmx500m
 
 RUN [ "cross-build-end" ]
 
 ENV MANAGER_DOCROOT webapp
-ENV CONSOLE_DOCROOT deployment/resources_console
-ENV LOGGING_CONFIG_FILE deployment/logging.properties
-ENV MAP_TILES_PATH deployment/mapdata.mbtiles
-ENV MAP_SETTINGS_PATH deployment/mapsettings.json
+ENV CONSOLES_DOCROOT /deployment/consoles
+ENV UI_DOCROOT /deployment/ui
+ENV LOGGING_CONFIG_FILE /deployment/logging.properties
+ENV MAP_TILES_PATH /deployment/map/mapdata.mbtiles
+ENV MAP_SETTINGS_PATH /deployment/map/mapsettings.json
+
+EXPOSE 8080
+
+HEALTHCHECK --interval=3s --timeout=3s --start-period=2s --retries=30 CMD curl --fail http://localhost:8080 || exit 1
+
+WORKDIR /opt/app
 
 ADD server /opt/app
 ADD client /opt/app
 
-EXPOSE 8080
-
-WORKDIR /opt/app
-
-ENTRYPOINT ["java", "-cp", "/opt/app/lib/*", "org.openremote.manager.server.Main"]
+ENTRYPOINT java $JAVA_OPTS -cp /opt/app/lib/*:/deployment/extensions/* org.openremote.manager.server.Main

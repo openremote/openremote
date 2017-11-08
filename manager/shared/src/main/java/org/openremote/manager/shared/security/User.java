@@ -34,10 +34,10 @@ import javax.validation.constraints.Size;
  * This can be used (among other things) to query the USER_ENTITY table in JPA queries.
  */
 @Entity
-@Subselect("select * from USER_ENTITY") // Map this immutable to an SQL view, don't use/create table
+@Subselect("select * from PUBLIC.USER_ENTITY") // Map this immutable to an SQL view, don't use/create table
 public class User {
 
-    @Formula("(select r.NAME from REALM r where r.ID = REALM_ID)")
+    @Formula("(select r.NAME from PUBLIC.REALM r where r.ID = REALM_ID)")
     protected String realm;
 
     @Column(name = "REALM_ID")

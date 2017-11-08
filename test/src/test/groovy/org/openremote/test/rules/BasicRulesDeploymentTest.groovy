@@ -16,8 +16,8 @@ import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
 import static org.openremote.container.util.MapAccess.getString
-import static org.openremote.manager.server.setup.AbstractKeycloakSetup.SETUP_KEYCLOAK_ADMIN_PASSWORD
-import static org.openremote.manager.server.setup.AbstractKeycloakSetup.SETUP_KEYCLOAK_ADMIN_PASSWORD_DEFAULT
+import static org.openremote.manager.server.setup.AbstractKeycloakSetup.KEYCLOAK_PASSWORD
+import static org.openremote.manager.server.setup.AbstractKeycloakSetup.KEYCLOAK_PASSWORD_DEFAULT
 import static org.openremote.model.Constants.*
 
 class BasicRulesDeploymentTest extends Specification implements ManagerContainerTrait {
@@ -45,7 +45,7 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
                 MASTER_REALM,
                 KEYCLOAK_CLIENT_ID,
                 MASTER_REALM_ADMIN_USER,
-                getString(container.getConfig(), SETUP_KEYCLOAK_ADMIN_PASSWORD, SETUP_KEYCLOAK_ADMIN_PASSWORD_DEFAULT)
+                getString(container.getConfig(), KEYCLOAK_PASSWORD, KEYCLOAK_PASSWORD_DEFAULT)
         ).token
 
         expect: "the rules engines to be ready"
@@ -210,7 +210,7 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
         def apartment3Engine = rulesService.assetEngines.get(managerDemoSetup.apartment3Id)
         def customerATenant = keycloakDemoSetup.customerATenant
         customerATenant.setEnabled(false)
-        identityService.identityProvider.updateTenant(new ClientRequestInfo(null, accessToken), customerATenant.getRealm(), customerATenant)
+        identityService.getIdentityProvider().updateTenant(new ClientRequestInfo(null, accessToken), customerATenant.getRealm(), customerATenant)
 
         then: "the tenants rule engine should stop and all asset rule engines in this realm should also stop"
         conditions.eventually {
@@ -236,7 +236,7 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
 
         when: "the disabled tenant is re-enabled"
         customerATenant.setEnabled(true)
-        identityService.identityProvider.updateTenant(new ClientRequestInfo(null, accessToken), customerATenant.getRealm(), customerATenant)
+        identityService.getIdentityProvider().updateTenant(new ClientRequestInfo(null, accessToken), customerATenant.getRealm(), customerATenant)
 
         then: "the tenants rule engine should start and all asset rule engines from this realm should also start"
         conditions.eventually {

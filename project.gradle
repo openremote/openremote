@@ -1,4 +1,5 @@
 // Common configuration applied to all projects
+import static org.apache.tools.ant.taskdefs.condition.Os.*
 
 // Default repositories for dependency resolution
 repositories {
@@ -18,10 +19,36 @@ repositories {
 // Eclipse needs help
 apply plugin: "eclipse"
 
+// Intellij needs help
+apply plugin: 'idea'
+// Use the same output directories in IDE as in gradle
+idea {
+    module {
+        outputDir file('build/classes/main')
+        testOutputDir file('build/classes/test')
+    }
+}
+if(project.convention.findPlugin(JavaPluginConvention)) {
+    // Change the output directory for the main and test source sets back to the old path
+    sourceSets.main.output.classesDirs = new File(buildDir, "classes/main")
+    sourceSets.test.output.classesDirs = new File(buildDir, "classes/test")
+}
+
 // Configure versions in gradle.properties (putting a gradle.properties file
 // in a subproject only overrides root properties of same name for the actual
 // subproject, not for its children!)
 version = hasProperty("openremoteVersion") ? openremoteVersion : projectVersion
+
+// Add bower tasks
+task bowerPrune(type: Exec){
+    commandLine "bower", "prune"
+    standardOutput = new ByteArrayOutputStream()
+}
+
+task bowerUpdate(type: Exec){
+    commandLine "bower", "update"
+    standardOutput = new ByteArrayOutputStream()
+}
 
 // Configure Java build
 plugins.withType(JavaPlugin).whenPluginAdded {
@@ -30,8 +57,8 @@ plugins.withType(JavaPlugin).whenPluginAdded {
     tasks.withType(JavaCompile) {
         sourceCompatibility = "1.8"
         def warnLogFile = file("$buildDir/${name}Warnings.log")
-        logging.addStandardErrorListener(new StandardOutputListener(){
-            void onOutput(CharSequence output){
+        logging.addStandardErrorListener(new StandardOutputListener() {
+            void onOutput(CharSequence output) {
                 warnLogFile << output
             }
         })

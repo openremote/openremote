@@ -39,8 +39,8 @@ import spock.util.concurrent.PollingConditions
 
 import static org.openremote.container.util.MapAccess.getString
 import static org.openremote.manager.server.event.ClientEventService.WEBSOCKET_EVENTS
-import static org.openremote.manager.server.setup.AbstractKeycloakSetup.SETUP_KEYCLOAK_ADMIN_PASSWORD
-import static org.openremote.manager.server.setup.AbstractKeycloakSetup.SETUP_KEYCLOAK_ADMIN_PASSWORD_DEFAULT
+import static org.openremote.manager.server.setup.AbstractKeycloakSetup.KEYCLOAK_PASSWORD
+import static org.openremote.manager.server.setup.AbstractKeycloakSetup.KEYCLOAK_PASSWORD_DEFAULT
 import static org.openremote.model.Constants.*
 
 class AssetBrowserPresenterTest extends Specification implements ManagerContainerTrait, GwtClientTrait {
@@ -64,11 +64,11 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
                     realm,
                     KEYCLOAK_CLIENT_ID,
                     MASTER_REALM_ADMIN_USER,
-                    getString(container.getConfig(), SETUP_KEYCLOAK_ADMIN_PASSWORD, SETUP_KEYCLOAK_ADMIN_PASSWORD_DEFAULT)
+                    getString(container.getConfig(), KEYCLOAK_PASSWORD, KEYCLOAK_PASSWORD_DEFAULT)
             ).token
         }
         def securityService = new ClientSecurityService(keycloakProvider.getKeycloakDeployment(realm, KEYCLOAK_CLIENT_ID), accessToken)
-        def currentTenant = identityService.identityProvider.getTenantForRealm(realm)
+        def currentTenant = identityService.getIdentityProvider().getTenantForRealm(realm)
 
         and: "a client request service and target"
         def constraintViolationReader = new ClientObjectMapper(container.JSON, ConstraintViolationReport.class) as EntityReader<ConstraintViolationReport>
@@ -238,7 +238,7 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
         1 * assetBrowser.refresh(asset.id, managerDemoSetup.smartOfficeId)
 
         cleanup: "the client should be stopped"
-        clientEventService.close()
+        if (clientEventService != null) clientEventService.close()
 
         and: "the server should be stopped"
         stopContainer(container)
@@ -267,7 +267,7 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
             ).token
         }
         def securityService = new ClientSecurityService(keycloakProvider.getKeycloakDeployment(realm, KEYCLOAK_CLIENT_ID), accessToken)
-        def currentTenant = identityService.identityProvider.getTenantForRealm(realm)
+        def currentTenant = identityService.getIdentityProvider().getTenantForRealm(realm)
 
         and: "a client request service and target"
         def constraintViolationReader = new ClientObjectMapper(container.JSON, ConstraintViolationReport.class) as EntityReader<ConstraintViolationReport>
@@ -419,7 +419,7 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
         }
 
         cleanup: "the client should be stopped"
-        clientEventService.close()
+        if (clientEventService != null) clientEventService.close()
 
         and: "the server should be stopped"
         stopContainer(container)
@@ -446,7 +446,7 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
             ).token
         }
         def securityService = new ClientSecurityService(keycloakProvider.getKeycloakDeployment(realm, KEYCLOAK_CLIENT_ID), accessToken)
-        def currentTenant = identityService.identityProvider.getTenantForRealm(realm)
+        def currentTenant = identityService.getIdentityProvider().getTenantForRealm(realm)
 
         and: "a client request service and target"
         def constraintViolationReader = new ClientObjectMapper(container.JSON, ConstraintViolationReport.class) as EntityReader<ConstraintViolationReport>
@@ -530,7 +530,7 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
         }
 
         cleanup: "the client should be stopped"
-        clientEventService.close()
+        if (clientEventService != null) clientEventService.close()
 
         and: "the server should be stopped"
         stopContainer(container)

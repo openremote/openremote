@@ -55,3 +55,7 @@ dependencies {
         exclude group: "javax.servlet"
     }
 }
+
+jar {
+    archivesBaseName = "openremote-${project.name}"
+}

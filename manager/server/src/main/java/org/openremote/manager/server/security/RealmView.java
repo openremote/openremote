@@ -30,7 +30,7 @@ import javax.persistence.Id;
  * Use this to query the Keycloak REALM table in JPA queries.
  */
 @Entity
-@Subselect("select * from REALM") // Map this immutable to an SQL view, don't use/create table
+@Subselect("select * from PUBLIC.REALM") // Map this immutable to an SQL view, don't use/create table
 public class RealmView {
 
     protected String id;

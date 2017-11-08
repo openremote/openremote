@@ -29,59 +29,48 @@ import org.openremote.model.Constants;
 import javax.ws.rs.core.UriBuilder;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
 import static org.openremote.container.util.MapAccess.getString;
 
 public class ManagerWebService extends WebService {
 
-    private static final Logger LOG = Logger.getLogger(ManagerWebService.class.getName());
-
     public static final String MANAGER_DOCROOT = "MANAGER_DOCROOT";
     public static final String MANAGER_DOCROOT_DEFAULT = "manager/client/src/main/webapp";
-    public static final String CONSOLE_DOCROOT = "CONSOLE_DOCROOT";
-    public static final String CONSOLE_DOCROOT_DEFAULT = "deployment/manager/resources_console";
+    public static final String CONSOLES_DOCROOT = "CONSOLES_DOCROOT";
+    public static final String CONSOLES_DOCROOT_DEFAULT = "deployment/manager/consoles";
+    public static final String UI_DOCROOT = "UI_DOCROOT";
+    public static final String UI_DOCROOT_DEFAULT = "deployment/manager/ui";
 
     public static final String MANAGER_PATH = "/static";
     public static final String CONSOLE_PATH = "/console";
+    public static final String UI_PATH = "/ui";
     public static final Pattern MANAGER_PATTERN = Pattern.compile(Pattern.quote(MANAGER_PATH) + "(/.*)?");
     public static final Pattern CONSOLE_PATTERN = Pattern.compile(Pattern.quote(CONSOLE_PATH) + "(/.*)?");
+    public static final Pattern UI_PATTERN = Pattern.compile(Pattern.quote(UI_PATH) + "(/.*)?");
 
     protected Path managerDocRoot;
-    protected Path consoleDocRoot;
+    protected Path consolesDocRoot;
+    protected Path uiDocRoot;
     protected HttpHandler managerFileHandler;
 
     @Override
     public void init(Container container) throws Exception {
+        boolean devMode = container.isDevMode();
+        IdentityService identityService = container.getService(IdentityService.class);
 
         // Serve the Manager client files unsecured
-        managerDocRoot = Paths.get(
-            getString(container.getConfig(), MANAGER_DOCROOT, MANAGER_DOCROOT_DEFAULT)
-        );
-        DeploymentInfo managerDeployment = ManagerFileServlet.createDeploymentInfo(
-            container.isDevMode(), MANAGER_PATH, managerDocRoot, new String[0] // Unsecured, no required roles!
-        );
-        managerFileHandler = addServletDeployment(
-            container.getService(IdentityService.class), managerDeployment, false
-        );
-        getPrefixRoutes().put(
-            MANAGER_PATH, ManagerFileServlet.wrapHandler(managerFileHandler, MANAGER_PATTERN)
-        );
+        managerDocRoot = Paths.get(getString(container.getConfig(), MANAGER_DOCROOT, MANAGER_DOCROOT_DEFAULT));
+        managerFileHandler = addDeployment(devMode, identityService, managerDocRoot, MANAGER_PATH);
+        addRoute(managerFileHandler, MANAGER_PATH, MANAGER_PATTERN);
 
         // Serve the Console client files unsecured
-         consoleDocRoot = Paths.get(
-            getString(container.getConfig(), CONSOLE_DOCROOT, CONSOLE_DOCROOT_DEFAULT)
-        );
-        DeploymentInfo consoleDeployment = ManagerFileServlet.createDeploymentInfo(
-            container.isDevMode(), CONSOLE_PATH, consoleDocRoot, new String[0] // Unsecured, no required roles!
-        );
-        HttpHandler consoleHandler = addServletDeployment(
-            container.getService(IdentityService.class), consoleDeployment, false
-        );
-        getPrefixRoutes().put(
-            CONSOLE_PATH, ManagerFileServlet.wrapHandler(consoleHandler, CONSOLE_PATTERN)
-        );
+        consolesDocRoot = Paths.get(getString(container.getConfig(), CONSOLES_DOCROOT, CONSOLES_DOCROOT_DEFAULT));
+        addRoute(addDeployment(devMode, identityService, consolesDocRoot, CONSOLE_PATH), CONSOLE_PATH, CONSOLE_PATTERN);
+
+        // Serve the UI deployment files unsecured
+        uiDocRoot = Paths.get(getString(container.getConfig(), UI_DOCROOT, UI_DOCROOT_DEFAULT));
+        addRoute(addDeployment(devMode, identityService, uiDocRoot, UI_PATH), UI_PATH, UI_PATTERN);
 
         super.init(container);
     }
@@ -100,18 +89,33 @@ public class ManagerWebService extends WebService {
         return managerDocRoot;
     }
 
-    public Path getConsoleDocRoot() {
-        return consoleDocRoot;
+    public Path getConsolesDocRoot() {
+        return consolesDocRoot;
+    }
+
+    public Path getUiDocRoot() {
+        return uiDocRoot;
     }
 
     public String getConsoleUrl(UriBuilder baseUri, String realm) {
         return baseUri.path(CONSOLE_PATH).path(realm).build().toString();
     }
 
+    protected HttpHandler addDeployment(boolean devMode, IdentityService identityService, Path filePath, String hostOnPath) {
+        DeploymentInfo deploymentInfo = ManagerFileServlet.createDeploymentInfo(devMode, hostOnPath, filePath, new String[0]);
+        return addServletDeployment(identityService, deploymentInfo, false);
+    }
+
+    protected void addRoute(HttpHandler httpHandler, String hostOnPath, Pattern requestPattern) {
+        getPrefixRoutes().put(hostOnPath, ManagerFileServlet.wrapHandler(httpHandler, requestPattern));
+    }
+
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
+            "managerDocRoot=" + managerDocRoot +
+            ", consolesDocRoot=" + consolesDocRoot +
+            ", uiDocRoot=" + uiDocRoot +
             '}';
     }
-
 }

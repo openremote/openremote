@@ -29,5 +29,7 @@ package org.openremote.manager.server.setup;
  */
 public interface Setup {
 
-    void execute() throws Exception;
+    default void onInit() throws Exception {}
+
+    default void onStart() throws Exception {}
 }

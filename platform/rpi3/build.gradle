@@ -8,7 +8,7 @@ task copyPubkey(type: Copy) {
 }
 
 task prepareImage(type: Copy) {
-    dependsOn resolveTask(":manager:prepareImage"), resolveTask(":platform:rpi3:copyPubkey")
+    dependsOn resolveTask(":manager:installDist"), resolveTask(":platform:rpi3:copyPubkey")
     from "${project.projectDir}/pi64"
     into "${project.buildDir}/install"
 }

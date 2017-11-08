@@ -59,7 +59,8 @@ public class KeycloakDemoSetup extends AbstractKeycloakSetup {
     }
 
     @Override
-    public void execute() throws Exception {
+    public void onStart() throws Exception {
+        super.onStart();
 
         // Tenants
         masterTenant = identityService.getIdentityProvider().getTenantForRealm(Constants.MASTER_REALM);

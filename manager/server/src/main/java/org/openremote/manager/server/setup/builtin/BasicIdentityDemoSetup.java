@@ -56,7 +56,7 @@ public class BasicIdentityDemoSetup implements Setup {
     }
 
     @Override
-    public void execute() throws Exception {
+    public void onStart() throws Exception {
 
         // Tenants
         masterTenant = identityService.getIdentityProvider().getTenantForRealm(Constants.MASTER_REALM);

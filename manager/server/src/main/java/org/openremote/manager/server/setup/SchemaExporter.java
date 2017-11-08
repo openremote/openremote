@@ -22,6 +22,7 @@ package org.openremote.manager.server.setup;
 import org.openremote.container.Container;
 import org.openremote.container.persistence.Database;
 import org.openremote.container.persistence.PersistenceService;
+import org.openremote.manager.server.concurrent.ManagerExecutorService;
 import org.openremote.manager.server.persistence.ManagerPersistenceService;
 
 import javax.persistence.Persistence;
@@ -45,6 +46,7 @@ public class SchemaExporter {
         File schemaFile = new File(args[0]);
 
         Container container = new Container(
+            new ManagerExecutorService(),
             new ManagerPersistenceService() {
 
                 @Override

@@ -39,9 +39,12 @@ public abstract class IdentityService implements ContainerService {
     public static final String IDENTITY_NETWORK_HOST_DEFAULT = "localhost";
     public static final String IDENTITY_NETWORK_WEBSERVER_PORT = "IDENTITY_NETWORK_WEBSERVER_PORT";
     public static final int IDENTITY_NETWORK_WEBSERVER_PORT_DEFAULT = 8080;
+    public static final String IDENTITY_PROVIDER = "IDENTITY_PROVIDER";
+    public static final String IDENTITY_PROVIDER_DEFAULT = "keycloak";
 
     // The externally visible address of this installation
     protected UriBuilder externalServerUri;
+    protected IdentityProvider identityProvider;
 
     @Override
     public void init(Container container) throws Exception {
@@ -59,16 +62,20 @@ public abstract class IdentityService implements ContainerService {
         }
 
         LOG.info("External system base URL: " + externalServerUri.build());
+
+        String identityProviderType = getString(container.getConfig(), IDENTITY_PROVIDER, IDENTITY_PROVIDER_DEFAULT);
+        identityProvider = createIdentityProvider(container, identityProviderType);
+        identityProvider.init();
     }
 
     @Override
     public void start(Container container) throws Exception {
-        getIdentityProvider().start();
+        identityProvider.start();
     }
 
     @Override
     public void stop(Container container) throws Exception {
-        getIdentityProvider().stop();
+        identityProvider.stop();
     }
 
     public UriBuilder getExternalServerUri() {
@@ -79,18 +86,18 @@ public abstract class IdentityService implements ContainerService {
         LOG.info("Securing web deployment: " + deploymentInfo.getContextPath());
         deploymentInfo.addOuterHandlerChainWrapper(AuthOverloadHandler::new);
         deploymentInfo.setSecurityDisabled(false);
-        getIdentityProvider().secureDeployment(deploymentInfo);
+        identityProvider.secureDeployment(deploymentInfo);
     }
 
     /**
      * If Keycloak is enabled, support multi-tenancy.
      */
     public boolean isKeycloakEnabled() {
-        return getIdentityProvider() instanceof KeycloakIdentityProvider;
+        return identityProvider instanceof KeycloakIdentityProvider;
     }
 
     /**
-     * To initialize the {@link IdentityProvider}, subclasses should override {@link #init(Container)}.
+     * To configure the {@link IdentityProvider}, subclasses should override {@link #init(Container)}.
      */
-    abstract public IdentityProvider getIdentityProvider();
+    abstract public IdentityProvider createIdentityProvider(Container container, String type);
 }

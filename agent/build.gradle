@@ -28,3 +28,7 @@ dependencies {
 
     compile "net.sf.saxon:Saxon-HE:$saxonHEVersion"
 }
+
+jar {
+    archivesBaseName = "openremote-${project.name}"
+}
