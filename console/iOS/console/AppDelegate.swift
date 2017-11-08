@@ -24,26 +24,26 @@ import Firebase
 
 
 @UIApplicationMain
-class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterDelegate, URLSessionDelegate {
-    
+class AppDelegate: UIResponder, UIApplicationDelegate, URLSessionDelegate {
+
     var window: UIWindow?
     let gcmMessageIDKey = "gcm.message_id"
     var reachabilityAlert : UIAlertController?
     var reachabilityAlertShown = false
     let internetReachability = Reachability.forInternetConnection()
-    
-    
+
+
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplicationLaunchOptionsKey: Any]?) -> Bool {
         UNUserNotificationCenter.current().delegate = self
         let authOptions: UNAuthorizationOptions = [.alert, .badge, .sound]
         UNUserNotificationCenter.current().requestAuthorization(
             options: authOptions,
             completionHandler: {_, _ in })
-        
+
         FirebaseApp.configure()
-        
+        Messaging.messaging().delegate = self
+
         application.registerForRemoteNotifications()
-        NotificationCenter.default.addObserver(self, selector: #selector(self.tokenRefreshNotification), name: NSNotification.Name.InstanceIDTokenRefresh, object: nil)
         NotificationCenter.default.addObserver(self,
                                                selector: #selector(self.reachabilityChanged(note:)),
                                                name: NSNotification.Name.reachabilityChanged,
@@ -52,7 +52,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         self.updateReachabilityStatus(reachability: internetReachability!)
         return true
     }
-    
+
     func applicationWillResignActive(_ application: UIApplication) {
         // Sent when the application is about to move from active to inactive state. This can occur for certain types of temporary interruptions (such as an incoming phone call or SMS message) or when the user quits the application and it begins the transition to the background state.
         // Use this method to pause ongoing tasks, disable timers, and invalidate graphics rendering callbacks. Games should use this method to pause the game.
@@ -60,7 +60,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         reachabilityAlertShown = false
         internetReachability?.stopNotifier()
     }
-    
+
     func applicationDidEnterBackground(_ application: UIApplication) {
         // Use this method to release shared resources, save user data, invalidate timers, and store enough application state information to restore your application to its current state in case it is terminated later.
         // If your application supports background execution, this method is called instead of applicationWillTerminate: when the user quits.
@@ -68,7 +68,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         reachabilityAlertShown = false
         internetReachability?.stopNotifier()
     }
-    
+
     func applicationWillEnterForeground(_ application: UIApplication) {
         // Called as part of the transition from the background to the active state; here you can undo many of the changes made on entering the background.
         DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
@@ -76,37 +76,90 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
             self.updateReachabilityStatus(reachability: self.internetReachability!)
         }
     }
-    
+
     func applicationDidBecomeActive(_ application: UIApplication) {
         // Restart any tasks that were paused (or not yet started) while the application was inactive. If the application was previously in the background, optionally refresh the user interface.
-        connectToFcm()
         DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
             self.internetReachability?.startNotifier()
             self.updateReachabilityStatus(reachability: self.internetReachability!)
         }
     }
-    
+
     func applicationWillTerminate(_ application: UIApplication) {
         // Called when the application is about to terminate. Save data if appropriate. See also applicationDidEnterBackground:.
         reachabilityAlert?.dismiss(animated: true, completion: nil)
         reachabilityAlertShown = false
         internetReachability?.stopNotifier()
     }
-    
+
     func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
         Messaging.messaging().apnsToken = deviceToken
     }
-    
+
     func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable : Any], fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
-        completionHandler(UIBackgroundFetchResult.noData)
+        completionHandler(UIBackgroundFetchResult.newData)
     }
-    
-    //MARK : - UNUserNotificationCenterDelegate
-    
+
+    func application(_ application: UIApplication, open url: URL, sourceApplication: String?, annotation: Any) -> Bool {
+        return true
+    }
+
+    @objc func reachabilityChanged(note: NSNotification) {
+        if let reachability = note.object as? Reachability {
+            updateReachabilityStatus(reachability: reachability)
+        }
+    }
+
+    private func updateReachabilityStatus(reachability: Reachability) {
+        if reachability.currentReachabilityStatus() == NetworkStatus.NotReachable {
+            if (!reachabilityAlertShown) {
+                let topWindow = UIWindow(frame: UIScreen.main.bounds)
+                topWindow.rootViewController = UIViewController()
+                topWindow.windowLevel = UIWindowLevelAlert + 1
+
+                reachabilityAlert = UIAlertController(title: "Network Error", message: "Your device seems to be offline", preferredStyle: .alert)
+                let reachabilityRetryAction = UIAlertAction(title: "Retry", style: .default, handler: { (action) in
+                    self.reachabilityAlertShown = false
+                    self.updateReachabilityStatus(reachability: self.internetReachability!)
+                    topWindow.isHidden = true
+                })
+                let reachabilityCancelAction = UIAlertAction(title: "Cancel", style: .cancel, handler: { (action) in
+                    self.reachabilityAlertShown = false
+                    self.reachabilityAlert?.dismiss(animated: true, completion: nil)
+                    topWindow.isHidden = true
+                })
+                reachabilityAlert?.addAction(reachabilityRetryAction)
+                reachabilityAlert?.addAction(reachabilityCancelAction)
+                topWindow.makeKeyAndVisible()
+                topWindow.rootViewController?.present(reachabilityAlert!, animated: true, completion: nil)
+                reachabilityAlertShown = true
+            }
+        } else {
+            if (reachabilityAlertShown) {
+                reachabilityAlert?.dismiss(animated: true, completion: nil)
+                reachabilityAlertShown = false
+            }
+        }
+
+    }
+
+    func urlSession(_ session: URLSession, didReceive challenge: URLAuthenticationChallenge, completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
+        if (challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodServerTrust) {
+            if challenge.protectionSpace.host == Server.hostURL {
+                completionHandler(.useCredential, URLCredential(trust: challenge.protectionSpace.serverTrust!))
+            } else {
+                completionHandler(.performDefaultHandling, nil)
+            }
+        }
+    }
+}
+
+extension AppDelegate : UNUserNotificationCenterDelegate {
+
     func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
         completionHandler([.alert, .sound])
     }
-    
+
     func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
         var assetId : String = ""
         var attributeName : String = ""
@@ -121,13 +174,13 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
             }
         case ActionType.ACTION_ACTUATOR :
             NSLog("Action asked : %@", response.actionIdentifier)
-            
+
             if let actions = response.notification.request.content.userInfo["actions"] {
                 assetId = (actions as! Dictionary<String,String>)["assetId"]!
                 attributeName = (actions as! Dictionary<String,String>)["attributeName"]!
                 rawJson = (actions as! Dictionary<String,String>)["rawJson"]!
             }
-            
+
             (self.window?.rootViewController as! ViewController).updateAssetAttribute(assetId : assetId, attributeName : attributeName, rawJson : rawJson)
         default : break
         }
@@ -174,79 +227,17 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
             completionHandler()
         }
     }
-    
-    
-    func application(_ application: UIApplication, open url: URL, sourceApplication: String?, annotation: Any) -> Bool {
-        return true
+}
+
+extension AppDelegate : MessagingDelegate {
+    func messaging(_ messaging: Messaging, didRefreshRegistrationToken fcmToken: String) {
+        print("Firebase registration token: \(fcmToken)")
+        TokenManager.sharedInstance.storeDeviceId(token: fcmToken)
     }
-    
-    func connectToFcm() {
-        Messaging.messaging().connect { (error) in
-            if (error != nil) {
-                if let token = InstanceID.instanceID().token() {
-                    NSLog("Connected to FCM. Token is %@",token as String)
-                    TokenManager.sharedInstance.storeDeviceId(token: token)
-                }
-            } else {
-                if let token = InstanceID.instanceID().token() {
-                    NSLog("Connected to FCM. Token is %@",token as String)
-                    TokenManager.sharedInstance.storeDeviceId(token: token)
-                }
-            }
-        }
-    }
-    
-    @objc func tokenRefreshNotification(notification: NSNotification) {
-        // Connect to FCM since connection may have failed when attempted before having a token.
-        connectToFcm()
-    }
-    
-    @objc func reachabilityChanged(note: NSNotification) {
-        if let reachability = note.object as? Reachability {
-            updateReachabilityStatus(reachability: reachability)
-        }
-    }
-    
-    private func updateReachabilityStatus(reachability: Reachability) {
-        if reachability.currentReachabilityStatus() == NetworkStatus.NotReachable {
-            if (!reachabilityAlertShown) {
-                let topWindow = UIWindow(frame: UIScreen.main.bounds)
-                topWindow.rootViewController = UIViewController()
-                topWindow.windowLevel = UIWindowLevelAlert + 1
-                
-                reachabilityAlert = UIAlertController(title: "Network Error", message: "Your device seems to be offline", preferredStyle: .alert)
-                let reachabilityRetryAction = UIAlertAction(title: "Retry", style: .default, handler: { (action) in
-                    self.reachabilityAlertShown = false
-                    self.updateReachabilityStatus(reachability: self.internetReachability!)
-                    topWindow.isHidden = true
-                })
-                let reachabilityCancelAction = UIAlertAction(title: "Cancel", style: .cancel, handler: { (action) in
-                    self.reachabilityAlertShown = false
-                    self.reachabilityAlert?.dismiss(animated: true, completion: nil)
-                    topWindow.isHidden = true
-                })
-                reachabilityAlert?.addAction(reachabilityRetryAction)
-                reachabilityAlert?.addAction(reachabilityCancelAction)
-                topWindow.makeKeyAndVisible()
-                topWindow.rootViewController?.present(reachabilityAlert!, animated: true, completion: nil)
-                reachabilityAlertShown = true
-            }
-        } else {
-            if (reachabilityAlertShown) {
-                reachabilityAlert?.dismiss(animated: true, completion: nil)
-                reachabilityAlertShown = false
-            }
-        }
-        
-    }
-    
-    func urlSession(_ session: URLSession, didReceive challenge: URLAuthenticationChallenge, completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
-        if (challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodServerTrust) {
-            if challenge.protectionSpace.host == Server.hostURL {
-                completionHandler(.useCredential, URLCredential(trust: challenge.protectionSpace.serverTrust!))
-            } else {
-                completionHandler(.performDefaultHandling, nil)
-            }
-        }
+
+    func messaging(_ messaging: Messaging, didReceiveRegistrationToken fcmToken: String) {
+        print("Firebase registration token: \(fcmToken)")
+        TokenManager.sharedInstance.storeDeviceId(token: fcmToken)
     }
 }
+
