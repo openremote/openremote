@@ -35,10 +35,14 @@ services:
       #DOMAINNAME: localhost
 
       # Provide your own email address for your SSL certificates!
-      LE_EMAIL: 'devnull@openremote.io'
+      LE_EMAIL: 'no-reply@openremote.io'
 
       # --staging requests fake certificates to avoid hitting limits during testing
       #LE_EXTRA_ARGS: '--staging --logs-dir=/etc/letsencrypt'
+
+      # Traffic should be forwarded to this service
+      PROXY_BACKEND_HOST: manager
+      PROXY_BACKEND_PORT: 8080
 
       # Customize log output
       PROXY_LOGLEVEL: 'notice'
@@ -55,9 +59,6 @@ services:
     logging:
         options:
             max-size: 10m
-
-    # Always restart the service
-    restart: on-failure
 
   # The API gateway and Manager web application.
   manager:
@@ -191,9 +192,6 @@ services:
         options:
             max-size: 10m
 
-    # Always restart the service
-    restart: always
-
   # Keycloak identity provider
   keycloak:
 
@@ -227,9 +225,6 @@ services:
         options:
             max-size: 10m
 
-    # Always restart the service
-    restart: always
-
   # PostgreSQL DBMS
   postgresql:
 
@@ -257,6 +252,3 @@ services:
     logging:
         options:
             max-size: 10m
-
-    # Always restart the service
-    restart: always

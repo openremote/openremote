@@ -53,6 +53,9 @@ dependencies {
 
     compile("org.cyclopsgroup:jmxterm:$jmxtermVersion") {
         exclude group: "javax.servlet"
+        exclude group: "log4j"
+        exclude group: "logkit"
+        exclude group: "commons-logging"
     }
 }
 
