@@ -346,7 +346,7 @@ function cron_auto_renewal_init {
     cron_auto_renewal
 
   else
-    log_info "Not renewing dummy certificate for localhost"
+    log_info "Domain is 'localhost', dummy SSL certificate does not have to be renewed"
   fi
 }
 
