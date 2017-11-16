@@ -50,6 +50,11 @@ task bowerUpdate(type: Exec){
     standardOutput = new ByteArrayOutputStream()
 }
 
+task polymerBuild(type: Exec){
+    commandLine "polymer", "build"
+    standardOutput = new ByteArrayOutputStream()
+}
+
 // Configure Java build
 plugins.withType(JavaPlugin).whenPluginAdded {
 
