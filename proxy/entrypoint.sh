@@ -63,7 +63,7 @@ function check_proxy {
 
 function run_proxy {
     # Start rsyslogd
-    rsyslogd
+    service rsyslog start
 
     check_proxy
 
@@ -378,7 +378,7 @@ function cron_auto_renewal {
     # Start crond if not running
     if ! [ -f /var/run/crond.pid ]; then
         log_info "CRON daemon starting..."
-        crond
+        service cron start
         log_info "CRON daemon started"
     fi
 }

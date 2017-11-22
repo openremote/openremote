@@ -1,11 +1,21 @@
-FROM centos:7
+FROM debian:stretch
+MAINTAINER support@openremote.io
 
-RUN yum update -y && yum -y install epel-release && \
-    yum -y install rsyslog inotify-tools make gcc pcre-devel openssl-devel readline-devel certbot cronie && \
-    yum clean all
+# Install curl, wget, ca-certificates, procps
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        procps \
+		ca-certificates \
+		curl \
+		wget \
+	&& rm -rf /var/lib/apt/lists/*
+
+RUN apt-get update \
+      && apt-get install -y --no-install-recommends \
+            certbot rsyslog cron inotify-tools make gcc g++ libreadline-dev libssl-dev libpcre3-dev libz-dev \
+      && rm -rf /var/lib/apt/lists/*
 
 ARG HA_PROXY_MINOR_VERSION=1.7
-ARG HA_PROXY_VERSION=1.7.5
+ARG HA_PROXY_VERSION=1.7.9
 ARG LUA_VERSION=5.3.4
 ARG ACME_PLUGIN_VERSION=0.1.1
 ARG DOMAINNAME
@@ -31,6 +41,8 @@ RUN mkdir /etc/haproxy && cd /etc/haproxy \
     && curl -sSL https://github.com/janeczku/haproxy-acme-validation-plugin/archive/${ACME_PLUGIN_VERSION}.tar.gz -o acme-plugin.tar.gz \
     && tar xvf acme-plugin.tar.gz --strip-components=1 --no-anchored acme-http01-webroot.lua \
     && rm *.tar.gz && cd
+
+RUN apt-get purge --auto-remove -y make gcc g++ libreadline-dev libssl-dev libpcre3-dev libz-dev
 
 RUN mkdir /opt/selfsigned
 

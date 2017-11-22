@@ -3,7 +3,6 @@
  */
 create extension if not exists POSTGIS;
 create extension if not exists POSTGIS_TOPOLOGY;
-create extension if not exists FUZZYSTRMATCH;
 
 /*
   ############################# SEQUENCES #############################

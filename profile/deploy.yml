@@ -55,6 +55,10 @@ services:
       - "80:80"
       - "443:443"
 
+    # Resource limits
+    mem_limit: 50m
+    memswap_limit: 50m
+
     # Configure logging of the container
     logging:
         options:
@@ -184,8 +188,17 @@ services:
       # unless you want to deploy a modified version of the Manager UI.
       # MANAGER_DOCROOT: 'manager/client/src/main/webapp'
 
-      # Custom JVM options (default max heap size is 1GB)
-      # JAVA_OPTS: '-Xmx1g -XX:+PrintGCDetails'
+      # Custom JVM options (increase heap size if required)
+      JAVA_OPTS: '-Xms400m -Xmx400m
+                  -XX:CompressedClassSpaceSize=25m -XX:MaxMetaspaceSize=150m
+                  -XX:InitialCodeCacheSize=25m -XX:ReservedCodeCacheSize=25m
+                  -XX:MaxDirectMemorySize=25m
+                  -XX:NativeMemoryTracking=summary
+                  -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/javadump.core.hprof'
+
+    # Resource limits
+    mem_limit: 700m
+    memswap_limit: 700m
 
     # Configure logging of the container, see deployment/logging.properties
     logging:
@@ -220,6 +233,19 @@ services:
       POSTGRES_USER: openremote
       POSTGRES_PASSWORD: CHANGE_ME_DB_USER_PASSWORD
 
+      # Custom JVM options (increase heap size if required)
+      JAVA_OPTS: '-Xms300m -Xmx300m
+                  -XX:CompressedClassSpaceSize=25m -XX:MaxMetaspaceSize=150m
+                  -XX:InitialCodeCacheSize=25m -XX:ReservedCodeCacheSize=25m
+                  -XX:MaxDirectMemorySize=25m
+                  -XX:NativeMemoryTracking=summary
+                  -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/javadump.core.hprof
+                  -Djava.net.preferIPv4Stack=true -Djboss.modules.system.pkgs=org.jboss.byteman -Djava.awt.headless=true'
+
+    # Resource limits
+    mem_limit: 600m
+    memswap_limit: 600m
+
     # Configure logging of the container
     logging:
         options:
@@ -247,6 +273,10 @@ services:
 
       # You can open an SQL console on a running container with:
       # docker exec -it <container ID> psql -U openremote
+
+    # Resource limits
+    mem_limit: 300m
+    memswap_limit: 300m
 
     # Configure logging of the container
     logging:
