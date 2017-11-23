@@ -1,34 +1,26 @@
 #!/bin/bash
 
-# Create directories
-mkdir -p /deployment/acme-webroot
-mkdir -p /deployment/letsencrypt/live
-
 # Configure letsencrypt
+export LE_WEB_ROOT="/deployment/acme-webroot"
+mkdir -p $LE_WEB_ROOT
 if [ -n "${LE_EMAIL}" ]; then
   LE_EXTRA_ARGS+=" --email ${LE_EMAIL}"
 fi
-
 if [ -n "${LE_RSA_KEY_SIZE}" ]; then
   LE_EXTRA_ARGS+=" --rsa-key-size ${LE_RSA_KEY_SIZE}"
 fi
-
 LE_WORK_DIR="/deployment/letsencrypt"
-LE_CERT_ROOT="${LE_WORK_DIR}/live"
-LE_WEB_ROOT="/deployment/acme-webroot"
-LE_ARCHIVE_ROOT="/deployment/letsencrypt/archive"
-LE_RENEWAL_CONFIG_ROOT="/deployment/letsencrypt/renewal"
+export LE_CERT_ROOT="${LE_WORK_DIR}/live"
+LE_ARCHIVE_ROOT="${LE_WORK_DIR}/archive"
+LE_RENEWAL_CONFIG_ROOT="${LE_WORK_DIR}/renewal"
 LE_CMD="/usr/bin/certbot certonly --config-dir ${LE_WORK_DIR} -w ${LE_WEB_ROOT} ${LE_EXTRA_ARGS}"
+mkdir -p $LE_CERT_ROOT
 
 # Configure haproxy
-CERT_FILE="/opt/selfsigned/localhost.pem"
+export CERT_FILE="/opt/selfsigned/localhost.pem"
 if [ -n "${DOMAINNAME}" ] && [ "${DOMAINNAME}" != "localhost" ]; then
-  CERT_FILE="/deployment/letsencrypt/live/${DOMAINNAME}/haproxy.pem"
+  export CERT_FILE="${LE_CERT_ROOT}/${DOMAINNAME}/haproxy.pem"
 fi
-export CERT_FILE=${CERT_FILE}
-export PROXY_LOGLEVEL=${PROXY_LOGLEVEL}
-
-# Assume
 if [ ! -f ${CERT_FILE} ]; then
   INIT=true
   HAPROXY_CONFIG="/etc/haproxy/haproxy-init.cfg"
@@ -78,13 +70,13 @@ function run_proxy {
         restart
     fi
 
-    log_info "Monitoring config file and cert $LE_WORK_DIR for changes..."
+    log_info "Monitoring config file $HAPROXY_CONFIG and certs in $LE_CERT_ROOT for changes..."
 
     # Wait if config or certificates were changed, block this execution
-    while inotifywait -q -r --exclude '\.git/' -e modify,create,delete,move,move_self $HAPROXY_CONFIG $LE_WORK_DIR; do
+    while inotifywait -q -r --exclude '\.git/' -e modify,create,delete,move,move_self $HAPROXY_CONFIG $LE_CERT_ROOT; do
         log_info "Change detected..."
         restart
-        log_info "Monitoring config file and cert $LE_WORK_DIR for changes..."
+        log_info "Monitoring config file $HAPROXY_CONFIG and certs in $LE_CERT_ROOT for changes..."
     done
 }
 
@@ -377,9 +369,7 @@ function cron_auto_renewal {
 
     # Start crond if not running
     if ! [ -f /var/run/crond.pid ]; then
-        log_info "CRON daemon starting..."
         service cron start
-        log_info "CRON daemon started"
     fi
 }
 
@@ -388,6 +378,7 @@ log_info "HAPROXY_CERT_FILE: ${CERT_FILE}"
 log_info "HAPROXY_CONFIG: ${HAPROXY_CONFIG}"
 log_info "HAPROXY_CMD: ${HAPROXY_CMD}"
 log_info "HAPROXY_USER_PARAMS: ${HAPROXY_USER_PARAMS}"
+log_info "PROXY_LOGLEVEL: ${PROXY_LOGLEVEL}"
 log_info "LE_CERT_ROOT: ${LE_CERT_ROOT}"
 log_info "LE_ARCHIVE_ROOT: ${LE_ARCHIVE_ROOT}"
 log_info "LE_RENEWAL_CONFIG_ROOT: ${LE_RENEWAL_CONFIG_ROOT}"

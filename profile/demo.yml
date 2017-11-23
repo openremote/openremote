@@ -62,6 +62,9 @@ services:
       # Store data either in host-mapped directory or a named Docker volume
       # - ${DEPLOYMENT_DIRECTORY:-../deployment}/proxy:/deployment
       # - proxy-data:/deployment
+      #
+      # Override the haproxy.cfg with custom file
+      # -${MY_PROXY_CONFIG_FILE}:/etc/haproxy/haproxy.cfg
 
   # This configuration uses the manager's deployment-specific data such as map tiles,
   # console application static resources (HTML, JS, CSS), extensions, and other
