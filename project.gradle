@@ -1,6 +1,19 @@
 // Common configuration applied to all projects
 import static org.apache.tools.ant.taskdefs.condition.Os.*
 
+// Build plugins
+buildscript {
+    repositories {
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
+    }
+
+    dependencies {
+        classpath "com.moowork.gradle:gradle-node-plugin:$nodePluginVersion"
+    }
+}
+
 // Default repositories for dependency resolution
 repositories {
     mavenCentral()
@@ -39,20 +52,31 @@ if(project.convention.findPlugin(JavaPluginConvention)) {
 // subproject, not for its children!)
 version = hasProperty("openremoteVersion") ? openremoteVersion : projectVersion
 
+// Add console NodeJS plugin configuration and tasks
+apply plugin: com.moowork.gradle.node.NodePlugin
+def nodeDir = "${rootDir}/.node"
+// Configuration of paths is completely broken in the gradle node plugin, this approach
+// is the only one that results in a predictable location for installed modules
+def nodeExtDir = "${nodeDir}/ext"
+node {
+    download = true
+    version = nodeJSVersion
+    workDir = file(nodeDir)
+}
+
 // Add bower tasks
-task bowerPrune(type: Exec){
-    commandLine "bower", "prune"
-    standardOutput = new ByteArrayOutputStream()
+task bowerInstall(type: NpmTask) {
+    args = ['install', '--prefix', nodeExtDir, '-g', 'bower']
 }
-
-task bowerUpdate(type: Exec){
-    commandLine "bower", "update"
-    standardOutput = new ByteArrayOutputStream()
+task bowerUpdate(type: NodeTask) {
+    dependsOn bowerInstall
+    script = file("${nodeExtDir}/bin/bower")
+    args = ['update']
 }
-
-task polymerBuild(type: Exec){
-    commandLine "polymer", "build"
-    standardOutput = new ByteArrayOutputStream()
+task bowerPrune(type: NodeTask) {
+    dependsOn bowerInstall
+    script = file("${nodeExtDir}/bin/bower")
+    args = ['prune']
 }
 
 // Configure Java build

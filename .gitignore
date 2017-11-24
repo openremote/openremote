@@ -6,6 +6,7 @@ local.properties
 build/
 .gradle
 .vagrant
+.node
 
 bin/
 out/
