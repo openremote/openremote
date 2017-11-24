@@ -10,7 +10,7 @@ buildscript {
     }
 
     dependencies {
-        classpath "com.moowork.gradle:gradle-node-plugin:$nodePluginVersion"
+        classpath "com.moowork.gradle:gradle-node-plugin:1.2.0"
     }
 }
 
@@ -56,7 +56,7 @@ version = hasProperty("openremoteVersion") ? openremoteVersion : projectVersion
 apply plugin: com.moowork.gradle.node.NodePlugin
 node {
     download = true
-    version = nodeJSVersion
+    version = "8.9.0"
     workDir = file("${rootDir}/.node")
 }
 def nodeDir = {
