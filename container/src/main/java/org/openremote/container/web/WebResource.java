@@ -63,6 +63,10 @@ public class WebResource implements AuthContext {
         return request.getRemoteAddr();
     }
 
+    public String getRequestRealm() {
+        return request.getHeader(WebService.REQUEST_HEADER_REALM);
+    }
+
     @SuppressWarnings("unchecked")
     public AuthContext getAuthContext() {
         // The securityContext is a thread-local proxy, careful when/how you call it

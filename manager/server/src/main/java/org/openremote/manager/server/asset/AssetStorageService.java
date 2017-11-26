@@ -820,6 +820,16 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 binders.add(st -> st.setString(pos, query.userId));
             }
 
+            if (level == 1 && query.select.publicOnly) {
+                // TODO: Change this once public asset mechanism is finalised
+                AbstractAssetQuery.StringPredicate publicPredicate =
+                    new AbstractAssetQuery.StringPredicate(AbstractAssetQuery.Match.BEGIN, false, "urn:openremote:public:");
+                sb.append(publicPredicate.caseSensitive ? " and A.ASSET_TYPE " : " and upper(A.ASSET_TYPE)");
+                sb.append(publicPredicate.match == AssetQuery.Match.EXACT ? " = ?" : " like ?");
+                final int pos = binders.size() + 1;
+                binders.add(st -> st.setString(pos, publicPredicate.prepareValue()));
+            }
+
             if (query.type != null) {
                 sb.append(query.type.caseSensitive ? " and A.ASSET_TYPE" : " and upper(A.ASSET_TYPE)");
                 sb.append(query.type.match == AssetQuery.Match.EXACT ? " = ? " : " like ? ");

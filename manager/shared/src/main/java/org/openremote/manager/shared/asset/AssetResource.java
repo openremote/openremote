@@ -226,4 +226,17 @@ public interface AssetResource {
     @RolesAllowed({"read:assets"})
     @SuppressWarnings("unusable-by-js")
     Asset[] queryAssets(@BeanParam RequestParams requestParams, AbstractAssetQuery query);
+
+    /**
+     * Retrieve public assets using an {@link AbstractAssetQuery}.
+     * <p>
+     * Allows un-authenticated 'public' users to query public assets for a realm.
+     */
+    @POST
+    @Path("public/query")
+    @Consumes(APPLICATION_JSON)
+    @Produces(APPLICATION_JSON)
+    @SuccessStatusCode(200)
+    @SuppressWarnings("unusable-by-js")
+    Asset[] queryPublicAssets(@BeanParam RequestParams requestParams, AbstractAssetQuery query);
 }

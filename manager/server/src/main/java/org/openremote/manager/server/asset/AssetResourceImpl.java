@@ -35,6 +35,7 @@ import org.openremote.model.asset.*;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.MetaItem;
+import org.openremote.model.util.TextUtil;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueException;
 import org.openremote.model.value.Values;
@@ -467,6 +468,40 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             List<ServerAsset> result = assetStorageService.findAll(query);
             return result.toArray(new Asset[result.size()]);
 
+        } catch (IllegalStateException ex) {
+            throw new WebApplicationException(ex, Response.Status.BAD_REQUEST);
+        }
+    }
+
+    @Override
+    public Asset[] queryPublicAssets(RequestParams requestParams, AbstractAssetQuery query) {
+
+        String requestRealm = getRequestRealm();
+
+        if (query == null || TextUtil.isNullOrEmpty(requestRealm)) {
+            return EMPTY_ASSETS;
+        }
+
+        // Force realm to be request realm
+        if (query.tenantPredicate == null) {
+            query.tenant(new AbstractAssetQuery.TenantPredicate().realm(requestRealm));
+        } else {
+            query.tenantPredicate.realm = requestRealm;
+        }
+
+        // Set public only flag
+        if (query.select == null) {
+            query.select(new AssetQuery.Select().publicOnly(true));
+        } else {
+            query.select.publicOnly = true;
+        }
+
+        // Limit to protected attributes and meta items
+        query.select.filterProtected = true;
+
+        try {
+            List<ServerAsset> result = assetStorageService.findAll(query);
+            return result.toArray(new Asset[result.size()]);
         } catch (IllegalStateException ex) {
             throw new WebApplicationException(ex, Response.Status.BAD_REQUEST);
         }

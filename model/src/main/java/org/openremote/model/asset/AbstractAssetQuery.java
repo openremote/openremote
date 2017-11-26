@@ -45,6 +45,7 @@ public class AbstractAssetQuery<CHILD extends AbstractAssetQuery<CHILD>> {
         public boolean filterProtected;
         public boolean recursive;
         public String[] attributeNames;
+        public boolean publicOnly;
 
         public Select() {
         }
@@ -73,6 +74,11 @@ public class AbstractAssetQuery<CHILD extends AbstractAssetQuery<CHILD>> {
 
         public Select include(Include include) {
             this.include = include;
+            return this;
+        }
+
+        public Select publicOnly(boolean publicOnly) {
+            this.publicOnly = publicOnly;
             return this;
         }
 
