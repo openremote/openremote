@@ -90,12 +90,14 @@ task bowerUpdate(type: NodeTask) {
     script = nodeModuleGlobal('bower', 'bower')
     args = ['update']
     inputs.file("${project.projectDir}/bower.json")
+    outputs.dir("${project.projectDir}/bower_components")
 }
 task bowerPrune(type: NodeTask) {
     dependsOn bowerInstall
     script = nodeModuleGlobal('bower', 'bower')
     args = ['prune']
     inputs.file("${project.projectDir}/bower.json")
+    outputs.dir("${project.projectDir}/bower_components")
 }
 
 // Configure Java build
