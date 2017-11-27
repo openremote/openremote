@@ -74,17 +74,25 @@ class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMessageHa
         
         completionHandler(exec_template)
     }
-    
+
     func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
         if (navigationAction.request.url?.absoluteString.contains("logout"))! {
             TokenManager.sharedInstance.logout()
             decisionHandler(.cancel)
             self.dismiss(animated: false, completion: nil)
         } else {
-            decisionHandler(.allow)
+            let app = UIApplication.shared
+            if navigationAction.targetFrame == nil, let url = navigationAction.request.url{
+                if app.canOpenURL(url) {
+                    app.open(url, options: [:], completionHandler: nil)
+                    decisionHandler(.cancel)
+                }
+            } else {
+                decisionHandler(.allow)
+            }
         }
     }
-    
+
     func webView(_ webView: WKWebView, decidePolicyFor navigationResponse: WKNavigationResponse, decisionHandler: @escaping (WKNavigationResponsePolicy) -> Void) {
         if let response = navigationResponse.response as? HTTPURLResponse {
             if response.statusCode != 200 && response.statusCode != 204 {
