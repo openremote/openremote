@@ -69,9 +69,9 @@ public enum AssetMeta implements MetaItemDescriptor {
         null,
         false,
         value ->
-        Optional.ofNullable(AttributeRef.isAttributeRef(value)
-            ? null
-            : new ValidationFailure(META_ITEM_VALUE_MISMATCH, AttributeRef.class.getSimpleName()))
+            Optional.ofNullable(AttributeRef.isAttributeRef(value)
+                ? null
+                : new ValidationFailure(META_ITEM_VALUE_MISMATCH, AttributeRef.class.getSimpleName()))
     ),
 
     /**
@@ -133,7 +133,7 @@ public enum AssetMeta implements MetaItemDescriptor {
      */
     DESCRIPTION(
         ASSET_META_NAMESPACE + ":description",
-        new Access(true, false, true),
+        new Access(true, true, true),
         ValueType.STRING,
         null,
         null,
@@ -145,7 +145,7 @@ public enum AssetMeta implements MetaItemDescriptor {
      */
     ABOUT(
         ASSET_META_NAMESPACE + ":about",
-        new Access(true, false, true),
+        new Access(true, true, true),
         ValueType.STRING,
         null,
         null,
