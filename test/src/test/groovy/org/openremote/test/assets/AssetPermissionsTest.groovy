@@ -20,9 +20,12 @@ import static org.openremote.container.util.MapAccess.getString
 import static org.openremote.manager.server.setup.AbstractKeycloakSetup.KEYCLOAK_PASSWORD
 import static org.openremote.manager.server.setup.AbstractKeycloakSetup.KEYCLOAK_PASSWORD_DEFAULT
 import static org.openremote.model.Constants.*
+import static org.openremote.model.asset.AssetMeta.ABOUT
 import static org.openremote.model.asset.AssetMeta.LABEL
+import static org.openremote.model.asset.AssetMeta.PROTOCOL_CONFIGURATION
+import static org.openremote.model.asset.AssetMeta.STORE_DATA_POINTS
+import static org.openremote.model.attribute.AttributeType.BOOLEAN
 import static org.openremote.model.attribute.AttributeType.NUMBER
-import static org.openremote.model.attribute.AttributeType.TEMPERATURE_CELCIUS
 import static org.openremote.model.attribute.MetaItem.isMetaNameEqualTo
 
 class AssetPermissionsTest extends Specification implements ManagerContainerTrait {
@@ -136,6 +139,14 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         testAsset.wellKnownType == AssetType.ROOM
         testAsset.realmId == keycloakDemoSetup.masterTenant.id
         testAsset.parentId == null
+
+        when: "an asset is made public"
+        testAsset.setAccessPublicRead(true)
+        assetResource.update(null, testAsset.id, testAsset)
+        testAsset = assetResource.get(null, testAsset.getId())
+
+        then: "the asset should be updated"
+        testAsset.accessPublicRead
 
         when: "an asset is updated with a new parent in the authenticated realm"
         testAsset.setParentId(managerDemoSetup.groundFloorId)
@@ -653,22 +664,22 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         when: "a user asset is retrieved by ID in the authenticated realm"
         apartment1Livingroom = assetResource.get(null, managerDemoSetup.apartment1LivingroomId)
 
-        then: "the protected asset details should be available"
+        then: "the restricted asset details should be available"
         apartment1Livingroom.id == managerDemoSetup.apartment1LivingroomId
         apartment1Livingroom.name == "Living Room"
-        def protectedAttributes = apartment1Livingroom.getAttributesList()
-        protectedAttributes.size() == 7
+        def resultAttributes = apartment1Livingroom.getAttributesList()
+        resultAttributes.size() == 7
         def currentTemperature = apartment1Livingroom.getAttribute("currentTemperature").get()
         currentTemperature.getType().get() == AttributeType.TEMPERATURE_CELCIUS
         !currentTemperature.getValue().isPresent()
-        Meta protectedMeta = currentTemperature.getMeta()
-        protectedMeta.size() == 6
-        protectedMeta.stream().filter(isMetaNameEqualTo(AssetMeta.LABEL)).findFirst().get().getValueAsString().get() == "Current temperature"
-        protectedMeta.stream().filter(isMetaNameEqualTo(AssetMeta.READ_ONLY)).findFirst().get().getValueAsBoolean().get()
-        protectedMeta.stream().filter(isMetaNameEqualTo(AssetMeta.RULE_STATE)).findFirst().get().getValueAsBoolean().get()
-        protectedMeta.stream().filter(isMetaNameEqualTo(AssetMeta.STORE_DATA_POINTS)).findFirst().get().getValueAsBoolean().get()
-        protectedMeta.stream().filter(isMetaNameEqualTo(AssetMeta.SHOW_ON_DASHBOARD)).findFirst().get().getValueAsBoolean().get()
-        protectedMeta.stream().filter(isMetaNameEqualTo(AssetMeta.FORMAT)).findFirst().get().getValueAsString().get() == "%0.1f C"
+        Meta resultMeta = currentTemperature.getMeta()
+        resultMeta.size() == 6
+        resultMeta.stream().filter(isMetaNameEqualTo(AssetMeta.LABEL)).findFirst().get().getValueAsString().get() == "Current temperature"
+        resultMeta.stream().filter(isMetaNameEqualTo(AssetMeta.READ_ONLY)).findFirst().get().getValueAsBoolean().get()
+        resultMeta.stream().filter(isMetaNameEqualTo(AssetMeta.RULE_STATE)).findFirst().get().getValueAsBoolean().get()
+        resultMeta.stream().filter(isMetaNameEqualTo(STORE_DATA_POINTS)).findFirst().get().getValueAsBoolean().get()
+        resultMeta.stream().filter(isMetaNameEqualTo(AssetMeta.SHOW_ON_DASHBOARD)).findFirst().get().getValueAsBoolean().get()
+        resultMeta.stream().filter(isMetaNameEqualTo(AssetMeta.FORMAT)).findFirst().get().getValueAsString().get() == "%0.1f C"
 
         when: "an asset is retrieved by ID in a foreign realm"
         assetResource.get(null, managerDemoSetup.thingId)
@@ -692,10 +703,37 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         testAsset = assetResource.get(null, managerDemoSetup.apartment1LivingroomId)
         testAsset.setParentId(null)
         assetResource.update(null, testAsset.id, testAsset)
+        testAsset = assetResource.get(null, managerDemoSetup.apartment1LivingroomId)
 
-        then: "a bad request error should occur"
-        ex = thrown()
-        ex.response.status == 400
+        then: "the update should be ignored"
+        assert testAsset.getParentId() == managerDemoSetup.apartment1Id
+
+        when: "an asset is moved to a new parent in the authenticated realm"
+        testAsset = assetResource.get(null, managerDemoSetup.apartment1LivingroomId)
+        testAsset.setParentId(managerDemoSetup.apartment2Id)
+        assetResource.update(null, testAsset.id, testAsset)
+        testAsset = assetResource.get(null, managerDemoSetup.apartment1LivingroomId)
+
+        then: "the update should be ignored"
+        assert testAsset.getParentId() == managerDemoSetup.apartment1Id
+
+        when: "an asset is made public"
+        testAsset = assetResource.get(null, managerDemoSetup.apartment1LivingroomId)
+        testAsset.setAccessPublicRead(true)
+        assetResource.update(null, testAsset.id, testAsset)
+        testAsset = assetResource.get(null, managerDemoSetup.apartment1LivingroomId)
+
+        then: "the update should be ignored"
+        assert !testAsset.isAccessPublicRead()
+
+        when: "an asset is renamed"
+        testAsset = assetResource.get(null, managerDemoSetup.apartment1LivingroomId)
+        testAsset.setName("Ignored")
+        assetResource.update(null, testAsset.id, testAsset)
+        testAsset = assetResource.get(null, managerDemoSetup.apartment1LivingroomId)
+
+        then: "the update should be ignored"
+        assert testAsset.getName() == "Living Room"
 
         when: "an asset is created in the authenticated realm"
         testAsset = new Asset("Test Room", AssetType.ROOM, null, keycloakDemoSetup.customerATenant.id)
@@ -727,22 +765,12 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         ex = thrown()
         ex.response.status == 404
 
-        when: "a protected read-only asset attribute is written on a user asset"
+        when: "a restricted read-only asset attribute is written on a user asset"
         assetResource.writeAttributeValue(null, managerDemoSetup.apartment1LivingroomId, "currentTemperature", Values.create(22.123).toJson())
 
         then: "the request should be forbidden"
         ex = thrown()
         ex.response.status == 403
-
-        when: "a protected asset attribute is written on a user asset"
-        assetResource.writeAttributeValue(null, managerDemoSetup.apartment1LivingroomId, "targetTemperature", Values.create(22.123).toJson())
-
-        then: "result should match"
-        conditions.eventually {
-            def asset = assetResource.get(null, managerDemoSetup.apartment1LivingroomId)
-            assert asset.getAttribute("targetTemperature").get().getValue().isPresent()
-            assert asset.getAttribute("targetTemperature").get().getValue().get().toJson() == Values.create(22.123).toJson()
-        }
 
         when: "an attribute is written on a non-existent user asset"
         assetResource.writeAttributeValue(null, "doesnotexist", "lightSwitch", Values.create(false).toJson())
@@ -772,44 +800,109 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         ex = thrown()
         ex.response.status == 403
 
-        when: "an non-protected asset attribute is updated"
-        testAsset = assetResource.get(null, managerDemoSetup.apartment1LivingroomId)
-        testAsset.replaceAttribute(new AssetAttribute("motionSensor", NUMBER)
-                .addMeta(new MetaItem(LABEL, Values.create("Motion Sensor")))
+        when: "a non-writable attribute value is written on a user asset"
+        assetResource.writeAttributeValue(null, managerDemoSetup.apartment1KitchenId, "presenceDetected", Values.create(true).toJson())
+
+        then: "access should be forbidden"
+        ex = thrown()
+        ex.response.status == 403
+
+        when: "a non-writable attribute value is updated on a user asset"
+        testAsset = assetResource.get(null, managerDemoSetup.apartment1KitchenId)
+        testAsset.getAttribute("presenceDetected").get().setValue(Values.create(true))
+        assetResource.update(null, testAsset.id, testAsset)
+        testAsset = assetResource.get(null, managerDemoSetup.apartment1KitchenId)
+
+        then: "the update should be ignored"
+        assert !testAsset.getAttribute("presenceDetected").get().getValue().isPresent()
+
+        when: "a non-writable attribute is updated on a user asset"
+        testAsset = assetResource.get(null, managerDemoSetup.apartment1KitchenId)
+        testAsset.replaceAttribute(new AssetAttribute("presenceDetected", BOOLEAN, Values.create(true)))
+        assetResource.update(null, testAsset.id, testAsset)
+        testAsset = assetResource.get(null, managerDemoSetup.apartment1KitchenId)
+
+        then: "the update should be ignored"
+        assert !testAsset.getAttribute("presenceDetected").get().getValue().isPresent()
+
+        when: "a non-writable attribute's meta item value is updated"
+        testAsset = assetResource.get(null, managerDemoSetup.apartment1KitchenId)
+        testAsset.getAttribute("presenceDetected").orElse(null).getMetaItem(STORE_DATA_POINTS).orElse(null).setValue(Values.create(false))
+        assetResource.update(null, testAsset.id, testAsset)
+
+        then: "the update should be ignored"
+        assert testAsset.getAttribute("presenceDetected").get().getMetaItem(STORE_DATA_POINTS).get().getValue().get()
+
+        when: "a non-writable attribute's meta item value is added"
+        testAsset = assetResource.get(null, managerDemoSetup.apartment1KitchenId)
+        testAsset.getAttribute("presenceDetected").orElse(null).addMeta(new MetaItem(ABOUT, Values.create("Ignored")))
+        assetResource.update(null, testAsset.id, testAsset)
+        testAsset = assetResource.get(null, managerDemoSetup.apartment1KitchenId)
+
+        then: "the update should be ignored"
+        assert !testAsset.getAttribute("presenceDetected").get().getMetaItem(ABOUT).isPresent()
+
+        when: "a new attribute is added on a user asset"
+        testAsset = assetResource.get(null, managerDemoSetup.apartment1KitchenId)
+        testAsset.addAttributes(new AssetAttribute("myCustomAttribute", NUMBER, Values.create(123)))
+        assetResource.update(null, testAsset.id, testAsset)
+        testAsset = assetResource.get(null, managerDemoSetup.apartment1KitchenId)
+
+        then: "result should match"
+        assert testAsset.getAttribute("myCustomAttribute").get().getValue().get() == Values.create(123)
+
+        when: "a writable attribute value is written on a user asset"
+        assetResource.writeAttributeValue(null, managerDemoSetup.apartment1KitchenId, "myCustomAttribute", Values.create(456).toJson())
+
+        then: "result should match"
+        conditions.eventually {
+            testAsset = assetResource.get(null, managerDemoSetup.apartment1KitchenId)
+            assert testAsset.getAttribute("myCustomAttribute").get().getValue().get() == Values.create(456)
+        }
+
+        when: "a writable attribute has a non-writable meta item"
+        testAsset = assetResource.get(null, managerDemoSetup.apartment1KitchenId)
+        testAsset.getAttribute("myCustomAttribute").get().addMeta(new MetaItem(PROTOCOL_CONFIGURATION, Values.create("Ignored")))
+        testAsset = assetResource.get(null, managerDemoSetup.apartment1KitchenId)
+        assetResource.update(null, testAsset.id, testAsset)
+
+        then: "the update should be ignored"
+        assert !testAsset.getAttribute("presenceDetected").get().getMetaItem(PROTOCOL_CONFIGURATION).isPresent()
+
+        when: "a writable attribute has a writable meta item"
+        testAsset = assetResource.get(null, managerDemoSetup.apartment1KitchenId)
+        testAsset.getAttribute("myCustomAttribute").get().addMeta(new MetaItem(LABEL, Values.create("My label")))
+        assetResource.update(null, testAsset.id, testAsset)
+        testAsset = assetResource.get(null, managerDemoSetup.apartment1KitchenId)
+
+        then: "the result should match"
+        assert testAsset.getAttribute("myCustomAttribute").get().getMetaItem(LABEL).get().getValue().get() == Values.create("My label")
+
+        when: "a writable attribute has a writable meta item value update"
+        testAsset = assetResource.get(null, managerDemoSetup.apartment1KitchenId)
+        testAsset.getAttribute("myCustomAttribute").get().getMetaItem(LABEL).get().setValue(Values.create("My label update"))
+        assetResource.update(null, testAsset.id, testAsset)
+        testAsset = assetResource.get(null, managerDemoSetup.apartment1KitchenId)
+
+        then: "the result should match"
+        assert testAsset.getAttribute("myCustomAttribute").get().getMetaItem(LABEL).get().getValue().get() == Values.create("My label update")
+
+        when: "a writable attribute replaces a writable meta item with several new items"
+        testAsset = assetResource.get(null, managerDemoSetup.apartment1KitchenId)
+        testAsset.getAttribute("myCustomAttribute").get().getMeta().removeIf(isMetaNameEqualTo(LABEL))
+        testAsset.getAttribute("myCustomAttribute").get().addMeta(
+                new MetaItem(LABEL, Values.create("Label1")),
+                new MetaItem(LABEL, Values.create("Label2")),
+                new MetaItem(LABEL, Values.create("Label3")),
         )
         assetResource.update(null, testAsset.id, testAsset)
+        testAsset = assetResource.get(null, managerDemoSetup.apartment1KitchenId)
 
-        then: "a conflict error should occur"
-        ex = thrown()
-        ex.response.status == 409
-
-        when: "an non protected writable meta item is added"
-        testAsset = assetResource.get(null, managerDemoSetup.apartment1LivingroomId)
-        testAsset.replaceAttribute(new AssetAttribute("currentTemperature", TEMPERATURE_CELCIUS)
-                .addMeta(new MetaItem(AssetMeta.PATTERN))
-        )
-        assetResource.update(null, testAsset.id, testAsset)
-
-        then: "a bad request error should occur"
-        ex = thrown()
-        ex.response.status == 400
-
-        when: "an asset attribute is updated"
-        testAsset = assetResource.get(null, managerDemoSetup.apartment1LivingroomId)
-        def temperatureAttr = testAsset.attributesStream.filter { assetAttr -> assetAttr.name.get().equalsIgnoreCase("targetTemperature") }.findFirst().orElse(null)
-        assert temperatureAttr != null
-        def labelMeta = temperatureAttr.getMetaItem(LABEL).orElse(null)
-        assert labelMeta != null
-        labelMeta.setValue(Values.create("Target Temperature"))
-        assetResource.update(null, testAsset.id, testAsset)
-
-        then: "no error should occur"
-        def updatedAsset = assetResource.get(null, managerDemoSetup.apartment1LivingroomId)
-        def updatedAttribute = updatedAsset.getAttribute("targetTemperature")
-        assert updatedAttribute.isPresent()
-        def updatedMetaItem = updatedAttribute.get().getMetaItem(LABEL)
-        assert updatedMetaItem.isPresent()
-        assert updatedMetaItem.get().valueAsString.get() == "Target Temperature"
+        then: "the result should match"
+        assert testAsset.getAttribute("myCustomAttribute").get().getMetaItems(LABEL.getUrn()).length == 3
+        assert testAsset.getAttribute("myCustomAttribute").get().getMetaItems(LABEL.getUrn())[0].getValue().get() == Values.create("Label1")
+        assert testAsset.getAttribute("myCustomAttribute").get().getMetaItems(LABEL.getUrn())[1].getValue().get() == Values.create("Label2")
+        assert testAsset.getAttribute("myCustomAttribute").get().getMetaItems(LABEL.getUrn())[2].getValue().get() == Values.create("Label3")
 
         cleanup: "the server should be stopped"
         stopContainer(container)

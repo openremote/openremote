@@ -72,5 +72,8 @@ public interface ObjectValue extends Value {
 
     ObjectValue deepCopy();
 
+    /**
+     * @param ignoreKeys Keys to ignore in comparison.
+     */
     boolean equalsIgnoreKeys(ObjectValue that, String... ignoreKeys);
 }

@@ -28,15 +28,16 @@ create table ALERT_NOTIFICATION (
 );
 
 create table ASSET (
-  ID          varchar(43)              not null,
-  ATTRIBUTES  jsonb,
-  CREATED_ON  timestamp with time zone not null,
-  NAME        varchar(1023)            not null,
-  PARENT_ID   varchar(36),
-  REALM_ID    varchar(255)             not null,
-  ASSET_TYPE  varchar(255)             not null,
-  OBJ_VERSION int8                     not null,
-  LOCATION    geometry,
+  ID                 varchar(43)              not null,
+  ATTRIBUTES         jsonb,
+  CREATED_ON         timestamp with time zone not null,
+  NAME               varchar(1023)            not null,
+  PARENT_ID          varchar(36),
+  REALM_ID           varchar(255)             not null,
+  ASSET_TYPE         varchar(255)             not null,
+  ACCESS_PUBLIC_READ boolean                  not null,
+  OBJ_VERSION        int8                     not null,
+  LOCATION           geometry,
   primary key (ID),
   check (ID != PARENT_ID)
 );

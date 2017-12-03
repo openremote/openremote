@@ -22,7 +22,9 @@ package org.openremote.model.asset;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import org.openremote.model.attribute.AttributeRef;
+import org.openremote.model.attribute.MetaItemDescriptor;
 
+import java.util.Arrays;
 import java.util.Locale;
 
 /**
@@ -40,34 +42,43 @@ public class AbstractAssetQuery<CHILD extends AbstractAssetQuery<CHILD>> {
         ALL
     }
 
+    public enum Access {
+        PRIVATE_READ,
+        RESTRICTED_READ,
+        PUBLIC_READ
+    }
+
     public static class Select {
-        public Include include = Include.ALL_EXCEPT_PATH_AND_ATTRIBUTES;
-        public boolean filterProtected;
+        public Include include;
         public boolean recursive;
+        public Access access;
         public String[] attributeNames;
-        public boolean publicOnly;
 
         public Select() {
         }
 
         public Select(Include include) {
-            this(include, false);
+            this(include, Access.PRIVATE_READ);
         }
 
-        public Select(Include include, boolean filterProtected) {
-            this(include, filterProtected, false);
+        public Select(Include include, Access access) {
+            this(include, false, access);
         }
 
-        public Select(Include include, boolean filterProtected, boolean recursive) {
-            this(include, filterProtected, recursive, (String[]) null);
+        public Select(Include include, boolean recursive, Access access) {
+            this(include, recursive, access, (String[]) null);
         }
 
-        public Select(Include include, boolean filterProtected, boolean recursive, String... attributeNames) {
+        public Select(Include include, boolean recursive, String... attributeNames) {
+            this(include, recursive, Access.PRIVATE_READ, attributeNames);
+        }
+
+        public Select(Include include, boolean recursive, Access access, String... attributeNames) {
             if (include == null) {
                 include = Include.ALL_EXCEPT_PATH_AND_ATTRIBUTES;
             }
             this.include = include;
-            this.filterProtected = filterProtected;
+            this.access = access;
             this.recursive = recursive;
             this.attributeNames = attributeNames;
         }
@@ -77,19 +88,24 @@ public class AbstractAssetQuery<CHILD extends AbstractAssetQuery<CHILD>> {
             return this;
         }
 
-        public Select publicOnly(boolean publicOnly) {
-            this.publicOnly = publicOnly;
-            return this;
-        }
-
-        public Select filterProtected(boolean filterProtected) {
-            this.filterProtected = filterProtected;
+        public Select filterAccess(Access access) {
+            this.access = access;
             return this;
         }
 
         public Select filterAttributes(String... attributeNames) {
             this.attributeNames = attributeNames;
             return this;
+        }
+
+        @Override
+        public String toString() {
+            return getClass().getSimpleName() + "{" +
+                "include=" + include +
+                ", recursive=" + recursive +
+                ", access=" + access +
+                ", attributeNames=" + Arrays.toString(attributeNames) +
+                '}';
         }
     }
 
@@ -187,6 +203,15 @@ public class AbstractAssetQuery<CHILD extends AbstractAssetQuery<CHILD>> {
                 s = s.toUpperCase(Locale.ROOT);
             return s;
         }
+
+        @Override
+        public String toString() {
+            return getClass().getSimpleName() + "{" +
+                "match=" + match +
+                ", caseSensitive=" + caseSensitive +
+                ", value='" + value + '\'' +
+                '}';
+        }
     }
 
     public static class BooleanPredicate implements ValuePredicate {
@@ -203,6 +228,13 @@ public class AbstractAssetQuery<CHILD extends AbstractAssetQuery<CHILD>> {
             this.predicate = predicate;
             return this;
         }
+
+        @Override
+        public String toString() {
+            return getClass().getSimpleName() + "{" +
+                "predicate=" + predicate +
+                '}';
+        }
     }
 
     public static class StringArrayPredicate implements ValuePredicate {
@@ -218,6 +250,13 @@ public class AbstractAssetQuery<CHILD extends AbstractAssetQuery<CHILD>> {
         public StringArrayPredicate predicates(StringPredicate... predicates) {
             this.predicates = predicates;
             return this;
+        }
+
+        @Override
+        public String toString() {
+            return getClass().getSimpleName() + "{" +
+                "predicates=" + Arrays.toString(predicates) +
+                '}';
         }
     }
 
@@ -260,6 +299,16 @@ public class AbstractAssetQuery<CHILD extends AbstractAssetQuery<CHILD>> {
             this.operatorMatch = OperatorMatch.BETWEEN;
             this.rangeValue = beforeValue;
             return this;
+        }
+
+        @Override
+        public String toString() {
+            return getClass().getSimpleName() + "{" +
+                "operatorMatch=" + operatorMatch +
+                ", dateFormat='" + dateFormat + '\'' +
+                ", value='" + value + '\'' +
+                ", rangeValue='" + rangeValue + '\'' +
+                '}';
         }
     }
 
@@ -312,6 +361,16 @@ public class AbstractAssetQuery<CHILD extends AbstractAssetQuery<CHILD>> {
             this.rangeValue = rangeValue;
             return this;
         }
+
+        @Override
+        public String toString() {
+            return getClass().getSimpleName() + "{" +
+                "value=" + value +
+                ", rangeValue=" + rangeValue +
+                ", operatorMatch=" + operatorMatch +
+                ", numberType=" + numberType +
+                '}';
+        }
     }
 
     public static class ParentPredicate {
@@ -348,6 +407,15 @@ public class AbstractAssetQuery<CHILD extends AbstractAssetQuery<CHILD>> {
             this.noParent = noParent;
             return this;
         }
+
+        @Override
+        public String toString() {
+            return getClass().getSimpleName() + "{" +
+                "id='" + id + '\'' +
+                ", type='" + type + '\'' +
+                ", noParent=" + noParent +
+                '}';
+        }
     }
 
     public static class PathPredicate {
@@ -367,6 +435,13 @@ public class AbstractAssetQuery<CHILD extends AbstractAssetQuery<CHILD>> {
 
         public boolean hasPath() {
             return path != null && path.length > 0;
+        }
+
+        @Override
+        public String toString() {
+            return getClass().getSimpleName() + "{" +
+                "path=" + Arrays.toString(path) +
+                '}';
         }
     }
 
@@ -390,6 +465,14 @@ public class AbstractAssetQuery<CHILD extends AbstractAssetQuery<CHILD>> {
             this.realm = name;
             return this;
         }
+
+        @Override
+        public String toString() {
+            return getClass().getSimpleName() + "{" +
+                "realmId='" + realmId + '\'' +
+                ", realm='" + realm + '\'' +
+                '}';
+        }
     }
 
     public static class AttributeMetaPredicate {
@@ -403,8 +486,8 @@ public class AbstractAssetQuery<CHILD extends AbstractAssetQuery<CHILD>> {
             this.itemNamePredicate = itemNamePredicate;
         }
 
-        public AttributeMetaPredicate(AssetMeta assetMeta) {
-            this.itemNamePredicate = new StringPredicate(assetMeta.getUrn());
+        public AttributeMetaPredicate(MetaItemDescriptor metaItemDescriptor) {
+            this.itemNamePredicate = new StringPredicate(metaItemDescriptor.getUrn());
         }
 
         public AttributeMetaPredicate(ValuePredicate itemValuePredicate) {
@@ -416,8 +499,8 @@ public class AbstractAssetQuery<CHILD extends AbstractAssetQuery<CHILD>> {
             this.itemValuePredicate = itemValuePredicate;
         }
 
-        public AttributeMetaPredicate(AssetMeta assetMeta, ValuePredicate itemValuePredicate) {
-            this(new StringPredicate(assetMeta.getUrn()), itemValuePredicate);
+        public AttributeMetaPredicate(MetaItemDescriptor metaItemDescriptor, ValuePredicate itemValuePredicate) {
+            this(new StringPredicate(metaItemDescriptor.getUrn()), itemValuePredicate);
         }
 
         public AttributeMetaPredicate itemName(StringPredicate itemNamePredicate) {
@@ -425,13 +508,21 @@ public class AbstractAssetQuery<CHILD extends AbstractAssetQuery<CHILD>> {
             return this;
         }
 
-        public AttributeMetaPredicate itemName(AssetMeta assetMeta) {
-            return itemName(new StringPredicate(assetMeta.getUrn()));
+        public AttributeMetaPredicate itemName(MetaItemDescriptor metaItemDescriptor) {
+            return itemName(new StringPredicate(metaItemDescriptor.getUrn()));
         }
 
         public AttributeMetaPredicate itemValue(ValuePredicate itemValuePredicate) {
             this.itemValuePredicate = itemValuePredicate;
             return this;
+        }
+
+        @Override
+        public String toString() {
+            return getClass().getSimpleName() + "{" +
+                "itemNamePredicate=" + itemNamePredicate +
+                ", itemValuePredicate=" + itemValuePredicate +
+                '}';
         }
     }
 
@@ -461,8 +552,8 @@ public class AbstractAssetQuery<CHILD extends AbstractAssetQuery<CHILD>> {
                 ));
         }
 
-        public AttributeRefPredicate(AssetMeta assetMeta, String entityId, String attributeName) {
-            this(assetMeta.getUrn(), entityId, attributeName);
+        public AttributeRefPredicate(MetaItemDescriptor metaItemDescriptor, String entityId, String attributeName) {
+            this(metaItemDescriptor.getUrn(), entityId, attributeName);
         }
 
         public AttributeRefPredicate(StringPredicate name, AttributeRef attributeRef) {
@@ -474,8 +565,8 @@ public class AbstractAssetQuery<CHILD extends AbstractAssetQuery<CHILD>> {
                 ));
         }
 
-        public AttributeRefPredicate(AssetMeta assetMeta, AttributeRef attributeRef) {
-            this(new StringPredicate(assetMeta.getUrn()), attributeRef);
+        public AttributeRefPredicate(MetaItemDescriptor metaItemDescriptor, AttributeRef attributeRef) {
+            this(new StringPredicate(metaItemDescriptor.getUrn()), attributeRef);
         }
     }
 
@@ -490,8 +581,8 @@ public class AbstractAssetQuery<CHILD extends AbstractAssetQuery<CHILD>> {
             this.itemNamePredicate = itemNamePredicate;
         }
 
-        public AttributePredicate(AssetMeta assetMeta) {
-            this.itemNamePredicate = new StringPredicate(assetMeta.getUrn());
+        public AttributePredicate(MetaItemDescriptor metaItemDescriptor) {
+            this.itemNamePredicate = new StringPredicate(metaItemDescriptor.getUrn());
         }
 
         public AttributePredicate(ValuePredicate itemValuePredicate) {
@@ -503,8 +594,8 @@ public class AbstractAssetQuery<CHILD extends AbstractAssetQuery<CHILD>> {
             this.itemValuePredicate = itemValuePredicate;
         }
 
-        public AttributePredicate(AssetMeta assetMeta, ValuePredicate itemValuePredicate) {
-            this(new StringPredicate(assetMeta.getUrn()), itemValuePredicate);
+        public AttributePredicate(MetaItemDescriptor metaItemDescriptor, ValuePredicate itemValuePredicate) {
+            this(new StringPredicate(metaItemDescriptor.getUrn()), itemValuePredicate);
         }
 
         public AttributePredicate itemName(StringPredicate itemNamePredicate) {
@@ -512,13 +603,21 @@ public class AbstractAssetQuery<CHILD extends AbstractAssetQuery<CHILD>> {
             return this;
         }
 
-        public AttributePredicate itemName(AssetMeta assetMeta) {
-            return itemName(new StringPredicate(assetMeta.getUrn()));
+        public AttributePredicate itemName(MetaItemDescriptor metaItemDescriptor) {
+            return itemName(new StringPredicate(metaItemDescriptor.getUrn()));
         }
 
         public AttributePredicate itemValue(ValuePredicate itemValuePredicate) {
             this.itemValuePredicate = itemValuePredicate;
             return this;
+        }
+
+        @Override
+        public String toString() {
+            return getClass().getSimpleName() + "{" +
+                "itemNamePredicate=" + itemNamePredicate +
+                ", itemValuePredicate=" + itemValuePredicate +
+                '}';
         }
     }
 
@@ -535,6 +634,13 @@ public class AbstractAssetQuery<CHILD extends AbstractAssetQuery<CHILD>> {
         public AttributePredicateArray predicates(AttributePredicate... predicates) {
             this.predicates = predicates;
             return this;
+        }
+
+        @Override
+        public String toString() {
+            return getClass().getSimpleName() + "{" +
+                "predicates=" + Arrays.toString(predicates) +
+                '}';
         }
     }
 
@@ -572,10 +678,18 @@ public class AbstractAssetQuery<CHILD extends AbstractAssetQuery<CHILD>> {
             this.descending = descending;
             return this;
         }
+
+        @Override
+        public String toString() {
+            return getClass().getSimpleName() + "{" +
+                "property=" + property +
+                ", descending=" + descending +
+                '}';
+        }
     }
 
     // Projection
-    public Select select = new Select();
+    public Select select;
 
     // Restriction predicates
     public String id;
@@ -589,7 +703,7 @@ public class AbstractAssetQuery<CHILD extends AbstractAssetQuery<CHILD>> {
     public AttributePredicateArray attributePredicateArray;
 
     // Ordering
-    public OrderBy orderBy = new OrderBy(OrderBy.Property.CREATED_ON);
+    public OrderBy orderBy;
 
     protected AbstractAssetQuery() {
     }
@@ -667,5 +781,22 @@ public class AbstractAssetQuery<CHILD extends AbstractAssetQuery<CHILD>> {
     public CHILD orderBy(OrderBy orderBy) {
         this.orderBy = orderBy;
         return (CHILD) this;
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "{" +
+            "select=" + select +
+            ", id='" + id + '\'' +
+            ", namePredicate=" + namePredicate +
+            ", parentPredicate=" + parentPredicate +
+            ", pathPredicate=" + pathPredicate +
+            ", tenantPredicate=" + tenantPredicate +
+            ", userId='" + userId + '\'' +
+            ", type=" + type +
+            ", attributeMetaPredicate=" + attributeMetaPredicate +
+            ", attributePredicateArray=" + attributePredicateArray +
+            ", orderBy=" + orderBy +
+            '}';
     }
 }

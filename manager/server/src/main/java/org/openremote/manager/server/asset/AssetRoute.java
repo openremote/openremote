@@ -179,8 +179,8 @@ public final class AssetRoute {
                 if (!assetStorageService.isUserAsset(authContext.getUserId(), event.getEntityId())) {
                     throw new AssetProcessingException(Reason.INSUFFICIENT_ACCESS);
                 }
-                // Must be protected attributes
-                if (!attribute.isProtected()) {
+                // Must be writable by restricted client
+                if (!attribute.isAccessRestrictedWrite()) {
                     throw new AssetProcessingException(Reason.INSUFFICIENT_ACCESS);
                 }
             }

@@ -522,4 +522,8 @@ public interface ManagerMessages extends Messages {
     String refreshDeviceRegistrations();
 
     String tenant();
+
+    String publicAccess();
+
+    String shareLink();
 }

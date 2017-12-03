@@ -36,9 +36,11 @@ import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
+import java.util.Optional;
 import java.util.function.Predicate;
-import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -66,8 +68,8 @@ import static org.openremote.model.asset.AssetAttribute.*;
  * <p>
  * The {@link #type} of the asset is an arbitrary string, it should be a URI, thus avoiding
  * collisions and representing "ownership" of asset type. Well-known asset types handled by
- * the core platform are defined in {@link AssetType}, third-party extensions can defined
- * their own asset types.
+ * the core platform are defined in {@link AssetType}, third-party extensions can define
+ * their own asset types in their own namespace, e.g. <code>urn:mynamespace:myassettype</code>
  * <p>
  * The {@link #path} is a list of parent asset identifiers, starting with the identifier of
  * this asset, followed by parent asset identifiers, and ending with the identifier of the
@@ -81,12 +83,8 @@ import static org.openremote.model.asset.AssetAttribute.*;
  * {@link ObjectValue} model. Use the {@link Attribute} etc. class to work with this API.
  * This property can be empty when certain optimized loading operations are used.
  * <p>
- * Constructors can filter attributes of an asset as to only contain protected attributes,
- * and their protected metadata (see {@link AssetMeta#PROTECTED}, {@link AssetMeta.Access}).
- * <p>
- * Note that third-party metadata items (not in the
- * {@link org.openremote.model.Constants#NAMESPACE}) are never included on
- * a protected attribute!
+ * For more details on restricted access of user-assigned assets, see {@link UserAsset}.
+ * </p>
  * <p>
  * Example JSON representation of an asset tree:
  * <blockquote><pre>{@code
@@ -186,7 +184,7 @@ import static org.openremote.model.asset.AssetAttribute.*;
           "value": "Current Temp"
         },
         {
-          "name": "urn:openremote:asset:meta:protected",
+          "name": "urn:openremote:asset:meta:accessRestrictedRead",
           "value": true
         },
         {
@@ -243,6 +241,9 @@ public class Asset implements IdentifiableEntity {
     @Column(name = "ASSET_TYPE", nullable = false, updatable = false)
     protected String type;
 
+    @Column(name = "ACCESS_PUBLIC_READ", nullable = false)
+    protected boolean accessPublicRead;
+
     @Column(name = "PARENT_ID", length = 36)
     protected String parentId;
 
@@ -286,7 +287,7 @@ public class Asset implements IdentifiableEntity {
     }
 
     public Asset(String name, String type) {
-        this(name, type, null, null);
+        this(name, type, false, null, null);
     }
 
     public Asset(@NotNull String name, @NotNull AssetType type, Asset parent) {
@@ -294,18 +295,19 @@ public class Asset implements IdentifiableEntity {
     }
 
     public Asset(@NotNull String name, @NotNull String type, Asset parent) {
-        this(name, type, parent, null);
+        this(name, type, false, parent, null);
     }
 
     public Asset(@NotNull String name, @NotNull AssetType type, Asset parent, @NotNull String realmId) {
-        this(name, type.getValue(), parent, realmId);
+        this(name, type.getValue(), false, parent, realmId);
     }
 
-    public Asset(@NotNull String name, @NotNull String type, Asset parent, @NotNull String realmId) {
+    public Asset(@NotNull String name, @NotNull String type, boolean accessPublicRead, Asset parent, @NotNull String realmId) {
         setRealmId(realmId);
         setName(name);
         setType(type);
         setParent(parent);
+        setAccessPublicRead(accessPublicRead);
 
         // Initialise realm from parent
         // TODO: Need to look at this - can child have a different realm to the parent?
@@ -316,11 +318,11 @@ public class Asset implements IdentifiableEntity {
         }
     }
 
-    public Asset(String id, long version, Date createdOn, String name, String type,
+    public Asset(String id, long version, Date createdOn, String name, String type, boolean accessPublicRead,
                  String parentId, String parentName, String parentType,
                  String realmId, String tenantRealm, String tenantDisplayName,
                  String[] path, ObjectValue attributes) {
-        this(name, type, null, realmId);
+        this(name, type, accessPublicRead, null, realmId);
         this.id = id;
         this.version = version;
         this.createdOn = createdOn;
@@ -410,6 +412,14 @@ public class Asset implements IdentifiableEntity {
 
     public void setType(AssetType type) {
         setType(type != null ? type.getValue() : null);
+    }
+
+    public boolean isAccessPublicRead() {
+        return accessPublicRead;
+    }
+
+    public void setAccessPublicRead(boolean accessPublicRead) {
+        this.accessPublicRead = accessPublicRead;
     }
 
     public void setParent(Asset parent) {
@@ -610,6 +620,7 @@ public class Asset implements IdentifiableEntity {
             ", createdOn=" + createdOn +
             ", name='" + name + '\'' +
             ", type='" + type + '\'' +
+            ", accessPublicRead='" + accessPublicRead + '\'' +
             ", parentId='" + parentId + '\'' +
             ", parentName='" + parentName + '\'' +
             ", parentType='" + parentType + '\'' +

@@ -19,6 +19,7 @@
  */
 package org.openremote.manager.client.assets.asset;
 
+import com.google.gwt.http.client.URL;
 import com.google.inject.Provider;
 import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.app.dialog.JsonEditor;
@@ -53,6 +54,7 @@ import org.openremote.model.datapoint.DatapointInterval;
 import org.openremote.model.datapoint.NumberDatapoint;
 import org.openremote.model.event.shared.TenantFilter;
 import org.openremote.model.simulator.SimulatorState;
+import org.openremote.model.value.Values;
 
 import javax.inject.Inject;
 import java.util.ArrayList;
@@ -275,6 +277,15 @@ public class AssetViewActivity
     public void writeAssetToView() {
         super.writeAssetToView();
         view.setIconAndType(asset.getWellKnownType().getIcon(), asset.getType());
+
+        // Build the link manually, shorter result than AssetQueryMapper, and we must hardcode the path anyway
+        String query = Values.createObject()
+            .put("select", Values.createObject().put("include", Values.create("ALL")))
+            .put("id", Values.create(asset.getId()))
+            .toJson();
+        view.setAccessPublicReadAnchor(
+            "/" + asset.getTenantRealm() + "/asset/public/query?q=" + URL.encodeQueryString(query)
+        );
     }
 
     protected List<FormButton> createAttributeActions(AssetAttribute attribute, AttributeViewImpl view) {

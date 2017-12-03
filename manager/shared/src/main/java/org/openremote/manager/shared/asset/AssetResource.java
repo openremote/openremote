@@ -24,6 +24,7 @@ import org.openremote.manager.shared.http.RequestParams;
 import org.openremote.manager.shared.http.SuccessStatusCode;
 import org.openremote.model.asset.AbstractAssetQuery;
 import org.openremote.model.asset.Asset;
+import org.openremote.model.asset.AssetQuery;
 import org.openremote.model.asset.UserAsset;
 
 import javax.annotation.security.RolesAllowed;
@@ -145,12 +146,14 @@ public interface AssetResource {
     Asset get(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId);
 
     /**
-     * TODO Update docs, how restricted user handling is actually implemented
-     * <p>
      * Updates the asset. Regular users can only update assets in their authenticated realm, the superuser can update
      * assets in other (all) realms. A 403 status is returned if a regular user tries to update an asset in a realm
-     * different than its authenticated realm, or if the user is restricted and the asset is not linked to the user. A
-     * 400 status is returned if the asset's parent or realm doesn't exist.
+     * different than its authenticated realm, or if the original or target realm is not accessible. A 403 status is
+     * returned if the user is restricted and the asset is not linked to the user. A 400 status is returned if the
+     * asset's parent doesn't exist. A 400 status is returned if a restricted user attempts to write private meta items
+     * of any attributes. If a restricted user tries to write asset properties or dynamic attributes or
+     * meta items of dynamic attributes which are not writable by a restricted user, such data is ignored. For more
+     * details on limitations of restricted users, see {@link UserAsset}.
      */
     @PUT
     @Path("{assetId}")
@@ -211,12 +214,12 @@ public interface AssetResource {
     void delete(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId);
 
     /**
-     * Retrieve assets using an {@link AbstractAssetQuery}.
+     * Retrieve assets using an {@link AssetQuery}.
      * <p>
      * If the authenticated user is the superuser then assets referenced in the query or returned by the query can be in
      * any realm. Otherwise assets must be in the same realm as the authenticated user. An empty result is returned if
      * the user does not have access to the assets or if the user is restricted. What is populated on the returned assets
-     * is determined by the {@link AbstractAssetQuery#select} value.
+     * is determined by the {@link AssetQuery#select} value.
      */
     @POST
     @Path("query")
@@ -225,10 +228,10 @@ public interface AssetResource {
     @SuccessStatusCode(200)
     @RolesAllowed({"read:assets"})
     @SuppressWarnings("unusable-by-js")
-    Asset[] queryAssets(@BeanParam RequestParams requestParams, AbstractAssetQuery query);
+    Asset[] queryAssets(@BeanParam RequestParams requestParams, AssetQuery query);
 
     /**
-     * Retrieve public assets using an {@link AbstractAssetQuery}.
+     * Retrieve public assets using an {@link AssetQuery}.
      * <p>
      * Allows un-authenticated 'public' users to query public assets for a realm.
      */
@@ -238,5 +241,17 @@ public interface AssetResource {
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
     @SuppressWarnings("unusable-by-js")
-    Asset[] queryPublicAssets(@BeanParam RequestParams requestParams, AbstractAssetQuery query);
+    Asset[] queryPublicAssets(@BeanParam RequestParams requestParams, AssetQuery query);
+
+    /**
+     * Retrieve public assets using an {@link AssetQuery} as a JSON serialized query parameter.
+     * <p>
+     * Allows un-authenticated 'public' users to query public assets for a realm.
+     */
+    @GET
+    @Path("public/query")
+    @Produces(APPLICATION_JSON)
+    @SuccessStatusCode(200)
+    @SuppressWarnings("unusable-by-js")
+    Asset[] queryPublicAssets(@BeanParam RequestParams requestParams, @QueryParam("q") String q);
 }

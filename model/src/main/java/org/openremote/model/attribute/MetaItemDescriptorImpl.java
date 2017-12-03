@@ -34,6 +34,7 @@ public class MetaItemDescriptorImpl implements MetaItemDescriptor {
     protected final String name;
     protected final String urn;
     protected final ValueType valueType;
+    protected final Access access;
     protected final boolean required;
     protected final String pattern;
     protected final Integer maxPerAttribute;
@@ -41,10 +42,23 @@ public class MetaItemDescriptorImpl implements MetaItemDescriptor {
     protected final boolean valueFixed;
     protected final String patternFailureMessage;
 
+    public MetaItemDescriptorImpl(String name,
+                                  String urn,
+                                  ValueType valueType,
+                                  boolean required,
+                                  String pattern,
+                                  String patternFailureMessage,
+                                  Integer maxPerAttribute,
+                                  Value initialValue,
+                                  boolean valueFixed) {
+        this(name, urn, valueType, Access.ACCESS_PRIVATE,required, pattern, patternFailureMessage, maxPerAttribute, initialValue, valueFixed);
+    }
+
     @JsonCreator
     public MetaItemDescriptorImpl(@JsonProperty("name") String name,
                                   @JsonProperty("urn") String urn,
                                   @JsonProperty("valueType") ValueType valueType,
+                                  @JsonProperty("access") Access access,
                                   @JsonProperty("required") boolean required,
                                   @JsonProperty("pattern") String pattern,
                                   @JsonProperty("patternFailureMessage") String patternFailureMessage,
@@ -54,6 +68,7 @@ public class MetaItemDescriptorImpl implements MetaItemDescriptor {
         this.name = name;
         this.urn = urn;
         this.valueType = valueType;
+        this.access = access;
         this.required = required;
         this.pattern = pattern;
         this.patternFailureMessage = patternFailureMessage;
@@ -75,6 +90,11 @@ public class MetaItemDescriptorImpl implements MetaItemDescriptor {
     @Override
     public ValueType getValueType() {
         return valueType;
+    }
+
+    @Override
+    public Access getAccess() {
+        return access;
     }
 
     @Override
@@ -111,5 +131,21 @@ public class MetaItemDescriptorImpl implements MetaItemDescriptor {
     @Override
     public Optional<Function<Value, Optional<ValidationFailure>>> getValidator() {
         return Optional.empty();
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "{" +
+            "name='" + name + '\'' +
+            ", urn='" + urn + '\'' +
+            ", valueType=" + valueType +
+            ", access=" + access +
+            ", required=" + required +
+            ", pattern='" + pattern + '\'' +
+            ", maxPerAttribute=" + maxPerAttribute +
+            ", initialValue=" + initialValue +
+            ", valueFixed=" + valueFixed +
+            ", patternFailureMessage='" + patternFailureMessage + '\'' +
+            '}';
     }
 }

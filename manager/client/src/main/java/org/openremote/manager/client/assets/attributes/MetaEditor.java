@@ -299,9 +299,7 @@ public class MetaEditor extends AbstractAttributeViewExtension {
             }
         }
 
-        metaItemDescriptors.addAll(
-            Arrays.asList(environment.getSecurityService().isSuperUser() ? AssetMeta.values() : AssetMeta.unRestricted())
-        );
+        metaItemDescriptors.addAll(Arrays.asList(AssetMeta.values())); // TODO Get meta item descriptors from server
 
         this.metaItemDescriptors = metaItemDescriptors.stream()
             .filter(metaItemDescriptor -> {
@@ -349,7 +347,7 @@ public class MetaEditor extends AbstractAttributeViewExtension {
 
     protected List<MetaItemEditor> getExistingItemEditors() {
         return IntStream.range(0, itemListPanel.getWidgetCount())
-            .mapToObj(i -> (MetaItemEditor)itemListPanel.getWidget(i))
+            .mapToObj(i -> (MetaItemEditor) itemListPanel.getWidget(i))
             .collect(Collectors.toList());
     }
 
@@ -376,11 +374,15 @@ public class MetaEditor extends AbstractAttributeViewExtension {
     }
 
     protected void onMetaItemTypeChanged(MetaItemEditor itemEditor, boolean updateItem) {
-        Optional<AssetMeta> assetMeta = AssetMeta.getAssetMeta(itemEditor.nameList.getSelectedValue());
-
         if (updateItem) {
             itemEditor.item.clearValue();
-            Value initialValue = assetMeta.map(AssetMeta::getInitialValue).orElse(null);
+
+            // TODO Should use meta item descriptors from server
+            Value initialValue = Arrays.stream(AssetMeta.values())
+                .filter(assetMeta -> assetMeta.getUrn().equals(itemEditor.nameList.getSelectedValue()))
+                .map(MetaItemDescriptor::getInitialValue)
+                .findFirst().orElse(null);
+
             ValueType valueType = EnumUtil.enumFromString(ValueType.class, itemEditor.typeList.getSelectedValue()).orElse(null);
             if (valueType == ValueType.BOOLEAN && initialValue == null) {
                 initialValue = Values.create(false);
@@ -484,7 +486,7 @@ public class MetaEditor extends AbstractAttributeViewExtension {
         List<MetaItemEditor> editors = getExistingItemEditors();
         IntStream.range(0, editors.size())
             .forEach(i -> {
-                MetaItemEditor editor = editors.get(i);
+                    MetaItemEditor editor = editors.get(i);
                     List<ValidationFailure> failures = !hasMetaFailures ? null : validationResult.getMetaFailures().get(i);
                     updateEditorFailures(editor, failures);
                 }

@@ -13,13 +13,13 @@
 
         .mapWidget {
             margin: 0 0 1em 1em;
-            height: 17em;
+            height: 19em;
         }
 
         .stringEditor {
-             min-width: 5em;
-             width: 100%;
-         }
+            min-width: 5em;
+            width: 100%;
+        }
 
         .numberEditor {
             min-width: 5em;
@@ -125,6 +125,18 @@
                                         </w:FormGroupActions>
                                     </w:actions>
                                 </w:FormGroup>
+
+                                <w:FormGroup ui:field="accessPublicReadGroup">
+                                    <w:label>
+                                        <w:FormLabel text="{managerMessages.publicAccess}"/>
+                                    </w:label>
+                                    <w:field>
+                                        <w:FormField addStyleNames="larger">
+                                            <w:FormCheckBox ui:field="accessPublicReadCheckBox"/>
+                                        </w:FormField>
+                                    </w:field>
+                                </w:FormGroup>
+
                             </div>
 
                             <w:MapWidget ui:field="mapWidget"
@@ -132,7 +144,7 @@
                         </div>
 
                         <div class="layout horizontal center wrap">
-                            <w:FormGroup ui:field="typeGroup" addStyleNames="flex">
+                            <w:FormGroup ui:field="typeGroup" addStyleNames="flex" visible="false">
                                 <w:label>
                                     <w:FormLabel text="{managerMessages.assetType}"/>
                                 </w:label>

@@ -39,6 +39,8 @@ public interface AssetEdit extends FormView, AssetBaseView<AssetEdit.Presenter> 
 
         void onMapClicked(double lng, double lat);
 
+        void onAccessPublicRead(boolean enabled);
+
         void onAssetTypeSelected(AssetType value);
 
         boolean addAttribute(String name, String type);

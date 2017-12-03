@@ -109,9 +109,9 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
         testAsset.setRealmId("thisdoesnotexistitreallydoesnt")
         assetResource.update(null, testAsset.id, testAsset)
 
-        then: "the request should be bad"
+        then: "the request should be forbidden"
         ex = thrown()
-        ex.response.status == 400
+        ex.response.status == 403
 
         when: "an asset is updated with a non-existent parent"
         testAsset = assetResource.get(null, testAsset.getId())

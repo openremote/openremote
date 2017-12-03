@@ -39,6 +39,8 @@ import org.openremote.manager.shared.security.User;
 import org.openremote.model.Constants;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.asset.*;
+import org.openremote.model.asset.AbstractAssetQuery.OrderBy;
+import org.openremote.model.asset.AbstractAssetQuery.Select;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.event.shared.TenantFilter;
 import org.openremote.model.util.TextUtil;
@@ -60,6 +62,10 @@ import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_
 import static org.openremote.manager.server.asset.AssetRoute.isPersistenceEventForEntityType;
 import static org.openremote.manager.server.event.ClientEventService.CLIENT_EVENT_TOPIC;
 import static org.openremote.manager.server.event.ClientEventService.getSessionKey;
+import static org.openremote.model.asset.AbstractAssetQuery.Access.PRIVATE_READ;
+import static org.openremote.model.asset.AbstractAssetQuery.Access.RESTRICTED_READ;
+import static org.openremote.model.asset.AbstractAssetQuery.Include.ALL;
+import static org.openremote.model.asset.AbstractAssetQuery.Include.ALL_EXCEPT_PATH_AND_ATTRIBUTES;
 import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 
 public class AssetStorageService extends RouteBuilder implements ContainerService, Consumer<AssetState> {
@@ -86,22 +92,6 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     protected PersistenceService persistenceService;
     protected ManagerIdentityService identityService;
     protected ClientEventService clientEventService;
-    protected static final String protectedAssetMetaClause; // Maybe these should be in the DB
-
-    static {
-        StringBuilder sb = new StringBuilder(" ('");
-        sb.append(
-            String.join(
-                "','",
-                Arrays.stream(AssetMeta.values())
-                    .filter(am -> am.getAccess().protectedRead)
-                    .map(AssetMeta::getUrn)
-                    .toArray(String[]::new)
-            )
-        );
-        sb.append("')");
-        protectedAssetMetaClause = sb.toString();
-    }
 
     @Override
     public void init(Container container) throws Exception {
@@ -197,7 +187,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 ServerAsset asset = find(
                     event.getAssetId(),
                     true,
-                    identityService.getIdentityProvider().isRestrictedUser(authContext.getUserId()) // Restricted users get filtered state
+                    identityService.getIdentityProvider().isRestrictedUser(authContext.getUserId()) ? RESTRICTED_READ : PRIVATE_READ
                 );
                 if (asset != null) {
                     replyWithAttributeEvents(sessionKey, asset, event.getAttributeNames());
@@ -218,17 +208,17 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     public ServerAsset find(String assetId, boolean loadComplete) {
         if (assetId == null)
             throw new IllegalArgumentException("Can't query null asset identifier");
-        return find(new AssetQuery().select(new AssetQuery.Select(loadComplete ? AssetQuery.Include.ALL : AssetQuery.Include.ALL_EXCEPT_PATH_AND_ATTRIBUTES, false)).id(assetId));
+        return find(new AssetQuery().select(new Select(loadComplete ? ALL : ALL_EXCEPT_PATH_AND_ATTRIBUTES)).id(assetId));
     }
 
     /**
-     * @param loadComplete    If the whole asset data (including path and attributes) should be loaded.
-     * @param filterProtected If the asset attributes should be filtered and only protected details included.
+     * @param loadComplete If the whole asset data (including path and attributes) should be loaded.
+     * @param access       The required access permissions of the asset data.
      */
-    public ServerAsset find(String assetId, boolean loadComplete, boolean filterProtected) {
+    public ServerAsset find(String assetId, boolean loadComplete, AbstractAssetQuery.Access access) {
         if (assetId == null)
             throw new IllegalArgumentException("Can't query null asset identifier");
-        return find(new AssetQuery().select(new AssetQuery.Select(loadComplete ? AssetQuery.Include.ALL : AssetQuery.Include.ALL_EXCEPT_PATH_AND_ATTRIBUTES, filterProtected)).id(assetId));
+        return find(new AssetQuery().select(new Select(loadComplete ? ALL : ALL_EXCEPT_PATH_AND_ATTRIBUTES, access)).id(assetId));
     }
 
     public ServerAsset find(AbstractAssetQuery query) {
@@ -309,7 +299,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             // Validate parent
             if (asset.getParentId() != null) {
                 // If this is a not a root asset...
-                ServerAsset parent = find(em, asset.getParentId(), true, false);
+                ServerAsset parent = find(em, asset.getParentId(), true);
                 // .. the parent must exist
                 if (parent == null)
                     throw new IllegalStateException("Parent not found: " + asset.getParentId());
@@ -343,7 +333,6 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             if (invalid > 0) {
                 throw new IllegalStateException("Storing asset failed, invalid attributes: " + invalid);
             }
-
 
             // If this is real merge and desired, copy the persistent version number over the detached
             // version, so the detached state always wins and this update will go through and ignore
@@ -421,7 +410,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                     "select ua from UserAsset ua where ua.id.realmId = :realmId and ua.id.userId = :userId order by ua.createdOn desc", UserAsset.class
                 ).setParameter("realmId", realmId).setParameter("userId", userId).getResultList();
 
-            } else if (isNullOrEmpty(userId)){
+            } else if (isNullOrEmpty(userId)) {
                 return entityManager.createQuery(
                     "select ua from UserAsset ua where ua.id.realmId = :realmId and ua.id.assetId = :assetId order by ua.createdOn desc", UserAsset.class
                 ).setParameter("realmId", realmId).setParameter("assetId", assetId).getResultList();
@@ -503,10 +492,19 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         void acceptStatement(PreparedStatement st) throws SQLException;
     }
 
-    protected ServerAsset find(EntityManager em, String assetId, boolean loadComplete, boolean filterProtected) {
+    protected ServerAsset find(EntityManager em, String assetId, boolean loadComplete) {
+        return find(em, assetId, loadComplete, PRIVATE_READ);
+    }
+
+    protected ServerAsset find(EntityManager em, String assetId, boolean loadComplete, AbstractAssetQuery.Access access) {
         if (assetId == null)
             throw new IllegalArgumentException("Can't query null asset identifier");
-        return find(em, new AssetQuery().select(new AssetQuery.Select(loadComplete ? AssetQuery.Include.ALL : AssetQuery.Include.ALL_EXCEPT_PATH_AND_ATTRIBUTES, filterProtected)).id(assetId));
+        return find(
+            em,
+            new AssetQuery().select(
+                new Select(loadComplete ? ALL : ALL_EXCEPT_PATH_AND_ATTRIBUTES, access)
+            ).id(assetId)
+        );
     }
 
     public ServerAsset find(EntityManager em, AbstractAssetQuery query) {
@@ -521,6 +519,19 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     }
 
     protected List<ServerAsset> findAll(EntityManager em, AbstractAssetQuery query) {
+
+        // Use a default projection if it's missing
+        if (query.select == null)
+            query.select = new Select();
+        if (query.select.include == null)
+            query.select.include = ALL_EXCEPT_PATH_AND_ATTRIBUTES;
+        if (query.select.access == null)
+            query.select.access = PRIVATE_READ;
+
+        // Default to order by creation date if the query may return multiple results
+        if (query.orderBy == null && query.id == null)
+            query.orderBy = new OrderBy(OrderBy.Property.CREATED_ON);
+
         PreparedAssetQuery querySql = buildQuery(query);
 
         return em.unwrap(Session.class).doReturningWork(new AbstractReturningWork<List<ServerAsset>>() {
@@ -542,6 +553,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     }
 
     protected PreparedAssetQuery buildQuery(AbstractAssetQuery query) {
+        LOG.fine("Building: " + query);
         StringBuilder sb = new StringBuilder();
         boolean recursive = query.select.recursive;
         List<ParameterBinder> binders = new ArrayList<>();
@@ -572,11 +584,11 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         StringBuilder sb = new StringBuilder();
         AssetQuery.Include include = query.select.include;
         boolean recursive = query.select.recursive;
-        boolean includeMainProperties = include == AssetQuery.Include.ALL ||
+        boolean includeMainProperties = include == ALL ||
             include == AssetQuery.Include.ALL_EXCEPT_PATH ||
-            include == AssetQuery.Include.ALL_EXCEPT_PATH_AND_ATTRIBUTES;
+            include == ALL_EXCEPT_PATH_AND_ATTRIBUTES;
 
-        sb.append("select A.ID as ID, A.NAME as NAME");
+        sb.append("select A.ID as ID, A.NAME as NAME, A.ACCESS_PUBLIC_READ as ACCESS_PUBLIC_READ");
 
         if (query.orderBy != null || includeMainProperties) {
             sb.append(", A.CREATED_ON AS CREATED_ON, A.ASSET_TYPE AS ASSET_TYPE, A.PARENT_ID AS PARENT_ID, A.REALM_ID AS REALM_ID");
@@ -598,20 +610,20 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         }
 
         if (!recursive || level == 3) {
-            if (include == AssetQuery.Include.ALL) {
+            if (include == ALL) {
                 sb.append(", get_asset_tree_path(A.ID) as PATH");
             } else {
                 sb.append(", NULL as PATH");
             }
         }
 
-        if (include != AssetQuery.Include.ALL_EXCEPT_PATH_AND_ATTRIBUTES) {
+        if (include != ALL_EXCEPT_PATH_AND_ATTRIBUTES) {
 
             if (recursive && level != 3) {
                 sb.append(", A.ATTRIBUTES as ATTRIBUTES");
             } else {
                 boolean namesOnly = include == AssetQuery.Include.ONLY_ID_AND_NAME_AND_ATTRIBUTE_NAMES;
-                sb.append(buildAttributeSelect(query.select.attributeNames, query.select.filterProtected, namesOnly, binders));
+                sb.append(buildAttributeSelect(query.select.attributeNames, query.select.access, namesOnly, binders));
             }
         } else {
             sb.append(", NULL as ATTRIBUTES");
@@ -620,9 +632,8 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         return sb.toString();
     }
 
-    protected String buildAttributeSelect(String[] attributeNames, boolean filterProtected, boolean namesOnly, List<ParameterBinder> binders) {
-
-        if (attributeNames == null && !filterProtected && !namesOnly) {
+    protected String buildAttributeSelect(String[] attributeNames, AbstractAssetQuery.Access access, boolean namesOnly, List<ParameterBinder> binders) {
+        if (attributeNames == null && access == PRIVATE_READ && !namesOnly) {
             return ", A.ATTRIBUTES as ATTRIBUTES";
         }
 
@@ -636,21 +647,21 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             sb.append(" where AM.VALUE #>> '{name}' = '");
             sb.append(AssetMeta.LABEL.getUrn());
             sb.append("'))) from jsonb_each(A.attributes) as AX");
-            if (filterProtected) {
-                // Use implicit inner join on meta array set to only select attributes with a protected=true meta item
+            if (access != PRIVATE_READ) {
+                // Use implicit inner join on meta array set to only select non-private attributes
                 sb.append(", jsonb_array_elements(AX.VALUE #> '{meta}') as AM");
             }
-        } else if (filterProtected) {
+        } else if (access != PRIVATE_READ) {
             // Use sub-select for processing the attributes the meta inside each attribute is replaced with filtered meta
             // (coalesce null to empty array because jsonb_set() with null will clear the whole object)
             sb.append("select json_object_agg(AX.key, jsonb_set(AX.value, '{meta}', coalesce(AMF.VALUE, jsonb_build_array()), false)) from jsonb_each(A.attributes) as AX");
-            // Use implicit inner join on meta array set to only select attributes with a protected=true meta item
+            // Use implicit inner join on meta array set to only select attributes with a non-private access meta item
             sb.append(", jsonb_array_elements(AX.VALUE #> '{meta}') as AM");
-            // Use subquery to filter out meta items not marked as protected
+            // Use subquery to filter out meta items not marked as non-private access
             sb.append(" INNER JOIN LATERAL (");
             sb.append("select jsonb_agg(AM.value) AS VALUE from jsonb_array_elements(AX.VALUE #> '{meta}') as AM");
             sb.append(" where AM.VALUE #>> '{name}' IN");
-            sb.append(protectedAssetMetaClause);
+            sb.append(access == RESTRICTED_READ ? AssetModel.META_ITEM_RESTRICTED_READ_SQL_FRAGMENT : AssetModel.META_ITEM_PUBLIC_READ_SQL_FRAGMENT);
             sb.append(") as AMF ON true");
         } else {
             sb.append("select json_object_agg(AX.key, AX.value) from jsonb_each(A.attributes) as AX");
@@ -669,13 +680,13 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             sb.append(") ");
         }
 
-        if (filterProtected) {
-            // Filter protected Attributes
-            AssetQuery.AttributeMetaPredicate protectedPredicate =
+        if (access != PRIVATE_READ) {
+            // Filter non-private access attributes
+            AssetQuery.AttributeMetaPredicate accessPredicate =
                 new AssetQuery.AttributeMetaPredicate()
-                    .itemName(AssetMeta.PROTECTED)
+                    .itemName(access == RESTRICTED_READ ? AssetMeta.ACCESS_RESTRICTED_READ: AssetMeta.ACCESS_PUBLIC_READ)
                     .itemValue(new AssetQuery.BooleanPredicate(true));
-            sb.append(buildAttributeMetaFilter(protectedPredicate, binders));
+            sb.append(buildAttributeMetaFilter(accessPredicate, binders));
         }
 
         sb.append(") AS ATTRIBUTES");
@@ -820,14 +831,8 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 binders.add(st -> st.setString(pos, query.userId));
             }
 
-            if (level == 1 && query.select.publicOnly) {
-                // TODO: Change this once public asset mechanism is finalised
-                AbstractAssetQuery.StringPredicate publicPredicate =
-                    new AbstractAssetQuery.StringPredicate(AbstractAssetQuery.Match.BEGIN, false, "urn:openremote:public:");
-                sb.append(publicPredicate.caseSensitive ? " and A.ASSET_TYPE " : " and upper(A.ASSET_TYPE)");
-                sb.append(publicPredicate.match == AssetQuery.Match.EXACT ? " = ?" : " like ?");
-                final int pos = binders.size() + 1;
-                binders.add(st -> st.setString(pos, publicPredicate.prepareValue()));
+            if (level == 1 && query.select.access == AbstractAssetQuery.Access.PUBLIC_READ) {
+                sb.append(" and A.ACCESS_PUBLIC_READ is true");
             }
 
             if (query.type != null) {
@@ -836,7 +841,6 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 final int pos = binders.size() + 1;
                 binders.add(st -> st.setString(pos, query.type.prepareValue()));
             }
-
 
             if (query.attributeMetaPredicate != null) {
                 String attributeMetaFilter = buildAttributeMetaFilter(query.attributeMetaPredicate, binders);
@@ -1045,6 +1049,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 ServerAsset asset = new ServerAsset();
                 asset.setId(rs.getString("ID"));
                 asset.setName(rs.getString("NAME"));
+                asset.setAccessPublicRead(rs.getBoolean("ACCESS_PUBLIC_READ"));
                 if (query.select.include != AssetQuery.Include.ONLY_ID_AND_NAME) {
                     if (rs.getString("ATTRIBUTES") != null) {
                         asset.setAttributes(Values.instance().<ObjectValue>parse(rs.getString("ATTRIBUTES")).orElse(null));
@@ -1055,7 +1060,8 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             case ALL_EXCEPT_PATH:
             case ALL:
                 return new ServerAsset(
-                    rs.getString("ID"), rs.getLong("OBJ_VERSION"), rs.getTimestamp("CREATED_ON"), rs.getString("NAME"), rs.getString("ASSET_TYPE"),
+                    rs.getString("ID"), rs.getLong("OBJ_VERSION"), rs.getTimestamp("CREATED_ON"), rs.getString("NAME"),
+                    rs.getString("ASSET_TYPE"), rs.getBoolean("ACCESS_PUBLIC_READ"),
                     rs.getString("PARENT_ID"), rs.getString("PARENT_NAME"), rs.getString("PARENT_TYPE"),
                     rs.getString("REALM_ID"), rs.getString("TENANT_NAME"), rs.getString("TENANT_DISPLAY_NAME"),
                     rs.getObject("LOCATION"), rs.getArray("PATH"), rs.getString("ATTRIBUTES"));

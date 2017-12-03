@@ -188,7 +188,8 @@
         margin: 1em 0;
     }
 
-    .or-Hyperlink {
+    .or-Hyperlink,
+    .or-FormAnchor {
         display: inline-block;
         white-space: nowrap;
     }
@@ -198,7 +199,9 @@
     }
 
     .or-Hyperlink a,
-    .or-Hyperlink a:visited {
+    .or-Hyperlink a:visited,
+    .or-FormAnchor,
+    .or-FormAnchor:visited {
         cursor: pointer;
         font-weight: 600;
         text-decoration: none;
@@ -207,8 +210,17 @@
         border-radius: 0.2em;
     }
 
+    .or-FormAnchor,
+    .or-FormAnchor:visited {
+        font-style: italic;
+        font-weight: normal;
+        text-decoration: underline;
+    }
+
     .or-Hyperlink a:hover,
-    .or-Hyperlink a:focus {
+    .or-Hyperlink a:focus,
+    .or-FormAnchor:hover,
+    .or-FormAnchor:focus {
         text-decoration: underline;
     }
 
@@ -330,7 +342,7 @@
     }
 
     .or-FormLabelIcon {
-        margin: 0.2em 0.4em 0.1em 0.1em;
+        margin-right: 0.4em;
         font-size: 1.2em;
         opacity: 0.4;
         align-self: flex-end;

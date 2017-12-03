@@ -1,5 +1,5 @@
 /*
- * Copyright 2016, OpenRemote Inc.
+ * Copyright 2017, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -17,22 +17,12 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.client.assets.asset;
+package org.openremote.manager.client.widget;
 
-public interface AssetView extends AssetBaseView<AssetView.Presenter> {
+public class FormAnchor extends com.google.gwt.user.client.ui.Anchor {
 
-    interface Presenter extends AssetBaseView.Presenter {
-
-        void enableLiveUpdates(boolean enable);
-
-        void refresh();
+    public FormAnchor() {
+        setStyleName("or-FormAnchor");
     }
 
-    void setPresenter(Presenter presenter);
-
-    void setFormBusy(boolean busy);
-
-    void setIconAndType(String icon, String type);
-
-    void setAccessPublicReadAnchor(String path);
 }

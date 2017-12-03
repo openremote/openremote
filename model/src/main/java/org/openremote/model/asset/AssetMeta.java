@@ -25,20 +25,19 @@ import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueType;
 import org.openremote.model.value.Values;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 
 import static org.openremote.model.Constants.ASSET_META_NAMESPACE;
 import static org.openremote.model.attribute.MetaItem.MetaItemFailureReason.META_ITEM_VALUE_MISMATCH;
+import static org.openremote.model.attribute.MetaItemDescriptor.Access.ACCESS_PRIVATE;
 import static org.openremote.model.util.TextUtil.REGEXP_PATTERN_DOUBLE;
-import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 
 /**
  * Asset attribute meta item name is an arbitrary string. It should be URI. This enum contains
  * the well-known URIs for functionality we can depend on in our platform.
+ * <p>
+ * A custom project can add its own asset meta items through {@link AssetModelProvider}.
  * <p>
  * TODO https://people.eecs.berkeley.edu/~arka/papers/buildsys2015_metadatasurvey.pdf
  */
@@ -49,7 +48,8 @@ public enum AssetMeta implements MetaItemDescriptor {
      * The attribute value is a protocol URN.
      */
     PROTOCOL_CONFIGURATION(
-        ASSET_META_NAMESPACE + ":protocolConfiguration", new Access(false, false, true),
+        ASSET_META_NAMESPACE + ":protocolConfiguration",
+        ACCESS_PRIVATE,
         ValueType.BOOLEAN,
         null,
         null,
@@ -62,7 +62,7 @@ public enum AssetMeta implements MetaItemDescriptor {
      */
     AGENT_LINK(
         ASSET_META_NAMESPACE + ":agentLink",
-        new Access(false, false, true),
+        ACCESS_PRIVATE,
         ValueType.ARRAY,
         null,
         null,
@@ -80,7 +80,7 @@ public enum AssetMeta implements MetaItemDescriptor {
      */
     ATTRIBUTE_LINK(
         ASSET_META_NAMESPACE + ":attributeLink",
-        new Access(false, false, true),
+        ACCESS_PRIVATE,
         ValueType.OBJECT,
         null,
         null,
@@ -109,7 +109,7 @@ public enum AssetMeta implements MetaItemDescriptor {
      */
     SHOW_ON_DASHBOARD(
         ASSET_META_NAMESPACE + ":showOnDashboard",
-        new Access(true, true, true),
+        new Access(true, false, true),
         ValueType.BOOLEAN,
         null,
         null,
@@ -153,8 +153,9 @@ public enum AssetMeta implements MetaItemDescriptor {
         false),
 
     /**
-     * Marks the attribute as read-only for clients. South-bound changes of the attribute are not possible.
-     * North-bound attribute updates made by protocols and changes made by rules are possible.
+     * Marks the attribute as read-only for non-superuser clients. South-bound {@link AttributeEvent}s
+     * by regular or restricted users are ignored. North-bound {@link AttributeEvent}s made by protocols and
+     * rules engine are possible.
      */
     READ_ONLY(
         ASSET_META_NAMESPACE + ":readOnly",
@@ -166,12 +167,37 @@ public enum AssetMeta implements MetaItemDescriptor {
         true),
 
     /**
-     * Marks the attribute as protected and accessible to restricted users, see {@link UserAsset}.
-     * TODO: Shouldn't this mean the opposite if something is protected then you need elevated privileges to access it
+     * Marks the attribute as readable by restricted clients and therefore users who are linked to
+     * the asset, see {@link UserAsset}.
      */
-    PROTECTED(
-        ASSET_META_NAMESPACE + ":protected",
-        new Access(false, false, true),
+    ACCESS_RESTRICTED_READ(
+        ASSET_META_NAMESPACE + ":accessRestrictedRead",
+        ACCESS_PRIVATE,
+        ValueType.BOOLEAN,
+        null,
+        null,
+        Values.create(true),
+        true),
+
+    /**
+     * Marks the attribute as writable by restricted clients and therefore users who are linked to
+     * the asset, see {@link UserAsset}.
+     */
+    ACCESS_RESTRICTED_WRITE(
+        ASSET_META_NAMESPACE + ":accessRestrictedWrite",
+        ACCESS_PRIVATE,
+        ValueType.BOOLEAN,
+        null,
+        null,
+        Values.create(true),
+        true),
+
+    /**
+     * Marks the attribute as readable by unauthenticated public clients.
+     */
+    ACCESS_PUBLIC_READ(
+        ASSET_META_NAMESPACE + ":accessPublicRead",
+        ACCESS_PRIVATE,
         ValueType.BOOLEAN,
         null,
         null,
@@ -345,14 +371,17 @@ public enum AssetMeta implements MetaItemDescriptor {
         this.patternFailureMessage = patternFailureMessage;
     }
 
+    @Override
     public String getUrn() {
         return urn;
     }
 
+    @Override
     public Access getAccess() {
         return access;
     }
 
+    @Override
     public ValueType getValueType() {
         return valueType;
     }
@@ -367,6 +396,7 @@ public enum AssetMeta implements MetaItemDescriptor {
         return pattern;
     }
 
+    @Override
     public String getPatternFailureMessage() {
         return patternFailureMessage;
     }
@@ -381,109 +411,13 @@ public enum AssetMeta implements MetaItemDescriptor {
         return Optional.ofNullable(validator);
     }
 
+    @Override
     public Value getInitialValue() {
         return initialValue;
     }
 
-    /**
-     * Indicates that the value of this asset meta should not be changed.
-     */
+    @Override
     public boolean isValueFixed() {
         return valueFixed;
     }
-
-    public boolean isRestricted() {
-        return access != null && access.restricted;
-    }
-
-    public static AssetMeta[] unRestricted() {
-        List<AssetMeta> list = new ArrayList<>();
-        for (AssetMeta meta : values()) {
-            if (!meta.getAccess().restricted)
-                list.add(meta);
-        }
-
-        list.sort(Comparator.comparing(Enum::name));
-
-        return list.toArray(new AssetMeta[list.size()]);
-    }
-
-    public static AssetMeta[] restricted() {
-        List<AssetMeta> list = new ArrayList<>();
-        for (AssetMeta meta : values()) {
-            if (meta.getAccess().restricted)
-                list.add(meta);
-        }
-
-        list.sort(Comparator.comparing(Enum::name));
-
-        return list.toArray(new AssetMeta[list.size()]);
-    }
-
-    public static boolean isRestricted(String urn) {
-        for (AssetMeta assetMeta : restricted()) {
-            if (assetMeta.getUrn().equals(urn))
-                return assetMeta.getAccess().restricted;
-        }
-        return false;
-    }
-
-    public static Optional<AssetMeta> getAssetMeta(String urn) {
-        if (isNullOrEmpty(urn))
-            return Optional.empty();
-
-        for (AssetMeta assetMeta : values()) {
-            if (assetMeta.getUrn().equals(urn))
-                return Optional.of(assetMeta);
-        }
-        return Optional.empty();
-    }
-
-    /**
-     * Some well-known items can be protected readable.
-     *
-     * @see Access#protectedRead
-     */
-    public static boolean isMetaItemProtectedReadable(MetaItem metaItem) {
-        return getAssetMeta(metaItem.getName().orElse(null))
-            .map(meta -> meta.getAccess().protectedRead)
-            .orElse(false);
-    }
-
-    /**
-     * Some well-known items can be protected writable.
-     *
-     * @see Access#protectedWrite
-     */
-    public static boolean isMetaItemProtectedWritable(MetaItem metaItem) {
-        return getAssetMeta(metaItem.getName().orElse(null))
-            .map(meta -> meta.getAccess().protectedWrite)
-            .orElse(false);
-    }
-
-    public static class Access {
-
-        /**
-         * When restricted clients read protected asset attributes, should this meta item be included?
-         */
-        final public boolean protectedRead;
-
-        /**
-         * When restricted clients write protected asset attributes, should this meta item be included?
-         */
-        final public boolean protectedWrite;
-
-        /**
-         * Can a user add this meta item when editing an asset?
-         */
-        final public boolean restricted;
-
-        public Access(boolean protectedRead, boolean protectedWrite, boolean restricted) {
-            this.protectedRead = protectedRead;
-            this.protectedWrite = protectedWrite;
-            this.restricted = restricted;
-        }
-    }
-
-
 }
