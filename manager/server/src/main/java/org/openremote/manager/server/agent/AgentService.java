@@ -465,7 +465,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
         // Get all assets that have attributes that use this protocol configuration
         List<ServerAsset> assets = assetStorageService.findAll(
             new AssetQuery()
-                .select(new AssetQuery.Select(AssetQuery.Include.ALL, false))
+                .select(new AssetQuery.Select(AssetQuery.Include.ALL))
                 .attributeMeta(
                     new AssetQuery.AttributeRefPredicate(
                         AssetMeta.AGENT_LINK,
@@ -493,7 +493,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
         // Get all assets that have attributes that use this protocol configuration
         List<ServerAsset> assets = assetStorageService.findAll(
             new AssetQuery()
-                .select(new AssetQuery.Select(AssetQuery.Include.ALL, false))
+                .select(new AssetQuery.Select(AssetQuery.Include.ALL))
                 .attributeMeta(
                     new AssetQuery.AttributeRefPredicate(
                         AssetMeta.AGENT_LINK,
@@ -717,7 +717,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
     public synchronized Map<String, Asset> getAgents() {
         if (agentMap == null) {
             agentMap = assetStorageService.findAll(new AssetQuery()
-                .select(new AssetQuery.Select(AssetQuery.Include.ALL, false))
+                .select(new AssetQuery.Select(AssetQuery.Include.ALL))
                 .type(AssetType.AGENT))
                 .stream()
                 .collect(Collectors.toMap(Asset::getId, agent -> agent));

@@ -67,16 +67,17 @@ Perform a clean build, delete all data volumes (!), and run all tests before com
 docker volume prune
 docker-compose -p openremote -f profile/dev-testing.yml up -d
 ./gradlew clean build installDist
+docker-compose -p openremote -f profile/dev-testing.yml down
 docker build -t openremote/proxy:latest haproxy
 docker build -t openremote/postgresql:latest postgresql
 docker build -t openremote/keycloak:latest keycloak
 docker build -t openremote/manager:latest manager/build/install/manager
-docker-compose -p openremote -f profile/dev-testing.yml down
 ```
 
 Push images to [Docker Hub](https://hub.docker.com/u/openremote):
 
 ```
+docker login
 docker push openremote/proxy:latest
 docker push openremote/postgresql:latest
 docker push openremote/keycloak:latest

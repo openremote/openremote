@@ -1,38 +1,32 @@
 #!/bin/bash
 
-# Create directories
-mkdir -p /deployment/acme-webroot
-mkdir -p /deployment/letsencrypt/live
-
 # Configure letsencrypt
+export LE_WEB_ROOT="/deployment/acme-webroot"
+mkdir -p $LE_WEB_ROOT
 if [ -n "${LE_EMAIL}" ]; then
   LE_EXTRA_ARGS+=" --email ${LE_EMAIL}"
 fi
-
 if [ -n "${LE_RSA_KEY_SIZE}" ]; then
   LE_EXTRA_ARGS+=" --rsa-key-size ${LE_RSA_KEY_SIZE}"
 fi
-
 LE_WORK_DIR="/deployment/letsencrypt"
-LE_CERT_ROOT="${LE_WORK_DIR}/live"
-LE_WEB_ROOT="/deployment/acme-webroot"
-LE_ARCHIVE_ROOT="/deployment/letsencrypt/archive"
-LE_RENEWAL_CONFIG_ROOT="/deployment/letsencrypt/renewal"
+export LE_CERT_ROOT="${LE_WORK_DIR}/live"
+LE_ARCHIVE_ROOT="${LE_WORK_DIR}/archive"
+LE_RENEWAL_CONFIG_ROOT="${LE_WORK_DIR}/renewal"
 LE_CMD="/usr/bin/certbot certonly --config-dir ${LE_WORK_DIR} -w ${LE_WEB_ROOT} ${LE_EXTRA_ARGS}"
+mkdir -p $LE_CERT_ROOT
 
 # Configure haproxy
-CERT_FILE="/opt/selfsigned/localhost.pem"
+export CERT_FILE="/opt/selfsigned/localhost.pem"
 if [ -n "${DOMAINNAME}" ] && [ "${DOMAINNAME}" != "localhost" ]; then
-  CERT_FILE="/deployment/letsencrypt/live/${DOMAINNAME}/haproxy.pem"
+  export CERT_FILE="${LE_CERT_ROOT}/${DOMAINNAME}/haproxy.pem"
 fi
-export CERT_FILE=${CERT_FILE}
-export PROXY_LOGLEVEL=${PROXY_LOGLEVEL}
-
-# Assume
 if [ ! -f ${CERT_FILE} ]; then
+  INIT=true
   HAPROXY_CONFIG="/etc/haproxy/haproxy-init.cfg"
 else
   HAPROXY_CONFIG="/etc/haproxy/haproxy.cfg"
+  INIT=false
 fi
 HAPROXY_PID_FILE="/var/run/haproxy.pid"
 HAPROXY_CMD="haproxy -f ${HAPROXY_CONFIG} ${HAPROXY_USER_PARAMS} -D -p ${HAPROXY_PID_FILE}"
@@ -61,7 +55,7 @@ function check_proxy {
 
 function run_proxy {
     # Start rsyslogd
-    rsyslogd
+    service rsyslog start
 
     check_proxy
 
@@ -71,10 +65,24 @@ function run_proxy {
 
     cron_auto_renewal_init
 
+    # Cert file should now exist
+    if [ "$INIT" = true ]; then
+        restart
+    fi
+
+    log_info "Monitoring config file $HAPROXY_CONFIG and certs in $LE_CERT_ROOT for changes..."
+
     # Wait if config or certificates were changed, block this execution
-    while inotifywait -q -r --exclude '\.git/' -e modify,create,delete,move,move_self $HAPROXY_CONFIG $LE_WORK_DIR; do
+    while inotifywait -q -r --exclude '\.git/' -e modify,create,delete,move,move_self $HAPROXY_CONFIG $LE_CERT_ROOT; do
+        log_info "Change detected..."
+        restart
+        log_info "Monitoring config file $HAPROXY_CONFIG and certs in $LE_CERT_ROOT for changes..."
+    done
+}
+
+function restart {
       if [ -f $HAPROXY_PID_FILE ]; then
-        log_info "Restarting HAProxy due to config changes..."
+        log_info "Restarting HAProxy..."
 
         # Wait for the certificate to be present before restarting or might interrupt cert generation/renewal
         log_info "Waiting for certificate '${CERT_FILE}' to exist..."
@@ -84,9 +92,12 @@ function run_proxy {
         HAPROXY_CMD="haproxy -f ${HAPROXY_CONFIG} ${HAPROXY_USER_PARAMS} -D -p ${HAPROXY_PID_FILE}"
         HAPROXY_CHECK_CONFIG_CMD="haproxy -f ${HAPROXY_CONFIG} -c"
 
+        log_info "HAPROXY_CONFIG: ${HAPROXY_CONFIG}"
+        log_info "HAPROXY_CMD: ${HAPROXY_CMD}"
+
         if $HAPROXY_CHECK_CONFIG_CMD; then
           $HAPROXY_CMD -sf $(cat $HAPROXY_PID_FILE)
-          log_info "HAProxy restarted, pid $(cat $HAPROXY_PID_FILE)." && log
+          log_info "HAProxy restarted, pid $(cat $HAPROXY_PID_FILE)."
         else
           log_info "HAProxy config invalid, not restarting..."
         fi
@@ -94,7 +105,6 @@ function run_proxy {
         log_error"Error: no $HAPROXY_PID_FILE present, HAProxy exited."
         break
       fi
-    done
 }
 
 function add {
@@ -355,11 +365,11 @@ function cron_auto_renewal {
     # If not defined, the default is daily
     CRON_TIME=${CRON_TIME:-@daily}
     log_info "Scheduling cron job with execution time ${CRON_TIME}"
-    log_info "${CRON_TIME} root /entrypoint.sh auto-renew >> /var/log/cron.log 2>&1" > /etc/cron.d/letsencrypt
+    echo "${CRON_TIME} root /entrypoint.sh auto-renew >> /var/log/cron.log 2>&1" > /etc/cron.d/letsencrypt
 
     # Start crond if not running
     if ! [ -f /var/run/crond.pid ]; then
-        crond
+        service cron start
     fi
 }
 
@@ -368,6 +378,7 @@ log_info "HAPROXY_CERT_FILE: ${CERT_FILE}"
 log_info "HAPROXY_CONFIG: ${HAPROXY_CONFIG}"
 log_info "HAPROXY_CMD: ${HAPROXY_CMD}"
 log_info "HAPROXY_USER_PARAMS: ${HAPROXY_USER_PARAMS}"
+log_info "PROXY_LOGLEVEL: ${PROXY_LOGLEVEL}"
 log_info "LE_CERT_ROOT: ${LE_CERT_ROOT}"
 log_info "LE_ARCHIVE_ROOT: ${LE_ARCHIVE_ROOT}"
 log_info "LE_RENEWAL_CONFIG_ROOT: ${LE_RENEWAL_CONFIG_ROOT}"

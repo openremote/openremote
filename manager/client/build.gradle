@@ -30,10 +30,10 @@ def gwtLauncherDir = "${project.projectDir}/src/main/webapp/gwt"
 
 task compileGwt(dependsOn: classes, type: JavaExec) {
 
-    inputs.file(sourceSets.main.java.srcDirs).skipWhenEmpty()
+    inputs.files(sourceSets.main.java.srcDirs).skipWhenEmpty()
     inputs.dir sourceSets.main.output.resourcesDir
-    inputs.file(resolveProject(":model").sourceSets.main.java.srcDirs[0]).skipWhenEmpty()
-    inputs.file(resolveProject(":manager:shared").sourceSets.main.java.srcDirs[0]).skipWhenEmpty()
+    inputs.dir(resolveProject(":model").sourceSets.main.java.srcDirs[0]).skipWhenEmpty()
+    inputs.dir(resolveProject(":manager:shared").sourceSets.main.java.srcDirs[0]).skipWhenEmpty()
     outputs.dir gwtOutputDir
 
     doFirst {

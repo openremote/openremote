@@ -3,7 +3,7 @@
   "version": "3.0.0",
   "homepage": "http://openremote.com/",
   "authors": [
-    "Christian Bauer <christian@openremote.org>"
+    "OpenRemote Inc. <support@openremote.io>"
   ],
   "description": "OR Manager",
   "main": "index.html",

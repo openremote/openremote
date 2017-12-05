@@ -26,6 +26,7 @@ import com.google.gwt.resources.client.CssResource;
 import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
 import com.google.gwt.uibinder.client.UiHandler;
+import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.ui.*;
 import com.google.inject.Provider;
 import org.openremote.manager.client.Environment;
@@ -42,8 +43,6 @@ import org.openremote.manager.client.widget.PushButton;
 import org.openremote.model.Constants;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetType;
-import org.openremote.model.attribute.AttributeEvent;
-import org.openremote.model.event.bus.EventRegistration;
 import org.openremote.model.geo.GeoJSON;
 import org.openremote.model.value.ObjectValue;
 
@@ -128,6 +127,13 @@ public class AssetViewImpl extends Composite implements AssetView {
     @UiField
     MapWidget mapWidget;
 
+    @UiField
+    FormGroup accessPublicReadGroup;
+    @UiField
+    FormCheckBox accessPublicReadCheckBox;
+    @UiField
+    FormAnchor accessPublicReadAnchor;
+
     /* ############################################################################ */
 
     FlowPanel liveUpdatesNavItem = new FlowPanel();
@@ -149,7 +155,6 @@ public class AssetViewImpl extends Composite implements AssetView {
     final List<AttributeView> attributeViews = new ArrayList<>();
     protected Presenter presenter;
     protected Asset asset;
-    protected EventRegistration<AttributeEvent> eventRegistration;
 
     @Inject
     public AssetViewImpl(AssetBrowser assetBrowser,
@@ -223,10 +228,9 @@ public class AssetViewImpl extends Composite implements AssetView {
         mapWidget.setVisible(false);
         showDroppedPin(GeoJSON.EMPTY_FEATURE_COLLECTION);
 
-        if (eventRegistration != null) {
-            environment.getEventBus().remove(eventRegistration);
-            eventRegistration = null;
-        }
+        accessPublicReadGroup.setVisible(false);
+        accessPublicReadCheckBox.setValue(false);
+        accessPublicReadAnchor.setHref("");
 
         attributeViews.clear();
         attributeViewContainer.clear();
@@ -330,6 +334,17 @@ public class AssetViewImpl extends Composite implements AssetView {
     }
 
     @Override
+    public void setAccessPublicRead(boolean enabled) {
+        accessPublicReadGroup.setVisible(enabled);
+        accessPublicReadCheckBox.setValue(enabled);
+    }
+
+    @Override
+    public void setAccessPublicReadAnchor(String path) {
+        accessPublicReadAnchor.setHref(Window.Location.getProtocol() + "//" + Window.Location.getHost() + path);
+    }
+
+    @Override
     public void setAttributeViews(List<AttributeView> attributeViews) {
         this.attributeViews.clear();
         this.attributeViews.addAll(attributeViews);
@@ -356,7 +371,6 @@ public class AssetViewImpl extends Composite implements AssetView {
     @Override
     public void setIconAndType(String icon, String type) {
         headline.setIcon(icon);
-        // TODO: Should unknown/undefined asset type default to custom
         AssetType assetType = AssetType.getByValue(type).orElse(AssetType.CUSTOM);
         if (assetType == AssetType.CUSTOM) {
             headline.setSub(type);

@@ -42,7 +42,7 @@ version: '2.2'
 # If you enable volume mappings in services, you need this. Otherwise, remove the volumes
 volumes:
   #proxy-data:
-  manager-data:
+  #manager-data:
   postgresql-data:
 
 services:
@@ -62,6 +62,9 @@ services:
       # Store data either in host-mapped directory or a named Docker volume
       # - ${DEPLOYMENT_DIRECTORY:-../deployment}/proxy:/deployment
       # - proxy-data:/deployment
+      #
+      # Override the haproxy.cfg with custom file
+      # -${MY_PROXY_CONFIG_FILE}:/etc/haproxy/haproxy.cfg
 
   # This configuration uses the manager's deployment-specific data such as map tiles,
   # console application static resources (HTML, JS, CSS), extensions, and other
@@ -74,20 +77,23 @@ services:
       keycloak:
         condition: service_healthy
     # volumes:
-      # Use local deployment data in host-mapped directory for easy development. The
-      # ../deployment directory is the one which will be baked into the managers image.
+      # The ../deployment directory is baked into the managers image. Here you can
+      # override it with either a (different) host-mapped directory or a named data volume.
+
+      # Use local deployment data in host-mapped directory for easy development.
       # - ${DEPLOYMENT_DIRECTORY:-../deployment}/manager:/deployment
 
       # Use a named volume. When the volume is empty on startup, the files in the manager
       # image's /deployment directory will be copied into the empty volume, thus
       # giving you a default configuration to modify. Access the volume with:
       #
-      # docker run --rm -it -v openremote_manager-data:/deployment centos:7 /bin/bash
+      # docker run --rm -it -v openremote_manager-data:/deployment debian:stretch /bin/bash
       # > ls -la /deployment
       #
       # To use a volume, enable this:
       #
       # - manager-data:/deployment
+
     environment:
       # This switch can wipe all your Manager and Keycloak data, this is the factory reset!
       SETUP_WIPE_CLEAN_INSTALL: 'true'
@@ -116,9 +122,11 @@ services:
       file: deploy.yml
       service: postgresql
     volumes:
-      # Store data either in host-mapped directory or a named Docker volume
-      #
+      # Store data either in host-mapped directory or a named Docker volume.
+
+      # By default, we use a named volume to avoid permission problems with PostgreSQL.
+      - postgresql-data:/deployment
+
       # If you use a directory, it must be owned by user:group 5432:5432 and mode 700!
       #
       # - ${DEPLOYMENT_DIRECTORY:-../deployment}/postgresql:/deployment
-      - postgresql-data:/deployment

@@ -607,6 +607,8 @@ public class RulesEngine<T extends Ruleset> {
 
                     @Override
                     public List<String> getResults() {
+                        if (this.select == null)
+                            this.select = new Select();
                         Include oldValue = this.select.include;
                         this.select.include = Include.ONLY_ID_AND_NAME;
                         try {

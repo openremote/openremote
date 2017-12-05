@@ -86,7 +86,7 @@ public class AssetEditActivity
     protected final AssetAttributeMapper assetAttributeMapper;
     protected final Consumer<ConstraintViolation[]> validationErrorHandler;
     protected List<ProtocolDescriptor> protocolDescriptors = new ArrayList<>();
-    protected List<MetaItemDescriptor> metaItemDescriptors = new ArrayList<>(Arrays.asList(AssetMeta.values()));
+    protected List<MetaItemDescriptor> metaItemDescriptors = new ArrayList<>(Arrays.asList(AssetMeta.values())); // TODO Get meta item descriptors from server
     double[] selectedCoordinates;
     protected List<AssetAttribute> initialAssetAttributes;
 
@@ -194,6 +194,11 @@ public class AssetEditActivity
         selectedCoordinates = new double[]{lng, lat};
         view.showMapPopup(lng, lat, environment.getMessages().selectedLocation());
         view.setLocation(selectedCoordinates);
+    }
+
+    @Override
+    public void onAccessPublicRead(boolean enabled) {
+        asset.setAccessPublicRead(enabled);
     }
 
     @Override

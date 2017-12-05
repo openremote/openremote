@@ -18,6 +18,8 @@ import javax.persistence.EntityManager
 import java.util.function.Function
 
 import static org.openremote.model.asset.AbstractAssetQuery.*
+import static org.openremote.model.asset.AbstractAssetQuery.Access.PRIVATE_READ
+import static org.openremote.model.asset.AbstractAssetQuery.Access.RESTRICTED_READ
 import static org.openremote.model.asset.AbstractAssetQuery.OrderBy.Property.CREATED_ON
 import static org.openremote.model.asset.AbstractAssetQuery.OrderBy.Property.NAME
 import static org.openremote.model.asset.AssetType.THING
@@ -97,7 +99,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         when: "a user filtering query is executed that returns only IDs, names and attribute names and limits to protected attributes and meta"
         assets = assetStorageService.findAll(
             new AssetQuery()
-                .select(new Select(Include.ONLY_ID_AND_NAME_AND_ATTRIBUTE_NAMES, true))
+                .select(new Select(Include.ONLY_ID_AND_NAME_AND_ATTRIBUTE_NAMES, RESTRICTED_READ))
                 .userId(keycloakDemoSetup.testuser3Id)
         )
 
@@ -117,7 +119,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         when: "a query is executed that returns a protected attribute without any other meta items"
         assets = assetStorageService.findAll(
             new AssetQuery()
-                .select(new Select(Include.ALL_EXCEPT_PATH, true))
+                .select(new Select(Include.ALL_EXCEPT_PATH, RESTRICTED_READ))
                 .id(managerDemoSetup.apartment2LivingroomId)
         )
 
@@ -133,7 +135,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets = assetStorageService.findAll(
                 new AssetQuery()
                         .id(managerDemoSetup.smartHomeId)
-                        .select(new Select(Include.ONLY_ID_AND_NAME_AND_ATTRIBUTE_NAMES, false, true))
+                        .select(new Select(Include.ONLY_ID_AND_NAME_AND_ATTRIBUTE_NAMES, true, RESTRICTED_READ))
                         .orderBy(new OrderBy(CREATED_ON))
         )
 
@@ -223,7 +225,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         when: "a query is executed"
         asset = assetStorageService.find(
                 new AssetQuery()
-                        .select(new Select(Include.ALL, false))
+                        .select(new Select(Include.ALL))
                         .id(managerDemoSetup.smartOfficeId)
         )
 
@@ -271,7 +273,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         when: "a query is executed"
         assets = assetStorageService.findAll(
                 new AssetQuery()
-                        .select(new Select(Include.ALL, false))
+                        .select(new Select(Include.ALL))
                         .parent(new ParentPredicate(true))
                         .tenant(new TenantPredicate(keycloakDemoSetup.masterTenant.id))
         )
@@ -383,7 +385,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
 
         when: "a query is executed"
         assets = assetStorageService.findAll(
-                new AssetQuery().select(new Select(Include.ALL, true)).userId(keycloakDemoSetup.testuser3Id)
+                new AssetQuery().select(new Select(Include.ALL, RESTRICTED_READ)).userId(keycloakDemoSetup.testuser3Id)
         )
 
         then: "result should match"
@@ -400,7 +402,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
 
         when: "a query is executed"
         assets = assetStorageService.findAll(
-                new AssetQuery().select(new Select(Include.ALL, true)).userId(keycloakDemoSetup.testuser2Id)
+                new AssetQuery().select(new Select(Include.ALL, RESTRICTED_READ)).userId(keycloakDemoSetup.testuser2Id)
         )
 
         then: "result should match"
@@ -561,7 +563,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         def asset = assetStorageService.find(
                 new AssetQuery()
                         .id(managerDemoSetup.apartment1LivingroomId)
-                        .select(new Select(Include.ALL, false, false, "co2Level", "lastPresenceDetected", "motionSensor"))
+                        .select(new Select(Include.ALL, false, PRIVATE_READ, "co2Level", "lastPresenceDetected", "motionSensor"))
         )
 
         then: "result should match"
@@ -590,7 +592,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         asset = assetStorageService.find(
                 new AssetQuery()
                         .id(managerDemoSetup.apartment1LivingroomId)
-                        .select(new Select(Include.ALL, false, false, "co2Level", "lastPresenceDetected", "motionSensor").filterProtected(true))
+                        .select(new Select(Include.ALL, false, RESTRICTED_READ, "co2Level", "lastPresenceDetected", "motionSensor"))
         )
 
         then: "result should contain only matches that are protected"

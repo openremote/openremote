@@ -1,5 +1,5 @@
 /*
- * Copyright 2016, OpenRemote Inc.
+ * Copyright 2017, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -17,22 +17,22 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.client.assets.asset;
+package org.openremote.model.asset;
 
-public interface AssetView extends AssetBaseView<AssetView.Presenter> {
+import org.openremote.model.attribute.MetaItemDescriptor;
 
-    interface Presenter extends AssetBaseView.Presenter {
+/**
+ * The built-in and well-known asset model.
+ */
+public class DefaultAssetModelProvider implements AssetModelProvider {
 
-        void enableLiveUpdates(boolean enable);
-
-        void refresh();
+    @Override
+    public MetaItemDescriptor[] getMetaItemDescriptors() {
+        return AssetMeta.values();
     }
 
-    void setPresenter(Presenter presenter);
-
-    void setFormBusy(boolean busy);
-
-    void setIconAndType(String icon, String type);
-
-    void setAccessPublicReadAnchor(String path);
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "{}";
+    }
 }

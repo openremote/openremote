@@ -20,6 +20,7 @@
 package org.openremote.model.asset;
 
 import org.hibernate.annotations.Formula;
+import org.openremote.model.attribute.MetaItemDescriptor;
 
 import javax.persistence.*;
 import java.io.Serializable;
@@ -28,22 +29,32 @@ import java.util.Date;
 /**
  * An asset can be linked to many users, and a user can have links to many assets.
  * <p>
- * If a user has linked assets, it's a <em>restricted</em> user. Such a user can only
- * access its assigned assets and their protected data, and it has a limited
- * set of client operations available:
+ * If a user has linked assets, it's a <em>restricted</em> user. When a client authenticates
+ * with such a user, the client can only access the assigned/linked assets of that user, and
+ * the available operations are limited:
  * <ul>
  * <li>
- * When a restricted user client loads asset data, only protected asset details are included.
+ * When a restricted client reads assets, only dynamic attributes with
+ * {@link AssetMeta#ACCESS_RESTRICTED_READ} and attribute meta items with {@link MetaItemDescriptor.Access#restrictedRead}
+ * are included. A restricted client may submit a query for public assets and dynamic attributes with
+ * {@link AssetMeta#ACCESS_PUBLIC_READ} and meta items with {@link MetaItemDescriptor.Access#publicRead}.
  * </li>
  * <li>
- * When a restricted user client updates asset data, only a subset of protected data can be changed.
+ * When a restricted client updates existing assets, new dynamic attributes can be added, but
+ * only attributes with {@link AssetMeta#ACCESS_RESTRICTED_WRITE} can be updated or deleted. Any new attributes
+ * are automatically set with {@link AssetMeta#ACCESS_RESTRICTED_READ} and {@link AssetMeta#ACCESS_RESTRICTED_WRITE},
+ * thus ensuring that a restricted client can fully access its own attributes. Any added, updated, or removed meta
+ * items of attributes must be {@link MetaItemDescriptor.Access#restrictedWrite}.
  * </li>
  * <li>
- * A restricted user client can not create or delete assets.
+ * A restricted client can not create or delete assets. A restricted client can not change the name, parent, or
+ * realm of an asset. A restricted user can not make an asset public. A restricted user can change the location of an asset.
  * </li>
  * </ul>
- * Asset attribute data can be protected with {@link AssetMeta#PROTECTED} and {@link AssetMeta.Access},
- * it is filtered in {@link AssetQuery.Select#filterProtected}.
+ * <p>
+ * Note that third-party metadata items (not in the {@link org.openremote.model.Constants#NAMESPACE}) are never
+ * included by default in restricted read/write asset operations. To include them, provide meta item descriptors and
+ * desired access permissions through the {@link AssetModelProvider} SPI.
  */
 @Entity
 @Table(name = "USER_ASSET")

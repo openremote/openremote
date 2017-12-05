@@ -274,20 +274,28 @@ public class AssetAttribute extends Attribute {
         }
     }
 
-    public boolean isProtected() {
+    public boolean isAccessRestrictedRead() {
         return getMetaStream()
-            .filter(isMetaNameEqualTo(PROTECTED))
+            .filter(isMetaNameEqualTo(AssetMeta.ACCESS_RESTRICTED_READ))
             .findFirst()
             .map(metaItem -> metaItem.getValueAsBoolean().orElse(false))
             .orElse(false);
     }
 
-    public void setProtected(boolean protect) {
-        if (protect) {
-            replaceMetaByName(getMeta(), PROTECTED, Values.create(true));
-        } else {
-            getMeta().removeIf(isMetaNameEqualTo(PROTECTED));
-        }
+    public boolean isAccessRestrictedWrite() {
+        return getMetaStream()
+            .filter(isMetaNameEqualTo(AssetMeta.ACCESS_RESTRICTED_WRITE))
+            .findFirst()
+            .map(metaItem -> metaItem.getValueAsBoolean().orElse(false))
+            .orElse(false);
+    }
+
+    public boolean isAccessPublicRead() {
+        return getMetaStream()
+            .filter(isMetaNameEqualTo(AssetMeta.ACCESS_PUBLIC_READ))
+            .findFirst()
+            .map(metaItem -> metaItem.getValueAsBoolean().orElse(false))
+            .orElse(false);
     }
 
     public boolean isReadOnly() {

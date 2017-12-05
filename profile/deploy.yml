@@ -13,7 +13,7 @@ version: '2.2'
 
 services:
 
-  # The frontend proxy, terminates SSL/TLS connections and forwards them to the Manager backend.
+  # The frontend proxy manages SSL certificates, terminates SSL/TLS connections and forwards them to the backend.
   proxy:
 
     # Image will be built when not already in the cache or when `--build` option is supplied to `docker-compose up`
@@ -29,31 +29,47 @@ services:
       # Bearer tokens are only valid for minutes, and authentication fails if Keycloak drifts.
       TZ: Europe/Zurich
 
-      # The public host name of this OpenRemote installation. This is used to resolve the SSL
-      # certificate chain and manage your certificates. The localhost has a baked in self-signed
-      # certificate. If you change this name, also adjust manager#IDENTITY_NETWORK_HOST.
-      #DOMAINNAME: localhost
+      # The public host name of this OpenRemote installation. Set this to request/manage an SSL
+      # certificate with the free https://letsencrypt.org/ provider. The default 'localhost' will
+      # rely on a baked-in self-signed certificate. If you change this, adjust manager#IDENTITY_NETWORK_HOST.
+      # DOMAINNAME: localhost
 
-      # Provide your own email address for your SSL certificates!
-      LE_EMAIL: 'no-reply@openremote.io'
+      # Provide your own email address for your SSL certificates with Let's Encrypt. This should
+      # be set when DOMAINNAME is not 'localhost'.
+      # LE_EMAIL: 'no-reply@openremote.io'
 
-      # --staging requests fake certificates to avoid hitting limits during testing
-      #LE_EXTRA_ARGS: '--staging --logs-dir=/etc/letsencrypt'
+      # Enable --staging will manage fake certificates, so avoid hitting the rate limits of Let's Encrypt
+      # when testing (this is important, you are limited to 5 duplicate certificates per week!)
+      # LE_EXTRA_ARGS: '--staging --logs-dir=/etc/letsencrypt'
 
-      # Traffic should be forwarded to this service
-      PROXY_BACKEND_HOST: manager
-      PROXY_BACKEND_PORT: 8080
+      # Traffic should be forwarded to this service (defaults to manager:8080)
+      # PROXY_BACKEND_HOST: manager
+      # PROXY_BACKEND_PORT: 8080
 
-      # Customize log output
-      PROXY_LOGLEVEL: 'notice'
+      # The proxy supports up to 10 custom redirects from hostname to any path on the
+      # backend service. This can be used to give consoles a vanity domain name.
+      # PROXY_HOST_REDIRECT_1_NAME: www.my-console-master.tld
+      # PROXY_HOST_REDIRECT_1_TARGET: /console/master
+      # PROXY_HOST_REDIRECT_2_NAME: www.my-console-customer-a.tld
+      # PROXY_HOST_REDIRECT_2_TARGET: /console/customerA
+      # PROXY_HOST_REDIRECT_3_NAME: ...
 
-    # Run proxy, obtain and automatically renew SSL certificates if DOMAINNAME is not localhost (see help)
+      # Customize proxy log, defaults to 'notice', requests are logged at 'info'.
+      # Available levels are: emerg, alert, crit, err, warning, notice, info, debug
+      # PROXY_LOGLEVEL: 'notice'
+
+    # Run proxy, obtain and automatically renew SSL certificates if DOMAINNAME is not localhost. Use
+    # the command 'help' to get a list of all options.
     command: run
 
     # Expose a public web service mapped to ports on the host.
     ports:
       - "80:80"
       - "443:443"
+
+    # Resource limits
+    mem_limit: 50m
+    memswap_limit: 50m
 
     # Configure logging of the container
     logging:
@@ -71,6 +87,8 @@ services:
 
     environment:
 
+      # It is important that all services have the same timezone and are time synchronized.
+      # Bearer tokens are only valid for minutes, and authentication fails if Keycloak drifts.
       TZ: Europe/Zurich
 
       # If developer mode is enabled, all setup tasks will be executed on application startup.
@@ -106,17 +124,17 @@ services:
       #
       SETUP_IMPORT_DEMO_AGENT: 'true'
       SETUP_IMPORT_DEMO_AGENT_KNX: 'false'
-      #SETUP_IMPORT_DEMO_AGENT_KNX_GATEWAY_IP: '10.0.0.11'
-      #SETUP_IMPORT_DEMO_AGENT_KNX_LOCAL_IP: '10.0.0.12'
+      # SETUP_IMPORT_DEMO_AGENT_KNX_GATEWAY_IP: '10.0.0.11'
+      # SETUP_IMPORT_DEMO_AGENT_KNX_LOCAL_IP: '10.0.0.12'
       SETUP_IMPORT_DEMO_AGENT_VELBUS: 'false'
-      #SETUP_IMPORT_DEMO_AGENT_VELBUS_COM_PORT: 'COM3'
+      # SETUP_IMPORT_DEMO_AGENT_VELBUS_COM_PORT: 'COM3'
       SETUP_IMPORT_DEMO_AGENT_UPNP: 'false'
       # TODO: Additional docker settings are necessary to use com ports and multicast from within containers
 
       # The public host name of this OpenRemote installation. This name is used in bearer tokens
       # and must be the name you access the web services under. If you change proxy#DOMAINNAME, also
       # change this to match.
-      #IDENTITY_NETWORK_HOST: localhost
+      # IDENTITY_NETWORK_HOST: localhost
 
       # Set if SSL is enabled on the frontend reverse proxy and all internal proxies should assume https
       IDENTITY_NETWORK_SECURE: 'true'
@@ -184,8 +202,17 @@ services:
       # unless you want to deploy a modified version of the Manager UI.
       # MANAGER_DOCROOT: 'manager/client/src/main/webapp'
 
-      # Custom JVM options (default max heap size is 1GB)
-      # JAVA_OPTS: '-Xmx1g -XX:+PrintGCDetails'
+      # Custom JVM options (increase heap size if required)
+      JAVA_OPTS: '-Xms400m -Xmx400m
+                  -XX:CompressedClassSpaceSize=25m -XX:MaxMetaspaceSize=150m
+                  -XX:InitialCodeCacheSize=25m -XX:ReservedCodeCacheSize=25m
+                  -XX:MaxDirectMemorySize=25m
+                  -XX:NativeMemoryTracking=summary
+                  -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/javadump.core.hprof'
+
+    # Resource limits
+    mem_limit: 700m
+    memswap_limit: 700m
 
     # Configure logging of the container, see deployment/logging.properties
     logging:
@@ -202,6 +229,9 @@ services:
     image: openremote/keycloak:latest
 
     environment:
+
+      # It is important that all services have the same timezone and are time synchronized.
+      # Bearer tokens are only valid for minutes, and authentication fails if Keycloak drifts.
       TZ: Europe/Zurich
 
       # Switch to DEBUG to diagnose Keycloak problems.
@@ -220,6 +250,19 @@ services:
       POSTGRES_USER: openremote
       POSTGRES_PASSWORD: CHANGE_ME_DB_USER_PASSWORD
 
+      # Custom JVM options (increase heap size if required)
+      JAVA_OPTS: '-Xms300m -Xmx300m
+                  -XX:CompressedClassSpaceSize=25m -XX:MaxMetaspaceSize=150m
+                  -XX:InitialCodeCacheSize=25m -XX:ReservedCodeCacheSize=25m
+                  -XX:MaxDirectMemorySize=25m
+                  -XX:NativeMemoryTracking=summary
+                  -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/javadump.core.hprof
+                  -Djava.net.preferIPv4Stack=true -Djboss.modules.system.pkgs=org.jboss.byteman -Djava.awt.headless=true'
+
+    # Resource limits
+    mem_limit: 600m
+    memswap_limit: 600m
+
     # Configure logging of the container
     logging:
         options:
@@ -235,6 +278,9 @@ services:
     image: openremote/postgresql:latest
 
     environment:
+
+      # It is important that all services have the same timezone and are time synchronized.
+      # Bearer tokens are only valid for minutes, and authentication fails if Keycloak drifts.
       TZ: Europe/Zurich
 
       # Create database and user if there is no data. For production, run
@@ -247,6 +293,10 @@ services:
 
       # You can open an SQL console on a running container with:
       # docker exec -it <container ID> psql -U openremote
+
+    # Resource limits
+    mem_limit: 300m
+    memswap_limit: 300m
 
     # Configure logging of the container
     logging:
