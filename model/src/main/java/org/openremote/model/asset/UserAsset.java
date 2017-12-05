@@ -36,7 +36,8 @@ import java.util.Date;
  * <li>
  * When a restricted client reads assets, only dynamic attributes with
  * {@link AssetMeta#ACCESS_RESTRICTED_READ} and attribute meta items with {@link MetaItemDescriptor.Access#restrictedRead}
- * are included.
+ * are included. A restricted client may submit a query for public assets and dynamic attributes with
+ * {@link AssetMeta#ACCESS_PUBLIC_READ} and meta items with {@link MetaItemDescriptor.Access#publicRead}.
  * </li>
  * <li>
  * When a restricted client updates existing assets, new dynamic attributes can be added, but

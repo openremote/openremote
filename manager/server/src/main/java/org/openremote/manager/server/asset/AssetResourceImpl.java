@@ -46,6 +46,7 @@ import java.util.logging.Logger;
 
 import static javax.ws.rs.core.Response.Status.*;
 import static org.openremote.container.Container.JSON;
+import static org.openremote.model.asset.AbstractAssetQuery.Access.PRIVATE_READ;
 import static org.openremote.model.asset.AbstractAssetQuery.Access.PUBLIC_READ;
 import static org.openremote.model.asset.AbstractAssetQuery.Access.RESTRICTED_READ;
 import static org.openremote.model.attribute.AttributeEvent.Source.CLIENT;
@@ -431,10 +432,14 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             }
 
             if (isRestrictedUser()) {
+                // A restricted user can only query linked assets
                 query = query.userId(getUserId());
+
+                // A restricted user may not query private asset data, only restricted or public
                 if (query.select == null)
                     query.select = new Select();
-                query.select.filterAccess(RESTRICTED_READ);
+                if (query.select.access == null || query.select.access == PRIVATE_READ)
+                    query.select.filterAccess(RESTRICTED_READ);
             }
 
             Tenant tenant = query.tenantPredicate != null
