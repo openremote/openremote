@@ -300,7 +300,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
         processorLoop:
         for (Consumer<AssetState> processor : processors) {
             try {
-                LOG.fine("==> Processor " + processor + " accepts: " + assetState);
+                LOG.finest("==> Processor " + processor + " accepts: " + assetState);
                 processor.accept(assetState);
             } catch (Throwable t) {
                 LOG.log(Level.SEVERE, "!!! Processor " + processor + " threw an exception whilst consuming: " + assetState, t);
@@ -310,13 +310,13 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
 
             switch (assetState.getProcessingStatus()) {
                 case COMPLETED:
-                    LOG.fine("<== Processor " + processor + " finally handled: " + assetState);
+                    LOG.finest("<== Processor " + processor + " finally handled: " + assetState);
                     break processorLoop;
                 case ERROR:
                     LOG.log(Level.SEVERE, "<== Processor " + processor + " error: " + assetState, assetState.getError());
                     break processorLoop;
                 default:
-                    LOG.fine("<== Processor " + processor + " done with: " + assetState);
+                    LOG.finest("<== Processor " + processor + " done with: " + assetState);
             }
         }
         if (assetState.getProcessingStatus() != AssetState.ProcessingStatus.ERROR) {

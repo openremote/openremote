@@ -302,7 +302,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
                     ).filter(AssetAttribute::isRuleState).collect(Collectors.toList());
 
                 // Retract facts for attributes that are obsolete
-                getAddedOrModifiedAttributes(newRuleStateAttributes, oldRuleStateAttributes, VALUE_TIMESTAMP_FIELD_NAME)
+                getAddedOrModifiedAttributes(newRuleStateAttributes, oldRuleStateAttributes, key -> key.equals(VALUE_TIMESTAMP_FIELD_NAME))
                     .forEach(obsoleteFactAttribute -> {
                         AssetState update = buildAssetState.apply(loadedAsset, obsoleteFactAttribute);
                         LOG.fine("Asset was persisted (" + persistenceEvent.getCause() + "), retracting: " + update);
@@ -310,7 +310,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
                     });
 
                 // Insert facts for attributes that are new
-                getAddedOrModifiedAttributes(oldRuleStateAttributes, newRuleStateAttributes, VALUE_TIMESTAMP_FIELD_NAME)
+                getAddedOrModifiedAttributes(oldRuleStateAttributes, newRuleStateAttributes, key -> key.equals(VALUE_TIMESTAMP_FIELD_NAME))
                     .forEach(newFactAttribute -> {
                         AssetState assetState = buildAssetState.apply(loadedAsset, newFactAttribute);
                         // Set the status to completed already so rules cannot interfere with this initial insert

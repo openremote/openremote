@@ -32,6 +32,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import static org.openremote.model.asset.AssetMeta.*;
@@ -415,10 +416,32 @@ public class AssetAttribute extends Attribute {
      * @return All attributes that exist only in the new list or are different than any attribute in the old list.
      */
     public static Stream<AssetAttribute> getAddedOrModifiedAttributes(List<AssetAttribute> oldAttributes,
+                                                                      List<AssetAttribute> newAttributes) {
+        return getAddedOrModifiedAttributes(oldAttributes, newAttributes, key -> false);
+    }
+
+    /**
+     * @return All attributes that exist only in the new list or are different than any attribute in the old list.
+     */
+    public static Stream<AssetAttribute> getAddedOrModifiedAttributes(List<AssetAttribute> oldAttributes,
                                                                       List<AssetAttribute> newAttributes,
-                                                                      String... ignoreAttributeKeys) {
+                                                                      Predicate<String> ignoredAttributeKeys) {
+        return getAddedOrModifiedAttributes(oldAttributes, newAttributes, name -> false, ignoredAttributeKeys);
+    }
+
+    /**
+     * @return All attributes that exist only in the new list or are different than any attribute in the old list.
+     */
+    public static Stream<AssetAttribute> getAddedOrModifiedAttributes(List<AssetAttribute> oldAttributes,
+                                                                      List<AssetAttribute> newAttributes,
+                                                                      Predicate<String> ignoredAttributeNames,
+                                                                      Predicate<String> ignoredAttributeKeys) {
         return newAttributes.stream().filter(newAttribute -> oldAttributes.stream().noneMatch(
-            oldAttribute -> newAttribute.getObjectValue().equalsIgnoreKeys(oldAttribute.getObjectValue(), ignoreAttributeKeys))
+            oldAttribute -> newAttribute.getObjectValue().equalsIgnoreKeys(oldAttribute.getObjectValue(), ignoredAttributeKeys))
+        ).filter(addedOrModifiedAttribute ->
+            !addedOrModifiedAttribute.getName().isPresent() ||
+                ignoredAttributeNames == null ||
+                !ignoredAttributeNames.test(addedOrModifiedAttribute.getName().get())
         );
     }
 

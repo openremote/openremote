@@ -18,6 +18,7 @@ package org.openremote.model.value;
 import org.openremote.model.util.Pair;
 
 import java.util.Optional;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 /**
@@ -73,7 +74,8 @@ public interface ObjectValue extends Value {
     ObjectValue deepCopy();
 
     /**
-     * @param ignoreKeys Keys to ignore in comparison.
+     *
+     * @param ignoreKeyPredicate Ignore given keys in the comparison.
      */
-    boolean equalsIgnoreKeys(ObjectValue that, String... ignoreKeys);
+    boolean equalsIgnoreKeys(ObjectValue that, Predicate<String> ignoreKeyPredicate);
 }

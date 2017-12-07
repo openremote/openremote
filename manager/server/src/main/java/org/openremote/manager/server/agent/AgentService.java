@@ -233,19 +233,23 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
         // Use the unique identifier provided by the protocol, it manages its own identifier space
         updatedAsset.setId(asset.getId());
 
-        if (options != null && options.isIgnoreAttributeValueTimestamps()) {
-            // Must check manually if asset exists and if any attributes were changed (ignoring different value timestamps)
+        if (options != null && (options.getIgnoredAttributeNames() != null || options.getIgnoredAttributeKeys() != null)) {
             ServerAsset existingAsset = assetStorageService.find(updatedAsset.getId(), true);
             if (existingAsset != null) {
+                // Check if any attributes except the ignored ones were modified
                 List<AssetAttribute> existingAttributes = existingAsset.getAttributesList();
                 List<AssetAttribute> updatedAttributes = updatedAsset.getAttributesList();
 
-                List<AssetAttribute> addedOrModifiedAttributes =
-                    getAddedOrModifiedAttributes(existingAttributes, updatedAttributes, VALUE_TIMESTAMP_FIELD_NAME).collect(Collectors.toList());
-                List<AssetAttribute> removedAttributes =
-                    getAddedOrModifiedAttributes(updatedAttributes, existingAttributes, VALUE_TIMESTAMP_FIELD_NAME).collect(Collectors.toList());
+                List<AssetAttribute> addedOrModifiedAttributes = getAddedOrModifiedAttributes(
+                    existingAttributes, updatedAttributes, options.getIgnoredAttributeNames(), options.getIgnoredAttributeKeys()
+                ).collect(Collectors.toList());
+
+                List<AssetAttribute> removedAttributes = getAddedOrModifiedAttributes(
+                        updatedAttributes, existingAttributes, options.getIgnoredAttributeNames(), options.getIgnoredAttributeKeys()
+                ).collect(Collectors.toList());
+
                 if (addedOrModifiedAttributes.isEmpty() && removedAttributes.isEmpty()) {
-                    LOG.fine("Ignoring merge, protocol-provided asset unchanged (except maybe attribute value timestamps): " + asset);
+                    LOG.finest("Skipping merge, protocol-provided asset unchanged (excluding ignored attribute names/keys): " + asset);
                     return existingAsset;
                 }
             }
@@ -398,13 +402,13 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
 
                 // Unlink thing attributes that are in old but not in new
                 getGroupedAgentLinkAttributes(
-                    getAddedOrModifiedAttributes(newAgentLinkedAttributes, oldAgentLinkedAttributes, VALUE_TIMESTAMP_FIELD_NAME),
+                    getAddedOrModifiedAttributes(newAgentLinkedAttributes, oldAgentLinkedAttributes, key -> key.equals(VALUE_TIMESTAMP_FIELD_NAME)),
                     attribute -> true
                 ).forEach(this::unlinkAttributes);
 
                 // Link thing attributes that are in new but not in old
                 getGroupedAgentLinkAttributes(
-                    getAddedOrModifiedAttributes(oldAgentLinkedAttributes, newAgentLinkedAttributes, VALUE_TIMESTAMP_FIELD_NAME),
+                    getAddedOrModifiedAttributes(oldAgentLinkedAttributes, newAgentLinkedAttributes, key -> key.equals(VALUE_TIMESTAMP_FIELD_NAME)),
                     attribute -> true,
                     attribute -> LOG.warning("Linked protocol configuration not found: " + attribute)
                 ).forEach(this::linkAttributes);

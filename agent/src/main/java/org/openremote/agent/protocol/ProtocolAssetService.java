@@ -20,12 +20,11 @@
 package org.openremote.agent.protocol;
 
 import org.openremote.container.ContainerService;
-import org.openremote.model.AbstractValueTimestampHolder;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.attribute.AttributeEvent;
 
-import java.util.Objects;
+import java.util.function.Predicate;
 
 /**
  * Interface for protocols to perform limited asset related operations.
@@ -38,19 +37,21 @@ public interface ProtocolAssetService extends ContainerService {
     class MergeOptions {
 
         final protected String assignToUserName;
-        final protected boolean ignoreAttributeValueTimestamps;
+        final protected Predicate<String> ignoredAttributeNames;
+        final protected Predicate<String> ignoredAttributeKeys;
 
         public MergeOptions(String assignToUserName) {
-            this(assignToUserName, false);
+            this(assignToUserName, null, null);
         }
 
-        public MergeOptions(boolean ignoreAttributeValueTimestamps) {
-            this(null, ignoreAttributeValueTimestamps);
+        public MergeOptions(Predicate<String> ignoredAttributeNames, Predicate<String> ignoredAttributeKeys) {
+            this(null, ignoredAttributeNames, ignoredAttributeKeys);
         }
 
-        public MergeOptions(String assignToUserName, boolean ignoreAttributeValueTimestamps) {
+        public MergeOptions(String assignToUserName, Predicate<String> ignoredAttributeNames, Predicate<String> ignoredAttributeKeys) {
             this.assignToUserName = assignToUserName;
-            this.ignoreAttributeValueTimestamps = ignoreAttributeValueTimestamps;
+            this.ignoredAttributeNames = ignoredAttributeNames;
+            this.ignoredAttributeKeys = ignoredAttributeKeys;
         }
 
         /**
@@ -63,26 +64,19 @@ public interface ProtocolAssetService extends ContainerService {
         }
 
         /**
-         * Compare existing and merged asset state before storing, if only the
-         * {@link AbstractValueTimestampHolder#getValueTimestamp()}s have changed, don't perform the merge.
+         * Compare existing and merged asset state before doing the actual storage merge. If only the
+         * ignored attributes have changed, don't perform the merge on storage.
          */
-        public boolean isIgnoreAttributeValueTimestamps() {
-            return ignoreAttributeValueTimestamps;
+        public Predicate<String> getIgnoredAttributeNames() {
+            return ignoredAttributeNames;
         }
 
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            MergeOptions that = (MergeOptions) o;
-            return ignoreAttributeValueTimestamps == that.ignoreAttributeValueTimestamps &&
-                Objects.equals(assignToUserName, that.assignToUserName);
-        }
-
-        @Override
-        public int hashCode() {
-
-            return Objects.hash(assignToUserName, ignoreAttributeValueTimestamps);
+        /**
+         * Compare existing and merged asset state before doing the actual storage merge. If only the
+         * ignored keys of any attributes have changed, don't perform the merge on storage.
+         */
+        public Predicate<String> getIgnoredAttributeKeys() {
+            return ignoredAttributeKeys;
         }
     }
 

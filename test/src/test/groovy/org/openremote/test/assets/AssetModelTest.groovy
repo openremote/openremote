@@ -46,25 +46,25 @@ class AssetModelTest extends Specification {
         def timestamp = System.currentTimeMillis()
         def timestamp2 = timestamp + 1000
 
-        def attributeA =new AssetAttribute("a", STRING, Values.create("foo"), timestamp)
-        def attributeB =new AssetAttribute("b", STRING, Values.create("foo"), timestamp2)
+        def attributeA = new AssetAttribute("a", STRING, Values.create("foo"), timestamp)
+        def attributeB = new AssetAttribute("b", STRING, Values.create("foo"), timestamp2)
 
         then: "they should be different"
-        !attributeA.getObjectValue().equalsIgnoreKeys(attributeB.getObjectValue())
+        !attributeA.getObjectValue().equalsIgnoreKeys(attributeB.getObjectValue(), null)
 
         and: "if we ignore the timestamp they should be equal"
-        attributeA.getObjectValue().equalsIgnoreKeys(attributeB.getObjectValue(), VALUE_TIMESTAMP_FIELD_NAME)
+        attributeA.getObjectValue().equalsIgnoreKeys(attributeB.getObjectValue(), { key -> key == VALUE_TIMESTAMP_FIELD_NAME })
 
         when: "an attribute has no timestamp"
-        def attributeC  = new AssetAttribute("c", STRING, Values.create("foo"))
+        def attributeC = new AssetAttribute("c", STRING, Values.create("foo"))
 
         then: "it should be different than attributes with a timestamp"
-        !attributeA.getObjectValue().equalsIgnoreKeys(attributeC.getObjectValue())
-        !attributeB.getObjectValue().equalsIgnoreKeys(attributeC.getObjectValue())
+        !attributeA.getObjectValue().equalsIgnoreKeys(attributeC.getObjectValue(), null)
+        !attributeB.getObjectValue().equalsIgnoreKeys(attributeC.getObjectValue(), null)
 
         and: "if we ignore the timestamp they all should be equal"
-        attributeA.getObjectValue().equalsIgnoreKeys(attributeC.getObjectValue(), VALUE_TIMESTAMP_FIELD_NAME)
-        attributeB.getObjectValue().equalsIgnoreKeys(attributeC.getObjectValue(), VALUE_TIMESTAMP_FIELD_NAME)
+        attributeA.getObjectValue().equalsIgnoreKeys(attributeC.getObjectValue(), { key -> key == VALUE_TIMESTAMP_FIELD_NAME })
+        attributeB.getObjectValue().equalsIgnoreKeys(attributeC.getObjectValue(), { key -> key == VALUE_TIMESTAMP_FIELD_NAME })
     }
 
     def "Comparing asset attribute lists"() {
@@ -85,6 +85,22 @@ class AssetModelTest extends Specification {
         then: "they should be different"
         addedOrModifiedAttributes.size() == 1
         addedOrModifiedAttributes[0].name.get() == "a3"
+
+        when: "two lists of asset attributes are compared, ignoring some"
+        timestamp = System.currentTimeMillis()
+        attributesA = [
+                new AssetAttribute("a1", STRING, Values.create("a111"), timestamp),
+                new AssetAttribute("a2", STRING, Values.create("a222"), timestamp),
+        ]
+        attributesB = [
+                new AssetAttribute("a1", STRING, Values.create("a111"), timestamp),
+                new AssetAttribute("a2", STRING, Values.create("a222"), timestamp),
+                new AssetAttribute("a3", STRING, Values.create("a333"), timestamp),
+        ]
+        addedOrModifiedAttributes = getAddedOrModifiedAttributes(attributesA, attributesB, { name -> name == "a3" }, { key -> false }).collect(Collectors.toList())
+
+        then: "they should be the same"
+        addedOrModifiedAttributes.size() == 0
 
         when: "two lists of asset attributes with different value timestamp are compared"
         timestamp = System.currentTimeMillis()
@@ -117,7 +133,7 @@ class AssetModelTest extends Specification {
                 new AssetAttribute("a1", STRING, Values.create("a111"), timestamp2),
                 new AssetAttribute("a2", STRING, Values.create("a222"), timestamp2),
         ]
-        addedOrModifiedAttributes = getAddedOrModifiedAttributes(attributesA, attributesB, VALUE_TIMESTAMP_FIELD_NAME).collect(Collectors.toList())
+        addedOrModifiedAttributes = getAddedOrModifiedAttributes(attributesA, attributesB, { key -> key == VALUE_TIMESTAMP_FIELD_NAME }).collect(Collectors.toList())
 
         then: "they should be the same"
         addedOrModifiedAttributes.size() == 0

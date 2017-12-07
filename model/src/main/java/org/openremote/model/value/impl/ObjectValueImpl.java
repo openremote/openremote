@@ -19,6 +19,7 @@ import org.openremote.model.util.Pair;
 import org.openremote.model.value.*;
 
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -172,7 +173,7 @@ public class ObjectValueImpl extends ValueImpl implements ObjectValue {
         if (!(o instanceof ObjectValueImpl))
             return false;
         ObjectValueImpl that = (ObjectValueImpl) o;
-        return equalsIgnoreKeys(that);
+        return equalsIgnoreKeys(that, key -> false);
     }
 
     @Override
@@ -184,22 +185,23 @@ public class ObjectValueImpl extends ValueImpl implements ObjectValue {
     }
 
     @Override
-    public boolean equalsIgnoreKeys(ObjectValue that, String... ignoreKeys) {
+    public boolean equalsIgnoreKeys(ObjectValue that, Predicate<String> ignoreKeyPredicate) {
         if (!(that instanceof ObjectValueImpl))
             return false;
         ObjectValueImpl thatImpl = (ObjectValueImpl) that;
 
-        List<String> ignoreKeysList = Arrays.asList(ignoreKeys);
-
         Set<String> thisKeys = this.map.keySet().stream()
-            .filter(key -> !ignoreKeysList.contains(key)).collect(Collectors.toSet());
+            .filter(key -> ignoreKeyPredicate == null || !ignoreKeyPredicate.test(key))
+            .collect(Collectors.toSet());
         Set<String> thatKeys = this.map.keySet().stream()
-            .filter(key -> !ignoreKeysList.contains(key)).collect(Collectors.toSet());
+            .filter(key -> ignoreKeyPredicate == null || !ignoreKeyPredicate.test(key))
+            .collect(Collectors.toSet());
+
         if (!thisKeys.equals(thatKeys))
             return false;
 
         for (Map.Entry<String, Value> entry : this.map.entrySet()) {
-            if (ignoreKeysList.contains(entry.getKey()))
+            if (ignoreKeyPredicate != null && ignoreKeyPredicate.test(entry.getKey()))
                 continue;
             Value mapAValue = entry.getValue();
             Value mapBValue = thatImpl.map.get(entry.getKey());
