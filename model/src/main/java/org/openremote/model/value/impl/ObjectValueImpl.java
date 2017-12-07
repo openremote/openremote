@@ -19,6 +19,7 @@ import org.openremote.model.util.Pair;
 import org.openremote.model.value.*;
 
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class ObjectValueImpl extends ValueImpl implements ObjectValue {
@@ -186,16 +187,22 @@ public class ObjectValueImpl extends ValueImpl implements ObjectValue {
     public boolean equalsIgnoreKeys(ObjectValue that, String... ignoreKeys) {
         if (!(that instanceof ObjectValueImpl))
             return false;
-        ObjectValueImpl objectValueImpl = (ObjectValueImpl)that;
+        ObjectValueImpl thatImpl = (ObjectValueImpl) that;
 
-        if (!this.map.keySet().equals(objectValueImpl.map.keySet()))
+        List<String> ignoreKeysList = Arrays.asList(ignoreKeys);
+
+        Set<String> thisKeys = this.map.keySet().stream()
+            .filter(key -> !ignoreKeysList.contains(key)).collect(Collectors.toSet());
+        Set<String> thatKeys = this.map.keySet().stream()
+            .filter(key -> !ignoreKeysList.contains(key)).collect(Collectors.toSet());
+        if (!thisKeys.equals(thatKeys))
             return false;
 
         for (Map.Entry<String, Value> entry : this.map.entrySet()) {
-            if (Arrays.asList(ignoreKeys).contains(entry.getKey()))
+            if (ignoreKeysList.contains(entry.getKey()))
                 continue;
             Value mapAValue = entry.getValue();
-            Value mapBValue = objectValueImpl.map.get(entry.getKey());
+            Value mapBValue = thatImpl.map.get(entry.getKey());
             if (!mapAValue.equals(mapBValue)) {
                 return false;
             }

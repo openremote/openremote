@@ -20,14 +20,71 @@
 package org.openremote.agent.protocol;
 
 import org.openremote.container.ContainerService;
+import org.openremote.model.AbstractValueTimestampHolder;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.attribute.AttributeEvent;
+
+import java.util.Objects;
 
 /**
  * Interface for protocols to perform limited asset related operations.
  */
 public interface ProtocolAssetService extends ContainerService {
+
+    /**
+     * Options when merging and storing assets from protocols.
+     */
+    class MergeOptions {
+
+        final protected String assignToUserName;
+        final protected boolean ignoreAttributeValueTimestamps;
+
+        public MergeOptions(String assignToUserName) {
+            this(assignToUserName, false);
+        }
+
+        public MergeOptions(boolean ignoreAttributeValueTimestamps) {
+            this(null, ignoreAttributeValueTimestamps);
+        }
+
+        public MergeOptions(String assignToUserName, boolean ignoreAttributeValueTimestamps) {
+            this.assignToUserName = assignToUserName;
+            this.ignoreAttributeValueTimestamps = ignoreAttributeValueTimestamps;
+        }
+
+        /**
+         * Assigns the merged asset to the given user, can be <code>null</code> to not assign
+         * the asset to a user. The {@link #mergeAsset} call returns <code>null</code> if the
+         * user doesn't exist or the asset couldn't be assigned.
+         */
+        public String getAssignToUserName() {
+            return assignToUserName;
+        }
+
+        /**
+         * Compare existing and merged asset state before storing, if only the
+         * {@link AbstractValueTimestampHolder#getValueTimestamp()}s have changed, don't perform the merge.
+         */
+        public boolean isIgnoreAttributeValueTimestamps() {
+            return ignoreAttributeValueTimestamps;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            MergeOptions that = (MergeOptions) o;
+            return ignoreAttributeValueTimestamps == that.ignoreAttributeValueTimestamps &&
+                Objects.equals(assignToUserName, that.assignToUserName);
+        }
+
+        @Override
+        public int hashCode() {
+
+            return Objects.hash(assignToUserName, ignoreAttributeValueTimestamps);
+        }
+    }
 
     /**
      * Protocols can update their own protocol configuration, for example, to store configuration
@@ -38,17 +95,19 @@ public interface ProtocolAssetService extends ContainerService {
     /**
      * Protocols may store assets in the context or update existing assets. A unique identifier
      * must be set by the protocol implementor, as well as a parent identifier. This operation
-     * stores transient or detached state and returns the current state.
+     * stores transient or detached state and returns the current state. It will override any
+     * existing stored asset data, ignoring versions.
      */
     Asset mergeAsset(Asset asset);
 
     /**
-     * Protocols may store assets in the context or update existing assets and assigns the given asset to the given user.
-     * A unique identifier must be set by the protocol implementor, as well as a parent identifier. This operation
-     * stores transient or detached state and returns the current state.
-     * Returns null if user doesn't exist or asset couldn't be assigned.
+     * Protocols may store assets in the context or update existing assets. A unique identifier
+     * must be set by the protocol implementor, as well as a parent identifier. This operation
+     * stores transient or detached state and returns the current state. It will override any
+     * existing stored asset data, ignoring versions. This call may return <code>null</code>
+     * if the desired {@link MergeOptions} were not successful.
      */
-    Asset mergeAsset(Asset asset, String userName);
+    Asset mergeAsset(Asset asset, MergeOptions options);
 
     /**
      * Protocols may remove assets from the context store.

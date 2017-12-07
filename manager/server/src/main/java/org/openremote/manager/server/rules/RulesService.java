@@ -35,7 +35,6 @@ import org.openremote.manager.server.concurrent.ManagerExecutorService;
 import org.openremote.manager.server.notification.NotificationService;
 import org.openremote.manager.server.security.ManagerIdentityService;
 import org.openremote.manager.shared.security.Tenant;
-import org.openremote.model.AbstractValueTimestampHolder;
 import org.openremote.model.asset.*;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeType;
@@ -57,7 +56,9 @@ import java.util.stream.Stream;
 import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_TOPIC;
 import static org.openremote.container.util.MapAccess.getString;
 import static org.openremote.manager.server.asset.AssetRoute.isPersistenceEventForEntityType;
+import static org.openremote.model.AbstractValueTimestampHolder.VALUE_TIMESTAMP_FIELD_NAME;
 import static org.openremote.model.asset.AssetAttribute.attributesFromJson;
+import static org.openremote.model.asset.AssetAttribute.getAddedOrModifiedAttributes;
 
 /**
  * Responsible for creating Drools knowledge sessions for the rulesets
@@ -301,44 +302,22 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
                     ).filter(AssetAttribute::isRuleState).collect(Collectors.toList());
 
                 // Retract facts for attributes that are obsolete
-                Stream<AssetAttribute> processAttributes = oldRuleStateAttributes
-                    .stream()
-                    .filter(oldRuleStateAttribute -> newRuleStateAttributes
-                        .stream()
-                        .noneMatch(newRuleStateAttribute ->
-                            oldRuleStateAttribute.getObjectValue().equalsIgnoreKeys(
-                                newRuleStateAttribute.getObjectValue(),
-                                AbstractValueTimestampHolder.VALUE_TIMESTAMP_FIELD_NAME
-                            )
-                        )
-                    );
-
-                processAttributes.forEach(obsoleteFactAttribute -> {
-                    AssetState update = buildAssetState.apply(loadedAsset, obsoleteFactAttribute);
-                    LOG.fine("Asset was persisted (" + persistenceEvent.getCause() + "), retracting: " + update);
-                    retractAssetState(update);
-                });
+                getAddedOrModifiedAttributes(newRuleStateAttributes, oldRuleStateAttributes, VALUE_TIMESTAMP_FIELD_NAME)
+                    .forEach(obsoleteFactAttribute -> {
+                        AssetState update = buildAssetState.apply(loadedAsset, obsoleteFactAttribute);
+                        LOG.fine("Asset was persisted (" + persistenceEvent.getCause() + "), retracting: " + update);
+                        retractAssetState(update);
+                    });
 
                 // Insert facts for attributes that are new
-                processAttributes = newRuleStateAttributes
-                    .stream()
-                    .filter(newRuleStateAttribute -> oldRuleStateAttributes
-                        .stream()
-                        .noneMatch(oldRuleStateAttribute ->
-                            oldRuleStateAttribute.getObjectValue().equalsIgnoreKeys(
-                                newRuleStateAttribute.getObjectValue(),
-                                AbstractValueTimestampHolder.VALUE_TIMESTAMP_FIELD_NAME
-                            )
-                        )
-                    );
-
-                processAttributes.forEach(newFactAttribute -> {
-                    AssetState assetState = buildAssetState.apply(loadedAsset, newFactAttribute);
-                    // Set the status to completed already so rules cannot interfere with this initial insert
-                    assetState.setProcessingStatus(AssetState.ProcessingStatus.COMPLETED);
-                    LOG.fine("Asset was persisted (" + persistenceEvent.getCause() + "), updating: " + assetState);
-                    updateAssetState(assetState, true);
-                });
+                getAddedOrModifiedAttributes(oldRuleStateAttributes, newRuleStateAttributes, VALUE_TIMESTAMP_FIELD_NAME)
+                    .forEach(newFactAttribute -> {
+                        AssetState assetState = buildAssetState.apply(loadedAsset, newFactAttribute);
+                        // Set the status to completed already so rules cannot interfere with this initial insert
+                        assetState.setProcessingStatus(AssetState.ProcessingStatus.COMPLETED);
+                        LOG.fine("Asset was persisted (" + persistenceEvent.getCause() + "), updating: " + assetState);
+                        updateAssetState(assetState, true);
+                    });
                 break;
 
             case DELETE:

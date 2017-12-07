@@ -345,6 +345,7 @@ public class AssetAttribute extends Attribute {
             getMeta().removeIf(isMetaNameEqualTo(RULE_STATE));
         }
     }
+
     public boolean isRuleEvent() {
         return getMetaStream()
             .filter(isMetaNameEqualTo(RULE_EVENT))
@@ -408,6 +409,17 @@ public class AssetAttribute extends Attribute {
             attribute.setName(name);
         }
         return Optional.of(attribute);
+    }
+
+    /**
+     * @return All attributes that exist only in the new list or are different than any attribute in the old list.
+     */
+    public static Stream<AssetAttribute> getAddedOrModifiedAttributes(List<AssetAttribute> oldAttributes,
+                                                                      List<AssetAttribute> newAttributes,
+                                                                      String... ignoreAttributeKeys) {
+        return newAttributes.stream().filter(newAttribute -> oldAttributes.stream().noneMatch(
+            oldAttribute -> newAttribute.getObjectValue().equalsIgnoreKeys(oldAttribute.getObjectValue(), ignoreAttributeKeys))
+        );
     }
 
     public static Stream<AssetAttribute> attributesFromJson(ObjectValue objectValue, String assetId) {

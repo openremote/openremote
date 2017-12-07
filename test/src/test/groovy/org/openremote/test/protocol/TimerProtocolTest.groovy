@@ -135,7 +135,7 @@ class TimerProtocolTest extends Specification implements ManagerContainerTrait {
         then: "the attributes value should contain the timers cron expression"
         conditions.eventually {
             apartment1 = assetStorageService.find(apartment1.id, true)
-            apartment1.getAttribute("awaySceneCronFRIDAY").get().getValueAsString() == "0 0 4 ? * FRI *"
+            apartment1.getAttribute("awaySceneCronFRIDAY").get().getValueAsString().get() == "0 0 4 ? * FRI *"
         }
 
         when: "the trigger cron expression is modified"
@@ -162,8 +162,8 @@ class TimerProtocolTest extends Specification implements ManagerContainerTrait {
         then: "the linked macro should have been executed"
         conditions.eventually {
             apartment1 = assetStorageService.find(apartment1.id, true)
-            apartment1.getAttribute("awayScene").get().getValueAsString() == "COMPLETED"
-            apartment1.getAttribute("lastExecutedScene").get().getValueAsString() == "AWAY"
+            apartment1.getAttribute("awayScene").get().getValueAsString().get() == "COMPLETED"
+            apartment1.getAttribute("lastExecutedScene").get().getValueAsString().get() == "AWAY"
         }
 
         when: "a trigger is deleted"

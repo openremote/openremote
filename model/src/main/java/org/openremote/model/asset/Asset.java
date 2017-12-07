@@ -340,7 +340,7 @@ public class Asset implements IdentifiableEntity {
     }
 
 
-    public void addAttributes(AssetAttribute... attributes) throws IllegalArgumentException {
+    public Asset addAttributes(AssetAttribute... attributes) throws IllegalArgumentException {
         Arrays.asList(attributes).forEach(
             attribute -> {
                 if (getAttributesStream().anyMatch(attr -> isAttributeNameEqualTo(attr, attribute.getName().orElse(null)))) {
@@ -350,12 +350,13 @@ public class Asset implements IdentifiableEntity {
                 replaceAttribute(attribute);
             }
         );
+        return this;
     }
 
     /**
      * Replaces existing or adds the attribute if it does not exist.
      */
-    public void replaceAttribute(AssetAttribute attribute) throws IllegalArgumentException {
+    public Asset replaceAttribute(AssetAttribute attribute) throws IllegalArgumentException {
         if (attribute == null || !attribute.getName().isPresent() || !attribute.getType().isPresent())
             throw new IllegalArgumentException("Attribute cannot be null and must have a name and type");
 
@@ -363,11 +364,14 @@ public class Asset implements IdentifiableEntity {
         List<AssetAttribute> attributeList = getAttributesList();
         attributeList.removeIf(attr -> attr.getName().orElse("").equals(attribute.getName().orElse("")));
         attributeList.add(attribute);
+
+        return this;
     }
 
-    public void removeAttribute(String name) {
+    public Asset removeAttribute(String name) {
         List<AssetAttribute> attributeList = getAttributesList();
         attributeList.removeIf(attr -> attr.getName().orElse("").equals(name));
+        return this;
     }
 
     public String getId() {
@@ -376,6 +380,8 @@ public class Asset implements IdentifiableEntity {
 
     public void setId(String id) {
         this.id = id;
+        // Must clear the cached list of attributes they can be recreated with the new identifier
+        this.attributeList = null;
     }
 
     public long getVersion() {
@@ -569,17 +575,19 @@ public class Asset implements IdentifiableEntity {
             .flatMap(objectValue -> AssetAttribute.attributeFromJson(objectValue, id, name));
     }
 
-    public void setAttributes(ObjectValue attributes) {
+    public Asset setAttributes(ObjectValue attributes) {
         setAttributes(attributesFromJson(attributes, id).collect(Collectors.toList()));
+        return this;
     }
 
-    public void setAttributes(List<AssetAttribute> attributes) {
+    public Asset setAttributes(List<AssetAttribute> attributes) {
         ((ObservableList)getAttributesList()).clear(false);
         getAttributesList().addAll(attributes);
+        return this;
     }
 
-    public void setAttributes(AssetAttribute... attributes) {
-        setAttributes(Arrays.asList(attributes));
+    public Asset setAttributes(AssetAttribute... attributes) {
+        return setAttributes(Arrays.asList(attributes));
     }
 
     /**

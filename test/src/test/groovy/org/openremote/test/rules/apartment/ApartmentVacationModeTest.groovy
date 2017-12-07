@@ -20,7 +20,7 @@ import java.time.DayOfWeek
 
 import static java.util.concurrent.TimeUnit.DAYS
 import static java.util.concurrent.TimeUnit.HOURS
-import static org.openremote.manager.server.setup.builtin.BuiltinSetupTasks.SETUP_IMPORT_DEMO_SCENES
+import static org.openremote.manager.server.setup.SetupTasks.SETUP_IMPORT_DEMO_SCENES
 import static org.openremote.manager.server.setup.builtin.ManagerDemoSetup.DEMO_RULE_STATES_APARTMENT_1_WITH_SCENES
 
 class ApartmentVacationModeTest extends Specification implements ManagerContainerTrait {

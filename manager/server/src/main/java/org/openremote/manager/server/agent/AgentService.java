@@ -35,7 +35,6 @@ import org.openremote.manager.server.asset.ServerAsset;
 import org.openremote.manager.server.event.ClientEventService;
 import org.openremote.manager.server.security.ManagerIdentityService;
 import org.openremote.manager.shared.security.ClientRole;
-import org.openremote.model.AbstractValueTimestampHolder;
 import org.openremote.model.asset.*;
 import org.openremote.model.asset.agent.*;
 import org.openremote.model.attribute.AttributeEvent;
@@ -58,7 +57,9 @@ import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_
 import static org.openremote.manager.server.asset.AssetProcessingService.ASSET_QUEUE;
 import static org.openremote.manager.server.asset.AssetRoute.isPersistenceEventForAssetType;
 import static org.openremote.manager.server.asset.AssetRoute.isPersistenceEventForEntityType;
+import static org.openremote.model.AbstractValueTimestampHolder.VALUE_TIMESTAMP_FIELD_NAME;
 import static org.openremote.model.asset.AssetAttribute.attributesFromJson;
+import static org.openremote.model.asset.AssetAttribute.getAddedOrModifiedAttributes;
 import static org.openremote.model.asset.AssetType.AGENT;
 import static org.openremote.model.asset.agent.AgentLink.getAgentLink;
 import static org.openremote.model.asset.agent.ConnectionStatus.*;
@@ -220,23 +221,42 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
     public Asset mergeAsset(Asset asset) {
         Objects.requireNonNull(asset.getId());
         Objects.requireNonNull(asset.getParentId());
-        LOG.fine("Merging (and overriding existing older version of) with protocol-provided: " + asset);
-        ServerAsset serverAsset = ServerAsset.map(asset, new ServerAsset());
-        // Use the unique identifier provided by the protocol, it manages its own identifier space
-        serverAsset.setId(asset.getId());
-        return assetStorageService.merge(serverAsset, true);
+        return mergeAsset(asset, null);
     }
 
     @Override
-    public Asset mergeAsset(Asset asset, String userName) {
+    public Asset mergeAsset(Asset asset, MergeOptions options) {
         Objects.requireNonNull(asset.getId());
         Objects.requireNonNull(asset.getParentId());
-        Objects.requireNonNull(userName);
-        LOG.fine("Merging (and overriding existing older version of) with protocol-provided: " + asset);
-        ServerAsset serverAsset = ServerAsset.map(asset, new ServerAsset());
+
+        ServerAsset updatedAsset = ServerAsset.map(asset, new ServerAsset());
         // Use the unique identifier provided by the protocol, it manages its own identifier space
-        serverAsset.setId(asset.getId());
-        return assetStorageService.merge(serverAsset, true, userName);
+        updatedAsset.setId(asset.getId());
+
+        if (options != null && options.isIgnoreAttributeValueTimestamps()) {
+            // Must check manually if asset exists and if any attributes were changed (ignoring different value timestamps)
+            ServerAsset existingAsset = assetStorageService.find(updatedAsset.getId(), true);
+            if (existingAsset != null) {
+                List<AssetAttribute> existingAttributes = existingAsset.getAttributesList();
+                List<AssetAttribute> updatedAttributes = updatedAsset.getAttributesList();
+
+                List<AssetAttribute> addedOrModifiedAttributes =
+                    getAddedOrModifiedAttributes(existingAttributes, updatedAttributes, VALUE_TIMESTAMP_FIELD_NAME).collect(Collectors.toList());
+                List<AssetAttribute> removedAttributes =
+                    getAddedOrModifiedAttributes(updatedAttributes, existingAttributes, VALUE_TIMESTAMP_FIELD_NAME).collect(Collectors.toList());
+                if (addedOrModifiedAttributes.isEmpty() && removedAttributes.isEmpty()) {
+                    LOG.fine("Ignoring merge, protocol-provided asset unchanged (except maybe attribute value timestamps): " + asset);
+                    return existingAsset;
+                }
+            }
+        }
+
+        LOG.fine("Merging (and overriding existing older version of) with protocol-provided: " + asset);
+        if (options != null && options.getAssignToUserName() != null) {
+            return assetStorageService.merge(updatedAsset, true, options.getAssignToUserName());
+        } else {
+            return assetStorageService.merge(updatedAsset, true);
+        }
     }
 
     @Override
@@ -251,8 +271,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
     }
 
     /**
-     * Looks for new, modified and obsolete protocol configurations and links / unlinks any associated
-     * attributes
+     * Looks for new, modified and obsolete protocol configurations and links / unlinks any associated attributes
      */
     protected void processAgentChange(Asset agent, PersistenceEvent persistenceEvent) {
         LOG.finest("Processing agent persistence event: " + persistenceEvent.getCause());
@@ -378,36 +397,14 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
                         .collect(Collectors.toList());
 
                 // Unlink thing attributes that are in old but not in new
-                Stream<AssetAttribute> attributesToUnlink = oldAgentLinkedAttributes
-                    .stream()
-                    .filter(oldAgentLinkedAttribute -> newAgentLinkedAttributes
-                        .stream()
-                        .noneMatch(newAgentLinkedAttribute ->
-                            oldAgentLinkedAttribute.getObjectValue().equalsIgnoreKeys(
-                                newAgentLinkedAttribute.getObjectValue(),
-                                AbstractValueTimestampHolder.VALUE_TIMESTAMP_FIELD_NAME
-                            )
-                        )
-                    );
-
-                getGroupedAgentLinkAttributes(attributesToUnlink, attribute -> true)
-                    .forEach(this::unlinkAttributes);
+                getGroupedAgentLinkAttributes(
+                    getAddedOrModifiedAttributes(newAgentLinkedAttributes, oldAgentLinkedAttributes, VALUE_TIMESTAMP_FIELD_NAME),
+                    attribute -> true
+                ).forEach(this::unlinkAttributes);
 
                 // Link thing attributes that are in new but not in old
-                Stream<AssetAttribute> attributesToLink = newAgentLinkedAttributes
-                    .stream()
-                    .filter(newThingAttribute -> oldAgentLinkedAttributes
-                        .stream()
-                        .noneMatch(oldThingAttribute ->
-                            oldThingAttribute.getObjectValue().equalsIgnoreKeys(
-                                newThingAttribute.getObjectValue(),
-                                AbstractValueTimestampHolder.VALUE_TIMESTAMP_FIELD_NAME
-                            )
-                        )
-                    );
-
                 getGroupedAgentLinkAttributes(
-                    attributesToLink,
+                    getAddedOrModifiedAttributes(oldAgentLinkedAttributes, newAgentLinkedAttributes, VALUE_TIMESTAMP_FIELD_NAME),
                     attribute -> true,
                     attribute -> LOG.warning("Linked protocol configuration not found: " + attribute)
                 ).forEach(this::linkAttributes);
