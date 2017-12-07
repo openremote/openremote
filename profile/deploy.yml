@@ -92,15 +92,15 @@ services:
       TZ: Europe/Zurich
 
       # If developer mode is enabled, all setup tasks will be executed on application startup.
-      # This will clean all data in Keycloak and the Manager database, and then import demo/test
-      # data. Some caching and other runtime performance-optimizations will also be disabled.
+      # This will clean all data in the database, and then import demo/test data. Some caching and
+      # other runtime performance-optimizations will also be disabled.
       DEV_MODE: 'false'
 
-      # This switch can wipe all your Manager and Keycloak data, this is the factory reset!
+      # This switch can wipe your database, this is the factory reset!
       SETUP_WIPE_CLEAN_INSTALL: 'true'
       # When you are ready to permanently install your project, replace it with the next lines...
       # SETUP_WIPE_CLEAN_INSTALL: # Allow override on CLI
-      # KEYCLOAK_PASSWORD: # Allow override on CLI
+      # SETUP_ADMIN_PASSWORD: # Allow override on CLI
 
       # Optional: Configure SMTP smart host for Keycloak, to send password reset emails etc.
       #SETUP_KEYCLOAK_EMAIL_HOST: smtp-host.demo.tld
@@ -115,6 +115,7 @@ services:
       SETUP_IMPORT_DEMO_USERS: 'true'
       SETUP_IMPORT_DEMO_ASSETS: 'true'
       SETUP_IMPORT_DEMO_RULES: 'true'
+      SETUP_IMPORT_DEMO_SCENES: 'true'
 
       # Create a demo agent with example configurations for all built-in protocols:
       #
@@ -196,7 +197,6 @@ services:
       # provides full multi-tenancy identity and role management. The basic provider supports
       # only superusers and their text passwords, managed in a simple database table.
       # IDENTITY_PROVIDER: 'basic'
-      # SETUP_BASIC_IDENTITY_ADMIN_PASSWORD: 'secret'
 
       # Location of the static manager (UI and API) resources, you don't need to override this
       # unless you want to deploy a modified version of the Manager UI.
@@ -237,13 +237,10 @@ services:
       # Switch to DEBUG to diagnose Keycloak problems.
       KEYCLOAK_LOGLEVEL: INFO
 
-      # The master realm superuser, you should not change this.
-      KEYCLOAK_USER: admin
-
       # CHANGE THIS PASSWORD BEFORE STARTING THE STACK! THIS IS ONLY FOR DEMO!
-      KEYCLOAK_PASSWORD: secret
+      SETUP_ADMIN_PASSWORD: secret
       # When you are ready to permanently install your project, replace it with the next line ...
-      # KEYCLOAK_PASSWORD: # Allow override on CLI
+      # SETUP_ADMIN_PASSWORD: # Allow override on CLI
 
       # Configure how Keycloak connects to the database
       POSTGRES_DATABASE: openremote

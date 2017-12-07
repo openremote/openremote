@@ -30,15 +30,15 @@ import java.util.ServiceLoader;
 import java.util.logging.Logger;
 
 /**
- * Executes setup tasks when the application starts, configuring the state of
- * subsystems (database, Keycloak).
+ * Executes setup tasks for a clean installation when the application starts.
+ * <p>
+ * This service is disabled when {@link AbstractSetupTasks#SETUP_WIPE_CLEAN_INSTALL} is <code>false</code>.
  * <p>
  * First, this service will load an implementation of {@link SetupTasks} from the
  * classpath using {@link ServiceLoader}. If multiple providers are found, an error
- * is raised. If a provider is found, only its tasks will be enabled.
+ * is raised. If a provider is found, only its tasks will be used.
  * <p>
- * If no {@link SetupTasks} provider is found on the classpath, the builtin
- * tasks will be enabled, see {@link BuiltinSetupTasks}.
+ * If no {@link SetupTasks} provider is found on the classpath, the {@link BuiltinSetupTasks} are used.
  */
 public class SetupService implements ContainerService {
 
@@ -51,22 +51,28 @@ public class SetupService implements ContainerService {
 
     @Override
     public void init(Container container) throws Exception {
+
+        if (!SetupTasks.isSetupWipeCleanInstall(container)) {
+            LOG.info("Setup service disabled, " + SetupTasks.SETUP_WIPE_CLEAN_INSTALL + "=false");
+            return;
+        }
+
         ServiceLoader.load(SetupTasks.class).forEach(
             discoveredSetupTasks -> {
                 if (setupTasks != null) {
                     throw new IllegalStateException(
-                        "Only one instance of SetupTasks can be configured, already found '"
+                        "Only one provider of SetupTasks can be configured, already found '"
                             + setupTasks.getClass().getName() + ", remove from classpath: "
                             + discoveredSetupTasks.getClass().getName()
                     );
                 }
-                LOG.info("Found setup tasks: " + discoveredSetupTasks.getClass().getName());
+                LOG.info("Found custom SetupTasks provider on classpath: " + discoveredSetupTasks.getClass().getName());
                 setupTasks = discoveredSetupTasks;
             }
         );
 
         if (setupTasks == null) {
-            LOG.info("No custom setup tasks found on classpath, enabling built-in tasks");
+            LOG.info("No custom SetupTasks provider found on classpath, enabling: " + BuiltinSetupTasks.class.getName());
             setupTasks = new BuiltinSetupTasks();
         }
 

@@ -40,8 +40,8 @@ public abstract class AbstractKeycloakSetup implements Setup {
     // demo data as needed.
     public static final String ADMIN_CLI_CLIENT_ID = "admin-cli";
 
-    public static final String KEYCLOAK_PASSWORD = "KEYCLOAK_PASSWORD";
-    public static final String KEYCLOAK_PASSWORD_DEFAULT = "secret";
+    public static final String SETUP_ADMIN_PASSWORD = "SETUP_ADMIN_PASSWORD";
+    public static final String SETUP_ADMIN_PASSWORD_DEFAULT = "secret";
     public static final String SETUP_KEYCLOAK_EMAIL_HOST = "SETUP_KEYCLOAK_EMAIL_HOST";
     public static final String SETUP_KEYCLOAK_EMAIL_HOST_DEFAULT = "smtp-host.demo.tld";
     public static final String SETUP_KEYCLOAK_EMAIL_USER = "SETUP_KEYCLOAK_EMAIL_USER";
@@ -95,7 +95,7 @@ public abstract class AbstractKeycloakSetup implements Setup {
     @Override
     public void onStart() throws Exception {
         // Use direct access grant feature of Keycloak Admin CLI to get superuser access token
-        String keycloakAdminPassword = container.getConfig().getOrDefault(KEYCLOAK_PASSWORD, KEYCLOAK_PASSWORD_DEFAULT);
+        String keycloakAdminPassword = container.getConfig().getOrDefault(SETUP_ADMIN_PASSWORD, SETUP_ADMIN_PASSWORD_DEFAULT);
         this.accessToken = keycloakProvider.getKeycloak().getAccessToken(
             MASTER_REALM, new AuthForm(ADMIN_CLI_CLIENT_ID, MASTER_REALM_ADMIN_USER, keycloakAdminPassword)
         ).getToken();

@@ -11,7 +11,7 @@ export DEV_MODE=true
 # the application, you can configure which setup tasks you want to execute. Careful,
 # these tasks will clean and populate the Manager database with demo data!
 export SETUP_WIPE_CLEAN_INSTALL=true
-export SETUP_BASIC_IDENTITY_ADMIN_PASSWORD=${SETUP_BASIC_IDENTITY_ADMIN_PASSWORD:-"secret"}
+export SETUP_ADMIN_PASSWORD=${SETUP_ADMIN_PASSWORD:-"secret"}
 export SETUP_IMPORT_DEMO_USERS=true
 export SETUP_IMPORT_DEMO_ASSETS=true
 export SETUP_IMPORT_DEMO_RULES=true

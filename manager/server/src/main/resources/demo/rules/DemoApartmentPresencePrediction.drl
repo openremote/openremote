@@ -58,7 +58,6 @@ Old:
     awayActualSceneStartTime               // "-", e.g. "18:22"
 
     currentScene                          // "-", Possible values are "-", "Departure", "Arrive"
-                                        // in blok61 it is "home", "away", "evening", "night"
 */
 
 

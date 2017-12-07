@@ -41,8 +41,8 @@ import spock.util.concurrent.BlockingVariables
 import spock.util.concurrent.PollingConditions
 
 import static org.openremote.container.util.MapAccess.getString
-import static org.openremote.manager.server.setup.AbstractKeycloakSetup.KEYCLOAK_PASSWORD
-import static org.openremote.manager.server.setup.AbstractKeycloakSetup.KEYCLOAK_PASSWORD_DEFAULT
+import static org.openremote.manager.server.setup.AbstractKeycloakSetup.SETUP_ADMIN_PASSWORD
+import static org.openremote.manager.server.setup.AbstractKeycloakSetup.SETUP_ADMIN_PASSWORD_DEFAULT
 import static org.openremote.model.Constants.*
 
 class AdminUsersActivityTest extends Specification implements ManagerContainerTrait, GwtClientTrait {
@@ -70,7 +70,7 @@ class AdminUsersActivityTest extends Specification implements ManagerContainerTr
                     realm,
                     KEYCLOAK_CLIENT_ID,
                     MASTER_REALM_ADMIN_USER,
-                    getString(container.getConfig(), KEYCLOAK_PASSWORD, KEYCLOAK_PASSWORD_DEFAULT)
+                    getString(container.getConfig(), SETUP_ADMIN_PASSWORD, SETUP_ADMIN_PASSWORD_DEFAULT)
             ).token
         }
         def securityService = new ClientSecurityService(keycloakProvider.getKeycloakDeployment(realm, KEYCLOAK_CLIENT_ID), accessToken)

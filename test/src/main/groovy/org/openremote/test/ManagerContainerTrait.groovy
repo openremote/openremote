@@ -36,7 +36,7 @@ import static org.openremote.container.security.IdentityService.IDENTITY_NETWORK
 import static org.openremote.container.timer.TimerService.Clock.PSEUDO
 import static org.openremote.container.timer.TimerService.TIMER_CLOCK_TYPE
 import static org.openremote.container.web.WebService.WEBSERVER_LISTEN_PORT
-import static org.openremote.manager.server.setup.builtin.BuiltinSetupTasks.*
+import static org.openremote.manager.server.setup.SetupTasks.*
 
 trait ManagerContainerTrait extends ContainerTrait {
 

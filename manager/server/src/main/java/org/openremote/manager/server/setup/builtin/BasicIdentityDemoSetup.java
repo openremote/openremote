@@ -39,8 +39,8 @@ import java.sql.PreparedStatement;
  */
 public class BasicIdentityDemoSetup implements Setup {
 
-    public static final String SETUP_BASIC_IDENTITY_ADMIN_PASSWORD = "SETUP_BASIC_IDENTITY_ADMIN_PASSWORD";
-    public static final String SETUP_BASIC_IDENTITY_ADMIN_PASSWORD_DEFAULT = "secret";
+    public static final String SETUP_ADMIN_PASSWORD = "SETUP_ADMIN_PASSWORD";
+    public static final String SETUP_ADMIN_PASSWORD_DEFAULT = "secret";
 
     final protected ManagerPersistenceService persistenceService;
     final protected ManagerIdentityService identityService;
@@ -52,7 +52,7 @@ public class BasicIdentityDemoSetup implements Setup {
         this.persistenceService = container.getService(ManagerPersistenceService.class);
         this.identityService = container.getService(ManagerIdentityService.class);
 
-        this.demoAdminPassword = container.getConfig().getOrDefault(SETUP_BASIC_IDENTITY_ADMIN_PASSWORD, SETUP_BASIC_IDENTITY_ADMIN_PASSWORD_DEFAULT);
+        this.demoAdminPassword = container.getConfig().getOrDefault(SETUP_ADMIN_PASSWORD, SETUP_ADMIN_PASSWORD_DEFAULT);
     }
 
     @Override

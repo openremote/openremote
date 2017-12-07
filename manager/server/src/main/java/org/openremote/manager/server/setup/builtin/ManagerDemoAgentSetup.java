@@ -53,7 +53,6 @@ public class ManagerDemoAgentSetup extends AbstractManagerSetup {
 
     public String masterRealmId;
 
-
     final protected boolean knx;
     final protected String knxGatewayIp;
     final protected String knxLocalIp;
