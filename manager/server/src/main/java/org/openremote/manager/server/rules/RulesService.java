@@ -269,7 +269,12 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
 
                 // Build an update with a fully loaded asset
                 ruleStateAttributes.forEach(attribute -> {
-                    AssetState assetState = buildAssetState.apply(assetStorageService.find(asset.getId(), true), attribute);
+                    ServerAsset loadedAsset = assetStorageService.find(asset.getId(), true);
+                    // If the asset is now gone it was deleted immediately after being inserted, nothing more to do
+                    if (loadedAsset == null)
+                        return;
+
+                    AssetState assetState = buildAssetState.apply(loadedAsset, attribute);
                     // Set the status to completed already so rules cannot interfere with this initial insert
                     assetState.setProcessingStatus(AssetState.ProcessingStatus.COMPLETED);
                     LOG.fine("Asset was persisted (" + persistenceEvent.getCause() + "), inserting fact: " + assetState);
@@ -286,6 +291,9 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
 
                 // Fully load the asset
                 final Asset loadedAsset = assetStorageService.find(asset.getId(), true);
+                // If the asset is now gone it was deleted immediately after being updated, nothing more to do
+                if (loadedAsset == null)
+                    return;
 
                 // Attributes have possibly changed so need to compare old and new attributes
                 // to determine which facts to retract and which to insert
