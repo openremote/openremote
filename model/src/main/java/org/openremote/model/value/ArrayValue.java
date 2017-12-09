@@ -61,4 +61,6 @@ public interface ArrayValue extends Value {
     boolean contains(String string);
 
     boolean contains(double number);
+
+    int indexOf(String string);
 }

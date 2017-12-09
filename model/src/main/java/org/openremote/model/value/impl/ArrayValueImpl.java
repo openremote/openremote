@@ -173,6 +173,11 @@ public class ArrayValueImpl extends ValueImpl implements ArrayValue {
     }
 
     @Override
+    public int indexOf(String string) {
+        return values.indexOf(factory.create(string));
+    }
+
+    @Override
     public String toJson() throws ValueException {
         return ValueUtil.stringify(this);
     }

@@ -48,6 +48,10 @@ public interface ProtocolAssetService extends ContainerService {
             this(null, ignoredAttributeNames, ignoredAttributeKeys);
         }
 
+        public MergeOptions(String assignToUserName, Predicate<String> ignoredAttributeKeys) {
+            this(assignToUserName, null, ignoredAttributeKeys);
+        }
+
         public MergeOptions(String assignToUserName, Predicate<String> ignoredAttributeNames, Predicate<String> ignoredAttributeKeys) {
             this.assignToUserName = assignToUserName;
             this.ignoredAttributeNames = ignoredAttributeNames;
