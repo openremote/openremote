@@ -146,6 +146,10 @@ task gwtSuperDev(dependsOn: classes, type: JavaExec) {
     jvmArgs("-Dgwt.persistentunitcachedir=$gwtCacheDir")
 }
 
+installDist {
+    dependsOn resolveTask(":manager:client:src:main:webapp:installDist")
+}
+
 distributions {
     main {
         contents {
