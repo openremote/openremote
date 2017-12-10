@@ -63,9 +63,6 @@ window.startBasicAuthentication = function (realm, successCallback, failureCallb
                     window.basicAuthUsername = username;
                     window.basicAuthPassword = password;
                     document.body.removeChild(authForm);
-                    if (startLoading) {
-                        startLoading();
-                    }
                     if (successCallback) {
                         successCallback();
                     }

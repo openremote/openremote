@@ -1,10 +1,6 @@
 window.defaultErrorMessage = "Service not available, please try again later.";
 
-window.startLoading = function() {
-    console.log("Start loading...");
-    if (!window.document.body.classList.contains("loading")) {
-        window.document.body.classList.add("loading");
-    }
+document.addEventListener("DOMContentLoaded", function () {
     // Need this to find out if GWT superdev compilation failed, then abort loading...
     window.clearInterval(window.checkGwtDebugInterval);
     window.checkGwtDebugInterval = window.setInterval(function() {
@@ -15,7 +11,7 @@ window.startLoading = function() {
             window.handleLoadComplete();
         }
     }, 500);
-};
+});
 
 window.handleLoadError = function(reason) {
     console.log("Load error: " + reason);

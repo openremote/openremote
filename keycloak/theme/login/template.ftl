@@ -44,7 +44,7 @@
         });
     </script>
 </head>
-<body class="layout vertical loading" onload="startLoading()">
+<body class="layout vertical loading">
 
     <div class="flex layout vertical center-center">
 
