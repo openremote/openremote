@@ -1,0 +1,461 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 48;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		4C4C2FB81FD8044A0071CBDA /* ORNotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C4C2FB71FD8044A0071CBDA /* ORNotificationService.swift */; };
+		4C82D73F1FC58ED2009DE853 /* ORLib.h in Headers */ = {isa = PBXBuildFile; fileRef = 4C82D73D1FC58ED2009DE853 /* ORLib.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		4C82D74A1FC58F4E009DE853 /* ORViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C82D7451FC58F4E009DE853 /* ORViewController.swift */; };
+		4C82D74B1FC58F4E009DE853 /* ORAppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C82D7461FC58F4E009DE853 /* ORAppDelegate.swift */; };
+		4C82D74C1FC58F4E009DE853 /* ProjectConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C82D7471FC58F4E009DE853 /* ProjectConstants.swift */; };
+		4C82D74D1FC58F4E009DE853 /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C82D7481FC58F4E009DE853 /* Constants.swift */; };
+		4C82D74E1FC58F4E009DE853 /* ORLoginViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C82D7491FC58F4E009DE853 /* ORLoginViewController.swift */; };
+		4C82D7581FC590FB009DE853 /* ErrorManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C82D7531FC590FB009DE853 /* ErrorManager.swift */; };
+		4C82D7591FC590FB009DE853 /* TokenManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C82D7541FC590FB009DE853 /* TokenManager.swift */; };
+		4CBC0D471FD6DDA1000BE8B1 /* Reachability.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CBC0D461FD6DDA1000BE8B1 /* Reachability.swift */; };
+		7CCC2ED6D141AFD5DC9E5EC1 /* Pods_ORLib.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 978B95045017E64853668497 /* Pods_ORLib.framework */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		4C4C2FB71FD8044A0071CBDA /* ORNotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ORNotificationService.swift; sourceTree = "<group>"; };
+		4C82D73A1FC58ED2009DE853 /* ORLib.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = ORLib.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		4C82D73D1FC58ED2009DE853 /* ORLib.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ORLib.h; sourceTree = "<group>"; };
+		4C82D73E1FC58ED2009DE853 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		4C82D7451FC58F4E009DE853 /* ORViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ORViewController.swift; sourceTree = "<group>"; };
+		4C82D7461FC58F4E009DE853 /* ORAppDelegate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ORAppDelegate.swift; sourceTree = "<group>"; };
+		4C82D7471FC58F4E009DE853 /* ProjectConstants.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ProjectConstants.swift; sourceTree = "<group>"; };
+		4C82D7481FC58F4E009DE853 /* Constants.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Constants.swift; sourceTree = "<group>"; };
+		4C82D7491FC58F4E009DE853 /* ORLoginViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ORLoginViewController.swift; sourceTree = "<group>"; };
+		4C82D7531FC590FB009DE853 /* ErrorManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ErrorManager.swift; sourceTree = "<group>"; };
+		4C82D7541FC590FB009DE853 /* TokenManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TokenManager.swift; sourceTree = "<group>"; };
+		4CBC0D461FD6DDA1000BE8B1 /* Reachability.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Reachability.swift; sourceTree = "<group>"; };
+		572EED7F064AF79DDABE9FC8 /* Pods-ORLib.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ORLib.release.xcconfig"; path = "Pods/Target Support Files/Pods-ORLib/Pods-ORLib.release.xcconfig"; sourceTree = "<group>"; };
+		978B95045017E64853668497 /* Pods_ORLib.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_ORLib.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		C641D9E59892499E90E68616 /* Pods-ORLib.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ORLib.debug.xcconfig"; path = "Pods/Target Support Files/Pods-ORLib/Pods-ORLib.debug.xcconfig"; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		4C82D7361FC58ED2009DE853 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7CCC2ED6D141AFD5DC9E5EC1 /* Pods_ORLib.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		4C82D7301FC58ED2009DE853 = {
+			isa = PBXGroup;
+			children = (
+				4C82D73C1FC58ED2009DE853 /* ORLib */,
+				4C82D73B1FC58ED2009DE853 /* Products */,
+				8B937E998158FCCA944454DF /* Pods */,
+				659E47451ADA08D6BAAF1568 /* Frameworks */,
+			);
+			sourceTree = "<group>";
+		};
+		4C82D73B1FC58ED2009DE853 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				4C82D73A1FC58ED2009DE853 /* ORLib.framework */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		4C82D73C1FC58ED2009DE853 /* ORLib */ = {
+			isa = PBXGroup;
+			children = (
+				4C82D7531FC590FB009DE853 /* ErrorManager.swift */,
+				4C82D7541FC590FB009DE853 /* TokenManager.swift */,
+				4CBC0D461FD6DDA1000BE8B1 /* Reachability.swift */,
+				4C82D7461FC58F4E009DE853 /* ORAppDelegate.swift */,
+				4C82D7481FC58F4E009DE853 /* Constants.swift */,
+				4C82D7451FC58F4E009DE853 /* ORViewController.swift */,
+				4C82D7471FC58F4E009DE853 /* ProjectConstants.swift */,
+				4C82D7491FC58F4E009DE853 /* ORLoginViewController.swift */,
+				4C82D73D1FC58ED2009DE853 /* ORLib.h */,
+				4C82D73E1FC58ED2009DE853 /* Info.plist */,
+				4C4C2FB71FD8044A0071CBDA /* ORNotificationService.swift */,
+			);
+			path = ORLib;
+			sourceTree = "<group>";
+		};
+		659E47451ADA08D6BAAF1568 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				978B95045017E64853668497 /* Pods_ORLib.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		8B937E998158FCCA944454DF /* Pods */ = {
+			isa = PBXGroup;
+			children = (
+				C641D9E59892499E90E68616 /* Pods-ORLib.debug.xcconfig */,
+				572EED7F064AF79DDABE9FC8 /* Pods-ORLib.release.xcconfig */,
+			);
+			name = Pods;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXHeadersBuildPhase section */
+		4C82D7371FC58ED2009DE853 /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4C82D73F1FC58ED2009DE853 /* ORLib.h in Headers */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXHeadersBuildPhase section */
+
+/* Begin PBXNativeTarget section */
+		4C82D7391FC58ED2009DE853 /* ORLib */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 4C82D7421FC58ED2009DE853 /* Build configuration list for PBXNativeTarget "ORLib" */;
+			buildPhases = (
+				96B4118FFE24AACE46B60F45 /* [CP] Check Pods Manifest.lock */,
+				4C82D7351FC58ED2009DE853 /* Sources */,
+				4C82D7361FC58ED2009DE853 /* Frameworks */,
+				4C82D7371FC58ED2009DE853 /* Headers */,
+				4C82D7381FC58ED2009DE853 /* Resources */,
+				C4FE859AEC10E3D92C80C6BB /* [CP] Copy Pods Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = ORLib;
+			productName = ORLib;
+			productReference = 4C82D73A1FC58ED2009DE853 /* ORLib.framework */;
+			productType = "com.apple.product-type.framework";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		4C82D7311FC58ED2009DE853 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 0910;
+				ORGANIZATIONNAME = "Open Remote Inc.";
+				TargetAttributes = {
+					4C82D7391FC58ED2009DE853 = {
+						CreatedOnToolsVersion = 9.1;
+						LastSwiftMigration = 0910;
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 4C82D7341FC58ED2009DE853 /* Build configuration list for PBXProject "ORLib" */;
+			compatibilityVersion = "Xcode 8.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+			);
+			mainGroup = 4C82D7301FC58ED2009DE853;
+			productRefGroup = 4C82D73B1FC58ED2009DE853 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				4C82D7391FC58ED2009DE853 /* ORLib */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		4C82D7381FC58ED2009DE853 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		96B4118FFE24AACE46B60F45 /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-ORLib-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+		C4FE859AEC10E3D92C80C6BB /* [CP] Copy Pods Resources */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "[CP] Copy Pods Resources";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-ORLib/Pods-ORLib-resources.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		4C82D7351FC58ED2009DE853 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4C4C2FB81FD8044A0071CBDA /* ORNotificationService.swift in Sources */,
+				4C82D7581FC590FB009DE853 /* ErrorManager.swift in Sources */,
+				4C82D74E1FC58F4E009DE853 /* ORLoginViewController.swift in Sources */,
+				4C82D74C1FC58F4E009DE853 /* ProjectConstants.swift in Sources */,
+				4C82D74B1FC58F4E009DE853 /* ORAppDelegate.swift in Sources */,
+				4CBC0D471FD6DDA1000BE8B1 /* Reachability.swift in Sources */,
+				4C82D74A1FC58F4E009DE853 /* ORViewController.swift in Sources */,
+				4C82D74D1FC58F4E009DE853 /* Constants.swift in Sources */,
+				4C82D7591FC590FB009DE853 /* TokenManager.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		4C82D7401FC58ED2009DE853 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 11.1;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				VERSIONING_SYSTEM = "apple-generic";
+				VERSION_INFO_PREFIX = "";
+			};
+			name = Debug;
+		};
+		4C82D7411FC58ED2009DE853 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 11.1;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = iphoneos;
+				SWIFT_OPTIMIZATION_LEVEL = "-Owholemodule";
+				VALIDATE_PRODUCT = YES;
+				VERSIONING_SYSTEM = "apple-generic";
+				VERSION_INFO_PREFIX = "";
+			};
+			name = Release;
+		};
+		4C82D7431FC58ED2009DE853 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = C641D9E59892499E90E68616 /* Pods-ORLib.debug.xcconfig */;
+			buildSettings = {
+				CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_IDENTITY = "";
+				CODE_SIGN_STYLE = Automatic;
+				DEFINES_MODULE = YES;
+				DEVELOPMENT_TEAM = MD7Q2M7GWA;
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"${PODS_ROOT}/Firebase/Core/Sources",
+					"$(inherited)",
+					"\"${PODS_ROOT}/Headers/Public\"",
+					"\"${PODS_ROOT}/Headers/Public/Firebase\"",
+					"\"${PODS_ROOT}/Headers/Public/FirebaseAnalytics\"",
+					"\"${PODS_ROOT}/Headers/Public/FirebaseCore\"",
+					"\"${PODS_ROOT}/Headers/Public/FirebaseInstanceID\"",
+					"\"${PODS_ROOT}/Headers/Public/FirebaseMessaging\"",
+					"\"$(SRCROOT)/Library\"",
+				);
+				INFOPLIST_FILE = ORLib/Info.plist;
+				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
+				IPHONEOS_DEPLOYMENT_TARGET = 10.3;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
+				LIBRARY_SEARCH_PATHS = "";
+				MODULEMAP_FILE = "";
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = org.openremote.ORLib;
+				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
+				SKIP_INSTALL = YES;
+				SWIFT_INCLUDE_PATHS = "";
+				SWIFT_OBJC_BRIDGING_HEADER = "";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 4.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		4C82D7441FC58ED2009DE853 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 572EED7F064AF79DDABE9FC8 /* Pods-ORLib.release.xcconfig */;
+			buildSettings = {
+				CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_IDENTITY = "";
+				CODE_SIGN_STYLE = Automatic;
+				DEFINES_MODULE = YES;
+				DEVELOPMENT_TEAM = MD7Q2M7GWA;
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"${PODS_ROOT}/Firebase/Core/Sources",
+					"$(inherited)",
+					"\"${PODS_ROOT}/Headers/Public\"",
+					"\"${PODS_ROOT}/Headers/Public/Firebase\"",
+					"\"${PODS_ROOT}/Headers/Public/FirebaseAnalytics\"",
+					"\"${PODS_ROOT}/Headers/Public/FirebaseCore\"",
+					"\"${PODS_ROOT}/Headers/Public/FirebaseInstanceID\"",
+					"\"${PODS_ROOT}/Headers/Public/FirebaseMessaging\"",
+					"\"$(SRCROOT)/Library\"",
+				);
+				INFOPLIST_FILE = ORLib/Info.plist;
+				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
+				IPHONEOS_DEPLOYMENT_TARGET = 10.3;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
+				LIBRARY_SEARCH_PATHS = "";
+				MODULEMAP_FILE = "";
+				ONLY_ACTIVE_ARCH = NO;
+				PRODUCT_BUNDLE_IDENTIFIER = org.openremote.ORLib;
+				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
+				SKIP_INSTALL = YES;
+				SWIFT_INCLUDE_PATHS = "";
+				SWIFT_OBJC_BRIDGING_HEADER = "";
+				SWIFT_VERSION = 4.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		4C82D7341FC58ED2009DE853 /* Build configuration list for PBXProject "ORLib" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				4C82D7401FC58ED2009DE853 /* Debug */,
+				4C82D7411FC58ED2009DE853 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		4C82D7421FC58ED2009DE853 /* Build configuration list for PBXNativeTarget "ORLib" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				4C82D7431FC58ED2009DE853 /* Debug */,
+				4C82D7441FC58ED2009DE853 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 4C82D7311FC58ED2009DE853 /* Project object */;
+}
