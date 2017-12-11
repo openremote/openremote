@@ -12,7 +12,7 @@ Pod::Spec.new do |s|
   s.version = '1.0.0'
   s.authors = 'OpenRemote'
   s.homepage = "http://www.openremote.com/community/"
-  s.source = { :git => 'https://github.com/openremote/openremote.git', :tag => 'iOSPodV1.0.0' }
+  s.source = { :git => 'https://github.com/openremote/openremote.git', :tag => s.version.to_s }
   s.dependency 'Firebase/Core', '4.6.0'
   s.dependency 'Firebase/Messaging', '4.6.0'
 
