@@ -475,6 +475,45 @@ public class AbstractAssetQuery<CHILD extends AbstractAssetQuery<CHILD>> {
         }
     }
 
+    public static class AttributePredicate {
+        public StringPredicate name;
+        public ValuePredicate value;
+
+        public AttributePredicate() {
+        }
+
+        public AttributePredicate(StringPredicate name) {
+            this.name = name;
+        }
+
+        public AttributePredicate(ValuePredicate value) {
+            this.value = value;
+        }
+
+        public AttributePredicate(StringPredicate name, ValuePredicate value) {
+            this.name = name;
+            this.value = value;
+        }
+
+        public AttributePredicate name(StringPredicate name) {
+            this.name = name;
+            return this;
+        }
+
+        public AttributePredicate value(ValuePredicate value) {
+            this.value = value;
+            return this;
+        }
+
+        @Override
+        public String toString() {
+            return getClass().getSimpleName() + "{" +
+                "name=" + name +
+                ", value=" + value +
+                '}';
+        }
+    }
+
     public static class AttributeMetaPredicate {
         public StringPredicate itemNamePredicate;
         public ValuePredicate itemValuePredicate;
@@ -570,80 +609,6 @@ public class AbstractAssetQuery<CHILD extends AbstractAssetQuery<CHILD>> {
         }
     }
 
-    public static class AttributePredicate {
-        public StringPredicate itemNamePredicate;
-        public ValuePredicate itemValuePredicate;
-
-        public AttributePredicate() {
-        }
-
-        public AttributePredicate(StringPredicate itemNamePredicate) {
-            this.itemNamePredicate = itemNamePredicate;
-        }
-
-        public AttributePredicate(MetaItemDescriptor metaItemDescriptor) {
-            this.itemNamePredicate = new StringPredicate(metaItemDescriptor.getUrn());
-        }
-
-        public AttributePredicate(ValuePredicate itemValuePredicate) {
-            this.itemValuePredicate = itemValuePredicate;
-        }
-
-        public AttributePredicate(StringPredicate itemNamePredicate, ValuePredicate itemValuePredicate) {
-            this.itemNamePredicate = itemNamePredicate;
-            this.itemValuePredicate = itemValuePredicate;
-        }
-
-        public AttributePredicate(MetaItemDescriptor metaItemDescriptor, ValuePredicate itemValuePredicate) {
-            this(new StringPredicate(metaItemDescriptor.getUrn()), itemValuePredicate);
-        }
-
-        public AttributePredicate itemName(StringPredicate itemNamePredicate) {
-            this.itemNamePredicate = itemNamePredicate;
-            return this;
-        }
-
-        public AttributePredicate itemName(MetaItemDescriptor metaItemDescriptor) {
-            return itemName(new StringPredicate(metaItemDescriptor.getUrn()));
-        }
-
-        public AttributePredicate itemValue(ValuePredicate itemValuePredicate) {
-            this.itemValuePredicate = itemValuePredicate;
-            return this;
-        }
-
-        @Override
-        public String toString() {
-            return getClass().getSimpleName() + "{" +
-                "itemNamePredicate=" + itemNamePredicate +
-                ", itemValuePredicate=" + itemValuePredicate +
-                '}';
-        }
-    }
-
-    public static class AttributePredicateArray {
-        public AttributePredicate[] predicates = new AttributePredicate[0];
-
-        public AttributePredicateArray() {
-        }
-
-        public AttributePredicateArray(AttributePredicate... predicates) {
-            this.predicates = predicates;
-        }
-
-        public AttributePredicateArray predicates(AttributePredicate... predicates) {
-            this.predicates = predicates;
-            return this;
-        }
-
-        @Override
-        public String toString() {
-            return getClass().getSimpleName() + "{" +
-                "predicates=" + Arrays.toString(predicates) +
-                '}';
-        }
-    }
-
     public static class OrderBy {
 
         public enum Property {
@@ -699,8 +664,8 @@ public class AbstractAssetQuery<CHILD extends AbstractAssetQuery<CHILD>> {
     public TenantPredicate tenantPredicate;
     public String userId;
     public StringPredicate type;
-    public AttributeMetaPredicate attributeMetaPredicate;
-    public AttributePredicateArray attributePredicateArray;
+    public AttributePredicate[] attributePredicates;
+    public AttributeMetaPredicate[] attributeMetaPredicates;
 
     // Ordering
     public OrderBy orderBy;
@@ -768,13 +733,13 @@ public class AbstractAssetQuery<CHILD extends AbstractAssetQuery<CHILD>> {
         return type(new StringPredicate(assetType.getValue()));
     }
 
-    public CHILD attributeMeta(AttributeMetaPredicate attributeMetaPredicate) {
-        this.attributeMetaPredicate = attributeMetaPredicate;
+    public CHILD attributes(AttributePredicate... attributePredicates) {
+        this.attributePredicates = attributePredicates;
         return (CHILD) this;
     }
 
-    public CHILD attributes(AttributePredicateArray attributePredicateArray) {
-        this.attributePredicateArray = attributePredicateArray;
+    public CHILD attributeMeta(AttributeMetaPredicate... attributeMetaPredicates) {
+        this.attributeMetaPredicates = attributeMetaPredicates;
         return (CHILD) this;
     }
 
@@ -794,8 +759,8 @@ public class AbstractAssetQuery<CHILD extends AbstractAssetQuery<CHILD>> {
             ", tenantPredicate=" + tenantPredicate +
             ", userId='" + userId + '\'' +
             ", type=" + type +
-            ", attributeMetaPredicate=" + attributeMetaPredicate +
-            ", attributePredicateArray=" + attributePredicateArray +
+            ", attributePredicates=" + Arrays.toString(attributePredicates) +
+            ", attributeMetaPredicates=" + Arrays.toString(attributeMetaPredicates) +
             ", orderBy=" + orderBy +
             '}';
     }

@@ -437,7 +437,7 @@ public class RulesEngine<T extends Ruleset> {
 
             // Insert initial asset states
             try {
-                Set<AssetState> initialState = assetStates.keySet();
+                Set<AssetState> initialState = new HashSet<>(assetStates.keySet());
                 LOG.info("On " + this + ", inserting initial asset states: " + initialState.size());
                 for (AssetState assetState : initialState) {
                     insertAssetState(assetState);

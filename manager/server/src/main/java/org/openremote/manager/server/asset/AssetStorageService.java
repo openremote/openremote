@@ -842,21 +842,23 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 binders.add(st -> st.setString(pos, query.type.prepareValue()));
             }
 
-            if (query.attributeMetaPredicate != null) {
-                String attributeMetaFilter = buildAttributeMetaFilter(query.attributeMetaPredicate, binders);
+            if (query.attributeMetaPredicates != null) {
+                for (AbstractAssetQuery.AttributeMetaPredicate attributeMetaPredicate : query.attributeMetaPredicates) {
+                    String attributeMetaFilter = buildAttributeMetaFilter(attributeMetaPredicate, binders);
 
-                if (attributeMetaFilter.length() > 0) {
-                    sb.append(" and A.ID in (select A.ID from");
-                    sb.append(" jsonb_each(A.ATTRIBUTES) as AX,");
-                    sb.append(" jsonb_array_elements(AX.VALUE #> '{meta}') as AM");
-                    sb.append(" where true");
-                    sb.append(attributeMetaFilter);
-                    sb.append(")");
+                    if (attributeMetaFilter.length() > 0) {
+                        sb.append(" and A.ID in (select A.ID from");
+                        sb.append(" jsonb_each(A.ATTRIBUTES) as AX,");
+                        sb.append(" jsonb_array_elements(AX.VALUE #> '{meta}') as AM");
+                        sb.append(" where true");
+                        sb.append(attributeMetaFilter);
+                        sb.append(")");
+                    }
                 }
             }
 
-            if (query.attributePredicateArray != null && query.attributePredicateArray.predicates != null) {
-                for (AssetQuery.AttributePredicate attributePredicate : query.attributePredicateArray.predicates) {
+            if (query.attributePredicates != null) {
+                for (AssetQuery.AttributePredicate attributePredicate : query.attributePredicates) {
                     StringBuilder attributeFilterBuilder = new StringBuilder();
                     attributeFilterBuilder.append(buildAttributeFilter(attributePredicate, binders));
 
@@ -921,18 +923,18 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     protected String buildAttributeFilter(AssetQuery.AttributePredicate attributePredicate, List<ParameterBinder> binders) {
         StringBuilder attributeBuilder = new StringBuilder();
 
-        if (attributePredicate.itemNamePredicate != null) {
-            attributeBuilder.append(attributePredicate.itemNamePredicate.caseSensitive
+        if (attributePredicate.name != null) {
+            attributeBuilder.append(attributePredicate.name.caseSensitive
                 ? " and AX.key"
                 : " and upper(AX.key)"
             );
-            attributeBuilder.append(attributePredicate.itemNamePredicate.match == AssetQuery.Match.EXACT ? " = ? " : " like ? ");
+            attributeBuilder.append(attributePredicate.name.match == AssetQuery.Match.EXACT ? " = ? " : " like ? ");
             final int pos = binders.size() + 1;
-            binders.add(st -> st.setString(pos, attributePredicate.itemNamePredicate.prepareValue()));
+            binders.add(st -> st.setString(pos, attributePredicate.name.prepareValue()));
         }
-        if (attributePredicate.itemValuePredicate != null) {
-            if (attributePredicate.itemValuePredicate instanceof AssetQuery.StringPredicate) {
-                AssetQuery.StringPredicate stringPredicate = (AssetQuery.StringPredicate) attributePredicate.itemValuePredicate;
+        if (attributePredicate.value != null) {
+            if (attributePredicate.value instanceof AssetQuery.StringPredicate) {
+                AssetQuery.StringPredicate stringPredicate = (AssetQuery.StringPredicate) attributePredicate.value;
                 attributeBuilder.append(stringPredicate.caseSensitive
                     ? " and AX.VALUE #>> '{value}'"
                     : " and upper(AX.VALUE #>> '{value}')"
@@ -940,13 +942,13 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 attributeBuilder.append(stringPredicate.match == AssetQuery.Match.EXACT ? " = ? " : " like ? ");
                 final int pos = binders.size() + 1;
                 binders.add(st -> st.setString(pos, stringPredicate.prepareValue()));
-            } else if (attributePredicate.itemValuePredicate instanceof AssetQuery.BooleanPredicate) {
-                AssetQuery.BooleanPredicate booleanPredicate = (AssetQuery.BooleanPredicate) attributePredicate.itemValuePredicate;
+            } else if (attributePredicate.value instanceof AssetQuery.BooleanPredicate) {
+                AssetQuery.BooleanPredicate booleanPredicate = (AssetQuery.BooleanPredicate) attributePredicate.value;
                 attributeBuilder.append(" and AX.VALUE #> '{value}' = to_jsonb(")
                     .append(booleanPredicate.predicate)
                     .append(")");
-            } else if (attributePredicate.itemValuePredicate instanceof AssetQuery.StringArrayPredicate) {
-                AssetQuery.StringArrayPredicate stringArrayPredicate = (AssetQuery.StringArrayPredicate) attributePredicate.itemValuePredicate;
+            } else if (attributePredicate.value instanceof AssetQuery.StringArrayPredicate) {
+                AssetQuery.StringArrayPredicate stringArrayPredicate = (AssetQuery.StringArrayPredicate) attributePredicate.value;
                 for (int i = 0; i < stringArrayPredicate.predicates.length; i++) {
                     AssetQuery.StringPredicate stringPredicate = stringArrayPredicate.predicates[i];
                     attributeBuilder.append(stringPredicate.caseSensitive
@@ -957,8 +959,8 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                     final int pos = binders.size() + 1;
                     binders.add(st -> st.setString(pos, stringPredicate.prepareValue()));
                 }
-            } else if (attributePredicate.itemValuePredicate instanceof AssetQuery.DateTimePredicate) {
-                AssetQuery.DateTimePredicate dateTimePredicate = (AssetQuery.DateTimePredicate) attributePredicate.itemValuePredicate;
+            } else if (attributePredicate.value instanceof AssetQuery.DateTimePredicate) {
+                AssetQuery.DateTimePredicate dateTimePredicate = (AssetQuery.DateTimePredicate) attributePredicate.value;
                 attributeBuilder.append(" and to_timestamp(AX.VALUE #>> '{value}', ?)");
                 final int keyFormatPos = binders.size() + 1;
                 binders.add(st -> st.setString(keyFormatPos, dateTimePredicate.dateFormat));
@@ -992,8 +994,8 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                         binders.add(st -> st.setString(formatPos2, dateTimePredicate.dateFormat));
                         break;
                 }
-            } else if (attributePredicate.itemValuePredicate instanceof AssetQuery.NumberPredicate) {
-                AssetQuery.NumberPredicate numberPredicate = (AssetQuery.NumberPredicate) attributePredicate.itemValuePredicate;
+            } else if (attributePredicate.value instanceof AssetQuery.NumberPredicate) {
+                AssetQuery.NumberPredicate numberPredicate = (AssetQuery.NumberPredicate) attributePredicate.value;
                 attributeBuilder.append(" and (AX.VALUE #>> '{value}')::numeric");
                 switch (numberPredicate.operatorMatch) {
                     case EXACT:
