@@ -17,6 +17,6 @@ Pod::Spec.new do |s|
   s.dependency 'Firebase/Messaging', '4.6.0'
 
   base_dir = "console/iOS/"
-  s.source_files = base_dir + 'ORLib/**/*.{swift}'
-  s.license = { :type => "MIT", :file => "base_dir/LICENSE" }
+  s.source_files = base_dir + 'ORLib/*.{swift}'
+  s.license = { :type => "MIT", :file => base_dir + "LICENSE" }
 end
