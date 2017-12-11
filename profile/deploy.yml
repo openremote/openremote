@@ -205,14 +205,14 @@ services:
       # Custom JVM options (increase heap size if required)
       JAVA_OPTS: '-Xms400m -Xmx400m
                   -XX:CompressedClassSpaceSize=25m -XX:MaxMetaspaceSize=150m
-                  -XX:InitialCodeCacheSize=25m -XX:ReservedCodeCacheSize=25m
+                  -XX:InitialCodeCacheSize=50m -XX:ReservedCodeCacheSize=50m
                   -XX:MaxDirectMemorySize=25m
                   -XX:NativeMemoryTracking=summary
                   -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/javadump.core.hprof'
 
     # Resource limits
-    mem_limit: 700m
-    memswap_limit: 700m
+    mem_limit: 800m
+    memswap_limit: 800m
 
     # Configure logging of the container, see deployment/logging.properties
     logging:
@@ -250,15 +250,15 @@ services:
       # Custom JVM options (increase heap size if required)
       JAVA_OPTS: '-Xms300m -Xmx300m
                   -XX:CompressedClassSpaceSize=25m -XX:MaxMetaspaceSize=150m
-                  -XX:InitialCodeCacheSize=25m -XX:ReservedCodeCacheSize=25m
+                  -XX:InitialCodeCacheSize=50m -XX:ReservedCodeCacheSize=50m
                   -XX:MaxDirectMemorySize=25m
                   -XX:NativeMemoryTracking=summary
                   -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/javadump.core.hprof
                   -Djava.net.preferIPv4Stack=true -Djboss.modules.system.pkgs=org.jboss.byteman -Djava.awt.headless=true'
 
     # Resource limits
-    mem_limit: 600m
-    memswap_limit: 600m
+    mem_limit: 700m
+    memswap_limit: 700m
 
     # Configure logging of the container
     logging:
