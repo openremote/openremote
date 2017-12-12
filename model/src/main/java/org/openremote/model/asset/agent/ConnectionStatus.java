@@ -28,6 +28,11 @@ import org.openremote.model.attribute.MetaItem;
 public enum ConnectionStatus {
 
     /**
+     * To be used when it is not possible to determine the status.
+     */
+    UNKNOWN,
+
+    /**
      * Not connected.
      */
     DISCONNECTED,
