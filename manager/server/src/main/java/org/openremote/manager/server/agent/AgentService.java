@@ -98,15 +98,12 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
         clientEventService = container.getService(ClientEventService.class);
         localAgentConnector = new LocalAgentConnector(this);
 
-        clientEventService.addSubscriptionAuthorizer((auth, subscription) -> {
-            if (!subscription.isEventType(AgentStatusEvent.class))
-                return false;
-            return identityService.getIdentityProvider().canSubscribeWith(
-                auth,
-                subscription.getFilter() instanceof TenantFilter ? ((TenantFilter) subscription.getFilter()) : null,
-                ClientRole.READ_ASSETS
-            );
-        });
+        clientEventService.addSubscriptionAuthorizer((auth, subscription) ->
+            subscription.isEventType(AgentStatusEvent.class)
+                && identityService.getIdentityProvider()
+                    .canSubscribeWith(auth, subscription.getFilter() instanceof TenantFilter
+                        ? ((TenantFilter) subscription.getFilter())
+                        : null, ClientRole.READ_ASSETS));
 
         container.getService(WebService.class).getApiSingletons().add(
             new AgentResourceImpl(
@@ -445,7 +442,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
             // Store the info
             protocolConfigurations.put(
                 protocolAttributeRef,
-                new Pair<>(protocolConfiguration, CONNECTING)
+                new Pair<>(protocolConfiguration, null)
             );
 
             // Set status to linking
@@ -457,8 +454,14 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
             } catch (Exception e) {
                 LOG.log(Level.SEVERE, "Protocol threw an exception during protocol configuration linking", e);
                 // Set status to error
-                publishProtocolConnectionStatus(protocolAttributeRef, ERROR);
-                // Cannot continue to link attributes;
+                publishProtocolConnectionStatus(protocolAttributeRef, ERROR_CONFIGURATION);
+            }
+
+            // Check protocol status and only continue linking attributes if not in error state
+            ConnectionStatus connectionStatus = getProtocolConnectionStatus(protocolAttributeRef);
+            if (connectionStatus == ERROR_CONFIGURATION || connectionStatus == ERROR) {
+                LOG.warning("Protocol connection status is showing error so not linking attributes: "
+                    + protocolConfiguration);
                 return;
             }
         }
@@ -531,10 +534,10 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
     }
 
     protected void publishProtocolConnectionStatus(AttributeRef protocolRef, ConnectionStatus connectionStatus) {
-        LOG.info("Agent protocol status updated to " + connectionStatus + ": " + protocolRef);
         synchronized (protocolConfigurations) {
             Pair<AssetAttribute, ConnectionStatus> protocolDeploymentInfo = protocolConfigurations.get(protocolRef);
-            if (protocolDeploymentInfo != null) {
+            if (protocolDeploymentInfo != null && protocolDeploymentInfo.value != connectionStatus) {
+                LOG.info("Agent protocol status updated to " + connectionStatus + ": " + protocolRef);
                 protocolDeploymentInfo.value = connectionStatus;
 
                 // Notify clients
@@ -663,6 +666,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
         return getGroupedAgentLinkAttributes(attributes, filter, null);
     }
 
+    @SuppressWarnings("ConstantConditions")
     protected Map<AssetAttribute, List<AssetAttribute>> getGroupedAgentLinkAttributes(Stream<AssetAttribute> attributes,
                                                                                       Predicate<AssetAttribute> filter,
                                                                                       Consumer<AssetAttribute> notFoundConsumer) {
