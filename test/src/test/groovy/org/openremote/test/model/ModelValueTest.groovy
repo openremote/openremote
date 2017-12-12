@@ -2,6 +2,7 @@ package org.openremote.test.model
 
 import org.openremote.model.value.ArrayValue
 import org.openremote.model.value.ObjectValue
+import org.openremote.model.value.Value
 import org.openremote.model.value.Values
 import spock.lang.Specification
 
@@ -24,6 +25,18 @@ class ModelValueTest extends Specification {
         println rawValue
         ArrayValue parsedValue = Values.<ArrayValue>parse(rawValue).get()
         parsedValue == sampleArray1
+    }
+
+    def "Null support"() {
+        expect:
+        def sampleObject = Values.createObject().put("prop", (Value)null)
+        sampleObject.toJson() == '{"prop":null}'
+        sampleObject.put("prop1", Values.createObject().put("prop2", Values.<ObjectValue>parse('{"prop3":1234,"prop4":{"prop5":null,"prop6":true}}').get()))
+        sampleObject.getObject("prop1").flatMap({it.getObject("prop2").flatMap({it.getObject("prop4").map({it.keyContainsNull("prop5")})})}).get() == true
+        sampleObject.getObject("prop1").flatMap({it.getObject("prop2").flatMap({it.getObject("prop4").map({it.keyContainsNull("prop6")})})}).get() == false
+        sampleObject.toJson() == '{"prop":null,"prop1":{"prop2":{"prop3":1234,"prop4":{"prop5":null,"prop6":true}}}}'
+        def sampleArr = Values.createArray().add(null);
+        sampleArr.toJson() == '[null]'
     }
 
     def "Compare scalar values"() {

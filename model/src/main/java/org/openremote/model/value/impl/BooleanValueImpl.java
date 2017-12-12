@@ -20,9 +20,15 @@ import org.openremote.model.value.ValueType;
 
 public class BooleanValueImpl extends ValueImpl implements BooleanValue {
 
+    private static final BooleanValueImpl FALSE = new BooleanValueImpl(false);
+    private static final BooleanValueImpl TRUE = new BooleanValueImpl(true);
     private transient boolean bool;
 
-    public BooleanValueImpl(boolean bool) {
+    public static BooleanValueImpl create(boolean bool) {
+        return bool ? TRUE : FALSE;
+    }
+
+    private BooleanValueImpl(boolean bool) {
         this.bool = bool;
     }
 
@@ -44,16 +50,6 @@ public class BooleanValueImpl extends ValueImpl implements BooleanValue {
     @Override
     public String toJson() {
         return String.valueOf(bool);
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (o == null)
-            return false;
-        if (!(o instanceof BooleanValueImpl))
-            return false;
-        BooleanValueImpl that = (BooleanValueImpl) o;
-        return getBoolean() == that.getBoolean();
     }
 
     @Override
