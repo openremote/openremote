@@ -80,12 +80,23 @@ public class RuleExecutionLogger extends DefaultAgendaEventListener {
             objectLog = String.format("%s\t\tClass: \"%s\"\n\t\tFields: \n\t\t\t%s\n", objectLog, theClass, theValue);
         }
 
-        LOG.log(
-            ruleName.startsWith("\"--") ? Level.INFO : Level.FINE,
-            String.format("*** On " + contextSupplier.get() + "\n\nRule %s\n\n" +
-                "\tDeclarations \n---------------------------------\n%s\n" +
-                "\tLHS objects(antecedents)\n---------------------------------\n%s", ruleName, declarationLog, objectLog)
-        );
+        if (ruleName.startsWith("\"--")) {
+            LOG.log(Level.INFO,
+                String.format("*** On " + contextSupplier.get() + "\n\nRule %s\n\n" +
+                    "\tDeclarations \n---------------------------------\n%s\n" +
+                    "\tLHS objects(antecedents)\n---------------------------------\n%s", ruleName, declarationLog, objectLog)
+            );
+        } else if (ruleName.startsWith("\"-")) {
+            LOG.log(Level.INFO,
+                String.format("*** On " + contextSupplier.get() + "\nRule %s", ruleName)
+            );
+        } else {
+            LOG.log(Level.FINE,
+                String.format("*** On " + contextSupplier.get() + "\n\nRule %s\n\n" +
+                    "\tDeclarations \n---------------------------------\n%s\n" +
+                    "\tLHS objects(antecedents)\n---------------------------------\n%s", ruleName, declarationLog, objectLog)
+            );
+        }
     }
 
     /**
