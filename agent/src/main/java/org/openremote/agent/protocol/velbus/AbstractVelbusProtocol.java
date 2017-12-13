@@ -376,7 +376,7 @@ public abstract class AbstractVelbusProtocol extends AbstractProtocol implements
                                     propertyDescriptor.getDisplayName(),
                                     propertyDescriptor.getAttributeType(),
                                     propertyDescriptor.isReadOnly(),
-                                    propertyDescriptor.isExecutable(),
+                                    false,
                                     createLinkedAttributeMetaItems(
                                         deviceAddress,
                                         propertyDescriptor.getLinkName()

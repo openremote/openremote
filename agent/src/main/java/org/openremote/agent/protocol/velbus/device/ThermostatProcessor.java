@@ -130,14 +130,14 @@ public class ThermostatProcessor extends FeatureProcessor {
     }
 
     protected static final List<PropertyDescriptor> THERMOSTAT_PROPERTIES = Arrays.asList(
-        new PropertyDescriptor("heater", "Heater", "HEATER", AttributeType.STRING, true, false),
-        new PropertyDescriptor("boost", "Boost", "BOOST", AttributeType.STRING, true, false),
-        new PropertyDescriptor("pump", "Pump", "PUMP", AttributeType.STRING, true, false),
-        new PropertyDescriptor("cooler", "Cooler", "COOLER", AttributeType.STRING, true, false),
-        new PropertyDescriptor("tempAlarm1", "Temp Alarm 1", "TEMP_ALARM1", AttributeType.STRING, true, false),
-        new PropertyDescriptor("tempAlarm2", "Temp Alarm 2", "TEMP_ALARM2", AttributeType.STRING, true, false),
-        new PropertyDescriptor("tempAlarm3", "Temp Alarm 3", "TEMP_ALARM3", AttributeType.STRING, true, false),
-        new PropertyDescriptor("tempAlarm4", "Temp Alarm 4", "TEMP_ALARM4", AttributeType.STRING, true, false),
+        new PropertyDescriptor("heater", "Heater", "HEATER", AttributeType.STRING, true),
+        new PropertyDescriptor("boost", "Boost", "BOOST", AttributeType.STRING, true),
+        new PropertyDescriptor("pump", "Pump", "PUMP", AttributeType.STRING, true),
+        new PropertyDescriptor("cooler", "Cooler", "COOLER", AttributeType.STRING, true),
+        new PropertyDescriptor("tempAlarm1", "Temp Alarm 1", "TEMP_ALARM1", AttributeType.STRING, true),
+        new PropertyDescriptor("tempAlarm2", "Temp Alarm 2", "TEMP_ALARM2", AttributeType.STRING, true),
+        new PropertyDescriptor("tempAlarm3", "Temp Alarm 3", "TEMP_ALARM3", AttributeType.STRING, true),
+        new PropertyDescriptor("tempAlarm4", "Temp Alarm 4", "TEMP_ALARM4", AttributeType.STRING, true),
         new PropertyDescriptor("tempState", "Thermostat State", "TEMP_STATE", AttributeType.STRING),
         new PropertyDescriptor("tempStateDisable", "Thermostat Disable (s)", "TEMP_STATE_DISABLE_SECONDS", AttributeType.TIME_SECONDS),
         // Get current mode or set mode until next program step

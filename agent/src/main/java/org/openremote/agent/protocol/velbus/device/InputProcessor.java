@@ -159,10 +159,10 @@ public class InputProcessor extends ChannelProcessor {
                         properties.add(new PropertyDescriptor("ch"+i+"LockDuration", "CH" + i + " Lock Duration (s)", "CH" + i + propertyType.getPropertySuffix(), AttributeType.NUMBER));
                         break;
                     case ENABLED_STATE:
-                        properties.add(new PropertyDescriptor("ch"+i+"Enabled", "CH" + i + " Enabled", "CH" + i + propertyType.getPropertySuffix(), AttributeType.BOOLEAN, true, false));
+                        properties.add(new PropertyDescriptor("ch"+i+"Enabled", "CH" + i + " Enabled", "CH" + i + propertyType.getPropertySuffix(), AttributeType.BOOLEAN, true));
                         break;
                     case INVERTED_STATE:
-                        properties.add(new PropertyDescriptor("ch"+i+"Inverted", "CH" + i + " Inverted", "CH" + i + propertyType.getPropertySuffix(), AttributeType.BOOLEAN, true, false));
+                        properties.add(new PropertyDescriptor("ch"+i+"Inverted", "CH" + i + " Inverted", "CH" + i + propertyType.getPropertySuffix(), AttributeType.BOOLEAN, true));
                         break;
                 }
 
