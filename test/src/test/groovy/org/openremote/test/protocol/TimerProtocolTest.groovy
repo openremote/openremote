@@ -26,7 +26,7 @@ class TimerProtocolTest extends Specification implements ManagerContainerTrait {
     def "Check timer protocol agent and device asset deployment"() {
 
         given: "expected conditions"
-        def conditions = new PollingConditions(timeout: 20, initialDelay: 0)
+        def conditions = new PollingConditions(timeout: 10, initialDelay: 0)
 
         when: "the container starts"
         def serverPort = findEphemeralPort()
@@ -40,6 +40,7 @@ class TimerProtocolTest extends Specification implements ManagerContainerTrait {
 
         then: "the container should be running and attributes linked"
         conditions.eventually {
+            assert isContainerRunning()
             assert noEventProcessedIn(assetProcessingService, 500)
 
             apartment1 = assetStorageService.find(managerDemoSetup.apartment1Id, true)
@@ -71,6 +72,11 @@ class TimerProtocolTest extends Specification implements ManagerContainerTrait {
             assert cronTrigger.cronExpression == "0 30 8 ? * FRI *"
         }
 
+        and: "all protocol linked attributes should be linked"
+        conditions.eventually {
+            assert timerProtocol.linkedAttributes.size() == 56
+        }
+
         when: "a trigger is disabled"
         def disableScene = new AttributeEvent(managerDemoSetup.apartment1Id, "awaySceneEnabledFRIDAY", Values.create(false))
         assetProcessingService.sendAttributeEvent(disableScene)
@@ -84,6 +90,11 @@ class TimerProtocolTest extends Specification implements ManagerContainerTrait {
             def triggers = timerProtocol.cronScheduler.scheduler.getTriggersOfJob(jobKey)
             assert jobDetail == null
             assert triggers.isEmpty()
+        }
+
+        and: "all protocol linked attributes should be re-linked"
+        conditions.eventually {
+            assert timerProtocol.linkedAttributes.size() == 56
         }
     
         when: "the trigger is re-enabled"

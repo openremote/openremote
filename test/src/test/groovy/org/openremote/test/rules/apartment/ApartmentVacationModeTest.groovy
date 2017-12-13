@@ -28,7 +28,7 @@ class ApartmentVacationModeTest extends Specification implements ManagerContaine
     def "Start and end vacation mode"() {
 
         given: "the container environment is started"
-        def conditions = new PollingConditions(timeout: 15, delay: 1)
+        def conditions = new PollingConditions(timeout: 20, delay: 1)
         def serverPort = findEphemeralPort()
         def container = startContainerWithPseudoClock(defaultConfig(serverPort) << [(SETUP_IMPORT_DEMO_SCENES): "true"], defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
