@@ -437,12 +437,7 @@ public class RulesEngine<T extends Ruleset> {
 
             // Insert initial asset states
             try {
-                Set<AssetState> initialState = new HashSet<>(assetStates.keySet());
-                LOG.info("On " + this + ", inserting initial asset states: " + initialState.size());
-                for (AssetState assetState : initialState) {
-                    insertAssetState(assetState);
-                }
-                LOG.info("On " + this + ", inserted initial asset states: " + initialState.size());
+                insertInitialAssetStates();
             } catch (Exception ex) {
                 // This is called in a background timer thread, we must log here or the exception is swallowed
                 LOG.log(Level.SEVERE, "On " + this + ", inserting initial asset states failed", ex);
@@ -495,28 +490,72 @@ public class RulesEngine<T extends Ruleset> {
         }
     }
 
-    protected synchronized void insertAssetState(AssetState newAssetState) {
-        FactHandle factHandle = insertIntoSession(newAssetState);
-        assetStates.put(newAssetState, factHandle);
+    protected synchronized void insertInitialAssetStates() {
+        synchronized (assetStates) {
+            LOG.info("On " + this + ", inserting initial asset states: " + assetStates.size());
+            for (AssetState assetState : new HashSet<>(assetStates.keySet())) {
+                updateAssetState(assetState, true);
+            }
+            LOG.info("On " + this + ", inserted initial asset states: " + assetStates.size());
+        }
+    }
+    protected synchronized void updateAssetState(AssetState assetState) {
+        updateAssetState(assetState, false);
     }
 
-    protected synchronized void updateAssetState(AssetState assetState) {
-        // Check if fact already exists using equals()
-        if (!assetStates.containsKey(assetState)) {
-            // Delete any existing fact for this attribute ref
-            // Put the fact into working memory and store the handle
-            retractAssetState(assetState);
+    protected synchronized void updateAssetState(AssetState assetState, boolean skipDirtyCheck) {
+        synchronized (assetStates) {
 
-            if (isRunning()) {
-                insertAssetState(assetState);
-            } else {
-                assetStates.put(assetState, null);
+            // Check if fact already exists using equals(), this will deduplicate asset state writes
+            if (!skipDirtyCheck && assetStates.containsKey(assetState)) {
+                LOG.finest("On " + this + ", update is the same as existing, ignoring: " + assetState);
+                return;
             }
+
+            LOG.fine("On " + this + ", updating: " + assetState);
+
+            // Get the old asset state
+            AssetState oldAssetState = assetStates.keySet()
+                .stream()
+                .filter(au -> au.attributeRefsEqual(assetState))
+                .findFirst()
+                .orElse(null);
+
+            // Always remove the old asset state and get its fact handle
+            FactHandle oldFactHandle = oldAssetState != null ? assetStates.remove(oldAssetState) : null;
+
+            if (!isRunning()) {
+                LOG.fine("On " + this + ", engine is in error state or not running, storing for later update: " + assetState);
+                assetStates.put(assetState, null);
+                return;
+            }
+
+            deleteAndInsertInKnowledgeSession(oldFactHandle, assetState, factHandle -> {
+                // Store the new asset state and the fact handle
+                synchronized (assetStates) {
+                    assetStates.put(assetState, factHandle);
+                }
+            });
         }
     }
 
-    protected synchronized void retractAssetState(AssetState assetState) {
+    protected synchronized void deleteAndInsertInKnowledgeSession(FactHandle oldFactHandle,
+                                                                  AssetState assetState,
+                                                                  Consumer<FactHandle> factHandleConsumer) {
+        // Atomically delete the old fact and insert a new fact
+        knowledgeSession.submit(session -> {
+            if (oldFactHandle != null) {
+                session.delete(oldFactHandle);
+            }
+            FactHandle factHandle = session.insert(assetState);
+            if (factHandleConsumer != null) {
+                factHandleConsumer.accept(factHandle);
+            }
+        });
+    }
 
+    protected synchronized void retractAssetState(AssetState assetState) {
+        LOG.fine("On " + this + ", retracting: " + assetState);
         // If there already is a fact in working memory for this attribute then delete it
         AssetState update = assetStates.keySet()
             .stream()
@@ -540,30 +579,17 @@ public class RulesEngine<T extends Ruleset> {
     }
 
     protected synchronized void insertAssetEvent(long expirationOffset, AssetEvent assetEvent) {
-        FactHandle factHandle = insertIntoSession(assetEvent);
+        if (!isRunning()) {
+            LOG.fine("On " + this + ", engine is in error state or not running, ignoring: " + assetEvent);
+            return;
+        }
+        FactHandle factHandle = knowledgeSession.insert(assetEvent);
         if (factHandle != null) {
             scheduleExpiration(assetEvent, factHandle, expirationOffset);
         }
         if (assetEventsConsumer != null) {
             assetEventsConsumer.accept(assetEvent);
         }
-    }
-
-    protected synchronized FactHandle insertIntoSession(AbstractAssetUpdate update) {
-        if (!isRunning()) {
-            LOG.fine("On " + this + ", engine is in error state or not running, ignoring: " + update);
-            return null;
-        }
-        FactHandle fh = knowledgeSession.insert(update);
-        LOG.fine("On " + this + ", fact count after insert: " + knowledgeSession.getFactCount());
-        /* TODO Not synchronous with actual session state due to active mode, and a bit too much output?
-        if (LOG.isLoggable(Level.FINEST)) {
-            for (FactHandle factHandle : knowledgeSession.getFactHandles()) {
-                LOG.fine("Fact: " + knowledgeSession.getObject(factHandle));
-            }
-        }
-        */
-        return fh;
     }
 
     protected Assets createAssetsFacade() {

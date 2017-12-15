@@ -34,7 +34,6 @@ import org.openremote.model.attribute.*;
 import org.openremote.model.value.ArrayValue;
 import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.ValueType;
-import sun.plugin2.message.Message;
 
 import java.io.IOException;
 import java.util.ArrayList;
