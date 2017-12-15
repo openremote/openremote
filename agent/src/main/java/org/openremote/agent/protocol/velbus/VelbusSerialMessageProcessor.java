@@ -21,12 +21,9 @@ package org.openremote.agent.protocol.velbus;
 
 import io.netty.buffer.ByteBuf;
 import org.openremote.agent.protocol.AbstractSerialMessageProcessor;
-import org.openremote.agent.protocol.AbstractSocketMessageProcessor;
 import org.openremote.agent.protocol.ProtocolExecutorService;
 
 import java.util.List;
-
-import static org.openremote.agent.protocol.velbus.VelbusPacket.MAX_PACKET_SIZE;
 
 public class VelbusSerialMessageProcessor extends AbstractSerialMessageProcessor<VelbusPacket> {
 

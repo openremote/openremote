@@ -415,12 +415,18 @@ public class ThermostatProcessor extends FeatureProcessor {
             case MANUAL:
                 // Send TEMP_MODE with current MODE as permanent change
                 TemperatureMode currentMode = (TemperatureMode)device.getPropertyValue("TEMP_MODE");
-                packets.addAll(getTempModePackets(device, currentMode, -1));
+                List<VelbusPacket> tempModePackets = getTempModePackets(device, currentMode, -1);
+                if (tempModePackets != null) {
+                    packets.addAll(tempModePackets);
+                }
                 break;
             case NORMAL:
                 // Send TEMP_MODE with current MODE as temp change
                 currentMode = (TemperatureMode)device.getPropertyValue("TEMP_MODE");
-                packets.addAll(getTempModePackets(device, currentMode, 0));
+                tempModePackets = getTempModePackets(device, currentMode, 0);
+                if (tempModePackets != null) {
+                    packets.addAll(tempModePackets);
+                }
                 break;
         }
 

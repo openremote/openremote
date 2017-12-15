@@ -19,7 +19,6 @@
  */
 package org.openremote.manager.client.widget;
 
-import com.google.gwt.core.client.JavaScriptObject;
 import com.google.gwt.dom.client.Document;
 import com.google.gwt.user.client.ui.FlowPanel;
 import elemental.client.Browser;

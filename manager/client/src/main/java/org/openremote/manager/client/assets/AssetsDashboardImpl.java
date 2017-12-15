@@ -24,10 +24,8 @@ import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
 import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.HTMLPanel;
-import com.google.gwt.user.client.ui.SimplePanel;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.i18n.ManagerMessages;
-import org.openremote.manager.client.style.FormTreeStyle;
 import org.openremote.manager.client.widget.FlexSplitPanel;
 
 import javax.inject.Inject;

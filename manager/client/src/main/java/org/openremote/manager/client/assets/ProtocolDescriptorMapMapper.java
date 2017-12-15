@@ -20,8 +20,6 @@
 package org.openremote.manager.client.assets;
 
 import com.github.nmorel.gwtjackson.client.ObjectMapper;
-import com.github.nmorel.gwtjackson.client.annotation.JsonMixIns;
-import org.openremote.manager.client.interop.jackson.DefaultJsonMixin;
 import org.openremote.manager.shared.http.EntityReader;
 import org.openremote.model.asset.agent.ProtocolDescriptor;
 

@@ -78,7 +78,7 @@ public class QueryParameterInjectorFilter implements ClientRequestFilter {
                         valueArr[i] = valueArr[i].replaceAll(dynamicPlaceholderRegex, finalDynamicValue);
                     }
                 }
-                uriBuilder.queryParam(name, valueArr);
+                uriBuilder.queryParam(name, (Object[]) valueArr);
             });
             requestContext.setUri(uriBuilder.build());
         }

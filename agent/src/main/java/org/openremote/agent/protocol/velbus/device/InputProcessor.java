@@ -237,9 +237,7 @@ public class InputProcessor extends ChannelProcessor {
                             break;
                         case LOCK_STATE:
                             Values.getBoolean(value)
-                                .ifPresent(locked -> {
-                                    packets.addAll(getLockStatePackets(device, channelNumber, locked ? -1 : 0));
-                                });
+                                .ifPresent(locked -> packets.addAll(getLockStatePackets(device, channelNumber, locked ? -1 : 0)));
                             break;
                         case LOCK_DURATION:
                             Values.getIntegerCoerced(value)

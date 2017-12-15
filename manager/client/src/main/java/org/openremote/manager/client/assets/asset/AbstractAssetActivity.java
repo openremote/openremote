@@ -19,7 +19,6 @@
  */
 package org.openremote.manager.client.assets.asset;
 
-import com.google.gwt.place.shared.Place;
 import com.google.gwt.user.client.ui.AcceptsOneWidget;
 import com.google.gwt.user.client.ui.IsWidget;
 import com.google.inject.Provider;

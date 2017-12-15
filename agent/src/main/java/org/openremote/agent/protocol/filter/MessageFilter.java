@@ -22,7 +22,6 @@ package org.openremote.agent.protocol.filter;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import org.openremote.agent.protocol.http.OAuthGrant;
 import org.openremote.container.Container;
 import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Value;

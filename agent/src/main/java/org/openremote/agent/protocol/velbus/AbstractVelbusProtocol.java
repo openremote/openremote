@@ -261,7 +261,7 @@ public abstract class AbstractVelbusProtocol extends AbstractProtocol implements
 
     @Override
     public Asset[] discoverLinkedAssetAttributes(AssetAttribute protocolConfiguration, FileInfo fileInfo) throws IllegalStateException {
-        Document xmlDoc = null;
+        Document xmlDoc;
         try {
             String xmlStr = fileInfo.isBinary() ? new String(Util.decodeBase64(fileInfo.getContents()), "UTF8") : fileInfo.getContents();
             LOG.info("Parsing VELBUS project file: " + fileInfo.getName());

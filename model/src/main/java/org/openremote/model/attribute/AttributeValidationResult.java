@@ -22,7 +22,6 @@ package org.openremote.model.attribute;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.openremote.model.ValidationFailure;
-import org.openremote.model.util.Pair;
 
 import java.util.*;
 

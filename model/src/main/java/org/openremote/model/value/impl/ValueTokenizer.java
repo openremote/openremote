@@ -17,8 +17,6 @@ package org.openremote.model.value.impl;
 
 import org.openremote.model.value.*;
 
-import java.util.Optional;
-
 /**
  * Implementation of parsing a JSON string into instances
  * of {@link org.openremote.model.value.Value}.

@@ -23,7 +23,6 @@ import com.github.nmorel.gwtjackson.client.ObjectMapper;
 import com.github.nmorel.gwtjackson.client.annotation.JsonMixIns;
 import org.openremote.manager.client.interop.jackson.DefaultJsonMixin;
 import org.openremote.manager.shared.http.EntityReader;
-import org.openremote.manager.shared.http.EntityWriter;
 import org.openremote.model.asset.agent.ProtocolDescriptor;
 
 @JsonMixIns({@JsonMixIns.JsonMixIn(target = ProtocolDescriptor.class, mixIn = DefaultJsonMixin.class)})
