@@ -483,6 +483,16 @@ public class RulesEngine<T extends Ruleset> {
                 knowledgeSession.halt();
                 knowledgeSession.dispose();
                 LOG.fine("On " + this + ", knowledge session disposed");
+
+                // Clear out fact handles because the session they belong to is gone
+                synchronized (assetStates) {
+                    for (AssetState assetState : new HashSet<>(assetStates.keySet())) {
+                        if (assetStates.get(assetState) != null) {
+                            assetStates.put(assetState, null);
+                        }
+                    }
+                }
+
             } finally {
                 runningFuture.cancel(true);
                 runningFuture = null;
@@ -555,24 +565,26 @@ public class RulesEngine<T extends Ruleset> {
     }
 
     protected synchronized void retractAssetState(AssetState assetState) {
-        LOG.fine("On " + this + ", retracting: " + assetState);
-        // If there already is a fact in working memory for this attribute then delete it
-        AssetState update = assetStates.keySet()
-            .stream()
-            .filter(au -> au.attributeRefsEqual(assetState))
-            .findFirst()
-            .orElse(null);
+        synchronized (assetStates) {
+            LOG.fine("On " + this + ", retracting: " + assetState);
+            // If there already is a fact in working memory for this attribute then delete it
+            AssetState update = assetStates.keySet()
+                .stream()
+                .filter(au -> au.attributeRefsEqual(assetState))
+                .findFirst()
+                .orElse(null);
 
-        // Always remove from asset states
-        FactHandle factHandle = update != null ? assetStates.remove(update) : null;
+            // Always remove from asset states
+            FactHandle factHandle = update != null ? assetStates.remove(update) : null;
 
-        if (factHandle != null) {
-            if (isRunning()) {
-                try {
-                    // ... retract it from working memory ...
-                    knowledgeSession.delete(factHandle);
-                } catch (Exception e) {
-                    LOG.warning("On " + this + ", failed to retract fact: " + update);
+            if (factHandle != null) {
+                if (isRunning()) {
+                    try {
+                        // ... retract it from working memory ...
+                        knowledgeSession.delete(factHandle);
+                    } catch (Exception e) {
+                        LOG.warning("On " + this + ", failed to retract fact: " + update);
+                    }
                 }
             }
         }
