@@ -28,10 +28,7 @@ import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.Values;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
@@ -393,6 +390,24 @@ public class AssetAttribute extends Attribute {
             "} " + objectValue.toJson();
     }
 
+    @Override
+    public int hashCode() {
+        return Objects.hash(objectValue, name, assetId);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null)
+            return false;
+        if (!(obj instanceof AssetAttribute))
+            return false;
+        AssetAttribute that = (AssetAttribute) obj;
+
+        return Objects.equals(assetId, that.assetId)
+            && Objects.equals(name, that.name)
+            && Objects.equals(objectValue, that.objectValue);
+    }
+
     //    ---------------------------------------------------
     //    FUNCTIONAL METHODS BELOW
     //    ---------------------------------------------------
@@ -449,6 +464,7 @@ public class AssetAttribute extends Attribute {
         if (objectValue == null || objectValue.keys().length == 0) {
             return Stream.empty();
         }
+        //noinspection ConstantConditions
         return Arrays
             .stream(objectValue.keys())
             .map(key -> new Pair<>(key, objectValue.getObject(key)))

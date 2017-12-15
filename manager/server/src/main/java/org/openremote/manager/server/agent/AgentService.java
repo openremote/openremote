@@ -204,7 +204,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
         // Check protocol configuration has changed
         @SuppressWarnings("ConstantConditions")
         AssetAttribute oldProtocolConfiguration = agent.getAttribute(protocolRef.getAttributeName()).get();
-        if (oldProtocolConfiguration.getObjectValue().equals(protocolConfiguration.getObjectValue())) {
+        if (oldProtocolConfiguration.equals(protocolConfiguration)) {
             // Protocol configuration hasn't changed so nothing to do here
             return;
         }
@@ -317,8 +317,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
                     .stream()
                     .filter(oldProtocolAttribute -> newProtocolConfigurations
                         .stream()
-                        .noneMatch(newProtocolAttribute ->
-                            oldProtocolAttribute.getObjectValue().equals(newProtocolAttribute.getObjectValue())
+                        .noneMatch(oldProtocolAttribute::equals
                         )
                     )
                     .forEach(this::unlinkProtocolConfiguration);
@@ -328,8 +327,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
                     .stream()
                     .filter(newProtocolAttribute -> oldProtocolConfigurations
                         .stream()
-                        .noneMatch(oldProtocolAttribute ->
-                            oldProtocolAttribute.getObjectValue().equals(newProtocolAttribute.getObjectValue())
+                        .noneMatch(newProtocolAttribute::equals
                         )
                     ).forEach(this::linkProtocolConfiguration);
 
