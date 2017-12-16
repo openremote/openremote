@@ -77,6 +77,9 @@ public class RulesEngine<T extends Ruleset> {
 
     public static final Logger LOG = Logger.getLogger(RulesEngine.class.getName());
 
+    // Separate logger for rules, available global in session
+    public static final Logger RULES_LOG = Logger.getLogger(RulesEngine.class.getPackage().getName() + ".Rules");
+
     private static final int AUTO_START_DELAY_SECONDS = 2;
     private static Long counter = 1L;
 
@@ -403,7 +406,7 @@ public class RulesEngine<T extends Ruleset> {
 
             setGlobal("assets", createAssetsFacade());
             setGlobal("users", createUsersFacade());
-            setGlobal("LOG", LOG);
+            setGlobal("LOG", RULES_LOG);
 
             // TODO Still need this UTIL?
             setGlobal("util", UTIL);
