@@ -622,7 +622,6 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
 
         // Pass through each engine and try and insert the fact
         for (RulesEngine deployment : rulesEngines) {
-            LOG.fine("@@@ On " + deployment + ", updating: " + assetState);
             deployment.updateAssetState(assetState);
         }
     }
@@ -641,7 +640,6 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
 
         // Pass through each engine and retract this fact
         for (RulesEngine deployment : rulesEngines) {
-            LOG.fine("@@@ On " + deployment + ", retracting: " + assetState);
             deployment.retractAssetState(assetState);
         }
     }

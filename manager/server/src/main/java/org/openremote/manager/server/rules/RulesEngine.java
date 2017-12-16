@@ -19,6 +19,7 @@
  */
 package org.openremote.manager.server.rules;
 
+import org.drools.core.ClassObjectFilter;
 import org.drools.core.common.InternalWorkingMemory;
 import org.drools.core.time.InternalSchedulerService;
 import org.drools.core.time.JobContext;
@@ -65,6 +66,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.logging.Level;
@@ -77,8 +79,11 @@ public class RulesEngine<T extends Ruleset> {
 
     public static final Logger LOG = Logger.getLogger(RulesEngine.class.getName());
 
+    // Separate logger for stats
+    public static final Logger STATS_LOG = Logger.getLogger("org.openremote.RulesEngineStats");
+
     // Separate logger for rules, available global in session
-    public static final Logger RULES_LOG = Logger.getLogger(RulesEngine.class.getPackage().getName() + ".Rules");
+    public static final Logger RULES_LOG = Logger.getLogger("org.openremote.Rules");
 
     private static final int AUTO_START_DELAY_SECONDS = 2;
     private static Long counter = 1L;
@@ -110,6 +115,7 @@ public class RulesEngine<T extends Ruleset> {
     // count from Drools session (events are expired automatically))
     protected Consumer<AssetEvent> assetEventsConsumer;
     protected ScheduledFuture startTimer;
+    protected ScheduledFuture statsTimer;
 
     public RulesEngine(TimerService timerService,
                        ManagerExecutorService executorService,
@@ -411,7 +417,7 @@ public class RulesEngine<T extends Ruleset> {
             // TODO Still need this UTIL?
             setGlobal("util", UTIL);
 
-            knowledgeSession.addEventListener(new RuleExecutionLogger(this::toString));
+            knowledgeSession.addEventListener(new RuleExecutionLogger(this::toString, RULES_LOG));
 
             AgendaEventListener eventListener = rulesEngineListeners != null ? rulesEngineListeners.apply(this) : null;
             if (eventListener != null) {
@@ -421,17 +427,17 @@ public class RulesEngine<T extends Ruleset> {
             knowledgeSession.addEventListener(new RuleRuntimeEventListener() {
                 @Override
                 public void objectInserted(ObjectInsertedEvent event) {
-                    LOG.fine("+++ On " + RulesEngine.this + ", object inserted: " + event.getObject());
+                    RULES_LOG.finest("+++ On " + RulesEngine.this + ", fact inserted: " + event.getObject());
                 }
 
                 @Override
                 public void objectUpdated(ObjectUpdatedEvent event) {
-                    LOG.fine("^^^ On " + RulesEngine.this + ", object updated: " + event.getObject());
+                    RULES_LOG.finest("^^^ On " + RulesEngine.this + ", fact updated: " + event.getObject());
                 }
 
                 @Override
                 public void objectDeleted(ObjectDeletedEvent event) {
-                    LOG.fine("--- On " + RulesEngine.this + ", object deleted: " + event.getOldObject());
+                    RULES_LOG.finest("--- On " + RulesEngine.this + ", fact deleted: " + event.getOldObject());
                 }
             });
 
@@ -448,6 +454,15 @@ public class RulesEngine<T extends Ruleset> {
                 stop();
             }
 
+            // Start a background stats printer if INFO level logging is enabled
+            if (STATS_LOG.isLoggable(Level.INFO) || STATS_LOG.isLoggable(Level.FINEST)) {
+                if (STATS_LOG.isLoggable(Level.FINEST)) {
+                    LOG.info("On " + this + ", enabling periodic statistics output at INFO level every 30 seconds on category: " + STATS_LOG.getName());
+                } else {
+                    LOG.info("On " + this + ", enabling periodic full memory dump at FINEST level every 30 seconds on category: " + STATS_LOG.getName());
+                }
+                statsTimer = executorService.scheduleAtFixedRate(this::printSessionStats, 0, 30, TimeUnit.SECONDS);
+            }
         } catch (Exception ex) {
             LOG.log(Level.SEVERE, "On " + this + ", creating the knowledge session failed", ex);
             error = ex;
@@ -485,6 +500,7 @@ public class RulesEngine<T extends Ruleset> {
             try {
                 knowledgeSession.halt();
                 knowledgeSession.dispose();
+                knowledgeSession = null;
                 LOG.fine("On " + this + ", knowledge session disposed");
 
                 // Clear out fact handles because the session they belong to is gone
@@ -497,6 +513,10 @@ public class RulesEngine<T extends Ruleset> {
                 }
 
             } finally {
+                if (statsTimer != null) {
+                    statsTimer.cancel(true);
+                    statsTimer = null;
+                }
                 runningFuture.cancel(true);
                 runningFuture = null;
             }
@@ -512,6 +532,7 @@ public class RulesEngine<T extends Ruleset> {
             LOG.info("On " + this + ", inserted initial asset states: " + assetStates.size());
         }
     }
+
     protected synchronized void updateAssetState(AssetState assetState) {
         updateAssetState(assetState, false);
     }
@@ -521,11 +542,11 @@ public class RulesEngine<T extends Ruleset> {
 
             // Check if fact already exists using equals(), this will deduplicate asset state writes
             if (!skipDirtyCheck && assetStates.containsKey(assetState)) {
-                LOG.finest("On " + this + ", update is the same as existing, ignoring: " + assetState);
+                RULES_LOG.finest("On " + this + ", update is the same as existing, ignoring: " + assetState);
                 return;
             }
 
-            LOG.fine("On " + this + ", updating: " + assetState);
+            RULES_LOG.finest("On " + this + ", updating: " + assetState);
 
             // Get the old asset state
             AssetState oldAssetState = assetStates.keySet()
@@ -538,7 +559,7 @@ public class RulesEngine<T extends Ruleset> {
             FactHandle oldFactHandle = oldAssetState != null ? assetStates.remove(oldAssetState) : null;
 
             if (!isRunning()) {
-                LOG.fine("On " + this + ", engine is in error state or not running, storing for later update: " + assetState);
+                RULES_LOG.fine("On " + this + ", engine is in error state or not running, storing for later update: " + assetState);
                 assetStates.put(assetState, null);
                 return;
             }
@@ -569,7 +590,7 @@ public class RulesEngine<T extends Ruleset> {
 
     protected synchronized void retractAssetState(AssetState assetState) {
         synchronized (assetStates) {
-            LOG.fine("On " + this + ", retracting: " + assetState);
+            RULES_LOG.finest("On " + this + ", retracting: " + assetState);
             // If there already is a fact in working memory for this attribute then delete it
             AssetState update = assetStates.keySet()
                 .stream()
@@ -586,7 +607,7 @@ public class RulesEngine<T extends Ruleset> {
                         // ... retract it from working memory ...
                         knowledgeSession.delete(factHandle);
                     } catch (Exception e) {
-                        LOG.warning("On " + this + ", failed to retract fact: " + update);
+                        RULES_LOG.warning("On " + this + ", failed to retract fact: " + update);
                     }
                 }
             }
@@ -595,7 +616,7 @@ public class RulesEngine<T extends Ruleset> {
 
     protected synchronized void insertAssetEvent(long expirationOffset, AssetEvent assetEvent) {
         if (!isRunning()) {
-            LOG.fine("On " + this + ", engine is in error state or not running, ignoring: " + assetEvent);
+            RULES_LOG.fine("On " + this + ", engine is in error state or not running, ignoring: " + assetEvent);
             return;
         }
         FactHandle factHandle = knowledgeSession.insert(assetEvent);
@@ -702,7 +723,7 @@ public class RulesEngine<T extends Ruleset> {
                         );
                     }
 
-                    LOG.fine("Dispatching on " + RulesEngine.this + ": " + event);
+                    RULES_LOG.fine("Dispatching on " + RulesEngine.this + ": " + event);
                     assetProcessingService.sendAttributeEvent(event);
                 }
             }
@@ -777,6 +798,7 @@ public class RulesEngine<T extends Ruleset> {
                     }
                 }
 
+                RULES_LOG.fine("Storing and notifying on " + RulesEngine.this + " for user '" + userId + "': " + alert);
                 notificationService.storeAndNotify(userId, alert);
             }
         };
@@ -811,7 +833,7 @@ public class RulesEngine<T extends Ruleset> {
         }
         TimerJobInstance timerJobInstance = new DefaultTimerJobInstance(
             ctx -> {
-                LOG.fine("On " + RulesEngine.this + ", fact expired, deleting: " + assetEvent);
+                RULES_LOG.finest("On " + RulesEngine.this + ", fact expired, deleting: " + assetEvent);
                 synchronized (RulesEngine.this) {
                     knowledgeSession.delete(factHandle);
                 }
@@ -856,6 +878,35 @@ public class RulesEngine<T extends Ruleset> {
                 + ": "
                 + rd.getDeploymentStatus()).toArray(String[]::new)
         );
+    }
+
+    protected synchronized void printSessionStats() {
+        if (knowledgeSession == null) {
+            return;
+        }
+        Collection<?> assetStateFacts = knowledgeSession.getObjects(new ClassObjectFilter(AssetState.class));
+        Collection<?> assetEventFacts = knowledgeSession.getObjects(new ClassObjectFilter(AssetEvent.class));
+        Collection<?> customFacts = knowledgeSession.getObjects(object ->
+            !AssetState.class.isAssignableFrom( object.getClass()) && !AssetEvent.class.isAssignableFrom(object.getClass())
+        );
+        long total = assetStateFacts.size() + assetEventFacts.size() + customFacts.size();
+        STATS_LOG.info("On " + this + ", in memory facts are Total: " + total
+            + ", AssetState: " + assetStateFacts.size()
+            + ", AssetEvent: " + assetEventFacts.size()
+            + ", Custom: " + customFacts.size());
+
+        // Additional details if FINEST is enabled
+        if (STATS_LOG.isLoggable(Level.FINEST)) {
+            for (Object assetStateFact : assetStateFacts) {
+                STATS_LOG.finest("On " + this + ", fact: " + assetStateFact);
+            }
+            for (Object assetEventFact : assetEventFacts) {
+                STATS_LOG.finest("On " + this + ", fact: " + assetEventFact);
+            }
+            for (Object customFact : customFacts) {
+                STATS_LOG.finest("On " + this + ", fact: " + customFact);
+            }
+        }
     }
 
     @Override

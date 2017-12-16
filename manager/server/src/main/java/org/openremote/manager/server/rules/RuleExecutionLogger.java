@@ -23,7 +23,6 @@ import org.kie.api.definition.rule.Rule;
 import org.kie.api.event.rule.BeforeMatchFiredEvent;
 import org.kie.api.event.rule.DefaultAgendaEventListener;
 import org.kie.api.runtime.rule.Match;
-import org.openremote.model.syslog.SyslogLevel;
 
 import java.util.List;
 import java.util.function.Supplier;
@@ -35,16 +34,12 @@ import java.util.logging.Logger;
  */
 public class RuleExecutionLogger extends DefaultAgendaEventListener {
 
-    private static final Logger LOG = Logger.getLogger(RuleExecutionLogger.class.getName());
-
     final protected Supplier<String> contextSupplier;
+    final protected Logger LOG;
 
-    public RuleExecutionLogger(Supplier<String> contextSupplier) {
+    public RuleExecutionLogger(Supplier<String> contextSupplier, Logger LOG) {
         this.contextSupplier = contextSupplier;
-    }
-
-    public static Logger getLOG() {
-        return LOG;
+        this.LOG = LOG;
     }
 
     @Override
@@ -89,12 +84,6 @@ public class RuleExecutionLogger extends DefaultAgendaEventListener {
         } else if (ruleName.startsWith("\"-")) {
             LOG.log(Level.INFO,
                 String.format("*** On " + contextSupplier.get() + "\nRule %s", ruleName)
-            );
-        } else {
-            LOG.log(Level.FINE,
-                String.format("*** On " + contextSupplier.get() + "\n\nRule %s\n\n" +
-                    "\tDeclarations \n---------------------------------\n%s\n" +
-                    "\tLHS objects(antecedents)\n---------------------------------\n%s", ruleName, declarationLog, objectLog)
             );
         }
     }
