@@ -2,6 +2,7 @@
 .DS_*
 .local/
 local.properties
+openremote.log
 
 build/
 .gradle

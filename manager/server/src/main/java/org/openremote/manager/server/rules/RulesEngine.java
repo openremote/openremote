@@ -80,10 +80,10 @@ public class RulesEngine<T extends Ruleset> {
     public static final Logger LOG = Logger.getLogger(RulesEngine.class.getName());
 
     // Separate logger for stats
-    public static final Logger STATS_LOG = Logger.getLogger("org.openremote.RulesEngineStats");
+    public static final Logger STATS_LOG = Logger.getLogger("org.openremote.rules.RulesEngineStats");
 
     // Separate logger for rules, available global in session
-    public static final Logger RULES_LOG = Logger.getLogger("org.openremote.Rules");
+    public static final Logger RULES_LOG = Logger.getLogger("org.openremote.rules.Rules");
 
     private static final int AUTO_START_DELAY_SECONDS = 2;
     private static Long counter = 1L;
@@ -249,7 +249,7 @@ public class RulesEngine<T extends Ruleset> {
                 ? compileTemplate(ruleset.getTemplateAssetId(), ruleset.getRules())
                 : ruleset.getRules();
 
-            LOG.fine("Final ruleset DRL: " + drl);
+            LOG.finest("Final ruleset DRL: " + drl);
 
             // ID will be unique within the scope of a rules engine as ruleset will all be of same type
             kfs.write("src/main/resources/" + ruleset.getId() + ".drl", drl);

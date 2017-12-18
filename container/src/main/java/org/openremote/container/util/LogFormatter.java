@@ -37,7 +37,7 @@ public class LogFormatter extends Formatter {
 
         StringBuilder sb = new StringBuilder(250);
 
-        sb.append(TextUtil.pad(date.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME), 29));
+        sb.append(TextUtil.pad(date.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS")), 24));
         sb.append(" ");
         sb.append(TextUtil.pad(record.getLevel().toString(), 7));
         sb.append(" ");

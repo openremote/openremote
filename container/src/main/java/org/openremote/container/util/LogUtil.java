@@ -46,6 +46,7 @@ public class LogUtil {
             if (System.getenv(LOGGING_CONFIG_FILE) != null &&
                 Files.isReadable(Paths.get(System.getenv(LOGGING_CONFIG_FILE)))) {
                 try (InputStream is = Files.newInputStream(Paths.get(System.getenv(LOGGING_CONFIG_FILE)))) {
+                    System.out.println("Using logging configuration: " + Paths.get(System.getenv(LOGGING_CONFIG_FILE)).toAbsolutePath());
                     LogManager.getLogManager().readConfiguration(is);
                 } catch (Exception ex) {
                     throw new ExceptionInInitializerError(ex);
@@ -54,6 +55,7 @@ public class LogUtil {
                 // Try to find /deployment/logging.properties
                 if (Files.isReadable(Paths.get("/deployment/logging.properties"))) {
                     try (InputStream is = Files.newInputStream(Paths.get("/deployment/logging.properties"))) {
+                        System.out.println("Using logging configuration: /deployment/logging.properties");
                         LogManager.getLogManager().readConfiguration(is);
                     } catch (Exception ex) {
                         throw new ExceptionInInitializerError(ex);
@@ -62,6 +64,7 @@ public class LogUtil {
                     // Or load a default configuration from the classpath
                     try (InputStream is = Container.class.getClassLoader().getResourceAsStream(defaultLoggingProperties)) {
                         if (is != null) {
+                            System.out.println("Using logging configuration: logging.properties on classpath");
                             LogManager.getLogManager().readConfiguration(is);
                         }
                     } catch (Exception ex) {
