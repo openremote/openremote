@@ -23,6 +23,7 @@ import org.openremote.container.Container;
 
 import java.io.InputStream;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.logging.LogManager;
 
@@ -43,10 +44,13 @@ public class LogUtil {
         // If no JUL configuration is provided
         if (System.getProperty("java.util.logging.config.file") == null) {
             // Load the logging configuration file specified with an environment variable
-            if (System.getenv(LOGGING_CONFIG_FILE) != null &&
-                Files.isReadable(Paths.get(System.getenv(LOGGING_CONFIG_FILE)))) {
-                try (InputStream is = Files.newInputStream(Paths.get(System.getenv(LOGGING_CONFIG_FILE)))) {
-                    System.out.println("Using logging configuration: " + Paths.get(System.getenv(LOGGING_CONFIG_FILE)).toAbsolutePath());
+            if (System.getenv(LOGGING_CONFIG_FILE) != null) {
+                Path loggingConfigFile = Paths.get(System.getenv(LOGGING_CONFIG_FILE));
+                if (!Files.isReadable(loggingConfigFile)) {
+                    throw new ExceptionInInitializerError("LOGGING_CONFIG_FILE is not readable: " + loggingConfigFile.toAbsolutePath());
+                }
+                try (InputStream is = Files.newInputStream(loggingConfigFile)) {
+                    System.out.println("Using logging configuration: " + loggingConfigFile.toAbsolutePath());
                     LogManager.getLogManager().readConfiguration(is);
                 } catch (Exception ex) {
                     throw new ExceptionInInitializerError(ex);

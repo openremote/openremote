@@ -475,7 +475,11 @@ public class RulesEngine<T extends Ruleset> {
         runningFuture = executorService.getRulesExecutor().submit(() -> {
             boolean stoppedOnError = false;
             try {
-                knowledgeSession.fireUntilHalt();
+                if (knowledgeSession != null) {
+                    knowledgeSession.fireUntilHalt();
+                } else {
+                    LOG.log(Level.SEVERE, "On " + RulesEngine.this + ", can't fire until halt, no knowledge session exists");
+                }
             } catch (Exception ex) {
                 // Errors in rule RHS
                 LOG.log(Level.SEVERE, "On " + RulesEngine.this + ", error firing rules", ex);
