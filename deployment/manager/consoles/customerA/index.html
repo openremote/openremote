@@ -25,7 +25,24 @@
 
 <div>
     <openremote-app tenant="customerA" login-when-ready="true" timeout="10" verbose="true">
+        <!--Execute AssetQuery and subscribe for attribute changes-->
+        <openremote-asset type="room" asset-id="blabla">
+            <p>
+                Tempature of the room is,<span data-attribute="currentTemp"></span>
+            </p>
+            <form>
+                <input data-attribute="setTemp" data-validate>
+                <submit data-asset-action></submit>
+            </form>
+            <p data-visible="humidityBool">
+                Humidity too high!
+            </p>
+            <p data-attached="co2Bool">
+                Too much CO2!
+            </p>
+        </openremote-asset>
         <button onclick="document.querySelector('openremote-app').connect()">Click to connect</button>
+
     </openremote-app>
 </div>
 
