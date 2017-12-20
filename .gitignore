@@ -32,3 +32,4 @@ manager/.factorypath
 # Ignore build/runtime only data
 deployment/proxy/
 deployment/postgresql/
+deployment/manager/openremote.log*
