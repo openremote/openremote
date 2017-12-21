@@ -461,7 +461,7 @@ public class RulesEngine<T extends Ruleset> {
                 } else {
                     LOG.info("On " + this + ", enabling periodic full memory dump at FINEST level every 30 seconds on category: " + STATS_LOG.getName());
                 }
-                statsTimer = executorService.scheduleAtFixedRate(this::printSessionStats, 0, 30, TimeUnit.SECONDS);
+                statsTimer = executorService.scheduleAtFixedRate(this::printSessionStats, 3, 30, TimeUnit.SECONDS);
             }
         } catch (Exception ex) {
             LOG.log(Level.SEVERE, "On " + this + ", creating the knowledge session failed", ex);
@@ -533,7 +533,6 @@ public class RulesEngine<T extends Ruleset> {
             for (AssetState assetState : new HashSet<>(assetStates.keySet())) {
                 updateAssetState(assetState, true);
             }
-            LOG.info("On " + this + ", inserted initial asset states: " + assetStates.size());
         }
     }
 
@@ -541,29 +540,33 @@ public class RulesEngine<T extends Ruleset> {
         updateAssetState(assetState, false);
     }
 
-    protected synchronized void updateAssetState(AssetState assetState, boolean skipDirtyCheck) {
+    protected synchronized void updateAssetState(AssetState assetState, boolean initialImport) {
         synchronized (assetStates) {
 
             // Check if fact already exists using equals(), this will deduplicate asset state writes
-            if (!skipDirtyCheck && assetStates.containsKey(assetState)) {
+            if (!initialImport && assetStates.containsKey(assetState)) {
                 RULES_LOG.finest("On " + this + ", update is the same as existing, ignoring: " + assetState);
                 return;
             }
 
             RULES_LOG.finest("On " + this + ", updating: " + assetState);
 
-            // Get the old asset state
-            AssetState oldAssetState = assetStates.keySet()
-                .stream()
-                .filter(au -> au.attributeRefsEqual(assetState))
-                .findFirst()
-                .orElse(null);
+            // Do we have to remove an old fact first
+            FactHandle oldFactHandle = null;
+            if (!initialImport) {
+                // Get the old asset state
+                AssetState oldAssetState = assetStates.keySet()
+                    .stream()
+                    .filter(au -> au.attributeRefsEqual(assetState))
+                    .findFirst()
+                    .orElse(null);
 
-            // Always remove the old asset state and get its fact handle
-            FactHandle oldFactHandle = oldAssetState != null ? assetStates.remove(oldAssetState) : null;
+                // Remove the old asset state and get its fact handle, so the fact can be removed too
+                oldFactHandle = oldAssetState != null ? assetStates.remove(oldAssetState) : null;
+            }
 
             if (!isRunning()) {
-                RULES_LOG.fine("On " + this + ", engine is in error state or not running, storing for later update: " + assetState);
+                RULES_LOG.finest("On " + this + ", engine is in error state or not running, storing for later update: " + assetState);
                 assetStates.put(assetState, null);
                 return;
             }
@@ -580,7 +583,7 @@ public class RulesEngine<T extends Ruleset> {
     protected synchronized void deleteAndInsertInKnowledgeSession(FactHandle oldFactHandle,
                                                                   AssetState assetState,
                                                                   Consumer<FactHandle> factHandleConsumer) {
-        // Atomically delete the old fact and insert a new fact
+        // Atomically delete the old fact and insert a new fact, this adds to asynchronous work queue of rules engine thread
         knowledgeSession.submit(session -> {
             if (oldFactHandle != null) {
                 session.delete(oldFactHandle);
@@ -891,7 +894,7 @@ public class RulesEngine<T extends Ruleset> {
         Collection<?> assetStateFacts = knowledgeSession.getObjects(new ClassObjectFilter(AssetState.class));
         Collection<?> assetEventFacts = knowledgeSession.getObjects(new ClassObjectFilter(AssetEvent.class));
         Collection<?> customFacts = knowledgeSession.getObjects(object ->
-            !AssetState.class.isAssignableFrom( object.getClass()) && !AssetEvent.class.isAssignableFrom(object.getClass())
+            !AssetState.class.isAssignableFrom(object.getClass()) && !AssetEvent.class.isAssignableFrom(object.getClass())
         );
         long total = assetStateFacts.size() + assetEventFacts.size() + customFacts.size();
         STATS_LOG.info("On " + this + ", in memory facts are Total: " + total

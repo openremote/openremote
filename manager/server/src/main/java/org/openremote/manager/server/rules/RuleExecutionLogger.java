@@ -77,13 +77,13 @@ public class RuleExecutionLogger extends DefaultAgendaEventListener {
 
         if (ruleName.startsWith("\"--")) {
             LOG.log(Level.INFO,
-                String.format("*** On " + contextSupplier.get() + "\n\nRule %s\n\n" +
+                String.format("*** On %s\n*** Rule fired %s" +
                     "\tDeclarations \n---------------------------------\n%s\n" +
-                    "\tLHS objects(antecedents)\n---------------------------------\n%s", ruleName, declarationLog, objectLog)
+                    "\tLHS objects(antecedents)\n---------------------------------\n%s", contextSupplier.get(), ruleName, declarationLog, objectLog)
             );
         } else if (ruleName.startsWith("\"-")) {
             LOG.log(Level.INFO,
-                String.format("*** On " + contextSupplier.get() + "\nRule %s", ruleName)
+                String.format("*** On %s\n *** Rule fired %s", contextSupplier.get(), ruleName)
             );
         }
     }

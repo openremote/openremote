@@ -399,18 +399,18 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
 
                 RulesEngine newEngine = deployGlobalRuleset((GlobalRuleset) ruleset);
                 if (newEngine != null) {
-                    // Push all existing facts into the engine
-                    assetStates.forEach(newEngine::updateAssetState);
+                    // Push all existing facts into the engine, this is an initial import of state
+                    assetStates.forEach(assetState -> newEngine.updateAssetState(assetState, true));
                 }
 
             } else if (ruleset instanceof TenantRuleset) {
 
                 RulesEngine newEngine = deployTenantRuleset((TenantRuleset) ruleset);
                 if (newEngine != null) {
-                    // Push all existing facts for this tenant into the engine
+                    // Push all existing facts into the engine, this is an initial import of state
                     assetStates.forEach(assetState -> {
                         if (assetState.getRealmId().equals(((TenantRuleset) ruleset).getRealmId())) {
-                            newEngine.updateAssetState(assetState);
+                            newEngine.updateAssetState(assetState, true);
                         }
                     });
                 }
@@ -423,7 +423,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
                 if (newEngine != null) {
                     // Push all existing facts for this asset (and it's children into the engine)
                     getAssetStatesInScope(((AssetRuleset) ruleset).getAssetId())
-                        .forEach(newEngine::updateAssetState);
+                        .forEach(assetState -> newEngine.updateAssetState(assetState, true));
 
                 }
             }
