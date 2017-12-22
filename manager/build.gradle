@@ -17,7 +17,7 @@ distributions {
             // Populate the /deployment directory in the Manager image
             from (resolveProject(":deployment:manager").projectDir) {
                 into "deployment"
-                exclude "**/build.gradle", "**/bower.json"
+                exclude "**/build.gradle", "**/bower.json", "**/openremote.log*"
             }
         }
     }

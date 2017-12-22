@@ -68,7 +68,8 @@ public class Main {
                     new AssetStorageService(),
                     new AssetDatapointService(),
                     new AssetAttributeLinkingService(),
-                    new AssetProcessingService()
+                    new AssetProcessingService(),
+                    new MessageBrokerService()
                 ));
                 ServiceLoader.load(Protocol.class).forEach(this::add);
                 addAll(Arrays.asList(
@@ -76,7 +77,6 @@ public class Main {
                     new SimulatorService(),
                     new MapService(),
                     new NotificationService(),
-                    new MessageBrokerService(),
                     new ConsoleAppService(),
                     new ManagerWebService()
                 ));
