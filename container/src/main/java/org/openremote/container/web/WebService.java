@@ -122,7 +122,6 @@ public abstract class WebService implements ContainerService {
     @Override
     public void start(Container container) throws Exception {
         if (undertow != null) {
-            LOG.info("Starting webserver on http://" + host + ":" + port);
             undertow.start();
             LOG.info("Webserver ready on http://" + host + ":" + port);
         }
@@ -131,7 +130,6 @@ public abstract class WebService implements ContainerService {
     @Override
     public void stop(Container container) throws Exception {
         if (undertow != null) {
-            LOG.info("Stopping webserver...");
             undertow.stop();
             undertow = null;
         }

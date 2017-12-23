@@ -89,16 +89,21 @@ public abstract class WebsocketComponent extends DefaultComponent {
         }
         consumers.remove(resourceUri);
         try {
-            redeploy();
+            redeploy(consumers.size() == 0);
         } catch (Exception ex) {
             throw new RuntimeException(ex);
         }
     }
 
     protected void redeploy() throws Exception {
+        redeploy(false);
+    }
+
+    protected void redeploy(boolean doUndeployOnly) throws Exception {
         // TODO what happens to inflight sessions?
         undeploy();
-        deploy();
+        if (!doUndeployOnly)
+            deploy();
     }
 
     protected abstract void deploy() throws Exception;

@@ -41,6 +41,7 @@ import org.openremote.model.value.ValueType;
 import org.openremote.model.value.Values;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -136,11 +137,10 @@ public abstract class AbstractProtocol implements Protocol {
     public void stop(Container container) throws Exception {
         synchronized (linkedAttributes) {
             linkedAttributes.clear();
-            messageBrokerContext.stopRoute("Actuator-" + getProtocolName());
+            messageBrokerContext.stopRoute("Actuator-" + getProtocolName(), 1, TimeUnit.MILLISECONDS);
             messageBrokerContext.removeRoute("Actuator-" + getProtocolName());
         }
     }
-
 
     @Override
     public void linkProtocolConfiguration(AssetAttribute protocolConfiguration, Consumer<ConnectionStatus> statusConsumer) {

@@ -228,4 +228,9 @@ public class AssetAttributeLinkingService implements ContainerService, Consumer<
 
         return attribute.get().getValue().orElse(null);
     }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "{}";
+    }
 }

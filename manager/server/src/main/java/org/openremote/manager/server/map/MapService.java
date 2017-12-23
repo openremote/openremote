@@ -87,7 +87,6 @@ public class MapService implements ContainerService {
 
     @Override
     public void stop(Container container) throws Exception {
-        LOG.info("Stopping map service...");
         if (connection != null) {
             connection.close();
         }

@@ -66,12 +66,12 @@ trait ManagerContainerTrait extends ContainerTrait {
                 new AssetDatapointService(),
                 new AssetAttributeLinkingService(),
                 new AssetProcessingService(),
+                new MessageBrokerService(),
                 *Lists.newArrayList(ServiceLoader.load(Protocol.class)),
                 new AgentService(),
                 new SimulatorService(),
                 new MapService(),
                 new NotificationService(),
-                new MessageBrokerService(),
                 new ConsoleAppService(),
                 new ManagerWebService(),
                 *additionalServices
