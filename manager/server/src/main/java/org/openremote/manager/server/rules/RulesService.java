@@ -33,6 +33,8 @@ import org.openremote.manager.server.asset.AssetStorageService;
 import org.openremote.manager.server.asset.ServerAsset;
 import org.openremote.manager.server.concurrent.ManagerExecutorService;
 import org.openremote.manager.server.notification.NotificationService;
+import org.openremote.manager.server.rules.facade.AssetsFacade;
+import org.openremote.manager.server.rules.facade.UsersFacade;
 import org.openremote.manager.server.security.ManagerIdentityService;
 import org.openremote.manager.shared.security.Tenant;
 import org.openremote.model.asset.*;
@@ -94,6 +96,8 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
     protected final Map<String, RulesEngine<TenantRuleset>> tenantEngines = new HashMap<>();
     protected final Map<String, RulesEngine<AssetRuleset>> assetEngines = new HashMap<>();
     protected String[] activeTenantIds;
+
+    // For tests
     protected Function<RulesEngine, AgendaEventListener> rulesEngineListeners;
 
     // Keep global list of asset states that have been pushed to any engines
@@ -232,6 +236,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
             if (tenantDeployment != null) {
                 // Use a copy of the list to avoid concurrent modification problems in retract
                 new ArrayList<>(Arrays.asList(tenantDeployment.getAllRulesets()))
+                    .stream().map(rs -> (TenantRuleset) rs)
                     .forEach(this::undeployTenantRuleset);
             }
 
@@ -239,7 +244,8 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
             // Use a copy of the list to avoid concurrent modification problems in retract
             new ArrayList<>(assetEngines.values()).stream().flatMap(
                 assetRulesEngine -> Arrays.stream(assetRulesEngine.getAllRulesets())
-            ).filter(ruleset -> ruleset.getRealmId().equals(tenant.getId()))
+            ).map(rs -> (AssetRuleset) rs)
+                .filter(ruleset -> ruleset.getRealmId().equals(tenant.getId()))
                 .forEach(this::undeployAssetRuleset);
 
         } else {
@@ -443,12 +449,15 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
                 timerService,
                 executorService,
                 assetStorageService,
-                notificationService,
-                assetProcessingService,
-                identityService,
-                GlobalRuleset.class,
+                () -> new AssetsFacade<>(GlobalRuleset.class, null, assetStorageService, event -> {
+                    assetProcessingService.sendAttributeEvent(event);
+                }),
+                () -> new UsersFacade<>(GlobalRuleset.class, null, assetStorageService, notificationService, identityService),
                 ID_GLOBAL_RULES_ENGINE,
-                rulesEngineListeners
+                rulesEngineListeners,
+                error -> {
+                    // TODO Dispatch RulesetStatusEvent
+                }
             );
         }
 
@@ -479,12 +488,13 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
                     timerService,
                     executorService,
                     assetStorageService,
-                    notificationService,
-                    assetProcessingService,
-                    identityService,
-                    TenantRuleset.class,
+                    () -> new AssetsFacade<>(TenantRuleset.class, realmId, assetStorageService, event -> assetProcessingService.sendAttributeEvent(event)),
+                    () -> new UsersFacade<>(TenantRuleset.class, realmId, assetStorageService, notificationService, identityService),
                     realmId,
-                    rulesEngineListeners
+                    rulesEngineListeners,
+                    error -> {
+                        // TODO Dispatch RulesetStatusEvent
+                    }
                 );
             });
 
@@ -545,12 +555,13 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
                     timerService,
                     executorService,
                     assetStorageService,
-                    notificationService,
-                    assetProcessingService,
-                    identityService,
-                    AssetRuleset.class,
+                    () -> new AssetsFacade<>(AssetRuleset.class, assetId, assetStorageService, event -> assetProcessingService.sendAttributeEvent(event)),
+                    () -> new UsersFacade<>(AssetRuleset.class, assetId, assetStorageService, notificationService, identityService),
                     assetId,
-                    rulesEngineListeners
+                    rulesEngineListeners,
+                    error -> {
+                        // TODO Dispatch RulesetStatusEvent
+                    }
                 );
             });
 

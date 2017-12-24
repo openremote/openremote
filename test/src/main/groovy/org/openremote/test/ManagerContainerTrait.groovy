@@ -42,11 +42,11 @@ trait ManagerContainerTrait extends ContainerTrait {
 
     static Map<String, String> defaultConfig(int serverPort) {
         [
-                (WEBSERVER_LISTEN_PORT)             : Integer.toString(serverPort),
-                (IDENTITY_NETWORK_HOST)             : KeycloakIdentityProvider.KEYCLOAK_HOST_DEFAULT,
-                (IDENTITY_NETWORK_WEBSERVER_PORT)   : Integer.toString(KeycloakIdentityProvider.KEYCLOAK_PORT_DEFAULT),
-                (SETUP_IMPORT_DEMO_SCENES)          : "false",
-                (SETUP_IMPORT_DEMO_RULES)           : "false"
+                (WEBSERVER_LISTEN_PORT)          : Integer.toString(serverPort),
+                (IDENTITY_NETWORK_HOST)          : KeycloakIdentityProvider.KEYCLOAK_HOST_DEFAULT,
+                (IDENTITY_NETWORK_WEBSERVER_PORT): Integer.toString(KeycloakIdentityProvider.KEYCLOAK_PORT_DEFAULT),
+                (SETUP_IMPORT_DEMO_SCENES)       : "false",
+                (SETUP_IMPORT_DEMO_RULES)        : "false"
         ]
     }
 
@@ -134,17 +134,32 @@ trait ManagerContainerTrait extends ContainerTrait {
         container.getService(TimerService.class).getClock().getCurrentTimeMillis()
     }
 
-    static void advancePseudoClocks(long amount, TimeUnit unit, Container container, RulesEngine[] engine) {
+    static void advancePseudoClocks(long amount, TimeUnit unit, Container container, RulesEngine[] engines) {
+        if (engines == null) {
+            throw new NullPointerException("Engine can't be null")
+        }
         withClockOf(container) { it.advanceTime(amount, unit) }
-        engine.each { withClockOf(it) { it.advanceTime(amount, unit) } }
+        engines.each { engine ->
+            withClockOf(engine) { clock ->
+                if (clock == null) {
+                    throw new IllegalArgumentException("Knowledge session/clock not available for: " + engine)
+                }
+                clock.advanceTime(amount, unit)
+            }
+        }
     }
 
-    static void setPseudoClocksToRealTime(Container container, RulesEngine[] engine) {
+    static void setPseudoClocksToRealTime(Container container, RulesEngine[] engines) {
         withClockOf(container) {
             it.advanceTime(System.currentTimeMillis() - it.currentTimeMillis, TimeUnit.MILLISECONDS)
         }
-        engine.each {
-            withClockOf(it) { it.advanceTime(System.currentTimeMillis() - it.currentTime, TimeUnit.MILLISECONDS) }
+        engines.each { engine ->
+            withClockOf(engine) { clock ->
+                if (clock == null) {
+                    throw new IllegalArgumentException("Knowledge session/clock not available for: " + engine)
+                }
+                clock.advanceTime(System.currentTimeMillis() - clock.currentTime, TimeUnit.MILLISECONDS)
+            }
         }
     }
 

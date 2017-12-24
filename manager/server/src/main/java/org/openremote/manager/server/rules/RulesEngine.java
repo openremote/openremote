@@ -45,19 +45,16 @@ import org.kie.api.runtime.rule.FactHandle;
 import org.kie.api.time.SessionClock;
 import org.openremote.container.timer.TimerService;
 import org.openremote.container.util.Util;
-import org.openremote.manager.server.asset.AssetProcessingService;
 import org.openremote.manager.server.asset.AssetStorageService;
 import org.openremote.manager.server.asset.ServerAsset;
 import org.openremote.manager.server.concurrent.ManagerExecutorService;
-import org.openremote.manager.server.notification.NotificationService;
-import org.openremote.manager.server.security.ManagerIdentityService;
-import org.openremote.model.asset.*;
-import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.asset.AssetEvent;
+import org.openremote.model.asset.AssetState;
 import org.openremote.model.attribute.AttributeType;
-import org.openremote.model.notification.AlertNotification;
-import org.openremote.model.rules.*;
+import org.openremote.model.rules.Assets;
+import org.openremote.model.rules.Ruleset;
+import org.openremote.model.rules.Users;
 import org.openremote.model.rules.template.TemplateFilter;
-import org.openremote.model.user.UserQuery;
 import org.openremote.model.util.Pair;
 
 import java.io.ByteArrayInputStream;
@@ -69,6 +66,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -85,20 +83,18 @@ public class RulesEngine<T extends Ruleset> {
     // Separate logger for rules, available global in session
     public static final Logger RULES_LOG = Logger.getLogger("org.openremote.rules.Rules");
 
-    private static final int AUTO_START_DELAY_SECONDS = 2;
     private static Long counter = 1L;
 
     static final protected Util UTIL = new Util();
 
     final protected TimerService timerService;
     final protected ManagerExecutorService executorService;
-    final protected NotificationService notificationService;
     final protected AssetStorageService assetStorageService;
-    final protected AssetProcessingService assetProcessingService;
-    final protected ManagerIdentityService identityService;
-    final protected Class<T> rulesetType;
+    final protected Supplier<Assets> assetsFacadeSupplier;
+    final protected Supplier<Users> usersFacadeSupplier;
     final protected String id;//If globalRuleSet then null if tenantRuleSet then realmId if assetRuleSet then assetId
     final protected Function<RulesEngine, AgendaEventListener> rulesEngineListeners;
+    final protected Consumer<Throwable> errorListener;
 
     protected final Map<Long, T> rulesets = new LinkedHashMap<>();
     protected String rulesetsDebug;
@@ -114,37 +110,32 @@ public class RulesEngine<T extends Ruleset> {
     // This consumer is useful in testing, as we can't have a reliable event fact
     // count from Drools session (events are expired automatically))
     protected Consumer<AssetEvent> assetEventsConsumer;
-    protected ScheduledFuture startTimer;
     protected ScheduledFuture statsTimer;
 
     public RulesEngine(TimerService timerService,
                        ManagerExecutorService executorService,
                        AssetStorageService assetStorageService,
-                       NotificationService notificationService,
-                       AssetProcessingService assetProcessingService,
-                       ManagerIdentityService identityService,
-                       Class<T> rulesetType,
+                       Supplier<Assets> assetsFacadeSupplier,
+                       Supplier<Users> usersFacadeSupplier,
                        String id,
-                       Function<RulesEngine, AgendaEventListener> rulesEngineListeners) {
+                       Function<RulesEngine, AgendaEventListener> rulesEngineListeners,
+                       Consumer<Throwable> errorListener) {
         this.timerService = timerService;
         this.executorService = executorService;
         this.assetStorageService = assetStorageService;
-        this.notificationService = notificationService; // shouldBeUser service or Identity Service ?
-        this.assetProcessingService = assetProcessingService;
-        this.identityService = identityService;
-        this.rulesetType = rulesetType;
+        this.assetsFacadeSupplier = assetsFacadeSupplier;
+        this.usersFacadeSupplier = usersFacadeSupplier;
         this.id = id;
         this.rulesEngineListeners = rulesEngineListeners;
+        this.errorListener = errorListener;
     }
 
     protected synchronized static Long getNextCounter() {
         return counter++;
     }
 
-    @SuppressWarnings("unchecked")
-    public synchronized T[] getAllRulesets() {
-        T[] arr = Util.createArray(rulesets.size(), rulesetType);
-        return rulesets.values().toArray(arr);
+    public synchronized Ruleset[] getAllRulesets() {
+        return rulesets.values().stream().toArray(Ruleset[]::new);
     }
 
     public String getId() {
@@ -161,6 +152,12 @@ public class RulesEngine<T extends Ruleset> {
 
     public Throwable getError() {
         return error;
+    }
+
+    protected void setError(Throwable error) {
+        this.error = error;
+        if (errorListener != null)
+            errorListener.accept(error);
     }
 
     public KieSession getKnowledgeSession() {
@@ -194,19 +191,17 @@ public class RulesEngine<T extends Ruleset> {
 
     /**
      * Adds the ruleset to the engine by first stopping the engine and
-     * then deploying new rules and then restarting the engine (after
-     * {@link #AUTO_START_DELAY_SECONDS}) to prevent excessive engine stop/start.
+     * then deploying new rules and then restarting the engine.
      * <p>
      * If engine is in an error state (one of the rulesets failed to deploy)
-     * then the engine will not restart.
-     *
-     * @return Whether or not the ruleset deployed successfully
+     * then the engine will not restart, inspect then with {@link #isRunning()}
+     * and {@link #isError()}.
      */
-    public synchronized boolean addRuleset(T ruleset, boolean forceUpdate) {
+    public synchronized void addRuleset(T ruleset, boolean forceUpdate) {
         if (ruleset == null || ruleset.getRules() == null || ruleset.getRules().isEmpty()) {
             // Assume it's a success if deploying an empty ruleset
             LOG.finest("Ruleset is empty so no rules to deploy");
-            return true;
+            return;
         }
 
         if (kfs == null) {
@@ -217,16 +212,11 @@ public class RulesEngine<T extends Ruleset> {
 
         if (!forceUpdate && existingRuleset != null && existingRuleset.getVersion() == ruleset.getVersion()) {
             LOG.fine("Ruleset version already deployed so ignoring");
-            return true;
+            return;
         }
 
         if (isRunning()) {
             stop();
-        }
-
-        // Stop any running start timer
-        if (startTimer != null) {
-            startTimer.cancel(false);
         }
 
         // Check if ruleset is already deployed (maybe an older version)
@@ -241,7 +231,7 @@ public class RulesEngine<T extends Ruleset> {
         LOG.info("Adding ruleset: " + ruleset);
 
         boolean addSuccessful = false;
-        error = null;
+        setError(null);
 
         try {
             // If the ruleset references a template asset, compile it as a template
@@ -272,13 +262,13 @@ public class RulesEngine<T extends Ruleset> {
             }
         } catch (Exception e) {
             LOG.log(Level.SEVERE, "Error in ruleset: " + ruleset, e);
-            error = e;
+            setError(e);
             // If compilation failed, remove rules from FileSystem so it won't fail on next pass here if any
             kfs.delete("src/main/resources/" + ruleset.getId());
         }
 
         if (!addSuccessful) {
-            error = new RuntimeException("Ruleset contains an error: " + ruleset);
+            setError(new RuntimeException("Ruleset contains an error: " + ruleset));
 
             // Update status of each ruleset
             rulesets.forEach((id, rd) -> {
@@ -286,8 +276,6 @@ public class RulesEngine<T extends Ruleset> {
                     rd.setDeploymentStatus(Ruleset.DeploymentStatus.READY);
                 }
             });
-        } else {
-            startTimer = executorService.schedule(this::start, AUTO_START_DELAY_SECONDS * 1000);
         }
 
         // Add new ruleset
@@ -295,7 +283,9 @@ public class RulesEngine<T extends Ruleset> {
         rulesets.put(ruleset.getId(), ruleset);
         updateRulesetsDebug();
 
-        return addSuccessful;
+        if (addSuccessful) {
+            start();
+        }
     }
 
     protected synchronized void removeRuleset(Ruleset ruleset) {
@@ -313,11 +303,6 @@ public class RulesEngine<T extends Ruleset> {
             stop();
         }
 
-        // Stop any running start timer
-        if (startTimer != null) {
-            startTimer.cancel(false);
-        }
-
         // Remove this old rules file
         kfs.delete("src/main/resources/" + ruleset.getId());
         rulesets.remove(ruleset.getId());
@@ -330,7 +315,7 @@ public class RulesEngine<T extends Ruleset> {
             .anyMatch(rd -> rd.getDeploymentStatus() == Ruleset.DeploymentStatus.FAILED);
 
         if (!anyFailed) {
-            error = null;
+            setError(null);
             rulesets.forEach((id, rd) -> {
                 if (rd.getDeploymentStatus() == Ruleset.DeploymentStatus.READY) {
                     rd.setDeploymentStatus(Ruleset.DeploymentStatus.DEPLOYED);
@@ -339,8 +324,7 @@ public class RulesEngine<T extends Ruleset> {
         }
 
         if (!isError() && !isEmpty()) {
-            // Queue engine start
-            startTimer = executorService.schedule(this::start, AUTO_START_DELAY_SECONDS * 1000);
+            start();
         }
     }
 
@@ -410,8 +394,8 @@ public class RulesEngine<T extends Ruleset> {
                     .setStartupTime(timerService.getCurrentTimeMillis());
             }
 
-            setGlobal("assets", createAssetsFacade());
-            setGlobal("users", createUsersFacade());
+            setGlobal("assets", assetsFacadeSupplier.get());
+            setGlobal("users", usersFacadeSupplier.get());
             setGlobal("LOG", RULES_LOG);
 
             // TODO Still need this UTIL?
@@ -450,7 +434,7 @@ public class RulesEngine<T extends Ruleset> {
             } catch (Exception ex) {
                 // This is called in a background timer thread, we must log here or the exception is swallowed
                 LOG.log(Level.SEVERE, "On " + this + ", inserting initial asset states failed", ex);
-                error = ex;
+                setError(ex);
                 stop();
             }
 
@@ -465,7 +449,7 @@ public class RulesEngine<T extends Ruleset> {
             }
         } catch (Exception ex) {
             LOG.log(Level.SEVERE, "On " + this + ", creating the knowledge session failed", ex);
-            error = ex;
+            setError(ex);
             stop();
         }
     }
@@ -486,6 +470,7 @@ public class RulesEngine<T extends Ruleset> {
                 stoppedOnError = true;
             } finally {
                 if (stoppedOnError) {
+                    // TODO This should be configurable, RHS should not throw exception in production?
                     // Keep running if stopped firing because of a RHS error
                     runningFuture.cancel(true);
                     runningFuture = null;
@@ -500,21 +485,22 @@ public class RulesEngine<T extends Ruleset> {
             return;
         }
         LOG.info("Stopping: " + this);
+
+        // Clear out fact handles because the session they belong to is gone
+        synchronized (assetStates) {
+            for (AssetState assetState : new HashSet<>(assetStates.keySet())) {
+                if (assetStates.get(assetState) != null) {
+                    assetStates.put(assetState, null);
+                }
+            }
+        }
+
         if (knowledgeSession != null) {
             try {
                 knowledgeSession.halt();
                 knowledgeSession.dispose();
                 knowledgeSession = null;
                 LOG.fine("On " + this + ", knowledge session disposed");
-
-                // Clear out fact handles because the session they belong to is gone
-                synchronized (assetStates) {
-                    for (AssetState assetState : new HashSet<>(assetStates.keySet())) {
-                        if (assetStates.get(assetState) != null) {
-                            assetStates.put(assetState, null);
-                        }
-                    }
-                }
 
             } finally {
                 if (statsTimer != null) {
@@ -635,182 +621,6 @@ public class RulesEngine<T extends Ruleset> {
         }
     }
 
-    protected Assets createAssetsFacade() {
-        return new Assets() {
-            @Override
-            public RestrictedQuery query() {
-                RestrictedQuery query = new RestrictedQuery() {
-
-                    @Override
-                    public RestrictedQuery select(Select select) {
-                        throw new IllegalArgumentException("Overriding query projection is not allowed in this rules scope");
-                    }
-
-                    @Override
-                    public RestrictedQuery id(String id) {
-                        throw new IllegalArgumentException("Overriding query restriction is not allowed in this rules scope");
-                    }
-
-                    @Override
-                    public RestrictedQuery tenant(TenantPredicate tenantPredicate) {
-                        if (GlobalRuleset.class.isAssignableFrom(rulesetType))
-                            return super.tenant(tenantPredicate);
-                        throw new IllegalArgumentException("Overriding query restriction is not allowed in this rules scope");
-                    }
-
-                    @Override
-                    public RestrictedQuery userId(String userId) {
-                        throw new IllegalArgumentException("Overriding query restriction is not allowed in this rules scope");
-                    }
-
-                    @Override
-                    public RestrictedQuery orderBy(OrderBy orderBy) {
-                        throw new IllegalArgumentException("Overriding query result order is not allowed in this rules scope");
-                    }
-
-                    @Override
-                    public String getResult() {
-                        ServerAsset asset = assetStorageService.find(this);
-                        return asset != null ? asset.getId() : null;
-                    }
-
-                    @Override
-                    public List<String> getResults() {
-                        if (this.select == null)
-                            this.select = new Select();
-                        Include oldValue = this.select.include;
-                        this.select.include = Include.ONLY_ID_AND_NAME;
-                        try {
-                            return assetStorageService
-                                .findAll(this)
-                                .stream()
-                                .map(Asset::getId)
-                                .collect(Collectors.toList());
-                        } finally {
-                            this.select.include = oldValue;
-                        }
-                    }
-
-                    @Override
-                    public void applyResult(Consumer<String> assetIdConsumer) {
-                        assetIdConsumer.accept(getResult());
-                    }
-
-                    @Override
-                    public void applyResults(Consumer<List<String>> assetIdListConsumer) {
-                        assetIdListConsumer.accept(getResults());
-                    }
-                };
-
-                if (TenantRuleset.class.isAssignableFrom(rulesetType)) {
-                    query.tenantPredicate = new AbstractAssetQuery.TenantPredicate(id);
-                }
-                if (AssetRuleset.class.isAssignableFrom(rulesetType)) {
-                    ServerAsset restrictedAsset = assetStorageService.find(id, true);
-                    if (restrictedAsset == null) {
-                        throw new IllegalStateException("Asset is no longer available for this deployment: " + id);
-                    }
-                    query.pathPredicate = new AbstractAssetQuery.PathPredicate(restrictedAsset.getPath());
-                }
-                return query;
-            }
-
-            @Override
-            public void dispatch(AttributeEvent... events) {
-                if (events == null)
-                    return;
-                for (AttributeEvent event : events) {
-
-                    // Check if the asset ID of the event can be found in the original query
-                    AbstractAssetQuery checkQuery = query();
-                    checkQuery.id = event.getEntityId();
-                    if (assetStorageService.find(checkQuery) == null) {
-                        throw new IllegalArgumentException(
-                            "Access to asset not allowed for this rule engine scope: " + event
-                        );
-                    }
-
-                    RULES_LOG.fine("Dispatching on " + RulesEngine.this + ": " + event);
-                    assetProcessingService.sendAttributeEvent(event);
-                }
-            }
-        };
-    }
-
-    protected Users createUsersFacade() {
-        return new Users() {
-
-            @Override
-            public Users.RestrictedQuery query() {
-                RestrictedQuery query = new RestrictedQuery() {
-                    @Override
-                    public Users.RestrictedQuery tenant(UserQuery.TenantPredicate tenantPredicate) {
-                        if (GlobalRuleset.class.isAssignableFrom(rulesetType))
-                            return super.tenant(tenantPredicate);
-                        throw new IllegalArgumentException("Overriding query restriction is not allowed in this rules scope");
-                    }
-
-                    @Override
-                    public Users.RestrictedQuery asset(UserQuery.AssetPredicate assetPredicate) {
-                        if (GlobalRuleset.class.isAssignableFrom(rulesetType))
-                            return super.asset(assetPredicate);
-                        if (TenantRuleset.class.isAssignableFrom(rulesetType)) {
-                            return super.asset(assetPredicate);
-                            // TODO: should only be allowed if asset belongs to tenant
-                        }
-                        if (AssetRuleset.class.isAssignableFrom(rulesetType)) {
-                            return super.asset(assetPredicate);
-                            // TODO: should only be allowed if restricted asset is descendant of scope's asset
-                        }
-                        throw new IllegalArgumentException("Overriding query restriction is not allowed in this rules scope");
-                    }
-
-                    @Override
-                    public List<String> getResults() {
-                        return notificationService.findAllUsersWithToken(this);
-                    }
-
-                    @Override
-                    public void applyResults(Consumer<List<String>> usersIdListConsumer) {
-                        usersIdListConsumer.accept(getResults());
-                    }
-                };
-
-                if (TenantRuleset.class.isAssignableFrom(rulesetType)) {
-                    query.tenantPredicate = new UserQuery.TenantPredicate(id);
-                }
-                if (AssetRuleset.class.isAssignableFrom(rulesetType)) {
-                    ServerAsset restrictedAsset = assetStorageService.find(id, true);
-                    if (restrictedAsset == null) {
-                        throw new IllegalStateException("Asset is no longer available for this deployment: " + id);
-                    }
-                    query.assetPredicate = new UserQuery.AssetPredicate(id);
-                }
-                return query;
-
-            }
-
-            @Override
-            public void storeAndNotify(String userId, AlertNotification alert) {
-                if (TenantRuleset.class.isAssignableFrom(rulesetType)) {
-                    boolean userIsInTenant = identityService.getIdentityProvider().isUserInTenant(userId, id);
-                    if (!userIsInTenant) {
-                        throw new IllegalArgumentException("User not in tenant: " + id);
-                    }
-                }
-                if (AssetRuleset.class.isAssignableFrom(rulesetType)) {
-                    boolean userIsLinkedToAsset = assetStorageService.isUserAsset(userId, id);
-                    if (!userIsLinkedToAsset) {
-                        throw new IllegalArgumentException("User not linked to asset: " + id);
-                    }
-                }
-
-                RULES_LOG.fine("Storing and notifying on " + RulesEngine.this + " for user '" + userId + "': " + alert);
-                notificationService.storeAndNotify(userId, alert);
-            }
-        };
-    }
-
     /**
      * Use the internal scheduling of Drools to expire events, so we can coordinate with the internal clock.
      * Yes, this is a hack.
@@ -901,6 +711,12 @@ public class RulesEngine<T extends Ruleset> {
             + ", AssetState: " + assetStateFacts.size()
             + ", AssetEvent: " + assetEventFacts.size()
             + ", Custom: " + customFacts.size());
+
+        /* TODO Remove internal debug
+        STATS_LOG.info("On " + this + ", managed are: "
+            + "AssetState (no fact handle): " + assetStates.entrySet().stream().filter(entry -> entry.getValue() == null).count()
+            + ", AssetState (with fact handle): " + assetStates.entrySet().stream().filter(entry -> entry.getValue() != null).count());
+        */
 
         // Additional details if FINEST is enabled
         if (STATS_LOG.isLoggable(Level.FINEST)) {

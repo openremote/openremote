@@ -27,7 +27,7 @@ import java.util.function.Consumer;
 
 /**
  * Facade for writing rules RHS actions, supporting asset queries within the scope
- * of the rule engine.
+ * of the rule engine, and dispatching of {@link AttributeEvent} as rule consequence.
  */
 public abstract class Assets {
 
