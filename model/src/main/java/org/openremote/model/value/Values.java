@@ -112,6 +112,7 @@ public class Values {
         return getArrayElements(arrayValue, elementType, throwOnError, includeNulls, value -> value);
     }
 
+    @SuppressWarnings("unchecked")
     public static <T extends Value, U> Optional<List<U>> getArrayElements(ArrayValue arrayValue,
                                                                           Class<T> elementType,
                                                                           boolean throwOnError,
@@ -135,7 +136,6 @@ public class Values {
             values = values.filter(value -> value != null && value.getType().getModelType() == elementType);
         }
 
-        //noinspection unchecked
         Stream<U> stream = values.map(value -> (T)value).map(converter);
 
         if (!includeNulls) {
@@ -145,6 +145,7 @@ public class Values {
         return Optional.of(stream.collect(Collectors.toList()));
     }
 
+    @SuppressWarnings("unchecked")
     public static <T extends Value> Optional<T> getMetaItemValueOrThrow(AssetAttribute attribute,
                                                                         String name,
                                                                         Class<T> valueClazz,
@@ -177,7 +178,6 @@ public class Values {
         }
 
 
-        //noinspection unchecked
         return Optional.of((T)value.get());
     }
 

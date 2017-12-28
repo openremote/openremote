@@ -265,6 +265,7 @@ public abstract class AbstractProtocol implements Protocol {
      * {@link MessageFilter}s that have been set for the {@link Attribute} against the {@link AttributeState#value}
      * before sending on the sensor queue.
      */
+    @SuppressWarnings("unchecked")
     protected void updateLinkedAttribute(AttributeState state, long timestamp) {
         AssetAttribute attribute;
         synchronized (linkedAttributes) {
@@ -296,7 +297,6 @@ public abstract class AbstractProtocol implements Protocol {
                     } else {
                         try {
                             LOG.finest("Applying message filter: " + filter.getClass().getName());
-                            //noinspection unchecked
                             value = filter.process(value);
                         } catch (Exception e) {
                             LOG.log(
