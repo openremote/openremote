@@ -19,33 +19,47 @@
  */
 package org.openremote.manager.server.notification;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class FCMMessage extends FCMBaseMessage {
 
-    protected Notification notification;
+    protected FCMNotification notification;
     protected boolean contentAvailable;
+    protected boolean mutableContent;
     protected String priority;
 
-    public FCMMessage(Notification notification, boolean contentAvailable, String priority, String to) {
+    public FCMMessage(FCMNotification notification, boolean contentAvailable, boolean mutableContent, String priority, String to) {
         super(to);
         this.notification = notification;
         this.contentAvailable = contentAvailable;
+        this.mutableContent = mutableContent;
         this.priority = priority;
     }
 
-    public Notification getNotification() {
+    public FCMNotification getNotification() {
         return notification;
     }
 
-    public void setNotification(Notification notification) {
+    public void setNotification(FCMNotification notification) {
         this.notification = notification;
     }
 
+    @JsonProperty("content_available")
     public boolean getContentAvailable() {
         return contentAvailable;
     }
 
     public void setContentAvailable(boolean contentAvailable) {
         this.contentAvailable = contentAvailable;
+    }
+
+    @JsonProperty("mutable_content")
+    public boolean getMutableContent() {
+        return mutableContent;
+    }
+
+    public void setMutableContent(boolean mutableContent) {
+        this.mutableContent = mutableContent;
     }
 
     public String getPriority() {
@@ -61,6 +75,7 @@ public class FCMMessage extends FCMBaseMessage {
         return getClass().getSimpleName() + "{" +
             "notification=" + notification +
             ", contentAvailable=" + contentAvailable +
+            ", mutableContent=" + mutableContent +
             ", priority='" + priority + '\'' +
             '}';
     }

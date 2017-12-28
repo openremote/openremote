@@ -51,7 +51,11 @@
         min-width: 12em;
     }
 
-    .or-SecondaryNavHorizontal {
+    .or-SecondaryNav.vertical {
+        padding-top: 2.8em !important;
+    }
+
+    .or-SecondaryNav.horizontal {
         padding: 0.4em;
         height: 2em;
         min-height: 2em;
@@ -68,6 +72,7 @@
         border-radius: 0.15em;
         font-weight: 600;
         display: inline-block;
+        margin: 0 1em;
     }
 
     .or-SecondaryNavItem a {
@@ -95,9 +100,9 @@
     }
 
     .or-LeftGradient::before {
-        background: -moz-linear-gradient(right, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0) 100%);
-        background: -webkit-linear-gradient(right, rgba(0,0,0,0.65) 0%,rgba(0,0,0,0) 100%);
-        background: linear-gradient(to left, rgba(0,0,0,0.65) 0%,rgba(0,0,0,0) 100%);
+        background: -moz-linear-gradient(right, rgba(0, 0, 0, 0.65) 0%, rgba(0, 0, 0, 0) 100%);
+        background: -webkit-linear-gradient(right, rgba(0, 0, 0, 0.65) 0%, rgba(0, 0, 0, 0) 100%);
+        background: linear-gradient(to left, rgba(0, 0, 0, 0.65) 0%, rgba(0, 0, 0, 0) 100%);
         content: "\00a0";
         height: 100%;
         position: absolute;
@@ -115,8 +120,8 @@
     }
 
     .or-MainContent.scrollable div {
-        -webkit-flex-shrink:0;
-        flex-shrink:0;
+        -webkit-flex-shrink: 0;
+        flex-shrink: 0;
     }
 
     .or-MainContent:first-child {
@@ -183,7 +188,8 @@
         margin: 1em 0;
     }
 
-    .or-Hyperlink {
+    .or-Hyperlink,
+    .or-FormAnchor {
         display: inline-block;
         white-space: nowrap;
     }
@@ -193,7 +199,9 @@
     }
 
     .or-Hyperlink a,
-    .or-Hyperlink a:visited {
+    .or-Hyperlink a:visited,
+    .or-FormAnchor,
+    .or-FormAnchor:visited {
         cursor: pointer;
         font-weight: 600;
         text-decoration: none;
@@ -202,21 +210,27 @@
         border-radius: 0.2em;
     }
 
-    .or-Hyperlink a:hover,
-    .or-Hyperlink a:focus {
+    .or-FormAnchor,
+    .or-FormAnchor:visited {
+        font-style: italic;
+        font-weight: normal;
         text-decoration: underline;
     }
 
-    .or-SecondaryNav .or-Hyperlink,
-    .or-SecondaryNavHorizontal .or-Hyperlink {
+    .or-Hyperlink a:hover,
+    .or-Hyperlink a:focus,
+    .or-FormAnchor:hover,
+    .or-FormAnchor:focus {
+        text-decoration: underline;
+    }
+
+    .or-SecondaryNav .or-Hyperlink {
         padding: 0;
         border-radius: 0
     }
 
     .or-SecondaryNav .or-Hyperlink a:hover,
-    .or-SecondaryNav .or-Hyperlink a:focus,
-    .or-SecondaryNavHorizontal .or-Hyperlink a:hover,
-    .or-SecondaryNavHorizontal .or-Hyperlink a:focus {
+    .or-SecondaryNav .or-Hyperlink a:focus {
         text-decoration: none;
     }
 
@@ -255,10 +269,9 @@
     }
 
     .or-Form {
-        opacity: 1;
-        transition: opacity 0.4s linear;
-        -moz-transition: opacity 0.4s linear;
-        -webkit-transition: opacity 0.4s linear;
+        transition: opacity 0.1s linear;
+        -moz-transition: opacity 0.1s linear;
+        -webkit-transition: opacity 0.1s linear;
     }
 
     .or-FormBusy {
@@ -273,12 +286,12 @@
 
     .or-FormMessages {
         display: table;
-        margin-bottom: 1em;
+        margin: 1em;
     }
 
     .or-Toast .or-MessagesIcon,
     .or-FormMessages .or-MessagesIcon {
-        margin: 0.1em 0.4em 0 0;
+        margin: 0em 0.4em 0 0;
     }
 
     .or-FormGroup {
@@ -299,7 +312,6 @@
     }
 
     .or-FormGroup.expanded .or-FormGroup {
-        margin-bottom: 0;
     }
 
     .or-FormGroup.expanded .or-FormGroup .or-FormLabel {
@@ -330,7 +342,7 @@
     }
 
     .or-FormLabelIcon {
-        margin: 0.2em 0.4em 0.1em 0.1em;
+        margin-right: 0.4em;
         font-size: 1.2em;
         opacity: 0.4;
         align-self: flex-end;
@@ -422,6 +434,12 @@
         resize: none;
     }
 
+    .or-FormTextArea.border {
+        border-width: 1px;
+        border-style: solid;
+        padding: 0.4em 0.4em !important;
+    }
+
     .or-FormFileUploadLabel input[type="file"] {
         position: fixed;
         top: -10000px;
@@ -469,6 +487,9 @@
 
     .or-FormTableCell {
         padding: 0.4em 1.2em 0.4em 0.4em;
+    }
+
+    .or-FormTableCell.nowrap {
         white-space: nowrap;
     }
 
@@ -566,6 +587,10 @@
         padding: 0.4em;
     }
 
+    .or-FormListItem > .or-FormGroup:last-of-type {
+        margin-bottom: 0;
+    }
+
     .or-FormListEmptyMessage {
         margin: 0.4em;
     }
@@ -609,8 +634,13 @@
     }
 
     .or-JsonEditor {
-        width: 48em;
-        height: 30em;
+        width: 55em;
+        height: 40em;
+    }
+
+    .or-AdminNotificationEditor {
+        width: 50em;
+        height: 20em;
     }
 
     .or-SimulatorElement {

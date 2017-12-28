@@ -28,7 +28,7 @@ import com.google.gwt.user.client.ui.Hyperlink;
 import org.openremote.manager.client.admin.AdminPlace;
 import org.openremote.manager.client.admin.tenant.AdminTenantPlace;
 import org.openremote.manager.client.admin.tenant.AdminTenantsPlace;
-import org.openremote.manager.client.admin.users.AdminUserPlace;
+import org.openremote.manager.client.admin.users.AbstractAdminUsersPlace;
 import org.openremote.manager.client.admin.users.AdminUsersPlace;
 
 import javax.inject.Inject;
@@ -76,7 +76,7 @@ public class AdminNavigationImpl extends Composite implements AdminNavigation {
             tenantsLink.addStyleName("active");
         } else if (adminPlace instanceof AdminUsersPlace) {
             usersLink.addStyleName("active");
-        } else if (adminPlace instanceof AdminUserPlace) {
+        } else if (adminPlace instanceof AbstractAdminUsersPlace) {
             usersLink.addStyleName("active");
         } else {
             syslogLink.addStyleName("active");

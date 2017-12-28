@@ -25,8 +25,6 @@ import org.openremote.agent.protocol.ProtocolExecutorService;
 
 import java.util.List;
 
-import static org.openremote.agent.protocol.velbus.VelbusPacket.MAX_PACKET_SIZE;
-
 public class VelbusSocketMessageProcessor extends AbstractSocketMessageProcessor<VelbusPacket> {
 
     public VelbusSocketMessageProcessor(String host, int port, ProtocolExecutorService executorService) {

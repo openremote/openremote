@@ -12,7 +12,7 @@
     </ui:style>
 
 
-    <g:HTMLPanel styleName="layout horizontal center end-justified {widgetStyle.SecondaryNavHorizontal}">
+    <g:HTMLPanel styleName="layout horizontal center end-justified {widgetStyle.SecondaryNav}">
 
         <g:FlowPanel ui:field="navItemContainer"
                      styleName="layout horizontal center"/>
@@ -38,13 +38,6 @@
                 icon="edit"
                 visible="false"
                 text="{managerMessages.editAsset}"/>
-
-        <w:Hyperlink
-                ui:field="linkAssetUsersLink"
-                addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem}"
-                icon="vcard"
-                visible="false"
-                text="{managerMessages.linkAssetUsers}"/>
 
     </g:HTMLPanel>
 

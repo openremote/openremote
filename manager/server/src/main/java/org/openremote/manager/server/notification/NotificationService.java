@@ -19,53 +19,37 @@
  */
 package org.openremote.manager.server.notification;
 
-import org.jboss.resteasy.client.jaxrs.ResteasyClient;
-import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
-import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.persistence.PersistenceService;
+import org.openremote.container.timer.TimerService;
 import org.openremote.container.web.WebService;
+import org.openremote.manager.shared.notification.DeviceNotificationToken;
 import org.openremote.model.notification.AlertNotification;
 import org.openremote.model.notification.DeliveryStatus;
 import org.openremote.model.user.UserQuery;
 
-import javax.persistence.EntityManager;
 import javax.persistence.Query;
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.client.Invocation;
-import javax.ws.rs.core.Response;
+import java.util.Date;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import java.util.Optional;
 
 public class NotificationService implements ContainerService {
 
-    private static final Logger LOG = Logger.getLogger(NotificationService.class.getName());
-
-    public static final String NOTIFICATION_FIREBASE_API_KEY = "NOTIFICATION_FIREBASE_API_KEY";
-    public static final String NOTIFICATION_FIREBASE_URL = "NOTIFICATION_FIREBASE_URL";
-    public static final String NOTIFICATION_FIREBASE_URL_DEFAULT = "https://fcm.googleapis.com/fcm/send";
-
+    protected TimerService timerService;
     protected PersistenceService persistenceService;
-    protected ResteasyWebTarget firebaseTarget;
-    private String fcmKey;
+    protected FCMDeliveryService fcmDeliveryService;
 
     @Override
     public void init(Container container) throws Exception {
-
-        fcmKey = container.getConfig().get(NOTIFICATION_FIREBASE_API_KEY);
-        if (fcmKey == null) {
-            LOG.info(NOTIFICATION_FIREBASE_API_KEY + " not defined, can not send notifications to user devices");
-        }
+        this.timerService = container.getService(TimerService.class);
         this.persistenceService = container.getService(PersistenceService.class);
+
+        this.fcmDeliveryService = new FCMDeliveryService(container);
 
         container.getService(WebService.class).getApiSingletons().add(
             new NotificationResourceImpl(this)
         );
-
-        ResteasyClient client = new ResteasyClientBuilder().build();
-        firebaseTarget = client.target(container.getConfig().getOrDefault(NOTIFICATION_FIREBASE_URL, NOTIFICATION_FIREBASE_URL_DEFAULT));
     }
 
     @Override
@@ -80,90 +64,98 @@ public class NotificationService implements ContainerService {
         persistenceService.doTransaction(entityManager -> {
             DeviceNotificationToken.Id id = new DeviceNotificationToken.Id(deviceId, userId);
             DeviceNotificationToken deviceToken = new DeviceNotificationToken(id, token, deviceType);
+            deviceToken.setUpdatedOn(new Date(timerService.getCurrentTimeMillis()));
             entityManager.merge(deviceToken);
         });
     }
 
-    public String findDeviceToken(String deviceId, String userId) {
+    public void deleteDeviceToken(String deviceId, String userId) {
+        persistenceService.doTransaction(entityManager -> {
+            DeviceNotificationToken.Id id = new DeviceNotificationToken.Id(deviceId, userId);
+            DeviceNotificationToken deviceToken = entityManager.find(DeviceNotificationToken.class, id);
+            if (deviceToken != null) {
+                entityManager.remove(deviceToken);
+            }
+        });
+    }
+
+    public Optional<DeviceNotificationToken> findDeviceToken(String deviceId, String userId) {
         return persistenceService.doReturningTransaction(entityManager -> {
             DeviceNotificationToken.Id id = new DeviceNotificationToken.Id(deviceId, userId);
             DeviceNotificationToken deviceToken = entityManager.find(DeviceNotificationToken.class, id);
-            return deviceToken != null ? deviceToken.getToken() : null;
+            return Optional.ofNullable(deviceToken);
         });
     }
 
     public List<DeviceNotificationToken> findAllTokenForUser(String userId) {
-        return persistenceService.doReturningTransaction(entityManager -> {
-            Query query = entityManager.createQuery("SELECT dnt FROM DeviceNotificationToken dnt WHERE dnt.id.userId =:userId");
-            query.setParameter("userId", userId);
-            return query.getResultList();
-        });
+        return persistenceService.doReturningTransaction(entityManager -> entityManager.createQuery(
+            "SELECT dnt FROM DeviceNotificationToken dnt WHERE dnt.id.userId =:userId order by dnt.updatedOn desc", DeviceNotificationToken.class
+        ).setParameter("userId", userId).getResultList());
     }
 
+    public void storeAndNotify(String userId, AlertNotification notification) {
+        notification.setUserId(userId);
+        notification.setDeliveryStatus(DeliveryStatus.PENDING);
+        persistenceService.doTransaction(entityManager -> entityManager.merge(notification));
 
-    public void storeAndNotify(String userId, AlertNotification alertNotification) {
-        alertNotification.setUserId(userId);
-        alertNotification.setDeliveryStatus(DeliveryStatus.PENDING);
-        persistenceService.doTransaction((EntityManager entityManager) -> {
-            entityManager.merge(alertNotification);
-            if (fcmKey == null) {
-                LOG.info("No " + NOTIFICATION_FIREBASE_API_KEY + " configured, not sending to '" + userId + "': " + alertNotification);
-                return;
-            }
-            List<DeviceNotificationToken> allTokenForUser = findAllTokenForUser(userId);
-            if (allTokenForUser.size() == 0) {
-                LOG.fine("User has no registered devices/notification tokens: " + userId);
-            }
-            for (DeviceNotificationToken notificationToken : allTokenForUser) {
-                try {
-                    Invocation.Builder builder = firebaseTarget.request().header("Authorization", "key=" + fcmKey);
-                    Notification notification = new Notification("_", true);
-
-                    FCMBaseMessage message;
-                    if ("ANDROID".equals(notificationToken.getDeviceType())) {
-                        message = new FCMBaseMessage(notificationToken.getToken());
-                    } else {
-                        message = new FCMMessage(notification, true, "high", notificationToken.getToken());
-                    }
-                    LOG.fine("Sending notification message to device of user '" + userId + "': " + message);
-                    Response response = builder.post(Entity.entity(message, "application/json"));
-                    if (response.getStatus() != 200) {
-                        LOG.severe("Error send FCM notification status=[" + response.getStatus() + "], statusInformation=[" + response.getStatusInfo() + "]");
-                    }
-                    response.close();
-                } catch (Exception e) {
-                    LOG.log(Level.SEVERE, "Error sending notification to FCM", e);
-                }
-            }
-        });
+        // Try to queue through FCM in a separate transaction
+        persistenceService.doTransaction(fcmDeliveryService.deliverPendingToFCM(userId, findAllTokenForUser(userId)));
     }
 
-    public List<AlertNotification> getPendingAlertForUserId(String userId) {
-        return persistenceService.doReturningTransaction(entityManager -> {
-            Query query = entityManager.createQuery("SELECT an FROM AlertNotification an WHERE an.userId =:userId and an.deliveryStatus =:deliveryStatus");
-            query.setParameter("userId", userId);
-            query.setParameter("deliveryStatus", DeliveryStatus.PENDING);
-            return query.getResultList();
-        });
+    public List<AlertNotification> getNotificationsOfUser(String userId, DeliveryStatus deliveryStatus) {
+        return persistenceService.doReturningTransaction(entityManager -> entityManager.createQuery(
+            "SELECT an FROM AlertNotification an WHERE an.userId =:userId and an.deliveryStatus = :deliveryStatus order by an.createdOn desc",
+            AlertNotification.class
+        ).setParameter("userId", userId).setParameter("deliveryStatus", deliveryStatus).getResultList());
     }
 
-    public void removeAlertNotification(Long id) {
+    public List<AlertNotification> getNotificationsOfUser(String userId) {
+        return persistenceService.doReturningTransaction(entityManager -> entityManager.createQuery(
+            "SELECT an FROM AlertNotification an WHERE an.userId = :userId order by an.createdOn desc",
+            AlertNotification.class
+        ).setParameter("userId", userId).getResultList());
+    }
+
+    public boolean isQueuedNotificationForUser(Long id, String userId) {
+        return persistenceService.doReturningTransaction(entityManager -> entityManager.createQuery(
+            "SELECT count(an) FROM AlertNotification an WHERE an.id = :alertId and an.userId =:userId and an.deliveryStatus = :deliveryStatus"
+            , Long.class
+        ).setParameter("alertId", id).setParameter("userId", userId).setParameter("deliveryStatus", DeliveryStatus.QUEUED).getSingleResult() > 0);
+    }
+
+    public void setAcknowledged(Long id) {
         persistenceService.doTransaction(entityManager -> {
-            Query query = entityManager.createQuery("UPDATE AlertNotification SET deliveryStatus=:status  WHERE id =:id");
+            Query query = entityManager.createQuery("UPDATE AlertNotification SET deliveryStatus=:status WHERE id =:id");
             query.setParameter("id", id);
-            query.setParameter("status", DeliveryStatus.DELIVERED);
+            query.setParameter("status", DeliveryStatus.ACKNOWLEDGED);
             query.executeUpdate();
-            // TODO Who is cleaning up the delivered notifications?
+            // TODO Who is cleaning up the acknowledged notifications?
         });
+    }
+
+    public void removeNotificationsOfUser(String userId) {
+        persistenceService.doTransaction(entityManager -> entityManager
+            .createQuery("delete AlertNotification an where an.userId = :userId")
+            .setParameter("userId", userId)
+            .executeUpdate()
+        );
+    }
+
+    public void removeNotification(String userId, Long id) {
+        persistenceService.doTransaction(entityManager -> entityManager
+            .createQuery("delete AlertNotification an where an.userId = :userId and an.id = :id")
+            .setParameter("userId", userId).setParameter("id", id)
+            .executeUpdate()
+        );
     }
 
     public List<String> findAllUsersWithToken() {
-        return persistenceService.doReturningTransaction(entityManager -> {
-            Query query = entityManager.createQuery("SELECT DISTINCT dnt.id.userId FROM DeviceNotificationToken dnt");
-            return query.getResultList();
-        });
+        return persistenceService.doReturningTransaction(entityManager ->
+            entityManager.createQuery("SELECT DISTINCT dnt.id.userId FROM DeviceNotificationToken dnt", String.class).getResultList()
+        );
     }
 
+    @SuppressWarnings("unchecked")
     public List<String> findAllUsersWithToken(UserQuery userQuery) {
         return persistenceService.doReturningTransaction(entityManager -> {
             Query query = entityManager.createQuery("SELECT DISTINCT dnt.id.userId " + buildFromString(userQuery) + buildWhereString(userQuery));
@@ -180,11 +172,6 @@ public class NotificationService implements ContainerService {
         });
     }
 
-    @Override
-    public String toString() {
-        return getClass().getSimpleName() + "{}";
-    }
-
     protected String buildFromString(UserQuery query) {
         StringBuilder sb = new StringBuilder();
 
@@ -194,7 +181,7 @@ public class NotificationService implements ContainerService {
             sb.append("join User u on u.id = dnt.id.userId");
         }
         if (query.assetPredicate != null) {
-            sb.append("join UserAsset us on us.userId = dnt.id.userId ");
+            sb.append("join UserAsset ua on ua.id.userId = dnt.id.userId ");
         }
 
         return sb.toString();
@@ -209,10 +196,15 @@ public class NotificationService implements ContainerService {
             sb.append("AND u.realmId = :realmId");
         }
         if (query.assetPredicate != null) {
-            sb.append("AND us.assetId = :assetId ");
+            sb.append("AND ua.id.assetId = :assetId ");
         }
 
         return sb.toString();
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "{}";
     }
 
 }

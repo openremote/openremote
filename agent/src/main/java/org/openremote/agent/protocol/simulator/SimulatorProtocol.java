@@ -20,7 +20,7 @@
 package org.openremote.agent.protocol.simulator;
 
 import org.openremote.agent.protocol.AbstractProtocol;
-import org.openremote.agent.protocol.ConnectionStatus;
+import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.AbstractValueHolder;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.asset.AssetAttribute;

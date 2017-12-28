@@ -40,7 +40,7 @@ public class RulesDemoSetup extends AbstractManagerSetup {
     public Long apartmentActionsRulesetId;
 
     @Override
-    public void execute() throws Exception {
+    public void onStart() throws Exception {
 
         KeycloakDemoSetup keycloakDemoSetup = setupService.getTaskOfType(KeycloakDemoSetup.class);
         ManagerDemoSetup managerDemoSetup = setupService.getTaskOfType(ManagerDemoSetup.class);

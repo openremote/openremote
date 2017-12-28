@@ -24,8 +24,6 @@ import com.github.nmorel.gwtjackson.client.JsonDeserializer;
 import com.github.nmorel.gwtjackson.client.JsonDeserializerParameters;
 import com.github.nmorel.gwtjackson.client.stream.JsonReader;
 import org.openremote.model.ValidationFailure;
-import org.openremote.model.value.Value;
-import org.openremote.model.value.Values;
 
 public class ValidationFailureReasonDeserializer extends JsonDeserializer<ValidationFailure.Reason> {
 

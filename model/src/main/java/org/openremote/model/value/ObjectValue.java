@@ -18,6 +18,7 @@ package org.openremote.model.value;
 import org.openremote.model.util.Pair;
 
 import java.util.Optional;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 /**
@@ -27,6 +28,8 @@ import java.util.stream.Stream;
  */
 public interface ObjectValue extends Value {
 
+    boolean keyContainsNull(String key);
+
     Optional<Value> get(String key);
 
     /**
@@ -35,7 +38,7 @@ public interface ObjectValue extends Value {
     Optional<String> getString(String key);
 
     /**
-     * A <code>String</code> or if the value type is not {@link ValueType#BOOLEAN}, an empty {@link Optional}.
+     * A <code>Boolean</code> or if the value type is not {@link ValueType#BOOLEAN}, an empty {@link Optional}.
      */
     Optional<Boolean> getBoolean(String key);
 
@@ -74,5 +77,9 @@ public interface ObjectValue extends Value {
 
     ObjectValue deepCopy();
 
-    boolean equalsIgnoreKeys(ObjectValue that, String... ignoreKeys);
+    /**
+     *
+     * @param ignoreKeyPredicate Ignore given keys in the comparison.
+     */
+    boolean equalsIgnoreKeys(ObjectValue that, Predicate<String> ignoreKeyPredicate);
 }

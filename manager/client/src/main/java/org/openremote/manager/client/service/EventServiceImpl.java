@@ -26,7 +26,6 @@ import elemental.html.WebSocket;
 import org.openremote.manager.client.event.*;
 import org.openremote.manager.client.event.session.*;
 import org.openremote.manager.client.util.Timeout;
-import org.openremote.model.Constants;
 import org.openremote.model.event.bus.EventBus;
 import org.openremote.model.event.shared.*;
 

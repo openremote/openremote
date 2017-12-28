@@ -27,9 +27,8 @@ import com.google.gwt.uibinder.client.UiHandler;
 import com.google.gwt.user.client.ui.HTMLPanel;
 import com.google.gwt.user.client.ui.Label;
 import com.google.inject.Provider;
+import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.app.dialog.Confirmation;
-import org.openremote.manager.client.i18n.ManagerMessages;
-import org.openremote.manager.client.style.WidgetStyle;
 import org.openremote.manager.client.widget.FormInputText;
 import org.openremote.manager.client.widget.FormListBox;
 import org.openremote.manager.client.widget.FormViewImpl;
@@ -38,11 +37,8 @@ import org.openremote.model.syslog.SyslogEvent;
 import org.openremote.model.syslog.SyslogLevel;
 
 import javax.inject.Inject;
-import java.util.logging.Logger;
 
 public class AdminSyslogImpl extends FormViewImpl implements AdminSyslog {
-
-    private static final Logger LOG = Logger.getLogger(AdminSyslogImpl.class.getName());
 
     interface UI extends UiBinder<HTMLPanel, AdminSyslogImpl> {
     }
@@ -67,11 +63,10 @@ public class AdminSyslogImpl extends FormViewImpl implements AdminSyslog {
     int limit = SyslogConfig.DEFAULT_LIMIT;
 
     @Inject
-    public AdminSyslogImpl(Provider<Confirmation> confirmationDialogProvider,
-                           ManagerMessages messages, WidgetStyle widgetStyle) {
-        super(confirmationDialogProvider);
+    public AdminSyslogImpl(Environment environment, Provider<Confirmation> confirmationDialogProvider) {
+        super(confirmationDialogProvider, environment.getWidgetStyle());
 
-        syslogFilter = new SyslogFilter(messages, widgetStyle) {
+        syslogFilter = new SyslogFilter(environment.getMessages(), environment.getWidgetStyle()) {
             @Override
             protected void onClearLog() {
                 if (presenter != null)
@@ -104,8 +99,8 @@ public class AdminSyslogImpl extends FormViewImpl implements AdminSyslog {
             }
         };
 
-        Label emptyLabel = new Label(messages.noLogMessagesReceived());
-        emptyLabel.addStyleName(widgetStyle.FormListEmptyMessage());
+        Label emptyLabel = new Label(environment.getMessages().noLogMessagesReceived());
+        emptyLabel.addStyleName(environment.getWidgetStyle().FormListEmptyMessage());
         syslogItems = new SyslogItems(emptyLabel);
 
         UI ui = GWT.create(UI.class);
@@ -115,9 +110,9 @@ public class AdminSyslogImpl extends FormViewImpl implements AdminSyslog {
             storeLevelListBox.addItem(syslogLevel.name());
         }
 
-        expirationListBox.addItem(messages.minutes());
-        expirationListBox.addItem(messages.hours());
-        expirationListBox.addItem(messages.days());
+        expirationListBox.addItem(managerMessages.minutes());
+        expirationListBox.addItem(managerMessages.hours());
+        expirationListBox.addItem(managerMessages.days());
     }
 
     @Override

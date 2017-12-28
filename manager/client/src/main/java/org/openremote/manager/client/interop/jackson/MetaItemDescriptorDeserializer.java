@@ -24,11 +24,8 @@ import com.github.nmorel.gwtjackson.client.JsonDeserializer;
 import com.github.nmorel.gwtjackson.client.JsonDeserializerParameters;
 import com.github.nmorel.gwtjackson.client.stream.JsonReader;
 import com.google.gwt.core.client.GWT;
-import com.google.gwt.core.client.JavaScriptObject;
 import org.openremote.manager.client.assets.MetaItemDescriptorMapper;
-import org.openremote.model.ValidationFailure;
 import org.openremote.model.attribute.MetaItemDescriptor;
-import org.openremote.model.attribute.MetaItemDescriptorImpl;
 
 public class MetaItemDescriptorDeserializer extends JsonDeserializer<MetaItemDescriptor> {
 

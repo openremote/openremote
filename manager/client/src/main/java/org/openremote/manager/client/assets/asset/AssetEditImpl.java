@@ -56,15 +56,9 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
 
     interface Style extends CssResource, AttributeView.Style {
 
-        String navItem();
-
-        String formMessages();
-
         String mapWidget();
 
         String nameInput();
-
-        String newAttributeFormGroup();
 
         String stringEditor();
 
@@ -72,15 +66,13 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
 
         String booleanEditor();
 
-        String regularAttribute();
-
-        String highlightAttribute();
-
         String metaItemNameEditor();
 
         String metaItemValueEditor();
 
         String agentLinkEditor();
+
+        String attributeView();
     }
 
     @UiField
@@ -123,6 +115,11 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
     FormButton centerMapButton;
     @UiField
     MapWidget mapWidget;
+
+    @UiField
+    FormGroup accessPublicReadGroup;
+    @UiField
+    FormCheckBox accessPublicReadCheckBox;
 
     /* ############################################################################ */
 
@@ -173,7 +170,7 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
                          Provider<Confirmation> confirmationDialogProvider,
                          Provider<JsonEditor> jsonEditorProvider,
                          Environment environment) {
-        super(confirmationDialogProvider);
+        super(confirmationDialogProvider, environment.getWidgetStyle());
         this.jsonEditorProvider = jsonEditorProvider;
         this.assetBrowser = assetBrowser;
         this.assetNavigation = assetNavigation;
@@ -224,6 +221,12 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
         UI ui = GWT.create(UI.class);
         initWidget(ui.createAndBindUi(this));
 
+        accessPublicReadCheckBox.addValueChangeHandler(event -> {
+            if (presenter != null) {
+                presenter.onAccessPublicRead(event.getValue());
+            }
+        });
+
         splitPanel.setOnResize(() -> mapWidget.resize());
     }
 
@@ -242,6 +245,8 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
         parentAssetSelector.init();
         locationOutput.setCoordinates(null, null);
         centerMapButton.setEnabled(false);
+        accessPublicReadCheckBox.setValue(false);
+        typeGroup.setVisible(false);
         typeGroup.setError(false);
         typeListBox.setValue(null);
         typeListBox.setAcceptableValues(new ArrayList<>());
@@ -424,6 +429,11 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
             presenter.centerMap();
     }
 
+    @Override
+    public void setAccessPublicRead(boolean enabled) {
+        accessPublicReadCheckBox.setValue(enabled);
+    }
+
     /* ############################################################################ */
 
     @Override
@@ -450,6 +460,7 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
 
     @Override
     public void setTypeEditable(boolean editable) {
+        typeGroup.setVisible(editable);
         typeListBox.setEnabled(editable);
         typeInput.setReadOnly(!editable);
         customTypeInfoLabel.setVisible(editable && typeListBox.getValue() == AssetType.CUSTOM);

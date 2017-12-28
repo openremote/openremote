@@ -29,7 +29,6 @@ import org.openremote.manager.shared.http.*;
 import org.openremote.manager.shared.validation.ConstraintViolationReport;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.logging.Level;

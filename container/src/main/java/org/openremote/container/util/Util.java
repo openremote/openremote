@@ -34,7 +34,12 @@ public class Util {
      * @return Epoch time or 0 if there is a problem parsing the timestamp string.
      */
     public static long parseTimestamp(Object o) {
-        String timestamp = o.toString();
+        String timestamp = "";
+        try {
+            timestamp = o.toString();
+        }catch (Exception e){
+            return (0L);
+        }
         SimpleDateFormat sdf;
         if (timestamp.length() == 8) {
             sdf = new SimpleDateFormat("HH:mm:ss");

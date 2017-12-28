@@ -87,7 +87,7 @@ public abstract class DOMElement<CHILD extends DOMElement, PARENT extends DOMEle
 
     public CHILD[] getChildren() {
         NodeList nodes = getW3CElement().getChildNodes();
-        List<CHILD> children = new ArrayList();
+        List<CHILD> children = new ArrayList<>();
         for (int i = 0; i < nodes.getLength(); i++) {
             Node node = nodes.item(i);
             if (node.getNodeType() == Node.ELEMENT_NODE) {
@@ -151,6 +151,7 @@ public abstract class DOMElement<CHILD extends DOMElement, PARENT extends DOMEle
         return replacement;
     }
 
+    @SuppressWarnings("unchecked")
     public void replaceEqualChild(DOMElement source, String identifier) {
         DOMElement original = findChildWithIdentifier(identifier);
         DOMElement replacement = source.findChildWithIdentifier(identifier);
@@ -220,10 +221,12 @@ public abstract class DOMElement<CHILD extends DOMElement, PARENT extends DOMEle
         return localName;
     }
 
+    @SuppressWarnings("unchecked")
     public Collection<PARENT> getXPathParentElements(Builder<CHILD> builder, String expr) {
         return getXPathElements(builder, expr);
     }
 
+    @SuppressWarnings("unchecked")
     public Collection<CHILD> getXPathChildElements(Builder<CHILD> builder, String expr) {
         return getXPathElements(builder, expr);
     }
@@ -238,6 +241,7 @@ public abstract class DOMElement<CHILD extends DOMElement, PARENT extends DOMEle
         return node != null && node.getNodeType() == Node.ELEMENT_NODE ? builder.build((Element) node) : null;
     }
 
+    @SuppressWarnings("unchecked")
     public Collection getXPathElements(Builder builder, String expr) {
         Collection col = new ArrayList();
         NodeList result = (NodeList) getXPathResult(getW3CElement(), expr, XPathConstants.NODESET);

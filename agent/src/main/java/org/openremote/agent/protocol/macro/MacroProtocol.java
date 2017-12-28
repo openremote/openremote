@@ -20,7 +20,7 @@
 package org.openremote.agent.protocol.macro;
 
 import org.openremote.agent.protocol.AbstractProtocol;
-import org.openremote.agent.protocol.ConnectionStatus;
+import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.attribute.*;
 import org.openremote.model.util.Pair;

@@ -42,6 +42,7 @@ public class SyslogEvent extends SharedEvent {
         protected LevelCategoryFilter() {
         }
 
+        @SuppressWarnings("unchecked")
         public LevelCategoryFilter(SyslogLevel level, SyslogCategory... categories) {
             this.level = level;
             this.categories = categories != null ? Arrays.asList(categories) : Collections.EMPTY_LIST;
@@ -101,7 +102,7 @@ public class SyslogEvent extends SharedEvent {
     @Column(name = "SUBCATEGORY", length = 1024)
     protected String subCategory;
 
-    @Column(name = "MESSAGE", length = 8192)
+    @Column(name = "MESSAGE", length = 131072)
     protected String message;
 
     protected SyslogEvent() {

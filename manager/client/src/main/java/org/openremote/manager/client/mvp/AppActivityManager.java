@@ -198,6 +198,7 @@ public class AppActivityManager {
         }
     }
 
+    @SuppressWarnings("unchecked")
     protected void tryStart() {
         if (LOG.isLoggable(Level.FINE))
             LOG.fine(name + " - starting activity: " + currentActivity);

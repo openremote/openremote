@@ -20,14 +20,14 @@
 package org.openremote.container.web.socket;
 
 import org.apache.camel.Endpoint;
-import org.apache.camel.impl.UriEndpointComponent;
+import org.apache.camel.impl.DefaultComponent;
 import org.apache.camel.util.ServiceHelper;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
 
-public abstract class WebsocketComponent extends UriEndpointComponent {
+public abstract class WebsocketComponent extends DefaultComponent {
 
     private static final Logger LOG = Logger.getLogger(WebsocketComponent.class.getName());
 
@@ -37,7 +37,6 @@ public abstract class WebsocketComponent extends UriEndpointComponent {
     final protected WebsocketSessions websocketSessions;
 
     public WebsocketComponent() {
-        super(WebsocketEndpoint.class);
         this.websocketSessions = new MemoryWebsocketSessions();
     }
 
@@ -90,16 +89,21 @@ public abstract class WebsocketComponent extends UriEndpointComponent {
         }
         consumers.remove(resourceUri);
         try {
-            redeploy();
+            redeploy(consumers.size() == 0);
         } catch (Exception ex) {
             throw new RuntimeException(ex);
         }
     }
 
     protected void redeploy() throws Exception {
+        redeploy(false);
+    }
+
+    protected void redeploy(boolean doUndeployOnly) throws Exception {
         // TODO what happens to inflight sessions?
         undeploy();
-        deploy();
+        if (!doUndeployOnly)
+            deploy();
     }
 
     protected abstract void deploy() throws Exception;

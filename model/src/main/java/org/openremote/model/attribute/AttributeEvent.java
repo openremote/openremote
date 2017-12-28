@@ -52,7 +52,8 @@ public class AttributeEvent extends SharedEvent {
         INTERNAL, // This needs to be more fine grained
 
         /**
-         *
+         * An attribute event has been created by the linking service, which enables
+         * writing the same value onto another, linked attribute.
          */
         ATTRIBUTE_LINKING_SERVICE,
 
@@ -110,12 +111,20 @@ public class AttributeEvent extends SharedEvent {
         this(new AttributeState(new AttributeRef(entityId, attributeName), value));
     }
 
+    public AttributeEvent(String entityId, String attributeName) {
+        this(new AttributeState(new AttributeRef(entityId, attributeName)));
+    }
+
     public AttributeEvent(String entityId, String attributeName, Value value, long timestamp) {
         this(new AttributeState(new AttributeRef(entityId, attributeName), value), timestamp);
     }
 
     public AttributeEvent(AttributeRef attributeRef, Value value) {
         this(new AttributeState(attributeRef, value));
+    }
+
+    public AttributeEvent(AttributeRef attributeRef) {
+        this(new AttributeState(attributeRef));
     }
 
     public AttributeEvent(AttributeRef attributeRef, Value value, long timestamp) {

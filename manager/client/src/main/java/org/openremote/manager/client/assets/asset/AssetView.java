@@ -33,4 +33,6 @@ public interface AssetView extends AssetBaseView<AssetView.Presenter> {
     void setFormBusy(boolean busy);
 
     void setIconAndType(String icon, String type);
+
+    void setAccessPublicReadAnchor(String path);
 }

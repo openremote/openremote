@@ -29,6 +29,9 @@ import java.util.Optional;
 
 /**
  * The desired or current or past state of an {@link AttributeRef}.
+ * <p>
+ * <code>null</code> is a valid {@link #value}.
+ * </p>
  */
 public class AttributeState {
 
@@ -43,11 +46,25 @@ public class AttributeState {
     }
 
     /**
+     * Sets the {@link #value} to <code>null</code>.
+     */
+    public AttributeState(String entityId, String attributeName) {
+        this(new AttributeRef(entityId, attributeName), null);
+    }
+
+    /**
      * @param value can be <code>null</code> if the attribute has no value.
      */
     public AttributeState(AttributeRef attributeRef, Value value) {
         this.attributeRef = Objects.requireNonNull(attributeRef);
         this.value = value;
+    }
+
+    /**
+     * Sets the {@link #value} to <code>null</code>.
+     */
+    public AttributeState(AttributeRef attributeRef) {
+        this(attributeRef, null);
     }
 
     public AttributeRef getAttributeRef() {

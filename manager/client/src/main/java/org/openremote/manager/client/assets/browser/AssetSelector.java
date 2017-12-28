@@ -24,6 +24,7 @@ public class AssetSelector extends FormGroup {
     final FormOutputText outputTenantDisplayName = new FormOutputText();
     final FormInputText outputAssetName = new FormInputText();
     final Label infoLabel = new Label();
+    final boolean enableTenantSelection;
     final boolean enableClearSelection;
     final FormButton selectAssetButton = new FormButton();
     final FormButton clearSelectionButton = new FormButton();
@@ -41,16 +42,27 @@ public class AssetSelector extends FormGroup {
                          String infoText,
                          boolean enableClearSelection,
                          Consumer<BrowserTreeNode> selectionConsumer) {
+        this(assetBrowserPresenter, managerMessages, labelText, infoText, true, enableClearSelection, selectionConsumer);
+    }
+
+    public AssetSelector(AssetBrowser.Presenter assetBrowserPresenter,
+                         ManagerMessages managerMessages,
+                         String labelText,
+                         String infoText,
+                         boolean enableTenantSelection,
+                         boolean enableClearSelection,
+                         Consumer<BrowserTreeNode> selectionConsumer) {
         this.assetBrowserPresenter = assetBrowserPresenter;
         this.managerMessages = managerMessages;
         this.selectionConsumer = selectionConsumer;
+        this.enableTenantSelection = enableTenantSelection;
         this.enableClearSelection = enableClearSelection;
         setFormLabel(label);
         setFormField(field);
-        setFromGroupActions(actions);
+        setFormGroupActions(actions);
         addInfolabel(infoLabel);
         field.add(fieldContainer);
-        fieldContainer.setStyleName("layout vertical");
+        fieldContainer.setStyleName("flex layout vertical");
         fieldContainer.add(outputTenantDisplayName);
         fieldContainer.add(outputAssetName);
         actions.add(selectAssetButton);
@@ -110,6 +122,9 @@ public class AssetSelector extends FormGroup {
     }
 
     public void setSelectedNode(BrowserTreeNode selectedNode) {
+        if (!enableTenantSelection && (selectedNode instanceof TenantTreeNode)) {
+            return;
+        }
         this.selectedNode = selectedNode;
         renderTreeNode(managerMessages, selectedNode, outputTenantDisplayName, outputAssetName);
     }

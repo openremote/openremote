@@ -31,6 +31,7 @@ import org.openremote.manager.shared.security.TenantResource;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetQuery;
 import org.openremote.model.asset.AssetTreeModifiedEvent;
+import org.openremote.model.event.shared.TenantFilter;
 
 import javax.inject.Inject;
 import java.util.ArrayList;
@@ -99,12 +100,13 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public void onViewAttached() {
         environment.getEventService().subscribe(
             AssetTreeModifiedEvent.class,
             environment.getSecurityService().isSuperUser()
                 ? null
-                : new AssetTreeModifiedEvent.TenantFilter(currentTenant.getId())
+                : new TenantFilter(currentTenant.getId())
         );
     }
 

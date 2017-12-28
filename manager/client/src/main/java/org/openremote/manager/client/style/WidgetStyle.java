@@ -41,10 +41,6 @@ public class WidgetStyle {
         return "or-SecondaryNav";
     }
 
-    public String SecondaryNavHorizontal() {
-        return "or-SecondaryNavHorizontal";
-    }
-
     public String SecondaryNavItem() {
         return "or-SecondaryNavItem";
     }
@@ -285,8 +281,8 @@ public class WidgetStyle {
         return "or-FormTableSortedHeaderDescending";
     }
 
-    public String FormTableWidget() {
-        return "or-FormTableWidget";
+    public String FormTable() {
+        return "or-FormTable";
     }
 
     public String FormTreeEmptyMessage() {
@@ -397,15 +393,27 @@ public class WidgetStyle {
         return "or-HighlightBackground";
     }
 
-    public String HighlightBorder() {
-        return "or-HighlightBorder";
-    }
-
-    public String RegularBorder() {
-        return "or-RegularBorder";
-    }
-
     public String JsonEditor() {
         return "or-JsonEditor";
+    }
+
+    public String AdminNotificationEditor() {
+        return "or-AdminNotificationEditor";
+    }
+
+    public String BorderRed() {
+        return "or-BorderRed";
+    }
+
+    public String BorderGreen() {
+        return "or-BorderGreen";
+    }
+
+    public String BorderYellow() {
+        return "or-BorderYellow";
+    }
+
+    public String BorderDefault() {
+        return "or-BorderDefault";
     }
 }

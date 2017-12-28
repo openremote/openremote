@@ -28,10 +28,8 @@ import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.Values;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import static org.openremote.model.asset.AssetMeta.*;
@@ -274,20 +272,28 @@ public class AssetAttribute extends Attribute {
         }
     }
 
-    public boolean isProtected() {
+    public boolean isAccessRestrictedRead() {
         return getMetaStream()
-            .filter(isMetaNameEqualTo(PROTECTED))
+            .filter(isMetaNameEqualTo(AssetMeta.ACCESS_RESTRICTED_READ))
             .findFirst()
             .map(metaItem -> metaItem.getValueAsBoolean().orElse(false))
             .orElse(false);
     }
 
-    public void setProtected(boolean protect) {
-        if (protect) {
-            replaceMetaByName(getMeta(), PROTECTED, Values.create(true));
-        } else {
-            getMeta().removeIf(isMetaNameEqualTo(PROTECTED));
-        }
+    public boolean isAccessRestrictedWrite() {
+        return getMetaStream()
+            .filter(isMetaNameEqualTo(AssetMeta.ACCESS_RESTRICTED_WRITE))
+            .findFirst()
+            .map(metaItem -> metaItem.getValueAsBoolean().orElse(false))
+            .orElse(false);
+    }
+
+    public boolean isAccessPublicRead() {
+        return getMetaStream()
+            .filter(isMetaNameEqualTo(AssetMeta.ACCESS_PUBLIC_READ))
+            .findFirst()
+            .map(metaItem -> metaItem.getValueAsBoolean().orElse(false))
+            .orElse(false);
     }
 
     public boolean isReadOnly() {
@@ -337,6 +343,7 @@ public class AssetAttribute extends Attribute {
             getMeta().removeIf(isMetaNameEqualTo(RULE_STATE));
         }
     }
+
     public boolean isRuleEvent() {
         return getMetaStream()
             .filter(isMetaNameEqualTo(RULE_EVENT))
@@ -383,6 +390,24 @@ public class AssetAttribute extends Attribute {
             "} " + objectValue.toJson();
     }
 
+    @Override
+    public int hashCode() {
+        return Objects.hash(objectValue, name, assetId);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null)
+            return false;
+        if (!(obj instanceof AssetAttribute))
+            return false;
+        AssetAttribute that = (AssetAttribute) obj;
+
+        return Objects.equals(assetId, that.assetId)
+            && Objects.equals(name, that.name)
+            && Objects.equals(objectValue, that.objectValue);
+    }
+
     //    ---------------------------------------------------
     //    FUNCTIONAL METHODS BELOW
     //    ---------------------------------------------------
@@ -402,10 +427,44 @@ public class AssetAttribute extends Attribute {
         return Optional.of(attribute);
     }
 
+    /**
+     * @return All attributes that exist only in the new list or are different than any attribute in the old list.
+     */
+    public static Stream<AssetAttribute> getAddedOrModifiedAttributes(List<AssetAttribute> oldAttributes,
+                                                                      List<AssetAttribute> newAttributes) {
+        return getAddedOrModifiedAttributes(oldAttributes, newAttributes, key -> false);
+    }
+
+    /**
+     * @return All attributes that exist only in the new list or are different than any attribute in the old list.
+     */
+    public static Stream<AssetAttribute> getAddedOrModifiedAttributes(List<AssetAttribute> oldAttributes,
+                                                                      List<AssetAttribute> newAttributes,
+                                                                      Predicate<String> ignoredAttributeKeys) {
+        return getAddedOrModifiedAttributes(oldAttributes, newAttributes, name -> false, ignoredAttributeKeys);
+    }
+
+    /**
+     * @return All attributes that exist only in the new list or are different than any attribute in the old list.
+     */
+    public static Stream<AssetAttribute> getAddedOrModifiedAttributes(List<AssetAttribute> oldAttributes,
+                                                                      List<AssetAttribute> newAttributes,
+                                                                      Predicate<String> ignoredAttributeNames,
+                                                                      Predicate<String> ignoredAttributeKeys) {
+        return newAttributes.stream().filter(newAttribute -> oldAttributes.stream().noneMatch(
+            oldAttribute -> newAttribute.getObjectValue().equalsIgnoreKeys(oldAttribute.getObjectValue(), ignoredAttributeKeys))
+        ).filter(addedOrModifiedAttribute ->
+            !addedOrModifiedAttribute.getName().isPresent() ||
+                ignoredAttributeNames == null ||
+                !ignoredAttributeNames.test(addedOrModifiedAttribute.getName().get())
+        );
+    }
+
     public static Stream<AssetAttribute> attributesFromJson(ObjectValue objectValue, String assetId) {
         if (objectValue == null || objectValue.keys().length == 0) {
             return Stream.empty();
         }
+        //noinspection ConstantConditions
         return Arrays
             .stream(objectValue.keys())
             .map(key -> new Pair<>(key, objectValue.getObject(key)))

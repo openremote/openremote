@@ -21,22 +21,14 @@ package org.openremote.manager.client.admin.users;
 
 import com.google.gwt.place.shared.PlaceTokenizer;
 import com.google.gwt.place.shared.Prefix;
-import org.openremote.manager.client.admin.AdminPlace;
 
-public class AdminUsersPlace extends AdminPlace {
-
-    final String realm;
+public class AdminUsersPlace extends AbstractAdminUsersPlace {
 
     public AdminUsersPlace() {
-        this.realm = null;
     }
 
     public AdminUsersPlace(String realm) {
-        this.realm = realm;
-    }
-
-    public String getRealm() {
-        return realm;
+        super(realm);
     }
 
     @Prefix("users")
@@ -53,10 +45,4 @@ public class AdminUsersPlace extends AdminPlace {
         }
     }
 
-    @Override
-    public String toString() {
-        return getClass().getSimpleName() + "{" +
-            "realm='" + realm + '\'' +
-            "}";
-    }
 }

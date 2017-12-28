@@ -27,7 +27,6 @@ import org.openremote.model.notification.AlertNotification;
 import javax.annotation.security.RolesAllowed;
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
-
 import java.util.List;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
@@ -44,27 +43,104 @@ public interface NotificationResource {
     @SuccessStatusCode(204)
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
     @RolesAllowed({"write:user"})
+    @SuppressWarnings("unusable-by-js")
     void storeDeviceToken(@BeanParam RequestParams requestParams,
                           @FormParam("device_id") String deviceId,
                           @FormParam("token") String token,
                           @FormParam("device_type") String deviceType);
+
+    /**
+     * Only the superuser can call this operation.
+     */
+    @GET
+    @Path("token/{userId}")
+    @Produces(APPLICATION_JSON)
+    @RolesAllowed({"read:admin"})
+    @SuppressWarnings("unusable-by-js")
+    List<DeviceNotificationToken> getDeviceTokens(@BeanParam RequestParams requestParams,
+                                                  @PathParam("userId") String userId);
+
+    /**
+     * Only the superuser can call this operation.
+     */
+    @DELETE
+    @Path("token/{userId}/device/{deviceId}")
+    @Produces(APPLICATION_JSON)
+    @RolesAllowed({"write:admin"})
+    @SuppressWarnings("unusable-by-js")
+    void deleteDeviceToken(@BeanParam RequestParams requestParams,
+                           @PathParam("userId") String userId,
+                           @PathParam("deviceId") String deviceId);
 
     @POST
     @Path("alert")
     @SuccessStatusCode(204)
     @Consumes(APPLICATION_JSON)
     @RolesAllowed({"write:user"})
-    void storeAlertNotification(AlertNotification alertNotification);
+    @SuppressWarnings("unusable-by-js")
+    void storeNotificationForCurrentUser(@BeanParam RequestParams requestParams,
+                                         AlertNotification alertNotification);
+
+    /**
+     * Only the superuser can call this operation.
+     */
+    @POST
+    @Path("alert/user/{userId}")
+    @SuccessStatusCode(204)
+    @Consumes(APPLICATION_JSON)
+    @RolesAllowed({"write:admin"})
+    @SuppressWarnings("unusable-by-js")
+    void storeNotificationForUser(@BeanParam RequestParams requestParams,
+                                  @PathParam("userId") String userId,
+                                  AlertNotification alertNotification);
+
+    /**
+     * Only the superuser can call this operation.
+     */
+    @GET
+    @Path("alert/user/{userId}")
+    @SuccessStatusCode(200)
+    @Produces(APPLICATION_JSON)
+    @RolesAllowed({"read:admin"})
+    @SuppressWarnings("unusable-by-js")
+    AlertNotification[] getNotificationsOfUser(@BeanParam RequestParams requestParams,
+                                               @PathParam("userId") String userId);
+
+    /**
+     * Only the superuser can call this operation.
+     */
+    @DELETE
+    @Path("alert/user/{userId}")
+    @SuccessStatusCode(204)
+    @RolesAllowed({"write:admin"})
+    @SuppressWarnings("unusable-by-js")
+    void removeNotificationsOfUser(@BeanParam RequestParams requestParams,
+                                   @PathParam("userId") String userId);
+
+    /**
+     * Only the superuser can call this operation.
+     */
+    @DELETE
+    @Path("alert/user/{userId}/{alertId}")
+    @SuccessStatusCode(204)
+    @RolesAllowed({"write:admin"})
+    @SuppressWarnings("unusable-by-js")
+    void removeNotification(@BeanParam RequestParams requestParams,
+                            @PathParam("userId") String userId,
+                            @PathParam("alertId") Long id);
 
     @GET
     @Path("alert")
     @Produces(APPLICATION_JSON)
     @RolesAllowed({"write:user"})
-    List<AlertNotification> getAlertNotification();
+    @SuppressWarnings("unusable-by-js")
+    List<AlertNotification> getQueuedNotificationsOfCurrentUser(@BeanParam RequestParams requestParams);
 
     @DELETE
     @Path("alert/{alertId}")
     @SuccessStatusCode(204)
     @RolesAllowed({"write:user"})
-    void removeAlertNotification(@PathParam("alertId") Long id);
+    @SuppressWarnings("unusable-by-js")
+    void ackNotificationOfCurrentUser(@BeanParam RequestParams requestParams,
+                                      @PathParam("alertId") Long id);
 }

@@ -19,81 +19,167 @@
  */
 package org.openremote.model.asset;
 
+import org.hibernate.annotations.Formula;
+import org.openremote.model.attribute.MetaItemDescriptor;
+
 import javax.persistence.*;
 import java.io.Serializable;
+import java.util.Date;
 
 /**
  * An asset can be linked to many users, and a user can have links to many assets.
  * <p>
- * If a user has linked assets, it's a <em>restricted</em> user. Such a user can only
- * access its assigned assets and their protected data, and it has a limited
- * set of client operations available:
+ * If a user has linked assets, it's a <em>restricted</em> user. When a client authenticates
+ * with such a user, the client can only access the assigned/linked assets of that user, and
+ * the available operations are limited:
  * <ul>
  * <li>
- * When a restricted user client loads asset data, only protected asset details are included.
+ * When a restricted client reads assets, only dynamic attributes with
+ * {@link AssetMeta#ACCESS_RESTRICTED_READ} and attribute meta items with {@link MetaItemDescriptor.Access#restrictedRead}
+ * are included. A restricted client may submit a query for public assets and dynamic attributes with
+ * {@link AssetMeta#ACCESS_PUBLIC_READ} and meta items with {@link MetaItemDescriptor.Access#publicRead}.
  * </li>
  * <li>
- * When a restricted user client updates asset data, only a subset of protected data can be changed.
+ * When a restricted client updates existing assets, new dynamic attributes can be added, but
+ * only attributes with {@link AssetMeta#ACCESS_RESTRICTED_WRITE} can be updated or deleted. Any new attributes
+ * are automatically set with {@link AssetMeta#ACCESS_RESTRICTED_READ} and {@link AssetMeta#ACCESS_RESTRICTED_WRITE},
+ * thus ensuring that a restricted client can fully access its own attributes. Any added, updated, or removed meta
+ * items of attributes must be {@link MetaItemDescriptor.Access#restrictedWrite}.
  * </li>
  * <li>
- * A restricted user client can not create or delete assets.
+ * A restricted client can not create or delete assets. A restricted client can not change the name, parent, or
+ * realm of an asset. A restricted user can not make an asset public. A restricted user can change the location of an asset.
  * </li>
  * </ul>
- * Asset attribute data can be protected with {@link AssetMeta#PROTECTED} and {@link AssetMeta.Access},
- * it is filtered in {@link AbstractAssetAttributes#filterProtected}.
+ * <p>
+ * Note that third-party metadata items (not in the {@link org.openremote.model.Constants#NAMESPACE}) are never
+ * included by default in restricted read/write asset operations. To include them, provide meta item descriptors and
+ * desired access permissions through the {@link AssetModelProvider} SPI.
  */
 @Entity
 @Table(name = "USER_ASSET")
-@IdClass(UserAsset.class)
-public class UserAsset implements Serializable {
+public class UserAsset {
 
-    @Id
-    @Column(name = "USER_ID", length = 36)
-    protected String userId;
+    public static class Id implements Serializable {
+        @Column(name = "REALM_ID", length = 36)
+        protected String realmId;
 
-    @Id
-    @Column(name = "ASSET_ID", length = 36)
-    protected String assetId;
+        @Column(name = "USER_ID", length = 36)
+        protected String userId;
+
+        @Column(name = "ASSET_ID", length = 36)
+        protected String assetId;
+
+        protected Id() {
+        }
+
+        public Id(String realmId, String userId, String assetId) {
+            this.realmId = realmId;
+            this.userId = userId;
+            this.assetId = assetId;
+        }
+
+        public String getRealmId() {
+            return realmId;
+        }
+
+        public String getUserId() {
+            return userId;
+        }
+
+        public String getAssetId() {
+            return assetId;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            Id id = (Id) o;
+
+            if (!realmId.equals(id.realmId)) return false;
+            if (!userId.equals(id.userId)) return false;
+            return assetId.equals(id.assetId);
+        }
+
+        @Override
+        public int hashCode() {
+            int result = realmId.hashCode();
+            result = 31 * result + userId.hashCode();
+            result = 31 * result + assetId.hashCode();
+            return result;
+        }
+
+        @Override
+        public String toString() {
+            return getClass().getSimpleName() + "{" +
+                "realmId='" + realmId + '\'' +
+                ", userId='" + userId + '\'' +
+                ", assetId='" + assetId + '\'' +
+                '}';
+        }
+    }
+
+    @EmbeddedId
+    protected Id id;
+
+    @Temporal(TemporalType.TIMESTAMP)
+    @Column(name = "CREATED_ON", updatable = false, nullable = false, columnDefinition = "TIMESTAMP WITH TIME ZONE")
+    protected Date createdOn;
+
+    @Formula("(select a.NAME from ASSET a where a.ID = ASSET_ID)")
+    protected String assetName;
+
+    @Formula("(select pa.NAME from ASSET a left outer join ASSET pa on a.PARENT_ID = pa.ID where a.ID = ASSET_ID)")
+    protected String parentAssetName;
+
+    @Formula("(select u.USERNAME ||  ' (' || u.FIRST_NAME || ' ' || u.LAST_NAME || ')' from PUBLIC.USER_ENTITY u where u.ID = USER_ID)")
+    protected String userFullName;
 
     protected UserAsset() {
     }
 
-    public UserAsset(String userId, String assetId) {
-        this.userId = userId;
-        this.assetId = assetId;
+    public UserAsset(Id id) {
+        this.id = id;
     }
 
-    public String getUserId() {
-        return userId;
+    public UserAsset(String realmId, String userId, String assetId) {
+        this(new UserAsset.Id(realmId, userId, assetId));
     }
 
-    public String getAssetId() {
-        return assetId;
+    public Id getId() {
+        return id;
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        UserAsset userAsset = (UserAsset) o;
-
-        if (!userId.equals(userAsset.userId)) return false;
-        return assetId.equals(userAsset.assetId);
+    public String getAssetName() {
+        return assetName;
     }
 
-    @Override
-    public int hashCode() {
-        int result = userId.hashCode();
-        result = 31 * result + assetId.hashCode();
-        return result;
+    public String getParentAssetName() {
+        return parentAssetName;
+    }
+
+    public String getUserFullName() {
+        return userFullName;
+    }
+
+    public Date getCreatedOn() {
+        return createdOn;
+    }
+
+    public void setCreatedOn(Date createdOn) {
+        this.createdOn = createdOn;
     }
 
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
-            "userId='" + userId + '\'' +
-            ", assetId='" + assetId + '\'' +
+            "id=" + id +
+            ", createdOn=" + createdOn +
+            ", assetName='" + assetName + '\'' +
+            ", parentAssetName='" + parentAssetName + '\'' +
+            ", userFullName='" + userFullName + '\'' +
             '}';
     }
 }

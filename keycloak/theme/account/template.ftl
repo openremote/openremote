@@ -16,13 +16,17 @@
 
     <link rel="icon" type="image/png" href="/static/img/favicon.png" />
 
+    <!-- Promise API polyfill on IE 11  -->
+    <script src="/static/3rdparty/es6-promise.js"></script>
+
     <script src="/static//js/loader.js"></script>
     <link rel="stylesheet" type="text/css" href="/static/css/loader.css" />
 
     <link rel="import" href="/static/css/style.html">
     <link rel="import" href="/static/css/theme.html">
+    <link rel="import" href="/ui/colors.html">
     <custom-style>
-        <style include="global-style global-theme"></style>
+        <style include="global-style global-theme colors"></style>
     </custom-style>
 
     <script>
@@ -42,28 +46,24 @@
 <body class="layout horizontal loading">
 
     <div class="layout vertical or-SecondaryNav">
-        <div style="margin: 0 1em; padding-top: 2.8em !important" class="or-SecondaryNavItem <#if active=='account'>active</#if>"><div class="fa fa-user" style="width: 1em; margin-right:0.4em;"></div><a href="${url.accountUrl}">${msg("account")}</a></div>
-        <#if features.passwordUpdateSupported><div style="margin: 0 1em;" class="or-SecondaryNavItem <#if active=='password'>active</#if>"><div class="fa fa-key" style="width: 1em; margin-right:0.4em;"></div><a href="${url.passwordUrl}">${msg("password")}</a></div></#if>
+        <div class="or-SecondaryNavItem <#if active=='account'>active</#if>"><div class="fa fa-user" style="width: 1em; margin-right:0.4em;"></div><a href="${url.accountUrl}">${msg("account")}</a></div>
+        <#if features.passwordUpdateSupported><div class="or-SecondaryNavItem <#if active=='password'>active</#if>"><div class="fa fa-key" style="width: 1em; margin-right:0.4em;"></div><a href="${url.passwordUrl}">${msg("password")}</a></div></#if>
     </div>
 
     <div class="flex layout vertical">
 
-        <div class="layout horizontal center end-justified or-SecondaryNavHorizontal">
+        <div class="layout horizontal center end-justified or-SecondaryNav">
         </div>
 
-        <div class="flex or-MainContent">
+        <#if message?has_content>
+            <div style="max-width: 30em;" class="layout horizontal or-FormMessages ${message.type}">
+                <#if message.type=='success' ><div class="or-MessagesIcon fa fa-check"></div></#if>
+                <#if message.type=='error' ><div class="or-MessagesIcon fa fa-warning"></div></#if>
+            ${message.summary}
+            </div>
+        </#if>
 
-
-            <#if message?has_content>
-                <div style="max-width: 30em;" class="layout horizontal or-FormMessages ${message.type}">
-                    <#if message.type=='success' ><div class="or-MessagesIcon fa fa-check"></div></#if>
-                    <#if message.type=='error' ><div class="or-MessagesIcon fa fa-warning"></div></#if>
-                ${message.summary}
-                </div>
-            </#if>
-
-            <#nested "content">
-        </div>
+        <#nested "content">
     </div>
 
 </body>

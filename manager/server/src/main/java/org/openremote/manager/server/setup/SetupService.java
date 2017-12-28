@@ -30,15 +30,15 @@ import java.util.ServiceLoader;
 import java.util.logging.Logger;
 
 /**
- * Executes setup tasks when the application starts, configuring the state of
- * subsystems (database, Keycloak).
+ * Executes setup tasks for a clean installation when the application starts.
+ * <p>
+ * This service is disabled when {@link AbstractSetupTasks#SETUP_WIPE_CLEAN_INSTALL} is <code>false</code>.
  * <p>
  * First, this service will load an implementation of {@link SetupTasks} from the
  * classpath using {@link ServiceLoader}. If multiple providers are found, an error
- * is raised. If a provider is found, only its tasks will be enabled.
+ * is raised. If a provider is found, only its tasks will be used.
  * <p>
- * If no {@link SetupTasks} provider is found on the classpath, the builtin
- * tasks will be enabled, see {@link BuiltinSetupTasks}.
+ * If no {@link SetupTasks} provider is found on the classpath, the {@link BuiltinSetupTasks} are used.
  */
 public class SetupService implements ContainerService {
 
@@ -47,32 +47,32 @@ public class SetupService implements ContainerService {
     final protected List<Setup> setupList = new ArrayList<>();
 
     // Make demo/test data accessible from Groovy/Java code
-    protected SetupTasks setupTasks;
+    public SetupTasks setupTasks;
 
     @Override
     public void init(Container container) throws Exception {
-        // Setup runs last, when everything is initialized and started
-    }
 
-    @Override
-    public void start(Container container) {
+        if (!SetupTasks.isSetupWipeCleanInstall(container)) {
+            LOG.info("Setup service disabled, " + SetupTasks.SETUP_WIPE_CLEAN_INSTALL + "=false");
+            return;
+        }
 
         ServiceLoader.load(SetupTasks.class).forEach(
             discoveredSetupTasks -> {
                 if (setupTasks != null) {
                     throw new IllegalStateException(
-                        "Only one instance of SetupTasks can be configured, already found '"
+                        "Only one provider of SetupTasks can be configured, already found '"
                             + setupTasks.getClass().getName() + ", remove from classpath: "
                             + discoveredSetupTasks.getClass().getName()
                     );
                 }
-                LOG.info("Enabling setup tasks: " + discoveredSetupTasks.getClass().getName());
+                LOG.info("Found custom SetupTasks provider on classpath: " + discoveredSetupTasks.getClass().getName());
                 setupTasks = discoveredSetupTasks;
             }
         );
 
         if (setupTasks == null) {
-            LOG.info("No custom setup tasks found on classpath, enabling built-in tasks");
+            LOG.info("No custom SetupTasks provider found on classpath, enabling: " + BuiltinSetupTasks.class.getName());
             setupTasks = new BuiltinSetupTasks();
         }
 
@@ -80,11 +80,27 @@ public class SetupService implements ContainerService {
 
         try {
             if (setupList.size() > 0) {
-                LOG.info("--- EXECUTING SETUP TASKS ---");
+                LOG.info("--- EXECUTING INIT TASKS ---");
                 for (Setup setup : setupList) {
-                    setup.execute();
+                    setup.onInit();
                 }
-                LOG.info("--- SETUP TASKS COMPLETED SUCCESSFULLY ---");
+                LOG.info("--- INIT TASKS COMPLETED SUCCESSFULLY ---");
+            }
+        } catch (Exception ex) {
+            throw new RuntimeException("Error setting up application", ex);
+        }
+    }
+
+    @Override
+    public void start(Container container) {
+
+        try {
+            if (setupList.size() > 0) {
+                LOG.info("--- EXECUTING START TASKS ---");
+                for (Setup setup : setupList) {
+                    setup.onStart();
+                }
+                LOG.info("--- START TASKS COMPLETED SUCCESSFULLY ---");
             }
         } catch (Exception ex) {
             throw new RuntimeException("Error setting up application", ex);

@@ -19,6 +19,7 @@
  */
 package org.openremote.manager.client.rules;
 
+import com.google.gwt.cell.client.Cell;
 import com.google.gwt.i18n.client.DateTimeFormat;
 import com.google.gwt.resources.client.CssResource;
 import com.google.gwt.user.cellview.client.Column;
@@ -64,12 +65,22 @@ public class RulesetTable<R extends Ruleset> extends FormTable<R> {
         public String getValue(R ruleset) {
             return ruleset.getCreatedOn() != null ? dateTimeFormat.format(ruleset.getCreatedOn()) : "-";
         }
+
+        @Override
+        public String getCellStyleNames(Cell.Context context, R object) {
+            return "nowrap";
+        }
     };
 
     final protected TextColumn<R> lastModifiedColumn = new TextColumn<R>() {
         @Override
         public String getValue(R ruleset) {
             return ruleset.getLastModified() != null ? dateTimeFormat.format(ruleset.getLastModified()) : "-";
+        }
+
+        @Override
+        public String getCellStyleNames(Cell.Context context, R object) {
+            return "nowrap";
         }
     };
 

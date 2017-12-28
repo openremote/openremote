@@ -22,19 +22,25 @@ package org.openremote.manager.client.assets.tenant;
 import com.google.gwt.user.client.ui.AcceptsOneWidget;
 import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.TenantMapper;
+import org.openremote.manager.client.admin.UserArrayMapper;
+import org.openremote.manager.client.admin.users.edit.AdminUserEditPlace;
 import org.openremote.manager.client.assets.AssetBrowsingActivity;
 import org.openremote.manager.client.assets.asset.AssetViewPlace;
-import org.openremote.manager.client.assets.browser.AssetBrowser;
-import org.openremote.manager.client.assets.browser.AssetBrowserSelection;
-import org.openremote.manager.client.assets.browser.AssetTreeNode;
-import org.openremote.manager.client.assets.browser.TenantTreeNode;
+import org.openremote.manager.client.assets.browser.*;
+import org.openremote.manager.client.event.ShowFailureEvent;
+import org.openremote.manager.client.event.ShowSuccessEvent;
 import org.openremote.manager.client.mvp.AppActivity;
+import org.openremote.manager.shared.asset.AssetResource;
 import org.openremote.manager.shared.security.Tenant;
 import org.openremote.manager.shared.security.TenantResource;
+import org.openremote.manager.shared.security.User;
+import org.openremote.manager.shared.security.UserResource;
+import org.openremote.model.asset.UserAsset;
 import org.openremote.model.event.bus.EventBus;
 import org.openremote.model.event.bus.EventRegistration;
 
 import javax.inject.Inject;
+import java.util.Arrays;
 import java.util.Collection;
 
 import static org.openremote.manager.client.http.RequestExceptionHandler.handleRequestException;
@@ -44,9 +50,18 @@ public class AssetsTenantActivity extends AssetBrowsingActivity<AssetsTenantPlac
     final AssetsTenant view;
     final TenantResource tenantResource;
     final TenantMapper tenantMapper;
+    final AssetResource assetResource;
+    final UserAssetMapper userAssetMapper;
+    final UserAssetArrayMapper userAssetArrayMapper;
+    UserResource userResource;
+    final protected UserArrayMapper userArrayMapper;
 
     protected String realmId;
     protected Tenant tenant;
+    protected User[] users;
+
+    protected String selectedUserId;
+    protected String selectedAssetId;
 
     @Inject
     public AssetsTenantActivity(Environment environment,
@@ -54,11 +69,21 @@ public class AssetsTenantActivity extends AssetBrowsingActivity<AssetsTenantPlac
                                 AssetBrowser.Presenter assetBrowserPresenter,
                                 AssetsTenant view,
                                 TenantResource tenantResource,
-                                TenantMapper tenantMapper) {
+                                TenantMapper tenantMapper,
+                                AssetResource assetResource,
+                                UserAssetMapper userAssetMapper,
+                                UserAssetArrayMapper userAssetArrayMapper,
+                                UserResource userResource,
+                                UserArrayMapper userArrayMapper) {
         super(environment, currentTenant, assetBrowserPresenter);
         this.view = view;
         this.tenantResource = tenantResource;
         this.tenantMapper = tenantMapper;
+        this.assetResource = assetResource;
+        this.userAssetMapper = userAssetMapper;
+        this.userAssetArrayMapper = userAssetArrayMapper;
+        this.userResource = userResource;
+        this.userArrayMapper = userArrayMapper;
     }
 
     @Override
@@ -74,9 +99,11 @@ public class AssetsTenantActivity extends AssetBrowsingActivity<AssetsTenantPlac
 
         registrations.add(eventBus.register(AssetBrowserSelection.class, event -> {
             if (event.getSelectedNode() instanceof TenantTreeNode) {
-                environment.getPlaceController().goTo(
-                    new AssetsTenantPlace(event.getSelectedNode().getId())
-                );
+                if (this.realmId == null || !this.realmId.equals(event.getSelectedNode().getId())) {
+                    environment.getPlaceController().goTo(
+                        new AssetsTenantPlace(event.getSelectedNode().getId())
+                    );
+                }
             } else if (event.getSelectedNode() instanceof AssetTreeNode) {
                 environment.getPlaceController().goTo(
                     new AssetViewPlace(event.getSelectedNode().getId())
@@ -84,19 +111,7 @@ public class AssetsTenantActivity extends AssetBrowsingActivity<AssetsTenantPlac
             }
         }));
 
-
-        if (realmId != null) {
-            environment.getRequestService().execute(
-                tenantMapper,
-                requestParams -> tenantResource.getForRealmId(requestParams, realmId),
-                200,
-                tenant -> {
-                    this.tenant = tenant;
-                    writeTenantToView();
-                },
-                ex -> handleRequestException(ex, environment)
-            );
-        }
+        loadTenant();
     }
 
     @Override
@@ -105,8 +120,147 @@ public class AssetsTenantActivity extends AssetBrowsingActivity<AssetsTenantPlac
         view.setPresenter(null);
     }
 
+    @Override
+    public void onUserSelected(String username) {
+        this.selectedUserId = null;
+        Arrays.stream(users).filter(user -> user.getUsername().equals(username))
+            .findFirst().ifPresent(user -> {
+            this.selectedUserId = user.getId();
+            if (this.selectedAssetId != null)
+                view.setCreateAssetLinkEnabled(true);
+        });
+        loadUserAssets();
+    }
+
+    @Override
+    public void onAssetSelected(BrowserTreeNode treeNode) {
+        if (treeNode == null || !(treeNode instanceof AssetTreeNode)) {
+            this.selectedAssetId = null;
+            view.setCreateAssetLinkEnabled(false);
+        } else {
+            AssetTreeNode assetTreeNode = (AssetTreeNode) treeNode;
+            if (!assetTreeNode.getAsset().getRealmId().equals(this.realmId)) {
+                environment.getEventBus().dispatch(new ShowFailureEvent(
+                    environment.getMessages().assetNotInTenant(this.tenant.getDisplayName()), 2000
+                ));
+                this.selectedAssetId = null;
+                view.setCreateAssetLinkEnabled(false);
+                return;
+            }
+            this.selectedAssetId = assetTreeNode.getId();
+            if (this.selectedUserId != null)
+                view.setCreateAssetLinkEnabled(true);
+        }
+        loadUserAssets();
+    }
+
+    @Override
+    public void onCreateAssetLink() {
+        if (selectedUserId == null || selectedAssetId == null)
+            return;
+        UserAsset userAsset = new UserAsset(realmId, selectedUserId, selectedAssetId);
+        view.setFormBusy(true);
+        environment.getRequestService().execute(
+            userAssetMapper,
+            requestParams -> assetResource.createUserAsset(requestParams, userAsset),
+            204,
+            () -> {
+                environment.getEventBus().dispatch(new ShowSuccessEvent(
+                    environment.getMessages().userAssetLinkCreated()
+                ));
+                view.setFormBusy(false);
+                loadUserAssets();
+            },
+            ex -> handleRequestException(ex, environment)
+        );
+    }
+
+    @Override
+    public void onDeleteAssetLink(UserAsset.Id id) {
+        view.setFormBusy(true);
+        environment.getRequestService().execute(
+            userAssetMapper,
+            requestParams -> assetResource.deleteUserAsset(requestParams, id.getRealmId(), id.getUserId(), id.getAssetId()),
+            204,
+            () -> {
+                environment.getEventBus().dispatch(new ShowSuccessEvent(
+                    environment.getMessages().userAssetLinkDeleted()
+                ));
+                view.setFormBusy(false);
+                loadUserAssets();
+            },
+            ex -> handleRequestException(ex, environment)
+        );
+    }
+
+    @Override
+    public void onEditUser(UserAsset.Id id) {
+        environment.getPlaceController().goTo(
+            new AdminUserEditPlace(tenant.getRealm(), id.getUserId())
+        );
+    }
+
+    protected void loadTenant() {
+        view.setFormBusy(true);
+        if (this.realmId == null)
+            return;
+        environment.getRequestService().execute(
+            tenantMapper,
+            requestParams -> tenantResource.getForRealmId(requestParams, this.realmId),
+            200,
+            tenant -> {
+                this.tenant = tenant;
+                loadUsers(() -> {
+                    assetBrowserPresenter.selectTenant(tenant.getId());
+                    writeTenantToView();
+                    loadUserAssets();
+                    view.setFormBusy(false);
+                });
+            },
+            ex -> handleRequestException(ex, environment)
+        );
+    }
+
+    protected void loadUsers(Runnable onComplete) {
+        view.setFormBusy(true);
+        environment.getRequestService().execute(
+            userArrayMapper,
+            requestParams -> userResource.getAll(requestParams, this.tenant.getRealm()),
+            200,
+            users -> {
+                this.users = users;
+                writeUsersToView();
+                view.setFormBusy(false);
+                onComplete.run();
+            },
+            ex -> handleRequestException(ex, environment)
+        );
+    }
+
+    protected void loadUserAssets() {
+        environment.getRequestService().execute(
+            userAssetArrayMapper,
+            requestParams -> assetResource.getUserAssetLinks(requestParams, realmId, selectedUserId, selectedAssetId),
+            200,
+            userAssets -> {
+
+                // Do not allow creating a duplicate of a link we already have
+                if ((userAssets.length == 1
+                    && userAssets[0].getId().equals(new UserAsset.Id(realmId, selectedUserId, selectedAssetId))))
+                view.setCreateAssetLinkEnabled(false);
+
+                view.setUserAssets(userAssets);
+            },
+            ex -> handleRequestException(ex, environment)
+        );
+    }
+
     protected void writeTenantToView() {
         view.setTenantName(tenant.getDisplayName());
+    }
+
+    protected void writeUsersToView() {
+        view.setUsers(this.users);
     }
 
 }

@@ -23,7 +23,6 @@ import com.google.gwt.user.client.ui.AcceptsOneWidget;
 import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.assets.AssetBrowsingActivity;
 import org.openremote.manager.client.assets.browser.*;
-import org.openremote.manager.client.event.ShowFailureEvent;
 import org.openremote.manager.client.event.ShowSuccessEvent;
 import org.openremote.manager.client.mvp.AppActivity;
 import org.openremote.manager.shared.http.EntityReader;
@@ -197,11 +196,6 @@ public abstract class AbstractRulesEditorActivity<T extends Ruleset, PLACE exten
     public void onTemplateAssetSelection(BrowserTreeNode treeNode) {
         if (treeNode == null) {
             templateAsset = null;
-        } else if (treeNode instanceof TenantTreeNode) {
-            environment.getEventBus().dispatch(
-                new ShowFailureEvent(environment.getMessages().invalidTemplateAsset(), 3000)
-            );
-            writeTemplateAssetToView();
         } else if (treeNode instanceof AssetTreeNode){
             assetBrowserPresenter.loadAsset(treeNode.getId(), loadedAsset -> {
                 templateAsset = loadedAsset;

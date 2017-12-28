@@ -33,11 +33,13 @@ import org.openremote.manager.server.asset.AssetStorageService;
 import org.openremote.manager.server.asset.ServerAsset;
 import org.openremote.manager.server.concurrent.ManagerExecutorService;
 import org.openremote.manager.server.notification.NotificationService;
+import org.openremote.manager.server.rules.facade.AssetsFacade;
+import org.openremote.manager.server.rules.facade.UsersFacade;
 import org.openremote.manager.server.security.ManagerIdentityService;
 import org.openremote.manager.shared.security.Tenant;
-import org.openremote.model.AbstractValueTimestampHolder;
 import org.openremote.model.asset.*;
 import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.attribute.AttributeType;
 import org.openremote.model.rules.AssetRuleset;
 import org.openremote.model.rules.GlobalRuleset;
 import org.openremote.model.rules.Ruleset;
@@ -56,7 +58,9 @@ import java.util.stream.Stream;
 import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_TOPIC;
 import static org.openremote.container.util.MapAccess.getString;
 import static org.openremote.manager.server.asset.AssetRoute.isPersistenceEventForEntityType;
+import static org.openremote.model.AbstractValueTimestampHolder.VALUE_TIMESTAMP_FIELD_NAME;
 import static org.openremote.model.asset.AssetAttribute.attributesFromJson;
+import static org.openremote.model.asset.AssetAttribute.getAddedOrModifiedAttributes;
 
 /**
  * Responsible for creating Drools knowledge sessions for the rulesets
@@ -92,6 +96,8 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
     protected final Map<String, RulesEngine<TenantRuleset>> tenantEngines = new HashMap<>();
     protected final Map<String, RulesEngine<AssetRuleset>> assetEngines = new HashMap<>();
     protected String[] activeTenantIds;
+
+    // For tests
     protected Function<RulesEngine, AgendaEventListener> rulesEngineListeners;
 
     // Keep global list of asset states that have been pushed to any engines
@@ -230,6 +236,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
             if (tenantDeployment != null) {
                 // Use a copy of the list to avoid concurrent modification problems in retract
                 new ArrayList<>(Arrays.asList(tenantDeployment.getAllRulesets()))
+                    .stream().map(rs -> (TenantRuleset) rs)
                     .forEach(this::undeployTenantRuleset);
             }
 
@@ -237,7 +244,8 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
             // Use a copy of the list to avoid concurrent modification problems in retract
             new ArrayList<>(assetEngines.values()).stream().flatMap(
                 assetRulesEngine -> Arrays.stream(assetRulesEngine.getAllRulesets())
-            ).filter(ruleset -> ruleset.getRealmId().equals(tenant.getId()))
+            ).map(rs -> (AssetRuleset) rs)
+                .filter(ruleset -> ruleset.getRealmId().equals(tenant.getId()))
                 .forEach(this::undeployAssetRuleset);
 
         } else {
@@ -267,7 +275,12 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
 
                 // Build an update with a fully loaded asset
                 ruleStateAttributes.forEach(attribute -> {
-                    AssetState assetState = buildAssetState.apply(assetStorageService.find(asset.getId(), true), attribute);
+                    ServerAsset loadedAsset = assetStorageService.find(asset.getId(), true);
+                    // If the asset is now gone it was deleted immediately after being inserted, nothing more to do
+                    if (loadedAsset == null)
+                        return;
+
+                    AssetState assetState = buildAssetState.apply(loadedAsset, attribute);
                     // Set the status to completed already so rules cannot interfere with this initial insert
                     assetState.setProcessingStatus(AssetState.ProcessingStatus.COMPLETED);
                     LOG.fine("Asset was persisted (" + persistenceEvent.getCause() + "), inserting fact: " + assetState);
@@ -284,6 +297,9 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
 
                 // Fully load the asset
                 final Asset loadedAsset = assetStorageService.find(asset.getId(), true);
+                // If the asset is now gone it was deleted immediately after being updated, nothing more to do
+                if (loadedAsset == null)
+                    return;
 
                 // Attributes have possibly changed so need to compare old and new attributes
                 // to determine which facts to retract and which to insert
@@ -300,50 +316,22 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
                     ).filter(AssetAttribute::isRuleState).collect(Collectors.toList());
 
                 // Retract facts for attributes that are obsolete
-                Stream<AssetAttribute> processAttributes = oldRuleStateAttributes
-                    .stream()
-                    .filter(oldRuleStateAttribute -> newRuleStateAttributes
-                        .stream()
-                        .noneMatch(newRuleStateAttribute ->
-                            oldRuleStateAttribute.getObjectValue().equalsIgnoreKeys(
-                                newRuleStateAttribute.getObjectValue(),
-                                AbstractValueTimestampHolder.VALUE_TIMESTAMP_FIELD_NAME
-                            )
-                        )
-                    );
-
-                processAttributes.forEach(obsoleteFactAttribute -> {
-                    AssetState update = buildAssetState.apply(loadedAsset, obsoleteFactAttribute);
-                    LOG.fine("Asset was persisted (" + persistenceEvent.getCause() + "), retracting: " + update);
-                    retractAssetState(update);
-                });
+                getAddedOrModifiedAttributes(newRuleStateAttributes, oldRuleStateAttributes, key -> key.equals(VALUE_TIMESTAMP_FIELD_NAME))
+                    .forEach(obsoleteFactAttribute -> {
+                        AssetState update = buildAssetState.apply(loadedAsset, obsoleteFactAttribute);
+                        LOG.fine("Asset was persisted (" + persistenceEvent.getCause() + "), retracting: " + update);
+                        retractAssetState(update);
+                    });
 
                 // Insert facts for attributes that are new
-                processAttributes = newRuleStateAttributes
-                    .stream()
-                    .filter(newRuleStateAttribute -> oldRuleStateAttributes
-                        .stream()
-                        .noneMatch(oldRuleStateAttribute ->
-                            oldRuleStateAttribute.getObjectValue().equalsIgnoreKeys(
-                                newRuleStateAttribute.getObjectValue(),
-                                AbstractValueTimestampHolder.VALUE_TIMESTAMP_FIELD_NAME
-                            )
-                        )
-                    );
-
-                processAttributes.forEach(newFactAttribute -> {
-                    AssetState assetState = buildAssetState.apply(loadedAsset, newFactAttribute);
-                    // Set the status to completed already so rules cannot interfere with this initial insert
-                    assetState.setProcessingStatus(AssetState.ProcessingStatus.COMPLETED);
-                    LOG.fine("Asset was persisted (" + persistenceEvent.getCause() + "), updating: " + assetState);
-                    updateAssetState(assetState, true);
-                });
-
-                //TODO
-                //find out if any attribute is of type FILTER_TEMPLATE
-                //use the rulesetsStorage to find the rulesets and call processRulesSetsChange on those
-                //UPDATE AND DELETE
-
+                getAddedOrModifiedAttributes(oldRuleStateAttributes, newRuleStateAttributes, key -> key.equals(VALUE_TIMESTAMP_FIELD_NAME))
+                    .forEach(newFactAttribute -> {
+                        AssetState assetState = buildAssetState.apply(loadedAsset, newFactAttribute);
+                        // Set the status to completed already so rules cannot interfere with this initial insert
+                        assetState.setProcessingStatus(AssetState.ProcessingStatus.COMPLETED);
+                        LOG.fine("Asset was persisted (" + persistenceEvent.getCause() + "), updating: " + assetState);
+                        updateAssetState(assetState, true);
+                    });
                 break;
 
             case DELETE:
@@ -358,10 +346,48 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
                         LOG.fine("Asset was persisted (" + persistenceEvent.getCause() + "), retracting fact: " + assetState);
                         retractAssetState(assetState);
                     });
-
-                //TODO
-
                 break;
+        }
+
+        if (persistenceEvent.getCause() != PersistenceEvent.Cause.INSERT) {
+
+            int attributesIndex = Arrays.asList(persistenceEvent.getPropertyNames()).indexOf("attributes");
+            if (attributesIndex < 0) {
+                return;
+            }
+
+            // Get old template filter attributes and new ones
+            // If new collection doesn't contain them, then they are deleted and need to be processed too
+            List<AssetAttribute> oldTemplateFilterAttributes = persistenceEvent.getPreviousState() != null ? //can be null when insert
+                attributesFromJson(
+                    (ObjectValue) persistenceEvent.getPreviousState()[attributesIndex],
+                    asset.getId()
+                ).filter(attribute -> attribute.getTypeOrThrow() == AttributeType.RULES_TEMPLATE_FILTER)
+                    .collect(Collectors.toList()) : new ArrayList<>();
+
+            List<AssetAttribute> newTemplateFilterAttributes = persistenceEvent.getCurrentState() != null ? // can be null when delete
+                attributesFromJson(
+                    (ObjectValue) persistenceEvent.getCurrentState()[attributesIndex],
+                    asset.getId()
+                ).filter(attribute -> attribute.getTypeOrThrow() == AttributeType.RULES_TEMPLATE_FILTER)
+                    .collect(Collectors.toList()) : new ArrayList<>();
+
+            if (!oldTemplateFilterAttributes.isEmpty() || !newTemplateFilterAttributes.isEmpty()) {
+                rulesetStorageService.findTemplatedAssetRulesets(asset.getRealmId(), asset.getId())
+                    .forEach(assetRuleset -> {
+                        processRulesetChange(assetRuleset, persistenceEvent.getCause());
+                    });
+
+                rulesetStorageService.findTemplatedTenantRulesets(asset.getRealmId(), asset.getId())
+                    .forEach(tenantRuleset -> {
+                        processRulesetChange(tenantRuleset, persistenceEvent.getCause());
+                    });
+
+                rulesetStorageService.findTemplatedGlobalRulesets(asset.getId())
+                    .forEach(globalRuleset -> {
+                        processRulesetChange(globalRuleset, persistenceEvent.getCause());
+                    });
+            }
         }
     }
 
@@ -379,18 +405,18 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
 
                 RulesEngine newEngine = deployGlobalRuleset((GlobalRuleset) ruleset);
                 if (newEngine != null) {
-                    // Push all existing facts into the engine
-                    assetStates.forEach(newEngine::updateAssetState);
+                    // Push all existing facts into the engine, this is an initial import of state
+                    assetStates.forEach(assetState -> newEngine.updateAssetState(assetState, true));
                 }
 
             } else if (ruleset instanceof TenantRuleset) {
 
                 RulesEngine newEngine = deployTenantRuleset((TenantRuleset) ruleset);
                 if (newEngine != null) {
-                    // Push all existing facts for this tenant into the engine
+                    // Push all existing facts into the engine, this is an initial import of state
                     assetStates.forEach(assetState -> {
                         if (assetState.getRealmId().equals(((TenantRuleset) ruleset).getRealmId())) {
-                            newEngine.updateAssetState(assetState);
+                            newEngine.updateAssetState(assetState, true);
                         }
                     });
                 }
@@ -403,7 +429,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
                 if (newEngine != null) {
                     // Push all existing facts for this asset (and it's children into the engine)
                     getAssetStatesInScope(((AssetRuleset) ruleset).getAssetId())
-                        .forEach(newEngine::updateAssetState);
+                        .forEach(assetState -> newEngine.updateAssetState(assetState, true));
 
                 }
             }
@@ -423,16 +449,19 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
                 timerService,
                 executorService,
                 assetStorageService,
-                notificationService,
-                assetProcessingService,
-                identityService,
-                GlobalRuleset.class,
+                () -> new AssetsFacade<>(GlobalRuleset.class, null, assetStorageService, event -> {
+                    assetProcessingService.sendAttributeEvent(event);
+                }),
+                () -> new UsersFacade<>(GlobalRuleset.class, null, assetStorageService, notificationService, identityService),
                 ID_GLOBAL_RULES_ENGINE,
-                rulesEngineListeners
+                rulesEngineListeners,
+                error -> {
+                    // TODO Dispatch RulesetStatusEvent
+                }
             );
         }
 
-        globalEngine.addRuleset(ruleset);
+        globalEngine.addRuleset(ruleset, true);
         return created ? globalEngine : null;
     }
 
@@ -459,16 +488,17 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
                     timerService,
                     executorService,
                     assetStorageService,
-                    notificationService,
-                    assetProcessingService,
-                    identityService,
-                    TenantRuleset.class,
+                    () -> new AssetsFacade<>(TenantRuleset.class, realmId, assetStorageService, event -> assetProcessingService.sendAttributeEvent(event)),
+                    () -> new UsersFacade<>(TenantRuleset.class, realmId, assetStorageService, notificationService, identityService),
                     realmId,
-                    rulesEngineListeners
+                    rulesEngineListeners,
+                    error -> {
+                        // TODO Dispatch RulesetStatusEvent
+                    }
                 );
             });
 
-        deployment.addRuleset(ruleset);
+        deployment.addRuleset(ruleset, true);
 
         return created[0] ? deployment : null;
     }
@@ -525,16 +555,17 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
                     timerService,
                     executorService,
                     assetStorageService,
-                    notificationService,
-                    assetProcessingService,
-                    identityService,
-                    AssetRuleset.class,
+                    () -> new AssetsFacade<>(AssetRuleset.class, assetId, assetStorageService, event -> assetProcessingService.sendAttributeEvent(event)),
+                    () -> new UsersFacade<>(AssetRuleset.class, assetId, assetStorageService, notificationService, identityService),
                     assetId,
-                    rulesEngineListeners
+                    rulesEngineListeners,
+                    error -> {
+                        // TODO Dispatch RulesetStatusEvent
+                    }
                 );
             });
 
-        deployment.addRuleset(ruleset);
+        deployment.addRuleset(ruleset, true);
         return created[0] ? deployment : null;
     }
 
@@ -602,7 +633,6 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
 
         // Pass through each engine and try and insert the fact
         for (RulesEngine deployment : rulesEngines) {
-            LOG.fine("@@@ On " + deployment + ", updating: " + assetState);
             deployment.updateAssetState(assetState);
         }
     }
@@ -621,7 +651,6 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
 
         // Pass through each engine and retract this fact
         for (RulesEngine deployment : rulesEngines) {
-            LOG.fine("@@@ On " + deployment + ", retracting: " + assetState);
             deployment.retractAssetState(assetState);
         }
     }

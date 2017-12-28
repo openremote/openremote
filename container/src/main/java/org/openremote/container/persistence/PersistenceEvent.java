@@ -19,11 +19,13 @@
  */
 package org.openremote.container.persistence;
 
+import java.util.Arrays;
+
 public class PersistenceEvent<T> {
 
     // TODO: Make configurable
     public static final String PERSISTENCE_TOPIC =
-        "seda://PersistenceTopic?multipleConsumers=true&concurrentConsumers=1&waitForTaskToComplete=NEVER&purgeWhenStopping=true&discardIfNoConsumers=true&limitConcurrentConsumers=false&size=1000";
+        "seda://PersistenceTopic?multipleConsumers=true&concurrentConsumers=1&waitForTaskToComplete=NEVER&purgeWhenStopping=true&discardIfNoConsumers=true&limitConcurrentConsumers=false&size=25000";
 
     public static final String HEADER_ENTITY_TYPE = PersistenceEvent.class.getSimpleName() + ".ENTITY_TYPE";
 
@@ -69,12 +71,14 @@ public class PersistenceEvent<T> {
         return previousState;
     }
 
-    public <T> T getPreviousState(String propertyName) {
-        return getPreviousState() != null ? (T) getPreviousState()[getPropertyIndex(propertyName)] : null;
+    @SuppressWarnings("unchecked")
+    public <E> E getPreviousState(String propertyName) {
+        return getPreviousState() != null ? (E) getPreviousState()[getPropertyIndex(propertyName)] : null;
     }
 
-    public <T> T getCurrentState(String propertyName) {
-        return (T) getCurrentState()[getPropertyIndex(propertyName)];
+    @SuppressWarnings("unchecked")
+    public <E> E getCurrentState(String propertyName) {
+        return (E) getCurrentState()[getPropertyIndex(propertyName)];
     }
 
     protected int getPropertyIndex(String propertyName) {
@@ -85,5 +89,16 @@ public class PersistenceEvent<T> {
             }
         }
         throw new IllegalArgumentException("Property not found: " + propertyName);
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "{" +
+            "cause=" + cause +
+            ", entity=" + entity +
+            ", propertyNames=" + Arrays.toString(propertyNames) +
+            ", currentState=" + Arrays.toString(currentState) +
+            ", previousState=" + Arrays.toString(previousState) +
+            '}';
     }
 }

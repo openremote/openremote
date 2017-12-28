@@ -24,10 +24,10 @@ import org.openremote.agent.protocol.macro.MacroAction;
 import org.openremote.agent.protocol.macro.MacroProtocol;
 import org.openremote.agent.protocol.timer.TimerValue;
 import org.openremote.container.Container;
-import org.openremote.container.persistence.PersistenceService;
 import org.openremote.manager.server.asset.AssetStorageService;
 import org.openremote.manager.server.asset.ServerAsset;
 import org.openremote.manager.server.datapoint.AssetDatapointService;
+import org.openremote.manager.server.persistence.ManagerPersistenceService;
 import org.openremote.manager.server.rules.RulesetStorageService;
 import org.openremote.manager.server.security.ManagerIdentityService;
 import org.openremote.model.asset.AssetAttribute;
@@ -38,6 +38,7 @@ import java.time.DayOfWeek;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static org.openremote.agent.protocol.macro.MacroProtocol.META_MACRO_ACTION_INDEX;
@@ -50,7 +51,7 @@ import static org.openremote.model.attribute.AttributeType.*;
 
 public abstract class AbstractManagerSetup implements Setup {
 
-    final protected PersistenceService persistenceService;
+    final protected ManagerPersistenceService persistenceService;
     final protected ManagerIdentityService identityService;
     final protected AssetStorageService assetStorageService;
     final protected AssetDatapointService assetDatapointService;
@@ -59,7 +60,7 @@ public abstract class AbstractManagerSetup implements Setup {
     final protected SetupService setupService;
 
     public AbstractManagerSetup(Container container) {
-        this.persistenceService = container.getService(PersistenceService.class);
+        this.persistenceService = container.getService(ManagerPersistenceService.class);
         this.identityService = container.getService(ManagerIdentityService.class);
         this.assetStorageService = container.getService(AssetStorageService.class);
         this.assetDatapointService = container.getService(AssetDatapointService.class);
@@ -77,7 +78,7 @@ public abstract class AbstractManagerSetup implements Setup {
                 .setMeta(new Meta(
                     new MetaItem(LABEL, Values.create("Alarm enabled")),
                     new MetaItem(DESCRIPTION, Values.create("Send notifications when presence is detected")),
-                    new MetaItem(PROTECTED, Values.create(true)),
+                    new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)),
                     new MetaItem(RULE_STATE, Values.create(true)),
                     new MetaItem(SHOW_ON_DASHBOARD, Values.create(true))
                 )),
@@ -85,8 +86,9 @@ public abstract class AbstractManagerSetup implements Setup {
                 .setMeta(new Meta(
                     new MetaItem(LABEL, Values.create("Presence detected")),
                     new MetaItem(DESCRIPTION, Values.create("Presence detected in any room")),
-                    new MetaItem(PROTECTED, Values.create(true)),
+                    new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)),
                     new MetaItem(RULE_STATE, Values.create(true)),
+                    new MetaItem(RULE_EVENT, Values.create(true)),
                     new MetaItem(STORE_DATA_POINTS, Values.create(true)),
                     new MetaItem(SHOW_ON_DASHBOARD, Values.create(true))
                 )),
@@ -94,24 +96,32 @@ public abstract class AbstractManagerSetup implements Setup {
                 .setMeta(new Meta(
                     new MetaItem(LABEL, Values.create("Vacation until")),
                     new MetaItem(DESCRIPTION, Values.create("Vacation mode enabled until")),
-                    new MetaItem(PROTECTED, Values.create(true)),
+                    new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)),
                     new MetaItem(RULE_STATE, Values.create(true))
                 )),
             new AssetAttribute("autoSceneSchedule", AttributeType.BOOLEAN, Values.create(true))
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Automatic scene schedule")),
                     new MetaItem(DESCRIPTION, Values.create("Predict presence and automatically adjust scene schedule")),
-                    new MetaItem(PROTECTED, Values.create(true)),
+                    new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)),
                     new MetaItem(RULE_STATE, Values.create(true))
                 ),
             new AssetAttribute("lastExecutedScene", AttributeType.STRING, Values.create("HOME"))
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Last executed scene")),
-                    new MetaItem(PROTECTED, Values.create(true)),
+                    new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)),
                     new MetaItem(READ_ONLY, Values.create(true)),
                     new MetaItem(RULE_STATE, Values.create(true)),
                     new MetaItem(SHOW_ON_DASHBOARD, Values.create(true))
-                )
+                ),
+        new AssetAttribute("lastDetectedScene", AttributeType.STRING, Values.create("home"))
+            .setMeta(
+                new MetaItem(LABEL, Values.create("Last detecteded scene by rules")),
+                new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)),
+                new MetaItem(READ_ONLY, Values.create(true)),
+                new MetaItem(RULE_STATE, Values.create(true)),
+                new MetaItem(SHOW_ON_DASHBOARD, Values.create(true))
+            )
         );
         return apartment;
     }
@@ -138,8 +148,8 @@ public abstract class AbstractManagerSetup implements Setup {
                     new MetaItem(LABEL, Values.create("Presence detected")),
                     new MetaItem(DESCRIPTION, Values.create("Someone is moving or resting in the room")),
                     new MetaItem(RULE_STATE, Values.create(true)),
-                    new MetaItem(PROTECTED, Values.create(true)),
-                    new MetaItem(READ_ONLY, Values.create(true)),
+                    new MetaItem(RULE_EVENT, Values.create(true)),
+                    new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)),
                     new MetaItem(STORE_DATA_POINTS, Values.create(true)),
                     new MetaItem(SHOW_ON_DASHBOARD, Values.create(true))
                 ),
@@ -147,15 +157,13 @@ public abstract class AbstractManagerSetup implements Setup {
                 .setMeta(
                     new MetaItem(LABEL, Values.create("First time someone was present in the room")),
                     new MetaItem(RULE_STATE, Values.create(true)),
-                    new MetaItem(PROTECTED, Values.create(true)),
-                    new MetaItem(READ_ONLY, Values.create(true))
+                    new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true))
                 ),
             new AssetAttribute("lastPresenceDetected", TIMESTAMP_MILLIS)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Last time someone was present in the room")),
                     new MetaItem(RULE_STATE, Values.create(true)),
-                    new MetaItem(PROTECTED, Values.create(true)),
-                    new MetaItem(READ_ONLY, Values.create(true))
+                    new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true))
                 )
         );
     }
@@ -168,7 +176,7 @@ public abstract class AbstractManagerSetup implements Setup {
                     new MetaItem(RULE_STATE, Values.create(true)),
                     new MetaItem(RULE_EVENT, Values.create(true)),
                     new MetaItem(RULE_EVENT_EXPIRES, Values.create("16m")),
-                    new MetaItem(PROTECTED, Values.create(true)),
+                    new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)),
                     new MetaItem(READ_ONLY, Values.create(true)),
                     new MetaItem(STORE_DATA_POINTS, Values.create(true)),
                     new MetaItem(SHOW_ON_DASHBOARD, Values.create(true)),
@@ -183,7 +191,7 @@ public abstract class AbstractManagerSetup implements Setup {
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Humidity")),
                     new MetaItem(RULE_STATE, Values.create(true)),
-                    new MetaItem(PROTECTED, Values.create(true)),
+                    new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)),
                     new MetaItem(READ_ONLY, Values.create(true)),
                     new MetaItem(STORE_DATA_POINTS, Values.create(true)),
                     new MetaItem(SHOW_ON_DASHBOARD, Values.create(true)),
@@ -200,7 +208,7 @@ public abstract class AbstractManagerSetup implements Setup {
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Current temperature")),
                     new MetaItem(RULE_STATE, Values.create(true)),
-                    new MetaItem(PROTECTED, Values.create(true)),
+                    new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)),
                     new MetaItem(READ_ONLY, Values.create(true)),
                     new MetaItem(STORE_DATA_POINTS, Values.create(true)),
                     new MetaItem(SHOW_ON_DASHBOARD, Values.create(true)),
@@ -217,10 +225,71 @@ public abstract class AbstractManagerSetup implements Setup {
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Target temperature")),
                     new MetaItem(RULE_STATE, Values.create(true)),
-                    new MetaItem(PROTECTED, Values.create(true)),
+                    new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)),
                     new MetaItem(SHOW_ON_DASHBOARD, Values.create(true)),
                     new MetaItem(FORMAT, Values.create("%0.1f C"))
                 ).addMeta(shouldBeLinked ? agentLinker.get() : null)
+        );
+    }
+
+    protected void addDemoApartmentSmartSwitch(ServerAsset room,
+                                               String switchAttributePrefix,
+                                               String switchLabelPrefix,
+                                               boolean shouldBeLinked,
+                                               // Integer represents attribute number:
+                                               // 0 = On/Off
+                                               // 1 = Start time
+                                               // 2 = Stop time
+                                               // 3 = Smart enabled
+                                               Function<Integer, MetaItem[]> agentLinker) {
+
+        room.addAttributes(
+            // On/Off
+            new AssetAttribute(switchAttributePrefix + "OnOff", BOOLEAN)
+                .setMeta(
+                    new MetaItem(LABEL, Values.create(switchLabelPrefix + " on/off")),
+                    new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true))
+                ).addMeta(shouldBeLinked ? agentLinker.apply(0) : null),
+            // Start time
+            new AssetAttribute(switchAttributePrefix + "StartTime", TIMESTAMP_SECONDS)
+                .setMeta(
+                    new MetaItem(LABEL, Values.create(switchLabelPrefix + " earliest start time")),
+                    new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true))
+                ).addMeta(shouldBeLinked ? agentLinker.apply(1) : null),
+            // Stop time
+            new AssetAttribute(switchAttributePrefix + "StopTime", TIMESTAMP_SECONDS)
+                .setMeta(
+                    new MetaItem(LABEL, Values.create(switchLabelPrefix + " latest stop time")),
+                    new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true))
+                ).addMeta(shouldBeLinked ? agentLinker.apply(2) : null),
+            // Smart enabled
+            new AssetAttribute(switchAttributePrefix + "SmartEnabled", BOOLEAN)
+                .setMeta(
+                    new MetaItem(LABEL, Values.create(switchLabelPrefix + " smart control enabled")),
+                    new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true))
+                ).addMeta(shouldBeLinked ? agentLinker.apply(3) : null)
+        );
+    }
+
+    protected void addDemoApartmentVentilation(ServerAsset apartment,
+                                               boolean shouldBeLinked,
+                                               Supplier<MetaItem[]> agentLinker) {
+        apartment.addAttributes(
+            new AssetAttribute("ventilationLevel", NUMBER)
+                .setMeta(
+                    new MetaItem(LABEL, Values.create("Ventilation level")),
+                    new MetaItem(RANGE_MIN, Values.create(0)),
+                    new MetaItem(RANGE_MAX, Values.create(255)),
+                    new MetaItem(RULE_STATE, Values.create(true)),
+                    new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)),
+                    new MetaItem(FORMAT, Values.create("%d"))
+                ).addMeta(shouldBeLinked ? agentLinker.get() : null),
+            new AssetAttribute("ventilationAuto", BOOLEAN)
+                .setMeta(
+                    new MetaItem(LABEL, Values.create("Ventilation auto")),
+                    new MetaItem(RULE_STATE, Values.create(true)),
+                    new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true))
+                )
         );
     }
 
@@ -336,21 +405,21 @@ public abstract class AbstractManagerSetup implements Setup {
                 new AssetAttribute(scene.attributeName, AttributeType.STRING, Values.create(AttributeExecuteStatus.READY.name()))
                     .setMeta(
                         new MetaItem(LABEL, Values.create(scene.attributeLabel)),
-                        new MetaItem(PROTECTED, Values.create(true)),
+                        new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)),
                         new MetaItem(EXECUTABLE, Values.create(true)),
                         new MetaItem(AGENT_LINK, new AttributeRef(agent.getId(), scene.attributeName).toArrayValue())
                     ),
                 new AssetAttribute(scene.attributeName + "AlarmEnabled", AttributeType.BOOLEAN)
                     .setMeta(
                         new MetaItem(LABEL, Values.create(scene.attributeLabel + " alarm enabled")),
-                        new MetaItem(PROTECTED, Values.create(true)),
+                        new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)),
                         new MetaItem(META_MACRO_ACTION_INDEX, Values.create(0)),
                         new MetaItem(AGENT_LINK, new AttributeRef(agent.getId(), scene.attributeName).toArrayValue())
                     ),
                 new AssetAttribute(scene.attributeName + "TargetTemperature", AttributeType.NUMBER)
                     .setMeta(
                         new MetaItem(LABEL, Values.create(scene.attributeLabel + " target temperature")),
-                        new MetaItem(PROTECTED, Values.create(true)),
+                        new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)),
                         new MetaItem(META_MACRO_ACTION_INDEX, Values.create(1)),
                         new MetaItem(AGENT_LINK, new AttributeRef(agent.getId(), scene.attributeName).toArrayValue())
                     )
@@ -362,7 +431,7 @@ public abstract class AbstractManagerSetup implements Setup {
                     new AssetAttribute(scene.attributeName + "Time" + dayOfWeek.name(), AttributeType.STRING)
                         .setMeta(
                             new MetaItem(LABEL, Values.create(scene.attributeLabel + " time " + dayName)),
-                            new MetaItem(PROTECTED, Values.create(true)),
+                            new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)),
                             new MetaItem(RULE_STATE, Values.create(true)),
                             new MetaItem(META_TIMER_VALUE_LINK, Values.create(TimerValue.TIME.toString())),
                             new MetaItem(AGENT_LINK, new AttributeRef(agent.getId(), scene.attributeName + dayName).toArrayValue())
@@ -370,7 +439,7 @@ public abstract class AbstractManagerSetup implements Setup {
                     new AssetAttribute(scene.attributeName + "Enabled" + dayOfWeek.name(), AttributeType.BOOLEAN)
                         .setMeta(
                             new MetaItem(LABEL, Values.create(scene.attributeLabel + " enabled " + dayName)),
-                            new MetaItem(PROTECTED, Values.create(true)),
+                            new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)),
                             new MetaItem(META_TIMER_VALUE_LINK, Values.create(TimerValue.ENABLED.toString())),
                             new MetaItem(AGENT_LINK, new AttributeRef(agent.getId(), scene.attributeName + dayName).toArrayValue())
                         )
@@ -381,21 +450,21 @@ public abstract class AbstractManagerSetup implements Setup {
             new AssetAttribute("sceneTimerEnabled", AttributeType.BOOLEAN, Values.create(true))
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Scene timer enabled")),
-                    new MetaItem(PROTECTED, Values.create(true)),
+                    new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)),
                     new MetaItem(SHOW_ON_DASHBOARD, Values.create(true)),
                     new MetaItem(READ_ONLY, Values.create(true))
                 ),
             new AssetAttribute("enableSceneTimer", AttributeType.STRING, Values.create(AttributeExecuteStatus.READY.name()))
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Enable scene timer")),
-                    new MetaItem(PROTECTED, Values.create(true)),
+                    new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)),
                     new MetaItem(EXECUTABLE, Values.create(true)),
                     new MetaItem(AGENT_LINK, new AttributeRef(agent.getId(), "enableSceneTimer").toArrayValue())
                 ),
             new AssetAttribute("disableSceneTimer", AttributeType.STRING, Values.create(AttributeExecuteStatus.READY.name()))
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Disable scene timer")),
-                    new MetaItem(PROTECTED, Values.create(true)),
+                    new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)),
                     new MetaItem(EXECUTABLE, Values.create(true)),
                     new MetaItem(AGENT_LINK, new AttributeRef(agent.getId(), "disableSceneTimer").toArrayValue())
                 )

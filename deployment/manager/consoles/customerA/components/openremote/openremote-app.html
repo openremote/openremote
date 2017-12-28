@@ -1,0 +1,75 @@
+<!doctype html>
+
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+
+<dom-module id="openremote-app">
+
+    <script>
+
+        class OpenRemoteApp extends Polymer.Element {
+
+            constructor() {
+                super();
+            }
+
+            static get is() {
+                return "openremote-app";
+            }
+
+            static get properties() {
+                return {
+                    _socket: Object,
+                    _handlers: {
+                        type: Array
+                    },
+                    /**
+                     * Log internal processing to console.
+                     */
+                    verbose: {
+                        type: Boolean
+                    },
+                    /**
+                     * Name of the OpenRemote tenant this app wants to connect to
+                     * and possibly login and authenticate with.
+                     */
+                    tenant: {
+                        type: String
+                    },
+                    /**
+                     *  Time to wait in seconds before we are sure the service is
+                     *  disconnected and not just silent.
+                     */
+                    timeout: {
+                        type: Number
+                    },
+                    /**
+                     * CONNECTED, DISCONNECTED, WAITING.
+                     */
+                    status: {
+                        type: String,
+                        notify: true,
+                    },
+                };
+            }
+
+            connect() {
+                if (this.verbose) {
+                    console.log("Connecting to OpenRemote service, tenant channel: " + this.tenant);
+                }
+
+                // TODO Connect websocket, etc.
+            }
+
+            disconnect() {
+                if (this.socket) {
+                    // TODO Disconnect
+                }
+            }
+
+        }
+
+        customElements.define(OpenRemoteApp.is, OpenRemoteApp);
+
+    </script>
+
+</dom-module>

@@ -5,36 +5,16 @@
     <ui:with field="managerMessages" type="org.openremote.manager.client.i18n.ManagerMessages"/>
     <ui:with field="widgetStyle" type="org.openremote.manager.client.style.WidgetStyle"/>
 
-    <ui:style>
-        .formMessages {
-            max-width: 30em;
-        }
-    </ui:style>
-
     <g:HTMLPanel styleName="flex layout vertical">
 
         <g:HTMLPanel
-                styleName="layout horizontal center end-justified {widgetStyle.SecondaryNavHorizontal}">
+                styleName="layout horizontal center end-justified {widgetStyle.SecondaryNav}">
 
         </g:HTMLPanel>
 
         <w:Form ui:field="form" addStyleNames="flex">
 
             <g:HTMLPanel styleName="flex {widgetStyle.MainContent}">
-
-                <g:FlowPanel
-                        styleName="layout horizontal {style.formMessages} {widgetStyle.FormMessages} success"
-                        visible="false">
-                    <w:IconLabel icon="check" addStyleNames="{widgetStyle.MessagesIcon}"/>
-                    <g:FlowPanel ui:field="formMessagesSuccess"/>
-                </g:FlowPanel>
-
-                <g:FlowPanel
-                        styleName="layout horizontal {style.formMessages} {widgetStyle.FormMessages} error"
-                        visible="false">
-                    <w:IconLabel icon="warning" addStyleNames="{widgetStyle.MessagesIcon}"/>
-                    <g:FlowPanel ui:field="formMessagesError"/>
-                </g:FlowPanel>
 
                 <w:Headline icon="edit"
                             text="{managerMessages.editTenant}"/>

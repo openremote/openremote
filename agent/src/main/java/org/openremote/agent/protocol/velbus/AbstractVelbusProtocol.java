@@ -29,6 +29,7 @@ import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetMeta;
 import org.openremote.model.asset.AssetType;
 import org.openremote.model.asset.agent.AgentLink;
+import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.attribute.*;
 import org.openremote.model.file.FileInfo;
 import org.openremote.model.util.EnumUtil;
@@ -39,12 +40,8 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
 
 import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.io.StringReader;
 import java.util.*;
 import java.util.function.Consumer;
@@ -264,7 +261,7 @@ public abstract class AbstractVelbusProtocol extends AbstractProtocol implements
 
     @Override
     public Asset[] discoverLinkedAssetAttributes(AssetAttribute protocolConfiguration, FileInfo fileInfo) throws IllegalStateException {
-        Document xmlDoc = null;
+        Document xmlDoc;
         try {
             String xmlStr = fileInfo.isBinary() ? new String(Util.decodeBase64(fileInfo.getContents()), "UTF8") : fileInfo.getContents();
             LOG.info("Parsing VELBUS project file: " + fileInfo.getName());
@@ -379,7 +376,7 @@ public abstract class AbstractVelbusProtocol extends AbstractProtocol implements
                                     propertyDescriptor.getDisplayName(),
                                     propertyDescriptor.getAttributeType(),
                                     propertyDescriptor.isReadOnly(),
-                                    propertyDescriptor.isExecutable(),
+                                    false,
                                     createLinkedAttributeMetaItems(
                                         deviceAddress,
                                         propertyDescriptor.getLinkName()

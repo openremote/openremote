@@ -205,7 +205,7 @@ public class FormTableStyle implements CellTable.Style {
 
     @Override
     public String cellTableWidget() {
-        return widgetStyle.FormTableWidget();
+        return widgetStyle.FormTable();
     }
 
     @Override

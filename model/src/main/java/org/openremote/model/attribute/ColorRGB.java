@@ -35,7 +35,7 @@ public class ColorRGB {
     }
 
     public ColorRGB(double red, double green, double blue) {
-        this(new Double(red).intValue(), new Double(green).intValue(), new Double(blue).intValue());
+        this((int) red, (int) green, (int) blue);
     }
 
     public ColorRGB(ArrayValue arrayValue) {

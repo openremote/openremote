@@ -33,6 +33,8 @@ import java.util.Collection;
  */
 public abstract class AppActivity<P extends Place>  {
 
+    protected P place;
+
     public String mayStop() {
         return null;
     }
@@ -49,7 +51,12 @@ public abstract class AppActivity<P extends Place>  {
                 throw new RoleRequiredException(requiredRole);
             }
         }
+        this.place = place;
         return init(place);
+    }
+
+    public P getPlace() {
+        return place;
     }
 
     protected abstract AppActivity<P> init(P place);

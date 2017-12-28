@@ -22,10 +22,13 @@ package org.openremote.manager.client.admin.tenant;
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
-import com.google.gwt.user.client.ui.*;
-import org.openremote.manager.client.i18n.ManagerMessages;
+import com.google.gwt.user.client.ui.HTMLPanel;
+import com.google.gwt.user.client.ui.Label;
+import com.google.inject.Provider;
+import org.openremote.manager.client.Environment;
+import org.openremote.manager.client.app.dialog.Confirmation;
 import org.openremote.manager.client.style.FormTableStyle;
-import org.openremote.manager.client.style.WidgetStyle;
+import org.openremote.manager.client.widget.FormViewImpl;
 import org.openremote.manager.client.widget.Hyperlink;
 import org.openremote.manager.shared.security.Tenant;
 
@@ -33,16 +36,10 @@ import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-public class AdminTenantsImpl extends Composite implements AdminTenants {
+public class AdminTenantsImpl extends FormViewImpl implements AdminTenants {
 
     interface UI extends UiBinder<HTMLPanel, AdminTenantsImpl> {
     }
-
-    @UiField
-    ManagerMessages managerMessages;
-
-    @UiField
-    WidgetStyle widgetStyle;
 
     @UiField
     AdminTenantsTable.Style tenantsTableStyle;
@@ -60,7 +57,11 @@ public class AdminTenantsImpl extends Composite implements AdminTenants {
     Presenter presenter;
 
     @Inject
-    public AdminTenantsImpl(FormTableStyle formTableStyle) {
+    public AdminTenantsImpl(Environment environment,
+                            Provider<Confirmation> confirmationDialogProvider,
+                            FormTableStyle formTableStyle) {
+        super(confirmationDialogProvider, environment.getWidgetStyle());
+
         UI ui = GWT.create(UI.class);
         initWidget(ui.createAndBindUi(this));
 

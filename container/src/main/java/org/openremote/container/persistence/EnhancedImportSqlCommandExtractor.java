@@ -22,7 +22,6 @@ package org.openremote.container.persistence;
 import org.apache.commons.io.IOUtils;
 import org.hibernate.hql.internal.antlr.SqlStatementLexer;
 import org.hibernate.hql.internal.antlr.SqlStatementParser;
-import org.hibernate.tool.hbm2ddl.ImportScriptException;
 import org.hibernate.tool.hbm2ddl.ImportSqlCommandExtractor;
 
 import java.io.IOException;
@@ -34,6 +33,7 @@ import java.util.List;
  * Load and parse import SQL files, either the whole file as a single statement if its first line
  * is <code>-- importOneStatementOnly</code>, or as a semicolon-separated list of statements.
  */
+@SuppressWarnings("deprecation")
 public class EnhancedImportSqlCommandExtractor implements ImportSqlCommandExtractor {
 
     @Override
@@ -46,7 +46,7 @@ public class EnhancedImportSqlCommandExtractor implements ImportSqlCommandExtrac
                 return extractMultiLine(new StringReader(sql));
             }
         } catch (IOException e) {
-            throw new ImportScriptException("Error during import script parsing.", e);
+            throw new org.hibernate.tool.hbm2ddl.ImportScriptException("Error during import script parsing.", e);
         }
     }
 
@@ -57,7 +57,7 @@ public class EnhancedImportSqlCommandExtractor implements ImportSqlCommandExtrac
             parser.script(); // Parse script.
             parser.throwExceptionIfErrorOccurred();
         } catch (Exception e) {
-            throw new ImportScriptException("Error during import script parsing.", e);
+            throw new org.hibernate.tool.hbm2ddl.ImportScriptException("Error during import script parsing.", e);
         }
         List<String> statementList = parser.getStatementList();
         String[] result = statementList.toArray(new String[statementList.size()]);

@@ -25,6 +25,8 @@ import org.openremote.model.value.Values;
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 
+import java.util.Date;
+
 import static org.openremote.model.Constants.PERSISTENCE_JSON_ARRAY_TYPE;
 import static org.openremote.model.Constants.PERSISTENCE_SEQUENCE_ID_GENERATOR;
 
@@ -40,6 +42,11 @@ public class AlertNotification {
     @NotNull
     @Column(name = "TITLE", nullable = false)
     private String title;
+
+    @Temporal(TemporalType.TIMESTAMP)
+    @Column(name = "CREATED_ON", updatable = false, nullable = false, columnDefinition = "TIMESTAMP WITH TIME ZONE")
+    @org.hibernate.annotations.CreationTimestamp
+    protected Date createdOn;
 
     @NotNull
     @Column(name = "MESSAGE", nullable = false)
@@ -70,6 +77,12 @@ public class AlertNotification {
         this.message = message;
     }
 
+    public AlertNotification(String title, String message, String appUrl) {
+        this.title = title;
+        this.message = message;
+        this.appUrl = appUrl;
+    }
+
     /*  Actuator  */
 
     public Long getId() {
@@ -86,6 +99,10 @@ public class AlertNotification {
 
     public void setTitle(String title) {
         this.title = title;
+    }
+
+    public Date getCreatedOn() {
+        return createdOn;
     }
 
     public String getMessage() {
@@ -144,5 +161,19 @@ public class AlertNotification {
 
     public void setDeliveryStatus(DeliveryStatus deliveryStatus) {
         this.deliveryStatus = deliveryStatus;
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "{" +
+            "id=" + id +
+            ", title='" + title + '\'' +
+            ", createdOn=" + createdOn +
+            ", message='" + message + '\'' +
+            ", actions=" + actions +
+            ", appUrl='" + appUrl + '\'' +
+            ", userId='" + userId + '\'' +
+            ", deliveryStatus=" + deliveryStatus +
+            '}';
     }
 }

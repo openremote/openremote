@@ -20,7 +20,7 @@
 package org.openremote.manager.client.interop.mapbox;
 
 import com.google.gwt.core.client.JavaScriptObject;
-import elemental.dom.Node;
+import elemental2.dom.Node;
 import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
 

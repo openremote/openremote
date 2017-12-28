@@ -9,12 +9,17 @@
 
     <script src="/static/js/loader.js"></script>
     <link rel="stylesheet" type="text/css" href="/static/css/loader.css">
+
+    <!-- Promise API polyfill on IE 11  -->
+    <script src="/static/3rdparty/es6-promise.js"></script>
+
     <script src="/static/js/auth.js"></script>
 
     <link rel="import" href="/static/css/style.html">
     <link rel="import" href="/static/css/theme.html">
+    <link rel="import" href="/ui/colors.html">
     <custom-style>
-        <style include="global-style global-theme"></style>
+        <style include="global-style global-theme colors"></style>
     </custom-style>
 
     <script>
@@ -29,10 +34,10 @@
                 load.js("/static/bower_components/webcomponentsjs/webcomponents-loader.js"),
                 load.css("/static/bower_components/font-awesome/css/font-awesome.css"),
 
-                load.css("/static/3rdparty/mapbox-gl-js/0.35.0/mapbox-gl.css"),
-                load.js("/static/3rdparty/mapbox-gl-js/0.35.0/mapbox-gl.js"),
+                load.css("/static/3rdparty/mapbox-gl-js/0.42.2/mapbox-gl.css"),
+                load.js("/static/3rdparty/mapbox-gl-js/0.42.2/mapbox-gl.js"),
 
-                load.js("/static/3rdparty/chart-js/2.5.0/Chart.js"),
+                load.js("/static/bower_components/chart.js/dist/Chart.js"),
 
                 load.js("/static/3rdparty/sprintf/1.0.3/sprintf.min.js"),
 
@@ -59,7 +64,7 @@
     </script>
 
 </head>
-<body class="layout vertical loading" onload="startLoading()">
+<body class="layout vertical loading">
 
 <iframe src="javascript:''"
         id="__gwt_historyFrame"

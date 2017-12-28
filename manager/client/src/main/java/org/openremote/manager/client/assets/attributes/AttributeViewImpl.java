@@ -26,6 +26,7 @@ import elemental.client.Browser;
 import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.widget.*;
 import org.openremote.model.asset.AssetAttribute;
+import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.attribute.AttributeType;
 import org.openremote.model.attribute.AttributeValidationResult;
 import org.openremote.model.value.Value;
@@ -46,6 +47,7 @@ public class AttributeViewImpl extends FormGroup implements AttributeView {
     protected AssetAttribute attribute;
     protected List<FormButton> attributeActions;
     protected List<AbstractAttributeViewExtension> attributeExtensions;
+    protected ConnectionStatus connectionStatus;
     protected boolean editMode;
     protected ValueEditorSupplier valueEditorSupplier;
     protected ValidationErrorConsumer validationErrorConsumer;
@@ -58,6 +60,7 @@ public class AttributeViewImpl extends FormGroup implements AttributeView {
         this.attribute = attribute;
 
         addStyleName("flex-none");
+        addStyleName(style.attributeView());
         addStyleName(environment.getWidgetStyle().FormListItem());
 
         showDisabledExtensionToggle();
@@ -73,7 +76,7 @@ public class AttributeViewImpl extends FormGroup implements AttributeView {
         setFormField(formField);
 
         FormGroupActions formGroupActions = new FormGroupActions();
-        setFromGroupActions(formGroupActions);
+        setFormGroupActions(formGroupActions);
     }
 
     public void setAttributeActions(List<FormButton> attributeActions) {
@@ -168,6 +171,12 @@ public class AttributeViewImpl extends FormGroup implements AttributeView {
         return this;
     }
 
+    @Override
+    public void setStatus(ConnectionStatus connectionStatus) {
+        this.connectionStatus = connectionStatus;
+        refresh();
+    }
+
     protected void notifyAttributeModified(Value newValue) {
         // Push new value into the attribute
         attribute.setValue(newValue, 0);
@@ -195,10 +204,10 @@ public class AttributeViewImpl extends FormGroup implements AttributeView {
     }
 
     protected void refresh() {
-        removeStyleName(style.highlightAttribute());
-        removeStyleName(environment.getWidgetStyle().HighlightBorder());
-        removeStyleName(style.regularAttribute());
-        removeStyleName(environment.getWidgetStyle().RegularBorder());
+        removeStyleName(environment.getWidgetStyle().BorderDefault());
+        removeStyleName(environment.getWidgetStyle().BorderGreen());
+        removeStyleName(environment.getWidgetStyle().BorderYellow());
+        removeStyleName(environment.getWidgetStyle().BorderRed());
         getFormLabel().setIcon(null);
         getFormLabel().setText(null);
         getInfoLabel().setText(null);
@@ -208,12 +217,26 @@ public class AttributeViewImpl extends FormGroup implements AttributeView {
             return;
         }
 
-        if (attribute.hasAgentLink() || attribute.isProtocolConfiguration()) {
-            addStyleName(style.highlightAttribute());
-            addStyleName(environment.getWidgetStyle().HighlightBorder());
+        if (connectionStatus != null) {
+            switch (connectionStatus) {
+                case DISABLED:
+                case CLOSED:
+                    addStyleName(environment.getWidgetStyle().BorderDefault());
+                    break;
+                case CONNECTED:
+                    addStyleName(environment.getWidgetStyle().BorderGreen());
+                    break;
+                case WAITING:
+                case CONNECTING:
+                case DISCONNECTING:
+                    addStyleName(environment.getWidgetStyle().BorderYellow());
+                    break;
+                default:
+                    addStyleName(environment.getWidgetStyle().BorderRed());
+                    break;
+            }
         } else {
-            addStyleName(style.regularAttribute());
-            addStyleName(environment.getWidgetStyle().RegularBorder());
+            addStyleName(environment.getWidgetStyle().BorderDefault());
         }
 
         if (attribute.isExecutable()) {
@@ -230,7 +253,11 @@ public class AttributeViewImpl extends FormGroup implements AttributeView {
         if (attribute.isExecutable()) {
             infoText.append(environment.getMessages().executable());
         } else if (attribute.isProtocolConfiguration()) {
-            infoText.append(environment.getMessages().protocolConfiguration());
+            if (editMode) {
+                infoText.append(environment.getMessages().protocolConfiguration());
+            } else {
+                infoText.append(connectionStatus != null ? connectionStatus.toString() : environment.getMessages().waitingForStatus());
+            }
         } else if (attribute.getType().isPresent()) {
             infoText.append(environment.getMessages().attributeType(attribute.getType().get().name()));
         }

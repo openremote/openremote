@@ -170,6 +170,12 @@ public abstract class Attribute extends AbstractValueTimestampHolder {
             .findFirst();
     }
 
+    public MetaItem[] getMetaItems(String metaName) {
+        return getMetaStream()
+            .filter(metaItem -> metaItem.getName().filter(s -> s.equals(metaName)).isPresent())
+            .toArray(MetaItem[]::new);
+    }
+
     public Optional<MetaItem> getMetaItem(HasUniqueResourceName hasUniqueResourceName) {
         return getMetaItem(hasUniqueResourceName.getUrn());
     }
@@ -241,6 +247,21 @@ public abstract class Attribute extends AbstractValueTimestampHolder {
 
     public List<ValidationFailure> getMetaItemValidationFailures(MetaItem item, Optional<MetaItemDescriptor> metaItemDescriptor) {
         return item.getValidationFailures(metaItemDescriptor);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(objectValue, name);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null)
+            return false;
+        if (!(obj instanceof Attribute))
+            return false;
+        Attribute that = (Attribute) obj;
+        return Objects.equals(name, that.name) && Objects.equals(objectValue, that.objectValue);
     }
 
     //    ---------------------------------------------------

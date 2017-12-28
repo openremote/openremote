@@ -22,20 +22,18 @@ package org.openremote.manager.server.agent;
 import org.openremote.agent.protocol.Protocol;
 import org.openremote.agent.protocol.ProtocolLinkedAttributeDiscovery;
 import org.openremote.agent.protocol.ProtocolLinkedAttributeImport;
-import org.openremote.manager.server.asset.AssetResourceImpl;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.asset.agent.ProtocolConfiguration;
-import org.openremote.model.asset.agent.ProtocolDescriptor;
+import org.openremote.model.asset.agent.*;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.AttributeValidationResult;
 import org.openremote.model.file.FileInfo;
 import org.openremote.model.util.Pair;
 
-import java.util.Collections;
-import java.util.Optional;
+import java.util.*;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 public class LocalAgentConnector implements AgentConnector {
 
@@ -44,6 +42,24 @@ public class LocalAgentConnector implements AgentConnector {
 
     public LocalAgentConnector(AgentService agentService) {
         this.agentService = agentService;
+    }
+
+    @Override
+    public List<AgentStatusEvent> getConnectionStatus(Asset agent) {
+        Optional<Asset> foundAgent = agentService.getAgents().entrySet().stream()
+            .filter(entry -> entry.getKey().equals(agent.getId()))
+            .map(Map.Entry::getValue)
+            .findFirst();
+        return foundAgent.map(asset -> Agent.getProtocolConfigurations(asset).stream()
+            .map(AssetAttribute::getReferenceOrThrow)
+            .map(protocolConfigurationRef -> new Pair<>(protocolConfigurationRef, agentService.getProtocolConnectionStatus(protocolConfigurationRef)))
+            .map(pair -> new AgentStatusEvent(
+                agentService.timerService.getCurrentTimeMillis(),
+                asset.getRealmId(),
+                pair.key,
+                pair.value)
+            )
+            .collect(Collectors.toList())).orElseGet(ArrayList::new);
     }
 
     @Override

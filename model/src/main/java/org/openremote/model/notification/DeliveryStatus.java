@@ -22,12 +22,17 @@ package org.openremote.model.notification;
 public enum DeliveryStatus {
 
     /**
-     * To be picked up by receiving device.
+     * Not delivered to queue.
      */
     PENDING,
 
     /**
-     * Picked up by receiving device.
+     * Delivered to queue for at least one device, device should soon pick it up.
      */
-    DELIVERED
+    QUEUED,
+
+    /**
+     * Picked up by receiving device and dismissed by user.
+     */
+    ACKNOWLEDGED
 }

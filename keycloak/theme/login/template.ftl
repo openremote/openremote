@@ -17,12 +17,17 @@
     <link rel="icon" type="image/png" href="/static/img/favicon.png" />
 
     <script src="/static/js/loader.js"></script>
+
+    <!-- Promise API polyfill on IE 11  -->
+    <script src="/static/3rdparty/es6-promise.js"></script>
+
     <link rel="stylesheet" type="text/css" href="/static/css/loader.css" />
 
     <link rel="import" href="/static/css/style.html">
     <link rel="import" href="/static/css/theme.html">
+    <link rel="import" href="/ui/colors.html">
     <custom-style>
-        <style include="global-style global-theme"></style>
+        <style include="global-style global-theme colors"></style>
     </custom-style>
 
     <script>
@@ -39,7 +44,7 @@
         });
     </script>
 </head>
-<body class="layout vertical loading" onload="startLoading()">
+<body class="layout vertical loading">
 
     <div class="flex layout vertical center-center">
 

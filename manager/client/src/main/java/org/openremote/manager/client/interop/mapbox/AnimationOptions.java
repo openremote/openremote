@@ -20,18 +20,12 @@
 package org.openremote.manager.client.interop.mapbox;
 
 import com.google.gwt.core.client.JavaScriptObject;
-import jsinterop.annotations.JsProperty;
+import jsinterop.annotations.JsType;
 
+@JsType
 public class AnimationOptions {
-    @JsProperty
     public int duration;
-
-    @JsProperty
     public EasingFn easing;
-
-    @JsProperty
     public JavaScriptObject offset;
-
-    @JsProperty
     public boolean animate;
 }

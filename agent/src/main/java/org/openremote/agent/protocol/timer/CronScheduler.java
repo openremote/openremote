@@ -83,6 +83,7 @@ class CronScheduler {
         Pair<JobDetail, CronTrigger> cronTrigger = createCronTrigger(id, expression, executeHandler);
 
         try {
+            LOG.fine("Scheduling job: " + id);
             scheduler.scheduleJob(cronTrigger.key, cronTrigger.value);
 
             if (!scheduler.isStarted()) {
@@ -98,6 +99,7 @@ class CronScheduler {
 
     protected void removeJob(String id) {
         try {
+            LOG.fine("Unscheduling job: " + id);
             scheduler.unscheduleJob(TriggerKey.triggerKey(id));
             scheduler.deleteJob(JobKey.jobKey("cronJob1", id));
         } catch (SchedulerException e) {

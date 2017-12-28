@@ -35,12 +35,19 @@ public class Hyperlink extends com.google.gwt.user.client.ui.Hyperlink {
     protected Runnable simpleClickHandler;
 
     public Hyperlink() {
+        this(null, null);
+    }
+
+    public Hyperlink(String icon, String text) {
         super();
 
         getElement().addClassName("or-Hyperlink");
         Element anchor = getElement().getFirstChildElement();
         // TODO Clickable icon?!
         DOM.insertBefore(getElement(), iconLabel.getElement(), anchor);
+
+        setIcon(icon);
+        setText(text);
     }
 
     public String getIcon() {

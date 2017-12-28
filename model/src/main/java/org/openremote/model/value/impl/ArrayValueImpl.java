@@ -31,8 +31,13 @@ public class ArrayValueImpl extends ValueImpl implements ArrayValue {
     }
 
     @Override
+    public boolean indexContainsNull(int index) {
+        return index >= 0 && values.size() > index && values.get(index) == null;
+    }
+
+    @Override
     public Optional<Value> get(int index) {
-        return index >= 0 && values.size() > index ? Optional.of(values.get(index)) : Optional.empty();
+        return index >= 0 && values.size() > index ? Optional.ofNullable(values.get(index)) : Optional.empty();
     }
 
     @Override
@@ -154,6 +159,30 @@ public class ArrayValueImpl extends ValueImpl implements ArrayValue {
     }
 
     @Override
+    public boolean contains(String string, boolean ignoreCase) {
+        if (ignoreCase) {
+            return values.stream().anyMatch(val -> Values.getString(val).orElseThrow(() -> new ValueException("Value should be string")).equalsIgnoreCase(string));
+        } else {
+            return values.contains(factory.create(string));
+        }
+    }
+
+    @Override
+    public boolean contains(String string) {
+        return contains(string, false);
+    }
+
+    @Override
+    public boolean contains(double number) {
+        return values.contains(factory.create(number));
+    }
+
+    @Override
+    public int indexOf(String string) {
+        return values.indexOf(factory.create(string));
+    }
+
+    @Override
     public String toJson() throws ValueException {
         return ValueUtil.stringify(this);
     }
@@ -166,10 +195,8 @@ public class ArrayValueImpl extends ValueImpl implements ArrayValue {
                 arrayCtx.setCurrentIndex(i);
                 if (visitor.visitIndex(arrayCtx.getCurrentIndex(), arrayCtx)) {
                     Optional<Value> value = get(i);
-                    if (value.isPresent()) {
-                        visitor.accept(value.get(), arrayCtx);
-                        arrayCtx.setFirst(false);
-                    }
+                    visitor.accept(value.orElse(null), arrayCtx);
+                    arrayCtx.setFirst(false);
                 }
             }
         }

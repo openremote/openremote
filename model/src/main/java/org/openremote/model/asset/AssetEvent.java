@@ -28,6 +28,8 @@ import java.util.Optional;
  */
 @org.kie.api.definition.type.Role(Role.Type.EVENT)
 @org.kie.api.definition.type.Timestamp("valueTimestamp")
+// TODO Bug in drools, it fails if there is no @Expires annotation https://issues.jboss.org/browse/DROOLS-2182
+@org.kie.api.definition.type.Expires(value = "10000d")
 public class AssetEvent extends AbstractAssetUpdate {
 
     public AssetEvent(AbstractAssetUpdate that) {

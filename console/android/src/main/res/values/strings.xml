@@ -21,4 +21,9 @@
     <string name="fatalErrorExplain">OpenRemote service is not available, please try again later.</string>
     <string name="httpError">Invalid response from service.</string>
     <string name="httpErrorExplain">Can\'t connect to the OpenRemote service.</string>
+    <string name="downloading_file">Downloading File</string>
+    <string name="downloading_enabled">Downloading enabled</string>
+    <string name="error_downloading">Error downloading file</string>
+    <string name="download_completed">Download completed</string>
+
 </resources>

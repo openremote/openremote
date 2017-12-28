@@ -129,7 +129,7 @@ public class AssetRulesEditorActivity
 
     @Override
     protected Consumer<RequestParams<Void>> deleteRequestConsumer() {
-        return params -> rulesetResource.deletAssetRuleset(params, rulesetId);
+        return params -> rulesetResource.deleteAssetRuleset(params, rulesetId);
     }
 
     @Override

@@ -21,6 +21,7 @@ package org.openremote.agent.protocol.velbus;
 
 import org.openremote.agent.protocol.*;
 import org.openremote.agent.protocol.velbus.device.*;
+import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.value.*;
 
 import java.util.*;

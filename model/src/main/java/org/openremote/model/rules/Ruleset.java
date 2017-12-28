@@ -79,7 +79,6 @@ public abstract class Ruleset {
     @Column(name = "TEMPLATE_ASSET_ID", nullable = true)
     protected String templateAssetId;
 
-    @Lob
     @Column(name = "RULES", nullable = false)
     protected String rules;
 

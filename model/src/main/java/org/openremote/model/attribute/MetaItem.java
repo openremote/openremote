@@ -23,7 +23,6 @@ import com.google.gwt.regexp.shared.RegExp;
 import org.openremote.model.AbstractValueHolder;
 import org.openremote.model.HasUniqueResourceName;
 import org.openremote.model.ValidationFailure;
-import org.openremote.model.asset.AssetMeta;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Value;
@@ -67,10 +66,10 @@ public class MetaItem extends AbstractValueHolder {
         setValue(value);
     }
 
-    public MetaItem(AssetMeta assetMeta) {
+    public MetaItem(MetaItemDescriptor metaItemDescriptor) {
         super(Values.createObject());
-        setName(assetMeta.getUrn());
-        setValue(assetMeta.getInitialValue());
+        setName(metaItemDescriptor.getUrn());
+        setValue(metaItemDescriptor.getInitialValue());
     }
 
     public MetaItem(HasUniqueResourceName hasUniqueResourceName, Value value) {
@@ -79,18 +78,6 @@ public class MetaItem extends AbstractValueHolder {
 
     public Optional<String> getName() {
         return getObjectValue().getString("name");
-    }
-
-    public boolean hasRestrictedFlag() {
-        return getObjectValue().hasKey("restricted");
-    }
-
-    public boolean isRestricted() {
-        return getObjectValue().getBoolean("restricted").orElse(false);
-    }
-
-    public void setRestricted(boolean restricted) {
-        getObjectValue().put("restricted", Values.create(restricted));
     }
 
     public void setName(String name) {
@@ -237,24 +224,6 @@ public class MetaItem extends AbstractValueHolder {
             .stream()
             .map(value -> new MetaItem(name, value))
             .forEach(metaItems::add);
-    }
-
-    /**
-     * Merges two Collections of MetaItem
-     *
-     * @param metaItems    the original collection. The new values will be added to this collection
-     * @param newMetaItems the collection with new values
-     * @param <T>
-     */
-    public static <T extends Collection<MetaItem>> void mergeMeta(T metaItems, T newMetaItems) {
-        metaItems.forEach(metaItem -> {
-            Optional<MetaItem> newMetaItem = newMetaItems.stream().filter(isMetaNameEqualTo(metaItem.getName().orElse(null))).findFirst();
-            newMetaItem.ifPresent(nMetaItem -> {
-                metaItem.setRestricted(nMetaItem.isRestricted());
-                metaItem.setValue(nMetaItem.getValue().orElse(null));
-            });
-        });
-        newMetaItems.stream().filter(newMetaItem -> !metaItems.contains(newMetaItem)).forEach(metaItems::add);
     }
 
     public static <T extends Collection<MetaItem>> void replaceMetaByName(T metaItems, HasUniqueResourceName hasUniqueResourceName, MetaItem newMetaItem) {

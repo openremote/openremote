@@ -28,8 +28,13 @@ public class FormInputText extends TextBox {
     boolean autofocus;
 
     public FormInputText() {
+        this(null);
+    }
+
+    public FormInputText(String value) {
         super();
         setStyleName("or-FormControl or-FormInputText");
+        setValue(value);
     }
 
     public String getPlaceholder() {

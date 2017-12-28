@@ -22,7 +22,6 @@ package org.openremote.agent.protocol.timer;
 import org.openremote.model.AbstractValueHolder;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.ValueHolder;
-import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.attribute.AttributeState;
 import org.openremote.model.attribute.AttributeValidationResult;

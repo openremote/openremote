@@ -152,10 +152,15 @@ public class TokenService {
                                 LOG.severe("Sending FCM device token failed for device id: " + id  +", response code: " + response.code());
                             } else {
                                 LOG.fine("Sending FCM device token successful for device id: " + id);
+
+                                // #40: Don't clean-up the FCM information from SharedPreferences, this means they are always sent
+                                // This ensures that if it gets cleaned from server, it is re-send again and notifications can be send
+                                /*
                                 SharedPreferences.Editor editor = sharedPref.edit();
                                 editor.remove(fcmTokenKey);
                                 editor.remove(deviceIdKey);
                                 editor.commit();
+                                */
                             }
                         }
 

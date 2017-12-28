@@ -22,13 +22,15 @@ package org.openremote.container.persistence;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import org.hibernate.cfg.AvailableSettings;
-import org.hibernate.spatial.dialect.postgis.PostgisDialect;
+import org.hibernate.spatial.dialect.postgis.PostgisPG95Dialect;
 import org.openremote.container.concurrent.ContainerThreadFactory;
 
 import java.util.HashMap;
 import java.util.Map;
 
 public interface Database {
+
+    String PROPERTY_POOL_NAME = Database.class.getName() + ".POOL_NAME";
 
     /**
      * @return Persistence unit properties you want to use for this database (e.g. Hibernate dialect already set), will be passed into {@link #open}.
@@ -51,16 +53,19 @@ public interface Database {
             @Override
             public Map<String, Object> createProperties() {
                 Map<String, Object> properties = new HashMap<>();
-                properties.put(AvailableSettings.DIALECT, PostgisDialect.class.getName());
+                properties.put(AvailableSettings.DIALECT, PostgisPG95Dialect.class.getName());
                 return properties;
             }
 
             @Override
             public void open(Map<String, Object> properties, String connectionUrl, String username, String password, int connectionTimeoutSeconds, int minIdle, int maxPoolSize) {
                 hikariConfig = new HikariConfig();
+                hikariConfig.setRegisterMbeans(true);
+                hikariConfig.setPoolName(properties.containsKey(PROPERTY_POOL_NAME)? properties.get(PROPERTY_POOL_NAME).toString() : "or-pool");
                 hikariConfig.setThreadFactory(new ContainerThreadFactory("Database Connections"));
                 hikariConfig.setDataSourceClassName("org.postgresql.ds.PGSimpleDataSource");
                 hikariConfig.addDataSourceProperty("url", connectionUrl);
+                hikariConfig.addDataSourceProperty("currentSchema", "persistence");
                 hikariConfig.setUsername(username);
                 hikariConfig.setPassword(password);
                 hikariConfig.setConnectionTimeout(connectionTimeoutSeconds * 1000);

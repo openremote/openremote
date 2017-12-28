@@ -19,8 +19,7 @@
  */
 package org.openremote.model.asset;
 
-import org.openremote.model.event.shared.EventFilter;
-import org.openremote.model.event.shared.SharedEvent;
+import org.openremote.model.event.shared.TenantScopedEvent;
 
 /**
  * Published by the server when either tenants or assets are modified, and when that
@@ -35,44 +34,8 @@ import org.openremote.model.event.shared.SharedEvent;
  * </ul>
  * <p>
  */
-public class AssetTreeModifiedEvent extends SharedEvent {
+public class AssetTreeModifiedEvent extends TenantScopedEvent {
 
-    public static class TenantFilter extends EventFilter<AssetTreeModifiedEvent> {
-
-        public static final String FILTER_TYPE = "asset-tree-modified-tenant";
-
-        protected String realmId;
-
-        protected TenantFilter() {
-        }
-
-        public TenantFilter(String realmId) {
-            this.realmId = realmId;
-        }
-
-        public String getRealmId() {
-            return realmId;
-        }
-
-        @Override
-        public String getFilterType() {
-            return FILTER_TYPE;
-        }
-
-        @Override
-        public boolean apply(AssetTreeModifiedEvent event) {
-            return getRealmId().equals(event.getRealmId());
-        }
-
-        @Override
-        public String toString() {
-            return getClass().getSimpleName() + "{" +
-                "realmId='" + realmId + '\'' +
-                '}';
-        }
-    }
-
-    protected String realmId;
     protected String assetId;
     protected boolean newAssetChildren;
 
@@ -80,7 +43,7 @@ public class AssetTreeModifiedEvent extends SharedEvent {
     }
 
     public AssetTreeModifiedEvent(long timestamp, String realmId, String assetId) {
-        super(timestamp);
+        super(timestamp, realmId);
         this.realmId = realmId;
         this.assetId = assetId;
     }
@@ -100,8 +63,9 @@ public class AssetTreeModifiedEvent extends SharedEvent {
      * and relocation of in the tree events. For creation of child asset events, this is the identifier
      * of the realm of a newly created root asset.
      */
+    @Override
     public String getRealmId() {
-        return realmId;
+        return super.getRealmId();
     }
 
     /**

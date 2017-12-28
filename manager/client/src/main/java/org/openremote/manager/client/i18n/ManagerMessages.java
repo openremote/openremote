@@ -375,8 +375,6 @@ public interface ManagerMessages extends Messages {
 
     String templateAsset();
 
-    String invalidTemplateAsset();
-
     String noAssetSelected();
 
     String clearSelection();
@@ -423,7 +421,7 @@ public interface ManagerMessages extends Messages {
 
     String protocolLinkDiscoveryStarted();
 
-    String protocolLinkDiscoverySuccess(@PluralCount int assetCount);
+    String protocolLinkDiscoverySuccess(int assetCount);
 
     String protocolLinkDiscoveryFailure(int failureCode);
 
@@ -444,4 +442,88 @@ public interface ManagerMessages extends Messages {
     String deleteConverterValue();
 
     String linkAssetUsers();
+
+    String waitingForStatus();
+
+    String noAttributesLinkedToSimulator();
+
+    String noRegisteredDevices();
+
+    String registeredDeviceId();
+
+    String deleteRegistration();
+
+    String registeredDeviceType();
+
+    String registeredDeviceLastLogin();
+
+    String registeredDeviceNotificationToken();
+
+    String registeredDeviceDeleted(String deviceId);
+
+    String sendNotification();
+
+    String title();
+
+    String message();
+
+    String notificationAppUrl();
+
+    String enterTitleMessageAppurlForNotification();
+
+    String notificationSentToUser();
+
+    String notificationOpenApplicationDetails();
+
+    String withUser();
+
+    String linkAsset();
+
+    String createAssetLink();
+
+    String noUserSelected();
+
+    String noAssetUserLinks();
+
+    String asset();
+
+    String deleteLink();
+
+    String linkedToUser();
+
+    String userAssetLinkCreated();
+
+    String userAssetLinkDeleted();
+
+    String assetNotInTenant(String displayName);
+
+    String notifications();
+
+    String manageNotifications();
+
+    String allUsers();
+
+    String noNotifications();
+
+    String notificationDeleted(Long id);
+
+    String deleteNotification();
+
+    String deliveryStatus();
+
+    String action();
+
+    String notificationsDeleted();
+
+    String refresh();
+
+    String deleteNotifications();
+
+    String refreshDeviceRegistrations();
+
+    String tenant();
+
+    String publicAccess();
+
+    String shareLink();
 }

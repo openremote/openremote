@@ -27,6 +27,7 @@ import org.openremote.manager.server.setup.AbstractManagerSetup;
 import org.openremote.manager.shared.security.Tenant;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetState;
+import org.openremote.model.asset.UserAsset;
 import org.openremote.model.attribute.*;
 import org.openremote.model.simulator.element.ColorSimulatorElement;
 import org.openremote.model.simulator.element.NumberSimulatorElement;
@@ -49,7 +50,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
     final protected boolean importDemoScenes;
 
     // Update these numbers whenever you change a RULE_STATE flag in test data
-    public static final int DEMO_RULE_STATES_APARTMENT_1 = 15;
+    public static final int DEMO_RULE_STATES_APARTMENT_1 = 18;
     public static final int DEMO_RULE_STATES_APARTMENT_2 = 9;
     public static final int DEMO_RULE_STATES_APARTMENT_3 = 0;
     public static final int DEMO_RULE_STATES_SMART_HOME = DEMO_RULE_STATES_APARTMENT_1 + DEMO_RULE_STATES_APARTMENT_2 + DEMO_RULE_STATES_APARTMENT_3;
@@ -87,7 +88,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
     }
 
     @Override
-    public void execute() throws Exception {
+    public void onStart() throws Exception {
 
         KeycloakDemoSetup keycloakDemoSetup = setupService.getTaskOfType(KeycloakDemoSetup.class);
         Tenant masterTenant = keycloakDemoSetup.masterTenant;
@@ -414,14 +415,6 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         apartment2 = assetStorageService.merge(apartment2);
         apartment2Id = apartment2.getId();
 
-        /* TODO Experimental
-        ServerAsset apartment2UpnpAgent= new ServerAsset("UPnP Agent", AGENT, apartment2);
-        apartment2UpnpAgent.setAttributes(
-            initProtocolConfiguration(new AssetAttribute("upnpConfig1"), UpnpProtocol.PROTOCOL_NAME)
-        );
-        apartment2UpnpAgent = assetStorageService.merge(apartment2UpnpAgent);
-        */
-
         ServerAsset apartment2Livingroom = new ServerAsset("Living Room", ROOM, apartment2);
         apartment2Livingroom.setLocation(apartment2.getLocation());
         apartment2Livingroom.setAttributes(
@@ -462,7 +455,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                 ),
             new AssetAttribute("windowOpen", AttributeType.BOOLEAN, Values.create(false))
                 .setMeta(
-                    new MetaItem(LABEL, Values.create("Window Open"))
+                    new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true))
                 )
         );
         apartment2Livingroom = assetStorageService.merge(apartment2Livingroom);
@@ -521,10 +514,9 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
 
         // ################################ Link demo users and assets ###################################
 
-        identityService.getIdentityProvider().setRestrictedUser(keycloakDemoSetup.testuser3Id, true);
-        assetStorageService.storeUserAsset(keycloakDemoSetup.testuser3Id, apartment1Id);
-        assetStorageService.storeUserAsset(keycloakDemoSetup.testuser3Id, apartment1LivingroomId);
-        assetStorageService.storeUserAsset(keycloakDemoSetup.testuser3Id, apartment1KitchenId);
-        assetStorageService.storeUserAsset(keycloakDemoSetup.testuser3Id, apartment2Id);
+        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.customerATenant.getId(), keycloakDemoSetup.testuser3Id, apartment1Id));
+        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.customerATenant.getId(), keycloakDemoSetup.testuser3Id, apartment1LivingroomId));
+        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.customerATenant.getId(), keycloakDemoSetup.testuser3Id, apartment1KitchenId));
+        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.customerATenant.getId(), keycloakDemoSetup.testuser3Id, apartment2Id));
     }
 }

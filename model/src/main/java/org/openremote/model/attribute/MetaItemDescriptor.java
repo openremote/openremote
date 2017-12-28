@@ -26,12 +26,68 @@ import org.openremote.model.ValidationFailure;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueType;
 
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 
 @JsonSerialize(as = MetaItemDescriptorImpl.class)
 @JsonDeserialize(as = MetaItemDescriptorImpl.class)
 public interface MetaItemDescriptor extends HasUniqueResourceName {
+
+    /**
+     * Control access to meta items when attributes are read/written. The default is
+     * read/write access by regular and super-users only, meta items are considered private.
+     */
+    class Access {
+
+        public static Access ACCESS_PRIVATE = new Access();
+
+        /**
+         * When restricted clients read attributes of the authenticated user's linked
+         * assets, should this meta item be included?
+         */
+        public boolean restrictedRead;
+
+        /**
+         * When restricted clients write attributes of the authenticated user's linked
+         * assets, should this meta item be included?
+         */
+        public boolean restrictedWrite;
+
+        /**
+         * When public clients read asset attributes, should this meta item be
+         * included? Note that public clients can not write asset attributes.
+         */
+        public boolean publicRead;
+
+        /**
+         * Private access only.
+         */
+        public Access() {
+            this(false, false, false);
+        }
+
+        public Access(boolean restrictedRead, boolean restrictedWrite, boolean publicRead) {
+            this.restrictedRead = restrictedRead;
+            this.restrictedWrite = restrictedWrite;
+            this.publicRead = publicRead;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            Access access = (Access) o;
+            return restrictedRead == access.restrictedRead &&
+                restrictedWrite == access.restrictedWrite &&
+                publicRead == access.publicRead;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(restrictedRead, restrictedWrite, publicRead);
+        }
+    }
 
     enum PatternFailure {
         INTEGER,
@@ -56,41 +112,48 @@ public interface MetaItemDescriptor extends HasUniqueResourceName {
     ValueType getValueType();
 
     /**
-     * Indicates if this meta item is always required
+     * Access permissions for read/write operations performed by restricted or public clients.
+     */
+    Access getAccess();
+
+    /**
+     * Indicates if this meta item is always required.
+     * <p>
+     * TODO Currently not used.
      */
     boolean isRequired();
 
     /**
-     * A regex pattern that can be used for basic validation
+     * A regex pattern that can be used for basic validation, can be <code>null</code> to disable validation.
      */
     String getPattern();
 
     /**
      * Get a parameter to show as part of validation feedback for when the pattern matching fails
-     * e.g. Meta Item value must be 'Positive Integer'.
+     * e.g. Meta Item value must be 'Positive Integer'. Can be <code>null</code> if validation is disabled.
      * <p>
      * Values defined in {@link PatternFailure} should support localisation.
      */
     String getPatternFailureMessage();
 
     /**
-     * Gets the maximum number of these meta items allowed per attribute
+     * Gets the maximum number of these meta items allowed per attribute.
      */
     Integer getMaxPerAttribute();
 
     /**
-     * Gets the initial value for new instances of this meta item
+     * Gets the initial value for new instances of this meta item, can be <code>null</code>.
      */
     Value getInitialValue();
 
     /**
-     * Indicates if the value of this meta item is fixed
+     * Indicates if the value of this meta item is fixed and can't be edited.
      */
     boolean isValueFixed();
 
     /**
      * Get optional validation function; this allows {@link MetaItemDescriptor} implementations to do more advanced
-     * validation. If defined this takes priority over all other value checks
+     * validation. If defined this takes priority over all other value checks.
      */
     Optional<Function<Value, Optional<ValidationFailure>>> getValidator();
 }

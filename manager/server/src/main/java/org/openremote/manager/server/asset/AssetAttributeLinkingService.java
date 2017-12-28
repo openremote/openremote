@@ -218,7 +218,7 @@ public class AssetAttributeLinkingService implements ContainerService, Consumer<
         ServerAsset asset = assetStorageService.find(
             new AssetQuery()
                 .id(attributeRef.getEntityId())
-                .select(new AbstractAssetQuery.Select(AbstractAssetQuery.Include.ALL, false, false, attributeRef.getAttributeName()))
+                .select(new AbstractAssetQuery.Select(AbstractAssetQuery.Include.ALL, false, attributeRef.getAttributeName()))
         );
 
         Optional<AssetAttribute> attribute;
@@ -227,5 +227,10 @@ public class AssetAttributeLinkingService implements ContainerService, Consumer<
         }
 
         return attribute.get().getValue().orElse(null);
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "{}";
     }
 }

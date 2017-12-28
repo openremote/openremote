@@ -1,15 +1,15 @@
 <#import "template.ftl" as layout>
 <@layout.mainLayout active='account'; section>
 
-<div class="layout vertical">
+<form action="${url.accountUrl}" class="flex layout vertical or-Form" method="post">
 
-    <div class="or-Headline">
-        <span class="or-HeadlineIcon fa fa-user"></span>
-        <span class="or-HeadlineText">${msg("editAccountHtmlTitle")}</span>
-        <div class="or-HeadlineSub">* ${msg("requiredFields")}</div>
-    </div>
+    <div class="flex or-MainContent">
 
-    <form action="${url.accountUrl}" class="layout vertical or-Form" method="post">
+        <div class="or-Headline">
+            <span class="or-HeadlineIcon fa fa-user"></span>
+            <span class="or-HeadlineText">${msg("editAccountHtmlTitle")}</span>
+            <div class="or-HeadlineSub">* ${msg("requiredFields")}</div>
+        </div>
 
         <input type="hidden" id="stateChecker" name="stateChecker" value="${stateChecker?html}">
 
@@ -59,20 +59,26 @@
             </div>
         </div>
 
+    </div>
+
+    <div class="flex-none or-MainContent">
         <div class="layout horizontal or-FormGroup">
             <div class="or-FormField">
                 <#if url.referrerURI??><a href="${url.referrerURI}">${msg("backToApplication")}/a></#if>
                 <button type="submit"
                         class="or-FormControl or-FormButtonPrimary or-PushButton"
                         name="submitAction" value="Save">
-                    <span class="or-PushButtonIcon fa fa-save"></span><span class="html-face">${msg("doSave")}</span></button>
+                    <span class="or-PushButtonIcon fa fa-save"></span><span class="html-face">${msg("doSave")}</span>
+                </button>
                 <button type="submit"
                         class="or-FormControl or-FormButton or-PushButton"
                         name="submitAction" value="Cancel">
-                    <span class="or-PushButtonIcon fa fa-close"></span><span class="html-face">${msg("doCancel")}</span></button>
+                    <span class="or-PushButtonIcon fa fa-close"></span><span class="html-face">${msg("doCancel")}</span>
+                </button>
             </div>
         </div>
-    </form>
-</div>
+    </div>
+
+</form>
 
 </@layout.mainLayout>

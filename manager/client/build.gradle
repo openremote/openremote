@@ -11,18 +11,18 @@ dependencies {
 
     compile resolveProject(":manager:shared")
 
-    compile "com.google.gwt:gwt-user:$gwtVersion"
     compile "com.google.gwt:gwt-elemental:$gwtVersion"
     compile("com.google.gwt.inject:gin:$ginVersion")
     compile files(['lib/gwt-jackson-0.14.3-SNAPSHOT.jar'])
     //compile "com.github.nmorel.gwtjackson:gwt-jackson:$gwtJacksonVersion"
+    compile "org.jboss.gwt.elemento:elemento-core:0.6.1"
 
     // This is not on regular classpath, only used when compiling GWT/running codeserver
     gwtDev files(['lib/javapoet-1.0.0.jar', 'lib/jackson-annotations-2.8.6-sources.jar'])
     gwtDev "com.google.gwt:gwt-dev:$gwtVersion"
 }
 
-def gwtOutputDir = "${project.buildDir}/gwt/out"
+def gwtOutputDir = "${project.buildDir}/gwt/output"
 def gwtExtraDir = "${project.buildDir}/gwt/extra"
 def gwtWorkDir = "${project.buildDir}/gwt/work"
 def gwtCacheDir = "${project.buildDir}/gwt/cache"
@@ -30,10 +30,10 @@ def gwtLauncherDir = "${project.projectDir}/src/main/webapp/gwt"
 
 task compileGwt(dependsOn: classes, type: JavaExec) {
 
-    inputs.file(sourceSets.main.java.srcDirs).skipWhenEmpty()
+    inputs.files(sourceSets.main.java.srcDirs).skipWhenEmpty()
     inputs.dir sourceSets.main.output.resourcesDir
-    inputs.file(resolveProject(":model").sourceSets.main.java.srcDirs[0]).skipWhenEmpty()
-    inputs.file(resolveProject(":manager:shared").sourceSets.main.java.srcDirs[0]).skipWhenEmpty()
+    inputs.dir(resolveProject(":model").sourceSets.main.java.srcDirs[0]).skipWhenEmpty()
+    inputs.dir(resolveProject(":manager:shared").sourceSets.main.java.srcDirs[0]).skipWhenEmpty()
     outputs.dir gwtOutputDir
 
     doFirst {
@@ -45,7 +45,7 @@ task compileGwt(dependsOn: classes, type: JavaExec) {
         [configurations.gwtDev,
          sourceSets.main.java.srcDirs,
          sourceSets.main.output.resourcesDir,
-         sourceSets.main.output.classesDir,
+         sourceSets.main.output.classesDirs,
          sourceSets.main.compileClasspath]
     }
     maxHeapSize = "1024M"
@@ -85,12 +85,11 @@ task compileGwt(dependsOn: classes, type: JavaExec) {
     args = [
             "org.openremote.manager.Manager", // The production GWT module
             "-war", gwtOutputDir,
-            "-logLevel", "INFO",
+            "-logLevel", "ERROR",
             "-localWorkers", "2",
             "-extra", gwtExtraDir,
             "-generateJsInteropExports",
-            "-logLevel", "INFO",
-            "-style", "PRETTY"
+            "-style", "OBFUSCATED"
     ]
 }
 
@@ -105,7 +104,7 @@ task gwtSuperDev(dependsOn: classes, type: JavaExec) {
         [configurations.gwtDev,
          sourceSets.main.java.srcDirs,
          sourceSets.main.output.resourcesDir,
-         sourceSets.main.output.classesDir,
+         sourceSets.main.output.classesDirs,
          sourceSets.main.compileClasspath]
     }
     maxHeapSize = "1024M"
@@ -147,21 +146,23 @@ task gwtSuperDev(dependsOn: classes, type: JavaExec) {
     jvmArgs("-Dgwt.persistentunitcachedir=$gwtCacheDir")
 }
 
+installDist {
+    dependsOn resolveTask(":manager:client:src:main:webapp:installDist")
+}
+
 distributions {
     main {
         contents {
             from("src/main/webapp") {
                 into "webapp"
-                exclude "gwt"
+                exclude "gwt", "build.gradle", "bower.json"
             }
+            /* You can comment out this block to skip GWT compilation for fast testing the build
+            */
             from(compileGwt.outputs) {
                 into "webapp/gwt"
                 exclude "WEB-INF"
             }
         }
     }
-}
-
-installDist {
-    into "${resolveProject(":manager").buildDir}/install/$distributions.main.baseName"
 }

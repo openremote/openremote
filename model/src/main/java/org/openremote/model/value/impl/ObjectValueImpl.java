@@ -19,6 +19,8 @@ import org.openremote.model.util.Pair;
 import org.openremote.model.value.*;
 
 import java.util.*;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class ObjectValueImpl extends ValueImpl implements ObjectValue {
@@ -47,7 +49,12 @@ public class ObjectValueImpl extends ValueImpl implements ObjectValue {
 
     @Override
     public Optional<Value> get(String key) {
-        return map.containsKey(key) ? Optional.of(map.get(key)) : Optional.empty();
+        return map.containsKey(key) ? Optional.ofNullable(map.get(key)) : Optional.empty();
+    }
+
+    @Override
+    public boolean keyContainsNull(String key) {
+        return map.containsKey(key) && map.get(key) == null;
     }
 
     @Override
@@ -87,7 +94,7 @@ public class ObjectValueImpl extends ValueImpl implements ObjectValue {
 
     @Override
     public Stream<Pair<String, Value>> stream() {
-        return Arrays.stream(keys()).map(key -> new Pair<>(key, get(key).get()));
+        return Arrays.stream(keys()).map(key -> new Pair<>(key, get(key).orElse(null)));
     }
 
     @Override
@@ -102,21 +109,13 @@ public class ObjectValueImpl extends ValueImpl implements ObjectValue {
 
     @Override
     public ObjectValue put(String key, Value value) {
-        if (value == null) {
-            map.remove(key);
-        } else {
-            map.put(key, value);
-        }
+        map.put(key, value);
         return this;
     }
 
     @Override
     public ObjectValue put(String key, String value) {
-        if (value == null) {
-            remove(key);
-        } else {
-            put(key, factory.create(value));
-        }
+        map.put(key, factory.create(value));
         return this;
     }
 
@@ -156,10 +155,8 @@ public class ObjectValueImpl extends ValueImpl implements ObjectValue {
                 objCtx.setCurrentKey(key);
                 if (visitor.visitKey(objCtx.getCurrentKey(), objCtx)) {
                     Optional<Value> value = get(key);
-                    if (value.isPresent()) {
-                        visitor.accept(value.get(), objCtx);
-                        objCtx.setFirst(false);
-                    }
+                    visitor.accept(value.orElse(null), objCtx);
+                    objCtx.setFirst(false);
                 }
             }
         }
@@ -176,7 +173,7 @@ public class ObjectValueImpl extends ValueImpl implements ObjectValue {
         if (!(o instanceof ObjectValueImpl))
             return false;
         ObjectValueImpl that = (ObjectValueImpl) o;
-        return equalsIgnoreKeys(that);
+        return equalsIgnoreKeys(that, key -> false);
     }
 
     @Override
@@ -188,19 +185,26 @@ public class ObjectValueImpl extends ValueImpl implements ObjectValue {
     }
 
     @Override
-    public boolean equalsIgnoreKeys(ObjectValue that, String... ignoreKeys) {
+    public boolean equalsIgnoreKeys(ObjectValue that, Predicate<String> ignoreKeyPredicate) {
         if (!(that instanceof ObjectValueImpl))
             return false;
-        ObjectValueImpl objectValueImpl = (ObjectValueImpl)that;
+        ObjectValueImpl thatImpl = (ObjectValueImpl) that;
 
-        if (!this.map.keySet().equals(objectValueImpl.map.keySet()))
+        Set<String> thisKeys = this.map.keySet().stream()
+            .filter(key -> ignoreKeyPredicate == null || !ignoreKeyPredicate.test(key))
+            .collect(Collectors.toSet());
+        Set<String> thatKeys = this.map.keySet().stream()
+            .filter(key -> ignoreKeyPredicate == null || !ignoreKeyPredicate.test(key))
+            .collect(Collectors.toSet());
+
+        if (!thisKeys.equals(thatKeys))
             return false;
 
         for (Map.Entry<String, Value> entry : this.map.entrySet()) {
-            if (Arrays.asList(ignoreKeys).contains(entry.getKey()))
+            if (ignoreKeyPredicate != null && ignoreKeyPredicate.test(entry.getKey()))
                 continue;
             Value mapAValue = entry.getValue();
-            Value mapBValue = objectValueImpl.map.get(entry.getKey());
+            Value mapBValue = thatImpl.map.get(entry.getKey());
             if (!mapAValue.equals(mapBValue)) {
                 return false;
             }

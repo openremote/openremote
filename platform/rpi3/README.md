@@ -24,7 +24,7 @@ Test the SSH connection with: `ssh openremote@<IP of your Raspberry Pi 3>`
 Next copy from your local machine the OpenRemote app to the Raspberry Pi 3 (there is not enough space on boot partition to include it there):
 
 ```
-scp -r manager/build/install/client manager/build/install/server openremote@<IP of your Raspberry Pi3>:/home/openremote/app/
+scp -r manager/build/install/manager/client manager/build/install/manager/server openremote@<IP of your Raspberry Pi3>:/home/openremote/app/
 ```
 
 Continue installation by connecting with SSH and run on the Raspberry Pi 3:
@@ -37,7 +37,7 @@ This will download packages from the Internet, so make sure your machine is conn
 Start OpenRemote with:
 
 ```
-sudo DATABASE_PASSWORD='dbsecret' SETUP_BASIC_IDENTITY_ADMIN_PASSWORD='secret123' IDENTITY_NETWORK_HOST=<IP of your Raspberry Pi3> ./openremote-run.sh
+sudo DATABASE_PASSWORD='dbsecret' SETUP_ADMIN_PASSWORD='secret123' IDENTITY_NETWORK_HOST=<IP of your Raspberry Pi3> ./openremote-run.sh
 ```
 
 Open the Manager UI on `http://<IP of your Raspberry Pi 3>/` and login with `admin` and your password.

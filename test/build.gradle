@@ -1,0 +1,42 @@
+apply plugin: "java"
+apply plugin: "groovy"
+
+dependencies {
+
+    compile "org.codehaus.groovy:groovy:$groovyVersion"
+
+    compile resolveProject(":manager:server")
+    compile resolveProject(":manager:client")
+
+    compile "junit:junit:$junitVersion"
+    compile "org.spockframework:spock-core:$spockVersion"
+
+    compile "org.glassfish.tyrus:tyrus-client:$tyrusVersion"
+    compile "org.glassfish.tyrus:tyrus-container-grizzly-client:$tyrusVersion"
+    compile "org.objenesis:objenesis:$objenesisVersion"
+
+    // We must have this on the regular classpath because we do weird
+    // things with GWT in tests, but without the transitive runtime
+    // dependencies for code server
+    compile("com.google.gwt:gwt-dev:$gwtVersion") {
+        exclude group: "com.google.code.gson"
+        exclude group: "org.ow2.asm"
+        exclude group: "colt"
+        exclude group: "ant"
+        exclude group: "commons-collections"
+        exclude group: "commons-io"
+        exclude group: "com.ibm.icu"
+        exclude group: "tapestry"
+        exclude group: "net.sourceforge.htmlunit"
+        exclude group: "org.eclipse.jetty"
+    }
+
+    compile("com.github.calimero:calimero-server:$calimeroVersion") {
+        // Libraries should not depend on a logging implementation and/or alpha versions!
+        exclude group: "org.slf4j"
+    }
+}
+
+test {
+    workingDir = findProject(":openremote") != null ? resolveProject("").projectDir : rootProject.projectDir
+}

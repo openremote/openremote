@@ -19,7 +19,6 @@
  */
 package org.openremote.manager.client.assets.asset;
 
-import com.google.gwt.place.shared.Place;
 import com.google.gwt.user.client.ui.AcceptsOneWidget;
 import com.google.gwt.user.client.ui.IsWidget;
 import com.google.inject.Provider;
@@ -211,6 +210,7 @@ public abstract class AbstractAssetActivity<V
         view.setLocation(asset.getCoordinates());
         view.showDroppedPin(asset.getGeoFeature(20));
         view.flyTo(asset.getCoordinates());
+        view.setAccessPublicRead(asset.isAccessPublicRead());
     }
 
     @Override
@@ -234,11 +234,6 @@ public abstract class AbstractAssetActivity<V
     @Override
     public String getAssetEditPlaceToken() {
         return environment.getPlaceHistoryMapper().getToken(new AssetEditPlace(assetId));
-    }
-
-    @Override
-    public String getAssetLinkUsersPlaceToken() {
-        return environment.getPlaceHistoryMapper().getToken(new AssetLinkUsersPlace(assetId));
     }
 
     @Override
@@ -365,8 +360,10 @@ public abstract class AbstractAssetActivity<V
     }
 
     protected Optional<MetaItemDescriptor> getMetaItemDescriptor(MetaItem item) {
-        return AssetMeta
-            .getAssetMeta(item.getName().orElse(""))
+        // TODO Should use meta item descriptors from server
+        return Arrays.stream(AssetMeta.values())
+            .filter(assetMeta -> assetMeta.getUrn().equals(item.getName().orElse("")))
+            .findFirst()
             .map(assetMeta -> (MetaItemDescriptor)assetMeta);
     }
 
@@ -403,10 +400,11 @@ public abstract class AbstractAssetActivity<V
 
         // Meta item value is read only if value is fixed
         if (valueHolder instanceof MetaItem) {
-            return ((MetaItem) valueHolder).getName()
-                .flatMap(AssetMeta::getAssetMeta)
+            // TODO Should use meta item descriptors from server
+            return Arrays.stream(AssetMeta.values())
+                .filter(assetMeta -> assetMeta.getUrn().equals(((MetaItem) valueHolder).getName()))
                 .map(AssetMeta::isValueFixed)
-                .orElse(false);
+                .findFirst().orElse(false);
         }
 
         if (valueHolder instanceof AssetAttribute) {

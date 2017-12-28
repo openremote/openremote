@@ -57,6 +57,7 @@ public class UserControlsImpl extends AbstractAppPanel implements UserControls {
     public UserControlsImpl() {
         super(GWT.create(UI.class));
         setAutoHide(true);
+        setAutoHideOnHistoryEvents(true);
     }
 
     @Override

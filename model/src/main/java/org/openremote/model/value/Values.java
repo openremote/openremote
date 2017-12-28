@@ -15,9 +15,16 @@
  */
 package org.openremote.model.value;
 
+import org.openremote.model.asset.AssetAttribute;
+import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.value.impl.ValueFactoryImpl;
 
+import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Vends out implementations of {@link Value} and {@link ValueFactory}.
@@ -75,53 +82,19 @@ public class Values {
      * Will attempt to coerce the value into a boolean (where it makes sense)
      */
     public static Optional<Boolean> getBooleanCoerced(Value value) {
-        if (value == null) {
-            return Optional.empty();
-        }
 
-        switch (value.getType()) {
-            case OBJECT:
-                return Optional.empty();
-            case ARRAY:
-                return Optional.empty();
-            case STRING:
-                return Optional.of(Boolean.parseBoolean(value.toString().toLowerCase()));
-            case NUMBER:
-                int number = Values.getNumber(value).map(Double::intValue).orElse(2);
-                return number == 0 ? Optional.of(false) : number == 1 ? Optional.of(true) : Optional.empty();
-            case BOOLEAN:
-                return Values.getBoolean(value);
-        }
-
-        return Optional.empty();
+        return convert(value, BooleanValue.class)
+            .map(BooleanValue::getBoolean);
     }
 
     /**
      * Attempts to coerce the value into an integer (where it makes sense)
      */
     public static Optional<Integer> getIntegerCoerced(Value value) {
-        if (value == null) {
-            return Optional.empty();
-        }
 
-        switch (value.getType()) {
-            case OBJECT:
-                return Optional.empty();
-            case ARRAY:
-                return Optional.empty();
-            case STRING:
-                try {
-                    Optional.of(Integer.parseInt(value.toString()));
-                } catch (NumberFormatException e) {
-                    return Optional.empty();
-                }
-            case NUMBER:
-                return Values.getNumber(value).map(Double::intValue);
-            case BOOLEAN:
-                return Values.getBoolean(value).map(b -> b ? 1 : 0);
-        }
-
-        return Optional.empty();
+        return convert(value, NumberValue.class)
+            .map(NumberValue::getNumber)
+            .map(Double::intValue);
     }
 
     public static Optional<ObjectValue> getObject(Value value) {
@@ -132,4 +105,141 @@ public class Values {
         return cast(ArrayValue.class, value);
     }
 
+    public static <T extends Value> Optional<List<T>> getArrayElements(ArrayValue arrayValue,
+                                                                       Class<T> elementType,
+                                                                       boolean throwOnError,
+                                                                       boolean includeNulls) throws ClassCastException {
+        return getArrayElements(arrayValue, elementType, throwOnError, includeNulls, value -> value);
+    }
+
+    @SuppressWarnings("unchecked")
+    public static <T extends Value, U> Optional<List<U>> getArrayElements(ArrayValue arrayValue,
+                                                                          Class<T> elementType,
+                                                                          boolean throwOnError,
+                                                                          boolean includeNulls,
+                                                                          Function<T, U> converter)
+        throws ClassCastException, IllegalArgumentException {
+
+        if (arrayValue == null || arrayValue.isEmpty() || elementType == null) {
+            return Optional.empty();
+        }
+
+        if (converter == null) {
+            if (throwOnError) {
+                throw new IllegalArgumentException("Converter cannot be null");
+            }
+            return Optional.empty();
+        }
+
+        Stream<Value> values = arrayValue.stream();
+        if (!throwOnError) {
+            values = values.filter(value -> value != null && value.getType().getModelType() == elementType);
+        }
+
+        Stream<U> stream = values.map(value -> (T)value).map(converter);
+
+        if (!includeNulls) {
+            stream = stream.filter(Objects::nonNull);
+        }
+
+        return Optional.of(stream.collect(Collectors.toList()));
+    }
+
+    @SuppressWarnings("unchecked")
+    public static <T extends Value> Optional<T> getMetaItemValueOrThrow(AssetAttribute attribute,
+                                                                        String name,
+                                                                        Class<T> valueClazz,
+                                                                        boolean throwIfMetaMissing,
+                                                                        boolean throwIfValueMissing)
+        throws IllegalArgumentException {
+
+        Optional<MetaItem> metaItem = attribute.getMetaItem(name);
+
+        if (!metaItem.isPresent()) {
+            if (throwIfMetaMissing) {
+                throw new IllegalArgumentException("Required meta item is missing: " + name);
+            }
+
+            return Optional.empty();
+        }
+
+        Optional<Value> value = metaItem.get().getValue();
+
+        if (!value.isPresent()) {
+            if (throwIfValueMissing) {
+                throw new IllegalArgumentException("Meta item value is missing: " + name);
+            }
+            return Optional.empty();
+        }
+
+        if (value.get().getType().getModelType() != valueClazz) {
+            throw new IllegalArgumentException("Meta item value is of incorrect type: expected="
+                + valueClazz.getName() + "; actual=" + value.get().getType().getModelType().getName());
+        }
+
+
+        return Optional.of((T)value.get());
+    }
+
+    public static <T extends Value> Optional<T> convert(Value value, Class<T> toType) {
+        return convert(value, ValueType.fromModelType(toType));
+    }
+
+    @SuppressWarnings("unchecked")
+    public static <T extends Value> Optional<T> convert(Value value, ValueType toType) {
+        if (value == null) {
+            return Optional.empty();
+        }
+
+        T outputValue = null;
+
+        if (toType == value.getType()) {
+            outputValue = (T) value;
+        } else if (toType == ValueType.STRING) {
+            outputValue = (T) Values.create(value.toString());
+        } else {
+            switch (value.getType()) {
+
+                case STRING:
+                    switch (toType) {
+
+                        case NUMBER:
+                            try {
+                                double dbl = Double.parseDouble(value.toString());
+                                outputValue = (T) Values.create(dbl);
+                            } catch (NumberFormatException e) {
+                                return Optional.empty();
+                            }
+                            break;
+                        case BOOLEAN:
+                            outputValue = (T) Values.create(Boolean.parseBoolean(value.toString()));
+                            break;
+                    }
+                    break;
+                case NUMBER:
+                    switch (toType) {
+
+                        case BOOLEAN:
+                            outputValue = (T) Values.getNumber(value)
+                                .map(Double::intValue)
+                                .map(i -> i == 0 ? Boolean.FALSE : i == 1 ? Boolean.TRUE : null)
+                                .map(Values::create)
+                                .orElse(null);
+                            break;
+                    }
+                    break;
+                case BOOLEAN:
+
+                    switch (toType) {
+
+                        case NUMBER:
+                            outputValue = (T) Values.create(((BooleanValue)value).getBoolean() ? 1 : 0);
+                            break;
+                    }
+                    break;
+            }
+        }
+
+        return Optional.ofNullable(outputValue);
+    }
 }

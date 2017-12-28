@@ -19,32 +19,16 @@
     <g:HTMLPanel styleName="flex layout vertical">
 
         <g:HTMLPanel
-                styleName="flex-none layout horizontal center end-justified {widgetStyle.SecondaryNavHorizontal}">
+                styleName="flex-none layout horizontal center end-justified {widgetStyle.SecondaryNav}">
 
         </g:HTMLPanel>
 
-        <div class="flex-none layout vertical {widgetStyle.MainContent}" style="z-index:1;">
+        <w:Form ui:field="form" addStyleNames="flex">
 
-            <w:Headline icon="list-alt"
-                        text="{managerMessages.syslog}"/>
+            <g:FlowPanel styleName="flex-none layout vertical {widgetStyle.MainContent}">
 
-            <g:FlowPanel
-                    styleName="flex-none layout horizontal {style.formMessages} {widgetStyle.FormMessages} success"
-                    visible="false">
-                <w:IconLabel icon="check"
-                             addStyleNames="{widgetStyle.MessagesIcon}"/>
-                <g:FlowPanel ui:field="formMessagesSuccess"/>
-            </g:FlowPanel>
-
-            <g:FlowPanel
-                    styleName="flex-none layout horizontal {style.formMessages} {widgetStyle.FormMessages} error"
-                    visible="false">
-                <w:IconLabel icon="warning"
-                             addStyleNames="{widgetStyle.MessagesIcon}"/>
-                <g:FlowPanel ui:field="formMessagesError"/>
-            </g:FlowPanel>
-
-            <w:Form ui:field="form">
+                <w:Headline icon="list-alt"
+                            text="{managerMessages.syslog}"/>
 
                 <w:FormGroup>
                     <w:label>
@@ -77,13 +61,13 @@
                     </w:actions>
                 </w:FormGroup>
 
-            </w:Form>
+            </g:FlowPanel>
 
-        </div>
+            <syslog:SyslogItems ui:field="syslogItems"/>
 
-        <syslog:SyslogItems ui:field="syslogItems"/>
+            <syslog:SyslogFilter ui:field="syslogFilter"/>
 
-        <syslog:SyslogFilter ui:field="syslogFilter"/>
+        </w:Form>
 
     </g:HTMLPanel>
 

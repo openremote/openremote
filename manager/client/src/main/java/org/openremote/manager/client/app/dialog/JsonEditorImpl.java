@@ -21,9 +21,9 @@ package org.openremote.manager.client.app.dialog;
 
 import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.InlineLabel;
-import com.google.gwt.user.client.ui.TextArea;
 import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.style.WidgetStyle;
+import org.openremote.manager.client.widget.FormTextArea;
 import org.openremote.manager.client.widget.IconLabel;
 import org.openremote.manager.client.widget.PushButton;
 import org.openremote.model.value.Value;
@@ -40,7 +40,7 @@ public class JsonEditorImpl implements JsonEditor {
     final protected WidgetStyle widgetStyle;
     final protected ManagerMessages managerMessages;
 
-    TextArea editor;
+    FormTextArea editor;
     FlowPanel errorPanel = new FlowPanel();
     Consumer<Value> onApply;
     Runnable onReset;
@@ -108,8 +108,10 @@ public class JsonEditorImpl implements JsonEditor {
         errorPanel.setVisible(false);
         dialog.getContentPanel().add(errorPanel);
 
-        editor = new TextArea();
+        editor = new FormTextArea();
         editor.setHeight("30em");
+        editor.setResizable(false);
+        editor.setBorder(true);
         editor.setReadOnly(onApply == null);
         dialog.getContentPanel().add(editor);
     }

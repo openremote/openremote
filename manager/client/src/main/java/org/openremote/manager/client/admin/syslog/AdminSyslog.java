@@ -20,11 +20,10 @@
 package org.openremote.manager.client.admin.syslog;
 
 import org.openremote.manager.client.admin.AdminContent;
-import org.openremote.manager.client.widget.FormView;
 import org.openremote.model.syslog.SyslogEvent;
 import org.openremote.model.syslog.SyslogLevel;
 
-public interface AdminSyslog extends AdminContent, FormView {
+public interface AdminSyslog extends AdminContent {
 
     interface Presenter {
 

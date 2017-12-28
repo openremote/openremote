@@ -149,9 +149,7 @@ public class SyslogService extends Handler implements ContainerService {
         if (persistenceService == null)
             return;
         synchronized (batch) {
-            persistenceService.doTransaction(em -> {
-                em.createQuery("delete from SyslogEvent e").executeUpdate();
-            });
+            persistenceService.doTransaction(em -> em.createQuery("delete from SyslogEvent e").executeUpdate());
         }
     }
 
@@ -159,10 +157,10 @@ public class SyslogService extends Handler implements ContainerService {
         if (persistenceService == null)
             return new ArrayList<>();
         return persistenceService.doReturningTransaction(em -> {
-            List list = em.createQuery("select e from SyslogEvent e where e.level >= :level order by e.timestamp desc")
-                .setParameter("level", level)
-                .setMaxResults(limit)
-                .getResultList();
+            List<SyslogEvent> list = em.createQuery(
+                "select e from SyslogEvent e where e.level >= :level order by e.timestamp desc",
+                SyslogEvent.class
+            ).setParameter("level", level).setMaxResults(limit).getResultList();
             Collections.reverse(list);
             return list;
         });
@@ -196,10 +194,16 @@ public class SyslogService extends Handler implements ContainerService {
                 return;
             LOG.fine("Flushing syslog batch: " + transientEvents.size());
             persistenceService.doTransaction(em -> {
-                for (SyslogEvent e : transientEvents) {
-                    em.persist(e);
+                try {
+                    for (SyslogEvent e : transientEvents) {
+                        em.persist(e);
+                    }
+                    em.flush();
+                } catch (RuntimeException ex) {
+                    // This is not a big problem, it may happen on shutdown of database connections during tests, just inform the user
+                    // TODO Or is it a serious problem and we need to escalate? In any case, just throwing the ex is not good
+                    LOG.info("Error flushing syslog to database, some events are lost: " + ex);
                 }
-                em.flush();
             });
         }
     }

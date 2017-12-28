@@ -35,7 +35,7 @@ public class BasicIdentityInitSetup implements Setup {
     }
 
     @Override
-    public void execute() {
+    public void onStart() {
         // Configure the master realm
         persistenceService.doTransaction(em -> em.unwrap(Session.class).doWork(connection -> {
             String sql = "insert into REALM(ID, NAME, ENABLED) values ('master', 'master', true)";

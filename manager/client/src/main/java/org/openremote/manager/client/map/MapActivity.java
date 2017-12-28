@@ -40,7 +40,6 @@ import org.openremote.model.attribute.AttributeType;
 import org.openremote.model.event.bus.EventBus;
 import org.openremote.model.event.bus.EventRegistration;
 import org.openremote.model.geo.GeoJSON;
-import org.openremote.model.util.Pair;
 import org.openremote.model.value.Values;
 
 import javax.inject.Inject;

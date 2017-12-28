@@ -5,3 +5,4 @@ org.openremote.agent.protocol.knx.KNXProtocol
 org.openremote.agent.protocol.upnp.UpnpProtocol
 org.openremote.agent.protocol.velbus.VelbusSocketProtocol
 org.openremote.agent.protocol.velbus.VelbusSerialProtocol
+org.openremote.agent.protocol.http.HttpClientProtocol

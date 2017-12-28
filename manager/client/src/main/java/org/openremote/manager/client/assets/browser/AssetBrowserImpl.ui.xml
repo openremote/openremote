@@ -36,8 +36,9 @@
                  addStyleNames="{style.view}">
 
         <g:HTMLPanel
-                styleName="layout horizontal center {widgetStyle.SecondaryNavHorizontal}">
+                styleName="layout horizontal center {widgetStyle.SecondaryNav}">
 
+            <!-- TODO Depends on AssetQuery/Rules Designer work
             <w:FormInputText ui:field="searchInput"
                              addStyleNames="flex {style.navItemFirst} {style.searchInput} {widgetStyle.SecondaryNavItem}"
                              autofocus="true"
@@ -55,11 +56,12 @@
                           text="{managerMessages.sort}"
                           icon="sort"
                           tabIndex="99999"/>
+          -->
 
         </g:HTMLPanel>
 
         <g:HTMLPanel
-                styleName="layout horizontal center {widgetStyle.SecondaryNavHorizontal}">
+                styleName="layout horizontal center {widgetStyle.SecondaryNav}">
 
             <w:Hyperlink
                     ui:field="createAssetLink"

@@ -19,7 +19,6 @@
  */
 package org.openremote.model.asset.agent;
 
-import org.kie.api.task.model.User;
 import org.openremote.model.AbstractValueHolder;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;

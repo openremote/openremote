@@ -25,6 +25,7 @@ import javax.websocket.CloseReason;
 import javax.websocket.Endpoint;
 import javax.websocket.EndpointConfig;
 import javax.websocket.Session;
+import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -71,8 +72,12 @@ public class WebsocketAdapter extends Endpoint {
     @Override
     public void onError(Session session, Throwable thr) {
         super.onError(session, thr);
-        if (LOG.isLoggable(Level.INFO))
-            LOG.log(Level.INFO, "Websocket session error: " + session.getId(), thr);
+        
+        // Ignore connection reset
+        if (!(thr instanceof IOException && thr.getMessage().equals("Connection reset by peer"))) {
+            if (LOG.isLoggable(Level.INFO))
+                LOG.log(Level.INFO, "Websocket session error: " + session.getId(), thr);
+        }
         this.consumer.sendMessage(session.getId(), getHandshakeAuth(session), thr, exchange -> {
             exchange.getIn().setHeader(WebsocketConstants.SESSION, session);
             exchange.getIn().setHeader(WebsocketConstants.SESSION_CLOSE_ERROR, true);

@@ -34,4 +34,11 @@ public class FCMBaseMessage {
     public void setTo(String to) {
         this.to = to;
     }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "{" +
+            "to='" + to + '\'' +
+            '}';
+    }
 }

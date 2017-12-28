@@ -26,6 +26,7 @@ import org.kie.api.runtime.rule.Match;
 
 import java.util.List;
 import java.util.function.Supplier;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -33,16 +34,12 @@ import java.util.logging.Logger;
  */
 public class RuleExecutionLogger extends DefaultAgendaEventListener {
 
-    private static final Logger LOG = Logger.getLogger(RuleExecutionLogger.class.getName());
-
     final protected Supplier<String> contextSupplier;
+    final protected Logger LOG;
 
-    public RuleExecutionLogger(Supplier<String> contextSupplier) {
+    public RuleExecutionLogger(Supplier<String> contextSupplier, Logger LOG) {
         this.contextSupplier = contextSupplier;
-    }
-
-    public static Logger getLOG() {
-        return LOG;
+        this.LOG = LOG;
     }
 
     @Override
@@ -79,22 +76,16 @@ public class RuleExecutionLogger extends DefaultAgendaEventListener {
         }
 
         if (ruleName.startsWith("\"--")) {
-            LOG.finest(String.format("*** On " + contextSupplier.get() + "\nRule %s\n" +
-                    "\tDeclarations \n%s" +
-                    "\tLHS objects(antecedents)\n%s", ruleName, declarationLog, objectLog));
-            return;
+            LOG.log(Level.INFO,
+                String.format("*** On %s\n*** Rule fired %s" +
+                    "\tDeclarations \n---------------------------------\n%s\n" +
+                    "\tLHS objects(antecedents)\n---------------------------------\n%s", contextSupplier.get(), ruleName, declarationLog, objectLog)
+            );
+        } else if (ruleName.startsWith("\"-")) {
+            LOG.log(Level.INFO,
+                String.format("*** On %s\n *** Rule fired %s", contextSupplier.get(), ruleName)
+            );
         }
-
-        if (ruleName.startsWith("\"-")) {
-            LOG.fine(String.format("*** On " + contextSupplier.get() + "\nRule %s\n" +
-                    "\tDeclarations \n%s" +
-                    "\tLHS objects(antecedents)\n%s", ruleName, declarationLog, objectLog));
-            return;
-        }
-
-        LOG.info(String.format("*** On " + contextSupplier.get() + "\nRule %s\n" +
-            "\tDeclarations \n%s" +
-            "\tLHS objects(antecedents)\n%s", ruleName, declarationLog, objectLog));
     }
 
     /**

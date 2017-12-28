@@ -1,0 +1,51 @@
+<!doctype html>
+<html>
+<head>
+    <title>OpenRemote Console Application</title>
+
+    <!-- ############## YOU NEED THESE LINES IN YOUR OPENREMOTE APP ############### -->
+    <script src="bower_components/webcomponentsjs/webcomponents-lite.js"></script>
+    <link rel="import" href="components/openremote/openremote-app.html">
+    <!-- ################################################################################## -->
+
+</head>
+<body>
+<h1>The OpenRemote console application of the <code>customerA</code> tenant</h1>
+<p>
+    On your OpenRemote installation, edit the HTML content in <code>deployment/manager/consoles/customerA/</code>.
+</p>
+<p>
+    You can duplicate the <code>customerA</code> directory to create new console applications for other tenants/realms.
+</p>
+<p>
+    View the source in your web browser and follow the examples on this page to write your own OpenRemote
+    application, it's easy with <a href="https://www.webcomponents.org/">Web Components</a>.
+</p>
+
+
+<div>
+    <openremote-app tenant="customerA" login-when-ready="true" timeout="10" verbose="true">
+        <!--Execute AssetQuery and subscribe for attribute changes-->
+        <openremote-asset type="room" asset-id="blabla">
+            <p>
+                Tempature of the room is,<span data-attribute="currentTemp"></span>
+            </p>
+            <form>
+                <input data-attribute="setTemp" data-validate>
+                <submit data-asset-action></submit>
+            </form>
+            <p data-visible="humidityBool">
+                Humidity too high!
+            </p>
+            <p data-attached="co2Bool">
+                Too much CO2!
+            </p>
+        </openremote-asset>
+        <button onclick="document.querySelector('openremote-app').connect()">Click to connect</button>
+
+    </openremote-app>
+</div>
+
+
+</body>
+</html>

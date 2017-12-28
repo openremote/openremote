@@ -5,11 +5,14 @@ dependencies {
 
     compile resolveProject(":container")
 
-    compile "org.drools:drools-compiler:$droolsVersion"
-    compile "org.drools:drools-decisiontables:$droolsVersion"
+    compile "io.netty:netty-transport-rxtx:$nettyVersion"
+    compile "io.netty:netty-codec:$nettyVersion"
+    compile "com.neuronrobotics:nrjavaserial:$nrjavaserialVersion"
 
     compile "com.luckycatlabs:SunriseSunsetCalculator:$sunriseSunsetCalculatorVersion"
-    compile "org.quartz-scheduler:quartz:$quartzVersion"
+    compile("org.quartz-scheduler:quartz:$quartzVersion") {
+        exclude group: "c3p0"
+    }
 
     compile("com.github.calimero:calimero-core:$calimeroVersion") {
         // Libraries should not depend on a logging implementation and/or alpha versions!
@@ -23,7 +26,9 @@ dependencies {
 
     compile "org.fourthline.cling:cling-core:$clingVersion"
 
-    compile "com.neuronrobotics:nrjavaserial:$nrjavaserialVersion"
-    
     compile "net.sf.saxon:Saxon-HE:$saxonHEVersion"
+}
+
+jar {
+    archivesBaseName = "openremote-${project.name}"
 }

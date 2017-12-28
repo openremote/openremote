@@ -130,7 +130,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
 
     // TODO: Some of these options should be configurable depending on expected load etc.
     // Message topic for communicating individual asset attribute changes
-    public static final String ASSET_QUEUE = "seda://AssetQueue?waitForTaskToComplete=IfReplyExpected&timeout=10000&purgeWhenStopping=true&discardIfNoConsumers=false&size=1000";
+    public static final String ASSET_QUEUE = "seda://AssetQueue?waitForTaskToComplete=IfReplyExpected&timeout=10000&purgeWhenStopping=true&discardIfNoConsumers=false&size=25000";
 
     protected TimerService timerService;
     protected ManagerIdentityService identityService;
@@ -229,6 +229,30 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
             .to(ASSET_QUEUE);
 
         // Process attribute events
+        /* TODO This message consumer should be transactionally consistent with the database, this is currenlty not the case
+
+         Our "if I have not processed this message before" duplicate detection:
+
+          - discard events with source time greater than server processing time (future events)
+          - discard events with source time less than last applied/stored event source time
+          - allow the rest (also events with same source time, order of application undefined)
+
+         Possible improvements moving towards at-least-once:
+
+          - Hibernate ThreadLocal Session & Transaction for the whole Camel Exchange/route
+            0. Receive attribute event, security/404 checks
+            1. Open DB local transaction
+            2. Read last asset state
+            3. Write non-duplicate attribute event
+            4. Commit DB local transaction
+            5. Commit reception on message broker
+
+          - See pseudocode here: http://activemq.apache.org/should-i-use-xa.html
+
+          - Replace at-most-once ClientEventService with at-least-once capable, embeddable message broker/protocol
+
+          - Do we want JMS/AMQP/WSS or SOME_API/MQTT/WSS? ActiveMQ or Moquette?
+        */
         from(ASSET_QUEUE)
             .routeId("AssetUpdates")
             .filter(body().isInstanceOf(AttributeEvent.class))
@@ -276,7 +300,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
         processorLoop:
         for (Consumer<AssetState> processor : processors) {
             try {
-                LOG.fine("==> Processor " + processor + " accepts: " + assetState);
+                LOG.finest("==> Processor " + processor + " accepts: " + assetState);
                 processor.accept(assetState);
             } catch (Throwable t) {
                 LOG.log(Level.SEVERE, "!!! Processor " + processor + " threw an exception whilst consuming: " + assetState, t);
@@ -286,13 +310,13 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
 
             switch (assetState.getProcessingStatus()) {
                 case COMPLETED:
-                    LOG.fine("<== Processor " + processor + " finally handled: " + assetState);
+                    LOG.finest("<== Processor " + processor + " finally handled: " + assetState);
                     break processorLoop;
                 case ERROR:
                     LOG.log(Level.SEVERE, "<== Processor " + processor + " error: " + assetState, assetState.getError());
                     break processorLoop;
                 default:
-                    LOG.fine("<== Processor " + processor + " done with: " + assetState);
+                    LOG.finest("<== Processor " + processor + " done with: " + assetState);
             }
         }
         if (assetState.getProcessingStatus() != AssetState.ProcessingStatus.ERROR) {

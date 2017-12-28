@@ -24,12 +24,15 @@ import org.openremote.manager.shared.http.RequestParams;
 import org.openremote.manager.shared.http.SuccessStatusCode;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
+import org.openremote.model.asset.agent.AgentStatusEvent;
+import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.asset.agent.ProtocolDescriptor;
 import org.openremote.model.attribute.AttributeValidationResult;
 import org.openremote.model.file.FileInfo;
 
 import javax.annotation.security.RolesAllowed;
 import javax.ws.rs.*;
+import java.util.List;
 import java.util.Map;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
@@ -53,7 +56,22 @@ public interface AgentResource {
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
     @RolesAllowed({"read:assets"})
+    @SuppressWarnings("unusable-by-js")
     ProtocolDescriptor[] getSupportedProtocols(
+        @BeanParam RequestParams requestParams,
+        @PathParam("agentId") String agentId
+    );
+
+    /**
+     * Retrieve {@link org.openremote.model.asset.agent.ConnectionStatus} of all protocol configurations.
+     */
+    @GET
+    @Path("status/{agentId}")
+    @Produces(APPLICATION_JSON)
+    @SuccessStatusCode(200)
+    @RolesAllowed({"read:assets"})
+    @SuppressWarnings("unusable-by-js")
+    List<AgentStatusEvent> getAgentStatus(
         @BeanParam RequestParams requestParams,
         @PathParam("agentId") String agentId
     );
@@ -66,6 +84,7 @@ public interface AgentResource {
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
     @RolesAllowed({"read:assets"})
+    @SuppressWarnings("unusable-by-js")
     Map<String, ProtocolDescriptor[]> getAllSupportedProtocols(
         @BeanParam RequestParams requestParams
     );
@@ -78,6 +97,7 @@ public interface AgentResource {
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
     @RolesAllowed({"read:assets"})
+    @SuppressWarnings("unusable-by-js")
     AssetAttribute[] getDiscoveredProtocolConfigurations(
         @BeanParam RequestParams requestParams,
         @PathParam("agentId") String agentId,
@@ -92,6 +112,7 @@ public interface AgentResource {
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
+    @SuppressWarnings("unusable-by-js")
     AttributeValidationResult validateProtocolConfiguration(
         @BeanParam RequestParams requestParams,
         @PathParam("agentId") String agentId,
@@ -111,6 +132,7 @@ public interface AgentResource {
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
+    @SuppressWarnings("unusable-by-js")
     Asset[] searchForLinkedAttributes(
         @BeanParam RequestParams requestParams,
         @PathParam("agentId") String agentId,
@@ -133,6 +155,7 @@ public interface AgentResource {
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
+    @SuppressWarnings("unusable-by-js")
     // TODO: File upload should use standard multipart mechanism
     Asset[] importLinkedAttributes(
         @BeanParam RequestParams requestParams,

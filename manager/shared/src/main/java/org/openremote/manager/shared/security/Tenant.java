@@ -34,7 +34,7 @@ import javax.validation.constraints.Size;
  * This can be used (among other things) to query the REALM table in JPA queries.
  */
 @Entity
-@Subselect("select * from REALM") // Map this immutable to an SQL view, don't use/create table
+@Subselect("select * from PUBLIC.REALM") // Map this immutable to an SQL view, don't use/create table
 public class Tenant {
 
     @Id
@@ -43,7 +43,7 @@ public class Tenant {
     @Column(name = "NAME")
     protected String realm;
 
-    @Formula("(select ra.VALUE from REALM_ATTRIBUTE ra where ra.REALM_ID = ID and ra.name = 'displayName')")
+    @Formula("(select ra.VALUE from PUBLIC.REALM_ATTRIBUTE ra where ra.REALM_ID = ID and ra.name = 'displayName')")
     protected String displayName;
 
     @Column(name = "ENABLED")

@@ -31,14 +31,11 @@ import org.openremote.manager.client.style.WidgetStyle;
 import org.openremote.manager.client.widget.FlexSplitPanel;
 import org.openremote.manager.client.widget.Hyperlink;
 import org.openremote.manager.client.widget.MapWidget;
-import org.openremote.model.util.Pair;
 import org.openremote.model.geo.GeoJSON;
 import org.openremote.model.value.ObjectValue;
 
 import javax.inject.Inject;
-import java.util.Comparator;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class MapViewImpl extends Composite implements MapView {
 

@@ -22,14 +22,14 @@ package org.openremote.manager.client.admin.users;
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
-import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.HTMLPanel;
 import com.google.gwt.user.client.ui.Label;
 import com.google.gwt.user.client.ui.ListBox;
-import org.openremote.manager.client.i18n.ManagerMessages;
+import com.google.inject.Provider;
+import org.openremote.manager.client.app.dialog.Confirmation;
 import org.openremote.manager.client.style.FormTableStyle;
 import org.openremote.manager.client.style.WidgetStyle;
-import org.openremote.manager.client.widget.Hyperlink;
+import org.openremote.manager.client.widget.FormViewImpl;
 import org.openremote.manager.shared.security.Tenant;
 import org.openremote.manager.shared.security.User;
 
@@ -37,22 +37,16 @@ import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-public class AdminUsersImpl extends Composite implements AdminUsers {
+public class AdminUsersImpl extends FormViewImpl implements AdminUsers {
 
     interface UI extends UiBinder<HTMLPanel, AdminUsersImpl> {
     }
 
     @UiField
-    protected ManagerMessages managerMessages;
-
-    @UiField
-    protected WidgetStyle widgetStyle;
-
-    @UiField
     AdminUsersTable.Style usersTableStyle;
 
-    @UiField
-    Hyperlink createLink;
+    @UiField(provided = true)
+    AdminUsersNavigation adminUsersNavigation;
 
     @UiField
     HTMLPanel mainContent;
@@ -67,7 +61,14 @@ public class AdminUsersImpl extends Composite implements AdminUsers {
     Presenter presenter;
 
     @Inject
-    public AdminUsersImpl(FormTableStyle formTableStyle) {
+    public AdminUsersImpl(Provider<Confirmation> confirmationDialogProvider,
+                          WidgetStyle widgetStyle,
+                          FormTableStyle formTableStyle,
+                          AdminUsersNavigation adminUsersNavigation) {
+        super(confirmationDialogProvider, widgetStyle);
+
+        this.adminUsersNavigation = adminUsersNavigation;
+
         UI ui = GWT.create(UI.class);
         initWidget(ui.createAndBindUi(this));
 
@@ -100,7 +101,13 @@ public class AdminUsersImpl extends Composite implements AdminUsers {
     public void setPresenter(Presenter presenter) {
         this.presenter = presenter;
 
-        setCreateUserHistoryToken("");
+        if (presenter == null) {
+            adminUsersNavigation.setVisible(false);
+            adminUsersNavigation.reset();
+        } else {
+            adminUsersNavigation.setActive(presenter.getPlace());
+            adminUsersNavigation.setVisible(true);
+        }
         noUsersLabel.setVisible(false);
         tenantListBox.clear();
         tenantListBox.addItem(managerMessages.loadingDotdotdot());
@@ -135,9 +142,4 @@ public class AdminUsersImpl extends Composite implements AdminUsers {
         table.flush();
     }
 
-    @Override
-    public void setCreateUserHistoryToken(String token) {
-        createLink.setTargetHistoryToken(token);
-        createLink.setVisible(token != null && token.length() > 0);
-    }
 }

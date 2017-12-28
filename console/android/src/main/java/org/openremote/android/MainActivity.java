@@ -1,19 +1,32 @@
 package org.openremote.android;
 
+import android.Manifest;
 import android.app.Activity;
+import android.app.DownloadManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.net.Uri;
 import android.net.http.SslError;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
+import android.support.annotation.NonNull;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.view.KeyEvent;
 import android.view.View;
+import android.webkit.CookieManager;
+import android.webkit.DownloadListener;
 import android.webkit.JavascriptInterface;
+import android.webkit.MimeTypeMap;
 import android.webkit.SslErrorHandler;
+import android.webkit.URLUtil;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
@@ -23,6 +36,7 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -34,9 +48,21 @@ public class MainActivity extends Activity {
 
     private static final Logger LOG = Logger.getLogger(MainActivity.class.getName());
 
+    private final int WRITE_PERMISSION_REQUEST = 999;
+
     protected final ConnectivityChangeReceiver connectivityChangeReceiver = new ConnectivityChangeReceiver();
     protected WebView webView;
     protected ErrorViewHolder errorViewHolder;
+    protected Context context;
+
+    BroadcastReceiver onDownloadCompleteReciever = new BroadcastReceiver() {
+        public void onReceive(Context ctxt, Intent intent) {
+            String action = intent.getAction();
+            if (DownloadManager.ACTION_DOWNLOAD_COMPLETE.equals(action)) {
+                Toast.makeText(getApplicationContext(), R.string.download_completed, Toast.LENGTH_LONG).show();
+            }
+        }
+    };
 
     protected class ErrorViewHolder {
         View errorView;
@@ -82,6 +108,8 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        context = this;
+
         // Enable remote debugging of WebView from Chrome Debugger tools
         if (isRemoteDebuggingEnabled()) {
             LOG.info("Enabling remote debugging");
@@ -119,12 +147,14 @@ public class MainActivity extends Activity {
     protected void onResume() {
         super.onResume();
         registerReceiver(connectivityChangeReceiver, new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION));
+        registerReceiver(onDownloadCompleteReciever, new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE));
     }
 
     @Override
     protected void onPause() {
         super.onPause();
         unregisterReceiver(connectivityChangeReceiver);
+        unregisterReceiver(onDownloadCompleteReciever);
     }
 
     @Override
@@ -167,7 +197,9 @@ public class MainActivity extends Activity {
     protected void initializeWebView() {
         LOG.fine("Initializing web view");
 
-        webView.addJavascriptInterface(new WebAppInterface(this), "MobileInterface");
+        final WebAppInterface webAppInterface = new WebAppInterface(this);
+
+        webView.addJavascriptInterface(webAppInterface, "MobileInterface");
         WebSettings webSettings = webView.getSettings();
         webSettings.setJavaScriptEnabled(true);
         webSettings.setAppCacheEnabled(true);
@@ -184,6 +216,11 @@ public class MainActivity extends Activity {
         webView.setWebViewClient(new WebViewClient() {
             @Override
             public void onReceivedHttpError(WebView view, WebResourceRequest request, WebResourceResponse errorResponse) {
+                if (request.getUrl().getLastPathSegment().equals("token") && request.getMethod().equals("POST")) {
+                    webAppInterface.tokenService.clearToken();
+                    reloadWebView(getCurrentFocus());
+                    return;
+                }
                 LOG.warning("Error requesting '" + request.getUrl() + "', response code: " + errorResponse.getStatusCode());
                 errorViewHolder.show(R.string.httpError, R.string.httpErrorExplain, true, true);
             }
@@ -213,6 +250,51 @@ public class MainActivity extends Activity {
             }
         });
         webView.setWebChromeClient(new WebChromeClient());
+
+        webView.setDownloadListener(new DownloadListener() {
+            @Override
+            public void onDownloadStart(String url, String userAgent, String contentDisposition, String mimetype, long contentLength) {
+
+                String writePermission = Manifest.permission.WRITE_EXTERNAL_STORAGE;
+                if (ContextCompat.checkSelfPermission(context, writePermission) != PackageManager.PERMISSION_GRANTED) {
+                    // Location permission has not been granted yet, request it.
+                    ActivityCompat.requestPermissions((MainActivity) context, new String[]{writePermission}, WRITE_PERMISSION_REQUEST);
+                } else {
+                    DownloadManager.Request request = new
+                            DownloadManager.Request(Uri.parse(url));
+
+                    request.setMimeType(mimetype);
+                    //------------------------COOKIE!!------------------------
+                    String cookies = CookieManager.getInstance().getCookie(url);
+                    request.addRequestHeader("cookie", cookies);
+                    //------------------------COOKIE!!------------------------
+                    request.addRequestHeader("User-Agent", userAgent);
+                    request.setDescription("Downloading file...");
+                    request.setTitle(URLUtil.guessFileName(url, contentDisposition, mimetype));
+                    request.allowScanningByMediaScanner();
+                    request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+                    request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, URLUtil.guessFileName(url, contentDisposition, mimetype));
+                    DownloadManager dm = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
+                    if (dm != null) {
+                        Toast.makeText(getApplicationContext(), R.string.downloading_file, Toast.LENGTH_LONG).show();
+                        dm.enqueue(request);
+                    } else {
+                        Toast.makeText(getApplicationContext(), R.string.error_downloading, Toast.LENGTH_LONG).show();
+                    }
+                }
+            }
+        });
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        if (requestCode == WRITE_PERMISSION_REQUEST) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                Toast.makeText(getApplicationContext(), R.string.downloading_file, Toast.LENGTH_LONG).show();
+            }
+        } else {
+            super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        }
     }
 
     protected class WebAppInterface {
@@ -274,7 +356,7 @@ public class MainActivity extends Activity {
         @Override
         public void onReceive(Context context, Intent intent) {
             ConnectivityManager cm
-                = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+                    = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
 
             NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
             onConnectivityChanged(activeNetwork != null && activeNetwork.isConnectedOrConnecting());

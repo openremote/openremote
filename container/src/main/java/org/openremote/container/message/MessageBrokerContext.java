@@ -24,6 +24,7 @@ import org.apache.camel.impl.PropertyPlaceholderDelegateRegistry;
 import org.apache.camel.impl.SimpleRegistry;
 import org.apache.camel.spi.Registry;
 
+@SuppressWarnings("unchecked")
 public class MessageBrokerContext extends DefaultCamelContext {
 
     @Override

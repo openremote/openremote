@@ -20,14 +20,36 @@
 package org.openremote.manager.client.assets.tenant;
 
 import com.google.gwt.user.client.ui.IsWidget;
+import org.openremote.manager.client.assets.browser.BrowserTreeNode;
+import org.openremote.manager.client.widget.FormView;
+import org.openremote.manager.shared.security.User;
+import org.openremote.model.asset.UserAsset;
 
-public interface AssetsTenant extends IsWidget {
+public interface AssetsTenant extends FormView, IsWidget {
 
     interface Presenter {
+
+        void onUserSelected(String username);
+
+        void onAssetSelected(BrowserTreeNode treeNode);
+
+        void onCreateAssetLink();
+
+        void onDeleteAssetLink(UserAsset.Id id);
+
+        void onEditUser(UserAsset.Id id);
     }
 
     void setPresenter(Presenter presenter);
 
     void setTenantName(String name);
+
+    void setUsers(User[] users);
+
+    void setCreateAssetLinkEnabled(boolean enabled);
+
+    void setUserAssets(UserAsset[] userAssets);
+
+    void removeUserAsset(UserAsset.Id id);
 
 }

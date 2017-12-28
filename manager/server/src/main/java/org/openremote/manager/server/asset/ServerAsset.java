@@ -53,26 +53,32 @@ public class ServerAsset extends Asset {
      * Easy conversion between types, we copy all properties (not a deep copy!)
      */
     public static ServerAsset map(Asset asset, ServerAsset serverAsset) {
-        return map(asset, serverAsset, null, null, null);
+        return map(asset, serverAsset, null, null, null, null, null, null, null);
     }
 
     public static ServerAsset map(Asset asset, ServerAsset serverAsset,
+                                  String overrideName,
+                                  String overrideRealmId,
                                   String overrideParentId,
                                   String overrideType,
-                                  Double[] overrideLocation) {
+                                  Double[] overrideLocation,
+                                  Boolean overrideAccessPublicRead,
+                                  ObjectValue overrideAttributes) {
         serverAsset.setVersion(asset.getVersion());
-        serverAsset.setName(asset.getName());
+        serverAsset.setName(overrideName != null ? overrideName : asset.getName());
         if (overrideType != null) {
             serverAsset.setType(overrideType);
         } else {
             serverAsset.setType(asset.getType());
         }
 
+        serverAsset.setAccessPublicRead(overrideAccessPublicRead != null ? overrideAccessPublicRead : asset.isAccessPublicRead());
+
         serverAsset.setParentId(overrideParentId != null ? overrideParentId : asset.getParentId());
         serverAsset.setParentName(null);
         serverAsset.setParentType(null);
 
-        serverAsset.setRealmId(asset.getRealmId());
+        serverAsset.setRealmId(overrideRealmId != null ? overrideRealmId : asset.getRealmId());
         serverAsset.setTenantRealm(null);
         serverAsset.setTenantDisplayName(null);
 
@@ -92,7 +98,7 @@ public class ServerAsset extends Asset {
             serverAsset.setLocation(null);
         }
 
-        serverAsset.setAttributes(asset.getAttributes());
+        serverAsset.setAttributes(overrideAttributes != null ? overrideAttributes : asset.getAttributes());
 
         return serverAsset;
     }
@@ -106,13 +112,13 @@ public class ServerAsset extends Asset {
     }
 
     @SuppressWarnings("unchecked")
-    public ServerAsset(String id, long version, Date createdOn, String name, String type,
+    public ServerAsset(String id, long version, Date createdOn, String name, String type, boolean accessPublicRead,
                        String parentId, String parentName, String parentType,
                        String realmId, String tenantRealm, String tenantDisplayName,
                        Object location,
                        Array path, String attributes) throws SQLException {
         super(
-            id, version, createdOn, name, type,
+            id, version, createdOn, name, type, accessPublicRead,
             parentId, parentName, parentType,
             realmId, tenantRealm, tenantDisplayName,
             path != null ? (String[]) path.getArray() : null,
@@ -126,7 +132,7 @@ public class ServerAsset extends Asset {
         if (location != null) {
             Geometry geomPoint = PGGeometryTypeDescriptor.toGeometry(location);
             if (geomPoint instanceof org.geolatte.geom.Point) {
-                position = (Point)JTS.to(geomPoint);
+                position = (Point) JTS.to(geomPoint);
             }
         }
 
@@ -138,7 +144,7 @@ public class ServerAsset extends Asset {
     }
 
     public ServerAsset(@NotNull String name, @NotNull String type) {
-        this(name, type, null, null);
+        this(name, type, false, null, null);
     }
 
     public ServerAsset(@NotNull String name, @NotNull AssetType type, Asset parent) {
@@ -146,15 +152,15 @@ public class ServerAsset extends Asset {
     }
 
     public ServerAsset(@NotNull String name, @NotNull String type, Asset parent) {
-        this(name, type, parent, null);
+        this(name, type, false, parent, null);
     }
 
     public ServerAsset(@NotNull String name, @NotNull AssetType type, Asset parent, String realmId) {
         super(name, type, parent, realmId);
     }
 
-    public ServerAsset(@NotNull String name, @NotNull String type, Asset parent, String realmId) {
-        super(name, type, parent, realmId);
+    public ServerAsset(@NotNull String name, @NotNull String type, boolean accessPublicRead, Asset parent, String realmId) {
+        super(name, type, accessPublicRead, parent, realmId);
     }
 
     public Point getLocation() {

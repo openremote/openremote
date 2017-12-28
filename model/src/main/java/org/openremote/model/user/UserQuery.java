@@ -48,11 +48,13 @@ public class UserQuery<CHILD extends UserQuery<CHILD>> {
     public UserQuery() {
     }
 
+    @SuppressWarnings("unchecked")
     public CHILD tenant(UserQuery.TenantPredicate tenantPredicate) {
         this.tenantPredicate = tenantPredicate;
         return (CHILD) this;
     }
 
+    @SuppressWarnings("unchecked")
     public CHILD asset(UserQuery.AssetPredicate assetPredicate) {
         this.assetPredicate = assetPredicate;
         return (CHILD) this;

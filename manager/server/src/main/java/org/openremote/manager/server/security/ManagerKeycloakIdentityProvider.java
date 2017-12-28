@@ -39,6 +39,7 @@ import org.openremote.manager.shared.security.*;
 import org.openremote.model.Constants;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetTreeModifiedEvent;
+import org.openremote.model.event.shared.TenantFilter;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
@@ -343,31 +344,8 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
 
     @Override
     public boolean isRestrictedUser(String userId) {
-        UserConfiguration userConfiguration = getUserConfiguration(userId);
-        return userConfiguration.isRestricted();
-    }
-
-    @Override
-    public void setRestrictedUser(String userId, boolean restricted) {
-        UserConfiguration userConfiguration = getUserConfiguration(userId);
-        userConfiguration.setRestricted(restricted);
-        mergeUserConfiguration(userConfiguration);
-    }
-
-    protected UserConfiguration getUserConfiguration(String userId) {
         UserConfiguration userConfiguration = persistenceService.doReturningTransaction(em -> em.find(UserConfiguration.class, userId));
-        if (userConfiguration == null) {
-            userConfiguration = new UserConfiguration(userId);
-            userConfiguration = mergeUserConfiguration(userConfiguration);
-        }
-        return userConfiguration;
-    }
-
-    protected UserConfiguration mergeUserConfiguration(UserConfiguration userConfiguration) {
-        if (userConfiguration.getUserId() == null || userConfiguration.getUserId().length() == 0) {
-            throw new IllegalArgumentException("User ID must be set on: " + userConfiguration);
-        }
-        return persistenceService.doReturningTransaction(em -> em.merge(userConfiguration));
+        return userConfiguration != null && userConfiguration.isRestricted();
     }
 
     @Override
@@ -376,6 +354,38 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             User user = em.find(User.class, userId);
             return (user != null && realmId.equals(user.getRealmId()));
         });
+    }
+
+    @Override
+    public boolean canSubscribeWith(AuthContext auth, TenantFilter filter, ClientRole... requiredRoles) {
+        // Superuser can always subscribe
+        if (auth.isSuperUser())
+            return true;
+
+        // Restricted users get nothing
+        if (isRestrictedUser(auth.getUserId()))
+            return false;
+
+        // User must have role
+        if (requiredRoles != null) {
+            for (ClientRole requiredRole : requiredRoles) {
+                if (!auth.hasResourceRole(requiredRole.getValue(), Constants.KEYCLOAK_CLIENT_ID)) {
+                    return false;
+                }
+            }
+        }
+
+        // Ensure filter matches authenticated realm
+        if (filter != null) {
+            Tenant authenticatedTenant = getTenantForRealm(auth.getAuthenticatedRealm());
+            if (authenticatedTenant == null)
+                return false;
+            if (filter.getRealmId().equals(authenticatedTenant.getId()))
+                return true;
+        }
+
+        return false;
+
     }
 
     public void configureRealm(RealmRepresentation realmRepresentation, TenantEmailConfig emailConfig) {

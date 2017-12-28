@@ -26,8 +26,6 @@ import com.github.nmorel.gwtjackson.client.stream.JsonReader;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.Values;
 
-import java.io.IOException;
-
 public class ModelValueDeserializer extends JsonDeserializer<Value> {
 
     @Override

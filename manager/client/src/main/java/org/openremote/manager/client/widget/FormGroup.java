@@ -103,7 +103,7 @@ public class FormGroup extends FlowPanel implements HasWidgets {
     }
 
     @UiChild(tagname = "actions", limit = 1)
-    public void setFromGroupActions(FormGroupActions formGroupActions) {
+    public void setFormGroupActions(FormGroupActions formGroupActions) {
         if (this.formGroupActions != null) {
             mainPanel.remove(this.formGroupActions);
         }

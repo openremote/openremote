@@ -21,6 +21,7 @@ package org.openremote.agent.protocol;
 
 import org.openremote.container.ContainerService;
 
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 
 /**
@@ -28,7 +29,7 @@ import java.util.concurrent.ScheduledFuture;
  * <p>
  * TODO: If we need to run blocking tasks in protocols we can add a regular thread pool/ExecutorService here
  */
-public interface ProtocolExecutorService extends ContainerService {
+public interface ProtocolExecutorService extends ScheduledExecutorService, ContainerService {
 
     /**
      * @see java.util.concurrent.ScheduledExecutorService#schedule

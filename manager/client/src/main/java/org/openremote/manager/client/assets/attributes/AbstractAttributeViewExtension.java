@@ -23,6 +23,7 @@ import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.widget.FormSection;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.asset.AssetAttribute;
+import org.openremote.model.asset.agent.ConnectionStatus;
 
 import java.util.function.Consumer;
 
@@ -79,6 +80,11 @@ public abstract class AbstractAttributeViewExtension extends FormSection impleme
     @Override
     public void setDisabled(boolean disabled) {
         super.setDisabled(disabled);
+    }
+
+    @Override
+    public void setStatus(ConnectionStatus connectionStatus) {
+        // TODO Ability for extensions to display some error highlight/visual marker
     }
 
     public void showValidationError(String attributeName, String metaItemName, ValidationFailure validationFailure) {

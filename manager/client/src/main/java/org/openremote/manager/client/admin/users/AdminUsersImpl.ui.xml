@@ -1,15 +1,12 @@
 <ui:UiBinder xmlns:ui="urn:ui:com.google.gwt.uibinder"
              xmlns:g="urn:import:com.google.gwt.user.client.ui"
-             xmlns:w="urn:import:org.openremote.manager.client.widget">
+             xmlns:w="urn:import:org.openremote.manager.client.widget"
+             xmlns:adminUsers="urn:import:org.openremote.manager.client.admin.users">
 
     <ui:with field="managerMessages" type="org.openremote.manager.client.i18n.ManagerMessages"/>
     <ui:with field="widgetStyle" type="org.openremote.manager.client.style.WidgetStyle"/>
 
     <ui:style>
-        .navItem {
-            margin: 0 1em;
-        }
-
         .noUsersLabel {
             max-width: 30em;
         }
@@ -17,43 +14,31 @@
 
     <ui:style field="usersTableStyle" type="org.openremote.manager.client.admin.users.AdminUsersTable.Style">
         .usernameColumn {
-            width: 10em;
+            width: 100%;
         }
 
         .firstNameColumn {
-            width: 12em;
         }
 
         .lastNameColumn {
-            width: 12em;
         }
 
         .enabledColumn {
-            width: 4em;
         }
     </ui:style>
 
     <g:HTMLPanel styleName="flex layout vertical">
 
-        <g:HTMLPanel
-                styleName="layout horizontal center end-justified {widgetStyle.SecondaryNavHorizontal}">
+        <adminUsers:AdminUsersNavigation ui:field="adminUsersNavigation"/>
 
-            <w:Hyperlink
-                    ui:field="createLink"
-                    addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem}"
-                    icon="plus-square"
-                    visible="false"
-                    text="{managerMessages.newUser}"/>
+        <w:Form ui:field="form" addStyleNames="flex">
 
-        </g:HTMLPanel>
+            <g:HTMLPanel ui:field="mainContent"
+                         styleName="flex {widgetStyle.MainContent}">
 
-        <g:HTMLPanel ui:field="mainContent"
-                     styleName="flex {widgetStyle.MainContent}">
+                <w:Headline icon="user"
+                            text="{managerMessages.manageUsers}"/>
 
-            <w:Headline icon="user"
-                        text="{managerMessages.manageUsers}"/>
-
-            <w:Form>
                 <w:FormGroup>
                     <w:field>
                         <w:FormField>
@@ -64,16 +49,14 @@
                     </w:field>
                 </w:FormGroup>
 
-            </w:Form>
+                <g:Label ui:field="noUsersLabel"
+                         addStyleNames="{style.noUsersLabel} {widgetStyle.FormMessages} info"
+                         visible="false"
+                         text="{managerMessages.noUserFound}"/>
 
-            <g:Label ui:field="noUsersLabel"
-                     addStyleNames="{style.noUsersLabel} {widgetStyle.FormMessages} info"
-                     visible="false"
-                     text="{managerMessages.noUserFound}"/>
+            </g:HTMLPanel>
 
-            <g:SimplePanel ui:field="tableContainer" visible="false"/>
-
-        </g:HTMLPanel>
+        </w:Form>
 
     </g:HTMLPanel>
 

@@ -9,15 +9,19 @@ import org.fourthline.cling.registry.DefaultRegistryListener;
 import org.fourthline.cling.registry.Registry;
 import org.fourthline.cling.registry.RegistryListener;
 import org.openremote.agent.protocol.AbstractProtocol;
+import org.openremote.model.AbstractValueHolder;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetType;
+import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.value.Values;
 
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.logging.Logger;
 
@@ -34,7 +38,14 @@ public class UpnpProtocol extends AbstractProtocol {
     public static final String PROTOCOL_NAME = PROTOCOL_NAMESPACE + ":upnp";
     public static final String PROTOCOL_DISPLAY_NAME = "UPnP";
 
+    /**
+     * The asset under which all discovered devices are merged.
+     */
+    public static final String GROUP_ASSET_ID = PROTOCOL_NAME + ":groupAssetId";
+
     protected static final String VERSION = "1.0";
+
+    protected Map<AttributeRef, String> protocolConfigsGroupAssetId = new HashMap<>();
 
     static protected UpnpService INSTANCE = null;
 
@@ -42,9 +53,9 @@ public class UpnpProtocol extends AbstractProtocol {
         @Override
         public void deviceAdded(Registry registry, Device device) {
             LOG.fine("UPnP device discovered: " + device.getDisplayString());
-            for (AttributeRef attributeRef : linkedProtocolConfigurations.keySet()) {
-                storeAssets(attributeRef.getEntityId(), device);
-            }
+            linkedProtocolConfigurations.values().forEach(linkedProtocolInfo -> {
+                storeAssets(linkedProtocolInfo.getProtocolConfiguration(), device);
+            });
         }
 
         @Override
@@ -74,12 +85,26 @@ public class UpnpProtocol extends AbstractProtocol {
 
     @Override
     protected void doLinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
+        boolean isEnabled = protocolConfiguration.isEnabled();
+        if (!isEnabled) {
+            updateStatus(protocolConfiguration.getReferenceOrThrow(), ConnectionStatus.DISABLED);
+            return;
+        }
+
         protocolConfiguration.getAssetId().ifPresent(agentId -> {
+
+            // The parent is either the configured asset to group all discovered devices or the agent
+            protocolConfigsGroupAssetId.put(
+                protocolConfiguration.getReferenceOrThrow(),
+                protocolConfiguration.getMetaItem(GROUP_ASSET_ID).flatMap(AbstractValueHolder::getValueAsString).orElse(agentId)
+            );
+
             Collection<Device> devices = getService().getRegistry().getDevices();
+            updateStatus(protocolConfiguration.getReferenceOrThrow(), ConnectionStatus.CONNECTED);
+
             if (devices.size() > 0) {
-                LOG.fine("Storing UPnP devices as child assets of agent: " + agentId);
                 for (Device device : getService().getRegistry().getDevices()) {
-                    storeAssets(agentId, device);
+                    storeAssets(protocolConfiguration, device);
                 }
             }
         });
@@ -87,6 +112,10 @@ public class UpnpProtocol extends AbstractProtocol {
 
     @Override
     protected void doUnlinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
+        protocolConfigsGroupAssetId.remove(protocolConfiguration.getReferenceOrThrow());
+
+        updateStatus(protocolConfiguration.getReferenceOrThrow(), ConnectionStatus.DISABLED);
+
         if (linkedProtocolConfigurations.size() == 1) {
             closeService();
         }
@@ -123,8 +152,10 @@ public class UpnpProtocol extends AbstractProtocol {
         }
     }
 
-    protected void storeAssets(String agentId, Device device) {
-        Asset asset = createAsset(agentId, device);
+    protected void storeAssets(AssetAttribute protocolConfiguration, Device device) {
+        String parentId = protocolConfigsGroupAssetId.get(protocolConfiguration.getReferenceOrThrow());
+        LOG.fine("Storing UPnP device as child assets of " + parentId + ": " + device);
+        Asset asset = createAsset(parentId, device);
         asset = assetService.mergeAsset(asset);
     }
 

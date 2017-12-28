@@ -1,15 +1,14 @@
 <#import "template.ftl" as layout>
 <@layout.mainLayout active='password'; section>
 
+<form action="${url.passwordUrl}" class="flex layout vertical or-Form" method="post">
 
-<div class="layout vertical">
+    <div class="flex or-MainContent">
 
-    <div class="or-Headline">
-        <span class="or-HeadlineIcon fa fa-key"></span>
-        <span class="or-HeadlineText">${msg("changePasswordHtmlTitle")}</span>
-    </div>
-
-    <form action="${url.passwordUrl}" class="layout vertical or-Form" method="post">
+        <div class="or-Headline">
+            <span class="or-HeadlineIcon fa fa-key"></span>
+            <span class="or-HeadlineText">${msg("changePasswordHtmlTitle")}</span>
+        </div>
 
         <input type="text" readonly value="this is not a login form" style="display: none;">
         <input type="password" readonly value="this is not a login form" style="display: none;">
@@ -21,7 +20,8 @@
                 </div>
 
                 <div class="or-FormField">
-                    <input type="password" class="or-FormControl or-FormInputText" id="password" name="password" autofocus autocomplete="off">
+                    <input type="password" class="or-FormControl or-FormInputText" id="password" name="password"
+                           autofocus autocomplete="off">
                 </div>
             </div>
         </#if>
@@ -34,7 +34,8 @@
             </div>
 
             <div class="or-FormField">
-                <input type="password" class="or-FormControl or-FormInputText" id="password-new" name="password-new" autocomplete="off">
+                <input type="password" class="or-FormControl or-FormInputText" id="password-new" name="password-new"
+                       autocomplete="off">
             </div>
         </div>
 
@@ -44,18 +45,24 @@
             </div>
 
             <div class="or-FormField">
-                <input type="password" class="or-FormControl or-FormInputText" id="password-confirm" name="password-confirm" autocomplete="off">
+                <input type="password" class="or-FormControl or-FormInputText" id="password-confirm"
+                       name="password-confirm" autocomplete="off">
             </div>
         </div>
 
+    </div>
+
+    <div class="flex-none or-MainContent">
         <div class="layout horizontal or-FormGroup">
             <div class="or-FormField">
                 <button type="submit" class="or-FormControl or-FormButtonPrimary or-PushButton"
                         name="submitAction" value="Save">
-                    <span class="or-PushButtonIcon fa fa-save"></span><span class="html-face">${msg("doSave")}</span></button>
+                    <span class="or-PushButtonIcon fa fa-save"></span><span class="html-face">${msg("doSave")}</span>
+                </button>
             </div>
         </div>
-    </form>
-</div>
+    </div>
+
+</form>
 
 </@layout.mainLayout>

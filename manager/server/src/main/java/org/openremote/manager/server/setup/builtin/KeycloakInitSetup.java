@@ -43,7 +43,9 @@ public class KeycloakInitSetup extends AbstractKeycloakSetup {
     }
 
     @Override
-    public void execute() {
+    public void onStart() throws Exception {
+        super.onStart();
+
         // Configure the master realm
         RealmRepresentation masterRealm = masterRealmResource.toRepresentation();
 

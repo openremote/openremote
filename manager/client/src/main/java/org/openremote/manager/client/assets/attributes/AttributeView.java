@@ -23,6 +23,7 @@ import com.google.gwt.user.client.ui.IsWidget;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.ValueHolder;
 import org.openremote.model.asset.AssetAttribute;
+import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.attribute.AttributeValidationResult;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueType;
@@ -53,9 +54,7 @@ public interface AttributeView extends IsWidget {
 
         String booleanEditor();
 
-        String regularAttribute();
-
-        String highlightAttribute();
+        String attributeView();
 
         String metaItemNameEditor();
 
@@ -111,4 +110,9 @@ public interface AttributeView extends IsWidget {
      * Indicates if current activity is edit mode or view mode.
      */
     void setEditMode(boolean editMode);
+
+    /**
+     * Shows the current status, if any, to the user.
+     */
+    void setStatus(ConnectionStatus connectionStatus);
 }

@@ -1,169 +1,132 @@
-# Demo setup of OpenRemote v3
+# OpenRemote v3
 #
-# This configuration works with Docker Community edition (https://docker.com/) on Windows and macOS.
+# By default running this profile installs the stack on https://localhost using a
+# self-signed SSL certificate, with username 'admin' and password 'secret'.
 #
-# Install Docker Community edition and execute "docker-compose -p openremote -f profile/demo.yml up"
+# Install Docker Community edition (https://docker.com/) on Windows, macOS, or Linux.
 #
-version: '2'
+# Start a transient demo stack with:
+#
+#   docker-compose -p openremote -f profile/demo.yml up
+#
+# For full documentation, see deploy.yml
+#
+# Steps to create a permanent installation:
+#
+# 1. DO NOT FORGET TO CHANGE SETUP_ADMIN_PASSWORD!
+#
+# 2. Consider setting a custom DOMAINNAME, LE_EMAIL, and IDENTITY_NETWORK_HOST, see deploy.yml
+#
+# 3. Understand how bind mounts and volume mappings work, see below and read:
+#     https://docs.docker.com/engine/admin/volumes/bind-mounts/
+#     https://docs.docker.com/engine/admin/volumes/volumes/#choose-the--v-or-mount-flag
+#     Survival guide: docker volume ls|rm|prune
+#
+# 4. Execute once:
+#
+#   SETUP_WIPE_CLEAN_INSTALL=true \
+#   SETUP_ADMIN_PASSWORD=secret \
+#   docker-compose -p openremote -f profile/demo.yml up
+#
+# This creates the initial database and optionally imports some examples. Inspect the
+# running installation and ensure it's working. You are now ready to restart the stack
+# without the clean wipe option. Passwords can be changed in the application.
+#
+# Database schemas will be upgraded to new versions of the services automatically, you do
+# not have to wipe all data to install a new version of OpenRemote.
+#
+# Your extension JAR files should be in the manager's ../deployment/extensions/ directory.
+#
+version: '2.2'
+
+# If you enable volume mappings in services, you need this. Otherwise, remove the volumes
+volumes:
+  #proxy-data:
+  #manager-data:
+  postgresql-data:
+
 services:
 
-  # The frontend proxy, terminates SSL/TLS connections and forwards them to the Manager backend.
-  # TODO Document how to install sidecar letsencrypt container for production certificates, with shared volume mapping.
-  haproxy:
-
-    # Use installed or pull the latest image from Docker Hub.
-    image: openremote/haproxy:latest
-
-    environment:
-
-      # It is important that all services have the same timezone and are time synchronized.
-      # Bearer tokens are only valid for minutes, and authentication fails if Keycloak drifts.
-      TZ: Europe/Zurich
-
-      # This is a demo configuration with a self-signed dummy SSL certificate, baked into the image.
-      HAPROXY_CONFIG: /etc/haproxy/demo/haproxy-demo.cfg
-
-    # This service needs access to other services on the Docker network.
-    links:
-      - manager
-
-    # Expose a public web service mapped to ports on the host.
-    ports:
-      - "80:80"
-      - "443:443"
-
-    # Configure logging of the container
-    logging:
-        options:
-            max-size: 10m
-
-  # The API gateway and Manager web application.
-  manager:
-
-    # Use installed or pull the latest image from Docker Hub.
-    image: openremote/manager:latest
-
-    environment:
-
-      TZ: Europe/Zurich
-
-      # If developer mode is enabled, all setup tasks will be executed on application startup.
-      # This will clean all data in Keycloak and the Manager database, and then import demo/test
-      # data. Some caching and other runtime performance-optimizations will also be disabled.
-      DEV_MODE: 'false'
-
-      # If you are not running in developer mode, and this is the first time you are starting
-      # the application, you can configure which setup tasks you want to execute. Careful,
-      # these tasks will clean and populate Keycloak and the Manager database with demo data!
-      SETUP_INIT_CLEAN_DATABASE: 'true'
-      SETUP_KEYCLOAK_ADMIN_PASSWORD: secret
-      SETUP_IMPORT_DEMO_USERS: 'true'
-      SETUP_IMPORT_DEMO_ASSETS: 'true'
-      SETUP_IMPORT_DEMO_RULES: 'true'
-
-      # Optional: Configure SMTP smart host for Keycloak, to send password reset emails etc.
-      #SETUP_KEYCLOAK_EMAIL_HOST: smtp-host.demo.tld
-      #SETUP_KEYCLOAK_EMAIL_USER: 'smtp-user'
-      #SETUP_KEYCLOAK_EMAIL_PASSWORD: 'smtp-password'
-      #SETUP_KEYCLOAK_EMAIL_PORT: 25
-      #SETUP_KEYCLOAK_EMAIL_AUTH: 'true'
-      #SETUP_KEYCLOAK_EMAIL_TLS: 'true'
-      #SETUP_KEYCLOAK_EMAIL_FROM: 'noreply@demo.tld'
-
-      # The public host name of this OpenRemote installation. This name is used in bearer tokens
-      # and must be the name you access the web services under.
-      IDENTITY_NETWORK_HOST: localhost
-
-      # Set if SSL is enabled on the frontend reverse proxy and all internal proxies should assume https
-      IDENTITY_NETWORK_SECURE: 'true'
-
-      # The public port of this OpenRemote installation.
-      IDENTITY_NETWORK_WEBSERVER_PORT: 443
-
-      # The service-internal JDBC connection URL for the database service.
-      DATABASE_CONNECTION_URL: jdbc:postgresql://postgresql/openremote
-
-      # The database connection settings, passwords should be changed in production!
-      DATABASE_USERNAME: openremote
-      DATABASE_PASSWORD: CHANGE_ME_DB_USER_PASSWORD
-      DATABASE_MIN_POOL_SIZE: 5
-      DATABASE_MAX_POOL_SIZE: 20
-      DATABASE_CONNECTION_TIMEOUT_SECONDS: 300
-
-      # The service-internal host name and port of the identity provider.
-      KEYCLOAK_HOST: keycloak
-      KEYCLOAK_PORT: 8080
-
-      # Optional: Console applications can register for push notifications through FCM.
-      # NOTIFICATION_FIREBASE_URL: https://fcm.googleapis.com/fcm/send
-      # NOTIFICATION_FIREBASE_API_KEY = '...'
-
-      # Optional: Override built-in logging.properties with a file of your choice
-      # LOGGING_CONFIG_FILE: /my/manager/logging.properties
-
-    # This service needs access to other services on the Docker network.
-    links:
-      - postgresql
-      - keycloak
-
-    # Configure logging of the container, see config/logging.properties
-    logging:
-        options:
-            max-size: 10m
-
-  # Keycloak identity provider
-  keycloak:
-    image: openremote/keycloak:latest
-    environment:
-      TZ: Europe/Zurich
-
-      # Switch to DEBUG to diagnose Keycloak problems.
-      KEYCLOAK_LOGLEVEL: INFO
-
-      # The master realm superuser, you should not change this.
-      KEYCLOAK_USER: admin
-
-      # Change the admin root password if you make this application publicly accessible! Note
-      # that imported demo data uses the admin account and also creates a 'test' user with
-      # password 'test'. Importing will be broken if you change the password only here.
-      # Demo data should not be imported in production.
-      KEYCLOAK_PASSWORD: secret
-
-      # Configure how Keycloak connects to the database
-      POSTGRES_DATABASE: openremote
-      POSTGRES_USER: openremote
-      POSTGRES_PASSWORD: CHANGE_ME_DB_USER_PASSWORD
-
-    # This service needs access to other services on the Docker network.
-    links:
-      - postgresql
-
-    # Configure logging of the container
-    logging:
-        options:
-            max-size: 10m
-
-  # PostgreSQL DBMS
-  postgresql:
-    image: openremote/postgresql:latest
-    environment:
-      TZ: Europe/Zurich
-
-      # Create transient database and user. For production, run this once
-      # with your volume mapping for the data directory, then remove the
-      # variables and restart to preserve the stored data
-      POSTGRES_DB: openremote
-      POSTGRES_USER: openremote
-      POSTGRES_PASSWORD: CHANGE_ME_DB_USER_PASSWORD
-
-      # You can open an SQL console on a running container with:
-      # docker exec -it <container ID> psql -U openremote
-
-    # Durable data requires a volume mapping on your Docker host
+  # This configuration does not store SSL certificate data and allow changes to the
+  # proxy configuration, it is only configured for deployment on localhost. You can
+  # map a Docker volume or host directory to access/store proxy configuration files
+  # and SSL certificates.
+  proxy:
+    extends:
+      file: deploy.yml
+      service: proxy
+    depends_on:
+      manager:
+        condition: service_healthy
     # volumes:
-    #  - /path/to/data/on/my/host:/var/lib/pgsql/data
+      # Store data either in host-mapped directory or a named Docker volume
+      # - ${DEPLOYMENT_DIRECTORY:-../deployment}/proxy:/deployment
+      # - proxy-data:/deployment
+      #
+      # Override the haproxy.cfg with custom file
+      # -${MY_PROXY_CONFIG_FILE}:/etc/haproxy/haproxy.cfg
 
-    # Configure logging of the container
-    logging:
-        options:
-            max-size: 10m
+  # This configuration uses the manager's deployment-specific data such as map tiles,
+  # console application static resources (HTML, JS, CSS), extensions, and other
+  # configuration files which were baked into the managers image.
+  manager:
+    extends:
+      file: deploy.yml
+      service: manager
+    depends_on:
+      keycloak:
+        condition: service_healthy
+    # volumes:
+      # The ../deployment directory is baked into the managers image. Here you can
+      # override it with either a (different) host-mapped directory or a named data volume.
+
+      # Use local deployment data in host-mapped directory for easy development.
+      # - ${DEPLOYMENT_DIRECTORY:-../deployment}/manager:/deployment
+
+      # Use a named volume. When the volume is empty on startup, the files in the manager
+      # image's /deployment directory will be copied into the empty volume, thus
+      # giving you a default configuration to modify. Access the volume with:
+      #
+      # docker run --rm -it -v openremote_manager-data:/deployment debian:stretch /bin/bash
+      # > ls -la /deployment
+      #
+      # To use a volume, enable this:
+      #
+      # - manager-data:/deployment
+
+    environment:
+      # This switch can wipe all your Manager and Keycloak data, this is the factory reset!
+      SETUP_WIPE_CLEAN_INSTALL: 'true'
+      # When you are ready to permanently install your project, replace it with the next lines...
+      # SETUP_WIPE_CLEAN_INSTALL: # Allow override on CLI
+      # SETUP_ADMIN_PASSWORD: # Allow override on CLI
+
+  keycloak:
+    extends:
+      file: deploy.yml
+      service: keycloak
+    depends_on:
+      postgresql:
+        condition: service_healthy
+    environment:
+      # CHANGE THIS PASSWORD BEFORE STARTING THE STACK! THIS IS ONLY FOR DEMO!
+      SETUP_ADMIN_PASSWORD: secret
+      # When you are ready to permanently install your project, replace it with the next line ...
+      # SETUP_ADMIN_PASSWORD: # Allow override on CLI
+
+  # This configuration stores postgresql data in a Docker volume. You manage this volume
+  # independently from your stack with with 'docker volume ls', 'docker volume rm', etc.
+  # Alternatively, you can store postgresql data in a directory on your host.
+  postgresql:
+    extends:
+      file: deploy.yml
+      service: postgresql
+    volumes:
+      # Store data either in host-mapped directory or a named Docker volume.
+
+      # By default, we use a named volume to avoid permission problems with PostgreSQL.
+      - postgresql-data:/deployment
+
+      # If you use a directory, it must be owned by user:group 5432:5432 and mode 700!
+      #
+      # - ${DEPLOYMENT_DIRECTORY:-../deployment}/postgresql:/deployment

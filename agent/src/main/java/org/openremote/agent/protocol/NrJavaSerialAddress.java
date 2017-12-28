@@ -19,9 +19,8 @@
  */
 package org.openremote.agent.protocol;
 
-import io.netty.channel.rxtx.RxtxDeviceAddress;
-
-public class NrJavaSerialAddress extends RxtxDeviceAddress {
+@SuppressWarnings("deprecation")
+public class NrJavaSerialAddress extends io.netty.channel.rxtx.RxtxDeviceAddress {
 
     protected int baudRate;
 

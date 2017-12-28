@@ -19,6 +19,7 @@
  */
 package org.openremote.container.persistence;
 
+import org.apache.camel.CamelExecutionException;
 import org.apache.camel.ExchangePattern;
 import org.hibernate.CallbackException;
 import org.hibernate.EmptyInterceptor;
@@ -31,6 +32,7 @@ import javax.transaction.Synchronization;
 import java.io.Serializable;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -48,10 +50,10 @@ public class PersistenceEventInterceptor extends EmptyInterceptor {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public boolean onSave(Object entity, Serializable id,
                           Object[] state, String[] propertyNames, Type[] types)
         throws CallbackException {
-        //noinspection unchecked
         persistenceEvents.add(new PersistenceEvent(
             PersistenceEvent.Cause.INSERT,
             entity,
@@ -62,11 +64,11 @@ public class PersistenceEventInterceptor extends EmptyInterceptor {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public boolean onFlushDirty(Object entity, Serializable id,
                                 Object[] currentState, Object[] previousState,
                                 String[] propertyNames, Type[] types)
         throws CallbackException {
-        //noinspection unchecked
         persistenceEvents.add(new PersistenceEvent(
             PersistenceEvent.Cause.UPDATE,
             entity,
@@ -78,11 +80,11 @@ public class PersistenceEventInterceptor extends EmptyInterceptor {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public void onDelete(Object entity, Serializable id,
                          Object[] state,
                          String[] propertyNames,
                          Type[] types) {
-        //noinspection unchecked
         persistenceEvents.add(new PersistenceEvent(
             PersistenceEvent.Cause.DELETE,
             entity,
@@ -105,13 +107,18 @@ public class PersistenceEventInterceptor extends EmptyInterceptor {
                         return;
 
                     for (PersistenceEvent persistenceEvent : persistenceEvents) {
-                        messageBrokerService.getProducerTemplate().sendBodyAndHeader(
-                            PersistenceEvent.PERSISTENCE_TOPIC,
-                            ExchangePattern.InOnly,
-                            persistenceEvent,
-                            PersistenceEvent.HEADER_ENTITY_TYPE,
-                            persistenceEvent.getEntity().getClass()
-                        );
+                        try {
+                            messageBrokerService.getProducerTemplate().sendBodyAndHeader(
+                                PersistenceEvent.PERSISTENCE_TOPIC,
+                                ExchangePattern.InOnly,
+                                persistenceEvent,
+                                PersistenceEvent.HEADER_ENTITY_TYPE,
+                                persistenceEvent.getEntity().getClass()
+                            );
+                        } catch (CamelExecutionException ex) {
+                            // TODO Better error handling?
+                            LOG.log(Level.SEVERE, "Error dispatching: " + persistenceEvent + " - " + ex, ex);
+                        }
                     }
                 } finally {
                     persistenceEvents.clear();

@@ -19,7 +19,7 @@
  */
 package org.openremote.manager.client.interop.mapbox;
 
-import elemental.events.Event;
+import elemental2.dom.Event;
 import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
 

@@ -19,8 +19,8 @@
  */
 package org.openremote.manager.client.admin;
 
-import com.google.gwt.user.client.ui.IsWidget;
+import org.openremote.manager.client.widget.FormView;
 
-public interface AdminContent extends IsWidget {
+public interface AdminContent extends FormView {
 
 }

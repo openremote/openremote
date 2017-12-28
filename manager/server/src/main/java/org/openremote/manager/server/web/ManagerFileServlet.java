@@ -31,7 +31,6 @@ import org.openremote.container.web.file.GzipResponseFilter;
 
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
-import javax.servlet.Servlet;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -64,7 +63,6 @@ public class ManagerFileServlet extends FileServlet {
             put("text/xml", 1800);
             put("text/css", 1800);
             put("text/javascript", 1800);
-            put("text/html", 1800);
             put("application/javascript", 1800);
             put("application/json", 1800);
         }

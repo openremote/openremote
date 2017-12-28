@@ -75,6 +75,8 @@ public interface AssetBaseView<P extends AssetBaseView.Presenter> extends IsWidg
 
     void flyTo(double[] coordinates);
 
+    void setAccessPublicRead(boolean enabled);
+
     void setAttributeViews(List<AttributeView> attributeViews);
 
     void addAttributeViews(List<AttributeView> attributeViews);
