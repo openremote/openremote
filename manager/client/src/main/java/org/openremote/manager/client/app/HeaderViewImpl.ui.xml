@@ -10,7 +10,7 @@
     </ui:style>
 
     <ui:with field="managerMessages" type="org.openremote.manager.client.i18n.ManagerMessages"/>
-    <ui:with field="widgetStyle" type="org.openremote.manager.client.style.WidgetStyle"/>
+    <ui:with field="widgetStyle" type="org.openremote.components.client.style.WidgetStyle"/>
 
     <g:HTMLPanel styleName="flex layout horizontal center {widgetStyle.Header}">
 

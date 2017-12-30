@@ -22,7 +22,7 @@ package org.openremote.manager.client.widget;
 import com.google.gwt.dom.client.Document;
 import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.InlineLabel;
-import org.openremote.manager.client.style.WidgetStyle;
+import org.openremote.components.client.style.WidgetStyle;
 
 public class FormMessages extends FlowPanel {
 

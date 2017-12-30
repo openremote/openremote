@@ -22,8 +22,6 @@ package org.openremote.manager.client.user;
 import com.google.inject.Inject;
 import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.ManagerHistoryMapper;
-import org.openremote.manager.client.event.ShowFailureEvent;
-import org.openremote.manager.client.event.UserChangeEvent;
 
 public class UserControlsPresenter implements UserControls.Presenter {
 
@@ -43,15 +41,6 @@ public class UserControlsPresenter implements UserControls.Presenter {
 
         updateView();
 
-        environment.getEventBus().register(UserChangeEvent.class, event -> {
-            if (event.getUsername() == null) {
-                environment.getEventBus().dispatch(
-                    new ShowFailureEvent(environment.getMessages().sessionTimedOut())
-                );
-            } else {
-                updateView();
-            }
-        });
     }
 
     @Override

@@ -20,9 +20,6 @@
 
 package org.openremote.model.flow;
 
-import jsinterop.annotations.JsType;
-
-@JsType
 public enum NodeColor {
 
     DEFAULT,

@@ -2,7 +2,7 @@
              xmlns:g="urn:import:com.google.gwt.user.client.ui">
 
     <ui:with field="managerMessages" type="org.openremote.manager.client.i18n.ManagerMessages"/>
-    <ui:with field="widgetStyle" type="org.openremote.manager.client.style.WidgetStyle"/>
+    <ui:with field="widgetStyle" type="org.openremote.components.client.style.WidgetStyle"/>
 
     <g:FlowPanel styleName="layout vertical {widgetStyle.Viewport}">
         <g:SimplePanel ui:field="header" styleName="layout horizontal"/>

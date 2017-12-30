@@ -336,10 +336,6 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider{
         addClientRedirectUris(realm, redirectUris);
         client.setRedirectUris(redirectUris);
 
-        // Redirect URL for logout etc, go to /<realm>/
-        String baseUrl = UriBuilder.fromUri("/").path(realm).build().toString();
-        client.setBaseUrl(baseUrl);
-
         return client;
     }
 

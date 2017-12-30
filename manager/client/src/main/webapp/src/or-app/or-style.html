@@ -1,8 +1,10 @@
-<link rel="import" href="/static/bower_components/iron-flex-layout/iron-flex-layout-classes.html">
+<link rel="import" href="or-theme.html">
 
-<dom-module id="global-style">
+<link rel="import" href="../../bower_components/iron-flex-layout/iron-flex-layout-classes.html">
+
+<dom-module id="or-style">
     <template>
-        <style include="iron-flex iron-flex-alignment iron-flex-factors iron-positioning">
+        <style include="or-theme iron-flex iron-flex-alignment iron-flex-factors iron-positioning">
 
     ::-webkit-scrollbar {
         width: 1em;
@@ -29,6 +31,15 @@
 
     *:focus {
         outline: 0;
+    }
+
+    .scrollable {
+        overflow: auto;
+    }
+
+    scrollable div {
+        -webkit-flex-shrink: 0;
+        flex-shrink: 0;
     }
 
     .or-Viewport {
@@ -115,17 +126,7 @@
         padding: .8em .8em 0 .8em
     }
 
-    .or-MainContent.scrollable {
-        overflow: auto;
-    }
-
-    .or-MainContent.scrollable div {
-        -webkit-flex-shrink: 0;
-        flex-shrink: 0;
-    }
-
-    .or-MainContent:first-child {
-        z-index: 0;
+    .or-MainContent:last-child {
     }
 
     .or-PushButton,
@@ -240,7 +241,7 @@
 
     .or-HeadlineIcon,
     .or-HeadlineText {
-        font-size: x-large;
+        font-size: x-large !important;
     }
 
     .or-HeadlineText {

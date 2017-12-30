@@ -29,7 +29,7 @@ import org.openremote.manager.client.apps.AppsModule;
 import org.openremote.manager.client.map.MapModule;
 import org.openremote.manager.client.mvp.MVPModule;
 import org.openremote.manager.client.rules.RulesModule;
-import org.openremote.manager.client.toast.ToastModule;
+import org.openremote.components.client.toast.ToastModule;
 import org.openremote.manager.client.user.UserModule;
 
 @GinModules({

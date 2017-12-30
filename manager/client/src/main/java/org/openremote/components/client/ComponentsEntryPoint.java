@@ -17,14 +17,21 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.client.widget;
+package org.openremote.components.client;
 
-import com.google.gwt.user.client.ui.InlineLabel;
+import java.util.logging.Logger;
 
-public class MessagesIcon extends InlineLabel {
+public class ComponentsEntryPoint implements com.google.gwt.core.client.EntryPoint {
 
-    public MessagesIcon(String icon) {
-        setStyleName("fa fa-" + icon);
-        addStyleName("or-MessagesIcon");
+    private static final Logger LOG = Logger.getLogger(ComponentsEntryPoint.class.getName());
+
+    @Override
+    public void onModuleLoad() {
+        dispatchReadyEvent();
     }
+
+    public native static void dispatchReadyEvent() /*-{
+        $wnd.dispatchEvent(new CustomEvent("ComponentsReady"));
+    }-*/;
+
 }

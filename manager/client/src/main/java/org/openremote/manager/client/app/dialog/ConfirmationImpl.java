@@ -21,7 +21,7 @@ package org.openremote.manager.client.app.dialog;
 
 import com.google.gwt.user.client.ui.Label;
 import org.openremote.manager.client.i18n.ManagerMessages;
-import org.openremote.manager.client.style.WidgetStyle;
+import org.openremote.components.client.style.WidgetStyle;
 import org.openremote.manager.client.widget.PushButton;
 
 import javax.inject.Inject;

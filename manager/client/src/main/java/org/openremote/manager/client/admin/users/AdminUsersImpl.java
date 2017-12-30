@@ -28,7 +28,7 @@ import com.google.gwt.user.client.ui.ListBox;
 import com.google.inject.Provider;
 import org.openremote.manager.client.app.dialog.Confirmation;
 import org.openremote.manager.client.style.FormTableStyle;
-import org.openremote.manager.client.style.WidgetStyle;
+import org.openremote.components.client.style.WidgetStyle;
 import org.openremote.manager.client.widget.FormViewImpl;
 import org.openremote.manager.shared.security.Tenant;
 import org.openremote.manager.shared.security.User;

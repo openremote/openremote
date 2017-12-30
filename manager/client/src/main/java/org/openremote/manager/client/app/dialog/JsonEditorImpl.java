@@ -22,7 +22,7 @@ package org.openremote.manager.client.app.dialog;
 import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.InlineLabel;
 import org.openremote.manager.client.i18n.ManagerMessages;
-import org.openremote.manager.client.style.WidgetStyle;
+import org.openremote.components.client.style.WidgetStyle;
 import org.openremote.manager.client.widget.FormTextArea;
 import org.openremote.manager.client.widget.IconLabel;
 import org.openremote.manager.client.widget.PushButton;

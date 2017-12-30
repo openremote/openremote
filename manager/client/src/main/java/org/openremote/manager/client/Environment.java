@@ -25,7 +25,7 @@ import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.service.EventService;
 import org.openremote.manager.client.service.RequestService;
 import org.openremote.manager.client.service.SecurityService;
-import org.openremote.manager.client.style.WidgetStyle;
+import org.openremote.components.client.style.WidgetStyle;
 import org.openremote.model.event.bus.EventBus;
 
 /**

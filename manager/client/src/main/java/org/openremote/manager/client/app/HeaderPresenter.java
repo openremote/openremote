@@ -23,6 +23,7 @@ import com.google.gwt.place.shared.PlaceController;
 import com.google.inject.Inject;
 import org.openremote.manager.client.admin.syslog.AdminSyslogPlace;
 import org.openremote.manager.client.apps.AppsPlace;
+import org.openremote.manager.client.apps.ConsoleAppSelection;
 import org.openremote.manager.client.assets.AssetsDashboardPlace;
 import org.openremote.manager.client.assets.asset.AssetViewPlace;
 import org.openremote.manager.client.assets.browser.AssetBrowserSelection;
@@ -30,8 +31,6 @@ import org.openremote.manager.client.assets.browser.AssetTreeNode;
 import org.openremote.manager.client.assets.browser.TenantTreeNode;
 import org.openremote.manager.client.assets.tenant.AssetsTenantPlace;
 import org.openremote.manager.client.event.GoToPlaceEvent;
-import org.openremote.manager.client.event.UserChangeEvent;
-import org.openremote.model.event.bus.EventBus;
 import org.openremote.manager.client.map.MapAssetPlace;
 import org.openremote.manager.client.map.MapTenantPlace;
 import org.openremote.manager.client.rules.asset.AssetRulesListPlace;
@@ -40,6 +39,7 @@ import org.openremote.manager.client.rules.tenant.TenantRulesListPlace;
 import org.openremote.manager.client.service.SecurityService;
 import org.openremote.manager.client.user.UserControls;
 import org.openremote.model.Constants;
+import org.openremote.model.event.bus.EventBus;
 
 public class HeaderPresenter implements HeaderView.Presenter {
 
@@ -49,6 +49,7 @@ public class HeaderPresenter implements HeaderView.Presenter {
     final protected SecurityService securityService;
 
     protected AssetBrowserSelection assetBrowserSelection;
+    protected ConsoleAppSelection consoleAppSelection;
 
     @Inject
     public HeaderPresenter(HeaderView view,
@@ -72,11 +73,11 @@ public class HeaderPresenter implements HeaderView.Presenter {
             event -> assetBrowserSelection = event
         );
 
-        view.setUsername(securityService.getUsername());
-        eventBus.register(
-            UserChangeEvent.class,
-            event -> view.setUsername(event.getUsername())
+        eventBus.register(ConsoleAppSelection.class,
+            event -> consoleAppSelection = event
         );
+
+        view.setUsername(securityService.getUsername());
     }
 
     @Override
@@ -131,7 +132,7 @@ public class HeaderPresenter implements HeaderView.Presenter {
 
     @Override
     public void navigateApps() {
-        placeController.goTo(new AppsPlace());
+        placeController.goTo(new AppsPlace(consoleAppSelection != null ? consoleAppSelection.getRealm() : null));
     }
 
     @Override

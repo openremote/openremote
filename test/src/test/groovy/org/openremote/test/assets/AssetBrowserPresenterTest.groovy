@@ -14,7 +14,7 @@ import org.openremote.manager.client.assets.browser.*
 import org.openremote.manager.client.event.SubscriptionFailureEvent
 import org.openremote.manager.client.i18n.ManagerMessages
 import org.openremote.manager.client.service.RequestServiceImpl
-import org.openremote.manager.client.style.WidgetStyle
+import org.openremote.components.client.style.WidgetStyle
 import org.openremote.manager.server.asset.AssetStorageService
 import org.openremote.manager.server.asset.ServerAsset
 import org.openremote.manager.server.security.ManagerIdentityService

@@ -13,7 +13,7 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package org.openremote.manager.client.widget;
+package org.openremote.components.client.widget;
 
 import com.google.gwt.animation.client.Animation;
 import com.google.gwt.core.client.GWT;

@@ -64,7 +64,7 @@ public class RequestServiceImpl implements RequestService {
         public static void setDefaults(String realm) {
             Location location = Browser.getWindow().getLocation();
             REST.apiURL = "//" + location.getHostname() + ":" + location.getPort() + "/" + realm;
-            REST.loglevel = LOG.isLoggable(Level.FINE) ? 1 : 0;
+            // REST.loglevel = LOG.isLoggable(Level.FINE) ? 1 : 0;
         }
     }
 

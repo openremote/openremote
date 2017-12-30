@@ -17,9 +17,10 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.client.toast;
+package org.openremote.components.client.toast;
 
 import com.google.gwt.user.client.Timer;
+import jsinterop.annotations.JsType;
 
 import javax.inject.Inject;
 import java.util.ArrayList;
@@ -27,6 +28,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
+@JsType
 public class Toasts extends Timer {
 
     final protected List<Toast> toasts = new LinkedList<>();

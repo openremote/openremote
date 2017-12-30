@@ -121,8 +121,7 @@ public class AppActivityManager {
         }
 
         if (startingNext) {
-            // The place changed again before the new current activity showed its
-            // widget
+            // The place changed again before the new current activity showed its widget
             tryStopOrCancel(false);
             currentActivity = NULL_ACTIVITY;
             startingNext = false;

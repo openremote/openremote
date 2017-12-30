@@ -23,7 +23,7 @@ import com.google.gwt.user.cellview.client.CellTree;
 import com.google.gwt.user.cellview.client.TreeNode;
 import com.google.gwt.view.client.TreeViewModel;
 import org.openremote.manager.client.style.FormTreeStyle;
-import org.openremote.manager.client.style.WidgetStyle;
+import org.openremote.components.client.style.WidgetStyle;
 
 import java.util.ArrayList;
 import java.util.HashMap;

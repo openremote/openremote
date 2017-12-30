@@ -27,7 +27,7 @@ import com.google.gwt.user.client.ui.HTMLPanel;
 import com.google.inject.Provider;
 import elemental.client.Browser;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
-import org.openremote.manager.client.style.WidgetStyle;
+import org.openremote.components.client.style.WidgetStyle;
 import org.openremote.manager.client.widget.FlexSplitPanel;
 import org.openremote.manager.client.widget.Hyperlink;
 import org.openremote.manager.client.widget.MapWidget;

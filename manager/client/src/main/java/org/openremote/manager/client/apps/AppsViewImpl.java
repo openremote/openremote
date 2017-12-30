@@ -28,17 +28,14 @@ import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.HTMLPanel;
 import com.google.gwt.user.client.ui.Label;
 import org.openremote.manager.client.i18n.ManagerMessages;
-import org.openremote.manager.client.style.WidgetStyle;
+import org.openremote.components.client.style.WidgetStyle;
 import org.openremote.manager.client.util.Timeout;
 import org.openremote.manager.client.widget.Hyperlink;
 import org.openremote.manager.shared.apps.ConsoleApp;
 
 import javax.inject.Inject;
-import java.util.logging.Logger;
 
 public class AppsViewImpl extends Composite implements AppsView {
-
-    private static final Logger LOG = Logger.getLogger(AppsViewImpl.class.getName());
 
     interface UI extends UiBinder<HTMLPanel, AppsViewImpl> {
     }
@@ -82,7 +79,6 @@ public class AppsViewImpl extends Composite implements AppsView {
             appsListPanel.clear();
             frame.setSrc("about:blank");
             frame.getStyle().setDisplay(com.google.gwt.dom.client.Style.Display.NONE);
-            placeholder.setVisible(true);
         }
     }
 
@@ -91,34 +87,62 @@ public class AppsViewImpl extends Composite implements AppsView {
         appsListPanel.clear();
 
         if (apps == null || apps.length == 0) {
-            Label noAgentsLabel = new Label(managerMessages.noAgentsFound());
-            noAgentsLabel.addStyleName(widgetStyle.SecondaryNavItem());
-            appsListPanel.add(noAgentsLabel);
+            LabelItem item = new LabelItem(null, managerMessages.noAppsFound());
+            appsListPanel.add(item);
             return;
         }
 
         for (ConsoleApp app : apps) {
-            Hyperlink item = new Hyperlink();
-            item.setIcon("connectdevelop");
-            item.addStyleName(style.navItem());
-            item.addStyleName(widgetStyle.SecondaryNavItem());
-            item.setText(app.getTenant().getDisplayName());
-            item.setSimpleClickHandler(() -> {
-                appsListPanel.forEach(widget -> widget.removeStyleName("active"));
-                item.addStyleName("active");
-                presenter.onAppSelected(app);
-            });
+            LinkItem item = new LinkItem(app.getTenant().getRealm(), app.getTenant().getDisplayName());
             appsListPanel.add(item);
         }
     }
 
     @Override
-    public void openAppUrl(String appUrl) {
+    public void openAppUrl(String realm, String appUrl) {
+
+        // Select the right item in the list of apps
+        appsListPanel.forEach(item -> {
+            item.removeStyleName("active");
+            if (item instanceof LinkItem) {
+                LinkItem linkItem = (LinkItem) item;
+                if (linkItem.realm.equals(realm)) {
+                    item.addStyleName("active");
+                }
+            }
+        });
+
+        // Show the app in an iframe, try to give it focus
         placeholder.setVisible(false);
         frame.getStyle().clearDisplay();
         frame.setSrc(appUrl);
         Timeout.debounce("setiframefocus", () -> {
             frame.focus();
         }, 500);
+    }
+
+    class LabelItem extends Label {
+
+        final String realm;
+
+        public LabelItem(String realm, String text) {
+            super(text);
+            this.realm = realm;
+            addStyleName(widgetStyle.SecondaryNavItem());
+        }
+    }
+
+    class LinkItem extends Hyperlink {
+
+        final String realm;
+
+        public LinkItem(String realm, String text) {
+            this.realm = realm;
+            setIcon("connectdevelop");
+            addStyleName(style.navItem());
+            addStyleName(widgetStyle.SecondaryNavItem());
+            setText(text);
+            setSimpleClickHandler(() -> presenter.onAppSelected(realm));
+        }
     }
 }

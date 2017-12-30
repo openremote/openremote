@@ -4,7 +4,7 @@
              xmlns:assetBrowser="urn:import:org.openremote.manager.client.assets.browser">
 
     <ui:with field="managerMessages" type="org.openremote.manager.client.i18n.ManagerMessages"/>
-    <ui:with field="widgetStyle" type="org.openremote.manager.client.style.WidgetStyle"/>
+    <ui:with field="widgetStyle" type="org.openremote.components.client.style.WidgetStyle"/>
 
     <w:FlexSplitPanel handleStyle="{widgetStyle.SplitPanelHandle}"
                       firstPanelWidth="250"

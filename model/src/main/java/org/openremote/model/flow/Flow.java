@@ -20,13 +20,10 @@
 
 package org.openremote.model.flow;
 
-import jsinterop.annotations.JsIgnore;
-import jsinterop.annotations.JsType;
-
 import javax.persistence.*;
 import java.util.*;
 
-@JsType
+
 @Entity
 @Table(name = "FLOW")
 public class Flow extends FlowObject {
@@ -36,7 +33,7 @@ public class Flow extends FlowObject {
     @Version
     public int version;
 
-    @JsIgnore
+
     @Column(name = "CREATED_ON")
     @Temporal(TemporalType.TIMESTAMP)
     public Date createdOn = new Date();
@@ -53,22 +50,22 @@ public class Flow extends FlowObject {
     @Transient
     public FlowDependency[] subDependencies = new FlowDependency[0];
 
-    @JsIgnore
+
     protected Flow() {
     }
 
-    @JsIgnore
+
     public Flow(String label, String id) {
         super(label, id, TYPE);
     }
 
-    @JsIgnore
+
     public Flow(String label, String id, Node... nodes) {
         this(label, id);
         this.nodes = nodes;
     }
 
-    @JsIgnore
+
     public Flow(String label, String id, Node[] nodes, Wire[] wires) {
         this(label, id);
         this.nodes = nodes;
@@ -81,7 +78,7 @@ public class Flow extends FlowObject {
         }
     }
 
-    @JsIgnore
+
     public Date getCreatedOn() {
         return createdOn;
     }
@@ -92,12 +89,7 @@ public class Flow extends FlowObject {
 
     public Node[] findNodes(String type) {
         List<Node> collection = new ArrayList<>(Arrays.asList(getNodes()));
-        Iterator<Node> it = collection.iterator();
-        while (it.hasNext()) {
-            Node node = it.next();
-            if (!node.isOfType(type))
-                it.remove();
-        }
+        collection.removeIf(node -> !node.isOfType(type));
         return collection.toArray(new Node[collection.size()]);
     }
 
@@ -262,8 +254,7 @@ public class Flow extends FlowObject {
         Slot slot = node.findSlot(slotId);
         if (slot == null)
             return false;
-        List<Slot> collection = new ArrayList<>();
-        collection.addAll(Arrays.asList(node.getSlots()));
+        List<Slot> collection = new ArrayList<>(Arrays.asList(node.getSlots()));
         Iterator<Slot> it = collection.iterator();
         boolean removed = false;
         while (it.hasNext()) {
@@ -394,13 +385,13 @@ public class Flow extends FlowObject {
         return null;
     }
 
-    @JsIgnore
+
     public void printWires(StringBuilder sb) {
         sb.append("\n").append("Wires of ").append(this).append(" => ").append(getWires().length).append("\n");
         printWires(sb, getWires());
     }
 
-    @JsIgnore
+
     public void printWires(StringBuilder sb, Wire[] wires) {
         for (Wire wire : wires) {
             sb.append("--------------------------------------------------------------------------------------------");

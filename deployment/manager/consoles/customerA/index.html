@@ -3,49 +3,212 @@
 <head>
     <title>OpenRemote Console Application</title>
 
-    <!-- ############## YOU NEED THESE LINES IN YOUR OPENREMOTE APP ############### -->
-    <script src="bower_components/webcomponentsjs/webcomponents-lite.js"></script>
-    <link rel="import" href="components/openremote/openremote-app.html">
-    <!-- ################################################################################## -->
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+
+    <!-- ############## Required: Load WebComponents polyfill and components ############### -->
+    <script src="/static/bower_components/webcomponentsjs/webcomponents-lite.js"></script>
+
+    <link rel="import" href="/static/src/or-app/or-app.html">
+    <link rel="import" href="/static/src/or-toast/or-toast.html">
+    <!-- Optional: You can import other OpenRemote modules here -->
+
+    <!-- Optional: Load more application resources after authentication -->
+    <script>
+        window.addEventListener('AppInit', function (e) {
+            console.log("Loading customerA console app resources...");
+            let app = e.detail.app;
+
+            // Load resources in parallel
+            Promise.all([
+                app.load.css("/static/bower_components/font-awesome/css/font-awesome.css"),
+
+                app.load.css("/static/3rdparty/mapbox-gl-js/0.42.2/mapbox-gl.css"),
+                app.load.js("/static/3rdparty/mapbox-gl-js/0.42.2/mapbox-gl.js"),
+
+                app.load.js("/static/bower_components/chart.js/dist/Chart.js"),
+
+                app.load.js("/static/3rdparty/sprintf/1.0.3/sprintf.min.js")
+            ]).then(() => {
+
+                /*
+                // Load resources sequentially
+                app.load.js("/resource1")
+                    .then(() => {
+                        return app.load.js("/resource2")
+                    })
+                    .catch(e => {
+                        app.set("error", e);
+                    });
+                */
+
+            }).catch(e => {
+                app.set("error", e);
+            });
+
+        })
+    </script>
+
+    <style type="text/css">
+        .myAppHeadline {
+            display: block;
+            text-decoration: none;
+            padding: 1em;
+            font-size: x-large;
+            background: var(--theme-lightgreen);
+            color: var(--theme-black);
+        }
+    </style>
 
 </head>
-<body>
-<h1>The OpenRemote console application of the <code>customerA</code> tenant</h1>
-<p>
-    On your OpenRemote installation, edit the HTML content in <code>deployment/manager/consoles/customerA/</code>.
-</p>
-<p>
-    You can duplicate the <code>customerA</code> directory to create new console applications for other tenants/realms.
-</p>
-<p>
-    View the source in your web browser and follow the examples on this page to write your own OpenRemote
-    application, it's easy with <a href="https://www.webcomponents.org/">Web Components</a>.
-</p>
 
+<!-- Optional: Make your body hidden by default, so it will be rendered only when authenticated -->
+<body class="layout vertical" style="visibility:hidden;">
 
-<div>
-    <openremote-app tenant="customerA" login-when-ready="true" timeout="10" verbose="true">
-        <!--Execute AssetQuery and subscribe for attribute changes-->
-        <openremote-asset type="room" asset-id="blabla">
+<!-- Optional: A component can handle ShowInfo and ShowError events for you with a simple toast display-->
+<or-toast></or-toast>
+
+<!-- ############## Required: One <or-app> should wrap your frontend, you can enforce login/authentication ############## -->
+<or-app login="true" tenant="customerA" timeout="10">
+
+    <a href="#" class="myAppHeadline">
+        The OpenRemote console application of the <code>customerA</code> tenant
+    </a>
+
+    <!-- This is a container element that has some padding and visually separation from other containers -->
+    <div class="or-MainContent">
+
+        <p>
+            On your OpenRemote installation, edit the HTML content in
+            <code>deployment/manager/consoles/customerA/</code>.
+        </p>
+        <p>
+            You can duplicate the <code>customerA</code> directory to create new console applications for other
+            tenants/realms.
+        </p>
+        <p>
+            View the source in your web browser and follow the examples on this page to write your own OpenRemote
+            application, it's easy with <a href="https://www.webcomponents.org/">Web Components</a>.
+        </p>
+    </div>
+
+    <div class="or-MainContent">
+
+        <h3 style="color: var(--theme-red);">Note: This is under development and incomplete.</h3>
+
+        <!-- Execute AssetQuery and subscribe for attribute changes -->
+        <or-asset type="room" id="blabla">
+
+            <!-- Bind asset attributes to elements -->
             <p>
-                Tempature of the room is,<span data-attribute="currentTemp"></span>
+                Temperature of the room is: <span data-attribute="currentTemp"></span>
             </p>
+
             <form>
+                Set desired temperature:
                 <input data-attribute="setTemp" data-validate>
                 <submit data-asset-action></submit>
+                <!-- Defaults to 'update' as this is what restricted users can do -->
             </form>
+
+            <!-- Show hide elements based on boolean asset attribute -->
             <p data-visible="humidityBool">
                 Humidity too high!
             </p>
             <p data-attached="co2Bool">
                 Too much CO2!
             </p>
-        </openremote-asset>
-        <button onclick="document.querySelector('openremote-app').connect()">Click to connect</button>
+        </or-asset>
+    </div>
 
-    </openremote-app>
-</div>
+    <!-- Switch to horizontal layout but flex first and take as much vertical space as needed -->
+    <div class="flex layout horizontal">
 
+        <!-- This is a container element that flexes and takes as much vertical space as it
+             can get, and if that's not enough, it will show a scrollbar -->
+        <div class="flex scrollable or-MainContent">
+            <p>Scroll me...</p>
+            <p>Scroll me...</p>
+            <p>Scroll me...</p>
+            <p>Scroll me...</p>
+            <p>Scroll me...</p>
+            <p>Scroll me...</p>
+            <p>Scroll me...</p>
+            <p>Scroll me...</p>
+            <p>Scroll me...</p>
+            <p>Scroll me...</p>
+            <p>Scroll me...</p>
+            <p>Scroll me...</p>
+            <p>Scroll me...</p>
+            <p>Scroll me...</p>
+            <p>Scroll me...</p>
+            <p>Scroll me...</p>
+            <p>Scroll me...</p>
+            <p>Scroll me...</p>
+            <p>Scroll me...</p>
+            <p>Scroll me...</p>
+            <p>Scroll me...</p>
+            <p>Scroll me...</p>
+            <p>Scroll me...</p>
+            <p>Scroll me...</p>
+            <p>Scroll me...</p>
+            <p>Scroll me...</p>
+        </div>
+
+        <!-- This is nice list container that flexes and takes as much vertical space as it
+             can get, and if that's not enough, it will show a scrollbar -->
+        <div class="flex or-MainContent or-FormList">
+            <div class="or-FormListItem">Scroll me...</div>
+            <div class="or-FormListItem">Scroll me...</div>
+            <div class="or-FormListItem">Scroll me...</div>
+            <div class="or-FormListItem">Scroll me...</div>
+            <div class="or-FormListItem">Scroll me...</div>
+            <div class="or-FormListItem">Scroll me...</div>
+            <div class="or-FormListItem">Scroll me...</div>
+            <div class="or-FormListItem">Scroll me...</div>
+            <div class="or-FormListItem">Scroll me...</div>
+            <div class="or-FormListItem">Scroll me...</div>
+            <div class="or-FormListItem">Scroll me...</div>
+            <div class="or-FormListItem">Scroll me...</div>
+            <div class="or-FormListItem">Scroll me...</div>
+            <div class="or-FormListItem">Scroll me...</div>
+            <div class="or-FormListItem">Scroll me...</div>
+            <div class="or-FormListItem">Scroll me...</div>
+            <div class="or-FormListItem">Scroll me...</div>
+            <div class="or-FormListItem">Scroll me...</div>
+            <div class="or-FormListItem">Scroll me...</div>
+            <div class="or-FormListItem">Scroll me...</div>
+            <div class="or-FormListItem">Scroll me...</div>
+            <div class="or-FormListItem">Scroll me...</div>
+        </div>
+
+    </div>
+
+    <div class="or-MainContent">
+        <div class="layout horizontal or-FormGroup">
+            <div class="or-FormField">
+
+                <button class="or-FormControl or-FormButtonPrimary or-PushButton"
+                        onclick="document.querySelector('or-app').connectService()">Click to connect (doesn't work yet)
+                </button>
+
+                <button class="or-FormControl or-FormButton or-PushButton"
+                        onclick="openremote.TOASTS.showToast(
+                            new openremote.toast.Toast(
+                                openremote.toast.Toast.Type.SUCCESS,
+                                'Welcome ' + openremote.INSTANCE.user + ', on ' + openremote.INSTANCE.tenant + '. It is ' + new Date() + '.',
+                                3000
+                            )
+                        )">Show a toast</button>
+
+                <button class="or-FormControl or-FormButtonDanger or-PushButton"
+                        onclick="document.querySelector('or-app').logout()">Logout
+                </button>
+
+            </div>
+        </div>
+    </div>
+
+</or-app>
 
 </body>
 </html>

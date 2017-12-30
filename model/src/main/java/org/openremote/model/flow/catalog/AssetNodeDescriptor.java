@@ -22,8 +22,6 @@ package org.openremote.model.flow.catalog;
 import org.openremote.model.flow.Node;
 import org.openremote.model.flow.NodeColor;
 import org.openremote.model.flow.Slot;
-import org.openremote.model.flow.catalog.CatalogCategory;
-import org.openremote.model.flow.catalog.NodeDescriptor;
 
 import java.util.List;
 import java.util.function.Supplier;

@@ -1,6 +1,8 @@
-<dom-module id="global-theme">
+<link rel="import" href="/ui/colors.html">
+
+<dom-module id="or-theme">
     <template>
-        <style>
+        <style include="colors">
 
     ::-webkit-scrollbar-track {
         background-color: var(--theme-black);
@@ -335,9 +337,9 @@
 
     .or-MainContent {
         background-color: var(--theme-white);
-        -webkit-box-shadow: 0px 2px 2px 0px rgba(44, 44, 44, 0.4);
-        -moz-box-shadow: 0px 2px 2px 0px rgba(44, 44, 44, 0.4);
-        box-shadow: 0px 2px 2px 0px rgba(44, 44, 44, 0.4);
+        box-shadow: inset 0px 2px 4px 0px var(--theme-mediumgrey);
+        -webkit-box-shadow: inset 0px 2px 4px 0px var(--theme-mediumgrey);
+        -moz-box-shadow: inset 0px 2px 4px 0px var(--theme-mediumgrey);
     }
 
     .or-FormList {

@@ -30,7 +30,7 @@ import com.google.gwt.user.client.ui.Label;
 import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.widget.AbstractAppPanel;
 import org.openremote.manager.client.widget.Hyperlink;
-import org.openremote.manager.client.widget.PopupPanel;
+import org.openremote.components.client.widget.PopupPanel;
 
 import javax.inject.Inject;
 

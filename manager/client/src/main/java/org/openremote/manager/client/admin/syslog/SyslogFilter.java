@@ -21,7 +21,7 @@ package org.openremote.manager.client.admin.syslog;
 
 import com.google.gwt.user.client.ui.FlowPanel;
 import org.openremote.manager.client.i18n.ManagerMessages;
-import org.openremote.manager.client.style.WidgetStyle;
+import org.openremote.components.client.style.WidgetStyle;
 import org.openremote.manager.client.widget.*;
 import org.openremote.model.syslog.SyslogLevel;
 

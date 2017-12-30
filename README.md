@@ -28,6 +28,8 @@ docker-compose -p openremote -f profile/demo.yml up --no-build
 
 Access the manager UI and API on https://localhost/ with username `admin` and password `secret`. Accept the 'insecure' self-signed SSL certificate.
 
+The console app of `customerA` can be accessed on https://localhost/console/customerA/ with username `testuser3` and password `testuser3`.
+
 Stop the stack and remove all unused data volumes (on your host!) with:
 
 ```

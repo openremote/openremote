@@ -21,8 +21,6 @@
 package org.openremote.model.flow;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import jsinterop.annotations.JsIgnore;
-import jsinterop.annotations.JsType;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -31,7 +29,6 @@ import javax.persistence.Table;
 import javax.validation.constraints.NotNull;
 import java.io.Serializable;
 
-@JsType
 @IdClass(Wire.Id.class)
 @Entity
 @Table(name = "WIRE")
@@ -86,20 +83,20 @@ public class Wire {
     @javax.persistence.Id
     @NotNull
     @Column(name = "FLOW_ID")
-    @JsIgnore
+
     @JsonIgnore
     public String flowId;
 
-    @JsIgnore
+
     protected Wire() {
     }
 
-    @JsIgnore
+
     public Wire(Slot source, Slot sink) {
         this(source.getId(), sink.getId());
     }
 
-    @JsIgnore
+
     public Wire(String sourceId, String sinkId) {
         this.sourceId = sourceId;
         this.sinkId = sinkId;

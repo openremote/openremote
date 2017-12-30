@@ -25,22 +25,38 @@ import com.google.gwt.place.shared.Prefix;
 
 public class AppsPlace extends Place {
 
+    final String realm;
+
+    public AppsPlace() {
+        this.realm = null;
+    }
+
+    public AppsPlace(String realm) {
+        this.realm = realm;
+    }
+
+    public String getRealm() {
+        return realm;
+    }
+
     @Prefix("apps")
     public static class Tokenizer implements PlaceTokenizer<AppsPlace> {
 
         @Override
         public AppsPlace getPlace(String token) {
-            return new AppsPlace();
+            return new AppsPlace(token != null && token.length() > 0 ? token : null);
         }
 
         @Override
         public String getToken(AppsPlace place) {
-            return "";
+            return place.getRealm() != null ? place.getRealm() : "";
         }
     }
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + "{}";
+        return getClass().getSimpleName() + "{" +
+            "realm='" + realm + '\'' +
+            '}';
     }
 }

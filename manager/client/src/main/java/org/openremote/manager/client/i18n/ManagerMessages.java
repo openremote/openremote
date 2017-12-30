@@ -526,4 +526,6 @@ public interface ManagerMessages extends Messages {
     String publicAccess();
 
     String shareLink();
+
+    String noAppsFound();
 }

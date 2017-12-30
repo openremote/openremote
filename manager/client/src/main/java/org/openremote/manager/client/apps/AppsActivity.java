@@ -66,7 +66,18 @@ public class AppsActivity
             consoleAppArrayMapper,
             consoleAppResource::getInstalledApps,
             200,
-            view::setApps,
+            apps -> {
+                view.setApps(apps);
+                if (getPlace().getRealm() != null) {
+                    for (ConsoleApp app : apps) {
+                        if (app.getTenant().getRealm().equals(getPlace().getRealm())) {
+                            view.openAppUrl(app.getTenant().getRealm(), app.getUrl());
+                            environment.getEventBus().dispatch(new ConsoleAppSelection(app.getTenant().getRealm()));
+                            break;
+                        }
+                    }
+                }
+            },
             ex -> handleRequestException(ex, environment)
         );
     }
@@ -78,7 +89,7 @@ public class AppsActivity
     }
 
     @Override
-    public void onAppSelected(ConsoleApp app) {
-        view.openAppUrl(app.getUrl());
+    public void onAppSelected(String realm) {
+        environment.getPlaceController().goTo(new AppsPlace(realm));
     }
 }

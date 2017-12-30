@@ -5,8 +5,6 @@
 
 package org.openremote.model.flow;
 
-import jsinterop.annotations.JsIgnore;
-import jsinterop.annotations.JsType;
 import org.openremote.model.IdentifiableEntity;
 
 import javax.persistence.Column;
@@ -18,7 +16,7 @@ import javax.validation.constraints.Size;
 
 import static org.openremote.model.Constants.PERSISTENCE_UNIQUE_ID_GENERATOR;
 
-@JsType
+
 @MappedSuperclass
 public class FlowObject implements IdentifiableEntity {
 
@@ -35,11 +33,11 @@ public class FlowObject implements IdentifiableEntity {
     @Column(name = "LABEL", nullable = true)
     public String label;
 
-    @JsIgnore
+
     protected FlowObject() {
     }
 
-    @JsIgnore
+
     public FlowObject(String id, String type, String label) {
         this.id = id;
         this.type = type;

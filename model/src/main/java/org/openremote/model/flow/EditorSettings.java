@@ -20,9 +20,6 @@
 
 package org.openremote.model.flow;
 
-import jsinterop.annotations.JsIgnore;
-import jsinterop.annotations.JsType;
-
 import javax.persistence.Column;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
@@ -30,7 +27,7 @@ import javax.validation.constraints.NotNull;
 
 import static org.openremote.model.Constants.PERSISTENCE_STRING_ARRAY_TYPE;
 
-@JsType
+
 public class EditorSettings {
 
     @NotNull
@@ -54,16 +51,16 @@ public class EditorSettings {
     @org.hibernate.annotations.Type(type = PERSISTENCE_STRING_ARRAY_TYPE)
     public String[] components;
 
-    @JsIgnore
+
     public EditorSettings() {
     }
 
-    @JsIgnore
+
     public EditorSettings(String typeLabel) {
         this.typeLabel = typeLabel;
     }
 
-    @JsIgnore
+
     public EditorSettings(String typeLabel, NodeColor nodeColor) {
         this.typeLabel = typeLabel;
         this.nodeColor = nodeColor;

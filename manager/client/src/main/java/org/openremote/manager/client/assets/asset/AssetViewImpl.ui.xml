@@ -3,7 +3,7 @@
              xmlns:w="urn:import:org.openremote.manager.client.widget">
 
     <ui:with field="managerMessages" type="org.openremote.manager.client.i18n.ManagerMessages"/>
-    <ui:with field="widgetStyle" type="org.openremote.manager.client.style.WidgetStyle"/>
+    <ui:with field="widgetStyle" type="org.openremote.components.client.style.WidgetStyle"/>
 
     <ui:style field="style" type="org.openremote.manager.client.assets.asset.AssetViewImpl.Style">
         .navItem {
@@ -29,7 +29,8 @@
         }
 
         .attributeView {
-            border-left: 8px solid;
+            border-left-width: 8px;
+            border-left-style: solid;
         }
 
         .metaItemValueEditor {

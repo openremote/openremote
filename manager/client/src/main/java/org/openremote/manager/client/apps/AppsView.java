@@ -25,13 +25,13 @@ import org.openremote.manager.shared.apps.ConsoleApp;
 public interface AppsView extends IsWidget {
 
     interface Presenter {
-        void onAppSelected(ConsoleApp app);
+        void onAppSelected(String realm);
     }
 
     void setPresenter(Presenter presenter);
 
     void setApps(ConsoleApp[] apps);
 
-    void openAppUrl(String appUrl);
+    void openAppUrl(String realm, String appUrl);
 
 }

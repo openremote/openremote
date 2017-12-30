@@ -17,20 +17,22 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.client.toast;
+package org.openremote.components.client.toast;
 
 import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.Label;
-import org.openremote.manager.client.style.WidgetStyle;
-import org.openremote.manager.client.widget.MessagesIcon;
-import org.openremote.manager.client.widget.PopupPanel;
+import jsinterop.annotations.JsType;
+import org.openremote.components.client.style.WidgetStyle;
+import org.openremote.components.client.widget.MessagesIcon;
+import org.openremote.components.client.widget.PopupPanel;
 
 import javax.inject.Inject;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+@JsType
 public class PopupToastDisplay implements ToastDisplay {
 
     protected class Point {

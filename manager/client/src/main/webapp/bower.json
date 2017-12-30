@@ -16,9 +16,9 @@
     "tests"
   ],
   "dependencies": {
-    "polymer": "Polymer/polymer#^2.2.0",
+    "polymer": "Polymer/polymer#^2.3.0",
     "iron-flex-layout": "^2.0.0",
     "font-awesome": "~4.7.0",
-    "chart.js": "^2.5.0"
+    "chart.js": "^2.7.0"
   }
 }

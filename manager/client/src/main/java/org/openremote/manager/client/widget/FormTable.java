@@ -24,7 +24,7 @@ import com.google.gwt.user.cellview.client.Column;
 import com.google.gwt.user.cellview.client.Header;
 import com.google.gwt.user.cellview.client.TextHeader;
 import org.openremote.manager.client.style.FormTableStyle;
-import org.openremote.manager.client.style.WidgetStyle;
+import org.openremote.components.client.style.WidgetStyle;
 
 public class FormTable<T> extends CellTable<T> {
 

@@ -17,19 +17,14 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.client.event;
+package org.openremote.components.client.widget;
 
-import org.openremote.model.event.Event;
+import com.google.gwt.user.client.ui.InlineLabel;
 
-public class UserChangeEvent extends Event {
+public class MessagesIcon extends InlineLabel {
 
-    final protected String username;
-
-    public UserChangeEvent(String username) {
-        this.username = username;
-    }
-
-    public String getUsername() {
-        return username;
+    public MessagesIcon(String icon) {
+        setStyleName("fa fa-" + icon);
+        addStyleName("or-MessagesIcon");
     }
 }

@@ -28,14 +28,6 @@ public class ManagerEntryPoint implements com.google.gwt.core.client.EntryPoint 
     @Override
     public void onModuleLoad() {
         injector.getAppController().start();
-        dispatchReadyEvent();
     }
-
-    public native static void dispatchReadyEvent() /*-{
-        $wnd.dispatchEvent(new CustomEvent("ManagerReady", {
-            bubbles: true,
-            cancelable: true
-        }));
-    }-*/;
 
 }

@@ -37,7 +37,7 @@ import org.openremote.manager.client.assets.browser.AssetSelector;
 import org.openremote.manager.client.assets.browser.BrowserTreeNode;
 import org.openremote.manager.client.assets.navigation.AssetNavigation;
 import org.openremote.manager.client.i18n.ManagerMessages;
-import org.openremote.manager.client.style.WidgetStyle;
+import org.openremote.components.client.style.WidgetStyle;
 import org.openremote.manager.client.widget.*;
 import org.openremote.manager.client.widget.PushButton;
 import org.openremote.model.Constants;

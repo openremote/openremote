@@ -1,9 +1,10 @@
 <ui:UiBinder xmlns:ui="urn:ui:com.google.gwt.uibinder"
              xmlns:g="urn:import:com.google.gwt.user.client.ui"
-             xmlns:w="urn:import:org.openremote.manager.client.widget">
+             xmlns:w="urn:import:org.openremote.manager.client.widget"
+             xmlns:widget="urn:import:org.openremote.components.client.widget">
 
     <ui:with field="managerMessages" type="org.openremote.manager.client.i18n.ManagerMessages"/>
-    <ui:with field="widgetStyle" type="org.openremote.manager.client.style.WidgetStyle"/>
+    <ui:with field="widgetStyle" type="org.openremote.components.client.style.WidgetStyle"/>
 
     <ui:style type="org.openremote.manager.client.map.MapInfoPanel.Style">
         .popup {
@@ -42,7 +43,7 @@
         }
     </ui:style>
 
-    <w:PopupPanel glassEnabled="false" styleName="{style.popup} {widgetStyle.PopupPanel}">
+    <widget:PopupPanel glassEnabled="false" styleName="{style.popup} {widgetStyle.PopupPanel}">
         <g:HTMLPanel ui:field="panel"
                      styleName="layout vertical {style.panel}">
 
@@ -52,6 +53,6 @@
 
         </g:HTMLPanel>
 
-    </w:PopupPanel>
+    </widget:PopupPanel>
 
 </ui:UiBinder>

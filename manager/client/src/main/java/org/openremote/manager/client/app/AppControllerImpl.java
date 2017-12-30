@@ -29,8 +29,8 @@ import org.openremote.manager.client.event.ShowFailureEvent;
 import org.openremote.manager.client.event.ShowInfoEvent;
 import org.openremote.manager.client.event.ShowSuccessEvent;
 import org.openremote.manager.client.event.SubscriptionFailureEvent;
-import org.openremote.manager.client.toast.Toast;
-import org.openremote.manager.client.toast.Toasts;
+import org.openremote.components.client.toast.Toast;
+import org.openremote.components.client.toast.Toasts;
 
 import javax.inject.Inject;
 

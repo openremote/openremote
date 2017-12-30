@@ -47,7 +47,7 @@ public abstract class WidgetNodeDescriptor extends ConsoleNodeDescriptor {
         .put("opacity", 1.0);
 
     public static final String[] WIDGET_PERSISTENT_PROPERTY_PATHS = new String[]{
-        "component",
+        PROPERTY_COMPONENT,
         "positionX",
         "positionY",
         "positionZ",

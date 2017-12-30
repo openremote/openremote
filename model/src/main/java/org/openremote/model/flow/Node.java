@@ -21,8 +21,6 @@
 package org.openremote.model.flow;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import jsinterop.annotations.JsIgnore;
-import jsinterop.annotations.JsType;
 
 import javax.persistence.*;
 import java.util.ArrayList;
@@ -31,7 +29,7 @@ import java.util.List;
 
 import static org.openremote.model.Constants.PERSISTENCE_STRING_ARRAY_TYPE;
 
-@JsType
+
 @Entity
 @Table(name = "NODE")
 public class Node extends FlowObject {
@@ -53,7 +51,7 @@ public class Node extends FlowObject {
     @org.hibernate.annotations.OnDelete(
         action = org.hibernate.annotations.OnDeleteAction.CASCADE
     )
-    @JsIgnore
+
     @JsonIgnore
     public Flow flow;
 
@@ -83,16 +81,16 @@ public class Node extends FlowObject {
     @org.hibernate.annotations.Type(type = PERSISTENCE_STRING_ARRAY_TYPE)
     public String[] persistentPropertyPaths;
 
-    @JsIgnore
+
     protected Node() {
     }
 
-    @JsIgnore
+
     public Node(String label, String id, String type) {
         super(label, id, type);
     }
 
-    @JsIgnore
+
     public Node(String label, String id, String type, String subflowId) {
         super(label, id, type);
         if (!isOfTypeSubflow()) {

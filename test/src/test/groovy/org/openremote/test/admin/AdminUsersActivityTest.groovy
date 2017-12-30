@@ -23,7 +23,7 @@ import org.openremote.manager.client.event.WillGoToPlaceEvent
 import org.openremote.manager.client.i18n.ManagerMessages
 import org.openremote.manager.client.service.EventService
 import org.openremote.manager.client.service.RequestServiceImpl
-import org.openremote.manager.client.style.WidgetStyle
+import org.openremote.components.client.style.WidgetStyle
 import org.openremote.manager.server.setup.AbstractKeycloakSetup
 import org.openremote.manager.server.setup.SetupService
 import org.openremote.manager.shared.http.EntityReader

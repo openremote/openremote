@@ -20,11 +20,9 @@
 
 package org.openremote.model.flow.catalog;
 
-import jsinterop.annotations.JsIgnore;
-import jsinterop.annotations.JsType;
 import org.openremote.model.flow.NodeColor;
 
-@JsType
+
 public class CatalogItem {
 
     public String label;
@@ -35,11 +33,11 @@ public class CatalogItem {
 
     public NodeColor nodeColor;
 
-    @JsIgnore
+
     protected CatalogItem() {
     }
 
-    @JsIgnore
+
     public CatalogItem(String label, CatalogCategory category, String nodeType, NodeColor nodeColor) {
         this.label = label;
         this.category = category;

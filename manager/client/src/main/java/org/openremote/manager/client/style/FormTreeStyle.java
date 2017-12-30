@@ -2,6 +2,7 @@ package org.openremote.manager.client.style;
 
 import com.google.gwt.resources.client.ImageResource;
 import com.google.gwt.user.cellview.client.CellTree;
+import org.openremote.components.client.style.WidgetStyle;
 
 import javax.inject.Inject;
 

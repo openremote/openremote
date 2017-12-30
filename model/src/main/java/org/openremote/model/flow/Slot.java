@@ -21,12 +21,9 @@
 package org.openremote.model.flow;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import jsinterop.annotations.JsIgnore;
-import jsinterop.annotations.JsType;
 
 import javax.persistence.*;
 
-@JsType
 @Entity
 @Table(name = "SLOT")
 public class Slot extends FlowObject {
@@ -39,7 +36,7 @@ public class Slot extends FlowObject {
     @org.hibernate.annotations.OnDelete(
         action = org.hibernate.annotations.OnDeleteAction.CASCADE
     )
-    @JsIgnore
+
     @JsonIgnore
     public Node node;
 
@@ -52,41 +49,41 @@ public class Slot extends FlowObject {
     @Column(name = "PROPERTY_PATH")
     public String propertyPath;
 
-    @JsIgnore
+
     protected Slot() {
     }
 
-    @JsIgnore
+
     public Slot(String id, String type) {
         super(null, id, type);
     }
 
-    @JsIgnore
+
     public Slot(String label, String id, String type) {
         this(label, id, type, null);
     }
 
-    @JsIgnore
+
     public Slot(String label, String id, String type, String propertyPath) {
         this(label, id, type, true, null, propertyPath);
     }
 
-    @JsIgnore
+
     public Slot(String id, String type, boolean connectable) {
         this(null, id, type, connectable);
     }
 
-    @JsIgnore
+
     public Slot(String label, String id, String type, boolean connectable) {
         this(label, id, type, connectable, null, null);
     }
 
-    @JsIgnore
+
     public Slot(String id, Slot peer, String label) {
         this(label, id, peer.getType(), true, peer.getId(), null);
     }
 
-    @JsIgnore
+
     public Slot(String label, String id, String type, boolean connectable, String peerId, String propertyPath) {
         super(label, id, type);
         this.connectable = connectable;

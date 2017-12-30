@@ -20,9 +20,6 @@
 
 package org.openremote.model.flow.catalog;
 
-import jsinterop.annotations.JsType;
-
-@JsType
 public enum CatalogCategory {
 
     WIDGETS("Widgets"),

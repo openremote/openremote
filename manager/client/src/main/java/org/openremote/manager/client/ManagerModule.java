@@ -20,20 +20,20 @@
 package org.openremote.manager.client;
 
 import com.google.gwt.inject.client.AbstractGinModule;
+import com.google.gwt.place.shared.Place;
 import com.google.gwt.place.shared.PlaceController;
 import com.google.gwt.place.shared.PlaceHistoryHandler;
 import com.google.gwt.place.shared.PlaceHistoryMapper;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
+import org.openremote.manager.client.app.OpenRemoteApp;
 import org.openremote.manager.client.event.*;
 import org.openremote.manager.client.http.ConstraintViolationReportMapper;
 import org.openremote.manager.client.i18n.ManagerMessages;
-import org.openremote.manager.client.interop.keycloak.Keycloak;
-import org.openremote.manager.client.map.MapAssetPlace;
 import org.openremote.manager.client.mvp.AppActivityManager;
 import org.openremote.manager.client.mvp.AppPlaceController;
 import org.openremote.manager.client.service.*;
-import org.openremote.manager.client.style.WidgetStyle;
+import org.openremote.components.client.style.WidgetStyle;
 import org.openremote.manager.shared.security.Tenant;
 import org.openremote.manager.shared.security.TenantResource;
 import org.openremote.model.event.bus.EventBus;
@@ -47,6 +47,12 @@ public class ManagerModule extends AbstractGinModule {
 
         bind(CookieService.class).to(CookieServiceImpl.class).in(Singleton.class);
     }
+
+    @Provides
+    @Singleton
+    public static native OpenRemoteApp getApp() /*-{
+        return $wnd.openremote.INSTANCE;
+    }-*/;
 
     @Provides
     @Singleton
@@ -109,15 +115,11 @@ public class ManagerModule extends AbstractGinModule {
 
     @Provides
     @Singleton
-    public SecurityService getSecurityService(CookieService cookieService, EventBus eventBus) {
-        return getKeyCloak() != null
-            ? new KeycloakSecurityService(getKeyCloak(), cookieService, eventBus)
+    public SecurityService getSecurityService(OpenRemoteApp openRemoteApp, CookieService cookieService, EventBus eventBus) {
+        return openRemoteApp.getKeycloak() != null
+            ? new KeycloakSecurityService(openRemoteApp, cookieService, eventBus)
             : new BasicSecurityService(getBasicAuthUsername(), getBasicAuthPassword());
     }
-
-    public static native Keycloak getKeyCloak() /*-{
-        return $wnd.keycloak;
-    }-*/;
 
     public static native String getBasicAuthUsername() /*-{
         return $wnd.basicAuthUsername;
@@ -141,7 +143,7 @@ public class ManagerModule extends AbstractGinModule {
                                                  PlaceHistoryMapper historyMapper,
                                                  com.google.web.bindery.event.shared.EventBus legacyEventBus) {
         PlaceHistoryHandler historyHandler = new PlaceHistoryHandler(historyMapper);
-        historyHandler.register(placeController, legacyEventBus, new MapAssetPlace());
+        historyHandler.register(placeController, legacyEventBus, Place.NOWHERE); // TODO See AppPlaceController for default start page
         return historyHandler;
     }
 

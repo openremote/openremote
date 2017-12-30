@@ -19,14 +19,9 @@
  */
 package org.openremote.manager.client.service;
 
-import elemental.client.Browser;
-import elemental.html.Location;
-import org.openremote.manager.client.event.UserChangeEvent;
-import org.openremote.manager.client.interop.Consumer;
+import org.openremote.manager.client.app.OpenRemoteApp;
 import org.openremote.manager.client.interop.keycloak.AuthToken;
 import org.openremote.manager.client.interop.keycloak.Keycloak;
-import org.openremote.manager.client.interop.keycloak.KeycloakCallback;
-import org.openremote.manager.client.interop.keycloak.LogoutOptions;
 import org.openremote.manager.shared.http.RequestParams;
 import org.openremote.model.Constants;
 import org.openremote.model.event.bus.EventBus;
@@ -37,31 +32,14 @@ public class KeycloakSecurityService implements SecurityService {
 
     private static final Logger LOG = Logger.getLogger(KeycloakSecurityService.class.getName());
 
+    protected final OpenRemoteApp openRemoteApp;
     protected final Keycloak keycloak;
 
-    public KeycloakSecurityService(Keycloak keycloak,
+    public KeycloakSecurityService(OpenRemoteApp openRemoteApp,
                                    CookieService cookieService,
                                    EventBus eventBus) {
-        this.keycloak = keycloak;
-
-        onAuthSuccess(() -> {
-            LOG.info("On authentication, user changed: " + getParsedToken().getPreferredUsername());
-            eventBus.dispatch(new UserChangeEvent(getParsedToken().getPreferredUsername()));
-        });
-
-        onAuthLogout(() -> {
-            LOG.info("Keycloak logout (session expired?)");
-            eventBus.dispatch(new UserChangeEvent(null));
-        });
-
-        // We update the refresh token in the background. The only other option would
-        // be to update the token before every request. However, this
-        // will force asynchronous execution of all HTTP requests, which we don't want.
-        Browser.getWindow().setInterval(() -> updateToken(
-            Constants.ACCESS_TOKEN_LIFESPAN_SECONDS/2, // Token must be good for X more seconds
-            tokenRefreshed -> LOG.fine("Access token updated, was refreshed from auth server: " + tokenRefreshed),
-            this::logout
-        ), 30000);
+        this.openRemoteApp = openRemoteApp;
+        this.keycloak = openRemoteApp.getKeycloak();
     }
 
     @Override
@@ -76,11 +54,7 @@ public class KeycloakSecurityService implements SecurityService {
 
     @Override
     public void logout() {
-        LogoutOptions opts = new LogoutOptions();
-        // TODO Experiments with relative URLs only worked for master realm logout, not any other realm...
-        Location location = Browser.getWindow().getLocation();
-        opts.redirectUri = location.getProtocol() + "//" + location.getHost() + "/" + getAuthenticatedRealm();
-        keycloak.logout(opts);
+        openRemoteApp.logout();
     }
 
     @Override
@@ -110,13 +84,11 @@ public class KeycloakSecurityService implements SecurityService {
 
     @Override
     public <OUT> void setCredentials(RequestParams<OUT> requestParams) {
-        // TODO If the periodic refresh of token (see above) is not enough, this is where we could refresh
         requestParams.withBearerAuth(getToken());
     }
 
     @Override
     public String setCredentials(String serviceUrl) {
-        // TODO If the periodic refresh of token (see above) is not enough, this is where we could refresh
         String authenticatedServiceUrl = serviceUrl
             + "?Auth-Realm=" + getAuthenticatedRealm()
             + "&Authorization=Bearer " + getToken();
@@ -144,19 +116,4 @@ public class KeycloakSecurityService implements SecurityService {
         keycloak.onAuthLogout = () -> fn.run();
     }
 
-    protected void updateToken(int minValiditySeconds, Consumer<Boolean> successFn, Runnable errorFn) {
-        KeycloakCallback kcCallback = keycloak.updateToken(minValiditySeconds);
-        kcCallback.success(new org.openremote.manager.client.interop.Consumer<Boolean>(){
-            @Override
-            public void accept(Boolean o) {
-                successFn.accept(o);
-            }
-        });
-        kcCallback.error(new org.openremote.manager.client.interop.Runnable(){
-            @Override
-            public void run() {
-                errorFn.run();
-            }
-        });
-    }
 }
