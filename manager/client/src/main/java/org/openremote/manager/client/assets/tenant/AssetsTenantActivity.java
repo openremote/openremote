@@ -19,7 +19,6 @@
  */
 package org.openremote.manager.client.assets.tenant;
 
-import com.google.gwt.user.client.ui.AcceptsOneWidget;
 import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.TenantMapper;
 import org.openremote.manager.client.admin.UserArrayMapper;
@@ -29,6 +28,7 @@ import org.openremote.manager.client.assets.asset.AssetViewPlace;
 import org.openremote.manager.client.assets.browser.*;
 import org.openremote.manager.client.event.ShowFailureEvent;
 import org.openremote.manager.client.event.ShowSuccessEvent;
+import org.openremote.manager.client.mvp.AcceptsView;
 import org.openremote.manager.client.mvp.AppActivity;
 import org.openremote.manager.shared.asset.AssetResource;
 import org.openremote.manager.shared.security.Tenant;
@@ -93,7 +93,7 @@ public class AssetsTenantActivity extends AssetBrowsingActivity<AssetsTenantPlac
     }
 
     @Override
-    public void start(AcceptsOneWidget container, EventBus eventBus, Collection<EventRegistration> registrations) {
+    public void start(AcceptsView container, EventBus eventBus, Collection<EventRegistration> registrations) {
         view.setPresenter(this);
         container.setWidget(view.asWidget());
 

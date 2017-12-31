@@ -86,8 +86,10 @@ public class AppPlaceController extends PlaceController {
     @Override
     public void goTo(Place newPlace) {
         try {
+
             // TODO Evil hack to get rid of the empty # in URL added by Firefox on each reload of start page
-            if (newPlace == Place.NOWHERE) {
+            // TODO Still, firefox breaks with keycloak on every third reload and goes back to start page (wrong redirect with #state fragment)
+            if (newPlace == Place.NOWHERE) { // TODO Shouldn't really use that place anywhere, have a default place
                 super.goTo(new MapAssetPlace()); // This is the start page of the app
                 return;
             }

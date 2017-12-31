@@ -24,6 +24,8 @@ import com.google.gwt.place.shared.Place;
 import com.google.gwt.user.client.ui.AcceptsOneWidget;
 import com.google.gwt.user.client.ui.IsWidget;
 import com.google.gwt.user.client.ui.Label;
+import org.jboss.gwt.elemento.core.Elements;
+import org.openremote.components.client.polymer.ViewComponent;
 import org.openremote.manager.client.event.GoToPlaceEvent;
 import org.openremote.manager.client.event.WillGoToPlaceEvent;
 import org.openremote.model.event.bus.EventBus;
@@ -46,18 +48,25 @@ public class AppActivityManager {
      * Wraps our real display to prevent an Activity from taking it over if it is
      * not the currentActivity.
      */
-    protected class ProtectedDisplay implements AcceptsOneWidget {
+    protected class ProtectedDisplay implements AcceptsView {
         protected final AppActivity appActivity;
 
         ProtectedDisplay(AppActivity appActivity) {
             this.appActivity = appActivity;
         }
 
+        @Override
         public void setWidget(IsWidget view) {
             if (this.appActivity == AppActivityManager.this.currentActivity) {
                 startingNext = false;
                 showWidget(view);
             }
+        }
+
+        @Override
+        public void setViewComponent(ViewComponent viewComponent) {
+            // Adapter for new jsinterop views to legacy GWT Element and Widget
+            setWidget(Elements.asWidget(viewComponent));
         }
     }
 
@@ -69,7 +78,7 @@ public class AppActivityManager {
         }
 
         @Override
-        public void start(AcceptsOneWidget container, EventBus eventBus, Collection collection) {
+        public void start(AcceptsView container, EventBus eventBus, Collection collection) {
         }
     };
 

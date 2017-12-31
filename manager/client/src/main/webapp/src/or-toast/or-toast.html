@@ -34,11 +34,7 @@
             }
         }
 
-        // Upgrade only when jsinterop components are ready
-        window.addEventListener('ComponentsReady', function () {
-            console.log("Upgrading element: " + OpenRemoteToast.is);
-            customElements.define(OpenRemoteToast.is, OpenRemoteToast);
-        });
+        registerOpenRemoteElement(OpenRemoteToast, OpenRemoteToast.is, "Toast");
     </script>
 
 </dom-module>

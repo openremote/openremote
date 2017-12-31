@@ -1,5 +1,5 @@
 /*
- * Copyright 2016, OpenRemote Inc.
+ * Copyright 2017, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -17,21 +17,19 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.components.client;
+package org.openremote.app.client;
 
-import java.util.logging.Logger;
-
-public class ComponentsEntryPoint implements com.google.gwt.core.client.EntryPoint {
-
-    private static final Logger LOG = Logger.getLogger(ComponentsEntryPoint.class.getName());
+public class AppEntryPoint implements com.google.gwt.core.client.EntryPoint {
 
     @Override
     public void onModuleLoad() {
+        // TODO JUL doesn't work, no idea why...
         dispatchReadyEvent();
     }
 
     public native static void dispatchReadyEvent() /*-{
-        $wnd.dispatchEvent(new CustomEvent("ComponentsReady"));
+        console.log("App GWT entry point");
+        $wnd.dispatchEvent(new CustomEvent("AppReady"));
     }-*/;
 
 }

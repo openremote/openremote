@@ -19,7 +19,6 @@
  */
 package org.openremote.manager.client.assets;
 
-import com.google.gwt.user.client.ui.AcceptsOneWidget;
 import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.assets.asset.AssetViewPlace;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
@@ -27,10 +26,11 @@ import org.openremote.manager.client.assets.browser.AssetBrowserSelection;
 import org.openremote.manager.client.assets.browser.AssetTreeNode;
 import org.openremote.manager.client.assets.browser.TenantTreeNode;
 import org.openremote.manager.client.assets.tenant.AssetsTenantPlace;
+import org.openremote.manager.client.mvp.AcceptsView;
+import org.openremote.manager.client.mvp.AppActivity;
 import org.openremote.manager.shared.security.Tenant;
 import org.openremote.model.event.bus.EventBus;
 import org.openremote.model.event.bus.EventRegistration;
-import org.openremote.manager.client.mvp.AppActivity;
 
 import javax.inject.Inject;
 import java.util.Collection;
@@ -56,7 +56,7 @@ public class AssetsDashboardActivity
     }
 
     @Override
-    public void start(AcceptsOneWidget container, EventBus eventBus, Collection<EventRegistration> registrations) {
+    public void start(AcceptsView container, EventBus eventBus, Collection<EventRegistration> registrations) {
         view.setPresenter(this);
         container.setWidget(view.asWidget());
 

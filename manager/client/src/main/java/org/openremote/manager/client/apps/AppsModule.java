@@ -24,12 +24,12 @@ import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import org.openremote.manager.shared.apps.ConsoleAppResource;
 
+import static org.jboss.gwt.elemento.core.Elements.htmlElement;
+
 public class AppsModule extends AbstractGinModule {
 
     @Override
     protected void configure() {
-        bind(AppsView.class).to(AppsViewImpl.class).in(Singleton.class);
-        bind(AppsActivity.class);
     }
 
     @Provides
@@ -37,4 +37,10 @@ public class AppsModule extends AbstractGinModule {
     public native ConsoleAppResource getConsoleAppResource() /*-{
         return $wnd.ConsoleAppResource;
     }-*/;
+
+    @Provides
+    @Singleton
+    public ConsoleAppsView getAppsView() {
+        return htmlElement(ConsoleAppsView.is, ConsoleAppsView.class).asElement();
+    }
 }

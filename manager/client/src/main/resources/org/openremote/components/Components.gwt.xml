@@ -12,8 +12,15 @@
     <inherits name="com.google.gwt.inject.Inject"/>
     <inherits name="com.google.gwt.i18n.I18N"/>
     <inherits name="com.google.gwt.http.HTTP"/>
+
     <inherits name="elemental.Elemental"/>
+
+    <inherits name="jsinterop.base.Base"/>
+    <inherits name="elemental2.core.Core"/>
+    <inherits name="elemental2.dom.Dom"/>
+    <inherits name="elemental2.promise.Promise"/>
     <inherits name="org.jboss.gwt.elemento.Core"/>
+
     <inherits name="com.github.nmorel.gwtjackson.GwtJackson"/>
     <inherits name="org.jboss.resteasy.api.validation.ResteasyValidation"/>
     <inherits name="org.keycloak.representations.idm.KeycloakIDM"/>
@@ -45,11 +52,5 @@
     <source path="client"/>
 
     <!-- ##################################################################### -->
-
-    <collapse-all-properties/>
-
-    <!-- ##################################################################### -->
-
-    <entry-point class="org.openremote.components.client.ComponentsEntryPoint"/>
 
 </module>

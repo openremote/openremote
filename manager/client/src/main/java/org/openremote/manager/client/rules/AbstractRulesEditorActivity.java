@@ -19,11 +19,14 @@
  */
 package org.openremote.manager.client.rules;
 
-import com.google.gwt.user.client.ui.AcceptsOneWidget;
 import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.assets.AssetBrowsingActivity;
-import org.openremote.manager.client.assets.browser.*;
+import org.openremote.manager.client.assets.browser.AssetBrowser;
+import org.openremote.manager.client.assets.browser.AssetBrowserSelection;
+import org.openremote.manager.client.assets.browser.AssetTreeNode;
+import org.openremote.manager.client.assets.browser.BrowserTreeNode;
 import org.openremote.manager.client.event.ShowSuccessEvent;
+import org.openremote.manager.client.mvp.AcceptsView;
 import org.openremote.manager.client.mvp.AppActivity;
 import org.openremote.manager.shared.http.EntityReader;
 import org.openremote.manager.shared.http.EntityWriter;
@@ -87,7 +90,7 @@ public abstract class AbstractRulesEditorActivity<T extends Ruleset, PLACE exten
     }
 
     @Override
-    public void start(AcceptsOneWidget container, EventBus eventBus, Collection<EventRegistration> registrations) {
+    public void start(AcceptsView container, EventBus eventBus, Collection<EventRegistration> registrations) {
         view.setPresenter(this);
         container.setWidget(view.asWidget());
 

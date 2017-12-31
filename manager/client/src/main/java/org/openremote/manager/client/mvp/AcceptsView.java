@@ -1,5 +1,5 @@
 /*
- * Copyright 2016, OpenRemote Inc.
+ * Copyright 2017, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -17,14 +17,12 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.client.interop.mapbox;
+package org.openremote.manager.client.mvp;
 
-import jsinterop.annotations.JsType;
-import jsinterop.base.Any;
+import com.google.gwt.user.client.ui.AcceptsOneWidget;
+import org.openremote.components.client.polymer.ViewComponent;
 
-@JsType(isNative = true, namespace = "mapboxgl")
-public interface GeoJSONSource {
+public interface AcceptsView extends AcceptsOneWidget{
 
-    void setData(Any geoJson);
-
+  void setViewComponent(ViewComponent viewComponent);
 }

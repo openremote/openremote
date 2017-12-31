@@ -21,8 +21,10 @@ package org.openremote.manager.client.i18n;
 
 import com.google.gwt.i18n.client.LocalizableResource;
 import com.google.gwt.i18n.client.Messages;
+import jsinterop.annotations.JsType;
 
 @LocalizableResource.DefaultLocale
+@JsType
 public interface ManagerMessages extends Messages {
 
     String logout();

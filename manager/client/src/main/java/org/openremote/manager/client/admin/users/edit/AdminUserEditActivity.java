@@ -19,12 +19,12 @@
  */
 package org.openremote.manager.client.admin.users.edit;
 
-import com.google.gwt.user.client.ui.AcceptsOneWidget;
 import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.admin.*;
 import org.openremote.manager.client.admin.navigation.AdminNavigation;
 import org.openremote.manager.client.admin.users.AdminUsersPlace;
 import org.openremote.manager.client.event.ShowSuccessEvent;
+import org.openremote.manager.client.mvp.AcceptsView;
 import org.openremote.manager.client.mvp.AppActivity;
 import org.openremote.manager.shared.notification.DeviceNotificationToken;
 import org.openremote.manager.shared.notification.NotificationResource;
@@ -124,7 +124,7 @@ public class AdminUserEditActivity
     }
 
     @Override
-    public void start(AcceptsOneWidget container, EventBus eventBus, Collection<EventRegistration> registrations) {
+    public void start(AcceptsView container, EventBus eventBus, Collection<EventRegistration> registrations) {
         super.start(container, eventBus, registrations);
 
         adminContent.setPresenter(this);

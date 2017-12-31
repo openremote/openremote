@@ -20,17 +20,6 @@
 
     <link rel="import" href="/static/src/or-app/or-app.html">
 
-    <script>
-        window.addEventListener('AppInit', function (e) {
-            console.log("Loading Keycloak account page resources...");
-            let app = e.detail.app;
-            Promise.all([
-                app.load.css("/static/bower_components/font-awesome/css/font-awesome.css"),
-            ]).catch(e => {
-                app.set("error", e);
-            });
-        })
-    </script>
 </head>
 
 <body class="layout horizontal" style="visibility: hidden;">

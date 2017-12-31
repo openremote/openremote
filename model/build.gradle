@@ -14,6 +14,8 @@ dependencies {
     compile("org.kie:kie-api:$droolsVersion") {
         exclude group: "org.slf4j"
     }
+
+    compile "com.google.jsinterop:base:$jsinteropBaseVersion"
 }
 
 jar {

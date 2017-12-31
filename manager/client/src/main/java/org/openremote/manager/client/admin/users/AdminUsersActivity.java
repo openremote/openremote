@@ -19,7 +19,6 @@
  */
 package org.openremote.manager.client.admin.users;
 
-import com.google.gwt.user.client.ui.AcceptsOneWidget;
 import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.admin.AbstractAdminActivity;
 import org.openremote.manager.client.admin.AdminView;
@@ -27,12 +26,13 @@ import org.openremote.manager.client.admin.TenantArrayMapper;
 import org.openremote.manager.client.admin.UserArrayMapper;
 import org.openremote.manager.client.admin.navigation.AdminNavigation;
 import org.openremote.manager.client.admin.users.edit.AdminUserEditPlace;
-import org.openremote.model.event.bus.EventBus;
-import org.openremote.model.event.bus.EventRegistration;
+import org.openremote.manager.client.mvp.AcceptsView;
 import org.openremote.manager.client.mvp.AppActivity;
 import org.openremote.manager.shared.security.TenantResource;
 import org.openremote.manager.shared.security.User;
 import org.openremote.manager.shared.security.UserResource;
+import org.openremote.model.event.bus.EventBus;
+import org.openremote.model.event.bus.EventRegistration;
 
 import javax.inject.Inject;
 import java.util.Collection;
@@ -80,7 +80,7 @@ public class AdminUsersActivity
     }
 
     @Override
-    public void start(AcceptsOneWidget container, EventBus eventBus, Collection<EventRegistration> registrations) {
+    public void start(AcceptsView container, EventBus eventBus, Collection<EventRegistration> registrations) {
         super.start(container, eventBus, registrations);
 
         adminContent.setPresenter(this);

@@ -23,6 +23,7 @@ import com.google.gwt.user.client.ui.AcceptsOneWidget;
 import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.TenantMapper;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
+import org.openremote.manager.client.mvp.AcceptsView;
 import org.openremote.manager.client.mvp.AppActivity;
 import org.openremote.manager.client.rules.AbstractRulesEditorActivity;
 import org.openremote.manager.client.rules.RulesEditor;
@@ -73,7 +74,7 @@ public class TenantRulesEditorActivity
     }
 
     @Override
-    public void start(AcceptsOneWidget container, EventBus eventBus, Collection<EventRegistration> registrations) {
+    public void start(AcceptsView container, EventBus eventBus, Collection<EventRegistration> registrations) {
         super.start(container, eventBus, registrations);
 
         environment.getRequestService().execute(

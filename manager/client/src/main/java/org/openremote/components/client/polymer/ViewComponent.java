@@ -17,21 +17,22 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.client.apps;
+package org.openremote.components.client.polymer;
 
-import com.google.gwt.user.client.ui.IsWidget;
-import org.openremote.manager.shared.apps.ConsoleApp;
+import elemental2.dom.HTMLElement;
+import jsinterop.annotations.JsPackage;
+import jsinterop.annotations.JsType;
+import jsinterop.base.Any;
 
-public interface AppsView extends IsWidget {
+@JsType(isNative = true, namespace = JsPackage.GLOBAL, name = "OpenRemoteViewComponent")
+public abstract class ViewComponent extends HTMLElement {
 
-    interface Presenter {
-        void onAppSelected(String realm);
-    }
+    public native void showComponent();
 
-    void setPresenter(Presenter presenter);
+    public native void hideComponent();
 
-    void setApps(ConsoleApp[] apps);
+    public native void set(String path, Any any);
 
-    void openAppUrl(String realm, String appUrl);
+    public native String i18n(Any presenter, String key);
 
 }

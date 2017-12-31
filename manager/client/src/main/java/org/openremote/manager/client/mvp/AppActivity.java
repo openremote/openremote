@@ -20,11 +20,10 @@
 package org.openremote.manager.client.mvp;
 
 import com.google.gwt.place.shared.Place;
-import com.google.gwt.user.client.ui.AcceptsOneWidget;
-import org.openremote.model.event.bus.EventBus;
-import org.openremote.model.event.bus.EventRegistration;
 import org.openremote.manager.client.service.SecurityService;
 import org.openremote.model.Constants;
+import org.openremote.model.event.bus.EventBus;
+import org.openremote.model.event.bus.EventRegistration;
 
 import java.util.Collection;
 
@@ -64,7 +63,7 @@ public abstract class AppActivity<P extends Place>  {
     /**
      * Any registrations added to the supplied collection will be unregistered automatically when the activity stops.
      */
-    abstract public void start(AcceptsOneWidget container, EventBus eventBus, Collection<EventRegistration> registrations);
+    abstract public void start(AcceptsView container, EventBus eventBus, Collection<EventRegistration> registrations);
 
     /**
      * Checked when the activity is initialized, return empty array to allow all access.

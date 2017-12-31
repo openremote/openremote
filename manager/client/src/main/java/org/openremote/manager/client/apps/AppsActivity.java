@@ -19,13 +19,14 @@
  */
 package org.openremote.manager.client.apps;
 
-import com.google.gwt.user.client.ui.AcceptsOneWidget;
 import org.openremote.manager.client.Environment;
-import org.openremote.model.event.bus.EventBus;
-import org.openremote.model.event.bus.EventRegistration;
+import org.openremote.manager.client.i18n.ManagerMessages;
+import org.openremote.manager.client.mvp.AcceptsView;
 import org.openremote.manager.client.mvp.AppActivity;
 import org.openremote.manager.shared.apps.ConsoleApp;
 import org.openremote.manager.shared.apps.ConsoleAppResource;
+import org.openremote.model.event.bus.EventBus;
+import org.openremote.model.event.bus.EventRegistration;
 
 import javax.inject.Inject;
 import java.util.Collection;
@@ -34,16 +35,16 @@ import static org.openremote.manager.client.http.RequestExceptionHandler.handleR
 
 public class AppsActivity
     extends AppActivity<AppsPlace>
-    implements AppsView.Presenter {
+    implements ConsoleAppsView.Presenter {
 
-    final AppsView view;
+    final ConsoleAppsView view;
     final Environment environment;
     final ConsoleAppResource consoleAppResource;
     final ConsoleAppArrayMapper consoleAppArrayMapper;
 
     @Inject
     public AppsActivity(Environment environment,
-                        AppsView view,
+                        ConsoleAppsView view,
                         ConsoleAppResource consoleAppResource,
                         ConsoleAppArrayMapper consoleAppArrayMapper) {
         this.environment = environment;
@@ -58,8 +59,8 @@ public class AppsActivity
     }
 
     @Override
-    public void start(AcceptsOneWidget container, EventBus eventBus, Collection<EventRegistration> registrations) {
-        container.setWidget(view.asWidget());
+    public void start(AcceptsView container, EventBus eventBus, Collection<EventRegistration> registrations) {
+        container.setViewComponent(view);
         view.setPresenter(this);
 
         environment.getRequestService().execute(
@@ -83,9 +84,8 @@ public class AppsActivity
     }
 
     @Override
-    public void onStop() {
-        view.setPresenter(null);
-        super.onStop();
+    public ManagerMessages messages() {
+        return environment.getMessages();
     }
 
     @Override

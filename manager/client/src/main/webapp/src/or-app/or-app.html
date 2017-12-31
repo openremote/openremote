@@ -16,13 +16,74 @@
                 /* Hide the app by default */
                 visibility: hidden;
             }
+
+            /* TODO difficult but must have something on left side before ::
+            #slot ::slotted(*) {
+                color: var(--theme-lightgreen);
+                background: var(--theme-black);
+            }
+            */
+
         </style>
+
+        <template is="dom-if" if="[[error]]">
+            <div style="padding:1em;">
+                <h1 style="color: var(--theme-darkgrey);">Error starting OpenRemote application</h1>
+                <h5><span>[[error]]</span></h5>
+                <h3>[[defaultErrorMessage]]</h3>
+            </div>
+        </template>
 
         <slot id="slot"></slot>
 
     </template>
 
     <script>
+
+        class OpenRemoteViewComponent extends Polymer.Element {
+            static get properties() {
+                return {
+                    widgetStyle: {
+                        type: openremote.style.WidgetStyle,
+                        value: () => {
+                            return openremote.WIDGET_STYLE
+                        }
+                    }
+                }
+            }
+
+            ready() {
+                super.ready();
+
+                // View component should flex and its children should be in a flexbox vertical layout by default
+                this.shadowRoot.host.classList.add("flex", "layout", "vertical");
+
+                // View component is hidden by default, subclass decides when it's ready
+                this.hideComponent();
+            }
+
+            showComponent() {
+                Polymer.RenderStatus.afterNextRender(this, function () {
+                    this.shadowRoot.host.style.visibility = "visible";
+                });
+            }
+
+            hideComponent() {
+                Polymer.RenderStatus.afterNextRender(this, function () {
+                    this.shadowRoot.host.style.visibility = "hidden";
+                });
+            }
+
+            i18n(presenter, key) {
+                return presenter ? presenter.messages()[key]() : "";
+            }
+
+            icon(name) {
+                return "fa fa-" + name;
+            }
+
+        }
+
         /**
          * Singleton per window/document, registers itself as window.openremote.INSTANCE.
          */
@@ -112,7 +173,7 @@
                                             resolve(url);
                                         };
                                         element.onerror = function () {
-                                            reject("Loading failed with '" + tag + "' tag: " + url);
+                                            reject("Loading failed as '" + tag + "': " + url);
                                         };
 
                                         switch (tag) {
@@ -205,8 +266,26 @@
                 this.shadowRoot.host.classList.add("flex", "layout", "vertical");
 
                 /* TODO Bind stuff to children here?
-                const slot = this.shadowRoot.querySelector("#slot");
-                slot.addEventListener("slotchange", e => {
+                <link rel="import" href="../../bower_components/polymer/lib/utils/flattened-nodes-observer.html">
+
+                this._observer = new Polymer.FlattenedNodesObserver(this.$.slot, (info) => {
+                    this._processNewNodes(info.addedNodes);
+                    this._processRemovedNodes(info.removedNodes);
+                });
+
+                _processNewNodes(e) {
+                    console.log("### NEW NODES");
+                    console.dir(e);
+                }
+
+                _processRemovedNodes(e) {
+                    console.log("### REMOVED NODES");
+                    console.dir(e);
+                }
+
+                this.$.slot.addEventListener("slotchange", e => {
+                    console.log("### SLOT CHANGE, ASSIGNED NODES:");
+                    console.dir(this.$.slot.assignedNodes({flatten: true}));
                 });
                 */
 
@@ -219,27 +298,26 @@
             }
 
             onAppInit() {
-                // Load service-generated REST API and jsinterop Components, in that order
+                // This is usually used to load other application resources which are not components, from the main document
+                console.log("Application init");
+                window.dispatchEvent(new CustomEvent("AppInit", {detail: {app: this}}));
+
+                // Load service-generated REST API and GWT jsinterop components, in that order
                 this.load.js("/jsapi")
                     .then(function () {
-                        // When this is done, it will fire ComponentsReady on window
-                        return this.load.js("/static/gwt/Components/Components.nocache.js")
+                        // When this is done, it will fire AppReady on window
+                        return this.load.js("/static/gwt/App/App.nocache.js")
                     }.bind(this))
                     .catch(function (e) {
                         this.set("error", e);
                     }.bind(this));
 
-                // This is usually used to load other application resources which are not components, from the main document
-                console.log("Application init");
-                window.dispatchEvent(new CustomEvent("AppInit", {detail: {app: this}}));
+                // Show app (note that loading and init might still happen asynchronously)
                 this.showApp();
             }
 
             onAppError(error) {
                 console.error("Application error: " + error);
-                // TODO This has injection security holes! Do not use for input that isn't validated! Write proper error screen!
-                window.document.body.innerHTML =
-                    "<div style='padding:1em;'><h1>Error starting application</h1><h5>Reason: " + error + "</h5><h3>" + this.defaultErrorMessage + "</h3></div>";
                 this.showApp();
             }
 
@@ -308,10 +386,7 @@
 
                     // Clear native shell stored tokens
                     if (this.shellNative) {
-                        this.postNativeShellMessage({
-                            type: 'token',
-                            data: {}
-                        });
+                        this.postNativeShellMessage({type: 'token', data: {}});
                     }
 
                     // Navigate to start page on logout, drop the hash (also, Keycloak has a bug where it
@@ -327,6 +402,7 @@
             }
 
             computeKeycloak(tenant) {
+                // Check if Keycloak has been loaded
                 if (window.Keycloak) {
 
                     // If we are logged in, logout when tenant changes
@@ -587,10 +663,31 @@
         customElements.define(OpenRemoteApp.is, OpenRemoteApp);
 
         // Set some globals when jsinterop components are ready
-        window.addEventListener('ComponentsReady', function () {
+        window.addEventListener('AppReady', function () {
             openremote.WIDGET_STYLE = new openremote.style.WidgetStyle();
         });
 
+        // Upgrade element and register its type when everything is ready
+        function registerOpenRemoteElement(element, is, ...interopNames) {
+
+            window.addEventListener('AppInit', function () {
+                console.log("Setting type in global scope: " + is);
+                // Sets openremote.foo.bar.MyType = element so we can have the type in GWT jsinterop
+                let x = openremote;
+                for (let i = 0; i < interopNames.length; i++) {
+                    let name = interopNames[i];
+                    if (!x[name]) {
+                        x[name] = i === interopNames.length-1 ? element : {}
+                    }
+                    x = x[name];
+                }
+            });
+
+            window.addEventListener('AppReady', function () {
+                console.log("Upgrading element: " + is);
+                customElements.define(is, element);
+            });
+        }
     </script>
 
 </dom-module>

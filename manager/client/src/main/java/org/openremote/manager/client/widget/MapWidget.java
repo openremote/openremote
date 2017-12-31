@@ -21,7 +21,7 @@ package org.openremote.manager.client.widget;
 
 import com.google.gwt.dom.client.Document;
 import com.google.gwt.user.client.ui.FlowPanel;
-import elemental.client.Browser;
+import elemental2.dom.DomGlobal;
 import org.openremote.manager.client.interop.mapbox.*;
 import org.openremote.model.geo.GeoJSON;
 import org.openremote.model.value.ArrayValue;
@@ -145,7 +145,7 @@ public class MapWidget extends FlowPanel {
 
         mapOptions.put("container", hostElementId);
         mapOptions.put("attributionControl", true);
-        mapboxMap = new MapboxMap(mapOptions.asNativeObject());
+        mapboxMap = new MapboxMap(mapOptions.asAny());
 
         mapboxMap.on(EventType.LOAD, eventData -> {
             initFeatureLayers();
@@ -178,7 +178,7 @@ public class MapWidget extends FlowPanel {
             throw new IllegalStateException("Map not ready");
         mapboxMap.resize();
         // This is not reliable, so do it again a bit later
-        Browser.getWindow().setTimeout(() -> mapboxMap.resize(), 200);
+        DomGlobal.setTimeout(p -> mapboxMap.resize(), 200);
     }
 
     public void setOpaque(boolean opaque) {
@@ -194,7 +194,7 @@ public class MapWidget extends FlowPanel {
         ObjectValue popupOptions = Values.createObject();
         popupOptions.put("closeOnClick", create(false));
         popupOptions.put("closeButton", create(false));
-        popup = new Popup(popupOptions.asNativeObject());
+        popup = new Popup(popupOptions.asAny());
         popup.setLngLat(new LngLat(lng, lat)).setText(text);
         popup.addTo(mapboxMap);
     }
@@ -212,7 +212,7 @@ public class MapWidget extends FlowPanel {
         if (mapboxMap.getSource(featureSourceId) == null)
             throw new IllegalArgumentException("Map has no such feature source: " + featureSourceId);
         LOG.fine("Showing feature on source '" + featureSourceId + "': " + geoFeature);
-        mapboxMap.getSource(featureSourceId).setData(geoFeature.getObjectValue().asNativeObject());
+        mapboxMap.getSource(featureSourceId).setData(geoFeature.getObjectValue().asAny());
     }
 
     public void flyTo(double[] coordinates) {
@@ -225,15 +225,15 @@ public class MapWidget extends FlowPanel {
         center.set(0, coordinates[0]);
         center.set(1, coordinates[1]);
         options.put("center", center);
-        mapboxMap.flyTo(options.asNativeObject());
+        mapboxMap.flyTo(options.asAny());
     }
 
     protected void initFeatureLayers() {
         LOG.fine("Adding GeoJSON feature sources and layers on map load");
 
         ObjectValue sourceOptionsSelection = prepareSourceOptions(FEATURE_SOURCE_DROPPED_PIN);
-        mapboxMap.addSource(FEATURE_SOURCE_DROPPED_PIN, sourceOptionsSelection.asNativeObject());
-        mapboxMap.addLayer(LAYER_DROPPED_PIN.asNativeObject());
+        mapboxMap.addSource(FEATURE_SOURCE_DROPPED_PIN, sourceOptionsSelection.asAny());
+        mapboxMap.addLayer(LAYER_DROPPED_PIN.asAny());
 
         ObjectValue sourceOptionsAll = prepareSourceOptions(FEATURE_SOURCE_CIRCLE);
         sourceOptionsAll.put("maxzoom", create(20));
@@ -243,8 +243,8 @@ public class MapWidget extends FlowPanel {
         sourceOptionsAll.put("clusterRadius", create(50));
         sourceOptionsAll.put("clusterMaxZoom", create(15));
 
-        mapboxMap.addSource(FEATURE_SOURCE_CIRCLE, sourceOptionsAll.asNativeObject());
-        mapboxMap.addLayer(LAYER_CIRCLE.asNativeObject(), FEATURE_LAYER_DROPPED_PIN);
+        mapboxMap.addSource(FEATURE_SOURCE_CIRCLE, sourceOptionsAll.asAny());
+        mapboxMap.addLayer(LAYER_CIRCLE.asAny(), FEATURE_LAYER_DROPPED_PIN);
     }
 
     protected ObjectValue prepareSourceOptions(String featureSourceId) {

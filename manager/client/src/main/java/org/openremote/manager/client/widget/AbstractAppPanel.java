@@ -70,6 +70,10 @@ public abstract class AbstractAppPanel implements AppPanel {
                 popupPanel.removeAutoHidePartner(target.getElement());
                 target = null;
             }
+            if (bottomRightTarget != null)
+                bottomRightTarget = null;
+            if (topLeftTarget != null)
+                topLeftTarget  = null;
         });
 
     }

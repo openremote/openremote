@@ -19,23 +19,25 @@
  */
 package org.openremote.manager.shared.apps;
 
+import jsinterop.annotations.JsType;
 import org.openremote.manager.shared.security.Tenant;
 
 /**
  * An installed console app.
  */
+@JsType
 public class ConsoleApp {
 
-    protected Tenant tenant;
-    protected String url;
+    public Tenant tenant;
+    public String url;
 
-    public ConsoleApp() {
-
+    protected ConsoleApp() {
+        this(null, null);
     }
 
     public ConsoleApp(Tenant tenant, String url) {
-        this.tenant = tenant;
-        this.url = url;
+        setTenant(tenant);
+        setUrl(url);
     }
 
     public Tenant getTenant() {

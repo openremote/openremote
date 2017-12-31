@@ -16,17 +16,19 @@
 package org.openremote.model.value.impl;
 
 import com.google.gwt.core.client.GWT;
-import com.google.gwt.core.client.JavaScriptObject;
 import com.google.gwt.core.client.JsonUtils;
+import jsinterop.base.Any;
+import jsinterop.base.Js;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueException;
 
 public abstract class ValueImpl implements Value {
 
     @Override
-    public JavaScriptObject asNativeObject() throws ValueException {
+    public Any asAny() throws ValueException {
         if (GWT.isClient())
-            return JsonUtils.safeEval(this.toJson());
+            // TODO This makes a copy which is inefficient, need twice the memory. We need a better JSON API to share with Java and JS.
+            return Js.asAny(JsonUtils.safeEval(this.toJson()));
         else
             throw new ValueException("Not a GWT/JavaScript runtime environment");
     }

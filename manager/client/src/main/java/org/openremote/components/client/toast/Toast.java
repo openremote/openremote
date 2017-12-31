@@ -36,8 +36,8 @@ public class Toast {
 
     final Type type;
     final String text;
-    final long timestamp;
-    final long maxAgeMillis;
+    final double timestamp;
+    final double maxAgeMillis;
 
     public Toast(Type type, String text, int maxAgeMillis) {
         this.type = type;
@@ -54,11 +54,11 @@ public class Toast {
         return text;
     }
 
-    public long getTimestamp() {
+    public double getTimestamp() {
         return timestamp;
     }
 
-    public long getMaxAgeMillis() {
+    public double getMaxAgeMillis() {
         return maxAgeMillis;
     }
 

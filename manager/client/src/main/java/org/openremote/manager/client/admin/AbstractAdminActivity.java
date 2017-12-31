@@ -19,11 +19,11 @@
  */
 package org.openremote.manager.client.admin;
 
-import com.google.gwt.user.client.ui.AcceptsOneWidget;
 import org.openremote.manager.client.admin.navigation.AdminNavigation;
+import org.openremote.manager.client.mvp.AcceptsView;
+import org.openremote.manager.client.mvp.AppActivity;
 import org.openremote.model.event.bus.EventBus;
 import org.openremote.model.event.bus.EventRegistration;
-import org.openremote.manager.client.mvp.AppActivity;
 
 import java.util.Collection;
 
@@ -49,7 +49,7 @@ public abstract class AbstractAdminActivity<P extends AdminPlace, AC extends Adm
     }
 
     @Override
-    public void start(AcceptsOneWidget container, EventBus eventBus, Collection<EventRegistration> registrations) {
+    public void start(AcceptsView container, EventBus eventBus, Collection<EventRegistration> registrations) {
         container.setWidget(adminView.asWidget());
         adminView.setContent(adminContent);
     }

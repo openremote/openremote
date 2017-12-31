@@ -19,6 +19,9 @@
  */
 package org.openremote.components.client.toast;
 
+import jsinterop.annotations.JsType;
+
+@JsType
 public interface ToastDisplay {
 
     void show(Toast toast);

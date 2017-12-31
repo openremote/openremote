@@ -19,11 +19,11 @@
  */
 package org.openremote.manager.client.user;
 
-import com.google.gwt.user.client.ui.AcceptsOneWidget;
 import org.openremote.manager.client.Environment;
+import org.openremote.manager.client.mvp.AcceptsView;
+import org.openremote.manager.client.mvp.AppActivity;
 import org.openremote.model.event.bus.EventBus;
 import org.openremote.model.event.bus.EventRegistration;
-import org.openremote.manager.client.mvp.AppActivity;
 
 import javax.inject.Inject;
 import java.util.Collection;
@@ -46,7 +46,7 @@ public class UserAccountActivity extends AppActivity<UserAccountPlace> implement
     }
 
     @Override
-    public void start(AcceptsOneWidget container, EventBus eventBus, Collection<EventRegistration> registrations) {
+    public void start(AcceptsView container, EventBus eventBus, Collection<EventRegistration> registrations) {
         view.setPresenter(this);
         view.setRealm(environment.getSecurityService().getAuthenticatedRealm());
         container.setWidget(view.asWidget());

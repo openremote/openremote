@@ -19,6 +19,9 @@
  */
 package org.openremote.manager.shared.security;
 
+import jsinterop.annotations.JsIgnore;
+import jsinterop.annotations.JsProperty;
+import jsinterop.annotations.JsType;
 import org.hibernate.annotations.Formula;
 import org.hibernate.annotations.Subselect;
 
@@ -33,20 +36,25 @@ import javax.validation.constraints.Size;
 /**
  * This can be used (among other things) to query the REALM table in JPA queries.
  */
+@JsType
 @Entity
 @Subselect("select * from PUBLIC.REALM") // Map this immutable to an SQL view, don't use/create table
 public class Tenant {
 
     @Id
+    @JsProperty(name = "id")
     protected String id;
 
     @Column(name = "NAME")
+    @JsProperty(name = "realm")
     protected String realm;
 
     @Formula("(select ra.VALUE from PUBLIC.REALM_ATTRIBUTE ra where ra.REALM_ID = ID and ra.name = 'displayName')")
+    @JsProperty(name = "displayName")
     protected String displayName;
 
     @Column(name = "ENABLED")
+    @JsProperty(name = "enabled")
     protected Boolean enabled;
 
     @Column(name = "NOT_BEFORE")
@@ -59,7 +67,9 @@ public class Tenant {
     @Transient
     protected Boolean duplicateEmailsAllowed;
 
+    @JsIgnore
     public Tenant() {
+        this(null, null, null, null);
     }
 
     public Tenant(String id, String realm, String displayName, Boolean enabled) {

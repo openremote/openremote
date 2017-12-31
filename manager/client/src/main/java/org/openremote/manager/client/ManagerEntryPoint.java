@@ -21,12 +21,17 @@ package org.openremote.manager.client;
 
 import com.google.gwt.core.client.GWT;
 
+import java.util.logging.Logger;
+
 public class ManagerEntryPoint implements com.google.gwt.core.client.EntryPoint {
+
+    private static final Logger LOG = Logger.getLogger(ManagerEntryPoint.class.getName());
 
     protected final ManagerGinjector injector = GWT.create(ManagerGinjector.class);
 
     @Override
     public void onModuleLoad() {
+        LOG.info("Manager GWT entry point");
         injector.getAppController().start();
     }
 

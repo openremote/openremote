@@ -19,14 +19,14 @@
  */
 package org.openremote.manager.client.interop.mapbox;
 
-import com.google.gwt.core.client.JavaScriptObject;
 import jsinterop.annotations.JsType;
+import jsinterop.base.Any;
 
 @JsType(isNative = true, name = "Popup", namespace = "mapboxgl")
 public class Popup extends Control<Popup> {
     public Popup() {}
 
-    public Popup(JavaScriptObject options) {}
+    public Popup(Any options) {}
 
     public native LngLat getLngLat();
 

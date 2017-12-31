@@ -20,6 +20,7 @@
 package org.openremote.components.client.toast;
 
 import com.google.gwt.user.client.Timer;
+import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsType;
 
 import javax.inject.Inject;

@@ -19,10 +19,10 @@
  */
 package org.openremote.manager.client.interop.mapbox;
 
-import com.google.gwt.core.client.JavaScriptObject;
-import elemental2.dom.Node;
+import elemental2.dom.Element;
 import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
+import jsinterop.base.Any;
 
 @JsType(isNative = true, name = "Map", namespace = "mapboxgl")
 public class MapboxMap {
@@ -33,17 +33,17 @@ public class MapboxMap {
     @JsProperty
     public boolean loaded;
 
-    public MapboxMap(JavaScriptObject options) {}
+    public MapboxMap(Any options) {}
 
     public native MapboxMap addClass(String className);
-    public native MapboxMap addClass(String className, JavaScriptObject styleOptions);
+    public native MapboxMap addClass(String className, Any styleOptions);
 
     public native MapboxMap addControl(Control control);
 
-    public native MapboxMap addLayer(JavaScriptObject layer);
-    public native MapboxMap addLayer(JavaScriptObject layer, String beforeLayerId);
+    public native MapboxMap addLayer(Any layer);
+    public native MapboxMap addLayer(Any layer, String beforeLayerId);
 
-    public native MapboxMap addSource(String sourceId, JavaScriptObject source);
+    public native MapboxMap addSource(String sourceId, Any source);
     public native GeoJSONSource getSource(String sourceId);
 
     // TODO: add batch method fucntionality to map
@@ -55,45 +55,45 @@ public class MapboxMap {
     public native MapboxMap easeTo(CameraOptions cameraOptions);
     public native MapboxMap easeTo(AnimationOptions animationOptions);
 
-    public native MapboxMap featuresAt(Point point, JavaScriptObject options, FeaturesCallbackFn callbackFn);
+    public native MapboxMap featuresAt(Point point, Any options, FeaturesCallbackFn callbackFn);
 
-    public native MapboxMap featuresIn(JavaScriptObject options, FeaturesCallbackFn callbackFn);
-    public native MapboxMap featuresIn(Point[] bounds, JavaScriptObject options, FeaturesCallbackFn callbackFn);
+    public native MapboxMap featuresIn(Any options, FeaturesCallbackFn callbackFn);
+    public native MapboxMap featuresIn(Point[] bounds, Any options, FeaturesCallbackFn callbackFn);
 
-    public native MapboxMap fitBounds(LngLatBounds bounds, JavaScriptObject options);
-    public native MapboxMap fitBounds(LngLatBounds bounds, JavaScriptObject options, EventData eventData);
+    public native MapboxMap fitBounds(LngLatBounds bounds, Any options);
+    public native MapboxMap fitBounds(LngLatBounds bounds, Any options, EventData eventData);
 
-    public native MapboxMap flyTo(JavaScriptObject options);
+    public native MapboxMap flyTo(Any options);
 
-    public native MapboxMap flyTo(JavaScriptObject options, EventData eventData);
+    public native MapboxMap flyTo(Any options, EventData eventData);
 
     public native double getBearing();
 
     public native LngLatBounds getBounds();
 
-    public native Node getCanvas();
+    public native Element getCanvas();
 
-    public native Node getCanvasContainer();
+    public native Element getCanvasContainer();
 
     public native LngLat getCenter();
 
     public native String[] getClasses();
 
-    public native Node getContainer();
+    public native Element getContainer();
 
-    public native JavaScriptObject getFilter(String layerId);
+    public native Any getFilter(String layerId);
 
-    public native JavaScriptObject getLayer(String layerId);
+    public native Any getLayer(String layerId);
 
-    public native JavaScriptObject getLayoutProperty(String layerId, String propertyName);
-    public native JavaScriptObject getLayoutProperty(String layerId, String propertyName, String className);
+    public native Any getLayoutProperty(String layerId, String propertyName);
+    public native Any getLayoutProperty(String layerId, String propertyName, String className);
 
-    public native JavaScriptObject getPaintProperty(String layerId, String propertyName);
-    public native JavaScriptObject getPaintProperty(String layerId, String propertyName, String className);
+    public native Any getPaintProperty(String layerId, String propertyName);
+    public native Any getPaintProperty(String layerId, String propertyName, String className);
 
     public native double getPitch();
 
-    public native JavaScriptObject getStyle();
+    public native Any getStyle();
 
     public native int getZoom();
 
@@ -108,12 +108,12 @@ public class MapboxMap {
     public native MapboxMap panTo(LngLat lngLat, AnimationOptions options);
     public native MapboxMap panTo(LngLat lngLat, AnimationOptions options, EventData eventData);
 
-    public native JavaScriptObject project(LngLat lngLat);
+    public native Any project(LngLat lngLat);
 
     public native void remove();
 
     public native MapboxMap removeClass(String className);
-    public native MapboxMap removeClass(String className, JavaScriptObject options);
+    public native MapboxMap removeClass(String className, Any options);
 
     public native MapboxMap removeLayer(String layerId);
 
@@ -140,21 +140,21 @@ public class MapboxMap {
     public native MapboxMap setCenter(LngLat center, EventData eventData);
 
     public native MapboxMap setClasses(String[] classNames);
-    public native MapboxMap setClasses(String[] classNames, JavaScriptObject options);
+    public native MapboxMap setClasses(String[] classNames, Any options);
 
-    public native MapboxMap setFilter(String layerId, JavaScriptObject filter);
+    public native MapboxMap setFilter(String layerId, Any filter);
 
     public native MapboxMap setLayerZoomRange(String layerId, int minZoom, int maxZoom);
 
-    public native MapboxMap setLayoutProperty(String layerId, String propertyName, JavaScriptObject propertyValue);
+    public native MapboxMap setLayoutProperty(String layerId, String propertyName, Any propertyValue);
 
-    public native MapboxMap setPaintProperty(String layerId, String propertyName, JavaScriptObject propertyValue);
-    public native MapboxMap setPaintProperty(String layerId, String propertyName, JavaScriptObject propertyValue, String classSpecifier);
+    public native MapboxMap setPaintProperty(String layerId, String propertyName, Any propertyValue);
+    public native MapboxMap setPaintProperty(String layerId, String propertyName, Any propertyValue, String classSpecifier);
 
     public native MapboxMap setPitch(int pitch);
     public native MapboxMap setPitch(int pitch, EventData eventData);
 
-    public native MapboxMap setStyle(JavaScriptObject style);
+    public native MapboxMap setStyle(Any style);
 
     public native MapboxMap setZoom(int zoom);
     public native MapboxMap setZoom(int zoom, EventData eventData);

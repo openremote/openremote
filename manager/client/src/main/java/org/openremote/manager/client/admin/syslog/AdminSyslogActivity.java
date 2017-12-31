@@ -19,13 +19,13 @@
  */
 package org.openremote.manager.client.admin.syslog;
 
-import com.google.gwt.user.client.ui.AcceptsOneWidget;
 import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.admin.AbstractAdminActivity;
 import org.openremote.manager.client.admin.AdminView;
 import org.openremote.manager.client.admin.navigation.AdminNavigation;
 import org.openremote.manager.client.event.SharedEventArrayMapper;
 import org.openremote.manager.client.event.ShowSuccessEvent;
+import org.openremote.manager.client.mvp.AcceptsView;
 import org.openremote.manager.shared.syslog.SyslogConfig;
 import org.openremote.manager.shared.syslog.SyslogResource;
 import org.openremote.model.event.bus.EventBus;
@@ -75,7 +75,7 @@ public class AdminSyslogActivity
     }
 
     @Override
-    public void start(AcceptsOneWidget container, EventBus eventBus, Collection<EventRegistration> registrations) {
+    public void start(AcceptsView container, EventBus eventBus, Collection<EventRegistration> registrations) {
         super.start(container, eventBus, registrations);
         adminContent.setPresenter(this);
 

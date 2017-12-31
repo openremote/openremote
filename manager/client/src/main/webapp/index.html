@@ -11,17 +11,16 @@
 
     <link rel="import" href="/static/src/or-app/or-app.html">
     <link rel="import" href="/static/src/or-toast/or-toast.html">
+    <link rel="import" href="/static/src/manager/or-manager-console-apps/or-manager-console-apps-view.html">
 
     <script>
-        window.addEventListener('ComponentsReady', function () {
+        window.addEventListener("AppReady", function () {
             console.log("Loading Manager resources...");
 
             let app = openremote.INSTANCE;
 
             // Load resources in parallel
             Promise.all([
-                app.load.css("/static/bower_components/font-awesome/css/font-awesome.css"),
-
                 app.load.css("/static/3rdparty/mapbox-gl-js/0.42.2/mapbox-gl.css"),
                 app.load.js("/static/3rdparty/mapbox-gl-js/0.42.2/mapbox-gl.js"),
 

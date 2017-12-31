@@ -19,20 +19,20 @@
  */
 package org.openremote.manager.client.rules.tenant;
 
-import com.google.gwt.user.client.ui.AcceptsOneWidget;
 import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.TenantMapper;
 import org.openremote.manager.client.assets.AssetBrowsingActivity;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.assets.browser.AssetBrowserSelection;
+import org.openremote.manager.client.mvp.AcceptsView;
 import org.openremote.manager.client.mvp.AppActivity;
 import org.openremote.manager.client.rules.RulesModule;
 import org.openremote.manager.shared.rules.RulesetResource;
-import org.openremote.model.rules.TenantRuleset;
 import org.openremote.manager.shared.security.Tenant;
 import org.openremote.manager.shared.security.TenantResource;
 import org.openremote.model.event.bus.EventBus;
 import org.openremote.model.event.bus.EventRegistration;
+import org.openremote.model.rules.TenantRuleset;
 
 import javax.inject.Inject;
 import java.util.Collection;
@@ -75,7 +75,7 @@ public class TenantRulesListActivity
     }
 
     @Override
-    public void start(AcceptsOneWidget container, EventBus eventBus, Collection<EventRegistration> registrations) {
+    public void start(AcceptsView container, EventBus eventBus, Collection<EventRegistration> registrations) {
         view.setPresenter(this);
         container.setWidget(view.asWidget());
 

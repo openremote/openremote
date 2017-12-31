@@ -19,404 +19,610 @@
  */
 package org.openremote.components.client.style;
 
+import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsType;
 
 @JsType
 public class WidgetStyle {
 
+    public String Viewport = "or-Viewport";
+    public String Header = "or-Header";
+    public String Footer = "or-Footer";
+    public String NavItem = "or-NavItem";
+    public String SecondaryNav = "or-SecondaryNav";
+    public String SecondaryNavItem = "or-SecondaryNavItem";
+    public String SidebarContent = "or-SidebarContent";
+    public String MainContent = "or-MainContent";
+    public String PushButton = "or-PushButton";
+    public String Hyperlink = "or-Hyperlink";
+    public String HyperlinkIcon = "or-HyperlinkIcon";
+    public String UnorderedList = "or-UnorderedList";
+    public String Divider = "or-Divider";
+    public String Toast = "or-Toast";
+    public String ToastInfo = "or-ToastInfo";
+    public String ToastSuccess = "or-ToastSuccess";
+    public String ToastFailure = "or-ToastFailure";
+    public String MessagesIcon = "or-MessagesIcon";
+    public String PopupPanel = "or-PopupPanel";
+    public String PopupPanelHeader = "or-PopupPanelHeader";
+    public String PopupPanelContent = "or-PopupPanelContent";
+    public String PopupPanelFooter = "or-PopupPanelFooter";
+    public String Form = "or-Form";
+    public String FormMessages = "or-FormMessages";
+    public String FormBusy = "or-FormBusy";
+    public String FormGroup = "or-FormGroup";
+    public String FormLabel = "or-FormLabel";
+    public String FormField = "or-FormField";
+    public String FormControl = "or-FormControl";
+    public String FormInputText = "or-FormInputText";
+    public String FormOutputText = "or-FormOutputText";
+    public String FormTextArea = "or-FormTextArea";
+    public String FormFileUpload = "or-FormFileUpload";
+    public String FormFileUploadLabel = "or-FormFileUploadLabel";
+    public String FormValueListBox = "or-FormValueListBox";
+    public String FormListBox = "or-FormListBox";
+    public String FormButton = "or-FormButton";
+    public String FormButtonPrimary = "or-FormButtonPrimary";
+    public String FormButtonDanger = "or-FormButtonDanger";
+    public String FormCheckBox = "or-FormCheckBox";
+    public String FormTableHeaderCell = "or-FormTableHeaderCell";
+    public String FormTableCell = "or-FormTableCell";
+    public String FormTableCellText = "or-FormTableCellText";
+    public String FormTableEvenRow = "or-FormTableEvenRow";
+    public String FormTableEvenRowCell = "or-FormTableEvenRowCell";
+    public String FormTableFirstColumn = "or-FormTableFirstColumn";
+    public String FormTableFirstColumnFooter = "or-FormTableFirstColumnFooter";
+    public String FormTableFirstColumnHeader = "or-FormTableFirstColumnHeader";
+    public String FormTableFooter = "or-FormTableFooter";
+    public String FormTableHeader = "or-FormTableHeader";
+    public String FormTableHoveredRow = "or-FormTableHoveredRow";
+    public String FormTableHoveredRowCell = "or-FormTableHoveredRowCell";
+    public String FormTableKeyboardSelectedCell = "or-FormTableKeyboardSelectedCell";
+    public String FormTableKeyboardSelectedRow = "or-FormTableKeyboardSelectedRow";
+    public String FormTableKeyboardSelectedRowCell = "or-FormTableKeyboardSelectedRowCell";
+    public String FormTableLastColumn = "or-FormTableLastColumn";
+    public String FormTableLastColumnHeader = "or-FormTableLastColumnHeader";
+    public String FormTableLastColumnFooter = "or-FormTableLastColumnFooter";
+    public String FormTableLoading = "or-FormTableLoading";
+    public String FormTableOddRow = "or-FormTableOddRow";
+    public String FormTableOddRowCell = "or-FormTableOddRowCell";
+    public String FormTableSelectedRow = "or-FormTableSelectedRow";
+    public String FormTableSelectedRowCell = "or-FormTableSelectedRowCell";
+    public String FormTableSortableHeader = "or-FormTableSortableHeader";
+    public String FormTableSortedHeaderAscending = "or-FormTableSortedHeaderAscending";
+    public String FormTableSortedHeaderDescending = "or-FormTableSortedHeaderDescending";
+    public String FormTable = "or-FormTable";
+    public String FormTreeEmptyMessage = "or-FormTreeEmptyMessage";
+    public String FormTreeItem = "or-FormTreeItem";
+    public String FormTreeItemImage = "or-FormTreeItemImage";
+    public String FormTreeItemImageValue = "or-FormTreeItemImageValue";
+    public String FormTreeItemValue = "or-FormTreeItemValue";
+    public String FormTreeKeyboardSelectedItem = "or-FormTreeKeyboardSelectedItem";
+    public String FormTreeSelectedItem = "or-FormTreeSelectedItem";
+    public String FormTreeOpenItem = "or-FormTreeOpenItem";
+    public String FormTreeShowMoreButton = "or-FormTreeShowMoreButton";
+    public String FormTreeTopItem = "or-FormTreeTopItem";
+    public String FormTreeTopItemImage = "or-FormTreeTopItemImage";
+    public String FormTreeTopItemImageValue = "or-FormTreeTopItemImageValue";
+    public String FormTreeWidget = "or-FormTreeWidget";
+    public String FormList = "or-FormList";
+    public String FormListItem = "or-FormListItem";
+    public String FormListEmptyMessage = "or-FormListEmptyMessage";
+    public String StatusIndicator = "or-StatusIndicator";
+    public String StatusIndicatorOK = "or-StatusIndicatorOK";
+    public String StatusIndicatorATT = "or-StatusIndicatorATT";
+    public String StatusIndicatorERROR = "or-StatusIndicatorERROR";
+    public String SplitPanelHandle = "or-SplitPanelHandle";
+    public String ItemWithBorder = "or-ItemWithBorder";
+    public String ConfirmationDialog = "or-ConfirmationDialog";
+    public String RightGradient = "or-RightGradient";
+    public String LeftGradient = "or-LeftGradient";
+    public String TopGradient = "or-TopGradient";
+    public String HighlightBackground = "or-HighlightBackground";
+    public String JsonEditor = "or-JsonEditor";
+    public String AdminNotificationEditor = "or-AdminNotificationEditor";
+    public String BorderRed = "or-BorderRed";
+    public String BorderGreen = "or-BorderGreen";
+    public String BorderYellow = "or-BorderYellow";
+    public String BorderDefault = "or-BorderDefault";
+
+    @JsIgnore
     public String Viewport() {
-        return "or-Viewport";
+        return Viewport;
     }
 
+    @JsIgnore
     public String Header() {
-        return "or-Header";
+        return Header;
     }
 
+    @JsIgnore
     public String Footer() {
-        return "or-Footer";
+        return Footer;
     }
 
+    @JsIgnore
     public String NavItem() {
-        return "or-NavItem";
+        return NavItem;
     }
 
+    @JsIgnore
     public String SecondaryNav() {
-        return "or-SecondaryNav";
+        return SecondaryNav;
     }
 
+    @JsIgnore
     public String SecondaryNavItem() {
-        return "or-SecondaryNavItem";
+        return SecondaryNavItem;
     }
 
+    @JsIgnore
     public String SidebarContent() {
-        return "or-SidebarContent";
+        return SidebarContent;
     }
 
+    @JsIgnore
     public String MainContent() {
-        return "or-MainContent";
+        return MainContent;
     }
 
+    @JsIgnore
     public String PushButton() {
-        return "or-PushButton";
+        return PushButton;
     }
 
+    @JsIgnore
     public String Hyperlink() {
-        return "or-Hyperlink";
+        return Hyperlink;
     }
 
+    @JsIgnore
+    public String HyperlinkIcon() {
+        return HyperlinkIcon;
+    }
+
+    @JsIgnore
     public String UnorderedList() {
-        return "or-UnorderedList";
+        return UnorderedList;
     }
 
+    @JsIgnore
     public String Divider() {
-        return "or-Divider";
+        return Divider;
     }
 
+    @JsIgnore
     public String Toast() {
-        return "or-Toast";
+        return Toast;
     }
 
+    @JsIgnore
     public String ToastInfo() {
-        return "or-ToastInfo";
+        return ToastInfo;
     }
 
+    @JsIgnore
     public String ToastSuccess() {
-        return "or-ToastSuccess";
+        return ToastSuccess;
     }
 
+    @JsIgnore
     public String ToastFailure() {
-        return "or-ToastFailure";
+        return ToastFailure;
     }
 
+    @JsIgnore
     public String MessagesIcon() {
-        return "or-MessagesIcon";
+        return MessagesIcon;
     }
 
+    @JsIgnore
     public String PopupPanel() {
-        return "or-PopupPanel";
+        return PopupPanel;
     }
 
+    @JsIgnore
     public String PopupPanelHeader() {
-        return "or-PopupPanelHeader";
+        return PopupPanelHeader;
     }
 
+    @JsIgnore
     public String PopupPanelContent() {
-        return "or-PopupPanelContent";
+        return PopupPanelContent;
     }
 
+    @JsIgnore
     public String PopupPanelFooter() {
-        return "or-PopupPanelFooter";
+        return PopupPanelFooter;
     }
 
+    @JsIgnore
     public String Form() {
-        return "or-Form";
+        return Form;
     }
 
+    @JsIgnore
     public String FormMessages() {
-        return "or-FormMessages";
+        return FormMessages;
     }
 
+    @JsIgnore
     public String FormBusy() {
-        return "or-FormBusy";
+        return FormBusy;
     }
 
+    @JsIgnore
     public String FormGroup() {
-        return "or-FormGroup";
+        return FormGroup;
     }
 
+    @JsIgnore
     public String FormLabel() {
-        return "or-FormLabel";
+        return FormLabel;
     }
 
+    @JsIgnore
     public String FormField() {
-        return "or-FormField";
+        return FormField;
     }
 
+    @JsIgnore
     public String FormControl() {
-        return "or-FormControl";
+        return FormControl;
     }
 
+    @JsIgnore
     public String FormInputText() {
-        return "or-FormInputText";
+        return FormInputText;
     }
 
+    @JsIgnore
     public String FormOutputText() {
-        return "or-FormOutputText";
+        return FormOutputText;
     }
 
+    @JsIgnore
     public String FormTextArea() {
-        return "or-FormTextArea";
+        return FormTextArea;
     }
 
+    @JsIgnore
     public String FormFileUpload() {
-        return "or-FormFileUpload";
+        return FormFileUpload;
     }
 
+    @JsIgnore
     public String FormFileUploadLabel() {
-        return "or-FormFileUploadLabel";
+        return FormFileUploadLabel;
     }
 
+    @JsIgnore
     public String FormValueListBox() {
-        return "or-FormValueListBox";
+        return FormValueListBox;
     }
 
+    @JsIgnore
     public String FormListBox() {
-        return "or-FormListBox";
+        return FormListBox;
     }
 
+    @JsIgnore
     public String FormButton() {
-        return "or-FormButton";
+        return FormButton;
     }
 
+    @JsIgnore
     public String FormButtonPrimary() {
-        return "or-FormButtonPrimary";
+        return FormButtonPrimary;
     }
 
+    @JsIgnore
     public String FormButtonDanger() {
-        return "or-FormButtonDanger";
+        return FormButtonDanger;
     }
 
+    @JsIgnore
     public String FormCheckBox() {
-        return "or-FormCheckBox";
+        return FormCheckBox;
     }
 
+    @JsIgnore
     public String FormTableHeaderCell() {
-        return "or-FormTableHeaderCell";
+        return FormTableHeaderCell;
     }
 
+    @JsIgnore
     public String FormTableCell() {
-        return "or-FormTableCell";
+        return FormTableCell;
     }
 
+    @JsIgnore
     public String FormTableCellText() {
-        return "or-FormTableCellText";
+        return FormTableCellText;
     }
 
+    @JsIgnore
     public String FormTableEvenRow() {
-        return "or-FormTableEvenRow";
+        return FormTableEvenRow;
     }
 
+    @JsIgnore
     public String FormTableEvenRowCell() {
-        return "or-FormTableEvenRowCell";
+        return FormTableEvenRowCell;
     }
 
+    @JsIgnore
     public String FormTableFirstColumn() {
-        return "or-FormTableFirstColumn";
+        return FormTableFirstColumn;
     }
 
+    @JsIgnore
     public String FormTableFirstColumnFooter() {
-        return "or-FormTableFirstColumnFooter";
+        return FormTableFirstColumnFooter;
     }
 
+    @JsIgnore
     public String FormTableFirstColumnHeader() {
-        return "or-FormTableFirstColumnHeader";
+        return FormTableFirstColumnHeader;
     }
 
+    @JsIgnore
     public String FormTableFooter() {
-        return "or-FormTableFooter";
+        return FormTableFooter;
     }
 
+    @JsIgnore
     public String FormTableHeader() {
-        return "or-FormTableHeader";
+        return FormTableHeader;
     }
 
+    @JsIgnore
     public String FormTableHoveredRow() {
-        return "or-FormTableHoveredRow";
+        return FormTableHoveredRow;
     }
 
+    @JsIgnore
     public String FormTableHoveredRowCell() {
-        return "or-FormTableHoveredRowCell";
+        return FormTableHoveredRowCell;
     }
 
+    @JsIgnore
     public String FormTableKeyboardSelectedCell() {
-        return "or-FormTableKeyboardSelectedCell";
+        return FormTableKeyboardSelectedCell;
     }
 
+    @JsIgnore
     public String FormTableKeyboardSelectedRow() {
-        return "or-FormTableKeyboardSelectedRow";
+        return FormTableKeyboardSelectedRow;
     }
 
+    @JsIgnore
     public String FormTableKeyboardSelectedRowCell() {
-        return "or-FormTableKeyboardSelectedRowCell";
+        return FormTableKeyboardSelectedRowCell;
     }
 
+    @JsIgnore
     public String FormTableLastColumn() {
-        return "or-FormTableLastColumn";
+        return FormTableLastColumn;
     }
 
+    @JsIgnore
     public String FormTableLastColumnHeader() {
-        return "or-FormTableLastColumnHeader";
+        return FormTableLastColumnHeader;
     }
 
+    @JsIgnore
     public String FormTableLastColumnFooter() {
-        return "or-FormTableLastColumnFooter";
+        return FormTableLastColumnFooter;
     }
 
+    @JsIgnore
     public String FormTableLoading() {
-        return "or-FormTableLoading";
+        return FormTableLoading;
     }
 
+    @JsIgnore
     public String FormTableOddRow() {
-        return "or-FormTableOddRow";
+        return FormTableOddRow;
     }
 
+    @JsIgnore
     public String FormTableOddRowCell() {
-        return "or-FormTableOddRowCell";
+        return FormTableOddRowCell;
     }
 
+    @JsIgnore
     public String FormTableSelectedRow() {
-        return "or-FormTableSelectedRow";
+        return FormTableSelectedRow;
     }
 
+    @JsIgnore
     public String FormTableSelectedRowCell() {
-        return "or-FormTableSelectedRowCell";
+        return FormTableSelectedRowCell;
     }
 
+    @JsIgnore
     public String FormTableSortableHeader() {
-        return "or-FormTableSortableHeader";
+        return FormTableSortableHeader;
     }
 
+    @JsIgnore
     public String FormTableSortedHeaderAscending() {
-        return "or-FormTableSortedHeaderAscending";
+        return FormTableSortedHeaderAscending;
     }
 
+    @JsIgnore
     public String FormTableSortedHeaderDescending() {
-        return "or-FormTableSortedHeaderDescending";
+        return FormTableSortedHeaderDescending;
     }
 
+    @JsIgnore
     public String FormTable() {
-        return "or-FormTable";
+        return FormTable;
     }
 
+    @JsIgnore
     public String FormTreeEmptyMessage() {
-        return "or-FormTreeEmptyMessage";
+        return FormTreeEmptyMessage;
     }
 
+    @JsIgnore
     public String FormTreeItem() {
-        return "or-FormTreeItem";
+        return FormTreeItem;
     }
 
+    @JsIgnore
     public String FormTreeItemImage() {
-        return "or-FormTreeItemImage";
+        return FormTreeItemImage;
     }
 
+    @JsIgnore
     public String FormTreeItemImageValue() {
-        return "or-FormTreeItemImageValue";
+        return FormTreeItemImageValue;
     }
 
+    @JsIgnore
     public String FormTreeItemValue() {
-        return "or-FormTreeItemValue";
+        return FormTreeItemValue;
     }
 
+    @JsIgnore
     public String FormTreeKeyboardSelectedItem() {
-        return "or-FormTreeKeyboardSelectedItem";
+        return FormTreeKeyboardSelectedItem;
     }
 
+    @JsIgnore
     public String FormTreeSelectedItem() {
-        return "or-FormTreeSelectedItem";
+        return FormTreeSelectedItem;
     }
 
+    @JsIgnore
     public String FormTreeOpenItem() {
-        return "or-FormTreeOpenItem";
+        return FormTreeOpenItem;
     }
 
+    @JsIgnore
     public String FormTreeShowMoreButton() {
-        return "or-FormTreeShowMoreButton";
+        return FormTreeShowMoreButton;
     }
 
+    @JsIgnore
     public String FormTreeTopItem() {
-        return "or-FormTreeTopItem";
+        return FormTreeTopItem;
     }
 
+    @JsIgnore
     public String FormTreeTopItemImage() {
-        return "or-FormTreeTopItemImage";
+        return FormTreeTopItemImage;
     }
 
+    @JsIgnore
     public String FormTreeTopItemImageValue() {
-        return "or-FormTreeTopItemImageValue";
+        return FormTreeTopItemImageValue;
     }
 
+    @JsIgnore
     public String FormTreeWidget() {
-        return "or-FormTreeWidget";
+        return FormTreeWidget;
     }
 
+    @JsIgnore
     public String FormList() {
-        return "or-FormList";
+        return FormList;
     }
 
+    @JsIgnore
     public String FormListItem() {
-        return "or-FormListItem";
+        return FormListItem;
     }
 
+    @JsIgnore
     public String FormListEmptyMessage() {
-        return "or-FormListEmptyMessage";
+        return FormListEmptyMessage;
     }
 
+    @JsIgnore
     public String StatusIndicator() {
-        return "or-StatusIndicator";
+        return StatusIndicator;
     }
 
+    @JsIgnore
     public String StatusIndicatorOK() {
-        return "or-StatusIndicatorOK";
+        return StatusIndicatorOK;
     }
 
+    @JsIgnore
     public String StatusIndicatorATT() {
-        return "or-StatusIndicatorATT";
+        return StatusIndicatorATT;
     }
 
+    @JsIgnore
     public String StatusIndicatorERROR() {
-        return "or-StatusIndicatorERROR";
+        return StatusIndicatorERROR;
     }
 
+    @JsIgnore
     public String SplitPanelHandle() {
-        return "or-SplitPanelHandle";
+        return SplitPanelHandle;
     }
 
+    @JsIgnore
     public String ItemWithBorder() {
-        return "or-ItemWithBorder";
+        return ItemWithBorder;
     }
 
+    @JsIgnore
     public String ConfirmationDialog() {
-        return "or-ConfirmationDialog";
+        return ConfirmationDialog;
     }
 
+    @JsIgnore
     public String RightGradient() {
-        return "or-RightGradient";
+        return RightGradient;
     }
 
+    @JsIgnore
     public String LeftGradient() {
-        return "or-LeftGradient";
+        return LeftGradient;
     }
 
+    @JsIgnore
     public String TopGradient() {
-        return "or-TopGradient";
+        return TopGradient;
     }
 
+    @JsIgnore
     public String HighlightBackground() {
-        return "or-HighlightBackground";
+        return HighlightBackground;
     }
 
+    @JsIgnore
     public String JsonEditor() {
-        return "or-JsonEditor";
+        return JsonEditor;
     }
 
+    @JsIgnore
     public String AdminNotificationEditor() {
-        return "or-AdminNotificationEditor";
+        return AdminNotificationEditor;
     }
 
+    @JsIgnore
     public String BorderRed() {
-        return "or-BorderRed";
+        return BorderRed;
     }
 
+    @JsIgnore
     public String BorderGreen() {
-        return "or-BorderGreen";
+        return BorderGreen;
     }
 
+    @JsIgnore
     public String BorderYellow() {
-        return "or-BorderYellow";
+        return BorderYellow;
     }
 
+    @JsIgnore
     public String BorderDefault() {
-        return "or-BorderDefault";
+        return BorderDefault;
     }
 }

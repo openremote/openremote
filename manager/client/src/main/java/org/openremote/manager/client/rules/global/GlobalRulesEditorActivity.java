@@ -22,6 +22,7 @@ package org.openremote.manager.client.rules.global;
 import com.google.gwt.user.client.ui.AcceptsOneWidget;
 import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
+import org.openremote.manager.client.mvp.AcceptsView;
 import org.openremote.manager.shared.security.Tenant;
 import org.openremote.model.event.bus.EventBus;
 import org.openremote.model.event.bus.EventRegistration;
@@ -54,7 +55,7 @@ public class GlobalRulesEditorActivity
     }
 
     @Override
-    public void start(AcceptsOneWidget container, EventBus eventBus, Collection<EventRegistration> registrations) {
+    public void start(AcceptsView container, EventBus eventBus, Collection<EventRegistration> registrations) {
         super.start(container, eventBus, registrations);
 
         view.setHeadline(environment.getMessages().editGlobalRules(), null);

@@ -11,11 +11,19 @@ dependencies {
 
     compile resolveProject(":manager:shared")
 
-    compile "com.google.gwt:gwt-elemental:$gwtVersion"
     compile("com.google.gwt.inject:gin:$ginVersion")
+
+    // TODO Deprecate this and remove all usages
+    compile "com.google.gwt:gwt-elemental:$gwtVersion"
+
+    // Elemental2 from google, Elemento from jboss
+    compile "com.google.elemental2:elemental2-dom:$elemental2Version"
+    compile "com.google.elemental2:elemental2-webstorage:$elemental2Version"
+    compile "com.google.elemental2:elemental2-promise:$elemental2Version"
+    compile "org.jboss.gwt.elemento:elemento-core:$elementoCoreVersion"
+
     compile files(['lib/gwt-jackson-0.14.3-SNAPSHOT.jar'])
     //compile "com.github.nmorel.gwtjackson:gwt-jackson:$gwtJacksonVersion"
-    compile "org.jboss.gwt.elemento:elemento-core:0.6.1"
 
     // This is not on regular classpath, only used when compiling GWT/running codeserver
     gwtDev files(['lib/javapoet-1.0.0.jar', 'lib/jackson-annotations-2.8.6-sources.jar'])
@@ -83,7 +91,7 @@ task compileGwt(dependsOn: classes, type: JavaExec) {
      */
 
     args = [
-            "org.openremote.manager.Manager", "org.openremote.components.Components", // The production GWT modules
+            "org.openremote.components.Components", "org.openremote.manager.Manager", "org.openremote.app.App", // The production GWT modules
             "-war", gwtOutputDir,
             "-logLevel", "ERROR",
             "-localWorkers", "2",
@@ -130,7 +138,7 @@ task gwtSuperDev(dependsOn: classes, type: JavaExec) {
       -X[no]closureFormattedOutput   EXPERIMENTAL: Enables Javascript output suitable for post-compilation by Closure Compiler (defaults to OFF)
      */
     args = [
-            "org.openremote.manager.ManagerDev", "org.openremote.components.Components", // Note: Different module for dev mode!
+            "org.openremote.components.Components", "org.openremote.manager.ManagerDev", "org.openremote.app.App", // Note: Different module for dev mode!
             "-workDir", gwtWorkDir,
             "-launcherDir", gwtLauncherDir,
             "-src", resolveProject(":model").sourceSets.main.java.srcDirs[0], // Help code server detect source changes

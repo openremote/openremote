@@ -19,7 +19,6 @@
  */
 package org.openremote.manager.client.assets.asset;
 
-import com.google.gwt.user.client.ui.AcceptsOneWidget;
 import com.google.gwt.user.client.ui.IsWidget;
 import com.google.inject.Provider;
 import org.openremote.manager.client.Environment;
@@ -39,6 +38,7 @@ import org.openremote.manager.client.event.ShowFailureEvent;
 import org.openremote.manager.client.event.ShowInfoEvent;
 import org.openremote.manager.client.event.ShowSuccessEvent;
 import org.openremote.manager.client.interop.value.ObjectValueMapper;
+import org.openremote.manager.client.mvp.AcceptsView;
 import org.openremote.manager.client.mvp.AppActivity;
 import org.openremote.manager.client.widget.FormButton;
 import org.openremote.manager.client.widget.FormOutputText;
@@ -102,7 +102,7 @@ public abstract class AbstractAssetActivity<V
     }
 
     @Override
-    public void start(AcceptsOneWidget container, EventBus eventBus, Collection<EventRegistration> registrations) {
+    public void start(AcceptsView container, EventBus eventBus, Collection<EventRegistration> registrations) {
         this.registrations = registrations;
         view.setPresenter(presenter);
         view.getAssetNavigation().setPresenter(this);

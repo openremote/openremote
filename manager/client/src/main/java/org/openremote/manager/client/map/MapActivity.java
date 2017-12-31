@@ -19,7 +19,6 @@
  */
 package org.openremote.manager.client.map;
 
-import com.google.gwt.user.client.ui.AcceptsOneWidget;
 import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.assets.AssetBrowsingActivity;
 import org.openremote.manager.client.assets.AssetMapper;
@@ -29,6 +28,7 @@ import org.openremote.manager.client.assets.browser.AssetBrowserSelection;
 import org.openremote.manager.client.assets.browser.AssetTreeNode;
 import org.openremote.manager.client.assets.browser.TenantTreeNode;
 import org.openremote.manager.client.interop.value.ObjectValueMapper;
+import org.openremote.manager.client.mvp.AcceptsView;
 import org.openremote.manager.client.mvp.AppActivity;
 import org.openremote.manager.shared.asset.AssetResource;
 import org.openremote.manager.shared.map.MapResource;
@@ -98,7 +98,7 @@ public class MapActivity extends AssetBrowsingActivity<MapPlace> implements MapV
     }
 
     @Override
-    public void start(AcceptsOneWidget container, EventBus eventBus, Collection<EventRegistration> registrations) {
+    public void start(AcceptsView container, EventBus eventBus, Collection<EventRegistration> registrations) {
         view.setPresenter(this);
         container.setWidget(view.asWidget());
 
