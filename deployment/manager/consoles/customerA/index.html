@@ -66,8 +66,9 @@
 <or-toast></or-toast>
 
 <!-- ############## Required: One <or-app> should wrap your frontend, you can enforce login/authentication ############## -->
-<or-app login="true" tenant="customerA" timeout="10">
+<or-app login tenant="customerA" timeout="10">
 
+    <!-- You can use your own styles or the OpenRemote styles and theme -->
     <a href="#" class="myAppHeadline">
         The OpenRemote console application of the <code>customerA</code> tenant
     </a>
@@ -118,11 +119,12 @@
         </or-asset>
     </div>
 
-    <!-- Switch to horizontal layout but flex first and take as much vertical space as needed -->
-    <div class="flex layout horizontal">
+    <!-- Switch to horizontal layout but flex vertical first and take as much vertical
+         space as needed, and allow children to scroll if content doesn't fit -->
+    <div class="flex layout horizontal scrollable">
 
-        <!-- This is a container element that flexes and takes as much vertical space as it
-             can get, and if that's not enough, it will show a scrollbar -->
+        <!-- This is a container element that flexes and takes as much horizontal space as it
+             can get, it will show scrollbars if content doesn't fit -->
         <div class="flex scrollable or-MainContent">
             <p>Scroll me...</p>
             <p>Scroll me...</p>
@@ -152,8 +154,8 @@
             <p>Scroll me...</p>
         </div>
 
-        <!-- This is nice list container that flexes and takes as much vertical space as it
-             can get, and if that's not enough, it will show a scrollbar -->
+        <!-- This is nice list container that flexes and takes as much horizontal space as it
+             can get, it will show scrollbars if content doesn't fit -->
         <div class="flex or-MainContent or-FormList">
             <div class="or-FormListItem">Scroll me...</div>
             <div class="or-FormListItem">Scroll me...</div>
