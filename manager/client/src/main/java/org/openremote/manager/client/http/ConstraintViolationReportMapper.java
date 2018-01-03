@@ -21,9 +21,9 @@ package org.openremote.manager.client.http;
 
 import com.github.nmorel.gwtjackson.client.ObjectMapper;
 import com.github.nmorel.gwtjackson.client.annotation.JsonMixIns;
-import org.openremote.manager.client.interop.jackson.DefaultJsonMixin;
-import org.openremote.manager.shared.http.EntityReader;
-import org.openremote.manager.shared.validation.ConstraintViolationReport;
+import org.openremote.components.client.interop.jackson.DefaultJsonMixin;
+import org.openremote.model.http.EntityReader;
+import org.openremote.model.http.ConstraintViolationReport;
 
 @JsonMixIns({@JsonMixIns.JsonMixIn(target = ConstraintViolationReport.class, mixIn = DefaultJsonMixin.class)})
 public interface ConstraintViolationReportMapper

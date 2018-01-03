@@ -25,11 +25,11 @@ import org.openremote.manager.server.asset.ServerAsset;
 import org.openremote.manager.server.security.ManagerIdentityService;
 import org.openremote.manager.server.web.ManagerWebResource;
 import org.openremote.manager.shared.datapoint.AssetDatapointResource;
-import org.openremote.manager.shared.http.RequestParams;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.datapoint.Datapoint;
 import org.openremote.model.datapoint.DatapointInterval;
 import org.openremote.model.datapoint.NumberDatapoint;
+import org.openremote.model.http.RequestParams;
 
 import javax.ws.rs.BeanParam;
 import javax.ws.rs.WebApplicationException;

@@ -21,14 +21,14 @@ package org.openremote.manager.client.admin.users.notifications;
 
 import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.InlineLabel;
+import org.openremote.components.client.style.WidgetStyle;
 import org.openremote.manager.client.app.dialog.Dialog;
 import org.openremote.manager.client.i18n.ManagerMessages;
-import org.openremote.components.client.style.WidgetStyle;
 import org.openremote.manager.client.widget.*;
+import org.openremote.model.interop.Consumer;
 import org.openremote.model.notification.AlertNotification;
 
 import javax.inject.Inject;
-import java.util.function.Consumer;
 
 import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 

@@ -507,7 +507,7 @@ public interface ManagerMessages extends Messages {
 
     String noNotifications();
 
-    String notificationDeleted(Long id);
+    String notificationDeleted(double id);
 
     String deleteNotification();
 

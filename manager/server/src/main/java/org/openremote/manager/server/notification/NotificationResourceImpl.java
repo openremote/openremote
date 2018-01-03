@@ -20,9 +20,9 @@
 package org.openremote.manager.server.notification;
 
 import org.openremote.container.web.WebResource;
-import org.openremote.manager.shared.http.RequestParams;
 import org.openremote.manager.shared.notification.DeviceNotificationToken;
 import org.openremote.manager.shared.notification.NotificationResource;
+import org.openremote.model.http.RequestParams;
 import org.openremote.model.notification.AlertNotification;
 import org.openremote.model.notification.DeliveryStatus;
 

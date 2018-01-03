@@ -20,10 +20,10 @@
 package org.openremote.manager.shared.datapoint;
 
 import jsinterop.annotations.JsType;
-import org.openremote.manager.shared.http.RequestParams;
-import org.openremote.manager.shared.http.SuccessStatusCode;
 import org.openremote.model.datapoint.DatapointInterval;
 import org.openremote.model.datapoint.NumberDatapoint;
+import org.openremote.model.http.RequestParams;
+import org.openremote.model.http.SuccessStatusCode;
 
 import javax.annotation.security.RolesAllowed;
 import javax.ws.rs.*;

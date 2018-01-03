@@ -24,8 +24,7 @@ import org.openremote.manager.client.widget.FormSection;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.agent.ConnectionStatus;
-
-import java.util.function.Consumer;
+import org.openremote.model.interop.Consumer;
 
 public abstract class AbstractAttributeViewExtension extends FormSection implements AttributeView {
 

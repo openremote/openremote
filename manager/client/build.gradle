@@ -11,8 +11,6 @@ dependencies {
 
     compile resolveProject(":manager:shared")
 
-    compile("com.google.gwt.inject:gin:$ginVersion")
-
     // TODO Deprecate this and remove all usages
     compile "com.google.gwt:gwt-elemental:$gwtVersion"
 

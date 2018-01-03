@@ -11,6 +11,13 @@
                 margin: 0 1em;
             }
 
+            #appFrame {
+                display: none;
+                width: 100%;
+                height: 100%;
+                border: 0;
+            }
+
         </style>
 
         <div class="flex layout horizontal">
@@ -44,9 +51,7 @@
                         </span>
                 </div>
 
-                <iframe id="appFrame"
-                        class="flex"
-                        style="display:none;width:100%; height:100%;border:0;"></iframe>
+                <iframe id="appFrame" class="flex"></iframe>
 
             </div>
         </div>
@@ -95,13 +100,13 @@
             }
 
             setApps(apps) {
-               this.set("apps", apps);
+                this.set("apps", apps);
             }
 
             computeHaveApps(apps) {
                 return apps && apps.length > 0;
             }
-            
+
             onAppSelected(e) {
                 this.presenter.onAppSelected(e.model.item.tenant.realm);
             }

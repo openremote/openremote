@@ -65,7 +65,7 @@ public class BasicIdentityDemoSetup implements Setup {
 
 
         persistenceService.doTransaction(em -> em.unwrap(Session.class).doWork(connection -> {
-            String sql = "insert into USER_ENTITY(ID, REALM_ID, USERNAME, PASSWORD, ENABLED) values (?, 'master', 'admin', ?, true)";
+            String sql = "insert into PUBLIC.USER_ENTITY(ID, REALM_ID, USERNAME, PASSWORD, ENABLED) values (?, 'master', 'admin', ?, true)";
             PreparedStatement st = connection.prepareStatement(sql);
             st.setString(1, Generators.randomBasedGenerator().generate().toString());
             st.setString(2, PasswordStorage.createHash(demoAdminPassword));

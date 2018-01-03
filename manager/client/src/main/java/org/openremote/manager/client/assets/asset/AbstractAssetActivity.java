@@ -21,6 +21,7 @@ package org.openremote.manager.client.assets.asset;
 
 import com.google.gwt.user.client.ui.IsWidget;
 import com.google.inject.Provider;
+import org.openremote.components.client.interop.value.ObjectValueMapper;
 import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.app.dialog.JsonEditor;
 import org.openremote.manager.client.assets.AssetBrowsingActivity;
@@ -37,7 +38,6 @@ import org.openremote.manager.client.event.GoToPlaceEvent;
 import org.openremote.manager.client.event.ShowFailureEvent;
 import org.openremote.manager.client.event.ShowInfoEvent;
 import org.openremote.manager.client.event.ShowSuccessEvent;
-import org.openremote.manager.client.interop.value.ObjectValueMapper;
 import org.openremote.manager.client.mvp.AcceptsView;
 import org.openremote.manager.client.mvp.AppActivity;
 import org.openremote.manager.client.widget.FormButton;
@@ -53,10 +53,10 @@ import org.openremote.model.asset.agent.ProtocolConfiguration;
 import org.openremote.model.attribute.*;
 import org.openremote.model.event.bus.EventBus;
 import org.openremote.model.event.bus.EventRegistration;
+import org.openremote.model.interop.Consumer;
 import org.openremote.model.value.*;
 
 import java.util.*;
-import java.util.function.Consumer;
 
 import static org.openremote.manager.client.http.RequestExceptionHandler.handleRequestException;
 import static org.openremote.manager.client.widget.ValueEditors.*;
@@ -141,7 +141,7 @@ public abstract class AbstractAssetActivity<V
         ));
 
         if (!view.isMapInitialised()) {
-            environment.getRequestService().execute(
+            environment.getRequestService().sendAndReturn(
                 objectValueMapper,
                 mapResource::getSettings,
                 200,

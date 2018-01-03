@@ -28,7 +28,7 @@ import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.assets.browser.AssetSelector;
 import org.openremote.manager.client.assets.browser.AssetTreeNode;
 import org.openremote.manager.client.assets.browser.TenantTreeNode;
-import org.openremote.manager.client.interop.BiConsumer;
+import org.openremote.model.interop.BiConsumer;
 import org.openremote.manager.client.widget.*;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.agent.ProtocolDescriptor;

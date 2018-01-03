@@ -20,8 +20,8 @@
 package org.openremote.manager.shared.rules;
 
 import jsinterop.annotations.JsType;
-import org.openremote.manager.shared.http.RequestParams;
-import org.openremote.manager.shared.http.SuccessStatusCode;
+import org.openremote.model.http.RequestParams;
+import org.openremote.model.http.SuccessStatusCode;
 import org.openremote.model.rules.AssetRuleset;
 import org.openremote.model.rules.GlobalRuleset;
 import org.openremote.model.rules.TenantRuleset;

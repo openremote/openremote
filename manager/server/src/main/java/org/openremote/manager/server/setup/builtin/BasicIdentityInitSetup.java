@@ -38,12 +38,12 @@ public class BasicIdentityInitSetup implements Setup {
     public void onStart() {
         // Configure the master realm
         persistenceService.doTransaction(em -> em.unwrap(Session.class).doWork(connection -> {
-            String sql = "insert into REALM(ID, NAME, ENABLED) values ('master', 'master', true)";
+            String sql = "insert into PUBLIC.REALM(ID, NAME, ENABLED) values ('master', 'master', true)";
             PreparedStatement st = connection.prepareStatement(sql);
             st.executeUpdate();
             st.close();
 
-            sql = "insert into REALM_ATTRIBUTE(REALM_ID, NAME, VALUE) values ('master', 'displayName', 'Master')";
+            sql = "insert into PUBLIC.REALM_ATTRIBUTE(REALM_ID, NAME, VALUE) values ('master', 'displayName', 'Master')";
             st = connection.prepareStatement(sql);
             st.executeUpdate();
             st.close();

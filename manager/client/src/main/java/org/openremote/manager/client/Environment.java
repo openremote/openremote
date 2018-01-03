@@ -21,12 +21,12 @@ package org.openremote.manager.client;
 
 import com.google.gwt.place.shared.PlaceController;
 import com.google.gwt.place.shared.PlaceHistoryMapper;
+import org.openremote.components.client.AppSecurity;
+import org.openremote.components.client.style.WidgetStyle;
 import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.service.EventService;
-import org.openremote.manager.client.service.RequestService;
-import org.openremote.manager.client.service.SecurityService;
-import org.openremote.components.client.style.WidgetStyle;
 import org.openremote.model.event.bus.EventBus;
+import org.openremote.model.http.RequestService;
 
 /**
  * Bundle all typically needed dependencies of activities/presenters, so
@@ -34,7 +34,7 @@ import org.openremote.model.event.bus.EventBus;
  */
 public interface Environment {
 
-    static Environment create(SecurityService securityService,
+    static Environment create(AppSecurity appSecurity,
                               RequestService requestService,
                               EventService eventService,
                               PlaceController placeController,
@@ -45,8 +45,8 @@ public interface Environment {
         return new Environment() {
 
             @Override
-            public SecurityService getSecurityService() {
-                return securityService;
+            public AppSecurity getAppSecurity() {
+                return appSecurity;
             }
 
             @Override
@@ -86,7 +86,7 @@ public interface Environment {
         };
     }
 
-    SecurityService getSecurityService();
+    AppSecurity getAppSecurity();
 
     RequestService getRequestService();
 

@@ -27,6 +27,7 @@ public class ManagerPersistenceService extends PersistenceService {
 
     @Override
     protected void appendSchemaLocations(List<String> locations) {
+        super.appendSchemaLocations(locations);
         locations.add("classpath:org/openremote/manager/server/setup/database");
     }
 }

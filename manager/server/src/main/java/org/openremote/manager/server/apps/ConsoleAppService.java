@@ -31,10 +31,13 @@ import org.openremote.manager.shared.security.Tenant;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Logger;
 
 import static org.openremote.model.Constants.MASTER_REALM;
 
 public class ConsoleAppService implements ContainerService {
+
+    private static final Logger LOG = Logger.getLogger(ConsoleAppService.class.getName());
 
     protected TimerService timerService;
     protected ManagerWebService managerWebService;
@@ -43,7 +46,7 @@ public class ConsoleAppService implements ContainerService {
     @Override
     public void init(Container container) throws Exception {
 
-        this.timerService= container.getService(TimerService.class);
+        this.timerService = container.getService(TimerService.class);
         this.managerWebService = container.getService(ManagerWebService.class);
         this.identityService = container.getService(ManagerIdentityService.class);
 
@@ -65,6 +68,10 @@ public class ConsoleAppService implements ContainerService {
         Files.list(managerWebService.getConsolesDocRoot()).forEach(path -> {
             String directoryName = path.getFileName().toString();
             Tenant tenant = identityService.getIdentityProvider().getTenantForRealm(directoryName);
+            if (tenant == null) {
+                LOG.fine("No tenant exists for installed console app: " + path.toAbsolutePath());
+                return;
+            }
             if (tenant.isActive(timerService.getCurrentTimeMillis()) && tenant.getDisplayName() != null) {
                 String appUrl = managerWebService.getConsoleUrl(
                     identityService.getExternalServerUri(),

@@ -22,6 +22,7 @@ package org.openremote.manager.client;
 import com.google.gwt.place.shared.Place;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
+import org.openremote.components.client.AppSecurity;
 import org.openremote.manager.client.admin.syslog.AdminSyslogActivity;
 import org.openremote.manager.client.admin.syslog.AdminSyslogPlace;
 import org.openremote.manager.client.admin.tenant.AdminTenantActivity;
@@ -34,8 +35,8 @@ import org.openremote.manager.client.admin.users.edit.AdminUserEditActivity;
 import org.openremote.manager.client.admin.users.edit.AdminUserEditPlace;
 import org.openremote.manager.client.admin.users.notifications.AdminUserNotificationsActivity;
 import org.openremote.manager.client.admin.users.notifications.AdminUserNotificationsPlace;
-import org.openremote.manager.client.apps.AppsActivity;
-import org.openremote.manager.client.apps.AppsPlace;
+import org.openremote.manager.client.apps.ConsoleAppsActivity;
+import org.openremote.manager.client.apps.ConsoleAppsPlace;
 import org.openremote.manager.client.assets.AssetsDashboardActivity;
 import org.openremote.manager.client.assets.AssetsDashboardPlace;
 import org.openremote.manager.client.assets.asset.AssetEditActivity;
@@ -63,7 +64,6 @@ import org.openremote.manager.client.rules.tenant.TenantRulesEditorActivity;
 import org.openremote.manager.client.rules.tenant.TenantRulesEditorPlace;
 import org.openremote.manager.client.rules.tenant.TenantRulesListActivity;
 import org.openremote.manager.client.rules.tenant.TenantRulesListPlace;
-import org.openremote.manager.client.service.SecurityService;
 import org.openremote.manager.client.user.UserAccountActivity;
 import org.openremote.manager.client.user.UserAccountPlace;
 import org.openremote.model.event.bus.EventBus;
@@ -74,7 +74,7 @@ public class ManagerActivityMapper implements AppActivityMapper {
 
     private static final Logger LOG = Logger.getLogger(ManagerActivityMapper.class.getName());
 
-    protected final SecurityService securityService;
+    protected final AppSecurity appSecurity;
     protected final EventBus eventBus;
     protected final ManagerMessages managerMessages;
     protected final Provider<AssetsDashboardActivity> assetsDashboardActivityProvider;
@@ -88,7 +88,7 @@ public class ManagerActivityMapper implements AppActivityMapper {
     protected final Provider<TenantRulesEditorActivity> tenantRulesEditorActivityProvider;
     protected final Provider<AssetRulesListActivity> assetRulesListActivityProvider;
     protected final Provider<AssetRulesEditorActivity> assetRulesEditorActivityProvider;
-    protected final Provider<AppsActivity> appsActivityProvider;
+    protected final Provider<ConsoleAppsActivity> appsActivityProvider;
     protected final Provider<AdminSyslogActivity> adminSyslogActivityProvider;
     protected final Provider<AdminTenantsActivity> adminTenantsActivityProvider;
     protected final Provider<AdminTenantActivity> adminTenantActivityProvider;
@@ -98,7 +98,7 @@ public class ManagerActivityMapper implements AppActivityMapper {
     protected final Provider<UserAccountActivity> userProfileActivityProvider;
 
     @Inject
-    public ManagerActivityMapper(SecurityService securityService,
+    public ManagerActivityMapper(AppSecurity appSecurity,
                                  EventBus eventBus,
                                  ManagerMessages managerMessages,
                                  Provider<AssetsDashboardActivity> assetsDashboardActivityProvider,
@@ -112,7 +112,7 @@ public class ManagerActivityMapper implements AppActivityMapper {
                                  Provider<TenantRulesEditorActivity> tenantRulesEditorActivityProvider,
                                  Provider<AssetRulesListActivity> assetRulesListActivityProvider,
                                  Provider<AssetRulesEditorActivity> assetRulesEditorActivityProvider,
-                                 Provider<AppsActivity> appsActivityProvider,
+                                 Provider<ConsoleAppsActivity> appsActivityProvider,
                                  Provider<AdminSyslogActivity> adminSyslogActivityProvider,
                                  Provider<AdminTenantsActivity> adminTenantsActivityProvider,
                                  Provider<AdminTenantActivity> adminTenantActivityProvider,
@@ -120,7 +120,7 @@ public class ManagerActivityMapper implements AppActivityMapper {
                                  Provider<AdminUserEditActivity> adminUserActivityProvider,
                                  Provider<AdminUserNotificationsActivity> adminUserNotificationsActivityProvider,
                                  Provider<UserAccountActivity> userProfileActivityProvider) {
-        this.securityService = securityService;
+        this.appSecurity = appSecurity;
         this.eventBus = eventBus;
         this.managerMessages = managerMessages;
         this.assetsDashboardActivityProvider = assetsDashboardActivityProvider;
@@ -147,61 +147,61 @@ public class ManagerActivityMapper implements AppActivityMapper {
     public AppActivity getActivity(Place place) {
         try {
             if (place instanceof AssetsDashboardPlace) {
-                return assetsDashboardActivityProvider.get().init(securityService, (AssetsDashboardPlace) place);
+                return assetsDashboardActivityProvider.get().init(appSecurity, (AssetsDashboardPlace) place);
             }
             if (place instanceof AssetsTenantPlace) {
-                return assetsTenantActivityProvider.get().init(securityService, (AssetsTenantPlace) place);
+                return assetsTenantActivityProvider.get().init(appSecurity, (AssetsTenantPlace) place);
             }
             if (place instanceof AssetViewPlace) {
-                return assetViewActivityProvider.get().init(securityService, (AssetViewPlace) place);
+                return assetViewActivityProvider.get().init(appSecurity, (AssetViewPlace) place);
             }
             if (place instanceof AssetEditPlace) {
-                return assetEditActivityProvider.get().init(securityService, (AssetEditPlace) place);
+                return assetEditActivityProvider.get().init(appSecurity, (AssetEditPlace) place);
             }
             if (place instanceof MapPlace) {
-                return mapActivityProvider.get().init(securityService, (MapPlace) place);
+                return mapActivityProvider.get().init(appSecurity, (MapPlace) place);
             }
             if (place instanceof GlobalRulesListPlace) {
-                return globalRulesActivityProvider.get().init(securityService, (GlobalRulesListPlace) place);
+                return globalRulesActivityProvider.get().init(appSecurity, (GlobalRulesListPlace) place);
             }
             if (place instanceof GlobalRulesEditorPlace) {
-                return globalRulesEditorActivityProvider.get().init(securityService, (GlobalRulesEditorPlace) place);
+                return globalRulesEditorActivityProvider.get().init(appSecurity, (GlobalRulesEditorPlace) place);
             }
             if (place instanceof TenantRulesListPlace) {
-                return tenantRulesListActivityProvider.get().init(securityService, (TenantRulesListPlace) place);
+                return tenantRulesListActivityProvider.get().init(appSecurity, (TenantRulesListPlace) place);
             }
             if (place instanceof TenantRulesEditorPlace) {
-                return tenantRulesEditorActivityProvider.get().init(securityService, (TenantRulesEditorPlace) place);
+                return tenantRulesEditorActivityProvider.get().init(appSecurity, (TenantRulesEditorPlace) place);
             }
             if (place instanceof AssetRulesListPlace) {
-                return assetRulesListActivityProvider.get().init(securityService, (AssetRulesListPlace) place);
+                return assetRulesListActivityProvider.get().init(appSecurity, (AssetRulesListPlace) place);
             }
             if (place instanceof AssetRulesEditorPlace) {
-                return assetRulesEditorActivityProvider.get().init(securityService, (AssetRulesEditorPlace) place);
+                return assetRulesEditorActivityProvider.get().init(appSecurity, (AssetRulesEditorPlace) place);
             }
-            if (place instanceof AppsPlace) {
-                return appsActivityProvider.get().init(securityService, (AppsPlace) place);
+            if (place instanceof ConsoleAppsPlace) {
+                return appsActivityProvider.get().init(appSecurity, (ConsoleAppsPlace) place);
             }
             if (place instanceof AdminSyslogPlace) {
-                return adminSyslogActivityProvider.get().init(securityService, (AdminSyslogPlace) place);
+                return adminSyslogActivityProvider.get().init(appSecurity, (AdminSyslogPlace) place);
             }
             if (place instanceof AdminTenantsPlace) {
-                return adminTenantsActivityProvider.get().init(securityService, (AdminTenantsPlace) place);
+                return adminTenantsActivityProvider.get().init(appSecurity, (AdminTenantsPlace) place);
             }
             if (place instanceof AdminTenantPlace) {
-                return adminTenantActivityProvider.get().init(securityService, (AdminTenantPlace) place);
+                return adminTenantActivityProvider.get().init(appSecurity, (AdminTenantPlace) place);
             }
             if (place instanceof AdminUsersPlace) {
-                return adminUsersActivityProvider.get().init(securityService, (AdminUsersPlace) place);
+                return adminUsersActivityProvider.get().init(appSecurity, (AdminUsersPlace) place);
             }
             if (place instanceof AdminUserEditPlace) {
-                return adminUserActivityProvider.get().init(securityService, (AdminUserEditPlace) place);
+                return adminUserActivityProvider.get().init(appSecurity, (AdminUserEditPlace) place);
             }
             if (place instanceof AdminUserNotificationsPlace) {
-                return adminUserNotificationsActivityProvider.get().init(securityService, (AdminUserNotificationsPlace) place);
+                return adminUserNotificationsActivityProvider.get().init(appSecurity, (AdminUserNotificationsPlace) place);
             }
             if (place instanceof UserAccountPlace) {
-                return userProfileActivityProvider.get().init(securityService, (UserAccountPlace) place);
+                return userProfileActivityProvider.get().init(appSecurity, (UserAccountPlace) place);
             }
 
             LOG.severe("No activity available for place: " + place);

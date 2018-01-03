@@ -20,8 +20,7 @@
 package org.openremote.manager.client.widget;
 
 import com.google.gwt.user.client.ui.UIObject;
-
-import java.util.function.Consumer;
+import org.openremote.model.interop.Consumer;
 
 public interface AppPanel {
 

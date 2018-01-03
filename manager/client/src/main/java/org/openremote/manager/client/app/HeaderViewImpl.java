@@ -30,7 +30,7 @@ import com.google.gwt.user.client.ui.HTMLPanel;
 import com.google.inject.Inject;
 import org.openremote.manager.client.assets.AssetsPlace;
 import org.openremote.manager.client.admin.AdminPlace;
-import org.openremote.manager.client.apps.AppsPlace;
+import org.openremote.manager.client.apps.ConsoleAppsPlace;
 import org.openremote.manager.client.map.MapPlace;
 import org.openremote.manager.client.rules.RulesPlace;
 import org.openremote.manager.client.user.UserAccountPlace;
@@ -96,7 +96,7 @@ public class HeaderViewImpl extends Composite implements HeaderView {
         if (place instanceof RulesPlace) {
             rulesButton.addStyleName("active");
         }
-        if (place instanceof AppsPlace) {
+        if (place instanceof ConsoleAppsPlace) {
             appsButton.addStyleName("active");
         }
         if (place instanceof AdminPlace) {

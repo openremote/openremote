@@ -23,11 +23,11 @@ import org.openremote.container.timer.TimerService;
 import org.openremote.container.web.ClientRequestInfo;
 import org.openremote.manager.server.i18n.I18NService;
 import org.openremote.manager.server.web.ManagerWebResource;
-import org.openremote.manager.shared.http.RequestParams;
 import org.openremote.manager.shared.security.Tenant;
 import org.openremote.manager.shared.security.TenantResource;
-import org.openremote.manager.shared.validation.ConstraintViolation;
-import org.openremote.manager.shared.validation.ConstraintViolationReport;
+import org.openremote.model.http.ConstraintViolation;
+import org.openremote.model.http.ConstraintViolationReport;
+import org.openremote.model.http.RequestParams;
 
 import javax.ws.rs.ClientErrorException;
 import javax.ws.rs.WebApplicationException;
@@ -39,8 +39,8 @@ import java.util.logging.Logger;
 
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.NOT_FOUND;
-import static org.openremote.manager.shared.validation.ConstraintViolationReport.VIOLATION_EXCEPTION_HEADER;
 import static org.openremote.model.Constants.MASTER_REALM;
+import static org.openremote.model.http.ConstraintViolationReport.VIOLATION_EXCEPTION_HEADER;
 
 public class TenantResourceImpl extends ManagerWebResource implements TenantResource {
 

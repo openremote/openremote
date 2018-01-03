@@ -23,6 +23,7 @@ import elemental.client.Browser;
 import elemental.events.CloseEvent;
 import elemental.html.Location;
 import elemental.html.WebSocket;
+import org.openremote.components.client.AppSecurity;
 import org.openremote.manager.client.event.*;
 import org.openremote.manager.client.event.session.*;
 import org.openremote.manager.client.util.Timeout;
@@ -36,7 +37,7 @@ public class EventServiceImpl implements EventService {
 
     private static final Logger LOG = Logger.getLogger(EventServiceImpl.class.getName());
 
-    public static EventService create(SecurityService securityService,
+    public static EventService create(AppSecurity appSecurity,
                                       EventBus eventBus,
                                       SharedEventMapper sharedEventMapper,
                                       SharedEventArrayMapper sharedEventArrayMapper,
@@ -45,7 +46,7 @@ public class EventServiceImpl implements EventService {
                                       UnauthorizedEventSubscriptionMapper unauthorizedEventSubscriptionMapper) {
         Location location = Browser.getWindow().getLocation();
         return new EventServiceImpl(
-            securityService,
+            appSecurity,
             eventBus,
             ("https:".equals(location.getProtocol()) ? "wss" : "ws")
                 + "://" + location.getHostname() + ":" + location.getPort() + "/websocket/events",
@@ -64,7 +65,7 @@ public class EventServiceImpl implements EventService {
     // While not connected, buffer sent messages and finally flush the queue when connected again
     public static final int MAX_QUEUE_SIZE = 1000;
 
-    final protected SecurityService securityService;
+    final protected AppSecurity appSecurity;
     final protected EventBus eventBus;
     final protected String serviceUrl;
     final protected SharedEventMapper sharedEventMapper;
@@ -79,7 +80,7 @@ public class EventServiceImpl implements EventService {
     protected WebSocket webSocket;
     protected int failureCount;
 
-    public EventServiceImpl(SecurityService securityService,
+    public EventServiceImpl(AppSecurity appSecurity,
                             EventBus eventBus,
                             String serviceUrl,
                             SharedEventMapper sharedEventMapper,
@@ -87,7 +88,7 @@ public class EventServiceImpl implements EventService {
                             EventSubscriptionMapper eventSubscriptionMapper,
                             CancelEventSubscriptionMapper cancelEventSubscriptionMapper,
                             UnauthorizedEventSubscriptionMapper unauthorizedEventSubscriptionMapper) {
-        this.securityService = securityService;
+        this.appSecurity = appSecurity;
         this.eventBus = eventBus;
         this.serviceUrl = serviceUrl;
         this.sharedEventMapper = sharedEventMapper;
@@ -166,7 +167,7 @@ public class EventServiceImpl implements EventService {
 
         LOG.fine("Connecting to event websocket: " + serviceUrl);
 
-        String authenticatedServiceUrl = securityService.setCredentials(serviceUrl);
+        String authenticatedServiceUrl = appSecurity.setCredentialsOnUrl(serviceUrl);
 
         webSocket = Browser.getWindow().newWebSocket(authenticatedServiceUrl);
         webSocket.setOnopen(evt -> {

@@ -32,6 +32,7 @@ import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.AttributeValidationResult;
 import org.openremote.model.event.bus.EventRegistration;
+import org.openremote.model.interop.Consumer;
 import org.openremote.model.simulator.RequestSimulatorState;
 import org.openremote.model.simulator.SimulatorElement;
 import org.openremote.model.simulator.SimulatorState;
@@ -39,7 +40,6 @@ import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueType;
 
 import java.util.*;
-import java.util.function.Consumer;
 
 public class Simulator extends AbstractAttributeViewExtension {
 

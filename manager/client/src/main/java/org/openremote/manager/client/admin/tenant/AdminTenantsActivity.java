@@ -67,7 +67,7 @@ public class AdminTenantsActivity
         adminContent.setPresenter(this);
 
         adminContent.setFormBusy(true);
-        environment.getRequestService().execute(
+        environment.getRequestService().sendAndReturn(
             tenantArrayMapper,
             tenantResource::getAll,
             200,

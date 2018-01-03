@@ -24,11 +24,11 @@ import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.IsWidget;
 import org.openremote.manager.client.app.dialog.JsonEditor;
 import org.openremote.model.Constants;
+import org.openremote.model.interop.Consumer;
 import org.openremote.model.value.*;
 
 import java.util.Date;
 import java.util.Optional;
-import java.util.function.Consumer;
 
 import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 

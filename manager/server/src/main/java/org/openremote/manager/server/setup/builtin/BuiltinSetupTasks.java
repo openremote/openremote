@@ -44,22 +44,22 @@ public class BuiltinSetupTasks extends AbstractSetupTasks {
             if (isImportDemoUsers(container)) {
                 addTask(new KeycloakDemoSetup(container));
             }
+
+            if (isImportDemoAssets(container)) {
+                addTask(new ManagerDemoSetup(container, isImportDemoScenes(container)));
+            }
+            if (isImportDemoRules(container)) {
+                addTask(new RulesDemoSetup(container));
+            }
+            if (isImportDemoAgent(container)) {
+                addTask(new ManagerDemoAgentSetup(container));
+            }
         } else {
             addTask(new ManagerCleanSetup(container));
             addTask(new BasicIdentityInitSetup(container));
             if (isImportDemoUsers(container)) {
                 addTask(new BasicIdentityDemoSetup(container));
             }
-        }
-
-        if (isImportDemoAssets(container)) {
-            addTask(new ManagerDemoSetup(container, isImportDemoScenes(container)));
-        }
-        if (isImportDemoRules(container)) {
-            addTask(new RulesDemoSetup(container));
-        }
-        if (isImportDemoAgent(container)) {
-            addTask(new ManagerDemoAgentSetup(container));
         }
 
         return getTasks();

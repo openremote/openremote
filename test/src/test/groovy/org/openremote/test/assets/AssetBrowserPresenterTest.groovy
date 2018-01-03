@@ -4,6 +4,7 @@ import com.google.gwt.junit.GWTMockUtilities
 import com.google.gwt.place.shared.WithTokenizers
 import com.google.gwt.user.client.ui.Widget
 import com.google.gwt.view.client.HasData
+import org.openremote.components.client.style.WidgetStyle
 import org.openremote.manager.client.Environment
 import org.openremote.manager.client.ManagerHistoryMapper
 import org.openremote.manager.client.admin.TenantArrayMapper
@@ -13,8 +14,6 @@ import org.openremote.manager.client.assets.AssetQueryMapper
 import org.openremote.manager.client.assets.browser.*
 import org.openremote.manager.client.event.SubscriptionFailureEvent
 import org.openremote.manager.client.i18n.ManagerMessages
-import org.openremote.manager.client.service.RequestServiceImpl
-import org.openremote.components.client.style.WidgetStyle
 import org.openremote.manager.server.asset.AssetStorageService
 import org.openremote.manager.server.asset.ServerAsset
 import org.openremote.manager.server.security.ManagerIdentityService
@@ -23,16 +22,17 @@ import org.openremote.manager.server.setup.SetupService
 import org.openremote.manager.server.setup.builtin.KeycloakDemoSetup
 import org.openremote.manager.server.setup.builtin.ManagerDemoSetup
 import org.openremote.manager.shared.asset.AssetResource
-import org.openremote.manager.shared.http.EntityReader
 import org.openremote.manager.shared.security.Tenant
 import org.openremote.manager.shared.security.TenantResource
-import org.openremote.manager.shared.validation.ConstraintViolationReport
 import org.openremote.model.asset.Asset
 import org.openremote.model.asset.AssetQuery
 import org.openremote.model.asset.AssetTreeModifiedEvent
 import org.openremote.model.asset.AssetType
 import org.openremote.model.event.shared.SharedEvent
 import org.openremote.model.event.shared.TenantFilter
+import org.openremote.model.http.ConstraintViolationReport
+import org.openremote.model.http.EntityReader
+import org.openremote.model.http.RequestService
 import org.openremote.test.*
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
@@ -67,12 +67,14 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
                     getString(container.getConfig(), SETUP_ADMIN_PASSWORD, SETUP_ADMIN_PASSWORD_DEFAULT)
             ).token
         }
-        def securityService = new ClientSecurityService(keycloakProvider.getKeycloakDeployment(realm, KEYCLOAK_CLIENT_ID), accessToken)
+        def appSecurity = new TestAppSecurity(keycloakProvider.getKeycloakDeployment(realm, KEYCLOAK_CLIENT_ID), accessToken)
         def currentTenant = identityService.getIdentityProvider().getTenantForRealm(realm)
 
         and: "a client request service and target"
         def constraintViolationReader = new ClientObjectMapper(container.JSON, ConstraintViolationReport.class) as EntityReader<ConstraintViolationReport>
-        def requestService = new RequestServiceImpl(securityService, constraintViolationReader)
+        def requestService = new RequestService({
+            appSecurity.setCredentialsOnRequestParams(it)
+        }, constraintViolationReader)
         def clientTarget = getClientTarget(serverUri(serverPort), realm)
 
         and: "a client websocket connection and attached event bus and service"
@@ -108,10 +110,10 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
                 "TestMessageRequestFailed:" + it[0]
             }
         }
-        def placeController = createPlaceController(securityService, eventBus)
+        def placeController = createPlaceController(eventBus)
         def placeHistoryMapper = createPlaceHistoryMapper(ManagerHistoryMapper.getAnnotation(WithTokenizers.class))
         def environment = Environment.create(
-                securityService,
+                appSecurity,
                 requestService,
                 clientEventService,
                 placeController,
@@ -266,12 +268,14 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
                     "testuser1"
             ).token
         }
-        def securityService = new ClientSecurityService(keycloakProvider.getKeycloakDeployment(realm, KEYCLOAK_CLIENT_ID), accessToken)
+        def appSecurity = new TestAppSecurity(keycloakProvider.getKeycloakDeployment(realm, KEYCLOAK_CLIENT_ID), accessToken)
         def currentTenant = identityService.getIdentityProvider().getTenantForRealm(realm)
 
         and: "a client request service and target"
         def constraintViolationReader = new ClientObjectMapper(container.JSON, ConstraintViolationReport.class) as EntityReader<ConstraintViolationReport>
-        def requestService = new RequestServiceImpl(securityService, constraintViolationReader)
+        def requestService = new RequestService({
+            appSecurity.setCredentialsOnRequestParams(it)
+        }, constraintViolationReader)
         def clientTarget = getClientTarget(serverUri(serverPort), realm)
 
         and: "a client websocket connection and attached event bus and service"
@@ -307,10 +311,10 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
                 "TestMessageRequestFailed:" + it[0]
             }
         }
-        def placeController = createPlaceController(securityService, eventBus)
+        def placeController = createPlaceController(eventBus)
         def placeHistoryMapper = createPlaceHistoryMapper(ManagerHistoryMapper.getAnnotation(WithTokenizers.class))
         def environment = Environment.create(
-                securityService,
+                appSecurity,
                 requestService,
                 clientEventService,
                 placeController,
@@ -445,12 +449,14 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
                     "testuser3"
             ).token
         }
-        def securityService = new ClientSecurityService(keycloakProvider.getKeycloakDeployment(realm, KEYCLOAK_CLIENT_ID), accessToken)
+        def appSecurity = new TestAppSecurity(keycloakProvider.getKeycloakDeployment(realm, KEYCLOAK_CLIENT_ID), accessToken)
         def currentTenant = identityService.getIdentityProvider().getTenantForRealm(realm)
 
         and: "a client request service and target"
         def constraintViolationReader = new ClientObjectMapper(container.JSON, ConstraintViolationReport.class) as EntityReader<ConstraintViolationReport>
-        def requestService = new RequestServiceImpl(securityService, constraintViolationReader)
+        def requestService = new RequestService({
+            appSecurity.setCredentialsOnRequestParams(it)
+        }, constraintViolationReader)
         def clientTarget = getClientTarget(serverUri(serverPort), realm)
 
         and: "a client websocket connection and attached event bus and service"
@@ -486,10 +492,10 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
                 "TestMessageRequestFailed:" + it[0]
             }
         }
-        def placeController = createPlaceController(securityService, eventBus)
+        def placeController = createPlaceController(eventBus)
         def placeHistoryMapper = createPlaceHistoryMapper(ManagerHistoryMapper.getAnnotation(WithTokenizers.class))
         def environment = Environment.create(
-                securityService,
+                appSecurity,
                 requestService,
                 clientEventService,
                 placeController,

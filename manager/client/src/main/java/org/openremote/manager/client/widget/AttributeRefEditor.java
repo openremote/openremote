@@ -21,11 +21,11 @@ package org.openremote.manager.client.widget;
 
 import com.google.gwt.user.client.ui.FlowPanel;
 import org.openremote.model.attribute.AttributeRef;
+import org.openremote.model.interop.Consumer;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
 import java.util.stream.IntStream;
 
 import static org.openremote.model.util.TextUtil.isNullOrEmpty;

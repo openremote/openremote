@@ -32,13 +32,13 @@ import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetQuery;
 import org.openremote.model.asset.AssetTreeModifiedEvent;
 import org.openremote.model.event.shared.TenantFilter;
+import org.openremote.model.interop.Consumer;
 
 import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.function.Consumer;
 import java.util.logging.Logger;
 
 import static org.openremote.manager.client.http.RequestExceptionHandler.handleRequestException;
@@ -104,7 +104,7 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
     public void onViewAttached() {
         environment.getEventService().subscribe(
             AssetTreeModifiedEvent.class,
-            environment.getSecurityService().isSuperUser()
+            environment.getAppSecurity().isSuperUser()
                 ? null
                 : new TenantFilter(currentTenant.getId())
         );
@@ -122,7 +122,7 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
 
     @Override
     public void loadAsset(String id, Consumer<Asset> assetConsumer) {
-        environment.getRequestService().execute(
+        environment.getRequestService().sendAndReturn(
             assetMapper,
             requestParams -> assetResource.get(requestParams, id),
             200,
@@ -139,7 +139,7 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
         }
 
         // If the parent is the invisible root of the tree and this is the superuser, load all tenants
-        if (parent instanceof RootTreeNode && environment.getSecurityService().isSuperUser()) {
+        if (parent instanceof RootTreeNode && environment.getAppSecurity().isSuperUser()) {
             loadTenants(display);
         } else {
             loadAssets(parent, display);
@@ -224,7 +224,7 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
     }
 
     protected void loadTenants(HasData<BrowserTreeNode> display) {
-        environment.getRequestService().execute(
+        environment.getRequestService().sendAndReturn(
             tenantArrayMapper,
             requestParams -> {
                 // This must be synchronous, so tree selection/searching works
@@ -248,7 +248,7 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
     protected void loadAssets(BrowserTreeNode parent, HasData<BrowserTreeNode> display) {
         // TODO Pagination?
         // final Range range = display.getVisibleRange();
-        environment.getRequestService().execute(
+        environment.getRequestService().sendWithAndReturn(
             assetArrayMapper,
             assetQueryMapper,
             requestParams -> {
@@ -307,7 +307,7 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
      */
     protected String[] getTenantAdjustedAssetPath(Asset asset) {
         List<String> path = new ArrayList<>();
-        if (environment.getSecurityService().isSuperUser()) {
+        if (environment.getAppSecurity().isSuperUser()) {
             for (TenantTreeNode tenantNode : tenantNodes) {
                 if (tenantNode.getId().equals(asset.getRealmId())) {
                     path.add(tenantNode.getId());

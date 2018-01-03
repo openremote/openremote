@@ -40,9 +40,9 @@
     <!-- ##################################################################### -->
 
     <extend-configuration-property name="gwtjackson.configuration.extension"
-                                   value="org.openremote.manager.client.interop.jackson.SerializationConfiguration"/>
+                                   value="org.openremote.components.client.interop.jackson.SerializationConfiguration"/>
 
-    <replace-with class="org.openremote.manager.client.interop.jackson.JsonDeserializationContextBuilder">
+    <replace-with class="org.openremote.components.client.interop.jackson.JsonDeserializationContextBuilder">
         <when-type-assignable class="com.github.nmorel.gwtjackson.client.JsonDeserializationContext.Builder"/>
     </replace-with>
 

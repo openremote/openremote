@@ -60,18 +60,18 @@ public class AssetsModule extends AbstractGinModule {
     @Provides
     @Singleton
     public native AssetResource getAssetResource() /*-{
-        return $wnd.AssetResource;
+        return $wnd.openremote.REST.AssetResource;
     }-*/;
 
     @Provides
     @Singleton
     public native AssetDatapointResource getAssetDatapointResource() /*-{
-        return $wnd.AssetDatapointResource;
+        return $wnd.openremote.REST.AssetDatapointResource;
     }-*/;
 
     @Provides
     @Singleton
     public native AgentResource getAgentResource() /*-{
-        return $wnd.AgentResource;
+        return $wnd.openremote.REST.AgentResource;
     }-*/;
 }

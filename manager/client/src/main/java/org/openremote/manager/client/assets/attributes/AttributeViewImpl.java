@@ -29,11 +29,11 @@ import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.attribute.AttributeType;
 import org.openremote.model.attribute.AttributeValidationResult;
+import org.openremote.model.interop.Consumer;
 import org.openremote.model.value.Value;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Consumer;
 
 /**
  * This is an implementation of {@link AttributeView} that always shows the attribute value with configurable

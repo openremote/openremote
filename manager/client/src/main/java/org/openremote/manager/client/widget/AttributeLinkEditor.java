@@ -29,6 +29,7 @@ import org.openremote.model.ValidationFailure;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetMeta;
 import org.openremote.model.attribute.*;
+import org.openremote.model.interop.Consumer;
 import org.openremote.model.util.EnumUtil;
 import org.openremote.model.util.Pair;
 import org.openremote.model.value.ObjectValue;
@@ -37,7 +38,6 @@ import org.openremote.model.value.ValueType;
 import org.openremote.model.value.Values;
 
 import java.util.*;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 

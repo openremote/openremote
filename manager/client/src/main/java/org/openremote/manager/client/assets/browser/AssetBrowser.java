@@ -22,8 +22,7 @@ package org.openremote.manager.client.assets.browser;
 import com.google.gwt.user.client.ui.IsWidget;
 import com.google.gwt.view.client.HasData;
 import org.openremote.model.asset.Asset;
-
-import java.util.function.Consumer;
+import org.openremote.model.interop.Consumer;
 
 /**
  * Browse tenants and assets in a tree view.

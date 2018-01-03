@@ -19,7 +19,6 @@
  */
 package org.openremote.manager.client.rules.tenant;
 
-import com.google.gwt.user.client.ui.AcceptsOneWidget;
 import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.TenantMapper;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
@@ -27,10 +26,11 @@ import org.openremote.manager.client.mvp.AcceptsView;
 import org.openremote.manager.client.mvp.AppActivity;
 import org.openremote.manager.client.rules.AbstractRulesEditorActivity;
 import org.openremote.manager.client.rules.RulesEditor;
-import org.openremote.manager.shared.http.EntityReader;
-import org.openremote.manager.shared.http.EntityWriter;
-import org.openremote.manager.shared.http.RequestParams;
+import org.openremote.model.http.EntityReader;
+import org.openremote.model.http.EntityWriter;
+import org.openremote.model.http.RequestParams;
 import org.openremote.manager.shared.rules.RulesetResource;
+import org.openremote.model.interop.Consumer;
 import org.openremote.model.rules.TenantRuleset;
 import org.openremote.manager.shared.security.Tenant;
 import org.openremote.manager.shared.security.TenantResource;
@@ -39,7 +39,6 @@ import org.openremote.model.event.bus.EventRegistration;
 
 import javax.inject.Inject;
 import java.util.Collection;
-import java.util.function.Consumer;
 
 import static org.openremote.manager.client.http.RequestExceptionHandler.handleRequestException;
 
@@ -77,7 +76,7 @@ public class TenantRulesEditorActivity
     public void start(AcceptsView container, EventBus eventBus, Collection<EventRegistration> registrations) {
         super.start(container, eventBus, registrations);
 
-        environment.getRequestService().execute(
+        environment.getRequestService().sendAndReturn(
             tenantMapper,
             params -> tenantResource.getForRealmId(params, realmId),
             200,

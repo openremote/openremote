@@ -25,10 +25,9 @@ import org.openremote.model.ValueHolder;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.attribute.AttributeValidationResult;
+import org.openremote.model.interop.Consumer;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueType;
-
-import java.util.function.Consumer;
 
 /**
  * The presenter will deal with validating the {@link AssetAttribute}s and will notify the individual

@@ -1,6 +1,8 @@
 apply plugin: "java"
 
 dependencies {
+    compile("com.google.gwt.inject:gin:$ginVersion")
+
     compile "com.fasterxml.jackson.core:jackson-annotations:$jacksonVersion"
     compile "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
     compile("com.google.gwt:gwt-user:$gwtVersion") {
@@ -15,6 +17,7 @@ dependencies {
         exclude group: "org.slf4j"
     }
 
+    compile "org.jboss.spec.javax.ws.rs:jboss-jaxrs-api_2.0_spec:$jaxrsSpecVersion"
     compile "com.google.jsinterop:base:$jsinteropBaseVersion"
 }
 

@@ -23,13 +23,13 @@ import org.openremote.container.timer.TimerService;
 import org.openremote.manager.server.asset.AssetStorageService;
 import org.openremote.manager.server.security.ManagerIdentityService;
 import org.openremote.manager.server.web.ManagerWebResource;
-import org.openremote.manager.shared.http.RequestParams;
-import org.openremote.model.rules.AssetRuleset;
-import org.openremote.model.rules.GlobalRuleset;
 import org.openremote.manager.shared.rules.RulesetResource;
-import org.openremote.model.rules.TenantRuleset;
 import org.openremote.manager.shared.security.Tenant;
 import org.openremote.model.asset.Asset;
+import org.openremote.model.http.RequestParams;
+import org.openremote.model.rules.AssetRuleset;
+import org.openremote.model.rules.GlobalRuleset;
+import org.openremote.model.rules.TenantRuleset;
 
 import javax.ws.rs.BeanParam;
 import javax.ws.rs.WebApplicationException;

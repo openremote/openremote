@@ -31,6 +31,7 @@ import org.openremote.model.asset.agent.ProtocolDescriptor;
 import org.openremote.model.attribute.AttributeValidationResult;
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.attribute.MetaItemDescriptor;
+import org.openremote.model.interop.Supplier;
 import org.openremote.model.util.EnumUtil;
 import org.openremote.model.util.Pair;
 import org.openremote.model.value.Value;
@@ -38,7 +39,6 @@ import org.openremote.model.value.ValueType;
 import org.openremote.model.value.Values;
 
 import java.util.*;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 

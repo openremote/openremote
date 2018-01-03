@@ -160,7 +160,7 @@ public class AssetsTenantActivity extends AssetBrowsingActivity<AssetsTenantPlac
             return;
         UserAsset userAsset = new UserAsset(realmId, selectedUserId, selectedAssetId);
         view.setFormBusy(true);
-        environment.getRequestService().execute(
+        environment.getRequestService().sendWith(
             userAssetMapper,
             requestParams -> assetResource.createUserAsset(requestParams, userAsset),
             204,
@@ -178,7 +178,7 @@ public class AssetsTenantActivity extends AssetBrowsingActivity<AssetsTenantPlac
     @Override
     public void onDeleteAssetLink(UserAsset.Id id) {
         view.setFormBusy(true);
-        environment.getRequestService().execute(
+        environment.getRequestService().sendWith(
             userAssetMapper,
             requestParams -> assetResource.deleteUserAsset(requestParams, id.getRealmId(), id.getUserId(), id.getAssetId()),
             204,
@@ -204,7 +204,7 @@ public class AssetsTenantActivity extends AssetBrowsingActivity<AssetsTenantPlac
         view.setFormBusy(true);
         if (this.realmId == null)
             return;
-        environment.getRequestService().execute(
+        environment.getRequestService().sendAndReturn(
             tenantMapper,
             requestParams -> tenantResource.getForRealmId(requestParams, this.realmId),
             200,
@@ -223,7 +223,7 @@ public class AssetsTenantActivity extends AssetBrowsingActivity<AssetsTenantPlac
 
     protected void loadUsers(Runnable onComplete) {
         view.setFormBusy(true);
-        environment.getRequestService().execute(
+        environment.getRequestService().sendAndReturn(
             userArrayMapper,
             requestParams -> userResource.getAll(requestParams, this.tenant.getRealm()),
             200,
@@ -238,7 +238,7 @@ public class AssetsTenantActivity extends AssetBrowsingActivity<AssetsTenantPlac
     }
 
     protected void loadUserAssets() {
-        environment.getRequestService().execute(
+        environment.getRequestService().sendAndReturn(
             userAssetArrayMapper,
             requestParams -> assetResource.getUserAssetLinks(requestParams, realmId, selectedUserId, selectedAssetId),
             200,

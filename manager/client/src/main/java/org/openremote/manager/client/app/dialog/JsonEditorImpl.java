@@ -26,13 +26,13 @@ import org.openremote.components.client.style.WidgetStyle;
 import org.openremote.manager.client.widget.FormTextArea;
 import org.openremote.manager.client.widget.IconLabel;
 import org.openremote.manager.client.widget.PushButton;
+import org.openremote.model.interop.Consumer;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueException;
 import org.openremote.model.value.Values;
 import org.openremote.model.value.impl.ValueUtil;
 
 import javax.inject.Inject;
-import java.util.function.Consumer;
 
 public class JsonEditorImpl implements JsonEditor {
 

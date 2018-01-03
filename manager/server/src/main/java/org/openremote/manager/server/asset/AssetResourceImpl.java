@@ -25,7 +25,6 @@ import org.openremote.manager.server.security.ManagerIdentityService;
 import org.openremote.manager.server.web.ManagerWebResource;
 import org.openremote.manager.shared.asset.AssetProcessingException;
 import org.openremote.manager.shared.asset.AssetResource;
-import org.openremote.manager.shared.http.RequestParams;
 import org.openremote.manager.shared.security.Tenant;
 import org.openremote.model.Constants;
 import org.openremote.model.asset.*;
@@ -34,6 +33,7 @@ import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.Meta;
 import org.openremote.model.attribute.MetaItem;
+import org.openremote.model.http.RequestParams;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueException;
@@ -46,9 +46,7 @@ import java.util.logging.Logger;
 
 import static javax.ws.rs.core.Response.Status.*;
 import static org.openremote.container.Container.JSON;
-import static org.openremote.model.asset.AbstractAssetQuery.Access.PRIVATE_READ;
-import static org.openremote.model.asset.AbstractAssetQuery.Access.PUBLIC_READ;
-import static org.openremote.model.asset.AbstractAssetQuery.Access.RESTRICTED_READ;
+import static org.openremote.model.asset.AbstractAssetQuery.Access.*;
 import static org.openremote.model.attribute.AttributeEvent.Source.CLIENT;
 import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 

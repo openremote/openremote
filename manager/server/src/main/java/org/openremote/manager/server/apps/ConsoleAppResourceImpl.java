@@ -22,7 +22,7 @@ package org.openremote.manager.server.apps;
 import org.openremote.container.web.WebResource;
 import org.openremote.manager.shared.apps.ConsoleApp;
 import org.openremote.manager.shared.apps.ConsoleAppResource;
-import org.openremote.manager.shared.http.RequestParams;
+import org.openremote.model.http.RequestParams;
 
 import javax.ws.rs.BeanParam;
 import javax.ws.rs.WebApplicationException;

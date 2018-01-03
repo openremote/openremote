@@ -19,7 +19,6 @@
  */
 package org.openremote.manager.client.rules.global;
 
-import com.google.gwt.user.client.ui.AcceptsOneWidget;
 import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.mvp.AcceptsView;
@@ -28,15 +27,15 @@ import org.openremote.model.event.bus.EventBus;
 import org.openremote.model.event.bus.EventRegistration;
 import org.openremote.manager.client.rules.AbstractRulesEditorActivity;
 import org.openremote.manager.client.rules.RulesEditor;
-import org.openremote.manager.shared.http.EntityReader;
-import org.openremote.manager.shared.http.EntityWriter;
-import org.openremote.manager.shared.http.RequestParams;
+import org.openremote.model.http.EntityReader;
+import org.openremote.model.http.EntityWriter;
+import org.openremote.model.http.RequestParams;
+import org.openremote.model.interop.Consumer;
 import org.openremote.model.rules.GlobalRuleset;
 import org.openremote.manager.shared.rules.RulesetResource;
 
 import javax.inject.Inject;
 import java.util.Collection;
-import java.util.function.Consumer;
 
 public class GlobalRulesEditorActivity
     extends AbstractRulesEditorActivity<GlobalRuleset, GlobalRulesEditorPlace> {

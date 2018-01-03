@@ -21,8 +21,8 @@ package org.openremote.manager.server.map;
 
 import org.openremote.container.web.WebResource;
 import org.openremote.manager.server.security.ManagerIdentityService;
-import org.openremote.manager.shared.http.RequestParams;
 import org.openremote.manager.shared.map.MapResource;
+import org.openremote.model.http.RequestParams;
 import org.openremote.model.value.ObjectValue;
 
 import javax.ws.rs.WebApplicationException;

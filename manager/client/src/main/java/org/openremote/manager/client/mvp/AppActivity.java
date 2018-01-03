@@ -20,7 +20,7 @@
 package org.openremote.manager.client.mvp;
 
 import com.google.gwt.place.shared.Place;
-import org.openremote.manager.client.service.SecurityService;
+import org.openremote.components.client.AppSecurity;
 import org.openremote.model.Constants;
 import org.openremote.model.event.bus.EventBus;
 import org.openremote.model.event.bus.EventRegistration;
@@ -44,9 +44,9 @@ public abstract class AppActivity<P extends Place>  {
     public void onStop() {
     }
 
-    public AppActivity<P> init(SecurityService securityService, P place) throws RoleRequiredException {
+    public AppActivity<P> init(AppSecurity appSecurity, P place) throws RoleRequiredException {
         for (String requiredRole : getRequiredRoles()) {
-            if (!securityService.hasResourceRoleOrIsSuperUser(requiredRole, Constants.KEYCLOAK_CLIENT_ID)) {
+            if (!appSecurity.hasResourceRoleOrIsSuperUser(requiredRole, Constants.KEYCLOAK_CLIENT_ID)) {
                 throw new RoleRequiredException(requiredRole);
             }
         }

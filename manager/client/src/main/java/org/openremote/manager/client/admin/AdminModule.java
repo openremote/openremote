@@ -69,19 +69,19 @@ public class AdminModule extends AbstractGinModule {
     @Provides
     @Singleton
     public native SyslogResource getSyslogResource()  /*-{
-        return $wnd.SyslogResource;
+        return $wnd.openremote.REST.SyslogResource;
     }-*/;
 
     @Provides
     @Singleton
     public native UserResource getUserResource()  /*-{
-        return $wnd.UserResource;
+        return $wnd.openremote.REST.UserResource;
     }-*/;
 
     @Provides
     @Singleton
     public native NotificationResource getNotificationResource()  /*-{
-        return $wnd.NotificationResource;
+        return $wnd.openremote.REST.NotificationResource;
     }-*/;
 
 }

@@ -29,13 +29,13 @@ import org.openremote.manager.client.mvp.AcceptsView;
 import org.openremote.manager.client.mvp.AppActivity;
 import org.openremote.manager.shared.security.Tenant;
 import org.openremote.manager.shared.security.TenantResource;
-import org.openremote.manager.shared.validation.ConstraintViolation;
+import org.openremote.model.http.ConstraintViolation;
 import org.openremote.model.event.bus.EventBus;
 import org.openremote.model.event.bus.EventRegistration;
+import org.openremote.model.interop.Consumer;
 
 import javax.inject.Inject;
 import java.util.Collection;
-import java.util.function.Consumer;
 
 import static org.openremote.manager.client.http.RequestExceptionHandler.handleRequestException;
 
@@ -127,7 +127,7 @@ public class AdminTenantActivity
         adminContent.clearFormMessages();
         clearViewFieldErrors();
         readFromView();
-        environment.getRequestService().execute(
+        environment.getRequestService().sendWith(
             tenantMapper,
             requestParams -> {
                 tenantResource.create(requestParams, tenant);
@@ -150,7 +150,7 @@ public class AdminTenantActivity
         adminContent.clearFormMessages();
         clearViewFieldErrors();
         readFromView();
-        environment.getRequestService().execute(
+        environment.getRequestService().sendWith(
             tenantMapper,
             requestParams -> {
                 tenantResource.update(requestParams, realm, tenant);
@@ -176,7 +176,7 @@ public class AdminTenantActivity
                 adminContent.setFormBusy(true);
                 adminContent.clearFormMessages();
                 clearViewFieldErrors();
-                environment.getRequestService().execute(
+                environment.getRequestService().send(
                     requestParams -> {
                         tenantResource.delete(requestParams, this.realm);
                     },
@@ -201,7 +201,7 @@ public class AdminTenantActivity
 
     protected void loadTenant() {
         adminContent.setFormBusy(true);
-        environment.getRequestService().execute(
+        environment.getRequestService().sendAndReturn(
             tenantMapper,
             requestParams -> tenantResource.get(requestParams, realm),
             200,

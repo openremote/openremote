@@ -21,9 +21,9 @@ package org.openremote.manager.client.assets.tenant;
 
 import com.github.nmorel.gwtjackson.client.ObjectMapper;
 import com.github.nmorel.gwtjackson.client.annotation.JsonMixIns;
-import org.openremote.manager.client.interop.jackson.DefaultJsonMixin;
-import org.openremote.manager.shared.http.EntityReader;
-import org.openremote.manager.shared.http.EntityWriter;
+import org.openremote.components.client.interop.jackson.DefaultJsonMixin;
+import org.openremote.model.http.EntityReader;
+import org.openremote.model.http.EntityWriter;
 import org.openremote.model.asset.UserAsset;
 
 @JsonMixIns({@JsonMixIns.JsonMixIn(target = UserAsset.class, mixIn = DefaultJsonMixin.class)})

@@ -21,8 +21,9 @@ package org.openremote.manager.client.app;
 
 import com.google.gwt.place.shared.PlaceController;
 import com.google.inject.Inject;
+import org.openremote.components.client.AppSecurity;
 import org.openremote.manager.client.admin.syslog.AdminSyslogPlace;
-import org.openremote.manager.client.apps.AppsPlace;
+import org.openremote.manager.client.apps.ConsoleAppsPlace;
 import org.openremote.manager.client.apps.ConsoleAppSelection;
 import org.openremote.manager.client.assets.AssetsDashboardPlace;
 import org.openremote.manager.client.assets.asset.AssetViewPlace;
@@ -36,7 +37,6 @@ import org.openremote.manager.client.map.MapTenantPlace;
 import org.openremote.manager.client.rules.asset.AssetRulesListPlace;
 import org.openremote.manager.client.rules.global.GlobalRulesListPlace;
 import org.openremote.manager.client.rules.tenant.TenantRulesListPlace;
-import org.openremote.manager.client.service.SecurityService;
 import org.openremote.manager.client.user.UserControls;
 import org.openremote.model.Constants;
 import org.openremote.model.event.bus.EventBus;
@@ -46,7 +46,7 @@ public class HeaderPresenter implements HeaderView.Presenter {
     final protected HeaderView view;
     final protected UserControls.Presenter userControlsPresenter;
     final protected PlaceController placeController;
-    final protected SecurityService securityService;
+    final protected AppSecurity appSecurity;
 
     protected AssetBrowserSelection assetBrowserSelection;
     protected ConsoleAppSelection consoleAppSelection;
@@ -54,13 +54,13 @@ public class HeaderPresenter implements HeaderView.Presenter {
     @Inject
     public HeaderPresenter(HeaderView view,
                            UserControls.Presenter userControlsPresenter,
-                           SecurityService securityService,
+                           AppSecurity appSecurity,
                            PlaceController placeController,
                            EventBus eventBus) {
         this.view = view;
         this.userControlsPresenter = userControlsPresenter;
         this.placeController = placeController;
-        this.securityService = securityService;
+        this.appSecurity = appSecurity;
 
         view.setPresenter(this);
 
@@ -77,7 +77,7 @@ public class HeaderPresenter implements HeaderView.Presenter {
             event -> consoleAppSelection = event
         );
 
-        view.setUsername(securityService.getUsername());
+        view.setUsername(appSecurity.getUser());
     }
 
     @Override
@@ -132,7 +132,7 @@ public class HeaderPresenter implements HeaderView.Presenter {
 
     @Override
     public void navigateApps() {
-        placeController.goTo(new AppsPlace(consoleAppSelection != null ? consoleAppSelection.getRealm() : null));
+        placeController.goTo(new ConsoleAppsPlace(consoleAppSelection != null ? consoleAppSelection.getRealm() : null));
     }
 
     @Override
@@ -148,26 +148,26 @@ public class HeaderPresenter implements HeaderView.Presenter {
 
     @Override
     public boolean isMapEnabled() {
-        return securityService.hasResourceRoleOrIsSuperUser("read:map", Constants.KEYCLOAK_CLIENT_ID);
+        return appSecurity.hasResourceRoleOrIsSuperUser("read:map", Constants.KEYCLOAK_CLIENT_ID);
     }
 
     @Override
     public boolean isAssetsEnabled() {
-        return securityService.hasResourceRoleOrIsSuperUser("read:assets", Constants.KEYCLOAK_CLIENT_ID);
+        return appSecurity.hasResourceRoleOrIsSuperUser("read:assets", Constants.KEYCLOAK_CLIENT_ID);
     }
 
     @Override
     public boolean isRulesEnabled() {
-        return securityService.hasResourceRoleOrIsSuperUser("read:rules", Constants.KEYCLOAK_CLIENT_ID);
+        return appSecurity.hasResourceRoleOrIsSuperUser("read:rules", Constants.KEYCLOAK_CLIENT_ID);
     }
 
     @Override
     public boolean isAppsEnabled() {
-        return securityService.hasResourceRoleOrIsSuperUser("read:consoles", Constants.KEYCLOAK_CLIENT_ID);
+        return appSecurity.hasResourceRoleOrIsSuperUser("read:consoles", Constants.KEYCLOAK_CLIENT_ID);
     }
 
     @Override
     public boolean isAdminEnabled() {
-        return securityService.hasResourceRoleOrIsSuperUser("read:admin", Constants.KEYCLOAK_CLIENT_ID);
+        return appSecurity.hasResourceRoleOrIsSuperUser("read:admin", Constants.KEYCLOAK_CLIENT_ID);
     }
 }

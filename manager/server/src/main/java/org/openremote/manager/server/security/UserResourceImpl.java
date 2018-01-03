@@ -23,13 +23,13 @@ import org.openremote.container.timer.TimerService;
 import org.openremote.container.web.ClientRequestInfo;
 import org.openremote.manager.server.i18n.I18NService;
 import org.openremote.manager.server.web.ManagerWebResource;
-import org.openremote.manager.shared.http.RequestParams;
 import org.openremote.manager.shared.security.Credential;
 import org.openremote.manager.shared.security.Role;
 import org.openremote.manager.shared.security.User;
 import org.openremote.manager.shared.security.UserResource;
-import org.openremote.manager.shared.validation.ConstraintViolation;
-import org.openremote.manager.shared.validation.ConstraintViolationReport;
+import org.openremote.model.http.ConstraintViolation;
+import org.openremote.model.http.ConstraintViolationReport;
+import org.openremote.model.http.RequestParams;
 
 import javax.ws.rs.BeanParam;
 import javax.ws.rs.ClientErrorException;
@@ -40,8 +40,8 @@ import java.util.List;
 import java.util.ResourceBundle;
 
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
-import static org.openremote.manager.shared.validation.ConstraintViolationReport.VIOLATION_EXCEPTION_HEADER;
 import static org.openremote.model.Constants.MASTER_REALM;
+import static org.openremote.model.http.ConstraintViolationReport.VIOLATION_EXCEPTION_HEADER;
 
 public class UserResourceImpl extends ManagerWebResource implements UserResource {
 

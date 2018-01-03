@@ -20,9 +20,9 @@
 package org.openremote.manager.server.syslog;
 
 import org.openremote.container.web.WebResource;
-import org.openremote.manager.shared.http.RequestParams;
 import org.openremote.manager.shared.syslog.SyslogConfig;
 import org.openremote.manager.shared.syslog.SyslogResource;
+import org.openremote.model.http.RequestParams;
 import org.openremote.model.syslog.SyslogEvent;
 import org.openremote.model.syslog.SyslogLevel;
 

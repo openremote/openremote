@@ -108,7 +108,7 @@ public class JSAPIWriter {
     public void writeJavaScript(String uri, PrintWriter writer,
                                 ServiceRegistry serviceRegistry) throws IOException {
         copyResource("client.js", writer);
-        writer.println("REST.apiURL = '" + uri + "';");
+        writer.println("openremote.REST.apiURL = '" + uri + "';");
         Set<String> declaredPrefixes = new HashSet<String>();
         printService(writer, serviceRegistry, declaredPrefixes);
     }
@@ -183,15 +183,16 @@ public class JSAPIWriter {
     private void print(PrintWriter writer, String httpMethod, MethodMetaData methodMetaData) {
         String uri = methodMetaData.getUri();
         writer.println("// " + httpMethod + " " + uri);
-        writer.println(methodMetaData.getFunctionName() + " = function(_params");
+        writer.println("openremote.REST." + methodMetaData.getFunctionPrefix() + " = openremote.REST." + methodMetaData.getFunctionPrefix() + " || {};");
+        writer.println("openremote.REST." + methodMetaData.getFunctionName() + " = function(_params");
         printURIParamsSignature(uri, writer);
         printMethodParamsSignature(methodMetaData, writer);
         writer.println("){");
         writer.println(" var params = _params ? _params : {};");
-        writer.println(" var request = new REST.Request();");
+        writer.println(" var request = new openremote.REST.Request();");
         writer.println(" request.setMethod('" + httpMethod + "');");
         writer
-            .println(" var uri = params.$apiURL ? params.$apiURL : REST.apiURL;");
+            .println(" var uri = params.$apiURL ? params.$apiURL : openremote.REST.apiURL;");
         if (uri.contains("{")) {
             printURIParamCalls(uri, writer);
         } else {
@@ -209,9 +210,9 @@ public class JSAPIWriter {
                 + "');");
         }
 
-        writer.println("if (REST.antiBrowserCache == true) {");
+        writer.println("if (openremote.REST.antiBrowserCache == true) {");
         writer.println("  request.addQueryParameter('resteasy_jsapi_anti_cache', (new Date().getTime()));");
-        writer.println("    var cached_obj = REST._get_cache_signature(REST._generate_cache_signature(uri));");
+        writer.println("    var cached_obj = openremote.REST._get_cache_signature(openremote.REST._generate_cache_signature(uri));");
 
         writer.println("    if (cached_obj != null) { request.addHeader('If-Modified-Since', cached_obj[1]['Last-Modified']); request.addHeader('If-None-Match', cached_obj[1]['Etag']);}");
 
@@ -325,7 +326,7 @@ public class JSAPIWriter {
                 writer.println(" uri += '" + replacedCurlyURI.substring(i, matcher.start()) + "';");
             }
             String name = matcher.group(1);
-            writer.println(" uri += REST.Encoding.encodePathSegment(" + name + ");");
+            writer.println(" uri += openremote.REST.Encoding.encodePathSegment(" + name + ");");
             i = matcher.end();
         }
         if (i < replacedCurlyURI.length())

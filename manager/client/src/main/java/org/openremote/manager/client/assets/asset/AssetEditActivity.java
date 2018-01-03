@@ -31,8 +31,8 @@ import org.openremote.manager.client.assets.browser.BrowserTreeNode;
 import org.openremote.manager.client.assets.browser.TenantTreeNode;
 import org.openremote.manager.client.event.ShowFailureEvent;
 import org.openremote.manager.client.event.ShowSuccessEvent;
-import org.openremote.manager.client.interop.jackson.FileInfoMapper;
-import org.openremote.manager.client.interop.value.ObjectValueMapper;
+import org.openremote.components.client.interop.jackson.FileInfoMapper;
+import org.openremote.components.client.interop.value.ObjectValueMapper;
 import org.openremote.manager.client.widget.AttributeLinkEditor;
 import org.openremote.manager.client.widget.AttributeRefEditor;
 import org.openremote.manager.client.widget.FormButton;
@@ -41,7 +41,7 @@ import org.openremote.manager.shared.agent.AgentResource;
 import org.openremote.manager.shared.asset.AssetResource;
 import org.openremote.manager.shared.map.MapResource;
 import org.openremote.manager.shared.security.Tenant;
-import org.openremote.manager.shared.validation.ConstraintViolation;
+import org.openremote.model.http.ConstraintViolation;
 import org.openremote.model.ValueHolder;
 import org.openremote.model.asset.*;
 import org.openremote.model.asset.AbstractAssetQuery.AttributeMetaPredicate;
@@ -50,6 +50,7 @@ import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.asset.agent.ProtocolConfiguration;
 import org.openremote.model.asset.agent.ProtocolDescriptor;
 import org.openremote.model.attribute.*;
+import org.openremote.model.interop.Consumer;
 import org.openremote.model.util.EnumUtil;
 import org.openremote.model.util.Pair;
 import org.openremote.model.value.Value;
@@ -57,7 +58,6 @@ import org.openremote.model.value.ValueType;
 
 import javax.inject.Inject;
 import java.util.*;
-import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -276,7 +276,7 @@ public class AssetEditActivity
                 processValidationResults(results);
             } else {
                 readFromView();
-                environment.getRequestService().execute(
+                environment.getRequestService().sendWith(
                     assetMapper,
                     requestParams -> assetResource.update(requestParams, assetId, asset),
                     204,
@@ -306,7 +306,7 @@ public class AssetEditActivity
                 processValidationResults(results);
             } else {
                 readFromView();
-                environment.getRequestService().execute(
+                environment.getRequestService().sendWithAndReturn(
                     assetMapper,
                     assetMapper,
                     requestParams -> assetResource.create(requestParams, asset),
@@ -331,7 +331,7 @@ public class AssetEditActivity
             () -> {
                 view.setFormBusy(true);
                 clearViewMessages();
-                environment.getRequestService().execute(
+                environment.getRequestService().send(
                     requestParams -> assetResource.delete(requestParams, this.assetId),
                     204,
                     () -> {
@@ -383,7 +383,7 @@ public class AssetEditActivity
 
         // Do request
         final Predicate<AssetAttribute> finalAttributeFilter = attributeFilter;
-        environment.getRequestService().execute(
+        environment.getRequestService().sendWithAndReturn(
             assetArrayMapper,
             assetQueryMapper,
             requestParams -> assetResource.queryAssets(requestParams, query),
@@ -549,7 +549,7 @@ public class AssetEditActivity
 
             if (!clientSideOnly && validationResult.isValid() && ProtocolConfiguration.isProtocolConfiguration(attribute)) {
                 // Ask the server to validate the protocol configuration
-                environment.getRequestService().execute(
+                environment.getRequestService().sendWithAndReturn(
                     attributeValidationResultMapper,
                     assetAttributeMapper,
                     requestParams -> agentResource.validateProtocolConfiguration(requestParams, assetId, attribute),
@@ -582,7 +582,7 @@ public class AssetEditActivity
             List<Pair<String, String>> displayNamesAndTypes = new ArrayList<>();
             displayNamesAndTypes.add(new Pair<>(ValueEditors.EMPTY_LINE, null));
 
-            environment.getRequestService().execute(
+            environment.getRequestService().sendAndReturn(
                 protocolDescriptorArrayMapper,
                 requestParams -> agentResource.getSupportedProtocols(requestParams, assetId),
                 200,
@@ -605,7 +605,7 @@ public class AssetEditActivity
             );
         } else {
             // Get all protocol descriptors for all agents
-            environment.getRequestService().execute(
+            environment.getRequestService().sendAndReturn(
                 protocolDescriptorMapMapper,
                 agentResource::getAllSupportedProtocols,
                 200,
@@ -682,7 +682,7 @@ public class AssetEditActivity
     protected void doProtocolDiscovery(ProtocolDiscoveryView.DiscoveryRequest request, Runnable callback) {
         showInfo(environment.getMessages().protocolLinkDiscoveryStarted());
 
-        environment.getRequestService().execute(
+        environment.getRequestService().sendWithAndReturn(
             assetArrayMapper,
             fileInfoMapper,
             requestParams -> {

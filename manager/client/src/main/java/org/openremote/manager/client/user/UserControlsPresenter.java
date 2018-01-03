@@ -50,16 +50,16 @@ public class UserControlsPresenter implements UserControls.Presenter {
 
     @Override
     public void doLogout() {
-        environment.getSecurityService().logout();
+        environment.getAppSecurity().logout();
     }
 
     protected void updateView() {
         view.setUserDetails(
-            environment.getSecurityService().getUsername(),
-            environment.getSecurityService().getFullName(),
+            environment.getAppSecurity().getUser(),
+            environment.getAppSecurity().getFullName(),
             managerHistoryMapper.getToken(new UserAccountPlace()),
-            environment.getSecurityService().hasResourceRole("manage-account", "account")
-                && environment.getSecurityService().isUserTenantAdminEnabled()
+            environment.getAppSecurity().hasResourceRole("manage-account", "account")
+                && environment.getAppSecurity().isUserTenantAdminEnabled()
         );
     }
 

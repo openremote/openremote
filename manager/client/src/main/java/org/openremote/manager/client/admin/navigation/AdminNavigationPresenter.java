@@ -39,7 +39,7 @@ public class AdminNavigationPresenter implements AdminNavigation.Presenter {
 
         view.setPresenter(this);
         view.setUserTenantAdminEnabled(
-            environment.getSecurityService().isUserTenantAdminEnabled()
+            environment.getAppSecurity().isUserTenantAdminEnabled()
         );
     }
 

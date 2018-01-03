@@ -20,8 +20,8 @@
 package org.openremote.manager.shared.map;
 
 import jsinterop.annotations.JsType;
-import org.openremote.manager.shared.http.RequestParams;
-import org.openremote.manager.shared.http.SuccessStatusCode;
+import org.openremote.model.http.RequestParams;
+import org.openremote.model.http.SuccessStatusCode;
 import org.openremote.model.value.ObjectValue;
 
 import javax.annotation.security.RolesAllowed;

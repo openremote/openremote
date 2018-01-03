@@ -26,26 +26,27 @@ import com.google.gwt.place.shared.PlaceHistoryHandler;
 import com.google.gwt.place.shared.PlaceHistoryMapper;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import org.openremote.manager.client.app.OpenRemoteApp;
+import org.openremote.components.client.OpenRemoteApp;
+import org.openremote.components.client.rest.REST;
+import org.openremote.components.client.AppSecurity;
+import org.openremote.components.client.style.WidgetStyle;
 import org.openremote.manager.client.event.*;
 import org.openremote.manager.client.http.ConstraintViolationReportMapper;
 import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.mvp.AppActivityManager;
 import org.openremote.manager.client.mvp.AppPlaceController;
-import org.openremote.manager.client.service.*;
-import org.openremote.components.client.style.WidgetStyle;
+import org.openremote.manager.client.service.EventService;
+import org.openremote.manager.client.service.EventServiceImpl;
 import org.openremote.manager.shared.security.Tenant;
 import org.openremote.manager.shared.security.TenantResource;
 import org.openremote.model.event.bus.EventBus;
+import org.openremote.model.http.RequestService;
 
 public class ManagerModule extends AbstractGinModule {
 
     @Override
     protected void configure() {
-
         bind(PlaceHistoryMapper.class).to(ManagerHistoryMapper.class).in(Singleton.class);
-
-        bind(CookieService.class).to(CookieServiceImpl.class).in(Singleton.class);
     }
 
     @Provides
@@ -55,6 +56,11 @@ public class ManagerModule extends AbstractGinModule {
     }-*/;
 
     @Provides
+    public static AppSecurity getAppSecurity() {
+        return getApp().getAppSecurity();
+    }
+
+    @Provides
     @Singleton
     public AppActivityManager getActivityManager(ManagerActivityMapper activityMapper, EventBus eventBus) {
         return new AppActivityManager("AppActivityManager", activityMapper, eventBus);
@@ -62,7 +68,7 @@ public class ManagerModule extends AbstractGinModule {
 
     @Provides
     @Singleton
-    public Environment createEnvironment(SecurityService securityService,
+    public Environment createEnvironment(AppSecurity appSecurity,
                                          RequestService requestService,
                                          EventService eventService,
                                          PlaceController placeController,
@@ -71,7 +77,7 @@ public class ManagerModule extends AbstractGinModule {
                                          ManagerMessages managerMessages,
                                          WidgetStyle widgetStyle) {
         return Environment.create(
-            securityService,
+            appSecurity,
             requestService,
             eventService,
             placeController,
@@ -84,16 +90,15 @@ public class ManagerModule extends AbstractGinModule {
 
     @Provides
     @Singleton
-    public PlaceController getPlaceController(SecurityService securityService,
-                                              EventBus eventBus,
+    public PlaceController getPlaceController(EventBus eventBus,
                                               com.google.web.bindery.event.shared.EventBus legacyEventBus,
                                               PlaceController.Delegate delegate) {
-        return new AppPlaceController(securityService, eventBus, legacyEventBus, delegate);
+        return new AppPlaceController(eventBus, legacyEventBus, delegate);
     }
 
     @Provides
     @Singleton
-    public EventService getEventService(SecurityService securityService,
+    public EventService getEventService(AppSecurity appSecurity,
                                         EventBus eventBus,
                                         SharedEventMapper sharedEventMapper,
                                         SharedEventArrayMapper sharedEventArrayMapper,
@@ -101,7 +106,7 @@ public class ManagerModule extends AbstractGinModule {
                                         CancelEventSubscriptionMapper cancelEventSubscriptionMapper,
                                         UnauthorizedEventSubscriptionMapper unauthorizedEventSubscriptionMapper) {
         EventService eventService = EventServiceImpl.create(
-            securityService,
+            appSecurity,
             eventBus,
             sharedEventMapper,
             sharedEventArrayMapper,
@@ -115,26 +120,10 @@ public class ManagerModule extends AbstractGinModule {
 
     @Provides
     @Singleton
-    public SecurityService getSecurityService(OpenRemoteApp openRemoteApp, CookieService cookieService, EventBus eventBus) {
-        return openRemoteApp.getKeycloak() != null
-            ? new KeycloakSecurityService(openRemoteApp, cookieService, eventBus)
-            : new BasicSecurityService(getBasicAuthUsername(), getBasicAuthPassword());
-    }
-
-    public static native String getBasicAuthUsername() /*-{
-        return $wnd.basicAuthUsername;
-    }-*/;
-
-    public static native String getBasicAuthPassword() /*-{
-        return $wnd.basicAuthPassword;
-    }-*/;
-
-    @Provides
-    @Singleton
-    public RequestService getRequestService(SecurityService securityService,
+    public RequestService getRequestService(AppSecurity appSecurity,
                                             ConstraintViolationReportMapper constraintViolationReportMapper) {
-        RequestServiceImpl.Configuration.setDefaults(securityService.getAuthenticatedRealm());
-        return new RequestServiceImpl(securityService, constraintViolationReportMapper);
+        REST.Configuration.setDefaults(appSecurity.getAuthenticatedRealm());
+        return new RequestService(appSecurity::setCredentialsOnRequestParams, constraintViolationReportMapper);
     }
 
     @Provides
@@ -154,11 +143,11 @@ public class ManagerModule extends AbstractGinModule {
                                    TenantMapper tenantMapper) {
         // Load tenant from server on startup, blocking
         final Tenant[] currentTenant = new Tenant[1];
-        environment.getRequestService().execute(
+        environment.getRequestService().sendAndReturn(
             tenantMapper,
             params -> {
                 params.setAsync(false);
-                tenantResource.get(params, environment.getSecurityService().getAuthenticatedRealm());
+                tenantResource.get(params, environment.getAppSecurity().getAuthenticatedRealm());
             },
             200,
             tenant -> currentTenant[0] = tenant,
@@ -174,7 +163,7 @@ public class ManagerModule extends AbstractGinModule {
     @Provides
     @Singleton
     public native TenantResource getTenantResource()  /*-{
-        return $wnd.TenantResource;
+        return $wnd.openremote.REST.TenantResource;
     }-*/;
 
 }

@@ -25,22 +25,22 @@ import com.google.gwt.text.shared.AbstractRenderer;
 import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.Label;
 import elemental.client.Browser;
+import org.openremote.components.client.interop.chartjs.Chart;
+import org.openremote.components.client.interop.chartjs.ChartUtil;
 import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.assets.attributes.AbstractAttributeViewExtension;
 import org.openremote.manager.client.assets.attributes.AttributeView;
 import org.openremote.manager.client.assets.attributes.AttributeViewImpl;
-import org.openremote.manager.client.interop.chartjs.Chart;
-import org.openremote.manager.client.interop.chartjs.ChartUtil;
 import org.openremote.manager.client.widget.*;
 import org.openremote.model.Constants;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.attribute.AttributeValidationResult;
 import org.openremote.model.datapoint.DatapointInterval;
 import org.openremote.model.datapoint.NumberDatapoint;
+import org.openremote.model.interop.Consumer;
 
 import java.util.Arrays;
 import java.util.Date;
-import java.util.function.Consumer;
 
 import static com.google.gwt.dom.client.Style.Unit.EM;
 import static com.google.gwt.dom.client.Style.Unit.PX;

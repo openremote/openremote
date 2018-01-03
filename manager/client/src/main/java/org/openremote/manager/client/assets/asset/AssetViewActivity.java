@@ -31,7 +31,7 @@ import org.openremote.manager.client.assets.attributes.AttributeViewImpl;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.datapoint.DatapointBrowser;
 import org.openremote.manager.client.datapoint.NumberDatapointArrayMapper;
-import org.openremote.manager.client.interop.value.ObjectValueMapper;
+import org.openremote.components.client.interop.value.ObjectValueMapper;
 import org.openremote.manager.client.simulator.Simulator;
 import org.openremote.manager.client.widget.FormButton;
 import org.openremote.manager.shared.agent.AgentResource;
@@ -53,6 +53,7 @@ import org.openremote.model.datapoint.Datapoint;
 import org.openremote.model.datapoint.DatapointInterval;
 import org.openremote.model.datapoint.NumberDatapoint;
 import org.openremote.model.event.shared.TenantFilter;
+import org.openremote.model.interop.Consumer;
 import org.openremote.model.simulator.SimulatorState;
 import org.openremote.model.value.Values;
 
@@ -61,7 +62,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Consumer;
 
 import static org.openremote.manager.client.http.RequestExceptionHandler.handleRequestException;
 import static org.openremote.model.util.TextUtil.isNullOrEmpty;
@@ -260,7 +260,7 @@ public class AssetViewActivity
     }
 
     protected void fetchAgentStatus(String agentId) {
-        environment.getRequestService().execute(
+        environment.getRequestService().sendAndReturn(
             agentStatusEventMapper,
             requestParams -> agentResource.getAgentStatus(requestParams, agentId),
             200,
@@ -365,7 +365,7 @@ public class AssetViewActivity
             );
         }
 
-        if (environment.getSecurityService().isSuperUser() &&
+        if (environment.getAppSecurity().isSuperUser() &&
             ProtocolConfiguration.isProtocolConfiguration(attribute) &&
             ProtocolConfiguration.getProtocolName(attribute)
                 .map(name -> name.equals(Constants.PROTOCOL_NAMESPACE + ":simulator"))
@@ -410,7 +410,7 @@ public class AssetViewActivity
 
     protected void queryDataPoints(String attributeName, DatapointInterval interval, long timestamp, Consumer<NumberDatapoint[]> consumer) {
         if (!isNullOrEmpty(attributeName)) {
-            environment.getRequestService().execute(
+            environment.getRequestService().sendAndReturn(
                 numberDatapointArrayMapper,
                 requestParams -> assetDatapointResource.getNumberDatapoints(
                     requestParams, this.asset.getId(), attributeName, interval, timestamp

@@ -27,7 +27,7 @@ import org.openremote.manager.client.admin.tenant.AdminTenantsPlace;
 import org.openremote.manager.client.admin.users.AdminUsersPlace;
 import org.openremote.manager.client.admin.users.edit.AdminUserEditPlace;
 import org.openremote.manager.client.admin.users.notifications.AdminUserNotificationsPlace;
-import org.openremote.manager.client.apps.AppsPlace;
+import org.openremote.manager.client.apps.ConsoleAppsPlace;
 import org.openremote.manager.client.assets.AssetsDashboardPlace;
 import org.openremote.manager.client.assets.asset.AssetEditPlace;
 import org.openremote.manager.client.assets.asset.AssetViewPlace;
@@ -56,7 +56,7 @@ import org.openremote.manager.client.user.UserAccountPlace;
         TenantRulesEditorPlace.Tokenizer.class,
         AssetRulesListPlace.Tokenizer.class,
         AssetRulesEditorPlace.Tokenizer.class,
-        AppsPlace.Tokenizer.class,
+        ConsoleAppsPlace.Tokenizer.class,
         AdminSyslogPlace.Tokenizer.class,
         AdminTenantsPlace.Tokenizer.class,
         AdminTenantPlace.Tokenizer.class,

@@ -25,11 +25,11 @@ import org.openremote.manager.client.widget.FormView;
 import org.openremote.model.ValueHolder;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetType;
+import org.openremote.model.interop.Consumer;
 import org.openremote.model.util.Pair;
 
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
 
 public interface AssetEdit extends FormView, AssetBaseView<AssetEdit.Presenter> {
 

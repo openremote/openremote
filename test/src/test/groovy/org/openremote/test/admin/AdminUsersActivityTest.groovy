@@ -4,6 +4,7 @@ import com.google.gwt.junit.GWTMockUtilities
 import com.google.gwt.place.shared.WithTokenizers
 import com.google.gwt.user.client.ui.AcceptsOneWidget
 import com.google.gwt.user.client.ui.Widget
+import org.openremote.components.client.style.WidgetStyle
 import org.openremote.manager.client.Environment
 import org.openremote.manager.client.ManagerActivityMapper
 import org.openremote.manager.client.ManagerHistoryMapper
@@ -22,18 +23,17 @@ import org.openremote.manager.client.event.ShowSuccessEvent
 import org.openremote.manager.client.event.WillGoToPlaceEvent
 import org.openremote.manager.client.i18n.ManagerMessages
 import org.openremote.manager.client.service.EventService
-import org.openremote.manager.client.service.RequestServiceImpl
-import org.openremote.components.client.style.WidgetStyle
 import org.openremote.manager.server.setup.AbstractKeycloakSetup
 import org.openremote.manager.server.setup.SetupService
-import org.openremote.manager.shared.http.EntityReader
 import org.openremote.manager.shared.notification.NotificationResource
 import org.openremote.manager.shared.security.*
-import org.openremote.manager.shared.validation.ConstraintViolationReport
 import org.openremote.model.event.Event
 import org.openremote.model.event.bus.EventListener
+import org.openremote.model.http.ConstraintViolationReport
+import org.openremote.model.http.EntityReader
+import org.openremote.model.http.RequestService
 import org.openremote.test.ClientObjectMapper
-import org.openremote.test.ClientSecurityService
+import org.openremote.test.TestAppSecurity
 import org.openremote.test.GwtClientTrait
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
@@ -73,11 +73,13 @@ class AdminUsersActivityTest extends Specification implements ManagerContainerTr
                     getString(container.getConfig(), SETUP_ADMIN_PASSWORD, SETUP_ADMIN_PASSWORD_DEFAULT)
             ).token
         }
-        def securityService = new ClientSecurityService(keycloakProvider.getKeycloakDeployment(realm, KEYCLOAK_CLIENT_ID), accessToken)
+        def appSecurity = new TestAppSecurity(keycloakProvider.getKeycloakDeployment(realm, KEYCLOAK_CLIENT_ID), accessToken)
 
         and: "A client request service and target"
         def constraintViolationReader = new ClientObjectMapper(container.JSON, ConstraintViolationReport.class) as EntityReader<ConstraintViolationReport>
-        def requestService = new RequestServiceImpl(securityService, constraintViolationReader)
+        def requestService = new RequestService({
+            appSecurity.setCredentialsOnRequestParams(it)
+        }, constraintViolationReader)
         def clientTarget = getClientTarget(serverUri(serverPort), realm)
 
         and: "The fake client MVP environment"
@@ -117,9 +119,9 @@ class AdminUsersActivityTest extends Specification implements ManagerContainerTr
             }
         })
         def placeHistoryMapper = createPlaceHistoryMapper(ManagerHistoryMapper.getAnnotation(WithTokenizers.class))
-        def placeController = createPlaceController(securityService, eventBus)
+        def placeController = createPlaceController(eventBus)
         def environment = Environment.create(
-                securityService,
+                appSecurity,
                 requestService,
                 Mock(EventService),
                 placeController,
@@ -173,7 +175,7 @@ class AdminUsersActivityTest extends Specification implements ManagerContainerTr
         and: "An activity management configuration"
         def activityDisplay = Mock(AcceptsOneWidget)
         def activityMapper = new ManagerActivityMapper(
-                securityService,
+                appSecurity,
                 eventBus,
                 managerMessages,
                 {},

@@ -25,7 +25,6 @@ import org.openremote.manager.server.asset.ServerAsset;
 import org.openremote.manager.server.security.ManagerIdentityService;
 import org.openremote.manager.server.web.ManagerWebResource;
 import org.openremote.manager.shared.agent.AgentResource;
-import org.openremote.manager.shared.http.RequestParams;
 import org.openremote.manager.shared.security.Tenant;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
@@ -36,6 +35,7 @@ import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.AttributeValidationResult;
 import org.openremote.model.event.shared.TenantFilter;
 import org.openremote.model.file.FileInfo;
+import org.openremote.model.http.RequestParams;
 import org.openremote.model.util.Pair;
 
 import javax.ws.rs.*;

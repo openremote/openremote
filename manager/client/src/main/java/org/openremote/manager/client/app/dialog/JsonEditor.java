@@ -19,9 +19,8 @@
  */
 package org.openremote.manager.client.app.dialog;
 
+import org.openremote.model.interop.Consumer;
 import org.openremote.model.value.Value;
-
-import java.util.function.Consumer;
 
 public interface JsonEditor {
 

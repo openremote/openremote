@@ -70,6 +70,6 @@ public class RulesModule extends AbstractGinModule {
     @Provides
     @Singleton
     public native RulesetResource getRulesetResource() /*-{
-        return $wnd.RulesetResource;
+        return $wnd.openremote.REST.RulesetResource;
     }-*/;
 }

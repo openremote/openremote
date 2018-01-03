@@ -27,7 +27,7 @@ import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.assets.browser.AssetBrowserSelection;
 import org.openremote.manager.client.assets.browser.AssetTreeNode;
 import org.openremote.manager.client.assets.browser.TenantTreeNode;
-import org.openremote.manager.client.interop.value.ObjectValueMapper;
+import org.openremote.components.client.interop.value.ObjectValueMapper;
 import org.openremote.manager.client.mvp.AcceptsView;
 import org.openremote.manager.client.mvp.AppActivity;
 import org.openremote.manager.shared.asset.AssetResource;
@@ -136,7 +136,7 @@ public class MapActivity extends AssetBrowsingActivity<MapPlace> implements MapV
         ));
 
         if (!view.isMapInitialised()) {
-            environment.getRequestService().execute(
+            environment.getRequestService().sendAndReturn(
                 objectValueMapper,
                 mapResource::getSettings,
                 200,

@@ -25,8 +25,7 @@ import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.ui.UIObject;
 import org.openremote.components.client.widget.PopupPanel;
-
-import java.util.function.Consumer;
+import org.openremote.model.interop.Consumer;
 
 public abstract class AbstractAppPanel implements AppPanel {
 

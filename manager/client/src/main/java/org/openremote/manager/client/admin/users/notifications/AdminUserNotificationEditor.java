@@ -19,9 +19,8 @@
  */
 package org.openremote.manager.client.admin.users.notifications;
 
+import org.openremote.model.interop.Consumer;
 import org.openremote.model.notification.AlertNotification;
-
-import java.util.function.Consumer;
 
 public interface AdminUserNotificationEditor {
 

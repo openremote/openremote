@@ -27,7 +27,6 @@ import com.google.web.bindery.event.shared.UmbrellaException;
 import org.openremote.manager.client.event.GoToPlaceEvent;
 import org.openremote.manager.client.event.WillGoToPlaceEvent;
 import org.openremote.manager.client.map.MapAssetPlace;
-import org.openremote.manager.client.service.SecurityService;
 import org.openremote.model.event.bus.EventBus;
 
 import java.util.logging.Level;
@@ -43,15 +42,12 @@ public class AppPlaceController extends PlaceController {
     private static final Logger LOG = Logger.getLogger(AppPlaceController.class.getName());
 
     protected final com.google.web.bindery.event.shared.EventBus legacyEventBus;
-    protected final SecurityService securityService;
 
-    public AppPlaceController(SecurityService securityService,
-                              EventBus eventBus,
+    public AppPlaceController(EventBus eventBus,
                               com.google.web.bindery.event.shared.EventBus legacyEventBus,
                               Delegate delegate) {
         super(legacyEventBus, delegate);
         this.legacyEventBus = legacyEventBus;
-        this.securityService = securityService;
 
         legacyEventBus.addHandler(PlaceChangeEvent.TYPE, event -> {
             if (LOG.isLoggable(Level.FINE))
@@ -98,10 +94,6 @@ public class AppPlaceController extends PlaceController {
         } catch (UmbrellaException ex) {
             LOG.log(Level.SEVERE, "Error handling place change to: " + newPlace, ex);
         }
-    }
-
-    public SecurityService getSecurityService() {
-        return securityService;
     }
 
     public com.google.web.bindery.event.shared.EventBus getLegacyEventBus() {

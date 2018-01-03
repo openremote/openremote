@@ -22,7 +22,7 @@ package org.openremote.manager.client.widget;
 import com.google.gwt.dom.client.Document;
 import com.google.gwt.user.client.ui.FlowPanel;
 import elemental2.dom.DomGlobal;
-import org.openremote.manager.client.interop.mapbox.*;
+import org.openremote.components.client.interop.mapbox.*;
 import org.openremote.model.geo.GeoJSON;
 import org.openremote.model.value.ArrayValue;
 import org.openremote.model.value.ObjectValue;

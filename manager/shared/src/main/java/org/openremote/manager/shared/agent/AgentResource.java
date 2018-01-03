@@ -20,15 +20,14 @@
 package org.openremote.manager.shared.agent;
 
 import jsinterop.annotations.JsType;
-import org.openremote.manager.shared.http.RequestParams;
-import org.openremote.manager.shared.http.SuccessStatusCode;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.agent.AgentStatusEvent;
-import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.asset.agent.ProtocolDescriptor;
 import org.openremote.model.attribute.AttributeValidationResult;
 import org.openremote.model.file.FileInfo;
+import org.openremote.model.http.RequestParams;
+import org.openremote.model.http.SuccessStatusCode;
 
 import javax.annotation.security.RolesAllowed;
 import javax.ws.rs.*;

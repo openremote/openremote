@@ -23,11 +23,11 @@ import org.openremote.manager.client.Environment;
 import org.openremote.model.event.bus.EventBus;
 import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.event.ShowFailureEvent;
-import org.openremote.manager.shared.http.*;
-import org.openremote.manager.shared.validation.ConstraintViolation;
+import org.openremote.model.http.ConstraintViolation;
+import org.openremote.model.http.*;
+import org.openremote.model.interop.Consumer;
 
 import java.util.Arrays;
-import java.util.function.Consumer;
 
 public interface RequestExceptionHandler {
 

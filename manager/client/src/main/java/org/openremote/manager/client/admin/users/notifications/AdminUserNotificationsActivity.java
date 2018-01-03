@@ -128,7 +128,7 @@ public class AdminUserNotificationsActivity
         notificationEditor.setOnSend(updatedNotification -> {
             adminContent.setFormBusy(true);
             this.alertNotification = updatedNotification;
-            environment.getRequestService().execute(
+            environment.getRequestService().sendWith(
                 alertNotificationMapper,
                 requestParams -> notificationResource.storeNotificationForUser(requestParams, userId, this.alertNotification),
                 204,
@@ -152,7 +152,7 @@ public class AdminUserNotificationsActivity
     @Override
     public void onNotificationsDelete() {
         adminContent.setFormBusy(true);
-        environment.getRequestService().execute(
+        environment.getRequestService().send(
             requestParams -> notificationResource.removeNotificationsOfUser(requestParams, userId),
             204,
             () -> {
@@ -168,7 +168,7 @@ public class AdminUserNotificationsActivity
     @Override
     public void onNotificationDelete(Long id) {
         adminContent.setFormBusy(true);
-        environment.getRequestService().execute(
+        environment.getRequestService().send(
             requestParams -> notificationResource.removeNotification(requestParams, userId, id),
             204,
             () -> {
@@ -197,7 +197,7 @@ public class AdminUserNotificationsActivity
 
     protected void loadUser() {
         adminContent.setFormBusy(true);
-        environment.getRequestService().execute(
+        environment.getRequestService().sendAndReturn(
             userMapper,
             requestParams -> userResource.get(requestParams, realm, userId),
             200,
@@ -214,7 +214,7 @@ public class AdminUserNotificationsActivity
     }
 
     protected void loadNotifications(Runnable onComplete) {
-        environment.getRequestService().execute(
+        environment.getRequestService().sendAndReturn(
             alertNotificationArrayMapper,
             requestParams -> notificationResource.getNotificationsOfUser(requestParams, userId),
             200,

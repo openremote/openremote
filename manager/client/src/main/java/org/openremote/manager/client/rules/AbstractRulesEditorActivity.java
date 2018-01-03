@@ -28,20 +28,20 @@ import org.openremote.manager.client.assets.browser.BrowserTreeNode;
 import org.openremote.manager.client.event.ShowSuccessEvent;
 import org.openremote.manager.client.mvp.AcceptsView;
 import org.openremote.manager.client.mvp.AppActivity;
-import org.openremote.manager.shared.http.EntityReader;
-import org.openremote.manager.shared.http.EntityWriter;
-import org.openremote.manager.shared.http.RequestParams;
+import org.openremote.model.http.EntityReader;
+import org.openremote.model.http.EntityWriter;
+import org.openremote.model.http.RequestParams;
 import org.openremote.manager.shared.rules.RulesetResource;
 import org.openremote.manager.shared.security.Tenant;
-import org.openremote.manager.shared.validation.ConstraintViolation;
+import org.openremote.model.http.ConstraintViolation;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.event.bus.EventBus;
 import org.openremote.model.event.bus.EventRegistration;
+import org.openremote.model.interop.Consumer;
 import org.openremote.model.rules.Ruleset;
 
 import javax.inject.Inject;
 import java.util.Collection;
-import java.util.function.Consumer;
 import java.util.logging.Logger;
 
 import static org.openremote.manager.client.http.RequestExceptionHandler.handleRequestException;
@@ -106,7 +106,7 @@ public abstract class AbstractRulesEditorActivity<T extends Ruleset, PLACE exten
 
         view.setFormBusy(true);
         if (rulesetId != null) {
-            environment.getRequestService().execute(
+            environment.getRequestService().sendAndReturn(
                 getEntityReader(),
                 loadRequestConsumer(),
                 200,
@@ -154,7 +154,7 @@ public abstract class AbstractRulesEditorActivity<T extends Ruleset, PLACE exten
         view.setFormBusy(true);
         clearViewMessages();
         readFromView();
-        environment.getRequestService().execute(
+        environment.getRequestService().sendWith(
             getEntityWriter(),
             createRequestConsumer(),
             204,
@@ -168,7 +168,7 @@ public abstract class AbstractRulesEditorActivity<T extends Ruleset, PLACE exten
         view.setFormBusy(true);
         clearViewMessages();
         readFromView();
-        environment.getRequestService().execute(
+        environment.getRequestService().sendWith(
             getEntityWriter(),
             updateRequestConsumer(),
             204,
@@ -185,7 +185,7 @@ public abstract class AbstractRulesEditorActivity<T extends Ruleset, PLACE exten
             () -> {
                 view.setFormBusy(true);
                 clearViewMessages();
-                environment.getRequestService().execute(
+                environment.getRequestService().send(
                     deleteRequestConsumer(),
                     204,
                     afterDeleteRunnable(),

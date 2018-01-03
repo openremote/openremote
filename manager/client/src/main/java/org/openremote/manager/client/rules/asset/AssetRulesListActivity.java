@@ -99,7 +99,7 @@ public class AssetRulesListActivity
                 }
             });
 
-            environment.getRequestService().execute(
+            environment.getRequestService().sendAndReturn(
                 assetRulesetArrayMapper,
                 params -> rulesetResource.getAssetRulesets(params, assetId),
                 200,
