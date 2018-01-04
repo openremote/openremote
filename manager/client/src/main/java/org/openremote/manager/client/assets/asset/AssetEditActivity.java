@@ -191,6 +191,7 @@ public class AssetEditActivity
     @Override
     public void onMapClicked(double lng, double lat) {
         selectedCoordinates = new double[]{lng, lat};
+        view.hideMapPopup();
         view.showMapPopup(lng, lat, environment.getMessages().selectedLocation());
         view.setLocation(selectedCoordinates);
     }

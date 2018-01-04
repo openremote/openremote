@@ -68,12 +68,12 @@ public class FormOutputLocation extends Composite {
         // Rounding to 5 decimals gives us precision of about 1 meter, should be enough
         if (reversed) {
             coordinatesLabel.setText(round(coordinates[0], 5) + " " + round(coordinates[1], 5));
-            toggleButton.getUpFace().setText("Lng|Lat");
-            toggleButton.getDownFace().setText("Lng|Lat");
+            toggleButton.getUpFace().setText("Lng | Lat");
+            toggleButton.getDownFace().setText("Lng | Lat");
         } else {
             coordinatesLabel.setText(round(coordinates[1], 5) + " " + round(coordinates[0], 5));
-            toggleButton.getUpFace().setText("Lat|Lng");
-            toggleButton.getDownFace().setText("Lat|Lng");
+            toggleButton.getUpFace().setText("Lat | Lng");
+            toggleButton.getDownFace().setText("Lat | Lng");
         }
     }
     protected String round(double d, int places) {
