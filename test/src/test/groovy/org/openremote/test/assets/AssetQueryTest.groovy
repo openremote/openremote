@@ -17,11 +17,11 @@ import spock.lang.Specification
 import javax.persistence.EntityManager
 import java.util.function.Function
 
-import static org.openremote.model.asset.AbstractAssetQuery.*
-import static org.openremote.model.asset.AbstractAssetQuery.Access.PRIVATE_READ
-import static org.openremote.model.asset.AbstractAssetQuery.Access.RESTRICTED_READ
-import static org.openremote.model.asset.AbstractAssetQuery.OrderBy.Property.CREATED_ON
-import static org.openremote.model.asset.AbstractAssetQuery.OrderBy.Property.NAME
+import static org.openremote.model.asset.BaseAssetQuery.*
+import static org.openremote.model.asset.BaseAssetQuery.Access.PRIVATE_READ
+import static org.openremote.model.asset.BaseAssetQuery.Access.RESTRICTED_READ
+import static org.openremote.model.asset.BaseAssetQuery.OrderBy.Property.CREATED_ON
+import static org.openremote.model.asset.BaseAssetQuery.OrderBy.Property.NAME
 import static org.openremote.model.asset.AssetType.THING
 
 class AssetQueryTest extends Specification implements ManagerContainerTrait {

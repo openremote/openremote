@@ -31,8 +31,8 @@ import org.openremote.model.asset.AssetType
 import org.openremote.model.event.shared.SharedEvent
 import org.openremote.model.event.shared.TenantFilter
 import org.openremote.model.http.ConstraintViolationReport
-import org.openremote.model.http.EntityReader
-import org.openremote.model.http.RequestService
+import org.openremote.components.client.rest.EntityReader
+import org.openremote.components.client.rest.RequestService
 import org.openremote.test.*
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
@@ -72,9 +72,7 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
 
         and: "a client request service and target"
         def constraintViolationReader = new ClientObjectMapper(container.JSON, ConstraintViolationReport.class) as EntityReader<ConstraintViolationReport>
-        def requestService = new RequestService({
-            appSecurity.setCredentialsOnRequestParams(it)
-        }, constraintViolationReader)
+        def requestService = new RequestService(appSecurity, constraintViolationReader)
         def clientTarget = getClientTarget(serverUri(serverPort), realm)
 
         and: "a client websocket connection and attached event bus and service"
@@ -273,9 +271,7 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
 
         and: "a client request service and target"
         def constraintViolationReader = new ClientObjectMapper(container.JSON, ConstraintViolationReport.class) as EntityReader<ConstraintViolationReport>
-        def requestService = new RequestService({
-            appSecurity.setCredentialsOnRequestParams(it)
-        }, constraintViolationReader)
+        def requestService = new RequestService(appSecurity, constraintViolationReader)
         def clientTarget = getClientTarget(serverUri(serverPort), realm)
 
         and: "a client websocket connection and attached event bus and service"
@@ -454,9 +450,7 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
 
         and: "a client request service and target"
         def constraintViolationReader = new ClientObjectMapper(container.JSON, ConstraintViolationReport.class) as EntityReader<ConstraintViolationReport>
-        def requestService = new RequestService({
-            appSecurity.setCredentialsOnRequestParams(it)
-        }, constraintViolationReader)
+        def requestService = new RequestService(appSecurity, constraintViolationReader)
         def clientTarget = getClientTarget(serverUri(serverPort), realm)
 
         and: "a client websocket connection and attached event bus and service"

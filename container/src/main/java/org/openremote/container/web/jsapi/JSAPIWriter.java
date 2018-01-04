@@ -287,14 +287,14 @@ public class JSAPIWriter {
             case ENTITY_PARAMETER:
                 writer.println(" if(" + metaData.getParamName() + ") {");
                 writer.println("   if(params.$entityWriter) {");
-                writer.println("      request.setEntity(params.$entityWriter.write("+metaData.getParamName()+"));");
+                writer.println("      request.setEntity(params.$entityWriter.accept("+metaData.getParamName()+"));");
                 writer.println("   } else {");
                 writer.println("      request.setEntity(" + metaData.getParamName() + ");");
                 writer.println("   }");
                 writer.println(" }");
                 writer.println(" if(params.$entity) {");
                 writer.println("   if(params.$entityWriter) {");
-                writer.println("      request.setEntity(params.$entityWriter.write(params.$entity));");
+                writer.println("      request.setEntity(params.$entityWriter.accept(params.$entity));");
                 writer.println("   } else {");
                 writer.println("      request.setEntity(params.$entity);");
                 writer.println("   }");

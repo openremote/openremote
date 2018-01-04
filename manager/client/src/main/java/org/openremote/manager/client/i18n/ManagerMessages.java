@@ -113,7 +113,7 @@ public interface ManagerMessages extends Messages {
 
     String errorMarshallingResponse(String error);
 
-    String unexpectedResponseStatus(int statusCode, String expectedStatusCodes);
+    String unexpectedResponseStatus(double statusCode, String expectedStatusCodes);
 
     String unknownError();
 
@@ -307,7 +307,7 @@ public interface ManagerMessages extends Messages {
 
     String viewAsset();
 
-    String errorLoadingTenant(int statusCode);
+    String errorLoadingTenant(double statusCode);
 
     String subscriptionFailed(String eventType);
 

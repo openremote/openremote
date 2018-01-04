@@ -36,6 +36,7 @@ import org.openremote.model.event.bus.EventBus;
 import org.openremote.model.event.bus.EventRegistration;
 import org.openremote.model.http.ConstraintViolation;
 import org.openremote.model.interop.Consumer;
+import org.openremote.model.interop.Runnable;
 
 import javax.inject.Inject;
 import java.util.ArrayList;

@@ -19,6 +19,8 @@
  */
 package org.openremote.manager.client.rules;
 
+import org.openremote.components.client.rest.EntityReader;
+import org.openremote.components.client.rest.EntityWriter;
 import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.assets.AssetBrowsingActivity;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
@@ -28,16 +30,15 @@ import org.openremote.manager.client.assets.browser.BrowserTreeNode;
 import org.openremote.manager.client.event.ShowSuccessEvent;
 import org.openremote.manager.client.mvp.AcceptsView;
 import org.openremote.manager.client.mvp.AppActivity;
-import org.openremote.model.http.EntityReader;
-import org.openremote.model.http.EntityWriter;
-import org.openremote.model.http.RequestParams;
 import org.openremote.manager.shared.rules.RulesetResource;
 import org.openremote.manager.shared.security.Tenant;
-import org.openremote.model.http.ConstraintViolation;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.event.bus.EventBus;
 import org.openremote.model.event.bus.EventRegistration;
+import org.openremote.model.http.ConstraintViolation;
+import org.openremote.model.http.RequestParams;
 import org.openremote.model.interop.Consumer;
+import org.openremote.model.interop.Runnable;
 import org.openremote.model.rules.Ruleset;
 
 import javax.inject.Inject;
@@ -277,19 +278,19 @@ public abstract class AbstractRulesEditorActivity<T extends Ruleset, PLACE exten
 
     abstract protected EntityReader<T> getEntityReader();
 
-    abstract protected Consumer<RequestParams<T>> loadRequestConsumer();
+    abstract protected Consumer<RequestParams<Void, T>> loadRequestConsumer();
 
     abstract protected EntityWriter<T> getEntityWriter();
 
-    abstract protected Consumer<RequestParams<Void>> createRequestConsumer();
+    abstract protected Consumer<RequestParams<T, Void>> createRequestConsumer();
 
     abstract protected void afterCreate();
 
-    abstract protected Consumer<RequestParams<Void>> updateRequestConsumer();
+    abstract protected Consumer<RequestParams<T, Void>> updateRequestConsumer();
 
     abstract protected void afterUpdate();
 
-    abstract protected Consumer<RequestParams<Void>> deleteRequestConsumer();
+    abstract protected Consumer<RequestParams<Void, Void>> deleteRequestConsumer();
 
     abstract protected void afterDelete();
 

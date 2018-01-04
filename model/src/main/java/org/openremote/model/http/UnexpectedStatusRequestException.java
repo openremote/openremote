@@ -24,14 +24,14 @@ import jsinterop.annotations.JsType;
 @JsType
 public class UnexpectedStatusRequestException extends RequestException {
 
-    protected Integer[] expectedStatusCodes;
+    protected double[] expectedStatusCodes;
 
-    public UnexpectedStatusRequestException(int statusCode, Integer[] expectedStatusCodes) {
+    public UnexpectedStatusRequestException(double statusCode, double[] expectedStatusCodes) {
         super(statusCode, "Unexpected response status");
         this.expectedStatusCodes = expectedStatusCodes;
     }
 
-    public Integer[] getExpectedStatusCodes() {
+    public double[] getExpectedStatusCodes() {
         return expectedStatusCodes;
     }
 }

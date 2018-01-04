@@ -19,8 +19,8 @@
  */
 package org.openremote.components.client.interop.value;
 
-import org.openremote.model.http.EntityReader;
-import org.openremote.model.http.EntityWriter;
+import org.openremote.components.client.rest.EntityReader;
+import org.openremote.components.client.rest.EntityWriter;
 import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Values;
 

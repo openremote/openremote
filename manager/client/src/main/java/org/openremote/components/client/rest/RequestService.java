@@ -17,16 +17,26 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.model.http;
+package org.openremote.components.client.rest;
 
+import com.google.gwt.core.client.GWT;
+import elemental.client.Browser;
+import elemental.html.Location;
+import elemental2.core.Global;
+import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsType;
+import jsinterop.base.Any;
+import org.openremote.components.client.AppSecurity;
+import org.openremote.model.http.*;
 import org.openremote.model.interop.Consumer;
+import org.openremote.model.interop.Function;
+import org.openremote.model.interop.Runnable;
 
-import javax.inject.Inject;
-import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
+import java.util.stream.DoubleStream;
 
 import static com.google.gwt.http.client.Response.*;
 import static org.openremote.model.http.ConstraintViolationReport.VIOLATION_EXCEPTION_HEADER;
@@ -35,58 +45,117 @@ import static org.openremote.model.http.ConstraintViolationReport.VIOLATION_EXCE
 public class RequestService {
 
     private static final Logger LOG = Logger.getLogger(RequestService.class.getName());
-    int ANY_STATUS_CODE = -1;
+
+    double ANY_STATUS_CODE = -1;
 
     final protected Consumer<RequestParams> authenticator;
-    final protected EntityReader<ConstraintViolationReport> constraintViolationReader;
+    final protected Function<String, ConstraintViolationReport> constraintViolationReader;
 
-    @Inject
     public RequestService(Consumer<RequestParams> authenticator,
-                          EntityReader<ConstraintViolationReport> constraintViolationReader) {
+                          Function<String, ConstraintViolationReport> constraintViolationReader) {
         this.authenticator = authenticator;
         this.constraintViolationReader = constraintViolationReader;
     }
 
-    public void send(Consumer<RequestParams<Void>> onRequest,
+    @JsIgnore
+    public RequestService(AppSecurity appSecurity,
+                          EntityReader<ConstraintViolationReport> constraintViolationReader) {
+        this(appSecurity::setCredentialsOnRequestParams, constraintViolationReader::read);
+        if (GWT.isClient()) {
+            configure(appSecurity.getAuthenticatedRealm());
+        }
+    }
+
+    public void configure(String realm) {
+        Location location = Browser.getWindow().getLocation();
+        REST.apiURL = "//" + location.getHostname() + ":" + location.getPort() + "/" + realm;
+        REST.loglevel = LOG.isLoggable(Level.FINE) ? 1 : 0;
+    }
+
+    @JsIgnore
+    public void send(Consumer<RequestParams<Void, Void>> onRequest,
                      int expectedStatusCode,
                      Runnable onResponse,
                      Consumer<RequestException> onException) {
-        sendWith(null, onRequest, expectedStatusCode, onResponse, onException);
+        execute(null, null, onRequest, new double[]{expectedStatusCode}, out -> onResponse.run(), onException);
     }
 
+    public void send(Consumer<RequestParams<Void, Void>> onRequest,
+                     double expectedStatusCode,
+                     Runnable onResponse,
+                     Consumer<RequestException> onException) {
+        if (!GWT.isClient())
+            throw new UnsupportedOperationException("This method can only be called in a JS runtime environment");
+        execute(null, null, onRequest, new double[]{expectedStatusCode}, out -> onResponse.run(), onException);
+    }
+
+    @JsIgnore
     public <OUT> void sendAndReturn(EntityReader<OUT> entityReader,
-                                    Consumer<RequestParams<OUT>> onRequest,
+                                    Consumer<RequestParams<Void, OUT>> onRequest,
                                     int expectedStatusCode,
                                     Consumer<OUT> onResponse,
                                     Consumer<RequestException> onException) {
-        execute(entityReader, null, onRequest, new Integer[]{expectedStatusCode}, onResponse, onException);
+        execute(entityReader::read, null, onRequest, new double[]{expectedStatusCode}, onResponse, onException);
     }
 
+    public void sendAndReturn(Consumer<RequestParams<Void, Any>> onRequest,
+                              double expectedStatusCode,
+                              Consumer<Any> onResponse,
+                              Consumer<RequestException> onException) {
+        if (!GWT.isClient())
+            throw new UnsupportedOperationException("This method can only be called in a JS runtime environment");
+        execute(object -> (Any) Global.JSON.parse(object), null, onRequest, new double[]{expectedStatusCode}, onResponse, onException);
+    }
+
+    @JsIgnore
     public <IN> void sendWith(EntityWriter<IN> entityWriter,
-                              Consumer<RequestParams<Void>> onRequest,
+                              Consumer<RequestParams<IN, Void>> onRequest,
                               int expectedStatusCode,
                               Runnable onResponse,
                               Consumer<RequestException> onException) {
-        execute(null, entityWriter, onRequest, new Integer[]{expectedStatusCode}, out -> onResponse.run(), onException);
+        execute(null, entityWriter::write, onRequest, new double[]{expectedStatusCode}, out -> onResponse.run(), onException);
     }
 
+
+    public <IN> void sendWith(Function<IN, String> entityWriter,
+                              Consumer<RequestParams<IN, Void>> onRequest,
+                              double expectedStatusCode,
+                              Runnable onResponse,
+                              Consumer<RequestException> onException) {
+        if (!GWT.isClient())
+            throw new UnsupportedOperationException("This method can only be called in a JS runtime environment");
+        execute(null, entityWriter, onRequest, new double[]{expectedStatusCode}, out -> onResponse.run(), onException);
+    }
+
+    @JsIgnore
     public <IN, OUT> void sendWithAndReturn(EntityReader<OUT> entityReader,
                                             EntityWriter<IN> entityWriter,
-                                            Consumer<RequestParams<OUT>> onRequest,
+                                            Consumer<RequestParams<IN, OUT>> onRequest,
                                             int expectedStatusCode,
                                             Consumer<OUT> onResponse,
                                             Consumer<RequestException> onException) {
-        execute(entityReader, entityWriter, onRequest, new Integer[]{expectedStatusCode}, onResponse, onException);
+        execute(entityReader::read, entityWriter::write, onRequest, new double[]{expectedStatusCode}, onResponse, onException);
     }
 
-    protected <IN, OUT> void execute(EntityReader<OUT> entityReader,
-                                     EntityWriter<IN> entityWriter,
-                                     Consumer<RequestParams<OUT>> onRequest,
-                                     Integer[] expectedStatusCodes,
+    public <IN, OUT> void sendWithAndReturn(Function<String, OUT> entityReader,
+                                            Function<IN, String> entityWriter,
+                                            Consumer<RequestParams<IN, OUT>> onRequest,
+                                            double expectedStatusCode,
+                                            Consumer<OUT> onResponse,
+                                            Consumer<RequestException> onException) {
+        if (!GWT.isClient())
+            throw new UnsupportedOperationException("This method can only be called in a JS runtime environment");
+        execute(entityReader, entityWriter, onRequest, new double[]{expectedStatusCode}, onResponse, onException);
+    }
+
+    protected <IN, OUT> void execute(Function<String, OUT> entityReader,
+                                     Function<IN, String> entityWriter,
+                                     Consumer<RequestParams<IN, OUT>> onRequest,
+                                     double[] expectedStatusCodes,
                                      Consumer<OUT> onResponse,
                                      Consumer<RequestException> onException) {
 
-        RequestParams<OUT> requestParams = new RequestParams<>(
+        RequestParams<IN, OUT> requestParams = new RequestParams<>(
             (responseCode, request, responseText) -> {
 
                 if (responseCode == 0) {
@@ -131,8 +200,8 @@ public class RequestService {
                     LOG.fine("Received response status: " + responseCode);
                 }
 
-                List<Integer> expectedStatusCodesList = Arrays.asList(expectedStatusCodes);
-                if (!expectedStatusCodesList.contains(ANY_STATUS_CODE) && !expectedStatusCodesList.contains(responseCode)) {
+                List<Double> expectedStatusCodesList = DoubleStream.of(expectedStatusCodes).boxed().collect(Collectors.toList());
+                if (!expectedStatusCodesList.contains(ANY_STATUS_CODE) && !expectedStatusCodesList.contains((double) responseCode)) {
                     onException.accept(new UnexpectedStatusRequestException(responseCode, expectedStatusCodes));
                     return;
                 }
@@ -142,7 +211,7 @@ public class RequestService {
                     if (LOG.isLoggable(Level.FINE))
                         LOG.fine("Reading response text, length: " + responseText.length());
                     try {
-                        out = entityReader.read(responseText);
+                        out = entityReader.apply(responseText);
                     } catch (Exception ex) {
                         if (LOG.isLoggable(Level.FINE))
                             LOG.log(Level.FINE, "Response marshalling error", ex);
@@ -170,6 +239,6 @@ public class RequestService {
     }
 
     protected ConstraintViolationReport getConstraintViolationReport(String responseText) {
-        return constraintViolationReader.read(responseText);
+        return constraintViolationReader.apply(responseText);
     }
 }

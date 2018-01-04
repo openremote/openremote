@@ -27,8 +27,8 @@ import org.openremote.manager.shared.security.TenantResource
 import org.openremote.model.event.Event
 import org.openremote.model.event.bus.EventListener
 import org.openremote.model.http.ConstraintViolationReport
-import org.openremote.model.http.EntityReader
-import org.openremote.model.http.RequestService
+import org.openremote.components.client.rest.EntityReader
+import org.openremote.components.client.rest.RequestService
 import org.openremote.test.ClientObjectMapper
 import org.openremote.test.TestAppSecurity
 import org.openremote.test.GwtClientTrait
@@ -71,9 +71,7 @@ class AdminTenantsActivityTest extends Specification implements ManagerContainer
 
         and: "A client request service and target"
         def constraintViolationReader = new ClientObjectMapper(container.JSON, ConstraintViolationReport.class) as EntityReader<ConstraintViolationReport>
-        def requestService = new RequestService({
-            appSecurity.setCredentialsOnRequestParams(it)
-        }, constraintViolationReader)
+        def requestService = new RequestService(appSecurity, constraintViolationReader)
         def clientTarget = getClientTarget(serverUri(serverPort), realm)
 
         and: "The fake client MVP environment"

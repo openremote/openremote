@@ -334,8 +334,26 @@
                 window.document.body.style.visibility = "visible";
             }
 
+            registerWidgetStyle() {
+                openremote.WIDGET_STYLE = new openremote.style.WidgetStyle();
+            }
+
             getAppSecurity() {
                 return this.$.appSecurity;
+            }
+
+            registerRequestService() {
+                let requestService = new openremote.REST.RequestService(
+                    (requestParams) => {
+                        this.$.appSecurity.setCredentialsOnRequestParams(requestParams);
+                    },
+                    (constraintViolationReportJson) => {
+                        // TODO Anything else?
+                        return JSON.parse(constraintViolationReportJson);
+                    }
+                );
+                requestService.configure(this.tenant);
+                openremote.REQUEST = requestService;
             }
         }
 
@@ -345,10 +363,12 @@
         // Set some globals when jsinterop components are ready
         window.addEventListener('AppReady', function () {
 
+            openremote.INSTANCE.registerRequestService();
+            openremote.INSTANCE.registerWidgetStyle();
+
             // Show the app when it's ready
             openremote.INSTANCE.showApp();
 
-            openremote.WIDGET_STYLE = new openremote.style.WidgetStyle();
         });
 
         // Upgrade element and register its type when everything is ready

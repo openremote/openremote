@@ -58,7 +58,7 @@ public class Tenant {
     protected Boolean enabled;
 
     @Column(name = "NOT_BEFORE")
-    protected Integer notBefore; // This will explode in 2038
+    protected Double notBefore; // This will explode in 2038
 
     // We allow password reset by default
     @Transient
@@ -116,11 +116,11 @@ public class Tenant {
         this.enabled = enabled;
     }
 
-    public Integer getNotBefore() {
+    public Double getNotBefore() {
         return notBefore;
     }
 
-    public void setNotBefore(Integer notBefore) {
+    public void setNotBefore(Double notBefore) {
         this.notBefore = notBefore;
     }
 
@@ -140,7 +140,7 @@ public class Tenant {
         this.duplicateEmailsAllowed = duplicateEmailsAllowed;
     }
 
-    public boolean isActive(long currentTimeMillis) {
+    public boolean isActive(double currentTimeMillis) {
         return enabled != null && enabled
             && (notBefore == null || notBefore == 0 || notBefore <= (currentTimeMillis/1000));
     }

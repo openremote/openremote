@@ -17,13 +17,10 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.model.http;
+package org.openremote.components.client.rest;
 
-import jsinterop.annotations.JsType;
+public interface EntityWriter<T> {
 
-@JsType
-public interface EntityReader<T> {
-
-    T read(String value);
+    String write(T value);
 
 }

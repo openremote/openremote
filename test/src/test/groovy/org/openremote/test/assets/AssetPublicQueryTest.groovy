@@ -17,7 +17,7 @@ import spock.lang.Shared
 import spock.lang.Specification
 
 import static org.openremote.model.Constants.MASTER_REALM
-import static org.openremote.model.asset.AbstractAssetQuery.*
+import static org.openremote.model.asset.BaseAssetQuery.*
 import static org.openremote.model.asset.AssetMeta.ACCESS_PUBLIC_READ
 import static org.openremote.model.asset.AssetMeta.LABEL
 import static org.openremote.model.asset.AssetType.THING

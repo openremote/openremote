@@ -25,7 +25,7 @@ import jsinterop.annotations.JsType;
 @JsType
 public class RequestException extends RuntimeException {
 
-    public int statusCode;
+    public double statusCode;
 
     @JsIgnore
     public RequestException() {
@@ -38,16 +38,16 @@ public class RequestException extends RuntimeException {
     }
 
     @JsIgnore
-    public RequestException(int statusCode) {
+    public RequestException(double statusCode) {
         this(statusCode, null);
     }
 
-    public RequestException(int statusCode, String message) {
+    public RequestException(double statusCode, String message) {
         super(message);
         this.statusCode = statusCode;
     }
 
-    public int getStatusCode() {
+    public double getStatusCode() {
         return statusCode;
     }
 }

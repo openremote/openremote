@@ -21,7 +21,7 @@ package org.openremote.manager.server.rules.facade;
 
 import org.openremote.manager.server.asset.AssetStorageService;
 import org.openremote.manager.server.asset.ServerAsset;
-import org.openremote.model.asset.AbstractAssetQuery;
+import org.openremote.model.asset.BaseAssetQuery;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.rules.*;
@@ -29,6 +29,9 @@ import org.openremote.model.rules.*;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+
+import static org.openremote.model.asset.AssetQuery.PathPredicate;
+import static org.openremote.model.asset.AssetQuery.TenantPredicate;
 
 /**
  * Restricts rule RHS access to the scope of the engine (a rule in asset scope can not use assets in global scope).
@@ -113,14 +116,14 @@ public class AssetsFacade<T extends Ruleset> extends Assets {
         };
 
         if (TenantRuleset.class.isAssignableFrom(rulesetType)) {
-            query.tenantPredicate = new AbstractAssetQuery.TenantPredicate(rulesetId);
+            query.tenantPredicate = new TenantPredicate(rulesetId);
         }
         if (AssetRuleset.class.isAssignableFrom(rulesetType)) {
             ServerAsset restrictedAsset = assetStorageService.find(rulesetId, true);
             if (restrictedAsset == null) {
                 throw new IllegalStateException("Asset is no longer available for this deployment: " + rulesetId);
             }
-            query.pathPredicate = new AbstractAssetQuery.PathPredicate(restrictedAsset.getPath());
+            query.pathPredicate = new PathPredicate(restrictedAsset.getPath());
         }
         return query;
     }
@@ -132,7 +135,7 @@ public class AssetsFacade<T extends Ruleset> extends Assets {
         for (AttributeEvent event : events) {
 
             // Check if the asset ID of the event can be found in the original query
-            AbstractAssetQuery checkQuery = query();
+            BaseAssetQuery<RestrictedQuery> checkQuery = query();
             checkQuery.id = event.getEntityId();
             if (assetStorageService.find(checkQuery) == null) {
                 throw new IllegalArgumentException(

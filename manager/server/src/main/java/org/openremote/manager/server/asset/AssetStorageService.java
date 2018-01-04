@@ -39,8 +39,9 @@ import org.openremote.manager.shared.security.User;
 import org.openremote.model.Constants;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.asset.*;
-import org.openremote.model.asset.AbstractAssetQuery.OrderBy;
-import org.openremote.model.asset.AbstractAssetQuery.Select;
+import org.openremote.model.asset.BaseAssetQuery.OrderBy;
+import org.openremote.model.asset.BaseAssetQuery.Select;
+import org.openremote.model.asset.BaseAssetQuery.Access;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.event.shared.TenantFilter;
 import org.openremote.model.util.TextUtil;
@@ -62,10 +63,9 @@ import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_
 import static org.openremote.manager.server.asset.AssetRoute.isPersistenceEventForEntityType;
 import static org.openremote.manager.server.event.ClientEventService.CLIENT_EVENT_TOPIC;
 import static org.openremote.manager.server.event.ClientEventService.getSessionKey;
-import static org.openremote.model.asset.AbstractAssetQuery.Access.PRIVATE_READ;
-import static org.openremote.model.asset.AbstractAssetQuery.Access.RESTRICTED_READ;
-import static org.openremote.model.asset.AbstractAssetQuery.Include.ALL;
-import static org.openremote.model.asset.AbstractAssetQuery.Include.ALL_EXCEPT_PATH_AND_ATTRIBUTES;
+import static org.openremote.model.asset.BaseAssetQuery.*;
+import static org.openremote.model.asset.BaseAssetQuery.Access.*;
+import static org.openremote.model.asset.BaseAssetQuery.Include.*;
 import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 
 public class AssetStorageService extends RouteBuilder implements ContainerService, Consumer<AssetState> {
@@ -215,17 +215,17 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
      * @param loadComplete If the whole asset data (including path and attributes) should be loaded.
      * @param access       The required access permissions of the asset data.
      */
-    public ServerAsset find(String assetId, boolean loadComplete, AbstractAssetQuery.Access access) {
+    public ServerAsset find(String assetId, boolean loadComplete, Access access) {
         if (assetId == null)
             throw new IllegalArgumentException("Can't query null asset identifier");
         return find(new AssetQuery().select(new Select(loadComplete ? ALL : ALL_EXCEPT_PATH_AND_ATTRIBUTES, access)).id(assetId));
     }
 
-    public ServerAsset find(AbstractAssetQuery query) {
+    public ServerAsset find(BaseAssetQuery query) {
         return persistenceService.doReturningTransaction(em -> find(em, query));
     }
 
-    public List<ServerAsset> findAll(AbstractAssetQuery query) {
+    public List<ServerAsset> findAll(BaseAssetQuery query) {
         return persistenceService.doReturningTransaction(em -> findAll(em, query));
     }
 
@@ -496,7 +496,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         return find(em, assetId, loadComplete, PRIVATE_READ);
     }
 
-    protected ServerAsset find(EntityManager em, String assetId, boolean loadComplete, AbstractAssetQuery.Access access) {
+    protected ServerAsset find(EntityManager em, String assetId, boolean loadComplete, Access access) {
         if (assetId == null)
             throw new IllegalArgumentException("Can't query null asset identifier");
         return find(
@@ -507,7 +507,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         );
     }
 
-    public ServerAsset find(EntityManager em, AbstractAssetQuery query) {
+    public ServerAsset find(EntityManager em, BaseAssetQuery query) {
         List<ServerAsset> result = findAll(em, query);
         if (result.size() == 0)
             return null;
@@ -518,7 +518,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
     }
 
-    protected List<ServerAsset> findAll(EntityManager em, AbstractAssetQuery query) {
+    protected List<ServerAsset> findAll(EntityManager em, BaseAssetQuery query) {
 
         // Use a default projection if it's missing
         if (query.select == null)
@@ -552,7 +552,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         });
     }
 
-    protected PreparedAssetQuery buildQuery(AbstractAssetQuery query) {
+    protected PreparedAssetQuery buildQuery(BaseAssetQuery query) {
         LOG.fine("Building: " + query);
         StringBuilder sb = new StringBuilder();
         boolean recursive = query.select.recursive;
@@ -577,7 +577,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         return new PreparedAssetQuery(sb.toString(), binders);
     }
 
-    protected String buildSelectString(AbstractAssetQuery query, int level, List<ParameterBinder> binders) {
+    protected String buildSelectString(BaseAssetQuery query, int level, List<ParameterBinder> binders) {
         // level = 1 is main query select
         // level = 2 is union select
         // level = 3 is CTE select
@@ -632,7 +632,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         return sb.toString();
     }
 
-    protected String buildAttributeSelect(String[] attributeNames, AbstractAssetQuery.Access access, boolean namesOnly, List<ParameterBinder> binders) {
+    protected String buildAttributeSelect(String[] attributeNames, Access access, boolean namesOnly, List<ParameterBinder> binders) {
         if (attributeNames == null && access == PRIVATE_READ && !namesOnly) {
             return ", A.ATTRIBUTES as ATTRIBUTES";
         }
@@ -693,7 +693,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         return sb.toString();
     }
 
-    protected String buildFromString(AbstractAssetQuery query, int level) {
+    protected String buildFromString(BaseAssetQuery query, int level) {
         // level = 1 is main query
         // level = 2 is union
         // level = 3 is CTE
@@ -733,7 +733,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         return sb.toString();
     }
 
-    protected String buildOrderByString(AbstractAssetQuery query) {
+    protected String buildOrderByString(BaseAssetQuery query) {
         StringBuilder sb = new StringBuilder();
 
         if (query.id != null && !query.select.recursive) {
@@ -766,7 +766,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         return sb.toString();
     }
 
-    protected String buildWhereClause(AbstractAssetQuery query, int level, List<ParameterBinder> binders) {
+    protected String buildWhereClause(BaseAssetQuery query, int level, List<ParameterBinder> binders) {
         // level = 1 is main query
         // level = 2 is union
         // level = 3 is CTE
@@ -831,7 +831,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 binders.add(st -> st.setString(pos, query.userId));
             }
 
-            if (level == 1 && query.select.access == AbstractAssetQuery.Access.PUBLIC_READ) {
+            if (level == 1 && query.select.access == Access.PUBLIC_READ) {
                 sb.append(" and A.ACCESS_PUBLIC_READ is true");
             }
 
@@ -843,7 +843,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             }
 
             if (query.attributeMetaPredicates != null) {
-                for (AbstractAssetQuery.AttributeMetaPredicate attributeMetaPredicate : query.attributeMetaPredicates) {
+                for (AttributeMetaPredicate attributeMetaPredicate : query.attributeMetaPredicates) {
                     String attributeMetaFilter = buildAttributeMetaFilter(attributeMetaPredicate, binders);
 
                     if (attributeMetaFilter.length() > 0) {
@@ -1024,14 +1024,14 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                     case DOUBLE:
                     default:
                         binders.add(st -> st.setDouble(pos, numberPredicate.value));
-                        if (numberPredicate.operatorMatch == AbstractAssetQuery.OperatorMatch.BETWEEN) {
+                        if (numberPredicate.operatorMatch == OperatorMatch.BETWEEN) {
                             final int pos2 = binders.size() + 1;
                             binders.add(st -> st.setDouble(pos, numberPredicate.rangeValue));
                         }
                         break;
                     case INTEGER:
                         binders.add(st -> st.setInt(pos, (int) numberPredicate.value));
-                        if (numberPredicate.operatorMatch == AbstractAssetQuery.OperatorMatch.BETWEEN) {
+                        if (numberPredicate.operatorMatch == OperatorMatch.BETWEEN) {
                             final int pos2 = binders.size() + 1;
                             binders.add(st -> st.setInt(pos2, (int) numberPredicate.rangeValue));
                         }
@@ -1043,7 +1043,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         return attributeBuilder.toString();
     }
 
-    protected ServerAsset mapResultTuple(AbstractAssetQuery query, ResultSet rs) throws SQLException {
+    protected ServerAsset mapResultTuple(BaseAssetQuery query, ResultSet rs) throws SQLException {
         switch (query.select.include) {
             case ONLY_ID_AND_NAME:
             case ONLY_ID_AND_NAME_AND_ATTRIBUTES:

@@ -137,7 +137,7 @@ public class MapActivity extends AssetBrowsingActivity<MapPlace> implements MapV
 
         if (!view.isMapInitialised()) {
             environment.getRequestService().sendAndReturn(
-                objectValueMapper,
+                objectValueMapper::read,
                 mapResource::getSettings,
                 200,
                 view::initialiseMap,

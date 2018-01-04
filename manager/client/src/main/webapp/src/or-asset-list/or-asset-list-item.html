@@ -1,0 +1,40 @@
+<dom-module id="or-asset-list-item">
+
+    <template>
+        <slot id="slot"></slot>
+    </template>
+
+    <script>
+        class OpenRemoteAssetListItem extends Polymer.TemplateStamp(Polymer.Element) {
+            static get is() {
+                return "or-asset-list-item";
+            }
+
+            static get properties() {
+                return {
+                    asset: {
+                        type: Object,
+                    },
+                };
+            }
+
+            ready() {
+                super.ready();
+            }
+
+            connectedCallback() {
+                super.connectedCallback();
+
+                // Get the slotted template, stamp it, and append to host element
+                let assetTemplate = this.$.slot.assignedNodes().find((e) => {
+                    return e instanceof HTMLTemplateElement;
+                });
+                let stampedTemplate = this._stampTemplate(assetTemplate);
+                this.shadowRoot.host.appendChild(stampedTemplate);
+            }
+        }
+
+        registerOpenRemoteElement(OpenRemoteAssetListItem, OpenRemoteAssetListItem.is, "AssetListItem");
+    </script>
+
+</dom-module>

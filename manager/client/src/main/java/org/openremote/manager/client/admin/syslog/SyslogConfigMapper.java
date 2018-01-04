@@ -22,8 +22,8 @@ package org.openremote.manager.client.admin.syslog;
 import com.github.nmorel.gwtjackson.client.ObjectMapper;
 import com.github.nmorel.gwtjackson.client.annotation.JsonMixIns;
 import org.openremote.components.client.interop.jackson.DefaultJsonMixin;
-import org.openremote.model.http.EntityReader;
-import org.openremote.model.http.EntityWriter;
+import org.openremote.components.client.rest.EntityReader;
+import org.openremote.components.client.rest.EntityWriter;
 import org.openremote.manager.shared.syslog.SyslogConfig;
 
 @JsonMixIns({@JsonMixIns.JsonMixIn(target = SyslogConfig.class, mixIn = DefaultJsonMixin.class)})

@@ -27,8 +27,8 @@ import org.openremote.model.event.bus.EventBus;
 import org.openremote.model.event.bus.EventRegistration;
 import org.openremote.manager.client.rules.AbstractRulesEditorActivity;
 import org.openremote.manager.client.rules.RulesEditor;
-import org.openremote.model.http.EntityReader;
-import org.openremote.model.http.EntityWriter;
+import org.openremote.components.client.rest.EntityReader;
+import org.openremote.components.client.rest.EntityWriter;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.interop.Consumer;
 import org.openremote.model.rules.GlobalRuleset;
@@ -72,7 +72,7 @@ public class GlobalRulesEditorActivity
     }
 
     @Override
-    protected Consumer<RequestParams<GlobalRuleset>> loadRequestConsumer() {
+    protected Consumer<RequestParams<Void, GlobalRuleset>> loadRequestConsumer() {
         return params -> rulesetResource.getGlobalRuleset(params, rulesetId);
     }
 
@@ -82,7 +82,7 @@ public class GlobalRulesEditorActivity
     }
 
     @Override
-    protected Consumer<RequestParams<Void>> createRequestConsumer() {
+    protected Consumer<RequestParams<GlobalRuleset, Void>> createRequestConsumer() {
         return params -> rulesetResource.createGlobalRuleset(params, ruleset);
     }
 
@@ -92,7 +92,7 @@ public class GlobalRulesEditorActivity
     }
 
     @Override
-    protected Consumer<RequestParams<Void>> updateRequestConsumer() {
+    protected Consumer<RequestParams<GlobalRuleset, Void>> updateRequestConsumer() {
         return params -> rulesetResource.updateGlobalRuleset(params, rulesetId, ruleset);
     }
 
@@ -102,7 +102,7 @@ public class GlobalRulesEditorActivity
     }
 
     @Override
-    protected Consumer<RequestParams<Void>> deleteRequestConsumer() {
+    protected Consumer<RequestParams<Void, Void>> deleteRequestConsumer() {
         return params -> rulesetResource.deleteGlobalRuleset(params, rulesetId);
     }
 

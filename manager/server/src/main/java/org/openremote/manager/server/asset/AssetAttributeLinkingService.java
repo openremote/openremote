@@ -21,7 +21,10 @@ package org.openremote.manager.server.asset;
 
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
-import org.openremote.model.asset.*;
+import org.openremote.model.asset.AssetAttribute;
+import org.openremote.model.asset.AssetMeta;
+import org.openremote.model.asset.AssetQuery;
+import org.openremote.model.asset.AssetState;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeLink;
 import org.openremote.model.attribute.AttributeRef;
@@ -35,6 +38,8 @@ import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
 
+import static org.openremote.model.asset.AssetQuery.Include;
+import static org.openremote.model.asset.AssetQuery.Select;
 import static org.openremote.model.attribute.MetaItem.isMetaNameEqualTo;
 
 /**
@@ -154,7 +159,7 @@ public class AssetAttributeLinkingService implements ContainerService, Consumer<
         return attributeLink.getConverter()
             .map(
                 converter -> {
-                    String converterKey = originalValue == null ? "NULL": originalValue.toString().toUpperCase(Locale.ROOT);
+                    String converterKey = originalValue == null ? "NULL" : originalValue.toString().toUpperCase(Locale.ROOT);
                     Optional<Value> converterValue = converter.get(converterKey);
                     // Convert the value
                     return converterValue
@@ -189,7 +194,7 @@ public class AssetAttributeLinkingService implements ContainerService, Consumer<
                         LOG.fine("Cannot toggle attribute value as attribute is not of type BOOLEAN: " + linkedAttributeRef);
                         return new Pair<>(false, null);
                     }
-                    return new Pair<>(true, Values.create(!((BooleanValue)currentValue).getBoolean()));
+                    return new Pair<>(true, Values.create(!((BooleanValue) currentValue).getBoolean()));
                 } catch (NoSuchElementException e) {
                     LOG.fine("The attribute doesn't exist so ignoring toggle value request: " + linkedAttributeRef);
                     return new Pair<>(false, null);
@@ -204,7 +209,7 @@ public class AssetAttributeLinkingService implements ContainerService, Consumer<
                         return new Pair<>(false, null);
                     }
                     int change = converter == AttributeLink.ConverterType.INCREMENT ? +1 : -1;
-                    return new Pair<>(true, Values.create(((NumberValue)currentValue).getNumber() + change));
+                    return new Pair<>(true, Values.create(((NumberValue) currentValue).getNumber() + change));
                 } catch (NoSuchElementException e) {
                     LOG.fine("The attribute doesn't exist so ignoring increment/decrement value request: " + linkedAttributeRef);
                     return new Pair<>(false, null);
@@ -218,7 +223,7 @@ public class AssetAttributeLinkingService implements ContainerService, Consumer<
         ServerAsset asset = assetStorageService.find(
             new AssetQuery()
                 .id(attributeRef.getEntityId())
-                .select(new AbstractAssetQuery.Select(AbstractAssetQuery.Include.ALL, false, attributeRef.getAttributeName()))
+                .select(new Select(Include.ALL, false, attributeRef.getAttributeName()))
         );
 
         Optional<AssetAttribute> attribute;

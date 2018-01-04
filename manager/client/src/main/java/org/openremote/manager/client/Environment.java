@@ -26,7 +26,7 @@ import org.openremote.components.client.style.WidgetStyle;
 import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.service.EventService;
 import org.openremote.model.event.bus.EventBus;
-import org.openremote.model.http.RequestService;
+import org.openremote.components.client.rest.RequestService;
 
 /**
  * Bundle all typically needed dependencies of activities/presenters, so

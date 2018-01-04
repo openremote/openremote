@@ -22,13 +22,14 @@ package org.openremote.model.http;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
+import org.openremote.model.interop.Function;
 
 import javax.ws.rs.HeaderParam;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 
 @JsType
-public class RequestParams<OUT> {
+public class RequestParams<IN, OUT> {
 
     @HeaderParam(HttpHeaders.AUTHORIZATION)
     @JsProperty(name = HttpHeaders.AUTHORIZATION)
@@ -38,7 +39,7 @@ public class RequestParams<OUT> {
     public String entity;
 
     @JsProperty(name = "$entityWriter")
-    public EntityWriter entityWriter;
+    public Function<IN, String> entityWriter;
 
     @JsProperty(name = "$contentType")
     public String contentType;
@@ -74,7 +75,7 @@ public class RequestParams<OUT> {
         this.accepts = MediaType.APPLICATION_JSON;
     }
 
-    public RequestParams<OUT> withBearerAuth(String authorization) {
+    public RequestParams<IN, OUT> withBearerAuth(String authorization) {
         this.authorization = "Bearer " + authorization;
         return this;
     }
@@ -85,42 +86,42 @@ public class RequestParams<OUT> {
         return authorization.split(" ")[1];
     }
 
-    public RequestParams<OUT> setEntity(String entity) {
+    public RequestParams<IN, OUT> setEntity(String entity) {
         this.entity = entity;
         return this;
     }
 
-    public RequestParams<OUT> setEntityWriter(EntityWriter entityWriter) {
+    public RequestParams<IN, OUT> setEntityWriter(Function<IN, String> entityWriter) {
         this.entityWriter = entityWriter;
         return this;
     }
 
-    public RequestParams<OUT> setContentType(String contentType) {
+    public RequestParams<IN, OUT> setContentType(String contentType) {
         this.contentType = contentType;
         return this;
     }
 
-    public RequestParams<OUT> setAccepts(String accepts) {
+    public RequestParams<IN, OUT> setAccepts(String accepts) {
         this.accepts = accepts;
         return this;
     }
 
-    public RequestParams<OUT> setApiURL(String apiURL) {
+    public RequestParams<IN, OUT> setApiURL(String apiURL) {
         this.apiURL = apiURL;
         return this;
     }
 
-    public RequestParams<OUT> setUsername(String username) {
+    public RequestParams<IN, OUT> setUsername(String username) {
         this.username = username;
         return this;
     }
 
-    public RequestParams<OUT> setPassword(String password) {
+    public RequestParams<IN, OUT> setPassword(String password) {
         this.password = password;
         return this;
     }
 
-    public RequestParams<OUT> setAsync(boolean async) {
+    public RequestParams<IN, OUT> setAsync(boolean async) {
         this.async = async;
         return this;
     }

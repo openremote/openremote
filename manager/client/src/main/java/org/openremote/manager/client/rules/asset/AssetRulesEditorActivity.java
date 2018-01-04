@@ -31,8 +31,8 @@ import org.openremote.manager.shared.rules.RulesetResource;
 import org.openremote.manager.shared.security.Tenant;
 import org.openremote.model.event.bus.EventBus;
 import org.openremote.model.event.bus.EventRegistration;
-import org.openremote.model.http.EntityReader;
-import org.openremote.model.http.EntityWriter;
+import org.openremote.components.client.rest.EntityReader;
+import org.openremote.components.client.rest.EntityWriter;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.interop.Consumer;
 import org.openremote.model.rules.AssetRuleset;
@@ -98,7 +98,7 @@ public class AssetRulesEditorActivity
     }
 
     @Override
-    protected Consumer<RequestParams<AssetRuleset>> loadRequestConsumer() {
+    protected Consumer<RequestParams<Void, AssetRuleset>> loadRequestConsumer() {
         return params -> rulesetResource.getAssetRuleset(params, rulesetId);
     }
 
@@ -108,7 +108,7 @@ public class AssetRulesEditorActivity
     }
 
     @Override
-    protected Consumer<RequestParams<Void>> createRequestConsumer() {
+    protected Consumer<RequestParams<AssetRuleset, Void>> createRequestConsumer() {
         return params -> rulesetResource.createAssetRuleset(params, ruleset);
     }
 
@@ -118,7 +118,7 @@ public class AssetRulesEditorActivity
     }
 
     @Override
-    protected Consumer<RequestParams<Void>> updateRequestConsumer() {
+    protected Consumer<RequestParams<AssetRuleset, Void>> updateRequestConsumer() {
         return params -> rulesetResource.updateAssetRuleset(params, rulesetId, ruleset);
     }
 
@@ -128,7 +128,7 @@ public class AssetRulesEditorActivity
     }
 
     @Override
-    protected Consumer<RequestParams<Void>> deleteRequestConsumer() {
+    protected Consumer<RequestParams<Void, Void>> deleteRequestConsumer() {
         return params -> rulesetResource.deleteAssetRuleset(params, rulesetId);
     }
 

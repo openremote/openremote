@@ -22,7 +22,7 @@ package org.openremote.manager.client.rules.global;
 import com.github.nmorel.gwtjackson.client.ObjectMapper;
 import com.github.nmorel.gwtjackson.client.annotation.JsonMixIns;
 import org.openremote.components.client.interop.jackson.DefaultJsonMixin;
-import org.openremote.model.http.EntityReader;
+import org.openremote.components.client.rest.EntityReader;
 import org.openremote.model.rules.GlobalRuleset;
 
 @JsonMixIns({@JsonMixIns.JsonMixIn(target = GlobalRuleset.class, mixIn = DefaultJsonMixin.class)})

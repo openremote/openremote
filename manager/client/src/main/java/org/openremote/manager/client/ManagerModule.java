@@ -26,9 +26,10 @@ import com.google.gwt.place.shared.PlaceHistoryHandler;
 import com.google.gwt.place.shared.PlaceHistoryMapper;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
+import org.openremote.components.client.AppSecurity;
 import org.openremote.components.client.OpenRemoteApp;
 import org.openremote.components.client.rest.REST;
-import org.openremote.components.client.AppSecurity;
+import org.openremote.components.client.rest.RequestService;
 import org.openremote.components.client.style.WidgetStyle;
 import org.openremote.manager.client.event.*;
 import org.openremote.manager.client.http.ConstraintViolationReportMapper;
@@ -40,7 +41,6 @@ import org.openremote.manager.client.service.EventServiceImpl;
 import org.openremote.manager.shared.security.Tenant;
 import org.openremote.manager.shared.security.TenantResource;
 import org.openremote.model.event.bus.EventBus;
-import org.openremote.model.http.RequestService;
 
 public class ManagerModule extends AbstractGinModule {
 
@@ -122,8 +122,7 @@ public class ManagerModule extends AbstractGinModule {
     @Singleton
     public RequestService getRequestService(AppSecurity appSecurity,
                                             ConstraintViolationReportMapper constraintViolationReportMapper) {
-        REST.Configuration.setDefaults(appSecurity.getAuthenticatedRealm());
-        return new RequestService(appSecurity::setCredentialsOnRequestParams, constraintViolationReportMapper);
+        return new RequestService(appSecurity, constraintViolationReportMapper);
     }
 
     @Provides

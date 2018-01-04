@@ -27,8 +27,8 @@ import org.openremote.manager.shared.asset.AssetProcessingException;
 import org.openremote.manager.shared.asset.AssetResource;
 import org.openremote.manager.shared.security.Tenant;
 import org.openremote.model.Constants;
+import org.openremote.model.asset.BaseAssetQuery.Select;
 import org.openremote.model.asset.*;
-import org.openremote.model.asset.AbstractAssetQuery.Select;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.Meta;
@@ -46,7 +46,7 @@ import java.util.logging.Logger;
 
 import static javax.ws.rs.core.Response.Status.*;
 import static org.openremote.container.Container.JSON;
-import static org.openremote.model.asset.AbstractAssetQuery.Access.*;
+import static org.openremote.model.asset.AssetQuery.*;
 import static org.openremote.model.attribute.AttributeEvent.Source.CLIENT;
 import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 
@@ -77,15 +77,15 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             if (!isRestrictedUser()) {
                 List<ServerAsset> result = assetStorageService.findAll(
                     new AssetQuery()
-                        .parent(new AbstractAssetQuery.ParentPredicate(true))
-                        .tenant(new AbstractAssetQuery.TenantPredicate().realm(getAuthenticatedRealm()))
+                        .parent(new ParentPredicate(true))
+                        .tenant(new TenantPredicate().realm(getAuthenticatedRealm()))
                 );
                 return result.toArray(new Asset[result.size()]);
             }
 
             List<ServerAsset> assets = assetStorageService.findAll(
                 new AssetQuery().select(
-                    new Select(AbstractAssetQuery.Include.ALL_EXCEPT_PATH_AND_ATTRIBUTES, RESTRICTED_READ)
+                    new Select(Include.ALL_EXCEPT_PATH_AND_ATTRIBUTES, Access.RESTRICTED_READ)
                 ).userId(getUserId())
             );
 
@@ -185,7 +185,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                 if (!assetStorageService.isUserAsset(getUserId(), assetId)) {
                     throw new WebApplicationException(FORBIDDEN);
                 }
-                asset = assetStorageService.find(assetId, true, RESTRICTED_READ);
+                asset = assetStorageService.find(assetId, true, Access.RESTRICTED_READ);
             } else {
                 asset = assetStorageService.find(assetId, true);
             }
@@ -436,8 +436,8 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                 // A restricted user may not query private asset data, only restricted or public
                 if (query.select == null)
                     query.select = new Select();
-                if (query.select.access == null || query.select.access == PRIVATE_READ)
-                    query.select.filterAccess(RESTRICTED_READ);
+                if (query.select.access == null || query.select.access == Access.PRIVATE_READ)
+                    query.select.filterAccess(Access.RESTRICTED_READ);
             }
 
             Tenant tenant = query.tenantPredicate != null
@@ -458,7 +458,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
 
             // This replicates behaviour of old getRoot and getChildren methods
             if (!isSuperUser() || query.parentPredicate == null || query.parentPredicate.noParent) {
-                query.tenant(new AbstractAssetQuery.TenantPredicate(tenant.getId()));
+                query.tenant(new TenantPredicate(tenant.getId()));
             }
 
             List<ServerAsset> result = assetStorageService.findAll(query);
@@ -480,16 +480,16 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
 
         // Force realm to be request realm
         if (query.tenantPredicate == null) {
-            query.tenant(new AbstractAssetQuery.TenantPredicate().realm(requestRealm));
+            query.tenant(new TenantPredicate().realm(requestRealm));
         } else {
             query.tenantPredicate.realm = requestRealm;
         }
 
         // Force public access filter on query
         if (query.select == null) {
-            query.select(new Select().filterAccess(PUBLIC_READ));
+            query.select(new Select().filterAccess(Access.PUBLIC_READ));
         } else {
-            query.select.filterAccess(PUBLIC_READ);
+            query.select.filterAccess(Access.PUBLIC_READ);
         }
 
         try {

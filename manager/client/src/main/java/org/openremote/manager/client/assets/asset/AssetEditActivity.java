@@ -21,6 +21,8 @@ package org.openremote.manager.client.assets.asset;
 
 import com.google.gwt.user.client.ui.IsWidget;
 import com.google.inject.Provider;
+import org.openremote.components.client.interop.jackson.FileInfoMapper;
+import org.openremote.components.client.interop.value.ObjectValueMapper;
 import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.app.dialog.JsonEditor;
 import org.openremote.manager.client.assets.*;
@@ -31,8 +33,6 @@ import org.openremote.manager.client.assets.browser.BrowserTreeNode;
 import org.openremote.manager.client.assets.browser.TenantTreeNode;
 import org.openremote.manager.client.event.ShowFailureEvent;
 import org.openremote.manager.client.event.ShowSuccessEvent;
-import org.openremote.components.client.interop.jackson.FileInfoMapper;
-import org.openremote.components.client.interop.value.ObjectValueMapper;
 import org.openremote.manager.client.widget.AttributeLinkEditor;
 import org.openremote.manager.client.widget.AttributeRefEditor;
 import org.openremote.manager.client.widget.FormButton;
@@ -41,15 +41,13 @@ import org.openremote.manager.shared.agent.AgentResource;
 import org.openremote.manager.shared.asset.AssetResource;
 import org.openremote.manager.shared.map.MapResource;
 import org.openremote.manager.shared.security.Tenant;
-import org.openremote.model.http.ConstraintViolation;
 import org.openremote.model.ValueHolder;
 import org.openremote.model.asset.*;
-import org.openremote.model.asset.AbstractAssetQuery.AttributeMetaPredicate;
-import org.openremote.model.asset.AbstractAssetQuery.BooleanPredicate;
 import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.asset.agent.ProtocolConfiguration;
 import org.openremote.model.asset.agent.ProtocolDescriptor;
 import org.openremote.model.attribute.*;
+import org.openremote.model.http.ConstraintViolation;
 import org.openremote.model.interop.Consumer;
 import org.openremote.model.util.EnumUtil;
 import org.openremote.model.util.Pair;
@@ -63,6 +61,7 @@ import java.util.stream.Collectors;
 
 import static org.openremote.manager.client.http.RequestExceptionHandler.handleRequestException;
 import static org.openremote.model.asset.AssetAttribute.attributesFromJson;
+import static org.openremote.model.asset.AssetQuery.*;
 import static org.openremote.model.attribute.Attribute.ATTRIBUTE_NAME_VALIDATOR;
 import static org.openremote.model.attribute.Attribute.isAttributeNameEqualTo;
 import static org.openremote.model.attribute.MetaItem.isMetaNameEqualTo;
@@ -363,7 +362,7 @@ public class AssetEditActivity
             // Retrieve agents in the same realm as the asset (if it has been assigned a realm otherwise
             // the query will be automatically restricted to the logged in users realm)
             if (!isNullOrEmpty(asset.getRealmId())) {
-                query.tenant(new AbstractAssetQuery.TenantPredicate(asset.getRealmId()));
+                query.tenant(new TenantPredicate(asset.getRealmId()));
             }
 
             // Agents must have protocol configurations
@@ -378,7 +377,7 @@ public class AssetEditActivity
             // Limit to assets that have the same realm as the asset being edited (if it has been assigned a realm
             // otherwise the query will be automatically restricted to the logged in users realm)
             if (!isNullOrEmpty(asset.getRealmId())) {
-                query.tenant(new AbstractAssetQuery.TenantPredicate(asset.getRealmId()));
+                query.tenant(new AssetQuery.TenantPredicate(asset.getRealmId()));
             }
         }
 

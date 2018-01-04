@@ -31,7 +31,7 @@ import java.util.Locale;
  * Encapsulate asset query restriction, projection, and ordering of results.
  */
 @SuppressWarnings("unchecked")
-public class AbstractAssetQuery<CHILD extends AbstractAssetQuery<CHILD>> {
+public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> {
 
     public enum Include {
         ALL_EXCEPT_PATH_AND_ATTRIBUTES,
@@ -670,7 +670,7 @@ public class AbstractAssetQuery<CHILD extends AbstractAssetQuery<CHILD>> {
     // Ordering
     public OrderBy orderBy;
 
-    protected AbstractAssetQuery() {
+    protected BaseAssetQuery() {
     }
 
     public CHILD select(Select select) {

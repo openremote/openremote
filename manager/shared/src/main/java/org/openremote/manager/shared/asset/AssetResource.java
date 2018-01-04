@@ -44,17 +44,25 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
  * </li>
  * <li>
  * A <em>restricted</em> user is linked to a subset of assets within its authenticated realm and
- * may have roles that allow read and/or write access to protected asset details (see
+ * may have roles that allow read and/or write access to some asset details (see
  * {@link org.openremote.model.asset.UserAsset}).
  * </li> </ul>
  * <p>
- * The only operations a restricted user is able to perform are {@link #getCurrentUserAssets}, {@link #get}, {@link
- * #update}, and {@link #writeAttributeValue}.
+ * The only operations, always limited to linked assets, a restricted user is able to perform are:
+ * <ul>
+ *     <li>{@link #getCurrentUserAssets}</li>
+ *     <li>{@link #queryAssets}</li>
+ *     <li>{@link #queryPublicAssets}</li>
+ *     <li>{@link #get}</li>
+ *     <li>{@link #update}</li>
+ *     <li>{@link #writeAttributeValue}</li>
+ * </ul>
  */
 @Path("asset")
 @JsType(isNative = true)
 public interface AssetResource {
 
+    // TODO This returns the same as #queryAssets, can it be removed?
     /**
      * Retrieve the linked assets of the currently authenticated user. If the request is made by the superuser, an empty
      * result is returned. If the request is made by a regular user, but the user has no linked assets and is therefore
@@ -216,9 +224,10 @@ public interface AssetResource {
      * Retrieve assets using an {@link AssetQuery}.
      * <p>
      * If the authenticated user is the superuser then assets referenced in the query or returned by the query can be in
-     * any realm. Otherwise assets must be in the same realm as the authenticated user. An empty result is returned if
-     * the user does not have access to the assets or if the user is restricted. What is populated on the returned assets
-     * is determined by the {@link AssetQuery#select} value.
+     * any realm. Otherwise assets must be in the same realm as the authenticated user, and for a restricted user, the
+     * assets must be linked to the user. An empty result is returned if the user does not have access to the assets.
+     * What is populated on the returned assets is determined by the
+     * {@link AssetQuery#select} value.
      */
     @POST
     @Path("query")

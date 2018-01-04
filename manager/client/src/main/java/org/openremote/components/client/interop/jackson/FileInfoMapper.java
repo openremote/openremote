@@ -21,7 +21,7 @@ package org.openremote.components.client.interop.jackson;
 
 import com.github.nmorel.gwtjackson.client.ObjectMapper;
 import com.github.nmorel.gwtjackson.client.annotation.JsonMixIns;
-import org.openremote.model.http.EntityWriter;
+import org.openremote.components.client.rest.EntityWriter;
 import org.openremote.model.file.FileInfo;
 
 @JsonMixIns({@JsonMixIns.JsonMixIn(target = FileInfo.class, mixIn = DefaultJsonMixin.class)})

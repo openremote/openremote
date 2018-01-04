@@ -23,7 +23,7 @@ import com.github.nmorel.gwtjackson.client.ObjectMapper;
 import com.github.nmorel.gwtjackson.client.annotation.JsonMixIns;
 import org.openremote.components.client.interop.jackson.DefaultJsonMixin;
 import org.openremote.manager.shared.apps.ConsoleApp;
-import org.openremote.model.http.EntityReader;
+import org.openremote.components.client.rest.EntityReader;
 
 @JsonMixIns({@JsonMixIns.JsonMixIn(target = ConsoleApp.class, mixIn = DefaultJsonMixin.class)})
 public interface ConsoleAppArrayMapper

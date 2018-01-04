@@ -26,8 +26,8 @@ import org.openremote.manager.client.mvp.AcceptsView;
 import org.openremote.manager.client.mvp.AppActivity;
 import org.openremote.manager.client.rules.AbstractRulesEditorActivity;
 import org.openremote.manager.client.rules.RulesEditor;
-import org.openremote.model.http.EntityReader;
-import org.openremote.model.http.EntityWriter;
+import org.openremote.components.client.rest.EntityReader;
+import org.openremote.components.client.rest.EntityWriter;
 import org.openremote.model.http.RequestParams;
 import org.openremote.manager.shared.rules.RulesetResource;
 import org.openremote.model.interop.Consumer;
@@ -98,7 +98,7 @@ public class TenantRulesEditorActivity
     }
 
     @Override
-    protected Consumer<RequestParams<TenantRuleset>> loadRequestConsumer() {
+    protected Consumer<RequestParams<Void, TenantRuleset>> loadRequestConsumer() {
         return params -> rulesetResource.getTenantRuleset(params, rulesetId);
     }
 
@@ -108,7 +108,7 @@ public class TenantRulesEditorActivity
     }
 
     @Override
-    protected Consumer<RequestParams<Void>> createRequestConsumer() {
+    protected Consumer<RequestParams<TenantRuleset, Void>> createRequestConsumer() {
         return params -> rulesetResource.createTenantRuleset(params, ruleset);
     }
 
@@ -118,7 +118,7 @@ public class TenantRulesEditorActivity
     }
 
     @Override
-    protected Consumer<RequestParams<Void>> updateRequestConsumer() {
+    protected Consumer<RequestParams<TenantRuleset, Void>> updateRequestConsumer() {
         return params -> rulesetResource.updateTenantRuleset(params, rulesetId, ruleset);
     }
 
@@ -128,7 +128,7 @@ public class TenantRulesEditorActivity
     }
 
     @Override
-    protected Consumer<RequestParams<Void>> deleteRequestConsumer() {
+    protected Consumer<RequestParams<Void, Void>> deleteRequestConsumer() {
         return params -> rulesetResource.updateTenantRuleset(params, rulesetId);
     }
 
