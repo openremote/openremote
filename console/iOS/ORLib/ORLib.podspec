@@ -9,7 +9,7 @@ Pod::Spec.new do |s|
   s.name = "ORLib"
   s.summary = "The OpenRemote library to create console apps."
   s.requires_arc = true
-  s.version = '1.0.0'
+  s.version = '1.0.1'
   s.authors = 'OpenRemote'
   s.homepage = "http://www.openremote.com/community/"
   s.source = { :git => 'https://github.com/openremote/openremote.git', :tag => s.version.to_s }
