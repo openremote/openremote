@@ -173,8 +173,6 @@ open class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMess
         myWebView?.uiDelegate = self;
         myWebView?.navigationDelegate = self;
         view.addSubview(myWebView!)
-        
-        self.login()
     }
     
     open func loadURL(url : URL) {
