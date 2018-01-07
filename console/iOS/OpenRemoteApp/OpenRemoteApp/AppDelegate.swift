@@ -13,10 +13,10 @@ import ORLib
 class AppDelegate: ORAppDelegate {
     override func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplicationLaunchOptionsKey : Any]?) -> Bool {
 
-        ORServer.hostURL = "eindhoven.nl"
-        ORServer.realm = "blok61"
+        ORServer.hostURL = "example.com"
+        ORServer.realm = "example"
 
-        ORAppGroup.entitlement = "group.io.openremote.blok61"
+        ORAppGroup.entitlement = "group.com.company.example"
 
         return super.application(application, didFinishLaunchingWithOptions: launchOptions);
     }
