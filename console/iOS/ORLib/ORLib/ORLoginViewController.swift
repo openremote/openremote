@@ -58,7 +58,9 @@ open class ORLoginViewController: UIViewController {
         // This is some leftover from the initial way the app was architected, must be eventually cleaned up
         
         if (self.presentedViewController == nil) {
-            self.present(orViewController, animated: true, completion: nil)
+            self.present(orViewController, animated: true, completion: {
+                self.orViewController.login()
+            })
         }
     }
     
