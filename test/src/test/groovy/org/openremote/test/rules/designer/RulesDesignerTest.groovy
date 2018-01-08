@@ -25,7 +25,7 @@ Requires in test/build.xml:
 
     compile "org.hamcrest:hamcrest-library:1.3"
 
-Requires in manager/server/build.xml
+Requires in manager/build.xml
 
     compile "org.drools:drools-workbench-models-commons:$droolsVersion"
 

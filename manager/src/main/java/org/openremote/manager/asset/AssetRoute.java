@@ -1,0 +1,302 @@
+/*
+ * Copyright 2016, OpenRemote Inc.
+ *
+ * See the CONTRIBUTORS.txt file in the distribution for a
+ * full listing of individual contributors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.openremote.manager.asset;
+
+import org.apache.camel.Exchange;
+import org.apache.camel.Predicate;
+import org.apache.camel.Processor;
+import org.openremote.agent.protocol.Protocol;
+import org.openremote.container.persistence.PersistenceEvent;
+import org.openremote.container.security.AuthContext;
+import org.openremote.container.timer.TimerService;
+import org.openremote.manager.agent.AgentService;
+import org.openremote.manager.security.ManagerIdentityService;
+import org.openremote.model.asset.AssetProcessingException;
+import org.openremote.model.asset.AssetProcessingException.Reason;
+import org.openremote.model.Constants;
+import org.openremote.model.ValidationFailure;
+import org.openremote.model.asset.Asset;
+import org.openremote.model.asset.AssetAttribute;
+import org.openremote.model.asset.AssetState;
+import org.openremote.model.asset.AssetType;
+import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.attribute.AttributeEvent.Source;
+import org.openremote.model.attribute.AttributeExecuteStatus;
+import org.openremote.model.event.Event;
+import org.openremote.model.security.ClientRole;
+import org.openremote.model.value.Values;
+
+import java.util.Date;
+import java.util.List;
+import java.util.Optional;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import static org.openremote.model.asset.agent.AgentLink.getAgentLink;
+import static org.openremote.model.attribute.AttributeEvent.HEADER_SOURCE;
+
+public final class AssetRoute {
+
+    public static final String HEADER_ASSET = AssetRoute.class.getName() + ".ASSET";
+    public static final String HEADER_ATTRIBUTE = AssetRoute.class.getName() + ".ATTRIBUTE";
+    public static final String HEADER_ASSET_STATE = AssetRoute.class.getName() + ".ASSET_STATE";
+
+    public static Predicate isPersistenceEventForEntityType(Class<?> type) {
+        return exchange -> {
+            Class<?> entityType = exchange.getIn().getHeader(PersistenceEvent.HEADER_ENTITY_TYPE, Class.class);
+            return type.isAssignableFrom(entityType);
+        };
+    }
+
+    public static Predicate isPersistenceEventForAssetType(AssetType assetType) {
+        return exchange -> {
+            if (!(exchange.getIn().getBody() instanceof PersistenceEvent))
+                return false;
+            PersistenceEvent persistenceEvent = exchange.getIn().getBody(PersistenceEvent.class);
+            Asset asset = (Asset) persistenceEvent.getEntity();
+            return asset.getWellKnownType() == assetType;
+        };
+    }
+
+    public static Processor extractAttributeEventDetails(AssetStorageService assetStorageService) {
+        return exchange -> {
+            AttributeEvent event = exchange.getIn().getBody(AttributeEvent.class);
+            if (event.getEntityId() == null || event.getEntityId().isEmpty())
+                return;
+            if (event.getAttributeName() == null || event.getAttributeName().isEmpty())
+                return;
+
+            ServerAsset asset;
+            if (exchange.getIn().getHeader(HEADER_ASSET) == null) {
+                asset = assetStorageService.find(event.getEntityId(), true);
+                if (asset == null)
+                    return;
+                exchange.getIn().setHeader(HEADER_ASSET, asset);
+            } else {
+                asset = exchange.getIn().getHeader(HEADER_ASSET, ServerAsset.class);
+            }
+
+            AssetAttribute attribute;
+            if (exchange.getIn().getHeader(HEADER_ATTRIBUTE) == null) {
+                attribute = asset.getAttribute(event.getAttributeName()).orElse(null);
+                if (attribute == null)
+                    return;
+                exchange.getIn().setHeader(HEADER_ATTRIBUTE, attribute);
+            }
+        };
+    }
+
+    public static Processor validateAttributeEvent() {
+        return exchange -> {
+
+            AttributeEvent event = exchange.getIn().getBody(AttributeEvent.class);
+
+            Source source = exchange.getIn().getHeader(AttributeEvent.HEADER_SOURCE, () -> null, Source.class);
+            if (source == null) {
+                throw new AssetProcessingException(Reason.MISSING_SOURCE);
+            }
+
+            ServerAsset asset = exchange.getIn().getHeader(HEADER_ASSET, ServerAsset.class);
+            if (asset == null) {
+                throw new AssetProcessingException(Reason.ASSET_NOT_FOUND);
+            }
+
+            AssetAttribute attribute = exchange.getIn().getHeader(HEADER_ATTRIBUTE, AssetAttribute.class);
+            if (attribute == null) {
+                throw new AssetProcessingException(Reason.ATTRIBUTE_NOT_FOUND);
+            }
+
+            if (asset.getWellKnownType() == AssetType.AGENT) {
+                throw new AssetProcessingException(Reason.ILLEGAL_AGENT_UPDATE);
+            }
+
+            // For executable attributes, non-sensor sources can set a writable attribute execute status
+            if (attribute.isExecutable() && source != Source.SENSOR) {
+                Optional<AttributeExecuteStatus> status = event.getValue()
+                    .flatMap(Values::getString)
+                    .flatMap(AttributeExecuteStatus::fromString);
+
+                if (status.isPresent() && !status.get().isWrite()) {
+                    throw new AssetProcessingException(Reason.INVALID_ATTRIBUTE_EXECUTE_STATUS);
+                }
+            }
+        };
+    }
+
+    public static Processor validateAttributeEventFromClient(AssetStorageService assetStorageService,
+                                                             ManagerIdentityService identityService) {
+        return exchange -> {
+
+            AuthContext authContext = exchange.getIn().getHeader(Constants.AUTH_CONTEXT, AuthContext.class);
+            if (authContext == null) {
+                throw new AssetProcessingException(Reason.NO_AUTH_CONTEXT);
+            }
+
+            AttributeEvent event = exchange.getIn().getBody(AttributeEvent.class);
+            ServerAsset asset = exchange.getIn().getHeader(HEADER_ASSET, ServerAsset.class);
+            AssetAttribute attribute = exchange.getIn().getHeader(HEADER_ATTRIBUTE, AssetAttribute.class);
+            Source source = exchange.getIn().getHeader(AttributeEvent.HEADER_SOURCE, () -> null, Source.class);
+
+            if (source != Source.CLIENT) {
+                throw new AssetProcessingException(Reason.ILLEGAL_SOURCE);
+            }
+
+            // Check realm, must be accessible
+            if (!identityService.getIdentityProvider().isTenantActiveAndAccessible(authContext, asset)) {
+                throw new AssetProcessingException(Reason.INSUFFICIENT_ACCESS);
+            }
+
+            // Check read-only
+            if (attribute.isReadOnly() && !authContext.isSuperUser()) {
+                throw new AssetProcessingException(Reason.INSUFFICIENT_ACCESS);
+            }
+
+            // Regular user must have write assets role
+            if (!authContext.hasResourceRoleOrIsSuperUser(ClientRole.WRITE_ASSETS.getValue(), Constants.KEYCLOAK_CLIENT_ID)) {
+                throw new AssetProcessingException(Reason.INSUFFICIENT_ACCESS);
+            }
+
+            // Check restricted user
+            if (identityService.getIdentityProvider().isRestrictedUser(authContext.getUserId())) {
+                // Must be asset linked to user
+                if (!assetStorageService.isUserAsset(authContext.getUserId(), event.getEntityId())) {
+                    throw new AssetProcessingException(Reason.INSUFFICIENT_ACCESS);
+                }
+                // Must be writable by restricted client
+                if (!attribute.isAccessRestrictedWrite()) {
+                    throw new AssetProcessingException(Reason.INSUFFICIENT_ACCESS);
+                }
+            }
+        };
+    }
+
+    public static Processor validateAttributeEventFromSensor(AgentService agentService) {
+        return exchange -> {
+
+            AssetAttribute attribute = exchange.getIn().getHeader(HEADER_ATTRIBUTE, AssetAttribute.class);
+            Source source = exchange.getIn().getHeader(AttributeEvent.HEADER_SOURCE, () -> null, Source.class);
+
+            if (source != Source.SENSOR) {
+                throw new AssetProcessingException(Reason.ILLEGAL_SOURCE);
+            }
+
+            Optional<AssetAttribute> protocolConfiguration =
+                getAgentLink(attribute).flatMap(agentService::getProtocolConfiguration);
+
+            if (!protocolConfiguration.isPresent()) {
+                throw new AssetProcessingException(Reason.INVALID_AGENT_LINK);
+            }
+
+        };
+    }
+
+    public static Processor buildAssetState(TimerService timerService) {
+        return exchange -> {
+
+            AttributeEvent event = exchange.getIn().getBody(AttributeEvent.class);
+            AttributeEvent.Source source = exchange.getIn().getHeader(HEADER_SOURCE, AttributeEvent.Source.class);
+            ServerAsset asset = exchange.getIn().getHeader(HEADER_ASSET, ServerAsset.class);
+            AssetAttribute attribute = exchange.getIn().getHeader(HEADER_ATTRIBUTE, AssetAttribute.class);
+
+            long eventTime = event.getTimestamp();
+            long processingTime = timerService.getCurrentTimeMillis();
+
+            // Ensure timestamp of event is not in the future as that would essentially block access to
+            // the attribute until after that time (maybe that is desirable behaviour)
+            // Allow a leniency of 1s
+            if (eventTime - processingTime > 1000) {
+                // TODO: Decide how to handle update events in the future - ignore or change timestamp
+                throw new AssetProcessingException(
+                    Reason.EVENT_IN_FUTURE,
+                    "current time: " + new Date(processingTime) + "/" + processingTime
+                        + ", event time: " + new Date(eventTime) + "/" + eventTime
+                );
+            }
+
+            // Hold on to existing attribute state so we can use it during processing
+            Optional<AttributeEvent> lastStateEvent = attribute.getStateEvent();
+
+            // Check the last update timestamp of the attribute, ignoring any event that is older than last update
+            // TODO This means we drop out-of-sequence events but accept events with the same source timestamp
+            // TODO Several attribute events can occur in the same millisecond, then order of application is undefined
+            lastStateEvent.map(Event::getTimestamp).filter(t -> t >= 0 && eventTime < t).ifPresent(
+                lastStateTime -> {
+                    throw new AssetProcessingException(
+                        Reason.EVENT_OUTDATED,
+                        "last asset state time: " + new Date(lastStateTime) + "/" + lastStateTime
+                            + ", event time: " + new Date(eventTime) + "/" + eventTime);
+                }
+            );
+
+            // Set new value and event timestamp on attribute
+            attribute.setValue(event.getValue().orElse(null), eventTime);
+
+            // Validate constraints of attribute
+            List<ValidationFailure> validationFailures = attribute.getValidationFailures();
+            if (!validationFailures.isEmpty()) {
+                throw new AssetProcessingException(
+                    Reason.ATTRIBUTE_VALIDATION_FAILURE, validationFailures.toString()
+                );
+            }
+
+            AssetState assetState = new AssetState(
+                asset,
+                attribute,
+                lastStateEvent.flatMap(AttributeEvent::getValue).orElse(null),
+                lastStateEvent.map(AttributeEvent::getTimestamp).orElse(-1L),
+                source
+            );
+
+            exchange.getIn().setHeader(HEADER_ASSET_STATE, assetState);
+        };
+    }
+
+    public static Processor handleAssetProcessingException(Logger logger) {
+        return exchange -> {
+            AttributeEvent event = exchange.getIn().getBody(AttributeEvent.class);
+            Exception exception = (Exception) exchange.getProperty(Exchange.EXCEPTION_CAUGHT);
+
+            StringBuilder error = new StringBuilder();
+
+            Source source = exchange.getIn().getHeader(AttributeEvent.HEADER_SOURCE, "unknown source", Source.class);
+            if (source != null) {
+                error.append("Error processing from ").append(source);
+            }
+
+            String protocolName = exchange.getIn().getHeader(Protocol.SENSOR_QUEUE_SOURCE_PROTOCOL, String.class);
+            if (protocolName != null) {
+                error.append(" (protocol: ").append(protocolName).append(")");
+            }
+
+            if (exception instanceof AssetProcessingException) {
+                AssetProcessingException processingException = (AssetProcessingException) exception;
+                error.append(" - ").append(processingException.getReasonPhrase());
+                error.append(": ").append(event.toString());
+                logger.warning(error.toString());
+            } else {
+                error.append(": ").append(event.toString());
+                logger.log(Level.WARNING, error.toString(), exception);
+            }
+
+            // Make the exception available if MEP is InOut
+            exchange.getOut().setBody(exception);
+        };
+    }
+}

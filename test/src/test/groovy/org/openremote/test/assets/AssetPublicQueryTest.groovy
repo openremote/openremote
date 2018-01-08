@@ -2,12 +2,12 @@ package org.openremote.test.assets
 
 import org.openremote.container.Container
 import org.openremote.container.persistence.PersistenceService
-import org.openremote.manager.server.asset.AssetStorageService
-import org.openremote.manager.server.asset.ServerAsset
-import org.openremote.manager.server.setup.SetupService
-import org.openremote.manager.server.setup.builtin.KeycloakDemoSetup
-import org.openremote.manager.server.setup.builtin.ManagerDemoSetup
-import org.openremote.manager.shared.asset.AssetResource
+import org.openremote.manager.asset.AssetStorageService
+import org.openremote.manager.asset.ServerAsset
+import org.openremote.manager.setup.SetupService
+import org.openremote.manager.setup.builtin.KeycloakDemoSetup
+import org.openremote.manager.setup.builtin.ManagerDemoSetup
+import org.openremote.model.asset.AssetResource
 import org.openremote.model.asset.AssetAttribute
 import org.openremote.model.asset.AssetQuery
 import org.openremote.model.attribute.MetaItem

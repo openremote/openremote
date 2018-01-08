@@ -20,15 +20,15 @@
 package org.openremote.test
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import org.openremote.manager.client.event.SubscriptionFailureEvent
-import org.openremote.manager.client.service.EventService
+import org.openremote.app.client.event.SubscriptionFailureEvent
+import org.openremote.app.client.service.EventService
 import org.openremote.model.event.bus.EventBus
 import org.openremote.model.event.shared.*
 
 import javax.websocket.*
 
 /**
- * Does the same job as {@link org.openremote.manager.client.service.EventServiceImpl}.
+ * Does the same job as {@link org.openremote.app.client.service.EventServiceImpl}.
  */
 class ClientEventService implements EventService {
 

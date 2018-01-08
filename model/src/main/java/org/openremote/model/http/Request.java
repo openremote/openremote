@@ -19,48 +19,18 @@
  */
 package org.openremote.model.http;
 
-import jsinterop.annotations.JsFunction;
-import jsinterop.annotations.JsOverlay;
+import jsinterop.annotations.JsMethod;
+import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsType;
 
 @JsType(isNative = true, namespace = "openremote.REST")
-public class Request<T> {
+public class Request {
 
-    @JsType(isNative = true)
+    @JsType(isNative = true, namespace= JsPackage.GLOBAL)
     public interface XMLHttpRequest {
+        @JsMethod
         String getResponseHeader(String header);
     }
-
-    @FunctionalInterface
-    @JsFunction
-    interface InternalCallback {
-        void call(int responseCode, XMLHttpRequest xmlHttpRequest, String responseText);
-    }
-
-    final public static class InternalCallbackImpl implements InternalCallback {
-
-        final protected RequestCallback requestCallback;
-
-        public InternalCallbackImpl(RequestCallback requestCallback) {
-            this.requestCallback = requestCallback;
-        }
-
-        @Override
-        public void call(int responseCode, XMLHttpRequest xmlHttpRequest, String responseText) {
-            requestCallback.call(responseCode, xmlHttpRequest, responseText);
-        }
-    }
-
-    @JsOverlay
-    final public void execute(RequestCallback<T> requestCallback) {
-        execute(new InternalCallbackImpl(requestCallback));
-    }
-
-    /**
-     * Executes the request with all the information set in the current object. The value is never returned
-     * but passed to the optional argument callback.
-     */
-    native public void execute(InternalCallback callback);
 
     /**
      * Sets the Accept request header. Defaults to star/star.

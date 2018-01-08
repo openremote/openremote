@@ -19,6 +19,10 @@
  */
 package org.openremote.model.http;
 
-public interface RequestCallback<T> {
+import jsinterop.annotations.JsFunction;
+
+@JsFunction
+@FunctionalInterface
+public interface RequestCallback {
     void call(int responseCode, Request.XMLHttpRequest request, String entity);
 }

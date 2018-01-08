@@ -5,8 +5,8 @@ dependencies {
 
     compile "org.codehaus.groovy:groovy:$groovyVersion"
 
-    compile resolveProject(":manager:server")
-    compile resolveProject(":manager:client")
+    compile resolveProject(":manager")
+    compile resolveProject(":client")
 
     compile "junit:junit:$junitVersion"
     compile "org.spockframework:spock-core:$spockVersion"

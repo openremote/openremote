@@ -1,14 +1,14 @@
 package org.openremote.test.rules
 
-import org.openremote.manager.server.asset.AssetProcessingService
-import org.openremote.manager.server.asset.AssetStorageService
-import org.openremote.manager.server.asset.ServerAsset
-import org.openremote.manager.server.rules.RulesEngine
-import org.openremote.manager.server.rules.RulesService
-import org.openremote.manager.server.rules.RulesetStorageService
-import org.openremote.manager.server.setup.SetupService
-import org.openremote.manager.server.setup.builtin.KeycloakDemoSetup
-import org.openremote.manager.server.setup.builtin.ManagerDemoSetup
+import org.openremote.manager.asset.AssetProcessingService
+import org.openremote.manager.asset.AssetStorageService
+import org.openremote.manager.asset.ServerAsset
+import org.openremote.manager.rules.RulesEngine
+import org.openremote.manager.rules.RulesService
+import org.openremote.manager.rules.RulesetStorageService
+import org.openremote.manager.setup.SetupService
+import org.openremote.manager.setup.builtin.KeycloakDemoSetup
+import org.openremote.manager.setup.builtin.ManagerDemoSetup
 import org.openremote.model.rules.AssetRuleset
 import org.openremote.model.rules.Ruleset.DeploymentStatus
 import org.openremote.model.rules.TenantRuleset
@@ -24,7 +24,7 @@ import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
-import static org.openremote.manager.server.setup.builtin.ManagerDemoSetup.*
+import static org.openremote.manager.setup.builtin.ManagerDemoSetup.*
 import static org.openremote.test.RulesTestUtil.createRulesExecutionListener
 
 class BasicRulesProcessingTest extends Specification implements ManagerContainerTrait {

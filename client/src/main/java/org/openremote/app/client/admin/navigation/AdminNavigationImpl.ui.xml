@@ -1,0 +1,37 @@
+<ui:UiBinder xmlns:ui="urn:ui:com.google.gwt.uibinder"
+             xmlns:g="urn:import:com.google.gwt.user.client.ui"
+             xmlns:w="urn:import:org.openremote.app.client.widget">
+
+    <ui:with field="managerMessages" type="org.openremote.app.client.i18n.ManagerMessages"/>
+    <ui:with field="widgetStyle" type="org.openremote.app.client.style.WidgetStyle"/>
+
+    <ui:style>
+        .nav {
+            padding-top: 2.8em !important;
+        }
+
+        .navItem {
+            margin: 0 1em;
+        }
+    </ui:style>
+
+    <g:HTMLPanel styleName="layout vertical {widgetStyle.SecondaryNav} {style.nav}">
+
+        <w:Hyperlink ui:field="syslogLink"
+                          addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem}"
+                          icon="list-alt"
+                          text="{managerMessages.syslog}"/>
+
+        <w:Hyperlink ui:field="tenantsLink"
+                          addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem}"
+                          icon="group"
+                          text="{managerMessages.manageTenants}"/>
+
+        <w:Hyperlink ui:field="usersLink"
+                          addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem}"
+                          icon="user"
+                          text="{managerMessages.manageUsers}"/>
+
+    </g:HTMLPanel>
+
+</ui:UiBinder>

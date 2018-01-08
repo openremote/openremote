@@ -100,7 +100,8 @@ task bowerPrune(type: NodeTask) {
     outputs.dir("${project.projectDir}/bower_components")
 }
 
-// TODO Test this... Add polymer tasks
+// TODO Test this... Add polymer tasks, we really only want to compile ES6 to ES5, maybe some minification!
+/*
 task polymerInstall(type: NpmTask) {
     dependsOn nodeSetup
     args = ['install', '-g', 'polymer-cli']
@@ -113,6 +114,7 @@ task polymerServe(type: NodeTask) {
     script = nodeModuleGlobal('polymer-cli', 'polymer-cli')
     args = ['serve']
 }
+*/
 
 // Configure Java build
 plugins.withType(JavaPlugin).whenPluginAdded {

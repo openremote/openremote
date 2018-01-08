@@ -25,10 +25,10 @@ import org.openremote.agent.protocol.filter.RegexFilter
 import org.openremote.agent.protocol.filter.SubStringFilter
 import org.openremote.model.asset.agent.AgentStatusEvent
 import org.openremote.model.asset.agent.ConnectionStatus
-import org.openremote.manager.server.agent.AgentService
-import org.openremote.manager.server.asset.AssetProcessingService
-import org.openremote.manager.server.asset.AssetStorageService
-import org.openremote.manager.server.asset.ServerAsset
+import org.openremote.manager.agent.AgentService
+import org.openremote.manager.asset.AssetProcessingService
+import org.openremote.manager.asset.AssetStorageService
+import org.openremote.manager.asset.ServerAsset
 import org.openremote.model.Constants
 import org.openremote.model.asset.AssetAttribute
 import org.openremote.model.asset.AssetMeta
@@ -44,9 +44,9 @@ import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
 import static org.openremote.container.util.MapAccess.getString
-import static org.openremote.manager.server.event.ClientEventService.WEBSOCKET_EVENTS
-import static org.openremote.manager.server.setup.AbstractKeycloakSetup.SETUP_ADMIN_PASSWORD
-import static org.openremote.manager.server.setup.AbstractKeycloakSetup.SETUP_ADMIN_PASSWORD_DEFAULT
+import static org.openremote.manager.event.ClientEventService.WEBSOCKET_EVENTS
+import static org.openremote.manager.setup.AbstractKeycloakSetup.SETUP_ADMIN_PASSWORD
+import static org.openremote.manager.setup.AbstractKeycloakSetup.SETUP_ADMIN_PASSWORD_DEFAULT
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID
 import static org.openremote.model.Constants.MASTER_REALM
 import static org.openremote.model.Constants.MASTER_REALM_ADMIN_USER

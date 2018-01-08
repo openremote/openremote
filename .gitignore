@@ -25,8 +25,8 @@ bower_components/
 console/iOS/DerivedData
 console/iOS/Pods
 
-manager/client/src/main/webapp/gwt/
-manager/client/.externalToolBuilders/
+client/src/main/webapp/gwt/
+client/.externalToolBuilders/
 manager/.factorypath
 
 # Ignore build/runtime only data

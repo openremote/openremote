@@ -75,8 +75,13 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider{
     public static final int KEYCLOAK_REQUEST_TIMEOUT_DEFAULT = 10000;
     public static final String KEYCLOAK_CLIENT_POOL_SIZE = "KEYCLOAK_CLIENT_POOL_SIZE";
     public static final int KEYCLOAK_CLIENT_POOL_SIZE_DEFAULT = 20;
-    public static final String KEYCLOAK_SESSION_TIMEOUT_SECONDS = "IDENTITY_SESSION_TIMEOUT_SECONDS";
-    public static final int KEYCLOAK_SESSION_TIMEOUT_SECONDS_DEFAULT = 10800; // 3 hours
+
+    public static final String IDENTITY_SESSION_TIMEOUT_SECONDS = "IDENTITY_SESSION_TIMEOUT_SECONDS";
+    public static final int IDENTITY_SESSION_TIMEOUT_SECONDS_DEFAULT = 60 * 60 * 3; // 3 hours
+    public static final String IDENTITY_SESSION_OFFLINE_TIMEOUT_SECONDS = "IDENTITY_SESSION_OFFLINE_TIMEOUT_SECONDS";
+    public static final int IDENTITY_SESSION_OFFLINE_TIMEOUT_SECONDS_DEFAULT = 60 * 60 * 48; // 2 days
+    public static final String IDENTITY_SESSION_MAX_SECONDS = "IDENTITY_SESSION_MAX_SECONDS";
+    public static final int IDENTITY_SESSION_MAX_SECONDS_DEFAULT = 60 * 60 * 10; // 10 hours
 
     // Each realm in Keycloak has a client application with this identifier
     final protected String clientId;
@@ -101,6 +106,8 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider{
 
     // Configuration options for new realms
     final protected int sessionTimeoutSeconds;
+    final protected int sessionOfflineTimeoutSeconds;
+    final protected int sessionMaxSeconds;
 
     // This will pass authentication ("NOT ATTEMPTED" state), but later fail any role authorization
     final protected KeycloakDeployment notAuthenticatedKeycloakDeployment = new KeycloakDeployment();
@@ -110,7 +117,18 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider{
         this.clientId = clientId;
         this.externalServerUri = externalServerUri;
 
-        sessionTimeoutSeconds = getInteger(container.getConfig(), KEYCLOAK_SESSION_TIMEOUT_SECONDS, KEYCLOAK_SESSION_TIMEOUT_SECONDS_DEFAULT);
+        sessionTimeoutSeconds = getInteger(container.getConfig(), IDENTITY_SESSION_TIMEOUT_SECONDS, IDENTITY_SESSION_TIMEOUT_SECONDS_DEFAULT);
+        if (sessionTimeoutSeconds < 60) {
+            throw new IllegalArgumentException(IDENTITY_SESSION_TIMEOUT_SECONDS + " must be more than 60 seconds");
+        }
+        sessionOfflineTimeoutSeconds = getInteger(container.getConfig(), IDENTITY_SESSION_OFFLINE_TIMEOUT_SECONDS, IDENTITY_SESSION_OFFLINE_TIMEOUT_SECONDS_DEFAULT);
+        if (sessionOfflineTimeoutSeconds < 60) {
+            throw new IllegalArgumentException(IDENTITY_SESSION_OFFLINE_TIMEOUT_SECONDS + " must be more than 60 seconds");
+        }
+        sessionMaxSeconds = getInteger(container.getConfig(), IDENTITY_SESSION_MAX_SECONDS, IDENTITY_SESSION_MAX_SECONDS_DEFAULT);
+        if (sessionMaxSeconds < 60) {
+            throw new IllegalArgumentException(IDENTITY_SESSION_MAX_SECONDS + " must be more than 60 seconds");
+        }
 
         keycloakServiceUri =
             UriBuilder.fromPath("/")
@@ -222,8 +240,12 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider{
         realmRepresentation.setLoginTheme("openremote");
         realmRepresentation.setAccountTheme("openremote");
         realmRepresentation.setEmailTheme("openremote");
-        realmRepresentation.setSsoSessionIdleTimeout(sessionTimeoutSeconds);
 
+        realmRepresentation.setSsoSessionIdleTimeout(sessionTimeoutSeconds);
+        realmRepresentation.setOfflineSessionIdleTimeout(sessionOfflineTimeoutSeconds);
+        realmRepresentation.setSsoSessionMaxLifespan(sessionMaxSeconds);
+
+        // Service-internal network (between manager and keycloak service containers) does not use SSL
         realmRepresentation.setSslRequired(SslRequired.NONE.toString());
     }
 

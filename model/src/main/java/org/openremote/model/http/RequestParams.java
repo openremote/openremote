@@ -57,21 +57,21 @@ public class RequestParams<IN, OUT> {
     public String password;
 
     @JsProperty(name = "$callback")
-    public Request.InternalCallback callback;
+    public RequestCallback callback;
 
     @JsProperty(name = "$async")
     public boolean async = true; // Default to async request
 
     @JsIgnore
     public RequestParams() {
+        this(null);
     }
 
     /**
      * Defaults to "<code>Accept: application/json</code>" header, call {@link #setAccepts(String)} to override.
      */
-    @JsIgnore
-    public RequestParams(RequestCallback<OUT> requestCallback) {
-        this.callback = new Request.InternalCallbackImpl(requestCallback);
+    public RequestParams(RequestCallback requestCallback) {
+        this.callback = requestCallback;
         this.accepts = MediaType.APPLICATION_JSON;
     }
 
@@ -121,8 +121,4 @@ public class RequestParams<IN, OUT> {
         return this;
     }
 
-    public RequestParams<IN, OUT> setAsync(boolean async) {
-        this.async = async;
-        return this;
-    }
 }

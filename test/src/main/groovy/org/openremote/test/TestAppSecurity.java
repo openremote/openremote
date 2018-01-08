@@ -23,9 +23,12 @@ import groovy.lang.Closure;
 import org.keycloak.adapters.KeycloakDeployment;
 import org.keycloak.adapters.rotation.AdapterRSATokenVerifier;
 import org.keycloak.representations.AccessToken;
-import org.openremote.components.client.AppSecurity;
+import org.openremote.app.client.AppSecurity;
 import org.openremote.model.Constants;
 import org.openremote.model.http.RequestParams;
+import org.openremote.model.interop.BiConsumer;
+import org.openremote.model.interop.Consumer;
+import org.openremote.model.interop.Runnable;
 
 /**
  * Does the same job as or-app-security.
@@ -98,20 +101,20 @@ public class TestAppSecurity implements AppSecurity {
     }
 
     @Override
-    public String getAuthenticatedRealm() {
+    public String getRealm() {
         return keycloakDeployment.getRealm();
     }
 
     @Override
-    public void setCredentialsOnRequestParams(RequestParams requestParams) {
+    public void authorizeRequestParams(RequestParams requestParams, Runnable onComplete) {
         requestParams.withBearerAuth(getToken());
+        onComplete.run();
     }
 
     @Override
-    public String setCredentialsOnUrl(String serviceUrl) {
-        return serviceUrl
-            + "?Auth-Realm=" + getAuthenticatedRealm()
-            + "&Authorization=Bearer " + getToken();
+    public void authorizeUrl(String serviceUrl, Consumer<String> onComplete) {
+        serviceUrl = serviceUrl + "?Auth-Realm=" + getRealm() + "&Authorization=Bearer " + getToken();
+        onComplete.accept(serviceUrl);
     }
 
     @Override

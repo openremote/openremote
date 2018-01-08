@@ -37,7 +37,7 @@ HEALTHCHECK --interval=3s --timeout=3s --start-period=2s --retries=30 CMD curl -
 
 WORKDIR /opt/app
 
-ADD server /opt/app
+ADD lib /opt/app/lib
 ADD client /opt/app
 
-ENTRYPOINT java $JAVA_OPTS -cp /opt/app/lib/*:/deployment/extensions/* org.openremote.manager.server.Main
+ENTRYPOINT java $JAVA_OPTS -cp /opt/app/lib/*:/deployment/extensions/* org.openremote.manager.Main

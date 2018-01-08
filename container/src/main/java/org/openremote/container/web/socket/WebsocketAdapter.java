@@ -43,7 +43,9 @@ public class WebsocketAdapter extends Endpoint {
     public void onOpen(Session session, EndpointConfig config) {
         if (LOG.isLoggable(Level.FINE))
             LOG.fine("Websocket session open: " + session.getId());
-        session.setMaxIdleTimeout(WebsocketConstants.SESSION_MAX_IDLE_TIMEOUT_SECONDS * 1000);
+        // TODO We never expire idle websocket sessions, the assumption is that only authenticate clients can
+        // open a session and if their SSO (managed by Keycloak) expires, they are logged out
+        session.setMaxIdleTimeout(0);
         consumer.getEndpoint().getWebsocketSessions().add(session);
         this.consumer.sendMessage(session.getId(), getHandshakeAuth(session), null, exchange -> {
             exchange.getIn().setHeader(WebsocketConstants.SESSION, session);

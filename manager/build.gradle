@@ -1,6 +1,28 @@
-evaluationDependsOnChildren()
-
+apply plugin: "java"
+apply plugin: "application"
 apply plugin: "distribution"
+
+mainClassName = "org.openremote.manager.Main"
+
+dependencies {
+
+    compile resolveProject(":container")
+    compile resolveProject(":agent")
+    compile resolveProject(":model")
+
+    compile("org.drools:drools-compiler:$droolsVersion") {
+        exclude group: "com.thoughtworks.xstream"
+    }
+    compile("org.drools:drools-decisiontables:$droolsVersion") {
+        exclude group: "org.apache.poi"
+    }
+
+    compile "org.xerial:sqlite-jdbc:$sqliteVersion"
+}
+
+jar {
+    archivesBaseName = "openremote-${project.name}"
+}
 
 distributions {
     main {
@@ -8,10 +30,7 @@ distributions {
             from (project.projectDir) {
                 include("*Dockerfile")
             }
-            from (resolveTask(":manager:server:installDist")) {
-                into "server"
-            }
-            from (resolveTask(":manager:client:installDist")) {
+            from (resolveTask(":client:installDist")) {
                 into "client"
             }
             // Populate the /deployment directory in the Manager image
@@ -26,10 +45,6 @@ distributions {
 installDist {
     doLast {
         // Delete the useless start scripts, they have a hardcoded classpath
-        delete "${buildDir}/install/$distributions.main.baseName/server/bin"
+        delete "${buildDir}/install/$distributions.main.baseName/bin"
     }
-}
-
-clean {
-    delete = "$projectDir/build"
 }

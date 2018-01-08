@@ -15,7 +15,7 @@
 
     <!-- Optional: Load more application resources after authentication -->
     <script>
-        window.addEventListener('AppInit', function (e) {
+        window.addEventListener('AppReady', function (e) {
             console.log("Loading customerA console app resources...");
             let app = e.detail.app;
 
@@ -68,7 +68,7 @@
 <or-toast></or-toast>
 
 <!-- ############## Required: One <or-app> should wrap your frontend, you can enforce login/authentication ############## -->
-<or-app login tenant="customerA" timeout="10">
+<or-app login tenant-realm="customerA" timeout="10">
 
     <!-- You can use your own styles or the OpenRemote styles and theme -->
     <a href="#" class="myAppHeadline">
@@ -102,7 +102,7 @@
         <div class="flex layout vertical">
 
             <!-- Execute an asset query and show a nice scrollable list -->
-            <or-asset-list class="flex or-MainContent or-FormList"
+            <or-asset-list class="myAssetList flex or-MainContent or-FormList"
                            select-include="ALL_EXCEPT_PATH_AND_ATTRIBUTES"
                            asset-type="urn:openremote:asset:residence">
 
@@ -118,7 +118,7 @@
             </or-asset-list>
 
             <!-- Execute an asset query and show a nice scrollable list -->
-            <or-asset-list class="flex or-MainContent or-FormList"
+            <or-asset-list class="myAssetList flex or-MainContent or-FormList"
                            select-include="ALL_EXCEPT_PATH_AND_ATTRIBUTES"
                            asset-type="urn:openremote:asset:room">
 
@@ -172,10 +172,14 @@
                         onclick="openremote.TOASTS.showToast(
                             new openremote.toast.Toast(
                                 openremote.toast.Toast.Type.SUCCESS,
-                                'Welcome ' + openremote.INSTANCE.user + ', on ' + openremote.INSTANCE.tenant + '. It is ' + new Date() + '.',
+                                'Welcome ' + openremote.INSTANCE.user + ', on ' + openremote.INSTANCE.tenantRealm + '. It is ' + new Date() + '.',
                                 3000
                             )
                         )">Show a toast
+                </button>
+
+                <button class="or-FormControl or-FormButton or-PushButton"
+                        onclick="document.querySelectorAll('.myAssetList').forEach((assetList) => {assetList.executeQuery()})">Refresh asset lists
                 </button>
 
                 <button class="or-FormControl or-FormButtonDanger or-PushButton"

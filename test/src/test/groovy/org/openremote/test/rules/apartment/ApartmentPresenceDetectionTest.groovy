@@ -1,13 +1,13 @@
 package org.openremote.test.rules.apartment
 
 import org.openremote.agent.protocol.simulator.SimulatorProtocol
-import org.openremote.manager.server.asset.AssetProcessingService
-import org.openremote.manager.server.asset.AssetStorageService
-import org.openremote.manager.server.rules.RulesEngine
-import org.openremote.manager.server.rules.RulesService
-import org.openremote.manager.server.rules.RulesetStorageService
-import org.openremote.manager.server.setup.SetupService
-import org.openremote.manager.server.setup.builtin.ManagerDemoSetup
+import org.openremote.manager.asset.AssetProcessingService
+import org.openremote.manager.asset.AssetStorageService
+import org.openremote.manager.rules.RulesEngine
+import org.openremote.manager.rules.RulesService
+import org.openremote.manager.rules.RulesetStorageService
+import org.openremote.manager.setup.SetupService
+import org.openremote.manager.setup.builtin.ManagerDemoSetup
 import org.openremote.model.asset.AssetEvent
 import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.rules.AssetRuleset
@@ -18,7 +18,7 @@ import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
 import static java.util.concurrent.TimeUnit.*
-import static org.openremote.manager.server.setup.builtin.ManagerDemoSetup.DEMO_RULE_STATES_APARTMENT_1
+import static org.openremote.manager.setup.builtin.ManagerDemoSetup.DEMO_RULE_STATES_APARTMENT_1
 import static org.openremote.model.attribute.AttributeEvent.Source.SENSOR
 
 class ApartmentPresenceDetectionTest extends Specification implements ManagerContainerTrait {

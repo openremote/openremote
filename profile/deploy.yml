@@ -199,8 +199,8 @@ services:
       # IDENTITY_PROVIDER: 'basic'
 
       # Location of the static manager (UI and API) resources, you don't need to override this
-      # unless you want to deploy a modified version of the Manager UI.
-      # MANAGER_DOCROOT: 'manager/client/src/main/webapp'
+      # unless you want to deploy a modified version of the Manager UI and JavaScript components.
+      # MANAGER_DOCROOT: 'client/src/main/webapp'
 
       # Custom JVM options (increase heap size if required)
       JAVA_OPTS: '-Xms400m -Xmx400m

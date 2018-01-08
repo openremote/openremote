@@ -28,9 +28,9 @@ import com.google.gwt.user.client.Window
 import com.google.gwt.user.client.ui.AcceptsOneWidget
 import com.google.web.bindery.event.shared.SimpleEventBus
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget
-import org.openremote.manager.client.mvp.AppActivityManager
-import org.openremote.manager.client.mvp.AppActivityMapper
-import org.openremote.manager.client.mvp.AppPlaceController
+import org.openremote.app.client.mvp.AppActivityManager
+import org.openremote.app.client.mvp.AppActivityMapper
+import org.openremote.app.client.mvp.AppPlaceController
 import org.openremote.model.event.Event
 import org.openremote.model.event.bus.EventBus
 import org.openremote.model.event.bus.EventListener

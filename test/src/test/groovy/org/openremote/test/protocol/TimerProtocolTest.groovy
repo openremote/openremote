@@ -2,11 +2,11 @@ package org.openremote.test.protocol
 
 import org.openremote.agent.protocol.timer.TimerProtocol
 import org.openremote.agent.protocol.timer.TimerValue
-import org.openremote.manager.server.asset.AssetProcessingService
-import org.openremote.manager.server.asset.AssetStorageService
-import org.openremote.manager.server.asset.ServerAsset
-import org.openremote.manager.server.setup.SetupService
-import org.openremote.manager.server.setup.builtin.ManagerDemoSetup
+import org.openremote.manager.asset.AssetProcessingService
+import org.openremote.manager.asset.AssetStorageService
+import org.openremote.manager.asset.ServerAsset
+import org.openremote.manager.setup.SetupService
+import org.openremote.manager.setup.builtin.ManagerDemoSetup
 import org.openremote.model.asset.AssetAttribute
 import org.openremote.model.asset.AssetQuery
 import org.openremote.model.asset.AssetType

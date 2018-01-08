@@ -1,12 +1,12 @@
 package org.openremote.test.map
 
 import groovy.json.JsonSlurper
-import org.openremote.manager.shared.map.MapResource
+import org.openremote.model.map.MapResource
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 
 import static org.openremote.container.util.MapAccess.getString
-import static org.openremote.manager.server.setup.AbstractKeycloakSetup.*
+import static org.openremote.manager.setup.AbstractKeycloakSetup.*
 import static org.openremote.model.Constants.*
 
 class MapResourceTest extends Specification implements ManagerContainerTrait {

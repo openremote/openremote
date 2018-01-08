@@ -1,11 +1,11 @@
 package org.openremote.test.assets
 
 import org.openremote.container.timer.TimerService
-import org.openremote.manager.server.security.ManagerIdentityService
-import org.openremote.manager.server.setup.SetupService
-import org.openremote.manager.server.setup.builtin.KeycloakDemoSetup
-import org.openremote.manager.server.setup.builtin.ManagerDemoSetup
-import org.openremote.manager.shared.asset.AssetResource
+import org.openremote.manager.security.ManagerIdentityService
+import org.openremote.manager.setup.SetupService
+import org.openremote.manager.setup.builtin.KeycloakDemoSetup
+import org.openremote.manager.setup.builtin.ManagerDemoSetup
+import org.openremote.model.asset.AssetResource
 import org.openremote.model.asset.UserAsset
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
@@ -13,8 +13,8 @@ import spock.lang.Specification
 import javax.ws.rs.WebApplicationException
 
 import static org.openremote.container.util.MapAccess.getString
-import static org.openremote.manager.server.setup.AbstractKeycloakSetup.SETUP_ADMIN_PASSWORD
-import static org.openremote.manager.server.setup.AbstractKeycloakSetup.SETUP_ADMIN_PASSWORD_DEFAULT
+import static org.openremote.manager.setup.AbstractKeycloakSetup.SETUP_ADMIN_PASSWORD
+import static org.openremote.manager.setup.AbstractKeycloakSetup.SETUP_ADMIN_PASSWORD_DEFAULT
 import static org.openremote.model.Constants.*
 
 class AssetUserLinkingTest extends Specification implements ManagerContainerTrait {
