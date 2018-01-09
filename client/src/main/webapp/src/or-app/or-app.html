@@ -13,8 +13,52 @@
     <template>
 
         <style include="or-style">
+
+            /* Children of or-app might be hidden, some have to be visible */
+            #loader,
+            #errorView {
+                visibility: visible !important;
+            }
+
+            #loader {
+                z-index: 9999;
+                position: fixed;
+                bottom: 0.8em;
+                right: 0.4em;
+                pointer-events: none;
+                width: 0.8em;
+                height: 0.8em;
+                border: 2px solid var(--theme-lightgreen);
+                border-top-color: var(--theme-black);
+                border-radius: 50%;
+                -webkit-animation: loadingspin 1s linear infinite;
+                animation: loaderSpin 1s linear infinite;
+            }
+
+            @-webkit-keyframes loaderSpin {
+                100% {
+                    -webkit-transform: rotate(360deg);
+                    transform: rotate(360deg);
+                }
+            }
+
+            @keyframes loaderSpin {
+                100% {
+                    -webkit-transform: rotate(360deg);
+                    transform: rotate(360deg);
+                }
+            }
+
+            #errorView {
+                padding: 1em;
+            }
+
+            #errorView h1 {
+                color: var(--theme-darkgrey);
+            }
+
+            /* Slots are not shown until we are ready */
             #slots {
-                /* Hide the slotted children by default */
                 display: none;
             }
 
@@ -23,8 +67,9 @@
                 border: 1px solid var(--theme-red);
                 */
             }
-
         </style>
+
+        <div id="loader"></div>
 
         <or-shell-native id="shellNative"></or-shell-native>
 
@@ -36,9 +81,9 @@
                          error="{{error}}"></or-app-security>
 
         <template is="dom-if" if="[[error]]">
-            <div style="padding:1em;">
-                <h1 style="color: var(--theme-darkgrey);">[[defaultErrorMessage]]</h1>
-                <h5><span>[[error]]</span></h5>
+            <div id="errorView">
+                <h1>[[defaultErrorMessage]]</h1>
+                <h5>[[error]]</h5>
             </div>
         </template>
 
@@ -92,6 +137,20 @@
 
         /**
          * Singleton per window/document, registers itself as window.openremote.INSTANCE.
+         *
+         * When this component is used, the following startup procedure runs:
+         *
+         * 1a. If authentication is required, perform authentication, then fire AppInit.
+         * 1b. If no authentication is required, fire AppInit.
+         *
+         * 2. Any element registered with defineAppElement() will be set in the openremote namespace
+         *    so its class is available in GWT jsinterop.
+         *
+         * 3. The GWT jsinterop components will be loaded, then fire AppLoaded.
+         *
+         * 4. This component will finish its initialization, then fire AppReady.
+         *
+         * 5. Any element registered with defineAppElement() will be finally defined/started.
          */
         class OpenRemoteApp extends Polymer.Element {
 
@@ -280,7 +339,9 @@
             }
 
             initialize() {
-                // This event is usually used to load other application resources which are not components, from the main document
+                // This event is usually used to load other application resources which are not
+                // components, from the main document. We also use it to set registered element
+                // classes/types in the "openremote" namespace.
                 console.log("Application init, loading components");
                 window.dispatchEvent(new CustomEvent("AppInit", {detail: {app: this}}));
 
@@ -309,30 +370,50 @@
                 // Remove all slotted children, effectively disabling the app
                 this.$.slot.assignedNodes({flatten: false}).forEach((node) => {
                     node.parentElement.removeChild(node);
-                })
+                });
+
+                // Disable login/token refresh
+                this.set("login", false);
+                // TODO Close websocket?
 
                 // Hide the slots
                 this.$.slots.style.display = "none";
 
-                // Disable login/token refresh
-                this.set("login", false);
+                // Hide the loader
+                this.hideLoader();
 
-                // Show the document body
-                window.document.body.style.visibility = "visible";
+                // Fire an event so others can react to an error
+                window.dispatchEvent(new CustomEvent("AppError", {detail: {app: this, error: error}}));
             }
 
             showApp() {
                 console.debug("Showing application");
 
-                // The slotted children are hidden by default (this will set display: flex)
+                // The children of or-app, the slots, and the slotted elements may be hidden, show them
+                document.querySelectorAll("or-app > *").forEach((node) => {
+                    if (node.style) {
+                        node.style.visibility = "visible";
+                    }
+                });
                 this.$.slots.style.display = "inherit";
-
                 // Safari bug, this will trigger another repaint, the first stops in some weird half-rendered state
                 this.$.slots.style.webkitTransform = 'scale(1)';
+                this.$.slot.assignedNodes({flatten: false}).forEach((node) => {
+                    if (node.style) {
+                        node.style.visibility = "visible";
+                    }
+                });
 
-                // Show the document body as late as possible, this hides the application
-                // of custom-style, which flickers in Firefox
-                window.document.body.style.visibility = "visible";
+                // Hide the loader
+                this.hideLoader();
+            }
+
+            hideLoader() {
+                this.$.loader.style.display = "none";
+            }
+
+            showLoader() {
+                this.$.loader.style.display = "inherit";
             }
 
             registerWidgetStyle() {
@@ -374,6 +455,13 @@
                     this.webSocket.onopen = () => {
                         console.log("Connected to event service: " + serviceUrl);
                         this.set("status", "CONNECTED");
+
+                        // Close explicitly on unload/refresh of page, otherwise close code will be 1001
+                        window.addEventListener("beforeunload", () => {
+                            console.log("Page unloaded, closing event service connection");
+                            // TODO Should also cancel all subscriptions with the server
+                            this.webSocket.close();
+                        });
                     };
 
                     this.webSocket.onerror = () => {
@@ -386,7 +474,9 @@
                         this.set("webSocket", undefined);
                         this.set("status", "DISCONNECTED");
                         if (!this.error) {
-                            if (e.code === 1001) {
+                            if (e.code === 1000) {
+                                // Do nothing, we closed the socket on page unload
+                            } else if (e.code === 1001) {
                                 this.set("error", "Server closed connection to event service: " + serviceUrl);
                             } else {
                                 let msg = e.reason ? e.reason : serviceUrl;
@@ -426,22 +516,11 @@
             }
         }
 
-        // Bit of a hack, we must detect if GWT superdev compilation failed, then show the
-        // document (without this, you won't see the failure message written by GWT dev mode
-        // into the main doc)
-        window.checkGwtSuperDevCompilationFailureInterval = window.setInterval(function() {
-            if (document.querySelectorAll("a[target='gwt_dev_mode_log']").length > 0) {
-                window.document.body.style.visibility = "visible";
-            }
-        }, 100);
-
         // Upgrade immediately, so you can't use jsinterop in this class!
         customElements.define(OpenRemoteApp.is, OpenRemoteApp);
 
         // This is fired after jsinterop components are loaded/started, finalize initialization
         window.addEventListener('AppLoaded', function () {
-
-            window.clearInterval(window.checkGwtSuperDevCompilationFailureInterval);
 
             openremote.INSTANCE.registerRequestService();
             openremote.INSTANCE.registerWidgetStyle();
@@ -484,7 +563,7 @@
 
             // This is fired after jsinterop components are loaded/started and after we have done any other
             // initialization (see above). Now the actual web component elements can be defined/upgraded,
-            // this is when component constructors etc. lifecycle starts
+            // this is when component constructors etc. lifecycle starts.
             window.addEventListener('AppReady', function () {
                 console.log("Upgrading element: " + is);
                 customElements.define(is, element);

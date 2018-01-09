@@ -26,4 +26,6 @@ public interface AppController {
     void goTo(Place place);
 
     void start();
+
+    void stop();
 }

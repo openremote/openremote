@@ -140,8 +140,8 @@
 
                     /**
                      * Name of the OpenRemote tenant realm this app wants to connect to
-                     * and possibly login and authenticate with. The realm can be overridden with an
-                     * attribute, otherwise try to get it from URL path, first segment.
+                     * and login and authenticate with. The realm can be overridden with an
+                     * attribute, otherwise it will be obtained from the URL path, first segment.
                      */
                     realm: {
                         type: String,
@@ -171,14 +171,14 @@
             ready() {
                 super.ready();
 
-                // If we don't have a tenant realm, get it from the URL path
-                if (!this.realm) {
+                // If login is required, and we don't have a realm, get it from the URL path
+                if (this.login && !this.realm) {
                     if (!window.location.pathname || window.location.pathname.length <= 1) {
                         this.set("error", "No tenant realm configured and URL doesn't have any path elements");
                         return;
                     }
                     let realm = window.location.pathname.split('/')[1];
-                    console.log("No tenant realm configured, using: " + realm);
+                    console.log("No tenant realm configured, using first URL path segment: " + realm);
                     this.set("realm", realm);
                 }
             }

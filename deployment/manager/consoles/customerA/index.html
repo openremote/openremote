@@ -47,8 +47,13 @@
         })
     </script>
 
-    <!-- Optional: Create some styles only for your app -->
     <style type="text/css">
+        /* Recommended: Avoid flickering during loading/styling by hiding children of or-app */
+        or-app > * {
+            visibility: hidden;
+        }
+
+        /* Optional: Create some styles only for your app */
         .myAppHeadline {
             display: block;
             text-decoration: none;
@@ -61,8 +66,8 @@
 
 </head>
 
-<!-- Optional: Make your body hidden by default, so it will be visible only when authenticated -->
-<body class="layout vertical" style="visibility:hidden;">
+<!-- Optional: You should use flexbox layout classes everywhere, starting with the body -->
+<body class="layout vertical">
 
 <!-- Optional: A component can handle ShowInfo and ShowError events for you with a simple toast display-->
 <or-toast></or-toast>

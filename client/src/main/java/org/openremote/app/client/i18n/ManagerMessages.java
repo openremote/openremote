@@ -29,8 +29,6 @@ public interface ManagerMessages extends Messages {
 
     String logout();
 
-    String sessionTimedOut();
-
     String map();
 
     String assets();

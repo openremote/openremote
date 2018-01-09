@@ -21,9 +21,9 @@ package org.openremote.app.client.app;
 
 import com.google.gwt.place.shared.Place;
 import com.google.gwt.place.shared.PlaceHistoryHandler;
-import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.ui.RootPanel;
 import com.google.inject.Provider;
+import elemental2.dom.DomGlobal;
 import org.openremote.app.client.Environment;
 import org.openremote.app.client.event.ShowFailureEvent;
 import org.openremote.app.client.event.ShowInfoEvent;
@@ -31,10 +31,14 @@ import org.openremote.app.client.event.ShowSuccessEvent;
 import org.openremote.app.client.event.SubscriptionFailureEvent;
 import org.openremote.app.client.toast.Toast;
 import org.openremote.app.client.toast.Toasts;
+import org.openremote.model.event.bus.EventListener;
 
 import javax.inject.Inject;
+import java.util.logging.Logger;
 
 public class AppControllerImpl implements AppController, AppView.Presenter {
+
+    private static final Logger LOG = Logger.getLogger(AppControllerImpl.class.getName());
 
     protected final AppView appView;
     protected final Environment environment;
@@ -103,9 +107,15 @@ public class AppControllerImpl implements AppController, AppView.Presenter {
 
     @Override
     public void start() {
-        Window.setTitle("OpenRemote Manager");
-        RootPanel.get().add(appView);
+        LOG.info("Starting manager");
         appView.setPresenter(this);
+        RootPanel.get().add(appView);
         placeHistoryHandler.handleCurrentHistory();
+    }
+
+    @Override
+    public void stop() {
+        LOG.info("Stopping manager");
+        RootPanel.get().remove(appView);
     }
 }

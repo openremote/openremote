@@ -20,9 +20,15 @@
 
     <link rel="import" href="/static/src/or-app/or-app.html">
 
+    <style type="text/css">
+        or-app > * {
+            visibility: hidden;
+        }
+    </style>
+
 </head>
 
-<body class="layout vertical" style="visibility: hidden;">
+<body class="layout vertical">
 
 <or-app>
 

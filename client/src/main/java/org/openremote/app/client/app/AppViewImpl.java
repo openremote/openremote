@@ -61,7 +61,6 @@ public class AppViewImpl extends Composite implements AppView {
     @Inject
     public AppViewImpl() {
         initWidget(ui.createAndBindUi(this));
-
     }
 
     @Override

@@ -21,30 +21,41 @@ package org.openremote.app.client;
 
 import com.google.gwt.core.client.GWT;
 
-import java.util.logging.Logger;
-
 public class AppEntryPoint implements com.google.gwt.core.client.EntryPoint {
 
-    private static final Logger LOG = Logger.getLogger(AppEntryPoint.class.getName());
-
     protected final ManagerGinjector injector = GWT.create(ManagerGinjector.class);
-
-    @Override
-    public void onModuleLoad() {
-        LOG.info("App GWT module loaded");
-        dispatchLoadedEvent();
-    }
 
     protected void startManager() {
         injector.getAppController().start();
     }
 
-    public native void dispatchLoadedEvent() /*-{
-        $wnd.addEventListener("StartManager", function() {
-            this.@org.openremote.app.client.AppEntryPoint::startManager()();
-        }.bind(this));
+    protected void stopManager() {
+        injector.getAppController().stop();
+    }
 
+    @Override
+    public native void onModuleLoad() /*-{
+        console.log("App GWT module loaded")
+
+        // Add a one-time event listener that starts the manager
+        var startEventListener = function(e) {
+            if (!$wnd.openremote.INSTANCE.error) {
+                this.@org.openremote.app.client.AppEntryPoint::startManager()();
+            }
+            e.currentTarget.removeEventListener("StartManager", startEventListener);
+        }.bind(this);
+        $wnd.addEventListener("StartManager", startEventListener);
+
+        // Add a one-time event listener that stops the manager
+        var stopEventListener = function(e) {
+            this.@org.openremote.app.client.AppEntryPoint::stopManager()();
+            e.currentTarget.removeEventListener("AppError", stopEventListener);
+        }.bind(this);
+        $wnd.addEventListener("AppError", stopEventListener);
+
+        // Let others know jsinterop components are loaded
         $wnd.dispatchEvent(new CustomEvent("AppLoaded"));
     }-*/;
+
 
 }
