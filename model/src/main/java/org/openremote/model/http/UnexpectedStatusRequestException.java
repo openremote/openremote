@@ -21,6 +21,8 @@ package org.openremote.model.http;
 
 import jsinterop.annotations.JsType;
 
+import java.util.Arrays;
+
 @JsType
 public class UnexpectedStatusRequestException extends RequestException {
 
@@ -33,5 +35,13 @@ public class UnexpectedStatusRequestException extends RequestException {
 
     public double[] getExpectedStatusCodes() {
         return expectedStatusCodes;
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "{" +
+            "expectedStatusCodes=" + Arrays.toString(expectedStatusCodes) +
+            ", statusCode=" + statusCode +
+            '}';
     }
 }

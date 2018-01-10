@@ -26,9 +26,8 @@ import elemental2.core.Global;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsType;
 import jsinterop.base.Any;
+import jsinterop.base.Js;
 import org.openremote.app.client.util.JsUtil;
-import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.AssetQuery;
 import org.openremote.model.http.*;
 import org.openremote.model.interop.BiConsumer;
 import org.openremote.model.interop.Consumer;
@@ -42,23 +41,31 @@ import java.util.stream.Collectors;
 import java.util.stream.DoubleStream;
 
 import static com.google.gwt.http.client.Response.*;
-import static org.openremote.model.http.ConstraintViolationReport.VIOLATION_EXCEPTION_HEADER;
+import static org.openremote.model.http.BadRequestException.VIOLATION_EXCEPTION_HEADER;
 
 @JsType
 public class RequestService {
 
     private static final Logger LOG = Logger.getLogger(RequestService.class.getName());
 
-    double ANY_STATUS_CODE = -1;
+    public static final double ANY_STATUS_CODE = -1;
 
     // This consumer gets request params, sets credentials to authorize the request, then calls the given runnable
     final protected BiConsumer<RequestParams, Runnable> requestAuthorizer;
 
+    final protected Runnable beforeRequest;
+
+    final protected Runnable afterRequest;
+
     final protected Function<String, ConstraintViolationReport> constraintViolationReader;
 
     public RequestService(BiConsumer<RequestParams, Runnable> requestAuthorizer,
+                          Runnable beforeRequest,
+                          Runnable afterRequest,
                           Function<String, ConstraintViolationReport> constraintViolationReader) {
         this.requestAuthorizer = requestAuthorizer;
+        this.beforeRequest = beforeRequest;
+        this.afterRequest = afterRequest;
         this.constraintViolationReader = constraintViolationReader;
     }
 
@@ -151,8 +158,16 @@ public class RequestService {
                                      Consumer<OUT> onResponse,
                                      Consumer<RequestException> onException) {
 
+        if (beforeRequest != null) {
+            beforeRequest.run();
+        }
+
         RequestParams<IN, OUT> requestParams = new RequestParams<>(
             (responseCode, request, responseText) -> {
+
+                if (afterRequest != null) {
+                    afterRequest.run();
+                }
 
                 if (responseCode == 0) {
                     onException.accept(new NoResponseException(0));
@@ -165,7 +180,7 @@ public class RequestService {
                         if (LOG.isLoggable(Level.FINE)) {
                             LOG.fine("Received 400 status with constraint violation report: " + responseText);
                         }
-                        ConstraintViolationReport report = getConstraintViolationReport(responseText);
+                        ConstraintViolationReport report = constraintViolationReader.apply(responseText);
                         onException.accept(new BadRequestException(SC_BAD_REQUEST, report));
                     } else {
                         if (LOG.isLoggable(Level.FINE)) {
@@ -228,9 +243,5 @@ public class RequestService {
             }
             requestAuthorizer.accept(requestParams, () -> onRequest.accept(requestParams));
         }
-    }
-
-    protected ConstraintViolationReport getConstraintViolationReport(String responseText) {
-        return constraintViolationReader.apply(responseText);
     }
 }

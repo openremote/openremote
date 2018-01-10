@@ -40,7 +40,7 @@ import java.util.logging.Logger;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 import static org.openremote.model.Constants.MASTER_REALM;
-import static org.openremote.model.http.ConstraintViolationReport.VIOLATION_EXCEPTION_HEADER;
+import static org.openremote.model.http.BadRequestException.VIOLATION_EXCEPTION_HEADER;
 
 public class TenantResourceImpl extends ManagerWebResource implements TenantResource {
 
@@ -163,10 +163,10 @@ public class TenantResourceImpl extends ManagerWebResource implements TenantReso
 
         ResourceBundle validationMessages = getContainer().getService(I18NService.class).getValidationMessages();
         List<ConstraintViolation> violations = new ArrayList<>();
-        violations.add(new ConstraintViolation(
-            ConstraintViolation.Type.PARAMETER,
-            validationMessages.getString("Tenant.masterDeleted")
-        ));
+        ConstraintViolation violation = new ConstraintViolation();
+        violation.setConstraintType(ConstraintViolation.Type.PARAMETER);
+        violation.setMessage(validationMessages.getString("Tenant.masterDeleted"));
+        violations.add(violation);
         ConstraintViolationReport report = new ConstraintViolationReport();
         report.setParameterViolations(violations.toArray(new ConstraintViolation[violations.size()]));
         return report;
@@ -180,19 +180,17 @@ public class TenantResourceImpl extends ManagerWebResource implements TenantReso
 
         List<ConstraintViolation> violations = new ArrayList<>();
         if (tenant.getEnabled() == null || !tenant.getEnabled()) {
-            ConstraintViolation violation = new ConstraintViolation(
-                ConstraintViolation.Type.PARAMETER,
-                "Tenant.enabled",
-                validationMessages.getString("Tenant.masterDisabled")
-            );
+            ConstraintViolation violation = new ConstraintViolation();
+            violation.setConstraintType(ConstraintViolation.Type.PARAMETER);
+            violation.setPath("Tenant.enabled");
+            violation.setMessage(validationMessages.getString("Tenant.masterDisabled"));
             violations.add(violation);
         }
         if (tenant.getRealm() == null || !tenant.getRealm().equals(MASTER_REALM)) {
-            ConstraintViolation violation = new ConstraintViolation(
-                ConstraintViolation.Type.PARAMETER,
-                "Tenant.realm",
-                validationMessages.getString("Tenant.masterRealmChanged")
-            );
+            ConstraintViolation violation = new ConstraintViolation();
+            violation.setConstraintType(ConstraintViolation.Type.PARAMETER);
+            violation.setPath("Tenant.realm");
+            violation.setMessage(validationMessages.getString("Tenant.masterRealmChanged"));
             violations.add(violation);
         }
         if (violations.size() > 0) {

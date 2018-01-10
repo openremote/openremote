@@ -42,8 +42,15 @@ public class TestOpenRemoteApp extends OpenRemoteApp {
     public TestOpenRemoteApp(KeycloakDeployment keycloakDeployment, Tenant tenant, Closure<String> accessTokenClosure) {
         this.security = new TestAppSecurity(keycloakDeployment, accessTokenClosure);
         this.tenant = tenant;
+
         ClientObjectMapper<ConstraintViolationReport> constraintViolationReportMapper = new ClientObjectMapper<>(Container.JSON, ConstraintViolationReport.class);
-        this.requestService = new RequestService(security::authorizeRequestParams, constraintViolationReportMapper::read);
+
+        this.requestService = new RequestService(
+            security::authorizeRequestParams,
+            () -> {},
+            () -> {},
+            constraintViolationReportMapper::read
+        );
     }
 
     @Override

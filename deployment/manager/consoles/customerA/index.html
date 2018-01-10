@@ -73,7 +73,7 @@
 <or-toast></or-toast>
 
 <!-- ############## Required: One <or-app> should wrap your frontend, you can enforce login/authentication ############## -->
-<or-app login tenant-realm="customerA" timeout="10">
+<or-app login tenant-realm="customerA">
 
     <!-- You can use your own styles or the OpenRemote styles and theme -->
     <a href="#" class="myAppHeadline">
@@ -99,9 +99,8 @@
         </p>
     </div>
 
-    <!-- Switch to horizontal layout but flex vertical first and take as much vertical
-         space as needed, and allow children to scroll if content doesn't fit -->
-    <div class="flex layout horizontal scrollable">
+    <!-- Switch to horizontal layout but flex vertical first and take as much vertical space as needed -->
+    <div class="flex layout horizontal">
 
         <!-- Flex and take as much horizontal space as possible -->
         <div class="flex layout vertical">
@@ -141,7 +140,7 @@
         </div>
 
         <!-- Flex and take as much horizontal space as possible, show scrollbars if content doesn't fit. -->
-        <div class="flex or-MainContent scrollable">
+        <div class="flex or-MainContent scroll">
             <!-- Execute AssetQuery and subscribe for attribute changes -->
             <or-asset type="room" id="blabla">
 

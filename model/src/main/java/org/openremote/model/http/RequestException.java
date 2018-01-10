@@ -50,4 +50,11 @@ public class RequestException extends RuntimeException {
     public double getStatusCode() {
         return statusCode;
     }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "{" +
+            "statusCode=" + statusCode +
+            '}';
+    }
 }

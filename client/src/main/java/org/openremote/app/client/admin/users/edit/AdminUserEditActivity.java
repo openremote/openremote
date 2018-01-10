@@ -229,11 +229,11 @@ public class AdminUserEditActivity
         if (password == null)
             return;
         if (!password.equals(passwordControl)) {
-            validationErrorHandler.accept(new ConstraintViolation[]{
-                new ConstraintViolation(
-                    ConstraintViolation.Type.FIELD, "password", environment.getMessages().passwordsMustMatch()
-                )
-            });
+            ConstraintViolation violation = new ConstraintViolation();
+            violation.setConstraintType(ConstraintViolation.Type.FIELD);
+            violation.setPath("password");
+            violation.setMessage(environment.getMessages().passwordsMustMatch());
+            validationErrorHandler.accept(new ConstraintViolation[]{violation});
             return;
         }
         Credential credential = new Credential(password, false);

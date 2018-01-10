@@ -309,6 +309,7 @@
                 }
                 serviceUrl = serviceUrl + "?Auth-Realm=" + this.realm;
                 if (this.keycloak) {
+                    // TODO Should use keycloak.updateToken()?
                     serviceUrl = serviceUrl + "&Authorization=Bearer " + this.keycloak.token;
                 } else {
                     serviceUrl = serviceUrl + "&Authorization=Basic " + window.btoa(this.user + ":" + this.basicAuthPassword);

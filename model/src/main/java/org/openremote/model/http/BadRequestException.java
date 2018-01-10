@@ -24,6 +24,8 @@ import jsinterop.annotations.JsType;
 @JsType
 public class BadRequestException extends RequestException {
 
+    public static final String VIOLATION_EXCEPTION_HEADER = "validation-exception";
+
     protected ConstraintViolationReport constraintViolationReport;
 
     public BadRequestException(int statusCode, ConstraintViolationReport constraintViolationReport) {

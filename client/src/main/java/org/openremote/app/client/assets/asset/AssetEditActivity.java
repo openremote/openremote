@@ -150,8 +150,6 @@ public class AssetEditActivity
             asset.setName("My New Asset");
             asset.setRealmId(environment.getApp().getTenant().getId());
             asset.setTenantDisplayName(environment.getApp().getTenant().getDisplayName());
-            JsUtil.log(asset);
-
             asset.setType(AssetType.THING);
         }
 

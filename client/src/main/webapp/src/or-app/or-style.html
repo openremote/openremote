@@ -34,15 +34,6 @@
         outline: 0;
     }
 
-    .scrollable {
-        overflow: auto;
-    }
-
-    scrollable div {
-        -webkit-flex-shrink: 0;
-        flex-shrink: 0;
-    }
-
     .or-Viewport {
         width: 100%;
         height: 100vh;
@@ -597,6 +588,16 @@
         margin: 0.4em;
     }
 
+    .or-FormMessages,
+    .or-Toast {
+        font-size: smaller;
+        font-weight: 600;
+        padding: 0.8em;
+        border-radius: 0.25em;
+        -webkit-box-shadow: 1px 1px 4px -1px rgba(0, 0, 0, 0.9);
+        -moz-box-shadow: 1px 1px 4px -1px rgba(0, 0, 0, 0.9);
+        box-shadow: 1px 1px 4px -1px rgba(0, 0, 0, 0.9);
+    }
     .or-FormMessages,
     .or-Toast {
         font-size: smaller;

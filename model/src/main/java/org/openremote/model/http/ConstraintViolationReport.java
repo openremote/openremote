@@ -19,73 +19,95 @@
  */
 package org.openremote.model.http;
 
-import jsinterop.annotations.JsType;
+import jsinterop.annotations.*;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-@JsType
-public class ConstraintViolationReport implements java.io.Serializable {
+@JsType(isNative = true, namespace = JsPackage.GLOBAL, name = "Object")
+public class ConstraintViolationReport {
 
-    public static final String VIOLATION_EXCEPTION_HEADER = "validation-exception";
-
+    @JsProperty
     protected String exception;
-    protected ConstraintViolation[] fieldViolations = new ConstraintViolation[0];
-    protected ConstraintViolation[] propertyViolations = new ConstraintViolation[0];
-    protected ConstraintViolation[] classViolations = new ConstraintViolation[0];
-    protected ConstraintViolation[] parameterViolations = new ConstraintViolation[0];
-    protected ConstraintViolation[] returnValueViolations = new ConstraintViolation[0];
 
-    public String getException() {
+    @JsProperty
+    protected ConstraintViolation[] fieldViolations;
+
+    @JsProperty
+    protected ConstraintViolation[] propertyViolations;
+
+    @JsProperty
+    protected ConstraintViolation[] classViolations;
+
+    @JsProperty
+    protected ConstraintViolation[] parameterViolations;
+
+    @JsProperty
+    protected ConstraintViolation[] returnValueViolations;
+
+    @JsOverlay
+    final public String getException() {
         return exception;
     }
 
-    public void setException(String exception) {
+    @JsOverlay
+    final public void setException(String exception) {
         this.exception = exception;
     }
 
-    public ConstraintViolation[] getFieldViolations() {
-        return fieldViolations;
+    @JsOverlay
+    final public ConstraintViolation[] getFieldViolations() {
+        return fieldViolations != null ? fieldViolations : new ConstraintViolation[0];
     }
 
-    public void setFieldViolations(ConstraintViolation[] fieldViolations) {
+    @JsOverlay
+    final public void setFieldViolations(ConstraintViolation[] fieldViolations) {
         this.fieldViolations = fieldViolations;
     }
 
-    public ConstraintViolation[] getPropertyViolations() {
-        return propertyViolations;
+    @JsOverlay
+    final public ConstraintViolation[] getPropertyViolations() {
+        return propertyViolations != null ?  propertyViolations : new ConstraintViolation[0];
     }
 
-    public void setPropertyViolations(ConstraintViolation[] propertyViolations) {
+    @JsOverlay
+    final public void setPropertyViolations(ConstraintViolation[] propertyViolations) {
         this.propertyViolations = propertyViolations;
     }
 
-    public ConstraintViolation[] getClassViolations() {
-        return classViolations;
+    @JsOverlay
+    final public ConstraintViolation[] getClassViolations() {
+        return classViolations != null ? classViolations : new ConstraintViolation[0];
     }
 
-    public void setClassViolations(ConstraintViolation[] classViolations) {
+    @JsOverlay
+    final public void setClassViolations(ConstraintViolation[] classViolations) {
         this.classViolations = classViolations;
     }
 
-    public ConstraintViolation[] getParameterViolations() {
-        return parameterViolations;
+    @JsOverlay
+    final public ConstraintViolation[] getParameterViolations() {
+        return parameterViolations != null ? parameterViolations : new ConstraintViolation[0];
     }
 
-    public void setParameterViolations(ConstraintViolation[] parameterViolations) {
+    @JsOverlay
+    final public void setParameterViolations(ConstraintViolation[] parameterViolations) {
         this.parameterViolations = parameterViolations;
     }
 
-    public ConstraintViolation[] getReturnValueViolations() {
-        return returnValueViolations;
+    @JsOverlay
+    final public ConstraintViolation[] getReturnValueViolations() {
+        return returnValueViolations != null ? returnValueViolations : new ConstraintViolation[0];
     }
 
-    public void setReturnValueViolations(ConstraintViolation[] returnValueViolations) {
+    @JsOverlay
+    final public void setReturnValueViolations(ConstraintViolation[] returnValueViolations) {
         this.returnValueViolations = returnValueViolations;
     }
 
-    public boolean hasViolations() {
+    @JsOverlay
+    final public boolean hasViolations() {
         return getFieldViolations().length > 0
             || getPropertyViolations().length > 0
             || getClassViolations().length > 0
@@ -93,7 +115,8 @@ public class ConstraintViolationReport implements java.io.Serializable {
             || getReturnValueViolations().length > 0;
     }
 
-    public ConstraintViolation[] getAllViolations() {
+    @JsOverlay
+    final public ConstraintViolation[] getAllViolations() {
         List<ConstraintViolation> violations = new ArrayList<>();
         violations.addAll(Arrays.asList(getFieldViolations()));
         violations.addAll(Arrays.asList(getPropertyViolations()));
@@ -103,15 +126,4 @@ public class ConstraintViolationReport implements java.io.Serializable {
         return violations.toArray(new ConstraintViolation[violations.size()]);
     }
 
-    @Override
-    public String toString() {
-        return getClass().getSimpleName() + "{" +
-            "exception='" + exception + '\'' +
-            ", fieldViolations=" + Arrays.toString(fieldViolations) +
-            ", propertyViolations=" + Arrays.toString(propertyViolations) +
-            ", classViolations=" + Arrays.toString(classViolations) +
-            ", parameterViolations=" + Arrays.toString(parameterViolations) +
-            ", returnValueViolations=" + Arrays.toString(returnValueViolations) +
-            '}';
-    }
 }

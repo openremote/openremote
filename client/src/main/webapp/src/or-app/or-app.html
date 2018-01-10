@@ -62,11 +62,11 @@
                 display: none;
             }
 
+            /* Example how to style slotted children
             #slots ::slotted(*) {
-                /* TODO Example how to style slotted children
                 border: 1px solid var(--theme-red);
-                */
             }
+            */
         </style>
 
         <div id="loader"></div>
@@ -374,7 +374,7 @@
 
                 // Disable login/token refresh
                 this.set("login", false);
-                // TODO Close websocket?
+                this.disconnectEventService();
 
                 // Hide the slots
                 this.$.slots.style.display = "none";
@@ -429,8 +429,9 @@
                     (requestParams, onComplete) => {
                         this.getSecurity().authorizeRequestParams(requestParams, onComplete);
                     },
+                    this.showLoader.bind(this),
+                    this.hideLoader.bind(this),
                     (constraintViolationReportJson) => {
-                        // TODO Anything else for constraint violation handling?
                         return JSON.parse(constraintViolationReportJson);
                     }
                     // TODO We should give a default error handler to RequestService
@@ -459,8 +460,7 @@
                         // Close explicitly on unload/refresh of page, otherwise close code will be 1001
                         window.addEventListener("beforeunload", () => {
                             console.log("Page unloaded, closing event service connection");
-                            // TODO Should also cancel all subscriptions with the server
-                            this.webSocket.close();
+                            this.disconnectEventService();
                         });
                     };
 
@@ -493,6 +493,15 @@
                 });
             }
 
+            disconnectEventService() {
+                if (this.webSocket && this.webSocket.readyState === this.webSocket.OPEN) {
+                    console.log("Closing WebSocket");
+
+                    // TODO Should also cancel all subscriptions with the server!
+                    this.webSocket.close();
+                }
+            }
+
             loadTenantDetails(onComplete) {
                 if (!this.login) {
                     onComplete();
@@ -508,9 +517,7 @@
                         onComplete();
                     },
                     (exception) => {
-                        // TODO Exception handler, or see above for default error handler in RequestService
-                        console.log("### GOT EXCEPTION");
-                        console.dir(exception);
+                        this.set("error", exception);
                     }
                 );
             }

@@ -41,7 +41,7 @@ import java.util.ResourceBundle;
 
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static org.openremote.model.Constants.MASTER_REALM;
-import static org.openremote.model.http.ConstraintViolationReport.VIOLATION_EXCEPTION_HEADER;
+import static org.openremote.model.http.BadRequestException.VIOLATION_EXCEPTION_HEADER;
 
 public class UserResourceImpl extends ManagerWebResource implements UserResource {
 
@@ -210,10 +210,10 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
 
         ResourceBundle validationMessages = getContainer().getService(I18NService.class).getValidationMessages();
         List<ConstraintViolation> violations = new ArrayList<>();
-        violations.add(new ConstraintViolation(
-            ConstraintViolation.Type.PARAMETER,
-            validationMessages.getString("User.masterAdminDeleted")
-        ));
+        ConstraintViolation violation = new ConstraintViolation();
+        violation.setConstraintType(ConstraintViolation.Type.PARAMETER);
+        violation.setMessage(validationMessages.getString("User.masterAdminDeleted"));
+        violations.add(violation);
         ConstraintViolationReport report = new ConstraintViolationReport();
         report.setParameterViolations(violations.toArray(new ConstraintViolation[violations.size()]));
         return report;
@@ -231,11 +231,10 @@ public class UserResourceImpl extends ManagerWebResource implements UserResource
 
         List<ConstraintViolation> violations = new ArrayList<>();
         if (user.getEnabled() == null || !user.getEnabled()) {
-            ConstraintViolation violation = new ConstraintViolation(
-                ConstraintViolation.Type.PARAMETER,
-                "User.enabled",
-                validationMessages.getString("User.masterAdminDisabled")
-            );
+            ConstraintViolation violation = new ConstraintViolation();
+            violation.setConstraintType(ConstraintViolation.Type.PARAMETER);
+            violation.setPath("User.enabled");
+            violation.setMessage(validationMessages.getString("User.masterAdminDisabled"));
             violations.add(violation);
         }
         if (violations.size() > 0) {

@@ -19,72 +19,69 @@
  */
 package org.openremote.model.http;
 
-import jsinterop.annotations.JsIgnore;
-import jsinterop.annotations.JsType;
+import jsinterop.annotations.*;
 
-import java.io.Serializable;
-
-@JsType
-public class ConstraintViolation implements Serializable {
+@JsType(isNative = true, namespace = JsPackage.GLOBAL, name = "Object")
+public class ConstraintViolation {
 
     @JsType
     public enum Type {CLASS, FIELD, PROPERTY, PARAMETER, RETURN_VALUE}
 
+    @JsProperty
     protected Type constraintType;
+
+    @JsProperty
     protected String path;
+
+    @JsProperty
     protected String message;
+
+    @JsProperty
     protected String value;
 
-    @JsIgnore
-    private ConstraintViolation() {
-        this(null, null);
-    }
-
-    public ConstraintViolation(Type constraintType, String path, String message) {
-        this.constraintType = constraintType;
-        this.path = path;
-        this.message = message;
-    }
-
-    @JsIgnore
-    public ConstraintViolation(Type constraintType, String message) {
-        this(constraintType, null, message);
-    }
-
-    public Type getConstraintType() {
+    @JsOverlay
+    final public Type getConstraintType() {
         return constraintType;
     }
 
-    public void setConstraintType(Type constraintType) {
+    @JsOverlay
+    final public void setConstraintType(Type constraintType) {
         this.constraintType = constraintType;
     }
 
-    public String getPath() {
+    @JsOverlay
+    final public String getPath() {
         return path;
     }
 
-    public void setPath(String path) {
+    @JsOverlay
+    final public void setPath(String path) {
         this.path = path;
     }
 
-    public String getMessage() {
+    @JsOverlay
+    final public String getMessage() {
         return message;
     }
 
-    public void setMessage(String message) {
+    @JsOverlay
+    final public void setMessage(String message) {
         this.message = message;
     }
 
-    public String getValue() {
+    @JsOverlay
+    final public String getValue() {
         return value;
     }
 
-    public void setValue(String value) {
+    @JsOverlay
+    final public void setValue(String value) {
         this.value = value;
     }
 
+    @JsOverlay
     @Override
-    public String toString() {
+    final public String toString() {
         return getClass().getSimpleName() + "{" +
             "constraintType=" + constraintType +
             ", path='" + path + '\'' +
