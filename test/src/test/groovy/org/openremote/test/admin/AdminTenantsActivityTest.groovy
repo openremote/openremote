@@ -360,17 +360,16 @@ class AdminTenantsActivityTest extends Specification implements ManagerContainer
             "Test Name2"
         }
         1 * adminTenantView.getTenantRealm() >> {
-            return "master" // Note: This should be a conflict
+            return "master" // This will cause a conflict constraint violation
         }
         1 * adminTenantView.getTenantEnabled() >> {
             return true
         }
 
-        and: "The conflict toast should be shown"
-        conditions.eventually {
-            assert resultEvents[0] instanceof ShowFailureEvent
-            assert resultEvents[0].text == "TestMessageRequestFailed:TestMessageConflictRequest"
-        }
+        and: "The form errors should be shown"
+        1 * adminTenantView.addFormMessageError("TestMessageConflictRequest")
+        1 * adminTenantView.setTenantRealmError(true)
+        1 * adminTenantView.setFormBusy(false)
 
         when: "The user clicks the Update button"
         resultEvents = []

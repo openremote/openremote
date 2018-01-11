@@ -19,12 +19,14 @@
  */
 package org.openremote.model.http;
 
+import com.google.gwt.http.client.Response;
 import jsinterop.annotations.JsType;
 
 @JsType
-public class EntityMarshallingRequestException extends RequestException {
+public class UnauthorizedRequestError extends RequestError {
 
-    public EntityMarshallingRequestException(int statusCode, Throwable cause) {
-        super(statusCode, cause.getMessage());
+    public UnauthorizedRequestError() {
+        super(Response.SC_UNAUTHORIZED, "Unauthorized request, invalid credentials or access token");
     }
+
 }

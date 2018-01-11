@@ -47,8 +47,13 @@ public class TestOpenRemoteApp extends OpenRemoteApp {
 
         this.requestService = new RequestService(
             security::authorizeRequestParams,
-            () -> {},
-            () -> {},
+            () -> {
+            },
+            () -> {
+            },
+            (e) -> {
+                throw new RuntimeException(e.toString());
+            },
             constraintViolationReportMapper::read
         );
     }

@@ -21,7 +21,6 @@ package org.openremote.app.client.assets.asset;
 
 import com.google.gwt.user.client.ui.IsWidget;
 import com.google.inject.Provider;
-import org.openremote.app.client.interop.value.ObjectValueMapper;
 import org.openremote.app.client.Environment;
 import org.openremote.app.client.app.dialog.JsonEditor;
 import org.openremote.app.client.assets.AssetBrowsingActivity;
@@ -38,11 +37,11 @@ import org.openremote.app.client.event.GoToPlaceEvent;
 import org.openremote.app.client.event.ShowFailureEvent;
 import org.openremote.app.client.event.ShowInfoEvent;
 import org.openremote.app.client.event.ShowSuccessEvent;
+import org.openremote.app.client.interop.value.ObjectValueMapper;
 import org.openremote.app.client.mvp.AcceptsView;
 import org.openremote.app.client.mvp.AppActivity;
 import org.openremote.app.client.widget.FormButton;
 import org.openremote.app.client.widget.FormOutputText;
-import org.openremote.model.map.MapResource;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.ValueHolder;
 import org.openremote.model.asset.Asset;
@@ -53,12 +52,12 @@ import org.openremote.model.attribute.*;
 import org.openremote.model.event.bus.EventBus;
 import org.openremote.model.event.bus.EventRegistration;
 import org.openremote.model.interop.Consumer;
+import org.openremote.model.map.MapResource;
 import org.openremote.model.security.Tenant;
 import org.openremote.model.value.*;
 
 import java.util.*;
 
-import static org.openremote.app.client.http.RequestExceptionHandler.handleRequestException;
 import static org.openremote.app.client.widget.ValueEditors.*;
 import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 
@@ -144,8 +143,7 @@ public abstract class AbstractAssetActivity<V
                 objectValueMapper,
                 mapResource::getSettings,
                 200,
-                view::initialiseMap,
-                ex -> handleRequestException(ex, environment)
+                view::initialiseMap
             );
         } else {
             onMapReady();

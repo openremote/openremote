@@ -17,16 +17,15 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.app.client.http;
+package org.openremote.model.http;
 
-import com.github.nmorel.gwtjackson.client.ObjectMapper;
-import com.github.nmorel.gwtjackson.client.annotation.JsonMixIns;
-import org.openremote.app.client.interop.jackson.DefaultJsonMixin;
-import org.openremote.app.client.rest.EntityReader;
-import org.openremote.model.http.ConstraintViolationReport;
+import jsinterop.annotations.JsType;
 
-@JsonMixIns({@JsonMixIns.JsonMixIn(target = ConstraintViolationReport.class, mixIn = DefaultJsonMixin.class)})
-public interface ConstraintViolationReportMapper
-    extends ObjectMapper<ConstraintViolationReport>,
-    EntityReader<ConstraintViolationReport> {
+@JsType
+public class NoResponseError extends RequestError {
+
+    public NoResponseError(int statusCode) {
+        super(statusCode, "No response from service");
+    }
+
 }

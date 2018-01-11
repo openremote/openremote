@@ -19,27 +19,25 @@
  */
 package org.openremote.app.client.rules.asset;
 
-import org.openremote.app.client.rest.EntityReader;
-import org.openremote.app.client.rest.EntityWriter;
 import org.openremote.app.client.Environment;
 import org.openremote.app.client.assets.AssetMapper;
 import org.openremote.app.client.assets.browser.AssetBrowser;
 import org.openremote.app.client.mvp.AcceptsView;
 import org.openremote.app.client.mvp.AppActivity;
+import org.openremote.app.client.rest.EntityReader;
+import org.openremote.app.client.rest.EntityWriter;
 import org.openremote.app.client.rules.AbstractRulesEditorActivity;
 import org.openremote.app.client.rules.RulesEditor;
 import org.openremote.model.asset.AssetResource;
-import org.openremote.model.rules.RulesetResource;
 import org.openremote.model.event.bus.EventBus;
 import org.openremote.model.event.bus.EventRegistration;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.interop.Consumer;
 import org.openremote.model.rules.AssetRuleset;
+import org.openremote.model.rules.RulesetResource;
 
 import javax.inject.Inject;
 import java.util.Collection;
-
-import static org.openremote.app.client.http.RequestExceptionHandler.handleRequestException;
 
 public class AssetRulesEditorActivity
     extends AbstractRulesEditorActivity<AssetRuleset, AssetRulesEditorPlace> {
@@ -80,8 +78,7 @@ public class AssetRulesEditorActivity
             200,
             asset -> {
                 view.setHeadline(asset.getName(), environment.getMessages().editAssetRuleset());
-            },
-            ex -> handleRequestException(ex, environment)
+            }
         );
     }
 

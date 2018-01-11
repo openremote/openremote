@@ -25,7 +25,7 @@ import jsinterop.annotations.*;
 public class ConstraintViolation {
 
     @JsType
-    public enum Type {CLASS, FIELD, PROPERTY, PARAMETER, RETURN_VALUE}
+    public enum Type {CONFLICT, CLASS, FIELD, PROPERTY, PARAMETER, RETURN_VALUE}
 
     @JsProperty
     protected Type constraintType;

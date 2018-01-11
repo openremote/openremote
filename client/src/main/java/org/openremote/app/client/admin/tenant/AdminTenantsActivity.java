@@ -25,15 +25,13 @@ import org.openremote.app.client.admin.AdminView;
 import org.openremote.app.client.admin.TenantArrayMapper;
 import org.openremote.app.client.admin.navigation.AdminNavigation;
 import org.openremote.app.client.mvp.AcceptsView;
-import org.openremote.model.security.Tenant;
 import org.openremote.model.event.bus.EventBus;
 import org.openremote.model.event.bus.EventRegistration;
+import org.openremote.model.security.Tenant;
 import org.openremote.model.security.TenantResource;
 
 import javax.inject.Inject;
 import java.util.Collection;
-
-import static org.openremote.app.client.http.RequestExceptionHandler.handleRequestException;
 
 public class AdminTenantsActivity
     extends AbstractAdminActivity<AdminTenantsPlace, AdminTenants>
@@ -74,8 +72,7 @@ public class AdminTenantsActivity
             tenants -> {
                 adminContent.setTenants(tenants);
                 adminContent.setFormBusy(false);
-            },
-            ex -> handleRequestException(ex, environment)
+            }
         );
 
         adminContent.setCreateTenantHistoryToken(

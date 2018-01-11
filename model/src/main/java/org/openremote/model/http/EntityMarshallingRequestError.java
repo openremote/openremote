@@ -19,42 +19,12 @@
  */
 package org.openremote.model.http;
 
-import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsType;
 
 @JsType
-public class RequestException extends RuntimeException {
+public class EntityMarshallingRequestError extends RequestError {
 
-    public double statusCode;
-
-    @JsIgnore
-    public RequestException() {
-        this(-1, null);
-    }
-
-    @JsIgnore
-    public RequestException(String message) {
-        this(-1, message);
-    }
-
-    @JsIgnore
-    public RequestException(double statusCode) {
-        this(statusCode, null);
-    }
-
-    public RequestException(double statusCode, String message) {
-        super(message);
-        this.statusCode = statusCode;
-    }
-
-    public double getStatusCode() {
-        return statusCode;
-    }
-
-    @Override
-    public String toString() {
-        return getClass().getSimpleName() + "{" +
-            "statusCode=" + statusCode +
-            '}';
+    public EntityMarshallingRequestError(int statusCode, Throwable cause) {
+        super(statusCode, cause.getMessage());
     }
 }

@@ -26,19 +26,17 @@ import org.openremote.app.client.admin.users.edit.AdminUserEditPlace;
 import org.openremote.app.client.event.ShowSuccessEvent;
 import org.openremote.app.client.mvp.AcceptsView;
 import org.openremote.app.client.mvp.AppActivity;
-import org.openremote.model.notification.NotificationResource;
 import org.openremote.model.event.bus.EventBus;
 import org.openremote.model.event.bus.EventRegistration;
 import org.openremote.model.notification.ActionType;
 import org.openremote.model.notification.AlertAction;
 import org.openremote.model.notification.AlertNotification;
+import org.openremote.model.notification.NotificationResource;
 import org.openremote.model.security.User;
 import org.openremote.model.security.UserResource;
 
 import javax.inject.Inject;
 import java.util.Collection;
-
-import static org.openremote.app.client.http.RequestExceptionHandler.handleRequestException;
 
 public class AdminUserNotificationsActivity
     extends AbstractAdminActivity<AdminUserNotificationsPlace, AdminUserNotifications>
@@ -124,6 +122,7 @@ public class AdminUserNotificationsActivity
         if (this.alertNotification == null)
             this.alertNotification = createDefaultNotification();
 
+        // TODO Constraint violation handler and @Valid AlertNotification on resource method?
         notificationEditor.setAlertNotification(this.alertNotification);
         notificationEditor.setOnSend(updatedNotification -> {
             adminContent.setFormBusy(true);
@@ -137,8 +136,7 @@ public class AdminUserNotificationsActivity
                         environment.getMessages().notificationSentToUser()
                     ));
                     loadNotifications(() -> adminContent.setFormBusy(false));
-                },
-                ex -> handleRequestException(ex, environment)
+                }
             );
         });
         notificationEditor.show();
@@ -146,7 +144,8 @@ public class AdminUserNotificationsActivity
 
     @Override
     public void onRefresh() {
-        loadNotifications(() -> {});
+        loadNotifications(() -> {
+        });
     }
 
     @Override
@@ -160,8 +159,7 @@ public class AdminUserNotificationsActivity
                     environment.getMessages().notificationsDeleted())
                 );
                 loadNotifications(() -> adminContent.setFormBusy(false));
-            },
-            ex -> handleRequestException(ex, environment)
+            }
         );
     }
 
@@ -177,8 +175,7 @@ public class AdminUserNotificationsActivity
                 environment.getEventBus().dispatch(new ShowSuccessEvent(
                     environment.getMessages().notificationDeleted(id))
                 );
-            },
-            ex -> handleRequestException(ex, environment)
+            }
         );
     }
 
@@ -208,8 +205,7 @@ public class AdminUserNotificationsActivity
                 loadNotifications(() -> {
                     adminContent.setFormBusy(false);
                 });
-            },
-            ex -> handleRequestException(ex, environment)
+            }
         );
     }
 
@@ -221,8 +217,7 @@ public class AdminUserNotificationsActivity
             notifications -> {
                 adminContent.setNotifications(notifications);
                 onComplete.run();
-            },
-            ex -> handleRequestException(ex, environment)
+            }
         );
     }
 }

@@ -86,9 +86,6 @@
                     200,
                     (response) => {
                         this.set("assets", response);
-                    },
-                    (exception) => {
-                        openremote.INSTANCE.set("error", exception);
                     }
                 );
             }

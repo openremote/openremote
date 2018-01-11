@@ -26,15 +26,13 @@ import org.openremote.app.client.assets.browser.AssetBrowserSelection;
 import org.openremote.app.client.mvp.AcceptsView;
 import org.openremote.app.client.mvp.AppActivity;
 import org.openremote.app.client.rules.RulesModule;
-import org.openremote.model.rules.RulesetResource;
 import org.openremote.model.event.bus.EventBus;
 import org.openremote.model.event.bus.EventRegistration;
 import org.openremote.model.rules.GlobalRuleset;
+import org.openremote.model.rules.RulesetResource;
 
 import javax.inject.Inject;
 import java.util.Collection;
-
-import static org.openremote.app.client.http.RequestExceptionHandler.handleRequestException;
 
 public class GlobalRulesListActivity
     extends AssetBrowsingActivity<GlobalRulesListPlace>
@@ -75,8 +73,7 @@ public class GlobalRulesListActivity
             globalRulesetArrayMapper,
             rulesetResource::getGlobalRulesets,
             200,
-            view::setRulesets,
-            ex -> handleRequestException(ex, environment)
+            view::setRulesets
         );
 
         view.setCreateRulesetHistoryToken(

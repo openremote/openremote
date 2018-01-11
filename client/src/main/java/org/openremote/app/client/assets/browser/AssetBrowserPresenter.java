@@ -41,8 +41,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.logging.Logger;
 
-import static org.openremote.app.client.http.RequestExceptionHandler.handleRequestException;
-
 public class AssetBrowserPresenter implements AssetBrowser.Presenter {
 
     private static final Logger LOG = Logger.getLogger(AssetBrowserPresenter.class.getName());
@@ -125,8 +123,7 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
             assetMapper,
             requestParams -> assetResource.get(requestParams, id),
             200,
-            assetConsumer,
-            ex -> handleRequestException(ex, environment)
+            assetConsumer
         );
     }
 
@@ -235,8 +232,7 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
                 display.setRowData(0, tenantNodes);
                 display.setRowCount(tenantNodes.size(), true);
                 afterNodeLoadChildren(tenantNodes);
-            },
-            ex -> handleRequestException(ex, environment)
+            }
         );
     }
 
@@ -269,8 +265,7 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
                 display.setRowData(0, treeNodes);
                 display.setRowCount(assets.length, true);
                 afterNodeLoadChildren(treeNodes);
-            },
-            ex -> handleRequestException(ex, environment)
+            }
         );
     }
 

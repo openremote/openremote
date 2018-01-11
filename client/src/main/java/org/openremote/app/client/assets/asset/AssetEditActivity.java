@@ -21,8 +21,6 @@ package org.openremote.app.client.assets.asset;
 
 import com.google.gwt.user.client.ui.IsWidget;
 import com.google.inject.Provider;
-import org.openremote.app.client.interop.jackson.FileInfoMapper;
-import org.openremote.app.client.interop.value.ObjectValueMapper;
 import org.openremote.app.client.Environment;
 import org.openremote.app.client.app.dialog.JsonEditor;
 import org.openremote.app.client.assets.*;
@@ -33,22 +31,22 @@ import org.openremote.app.client.assets.browser.BrowserTreeNode;
 import org.openremote.app.client.assets.browser.TenantTreeNode;
 import org.openremote.app.client.event.ShowFailureEvent;
 import org.openremote.app.client.event.ShowSuccessEvent;
-import org.openremote.app.client.util.JsUtil;
+import org.openremote.app.client.interop.jackson.FileInfoMapper;
+import org.openremote.app.client.interop.value.ObjectValueMapper;
 import org.openremote.app.client.widget.AttributeLinkEditor;
 import org.openremote.app.client.widget.AttributeRefEditor;
 import org.openremote.app.client.widget.FormButton;
 import org.openremote.app.client.widget.ValueEditors;
-import org.openremote.model.asset.agent.AgentResource;
-import org.openremote.model.asset.AssetResource;
-import org.openremote.model.map.MapResource;
 import org.openremote.model.ValueHolder;
 import org.openremote.model.asset.*;
 import org.openremote.model.asset.agent.AgentLink;
+import org.openremote.model.asset.agent.AgentResource;
 import org.openremote.model.asset.agent.ProtocolConfiguration;
 import org.openremote.model.asset.agent.ProtocolDescriptor;
 import org.openremote.model.attribute.*;
 import org.openremote.model.http.ConstraintViolation;
 import org.openremote.model.interop.Consumer;
+import org.openremote.model.map.MapResource;
 import org.openremote.model.util.EnumUtil;
 import org.openremote.model.util.Pair;
 import org.openremote.model.value.Value;
@@ -59,7 +57,6 @@ import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import static org.openremote.app.client.http.RequestExceptionHandler.handleRequestException;
 import static org.openremote.model.asset.AssetAttribute.attributesFromJson;
 import static org.openremote.model.asset.AssetQuery.*;
 import static org.openremote.model.attribute.Attribute.ATTRIBUTE_NAME_VALIDATOR;
@@ -286,10 +283,7 @@ public class AssetEditActivity
                         ));
                         environment.getPlaceController().goTo(new AssetViewPlace(assetId));
                     },
-                    ex -> {
-                        view.setFormBusy(false);
-                        handleRequestException(ex, environment.getEventBus(), environment.getMessages(), validationErrorHandler);
-                    }
+                    validationErrorHandler
                 );
             }
         });
@@ -316,7 +310,7 @@ public class AssetEditActivity
                         ));
                         environment.getPlaceController().goTo(new AssetViewPlace(createdAsset.getId()));
                     },
-                    ex -> handleRequestException(ex, environment.getEventBus(), environment.getMessages(), validationErrorHandler)
+                    validationErrorHandler
                 );
             }
         });
@@ -339,8 +333,7 @@ public class AssetEditActivity
                             environment.getMessages().assetDeleted(asset.getName())
                         ));
                         environment.getPlaceController().goTo(new AssetsDashboardPlace());
-                    },
-                    ex -> handleRequestException(ex, environment.getEventBus(), environment.getMessages(), validationErrorHandler)
+                    }
                 );
             }
         );
@@ -417,7 +410,7 @@ public class AssetEditActivity
         switch (valueType) {
             case ARRAY:
                 if (valueHolder instanceof MetaItem) {
-                    if (isMetaNameEqualTo((MetaItem)valueHolder, AssetMeta.AGENT_LINK)) {
+                    if (isMetaNameEqualTo((MetaItem) valueHolder, AssetMeta.AGENT_LINK)) {
                         boolean isReadOnly = isValueReadOnly(valueHolder);
                         String assetWatermark = environment.getMessages().selectAgent();
                         String attributeWatermark = environment.getMessages().selectProtocolConfiguration();
@@ -554,7 +547,7 @@ public class AssetEditActivity
                     requestParams -> agentResource.validateProtocolConfiguration(requestParams, assetId, attribute),
                     200,
                     resultConsumer,
-                    ex -> handleRequestException(ex, environment.getEventBus(), environment.getMessages(), validationErrorHandler)
+                    validationErrorHandler
                 );
             } else {
                 resultConsumer.accept(validationResult);
@@ -599,8 +592,7 @@ public class AssetEditActivity
                     displayNamesAndTypes.addAll(attributeTypesToList());
                     view.setAvailableAttributeTypes(displayNamesAndTypes);
                     onComplete.run();
-                },
-                ex -> handleRequestException(ex, environment.getEventBus(), environment.getMessages(), validationErrorHandler)
+                }
             );
         } else {
             // Get all protocol descriptors for all agents
@@ -620,8 +612,7 @@ public class AssetEditActivity
                     view.setFormBusy(false);
                     view.setAvailableAttributeTypes(attributeTypesToList());
                     onComplete.run();
-                },
-                ex -> handleRequestException(ex, environment.getEventBus(), environment.getMessages(), validationErrorHandler)
+                }
             );
         }
     }
@@ -708,10 +699,6 @@ public class AssetEditActivity
                 view.setFormBusy(false);
                 view.setAvailableAttributeTypes(attributeTypesToList());
                 showSuccess(environment.getMessages().protocolLinkDiscoverySuccess(discoveredAssets.length));
-                callback.run();
-            },
-            ex -> {
-                handleRequestException(ex, environment.getEventBus(), environment.getMessages(), validationErrorHandler);
                 callback.run();
             }
         );

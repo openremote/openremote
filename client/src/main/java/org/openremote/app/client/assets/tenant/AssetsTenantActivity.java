@@ -43,8 +43,6 @@ import javax.inject.Inject;
 import java.util.Arrays;
 import java.util.Collection;
 
-import static org.openremote.app.client.http.RequestExceptionHandler.handleRequestException;
-
 public class AssetsTenantActivity extends AssetBrowsingActivity<AssetsTenantPlace> implements AssetsTenant.Presenter {
 
     final AssetsTenant view;
@@ -169,8 +167,7 @@ public class AssetsTenantActivity extends AssetBrowsingActivity<AssetsTenantPlac
                 ));
                 view.setFormBusy(false);
                 loadUserAssets();
-            },
-            ex -> handleRequestException(ex, environment)
+            }
         );
     }
 
@@ -187,8 +184,7 @@ public class AssetsTenantActivity extends AssetBrowsingActivity<AssetsTenantPlac
                 ));
                 view.setFormBusy(false);
                 loadUserAssets();
-            },
-            ex -> handleRequestException(ex, environment)
+            }
         );
     }
 
@@ -215,8 +211,7 @@ public class AssetsTenantActivity extends AssetBrowsingActivity<AssetsTenantPlac
                     loadUserAssets();
                     view.setFormBusy(false);
                 });
-            },
-            ex -> handleRequestException(ex, environment)
+            }
         );
     }
 
@@ -231,8 +226,7 @@ public class AssetsTenantActivity extends AssetBrowsingActivity<AssetsTenantPlac
                 writeUsersToView();
                 view.setFormBusy(false);
                 onComplete.run();
-            },
-            ex -> handleRequestException(ex, environment)
+            }
         );
     }
 
@@ -249,8 +243,7 @@ public class AssetsTenantActivity extends AssetBrowsingActivity<AssetsTenantPlac
                 view.setCreateAssetLinkEnabled(false);
 
                 view.setUserAssets(userAssets);
-            },
-            ex -> handleRequestException(ex, environment)
+            }
         );
     }
 

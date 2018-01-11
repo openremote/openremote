@@ -26,13 +26,13 @@ import org.openremote.app.client.admin.users.AdminUsersPlace;
 import org.openremote.app.client.event.ShowSuccessEvent;
 import org.openremote.app.client.mvp.AcceptsView;
 import org.openremote.app.client.mvp.AppActivity;
-import org.openremote.model.notification.DeviceNotificationToken;
-import org.openremote.model.notification.NotificationResource;
 import org.openremote.model.event.bus.EventBus;
 import org.openremote.model.event.bus.EventRegistration;
 import org.openremote.model.http.ConstraintViolation;
 import org.openremote.model.interop.Consumer;
 import org.openremote.model.interop.Runnable;
+import org.openremote.model.notification.DeviceNotificationToken;
+import org.openremote.model.notification.NotificationResource;
 import org.openremote.model.security.Credential;
 import org.openremote.model.security.Role;
 import org.openremote.model.security.User;
@@ -43,8 +43,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-
-import static org.openremote.app.client.http.RequestExceptionHandler.handleRequestException;
 
 public class AdminUserEditActivity
     extends AbstractAdminActivity<AdminUserEditPlace, AdminUserEdit>
@@ -57,33 +55,7 @@ public class AdminUserEditActivity
     final protected RoleArrayMapper roleArrayMapper;
     final protected NotificationResource notificationResource;
     final protected DeviceNotificationTokenMapper deviceNotificationTokenMapper;
-
-    final protected Consumer<ConstraintViolation[]> validationErrorHandler = violations -> {
-        for (ConstraintViolation violation : violations) {
-            if (violation.getPath() != null) {
-                if (violation.getPath().endsWith("username")) {
-                    adminContent.setUsernameError(true);
-                }
-                if (violation.getPath().endsWith("firstName")) {
-                    adminContent.setFirstNameError(true);
-                }
-                if (violation.getPath().endsWith("lastName")) {
-                    adminContent.setLastNameError(true);
-                }
-                if (violation.getPath().endsWith("email")) {
-                    adminContent.setEmailError(true);
-                }
-                if (violation.getPath().endsWith("enabled")) {
-                    adminContent.setUserEnabledError(true);
-                }
-                if (violation.getPath().endsWith("password")) {
-                    adminContent.setPasswordError(true);
-                }
-            }
-            adminContent.addFormMessageError(violation.getMessage());
-        }
-        adminContent.setFormBusy(false);
-    };
+    final protected Consumer<ConstraintViolation[]> validationErrorHandler;
 
     protected AdminUserEditPlace place;
     protected String realm;
@@ -110,6 +82,35 @@ public class AdminUserEditActivity
         this.roleArrayMapper = roleArrayMapper;
         this.notificationResource = notificationResource;
         this.deviceNotificationTokenMapper = deviceNotificationTokenMapper;
+        this.validationErrorHandler = violations -> {
+            for (ConstraintViolation violation : violations) {
+                if (violation.getConstraintType() == ConstraintViolation.Type.CONFLICT) {
+                    adminContent.addFormMessageError(environment.getMessages().conflictRequest());
+                    adminContent.setUsernameError(true);
+                } else if (violation.getPath() != null) {
+                    if (violation.getPath().endsWith("username")) {
+                        adminContent.setUsernameError(true);
+                    }
+                    if (violation.getPath().endsWith("firstName")) {
+                        adminContent.setFirstNameError(true);
+                    }
+                    if (violation.getPath().endsWith("lastName")) {
+                        adminContent.setLastNameError(true);
+                    }
+                    if (violation.getPath().endsWith("email")) {
+                        adminContent.setEmailError(true);
+                    }
+                    if (violation.getPath().endsWith("enabled")) {
+                        adminContent.setUserEnabledError(true);
+                    }
+                    if (violation.getPath().endsWith("password")) {
+                        adminContent.setPasswordError(true);
+                    }
+                    adminContent.addFormMessageError(violation.getMessage());
+                }
+            }
+            adminContent.setFormBusy(false);
+        };
     }
 
     @Override
@@ -207,7 +208,7 @@ public class AdminUserEditActivity
                 ));
                 environment.getPlaceController().goTo(new AdminUsersPlace(realm));
             },
-            ex -> handleRequestException(ex, environment.getEventBus(), environment.getMessages(), validationErrorHandler)
+            validationErrorHandler
         );
     }
 
@@ -241,8 +242,7 @@ public class AdminUserEditActivity
             credentialMapper,
             requestParams -> userResource.resetPassword(requestParams, realm, userId, credential),
             204,
-            () -> adminContent.addFormMessageSuccess(environment.getMessages().passwordUpdated()),
-            ex -> handleRequestException(ex, environment.getEventBus(), environment.getMessages(), validationErrorHandler)
+            () -> adminContent.addFormMessageSuccess(environment.getMessages().passwordUpdated())
         );
     }
 
@@ -255,7 +255,7 @@ public class AdminUserEditActivity
                 adminContent.setFormBusy(false);
                 adminContent.addFormMessageSuccess(environment.getMessages().userUpdated(user.getUsername()));
             }),
-            ex -> handleRequestException(ex, environment.getEventBus(), environment.getMessages(), validationErrorHandler)
+            validationErrorHandler
         );
     }
 
@@ -264,8 +264,7 @@ public class AdminUserEditActivity
             roleArrayMapper,
             requestParams -> userResource.updateRoles(requestParams, realm, userId, roles),
             204,
-            onComplete,
-            ex -> handleRequestException(ex, environment)
+            onComplete
         );
     }
 
@@ -279,8 +278,7 @@ public class AdminUserEditActivity
                 environment.getEventBus().dispatch(new ShowSuccessEvent(
                     environment.getMessages().registeredDeviceDeleted(id.getDeviceId())
                 ));
-            },
-            ex -> handleRequestException(ex, environment)
+            }
         );
     }
 
@@ -307,8 +305,7 @@ public class AdminUserEditActivity
                             environment.getMessages().userDeleted(user.getUsername())
                         ));
                         environment.getPlaceController().goTo(new AdminUsersPlace(realm));
-                    },
-                    ex -> handleRequestException(ex, environment.getEventBus(), environment.getMessages(), validationErrorHandler)
+                    }
                 );
             }
         );
@@ -331,8 +328,7 @@ public class AdminUserEditActivity
                     adminContent.enableDelete(true);
                     adminContent.enableResetPassword(true);
                 }));
-            },
-            ex -> handleRequestException(ex, environment)
+            }
         );
     }
 
@@ -348,8 +344,7 @@ public class AdminUserEditActivity
                 this.roles = roleList.toArray(new Role[roleList.size()]);
                 adminContent.enableRoles(true);
                 onComplete.run();
-            },
-            ex -> handleRequestException(ex, environment)
+            }
         );
     }
 
@@ -361,8 +356,7 @@ public class AdminUserEditActivity
             deviceNotificationTokens -> {
                 adminContent.setDeviceRegistrations(deviceNotificationTokens);
                 onComplete.run();
-            },
-            ex -> handleRequestException(ex, environment)
+            }
         );
     }
 

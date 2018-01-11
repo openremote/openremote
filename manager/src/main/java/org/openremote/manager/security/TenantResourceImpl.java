@@ -40,7 +40,7 @@ import java.util.logging.Logger;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 import static org.openremote.model.Constants.MASTER_REALM;
-import static org.openremote.model.http.BadRequestException.VIOLATION_EXCEPTION_HEADER;
+import static org.openremote.model.http.BadRequestError.VIOLATION_EXCEPTION_HEADER;
 
 public class TenantResourceImpl extends ManagerWebResource implements TenantResource {
 

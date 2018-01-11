@@ -19,7 +19,6 @@
  */
 package org.openremote.app.client.map;
 
-import org.openremote.app.client.interop.value.ObjectValueMapper;
 import org.openremote.app.client.Environment;
 import org.openremote.app.client.assets.AssetBrowsingActivity;
 import org.openremote.app.client.assets.AssetMapper;
@@ -28,17 +27,18 @@ import org.openremote.app.client.assets.browser.AssetBrowser;
 import org.openremote.app.client.assets.browser.AssetBrowserSelection;
 import org.openremote.app.client.assets.browser.AssetTreeNode;
 import org.openremote.app.client.assets.browser.TenantTreeNode;
+import org.openremote.app.client.interop.value.ObjectValueMapper;
 import org.openremote.app.client.mvp.AcceptsView;
 import org.openremote.app.client.mvp.AppActivity;
-import org.openremote.model.asset.AssetResource;
-import org.openremote.model.map.MapResource;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
+import org.openremote.model.asset.AssetResource;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeType;
 import org.openremote.model.event.bus.EventBus;
 import org.openremote.model.event.bus.EventRegistration;
 import org.openremote.model.geo.GeoJSON;
+import org.openremote.model.map.MapResource;
 import org.openremote.model.value.Values;
 
 import javax.inject.Inject;
@@ -46,15 +46,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-import static org.openremote.app.client.http.RequestExceptionHandler.handleRequestException;
 import static org.openremote.model.attribute.Attribute.isAttributeNameEqualTo;
 
 public class MapActivity extends AssetBrowsingActivity<MapPlace> implements MapView.Presenter {
-
-    private static final Logger LOG = Logger.getLogger(MapActivity.class.getName());
 
     final MapView view;
     final AssetResource assetResource;
@@ -138,8 +134,7 @@ public class MapActivity extends AssetBrowsingActivity<MapPlace> implements MapV
                 objectValueMapper::read,
                 mapResource::getSettings,
                 200,
-                view::initialiseMap,
-                ex -> handleRequestException(ex, environment)
+                view::initialiseMap
             );
         } else {
             onMapReady();

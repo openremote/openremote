@@ -27,17 +27,15 @@ import org.openremote.app.client.admin.navigation.AdminNavigation;
 import org.openremote.app.client.event.ShowSuccessEvent;
 import org.openremote.app.client.mvp.AcceptsView;
 import org.openremote.app.client.mvp.AppActivity;
-import org.openremote.model.security.Tenant;
-import org.openremote.model.http.ConstraintViolation;
 import org.openremote.model.event.bus.EventBus;
 import org.openremote.model.event.bus.EventRegistration;
+import org.openremote.model.http.ConstraintViolation;
 import org.openremote.model.interop.Consumer;
+import org.openremote.model.security.Tenant;
 import org.openremote.model.security.TenantResource;
 
 import javax.inject.Inject;
 import java.util.Collection;
-
-import static org.openremote.app.client.http.RequestExceptionHandler.handleRequestException;
 
 public class AdminTenantActivity
     extends AbstractAdminActivity<AdminTenantPlace, AdminTenant>
@@ -46,24 +44,7 @@ public class AdminTenantActivity
     final protected Environment environment;
     final protected TenantResource tenantResource;
     final protected TenantMapper tenantMapper;
-
-    final protected Consumer<ConstraintViolation[]> validationErrorHandler = violations -> {
-        for (ConstraintViolation violation : violations) {
-            if (violation.getPath() != null) {
-                if (violation.getPath().endsWith("displayName")) {
-                    adminContent.setTenantDisplayNameError(true);
-                }
-                if (violation.getPath().endsWith("realm")) {
-                    adminContent.setTenantRealmError(true);
-                }
-                if (violation.getPath().endsWith("enabled")) {
-                    adminContent.setTenantEnabledError(true);
-                }
-            }
-            adminContent.addFormMessageError(violation.getMessage());
-        }
-        adminContent.setFormBusy(false);
-    };
+    final protected Consumer<ConstraintViolation[]> validationErrorHandler;
 
     protected String realm;
     protected Tenant tenant;
@@ -79,6 +60,26 @@ public class AdminTenantActivity
         this.environment = environment;
         this.tenantResource = tenantResource;
         this.tenantMapper = tenantMapper;
+        this.validationErrorHandler = violations -> {
+            for (ConstraintViolation violation : violations) {
+                if (violation.getConstraintType() == ConstraintViolation.Type.CONFLICT) {
+                    adminContent.addFormMessageError(environment.getMessages().conflictRequest());
+                    adminContent.setTenantRealmError(true);
+                } else if (violation.getPath() != null) {
+                    if (violation.getPath().endsWith("displayName")) {
+                        adminContent.setTenantDisplayNameError(true);
+                    }
+                    if (violation.getPath().endsWith("realm")) {
+                        adminContent.setTenantRealmError(true);
+                    }
+                    if (violation.getPath().endsWith("enabled")) {
+                        adminContent.setTenantEnabledError(true);
+                    }
+                    adminContent.addFormMessageError(violation.getMessage());
+                }
+            }
+            adminContent.setFormBusy(false);
+        };
     }
 
     @Override
@@ -129,9 +130,7 @@ public class AdminTenantActivity
         readFromView();
         environment.getApp().getRequestService().sendWith(
             tenantMapper,
-            requestParams -> {
-                tenantResource.create(requestParams, tenant);
-            },
+            requestParams -> tenantResource.create(requestParams, tenant),
             204,
             () -> {
                 adminContent.setFormBusy(false);
@@ -140,7 +139,7 @@ public class AdminTenantActivity
                 ));
                 environment.getPlaceController().goTo(new AdminTenantsPlace());
             },
-            ex -> handleRequestException(ex, environment.getEventBus(), environment.getMessages(), validationErrorHandler)
+            validationErrorHandler
         );
     }
 
@@ -152,9 +151,7 @@ public class AdminTenantActivity
         readFromView();
         environment.getApp().getRequestService().sendWith(
             tenantMapper,
-            requestParams -> {
-                tenantResource.update(requestParams, realm, tenant);
-            },
+            requestParams -> tenantResource.update(requestParams, realm, tenant),
             204,
             () -> {
                 adminContent.setFormBusy(false);
@@ -163,7 +160,7 @@ public class AdminTenantActivity
                 ));
                 this.realm = tenant.getRealm();
             },
-            ex -> handleRequestException(ex, environment.getEventBus(), environment.getMessages(), validationErrorHandler)
+            validationErrorHandler
         );
     }
 
@@ -177,9 +174,7 @@ public class AdminTenantActivity
                 adminContent.clearFormMessages();
                 clearViewFieldErrors();
                 environment.getApp().getRequestService().send(
-                    requestParams -> {
-                        tenantResource.delete(requestParams, this.realm);
-                    },
+                    requestParams -> tenantResource.delete(requestParams, this.realm),
                     204,
                     () -> {
                         adminContent.setFormBusy(false);
@@ -187,8 +182,7 @@ public class AdminTenantActivity
                             environment.getMessages().tenantDeleted(tenant.getDisplayName())
                         ));
                         environment.getPlaceController().goTo(new AdminTenantsPlace());
-                    },
-                    ex -> handleRequestException(ex, environment.getEventBus(), environment.getMessages(), validationErrorHandler)
+                    }
                 );
             }
         );
@@ -213,8 +207,7 @@ public class AdminTenantActivity
                 adminContent.enableCreate(false);
                 adminContent.enableUpdate(true);
                 adminContent.enableDelete(true);
-            },
-            ex -> handleRequestException(ex, environment)
+            }
         );
     }
 

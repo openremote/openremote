@@ -19,13 +19,35 @@
  */
 package org.openremote.model.http;
 
+import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
 
 @JsType
-public class NoResponseException extends RequestException {
+public class RequestError {
 
-    public NoResponseException(int statusCode) {
-        super(statusCode, "No response from service");
+    protected double statusCode;
+    protected String message;
+
+    public RequestError(double statusCode, String message) {
+        this.statusCode = statusCode;
+        this.message = message;
     }
 
+    @JsProperty
+    public double getStatusCode() {
+        return statusCode;
+    }
+
+    @JsProperty
+    public String getMessage() {
+        return message;
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "{" +
+            "statusCode=" + statusCode +
+            ", message='" + message + '\'' +
+            '}';
+    }
 }

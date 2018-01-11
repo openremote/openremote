@@ -27,16 +27,14 @@ import org.openremote.app.client.assets.browser.AssetBrowserSelection;
 import org.openremote.app.client.mvp.AcceptsView;
 import org.openremote.app.client.mvp.AppActivity;
 import org.openremote.app.client.rules.RulesModule;
-import org.openremote.model.rules.RulesetResource;
 import org.openremote.model.event.bus.EventBus;
 import org.openremote.model.event.bus.EventRegistration;
+import org.openremote.model.rules.RulesetResource;
 import org.openremote.model.rules.TenantRuleset;
 import org.openremote.model.security.TenantResource;
 
 import javax.inject.Inject;
 import java.util.Collection;
-
-import static org.openremote.app.client.http.RequestExceptionHandler.handleRequestException;
 
 public class TenantRulesListActivity
     extends AssetBrowsingActivity<TenantRulesListPlace>
@@ -94,16 +92,14 @@ public class TenantRulesListActivity
                     view.setCreateRulesetHistoryToken(
                         environment.getPlaceHistoryMapper().getToken(new TenantRulesEditorPlace(realmId))
                     );
-                },
-                ex -> handleRequestException(ex, environment)
+                }
             );
 
             environment.getApp().getRequestService().sendAndReturn(
                 tenantRulesetArrayMapper,
                 params -> rulesetResource.getTenantRulesets(params, realmId),
                 200,
-                view::setRulesets,
-                ex -> handleRequestException(ex, environment)
+                view::setRulesets
             );
         }
     }

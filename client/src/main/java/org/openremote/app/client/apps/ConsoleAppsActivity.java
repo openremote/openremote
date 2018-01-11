@@ -31,8 +31,6 @@ import org.openremote.model.event.bus.EventRegistration;
 import javax.inject.Inject;
 import java.util.Collection;
 
-import static org.openremote.app.client.http.RequestExceptionHandler.handleRequestException;
-
 public class ConsoleAppsActivity
     extends AppActivity<ConsoleAppsPlace>
     implements ConsoleAppsView.Presenter {
@@ -78,8 +76,7 @@ public class ConsoleAppsActivity
                         }
                     }
                 }
-            },
-            ex -> handleRequestException(ex, environment)
+            }
         );
     }
 

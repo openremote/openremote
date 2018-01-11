@@ -1,5 +1,5 @@
 /*
- * Copyright 2016, OpenRemote Inc.
+ * Copyright 2018, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -23,10 +23,10 @@ import com.google.gwt.http.client.Response;
 import jsinterop.annotations.JsType;
 
 @JsType
-public class ConflictRequestException extends RequestException {
+public class NotFoundRequestError extends RequestError {
 
-    public ConflictRequestException() {
-        super(Response.SC_CONFLICT, "Conflicting resource state (concurrent updates?)");
+    public NotFoundRequestError() {
+        super(Response.SC_NOT_FOUND, "Resource not found");
     }
 
 }

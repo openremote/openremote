@@ -19,14 +19,29 @@
  */
 package org.openremote.model.http;
 
-import com.google.gwt.http.client.Response;
 import jsinterop.annotations.JsType;
 
-@JsType
-public class UnauthorizedRequestException extends RequestException {
+import java.util.Arrays;
 
-    public UnauthorizedRequestException() {
-        super(Response.SC_UNAUTHORIZED, "Unauthorized request, invalid credentials or access token");
+@JsType
+public class UnexpectedStatusRequestError extends RequestError {
+
+    protected double[] expectedStatusCodes;
+
+    public UnexpectedStatusRequestError(double statusCode, double[] expectedStatusCodes) {
+        super(statusCode, "Unexpected response status, expected one of: " + Arrays.toString(expectedStatusCodes));
+        this.expectedStatusCodes = expectedStatusCodes;
     }
 
+    public double[] getExpectedStatusCodes() {
+        return expectedStatusCodes;
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "{" +
+            "expectedStatusCodes=" + Arrays.toString(expectedStatusCodes) +
+            ", statusCode=" + statusCode +
+            '}';
+    }
 }

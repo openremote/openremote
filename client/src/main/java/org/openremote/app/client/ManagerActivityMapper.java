@@ -208,6 +208,7 @@ public class ManagerActivityMapper implements AppActivityMapper {
             LOG.severe("No activity available for place: " + place);
 
         } catch (RoleRequiredException ex) {
+            // TODO Delegate to or-app error handling!
             LOG.warning("Access denied, missing required role '" + ex.getRequiredRole() + "': " + place);
             eventBus.dispatch(new ShowFailureEvent(managerMessages.accessDenied(), 5000));
         }

@@ -101,19 +101,7 @@ public interface ManagerMessages extends Messages {
 
     String accessDenied();
 
-    String requestFailed(String error);
-
-    String noResponseFromServer();
-
-    String badRequest();
-
     String conflictRequest();
-
-    String errorMarshallingResponse(String error);
-
-    String unexpectedResponseStatus(double statusCode, String expectedStatusCodes);
-
-    String unknownError();
 
     String tenantCreated(String displayName);
 

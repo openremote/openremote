@@ -19,8 +19,6 @@
  */
 package org.openremote.app.client.rules;
 
-import org.openremote.app.client.rest.EntityReader;
-import org.openremote.app.client.rest.EntityWriter;
 import org.openremote.app.client.Environment;
 import org.openremote.app.client.assets.AssetBrowsingActivity;
 import org.openremote.app.client.assets.browser.AssetBrowser;
@@ -30,7 +28,8 @@ import org.openremote.app.client.assets.browser.BrowserTreeNode;
 import org.openremote.app.client.event.ShowSuccessEvent;
 import org.openremote.app.client.mvp.AcceptsView;
 import org.openremote.app.client.mvp.AppActivity;
-import org.openremote.model.rules.RulesetResource;
+import org.openremote.app.client.rest.EntityReader;
+import org.openremote.app.client.rest.EntityWriter;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.event.bus.EventBus;
 import org.openremote.model.event.bus.EventRegistration;
@@ -39,12 +38,11 @@ import org.openremote.model.http.RequestParams;
 import org.openremote.model.interop.Consumer;
 import org.openremote.model.interop.Runnable;
 import org.openremote.model.rules.Ruleset;
+import org.openremote.model.rules.RulesetResource;
 
 import javax.inject.Inject;
 import java.util.Collection;
 import java.util.logging.Logger;
-
-import static org.openremote.app.client.http.RequestExceptionHandler.handleRequestException;
 
 public abstract class AbstractRulesEditorActivity<T extends Ruleset, PLACE extends RulesEditorPlace>
     extends AssetBrowsingActivity<PLACE>
@@ -109,8 +107,7 @@ public abstract class AbstractRulesEditorActivity<T extends Ruleset, PLACE exten
                 getEntityReader(),
                 loadRequestConsumer(),
                 200,
-                this::startEdit,
-                ex -> handleRequestException(ex, environment)
+                this::startEdit
             );
         } else {
             startCreate();
@@ -158,7 +155,7 @@ public abstract class AbstractRulesEditorActivity<T extends Ruleset, PLACE exten
             createRequestConsumer(),
             204,
             afterCreateRunnable(),
-            ex -> handleRequestException(ex, environment.getEventBus(), environment.getMessages(), validationErrorHandler)
+            validationErrorHandler
         );
     }
 
@@ -172,7 +169,7 @@ public abstract class AbstractRulesEditorActivity<T extends Ruleset, PLACE exten
             updateRequestConsumer(),
             204,
             afterUpdateRunnable(),
-            ex -> handleRequestException(ex, environment.getEventBus(), environment.getMessages(), validationErrorHandler)
+            validationErrorHandler
         );
     }
 
@@ -187,8 +184,7 @@ public abstract class AbstractRulesEditorActivity<T extends Ruleset, PLACE exten
                 environment.getApp().getRequestService().send(
                     deleteRequestConsumer(),
                     204,
-                    afterDeleteRunnable(),
-                    ex -> handleRequestException(ex, environment.getEventBus(), environment.getMessages(), validationErrorHandler)
+                    afterDeleteRunnable()
                 );
             }
         );

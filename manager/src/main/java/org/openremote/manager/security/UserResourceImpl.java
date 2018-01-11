@@ -41,7 +41,7 @@ import java.util.ResourceBundle;
 
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static org.openremote.model.Constants.MASTER_REALM;
-import static org.openremote.model.http.BadRequestException.VIOLATION_EXCEPTION_HEADER;
+import static org.openremote.model.http.BadRequestError.VIOLATION_EXCEPTION_HEADER;
 
 public class UserResourceImpl extends ManagerWebResource implements UserResource {
 

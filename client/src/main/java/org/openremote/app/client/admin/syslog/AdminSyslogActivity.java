@@ -26,20 +26,18 @@ import org.openremote.app.client.admin.navigation.AdminNavigation;
 import org.openremote.app.client.event.SharedEventArrayMapper;
 import org.openremote.app.client.event.ShowSuccessEvent;
 import org.openremote.app.client.mvp.AcceptsView;
-import org.openremote.model.syslog.SyslogConfig;
-import org.openremote.model.syslog.SyslogResource;
 import org.openremote.model.event.bus.EventBus;
 import org.openremote.model.event.bus.EventRegistration;
 import org.openremote.model.event.shared.SharedEvent;
+import org.openremote.model.syslog.SyslogConfig;
 import org.openremote.model.syslog.SyslogEvent;
 import org.openremote.model.syslog.SyslogLevel;
+import org.openremote.model.syslog.SyslogResource;
 
 import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-
-import static org.openremote.app.client.http.RequestExceptionHandler.handleRequestException;
 
 public class AdminSyslogActivity
     extends AbstractAdminActivity<AdminSyslogPlace, AdminSyslog>
@@ -144,8 +142,7 @@ public class AdminSyslogActivity
                     environment.getMessages().settingsSaved()
                 ));
                 adminContent.setFormBusy(false);
-            },
-            ex -> handleRequestException(ex, environment.getEventBus(), environment.getMessages())
+            }
         );
     }
 
@@ -161,8 +158,7 @@ public class AdminSyslogActivity
                 environment.getEventBus().dispatch(new ShowSuccessEvent(
                     environment.getMessages().eventsRemoved()
                 ));
-            },
-            ex -> handleRequestException(ex, environment.getEventBus(), environment.getMessages())
+            }
         );
     }
 
@@ -187,8 +183,7 @@ public class AdminSyslogActivity
                     SyslogEvent.class,
                     new SyslogEvent.LevelCategoryFilter(filterLevel)
                 );
-            },
-            ex -> handleRequestException(ex, environment.getEventBus(), environment.getMessages())
+            }
         );
     }
 
@@ -203,8 +198,7 @@ public class AdminSyslogActivity
                 adminContent.setStoredLevel(config.getStoredLevel());
                 adminContent.setStoredMinutes(config.getStoredMaxAgeMinutes());
                 adminContent.setFormBusy(false);
-            },
-            ex -> handleRequestException(ex, environment.getEventBus(), environment.getMessages())
+            }
         );
     }
 

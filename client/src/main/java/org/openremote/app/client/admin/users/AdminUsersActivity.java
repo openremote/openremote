@@ -37,8 +37,6 @@ import org.openremote.model.security.UserResource;
 import javax.inject.Inject;
 import java.util.Collection;
 
-import static org.openremote.app.client.http.RequestExceptionHandler.handleRequestException;
-
 public class AdminUsersActivity
     extends AbstractAdminActivity<AdminUsersPlace, AdminUsers>
     implements AdminUsers.Presenter {
@@ -93,8 +91,7 @@ public class AdminUsersActivity
             tenants -> {
                 adminContent.setTenants(tenants, realm);
                 adminContent.setFormBusy(false);
-            },
-            ex -> handleRequestException(ex, environment)
+            }
         );
 
         if (realm != null) {
@@ -106,8 +103,7 @@ public class AdminUsersActivity
                 users -> {
                     adminContent.setUsers(users);
                     adminContent.setFormBusy(false);
-                },
-                ex -> handleRequestException(ex, environment)
+                }
             );
         }
     }

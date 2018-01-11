@@ -19,27 +19,25 @@
  */
 package org.openremote.app.client.rules.tenant;
 
-import org.openremote.app.client.rest.EntityReader;
-import org.openremote.app.client.rest.EntityWriter;
 import org.openremote.app.client.Environment;
 import org.openremote.app.client.TenantMapper;
 import org.openremote.app.client.assets.browser.AssetBrowser;
 import org.openremote.app.client.mvp.AcceptsView;
 import org.openremote.app.client.mvp.AppActivity;
+import org.openremote.app.client.rest.EntityReader;
+import org.openremote.app.client.rest.EntityWriter;
 import org.openremote.app.client.rules.AbstractRulesEditorActivity;
 import org.openremote.app.client.rules.RulesEditor;
-import org.openremote.model.rules.RulesetResource;
 import org.openremote.model.event.bus.EventBus;
 import org.openremote.model.event.bus.EventRegistration;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.interop.Consumer;
+import org.openremote.model.rules.RulesetResource;
 import org.openremote.model.rules.TenantRuleset;
 import org.openremote.model.security.TenantResource;
 
 import javax.inject.Inject;
 import java.util.Collection;
-
-import static org.openremote.app.client.http.RequestExceptionHandler.handleRequestException;
 
 public class TenantRulesEditorActivity
     extends AbstractRulesEditorActivity<TenantRuleset, TenantRulesEditorPlace> {
@@ -80,8 +78,7 @@ public class TenantRulesEditorActivity
             200,
             tenant -> {
                 view.setHeadline(tenant.getDisplayName(), environment.getMessages().editTenantRuleset());
-            },
-            ex -> handleRequestException(ex, environment)
+            }
         );
     }
 

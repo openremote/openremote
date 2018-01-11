@@ -431,10 +431,12 @@
                     },
                     this.showLoader.bind(this),
                     this.hideLoader.bind(this),
+                    (requestError) => {
+                        this.set("error", "Request error (response status: " + requestError.statusCode + ") - " + requestError.message);
+                    },
                     (constraintViolationReportJson) => {
                         return JSON.parse(constraintViolationReportJson);
                     }
-                    // TODO We should give a default error handler to RequestService
                 );
 
                 requestService.configure(this.tenantRealm);
@@ -478,6 +480,8 @@
                                 // Do nothing, we closed the socket on page unload
                             } else if (e.code === 1001) {
                                 this.set("error", "Server closed connection to event service: " + serviceUrl);
+                            } else if (e.code === 1006) {
+                                this.set("error", "Event service connection was closed, server not reachable?");
                             } else {
                                 let msg = e.reason ? e.reason : serviceUrl;
                                 this.set("error", "Event service connection was closed (clean: " + e.wasClean + ", code: " + e.code + "): " + msg);

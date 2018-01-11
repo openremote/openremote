@@ -19,17 +19,24 @@
  */
 package org.openremote.model.http;
 
+import com.google.gwt.http.client.Response;
+import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsType;
 
 @JsType
-public class BadRequestException extends RequestException {
+public class BadRequestError extends RequestError {
 
     public static final String VIOLATION_EXCEPTION_HEADER = "validation-exception";
 
     protected ConstraintViolationReport constraintViolationReport;
 
-    public BadRequestException(int statusCode, ConstraintViolationReport constraintViolationReport) {
-        super(statusCode, "Request entity validation failed, invalid resource state");
+    @JsIgnore
+    public BadRequestError() {
+        this(null);
+    }
+
+    public BadRequestError(ConstraintViolationReport constraintViolationReport) {
+        super(Response.SC_BAD_REQUEST, "Request entity validation failed, invalid resource state");
         this.constraintViolationReport = constraintViolationReport;
     }
 

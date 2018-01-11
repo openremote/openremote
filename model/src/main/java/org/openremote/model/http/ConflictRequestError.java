@@ -19,29 +19,14 @@
  */
 package org.openremote.model.http;
 
+import com.google.gwt.http.client.Response;
 import jsinterop.annotations.JsType;
 
-import java.util.Arrays;
-
 @JsType
-public class UnexpectedStatusRequestException extends RequestException {
+public class ConflictRequestError extends RequestError {
 
-    protected double[] expectedStatusCodes;
-
-    public UnexpectedStatusRequestException(double statusCode, double[] expectedStatusCodes) {
-        super(statusCode, "Unexpected response status");
-        this.expectedStatusCodes = expectedStatusCodes;
+    public ConflictRequestError() {
+        super(Response.SC_CONFLICT, "Conflicting resource state (concurrent updates?)");
     }
 
-    public double[] getExpectedStatusCodes() {
-        return expectedStatusCodes;
-    }
-
-    @Override
-    public String toString() {
-        return getClass().getSimpleName() + "{" +
-            "expectedStatusCodes=" + Arrays.toString(expectedStatusCodes) +
-            ", statusCode=" + statusCode +
-            '}';
-    }
 }

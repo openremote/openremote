@@ -21,7 +21,6 @@ package org.openremote.app.client.assets.asset;
 
 import com.google.gwt.http.client.URL;
 import com.google.inject.Provider;
-import org.openremote.app.client.interop.value.ObjectValueMapper;
 import org.openremote.app.client.Environment;
 import org.openremote.app.client.app.dialog.JsonEditor;
 import org.openremote.app.client.assets.AgentStatusEventMapper;
@@ -32,27 +31,28 @@ import org.openremote.app.client.assets.attributes.AttributeViewImpl;
 import org.openremote.app.client.assets.browser.AssetBrowser;
 import org.openremote.app.client.datapoint.DatapointBrowser;
 import org.openremote.app.client.datapoint.NumberDatapointArrayMapper;
+import org.openremote.app.client.interop.value.ObjectValueMapper;
 import org.openremote.app.client.simulator.Simulator;
 import org.openremote.app.client.widget.FormButton;
-import org.openremote.model.asset.agent.AgentResource;
-import org.openremote.model.asset.AssetResource;
-import org.openremote.model.datapoint.AssetDatapointResource;
-import org.openremote.model.map.MapResource;
 import org.openremote.model.Constants;
 import org.openremote.model.asset.AssetAttribute;
+import org.openremote.model.asset.AssetResource;
 import org.openremote.model.asset.AssetType;
 import org.openremote.model.asset.ReadAssetAttributesEvent;
 import org.openremote.model.asset.agent.AgentLink;
+import org.openremote.model.asset.agent.AgentResource;
 import org.openremote.model.asset.agent.AgentStatusEvent;
 import org.openremote.model.asset.agent.ProtocolConfiguration;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeExecuteStatus;
 import org.openremote.model.attribute.AttributeRef;
+import org.openremote.model.datapoint.AssetDatapointResource;
 import org.openremote.model.datapoint.Datapoint;
 import org.openremote.model.datapoint.DatapointInterval;
 import org.openremote.model.datapoint.NumberDatapoint;
 import org.openremote.model.event.shared.TenantFilter;
 import org.openremote.model.interop.Consumer;
+import org.openremote.model.map.MapResource;
 import org.openremote.model.simulator.SimulatorState;
 import org.openremote.model.value.Values;
 
@@ -62,7 +62,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-import static org.openremote.app.client.http.RequestExceptionHandler.handleRequestException;
 import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 
 public class AssetViewActivity
@@ -266,8 +265,7 @@ public class AssetViewActivity
                 for (AgentStatusEvent event : agentStatuses) {
                     onAgentStatusEvent(event);
                 }
-            },
-            ex -> handleRequestException(ex, environment.getEventBus(), environment.getMessages())
+            }
         );
     }
 
@@ -414,8 +412,7 @@ public class AssetViewActivity
                     requestParams, this.asset.getId(), attributeName, interval, timestamp
                 ),
                 200,
-                consumer,
-                ex -> handleRequestException(ex, environment)
+                consumer
             );
         }
     }
