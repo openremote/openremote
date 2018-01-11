@@ -22,8 +22,7 @@ package org.openremote.app.client;
 import com.google.gwt.place.shared.Place;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
-import org.openremote.app.client.AppSecurity;
-import org.openremote.app.client.OpenRemoteApp;
+import jsinterop.base.Js;
 import org.openremote.app.client.admin.syslog.AdminSyslogActivity;
 import org.openremote.app.client.admin.syslog.AdminSyslogPlace;
 import org.openremote.app.client.admin.tenant.AdminTenantActivity;
@@ -46,7 +45,6 @@ import org.openremote.app.client.assets.asset.AssetViewActivity;
 import org.openremote.app.client.assets.asset.AssetViewPlace;
 import org.openremote.app.client.assets.tenant.AssetsTenantActivity;
 import org.openremote.app.client.assets.tenant.AssetsTenantPlace;
-import org.openremote.app.client.event.ShowFailureEvent;
 import org.openremote.app.client.i18n.ManagerMessages;
 import org.openremote.app.client.map.MapActivity;
 import org.openremote.app.client.map.MapPlace;
@@ -69,11 +67,7 @@ import org.openremote.app.client.user.UserAccountActivity;
 import org.openremote.app.client.user.UserAccountPlace;
 import org.openremote.model.event.bus.EventBus;
 
-import java.util.logging.Logger;
-
 public class ManagerActivityMapper implements AppActivityMapper {
-
-    private static final Logger LOG = Logger.getLogger(ManagerActivityMapper.class.getName());
 
     protected final OpenRemoteApp app;
     protected final EventBus eventBus;
@@ -205,12 +199,10 @@ public class ManagerActivityMapper implements AppActivityMapper {
                 return userProfileActivityProvider.get().init(app.getSecurity(), (UserAccountPlace) place);
             }
 
-            LOG.severe("No activity available for place: " + place);
+            app.set("error", Js.asAny("No activity available for place: " + place));
 
         } catch (RoleRequiredException ex) {
-            // TODO Delegate to or-app error handling!
-            LOG.warning("Access denied, missing required role '" + ex.getRequiredRole() + "': " + place);
-            eventBus.dispatch(new ShowFailureEvent(managerMessages.accessDenied(), 5000));
+            app.set("error", Js.asAny(managerMessages.accessDenied(ex.getRequiredRole())));
         }
         return null;
     }

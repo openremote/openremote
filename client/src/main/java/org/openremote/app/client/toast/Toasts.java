@@ -20,10 +20,8 @@
 package org.openremote.app.client.toast;
 
 import com.google.gwt.user.client.Timer;
-import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsType;
 
-import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -35,7 +33,6 @@ public class Toasts extends Timer {
     final protected List<Toast> toasts = new LinkedList<>();
     final protected ToastDisplay display;
 
-    @Inject
     public Toasts(ToastDisplay display) {
         this.display = display;
     }
@@ -75,7 +72,7 @@ public class Toasts extends Timer {
             return;
         synchronized (toasts) {
 
-            // If it's the same toast content, only show it once
+            // If it's the same toast from the user's point of view, only show it once
             for (Toast existing : toasts) {
                 if (existing.equalsForUser(toast))
                 return;

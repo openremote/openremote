@@ -23,15 +23,12 @@ import com.google.gwt.place.shared.Place;
 import com.google.gwt.place.shared.PlaceHistoryHandler;
 import com.google.gwt.user.client.ui.RootPanel;
 import com.google.inject.Provider;
-import elemental2.dom.DomGlobal;
 import org.openremote.app.client.Environment;
 import org.openremote.app.client.event.ShowFailureEvent;
 import org.openremote.app.client.event.ShowInfoEvent;
 import org.openremote.app.client.event.ShowSuccessEvent;
 import org.openremote.app.client.event.SubscriptionFailureEvent;
 import org.openremote.app.client.toast.Toast;
-import org.openremote.app.client.toast.Toasts;
-import org.openremote.model.event.bus.EventListener;
 
 import javax.inject.Inject;
 import java.util.logging.Logger;
@@ -50,7 +47,6 @@ public class AppControllerImpl implements AppController, AppView.Presenter {
                              Provider<HeaderPresenter> headerPresenterProvider,
                              Provider<FooterPresenter> footerPresenterProvider,
                              AppView appView,
-                             Toasts toasts,
                              AppInitializer appInitializer) { // AppInitializer is needed so that activities are mapped to views
         this.appView = appView;
         this.environment = environment;
@@ -64,14 +60,14 @@ public class AppControllerImpl implements AppController, AppView.Presenter {
 
         environment.getEventBus().register(
             ShowInfoEvent.class,
-            event -> toasts.showToast(
+            event -> environment.getApp().getToasts().showToast(
                 new Toast(Toast.Type.INFO, event.getText(), Toast.DEFAULT_MAX_AGE)
             )
         );
 
         environment.getEventBus().register(
             ShowSuccessEvent.class,
-            event -> toasts.showToast(
+            event -> environment.getApp().getToasts().showToast(
                 new Toast(Toast.Type.SUCCESS, event.getText(), Toast.DEFAULT_MAX_AGE)
             )
         );
@@ -81,7 +77,7 @@ public class AppControllerImpl implements AppController, AppView.Presenter {
             event -> {
                 Toast.Type type = event.getDurationMillis() == ShowFailureEvent.DURABLE
                     ? Toast.Type.DURABLE_FAILURE : Toast.Type.FAILURE;
-                toasts.showToast(
+                environment.getApp().getToasts().showToast(
                     new Toast(type, event.getText(), event.getDurationMillis())
                 );
             }

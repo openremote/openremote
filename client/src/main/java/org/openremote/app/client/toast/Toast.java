@@ -70,6 +70,9 @@ public class Toast {
         return !isDurableFailure() && (getTimestamp() + getMaxAgeMillis()) <= System.currentTimeMillis();
     }
 
+    /**
+     * Toast is equal (considering its content and duration) for the user who sees it.
+     */
     public boolean equalsForUser(Toast that) {
         return getType().equals(that.getType()) && getText().equals(that.getText()) && getMaxAgeMillis() == that.getMaxAgeMillis();
     }

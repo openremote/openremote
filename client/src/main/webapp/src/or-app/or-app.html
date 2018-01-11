@@ -14,7 +14,7 @@
 
         <style include="or-style">
 
-            /* Children of or-app might be hidden, some have to be visible */
+            /* Children of or-app might be hidden by host page, some have to be visible */
             #loader,
             #errorView {
                 visibility: visible !important;
@@ -197,6 +197,13 @@
                         type: String,
                         notify: true,
                         reflectToAttribute: true
+                    },
+
+                    /**
+                     * Toasts display.
+                     */
+                    toasts: {
+                        type: Object
                     },
 
                     /**
@@ -416,12 +423,17 @@
                 this.$.loader.style.display = "inherit";
             }
 
+            getSecurity() {
+                return this.$.appSecurity;
+            }
+
             registerWidgetStyle() {
                 openremote.WIDGET_STYLE = new openremote.style.WidgetStyle();
             }
 
-            getSecurity() {
-                return this.$.appSecurity;
+            registerToasts() {
+                let toastDisplay = new openremote.toast.PopupToastDisplay(openremote.WIDGET_STYLE);
+                this.set("toasts", new openremote.toast.Toasts(toastDisplay));
             }
 
             registerRequestService() {
@@ -533,9 +545,12 @@
         // This is fired after jsinterop components are loaded/started, finalize initialization
         window.addEventListener('AppLoaded', function () {
 
-            openremote.INSTANCE.registerRequestService();
+            // These things are using jsinterop components
             openremote.INSTANCE.registerWidgetStyle();
+            openremote.INSTANCE.registerToasts();
+            openremote.INSTANCE.registerRequestService();
 
+            // Connect the WebSocket to event service endpoint
             openremote.INSTANCE.connectEventService();
 
             // Load the authenticated tenant details

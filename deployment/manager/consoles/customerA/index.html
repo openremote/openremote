@@ -9,7 +9,6 @@
     <script src="/static/bower_components/webcomponentsjs/webcomponents-lite.js"></script>
 
     <link rel="import" href="/static/src/or-app/or-app.html">
-    <link rel="import" href="/static/src/or-toast/or-toast.html">
     <link rel="import" href="/static/src/or-asset-list/or-asset-list.html">
     <!-- Optional: You can import other OpenRemote modules here -->
 
@@ -68,9 +67,6 @@
 
 <!-- Optional: You should use flexbox layout classes everywhere, starting with the body -->
 <body class="layout vertical">
-
-<!-- Optional: A component can handle ShowInfo and ShowError events for you with a simple toast display-->
-<or-toast></or-toast>
 
 <!-- ############## Required: One <or-app> should wrap your frontend, you can enforce login/authentication ############## -->
 <or-app login tenant-realm="customerA">
@@ -173,7 +169,7 @@
             <div class="or-FormField">
 
                 <button class="or-FormControl or-FormButton or-PushButton"
-                        onclick="openremote.TOASTS.showToast(
+                        onclick="openremote.INSTANCE.toasts.showToast(
                             new openremote.toast.Toast(
                                 openremote.toast.Toast.Type.SUCCESS,
                                 'Welcome ' + openremote.INSTANCE.user + ', on ' + openremote.INSTANCE.tenantRealm + '. It is ' + new Date() + '.',

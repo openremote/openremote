@@ -99,7 +99,7 @@ public interface ManagerMessages extends Messages {
 
     String notePasswordAfterCreate();
 
-    String accessDenied();
+    String accessDenied(String requiredRole);
 
     String conflictRequest();
 

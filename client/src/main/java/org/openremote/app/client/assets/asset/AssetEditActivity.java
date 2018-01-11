@@ -134,6 +134,11 @@ public class AssetEditActivity
     }
 
     @Override
+    protected String[] getRequiredRoles() {
+        return new String[]{"read:assets", "write:assets"};
+    }
+
+    @Override
     public void onStop() {
         clearViewMessages();
         super.onStop();
