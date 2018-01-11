@@ -39,6 +39,7 @@ idea {
     module {
         outputDir file('build/classes/main')
         testOutputDir file('build/classes/test')
+        excludeDirs += file(".node")
     }
 }
 if(project.convention.findPlugin(JavaPluginConvention)) {
