@@ -157,7 +157,7 @@ public class AssetsTenantActivity extends AssetBrowsingActivity<AssetsTenantPlac
             return;
         UserAsset userAsset = new UserAsset(realmId, selectedUserId, selectedAssetId);
         view.setFormBusy(true);
-        environment.getApp().getRequestService().sendWith(
+        environment.getApp().getRequests().sendWith(
             userAssetMapper,
             requestParams -> assetResource.createUserAsset(requestParams, userAsset),
             204,
@@ -174,7 +174,7 @@ public class AssetsTenantActivity extends AssetBrowsingActivity<AssetsTenantPlac
     @Override
     public void onDeleteAssetLink(UserAsset.Id id) {
         view.setFormBusy(true);
-        environment.getApp().getRequestService().sendWith(
+        environment.getApp().getRequests().sendWith(
             userAssetMapper,
             requestParams -> assetResource.deleteUserAsset(requestParams, id.getRealmId(), id.getUserId(), id.getAssetId()),
             204,
@@ -199,7 +199,7 @@ public class AssetsTenantActivity extends AssetBrowsingActivity<AssetsTenantPlac
         view.setFormBusy(true);
         if (this.realmId == null)
             return;
-        environment.getApp().getRequestService().sendAndReturn(
+        environment.getApp().getRequests().sendAndReturn(
             tenantMapper,
             requestParams -> tenantResource.getForRealmId(requestParams, this.realmId),
             200,
@@ -217,7 +217,7 @@ public class AssetsTenantActivity extends AssetBrowsingActivity<AssetsTenantPlac
 
     protected void loadUsers(Runnable onComplete) {
         view.setFormBusy(true);
-        environment.getApp().getRequestService().sendAndReturn(
+        environment.getApp().getRequests().sendAndReturn(
             userArrayMapper,
             requestParams -> userResource.getAll(requestParams, this.tenant.getRealm()),
             200,
@@ -231,7 +231,7 @@ public class AssetsTenantActivity extends AssetBrowsingActivity<AssetsTenantPlac
     }
 
     protected void loadUserAssets() {
-        environment.getApp().getRequestService().sendAndReturn(
+        environment.getApp().getRequests().sendAndReturn(
             userAssetArrayMapper,
             requestParams -> assetResource.getUserAssetLinks(requestParams, realmId, selectedUserId, selectedAssetId),
             200,

@@ -69,7 +69,7 @@
                 selectInclude = selectInclude || this.selectInclude;
                 assetType = assetType || this.assetType;
 
-                openremote.INSTANCE.requestService.sendAndReturn(
+                openremote.INSTANCE.requests.sendAndReturn(
                     (requestParams) => {
                         let query = {
                             select: {

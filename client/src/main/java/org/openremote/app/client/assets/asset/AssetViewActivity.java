@@ -257,7 +257,7 @@ public class AssetViewActivity
     }
 
     protected void fetchAgentStatus(String agentId) {
-        environment.getApp().getRequestService().sendAndReturn(
+        environment.getApp().getRequests().sendAndReturn(
             agentStatusEventMapper,
             requestParams -> agentResource.getAgentStatus(requestParams, agentId),
             200,
@@ -406,7 +406,7 @@ public class AssetViewActivity
 
     protected void queryDataPoints(String attributeName, DatapointInterval interval, long timestamp, Consumer<NumberDatapoint[]> consumer) {
         if (!isNullOrEmpty(attributeName)) {
-            environment.getApp().getRequestService().sendAndReturn(
+            environment.getApp().getRequests().sendAndReturn(
                 numberDatapointArrayMapper,
                 requestParams -> assetDatapointResource.getNumberDatapoints(
                     requestParams, this.asset.getId(), attributeName, interval, timestamp

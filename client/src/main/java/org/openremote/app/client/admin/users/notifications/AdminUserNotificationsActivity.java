@@ -127,7 +127,7 @@ public class AdminUserNotificationsActivity
         notificationEditor.setOnSend(updatedNotification -> {
             adminContent.setFormBusy(true);
             this.alertNotification = updatedNotification;
-            environment.getApp().getRequestService().sendWith(
+            environment.getApp().getRequests().sendWith(
                 alertNotificationMapper,
                 requestParams -> notificationResource.storeNotificationForUser(requestParams, userId, this.alertNotification),
                 204,
@@ -151,7 +151,7 @@ public class AdminUserNotificationsActivity
     @Override
     public void onNotificationsDelete() {
         adminContent.setFormBusy(true);
-        environment.getApp().getRequestService().send(
+        environment.getApp().getRequests().send(
             requestParams -> notificationResource.removeNotificationsOfUser(requestParams, userId),
             204,
             () -> {
@@ -166,7 +166,7 @@ public class AdminUserNotificationsActivity
     @Override
     public void onNotificationDelete(Long id) {
         adminContent.setFormBusy(true);
-        environment.getApp().getRequestService().send(
+        environment.getApp().getRequests().send(
             requestParams -> notificationResource.removeNotification(requestParams, userId, id),
             204,
             () -> {
@@ -194,7 +194,7 @@ public class AdminUserNotificationsActivity
 
     protected void loadUser() {
         adminContent.setFormBusy(true);
-        environment.getApp().getRequestService().sendAndReturn(
+        environment.getApp().getRequests().sendAndReturn(
             userMapper,
             requestParams -> userResource.get(requestParams, realm, userId),
             200,
@@ -210,7 +210,7 @@ public class AdminUserNotificationsActivity
     }
 
     protected void loadNotifications(Runnable onComplete) {
-        environment.getApp().getRequestService().sendAndReturn(
+        environment.getApp().getRequests().sendAndReturn(
             alertNotificationArrayMapper,
             requestParams -> notificationResource.getNotificationsOfUser(requestParams, userId),
             200,

@@ -23,7 +23,7 @@ import groovy.lang.Closure;
 import org.keycloak.adapters.KeycloakDeployment;
 import org.openremote.app.client.AppSecurity;
 import org.openremote.app.client.OpenRemoteApp;
-import org.openremote.app.client.rest.RequestService;
+import org.openremote.app.client.rest.Requests;
 import org.openremote.container.Container;
 import org.openremote.model.http.ConstraintViolationReport;
 import org.openremote.model.security.Tenant;
@@ -37,7 +37,7 @@ public class TestOpenRemoteApp extends OpenRemoteApp {
 
     final Tenant tenant;
 
-    final RequestService requestService;
+    final Requests requests;
 
     public TestOpenRemoteApp(KeycloakDeployment keycloakDeployment, Tenant tenant, Closure<String> accessTokenClosure) {
         this.security = new TestAppSecurity(keycloakDeployment, accessTokenClosure);
@@ -45,7 +45,7 @@ public class TestOpenRemoteApp extends OpenRemoteApp {
 
         ClientObjectMapper<ConstraintViolationReport> constraintViolationReportMapper = new ClientObjectMapper<>(Container.JSON, ConstraintViolationReport.class);
 
-        this.requestService = new RequestService(
+        this.requests = new Requests(
             security::authorizeRequestParams,
             () -> {
             },
@@ -69,7 +69,7 @@ public class TestOpenRemoteApp extends OpenRemoteApp {
     }
 
     @Override
-    public RequestService getRequestService() {
-        return requestService;
+    public Requests getRequests() {
+        return requests;
     }
 }

@@ -207,9 +207,9 @@
                     },
 
                     /**
-                     * The REST HTTP request service.
+                     * Interface for execution of HTTP requests to OpenRemote service.
                      */
-                    requestService: {
+                    requests: {
                         type: Object
                     },
 
@@ -217,6 +217,26 @@
                      *  The WebSocket connection to the event service.
                      */
                     webSocket: Object,
+
+                    /**
+                     * The message consumers on the event service WebSocket.
+                     */
+                    webSocketConsumers: {
+                        type: Array,
+                        value: () => {
+                            return [];
+                        }
+                    },
+
+                    /**
+                     * The listeners to notify before event service WebSocket is closed.
+                     */
+                    webSocketCloseListeners : {
+                        type: Array,
+                        value: () => {
+                            return [];
+                        }
+                    },
 
                     /**
                      * CONNECTED, DISCONNECTED, available for two-way binding.
@@ -381,7 +401,7 @@
 
                 // Disable login/token refresh
                 this.set("login", false);
-                this.disconnectEventService();
+                this.disconnectEvents();
 
                 // Hide the slots
                 this.$.slots.style.display = "none";
@@ -436,8 +456,8 @@
                 this.set("toasts", new openremote.toast.Toasts(toastDisplay));
             }
 
-            registerRequestService() {
-                let requestService = new openremote.REST.RequestService(
+            registerRequests() {
+                let requests = new openremote.REST.Requests(
                     (requestParams, onComplete) => {
                         this.getSecurity().authorizeRequestParams(requestParams, onComplete);
                     },
@@ -451,12 +471,12 @@
                     }
                 );
 
-                requestService.configure(this.tenantRealm);
+                requests.configure(this.tenantRealm);
 
-                this.set("requestService", requestService);
+                this.set("requests", requests);
             }
 
-            connectEventService() {
+            connectEvents() {
                 // Only authenticated apps can connect to the event service
                 if (!this.login) {
                     return;
@@ -471,10 +491,10 @@
                         console.log("Connected to event service: " + serviceUrl);
                         this.set("status", "CONNECTED");
 
-                        // Close explicitly on unload/refresh of page, otherwise close code will be 1001
+                        // Close socket on unload/refresh of page
                         window.addEventListener("beforeunload", () => {
                             console.log("Page unloaded, closing event service connection");
-                            this.disconnectEventService();
+                            this.disconnectEvents();
                         });
                     };
 
@@ -489,7 +509,7 @@
                         this.set("status", "DISCONNECTED");
                         if (!this.error) {
                             if (e.code === 1000) {
-                                // Do nothing, we closed the socket on page unload
+                                // Do nothing, we closed the socket
                             } else if (e.code === 1001) {
                                 this.set("error", "Server closed connection to event service: " + serviceUrl);
                             } else if (e.code === 1006) {
@@ -502,19 +522,36 @@
                     };
 
                     this.webSocket.onmessage = (e) => {
-                        // TODO Implement more
-                        console.log("### RECEIVED EVENT SERVICE MESSAGE");
-                        console.dir(e);
+                        console.debug("Received on event service WebSocket: " + e.data);
+                        for (let consumer of this.webSocketConsumers) {
+                            consumer(e.data);
+                        }
                     };
                 });
             }
 
-            disconnectEventService() {
+            disconnectEvents() {
                 if (this.webSocket && this.webSocket.readyState === this.webSocket.OPEN) {
+                    for (let listener of this.webSocketCloseListeners) {
+                        listener();
+                    }
                     console.log("Closing WebSocket");
-
-                    // TODO Should also cancel all subscriptions with the server!
                     this.webSocket.close();
+                }
+            }
+
+            addServiceMessageConsumer(consumer) {
+                this.webSocketConsumers.push(consumer);
+            }
+
+            addServiceConnectionCloseListener(listener) {
+                this.webSocketCloseListeners.push(listener);
+            }
+
+            sendServiceMessage(message) {
+                if (this.webSocket) {
+                    console.debug("Sending on event service WebSocket: " + message);
+                    this.webSocket.send(message);
                 }
             }
 
@@ -523,7 +560,7 @@
                     onComplete();
                     return;
                 }
-                this.requestService.sendAndReturn(
+                this.requests.sendAndReturn(
                     (requestParams) => {
                         openremote.REST.TenantResource.get(requestParams, this.tenantRealm);
                     },
@@ -548,10 +585,10 @@
             // These things are using jsinterop components
             openremote.INSTANCE.registerWidgetStyle();
             openremote.INSTANCE.registerToasts();
-            openremote.INSTANCE.registerRequestService();
+            openremote.INSTANCE.registerRequests();
 
             // Connect the WebSocket to event service endpoint
-            openremote.INSTANCE.connectEventService();
+            openremote.INSTANCE.connectEvents();
 
             // Load the authenticated tenant details
             openremote.INSTANCE.loadTenantDetails(() => {

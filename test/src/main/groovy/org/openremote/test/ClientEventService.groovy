@@ -21,14 +21,14 @@ package org.openremote.test
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.openremote.app.client.event.SubscriptionFailureEvent
-import org.openremote.app.client.service.EventService
+import org.openremote.app.client.event.EventService
 import org.openremote.model.event.bus.EventBus
 import org.openremote.model.event.shared.*
 
 import javax.websocket.*
 
 /**
- * Does the same job as {@link org.openremote.app.client.service.EventServiceImpl}.
+ * Does the same job as {@link org.openremote.app.client.event.EventServiceImpl}.
  */
 class ClientEventService implements EventService {
 
@@ -119,11 +119,6 @@ class ClientEventService implements EventService {
     }
 
     @Override
-    void connect() {
-        throw new UnsupportedOperationException("Not available in test environment")
-    }
-
-    @Override
     <E extends SharedEvent> void subscribe(Class<E> eventClass) {
         endpoint.sendSubscription(new EventSubscription(eventClass))
     }
@@ -141,6 +136,11 @@ class ClientEventService implements EventService {
     @Override
     void dispatch(SharedEvent sharedEvent) {
         endpoint.send(sharedEvent)
+    }
+
+    @Override
+    void stop() {
+        close()
     }
 
     void close() {

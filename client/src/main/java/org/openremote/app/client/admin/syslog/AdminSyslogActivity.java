@@ -131,7 +131,7 @@ public class AdminSyslogActivity
         // TODO Client-side validation error handling?
         adminContent.setFormBusy(true);
         readFromView();
-        environment.getApp().getRequestService().sendWith(
+        environment.getApp().getRequests().sendWith(
             syslogConfigMapper,
             requestParams -> {
                 syslogResource.updateConfig(requestParams, config);
@@ -149,7 +149,7 @@ public class AdminSyslogActivity
     @Override
     public void removeAll() {
         adminContent.setFormBusy(true);
-        environment.getApp().getRequestService().send(
+        environment.getApp().getRequests().send(
             syslogResource::clearEvents,
             204,
             () -> {
@@ -164,7 +164,7 @@ public class AdminSyslogActivity
 
     protected void fetchEvents() {
         adminContent.setFormBusy(true);
-        environment.getApp().getRequestService().sendAndReturn(
+        environment.getApp().getRequests().sendAndReturn(
             sharedEventArrayMapper,
             requestParams -> syslogResource.getEvents(requestParams, filterLevel, filterLimit),
             200,
@@ -189,7 +189,7 @@ public class AdminSyslogActivity
 
     protected void loadConfig() {
         adminContent.setFormBusy(true);
-        environment.getApp().getRequestService().sendAndReturn(
+        environment.getApp().getRequests().sendAndReturn(
             syslogConfigMapper,
             syslogResource::getConfig,
             200,

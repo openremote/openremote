@@ -84,7 +84,7 @@ public class AdminUsersActivity
         adminContent.setPresenter(this);
 
         adminContent.setFormBusy(true);
-        environment.getApp().getRequestService().sendAndReturn(
+        environment.getApp().getRequests().sendAndReturn(
             tenantArrayMapper,
             tenantResource::getAll,
             200,
@@ -96,7 +96,7 @@ public class AdminUsersActivity
 
         if (realm != null) {
             adminContent.setFormBusy(true);
-            environment.getApp().getRequestService().sendAndReturn(
+            environment.getApp().getRequests().sendAndReturn(
                 userArrayMapper,
                 requestParams -> userResource.getAll(requestParams, realm),
                 200,

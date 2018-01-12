@@ -139,7 +139,7 @@ public abstract class AbstractAssetActivity<V
         ));
 
         if (!view.isMapInitialised()) {
-            environment.getApp().getRequestService().sendAndReturn(
+            environment.getApp().getRequests().sendAndReturn(
                 objectValueMapper,
                 mapResource::getSettings,
                 200,

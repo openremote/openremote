@@ -21,10 +21,9 @@ package org.openremote.app.client;
 
 import com.google.gwt.place.shared.PlaceController;
 import com.google.gwt.place.shared.PlaceHistoryMapper;
-import org.openremote.app.client.OpenRemoteApp;
 import org.openremote.app.client.style.WidgetStyle;
 import org.openremote.app.client.i18n.ManagerMessages;
-import org.openremote.app.client.service.EventService;
+import org.openremote.app.client.event.EventService;
 import org.openremote.model.event.bus.EventBus;
 
 /**

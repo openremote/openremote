@@ -103,7 +103,7 @@ public abstract class AbstractRulesEditorActivity<T extends Ruleset, PLACE exten
 
         view.setFormBusy(true);
         if (rulesetId != null) {
-            environment.getApp().getRequestService().sendAndReturn(
+            environment.getApp().getRequests().sendAndReturn(
                 getEntityReader(),
                 loadRequestConsumer(),
                 200,
@@ -150,7 +150,7 @@ public abstract class AbstractRulesEditorActivity<T extends Ruleset, PLACE exten
         view.setFormBusy(true);
         clearViewMessages();
         readFromView();
-        environment.getApp().getRequestService().sendWith(
+        environment.getApp().getRequests().sendWith(
             getEntityWriter(),
             createRequestConsumer(),
             204,
@@ -164,7 +164,7 @@ public abstract class AbstractRulesEditorActivity<T extends Ruleset, PLACE exten
         view.setFormBusy(true);
         clearViewMessages();
         readFromView();
-        environment.getApp().getRequestService().sendWith(
+        environment.getApp().getRequests().sendWith(
             getEntityWriter(),
             updateRequestConsumer(),
             204,
@@ -181,7 +181,7 @@ public abstract class AbstractRulesEditorActivity<T extends Ruleset, PLACE exten
             () -> {
                 view.setFormBusy(true);
                 clearViewMessages();
-                environment.getApp().getRequestService().send(
+                environment.getApp().getRequests().send(
                     deleteRequestConsumer(),
                     204,
                     afterDeleteRunnable()

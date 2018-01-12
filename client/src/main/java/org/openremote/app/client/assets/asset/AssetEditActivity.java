@@ -277,7 +277,7 @@ public class AssetEditActivity
                 processValidationResults(results);
             } else {
                 readFromView();
-                environment.getApp().getRequestService().sendWith(
+                environment.getApp().getRequests().sendWith(
                     assetMapper,
                     requestParams -> assetResource.update(requestParams, assetId, asset),
                     204,
@@ -304,7 +304,7 @@ public class AssetEditActivity
                 processValidationResults(results);
             } else {
                 readFromView();
-                environment.getApp().getRequestService().sendWithAndReturn(
+                environment.getApp().getRequests().sendWithAndReturn(
                     assetMapper,
                     assetMapper,
                     requestParams -> assetResource.create(requestParams, asset),
@@ -329,7 +329,7 @@ public class AssetEditActivity
             () -> {
                 view.setFormBusy(true);
                 clearViewMessages();
-                environment.getApp().getRequestService().send(
+                environment.getApp().getRequests().send(
                     requestParams -> assetResource.delete(requestParams, this.assetId),
                     204,
                     () -> {
@@ -380,7 +380,7 @@ public class AssetEditActivity
 
         // Do request
         final Predicate<AssetAttribute> finalAttributeFilter = attributeFilter;
-        environment.getApp().getRequestService().sendWithAndReturn(
+        environment.getApp().getRequests().sendWithAndReturn(
             assetArrayMapper,
             assetQueryMapper,
             requestParams -> assetResource.queryAssets(requestParams, query),
@@ -546,7 +546,7 @@ public class AssetEditActivity
 
             if (!clientSideOnly && validationResult.isValid() && ProtocolConfiguration.isProtocolConfiguration(attribute)) {
                 // Ask the server to validate the protocol configuration
-                environment.getApp().getRequestService().sendWithAndReturn(
+                environment.getApp().getRequests().sendWithAndReturn(
                     attributeValidationResultMapper,
                     assetAttributeMapper,
                     requestParams -> agentResource.validateProtocolConfiguration(requestParams, assetId, attribute),
@@ -579,7 +579,7 @@ public class AssetEditActivity
             List<Pair<String, String>> displayNamesAndTypes = new ArrayList<>();
             displayNamesAndTypes.add(new Pair<>(ValueEditors.EMPTY_LINE, null));
 
-            environment.getApp().getRequestService().sendAndReturn(
+            environment.getApp().getRequests().sendAndReturn(
                 protocolDescriptorArrayMapper,
                 requestParams -> agentResource.getSupportedProtocols(requestParams, assetId),
                 200,
@@ -601,7 +601,7 @@ public class AssetEditActivity
             );
         } else {
             // Get all protocol descriptors for all agents
-            environment.getApp().getRequestService().sendAndReturn(
+            environment.getApp().getRequests().sendAndReturn(
                 protocolDescriptorMapMapper,
                 agentResource::getAllSupportedProtocols,
                 200,
@@ -677,7 +677,7 @@ public class AssetEditActivity
     protected void doProtocolDiscovery(ProtocolDiscoveryView.DiscoveryRequest request, Runnable callback) {
         showInfo(environment.getMessages().protocolLinkDiscoveryStarted());
 
-        environment.getApp().getRequestService().sendWithAndReturn(
+        environment.getApp().getRequests().sendWithAndReturn(
             assetArrayMapper,
             fileInfoMapper,
             requestParams -> {

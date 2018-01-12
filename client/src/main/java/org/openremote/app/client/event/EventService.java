@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.app.client.service;
+package org.openremote.app.client.event;
 
 import org.openremote.model.event.shared.EventFilter;
 import org.openremote.model.event.shared.SharedEvent;
@@ -38,8 +38,6 @@ import org.openremote.model.event.shared.SharedEvent;
  */
 public interface EventService {
 
-    void connect();
-
     <E extends SharedEvent> void subscribe(Class<E> eventClass);
 
     <E extends SharedEvent> void subscribe(Class<E> eventClass, EventFilter<E> filter);
@@ -47,4 +45,6 @@ public interface EventService {
     <E extends SharedEvent> void unsubscribe(Class<E> eventClass);
 
     void dispatch(SharedEvent sharedEvent);
+
+    void stop();
 }

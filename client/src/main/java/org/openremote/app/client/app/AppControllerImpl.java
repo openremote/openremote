@@ -20,6 +20,7 @@
 package org.openremote.app.client.app;
 
 import com.google.gwt.place.shared.Place;
+import com.google.gwt.place.shared.PlaceController;
 import com.google.gwt.place.shared.PlaceHistoryHandler;
 import com.google.gwt.user.client.ui.RootPanel;
 import com.google.inject.Provider;
@@ -28,6 +29,7 @@ import org.openremote.app.client.event.ShowFailureEvent;
 import org.openremote.app.client.event.ShowInfoEvent;
 import org.openremote.app.client.event.ShowSuccessEvent;
 import org.openremote.app.client.event.SubscriptionFailureEvent;
+import org.openremote.app.client.mvp.AppPlaceController;
 import org.openremote.app.client.toast.Toast;
 
 import javax.inject.Inject;
@@ -40,6 +42,7 @@ public class AppControllerImpl implements AppController, AppView.Presenter {
     protected final AppView appView;
     protected final Environment environment;
     protected final PlaceHistoryHandler placeHistoryHandler;
+    protected final PlaceController placeController;
 
     @Inject
     public AppControllerImpl(Environment environment,
@@ -47,10 +50,12 @@ public class AppControllerImpl implements AppController, AppView.Presenter {
                              Provider<HeaderPresenter> headerPresenterProvider,
                              Provider<FooterPresenter> footerPresenterProvider,
                              AppView appView,
+                             PlaceController placeController,
                              AppInitializer appInitializer) { // AppInitializer is needed so that activities are mapped to views
         this.appView = appView;
         this.environment = environment;
         this.placeHistoryHandler = placeHistoryHandler;
+        this.placeController = placeController;
 
         // Configure layout as not using activity mapper (it's static)
         HeaderPresenter headerPresenter = headerPresenterProvider.get();
@@ -113,5 +118,10 @@ public class AppControllerImpl implements AppController, AppView.Presenter {
     public void stop() {
         LOG.info("Stopping manager");
         RootPanel.get().remove(appView);
+        if (placeController instanceof AppPlaceController) {
+            AppPlaceController appPlaceController = (AppPlaceController) placeController;
+            appPlaceController.stop();
+        }
+        environment.getEventService().stop();
     }
 }

@@ -42,9 +42,9 @@ import static com.google.gwt.http.client.Response.*;
 import static org.openremote.model.http.BadRequestError.VIOLATION_EXCEPTION_HEADER;
 
 @JsType
-public class RequestService {
+public class Requests {
 
-    private static final Logger LOG = Logger.getLogger(RequestService.class.getName());
+    private static final Logger LOG = Logger.getLogger(Requests.class.getName());
 
     public static final double ANY_STATUS_CODE = -1;
 
@@ -59,11 +59,11 @@ public class RequestService {
 
     final protected Function<String, ConstraintViolationReport> constraintViolationReader;
 
-    public RequestService(BiConsumer<RequestParams, Runnable> requestAuthorizer,
-                          Runnable beforeRequest,
-                          Runnable afterRequest,
-                          Consumer<RequestError> onException,
-                          Function<String, ConstraintViolationReport> constraintViolationReader) {
+    public Requests(BiConsumer<RequestParams, Runnable> requestAuthorizer,
+                    Runnable beforeRequest,
+                    Runnable afterRequest,
+                    Consumer<RequestError> onException,
+                    Function<String, ConstraintViolationReport> constraintViolationReader) {
         this.requestAuthorizer = requestAuthorizer;
         this.beforeRequest = beforeRequest;
         this.afterRequest = afterRequest;

@@ -119,7 +119,7 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
 
     @Override
     public void loadAsset(String id, Consumer<Asset> assetConsumer) {
-        environment.getApp().getRequestService().sendAndReturn(
+        environment.getApp().getRequests().sendAndReturn(
             assetMapper,
             requestParams -> assetResource.get(requestParams, id),
             200,
@@ -220,7 +220,7 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
     }
 
     protected void loadTenants(HasData<BrowserTreeNode> display) {
-        environment.getApp().getRequestService().sendAndReturn(
+        environment.getApp().getRequests().sendAndReturn(
             tenantArrayMapper,
             tenantResource::getAll,
             200,
@@ -239,7 +239,7 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
     protected void loadAssets(BrowserTreeNode parent, HasData<BrowserTreeNode> display) {
         // TODO Pagination?
         // final Range range = display.getVisibleRange();
-        environment.getApp().getRequestService().sendWithAndReturn(
+        environment.getApp().getRequests().sendWithAndReturn(
             assetArrayMapper,
             assetQueryMapper,
             requestParams -> {

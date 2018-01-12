@@ -61,7 +61,7 @@ public class ConsoleAppsActivity
         container.setViewComponent(view);
         view.setPresenter(this);
 
-        environment.getApp().getRequestService().sendAndReturn(
+        environment.getApp().getRequests().sendAndReturn(
             consoleAppArrayMapper,
             consoleAppResource::getInstalledApps,
             200,

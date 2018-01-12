@@ -72,7 +72,7 @@ public class TenantRulesEditorActivity
     public void start(AcceptsView container, EventBus eventBus, Collection<EventRegistration> registrations) {
         super.start(container, eventBus, registrations);
 
-        environment.getApp().getRequestService().sendAndReturn(
+        environment.getApp().getRequests().sendAndReturn(
             tenantMapper,
             params -> tenantResource.getForRealmId(params, realmId),
             200,

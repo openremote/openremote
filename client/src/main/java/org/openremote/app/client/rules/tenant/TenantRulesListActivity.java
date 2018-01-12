@@ -83,7 +83,7 @@ public class TenantRulesListActivity
         if (realmId != null) {
             assetBrowserPresenter.selectTenant(realmId);
 
-            environment.getApp().getRequestService().sendAndReturn(
+            environment.getApp().getRequests().sendAndReturn(
                 tenantMapper,
                 params -> tenantResource.getForRealmId(params, realmId),
                 200,
@@ -95,7 +95,7 @@ public class TenantRulesListActivity
                 }
             );
 
-            environment.getApp().getRequestService().sendAndReturn(
+            environment.getApp().getRequests().sendAndReturn(
                 tenantRulesetArrayMapper,
                 params -> rulesetResource.getTenantRulesets(params, realmId),
                 200,

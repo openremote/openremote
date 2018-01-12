@@ -197,7 +197,7 @@ public class AdminUserEditActivity
         adminContent.clearFormMessages();
         clearViewFieldErrors();
         readFromView();
-        environment.getApp().getRequestService().sendWith(
+        environment.getApp().getRequests().sendWith(
             userMapper,
             requestParams -> userResource.create(requestParams, realm, user),
             204,
@@ -238,7 +238,7 @@ public class AdminUserEditActivity
             return;
         }
         Credential credential = new Credential(password, false);
-        environment.getApp().getRequestService().sendWith(
+        environment.getApp().getRequests().sendWith(
             credentialMapper,
             requestParams -> userResource.resetPassword(requestParams, realm, userId, credential),
             204,
@@ -247,7 +247,7 @@ public class AdminUserEditActivity
     }
 
     protected void updateUser() {
-        environment.getApp().getRequestService().sendWith(
+        environment.getApp().getRequests().sendWith(
             userMapper,
             requestParams -> userResource.update(requestParams, realm, userId, user),
             204,
@@ -260,7 +260,7 @@ public class AdminUserEditActivity
     }
 
     protected void updateRoles(Runnable onComplete) {
-        environment.getApp().getRequestService().sendWith(
+        environment.getApp().getRequests().sendWith(
             roleArrayMapper,
             requestParams -> userResource.updateRoles(requestParams, realm, userId, roles),
             204,
@@ -270,7 +270,7 @@ public class AdminUserEditActivity
 
     @Override
     public void onDeviceRegistrationDelete(DeviceNotificationToken.Id id) {
-        environment.getApp().getRequestService().send(
+        environment.getApp().getRequests().send(
             requestParams -> notificationResource.deleteDeviceToken(requestParams, id.getUserId(), id.getDeviceId()),
             204,
             () -> {
@@ -296,7 +296,7 @@ public class AdminUserEditActivity
                 adminContent.setFormBusy(true);
                 adminContent.clearFormMessages();
                 clearViewFieldErrors();
-                environment.getApp().getRequestService().send(
+                environment.getApp().getRequests().send(
                     requestParams -> userResource.delete(requestParams, realm, userId),
                     204,
                     () -> {
@@ -313,7 +313,7 @@ public class AdminUserEditActivity
 
     protected void loadUser() {
         adminContent.setFormBusy(true);
-        environment.getApp().getRequestService().sendAndReturn(
+        environment.getApp().getRequests().sendAndReturn(
             userMapper,
             requestParams -> userResource.get(requestParams, realm, userId),
             200,
@@ -333,7 +333,7 @@ public class AdminUserEditActivity
     }
 
     protected void loadRoles(Runnable onComplete) {
-        environment.getApp().getRequestService().sendAndReturn(
+        environment.getApp().getRequests().sendAndReturn(
             roleArrayMapper,
             requestParams -> userResource.getRoles(requestParams, realm, userId),
             200,
@@ -349,7 +349,7 @@ public class AdminUserEditActivity
     }
 
     protected void loadDeviceRegistrations(Runnable onComplete) {
-        environment.getApp().getRequestService().sendAndReturn(
+        environment.getApp().getRequests().sendAndReturn(
             deviceNotificationTokenMapper,
             requestParams -> notificationResource.getDeviceTokens(requestParams, userId),
             200,

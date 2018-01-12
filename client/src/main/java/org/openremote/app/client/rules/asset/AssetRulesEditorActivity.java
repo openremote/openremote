@@ -72,7 +72,7 @@ public class AssetRulesEditorActivity
     public void start(AcceptsView container, EventBus eventBus, Collection<EventRegistration> registrations) {
         super.start(container, eventBus, registrations);
 
-        environment.getApp().getRequestService().sendAndReturn(
+        environment.getApp().getRequests().sendAndReturn(
             assetMapper,
             params -> assetResource.get(params, assetId),
             200,

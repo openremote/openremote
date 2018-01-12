@@ -128,7 +128,7 @@ public class AdminTenantActivity
         adminContent.clearFormMessages();
         clearViewFieldErrors();
         readFromView();
-        environment.getApp().getRequestService().sendWith(
+        environment.getApp().getRequests().sendWith(
             tenantMapper,
             requestParams -> tenantResource.create(requestParams, tenant),
             204,
@@ -149,7 +149,7 @@ public class AdminTenantActivity
         adminContent.clearFormMessages();
         clearViewFieldErrors();
         readFromView();
-        environment.getApp().getRequestService().sendWith(
+        environment.getApp().getRequests().sendWith(
             tenantMapper,
             requestParams -> tenantResource.update(requestParams, realm, tenant),
             204,
@@ -173,7 +173,7 @@ public class AdminTenantActivity
                 adminContent.setFormBusy(true);
                 adminContent.clearFormMessages();
                 clearViewFieldErrors();
-                environment.getApp().getRequestService().send(
+                environment.getApp().getRequests().send(
                     requestParams -> tenantResource.delete(requestParams, this.realm),
                     204,
                     () -> {
@@ -195,7 +195,7 @@ public class AdminTenantActivity
 
     protected void loadTenant() {
         adminContent.setFormBusy(true);
-        environment.getApp().getRequestService().sendAndReturn(
+        environment.getApp().getRequests().sendAndReturn(
             tenantMapper,
             requestParams -> tenantResource.get(requestParams, realm),
             200,

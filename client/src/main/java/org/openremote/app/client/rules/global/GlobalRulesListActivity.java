@@ -69,7 +69,7 @@ public class GlobalRulesListActivity
             RulesModule.createDefaultNavigationListener(environment)
         ));
 
-        environment.getApp().getRequestService().sendAndReturn(
+        environment.getApp().getRequests().sendAndReturn(
             globalRulesetArrayMapper,
             rulesetResource::getGlobalRulesets,
             200,

@@ -5,8 +5,10 @@ import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
 import jsinterop.base.Any;
-import org.openremote.app.client.rest.RequestService;
+import org.openremote.app.client.rest.Requests;
 import org.openremote.app.client.toast.Toasts;
+import org.openremote.model.interop.Consumer;
+import org.openremote.model.interop.Runnable;
 import org.openremote.model.security.Tenant;
 
 /**
@@ -24,8 +26,13 @@ public abstract class OpenRemoteApp extends HTMLElement {
     public native Toasts getToasts();
 
     @JsProperty
-    public native RequestService getRequestService();
+    public native Requests getRequests();
+
+    public native void addServiceMessageConsumer(Consumer<String> message);
+
+    public native void addServiceConnectionCloseListener(Runnable listener);
+
+    public native void sendServiceMessage(String message);
 
     public native void set(String property, Any value);
-
 }

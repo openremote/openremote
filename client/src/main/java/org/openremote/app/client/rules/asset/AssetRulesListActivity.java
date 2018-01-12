@@ -95,7 +95,7 @@ public class AssetRulesListActivity
                 }
             });
 
-            environment.getApp().getRequestService().sendAndReturn(
+            environment.getApp().getRequests().sendAndReturn(
                 assetRulesetArrayMapper,
                 params -> rulesetResource.getAssetRulesets(params, assetId),
                 200,

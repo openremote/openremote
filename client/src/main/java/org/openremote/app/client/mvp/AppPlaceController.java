@@ -23,6 +23,7 @@ import com.google.gwt.place.shared.Place;
 import com.google.gwt.place.shared.PlaceChangeEvent;
 import com.google.gwt.place.shared.PlaceChangeRequestEvent;
 import com.google.gwt.place.shared.PlaceController;
+import com.google.web.bindery.event.shared.HandlerRegistration;
 import com.google.web.bindery.event.shared.UmbrellaException;
 import org.openremote.app.client.event.GoToPlaceEvent;
 import org.openremote.app.client.event.WillGoToPlaceEvent;
@@ -43,19 +44,22 @@ public class AppPlaceController extends PlaceController {
 
     protected final com.google.web.bindery.event.shared.EventBus legacyEventBus;
 
+    protected HandlerRegistration placeChangeRegistration;
+    protected HandlerRegistration placeChangeRequestRegistration;
+
     public AppPlaceController(EventBus eventBus,
                               com.google.web.bindery.event.shared.EventBus legacyEventBus,
                               Delegate delegate) {
         super(legacyEventBus, delegate);
         this.legacyEventBus = legacyEventBus;
 
-        legacyEventBus.addHandler(PlaceChangeEvent.TYPE, event -> {
+        placeChangeRegistration = legacyEventBus.addHandler(PlaceChangeEvent.TYPE, event -> {
             if (LOG.isLoggable(Level.FINE))
                 LOG.fine("Received place change, go to: " + event.getNewPlace());
             eventBus.dispatch(new GoToPlaceEvent(event.getNewPlace()));
         });
 
-        legacyEventBus.addHandler(PlaceChangeRequestEvent.TYPE, event -> {
+        placeChangeRequestRegistration = legacyEventBus.addHandler(PlaceChangeRequestEvent.TYPE, event -> {
             if (LOG.isLoggable(Level.FINE))
                 LOG.fine("Received place change request, will go to: " + event.getNewPlace());
             eventBus.dispatch(new WillGoToPlaceEvent(event.getNewPlace()) {
@@ -94,6 +98,11 @@ public class AppPlaceController extends PlaceController {
         } catch (UmbrellaException ex) {
             LOG.log(Level.SEVERE, "Error handling place change to: " + newPlace, ex);
         }
+    }
+
+    public void stop() {
+        placeChangeRegistration.removeHandler();
+        placeChangeRequestRegistration.removeHandler();
     }
 
     public com.google.web.bindery.event.shared.EventBus getLegacyEventBus() {

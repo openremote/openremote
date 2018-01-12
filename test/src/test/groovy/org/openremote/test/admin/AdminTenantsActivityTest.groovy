@@ -14,11 +14,10 @@ import org.openremote.app.client.admin.navigation.AdminNavigation
 import org.openremote.app.client.admin.navigation.AdminNavigationPresenter
 import org.openremote.app.client.admin.tenant.*
 import org.openremote.app.client.event.GoToPlaceEvent
-import org.openremote.app.client.event.ShowFailureEvent
 import org.openremote.app.client.event.ShowSuccessEvent
 import org.openremote.app.client.event.WillGoToPlaceEvent
 import org.openremote.app.client.i18n.ManagerMessages
-import org.openremote.app.client.service.EventService
+import org.openremote.app.client.event.EventService
 import org.openremote.app.client.style.WidgetStyle
 import org.openremote.manager.security.ManagerIdentityService
 import org.openremote.manager.setup.AbstractKeycloakSetup

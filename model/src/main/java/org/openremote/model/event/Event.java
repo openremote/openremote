@@ -23,6 +23,7 @@ import org.openremote.model.util.TextUtil;
 
 import javax.persistence.Column;
 import javax.persistence.MappedSuperclass;
+import java.util.logging.Logger;
 
 /**
  * A timestamped event.
@@ -33,6 +34,8 @@ import javax.persistence.MappedSuperclass;
  */
 @MappedSuperclass
 public abstract class Event {
+
+    private static final Logger LOG = Logger.getLogger(Event.class.getName());
 
     @Column(name = "TIMESTAMP", nullable = false)
     public long timestamp;
