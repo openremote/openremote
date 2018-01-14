@@ -90,6 +90,10 @@ trait ContainerTrait {
         WebClient.getTarget(createClient().build(), serverUri.clone().replacePath(realm).build(), accessToken, null, null)
     }
 
+    static ResteasyWebTarget getClientTarget(UriBuilder serverUri, String realm, String path, String accessToken) {
+        WebClient.getTarget(createClient().build(), serverUri.clone().replacePath(realm).path(path).build(), accessToken, null, null)
+    }
+
     static ResteasyWebTarget getClientTarget(ResteasyClient client, UriBuilder serverUri, String realm, String accessToken) {
         WebClient.getTarget(client, serverUri.clone().replacePath(realm).build(), accessToken, null, null)
     }

@@ -272,7 +272,7 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
     def "Check HTTP client protocol configuration and linked attribute deployment"() {
 
         given: "expected conditions"
-        def conditions = new PollingConditions(timeout: 15, initialDelay: 1, delay: 1)
+        def conditions = new PollingConditions(timeout: 10, initialDelay: 1)
 
         and: "the HTTP client protocol polling time units are set to milliseconds"
         HttpClientProtocol.POLLING_TIME_UNIT = TimeUnit.MILLISECONDS
