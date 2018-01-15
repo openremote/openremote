@@ -26,6 +26,7 @@ public enum ValueType {
     NUMBER(NumberValue.class),
     BOOLEAN(BooleanValue.class);
 
+    protected static final ValueType[] values = values();
     protected final Class<? extends Value> modelType;
 
     ValueType(Class<? extends Value> type) {
@@ -34,5 +35,15 @@ public enum ValueType {
 
     public Class getModelType() {
         return modelType;
+    }
+
+    public static ValueType fromModelType(Class<? extends Value> modelType) {
+        for (ValueType valueType : values) {
+            if (valueType.getModelType() == modelType) {
+                return valueType;
+            }
+        }
+
+        throw new IllegalStateException("Failed to get value type from model type");
     }
 }

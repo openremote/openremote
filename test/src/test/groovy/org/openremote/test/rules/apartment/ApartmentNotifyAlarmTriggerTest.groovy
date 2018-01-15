@@ -1,16 +1,16 @@
 package org.openremote.test.rules.apartment
 
-import org.openremote.manager.server.asset.AssetProcessingService
-import org.openremote.manager.server.asset.AssetStorageService
-import org.openremote.manager.server.notification.FCMDeliveryService
-import org.openremote.manager.server.notification.NotificationService
-import org.openremote.manager.server.rules.RulesEngine
-import org.openremote.manager.server.rules.RulesService
-import org.openremote.manager.server.rules.RulesetStorageService
-import org.openremote.manager.server.setup.SetupService
-import org.openremote.manager.server.setup.builtin.KeycloakDemoSetup
-import org.openremote.manager.server.setup.builtin.ManagerDemoSetup
-import org.openremote.manager.shared.notification.NotificationResource
+import org.openremote.manager.asset.AssetProcessingService
+import org.openremote.manager.asset.AssetStorageService
+import org.openremote.manager.notification.FCMDeliveryService
+import org.openremote.manager.notification.NotificationService
+import org.openremote.manager.rules.RulesEngine
+import org.openremote.manager.rules.RulesService
+import org.openremote.manager.rules.RulesetStorageService
+import org.openremote.manager.setup.SetupService
+import org.openremote.manager.setup.builtin.KeycloakDemoSetup
+import org.openremote.manager.setup.builtin.ManagerDemoSetup
+import org.openremote.model.notification.NotificationResource
 import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.notification.ActionType
 import org.openremote.model.notification.AlertAction
@@ -23,7 +23,7 @@ import spock.util.concurrent.PollingConditions
 
 import java.util.concurrent.TimeUnit
 
-import static org.openremote.manager.server.setup.builtin.ManagerDemoSetup.DEMO_RULE_STATES_APARTMENT_1
+import static org.openremote.manager.setup.builtin.ManagerDemoSetup.DEMO_RULE_STATES_APARTMENT_1
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID
 
 class ApartmentNotifyAlarmTriggerTest extends Specification implements ManagerContainerTrait {

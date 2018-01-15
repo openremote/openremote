@@ -4,43 +4,36 @@ import com.google.gwt.junit.GWTMockUtilities
 import com.google.gwt.place.shared.WithTokenizers
 import com.google.gwt.user.client.ui.Widget
 import com.google.gwt.view.client.HasData
-import org.openremote.manager.client.Environment
-import org.openremote.manager.client.ManagerHistoryMapper
-import org.openremote.manager.client.admin.TenantArrayMapper
-import org.openremote.manager.client.assets.AssetArrayMapper
-import org.openremote.manager.client.assets.AssetMapper
-import org.openremote.manager.client.assets.AssetQueryMapper
-import org.openremote.manager.client.assets.browser.*
-import org.openremote.manager.client.event.SubscriptionFailureEvent
-import org.openremote.manager.client.i18n.ManagerMessages
-import org.openremote.manager.client.service.RequestServiceImpl
-import org.openremote.manager.client.style.WidgetStyle
-import org.openremote.manager.server.asset.AssetStorageService
-import org.openremote.manager.server.asset.ServerAsset
-import org.openremote.manager.server.security.ManagerIdentityService
-import org.openremote.manager.server.setup.AbstractKeycloakSetup
-import org.openremote.manager.server.setup.SetupService
-import org.openremote.manager.server.setup.builtin.KeycloakDemoSetup
-import org.openremote.manager.server.setup.builtin.ManagerDemoSetup
-import org.openremote.manager.shared.asset.AssetResource
-import org.openremote.manager.shared.http.EntityReader
-import org.openremote.manager.shared.security.Tenant
-import org.openremote.manager.shared.security.TenantResource
-import org.openremote.manager.shared.validation.ConstraintViolationReport
-import org.openremote.model.asset.Asset
-import org.openremote.model.asset.AssetQuery
-import org.openremote.model.asset.AssetTreeModifiedEvent
-import org.openremote.model.asset.AssetType
+import org.openremote.app.client.Environment
+import org.openremote.app.client.ManagerHistoryMapper
+import org.openremote.app.client.admin.TenantArrayMapper
+import org.openremote.app.client.assets.AssetArrayMapper
+import org.openremote.app.client.assets.AssetMapper
+import org.openremote.app.client.assets.AssetQueryMapper
+import org.openremote.app.client.assets.browser.*
+import org.openremote.app.client.event.SubscriptionFailureEvent
+import org.openremote.app.client.i18n.ManagerMessages
+import org.openremote.app.client.style.WidgetStyle
+import org.openremote.manager.asset.AssetStorageService
+import org.openremote.manager.asset.ServerAsset
+import org.openremote.manager.security.ManagerIdentityService
+import org.openremote.manager.setup.AbstractKeycloakSetup
+import org.openremote.manager.setup.SetupService
+import org.openremote.manager.setup.builtin.KeycloakDemoSetup
+import org.openremote.manager.setup.builtin.ManagerDemoSetup
+import org.openremote.model.asset.*
 import org.openremote.model.event.shared.SharedEvent
 import org.openremote.model.event.shared.TenantFilter
+import org.openremote.model.security.Tenant
+import org.openremote.model.security.TenantResource
 import org.openremote.test.*
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
 import static org.openremote.container.util.MapAccess.getString
-import static org.openremote.manager.server.event.ClientEventService.WEBSOCKET_EVENTS
-import static org.openremote.manager.server.setup.AbstractKeycloakSetup.SETUP_ADMIN_PASSWORD
-import static org.openremote.manager.server.setup.AbstractKeycloakSetup.SETUP_ADMIN_PASSWORD_DEFAULT
+import static org.openremote.manager.event.ClientEventService.WEBSOCKET_EVENTS
+import static org.openremote.manager.setup.AbstractKeycloakSetup.SETUP_ADMIN_PASSWORD
+import static org.openremote.manager.setup.AbstractKeycloakSetup.SETUP_ADMIN_PASSWORD_DEFAULT
 import static org.openremote.model.Constants.*
 
 class AssetBrowserPresenterTest extends Specification implements ManagerContainerTrait, GwtClientTrait {
@@ -56,7 +49,7 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
 
-        and: "an authenticated user and client security service"
+        and: "an authenticated user"
         def realm = MASTER_REALM
         def accessToken = {
             authenticate(
@@ -67,13 +60,13 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
                     getString(container.getConfig(), SETUP_ADMIN_PASSWORD, SETUP_ADMIN_PASSWORD_DEFAULT)
             ).token
         }
-        def securityService = new ClientSecurityService(keycloakProvider.getKeycloakDeployment(realm, KEYCLOAK_CLIENT_ID), accessToken)
-        def currentTenant = identityService.getIdentityProvider().getTenantForRealm(realm)
 
-        and: "a client request service and target"
-        def constraintViolationReader = new ClientObjectMapper(container.JSON, ConstraintViolationReport.class) as EntityReader<ConstraintViolationReport>
-        def requestService = new RequestServiceImpl(securityService, constraintViolationReader)
-        def clientTarget = getClientTarget(serverUri(serverPort), realm)
+        and: "a test client app"
+        def testApp = new TestOpenRemoteApp(
+                keycloakProvider.getKeycloakDeployment(realm, KEYCLOAK_CLIENT_ID),
+                identityService.getIdentityProvider().getTenantForRealm(realm),
+                accessToken
+        )
 
         and: "a client websocket connection and attached event bus and service"
         List<SharedEvent> collectedSharedEvents = []
@@ -82,6 +75,7 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
         connect(createWebsocketClient(), clientEventService.endpoint, serverUri(serverPort), WEBSOCKET_EVENTS, realm, accessToken.call())
 
         and: "the server resources to call from client"
+        def clientTarget = getClientTarget(serverUri(serverPort), realm)
         def assetResource = Stub(AssetResource) {
             _(*_) >> { callResourceProxy(container.JSON, clientTarget, getDelegate()) }
         }
@@ -108,11 +102,10 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
                 "TestMessageRequestFailed:" + it[0]
             }
         }
-        def placeController = createPlaceController(securityService, eventBus)
+        def placeController = createPlaceController(eventBus)
         def placeHistoryMapper = createPlaceHistoryMapper(ManagerHistoryMapper.getAnnotation(WithTokenizers.class))
         def environment = Environment.create(
-                securityService,
-                requestService,
+                testApp,
                 clientEventService,
                 placeController,
                 placeHistoryMapper,
@@ -133,7 +126,6 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
         HasData<BrowserTreeNode> treeDisplay = Mock(HasData)
         def assetBrowserPresenter = new AssetBrowserPresenter(
                 environment,
-                currentTenant,
                 assetBrowser,
                 assetResource,
                 assetMapper,
@@ -255,7 +247,7 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
 
-        and: "An authenticated user and client security service"
+        and: "an authenticated user"
         def realm = MASTER_REALM
         def accessToken = {
             authenticate(
@@ -266,13 +258,13 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
                     "testuser1"
             ).token
         }
-        def securityService = new ClientSecurityService(keycloakProvider.getKeycloakDeployment(realm, KEYCLOAK_CLIENT_ID), accessToken)
-        def currentTenant = identityService.getIdentityProvider().getTenantForRealm(realm)
 
-        and: "a client request service and target"
-        def constraintViolationReader = new ClientObjectMapper(container.JSON, ConstraintViolationReport.class) as EntityReader<ConstraintViolationReport>
-        def requestService = new RequestServiceImpl(securityService, constraintViolationReader)
-        def clientTarget = getClientTarget(serverUri(serverPort), realm)
+        and: "a test client app"
+        def testApp = new TestOpenRemoteApp(
+                keycloakProvider.getKeycloakDeployment(realm, KEYCLOAK_CLIENT_ID),
+                identityService.getIdentityProvider().getTenantForRealm(realm),
+                accessToken
+        )
 
         and: "a client websocket connection and attached event bus and service"
         List<SharedEvent> collectedSharedEvents = []
@@ -281,6 +273,7 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
         connect(createWebsocketClient(), clientEventService.endpoint, serverUri(serverPort), WEBSOCKET_EVENTS, realm, accessToken.call())
 
         and: "the server resources to call from client"
+        def clientTarget = getClientTarget(serverUri(serverPort), realm)
         def assetResource = Stub(AssetResource) {
             _(*_) >> { callResourceProxy(container.JSON, clientTarget, getDelegate()) }
         }
@@ -307,11 +300,10 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
                 "TestMessageRequestFailed:" + it[0]
             }
         }
-        def placeController = createPlaceController(securityService, eventBus)
+        def placeController = createPlaceController(eventBus)
         def placeHistoryMapper = createPlaceHistoryMapper(ManagerHistoryMapper.getAnnotation(WithTokenizers.class))
         def environment = Environment.create(
-                securityService,
-                requestService,
+                testApp,
                 clientEventService,
                 placeController,
                 placeHistoryMapper,
@@ -332,7 +324,6 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
         HasData<BrowserTreeNode> treeDisplay = Mock(HasData)
         def assetBrowserPresenter = new AssetBrowserPresenter(
                 environment,
-                currentTenant,
                 assetBrowser,
                 assetResource,
                 assetMapper,
@@ -434,7 +425,7 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
         def keycloakProvider = container.getService(SetupService.class).getTaskOfType(AbstractKeycloakSetup.class).keycloakProvider
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
 
-        and: "An authenticated user and client security service"
+        and: "an authenticated user"
         def realm = keycloakDemoSetup.customerATenant.realm
         def accessToken = {
             authenticate(
@@ -445,13 +436,13 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
                     "testuser3"
             ).token
         }
-        def securityService = new ClientSecurityService(keycloakProvider.getKeycloakDeployment(realm, KEYCLOAK_CLIENT_ID), accessToken)
-        def currentTenant = identityService.getIdentityProvider().getTenantForRealm(realm)
 
-        and: "a client request service and target"
-        def constraintViolationReader = new ClientObjectMapper(container.JSON, ConstraintViolationReport.class) as EntityReader<ConstraintViolationReport>
-        def requestService = new RequestServiceImpl(securityService, constraintViolationReader)
-        def clientTarget = getClientTarget(serverUri(serverPort), realm)
+        and: "a test client app"
+        def testApp = new TestOpenRemoteApp(
+                keycloakProvider.getKeycloakDeployment(realm, KEYCLOAK_CLIENT_ID),
+                identityService.getIdentityProvider().getTenantForRealm(realm),
+                accessToken
+        )
 
         and: "a client websocket connection and attached event bus and service"
         List<SharedEvent> collectedSharedEvents = []
@@ -460,6 +451,7 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
         connect(createWebsocketClient(), clientEventService.endpoint, serverUri(serverPort), WEBSOCKET_EVENTS, realm, accessToken.call())
 
         and: "the server resources to call from client"
+        def clientTarget = getClientTarget(serverUri(serverPort), realm)
         def assetResource = Stub(AssetResource) {
             _(*_) >> { callResourceProxy(container.JSON, clientTarget, getDelegate()) }
         }
@@ -486,11 +478,10 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
                 "TestMessageRequestFailed:" + it[0]
             }
         }
-        def placeController = createPlaceController(securityService, eventBus)
+        def placeController = createPlaceController(eventBus)
         def placeHistoryMapper = createPlaceHistoryMapper(ManagerHistoryMapper.getAnnotation(WithTokenizers.class))
         def environment = Environment.create(
-                securityService,
-                requestService,
+                testApp,
                 clientEventService,
                 placeController,
                 placeHistoryMapper,
@@ -508,7 +499,6 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
         }
         def assetBrowserPresenter = new AssetBrowserPresenter(
                 environment,
-                currentTenant,
                 assetBrowser,
                 assetResource,
                 assetMapper,

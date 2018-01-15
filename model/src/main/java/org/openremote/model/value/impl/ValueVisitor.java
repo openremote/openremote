@@ -79,6 +79,7 @@ class ValueVisitor {
      */
     public void accept(Value node, ValueContext ctx) throws ValueException {
         if (node == null) {
+            visitNull(ctx);
             return;
         }
         ((ValueImpl) node).traverse(this, ctx);
@@ -115,6 +116,12 @@ class ValueVisitor {
      * Called for boolean present in an object.
      */
     public void visit(boolean bool, ValueContext ctx) {
+    }
+
+    /**
+     * Called for null present in an object.
+     */
+    public void visitNull(ValueContext ctx) {
     }
 
     /**

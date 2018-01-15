@@ -22,8 +22,6 @@ package org.openremote.model.file;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import java.io.UnsupportedEncodingException;
-
 public class FileInfo {
     protected final String name;
     protected final String contents;

@@ -52,7 +52,7 @@ public class EventBus {
     }
 
     public <E extends Event> EventRegistration<E> register(boolean prepare, Class<E> eventClass, EventListener<E> listener) {
-        EventRegistration<E> registration = new EventRegistration<E>(prepare, eventClass, listener);
+        EventRegistration<E> registration = new EventRegistration<>(prepare, eventClass, listener);
         add(registration);
         return registration;
     }

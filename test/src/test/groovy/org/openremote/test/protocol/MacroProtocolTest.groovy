@@ -1,9 +1,9 @@
 package org.openremote.test.protocol
 
-import org.openremote.manager.server.asset.AssetProcessingService
-import org.openremote.manager.server.asset.AssetStorageService
-import org.openremote.manager.server.setup.SetupService
-import org.openremote.manager.server.setup.builtin.ManagerDemoSetup
+import org.openremote.manager.asset.AssetProcessingService
+import org.openremote.manager.asset.AssetStorageService
+import org.openremote.manager.setup.SetupService
+import org.openremote.manager.setup.builtin.ManagerDemoSetup
 import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.attribute.AttributeExecuteStatus
 import org.openremote.model.value.Values

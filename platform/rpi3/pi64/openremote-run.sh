@@ -50,4 +50,4 @@ export LOGGING_CONFIG_FILE=${BASE_PATH}/server/deployment/manager/logging.proper
 export MAP_TILES_PATH=${BASE_PATH}/server/deployment/manager/map/mapdata.mbtiles
 export MAP_SETTINGS_PATH=${BASE_PATH}/server/deployment/manager/map/mapsettings.json
 
-java -cp "${BASE_PATH}/server/lib/*" org.openremote.manager.server.Main
+java -cp "${BASE_PATH}/server/lib/*" org.openremote.manager.Main

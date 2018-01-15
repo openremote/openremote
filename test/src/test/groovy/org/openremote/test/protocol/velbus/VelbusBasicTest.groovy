@@ -24,7 +24,7 @@ import org.openremote.agent.protocol.velbus.VelbusNetwork
 import org.openremote.agent.protocol.velbus.VelbusPacket
 import org.openremote.agent.protocol.velbus.device.*
 import org.openremote.container.Container
-import org.openremote.manager.server.concurrent.ManagerExecutorService
+import org.openremote.manager.concurrent.ManagerExecutorService
 import org.openremote.model.value.ValueType
 import org.openremote.model.value.Values
 import org.openremote.test.ManagerContainerTrait

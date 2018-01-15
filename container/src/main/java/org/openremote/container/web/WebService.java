@@ -21,6 +21,7 @@ package org.openremote.container.web;
 
 import io.undertow.Undertow;
 import io.undertow.server.HttpHandler;
+import io.undertow.server.handlers.PathHandler;
 import io.undertow.server.handlers.RedirectHandler;
 import io.undertow.server.handlers.RequestDumpingHandler;
 import io.undertow.servlet.Servlets;
@@ -75,9 +76,10 @@ public abstract class WebService implements ContainerService {
 
     public static final String API_PATH = "/api";
     public static final String JSAPI_PATH = "/jsapi";
-    protected final Pattern PATTERN_REALM_ROOT = Pattern.compile("/([a-zA-Z0-9\\-_]+)/?");
-    protected final Pattern PATTERN_REALM_SUB = Pattern.compile("/([a-zA-Z0-9\\-_]+)/(.*)");
+    protected static final Pattern PATTERN_REALM_ROOT = Pattern.compile("/([a-zA-Z0-9\\-_]+)/?");
+    protected static final Pattern PATTERN_REALM_SUB = Pattern.compile("/([a-zA-Z0-9\\-_]+)/(.*)");
 
+    protected PathHandler requestPathHandler;
     protected boolean devMode;
     protected String host;
     protected int port;
@@ -122,7 +124,6 @@ public abstract class WebService implements ContainerService {
     @Override
     public void start(Container container) throws Exception {
         if (undertow != null) {
-            LOG.info("Starting webserver on http://" + host + ":" + port);
             undertow.start();
             LOG.info("Webserver ready on http://" + host + ":" + port);
         }
@@ -131,10 +132,13 @@ public abstract class WebService implements ContainerService {
     @Override
     public void stop(Container container) throws Exception {
         if (undertow != null) {
-            LOG.info("Stopping webserver...");
             undertow.stop();
             undertow = null;
         }
+    }
+
+    public PathHandler getRequestPathHandler() {
+        return requestPathHandler;
     }
 
     protected Undertow.Builder build(Container container, Undertow.Builder builder) {
@@ -146,8 +150,10 @@ public abstract class WebService implements ContainerService {
             : null;
 
         ResteasyDeployment resteasyDeployment = createResteasyDeployment(container);
+
         HttpHandler apiHandler = createApiHandler(identityService, resteasyDeployment);
         HttpHandler jsApiHandler = createJsApiHandler(identityService, resteasyDeployment);
+        requestPathHandler = new PathHandler(apiHandler);
 
         HttpHandler handler = exchange -> {
             String requestPath = exchange.getRequestPath();
@@ -191,29 +197,30 @@ public abstract class WebService implements ContainerService {
                 return;
             }
 
-            // Serve API with path /<realm>/*
             Matcher realmSubMatcher = PATTERN_REALM_SUB.matcher(requestPath);
-            if (apiHandler != null && realmSubMatcher.matches()) {
-                LOG.fine("Serving API call: " + requestPath);
-                String realm = realmSubMatcher.group(1);
 
-                // Move the realm from path segment to header
-                exchange.getRequestHeaders().put(HttpString.tryFromString(REQUEST_HEADER_REALM), realm);
-
-                // Rewrite path, remove realm segment
-                URI apiUrl = fromUri(exchange.getRequestURL())
-                    .replacePath(API_PATH).path(realmSubMatcher.group(2))
-                    .build();
-                exchange.setRequestURI(apiUrl.toString(), true);
-                exchange.setRequestPath(apiUrl.getPath());
-                exchange.setRelativePath(apiUrl.getPath());
-
-                apiHandler.handleRequest(exchange);
-                return;
+            if (!realmSubMatcher.matches()) {
+                exchange.setStatusCode(NOT_FOUND.getStatusCode());
+                throw new WebApplicationException(NOT_FOUND);
             }
 
-            exchange.setStatusCode(NOT_FOUND.getStatusCode());
-            throw new WebApplicationException(NOT_FOUND);
+            // Extract realm from path and push it into REQUEST_HEADER_REALM header
+            String realm = realmSubMatcher.group(1);
+
+            // Move the realm from path segment to header
+            exchange.getRequestHeaders().put(HttpString.tryFromString(REQUEST_HEADER_REALM), realm);
+
+            // Rewrite path, remove realm segment
+            URI url = fromUri(exchange.getRequestURL())
+                .replacePath(realmSubMatcher.group(2))
+                .build();
+            exchange.setRequestURI(url.toString(), true);
+            exchange.setRequestPath(url.getPath());
+            exchange.setRelativePath(url.getPath());
+
+            // Look for registered path handlers and fallback to API handler
+            LOG.fine("Serving HTTP call: " + url.getPath());
+            requestPathHandler.handleRequest(exchange);
         };
 
         handler = new WebServiceExceptions.RootUndertowExceptionHandler(devMode, handler);
@@ -361,8 +368,6 @@ public abstract class WebService implements ContainerService {
      * Provides the LAN IPv4 address the container is bound to so it can be
      * used in the context provider callbacks; if CB is on the other side of some sort
      * of NAT then this won't work also assumes HTTP
-     *
-     * @return
      */
     public URI getHostUri() {
         return containerHostUri;

@@ -28,17 +28,16 @@ import com.google.gwt.user.client.Window
 import com.google.gwt.user.client.ui.AcceptsOneWidget
 import com.google.web.bindery.event.shared.SimpleEventBus
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget
-import org.openremote.manager.client.mvp.AppActivityManager
-import org.openremote.manager.client.mvp.AppActivityMapper
-import org.openremote.manager.client.mvp.AppPlaceController
-import org.openremote.manager.client.service.SecurityService
-import org.openremote.manager.shared.http.Request
-import org.openremote.manager.shared.http.RequestParams
-import org.openremote.manager.shared.http.SuccessStatusCode
+import org.openremote.app.client.mvp.AppActivityManager
+import org.openremote.app.client.mvp.AppActivityMapper
+import org.openremote.app.client.mvp.AppPlaceController
 import org.openremote.model.event.Event
 import org.openremote.model.event.bus.EventBus
 import org.openremote.model.event.bus.EventListener
 import org.openremote.model.event.shared.SharedEvent
+import org.openremote.model.http.Request
+import org.openremote.model.http.RequestParams
+import org.openremote.model.http.SuccessStatusCode
 import org.openremote.model.value.Value
 import org.spockframework.mock.IMockMethod
 
@@ -125,10 +124,10 @@ trait GwtClientTrait {
         return eventBus
     }
 
-    static AppPlaceController createPlaceController(SecurityService securityService, EventBus eventBus) {
+    static AppPlaceController createPlaceController(EventBus eventBus) {
         def legacyEventBus = new SimpleEventBus()
         def placeControllerDelegate = new MockPlaceControllerDelegate()
-        return new AppPlaceController(securityService, eventBus, legacyEventBus, placeControllerDelegate)
+        return new AppPlaceController(eventBus, legacyEventBus, placeControllerDelegate)
 
     }
 

@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.function.Consumer;
 
 /**
- * Facade for writing rules RHS actions, supporting asset queries within the scope
+ * Facade for writing rules RHS actions, supporting {@link UserQuery} within the scope
  * of the rule engine.
  */
 public abstract class Users {

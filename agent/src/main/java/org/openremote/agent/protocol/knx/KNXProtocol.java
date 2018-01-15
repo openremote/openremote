@@ -23,7 +23,6 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
 
-import org.apache.commons.io.IOUtils;
 import org.openremote.agent.protocol.AbstractProtocol;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.agent.protocol.ProtocolLinkedAttributeImport;

@@ -1,10 +1,10 @@
 package org.openremote.test.assets
 
 import org.openremote.agent.protocol.simulator.SimulatorProtocol
-import org.openremote.manager.server.asset.AssetStorageService
-import org.openremote.manager.server.datapoint.AssetDatapointService
-import org.openremote.manager.server.setup.SetupService
-import org.openremote.manager.server.setup.builtin.ManagerDemoSetup
+import org.openremote.manager.asset.AssetStorageService
+import org.openremote.manager.datapoint.AssetDatapointService
+import org.openremote.manager.setup.SetupService
+import org.openremote.manager.setup.builtin.ManagerDemoSetup
 import org.openremote.model.attribute.AttributeRef
 import org.openremote.model.datapoint.DatapointInterval
 import org.openremote.model.value.Values

@@ -20,18 +20,18 @@
 package org.openremote.model.rules;
 
 import org.openremote.model.attribute.AttributeEvent;
-import org.openremote.model.asset.AbstractAssetQuery;
+import org.openremote.model.asset.BaseAssetQuery;
 
 import java.util.List;
 import java.util.function.Consumer;
 
 /**
  * Facade for writing rules RHS actions, supporting asset queries within the scope
- * of the rule engine.
+ * of the rule engine, and dispatching of {@link AttributeEvent} as rule consequence.
  */
 public abstract class Assets {
 
-    public abstract class RestrictedQuery extends AbstractAssetQuery<RestrictedQuery> {
+    public abstract class RestrictedQuery extends BaseAssetQuery<RestrictedQuery> {
 
         abstract public String getResult();
 

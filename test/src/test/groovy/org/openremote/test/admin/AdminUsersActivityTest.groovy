@@ -4,45 +4,43 @@ import com.google.gwt.junit.GWTMockUtilities
 import com.google.gwt.place.shared.WithTokenizers
 import com.google.gwt.user.client.ui.AcceptsOneWidget
 import com.google.gwt.user.client.ui.Widget
-import org.openremote.manager.client.Environment
-import org.openremote.manager.client.ManagerActivityMapper
-import org.openremote.manager.client.ManagerHistoryMapper
-import org.openremote.manager.client.admin.*
-import org.openremote.manager.client.admin.navigation.AdminNavigation
-import org.openremote.manager.client.admin.navigation.AdminNavigationPresenter
-import org.openremote.manager.client.admin.users.AbstractAdminUsersPlace
-import org.openremote.manager.client.admin.users.AdminUsers
-import org.openremote.manager.client.admin.users.AdminUsersActivity
-import org.openremote.manager.client.admin.users.AdminUsersPlace
-import org.openremote.manager.client.admin.users.edit.AdminUserEdit
-import org.openremote.manager.client.admin.users.edit.AdminUserEditActivity
-import org.openremote.manager.client.admin.users.edit.AdminUserEditPlace
-import org.openremote.manager.client.event.GoToPlaceEvent
-import org.openremote.manager.client.event.ShowSuccessEvent
-import org.openremote.manager.client.event.WillGoToPlaceEvent
-import org.openremote.manager.client.i18n.ManagerMessages
-import org.openremote.manager.client.service.EventService
-import org.openremote.manager.client.service.RequestServiceImpl
-import org.openremote.manager.client.style.WidgetStyle
-import org.openremote.manager.server.setup.AbstractKeycloakSetup
-import org.openremote.manager.server.setup.SetupService
-import org.openremote.manager.shared.http.EntityReader
-import org.openremote.manager.shared.notification.NotificationResource
-import org.openremote.manager.shared.security.*
-import org.openremote.manager.shared.validation.ConstraintViolationReport
+import org.openremote.app.client.Environment
+import org.openremote.app.client.ManagerActivityMapper
+import org.openremote.app.client.ManagerHistoryMapper
+import org.openremote.app.client.admin.*
+import org.openremote.app.client.admin.navigation.AdminNavigation
+import org.openremote.app.client.admin.navigation.AdminNavigationPresenter
+import org.openremote.app.client.admin.users.AbstractAdminUsersPlace
+import org.openremote.app.client.admin.users.AdminUsers
+import org.openremote.app.client.admin.users.AdminUsersActivity
+import org.openremote.app.client.admin.users.AdminUsersPlace
+import org.openremote.app.client.admin.users.edit.AdminUserEdit
+import org.openremote.app.client.admin.users.edit.AdminUserEditActivity
+import org.openremote.app.client.admin.users.edit.AdminUserEditPlace
+import org.openremote.app.client.event.GoToPlaceEvent
+import org.openremote.app.client.event.ShowSuccessEvent
+import org.openremote.app.client.event.WillGoToPlaceEvent
+import org.openremote.app.client.i18n.ManagerMessages
+import org.openremote.app.client.event.EventService
+import org.openremote.app.client.style.WidgetStyle
+import org.openremote.manager.security.ManagerIdentityService
+import org.openremote.manager.setup.AbstractKeycloakSetup
+import org.openremote.manager.setup.SetupService
 import org.openremote.model.event.Event
 import org.openremote.model.event.bus.EventListener
+import org.openremote.model.notification.NotificationResource
+import org.openremote.model.security.*
 import org.openremote.test.ClientObjectMapper
-import org.openremote.test.ClientSecurityService
 import org.openremote.test.GwtClientTrait
 import org.openremote.test.ManagerContainerTrait
+import org.openremote.test.TestOpenRemoteApp
 import spock.lang.Specification
 import spock.util.concurrent.BlockingVariables
 import spock.util.concurrent.PollingConditions
 
 import static org.openremote.container.util.MapAccess.getString
-import static org.openremote.manager.server.setup.AbstractKeycloakSetup.SETUP_ADMIN_PASSWORD
-import static org.openremote.manager.server.setup.AbstractKeycloakSetup.SETUP_ADMIN_PASSWORD_DEFAULT
+import static org.openremote.manager.setup.AbstractKeycloakSetup.SETUP_ADMIN_PASSWORD
+import static org.openremote.manager.setup.AbstractKeycloakSetup.SETUP_ADMIN_PASSWORD_DEFAULT
 import static org.openremote.model.Constants.*
 
 class AdminUsersActivityTest extends Specification implements ManagerContainerTrait, GwtClientTrait {
@@ -52,6 +50,7 @@ class AdminUsersActivityTest extends Specification implements ManagerContainerTr
         given: "The server container is started"
         def serverPort = findEphemeralPort()
         def container = startContainerNoDemoAssets(defaultConfig(serverPort), defaultServices())
+        def identityService = container.getService(ManagerIdentityService.class)
         def keycloakProvider = container.getService(SetupService.class).getTaskOfType(AbstractKeycloakSetup.class).keycloakProvider
 
         and: "expected results"
@@ -62,7 +61,7 @@ class AdminUsersActivityTest extends Specification implements ManagerContainerTr
         def resultUsers = []
         def resultSelectedRealm = null
 
-        and: "An authenticated user and client security service"
+        and: "an authenticated user"
         def realm = MASTER_REALM
         def accessToken = {
             authenticate(
@@ -73,12 +72,25 @@ class AdminUsersActivityTest extends Specification implements ManagerContainerTr
                     getString(container.getConfig(), SETUP_ADMIN_PASSWORD, SETUP_ADMIN_PASSWORD_DEFAULT)
             ).token
         }
-        def securityService = new ClientSecurityService(keycloakProvider.getKeycloakDeployment(realm, KEYCLOAK_CLIENT_ID), accessToken)
 
-        and: "A client request service and target"
-        def constraintViolationReader = new ClientObjectMapper(container.JSON, ConstraintViolationReport.class) as EntityReader<ConstraintViolationReport>
-        def requestService = new RequestServiceImpl(securityService, constraintViolationReader)
+        and: "a test client app"
+        def testApp = new TestOpenRemoteApp(
+                keycloakProvider.getKeycloakDeployment(realm, KEYCLOAK_CLIENT_ID),
+                identityService.getIdentityProvider().getTenantForRealm(realm),
+                accessToken
+        )
+
+        and: "the server resources to call from client"
         def clientTarget = getClientTarget(serverUri(serverPort), realm)
+        def tenantResource = Stub(TenantResource) {
+            _(*_) >> { callResourceProxy(container.JSON, clientTarget, getDelegate()) }
+        }
+        def userResource = Stub(UserResource) {
+            _(*_) >> { callResourceProxy(container.JSON, clientTarget, getDelegate()) }
+        }
+        def notificationResource = Stub(NotificationResource) {
+            _(*_) >> { callResourceProxy(container.JSON, clientTarget, getDelegate()) }
+        }
 
         and: "The fake client MVP environment"
         GWTMockUtilities.disarm()
@@ -117,10 +129,9 @@ class AdminUsersActivityTest extends Specification implements ManagerContainerTr
             }
         })
         def placeHistoryMapper = createPlaceHistoryMapper(ManagerHistoryMapper.getAnnotation(WithTokenizers.class))
-        def placeController = createPlaceController(securityService, eventBus)
+        def placeController = createPlaceController(eventBus)
         def environment = Environment.create(
-                securityService,
-                requestService,
+                testApp,
                 Mock(EventService),
                 placeController,
                 placeHistoryMapper,
@@ -139,16 +150,6 @@ class AdminUsersActivityTest extends Specification implements ManagerContainerTr
 
         def adminNavigationView = Mock(AdminNavigation)
         def adminNavigationPresenter = new AdminNavigationPresenter(environment, adminNavigationView)
-
-        def tenantResource = Stub(TenantResource) {
-            _(*_) >> { callResourceProxy(container.JSON, clientTarget, getDelegate()) }
-        }
-        def userResource = Stub(UserResource) {
-            _(*_) >> { callResourceProxy(container.JSON, clientTarget, getDelegate()) }
-        }
-        def notificationResource = Stub(NotificationResource) {
-            _(*_) >> { callResourceProxy(container.JSON, clientTarget, getDelegate()) }
-        }
 
         def adminUsersView = Mock(AdminUsers) {
             setTenants(_, _) >> { Tenant[] tenants, String selectedRealm ->
@@ -173,7 +174,7 @@ class AdminUsersActivityTest extends Specification implements ManagerContainerTr
         and: "An activity management configuration"
         def activityDisplay = Mock(AcceptsOneWidget)
         def activityMapper = new ManagerActivityMapper(
-                securityService,
+                testApp,
                 eventBus,
                 managerMessages,
                 {},

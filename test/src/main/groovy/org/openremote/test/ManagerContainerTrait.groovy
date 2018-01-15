@@ -9,25 +9,25 @@ import org.openremote.container.message.MessageBrokerService
 import org.openremote.container.message.MessageBrokerSetupService
 import org.openremote.container.security.keycloak.KeycloakIdentityProvider
 import org.openremote.container.timer.TimerService
-import org.openremote.manager.server.agent.AgentService
-import org.openremote.manager.server.apps.ConsoleAppService
-import org.openremote.manager.server.asset.AssetAttributeLinkingService
-import org.openremote.manager.server.asset.AssetProcessingService
-import org.openremote.manager.server.asset.AssetStorageService
-import org.openremote.manager.server.concurrent.ManagerExecutorService
-import org.openremote.manager.server.datapoint.AssetDatapointService
-import org.openremote.manager.server.event.ClientEventService
-import org.openremote.manager.server.i18n.I18NService
-import org.openremote.manager.server.map.MapService
-import org.openremote.manager.server.notification.NotificationService
-import org.openremote.manager.server.persistence.ManagerPersistenceService
-import org.openremote.manager.server.rules.RulesEngine
-import org.openremote.manager.server.rules.RulesService
-import org.openremote.manager.server.rules.RulesetStorageService
-import org.openremote.manager.server.security.ManagerIdentityService
-import org.openremote.manager.server.setup.SetupService
-import org.openremote.manager.server.simulator.SimulatorService
-import org.openremote.manager.server.web.ManagerWebService
+import org.openremote.manager.agent.AgentService
+import org.openremote.manager.apps.ConsoleAppService
+import org.openremote.manager.asset.AssetAttributeLinkingService
+import org.openremote.manager.asset.AssetProcessingService
+import org.openremote.manager.asset.AssetStorageService
+import org.openremote.manager.concurrent.ManagerExecutorService
+import org.openremote.manager.datapoint.AssetDatapointService
+import org.openremote.manager.event.ClientEventService
+import org.openremote.manager.i18n.I18NService
+import org.openremote.manager.map.MapService
+import org.openremote.manager.notification.NotificationService
+import org.openremote.manager.persistence.ManagerPersistenceService
+import org.openremote.manager.rules.RulesEngine
+import org.openremote.manager.rules.RulesService
+import org.openremote.manager.rules.RulesetStorageService
+import org.openremote.manager.security.ManagerIdentityService
+import org.openremote.manager.setup.SetupService
+import org.openremote.manager.simulator.SimulatorService
+import org.openremote.manager.web.ManagerWebService
 
 import java.util.concurrent.TimeUnit
 
@@ -36,17 +36,17 @@ import static org.openremote.container.security.IdentityService.IDENTITY_NETWORK
 import static org.openremote.container.timer.TimerService.Clock.PSEUDO
 import static org.openremote.container.timer.TimerService.TIMER_CLOCK_TYPE
 import static org.openremote.container.web.WebService.WEBSERVER_LISTEN_PORT
-import static org.openremote.manager.server.setup.SetupTasks.*
+import static org.openremote.manager.setup.SetupTasks.*
 
 trait ManagerContainerTrait extends ContainerTrait {
 
     static Map<String, String> defaultConfig(int serverPort) {
         [
-                (WEBSERVER_LISTEN_PORT)             : Integer.toString(serverPort),
-                (IDENTITY_NETWORK_HOST)             : KeycloakIdentityProvider.KEYCLOAK_HOST_DEFAULT,
-                (IDENTITY_NETWORK_WEBSERVER_PORT)   : Integer.toString(KeycloakIdentityProvider.KEYCLOAK_PORT_DEFAULT),
-                (SETUP_IMPORT_DEMO_SCENES)          : "false",
-                (SETUP_IMPORT_DEMO_RULES)           : "false"
+                (WEBSERVER_LISTEN_PORT)          : Integer.toString(serverPort),
+                (IDENTITY_NETWORK_HOST)          : KeycloakIdentityProvider.KEYCLOAK_HOST_DEFAULT,
+                (IDENTITY_NETWORK_WEBSERVER_PORT): Integer.toString(KeycloakIdentityProvider.KEYCLOAK_PORT_DEFAULT),
+                (SETUP_IMPORT_DEMO_SCENES)       : "false",
+                (SETUP_IMPORT_DEMO_RULES)        : "false"
         ]
     }
 
@@ -66,12 +66,12 @@ trait ManagerContainerTrait extends ContainerTrait {
                 new AssetDatapointService(),
                 new AssetAttributeLinkingService(),
                 new AssetProcessingService(),
+                new MessageBrokerService(),
                 *Lists.newArrayList(ServiceLoader.load(Protocol.class)),
                 new AgentService(),
                 new SimulatorService(),
                 new MapService(),
                 new NotificationService(),
-                new MessageBrokerService(),
                 new ConsoleAppService(),
                 new ManagerWebService(),
                 *additionalServices
@@ -134,17 +134,32 @@ trait ManagerContainerTrait extends ContainerTrait {
         container.getService(TimerService.class).getClock().getCurrentTimeMillis()
     }
 
-    static void advancePseudoClocks(long amount, TimeUnit unit, Container container, RulesEngine[] engine) {
+    static void advancePseudoClocks(long amount, TimeUnit unit, Container container, RulesEngine[] engines) {
+        if (engines == null) {
+            throw new NullPointerException("Engine can't be null")
+        }
         withClockOf(container) { it.advanceTime(amount, unit) }
-        engine.each { withClockOf(it) { it.advanceTime(amount, unit) } }
+        engines.each { engine ->
+            withClockOf(engine) { clock ->
+                if (clock == null) {
+                    throw new IllegalArgumentException("Knowledge session/clock not available for: " + engine)
+                }
+                clock.advanceTime(amount, unit)
+            }
+        }
     }
 
-    static void setPseudoClocksToRealTime(Container container, RulesEngine[] engine) {
+    static void setPseudoClocksToRealTime(Container container, RulesEngine[] engines) {
         withClockOf(container) {
             it.advanceTime(System.currentTimeMillis() - it.currentTimeMillis, TimeUnit.MILLISECONDS)
         }
-        engine.each {
-            withClockOf(it) { it.advanceTime(System.currentTimeMillis() - it.currentTime, TimeUnit.MILLISECONDS) }
+        engines.each { engine ->
+            withClockOf(engine) { clock ->
+                if (clock == null) {
+                    throw new IllegalArgumentException("Knowledge session/clock not available for: " + engine)
+                }
+                clock.advanceTime(System.currentTimeMillis() - clock.currentTime, TimeUnit.MILLISECONDS)
+            }
         }
     }
 

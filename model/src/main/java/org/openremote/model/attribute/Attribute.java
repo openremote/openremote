@@ -249,6 +249,21 @@ public abstract class Attribute extends AbstractValueTimestampHolder {
         return item.getValidationFailures(metaItemDescriptor);
     }
 
+    @Override
+    public int hashCode() {
+        return Objects.hash(objectValue, name);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null)
+            return false;
+        if (!(obj instanceof Attribute))
+            return false;
+        Attribute that = (Attribute) obj;
+        return Objects.equals(name, that.name) && Objects.equals(objectValue, that.objectValue);
+    }
+
     //    ---------------------------------------------------
     //    FUNCTIONAL METHODS BELOW
     //    ---------------------------------------------------

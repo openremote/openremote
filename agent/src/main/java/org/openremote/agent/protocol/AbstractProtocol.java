@@ -21,6 +21,7 @@ package org.openremote.agent.protocol;
 
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.RouteBuilder;
+import org.openremote.agent.protocol.filter.MessageFilter;
 import org.openremote.container.Container;
 import org.openremote.container.message.MessageBrokerContext;
 import org.openremote.container.message.MessageBrokerService;
@@ -33,11 +34,16 @@ import org.openremote.model.asset.AssetMeta;
 import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.asset.agent.ProtocolConfiguration;
-import org.openremote.model.attribute.*;
 import org.openremote.model.asset.agent.ProtocolDescriptor;
+import org.openremote.model.attribute.*;
+import org.openremote.model.value.Value;
+import org.openremote.model.value.ValueType;
+import org.openremote.model.value.Values;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public abstract class AbstractProtocol implements Protocol {
@@ -79,6 +85,7 @@ public abstract class AbstractProtocol implements Protocol {
 
     protected final Map<AttributeRef, AssetAttribute> linkedAttributes = new HashMap<>();
     protected final Map<AttributeRef, LinkedProtocolInfo> linkedProtocolConfigurations = new HashMap<>();
+    protected final Map<AttributeRef, List<MessageFilter>> linkedAttributeFilters = new HashMap<>();
     protected MessageBrokerContext messageBrokerContext;
     protected ProducerTemplate producerTemplate;
     protected TimerService timerService;
@@ -130,11 +137,10 @@ public abstract class AbstractProtocol implements Protocol {
     public void stop(Container container) throws Exception {
         synchronized (linkedAttributes) {
             linkedAttributes.clear();
-            messageBrokerContext.stopRoute("Actuator-" + getProtocolName());
+            messageBrokerContext.stopRoute("Actuator-" + getProtocolName(), 1, TimeUnit.MILLISECONDS);
             messageBrokerContext.removeRoute("Actuator-" + getProtocolName());
         }
     }
-
 
     @Override
     public void linkProtocolConfiguration(AssetAttribute protocolConfiguration, Consumer<ConnectionStatus> statusConsumer) {
@@ -162,8 +168,25 @@ public abstract class AbstractProtocol implements Protocol {
         synchronized (linkedAttributes) {
             attributes.forEach(attribute -> {
                 LOG.fine("Linking attribute to '" + getProtocolName() + "': " + attribute);
-                linkedAttributes.put(attribute.getReferenceOrThrow(), attribute);
-                doLinkAttribute(attribute, protocolConfiguration);
+                AttributeRef attributeRef = attribute.getReferenceOrThrow();
+                // Need to add to map before actual linking as protocols may want to update the value as part of
+                // linking process and without entry in the map any update would be blocked
+                linkedAttributes.put(attributeRef, attribute);
+                Optional<List<MessageFilter>> messageFilters = Protocol.getLinkedAttributeMessageFilters(attribute);
+                if (messageFilters.isPresent()) {
+                    synchronized (linkedAttributeFilters) {
+                        linkedAttributeFilters.put(attributeRef, messageFilters.get());
+                    }
+                }
+                try {
+                    doLinkAttribute(attribute, protocolConfiguration);
+                } catch (Exception e) {
+                    LOG.log(Level.SEVERE, "Failed to link attribute to protocol: " + attribute, e);
+                    linkedAttributes.remove(attributeRef);
+                    synchronized (linkedAttributeFilters) {
+                        linkedAttributeFilters.remove(attributeRef);
+                    }
+                }
             });
         }
     }
@@ -173,8 +196,12 @@ public abstract class AbstractProtocol implements Protocol {
         synchronized (linkedAttributes) {
             attributes.forEach(attribute -> {
                 LOG.fine("Unlinking attribute on '" + getProtocolName() + "': " + attribute);
+                AttributeRef attributeRef = attribute.getReferenceOrThrow();
+                linkedAttributes.remove(attributeRef);
+                synchronized (linkedAttributeFilters) {
+                    linkedAttributeFilters.remove(attributeRef);
+                }
                 doUnlinkAttribute(attribute, protocolConfiguration);
-                linkedAttributes.remove(attribute.getReferenceOrThrow());
             });
         }
     }
@@ -220,33 +247,98 @@ public abstract class AbstractProtocol implements Protocol {
      */
     protected void sendAttributeEvent(AttributeEvent event) {
         // Don't allow updating linked attributes with this mechanism as it could cause an infinite loop
-        synchronized (linkedAttributes) {
-            boolean isForLinkedAttribute = linkedAttributes.values()
-                .stream()
-                .anyMatch(attribute -> attribute.getReferenceOrThrow()
-                    .equals(event.getAttributeRef())
-                );
+        boolean isForLinkedAttribute;
 
-            if (isForLinkedAttribute) {
-                LOG.warning("Cannot update an attribute linked to the same protocol; use updateLinkedAttribute for that: " + event);
-                return;
-            }
+        synchronized (linkedAttributes) {
+            isForLinkedAttribute = linkedAttributes.containsKey(event.getAttributeRef());
+        }
+
+        if (isForLinkedAttribute) {
+            LOG.warning("Cannot update an attribute linked to the same protocol; use updateLinkedAttribute for that: " + event);
+            return;
         }
         assetService.sendAttributeEvent(event);
     }
 
     /**
-     * Update the value of a linked attribute. Call this to publish new sensor values.
+     * Update the value of a linked attribute. Call this to publish new sensor values. This will apply any
+     * {@link MessageFilter}s that have been set for the {@link Attribute} against the {@link AttributeState#value}
+     * before sending on the sensor queue.
      */
+    @SuppressWarnings("unchecked")
     protected void updateLinkedAttribute(AttributeState state, long timestamp) {
+        AssetAttribute attribute;
+        synchronized (linkedAttributes) {
+            attribute = linkedAttributes.get(state.getAttributeRef());
+        }
+
+        if (attribute == null) {
+            LOG.severe("Update linked attribute called for un-linked attribute: " + state);
+            return;
+        }
+
+        if (state.getCurrentValue().isPresent()) {
+            List<MessageFilter> filters;
+            Value value = state.getCurrentValue().get();
+
+            synchronized (linkedAttributeFilters) {
+                filters = linkedAttributeFilters.get(state.getAttributeRef());
+            }
+
+            if (filters != null) {
+                LOG.fine("Applying message filters to sensor value...");
+
+                for (MessageFilter filter : filters) {
+                    if (filter.getMessageType() != value.getType().getModelType()) {
+                        LOG.fine("Message filter type '" + filter.getMessageType().getName()
+                            + "' is not compatible with actual message type '" + value.getType().getModelType().getName()
+                            + "': " + filter.getClass().getName());
+                        value = null;
+                    } else {
+                        try {
+                            LOG.finest("Applying message filter: " + filter.getClass().getName());
+                            value = filter.process(value);
+                        } catch (Exception e) {
+                            LOG.log(
+                                Level.SEVERE,
+                                "Message filter threw and exception during processing of message: "
+                                    + filter.getClass().getName(),
+                                e);
+                            value = null;
+                        }
+                    }
+
+                    if (value == null) {
+                        break;
+                    }
+                }
+            }
+
+            // Do basic value conversion
+            Optional<ValueType> attributeValueType = attribute.getType().map(AttributeType::getValueType);
+
+            if (value != null && attributeValueType.isPresent()) {
+                if (attributeValueType.get() != value.getType()) {
+                    LOG.fine("Converting value: " + value.getType() + " -> " + attributeValueType.get());
+                    Optional<Value> convertedValue = Values.convert(value, attributeValueType.get());
+                    if (!convertedValue.isPresent()) {
+                        LOG.warning("Failed to convert value: " + value.getType() + " -> " + attributeValueType.get());
+                    } else {
+                        value = convertedValue.get();
+                    }
+                }
+            }
+
+            state = new AttributeState(state.getAttributeRef(), value);
+        }
         AttributeEvent attributeEvent = new AttributeEvent(state, timestamp);
         LOG.fine("Sending on sensor queue: " + attributeEvent);
         producerTemplate.sendBodyAndHeader(SENSOR_QUEUE, attributeEvent, Protocol.SENSOR_QUEUE_SOURCE_PROTOCOL, getProtocolName());
     }
 
     /**
-     * Update the value of a linked attribute, with the current system time as event time. Call this to publish new
-     * sensor values.
+     * Update the value of a linked attribute, with the current system time as event time see
+     * {@link #updateLinkedAttribute(AttributeState, long)} for more details.
      */
     protected void updateLinkedAttribute(AttributeState state) {
         updateLinkedAttribute(state, timerService.getCurrentTimeMillis());

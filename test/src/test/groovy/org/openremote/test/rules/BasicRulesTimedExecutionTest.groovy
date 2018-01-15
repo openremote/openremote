@@ -1,8 +1,8 @@
 package org.openremote.test.rules
 
-import org.openremote.manager.server.rules.RulesEngine
-import org.openremote.manager.server.rules.RulesService
-import org.openremote.manager.server.rules.RulesetStorageService
+import org.openremote.manager.rules.RulesEngine
+import org.openremote.manager.rules.RulesService
+import org.openremote.manager.rules.RulesetStorageService
 import org.openremote.model.rules.GlobalRuleset
 import org.openremote.model.rules.Ruleset
 import org.openremote.test.ManagerContainerTrait
@@ -12,7 +12,7 @@ import spock.util.concurrent.PollingConditions
 import static java.util.concurrent.TimeUnit.SECONDS
 import static org.openremote.container.timer.TimerService.Clock.PSEUDO
 import static org.openremote.container.timer.TimerService.TIMER_CLOCK_TYPE
-import static org.openremote.manager.server.setup.builtin.ManagerDemoSetup.DEMO_RULE_STATES_GLOBAL
+import static org.openremote.manager.setup.builtin.ManagerDemoSetup.DEMO_RULE_STATES_GLOBAL
 import static org.openremote.test.RulesTestUtil.createRulesExecutionListener
 
 class BasicRulesTimedExecutionTest extends Specification implements ManagerContainerTrait {

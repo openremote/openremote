@@ -1,0 +1,23 @@
+{
+  "name": "manager",
+  "version": "3.0.0",
+  "homepage": "http://openremote.com/",
+  "authors": [
+    "OpenRemote Inc. <support@openremote.io>"
+  ],
+  "description": "OR Manager",
+  "main": "index.html",
+  "license": "APGLv3",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "polymer": "Polymer/polymer#^2.3.0",
+    "iron-flex-layout": "^2.0.0",
+    "chart.js": "^2.7.0"
+  }
+}

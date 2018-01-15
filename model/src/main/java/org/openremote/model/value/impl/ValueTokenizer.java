@@ -17,8 +17,6 @@ package org.openremote.model.value.impl;
 
 import org.openremote.model.value.*;
 
-import java.util.Optional;
-
 /**
  * Implementation of parsing a JSON string into instances
  * of {@link org.openremote.model.value.Value}.
@@ -159,20 +157,20 @@ class ValueTokenizer {
     }
 
     @SuppressWarnings("unchecked")
-    <T extends Value> Optional<T> nextValue() throws ValueException {
+    <T extends Value> T nextValue() throws ValueException {
         final int c = nextNonWhitespace();
         back(c);
         switch (c) {
             case '"':
             case '\'':
                 String s = nextString(c);
-                return Optional.of((T)valueFactory.create(s));
+                return (T)valueFactory.create(s);
             case '{':
-                return Optional.of( (T) parseObject());
+                return (T) parseObject();
             case '[':
-                return Optional.of((T) parseArray());
+                return (T) parseArray();
             default:
-                return (Optional<T>) getValueForLiteral(nextUntilOneOf(STOPCHARS));
+                return (T) getValueForLiteral(nextUntilOneOf(STOPCHARS));
         }
     }
 
@@ -187,7 +185,8 @@ class ValueTokenizer {
                     return array;
                 default:
                     back(c);
-                    nextValue().ifPresent(v -> array.set(array.length(), v));
+                    Value v = nextValue();
+                    array.set(array.length(), v);
                     final int d = nextNonWhitespace();
                     switch (d) {
                         case ']':
@@ -222,7 +221,8 @@ class ValueTokenizer {
                     if (nextNonWhitespace() != ':') {
                         throw new ValueException("Invalid object: expecting \":\"");
                     }
-                    nextValue().ifPresent(v -> object.put(key, v));
+                    Value v = nextValue();
+                    object.put(key, v);
                     switch (nextNonWhitespace()) {
                         case ',':
                             break;
@@ -250,7 +250,8 @@ class ValueTokenizer {
                         if (nextNonWhitespace() != ':') {
                             throw new ValueException("Invalid object: expecting \":\"");
                         }
-                        nextValue().ifPresent(v -> object.put(keyBuffer.toString(), v));
+                        v = nextValue();
+                        object.put(keyBuffer.toString(), v);
                         switch (nextNonWhitespace()) {
                             case ',':
                                 break;
@@ -276,26 +277,26 @@ class ValueTokenizer {
         }
     }
 
-    private Optional<Value> getValueForLiteral(String literal) throws ValueException {
+    private Value getValueForLiteral(String literal) throws ValueException {
         if ("".equals(literal)) {
             throw new ValueException("Missing value");
         }
 
         if ("null".equals(literal) || "undefined".equals(literal)) {
-            return Optional.empty();
+            return null;
         }
 
         if ("true".equals(literal)) {
-            return Optional.of(valueFactory.create(true));
+            return valueFactory.create(true);
         }
 
         if ("false".equals(literal)) {
-            return Optional.of(valueFactory.create(false));
+            return valueFactory.create(false);
         }
 
         final char c = literal.charAt(0);
         if (c == '-' || Character.isDigit(c)) {
-            return Optional.of(getNumberForLiteral(literal));
+            return getNumberForLiteral(literal);
         }
 
         throw new ValueException("Invalid literal: \"" + literal + "\"");

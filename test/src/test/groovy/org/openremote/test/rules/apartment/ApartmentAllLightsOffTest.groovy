@@ -1,12 +1,12 @@
 package org.openremote.test.rules.apartment
 
-import org.openremote.manager.server.asset.AssetProcessingService
-import org.openremote.manager.server.asset.AssetStorageService
-import org.openremote.manager.server.rules.RulesEngine
-import org.openremote.manager.server.rules.RulesService
-import org.openremote.manager.server.rules.RulesetStorageService
-import org.openremote.manager.server.setup.SetupService
-import org.openremote.manager.server.setup.builtin.ManagerDemoSetup
+import org.openremote.manager.asset.AssetProcessingService
+import org.openremote.manager.asset.AssetStorageService
+import org.openremote.manager.rules.RulesEngine
+import org.openremote.manager.rules.RulesService
+import org.openremote.manager.rules.RulesetStorageService
+import org.openremote.manager.setup.SetupService
+import org.openremote.manager.setup.builtin.ManagerDemoSetup
 import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.rules.AssetRuleset
 import org.openremote.model.rules.Ruleset
@@ -16,7 +16,7 @@ import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
 import static java.util.concurrent.TimeUnit.SECONDS
-import static org.openremote.manager.server.setup.builtin.ManagerDemoSetup.DEMO_RULE_STATES_APARTMENT_2
+import static org.openremote.manager.setup.builtin.ManagerDemoSetup.DEMO_RULE_STATES_APARTMENT_2
 
 class ApartmentAllLightsOffTest extends Specification implements ManagerContainerTrait {
 

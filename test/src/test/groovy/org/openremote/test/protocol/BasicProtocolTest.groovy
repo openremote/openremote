@@ -20,12 +20,15 @@
 package org.openremote.test.protocol
 
 import org.openremote.agent.protocol.AbstractProtocol
+import org.openremote.agent.protocol.Protocol
+import org.openremote.agent.protocol.filter.RegexFilter
+import org.openremote.agent.protocol.filter.SubStringFilter
 import org.openremote.model.asset.agent.AgentStatusEvent
 import org.openremote.model.asset.agent.ConnectionStatus
-import org.openremote.manager.server.agent.AgentService
-import org.openremote.manager.server.asset.AssetProcessingService
-import org.openremote.manager.server.asset.AssetStorageService
-import org.openremote.manager.server.asset.ServerAsset
+import org.openremote.manager.agent.AgentService
+import org.openremote.manager.asset.AssetProcessingService
+import org.openremote.manager.asset.AssetStorageService
+import org.openremote.manager.asset.ServerAsset
 import org.openremote.model.Constants
 import org.openremote.model.asset.AssetAttribute
 import org.openremote.model.asset.AssetMeta
@@ -41,9 +44,9 @@ import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
 import static org.openremote.container.util.MapAccess.getString
-import static org.openremote.manager.server.event.ClientEventService.WEBSOCKET_EVENTS
-import static org.openremote.manager.server.setup.AbstractKeycloakSetup.SETUP_ADMIN_PASSWORD
-import static org.openremote.manager.server.setup.AbstractKeycloakSetup.SETUP_ADMIN_PASSWORD_DEFAULT
+import static org.openremote.manager.event.ClientEventService.WEBSOCKET_EVENTS
+import static org.openremote.manager.setup.AbstractKeycloakSetup.SETUP_ADMIN_PASSWORD
+import static org.openremote.manager.setup.AbstractKeycloakSetup.SETUP_ADMIN_PASSWORD_DEFAULT
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID
 import static org.openremote.model.Constants.MASTER_REALM
 import static org.openremote.model.Constants.MASTER_REALM_ADMIN_USER
@@ -61,7 +64,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait, 
         and: "a mock protocol"
         def mockProtocolName = "urn:myCustom:mockProtocol"
         Map<String, Integer> protocolExpectedLinkedAttributeCount = [:]
-        protocolExpectedLinkedAttributeCount['mockConfig1'] = 2
+        protocolExpectedLinkedAttributeCount['mockConfig1'] = 5
         protocolExpectedLinkedAttributeCount['mockConfig2'] = 2
         protocolExpectedLinkedAttributeCount['mockConfig3'] = 2
         protocolExpectedLinkedAttributeCount['mockConfig4'] = 2
@@ -74,11 +77,11 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait, 
         List<AttributeEvent> protocolWriteAttributeEvents = []
         List<String> protocolMethodCalls = []
         def mockProtocol = new AbstractProtocol() {
-            protected void responseReceived() {
+            protected void updateReceived(AttributeState state) {
                 // Assume we've pushed the update to the actual device and it responded with OK
                 // so now we want to cause a sensor update that will go through the processing
                 // chain.
-                updateLinkedAttribute(protocolWriteAttributeEvents.last().getAttributeState())
+                updateLinkedAttribute(state)
             }
 
             protected void updateAttribute(AttributeState state) {
@@ -119,6 +122,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait, 
                 def deploymentStatus = getStatus(protocolConfiguration)
                 if (deploymentStatus == ConnectionStatus.CONNECTED) {
                     String attributeName = attribute.getName().orElse("")
+
                     if (attributeName.startsWith("lightToggle")) {
                         // Set all lights to on
                         updateLinkedAttribute(new AttributeState(attribute.getReferenceOrThrow(), Values.create(true)))
@@ -256,92 +260,130 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait, 
         when: "a mock thing asset is created that links to the mock protocol configurations"
         def mockThing = new ServerAsset("Mock Thing Asset", AssetType.THING, mockAgent)
         mockThing.setAttributes(
-                new AssetAttribute("lightToggle1", AttributeType.BOOLEAN)
-                    .setMeta(
-                        new MetaItem("MOCK_ATTRIBUTE_REQUIRED_META", Values.create(true)),
-                        new MetaItem(
-                            AssetMeta.AGENT_LINK,
-                            new AttributeRef(mockAgent.getId(), "mockConfig1").toArrayValue()
-                        )
-                    ),
-                new AssetAttribute("tempTarget1", AttributeType.NUMBER)
-                    .setMeta(
-                        new MetaItem("MOCK_ATTRIBUTE_REQUIRED_META", Values.create(true)),
-                        new MetaItem(
-                            AssetMeta.AGENT_LINK,
-                            new AttributeRef(mockAgent.getId(), "mockConfig1").toArrayValue()
-                        )
-                    ),
-                new AssetAttribute("invalidToggle1", AttributeType.BOOLEAN)
-                    .setMeta(
-                        new MetaItem(
-                            AssetMeta.AGENT_LINK,
-                            new AttributeRef(mockAgent.getId(), "mockConfig1").toArrayValue()
-                        )
-                    ),
-                new AssetAttribute("lightToggle2", AttributeType.BOOLEAN)
-                        .setMeta(
-                        new MetaItem("MOCK_ATTRIBUTE_REQUIRED_META", Values.create(true)),
-                        new MetaItem(
-                                AssetMeta.AGENT_LINK,
-                                new AttributeRef(mockAgent.getId(), "mockConfig2").toArrayValue()
-                        )
+            new AssetAttribute("lightToggle1", AttributeType.BOOLEAN)
+                .setMeta(
+                    new MetaItem("MOCK_ATTRIBUTE_REQUIRED_META", Values.create(true)),
+                    new MetaItem(
+                        AssetMeta.AGENT_LINK,
+                        new AttributeRef(mockAgent.getId(), "mockConfig1").toArrayValue()
+                    )
                 ),
-                new AssetAttribute("tempTarget2", AttributeType.NUMBER)
-                        .setMeta(
-                        new MetaItem("MOCK_ATTRIBUTE_REQUIRED_META", Values.create(true)),
-                        new MetaItem(
-                                AssetMeta.AGENT_LINK,
-                                new AttributeRef(mockAgent.getId(), "mockConfig2").toArrayValue()
-                        )
+            new AssetAttribute("tempTarget1", AttributeType.NUMBER)
+                .setMeta(
+                    new MetaItem("MOCK_ATTRIBUTE_REQUIRED_META", Values.create(true)),
+                    new MetaItem(
+                        AssetMeta.AGENT_LINK,
+                        new AttributeRef(mockAgent.getId(), "mockConfig1").toArrayValue()
+                    )
                 ),
-                new AssetAttribute("lightToggle3", AttributeType.BOOLEAN)
-                        .setMeta(
-                        new MetaItem("MOCK_ATTRIBUTE_REQUIRED_META", Values.create(true)),
-                        new MetaItem(
-                                AssetMeta.AGENT_LINK,
-                                new AttributeRef(mockAgent.getId(), "mockConfig3").toArrayValue()
-                        )
+            new AssetAttribute("invalidToggle1", AttributeType.BOOLEAN)
+                .setMeta(
+                    new MetaItem(
+                        AssetMeta.AGENT_LINK,
+                        new AttributeRef(mockAgent.getId(), "mockConfig1").toArrayValue()
+                    )
                 ),
-                new AssetAttribute("tempTarget3", AttributeType.NUMBER)
-                        .setMeta(
-                        new MetaItem("MOCK_ATTRIBUTE_REQUIRED_META", Values.create(true)),
-                        new MetaItem(
-                                AssetMeta.AGENT_LINK,
-                                new AttributeRef(mockAgent.getId(), "mockConfig3").toArrayValue()
-                        )
-                ),
-                new AssetAttribute("lightToggle4", AttributeType.BOOLEAN)
-                        .setMeta(
-                        new MetaItem("MOCK_ATTRIBUTE_REQUIRED_META", Values.create(true)),
-                        new MetaItem(
-                                AssetMeta.AGENT_LINK,
-                                new AttributeRef(mockAgent.getId(), "mockConfig4").toArrayValue()
-                        )
-                ),
-                new AssetAttribute("tempTarget4", AttributeType.NUMBER)
-                        .setMeta(
-                        new MetaItem("MOCK_ATTRIBUTE_REQUIRED_META", Values.create(true)),
-                        new MetaItem(
-                                AssetMeta.AGENT_LINK,
-                                new AttributeRef(mockAgent.getId(), "mockConfig4").toArrayValue()
-                        )
-                ),
-                new AssetAttribute("invalidToggle5", AttributeType.BOOLEAN, Values.create(false))
-                    .setMeta(
-                        new MetaItem(
-                            AssetMeta.AGENT_LINK,
-                            new AttributeRef(mockAgent.getId(), "INVALID CONFIG").toArrayValue()
-                        )
-                    ),
-                new AssetAttribute("plainAttribute", AttributeType.STRING, Values.create("demo"))
-                        .setMeta(
-                        new MetaItem(
-                                AssetMeta.DESCRIPTION,
-                                Values.create("A plain string attribute for storing information")
-                        ),
-                        new MetaItem(AssetMeta.READ_ONLY, Values.create(true))
+            new AssetAttribute("lightToggle2", AttributeType.BOOLEAN)
+                .setMeta(
+                new MetaItem("MOCK_ATTRIBUTE_REQUIRED_META", Values.create(true)),
+                new MetaItem(
+                        AssetMeta.AGENT_LINK,
+                        new AttributeRef(mockAgent.getId(), "mockConfig2").toArrayValue()
                 )
+            ),
+            new AssetAttribute("tempTarget2", AttributeType.NUMBER)
+                .setMeta(
+                new MetaItem("MOCK_ATTRIBUTE_REQUIRED_META", Values.create(true)),
+                new MetaItem(
+                        AssetMeta.AGENT_LINK,
+                        new AttributeRef(mockAgent.getId(), "mockConfig2").toArrayValue()
+                )
+            ),
+            new AssetAttribute("lightToggle3", AttributeType.BOOLEAN)
+                .setMeta(
+                new MetaItem("MOCK_ATTRIBUTE_REQUIRED_META", Values.create(true)),
+                new MetaItem(
+                        AssetMeta.AGENT_LINK,
+                        new AttributeRef(mockAgent.getId(), "mockConfig3").toArrayValue()
+                )
+            ),
+            new AssetAttribute("tempTarget3", AttributeType.NUMBER)
+                .setMeta(
+                new MetaItem("MOCK_ATTRIBUTE_REQUIRED_META", Values.create(true)),
+                new MetaItem(
+                        AssetMeta.AGENT_LINK,
+                        new AttributeRef(mockAgent.getId(), "mockConfig3").toArrayValue()
+                )
+            ),
+            new AssetAttribute("lightToggle4", AttributeType.BOOLEAN)
+                .setMeta(
+                new MetaItem("MOCK_ATTRIBUTE_REQUIRED_META", Values.create(true)),
+                new MetaItem(
+                        AssetMeta.AGENT_LINK,
+                        new AttributeRef(mockAgent.getId(), "mockConfig4").toArrayValue()
+                )
+            ),
+            new AssetAttribute("tempTarget4", AttributeType.NUMBER)
+                    .setMeta(
+                    new MetaItem("MOCK_ATTRIBUTE_REQUIRED_META", Values.create(true)),
+                    new MetaItem(
+                            AssetMeta.AGENT_LINK,
+                            new AttributeRef(mockAgent.getId(), "mockConfig4").toArrayValue()
+                    )
+            ),
+            new AssetAttribute("invalidToggle5", AttributeType.BOOLEAN, Values.create(false))
+                .setMeta(
+                    new MetaItem(
+                        AssetMeta.AGENT_LINK,
+                        new AttributeRef(mockAgent.getId(), "INVALID CONFIG").toArrayValue()
+                    )
+                ),
+            new AssetAttribute("plainAttribute", AttributeType.STRING, Values.create("demo"))
+                .setMeta(
+                new MetaItem(
+                        AssetMeta.DESCRIPTION,
+                        Values.create("A plain string attribute for storing information")
+                ),
+                new MetaItem(AssetMeta.READ_ONLY, Values.create(true))
+            ),
+            new AssetAttribute("filterRegex", AttributeType.NUMBER)
+                .setMeta(
+                new MetaItem("MOCK_ATTRIBUTE_REQUIRED_META", Values.create(true)),
+                new MetaItem(
+                    AssetMeta.AGENT_LINK,
+                    new AttributeRef(mockAgent.getId(), "mockConfig1").toArrayValue()
+                ),
+                new MetaItem(
+                    Protocol.META_PROTOCOL_FILTERS,
+                    Values.createArray().add(new RegexFilter("\\w(\\d+)", 1, 2).toValue().get())
+                )
+            ),
+            new AssetAttribute("filterSubstring", AttributeType.STRING)
+                .setMeta(
+                new MetaItem("MOCK_ATTRIBUTE_REQUIRED_META", Values.create(true)),
+                new MetaItem(
+                    AssetMeta.AGENT_LINK,
+                    new AttributeRef(mockAgent.getId(), "mockConfig1").toArrayValue()
+                ),
+                new MetaItem(
+                    Protocol.META_PROTOCOL_FILTERS,
+                    Values.createArray().add(new SubStringFilter(10, 12).toValue().get())
+                )
+            ),
+            new AssetAttribute("filterRegexSubstring", AttributeType.NUMBER)
+                .setMeta(
+                new MetaItem("MOCK_ATTRIBUTE_REQUIRED_META", Values.create(true)),
+                new MetaItem(
+                    AssetMeta.AGENT_LINK,
+                    new AttributeRef(mockAgent.getId(), "mockConfig1").toArrayValue()
+                ),
+                new MetaItem(
+                    Protocol.META_PROTOCOL_FILTERS,
+                    Values.createArray()
+                        .add(new SubStringFilter(23).toValue().get())
+                        .add(new RegexFilter("[a-z|\\s]+(\\d+)%\"}", 1, 0).toValue().get())
+                )
+            )
         )
         mockThing = assetStorageService.merge(mockThing)
 
@@ -354,7 +396,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait, 
         }
 
         and: "the deployment should have occurred in the correct order"
-        assert protocolMethodCalls.size() == 13
+        assert protocolMethodCalls.size() == 16
         assert protocolMethodCalls[0] == "LINK_PROTOCOL"
         assert protocolMethodCalls[1] == "LINK_PROTOCOL"
         assert protocolMethodCalls[2] == "LINK_PROTOCOL"
@@ -368,6 +410,9 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait, 
         assert protocolMethodCalls[10] == "LINK_ATTRIBUTE"
         assert protocolMethodCalls[11] == "LINK_ATTRIBUTE"
         assert protocolMethodCalls[12] == "LINK_ATTRIBUTE"
+        assert protocolMethodCalls[13] == "LINK_ATTRIBUTE"
+        assert protocolMethodCalls[14] == "LINK_ATTRIBUTE"
+        assert protocolMethodCalls[15] == "LINK_ATTRIBUTE"
 
         expect: "the linked attributes values should have been updated by the protocol"
         conditions.eventually {
@@ -432,12 +477,85 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait, 
         }
 
         when: "the protocol has finished processing the attribute write"
-        mockProtocol.responseReceived()
+        def state = mockProtocol.protocolWriteAttributeEvents.last().getAttributeState()
+        mockProtocol.updateReceived(state)
 
         then: "the target temp attributes value should be updated"
         conditions.eventually {
             mockThing = assetStorageService.find(mockThing.getId(), true)
             assert mockThing.getAttribute("tempTarget1").get().getValueAsNumber().orElse(0d) == 30d
+        }
+
+        when: "a sensor value is received that links to an attribute using a regex filter"
+        state = new AttributeState(mockThing.id, "filterRegex", Values.create("s100 d56 g1212"))
+        mockProtocol.updateReceived(state)
+
+        then: "the linked attributes value should be updated with the filtered result"
+        conditions.eventually {
+            mockThing = assetStorageService.find(mockThing.getId(), true)
+            assert mockThing.getAttribute("filterRegex").get().getValueAsNumber().orElse(0d) == 1212d
+        }
+
+        when: "the same attribute receives a sensor value that doesn't match the regex filter (match index invalid)"
+        state = new AttributeState(mockThing.id, "filterRegex", Values.create("s100"))
+        mockProtocol.updateReceived(state)
+
+        then: "the linked attributes value should be updated to null"
+        conditions.eventually {
+            mockThing = assetStorageService.find(mockThing.getId(), true)
+            assert !mockThing.getAttribute("filterRegex").get().getValueAsNumber().isPresent()
+        }
+
+        when: "the same attribute receives a sensor value that doesn't match the regex filter (no match)"
+        def lastUpdate = mockThing.getAttribute("filterRegex").get().valueTimestamp.get()
+        state = new AttributeState(mockThing.id, "filterRegex", Values.create("no match to be found!"))
+        mockProtocol.updateReceived(state)
+
+        then: "the linked attributes value should be updated to null"
+        conditions.eventually {
+            mockThing = assetStorageService.find(mockThing.getId(), true)
+            assert mockThing.getAttribute("filterRegex").get().valueTimestamp.get() > lastUpdate
+            assert !mockThing.getAttribute("filterRegex").get().getValueAsNumber().isPresent()
+        }
+
+        when: "a sensor value is received that links to an attribute using a substring filter"
+        state = new AttributeState(mockThing.id, "filterSubstring", Values.create("Substring test value"))
+        mockProtocol.updateReceived(state)
+
+        then: "the linked attributes value should be updated with the filtered result"
+        conditions.eventually {
+            mockThing = assetStorageService.find(mockThing.getId(), true)
+            assert mockThing.getAttribute("filterSubstring").get().getValueAsString().orElse(null) == "te"
+        }
+
+        when: "the same attribute receives a sensor value that doesn't match the substring filter"
+        state = new AttributeState(mockThing.id, "filterSubstring", Values.create("Substring"))
+        mockProtocol.updateReceived(state)
+
+        then: "the linked attributes value should be updated to null"
+        conditions.eventually {
+            mockThing = assetStorageService.find(mockThing.getId(), true)
+            assert !mockThing.getAttribute("filterSubstring").get().getValueAsString().isPresent()
+        }
+
+        when: "a sensor value is received that links to an attribute using a regex and substring filter"
+        state = new AttributeState(mockThing.id, "filterRegexSubstring", Values.create('{"prop1":true,"prop2":"volume is at 90%"}'))
+        mockProtocol.updateReceived(state)
+
+        then: "the linked attributes value should be updated with the filtered result"
+        conditions.eventually {
+            mockThing = assetStorageService.find(mockThing.getId(), true)
+            assert mockThing.getAttribute("filterRegexSubstring").get().getValueAsNumber().orElse(0d) == 90d
+        }
+
+        when: "the same attribute receives a sensor value that doesn't match the substring filter"
+        state = new AttributeState(mockThing.id, "filterRegexSubstring", Values.create('"volume is at 90%"}'))
+        mockProtocol.updateReceived(state)
+
+        then: "the linked attributes value should be updated to null"
+        conditions.eventually {
+            mockThing = assetStorageService.find(mockThing.getId(), true)
+            assert !mockThing.getAttribute("filterRegexSubstring").get().getValueAsNumber().isPresent()
         }
 
         cleanup: "the client should be stopped"

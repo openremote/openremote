@@ -2,11 +2,11 @@ package org.openremote.test.assets
 
 import org.openremote.container.Container
 import org.openremote.container.persistence.PersistenceService
-import org.openremote.manager.server.asset.AssetStorageService
-import org.openremote.manager.server.asset.ServerAsset
-import org.openremote.manager.server.setup.SetupService
-import org.openremote.manager.server.setup.builtin.KeycloakDemoSetup
-import org.openremote.manager.server.setup.builtin.ManagerDemoSetup
+import org.openremote.manager.asset.AssetStorageService
+import org.openremote.manager.asset.ServerAsset
+import org.openremote.manager.setup.SetupService
+import org.openremote.manager.setup.builtin.KeycloakDemoSetup
+import org.openremote.manager.setup.builtin.ManagerDemoSetup
 import org.openremote.model.asset.AssetMeta
 import org.openremote.model.asset.AssetQuery
 import org.openremote.model.asset.AssetType
@@ -17,11 +17,11 @@ import spock.lang.Specification
 import javax.persistence.EntityManager
 import java.util.function.Function
 
-import static org.openremote.model.asset.AbstractAssetQuery.*
-import static org.openremote.model.asset.AbstractAssetQuery.Access.PRIVATE_READ
-import static org.openremote.model.asset.AbstractAssetQuery.Access.RESTRICTED_READ
-import static org.openremote.model.asset.AbstractAssetQuery.OrderBy.Property.CREATED_ON
-import static org.openremote.model.asset.AbstractAssetQuery.OrderBy.Property.NAME
+import static org.openremote.model.asset.BaseAssetQuery.*
+import static org.openremote.model.asset.BaseAssetQuery.Access.PRIVATE_READ
+import static org.openremote.model.asset.BaseAssetQuery.Access.RESTRICTED_READ
+import static org.openremote.model.asset.BaseAssetQuery.OrderBy.Property.CREATED_ON
+import static org.openremote.model.asset.BaseAssetQuery.OrderBy.Property.NAME
 import static org.openremote.model.asset.AssetType.THING
 
 class AssetQueryTest extends Specification implements ManagerContainerTrait {
@@ -98,9 +98,9 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
 
         when: "a user filtering query is executed that returns only IDs, names and attribute names and limits to protected attributes and meta"
         assets = assetStorageService.findAll(
-            new AssetQuery()
-                .select(new Select(Include.ONLY_ID_AND_NAME_AND_ATTRIBUTE_NAMES, RESTRICTED_READ))
-                .userId(keycloakDemoSetup.testuser3Id)
+                new AssetQuery()
+                        .select(new Select(Include.ONLY_ID_AND_NAME_AND_ATTRIBUTE_NAMES, RESTRICTED_READ))
+                        .userId(keycloakDemoSetup.testuser3Id)
         )
 
         then: "only the users assets should be retrieved"
@@ -118,9 +118,9 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
 
         when: "a query is executed that returns a protected attribute without any other meta items"
         assets = assetStorageService.findAll(
-            new AssetQuery()
-                .select(new Select(Include.ALL_EXCEPT_PATH, RESTRICTED_READ))
-                .id(managerDemoSetup.apartment2LivingroomId)
+                new AssetQuery()
+                        .select(new Select(Include.ALL_EXCEPT_PATH, RESTRICTED_READ))
+                        .id(managerDemoSetup.apartment2LivingroomId)
         )
 
         then: "only one asset should be retrieved"
@@ -617,14 +617,14 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         !asset.getAttribute("motionSensor").isPresent()
 
         when: "a query is executed to select an asset with an attribute of a certain value"
-        AttributePredicate[] filter = [
-                [new StringPredicate("windowOpen"), new BooleanPredicate(false)],
-                [new StringPredicate("co2Level"), new NumberPredicate(340, OperatorMatch.GREATER_THEN, NumberType.INTEGER)]
-        ]
         asset = assetStorageService.find(
-                new AssetQuery()
-                        .select(new Select(Include.ONLY_ID_AND_NAME_AND_ATTRIBUTES))
-                        .attributes(new AttributePredicateArray(filter)
+                new AssetQuery().select(new Select(Include.ONLY_ID_AND_NAME_AND_ATTRIBUTES)).attributes(
+                        new AttributePredicate(
+                                new StringPredicate("windowOpen"), new BooleanPredicate(false)
+                        ),
+                        new AttributePredicate(
+                                new StringPredicate("co2Level"), new NumberPredicate(340, OperatorMatch.GREATER_THEN, NumberType.INTEGER)
+                        )
                 )
         )
 

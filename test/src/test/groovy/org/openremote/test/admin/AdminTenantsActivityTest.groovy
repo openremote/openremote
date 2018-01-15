@@ -4,41 +4,38 @@ import com.google.gwt.junit.GWTMockUtilities
 import com.google.gwt.place.shared.WithTokenizers
 import com.google.gwt.user.client.ui.AcceptsOneWidget
 import com.google.gwt.user.client.ui.Widget
-import org.openremote.manager.client.Environment
-import org.openremote.manager.client.ManagerActivityMapper
-import org.openremote.manager.client.ManagerHistoryMapper
-import org.openremote.manager.client.TenantMapper
-import org.openremote.manager.client.admin.AdminView
-import org.openremote.manager.client.admin.TenantArrayMapper
-import org.openremote.manager.client.admin.navigation.AdminNavigation
-import org.openremote.manager.client.admin.navigation.AdminNavigationPresenter
-import org.openremote.manager.client.admin.tenant.*
-import org.openremote.manager.client.event.GoToPlaceEvent
-import org.openremote.manager.client.event.ShowFailureEvent
-import org.openremote.manager.client.event.ShowSuccessEvent
-import org.openremote.manager.client.event.WillGoToPlaceEvent
-import org.openremote.manager.client.i18n.ManagerMessages
-import org.openremote.manager.client.service.EventService
-import org.openremote.manager.client.service.RequestServiceImpl
-import org.openremote.manager.client.style.WidgetStyle
-import org.openremote.manager.server.setup.AbstractKeycloakSetup
-import org.openremote.manager.server.setup.SetupService
-import org.openremote.manager.shared.http.EntityReader
-import org.openremote.manager.shared.security.Tenant
-import org.openremote.manager.shared.security.TenantResource
-import org.openremote.manager.shared.validation.ConstraintViolationReport
+import org.openremote.app.client.Environment
+import org.openremote.app.client.ManagerActivityMapper
+import org.openremote.app.client.ManagerHistoryMapper
+import org.openremote.app.client.TenantMapper
+import org.openremote.app.client.admin.AdminView
+import org.openremote.app.client.admin.TenantArrayMapper
+import org.openremote.app.client.admin.navigation.AdminNavigation
+import org.openremote.app.client.admin.navigation.AdminNavigationPresenter
+import org.openremote.app.client.admin.tenant.*
+import org.openremote.app.client.event.GoToPlaceEvent
+import org.openremote.app.client.event.ShowSuccessEvent
+import org.openremote.app.client.event.WillGoToPlaceEvent
+import org.openremote.app.client.i18n.ManagerMessages
+import org.openremote.app.client.event.EventService
+import org.openremote.app.client.style.WidgetStyle
+import org.openremote.manager.security.ManagerIdentityService
+import org.openremote.manager.setup.AbstractKeycloakSetup
+import org.openremote.manager.setup.SetupService
 import org.openremote.model.event.Event
 import org.openremote.model.event.bus.EventListener
+import org.openremote.model.security.Tenant
+import org.openremote.model.security.TenantResource
 import org.openremote.test.ClientObjectMapper
-import org.openremote.test.ClientSecurityService
 import org.openremote.test.GwtClientTrait
 import org.openremote.test.ManagerContainerTrait
+import org.openremote.test.TestOpenRemoteApp
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
 import static org.openremote.container.util.MapAccess.getString
-import static org.openremote.manager.server.setup.AbstractKeycloakSetup.SETUP_ADMIN_PASSWORD
-import static org.openremote.manager.server.setup.AbstractKeycloakSetup.SETUP_ADMIN_PASSWORD_DEFAULT
+import static org.openremote.manager.setup.AbstractKeycloakSetup.SETUP_ADMIN_PASSWORD
+import static org.openremote.manager.setup.AbstractKeycloakSetup.SETUP_ADMIN_PASSWORD_DEFAULT
 import static org.openremote.model.Constants.*
 
 class AdminTenantsActivityTest extends Specification implements ManagerContainerTrait, GwtClientTrait {
@@ -48,6 +45,7 @@ class AdminTenantsActivityTest extends Specification implements ManagerContainer
         given: "The server container is started"
         def serverPort = findEphemeralPort()
         def container = startContainerNoDemoAssets(defaultConfig(serverPort), defaultServices())
+        def identityService = container.getService(ManagerIdentityService.class)
         def keycloakProvider = container.getService(SetupService.class).getTaskOfType(AbstractKeycloakSetup.class).keycloakProvider
 
         and: "expected results"
@@ -56,7 +54,7 @@ class AdminTenantsActivityTest extends Specification implements ManagerContainer
         def resultTenants = []
         def resultCreateTenantHistoryToken = null
 
-        and: "An authenticated user and client security service"
+        and: "an authenticated user"
         def realm = MASTER_REALM
         def accessToken = {
             authenticate(
@@ -67,12 +65,19 @@ class AdminTenantsActivityTest extends Specification implements ManagerContainer
                     getString(container.getConfig(), SETUP_ADMIN_PASSWORD, SETUP_ADMIN_PASSWORD_DEFAULT)
             ).token
         }
-        def securityService = new ClientSecurityService(keycloakProvider.getKeycloakDeployment(realm, KEYCLOAK_CLIENT_ID), accessToken)
 
-        and: "A client request service and target"
-        def constraintViolationReader = new ClientObjectMapper(container.JSON, ConstraintViolationReport.class) as EntityReader<ConstraintViolationReport>
-        def requestService = new RequestServiceImpl(securityService, constraintViolationReader)
+        and: "a test client app"
+        def testApp = new TestOpenRemoteApp(
+                keycloakProvider.getKeycloakDeployment(realm, KEYCLOAK_CLIENT_ID),
+                identityService.getIdentityProvider().getTenantForRealm(realm),
+                accessToken
+        )
+
+        and: "the server resources to call from client"
         def clientTarget = getClientTarget(serverUri(serverPort), realm)
+        def tenantResource = Stub(TenantResource) {
+            _(*_) >> { callResourceProxy(container.JSON, clientTarget, getDelegate()) }
+        }
 
         and: "The fake client MVP environment"
         GWTMockUtilities.disarm()
@@ -101,10 +106,9 @@ class AdminTenantsActivityTest extends Specification implements ManagerContainer
             }
         })
         def placeHistoryMapper = createPlaceHistoryMapper(ManagerHistoryMapper.getAnnotation(WithTokenizers.class))
-        def placeController = createPlaceController(securityService, eventBus)
+        def placeController = createPlaceController(eventBus)
         def environment = Environment.create(
-                securityService,
-                requestService,
+                testApp,
                 Mock(EventService),
                 placeController,
                 placeHistoryMapper,
@@ -124,10 +128,6 @@ class AdminTenantsActivityTest extends Specification implements ManagerContainer
         def adminNavigationView = Mock(AdminNavigation)
         def adminNavigationPresenter = new AdminNavigationPresenter(environment, adminNavigationView)
 
-        def tenantResource = Stub(TenantResource) {
-            _(*_) >> { callResourceProxy(container.JSON, clientTarget, getDelegate()) }
-        }
-
         def adminTenantsView = Mock(AdminTenants) {
             setTenants(_) >> {
                 resultTenants = it[0]
@@ -146,7 +146,7 @@ class AdminTenantsActivityTest extends Specification implements ManagerContainer
         and: "An activity management configuration"
         def activityDisplay = Mock(AcceptsOneWidget)
         def activityMapper = new ManagerActivityMapper(
-                securityService,
+                testApp,
                 eventBus,
                 managerMessages,
                 {},
@@ -359,17 +359,16 @@ class AdminTenantsActivityTest extends Specification implements ManagerContainer
             "Test Name2"
         }
         1 * adminTenantView.getTenantRealm() >> {
-            return "master" // Note: This should be a conflict
+            return "master" // This will cause a conflict constraint violation
         }
         1 * adminTenantView.getTenantEnabled() >> {
             return true
         }
 
-        and: "The conflict toast should be shown"
-        conditions.eventually {
-            assert resultEvents[0] instanceof ShowFailureEvent
-            assert resultEvents[0].text == "TestMessageRequestFailed:TestMessageConflictRequest"
-        }
+        and: "The form errors should be shown"
+        1 * adminTenantView.addFormMessageError("TestMessageConflictRequest")
+        1 * adminTenantView.setTenantRealmError(true)
+        1 * adminTenantView.setFormBusy(false)
 
         when: "The user clicks the Update button"
         resultEvents = []

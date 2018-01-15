@@ -1,0 +1,22 @@
+package org.openremote.test.rules;
+
+import org.openremote.model.asset.*
+import org.openremote.model.attribute.*
+import org.openremote.model.value.*
+import org.openremote.model.value.Values
+
+global java.util.logging.Logger LOG;
+global org.openremote.model.rules.Assets assets;
+
+rule "Switch room lights off when apartment ALL LIGHTS OFF push-button is pressed"
+when
+    // In an asset of type RESIDENCE the All Lights Off push-button is pressed, which sends a 'true' value
+    $e: AssetEvent(type == AssetType.RESIDENCE, attributeName == "allLightsOffSwitch", valueAsBoolean == true)
+then
+    assets.query() // Execute a query to get "other" assets
+        .parent($e.getId()) // Where parent is the apartment in LHS
+        .type(AssetType.ROOM) // And the children are of type ROOM
+        .applyResults(assetIds -> assetIds.forEach(assetId -> assets.dispatch( // For each asset ID in result...
+            new AttributeEvent(assetId, "lightSwitch", Values.create(false)) // Dispatch an event that turns the switch off
+    )));
+end

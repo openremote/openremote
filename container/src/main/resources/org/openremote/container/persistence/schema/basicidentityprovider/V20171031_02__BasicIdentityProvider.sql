@@ -12,7 +12,7 @@ create table PUBLIC.REALM (
 create table PUBLIC.REALM_ATTRIBUTE (
   NAME     varchar(255) not null,
   VALUE    varchar(255),
-  REALM_ID varchar(36)  not null references REALM,
+  REALM_ID varchar(36)  not null references PUBLIC.REALM,
   primary key (NAME, REALM_ID)
 );
 

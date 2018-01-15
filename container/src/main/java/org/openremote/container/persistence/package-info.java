@@ -30,6 +30,10 @@
     @org.hibernate.annotations.TypeDef(
         name = Constants.PERSISTENCE_JSON_ARRAY_TYPE,
         typeClass = ModelArrayValuePersistentType.class
+    ),
+    @org.hibernate.annotations.TypeDef(
+        name = Constants.PERSISTENCE_STRING_ARRAY_TYPE,
+        typeClass = ArrayUserType.class
     )
 })
 

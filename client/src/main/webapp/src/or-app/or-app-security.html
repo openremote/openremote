@@ -1,0 +1,494 @@
+<!-- Keycloak if it's available -->
+<script src="/auth/js/keycloak.js"></script>
+
+<dom-module id="or-app-security">
+
+    <template>
+        <style include="or-style">
+            :host {
+                /* Hide basic auth form by default */
+                display: none;
+            }
+
+
+            #basicAuthHeadline {
+                margin: 1em;
+            }
+
+            .or-HeadlineText {
+                margin: 0;
+                white-space: nowrap;
+            }
+
+            .or-HeadlineSub {
+                margin-left: 0.2em;
+            }
+
+        </style>
+
+        <!-- The basic auth form, only visible if Keycloak is not available -->
+        <div id="basicAuthForm" class="flex layout vertical center-center">
+
+                <div id="basicAuthHeadline"
+                     class="layout horizontal center-center">
+                    <a href="https://www.openremote.com/">
+                        <svg style="pointer-events: none; display: block; width: 4em; height:4em; margin-right: 0.4em;"
+                             viewBox="0 0 24 24" preserveAspectRatio="xMidYMid meet">
+                            <path fill="#C4D600"
+                                  d="M11.93,21.851c-5.551,0-10.066-4.515-10.066-10.065h2.108c0,4.388,3.57,7.958,7.958,7.958 c4.387,0,7.958-3.57,7.958-7.958c0-4.388-3.57-7.958-7.958-7.958V1.72c5.55,0,10.066,4.517,10.066,10.066 C21.996,17.336,17.48,21.851,11.93,21.851L11.93,21.851z"/>
+                            <path fill="#4E9D2D"
+                                  d="M10.406,19.088c-1.95-0.406-3.626-1.549-4.717-3.215s-1.469-3.66-1.062-5.61 c0.407-1.951,1.55-3.626,3.217-4.718c1.667-1.092,3.659-1.469,5.61-1.062c4.027,0.84,6.62,4.799,5.779,8.825l-2.063-0.429 c0.603-2.889-1.257-5.73-4.147-6.333c-1.4-0.292-2.829-0.022-4.025,0.762C7.802,8.091,6.982,9.293,6.69,10.693 c-0.291,1.398-0.021,2.828,0.762,4.024c0.783,1.196,1.985,2.016,3.385,2.307L10.406,19.088L10.406,19.088z"/>
+                            <path fill="#1D5632"
+                                  d="M11.936,16.622c-0.082,0-0.164-0.001-0.245-0.004c-1.29-0.065-2.478-0.628-3.346-1.585 c-0.868-0.958-1.31-2.195-1.246-3.487l2.104,0.105c-0.036,0.728,0.214,1.427,0.704,1.967c0.488,0.54,1.16,0.858,1.888,0.894 c0.725,0.033,1.426-0.213,1.966-0.703c0.541-0.489,0.858-1.159,0.895-1.887c0.075-1.503-1.088-2.787-2.591-2.862l0.105-2.104 c2.664,0.132,4.724,2.406,4.592,5.07c-0.064,1.291-0.628,2.478-1.585,3.345C14.28,16.183,13.137,16.622,11.936,16.622L11.936,16.622 z"/>
+                        </svg>
+                    </a>
+                    <div class="layout vertical">
+                        <div class="or-HeadlineText">Master</div>
+                        <div class="or-HeadlineSub">OpenRemote Login</div>
+                    </div>
+                </div>
+
+                <div id="basicAuthMessage"
+                     class="layout horizontal center or-FormMessages error"
+                     style="display: none;">
+                    <div class="or-MessagesIcon fa fa-warning"></div>
+                    <span id="basicAuthMessageText"></span>
+                </div>
+
+                <form class="layout vertical or-Form">
+                    <div class="layout horizontal center or-FormGroup">
+                        <div class="or-FormLabel">
+                            <label for="username">Username</label>
+                        </div>
+                        <div class="or-FormField">
+                            <input id="username"
+                                   autofocus
+                                   autocomplete="off"
+                                   autocapitalize="off"
+                                   class="or-FormControl or-FormInputText"
+                                   name="username"
+                                   value="{{user::input}}"
+                                   type="text"/>
+                        </div>
+                    </div>
+                    <div class="layout horizontal center or-FormGroup">
+                        <div class="or-FormLabel">
+                            <label for="password">Password</label>
+                        </div>
+                        <div class="or-FormField">
+                            <input id="password"
+                                   class="or-FormControl or-FormInputText"
+                                   name="password"
+                                   type="password"
+                                   value="{{basicAuthPassword::input}}"
+                                   autocomplete="off"/>
+                        </div>
+                    </div>
+                    <div class="layout horizontal center-center or-FormGroup">
+                        <input class="or-FormControl or-FormButtonPrimary or-PushButton"
+                               name="login"
+                               type="submit"
+                               value="Log in"
+                               onclick="return false"
+                               on-click="performBasicAuthentication"/>
+                    </div>
+                </form>
+        </div>
+
+    </template>
+
+    <script>
+        class AppSecurity extends Polymer.Element {
+
+            static get is() {
+                return "or-app-security";
+            }
+
+            static get properties() {
+                return {
+                    /**
+                     * Whether the user is authenticated.
+                     */
+                    authenticated: {
+                        type: Boolean,
+                        notify: true
+                    },
+
+                    /**
+                     * The current error state, if any.
+                     */
+                    error: {
+                        type: String,
+                        notify: true
+                    },
+
+                    /**
+                     * True if this app should enforce an authenticated user.
+                     */
+                    login: {
+                        type: Boolean
+                    },
+
+                    /**
+                     * Name of the OpenRemote user who is authenticated, available for two-way binding.
+                     */
+                    user: {
+                        type: String,
+                        notify: true,
+                        observer: "onUserChange"
+                    },
+
+                    /**
+                     * Name of the OpenRemote tenant realm this app wants to connect to
+                     * and login and authenticate with. The realm can be overridden with an
+                     * attribute, otherwise it will be obtained from the URL path, first segment.
+                     */
+                    realm: {
+                        type: String,
+                        notify: true
+                    },
+
+                    /**
+                     * Defined when Keycloak is available and configured.
+                     */
+                    keycloak: {
+                        type: Object,
+                        computed: "computeKeycloak(realm)"
+                    },
+
+                    /**
+                     * Hold credentials when basic authentication is successful to authorize future requests.
+                     */
+                    basicAuthPassword: String,
+
+                    /**
+                     * This component can be bound to the native shell, optional.
+                     */
+                    shellNative: ShellNative
+                };
+            }
+
+            ready() {
+                super.ready();
+
+                // If login is required, and we don't have a realm, get it from the URL path
+                if (this.login && !this.realm) {
+                    if (!window.location.pathname || window.location.pathname.length <= 1) {
+                        this.set("error", "No tenant realm configured and URL doesn't have any path elements");
+                        return;
+                    }
+                    let realm = window.location.pathname.split('/')[1];
+                    console.log("No tenant realm configured, using first URL path segment: " + realm);
+                    this.set("realm", realm);
+                }
+            }
+
+            onUserChange(user) {
+                if (this.login && this.keycloak && this.keycloak.authenticated && user !== this.keycloak.tokenParsed.preferred_username) {
+                    console.debug("User changed, logging out: " + user);
+                    this.logout();
+                }
+            }
+
+            startAuthentication() {
+                console.log("Login required for realm: " + this.realm);
+                if (this.keycloak) {
+                    this.startKeycloakAuthentication()
+                } else {
+                    if (this.shellNative && this.shellNative.enabled) {
+                        window.alert("This OpenRemote service uses the basic identity provider, the application will not store credentials.")
+                    }
+                    this.startBasicAuthentication();
+                }
+            }
+
+            /**
+             * Called either manually by the user or when auth token refresh fails (refresh token invalid).
+             */
+            logout() {
+                // If we never have to login, don't have to logout
+                if (!this.login)
+                    return;
+
+                this.set("authenticated", false);
+                let logoutUrl = location.protocol + "//" + location.host + location.pathname;
+
+                if (this.keycloak) {
+
+                    // Clear native shell stored tokens
+                    if (this.shellNative && this.shellNative.enabled) {
+                        this.shellNative.postNativeShellMessage({type: 'token', data: {}});
+                    }
+
+                    // Navigate to start page on logout, drop the hash (also, Keycloak has a bug where it
+                    // puts the hash into redirect_uri instead of redirect_fragment and then denies that
+                    // this is a valid redirect URI, caused by https://github.com/keycloak/keycloak/pull/2188)
+                    let options = {redirectUri: logoutUrl}
+                    console.log("Logging out with redirect URI: " + options.redirectUri);
+                    this.keycloak.logout(options);
+
+                } else {
+                    // Go to start page
+                    location.assign(logoutUrl);
+                }
+            }
+
+            getFullName() {
+                if (this.authenticated && this.keycloak) {
+                    return this.keycloak.tokenParsed.name;
+                }
+                return this.user;
+            }
+
+            isSuperUser() {
+                return this.authenticated && this.realm === "master" && this.hasRealmRole("admin");
+            }
+
+            hasRealmRole(role) {
+                if (!this.authenticated) {
+                    return false;
+                }
+                if (this.keycloak) {
+                    return this.keycloak.hasRealmRole(role);
+                } else {
+                    return true;
+                }
+            }
+
+            hasResourceRole(role, resource) {
+                if (!this.authenticated) {
+                    return false;
+                }
+                if (this.keycloak) {
+                    return this.keycloak.hasResourceRole(role, resource);
+                } else {
+                    return true;
+                }
+            }
+
+            hasResourceRoleOrIsSuperUser(role, resource) {
+                if (!this.authenticated) {
+                    return false;
+                }
+                return this.hasResourceRole(role, resource) || this.isSuperUser();
+            }
+
+            isUserTenantAdminEnabled() {
+                if (!this.authenticated) {
+                    return false;
+                }
+                return this.keycloak; // Can only administrate multiple tenants if we have Keycloak
+            }
+
+            authorizeRequestParams(requestParams, onComplete) {
+                if (!this.authenticated) {
+                    onComplete();
+                } else if (this.keycloak) {
+                    // Token must be good for X more seconds, should be half of Constants.ACCESS_TOKEN_LIFESPAN_SECONDS
+                    let minValiditySeconds = 30;
+                    this.keycloak.updateToken(minValiditySeconds)
+                        .success((tokenRefreshed) => {
+                            console.debug("For request authorization, access token was refreshed from auth server: " + tokenRefreshed)
+                            requestParams.withBearerAuth(this.keycloak.token);
+                            onComplete();
+                        })
+                        .error(() => {
+                            console.warn("For request authorization, Access token refresh failed, session expired, logging out...");
+                            this.logout();
+                        });
+                } else {
+                    requestParams.setUsername(this.user);
+                    requestParams.setPassword(this.basicAuthPassword);
+                    onComplete();
+                }
+            }
+
+            authorizeUrl(serviceUrl, onComplete) {
+                if (!this.authenticated) {
+                    onComplete(serviceUrl);
+                }
+                serviceUrl = serviceUrl + "?Auth-Realm=" + this.realm;
+                if (this.keycloak) {
+                    // TODO Should use keycloak.updateToken()?
+                    serviceUrl = serviceUrl + "&Authorization=Bearer " + this.keycloak.token;
+                } else {
+                    serviceUrl = serviceUrl + "&Authorization=Basic " + window.btoa(this.user + ":" + this.basicAuthPassword);
+                }
+                onComplete(serviceUrl);
+            }
+
+            computeKeycloak(realm) {
+                // Check if Keycloak has been loaded
+                if (window.Keycloak) {
+
+                    // If we are logged in, logout when realm changes
+                    if (this.keycloak) {
+                        this.logout();
+                    }
+
+                    let keycloakConfig = {
+                        url: window.location.protocol + "//" + window.location.host + "/auth",
+                        realm: realm,
+                        clientId: "openremote"
+                    };
+                    console.debug("On realm change, Keycloak is available on: " + keycloakConfig.url);
+                    return new Keycloak(keycloakConfig);
+                } else {
+                    console.debug("On realm change, Keycloak not available");
+                    return undefined;
+                }
+            }
+
+            startKeycloakAuthentication() {
+                console.debug("Keycloak authentication init");
+
+                // Disable invisible login status iframe of Keycloak, it only checks the max session lifespan anyway:
+                //
+                // For this, Keycloak sets a cookie that expires when the max session lifespan has been reached, then logs
+                // you out when the cookie disappears. We get the same effect when the user triggers an HTTP request
+                // and access token has to be obtained, if either the session/offline idle or max lifespan has been
+                // reached the refresh will fail and we log out.
+                //
+                this.keycloak.init({checkLoginIframe: false, checkLoginIframeInterval: 10})
+                    .success((authenticated) => {
+                        if (authenticated) {
+                            this.onKeycloakAuthSuccess()
+                        } else {
+                            this.onKeycloakAuthFailure()
+                        }
+                    })
+                    .error((e) => {
+                        this.set("error", e)
+                    });
+            }
+
+            onKeycloakAuthSuccess() {
+                console.log("Keycloak authentication successful");
+
+                if (this.shellNative && this.shellNative.enabled) {
+                    // Transfer tokens to native shell so they can be stored for future usage
+                    this.shellNative.postNativeShellMessage({
+                        type: 'token',
+                        data: {
+                            token: this.keycloak.token,
+                            refreshToken: this.keycloak.refreshToken,
+                            idToken: this.keycloak.idToken
+                        }
+                    });
+                }
+                // Set authenticated user
+                this.set("user", this.keycloak.tokenParsed.preferred_username);
+                this.set("authenticated", true);
+            }
+
+            onKeycloakAuthFailure() {
+                console.log("Keycloak authentication failure");
+
+                if (this.login) {
+                    console.debug("Login required, trying again for realm: " + this.realm);
+
+                    let options = {};
+                    if (this.shellNative && this.shellNative.enabled) {
+
+                        // If we run in native shell, always try to use or obtain an offline refresh token
+                        console.debug("Native shell enabled, login attempt with scope_offline");
+                        options.scope = "offline_access";
+
+                        // Get offline token from native shell to try again
+                        let savedTokensString = this.shellNative.readNativeShellMessage('token');
+                        if (savedTokensString && savedTokensString.length > 0) {
+                            console.debug("Native shell has stored offline tokens, using them for next login attempt");
+                            let savedTokens = JSON.parse(savedTokensString);
+                            // TODO We should only need the refresh token?
+                            this.keycloak.token = savedTokens.token;
+                            this.keycloak.refreshToken = savedTokens.refreshToken;
+                            this.keycloak.idToken = savedTokens.idToken;
+                        }
+                    }
+                    this.keycloak.login(options);
+                }
+            }
+
+            startBasicAuthentication() {
+                console.debug("Basic authentication init");
+
+                // Show basic auth form (this will set display: flex)
+                this.shadowRoot.host.classList.add("flex", "layout", "vertical");
+
+                // Show the document body
+                window.document.body.style.visibility = "visible";
+
+                // Force focus on username
+                this.$.username.focus();
+                this.$.username.scrollIntoView();
+            }
+
+            performBasicAuthentication() {
+                try {
+                    // Send a request with credentials to a resource that we know returns 200 or 401
+                    let url = "/" + this.realm + "/asset/user/current";
+
+                    let request = new XMLHttpRequest();
+
+                    // TODO You all suck
+
+                    let isSafari = /constructor/i.test(window.HTMLElement) || ((p) => {
+                        return p.toString() === "[object SafariRemoteNotification]";
+                    })(!window['safari'] || safari.pushNotification);
+
+                    let isChrome = !!window.chrome && !!window.chrome.webstore;
+
+                    if (isSafari) {
+                        // Must be async false or Safari will popup 401 dialog
+                        request.open("GET", url, false);
+                    } else if (isChrome) {
+                        // Must set dummy URL username or Chrome will popup 401 dialog
+                        request.open("GET", url, true, "dummy");
+                    } else {
+                        request.open("GET", url, true);
+                    }
+
+                    let credentials = "Basic " + btoa(this.user + ":" + this.basicAuthPassword);
+
+                    request.setRequestHeader("Authorization", credentials);
+
+                    request.onreadystatechange = () => {
+                        if (request.readyState > 3) {
+                            if (request.status === 200) {
+
+                                console.log("Basic authentication successful");
+                                this.set("authenticated", true);
+
+                                // Hide basic auth form
+                                this.shadowRoot.host.style.display = "none";
+
+                            } else if (request.status === 401) {
+
+                                console.log("Basic authentication failed, trying again");
+                                this.set("authenticated", false);
+                                this.$.basicAuthMessage.style.display = "inherit";
+                                this.$.basicAuthMessageText.innerText = "Login failed, invalid username or password.";
+
+                            } else {
+                                console.log("Basic authentication error");
+
+                                // Hide basic auth form
+                                this.shadowRoot.host.style.display = "none";
+
+                                this.set("authenticated", false);
+                                this.set("error", "Basic authentication error, request status: " + request.status);
+                            }
+                        }
+                    };
+                    request.send()
+                } catch (e) {
+                    this.set("error", e);
+                }
+            }
+        }
+
+        // Upgrade immediately, so you can't use jsinterop here!
+        customElements.define(AppSecurity.is, AppSecurity);
+    </script>
+
+</dom-module>
