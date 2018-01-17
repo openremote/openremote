@@ -259,7 +259,7 @@ public abstract class AbstractManagerSetup implements Setup {
 
         room.addAttributes(
             // On/Off
-            new AssetAttribute(switchAttributePrefix + "OnOff", BOOLEAN)
+            new AssetAttribute(switchAttributePrefix + "OnOff", NUMBER)
                 .setMeta(
                     new MetaItem(LABEL, Values.create(switchLabelPrefix + " on/off")),
                     new MetaItem(ACCESS_RESTRICTED_WRITE, Values.create(true)),
@@ -286,7 +286,7 @@ public abstract class AbstractManagerSetup implements Setup {
                     new MetaItem(RULE_EVENT, Values.create(true))
                 ).addMeta(shouldBeLinked ? agentLinker.apply(2) : null),
             // Smart enabled
-            new AssetAttribute(switchAttributePrefix + "SmartEnabled", BOOLEAN)
+            new AssetAttribute(switchAttributePrefix + "SmartEnabled", NUMBER)
                 .setMeta(
                     new MetaItem(LABEL, Values.create(switchLabelPrefix + " smart control enabled")),
                     new MetaItem(ACCESS_RESTRICTED_WRITE, Values.create(true)),
