@@ -263,28 +263,36 @@ public abstract class AbstractManagerSetup implements Setup {
                 .setMeta(
                     new MetaItem(LABEL, Values.create(switchLabelPrefix + " on/off")),
                     new MetaItem(ACCESS_RESTRICTED_WRITE, Values.create(true)),
-                    new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true))
+                    new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)),
+                    new MetaItem(RULE_STATE, Values.create(true)),
+                    new MetaItem(RULE_EVENT, Values.create(true))
                 ).addMeta(shouldBeLinked ? agentLinker.apply(0) : null),
             // Start time
             new AssetAttribute(switchAttributePrefix + "StartTime", TIMESTAMP_SECONDS)
                 .setMeta(
                     new MetaItem(LABEL, Values.create(switchLabelPrefix + " earliest start time")),
                     new MetaItem(ACCESS_RESTRICTED_WRITE, Values.create(true)),
-                    new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true))
+                    new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)),
+                    new MetaItem(RULE_STATE, Values.create(true)),
+                    new MetaItem(RULE_EVENT, Values.create(true))
                 ).addMeta(shouldBeLinked ? agentLinker.apply(1) : null),
             // Stop time
             new AssetAttribute(switchAttributePrefix + "StopTime", TIMESTAMP_SECONDS)
                 .setMeta(
                     new MetaItem(LABEL, Values.create(switchLabelPrefix + " latest stop time")),
                     new MetaItem(ACCESS_RESTRICTED_WRITE, Values.create(true)),
-                    new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true))
+                    new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)),
+                    new MetaItem(RULE_STATE, Values.create(true)),
+                    new MetaItem(RULE_EVENT, Values.create(true))
                 ).addMeta(shouldBeLinked ? agentLinker.apply(2) : null),
             // Smart enabled
             new AssetAttribute(switchAttributePrefix + "SmartEnabled", BOOLEAN)
                 .setMeta(
                     new MetaItem(LABEL, Values.create(switchLabelPrefix + " smart control enabled")),
                     new MetaItem(ACCESS_RESTRICTED_WRITE, Values.create(true)),
-                    new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true))
+                    new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)),
+                    new MetaItem(RULE_STATE, Values.create(true)),
+                    new MetaItem(RULE_EVENT, Values.create(true))
                 ).addMeta(shouldBeLinked ? agentLinker.apply(3) : null)
         );
     }
