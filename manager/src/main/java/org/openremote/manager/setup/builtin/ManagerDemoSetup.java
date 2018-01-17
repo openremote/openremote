@@ -50,7 +50,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
     final protected boolean importDemoScenes;
 
     // Update these numbers whenever you change a RULE_STATE flag in test data
-    public static final int DEMO_RULE_STATES_APARTMENT_1 = 18;
+    public static final int DEMO_RULE_STATES_APARTMENT_1 = 19;
     public static final int DEMO_RULE_STATES_APARTMENT_2 = 9;
     public static final int DEMO_RULE_STATES_APARTMENT_3 = 0;
     public static final int DEMO_RULE_STATES_SMART_HOME = DEMO_RULE_STATES_APARTMENT_1 + DEMO_RULE_STATES_APARTMENT_2 + DEMO_RULE_STATES_APARTMENT_3;
