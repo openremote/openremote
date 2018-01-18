@@ -56,48 +56,42 @@ import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
  */
 public abstract class AbstractNettyMessageProcessor<T> implements MessageProcessor<T> {
 
-    protected class MessageDecoder extends ByteToMessageDecoder {
+    public class MessageDecoder extends ByteToMessageDecoder {
         protected List<T> messages = new ArrayList<>(1);
 
         @Override
-        protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
+        protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) {
             AbstractNettyMessageProcessor.this.decode(in, messages);
+
             if (!messages.isEmpty()) {
                 // Don't pass them along the channel pipeline just consume them
-                messages.forEach(
-                    AbstractNettyMessageProcessor.this::onMessageReceived
-                );
+                messages.forEach(AbstractNettyMessageProcessor.this::onMessageReceived);
                 messages.clear();
             }
         }
 
         @Override
-        public void channelActive(ChannelHandlerContext ctx) throws Exception {
-            super.channelActive(ctx);
-        }
-
-        @Override
-        public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-            super.channelInactive(ctx);
-        }
-
-        @Override
         public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
             super.exceptionCaught(ctx, cause);
-            LOG.log(Level.SEVERE, "Exception occurred on in-bound message: ", cause);
-            onConnectionStatusChanged(ConnectionStatus.ERROR);
+            AbstractNettyMessageProcessor.this.onEncodeException(ctx, cause);
         }
     }
 
-    protected class MessageEncoder extends MessageToByteEncoder<T> {
+    public class MessageEncoder extends MessageToByteEncoder<T> {
         @Override
         public void connect(ChannelHandlerContext ctx, SocketAddress remoteAddress, SocketAddress localAddress, ChannelPromise promise) throws Exception {
             super.connect(ctx, remoteAddress, localAddress, promise);
         }
 
         @Override
-        protected void encode(ChannelHandlerContext ctx, T msg, ByteBuf out) throws Exception {
+        protected void encode(ChannelHandlerContext ctx, T msg, ByteBuf out) {
             AbstractNettyMessageProcessor.this.encode(msg, out);
+        }
+
+        @Override
+        public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+            super.exceptionCaught(ctx, cause);
+            AbstractNettyMessageProcessor.this.onDecodeException(ctx, cause);
         }
     }
 
@@ -155,7 +149,7 @@ public abstract class AbstractNettyMessageProcessor<T> implements MessageProcess
 
         bootstrap.handler(new ChannelInitializer() {
             @Override
-            public void initChannel(Channel channel) throws Exception {
+            public void initChannel(Channel channel) {
                 AbstractNettyMessageProcessor.this.initChannel(channel);
             }
         });
@@ -168,7 +162,7 @@ public abstract class AbstractNettyMessageProcessor<T> implements MessageProcess
         // Add channel callback - this gets called when the channel connects or when channel encounters an error
         channelFuture.addListener(new ChannelFutureListener() {
             @Override
-            public void operationComplete(ChannelFuture future) throws Exception {
+            public void operationComplete(ChannelFuture future) {
                 synchronized (AbstractNettyMessageProcessor.this) {
                     channelFuture.removeListener(this);
 
@@ -177,10 +171,9 @@ public abstract class AbstractNettyMessageProcessor<T> implements MessageProcess
                     }
 
                     if (future.isSuccess()) {
-                        LOG.fine("Successfully connected to: " + getSocketAddressString());
+                        LOG.log(Level.INFO, "Connection initialising");
                         reconnectTask = null;
                         reconnectDelayMilliseconds = INITIAL_RECONNECT_DELAY_MILLIS;
-                        onConnectionStatusChanged(ConnectionStatus.CONNECTED);
                     } else if (future.cause() != null) {
                         LOG.log(Level.INFO, "Connection error", future.cause());
                         // Failed to connect so schedule reconnection attempt
@@ -298,6 +291,30 @@ public abstract class AbstractNettyMessageProcessor<T> implements MessageProcess
      * Inserts the decoders and encoders into the channel pipeline
      */
     protected void initChannel(Channel channel) {
+        channel.pipeline().addLast(new ChannelInboundHandlerAdapter() {
+            @Override
+            public void channelActive(ChannelHandlerContext ctx) throws Exception {
+                synchronized (AbstractNettyMessageProcessor.this) {
+                    LOG.fine("Connected: " + getSocketAddressString());
+                    onConnectionStatusChanged(ConnectionStatus.CONNECTED);
+                }
+                super.channelActive(ctx);
+            }
+
+            @Override
+            public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+                synchronized (AbstractNettyMessageProcessor.this) {
+                    if (connectionStatus != ConnectionStatus.DISCONNECTING) {
+                        // This is a connection failure so ignore as reconnect logic will handle it
+                        return;
+                    }
+
+                    LOG.fine("Disconnected: " + getSocketAddressString());
+                    onConnectionStatusChanged(ConnectionStatus.DISCONNECTED);
+                }
+                super.channelInactive(ctx);
+            }
+        });
         channel.pipeline().addLast(new MessageDecoder());
         channel.pipeline().addLast(new MessageEncoder());
     }
@@ -308,6 +325,16 @@ public abstract class AbstractNettyMessageProcessor<T> implements MessageProcess
         }
         LOG.finest("Message received notifying consumers");
         messageConsumers.forEach(consumer -> consumer.accept(message));
+    }
+
+    protected void onDecodeException(ChannelHandlerContext ctx, Throwable cause) {
+        LOG.log(Level.SEVERE, "Exception occurred on in-bound message: ", cause);
+        onConnectionStatusChanged(ConnectionStatus.ERROR);
+    }
+
+    protected void onEncodeException(ChannelHandlerContext ctx, Throwable cause) {
+        LOG.log(Level.SEVERE, "Exception occurred on out-bound message: ", cause);
+        onConnectionStatusChanged(ConnectionStatus.ERROR);
     }
 
     protected synchronized void onConnectionStatusChanged(ConnectionStatus connectionStatus) {
@@ -354,7 +381,7 @@ public abstract class AbstractNettyMessageProcessor<T> implements MessageProcess
      * When one or more messages are available in the {@link ByteBuf} then the messages
      * should be constructed and added to the messages list
      */
-    protected abstract void decode(ByteBuf buf, List<T> messages) throws Exception;
+    protected abstract void decode(ByteBuf buf, List<T> messages);
 
-    protected abstract void encode(T message, ByteBuf buf) throws Exception;
+    protected abstract void encode(T message, ByteBuf buf);
 }

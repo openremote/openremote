@@ -21,6 +21,7 @@ package org.openremote.agent.protocol.http;
 
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
 import org.openremote.agent.protocol.AbstractProtocol;
+import org.openremote.agent.protocol.Protocol;
 import org.openremote.container.Container;
 import org.openremote.model.AbstractValueHolder;
 import org.openremote.model.asset.AssetAttribute;
@@ -78,7 +79,10 @@ import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
  * <h1>Response filtering</h1>
  * <p>
  * Any {@link Attribute} whose value is to be set by the HTTP server response (i.e. it has an {@link
- * #META_ATTRIBUTE_POLLING_SECONDS} {@link MetaItem}) can use the standard <h1>Connection Status</h1>
+ * #META_ATTRIBUTE_POLLING_SECONDS} {@link MetaItem}) can use the standard {@link Protocol#META_PROTOCOL_FILTERS} in
+ * order to filter the received HTTP response.
+ *
+ * <h1>Connection Status</h1>
  * <p>
  * The {@link ConnectionStatus} of the {@link ProtocolConfiguration} is determined by the ping {@link
  * org.openremote.model.attribute.MetaItem}s on the protocol configuration. If specified then the {@link

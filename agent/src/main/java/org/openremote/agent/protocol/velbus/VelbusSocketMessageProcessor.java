@@ -31,12 +31,12 @@ public class VelbusSocketMessageProcessor extends AbstractSocketMessageProcessor
         super(host, port, executorService);
     }
     @Override
-    protected void decode(ByteBuf buf, List<VelbusPacket> messages) throws Exception {
+    protected void decode(ByteBuf buf, List<VelbusPacket> messages) {
         VelbusPacketEncoderDecoder.decode(buf, messages);
     }
 
     @Override
-    protected void encode(VelbusPacket message, ByteBuf buf) throws Exception {
+    protected void encode(VelbusPacket message, ByteBuf buf) {
         VelbusPacketEncoderDecoder.encode(message, buf);
     }
 }

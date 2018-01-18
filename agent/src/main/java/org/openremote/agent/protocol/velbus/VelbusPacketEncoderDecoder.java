@@ -28,7 +28,7 @@ import static org.openremote.agent.protocol.velbus.VelbusPacket.MAX_PACKET_SIZE;
 public final class VelbusPacketEncoderDecoder {
     private VelbusPacketEncoderDecoder() {}
 
-    public static void decode(ByteBuf buf, List<VelbusPacket> messages) throws Exception {
+    public static void decode(ByteBuf buf, List<VelbusPacket> messages) {
         int startIndex = buf.indexOf(0, buf.capacity() - 1, VelbusPacket.STX);
 
         if (startIndex < 0) {
@@ -71,7 +71,7 @@ public final class VelbusPacketEncoderDecoder {
         }
     }
 
-    public static void encode(VelbusPacket message, ByteBuf buf) throws Exception {
+    public static void encode(VelbusPacket message, ByteBuf buf) {
         buf.writeBytes(message.pack());
     }
 }
