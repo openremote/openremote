@@ -235,6 +235,10 @@ public enum AttributeType {
 
     FLOW_GPM("tachometer", ValueType.NUMBER, value -> Optional.empty(),
         new MetaItem(FORMAT, Values.create("%0.5f gpm"))
+    ),
+
+    DIRECTION_DECIMAL_DEGREES("compass", ValueType.NUMBER, value -> Optional.empty(),
+        new MetaItem(FORMAT, Values.create("%0.1f deg"))
     );
 
     public static final String DEFAULT_ICON = "circle-thin";
