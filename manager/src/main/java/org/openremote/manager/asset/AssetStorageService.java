@@ -19,6 +19,7 @@
  */
 package org.openremote.manager.asset;
 
+import com.vividsolutions.jts.geom.Point;
 import org.apache.camel.builder.RouteBuilder;
 import org.hibernate.Session;
 import org.hibernate.jdbc.AbstractReturningWork;
@@ -37,9 +38,6 @@ import org.openremote.manager.security.UserConfiguration;
 import org.openremote.model.Constants;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.asset.*;
-import org.openremote.model.asset.BaseAssetQuery.OrderBy;
-import org.openremote.model.asset.BaseAssetQuery.Select;
-import org.openremote.model.asset.BaseAssetQuery.Access;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.event.shared.TenantFilter;
 import org.openremote.model.security.ClientRole;
@@ -57,22 +55,23 @@ import java.util.*;
 import java.util.Date;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 
 import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_TOPIC;
 import static org.openremote.manager.asset.AssetRoute.isPersistenceEventForEntityType;
 import static org.openremote.manager.event.ClientEventService.CLIENT_EVENT_TOPIC;
 import static org.openremote.manager.event.ClientEventService.getSessionKey;
 import static org.openremote.model.asset.BaseAssetQuery.*;
-import static org.openremote.model.asset.BaseAssetQuery.Access.*;
-import static org.openremote.model.asset.BaseAssetQuery.Include.*;
+import static org.openremote.model.asset.BaseAssetQuery.Access.PRIVATE_READ;
+import static org.openremote.model.asset.BaseAssetQuery.Access.RESTRICTED_READ;
+import static org.openremote.model.asset.BaseAssetQuery.Include.ALL;
+import static org.openremote.model.asset.BaseAssetQuery.Include.ALL_EXCEPT_PATH_AND_ATTRIBUTES;
 import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 
 public class AssetStorageService extends RouteBuilder implements ContainerService, Consumer<AssetState> {
 
     protected class PreparedAssetQuery {
-        protected String querySql;
-        protected List<ParameterBinder> binders;
+        final protected String querySql;
+        final protected List<ParameterBinder> binders;
 
         public PreparedAssetQuery(String querySql, List<ParameterBinder> binders) {
             this.querySql = querySql;
@@ -140,8 +139,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         // If there is no timestamp, use system time (0 or -1 are "no timestamp")
         Optional<Long> timestamp = assetState.getAttribute().getValueTimestamp();
         String valueTimestamp = Long.toString(
-            timestamp.map(ts -> ts > 0 ? ts : timerService.getCurrentTimeMillis())
-                .orElseGet(() -> timerService.getCurrentTimeMillis())
+            timestamp.filter(ts -> ts > 0).orElseGet(() -> timerService.getCurrentTimeMillis())
         );
         if (!storeAttributeValue(assetId, attributeName, value, valueTimestamp)) {
             throw new RuntimeException("Database update failed, no rows updated");
@@ -1176,6 +1174,15 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                     break;
                 }
 
+                // Did the location change?
+                Point oldLocation = persistenceEvent.getPreviousState("location");
+                Point newLocation = persistenceEvent.getCurrentState("location");
+                if (oldLocation != newLocation || oldLocation == null || oldLocation.equalsExact(newLocation, 0)) {
+                    clientEventService.publishEvent(
+                        new LocationEvent(asset.getId(), asset.getCoordinates(), timerService.getCurrentTimeMillis())
+                    );
+                }
+
                 break;
             case DELETE:
                 clientEventService.publishEvent(
@@ -1189,14 +1196,11 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         List<String> names = attributeNames == null ? Collections.emptyList() : Arrays.asList(attributeNames);
 
         // Client may want to read a subset or all attributes of the asset
-        List<AttributeEvent> events = asset.getAttributesStream()
+        clientEventService.sendToSession(sessionKey, asset.getAttributesStream()
             .filter(attribute -> names.isEmpty() || attribute.getName().filter(names::contains).isPresent())
             .map(AssetAttribute::getStateEvent)
             .filter(Optional::isPresent)
-            .map(Optional::get)
-            .collect(Collectors.toList());
-
-        clientEventService.sendToSession(sessionKey, events.toArray(new AttributeEvent[events.size()]));
+            .map(Optional::get).toArray(AttributeEvent[]::new));
     }
 
     public String toString() {
