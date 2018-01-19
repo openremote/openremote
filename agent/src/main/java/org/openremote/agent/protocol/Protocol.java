@@ -23,15 +23,13 @@ import org.openremote.agent.protocol.filter.MessageFilter;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.model.AbstractValueHolder;
-import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.asset.AssetMeta;
-import org.openremote.model.asset.AssetType;
+import org.openremote.model.asset.*;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.asset.agent.ProtocolConfiguration;
 import org.openremote.model.asset.agent.ProtocolDescriptor;
 import org.openremote.model.attribute.*;
 import org.openremote.model.value.ArrayValue;
+import org.openremote.model.value.NumberValue;
 import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.ValueType;
 
@@ -79,6 +77,11 @@ import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
  * state into the attribute value and notifies the context broker of the change. A protocol updates
  * a linked attributes' value by sending  an {@link AttributeEvent} messages on the
  * {@link #SENSOR_QUEUE}, including the source protocol name in header {@link #SENSOR_QUEUE_SOURCE_PROTOCOL}.
+ * <p>
+ * As well as an {@link AssetMeta#AGENT_LINK} meta item; if an attribute also has an {@link AssetMeta#LOCATION_LINK}
+ * meta item then the protocol should push location data into the {@link Asset} location property (if the protocol and
+ * device support it and the attribute is correctly configured to receive location data and the value must be of type
+ * {@link ArrayValue} and contain two {@link NumberValue}s representing longitude and latitude in that order.
  * <p>
  * If the user writes a new value into the linked attribute, the protocol translates this value
  * change into a device (or service) action. Write operations on attributes linked to a protocol
@@ -145,11 +148,12 @@ public interface Protocol extends ContainerService {
     /**
      * {@link MetaItem} for defining {@link MessageFilter}s to apply to values before they are sent on the
      * {@link #SENSOR_QUEUE} (i.e. before it is used to update a protocol linked attribute); this is particularly
-     * useful for generic protocols. The {@link MetaItem} should be an {@link ArrayValue} of {@link ObjectValue}s where
-     * each {@link ObjectValue} represents a serialised {@link MessageFilter}. The message should pass through the
+     * useful for generic protocols. The {@link MetaItem} value should be an {@link ArrayValue} of {@link ObjectValue}s
+     * where each {@link ObjectValue} represents a serialised {@link MessageFilter}. The message should pass through the
      * filters in array order.
      */
     String META_PROTOCOL_FILTERS = PROTOCOL_NAMESPACE + ":filters";
+
 
     // TODO: Some of these options should be configurable depending on expected load etc.
 

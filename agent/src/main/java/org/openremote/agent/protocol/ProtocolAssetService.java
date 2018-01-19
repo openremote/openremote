@@ -19,10 +19,13 @@
  */
 package org.openremote.agent.protocol;
 
+import com.vividsolutions.jts.geom.Point;
 import org.openremote.container.ContainerService;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
+import org.openremote.model.asset.AssetMeta;
 import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.attribute.MetaItem;
 
 import java.util.function.Predicate;
 
@@ -89,6 +92,13 @@ public interface ProtocolAssetService extends ContainerService {
      * details such as temporary access (e.g. OAuth offline) tokens.
      */
     void updateProtocolConfiguration(AssetAttribute protocolConfiguration);
+
+    /**
+     * Protocols can update an assets location. This is generally to be used for linked attributes
+     * that also have a {@link AssetMeta#LOCATION_LINK} {@link MetaItem}. Set location to null to
+     * clear an asset's location.
+     */
+    void updateAssetLocation(String assetId, Point location);
 
     /**
      * Protocols may store assets in the context or update existing assets. A unique identifier

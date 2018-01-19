@@ -21,9 +21,7 @@ package org.openremote.model.asset;
 
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.attribute.*;
-import org.openremote.model.value.Value;
-import org.openremote.model.value.ValueType;
-import org.openremote.model.value.Values;
+import org.openremote.model.value.*;
 
 import java.util.Optional;
 import java.util.function.Function;
@@ -72,6 +70,21 @@ public enum AssetMeta implements MetaItemDescriptor {
             Optional.ofNullable(AttributeRef.isAttributeRef(value)
                 ? null
                 : new ValidationFailure(META_ITEM_VALUE_MISMATCH, AttributeRef.class.getSimpleName()))
+    ),
+
+
+    /**
+     * Links an attribute to the location of the owning {@link Asset}; this is intended to be coupled with
+     * {@link #AGENT_LINK} to allow protocols to write an {@link Asset}'s location.
+     */
+    LOCATION_LINK(
+        ASSET_META_NAMESPACE + ":locationLink",
+        ACCESS_PRIVATE,
+        ValueType.BOOLEAN,
+        null,
+        null,
+        Values.create(true),
+        true
     ),
 
     /**

@@ -19,6 +19,7 @@
  */
 package org.openremote.manager.agent;
 
+import com.vividsolutions.jts.geom.Point;
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.agent.protocol.Protocol;
 import org.openremote.agent.protocol.ProtocolAssetService;
@@ -215,6 +216,19 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
     }
 
     @Override
+    public void updateAssetLocation(String assetId, Point location) {
+        ServerAsset asset = assetStorageService.find(assetId, true);
+        if (asset == null) {
+            LOG.warning("Asset with requested ID doesn't exist: " + assetId);
+            return;
+        }
+
+        asset.setLocation(location);
+        LOG.fine("Updating asset location '" + assetId + "': " + Arrays.toString(asset.getCoordinates()));
+        assetStorageService.merge(asset);
+    }
+
+    @Override
     public Asset mergeAsset(Asset asset) {
         Objects.requireNonNull(asset.getId());
         Objects.requireNonNull(asset.getParentId());
@@ -370,9 +384,10 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
 
                 break;
             case UPDATE:
+                List<String> propertyNames = Arrays.asList(persistenceEvent.getPropertyNames());
 
                 // Check if attributes of the asset have been modified
-                int attributesIndex = Arrays.asList(persistenceEvent.getPropertyNames()).indexOf("attributes");
+                int attributesIndex = propertyNames.indexOf("attributes");
                 if (attributesIndex < 0) {
                     return;
                 }

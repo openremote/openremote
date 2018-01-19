@@ -19,7 +19,6 @@
  */
 package org.openremote.agent.protocol.tcp;
 
-import io.netty.channel.socket.SocketChannel;
 import org.openremote.agent.protocol.AbstractProtocol;
 import org.openremote.model.AbstractValueHolder;
 import org.openremote.model.asset.AssetAttribute;
@@ -34,7 +33,6 @@ import org.openremote.model.value.Values;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.BiConsumer;
 import java.util.logging.Logger;
 
 import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
@@ -66,7 +64,7 @@ public abstract class AbstractTcpServerProtocol<T extends TcpServer<U>, U> exten
     public static final String META_PROTOCOL_BIND_ADDRESS = PROTOCOL_NAME + ":bindAddress";
 
     private static final Logger LOG = Logger.getLogger(AbstractTcpServerProtocol.class.getName());
-    protected Map<AttributeRef, T> tcpServerMap = new HashMap<>();
+    protected final Map<AttributeRef, T> tcpServerMap = new HashMap<>();
 
     @Override
     protected void doLinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
@@ -94,7 +92,13 @@ public abstract class AbstractTcpServerProtocol<T extends TcpServer<U>, U> exten
         T tcpServer = createTcpServer(port, bindAddress.map(StringValue::getString).orElse(null), protocolConfiguration);
         tcpServerMap.put(protocolRef, tcpServer);
         startTcpServer(protocolRef, tcpServer);
-        updateStatus(protocolRef, ConnectionStatus.CONNECTED);
+
+        if (!tcpServer.isStarted()) {
+            LOG.warning("Failed to start TCP server instance");
+            updateStatus(protocolRef, ConnectionStatus.ERROR);
+        } else {
+            updateStatus(protocolRef, ConnectionStatus.CONNECTED);
+        }
     }
 
     @Override

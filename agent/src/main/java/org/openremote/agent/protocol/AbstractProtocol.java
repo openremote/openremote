@@ -19,6 +19,9 @@
  */
 package org.openremote.agent.protocol;
 
+import com.vividsolutions.jts.geom.Coordinate;
+import com.vividsolutions.jts.geom.GeometryFactory;
+import com.vividsolutions.jts.geom.Point;
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.agent.protocol.filter.MessageFilter;
@@ -36,9 +39,7 @@ import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.asset.agent.ProtocolConfiguration;
 import org.openremote.model.asset.agent.ProtocolDescriptor;
 import org.openremote.model.attribute.*;
-import org.openremote.model.value.Value;
-import org.openremote.model.value.ValueType;
-import org.openremote.model.value.Values;
+import org.openremote.model.value.*;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -50,8 +51,8 @@ public abstract class AbstractProtocol implements Protocol {
 
     protected static class LinkedProtocolInfo {
 
-        AssetAttribute protocolConfiguration;
-        Consumer<ConnectionStatus> connectionStatusConsumer;
+        final AssetAttribute protocolConfiguration;
+        final Consumer<ConnectionStatus> connectionStatusConsumer;
         ConnectionStatus currentConnectionStatus;
 
         protected LinkedProtocolInfo(
@@ -86,6 +87,7 @@ public abstract class AbstractProtocol implements Protocol {
     protected final Map<AttributeRef, AssetAttribute> linkedAttributes = new HashMap<>();
     protected final Map<AttributeRef, LinkedProtocolInfo> linkedProtocolConfigurations = new HashMap<>();
     protected final Map<AttributeRef, List<MessageFilter>> linkedAttributeFilters = new HashMap<>();
+    protected final List<AttributeRef> locationLinkedAttributes = new ArrayList<>();
     protected MessageBrokerContext messageBrokerContext;
     protected ProducerTemplate producerTemplate;
     protected TimerService timerService;
@@ -172,12 +174,20 @@ public abstract class AbstractProtocol implements Protocol {
                 // Need to add to map before actual linking as protocols may want to update the value as part of
                 // linking process and without entry in the map any update would be blocked
                 linkedAttributes.put(attributeRef, attribute);
+
                 Optional<List<MessageFilter>> messageFilters = Protocol.getLinkedAttributeMessageFilters(attribute);
-                if (messageFilters.isPresent()) {
+                messageFilters.ifPresent(mFilters -> {
                     synchronized (linkedAttributeFilters) {
-                        linkedAttributeFilters.put(attributeRef, messageFilters.get());
+                        linkedAttributeFilters.put(attributeRef, mFilters);
                     }
-                }
+                });
+
+                attribute.getMetaItem(AssetMeta.LOCATION_LINK).ifPresent(metaItem -> {
+                    synchronized (locationLinkedAttributes) {
+                        locationLinkedAttributes.add(attribute.getReferenceOrThrow());
+                    }
+                });
+
                 try {
                     doLinkAttribute(attribute, protocolConfiguration);
                 } catch (Exception e) {
@@ -185,6 +195,9 @@ public abstract class AbstractProtocol implements Protocol {
                     linkedAttributes.remove(attributeRef);
                     synchronized (linkedAttributeFilters) {
                         linkedAttributeFilters.remove(attributeRef);
+                    }
+                    synchronized (locationLinkedAttributes) {
+                        locationLinkedAttributes.remove(attributeRef);
                     }
                 }
             });
@@ -200,6 +213,9 @@ public abstract class AbstractProtocol implements Protocol {
                 linkedAttributes.remove(attributeRef);
                 synchronized (linkedAttributeFilters) {
                     linkedAttributeFilters.remove(attributeRef);
+                }
+                synchronized (locationLinkedAttributes) {
+                    locationLinkedAttributes.remove(attributeRef);
                 }
                 doUnlinkAttribute(attribute, protocolConfiguration);
             });
@@ -268,6 +284,8 @@ public abstract class AbstractProtocol implements Protocol {
     @SuppressWarnings("unchecked")
     protected void updateLinkedAttribute(AttributeState state, long timestamp) {
         AssetAttribute attribute;
+        boolean updateLocation;
+
         synchronized (linkedAttributes) {
             attribute = linkedAttributes.get(state.getAttributeRef());
         }
@@ -334,6 +352,41 @@ public abstract class AbstractProtocol implements Protocol {
         AttributeEvent attributeEvent = new AttributeEvent(state, timestamp);
         LOG.fine("Sending on sensor queue: " + attributeEvent);
         producerTemplate.sendBodyAndHeader(SENSOR_QUEUE, attributeEvent, Protocol.SENSOR_QUEUE_SOURCE_PROTOCOL, getProtocolName());
+
+
+        synchronized (locationLinkedAttributes) {
+            updateLocation = locationLinkedAttributes.contains(state.getAttributeRef());
+        }
+
+        if (updateLocation) {
+
+            // Check value type is compatible
+            Point location = state.getCurrentValue().map(value -> {
+                if (value.getType() != ValueType.ARRAY) {
+                    LOG.warning("Location linked attribute type is not an array");
+                    return null;
+                }
+
+                Optional<List<NumberValue>> coordinates = Values.getArrayElements((ArrayValue)value, NumberValue.class, false, false);
+                if (!coordinates.isPresent()
+                    || coordinates.get().size() != 2
+                    || Math.abs(coordinates.get().get(0).getNumber()) > 180
+                    || Math.abs(coordinates.get().get(1).getNumber()) > 90) {
+                    LOG.warning("Location linked attribute value must contain longitude then latitude in a 2 value number array");
+                    return null;
+                }
+
+                try {
+                    return new GeometryFactory().createPoint(
+                        new Coordinate(coordinates.get().get(0).getNumber(), coordinates.get().get(1).getNumber())
+                    );
+                } catch (Exception e) {
+                    return null;
+                }
+            }).orElse(null);
+
+            updateAssetLocation(state.getAttributeRef().getEntityId(), location);
+        }
     }
 
     /**
@@ -342,6 +395,10 @@ public abstract class AbstractProtocol implements Protocol {
      */
     protected void updateLinkedAttribute(AttributeState state) {
         updateLinkedAttribute(state, timerService.getCurrentTimeMillis());
+    }
+
+    protected void updateAssetLocation(String assetId, Point location) {
+        assetService.updateAssetLocation(assetId, location);
     }
 
     /**
