@@ -205,7 +205,12 @@ public class ObjectValueImpl extends ValueImpl implements ObjectValue {
                 continue;
             Value mapAValue = entry.getValue();
             Value mapBValue = thatImpl.map.get(entry.getKey());
-            if (!mapAValue.equals(mapBValue)) {
+            if (mapAValue == mapBValue) {
+                continue;
+            }
+
+            // If mapAValue is null then mapBValue cannot be null otherwise above equality check would return true
+            if (mapAValue == null || !mapAValue.equals(mapBValue)) {
                 return false;
             }
         }
