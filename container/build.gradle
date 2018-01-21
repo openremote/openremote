@@ -6,6 +6,7 @@ dependencies {
     compile resolveProject(":model")
 
     compile "org.codehaus.groovy:groovy:$groovyVersion"
+    compile "org.kohsuke:groovy-sandbox:$groovySandboxVersion"
 
     compile "org.slf4j:slf4j-api:$slf4jVersion"
     compile "org.slf4j:slf4j-jdk14:$slf4jVersion"

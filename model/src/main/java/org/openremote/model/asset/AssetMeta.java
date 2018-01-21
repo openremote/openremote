@@ -21,7 +21,10 @@ package org.openremote.model.asset;
 
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.attribute.*;
-import org.openremote.model.value.*;
+import org.openremote.model.rules.TemporaryFact;
+import org.openremote.model.value.Value;
+import org.openremote.model.value.ValueType;
+import org.openremote.model.value.Values;
 
 import java.util.Optional;
 import java.util.function.Function;
@@ -71,7 +74,6 @@ public enum AssetMeta implements MetaItemDescriptor {
                 ? null
                 : new ValidationFailure(META_ITEM_VALUE_MISMATCH, AttributeRef.class.getSimpleName()))
     ),
-
 
     /**
      * Links an attribute to the location of the owning {@link Asset}; this is intended to be coupled with
@@ -286,10 +288,10 @@ public enum AssetMeta implements MetaItemDescriptor {
         true),
 
     /**
-     * Should attribute writes be processed by the rules engines as {@link AssetState} facts in knowledge sessions,
-     * with a lifecycle that reflects the state of the asset attribute. The state facts in the rules sessions are kept
+     * Should attribute writes be processed by the rules engines as {@link AssetState} facts,
+     * with a lifecycle that reflects the state of the asset attribute. The state facts are kept
      * in sync with asset changes: For an attribute there will always be a single fact that is updated
-     * when the attribute is updated. If you want two types of facts in your rules knowledge session for a single
+     * when the attribute is updated. If you want two types of facts in your rules for a single
      * attribute, with state and event behavior, combine this with {@link #RULE_EVENT}.
      */
     RULE_STATE(
@@ -302,10 +304,10 @@ public enum AssetMeta implements MetaItemDescriptor {
         true),
 
     /**
-     * Should attribute writes be processed by the rules engines as events in knowledge sessions. Any attribute
-     * update will be inserted as an {@link AssetEvent} fact in the rules sessions, these events are expired
+     * Should attribute writes be processed by the rules engines as event facts. Any attribute
+     * update will be inserted as an {@link AssetEvent} fact in a rules engine, these events are expired
      * automatically after a defined time and/or if they can no longer be matched by rule LHS time constraints.
-     * If you want two types of facts in your rules knowledge session for a single attribute, with state and event
+     * If you want two types of facts in your rules for a single attribute, with state and event
      * behavior, combine this with {@link #RULE_STATE}.
      */
     RULE_EVENT(
@@ -318,15 +320,19 @@ public enum AssetMeta implements MetaItemDescriptor {
         true),
 
     /**
-     * Set maximum lifetime of {@link AssetEvent} facts in knowledge sessions, for example "1h30m". The rules
-     * engine will remove {@link AssetEvent} facts from the rules sessions if they are older than this value
-     * (using event source timestamp, not event processing time).
+     * Set maximum lifetime of {@link AssetEvent} facts in rules, for example "1h30m5s". The rules
+     * engine will remove {@link AssetEvent} facts if they are older than this value (using event source/value
+     * timestamp, not event processing time).
+     * <p>
+     * The default expiration for asset events can be configured with environment variable <code>RULE_EVENT_EXPIRES</code>.
+     * <p>
+     * Also see {@link TemporaryFact#GUARANTEED_MIN_EXPIRATION_MILLIS}.
      */
     RULE_EVENT_EXPIRES(
         ASSET_META_NAMESPACE + ":ruleEventExpires",
         new Access(true, false, true),
         ValueType.STRING,
-        "^([+-])?((\\d+)[Dd])?\\s*((\\d+)[Hh])?\\s*((\\d+)[Mm])?\\s*((\\d+)[Ss])?\\s*((\\d+)([Mm][Ss])?)?$", // From DROOLS
+        "^([+-])?((\\d+)[Dd])?\\s*((\\d+)[Hh])?\\s*((\\d+)[Mm])?\\s*((\\d+)[Ss])?\\s*((\\d+)([Mm][Ss])?)?$", // See TimeUtil
         PatternFailure.DAYS_HOURS_MINS_SECONDS.name(),
         null,
         false),

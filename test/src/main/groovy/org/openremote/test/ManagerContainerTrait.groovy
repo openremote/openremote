@@ -1,7 +1,6 @@
 package org.openremote.test
 
 import com.google.common.collect.Lists
-import org.drools.core.time.impl.PseudoClockScheduler
 import org.openremote.agent.protocol.Protocol
 import org.openremote.container.Container
 import org.openremote.container.ContainerService
@@ -21,7 +20,6 @@ import org.openremote.manager.i18n.I18NService
 import org.openremote.manager.map.MapService
 import org.openremote.manager.notification.NotificationService
 import org.openremote.manager.persistence.ManagerPersistenceService
-import org.openremote.manager.rules.RulesEngine
 import org.openremote.manager.rules.RulesService
 import org.openremote.manager.rules.RulesetStorageService
 import org.openremote.manager.security.ManagerIdentityService
@@ -113,17 +111,6 @@ trait ManagerContainerTrait extends ContainerTrait {
     }
 
     /**
-     * Execute pseudo clock operations in Rules engine.
-     */
-    static void withClockOf(RulesEngine engine, Closure<PseudoClockScheduler> clockConsumer) {
-        clockConsumer.call(engine.sessionClock as PseudoClockScheduler)
-    }
-
-    static long getClockTimeOf(RulesEngine engine) {
-        (engine.sessionClock as PseudoClockScheduler).currentTime
-    }
-
-    /**
      * Execute pseudo clock operations in Container.
      */
     static void withClockOf(Container container, Closure<TimerService.Clock> clockConsumer) {
@@ -134,33 +121,7 @@ trait ManagerContainerTrait extends ContainerTrait {
         container.getService(TimerService.class).getClock().getCurrentTimeMillis()
     }
 
-    static void advancePseudoClocks(long amount, TimeUnit unit, Container container, RulesEngine[] engines) {
-        if (engines == null) {
-            throw new NullPointerException("Engine can't be null")
-        }
+    static void advancePseudoClock(long amount, TimeUnit unit, Container container) {
         withClockOf(container) { it.advanceTime(amount, unit) }
-        engines.each { engine ->
-            withClockOf(engine) { clock ->
-                if (clock == null) {
-                    throw new IllegalArgumentException("Knowledge session/clock not available for: " + engine)
-                }
-                clock.advanceTime(amount, unit)
-            }
-        }
     }
-
-    static void setPseudoClocksToRealTime(Container container, RulesEngine[] engines) {
-        withClockOf(container) {
-            it.advanceTime(System.currentTimeMillis() - it.currentTimeMillis, TimeUnit.MILLISECONDS)
-        }
-        engines.each { engine ->
-            withClockOf(engine) { clock ->
-                if (clock == null) {
-                    throw new IllegalArgumentException("Knowledge session/clock not available for: " + engine)
-                }
-                clock.advanceTime(System.currentTimeMillis() - clock.currentTime, TimeUnit.MILLISECONDS)
-            }
-        }
-    }
-
 }

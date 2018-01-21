@@ -19,11 +19,12 @@
  */
 package org.openremote.model.rules;
 
-import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.asset.BaseAssetQuery;
+import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.attribute.AttributeExecuteStatus;
+import org.openremote.model.value.Value;
 
-import java.util.List;
-import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 /**
  * Facade for writing rules RHS actions, supporting asset queries within the scope
@@ -35,16 +36,23 @@ public abstract class Assets {
 
         abstract public String getResult();
 
-        abstract public List<String> getResults();
-
-        abstract public void applyResult(Consumer<String> assetIdConsumer);
-
-        abstract public void applyResults(Consumer<List<String>> assetIdListConsumer);
-
+        abstract public Stream<String> stream();
     }
 
     abstract public RestrictedQuery query();
 
-    abstract public void dispatch(AttributeEvent... event);
+    abstract public Assets dispatch(AttributeEvent... event);
+
+    abstract public Assets dispatch(String assetId, String attributeName, Value value);
+
+    abstract public Assets dispatch(String assetId, String attributeName, String value);
+
+    abstract public Assets dispatch(String assetId, String attributeName, double value);
+
+    abstract public Assets dispatch(String assetId, String attributeName, boolean value);
+
+    abstract public Assets dispatch(String assetId, String attributeName, AttributeExecuteStatus status);
+
+    abstract public Assets dispatch(String assetId, String attributeName);
 
 }

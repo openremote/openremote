@@ -20,6 +20,7 @@ dependencies {
     compile "com.google.elemental2:elemental2-promise:$elemental2Version"
     compile "org.jboss.gwt.elemento:elemento-core:$elementoCoreVersion"
 
+    // TODO Built from https://github.com/richturner/gwt-jackson
     compile files(['lib/gwt-jackson-0.14.3-SNAPSHOT.jar'])
     //compile "com.github.nmorel.gwtjackson:gwt-jackson:$gwtJacksonVersion"
 

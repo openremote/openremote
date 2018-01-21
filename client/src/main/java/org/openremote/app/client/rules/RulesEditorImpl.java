@@ -26,6 +26,7 @@ import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
 import com.google.gwt.uibinder.client.UiHandler;
 import com.google.gwt.user.client.ui.HTMLPanel;
+import com.google.gwt.user.client.ui.Widget;
 import com.google.inject.Provider;
 import elemental.client.Browser;
 import elemental.html.AnchorElement;
@@ -37,8 +38,10 @@ import org.openremote.app.client.app.dialog.Confirmation;
 import org.openremote.app.client.assets.browser.AssetBrowser;
 import org.openremote.app.client.assets.browser.AssetSelector;
 import org.openremote.app.client.assets.browser.AssetTreeNode;
+import org.openremote.model.rules.Ruleset;
 
 import javax.inject.Inject;
+import java.util.Optional;
 import java.util.logging.Logger;
 
 public class RulesEditorImpl extends FormViewImpl implements RulesEditor {
@@ -59,15 +62,16 @@ public class RulesEditorImpl extends FormViewImpl implements RulesEditor {
     @UiField
     FormInputText nameInput;
     @UiField
-
-    FormButton rulesFileDownload;
-    @UiField
-    FileUploadLabelled rulesFileUpload;
+    FormListBox languageListBox;
 
     @UiField
     FormGroup optionsGroup;
     @UiField
     FormCheckBox enabledCheckBox;
+    @UiField
+    FormButton rulesFileDownload;
+    @UiField
+    FileUploadLabelled rulesFileUpload;
 
     @UiField(provided = true)
     AssetSelector templateAssetSelector;
@@ -125,10 +129,20 @@ public class RulesEditorImpl extends FormViewImpl implements RulesEditor {
         RulesEditorImpl.UI ui = GWT.create(RulesEditorImpl.UI.class);
         initWidget(ui.createAndBindUi(this));
 
+        for (Ruleset.Lang lang : Ruleset.Lang.values()) {
+            languageListBox.addItem(lang.toString());
+        }
+
+        languageListBox.addChangeHandler(event -> {
+            if (presenter != null) {
+                presenter.onLanguageChange(getLang());
+            }
+        });
+
         rulesFileDownload.addClickHandler(event -> {
             AnchorElement downloadAnchor = (AnchorElement) Browser.getDocument().createElement("a");
             downloadAnchor.setDownload(
-                getName() != null && getName().length() > 0 ? getName() + ".drl.txt" : "OpenRemote-Rules.drl.txt"
+                (getName() != null && getName().length() > 0 ? getName() : "OpenRemote-Rules") + getLang().getFileExtension()
             );
             downloadAnchor.setHref(Browser.encodeURI("data:text/plain," + getRules()));
             Browser.getDocument().getBody().appendChild(downloadAnchor);
@@ -142,9 +156,14 @@ public class RulesEditorImpl extends FormViewImpl implements RulesEditor {
             if (files.length() != 1)
                 return;
             Blob file = (Blob) files.get(0);
-            if (file.getType().matches("text.*") || rulesFileUpload.getFileUpload().getFilename().endsWith(".drl")) {
+            Optional<Ruleset.Lang> lang = Ruleset.Lang.valueOfFileName(rulesFileUpload.getFileUpload().getFilename());
+            if (lang.isPresent()) {
+                // TODO Does this work? file.getType().matches("text.*")
                 final FileReader reader = Browser.getWindow().newFileReader();
-                reader.setOnloadend(evt -> setRules(reader.getResult().toString()));
+                reader.setOnloadend(evt -> {
+                    setLang(lang.get());
+                    setRules(reader.getResult().toString());
+                });
                 reader.readAsText(file, "UTF-8");
             } else {
                 if (!rulesFileUpload.getElement().hasClassName("error")) {
@@ -193,6 +212,16 @@ public class RulesEditorImpl extends FormViewImpl implements RulesEditor {
     @Override
     public String getName() {
         return nameInput.getValue().length() > 0 ? nameInput.getValue() : null;
+    }
+
+    @Override
+    public void setLang(Ruleset.Lang lang) {
+        languageListBox.selectItem(lang.toString());
+    }
+
+    @Override
+    public Ruleset.Lang getLang() {
+        return Ruleset.Lang.valueOf(languageListBox.getSelectedValue());
     }
 
     @Override

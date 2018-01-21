@@ -24,6 +24,7 @@ import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 
 import java.util.Date;
+import java.util.Optional;
 
 import static org.openremote.model.Constants.PERSISTENCE_SEQUENCE_ID_GENERATOR;
 
@@ -33,21 +34,82 @@ import static org.openremote.model.Constants.PERSISTENCE_SEQUENCE_ID_GENERATOR;
 @MappedSuperclass
 public abstract class Ruleset {
 
-    public enum DeploymentStatus {
-        /**
-         * Ruleset compiled successfully but is not running, due to failure of other rulesets in same scope.
-         */
-        READY,
+    public enum Lang {
+        JAVASCRIPT(".js",
+            "rules = [ // An array of rules, add more objects to add more rules\n" +
+            "    {\n" +
+            "        name: \"Set bar to foo on someAttribute\",\n" +
+            "        description: \"An example rule that sets 'bar' on someAttribute when it is 'foo'\",\n" +
+            "        when: function(facts) {\n" +
+            "            return facts.matchAssetState(\n" +
+            "                new AssetQuery().type(AssetType.THING).attributeValue(\"someAttribute\", \"foo\")\n" +
+            "            ).map(function(thing) {\n" +
+            "                facts.bind(\"assetId\", thing.id);\n" +
+            "                return true;\n" +
+            "            }).orElse(false);\n" +
+            "        },\n" +
+            "        then: function(facts) {\n" +
+            "            facts.updateAssetState(\n" +
+            "                facts.bound(\"assetId\"), \"someAttribute\", \"bar\"\n" +
+            "            );\n" +
+            "        }\n" +
+            "    }\n" +
+            "]"),
+        GROOVY(".groovy",
+            "package demo.rules\n" +
+                "\n" +
+                "import org.openremote.manager.rules.RulesBuilder\n" +
+                "import org.openremote.model.asset.*\n" +
+                "import org.openremote.model.attribute.*\n" +
+                "import org.openremote.model.value.*\n" +
+                "\n" +
+                "Logger LOG = binding.LOG\n" +
+                "RulesBuilder rules = binding.rules\n" +
+                "Assets assets = binding.assets\n" +
+                "\n" +
+                "rules.add()\n" +
+                "        .name(\"Set bar to foo on someAttribute\")\n" +
+                "        .description(\"An example rule that sets 'bar' on someAttribute when it is 'foo'\")\n" +
+                "        .when(\n" +
+                "        { facts ->\n" +
+                "            facts.matchAssetState(\n" +
+                "                    new AssetQuery().type(AssetType.THING).attributeValue(\"someAttribute\", \"foo\")\n" +
+                "            ).map({ thing ->\n" +
+                "                facts.bind(\"assetId\", thing.id)\n" +
+                "                true\n" +
+                "            }).orElse(false)\n" +
+                "        })\n" +
+                "        .then(\n" +
+                "        { facts ->\n" +
+                "            facts.updateAssetState(\n" +
+                "                    facts.bound(\"assetId\") as String, \"someAttribute\", \"bar\"\n" +
+                "            )\n" +
+                "        })"
+        );
 
-        /**
-         * Ruleset has been compiled and is running.
-         */
-        DEPLOYED,
+        final String fileExtension;
+        final String emptyRulesExample;
 
-        /**
-         * Ruleset did not compile successfully.
-         */
-        FAILED
+        Lang(String fileExtension, String emptyRulesExample) {
+            this.fileExtension = fileExtension;
+            this.emptyRulesExample = emptyRulesExample;
+        }
+
+        public String getFileExtension() {
+            return fileExtension;
+        }
+
+        public String getEmptyRulesExample() {
+            return emptyRulesExample;
+        }
+
+        static public Optional<Lang> valueOfFileName(String fileName) {
+            for (Lang lang : values()) {
+                if (fileName.endsWith(lang.getFileExtension()))
+                    return Optional.of(lang);
+            }
+            return Optional.empty();
+        }
     }
 
     @Id
@@ -82,17 +144,19 @@ public abstract class Ruleset {
     @Column(name = "RULES", nullable = false)
     protected String rules;
 
-    @Transient
-    protected DeploymentStatus deploymentStatus;
+    @NotNull
+    @Enumerated(EnumType.STRING)
+    @Column(name = "RULES_LANG", nullable = false)
+    protected Lang lang = Lang.JAVASCRIPT;
 
     public Ruleset() {
     }
 
     public Ruleset(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String templateAssetId) {
-        this(id, version, createdOn, lastModified, name, enabled, templateAssetId, null);
+        this(id, version, createdOn, lastModified, name, enabled, templateAssetId, null, Lang.JAVASCRIPT);
     }
 
-    public Ruleset(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String templateAssetId, String rules) {
+    public Ruleset(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String templateAssetId, String rules, Lang lang) {
         this.id = id;
         this.version = version;
         this.createdOn = createdOn;
@@ -101,16 +165,19 @@ public abstract class Ruleset {
         this.enabled = enabled;
         this.templateAssetId = templateAssetId;
         this.rules = rules;
+        this.lang = lang;
     }
 
-    public Ruleset(String name, String rules) {
+    public Ruleset(String name, String rules, Lang lang) {
         this.name = name;
         this.rules = rules;
+        this.lang = lang;
     }
 
-    public Ruleset(String name, String rules, String templateAssetId) {
+    public Ruleset(String name, String rules, Lang lang, String templateAssetId) {
         this.name = name;
         this.rules = rules;
+        this.lang = lang;
         this.templateAssetId = templateAssetId;
     }
 
@@ -172,24 +239,15 @@ public abstract class Ruleset {
         this.rules = rules;
     }
 
-    public DeploymentStatus getDeploymentStatus() {
-        return deploymentStatus;
+    public void setId(Long id) {
+        this.id = id;
     }
 
-    public void setDeploymentStatus(DeploymentStatus deploymentStatus) {
-        this.deploymentStatus = deploymentStatus;
+    public Lang getLang() {
+        return lang;
     }
 
-    @Override
-    public String toString() {
-        return getClass().getSimpleName() + "{" +
-                "id='" + id + '\'' +
-                ", version='" + version + '\'' +
-                ", name='" + name + '\'' +
-                ", createdOn='" + createdOn + '\'' +
-                ", lastModified='" + lastModified + '\'' +
-                ", enabled='" + enabled + '\'' +
-                ", templateAssetId='" + templateAssetId+ '\'' +
-                '}';
+    public void setLang(Lang lang) {
+        this.lang = lang;
     }
 }

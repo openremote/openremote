@@ -142,7 +142,7 @@ public class AssetAttributeLinkingService implements ContainerService, Consumer<
 
         // Convert the value as required
         Pair<Boolean, Value> sendConvertedValue = convertValueForLinkedAttribute(
-            assetState.getValue(),
+            assetState.getValue().orElse(null),
             attributeLink.get(),
             assetStorageService
         );

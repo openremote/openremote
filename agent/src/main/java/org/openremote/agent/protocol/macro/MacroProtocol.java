@@ -84,15 +84,7 @@ public class MacroProtocol extends AbstractProtocol {
             synchronized (executions) {
                 executions.put(attributeRef, this);
             }
-
-            // Update the command Status of this attribute - We use a timestamp slightly in the past otherwise
-            // it is possible for COMPLETED status update below to have the same timestamp and to then be rejected
-            // by the asset processing service
-            updateLinkedAttribute(new AttributeState(
-                attributeRef,
-                AttributeExecuteStatus.RUNNING.asValue()),
-                timerService.getCurrentTimeMillis()-10
-            );
+            updateLinkedAttribute(new AttributeState(attributeRef, AttributeExecuteStatus.RUNNING.asValue()));
             run();
         }
 
@@ -103,8 +95,6 @@ public class MacroProtocol extends AbstractProtocol {
             synchronized (executions) {
                 executions.remove(attributeRef);
             }
-
-            // Update the command Status of this attribute
             updateLinkedAttribute(new AttributeState(attributeRef, AttributeExecuteStatus.CANCELLED.asValue()));
         }
 
@@ -145,7 +135,7 @@ public class MacroProtocol extends AbstractProtocol {
             Integer delayMillis = actions.get(iteration).getDelayMilliseconds();
 
             // Schedule the next iteration
-            scheduledFuture = executorService.schedule(this::run, delayMillis > 0 ? delayMillis: 0);
+            scheduledFuture = executorService.schedule(this::run, delayMillis > 0 ? delayMillis : 0);
         }
     }
 

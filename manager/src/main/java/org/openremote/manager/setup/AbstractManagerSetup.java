@@ -89,7 +89,6 @@ public abstract class AbstractManagerSetup implements Setup {
                     new MetaItem(DESCRIPTION, Values.create("Presence detected in any room")),
                     new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)),
                     new MetaItem(RULE_STATE, Values.create(true)),
-                    new MetaItem(RULE_EVENT, Values.create(true)),
                     new MetaItem(STORE_DATA_POINTS, Values.create(true)),
                     new MetaItem(SHOW_ON_DASHBOARD, Values.create(true))
                 )),
@@ -153,7 +152,6 @@ public abstract class AbstractManagerSetup implements Setup {
                     new MetaItem(DESCRIPTION, Values.create("Greater than zero when motion is sensed")),
                     new MetaItem(READ_ONLY, Values.create(true)),
                     new MetaItem(RULE_STATE, Values.create(true)),
-                    new MetaItem(RULE_EVENT, Values.create(true)),
                     new MetaItem(STORE_DATA_POINTS, Values.create(true))
                 ).addMeta(shouldBeLinked ? agentLinker.get() : null),
             new AssetAttribute("presenceDetected", AttributeType.BOOLEAN)
@@ -161,7 +159,6 @@ public abstract class AbstractManagerSetup implements Setup {
                     new MetaItem(LABEL, Values.create("Presence detected")),
                     new MetaItem(DESCRIPTION, Values.create("Someone is moving or resting in the room")),
                     new MetaItem(RULE_STATE, Values.create(true)),
-                    new MetaItem(RULE_EVENT, Values.create(true)),
                     new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)),
                     new MetaItem(STORE_DATA_POINTS, Values.create(true)),
                     new MetaItem(SHOW_ON_DASHBOARD, Values.create(true))

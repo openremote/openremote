@@ -122,7 +122,7 @@ public abstract class AbstractRulesEditorActivity<T extends Ruleset, PLACE exten
 
     protected void startCreate() {
         ruleset = newRuleset();
-        ruleset.setRules(environment.getMessages().rules() + "...");
+        ruleset.setRules(ruleset.getLang().getEmptyRulesExample());
         clearViewMessages();
         writeToView();
         writeTemplateAssetToView();
@@ -201,8 +201,29 @@ public abstract class AbstractRulesEditorActivity<T extends Ruleset, PLACE exten
         }
     }
 
+    @Override
+    public void onLanguageChange(Ruleset.Lang lang) {
+        if (!view.getRules().equals(ruleset.getLang().getEmptyRulesExample())) {
+            view.showConfirmation(
+                environment.getMessages().confirmation(),
+                environment.getMessages().confirmationRulesLangChange(),
+                () -> {
+                    ruleset.setLang(lang);
+                    ruleset.setRules(lang.getEmptyRulesExample());
+                    view.setRules(ruleset.getRules());
+                },
+                () -> view.setLang(ruleset.getLang())
+            );
+        } else {
+            ruleset.setLang(lang);
+            ruleset.setRules(lang.getEmptyRulesExample());
+            view.setRules(ruleset.getRules());
+        }
+    }
+
     protected void writeToView() {
         view.setName(ruleset.getName());
+        view.setLang(ruleset.getLang());
         view.setRulesetEnabled(ruleset.isEnabled());
         view.setRules(ruleset.getRules());
         view.enableCreate(rulesetId == null);
@@ -221,6 +242,7 @@ public abstract class AbstractRulesEditorActivity<T extends Ruleset, PLACE exten
     protected void readFromView() {
         ruleset.setName(view.getName());
         ruleset.setEnabled(view.getRulesetEnabled());
+        ruleset.setLang(view.getLang());
         ruleset.setRules(view.getRules());
         if (templateAsset != null) {
             ruleset.setTemplateAssetId(templateAsset.getId());

@@ -106,14 +106,13 @@ import static org.openremote.model.attribute.AttributeEvent.Source.INTERNAL;
  * Checks if attribute is {@link AssetAttribute#isRuleState} or {@link AssetAttribute#isRuleEvent}, and if
  * so the message is passed through the rule engines that are in scope for the asset.
  * <p>
- * For {@link AssetState} messages, the rules service keeps the facts and thus the state of each rules
- * knowledge session in sync with the asset state changes that occur. If an asset attribute value changes,
- * the {@link AssetState} in each rules session will be updated to reflect the change.
+ * For {@link AssetState} messages, the rules service keeps the facts and thus the state of rule facts
+ * are in sync with the asset state changes that occur. If an asset attribute value changes,
+ * the {@link AssetState} in the rules engines will be updated to reflect the change.
  * <p>
  * For {@link AssetEvent} messages (obtained by converting the {@link AssetState}), they are inserted in the rules
- * sessions in scope and expired automatically either by a) the rules session if no time-pattern can possibly match
- * the event source timestamp anymore or b) by the rules service if the event lifetime set in
- * {@link RulesService#RULE_EVENT_EXPIRES} is reached or c) by the rules service if the event lifetime set in the
+ * engines in scope and expired automatically if the event lifetime set in
+ * {@link RulesService#RULE_EVENT_EXPIRES} is reached, or by the rules service if the event lifetime set in the
  * attribute {@link AssetMeta#RULE_EVENT_EXPIRES} is reached.
  * <h2>Asset Storage Service processing logic</h2>
  * <p>
@@ -323,7 +322,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
             if (assetState.getProcessingStatus() != AssetState.ProcessingStatus.COMPLETED)
                 assetState.setProcessingStatus(AssetState.ProcessingStatus.COMPLETED);
             clientEventService.publishEvent(new AttributeEvent(
-                assetState.getId(), assetState.getAttributeName(), assetState.getValue(), timerService.getCurrentTimeMillis()
+                assetState.getId(), assetState.getAttributeName(), assetState.getValue().orElse(null), timerService.getCurrentTimeMillis()
             ));
         }
         LOG.fine("<<< Processing complete: " + assetState);

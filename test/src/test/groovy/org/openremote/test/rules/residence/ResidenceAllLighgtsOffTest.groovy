@@ -1,4 +1,4 @@
-package org.openremote.test.rules.apartment
+package org.openremote.test.rules.residence
 
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
@@ -18,7 +18,7 @@ import spock.util.concurrent.PollingConditions
 import static java.util.concurrent.TimeUnit.SECONDS
 import static org.openremote.manager.setup.builtin.ManagerDemoSetup.DEMO_RULE_STATES_APARTMENT_2
 
-class ApartmentAllLightsOffTest extends Specification implements ManagerContainerTrait {
+class ResidenceAllLighgtsOffTest extends Specification implements ManagerContainerTrait {
 
     def "Turn all lights off"() {
 
@@ -37,7 +37,8 @@ class ApartmentAllLightsOffTest extends Specification implements ManagerContaine
         Ruleset ruleset = new AssetRuleset(
                 "Demo Apartment - All Lights Off",
                 managerDemoSetup.apartment2Id,
-                getClass().getResource("/demo/rules/DemoApartmentAllLightsOff.drl").text
+                getClass().getResource("/demo/rules/DemoResidenceAllLightsOff.js").text,
+                Ruleset.Lang.JAVASCRIPT
         )
         rulesetStorageService.merge(ruleset)
 
@@ -51,15 +52,17 @@ class ApartmentAllLightsOffTest extends Specification implements ManagerContaine
         and: "the demo attributes marked with RULE_STATE = true meta should be inserted into the engines"
         conditions.eventually {
             assert apartment2Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_2
-            assert apartment2Engine.knowledgeSession.factCount == DEMO_RULE_STATES_APARTMENT_2
         }
 
         and: "the room lights in an apartment to be on"
-        def livingRoomAsset = assetStorageService.find(managerDemoSetup.apartment2LivingroomId, true)
-        assert livingRoomAsset.getAttribute("lightSwitch").get().valueAsBoolean
+        conditions.eventually {
+            def livingroomAsset = assetStorageService.find(managerDemoSetup.apartment2LivingroomId, true)
+            assert livingroomAsset.getAttribute("lightSwitch").get().valueAsBoolean.get()
+            def bathRoomAsset = assetStorageService.find(managerDemoSetup.apartment2BathroomId, true)
+            assert bathRoomAsset.getAttribute("lightSwitch").get().valueAsBoolean.get()
+        }
 
         when: "the ALL LIGHTS OFF push-button is pressed for an apartment"
-        setPseudoClocksToRealTime(container, apartment2Engine)
         def lightsOffEvent = new AttributeEvent(
                 managerDemoSetup.apartment2Id, "allLightsOffSwitch", Values.create(true), getClockTimeOf(container)
         )
@@ -67,17 +70,28 @@ class ApartmentAllLightsOffTest extends Specification implements ManagerContaine
 
         then: "the room lights in the apartment should be off"
         conditions.eventually {
-            assert apartment2Engine.knowledgeSession.factCount == DEMO_RULE_STATES_APARTMENT_2 + 1
-            livingRoomAsset = assetStorageService.find(managerDemoSetup.apartment2LivingroomId, true)
-            assert !livingRoomAsset.getAttribute("lightSwitch").get().getValueAsBoolean().get()
+            assert apartment2Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_2
+            assert apartment2Engine.assetEvents.size() == 1
+            def livingroomAsset = assetStorageService.find(managerDemoSetup.apartment2LivingroomId, true)
+            assert !livingroomAsset.getAttribute("lightSwitch").get().valueAsBoolean.get()
+            def bathRoomAsset = assetStorageService.find(managerDemoSetup.apartment2BathroomId, true)
+            assert !bathRoomAsset.getAttribute("lightSwitch").get().valueAsBoolean.get()
         }
 
-        when: "time advanced"
-        advancePseudoClocks(15, SECONDS, container, apartment2Engine)
+        when: "time advanced by 15 seconds"
+        advancePseudoClock(15, SECONDS, container)
 
-        then: "event expired"
-        conditions.eventually {
-            assert apartment2Engine.knowledgeSession.factCount == DEMO_RULE_STATES_APARTMENT_2
+        and: "we turn the light on again in a room"
+        assetProcessingService.sendAttributeEvent(
+            new AttributeEvent(managerDemoSetup.apartment2LivingroomId, "lightSwitch", Values.create(true))
+        )
+
+        then: "the light should still be on after a few seconds (the all lights off event expires after 3 seconds)"
+        new PollingConditions(initialDelay: 3).eventually {
+            assert apartment2Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_2
+            assert apartment2Engine.assetEvents.size() == 0
+            def livingroomAsset = assetStorageService.find(managerDemoSetup.apartment2LivingroomId, true)
+            assert livingroomAsset.getAttribute("lightSwitch").get().valueAsBoolean.get()
         }
 
         cleanup: "stop the container"

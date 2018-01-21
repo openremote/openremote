@@ -22,6 +22,7 @@ import java.util.function.Consumer
 import java.util.logging.Logger
 
 class AssetProcessingTest extends Specification implements ManagerContainerTrait {
+
     Logger LOG = Logger.getLogger(AssetProcessingTest.class.getName())
 
     def "Check processing of asset updates through the processing chain"() {
@@ -195,7 +196,7 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
             assert updatesPassedDatapointService.size() == 0
             assert updatesPassedStartOfProcessingChain[0].attribute.getAssetId().orElse("") == mockThing.getId()
             assert updatesPassedStartOfProcessingChain[0].attribute.getName().orElse("") == "light1Toggle"
-            assert !updatesPassedStartOfProcessingChain[0].getValueAsBoolean()
+            assert !updatesPassedStartOfProcessingChain[0].getValueAsBoolean().get()
             assert updatesPassedStartOfProcessingChain[0].error == null
             assert updatesPassedStartOfProcessingChain[0].processingStatus == AssetState.ProcessingStatus.COMPLETED
             assert sendToActuatorEvents.size() == 1
@@ -219,7 +220,7 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
             assert updatesPassedStartOfProcessingChain[0].attribute.getAssetId().orElse("") == mockThing.getId()
             assert updatesPassedStartOfProcessingChain[0].attribute.getName().orElse("") == "light1Toggle"
             assert !Values.getBoolean(updatesPassedStartOfProcessingChain[0].getOldValue()).orElse(true)
-            assert !updatesPassedStartOfProcessingChain[0].getValueAsBoolean()
+            assert !updatesPassedStartOfProcessingChain[0].getValueAsBoolean().get()
             assert updatesPassedStartOfProcessingChain[0].error == null
             assert updatesPassedStartOfProcessingChain[0].processingStatus == AssetState.ProcessingStatus.COMPLETED
         }
@@ -274,7 +275,7 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
             assert updatesPassedDatapointService[0].name == "Mock Thing Asset"
             assert updatesPassedDatapointService[0].attributeName == "plainAttribute"
             assert Values.getString(updatesPassedDatapointService[0].oldValue).orElse(null) == "demo"
-            assert Values.getString(updatesPassedDatapointService[0].value).orElse(null) == "test"
+            assert updatesPassedDatapointService[0].valueAsString.orElse(null) == "test"
             assert updatesPassedDatapointService[0].error == null
             assert updatesPassedDatapointService[0].processingStatus == AssetState.ProcessingStatus.COMPLETED
         }

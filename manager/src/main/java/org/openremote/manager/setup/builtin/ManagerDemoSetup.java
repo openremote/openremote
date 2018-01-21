@@ -50,8 +50,8 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
     final protected boolean importDemoScenes;
 
     // Update these numbers whenever you change a RULE_STATE flag in test data
-    public static final int DEMO_RULE_STATES_APARTMENT_1 = 19;
-    public static final int DEMO_RULE_STATES_APARTMENT_2 = 9;
+    public static final int DEMO_RULE_STATES_APARTMENT_1 = 23;
+    public static final int DEMO_RULE_STATES_APARTMENT_2 = 11;
     public static final int DEMO_RULE_STATES_APARTMENT_3 = 0;
     public static final int DEMO_RULE_STATES_SMART_HOME = DEMO_RULE_STATES_APARTMENT_1 + DEMO_RULE_STATES_APARTMENT_2 + DEMO_RULE_STATES_APARTMENT_3;
     public static final int DEMO_RULE_STATES_CUSTOMER_A = DEMO_RULE_STATES_SMART_HOME;
@@ -74,6 +74,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
     public String apartment1ServiceAgentId;
     public String apartment1LivingroomId;
     public String apartment1KitchenId;
+    public String apartment1HallwayId;
     public String apartment2Id;
     public String apartment3Id;
     public String apartment2LivingroomId;
@@ -384,6 +385,15 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         apartment1Kitchen = assetStorageService.merge(apartment1Kitchen);
         apartment1KitchenId = apartment1Kitchen.getId();
 
+        ServerAsset apartment1Hallway = createDemoApartmentRoom(apartment1, "Hallway");
+        addDemoApartmentRoomMotionSensor(apartment1Hallway, true, () -> new MetaItem[]{
+            new MetaItem(AGENT_LINK, new AttributeRef(apartment1ServiceAgentId, "apartmentSimulator").toArrayValue()),
+            new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME))
+        });
+
+        apartment1Hallway = assetStorageService.merge(apartment1Hallway);
+        apartment1HallwayId = apartment1Hallway.getId();
+
         if (importDemoScenes) {
             Scene[] scenes = new Scene[]{
                 new Scene("homeScene", "Home scene", "HOME", "0 0 7 ? *", false, 21d),
@@ -393,7 +403,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
             };
 
             ServerAsset demoApartmentSceneAgent = createDemoApartmentSceneAgent(
-                apartment1, scenes, apartment1Livingroom, apartment1Kitchen
+                apartment1, scenes, apartment1Livingroom, apartment1Kitchen, apartment1Hallway
             );
             demoApartmentSceneAgent = assetStorageService.merge(demoApartmentSceneAgent);
 
@@ -409,7 +419,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                     new MetaItem(LABEL, Values.create("All Lights Off Switch")),
                     new MetaItem(DESCRIPTION, Values.create("When triggered, turns all lights in the apartment off")),
                     new MetaItem(RULE_EVENT, Values.create(true)),
-                    new MetaItem(RULE_EVENT_EXPIRES, Values.create("10s"))
+                    new MetaItem(RULE_EVENT_EXPIRES, Values.create("3s"))
                 )
         );
         apartment2 = assetStorageService.merge(apartment2);
@@ -451,7 +461,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
             new AssetAttribute("lightSwitch", AttributeType.BOOLEAN, Values.create(true))
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Light Switch")),
-                    new MetaItem(RULE_STATE, Values.create(false))
+                    new MetaItem(RULE_STATE, Values.create(true))
                 ),
             new AssetAttribute("windowOpen", AttributeType.BOOLEAN, Values.create(false))
                 .setMeta(
@@ -492,7 +502,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
             new AssetAttribute("lightSwitch", AttributeType.BOOLEAN, Values.create(true))
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Light Switch")),
-                    new MetaItem(RULE_STATE, Values.create(false))
+                    new MetaItem(RULE_STATE, Values.create(true))
                 )
         );
         apartment2Bathroom = assetStorageService.merge(apartment2Bathroom);
@@ -517,6 +527,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.customerATenant.getId(), keycloakDemoSetup.testuser3Id, apartment1Id));
         assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.customerATenant.getId(), keycloakDemoSetup.testuser3Id, apartment1LivingroomId));
         assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.customerATenant.getId(), keycloakDemoSetup.testuser3Id, apartment1KitchenId));
+        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.customerATenant.getId(), keycloakDemoSetup.testuser3Id, apartment1HallwayId));
         assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.customerATenant.getId(), keycloakDemoSetup.testuser3Id, apartment2Id));
     }
 }

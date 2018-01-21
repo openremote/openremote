@@ -22,6 +22,9 @@
         .lastModifiedColumn {
         }
 
+        .langColumn {
+        }
+
         .enabledColumn {
         }
 

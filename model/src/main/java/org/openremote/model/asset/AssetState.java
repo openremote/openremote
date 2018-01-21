@@ -104,4 +104,19 @@ public class AssetState extends AbstractAssetUpdate {
             throw new IllegalStateException("Instance is immutable, processing status '" + getProcessingStatus() + "': " + this);
         }
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        AssetState that = (AssetState) o;
+
+        return getAttributeRef().equals(that.getAttributeRef());
+    }
+
+    @Override
+    public int hashCode() {
+        return getAttributeRef().hashCode();
+    }
 }

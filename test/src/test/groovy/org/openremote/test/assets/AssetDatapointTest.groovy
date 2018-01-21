@@ -36,7 +36,7 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
         }
 
         when: "a simulated sensor receives a new value"
-        advancePseudoClocks(10, SECONDS, container)
+        advancePseudoClock(10, SECONDS, container)
         def datapoint1ExpectedTimestamp = getClockTimeOf(container)
         simulatorProtocol.putValue(managerDemoSetup.thingId, "light1PowerConsumption", Values.create(13.3))
         then: "the attribute should be updated"
@@ -46,7 +46,7 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
         }
 
         when: "a simulated sensor receives a new value"
-        advancePseudoClocks(10, SECONDS, container)
+        advancePseudoClock(10, SECONDS, container)
         def datapoint2ExpectedTimestamp = getClockTimeOf(container)
         simulatorProtocol.putValue(managerDemoSetup.thingId, "light1PowerConsumption", Values.create(14.4))
         then: "the attribute should be updated"
@@ -56,7 +56,7 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
         }
 
         when: "a simulated sensor receives a new value"
-        advancePseudoClocks(10, SECONDS, container)
+        advancePseudoClock(10, SECONDS, container)
         def datapoint3ExpectedTimestamp = getClockTimeOf(container)
         simulatorProtocol.putValue(managerDemoSetup.thingId, "light1PowerConsumption", Values.create(15.5))
         then: "the attribute should be updated"
@@ -115,7 +115,7 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
         }
 
         when: "a simulated sensor receives a new value"
-        advancePseudoClocks(10, SECONDS, container)
+        advancePseudoClock(10, SECONDS, container)
         def datapoint1ExpectedTimestamp = getClockTimeOf(container)
         simulatorProtocol.putValue(managerDemoSetup.thingId, "light1Toggle", Values.create(false))
         then: "the attribute should be updated"
@@ -125,7 +125,7 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
         }
 
         when: "a simulated sensor receives a new value"
-        advancePseudoClocks(10, SECONDS, container)
+        advancePseudoClock(10, SECONDS, container)
         def datapoint2ExpectedTimestamp = getClockTimeOf(container)
         simulatorProtocol.putValue(managerDemoSetup.thingId, "light1Toggle", Values.create(true))
         then: "the attribute should be updated"
@@ -135,7 +135,7 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
         }
 
         when: "a simulated sensor receives a new value"
-        advancePseudoClocks(10, SECONDS, container)
+        advancePseudoClock(10, SECONDS, container)
         def datapoint3ExpectedTimestamp = getClockTimeOf(container)
         simulatorProtocol.putValue(managerDemoSetup.thingId, "light1Toggle", Values.create(false))
         then: "the attribute should be updated"

@@ -1,0 +1,190 @@
+/*
+Uses 'motionSensor' and optional 'co2Level' of a room asset to set the 'presenceDetected'
+and 'lastPresenceDetected' attributes of the room. Presence detection is based on motion
+sensing and if available for a room, increasing CO2 level over a time window. The assumption
+is that the 'motionSensor' is set to 0 or 1, depending on whether motion has been detected
+in a room over a time window that is internal to the sensor (e.g. the last minute). The
+'presenceDetected' attribute of the residence is set depending on whether any child room
+assets have presence set.
+*/
+package demo.rules
+
+import org.openremote.manager.rules.RulesBuilder
+import org.openremote.model.asset.AssetQuery
+import org.openremote.model.asset.AssetState
+import org.openremote.model.util.Pair
+
+import java.util.logging.Logger
+
+import static org.openremote.model.asset.AssetType.RESIDENCE
+import static org.openremote.model.asset.AssetType.ROOM
+import static org.openremote.model.asset.BaseAssetQuery.Operator.GREATER_THAN
+import static org.openremote.model.asset.BaseAssetQuery.Operator.LESS_THAN
+
+Logger LOG = binding.LOG
+RulesBuilder rules = binding.rules
+
+rules.add()
+        .name("Set presence detected flag of room when motion is detected and (optional) CO2 increased")
+        .when(
+        { facts ->
+            // Any room where the presence detected flag is not set
+            facts.matchAssetState(
+                    new AssetQuery().type(ROOM).attributeValue("presenceDetected", false)
+            ).flatMap({ roomWithoutPresence ->
+                // and the motion sensor has been triggered
+                facts.matchAssetState(
+                        new AssetQuery().id(roomWithoutPresence.id).attributeValue("motionSensor", GREATER_THAN, 0)
+                )
+            }).findFirst().map({ roomWithMotionSensorTriggered ->
+
+                facts.bind("room", roomWithMotionSensorTriggered)
+
+                // and there is a CO2 sensor in the room
+                facts.matchFirstAssetState(
+                        new AssetQuery().id(roomWithMotionSensorTriggered.id).attributeName("co2Level")
+                ).map({ co2Level ->
+                    // and there are sensor events
+                    facts.matchAssetEvent(
+                            new AssetQuery().id(roomWithMotionSensorTriggered.id).attributeName("co2Level")
+                    ).filter(
+                            // in the last 12 minutes
+                            facts.clock.last("12m")
+                    ).filter({ coLevel ->
+                        // with increasing values
+                        coLevel.isValueGreaterThanOldValue()
+                    }).count() >= 2 // at least 2
+                }).orElse(true) // or we don't have a CO2 sensor
+
+            }).orElse(false)
+        })
+        .then(
+        { facts ->
+            AssetState room = facts.bound("room")
+            LOG.info("Presence detected in residence '" + room.parentName + "', room: " + room.name)
+            facts.updateAssetState(room.id, "presenceDetected", true)
+        })
+
+rules.add()
+        .name("Clear presence detected flag of room if no motion is detected and (optional) CO2 did not increase")
+        .when(
+        { facts ->
+            // Any room where the presence detected flag is set
+            facts.matchAssetState(
+                    new AssetQuery().type(ROOM).attributeValue("presenceDetected", true)
+            ).flatMap({ roomWithPresence ->
+                // and the motion sensor has not been triggered
+                facts.matchAssetState(
+                        new AssetQuery().id(roomWithPresence.id).attributeValue("motionSensor", LESS_THAN, 1)
+                )
+            }).findFirst().map({ roomWithoutMotionSensorTriggered ->
+
+                facts.bind("room", roomWithoutMotionSensorTriggered)
+
+                // and there is a CO2 sensor in the room
+                facts.matchFirstAssetState(
+                        new AssetQuery().id(roomWithoutMotionSensorTriggered.id).attributeName("co2Level")
+                ).map({ co2Level ->
+                    // and there are no sensor events
+                    facts.matchAssetEvent(
+                            new AssetQuery().id(roomWithoutMotionSensorTriggered.id).attributeName("co2Level")
+                    ).filter({ coLevel ->
+                        // with increasing values
+                        coLevel.isValueGreaterThanOldValue()
+                        // in the last 12 minutes≤
+                    }).filter(facts.clock.last("12m")).count() == 0
+                }).orElse(true) // or we don't have a CO2 sensor
+
+            }).orElse(false)
+        })
+        .then(
+        { facts ->
+            AssetState room = facts.bound("room")
+            LOG.info("Presence gone in residence '" + room.parentName + "', room: " + room.name)
+            facts.updateAssetState(room.id, "presenceDetected", false)
+        })
+
+rules.add()
+        .name("Update presence detected timestamp of room with last trigger of motion sensor")
+        .when(
+        { facts ->
+            // Any room where the presence detected flag is set
+            facts.matchAssetState(
+                    new AssetQuery().type(ROOM).attributeValue("presenceDetected", true)
+            ).flatMap({ roomWithPresence ->
+                // and the motion sensor has been triggered
+                facts.matchAssetState(
+                        new AssetQuery().id(roomWithPresence.id)
+                                .attributeValue("motionSensor", GREATER_THAN, 0)
+                ).flatMap({ roomWithMotionSensorTriggered ->
+                    // and the last presence detection timestamp is older than the motion sensor timestamp
+                    facts.matchAssetState(
+                            new AssetQuery().id(roomWithMotionSensorTriggered.id)
+                                    .attributeValue("lastPresenceDetected", LESS_THAN, roomWithMotionSensorTriggered.timestamp)
+                    ).map({ outdatedLastPresenceDetected ->
+                        // keep the room and the new timestamp
+                        new Pair<AssetState, Double>(outdatedLastPresenceDetected, roomWithMotionSensorTriggered.timestamp)
+                    })
+                })
+            }).findFirst().map({ pair ->
+                facts.bind("room", pair.key).bind("lastPresenceTimestamp", pair.value)
+                true
+            }).orElse(false)
+        })
+        .then(
+        { facts ->
+            AssetState room = facts.bound("room")
+            LOG.info("Motion sensor triggered, updating last presence in residence '" + room.parentName + "', room: " + room.name)
+            facts.updateAssetState(room.id, "lastPresenceDetected", facts.bound("lastPresenceTimestamp") as Double)
+        })
+
+rules.add()
+        .name("Set presence detected flag of residence if presence is detected in any room")
+        .when(
+        { facts ->
+            // A room where the presence detected flag is set
+            facts.matchAssetState(
+                    new AssetQuery().type(ROOM).attributeValue("presenceDetected", true)
+            ).flatMap({ roomWithPresence ->
+                // and a residence parent where the presence detected flag is not set
+                facts.matchAssetState(
+                        new AssetQuery().type(RESIDENCE)
+                                .id(roomWithPresence.parentId)
+                                .attributeValue("presenceDetected", false)
+                )
+            }).findFirst().map({ residenceWithoutPresence ->
+                facts.bind("residence", residenceWithoutPresence)
+                true
+            }).orElse(false)
+        })
+        .then(
+        { facts ->
+            AssetState residence = facts.bound("residence")
+            LOG.info("Presence detected in residence: " + residence.name)
+            facts.updateAssetState(residence.id, "presenceDetected", true)
+        })
+
+rules.add()
+        .name("Clear presence detected flag of residence when no presence is detected in any room")
+        .when(
+        { facts ->
+            // A residence where the presence detected flag is set
+            facts.matchAssetState(
+                    new AssetQuery().type(RESIDENCE).attributeValue("presenceDetected", true)
+            ).filter({ residenceWithPresence ->
+                // and no room child of that residence has presence
+                facts.matchAssetState(
+                        new AssetQuery().type(ROOM).parent(residenceWithPresence.id)
+                                .attributeValue("presenceDetected", true)
+                ).count() == 0
+            }).findFirst().map({ residenceWithPresence ->
+                facts.bind("residence", residenceWithPresence)
+                true
+            }).orElse(false)
+        })
+        .then(
+        { facts ->
+            AssetState residence = facts.bound("residence")
+            LOG.info("Presence gone in residence: " + residence.name)
+            facts.updateAssetState(residence.id, "presenceDetected", false)
+        })

@@ -20,8 +20,7 @@
         }
 
         .rulesTextArea {
-            margin: 0 !important;
-            padding: 0 !important;
+            padding: 4px 0 0 0;
         }
     </ui:style>
 
@@ -61,6 +60,11 @@
                                     <w:FormInputText ui:field="nameInput" addStyleNames="flex"/>
                                 </w:FormField>
                             </w:field>
+                            <w:actions>
+                                <w:FormGroupActions>
+                                    <w:FormListBox ui:field="languageListBox"/>
+                                </w:FormGroupActions>
+                            </w:actions>
                         </w:FormGroup>
 
                         <w:FormGroup ui:field="optionsGroup">

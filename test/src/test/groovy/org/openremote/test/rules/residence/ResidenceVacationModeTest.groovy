@@ -1,4 +1,4 @@
-package org.openremote.test.rules.apartment
+package org.openremote.test.rules.residence
 
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
@@ -23,7 +23,7 @@ import static java.util.concurrent.TimeUnit.HOURS
 import static org.openremote.manager.setup.SetupTasks.SETUP_IMPORT_DEMO_SCENES
 import static org.openremote.manager.setup.builtin.ManagerDemoSetup.DEMO_RULE_STATES_APARTMENT_1_WITH_SCENES
 
-class ApartmentVacationModeTest extends Specification implements ManagerContainerTrait {
+class ResidenceVacationModeTest extends Specification implements ManagerContainerTrait {
 
     def "Start and end vacation mode"() {
 
@@ -42,7 +42,8 @@ class ApartmentVacationModeTest extends Specification implements ManagerContaine
         Ruleset ruleset = new AssetRuleset(
                 "Demo Apartment - Vacation Mode",
                 managerDemoSetup.apartment1Id,
-                getClass().getResource("/demo/rules/DemoApartmentVacationMode.drl").text
+                getClass().getResource("/demo/rules/DemoResidenceVacationMode.groovy").text,
+                Ruleset.Lang.GROOVY
         )
         rulesetStorageService.merge(ruleset)
 
@@ -52,8 +53,6 @@ class ApartmentVacationModeTest extends Specification implements ManagerContaine
             assert apartment1Engine != null
             assert apartment1Engine.isRunning()
             assert apartment1Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_1_WITH_SCENES
-            assert apartment1Engine.knowledgeSession.factCount == DEMO_RULE_STATES_APARTMENT_1_WITH_SCENES
-            setPseudoClocksToRealTime(container, apartment1Engine)
         }
 
         and: "scene timers should be enabled"
@@ -69,7 +68,6 @@ class ApartmentVacationModeTest extends Specification implements ManagerContaine
         }
 
         when: "the vacation days are set to 5"
-        setPseudoClocksToRealTime(container, apartment1Engine)
         double fiveDaysInFuture = getClockTimeOf(container) + (5 * 24 * 60 * 60 * 1000)
         assetProcessingService.sendAttributeEvent(new AttributeEvent(
                 managerDemoSetup.apartment1Id, "vacationUntil", Values.create(fiveDaysInFuture)
@@ -92,7 +90,7 @@ class ApartmentVacationModeTest extends Specification implements ManagerContaine
         }
 
         when: "time advanced to the next day"
-        advancePseudoClocks(24, HOURS, container, apartment1Engine)
+        advancePseudoClock(24, HOURS, container)
 
         then: "vacation mode is still on"
         conditions.eventually {
@@ -108,7 +106,7 @@ class ApartmentVacationModeTest extends Specification implements ManagerContaine
         }
 
         when: "time advanced a few days"
-        advancePseudoClocks(5, DAYS, container, apartment1Engine)
+        advancePseudoClock(5, DAYS, container)
 
         then: "vacation mode is off and scene timers are enabled"
         conditions.eventually {

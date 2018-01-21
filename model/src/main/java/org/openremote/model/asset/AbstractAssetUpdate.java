@@ -20,6 +20,7 @@
 package org.openremote.model.asset;
 
 
+import javaemul.internal.annotations.GwtIncompatible;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.AttributeType;
@@ -28,6 +29,9 @@ import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.Values;
 
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Date;
 import java.util.Optional;
 
@@ -39,13 +43,14 @@ import static org.openremote.model.asset.AssetType.CUSTOM;
  * This class layout is convenient for writing expressions that match getters, while
  * carrying as much asset details as needed.
  */
-public abstract class AbstractAssetUpdate {
+@GwtIncompatible
+public abstract class AbstractAssetUpdate implements Comparable<AbstractAssetUpdate> {
 
-    final protected AssetAttribute attribute;
+    final public AssetAttribute attribute;
 
-    final protected Date createdOn;
+    final public Date createdOn;
 
-    final protected String id;
+    final public String id;
 
     final protected String name;
 
@@ -57,27 +62,29 @@ public abstract class AbstractAssetUpdate {
      * The identifiers of all parents representing the path in the tree. The first element
      * is the root asset without a parent, the last is the identifier of this instance.
      */
-    final protected String[] pathFromRoot;
+    final public String[] path;
 
-    final protected String parentId;
+    final public String parentId;
 
-    final protected String parentName;
+    final public String parentName;
 
-    final protected String parentTypeString;
+    final public String parentTypeString;
 
-    final protected AssetType parentType;
+    final public AssetType parentType;
 
-    final protected String realmId;
+    final public String realmId;
 
-    final protected String tenantRealm;
+    final public String tenantRealm;
 
-    final protected double[] coordinates;
+    final public double[] coordinates;
 
-    final protected Value oldValue;
+    final public Value oldValue;
 
     final protected long oldValueTimestamp;
 
-    final protected AttributeEvent.Source source;
+    final public AttributeEvent.Source source;
+
+    final protected LocalDateTime time;
 
     public AbstractAssetUpdate(Asset asset, AssetAttribute attribute, AttributeEvent.Source source) {
         this(asset, attribute, null, 0, source);
@@ -91,7 +98,7 @@ public abstract class AbstractAssetUpdate {
             asset.getName(),
             asset.getType(),
             asset.getWellKnownType(),
-            asset.getReversePath(),
+            asset.getPath(),
             asset.getParentId(),
             asset.getParentName(),
             asset.getParentType(),
@@ -113,7 +120,7 @@ public abstract class AbstractAssetUpdate {
             that.name,
             that.typeString,
             that.type,
-            that.pathFromRoot,
+            that.path,
             that.parentId,
             that.parentName,
             that.parentTypeString,
@@ -129,7 +136,7 @@ public abstract class AbstractAssetUpdate {
 
     protected AbstractAssetUpdate(AssetAttribute attribute,
                                   Date createdOn, String id, String name, String typeString, AssetType type,
-                                  String[] pathFromRoot, String parentId, String parentName, String parentTypeString, AssetType parentType,
+                                  String[] path, String parentId, String parentName, String parentTypeString, AssetType parentType,
                                   String realmId, String tenantRealm,
                                   double[] coordinates,
                                   Value oldValue,
@@ -141,10 +148,10 @@ public abstract class AbstractAssetUpdate {
         this.name = name;
         this.typeString = typeString;
         this.type = type;
-        if (pathFromRoot == null) {
+        if (path == null) {
             throw new IllegalArgumentException("Empty path (asset not completely loaded?): " + id);
         }
-        this.pathFromRoot = pathFromRoot;
+        this.path = path;
         this.parentId = parentId;
         this.parentName = parentName;
         this.parentTypeString = parentTypeString;
@@ -155,6 +162,7 @@ public abstract class AbstractAssetUpdate {
         this.oldValue = oldValue;
         this.oldValueTimestamp = oldValueTimestamp;
         this.source = source;
+        this.time = attribute.getValueTimestamp().map(ts -> LocalDateTime.ofInstant(Instant.ofEpochMilli(ts), ZoneId.systemDefault())).orElse(null);
     }
 
     public Date getCreatedOn() {
@@ -177,8 +185,8 @@ public abstract class AbstractAssetUpdate {
         return type;
     }
 
-    public String[] getPathFromRoot() {
-        return pathFromRoot;
+    public String[] getPath() {
+        return path;
     }
 
     public String getParentId() {
@@ -221,28 +229,28 @@ public abstract class AbstractAssetUpdate {
         return source;
     }
 
-    public Value getValue() {
-        return attribute.getValue().orElse(null);
+    public Optional<Value> getValue() {
+        return attribute.getValue();
     }
 
-    public Boolean getValueAsBoolean() {
-        return attribute.getValueAsBoolean().orElse(null);
+    public Optional<Boolean> getValueAsBoolean() {
+        return attribute.getValueAsBoolean();
     }
 
-    public Double getValueAsNumber() {
-        return attribute.getValueAsNumber().orElse(null);
+    public Optional<Double> getValueAsNumber() {
+        return attribute.getValueAsNumber();
     }
 
-    public String getValueAsString() {
-        return attribute.getValueAsString().orElse(null);
+    public Optional<String> getValueAsString() {
+        return attribute.getValueAsString();
     }
 
-    public ObjectValue getValueAsObject() {
-        return attribute.getValueAsObject().orElse(null);
+    public Optional<ObjectValue> getValueAsObject() {
+        return attribute.getValueAsObject();
     }
 
-    public ArrayValue getValueAsArray() {
-        return attribute.getValueAsArray().orElse(null);
+    public Optional<ArrayValue> getValueAsArray() {
+        return attribute.getValueAsArray();
     }
 
     public AssetAttribute getAttribute() {
@@ -253,8 +261,12 @@ public abstract class AbstractAssetUpdate {
         return attribute.getName().orElse(null);
     }
 
-    public long getValueTimestamp() {
+    public long getTimestamp() {
         return attribute.getValueTimestamp().orElse(-1L);
+    }
+
+    public LocalDateTime getTime() {
+        return time;
     }
 
     public AttributeType getAttributeType() {
@@ -266,47 +278,47 @@ public abstract class AbstractAssetUpdate {
     }
 
     /**
-     * <code>true</code> if this value is not null and that value is null or this value is greater than that value.
+     * <code>true</code> if this value is not empty and that value is null or this value is greater than that value.
      */
     public boolean isValueGreaterThan(Number that) {
-        Double number = getValueAsNumber();
-        return (number != null && that == null) || (number != null && number > that.doubleValue());
+        Optional<Double> number = getValueAsNumber();
+        return (number.isPresent() && that == null) || (number.isPresent() && number.get() > that.doubleValue());
     }
 
     /**
-     * <code>true</code> if this value is not null and the old value is null or this value is greater than old value.
+     * <code>true</code> if this value is not empty and the old value is null or this value is greater than old value.
      */
     public boolean isValueGreaterThanOldValue() {
         return isValueGreaterThan(Values.getNumber(getOldValue()).orElse(null));
     }
 
     /**
-     * <code>true</code> if this value is null and that value is not null or this value is less than that value.
+     * <code>true</code> if this value is empty and that value is not null or this value is less than that value.
      */
     public boolean isValueLessThan(Number that) {
-        Double number = getValueAsNumber();
-        return (number == null && that != null) || (number != null && number < that.doubleValue());
+        Optional<Double> number = getValueAsNumber();
+        return (!number.isPresent() && that != null) || (number.isPresent() && number.get() < that.doubleValue());
     }
 
     /**
-     * <code>true</code> if this value is null and the old value is not null or this value is less than old value.
+     * <code>true</code> if this value is empty and the old value is not null or this value is less than old value.
      */
     public boolean isValueLessThanOldValue() {
         return isValueLessThan(Values.getNumber(getOldValue()).orElse(null));
     }
 
     /**
-     * Value is null or {@link org.openremote.model.value.BooleanValue} <code>false</code>.
+     * Value is empty or {@link org.openremote.model.value.BooleanValue} <code>false</code>.
      */
     public boolean isValueFalse() {
-        return getValueAsBoolean() == null || !getValueAsBoolean();
+        return !getValueAsBoolean().isPresent() || !getValueAsBoolean().get();
     }
 
     /**
-     * Value is not null and {@link org.openremote.model.value.BooleanValue} <code>true</code>.
+     * Value is not empty and {@link org.openremote.model.value.BooleanValue} <code>true</code>.
      */
     public boolean isValueTrue() {
-        return getValueAsBoolean() != null && getValueAsBoolean();
+        return getValueAsBoolean().isPresent() && getValueAsBoolean().get();
     }
 
     public AttributeRef getAttributeRef() {
@@ -323,18 +335,21 @@ public abstract class AbstractAssetUpdate {
     /**
      * Compares entity identifier, attribute name, value, source, and optional timestamp.
      */
-    public boolean matches(AttributeEvent event, AttributeEvent.Source source, boolean ignoreTimestamp) {
-        return event.getAttributeRef().equals(getAttributeRef())
-            && Optional.ofNullable(getValue()).equals(event.getAttributeState().getCurrentValue())
-            && (ignoreTimestamp || getValueTimestamp() == event.getTimestamp())
+    public boolean matches(AttributeEvent that, AttributeEvent.Source source, boolean ignoreTimestamp) {
+        return getAttributeRef().equals(that.getAttributeRef())
+            && getValue().equals(that.getValue())
+            && (ignoreTimestamp || getTimestamp() == that.getTimestamp())
             && (source == null || getSource() == source);
     }
 
-    /**
-     * This is here because {@link #attribute} is not always publicly accessible
-     */
-    public boolean attributeRefsEqual(AbstractAssetUpdate assetUpdate) {
-        return assetUpdate != null && assetUpdate.getAttributeRef().equals(getAttributeRef());
+    @Override
+    public int compareTo(AbstractAssetUpdate that) {
+        int result = getId().compareTo(that.getId());
+        if (result == 0)
+            result = getAttributeName().compareTo(that.getAttributeName());
+        if (result == 0)
+            result = Long.compare(getTimestamp(), that.getTimestamp());
+        return result;
     }
 
     @Override
@@ -345,21 +360,13 @@ public abstract class AbstractAssetUpdate {
         AbstractAssetUpdate that = (AbstractAssetUpdate) o;
 
         return getId().equals(that.getId()) &&
-            getAttribute().getName().equals(that.getAttribute().getName()) &&
-            getAttribute().getValue().equals(that.getAttribute().getValue()) &&
-            getValueTimestamp() == that.getValueTimestamp() &&
-            Optional.ofNullable(getOldValue()).equals(Optional.ofNullable(that.getOldValue())) &&
-            getOldValueTimestamp() == that.getOldValueTimestamp();
+            getAttribute().getName().equals(that.getAttribute().getName());
     }
 
     @Override
     public int hashCode() {
         return getId().hashCode()
-            + getAttributeName().hashCode()
-            + getAttribute().getValue().hashCode()
-            + Long.hashCode(getValueTimestamp())
-            + Optional.ofNullable(getOldValue()).hashCode()
-            + Long.hashCode(getOldValueTimestamp());
+            + getAttributeName().hashCode();
     }
 
     @Override
@@ -371,8 +378,9 @@ public abstract class AbstractAssetUpdate {
             ", typeString='" + getType() + '\'' +
             ", attributeName='" + getAttributeName() + '\'' +
             ", attributeType=" + getAttributeType() +
-            ", value='" + (getValue() != null ? getValue().toJson() : "null") + '\'' +
-            ", valueTimestamp=" + getValueTimestamp() +
+            ", value='" + (getValue().isPresent() ? getValue().get().toJson() : "null") + '\'' + // TODO Performance?
+            ", timestamp=" + getTimestamp() +
+            ", time=" + getTime() +
             ", oldValue='" + (getOldValue() != null ? getOldValue().toJson() : "null") + '\'' +
             ", oldValueTimestamp=" + getOldValueTimestamp() +
             ", source=" + getSource() +

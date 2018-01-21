@@ -22,6 +22,7 @@ package org.openremote.app.client.rules;
 import org.openremote.app.client.assets.browser.AssetTreeNode;
 import org.openremote.app.client.assets.browser.BrowserTreeNode;
 import org.openremote.app.client.widget.FormView;
+import org.openremote.model.rules.Ruleset;
 
 public interface RulesEditor extends RulesView, FormView {
 
@@ -35,6 +36,8 @@ public interface RulesEditor extends RulesView, FormView {
         void cancel();
 
         void onTemplateAssetSelection(BrowserTreeNode browserTreeNode);
+
+        void onLanguageChange(Ruleset.Lang lang);
     }
 
     void setPresenter(Presenter presenter);
@@ -46,6 +49,10 @@ public interface RulesEditor extends RulesView, FormView {
     String getName();
 
     void setNameError(boolean error);
+
+    void setLang(Ruleset.Lang lang);
+
+    Ruleset.Lang getLang();
 
     void setRulesetEnabled(Boolean enabled);
 

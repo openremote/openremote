@@ -51,7 +51,7 @@ class AssetUserLinkingTest extends Specification implements ManagerContainerTrai
         def userAssets = assetResource.getUserAssetLinks(null, keycloakDemoSetup.customerATenant.id, null, null)
 
         then: "result should match"
-        userAssets.length == 4
+        userAssets.length == 5
         userAssets.any {
             it.id.realmId == keycloakDemoSetup.customerATenant.id &&
                     it.id.userId == keycloakDemoSetup.testuser3Id &&
@@ -79,6 +79,14 @@ class AssetUserLinkingTest extends Specification implements ManagerContainerTrai
         userAssets.any {
             it.id.realmId == keycloakDemoSetup.customerATenant.id &&
                     it.id.userId == keycloakDemoSetup.testuser3Id &&
+                    it.id.assetId == managerDemoSetup.apartment1HallwayId &&
+                    it.assetName == "Hallway" &&
+                    it.parentAssetName == "Apartment 1" &&
+                    it.userFullName == "testuser3 (Testuserfirst Testuserlast)"
+        }
+        userAssets.any {
+            it.id.realmId == keycloakDemoSetup.customerATenant.id &&
+                    it.id.userId == keycloakDemoSetup.testuser3Id &&
                     it.id.assetId == managerDemoSetup.apartment2Id &&
                     it.assetName == "Apartment 2" &&
                     it.parentAssetName == "Smart Home" &&
@@ -89,7 +97,7 @@ class AssetUserLinkingTest extends Specification implements ManagerContainerTrai
         userAssets = assetResource.getUserAssetLinks(null, keycloakDemoSetup.customerATenant.id, keycloakDemoSetup.testuser3Id, null)
 
         then: "result should match"
-        userAssets.length == 4
+        userAssets.length == 5
 
         when: "the realm and user don't match"
         assetResource.getUserAssetLinks(null, keycloakDemoSetup.customerBTenant.id, keycloakDemoSetup.testuser3Id, null)

@@ -445,11 +445,11 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                     query.select.filterAccess(Access.RESTRICTED_READ);
             }
 
-            Tenant tenant = query.tenantPredicate != null
-                ? !isNullOrEmpty(query.tenantPredicate.realmId)
-                ? identityService.getIdentityProvider().getTenantForRealmId(query.tenantPredicate.realmId)
-                : !isNullOrEmpty(query.tenantPredicate.realm)
-                ? identityService.getIdentityProvider().getTenantForRealm(query.tenantPredicate.realm)
+            Tenant tenant = query.tenant != null
+                ? !isNullOrEmpty(query.tenant.realmId)
+                ? identityService.getIdentityProvider().getTenantForRealmId(query.tenant.realmId)
+                : !isNullOrEmpty(query.tenant.realm)
+                ? identityService.getIdentityProvider().getTenantForRealm(query.tenant.realm)
                 : getAuthenticatedTenant()
                 : getAuthenticatedTenant();
 
@@ -462,7 +462,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             }
 
             // This replicates behaviour of old getRoot and getChildren methods
-            if (!isSuperUser() || query.parentPredicate == null || query.parentPredicate.noParent) {
+            if (!isSuperUser() || query.parent == null || query.parent.noParent) {
                 query.tenant(new TenantPredicate(tenant.getId()));
             }
 
@@ -484,10 +484,10 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
         }
 
         // Force realm to be request realm
-        if (query.tenantPredicate == null) {
+        if (query.tenant == null) {
             query.tenant(new TenantPredicate().realm(requestRealm));
         } else {
-            query.tenantPredicate.realm = requestRealm;
+            query.tenant.realm = requestRealm;
         }
 
         // Force public access filter on query

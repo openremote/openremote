@@ -55,36 +55,34 @@ public class ValidationFailure {
         }
     }
 
-    @JsonProperty
-    protected Reason reason;
-    @JsonProperty // This is called param because GWT Jackson is crap at resolving annotations
-    protected String param;
+    public Reason reason;
+    public String parameter;
+
+    protected ValidationFailure() {
+    }
 
     public ValidationFailure(Reason reason) {
         this(reason, null);
     }
 
-    @JsonCreator
-    public ValidationFailure(@JsonProperty("reason") Reason reason, @JsonProperty("param") String parameter) {
+    public ValidationFailure(Reason reason, String parameter) {
         this.reason = reason;
-        this.param = parameter;
+        this.parameter = parameter;
     }
 
-    @JsonIgnore
     public Reason getReason() {
         return reason;
     }
 
-    @JsonIgnore
     public Optional<String> getParameter() {
-        return Optional.ofNullable(param);
+        return Optional.ofNullable(parameter);
     }
 
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
             "reason=" + reason +
-            ", param='" + param + '\'' +
+            ", param='" + parameter + '\'' +
             '}';
     }
 }

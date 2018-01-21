@@ -1,4 +1,4 @@
-package org.openremote.test.rules.apartment
+package org.openremote.test.rules.residence
 
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
@@ -26,7 +26,7 @@ import java.util.concurrent.TimeUnit
 import static org.openremote.manager.setup.builtin.ManagerDemoSetup.DEMO_RULE_STATES_APARTMENT_1
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID
 
-class ApartmentNotifyAlarmTriggerTest extends Specification implements ManagerContainerTrait {
+class ResidenceNotifyAlarmTriggerTest extends Specification implements ManagerContainerTrait {
 
     def "Trigger notification when presence is detected and alarm enabled"() {
 
@@ -56,7 +56,8 @@ class ApartmentNotifyAlarmTriggerTest extends Specification implements ManagerCo
         Ruleset ruleset = new AssetRuleset(
                 "Demo Apartment - Notify Alarm Trigger",
                 managerDemoSetup.apartment1Id,
-                getClass().getResource("/demo/rules/DemoApartmentNotifyAlarmTrigger.drl").text
+                getClass().getResource("/demo/rules/DemoResidenceNotifyAlarmTrigger.groovy").text,
+                Ruleset.Lang.GROOVY
         )
         rulesetStorageService.merge(ruleset)
 
@@ -66,7 +67,6 @@ class ApartmentNotifyAlarmTriggerTest extends Specification implements ManagerCo
             assert apartment1Engine != null
             assert apartment1Engine.isRunning()
             assert apartment1Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_1
-            assert apartment1Engine.knowledgeSession.factCount == DEMO_RULE_STATES_APARTMENT_1
         }
 
         and: "the alarm enabled, presence detected flag of room should not be set"
@@ -95,7 +95,6 @@ class ApartmentNotifyAlarmTriggerTest extends Specification implements ManagerCo
         notificationService.findDeviceToken("device123", keycloakDemoSetup.testuser3Id).get().token == "token123"
 
         when: "the alarm is enabled"
-        setPseudoClocksToRealTime(container, apartment1Engine)
         assetProcessingService.sendAttributeEvent(new AttributeEvent(
                 managerDemoSetup.apartment1Id, "alarmEnabled", Values.create(true), getClockTimeOf(container)
         ))
@@ -130,7 +129,7 @@ class ApartmentNotifyAlarmTriggerTest extends Specification implements ManagerCo
         }
 
         when: "time moves on and other events happen that trigger evaluation in the rule engine"
-        advancePseudoClocks(20, TimeUnit.MINUTES, container, apartment1Engine)
+        advancePseudoClock(20, TimeUnit.MINUTES, container)
         assetProcessingService.sendAttributeEvent(new AttributeEvent(
                 managerDemoSetup.apartment1LivingroomId, "co2Level", Values.create(444), getClockTimeOf(container)
         ))
@@ -144,7 +143,7 @@ class ApartmentNotifyAlarmTriggerTest extends Specification implements ManagerCo
         }
 
         when: "time moves on"
-        advancePseudoClocks(30, TimeUnit.MINUTES, container, apartment1Engine)
+        advancePseudoClock(30, TimeUnit.MINUTES, container)
 
         then: "we notify again and now have two notifications pending"
         conditions.eventually {
@@ -153,7 +152,7 @@ class ApartmentNotifyAlarmTriggerTest extends Specification implements ManagerCo
         }
 
         when: "the presence os no longer in Living room of apartment 1"
-        advancePseudoClocks(5, TimeUnit.SECONDS, container, apartment1Engine)
+        advancePseudoClock(5, TimeUnit.SECONDS, container)
         assetProcessingService.sendAttributeEvent(new AttributeEvent(
                 managerDemoSetup.apartment1LivingroomId, "presenceDetected", Values.create(false), getClockTimeOf(container)
         ))
@@ -165,7 +164,7 @@ class ApartmentNotifyAlarmTriggerTest extends Specification implements ManagerCo
         }
 
         when: "time moves on"
-        advancePseudoClocks(40, TimeUnit.MINUTES, container, apartment1Engine)
+        advancePseudoClock(40, TimeUnit.MINUTES, container)
 
         then: "we have still only two notifications pending"
         conditions.eventually {

@@ -516,4 +516,8 @@ public interface ManagerMessages extends Messages {
     String shareLink();
 
     String noAppsFound();
+
+    String language();
+
+    String confirmationRulesLangChange();
 }

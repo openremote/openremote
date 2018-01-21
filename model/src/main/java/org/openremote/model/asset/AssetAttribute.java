@@ -19,7 +19,6 @@
  */
 package org.openremote.model.asset;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.openremote.model.AbstractValueHolder;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.attribute.*;
@@ -86,7 +85,6 @@ public class AssetAttribute extends Attribute {
         setAssetId(assetId);
     }
 
-    @JsonIgnore
     public Optional<String> getAssetId() {
         return Optional.ofNullable(assetId);
     }

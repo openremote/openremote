@@ -84,7 +84,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         )
 
         then: "only the users assets should be retrieved"
-        assets.size() == 4
+        assets.size() == 5
         assets.get(0).id == managerDemoSetup.apartment1Id
         assets.get(1).id == managerDemoSetup.apartment1LivingroomId
         assets.get(1).getAttributesList().size() == 8
@@ -94,7 +94,8 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         !assets.get(1).getAttribute("targetTemperature").get().getValue().isPresent()
         assets.get(1).getAttribute("targetTemperature").get().meta.size() == 1
         assets.get(2).id == managerDemoSetup.apartment1KitchenId
-        assets.get(3).id == managerDemoSetup.apartment2Id
+        assets.get(3).id == managerDemoSetup.apartment1HallwayId
+        assets.get(4).id == managerDemoSetup.apartment2Id
 
         when: "a user filtering query is executed that returns only IDs, names and attribute names and limits to protected attributes and meta"
         assets = assetStorageService.findAll(
@@ -104,7 +105,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         )
 
         then: "only the users assets should be retrieved"
-        assets.size() == 4
+        assets.size() == 5
         assets.get(0).id == managerDemoSetup.apartment1Id
         assets.get(1).id == managerDemoSetup.apartment1LivingroomId
         assets.get(1).getAttributesList().size() == 7
@@ -114,7 +115,8 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         !assets.get(1).getAttribute("targetTemperature").get().getValue().isPresent()
         assets.get(1).getAttribute("targetTemperature").get().meta.size() == 1
         assets.get(2).id == managerDemoSetup.apartment1KitchenId
-        assets.get(3).id == managerDemoSetup.apartment2Id
+        assets.get(3).id == managerDemoSetup.apartment1HallwayId
+        assets.get(4).id == managerDemoSetup.apartment2Id
 
         when: "a query is executed that returns a protected attribute without any other meta items"
         assets = assetStorageService.findAll(
@@ -140,7 +142,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         )
 
         then: "result should contain only ids, names and attribute names and label meta"
-        assets.size() == 10
+        assets.size() == 11
         assets[0].id == managerDemoSetup.smartHomeId
         assets[0].name == "Smart Home"
         assets[1].id == managerDemoSetup.apartment1Id
@@ -170,11 +172,12 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets[2].id == managerDemoSetup.apartment1ServiceAgentId
         assets[3].id == managerDemoSetup.apartment1LivingroomId
         assets[4].id == managerDemoSetup.apartment1KitchenId
-        assets[5].id == managerDemoSetup.apartment2Id
-        assets[6].id == managerDemoSetup.apartment2LivingroomId
-        assets[7].id == managerDemoSetup.apartment2BathroomId
-        assets[8].id == managerDemoSetup.apartment3Id
-        assets[9].id == managerDemoSetup.apartment3LivingroomId
+        assets[5].id == managerDemoSetup.apartment1HallwayId
+        assets[6].id == managerDemoSetup.apartment2Id
+        assets[7].id == managerDemoSetup.apartment2LivingroomId
+        assets[8].id == managerDemoSetup.apartment2BathroomId
+        assets[9].id == managerDemoSetup.apartment3Id
+        assets[10].id == managerDemoSetup.apartment3LivingroomId
 
         when: "an asset is loaded by identifier through JPA"
         def asset = persistenceService.doReturningTransaction(new Function<EntityManager, ServerAsset>() {
@@ -367,11 +370,12 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         )
 
         then: "result should match"
-        assets.size() == 4
+        assets.size() == 5
         assets.get(0).id == managerDemoSetup.apartment1Id
         assets.get(1).id == managerDemoSetup.apartment1ServiceAgentId
         assets.get(2).id == managerDemoSetup.apartment1LivingroomId
         assets.get(3).id == managerDemoSetup.apartment1KitchenId
+        assets.get(4).id == managerDemoSetup.apartment1HallwayId
 
         when: "a query is executed"
         assets = assetStorageService.findAll(
@@ -381,9 +385,10 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         )
 
         then: "result should match"
-        assets.size() == 2
+        assets.size() == 3
         assets.get(0).id == managerDemoSetup.apartment1LivingroomId
         assets.get(1).id == managerDemoSetup.apartment1KitchenId
+        assets.get(2).id == managerDemoSetup.apartment1HallwayId
 
         when: "a query is executed"
         assets = assetStorageService.findAll(
@@ -391,7 +396,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         )
 
         then: "result should match"
-        assets.size() == 4
+        assets.size() == 5
         assets.get(0).id == managerDemoSetup.apartment1Id
         assets.get(1).id == managerDemoSetup.apartment1LivingroomId
         assets.get(1).getAttributesList().size() == 7
@@ -400,7 +405,8 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         !assets.get(1).getAttribute("targetTemperature").get().getValue().isPresent()
         assets.get(1).getAttribute("targetTemperature").get().meta.size() == 4
         assets.get(2).id == managerDemoSetup.apartment1KitchenId
-        assets.get(3).id == managerDemoSetup.apartment2Id
+        assets.get(3).id == managerDemoSetup.apartment1HallwayId
+        assets.get(4).id == managerDemoSetup.apartment2Id
 
         when: "a query is executed"
         assets = assetStorageService.findAll(
@@ -588,7 +594,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         asset.getAttribute("lastPresenceDetected").isPresent()
         asset.getAttribute("lastPresenceDetected").get().meta.size() == 3
         asset.getAttribute("motionSensor").isPresent()
-        asset.getAttribute("motionSensor").get().meta.size() == 8
+        asset.getAttribute("motionSensor").get().meta.size() == 7
 
         when: "a query is executed to select a subset of protected attributes"
         asset = assetStorageService.find(
@@ -625,7 +631,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
                                 new StringPredicate("windowOpen"), new BooleanPredicate(false)
                         ),
                         new AttributePredicate(
-                                new StringPredicate("co2Level"), new NumberPredicate(340, OperatorMatch.GREATER_THEN, NumberType.INTEGER)
+                                new StringPredicate("co2Level"), new NumberPredicate(340, Operator.GREATER_THAN, NumberType.INTEGER)
                         )
                 )
         )

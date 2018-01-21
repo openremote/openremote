@@ -59,11 +59,10 @@ public abstract class Attribute extends AbstractValueTimestampHolder {
     public static final String TYPE_FIELD_NAME = "type";
     public static final String META_FIELD_NAME = "meta";
 
+    public String name;
+
     @JsonIgnore
     protected Meta meta;
-
-    @JsonProperty
-    protected String name;
 
     protected Attribute(ObjectValue objectValue) {
         super(objectValue);
@@ -91,15 +90,8 @@ public abstract class Attribute extends AbstractValueTimestampHolder {
         setValue(value);
     }
 
-    @JsonIgnore
     public Optional<String> getName() {
         return Optional.ofNullable(name);
-    }
-
-    // Only here for GWT jackson
-    @JsonProperty("name")
-    private String getNamePrivate() {
-        return name;
     }
 
     public void setName(String name) {

@@ -19,24 +19,48 @@
  */
 package org.openremote.model.asset;
 
-import org.kie.api.definition.type.Role;
+import org.openremote.model.rules.TemporaryFact;
+import org.openremote.model.util.TimeUtil;
 
 import java.util.Optional;
 
 /**
  * An asset attribute value change as a punctual event in rules processing.
  */
-@org.kie.api.definition.type.Role(Role.Type.EVENT)
-@org.kie.api.definition.type.Timestamp("valueTimestamp")
-// TODO Bug in drools, it fails if there is no @Expires annotation https://issues.jboss.org/browse/DROOLS-2182
-@org.kie.api.definition.type.Expires(value = "10000d")
-public class AssetEvent extends AbstractAssetUpdate {
+public class AssetEvent extends AbstractAssetUpdate implements TemporaryFact {
 
-    public AssetEvent(AbstractAssetUpdate that) {
+    final protected long expirationMilliseconds;
+
+    public AssetEvent(AbstractAssetUpdate that, String expires) {
         super(that);
+        this.expirationMilliseconds = TimeUtil.parseTimeString(expires);
     }
 
-    public Optional<String> getExpires() {
-        return attribute.getRuleEventExpires();
+    @Override
+    public long getExpirationMilliseconds() {
+        return expirationMilliseconds;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        AssetEvent that = (AssetEvent) o;
+
+        return getAttributeRef().equals(that.getAttributeRef()) &&
+            getAttribute().getValue().equals(that.getAttribute().getValue()) &&
+            getTimestamp() == that.getTimestamp() &&
+            Optional.ofNullable(getOldValue()).equals(Optional.ofNullable(that.getOldValue())) &&
+            getOldValueTimestamp() == that.getOldValueTimestamp();
+    }
+
+    @Override
+    public int hashCode() {
+        return getAttributeRef().hashCode()
+            + getAttribute().getValue().hashCode()
+            + Long.hashCode(getTimestamp())
+            + Optional.ofNullable(getOldValue()).hashCode()
+            + Long.hashCode(getOldValueTimestamp());
     }
 }

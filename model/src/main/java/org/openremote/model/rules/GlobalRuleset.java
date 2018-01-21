@@ -37,18 +37,25 @@ public class GlobalRuleset extends Ruleset {
         super(id, version, createdOn, lastModified, name, enabled, templateAssetId);
     }
 
-    public GlobalRuleset(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String templateAssetId, String rules) {
-        super(id, version, createdOn, lastModified, name, enabled, templateAssetId, rules);
+    public GlobalRuleset(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String templateAssetId, String rules, Lang lang) {
+        super(id, version, createdOn, lastModified, name, enabled, templateAssetId, rules, lang);
     }
 
-    public GlobalRuleset(String name, String rules) {
-        super(name, rules);
+    public GlobalRuleset(String name, String rules, Lang lang) {
+        super(name, rules, lang);
     }
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + "{}";
+        return getClass().getSimpleName() + "{" +
+            "id='" + id + '\'' +
+            ", version='" + version + '\'' +
+            ", name='" + name + '\'' +
+            ", lang='" + lang + '\'' +
+            ", createdOn='" + createdOn + '\'' +
+            ", lastModified='" + lastModified + '\'' +
+            ", enabled='" + enabled + '\'' +
+            '}';
     }
-
 
 }

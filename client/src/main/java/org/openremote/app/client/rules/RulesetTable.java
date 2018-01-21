@@ -40,6 +40,8 @@ public class RulesetTable<R extends Ruleset> extends FormTable<R> {
     public interface Style extends CssResource {
         String nameColumn();
 
+        String langColumn();
+
         String enabledColumn();
 
         String templateColumn();
@@ -76,6 +78,18 @@ public class RulesetTable<R extends Ruleset> extends FormTable<R> {
         @Override
         public String getValue(R ruleset) {
             return ruleset.getLastModified() != null ? dateTimeFormat.format(ruleset.getLastModified()) : "-";
+        }
+
+        @Override
+        public String getCellStyleNames(Cell.Context context, R object) {
+            return "nowrap";
+        }
+    };
+
+    final protected TextColumn<R> langColumn = new TextColumn<R>() {
+        @Override
+        public String getValue(R ruleset) {
+            return ruleset.getLang().toString();
         }
 
         @Override
@@ -122,6 +136,10 @@ public class RulesetTable<R extends Ruleset> extends FormTable<R> {
         addColumn(lastModifiedColumn, createHeader(managerMessages.lastModifiedOn()));
         addColumnStyleName(i++, style.lastModifiedColumn());
         lastModifiedColumn.setHorizontalAlignment(HasHorizontalAlignment.ALIGN_CENTER);
+
+        addColumn(langColumn, createHeader(managerMessages.language()));
+        addColumnStyleName(i++, style.langColumn());
+        langColumn.setHorizontalAlignment(HasHorizontalAlignment.ALIGN_LEFT);
 
         addColumn(enabledColumn, createHeader(managerMessages.enabled()));
         addColumnStyleName(i++, style.enabledColumn());

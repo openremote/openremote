@@ -711,7 +711,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             query.select.include != AssetQuery.Include.ONLY_ID_AND_NAME_AND_ATTRIBUTE_NAMES &&
             query.select.include != AssetQuery.Include.ONLY_ID_AND_NAME_AND_ATTRIBUTES;
 
-        if ((!recursive || level == 3) && (includeRealmInfo || query.tenantPredicate != null)) {
+        if ((!recursive || level == 3) && (includeRealmInfo || query.tenant != null)) {
             sb.append("join PUBLIC.REALM R on R.ID = A.REALM_ID ");
             sb.append("join PUBLIC.REALM_ATTRIBUTE RA on RA.REALM_ID = R.ID and RA.NAME = 'displayName' ");
         }
@@ -721,7 +721,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         }
 
         if (level == 1) {
-            if (query.parentPredicate != null && !query.parentPredicate.noParent) {
+            if (query.parent != null && !query.parent.noParent) {
                 sb.append("cross join ASSET P ");
             } else {
                 sb.append("left outer join ASSET P on A.PARENT_ID = P.ID ");
@@ -782,45 +782,45 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             binders.add(st -> st.setString(pos, query.id));
         }
 
-        if (level == 1 && query.namePredicate != null) {
-            sb.append(query.namePredicate.caseSensitive ? " and A.NAME " : " and upper(A.NAME)");
-            sb.append(query.namePredicate.match == AssetQuery.Match.EXACT ? " = ?" : " like ?");
+        if (level == 1 && query.name != null) {
+            sb.append(query.name.caseSensitive ? " and A.NAME " : " and upper(A.NAME)");
+            sb.append(query.name.match == AssetQuery.Match.EXACT ? " = ?" : " like ?");
             final int pos = binders.size() + 1;
-            binders.add(st -> st.setString(pos, query.namePredicate.prepareValue()));
+            binders.add(st -> st.setString(pos, query.name.prepareValue()));
         }
 
-        if (query.parentPredicate != null) {
+        if (query.parent != null) {
             // Can only restrict recursive query parent by asset type
-            if (level == 1 && query.parentPredicate.id != null) {
+            if (level == 1 && query.parent.id != null) {
                 sb.append(" and p.ID = a.PARENT_ID");
                 sb.append(" and A.PARENT_ID = ?");
                 final int pos = binders.size() + 1;
-                binders.add(st -> st.setString(pos, query.parentPredicate.id));
-            } else if (query.parentPredicate.type != null) {
+                binders.add(st -> st.setString(pos, query.parent.id));
+            } else if (query.parent.type != null) {
                 sb.append(" and p.ID = a.PARENT_ID");
                 sb.append(" and P.ASSET_TYPE = ?");
                 final int pos = binders.size() + 1;
-                binders.add(st -> st.setString(pos, query.parentPredicate.type));
-            } else if (level == 1 && query.parentPredicate.noParent) {
+                binders.add(st -> st.setString(pos, query.parent.type));
+            } else if (level == 1 && query.parent.noParent) {
                 sb.append(" and A.PARENT_ID is null");
             }
         }
 
-        if (level == 1 && query.pathPredicate != null && query.pathPredicate.hasPath()) {
+        if (level == 1 && query.path != null && query.path.hasPath()) {
             sb.append(" and ? <@ get_asset_tree_path(A.ID)");
             final int pos = binders.size() + 1;
-            binders.add(st -> st.setArray(pos, st.getConnection().createArrayOf("text", query.pathPredicate.path)));
+            binders.add(st -> st.setArray(pos, st.getConnection().createArrayOf("text", query.path.path)));
         }
 
         if (!recursive || level == 3) {
-            if (query.tenantPredicate != null && query.tenantPredicate.realmId != null) {
+            if (query.tenant != null && query.tenant.realmId != null) {
                 sb.append(" and R.ID = ?");
                 final int pos = binders.size() + 1;
-                binders.add(st -> st.setString(pos, query.tenantPredicate.realmId));
-            } else if (query.tenantPredicate != null && query.tenantPredicate.realm != null) {
+                binders.add(st -> st.setString(pos, query.tenant.realmId));
+            } else if (query.tenant != null && query.tenant.realm != null) {
                 sb.append(" and R.NAME = ?");
                 final int pos = binders.size() + 1;
-                binders.add(st -> st.setString(pos, query.tenantPredicate.realm));
+                binders.add(st -> st.setString(pos, query.tenant.realm));
             }
 
             if (query.userId != null) {
@@ -840,8 +840,8 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 binders.add(st -> st.setString(pos, query.type.prepareValue()));
             }
 
-            if (query.attributeMetaPredicates != null) {
-                for (AttributeMetaPredicate attributeMetaPredicate : query.attributeMetaPredicates) {
+            if (query.attributeMeta != null) {
+                for (AttributeMetaPredicate attributeMetaPredicate : query.attributeMeta) {
                     String attributeMetaFilter = buildAttributeMetaFilter(attributeMetaPredicate, binders);
 
                     if (attributeMetaFilter.length() > 0) {
@@ -855,8 +855,8 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 }
             }
 
-            if (query.attributePredicates != null) {
-                for (AssetQuery.AttributePredicate attributePredicate : query.attributePredicates) {
+            if (query.attribute != null) {
+                for (AssetQuery.AttributePredicate attributePredicate : query.attribute) {
                     StringBuilder attributeFilterBuilder = new StringBuilder();
                     attributeFilterBuilder.append(buildAttributeFilter(attributePredicate, binders));
 
@@ -898,7 +898,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             } else if (attributeMetaPredicate.itemValuePredicate instanceof AssetQuery.BooleanPredicate) {
                 AssetQuery.BooleanPredicate booleanPredicate = (AssetQuery.BooleanPredicate) attributeMetaPredicate.itemValuePredicate;
                 attributeMetaBuilder.append(" and AM.VALUE #> '{value}' = to_jsonb(")
-                    .append(booleanPredicate.predicate)
+                    .append(booleanPredicate.value)
                     .append(")");
             } else if (attributeMetaPredicate.itemValuePredicate instanceof AssetQuery.StringArrayPredicate) {
                 AssetQuery.StringArrayPredicate stringArrayPredicate = (AssetQuery.StringArrayPredicate) attributeMetaPredicate.itemValuePredicate;
@@ -943,7 +943,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             } else if (attributePredicate.value instanceof AssetQuery.BooleanPredicate) {
                 AssetQuery.BooleanPredicate booleanPredicate = (AssetQuery.BooleanPredicate) attributePredicate.value;
                 attributeBuilder.append(" and AX.VALUE #> '{value}' = to_jsonb(")
-                    .append(booleanPredicate.predicate)
+                    .append(booleanPredicate.value)
                     .append(")");
             } else if (attributePredicate.value instanceof AssetQuery.StringArrayPredicate) {
                 AssetQuery.StringArrayPredicate stringArrayPredicate = (AssetQuery.StringArrayPredicate) attributePredicate.value;
@@ -968,17 +968,17 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 final int formatPos = binders.size() + 1;
                 binders.add(st -> st.setString(formatPos, dateTimePredicate.dateFormat));
 
-                switch (dateTimePredicate.operatorMatch) {
-                    case EXACT:
+                switch (dateTimePredicate.operator) {
+                    case EQUALS:
                         attributeBuilder.append(" = to_timestamp(?, ?)");
                         break;
-                    case GREATER_THEN:
+                    case GREATER_THAN:
                         attributeBuilder.append(" > to_timestamp(?, ?)");
                         break;
                     case GREATER_EQUALS:
                         attributeBuilder.append(" >= to_timestamp(?, ?)");
                         break;
-                    case LESS_THEN:
+                    case LESS_THAN:
                         attributeBuilder.append(" < to_timestamp(?, ?)");
                         break;
                     case LESS_EQUALS:
@@ -995,18 +995,18 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             } else if (attributePredicate.value instanceof AssetQuery.NumberPredicate) {
                 AssetQuery.NumberPredicate numberPredicate = (AssetQuery.NumberPredicate) attributePredicate.value;
                 attributeBuilder.append(" and (AX.VALUE #>> '{value}')::numeric");
-                switch (numberPredicate.operatorMatch) {
-                    case EXACT:
+                switch (numberPredicate.operator) {
+                    case EQUALS:
                     default:
                         attributeBuilder.append(" = ?");
                         break;
-                    case GREATER_THEN:
+                    case GREATER_THAN:
                         attributeBuilder.append(" > ?");
                         break;
                     case GREATER_EQUALS:
                         attributeBuilder.append(" >= ?");
                         break;
-                    case LESS_THEN:
+                    case LESS_THAN:
                         attributeBuilder.append(" < ?");
                         break;
                     case LESS_EQUALS:
@@ -1022,14 +1022,14 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                     case DOUBLE:
                     default:
                         binders.add(st -> st.setDouble(pos, numberPredicate.value));
-                        if (numberPredicate.operatorMatch == OperatorMatch.BETWEEN) {
+                        if (numberPredicate.operator == Operator.BETWEEN) {
                             final int pos2 = binders.size() + 1;
                             binders.add(st -> st.setDouble(pos, numberPredicate.rangeValue));
                         }
                         break;
                     case INTEGER:
                         binders.add(st -> st.setInt(pos, (int) numberPredicate.value));
-                        if (numberPredicate.operatorMatch == OperatorMatch.BETWEEN) {
+                        if (numberPredicate.operator == Operator.BETWEEN) {
                             final int pos2 = binders.size() + 1;
                             binders.add(st -> st.setInt(pos2, (int) numberPredicate.rangeValue));
                         }

@@ -575,7 +575,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         def assets = assetResource.getCurrentUserAssets(null)
 
         then: "result should match"
-        assets.length == 4
+        assets.length == 5
         Asset apartment1 = assets[0]
         apartment1.id == managerDemoSetup.apartment1Id
         apartment1.name == "Apartment 1"
@@ -596,7 +596,11 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         apartment1Kitchen.id == managerDemoSetup.apartment1KitchenId
         apartment1Kitchen.name == "Kitchen"
 
-        Asset apartment2 = assets[3]
+        Asset apartment1Hallway = assets[3]
+        apartment1Hallway.id == managerDemoSetup.apartment1HallwayId
+        apartment1Hallway.name == "Hallway"
+
+        Asset apartment2 = assets[4]
         apartment2.id == managerDemoSetup.apartment2Id
         apartment2.name == "Apartment 2"
 
@@ -636,7 +640,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         )
 
         then: "result should match"
-        assets.length == 2
+        assets.length == 3
 
         when: "the child assets of an asset in the authenticated realm are retrieved"
         assets = assetResource.queryAssets(null,

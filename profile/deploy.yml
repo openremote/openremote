@@ -178,18 +178,16 @@ services:
       # Override logging.properties with a file of your choice.
       # LOGGING_CONFIG_FILE: '/deployment/logging.properties'
 
-      # The number of threads and therefore rules engines that can be instantiated (default unlimited).
-      # RULES_THREADS_MAX: 32
-
       # The number of threads and therefore background tasks that can be executed at the same
       # time. Used by scheduled, usually short-lived and non-blocking tasks, such as protocols
       # polling a remote service at regular interval, or the internal checks for expired client
-      # subscriptions on the event bus (default depends on detected CPU cores).
+      # subscriptions on the event bus (default depends on detected CPU cores). Also used by
+      # the rules engine.
       # SCHEDULED_TASKS_THREADS_MAX: 4
 
       # When asset attributes are enabled for rule events, each value update will be an event fact
-      # in a rules knowledge session. You can set the global default expiration time span, after which
-      # rule event facts are retracted automatically. Default is 1 hour.
+      # in a rules. You can set the global default expiration time span, after which rule event
+      # facts are retracted automatically. Default is 1 hour.
       # RULE_EVENT_EXPIRES: '1h'
 
       # The identity provider implementation to use for managing user identities, roles, and

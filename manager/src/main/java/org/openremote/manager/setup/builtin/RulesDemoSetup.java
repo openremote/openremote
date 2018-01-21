@@ -50,21 +50,27 @@ public class RulesDemoSetup extends AbstractManagerSetup {
         // ################################ Rules demo data ###################################
 
         // Apartment 1
-        try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/DemoApartmentPresenceDetection.drl")) {
+        try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/DemoResidencePresenceDetection.GROOVY")) {
             String rules = IOUtils.toString(inputStream, Charset.forName("utf-8"));
-            Ruleset ruleset = new AssetRuleset("Demo Apartment - Presence Detection with motion sensor", managerDemoSetup.apartment1Id, rules);
+            Ruleset ruleset = new AssetRuleset(
+                "Demo Residence - Presence Detection with motion and CO2 sensors", managerDemoSetup.apartment1Id, rules, Ruleset.Lang.GROOVY
+            );
             apartmentActionsRulesetId = rulesetStorageService.merge(ruleset).getId();
         }
-        try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/DemoApartmentVacationMode.drl")) {
+        try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/DemoResidenceVacationMode.groovy")) {
             String rules = IOUtils.toString(inputStream, Charset.forName("utf-8"));
-            Ruleset ruleset = new AssetRuleset("Demo Apartment - Vacation Mode", managerDemoSetup.apartment1Id, rules);
+            Ruleset ruleset = new AssetRuleset(
+                "Demo Residence - Vacation Mode", managerDemoSetup.apartment1Id, rules, Ruleset.Lang.GROOVY
+            );
             apartmentActionsRulesetId = rulesetStorageService.merge(ruleset).getId();
         }
 
         // Apartment 2
-        try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/DemoApartmentAllLightsOff.drl")) {
+        try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/DemoResidenceAllLightsOff.js")) {
             String rules = IOUtils.toString(inputStream, Charset.forName("utf-8"));
-            Ruleset ruleset = new AssetRuleset("Demo Apartment - All Lights Off", managerDemoSetup.apartment2Id, rules);
+            Ruleset ruleset = new AssetRuleset(
+                "Demo Residence - All Lights Off", managerDemoSetup.apartment2Id, rules, Ruleset.Lang.JAVASCRIPT
+            );
             apartmentActionsRulesetId = rulesetStorageService.merge(ruleset).getId();
         }
     }

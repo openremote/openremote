@@ -21,14 +21,16 @@ package org.openremote.manager.rules.facade;
 
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.asset.ServerAsset;
-import org.openremote.model.asset.BaseAssetQuery;
 import org.openremote.model.asset.Asset;
+import org.openremote.model.asset.BaseAssetQuery;
 import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.attribute.AttributeExecuteStatus;
 import org.openremote.model.rules.*;
+import org.openremote.model.value.Value;
+import org.openremote.model.value.Values;
 
-import java.util.List;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.openremote.model.asset.AssetQuery.PathPredicate;
 import static org.openremote.model.asset.AssetQuery.TenantPredicate;
@@ -88,55 +90,41 @@ public class AssetsFacade<T extends Ruleset> extends Assets {
             }
 
             @Override
-            public List<String> getResults() {
+            public Stream<String> stream() {
                 if (this.select == null)
                     this.select = new Select();
                 Include oldValue = this.select.include;
                 this.select.include = Include.ONLY_ID_AND_NAME;
                 try {
-                    return assetStorageService
-                        .findAll(this)
-                        .stream()
-                        .map(Asset::getId)
-                        .collect(Collectors.toList());
+                    return assetStorageService.findAll(this).stream().map(Asset::getId);
                 } finally {
                     this.select.include = oldValue;
                 }
             }
-
-            @Override
-            public void applyResult(Consumer<String> assetIdConsumer) {
-                assetIdConsumer.accept(getResult());
-            }
-
-            @Override
-            public void applyResults(Consumer<List<String>> assetIdListConsumer) {
-                assetIdListConsumer.accept(getResults());
-            }
         };
 
         if (TenantRuleset.class.isAssignableFrom(rulesetType)) {
-            query.tenantPredicate = new TenantPredicate(rulesetId);
+            query.tenant = new TenantPredicate(rulesetId);
         }
         if (AssetRuleset.class.isAssignableFrom(rulesetType)) {
             ServerAsset restrictedAsset = assetStorageService.find(rulesetId, true);
             if (restrictedAsset == null) {
                 throw new IllegalStateException("Asset is no longer available for this deployment: " + rulesetId);
             }
-            query.pathPredicate = new PathPredicate(restrictedAsset.getPath());
+            query.path = new PathPredicate(restrictedAsset.getPath());
         }
         return query;
     }
 
     @Override
-    public void dispatch(AttributeEvent... events) {
+    public Assets dispatch(AttributeEvent... events) {
         if (events == null)
-            return;
+            return this;
         for (AttributeEvent event : events) {
 
-            // Check if the asset ID of the event can be found in the original query
+            // Check if the asset ID of the event can be found with the default query of this facade
             BaseAssetQuery<RestrictedQuery> checkQuery = query();
-            checkQuery.id = event.getEntityId();
+            checkQuery.id = event.getEntityId(); // Set directly on field, as modifying query restrictions is not allowed
             if (assetStorageService.find(checkQuery) == null) {
                 throw new IllegalArgumentException(
                     "Access to asset not allowed for this rule engine scope: " + event
@@ -144,5 +132,36 @@ public class AssetsFacade<T extends Ruleset> extends Assets {
             }
             eventConsumer.accept(event);
         }
+        return this;
+    }
+
+    @Override
+    public Assets dispatch(String assetId, String attributeName, Value value) {
+        return dispatch(new AttributeEvent(assetId, attributeName, value));
+    }
+
+    @Override
+    public Assets dispatch(String assetId, String attributeName, String value) {
+        return dispatch(assetId, attributeName, Values.create(value));
+    }
+
+    @Override
+    public Assets dispatch(String assetId, String attributeName, double value) {
+        return dispatch(assetId, attributeName, Values.create(value));
+    }
+
+    @Override
+    public Assets dispatch(String assetId, String attributeName, boolean value) {
+        return dispatch(assetId, attributeName, Values.create(value));
+    }
+
+    @Override
+    public Assets dispatch(String assetId, String attributeName, AttributeExecuteStatus status) {
+        return dispatch(assetId, attributeName, status.asValue());
+    }
+
+    @Override
+    public Assets dispatch(String assetId, String attributeName) {
+        return dispatch(new AttributeEvent(assetId, attributeName));
     }
 }
