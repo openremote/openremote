@@ -24,7 +24,6 @@ import java.util.concurrent.*;
 import static org.openremote.container.concurrent.ContainerThreads.DEFAULT_REJECTED_EXECUTION_HANDLER;
 import static org.openremote.container.concurrent.ContainerThreads.logExceptionCause;
 
-// TODO Unused
 public class ContainerExecutor extends ThreadPoolExecutor {
 
     /**

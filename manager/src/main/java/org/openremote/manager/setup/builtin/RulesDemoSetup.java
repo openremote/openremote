@@ -50,7 +50,7 @@ public class RulesDemoSetup extends AbstractManagerSetup {
         // ################################ Rules demo data ###################################
 
         // Apartment 1
-        try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/DemoResidencePresenceDetection.GROOVY")) {
+        try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/DemoResidencePresenceDetection.groovy")) {
             String rules = IOUtils.toString(inputStream, Charset.forName("utf-8"));
             Ruleset ruleset = new AssetRuleset(
                 "Demo Residence - Presence Detection with motion and CO2 sensors", managerDemoSetup.apartment1Id, rules, Ruleset.Lang.GROOVY

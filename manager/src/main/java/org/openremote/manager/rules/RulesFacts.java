@@ -22,6 +22,7 @@ package org.openremote.manager.rules;
 import org.jeasy.rules.api.*;
 import org.openremote.model.asset.AssetEvent;
 import org.openremote.model.asset.AssetQuery;
+import org.openremote.model.asset.AssetQueryPredicate;
 import org.openremote.model.asset.AssetState;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeExecuteStatus;
@@ -324,7 +325,8 @@ public class RulesFacts extends Facts implements RuleListener, RulesEngineListen
     }
 
     public Stream<AssetState> matchAssetState(AssetQuery assetQuery) {
-        return getAssetStates().stream().filter(fact -> matchFact(fact, AssetState.class, assetQuery::test).isPresent());
+        return getAssetStates().stream()
+            .filter(fact -> matchFact(fact, AssetState.class, new AssetQueryPredicate(assetQuery)::test).isPresent());
     }
 
     public Optional<AssetEvent> matchFirstAssetEvent(AssetQuery assetQuery) {
@@ -332,7 +334,8 @@ public class RulesFacts extends Facts implements RuleListener, RulesEngineListen
     }
 
     public Stream<AssetEvent> matchAssetEvent(AssetQuery assetQuery) {
-        return getAssetEvents().stream().filter(fact -> matchFact(fact, AssetEvent.class, assetQuery::test).isPresent());
+        return getAssetEvents().stream()
+            .filter(fact -> matchFact(fact, AssetEvent.class, new AssetQueryPredicate(assetQuery)::test).isPresent());
     }
 
     public RulesFacts updateAssetState(String assetId, String attributeName, Value value) {

@@ -41,7 +41,7 @@ import static org.openremote.model.asset.AssetType.CUSTOM;
  * An asset attribute value update, capturing that asset state at a point in time.
  * <p>
  * This class layout is convenient for writing expressions that match getters, while
- * carrying as much asset details as needed.
+ * carrying as much asset details as needed (e.g. for writing rules).
  */
 @GwtIncompatible
 public abstract class AbstractAssetUpdate implements Comparable<AbstractAssetUpdate> {

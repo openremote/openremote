@@ -19,24 +19,20 @@
  */
 package org.openremote.model.asset;
 
-import com.fasterxml.jackson.annotation.*;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.MetaItemDescriptor;
 import org.openremote.model.value.Value;
 
 import java.util.Arrays;
 import java.util.Locale;
-import java.util.function.Predicate;
-
-import static org.openremote.model.asset.BaseAssetQuery.Operator.EQUALS;
-import static org.openremote.model.asset.BaseAssetQuery.Operator.LESS_EQUALS;
-import static org.openremote.model.asset.BaseAssetQuery.Operator.LESS_THAN;
 
 /**
  * Encapsulate asset query restriction, projection, and ordering of results.
  */
 @SuppressWarnings("unchecked")
-public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> implements Predicate<AbstractAssetUpdate> {
+public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> {
 
     public enum Include {
         ALL_EXCEPT_PATH_AND_ATTRIBUTES,
@@ -167,15 +163,10 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> implements Pred
         include = JsonTypeInfo.As.PROPERTY,
         property = "predicateType"
     )
-    public interface ValuePredicate<T> extends Predicate<T> {
+    public interface ValuePredicate<T> {
     }
 
     public static class ValueNotEmptyPredicate implements ValuePredicate<Value> {
-
-        @Override
-        public boolean test(Value value) {
-            return value != null;
-        }
     }
 
     public static class StringPredicate implements ValuePredicate<String> {
@@ -224,29 +215,6 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> implements Pred
         }
 
         @Override
-        public boolean test(String string) {
-            if (string == null && value == null)
-                return true;
-            if (string == null)
-                return false;
-            if (value == null)
-                return false;
-
-            String have = caseSensitive ? value : value.toUpperCase(Locale.ROOT);
-            String given = caseSensitive ? string : string.toUpperCase(Locale.ROOT);
-
-            switch (match) {
-                case BEGIN:
-                    return have.startsWith(given);
-                case END:
-                    return have.endsWith(given);
-                case CONTAINS:
-                    return have.contains(given);
-            }
-            return have.equals(given);
-        }
-
-        @Override
         public String toString() {
             return getClass().getSimpleName() + "{" +
                 "match=" + match +
@@ -272,14 +240,6 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> implements Pred
         }
 
         @Override
-        public boolean test(Boolean b) {
-            // If given a null, we assume it's false!
-            if (b == null)
-                b = false;
-            return b == value;
-        }
-
-        @Override
         public String toString() {
             return getClass().getSimpleName() + "{" +
                 "predicate=" + value +
@@ -300,24 +260,6 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> implements Pred
         public StringArrayPredicate predicates(StringPredicate... predicates) {
             this.predicates = predicates;
             return this;
-        }
-
-        @Override
-        public boolean test(String[] strings) {
-            if (strings == null && predicates == null)
-                return true;
-            if (strings == null)
-                return false;
-            if (predicates == null)
-                return false;
-            if (strings.length != predicates.length)
-                return false;
-            for (int i = 0; i < predicates.length; i++) {
-                StringPredicate predicate = predicates[i];
-                if (!predicate.test(strings[i]))
-                    return false;
-            }
-            return true;
         }
 
         @Override
@@ -367,11 +309,6 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> implements Pred
             this.operator = Operator.BETWEEN;
             this.rangeValue = beforeValue;
             return this;
-        }
-
-        @Override
-        public boolean test(Long aLong) {
-            throw new UnsupportedOperationException("NOT IMPLEMENTED");
         }
 
         @Override
@@ -436,38 +373,6 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> implements Pred
         }
 
         @Override
-        public boolean test(Double d) {
-            if (d == null) {
-
-                // If given a null and we want to know if it's "less than x", it's always less than x
-                // TODO Should be consistent with BETWEEN behavior?
-                if (operator == LESS_THAN || operator == LESS_EQUALS) {
-                    return true;
-                }
-
-                return false;
-            }
-
-            Number leftOperand = numberType == NumberType.DOUBLE ? d : d.intValue();
-            Number rightOperand = numberType == NumberType.DOUBLE ? value : (int) value;
-            switch (operator) {
-                case EQUALS:
-                    return leftOperand.equals(rightOperand);
-                case BETWEEN:
-                    return leftOperand.doubleValue() >= rightOperand.doubleValue() && leftOperand.doubleValue() <= rangeValue;
-                case LESS_THAN:
-                    return leftOperand.doubleValue() < rightOperand.doubleValue();
-                case LESS_EQUALS:
-                    return leftOperand.doubleValue() <= rightOperand.doubleValue();
-                case GREATER_THAN:
-                    return leftOperand.doubleValue() > rightOperand.doubleValue();
-                case GREATER_EQUALS:
-                    return leftOperand.doubleValue() >= rightOperand.doubleValue();
-            }
-            return false;
-        }
-
-        @Override
         public String toString() {
             return getClass().getSimpleName() + "{" +
                 "value=" + value +
@@ -478,7 +383,7 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> implements Pred
         }
     }
 
-    public static class ParentPredicate implements Predicate<AbstractAssetUpdate> {
+    public static class ParentPredicate {
         public String id;
         public String type;
         public boolean noParent;
@@ -514,13 +419,6 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> implements Pred
         }
 
         @Override
-        public boolean test(AbstractAssetUpdate assetUpdate) {
-            return (id == null || id.equals(assetUpdate.getParentId()))
-                && (type == null || type.equals(assetUpdate.getParentTypeString()))
-                && (!noParent || assetUpdate.getParentId() == null);
-        }
-
-        @Override
         public String toString() {
             return getClass().getSimpleName() + "{" +
                 "id='" + id + '\'' +
@@ -530,7 +428,7 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> implements Pred
         }
     }
 
-    public static class PathPredicate implements Predicate<String[]> {
+    public static class PathPredicate {
         public String[] path;
 
         public PathPredicate() {
@@ -550,11 +448,6 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> implements Pred
         }
 
         @Override
-        public boolean test(String[] givenPath) {
-            return Arrays.equals(path, givenPath);
-        }
-
-        @Override
         public String toString() {
             return getClass().getSimpleName() + "{" +
                 "path=" + Arrays.toString(path) +
@@ -562,7 +455,7 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> implements Pred
         }
     }
 
-    public static class TenantPredicate implements Predicate<AbstractAssetUpdate> {
+    public static class TenantPredicate {
         public String realmId;
         public String realm;
 
@@ -584,12 +477,6 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> implements Pred
         }
 
         @Override
-        public boolean test(AbstractAssetUpdate assetUpdate) {
-            return (realm == null || realm.equals(assetUpdate.getTenantRealm()))
-                && (realmId == null || realmId.equals(assetUpdate.getRealmId()));
-        }
-
-        @Override
         public String toString() {
             return getClass().getSimpleName() + "{" +
                 "realmId='" + realmId + '\'' +
@@ -598,7 +485,7 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> implements Pred
         }
     }
 
-    public static class AttributePredicate implements Predicate<AbstractAssetUpdate> {
+    public static class AttributePredicate {
         public StringPredicate name;
         public ValuePredicate value;
 
@@ -630,42 +517,6 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> implements Pred
         public AttributePredicate value(ValuePredicate value) {
             this.value = value;
             return this;
-        }
-
-        @Override
-        public boolean test(AbstractAssetUpdate assetUpdate) {
-            if (name != null && !name.test(assetUpdate.getAttributeName()))
-                return false;
-
-            if (value == null)
-                return true;
-
-            if (value instanceof AssetQuery.ValueNotEmptyPredicate) {
-
-                AssetQuery.ValueNotEmptyPredicate predicate = (AssetQuery.ValueNotEmptyPredicate) value;
-                return predicate.test(assetUpdate.getValue().orElse(null));
-
-            } else if (value instanceof AssetQuery.StringPredicate) {
-
-                AssetQuery.StringPredicate predicate = (AssetQuery.StringPredicate) value;
-                return predicate.test(assetUpdate.getValueAsString().orElse(null));
-
-            } else if (value instanceof AssetQuery.BooleanPredicate) {
-
-                AssetQuery.BooleanPredicate predicate = (AssetQuery.BooleanPredicate) value;
-                return predicate.test(assetUpdate.getValueAsBoolean().orElse(null));
-
-            } else if (value instanceof AssetQuery.NumberPredicate) {
-
-                AssetQuery.NumberPredicate predicate = (AssetQuery.NumberPredicate) value;
-                return predicate.test(assetUpdate.getValueAsNumber().orElse(null));
-
-            } else {
-                // TODO Implement more
-                throw new UnsupportedOperationException(
-                    "Restriction by attribute value not implemented in rules matching for " + value.getClass()
-                );
-            }
         }
 
         @Override
@@ -952,44 +803,6 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> implements Pred
     public CHILD orderBy(OrderBy orderBy) {
         this.orderBy = orderBy;
         return (CHILD) this;
-    }
-
-    @Override
-    public boolean test(AbstractAssetUpdate assetUpdate) {
-        if (id != null && !id.equals(assetUpdate.getId()))
-            return false;
-
-        if (name != null && !name.test(assetUpdate.getName()))
-            return false;
-
-        if (parent != null && !parent.test(assetUpdate))
-            return false;
-
-        if (path != null && !path.test(assetUpdate.getPath()))
-            return false;
-
-        if (tenant != null && !tenant.test(assetUpdate))
-            return false;
-
-        if (userId != null) {
-            // TODO Would require linked user IDs in AbstractAssetUpdate
-            throw new UnsupportedOperationException("Restriction by user ID not implemented in rules matching");
-        }
-        if (type != null && !type.test(assetUpdate.getTypeString()))
-            return false;
-
-        if (attribute != null) {
-            for (BaseAssetQuery.AttributePredicate attributePredicate : attribute) {
-                if (!attributePredicate.test(assetUpdate))
-                    return false;
-            }
-        }
-
-        if (attributeMeta != null) {
-            // TODO Would require meta items in AbstractAssetUpdate
-            throw new UnsupportedOperationException("Restriction by attribute meta not implemented in rules matching");
-        }
-        return true;
     }
 
     @Override
