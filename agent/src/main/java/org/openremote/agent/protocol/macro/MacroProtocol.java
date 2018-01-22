@@ -249,7 +249,7 @@ public class MacroProtocol extends AbstractProtocol {
             LOG.fine("No actions are available for the linked macro, maybe it is disabled?: " + macroRef);
         } else {
             actionIndex = Math.min(actions.size(), Math.max(0, actionIndex));
-            actionValue = actions.get(actionIndex).getAttributeState().getCurrentValue().orElse(null);
+            actionValue = actions.get(actionIndex).getAttributeState().getValue().orElse(null);
             LOG.fine("Attribute is linked to the value of macro action index: actionIndex");
         }
 

@@ -20,10 +20,10 @@
 package org.openremote.manager.rules;
 
 import org.jeasy.rules.api.*;
-import org.openremote.model.asset.AssetEvent;
+import org.openremote.model.rules.AssetEvent;
 import org.openremote.model.asset.AssetQuery;
-import org.openremote.model.asset.AssetQueryPredicate;
-import org.openremote.model.asset.AssetState;
+import org.openremote.model.rules.AssetQueryPredicate;
+import org.openremote.model.rules.AssetState;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeExecuteStatus;
 import org.openremote.model.rules.Assets;

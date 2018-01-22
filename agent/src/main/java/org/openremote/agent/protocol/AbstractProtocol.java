@@ -295,9 +295,9 @@ public abstract class AbstractProtocol implements Protocol {
             return;
         }
 
-        if (state.getCurrentValue().isPresent()) {
+        if (state.getValue().isPresent()) {
             List<MessageFilter> filters;
-            Value value = state.getCurrentValue().get();
+            Value value = state.getValue().get();
 
             synchronized (linkedAttributeFilters) {
                 filters = linkedAttributeFilters.get(state.getAttributeRef());
@@ -361,7 +361,7 @@ public abstract class AbstractProtocol implements Protocol {
         if (updateLocation) {
 
             // Check value type is compatible
-            Point location = state.getCurrentValue().map(value -> {
+            Point location = state.getValue().map(value -> {
                 if (value.getType() != ValueType.ARRAY) {
                     LOG.warning("Location linked attribute type is not an array");
                     return null;

@@ -23,7 +23,6 @@ import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebResource;
-import org.openremote.model.asset.AssetProcessingException;
 import org.openremote.model.asset.AssetResource;
 import org.openremote.model.security.Tenant;
 import org.openremote.model.Constants;
@@ -244,8 +243,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                 for (AssetAttribute updatedAttribute : asset.getAttributesList()) {
 
                     // Proper validation happens on merge(), here we only need the name to continue
-                    String updatedAttributeName =
-                        updatedAttribute.getName().orElseThrow(() -> new IllegalStateException("Missing attribute name"));
+                    String updatedAttributeName = updatedAttribute.getNameOrThrow();
 
                     // Check if attribute is present on the asset in storage
                     Optional<AssetAttribute> serverAttribute = resultAsset.getAttribute(updatedAttributeName);

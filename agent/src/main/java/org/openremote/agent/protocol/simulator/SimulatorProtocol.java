@@ -416,7 +416,7 @@ public class SimulatorProtocol extends AbstractProtocol {
             }
 
             Optional<Value> oldValue = element.getValue();
-            element.setValue(attributeState.getCurrentValue().orElse(null));
+            element.setValue(attributeState.getValue().orElse(null));
             List<ValidationFailure> failures = element.getValidationFailures();
 
             if (!failures.isEmpty()) {

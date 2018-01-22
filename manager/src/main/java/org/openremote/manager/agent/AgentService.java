@@ -30,20 +30,20 @@ import org.openremote.container.message.MessageBrokerSetupService;
 import org.openremote.container.persistence.PersistenceEvent;
 import org.openremote.container.timer.TimerService;
 import org.openremote.container.web.WebService;
-import org.openremote.manager.asset.AssetProcessingService;
-import org.openremote.manager.asset.AssetStorageService;
-import org.openremote.manager.asset.ServerAsset;
+import org.openremote.manager.asset.*;
 import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.model.asset.*;
 import org.openremote.model.asset.agent.*;
 import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.attribute.AttributeEvent.Source;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.event.shared.TenantFilter;
 import org.openremote.model.security.ClientRole;
 import org.openremote.model.util.Pair;
 import org.openremote.model.value.ObjectValue;
 
+import javax.persistence.EntityManager;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -56,8 +56,8 @@ import static org.openremote.agent.protocol.Protocol.ACTUATOR_TOPIC;
 import static org.openremote.agent.protocol.Protocol.SENSOR_QUEUE;
 import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_TOPIC;
 import static org.openremote.manager.asset.AssetProcessingService.ASSET_QUEUE;
-import static org.openremote.manager.asset.AssetRoute.isPersistenceEventForAssetType;
-import static org.openremote.manager.asset.AssetRoute.isPersistenceEventForEntityType;
+import static org.openremote.manager.asset.AssetUpdateProcessor.isPersistenceEventForAssetType;
+import static org.openremote.manager.asset.AssetUpdateProcessor.isPersistenceEventForEntityType;
 import static org.openremote.model.AbstractValueTimestampHolder.VALUE_TIMESTAMP_FIELD_NAME;
 import static org.openremote.model.asset.AssetAttribute.attributesFromJson;
 import static org.openremote.model.asset.AssetAttribute.getAddedOrModifiedAttributes;
@@ -65,6 +65,7 @@ import static org.openremote.model.asset.AssetType.AGENT;
 import static org.openremote.model.asset.agent.AgentLink.getAgentLink;
 import static org.openremote.model.asset.agent.ConnectionStatus.*;
 import static org.openremote.model.attribute.AttributeEvent.HEADER_SOURCE;
+import static org.openremote.model.attribute.AttributeEvent.Source.SENSOR;
 import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 import static org.openremote.model.util.TextUtil.isValidURN;
 
@@ -73,7 +74,7 @@ import static org.openremote.model.util.TextUtil.isValidURN;
  * <p>
  * Finds all {@link AssetType#AGENT} assets and manages their {@link ProtocolConfiguration}s.
  */
-public class AgentService extends RouteBuilder implements ContainerService, Consumer<AssetState>, ProtocolAssetService {
+public class AgentService extends RouteBuilder implements ContainerService, AssetUpdateProcessor, ProtocolAssetService {
 
     private static final Logger LOG = Logger.getLogger(AgentService.class.getName());
 
@@ -102,9 +103,9 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
         clientEventService.addSubscriptionAuthorizer((auth, subscription) ->
             subscription.isEventType(AgentStatusEvent.class)
                 && identityService.getIdentityProvider()
-                    .canSubscribeWith(auth, subscription.getFilter() instanceof TenantFilter
-                        ? ((TenantFilter) subscription.getFilter())
-                        : null, ClientRole.READ_ASSETS));
+                .canSubscribeWith(auth, subscription.getFilter() instanceof TenantFilter
+                    ? ((TenantFilter) subscription.getFilter())
+                    : null, ClientRole.READ_ASSETS));
 
         container.getService(WebService.class).getApiSingletons().add(
             new AgentResourceImpl(
@@ -180,7 +181,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
         from(SENSOR_QUEUE)
             .routeId("FromSensorUpdates")
             .filter(body().isInstanceOf(AttributeEvent.class))
-            .setHeader(HEADER_SOURCE, () -> AttributeEvent.Source.SENSOR)
+            .setHeader(HEADER_SOURCE, () -> SENSOR)
             .to(ASSET_QUEUE);
     }
 
@@ -256,7 +257,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
                 ).collect(Collectors.toList());
 
                 List<AssetAttribute> removedAttributes = getAddedOrModifiedAttributes(
-                        updatedAttributes, existingAttributes, options.getIgnoredAttributeNames(), options.getIgnoredAttributeKeys()
+                    updatedAttributes, existingAttributes, options.getIgnoredAttributeNames(), options.getIgnoredAttributeKeys()
                 ).collect(Collectors.toList());
 
                 if (addedOrModifiedAttributes.isEmpty() && removedAttributes.isEmpty()) {
@@ -635,23 +636,19 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
      * required (i.e. the protocol is responsible for synchronising state with the database).
      */
     @Override
-    public void accept(AssetState assetState) {
-        if (assetState.getSource() == AttributeEvent.Source.SENSOR) {
-            return;
+    public boolean processAssetUpdate(EntityManager entityManager, Asset asset, AssetAttribute attribute, Source source) throws AssetProcessingException {
+        if (source == SENSOR) {
+            return false;
         }
 
-        AgentLink.getAgentLink(assetState.getAttribute())
+        return AgentLink.getAgentLink(attribute)
             .map(ref ->
                 getProtocolConfiguration(ref)
-                    .orElseGet(() -> {
-                        assetState.setError(new RuntimeException("Attribute has an invalid agent link: " + assetState.getAttribute()));
-                        assetState.setProcessingStatus(AssetState.ProcessingStatus.ERROR);
-                        return null;
-                    })
+                    .orElseThrow(() -> new AssetProcessingException(AssetProcessingException.Reason.INVALID_AGENT_LINK))
             )
             .map(protocolConfiguration -> {
                 // Its' a send to actuator - push the update to the protocol
-                assetState.getAttribute().getStateEvent().ifPresent(attributeEvent -> {
+                attribute.getStateEvent().ifPresent(attributeEvent -> {
                     LOG.fine("Sending to actuator topic: " + attributeEvent);
                     messageBrokerService.getProducerTemplate().sendBodyAndHeader(
                         ACTUATOR_TOPIC,
@@ -660,13 +657,9 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
                         protocolConfiguration.getValueAsString().orElse("")
                     );
                 });
-                assetState.setProcessingStatus(AssetState.ProcessingStatus.COMPLETED);
-                return protocolConfiguration;
+                return true; // Processing complete, skip other processors
             })
-            .orElseGet(() -> {
-                // This is just a non protocol attribute so allow the processing to continue
-                return null;
-            });
+            .orElse(false); // This is just a non protocol attribute so allow the processing to continue
     }
 
     /**

@@ -3,7 +3,7 @@ package demo.rules
 import groovy.transform.ToString
 import org.openremote.manager.rules.RulesBuilder
 import org.openremote.model.asset.AssetQuery
-import org.openremote.model.asset.AssetState
+import org.openremote.model.rules.AssetState
 import org.openremote.model.rules.Assets
 
 import java.util.logging.Logger

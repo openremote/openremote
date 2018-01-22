@@ -338,7 +338,7 @@ public class TimerProtocol extends AbstractProtocol {
                 MetaItem.replaceMetaByName(
                     protocolConfig.getMeta(),
                     META_TIMER_CRON_EXPRESSION,
-                    state.getCurrentValue().orElse(null)
+                    state.getValue().orElse(null)
                 );
             }
         );

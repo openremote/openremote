@@ -26,28 +26,26 @@ import org.openremote.container.message.MessageBrokerSetupService;
 import org.openremote.container.persistence.PersistenceEvent;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.timer.TimerService;
-import org.openremote.manager.asset.AssetProcessingService;
-import org.openremote.manager.asset.AssetStorageService;
-import org.openremote.manager.asset.ServerAsset;
+import org.openremote.manager.asset.*;
 import org.openremote.manager.concurrent.ManagerExecutorService;
 import org.openremote.manager.notification.NotificationService;
 import org.openremote.manager.rules.facade.AssetsFacade;
 import org.openremote.manager.rules.facade.UsersFacade;
 import org.openremote.manager.security.ManagerIdentityService;
-import org.openremote.model.asset.*;
-import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.asset.Asset;
+import org.openremote.model.asset.AssetAttribute;
+import org.openremote.model.asset.AssetMeta;
+import org.openremote.model.asset.AssetQuery;
+import org.openremote.model.attribute.AttributeEvent.Source;
 import org.openremote.model.attribute.AttributeType;
-import org.openremote.model.rules.AssetRuleset;
-import org.openremote.model.rules.GlobalRuleset;
-import org.openremote.model.rules.Ruleset;
-import org.openremote.model.rules.TenantRuleset;
+import org.openremote.model.rules.*;
 import org.openremote.model.security.Tenant;
 import org.openremote.model.util.Pair;
 import org.openremote.model.value.ObjectValue;
 
+import javax.persistence.EntityManager;
 import java.util.*;
 import java.util.function.BiFunction;
-import java.util.function.Consumer;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -55,7 +53,7 @@ import java.util.stream.Stream;
 import static java.util.logging.Level.FINEST;
 import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_TOPIC;
 import static org.openremote.container.util.MapAccess.getString;
-import static org.openremote.manager.asset.AssetRoute.isPersistenceEventForEntityType;
+import static org.openremote.manager.asset.AssetUpdateProcessor.isPersistenceEventForEntityType;
 import static org.openremote.model.AbstractValueTimestampHolder.VALUE_TIMESTAMP_FIELD_NAME;
 import static org.openremote.model.asset.AssetAttribute.attributesFromJson;
 import static org.openremote.model.asset.AssetAttribute.getAddedOrModifiedAttributes;
@@ -73,7 +71,7 @@ import static org.openremote.model.asset.AssetAttribute.getAddedOrModifiedAttrib
  * with the same scope is not guaranteed)</li>
  * </ol>
  */
-public class RulesService extends RouteBuilder implements ContainerService, Consumer<AssetState> {
+public class RulesService extends RouteBuilder implements ContainerService, AssetUpdateProcessor {
 
     private static final Logger LOG = Logger.getLogger(RulesService.class.getName());
 
@@ -176,9 +174,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
             .forEach(pair -> {
                 ServerAsset asset = pair.key;
                 pair.value.forEach(ruleAttribute -> {
-                    AssetState assetState = new AssetState(asset, ruleAttribute, AttributeEvent.Source.INTERNAL);
-                    // Set the status to completed already so rules cannot interfere with this initial insert
-                    assetState.setProcessingStatus(AssetState.ProcessingStatus.COMPLETED);
+                    AssetState assetState = new AssetState(asset, ruleAttribute, Source.INTERNAL);
                     updateAssetState(assetState, true, true);
                 });
             });
@@ -203,26 +199,31 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
     }
 
     @Override
-    public void accept(AssetState assetState) {
+    public boolean processAssetUpdate(EntityManager em,
+                                      Asset asset,
+                                      AssetAttribute attribute,
+                                      Source source) throws AssetProcessingException {
         // We might process two facts for a single attribute update, if that is what the user wants
 
         // First as asset state
-        if (assetState.getAttribute().isRuleState()) {
+        AssetState assetState = new AssetState(asset, attribute, source);
+        if (attribute.isRuleState()) {
             updateAssetState(
                 assetState,
                 false, // Don't skip the error check on the rules engines
-                !assetState.getAttribute().isRuleEvent() // If it's not a rule event, fire immediately
+                !attribute.isRuleEvent() // If it's not a rule event, fire immediately
             );
         }
 
         // Then as asset event (if there wasn't an error), this will also fire the rules engines
-        if (assetState.getProcessingStatus() == AssetState.ProcessingStatus.CONTINUE
-            && assetState.getAttribute().isRuleEvent()) {
+        if (attribute.isRuleEvent()) {
             process(new AssetEvent(
                 assetState,
-                assetState.getAttribute().getRuleEventExpires().orElse(configEventExpires)
+                attribute.getRuleEventExpires().orElse(configEventExpires)
             ));
         }
+
+        return false;
     }
 
     protected synchronized void processTenantChange(Tenant tenant, PersistenceEvent.Cause cause) {
@@ -266,7 +267,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
         // We must load the asset from database (only when required), as the
         // persistence event might not contain a completely loaded asset
         BiFunction<Asset, AssetAttribute, AssetState> buildAssetState = (loadedAsset, attribute) ->
-            new AssetState(loadedAsset, attribute.deepCopy(), AttributeEvent.Source.INTERNAL);
+            new AssetState(loadedAsset, attribute.deepCopy(), Source.INTERNAL);
 
         switch (persistenceEvent.getCause()) {
             case INSERT:
@@ -283,8 +284,6 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
                         return;
 
                     AssetState assetState = buildAssetState.apply(loadedAsset, attribute);
-                    // Set the status to completed already so rules cannot interfere with this initial insert
-                    assetState.setProcessingStatus(AssetState.ProcessingStatus.COMPLETED);
                     LOG.fine("Asset was persisted (" + persistenceEvent.getCause() + "), inserting fact: " + assetState);
                     updateAssetState(assetState, true, true);
                 });
@@ -329,8 +328,6 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
                 getAddedOrModifiedAttributes(oldRuleStateAttributes, newRuleStateAttributes, key -> key.equals(VALUE_TIMESTAMP_FIELD_NAME))
                     .forEach(newFactAttribute -> {
                         AssetState assetState = buildAssetState.apply(loadedAsset, newFactAttribute);
-                        // Set the status to completed already so rules cannot interfere with this initial insert
-                        assetState.setProcessingStatus(AssetState.ProcessingStatus.COMPLETED);
                         LOG.fine("Asset was persisted (" + persistenceEvent.getCause() + "), updating: " + assetState);
                         updateAssetState(assetState, true, true);
                     });
@@ -344,7 +341,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
                         // We can't load the asset again (it was deleted), so don't use buildAssetState() and
                         // hope that the path of the event asset has been loaded before deletion, although it is
                         // "unlikely" anybody will access it during retraction...
-                        AssetState assetState = new AssetState(asset, attribute, AttributeEvent.Source.INTERNAL);
+                        AssetState assetState = new AssetState(asset, attribute, Source.INTERNAL);
                         LOG.fine("Asset was persisted (" + persistenceEvent.getCause() + "), retracting fact: " + assetState);
                         retractAssetState(assetState);
                     });
@@ -595,12 +592,10 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
 
         if (!skipStatusCheck) {
             // Check that all engines in the scope are available
-            // TODO This is not very useful without locking the engines until we are done with the udpate
+            // TODO This is not very useful without locking the engines until we are done with the update
             for (RulesEngine rulesEngine : rulesEngines) {
                 if (rulesEngine.isError()) {
-                    assetState.setProcessingStatus(AssetState.ProcessingStatus.ERROR);
-                    assetState.setError(rulesEngine.getError());
-                    return;
+                    throw rulesEngine.getError();
                 }
             }
         }

@@ -21,6 +21,8 @@ package org.openremote.model.asset;
 
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.attribute.*;
+import org.openremote.model.rules.AssetEvent;
+import org.openremote.model.rules.AssetState;
 import org.openremote.model.rules.TemporaryFact;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueType;

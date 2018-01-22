@@ -159,7 +159,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
             assertRulesFired(rulesImport.apartment2Engine, ["All"])
             assertRulesFired(rulesImport.apartment3Engine, 0)
             assertRulesFired(smartHomeEngine, 8)
-            assertRulesFired(smartHomeEngine, ["Living Room All", "Parent Type Residence", "Asset Type Room", "Boolean Attributes"])
+            assertRulesFired(smartHomeEngine, ["Living Room All", "Kitchen All", "Kitchen Number Attributes", "Parent Type Residence", "Asset Type Room", "Boolean Attributes", "String attributes", "Number value types"])
         }
 
         when: "an attribute event occurs"
@@ -178,8 +178,8 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
             assertRulesFired(rulesImport.apartment2Engine, 1)
             assertRulesFired(rulesImport.apartment2Engine, ["All"])
             assertRulesFired(rulesImport.apartment3Engine, 0)
-            assertRulesFired(smartHomeEngine, 9)
-            assertRulesFired(smartHomeEngine, ["Living Room All", "Current Asset Update", "Parent Type Residence", "Asset Type Room", "Boolean Attributes"])
+            assertRulesFired(smartHomeEngine, 8)
+            assertRulesFired(smartHomeEngine, ["Living Room All", "Kitchen All", "Kitchen Number Attributes", "Parent Type Residence", "Asset Type Room", "Boolean Attributes", "String attributes", "Number value types"])
         }
 
         cleanup: "the server should be stopped"

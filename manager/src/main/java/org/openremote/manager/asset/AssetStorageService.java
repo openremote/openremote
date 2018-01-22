@@ -57,7 +57,7 @@ import java.util.function.Consumer;
 import java.util.logging.Logger;
 
 import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_TOPIC;
-import static org.openremote.manager.asset.AssetRoute.isPersistenceEventForEntityType;
+import static org.openremote.manager.asset.AssetUpdateProcessor.isPersistenceEventForEntityType;
 import static org.openremote.manager.event.ClientEventService.CLIENT_EVENT_TOPIC;
 import static org.openremote.manager.event.ClientEventService.getSessionKey;
 import static org.openremote.model.asset.BaseAssetQuery.*;
@@ -67,7 +67,7 @@ import static org.openremote.model.asset.BaseAssetQuery.Include.ALL;
 import static org.openremote.model.asset.BaseAssetQuery.Include.ALL_EXCEPT_PATH_AND_ATTRIBUTES;
 import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 
-public class AssetStorageService extends RouteBuilder implements ContainerService, Consumer<AssetState> {
+public class AssetStorageService extends RouteBuilder implements ContainerService {
 
     protected class PreparedAssetQuery {
         final protected String querySql;
@@ -128,22 +128,6 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     @Override
     public void stop(Container container) throws Exception {
 
-    }
-
-    @Override
-    public void accept(AssetState assetState) {
-        String assetId = assetState.getId();
-        String attributeName = assetState.getAttribute().getName()
-            .orElseThrow(() -> new IllegalStateException("Cannot store asset state for attribute with no name"));
-        Value value = assetState.getAttribute().getValue().orElse(null);
-        // If there is no timestamp, use system time (0 or -1 are "no timestamp")
-        Optional<Long> timestamp = assetState.getAttribute().getValueTimestamp();
-        String valueTimestamp = Long.toString(
-            timestamp.filter(ts -> ts > 0).orElseGet(() -> timerService.getCurrentTimeMillis())
-        );
-        if (!storeAttributeValue(assetId, attributeName, value, valueTimestamp)) {
-            throw new RuntimeException("Database update failed, no rows updated");
-        }
     }
 
     @SuppressWarnings("unchecked")
@@ -211,6 +195,13 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
     /**
      * @param loadComplete If the whole asset data (including path and attributes) should be loaded.
+     */
+    public ServerAsset find(EntityManager em, String assetId, boolean loadComplete) {
+        return find(em, assetId, loadComplete, PRIVATE_READ);
+    }
+
+    /**
+     * @param loadComplete If the whole asset data (including path and attributes) should be loaded.
      * @param access       The required access permissions of the asset data.
      */
     public ServerAsset find(String assetId, boolean loadComplete, Access access) {
@@ -221,6 +212,17 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
     public ServerAsset find(BaseAssetQuery query) {
         return persistenceService.doReturningTransaction(em -> find(em, query));
+    }
+
+    public ServerAsset find(EntityManager em, BaseAssetQuery query) {
+        List<ServerAsset> result = findAll(em, query);
+        if (result.size() == 0)
+            return null;
+        if (result.size() > 1) {
+            throw new IllegalArgumentException("Query returned more than one asset");
+        }
+        return result.get(0);
+
     }
 
     public List<ServerAsset> findAll(BaseAssetQuery query) {
@@ -490,10 +492,6 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         void acceptStatement(PreparedStatement st) throws SQLException;
     }
 
-    protected ServerAsset find(EntityManager em, String assetId, boolean loadComplete) {
-        return find(em, assetId, loadComplete, PRIVATE_READ);
-    }
-
     protected ServerAsset find(EntityManager em, String assetId, boolean loadComplete, Access access) {
         if (assetId == null)
             throw new IllegalArgumentException("Can't query null asset identifier");
@@ -503,17 +501,6 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 new Select(loadComplete ? ALL : ALL_EXCEPT_PATH_AND_ATTRIBUTES, access)
             ).id(assetId)
         );
-    }
-
-    public ServerAsset find(EntityManager em, BaseAssetQuery query) {
-        List<ServerAsset> result = findAll(em, query);
-        if (result.size() == 0)
-            return null;
-        if (result.size() > 1) {
-            throw new IllegalArgumentException("Query returned more than one asset");
-        }
-        return result.get(0);
-
     }
 
     protected List<ServerAsset> findAll(EntityManager em, BaseAssetQuery query) {
@@ -682,7 +669,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             // Filter non-private access attributes
             AssetQuery.AttributeMetaPredicate accessPredicate =
                 new AssetQuery.AttributeMetaPredicate()
-                    .itemName(access == RESTRICTED_READ ? AssetMeta.ACCESS_RESTRICTED_READ: AssetMeta.ACCESS_PUBLIC_READ)
+                    .itemName(access == RESTRICTED_READ ? AssetMeta.ACCESS_RESTRICTED_READ : AssetMeta.ACCESS_PUBLIC_READ)
                     .itemValue(new AssetQuery.BooleanPredicate(true));
             sb.append(buildAttributeMetaFilter(accessPredicate, binders));
         }
@@ -1070,57 +1057,54 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         }
     }
 
-    protected boolean storeAttributeValue(String assetId, String attributeName, Value value, String timestamp) {
-        return persistenceService.doReturningTransaction(entityManager ->
-            entityManager.unwrap(Session.class).doReturningWork(connection -> {
+    public boolean storeAttributeValue(EntityManager em, String assetId, String attributeName, Value value, String timestamp) {
+        return em.unwrap(Session.class).doReturningWork(connection -> {
+            String update =
+                "update ASSET" +
+                    " set ATTRIBUTES = jsonb_set(jsonb_set(ATTRIBUTES, ?, ?, true), ?, ?, true)" +
+                    " where ID = ? and ATTRIBUTES -> ? is not null";
+            try (PreparedStatement statement = connection.prepareStatement(update)) {
 
-                String update =
-                    "update ASSET" +
-                        " set ATTRIBUTES = jsonb_set(jsonb_set(ATTRIBUTES, ?, ?, true), ?, ?, true)" +
-                        " where ID = ? and ATTRIBUTES -> ? is not null";
-                try (PreparedStatement statement = connection.prepareStatement(update)) {
-
-                    // Bind the value (and check we don't have a SQL injection hole in attribute name!)
-                    if (!AssetAttribute.ATTRIBUTE_NAME_VALIDATOR.test(attributeName)) {
-                        LOG.fine(
-                            "Invalid attribute name (must match '" + AssetAttribute.ATTRIBUTE_NAME_PATTERN + "'): " + attributeName
-                        );
-                        return false;
-                    }
-
-                    Array attributeValuePath = connection.createArrayOf(
-                        "text",
-                        new String[]{attributeName, "value"}
+                // Bind the value (and check we don't have a SQL injection hole in attribute name!)
+                if (!AssetAttribute.ATTRIBUTE_NAME_VALIDATOR.test(attributeName)) {
+                    LOG.fine(
+                        "Invalid attribute name (must match '" + AssetAttribute.ATTRIBUTE_NAME_PATTERN + "'): " + attributeName
                     );
-                    statement.setArray(1, attributeValuePath);
-
-                    PGobject pgJsonValue = new PGobject();
-                    pgJsonValue.setType("jsonb");
-                    // Careful, do not set Java null (as returned by value.toJson()) here! It will erase your whole SQL column!
-                    pgJsonValue.setValue(value == null ? "null" : value.toJson());
-                    statement.setObject(2, pgJsonValue);
-
-                    // Bind the value timestamp
-                    Array attributeValueTimestampPath = connection.createArrayOf(
-                        "text",
-                        new String[]{attributeName, "valueTimestamp"}
-                    );
-                    statement.setArray(3, attributeValueTimestampPath);
-                    PGobject pgJsonValueTimestamp = new PGobject();
-                    pgJsonValueTimestamp.setType("jsonb");
-                    pgJsonValueTimestamp.setValue(timestamp);
-                    statement.setObject(4, pgJsonValueTimestamp);
-
-                    // Bind asset ID and attribute name
-                    statement.setString(5, assetId);
-                    statement.setString(6, attributeName);
-
-                    int updatedRows = statement.executeUpdate();
-                    LOG.fine("Stored asset '" + assetId + "' attribute '" + attributeName + "' value, affected rows: " + updatedRows);
-                    return updatedRows == 1;
+                    return false;
                 }
-            })
-        );
+
+                Array attributeValuePath = connection.createArrayOf(
+                    "text",
+                    new String[]{attributeName, "value"}
+                );
+                statement.setArray(1, attributeValuePath);
+
+                PGobject pgJsonValue = new PGobject();
+                pgJsonValue.setType("jsonb");
+                // Careful, do not set Java null (as returned by value.toJson()) here! It will erase your whole SQL column!
+                pgJsonValue.setValue(value == null ? "null" : value.toJson());
+                statement.setObject(2, pgJsonValue);
+
+                // Bind the value timestamp
+                Array attributeValueTimestampPath = connection.createArrayOf(
+                    "text",
+                    new String[]{attributeName, "valueTimestamp"}
+                );
+                statement.setArray(3, attributeValueTimestampPath);
+                PGobject pgJsonValueTimestamp = new PGobject();
+                pgJsonValueTimestamp.setType("jsonb");
+                pgJsonValueTimestamp.setValue(timestamp);
+                statement.setObject(4, pgJsonValueTimestamp);
+
+                // Bind asset ID and attribute name
+                statement.setString(5, assetId);
+                statement.setString(6, attributeName);
+
+                int updatedRows = statement.executeUpdate();
+                LOG.fine("Stored asset '" + assetId + "' attribute '" + attributeName + "' value, affected rows: " + updatedRows);
+                return updatedRows == 1;
+            }
+        });
     }
 
     protected void publishModificationEvents(PersistenceEvent<ServerAsset> persistenceEvent) {

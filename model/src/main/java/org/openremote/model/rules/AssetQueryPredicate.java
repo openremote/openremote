@@ -17,8 +17,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.model.asset;
+package org.openremote.model.rules;
 
+import org.openremote.model.asset.BaseAssetQuery;
 import org.openremote.model.asset.BaseAssetQuery.*;
 
 import java.util.Arrays;
@@ -29,9 +30,9 @@ import static org.openremote.model.asset.BaseAssetQuery.Operator.LESS_EQUALS;
 import static org.openremote.model.asset.BaseAssetQuery.Operator.LESS_THAN;
 
 /**
- * Test an {@link AbstractAssetUpdate} with a {@link BaseAssetQuery}.
+ * Test an {@link AssetState} with a {@link BaseAssetQuery}.
  */
-public class AssetQueryPredicate implements Predicate<AbstractAssetUpdate> {
+public class AssetQueryPredicate implements Predicate<AssetState> {
 
     final protected BaseAssetQuery query;
 
@@ -40,33 +41,33 @@ public class AssetQueryPredicate implements Predicate<AbstractAssetUpdate> {
     }
 
     @Override
-    public boolean test(AbstractAssetUpdate assetUpdate) {
+    public boolean test(AssetState assetState) {
 
-        if (query.id != null && !query.id.equals(assetUpdate.getId()))
+        if (query.id != null && !query.id.equals(assetState.getId()))
             return false;
 
-        if (query.name != null && !asPredicate(query.name).test(assetUpdate.getName()))
+        if (query.name != null && !asPredicate(query.name).test(assetState.getName()))
             return false;
 
-        if (query.parent != null && !asPredicate(query.parent).test(assetUpdate))
+        if (query.parent != null && !asPredicate(query.parent).test(assetState))
             return false;
 
-        if (query.path != null && !asPredicate(query.path).test(assetUpdate.getPath()))
+        if (query.path != null && !asPredicate(query.path).test(assetState.getPath()))
             return false;
 
-        if (query.tenant != null && !asPredicate(query.tenant).test(assetUpdate))
+        if (query.tenant != null && !asPredicate(query.tenant).test(assetState))
             return false;
 
         if (query.userId != null) {
             // TODO Would require linked user IDs in AbstractAssetUpdate
             throw new UnsupportedOperationException("Restriction by user ID not implemented in rules matching");
         }
-        if (query.type != null && !asPredicate(query.type).test(assetUpdate.getTypeString()))
+        if (query.type != null && !asPredicate(query.type).test(assetState.getTypeString()))
             return false;
 
         if (query.attribute != null) {
             for (BaseAssetQuery.AttributePredicate p : query.attribute) {
-                if (!asPredicate(p).test(assetUpdate))
+                if (!asPredicate(p).test(assetState))
                     return false;
             }
         }
@@ -169,48 +170,48 @@ public class AssetQueryPredicate implements Predicate<AbstractAssetUpdate> {
         };
     }
 
-    protected Predicate<AbstractAssetUpdate> asPredicate(ParentPredicate predicate) {
-        return assetUpdate ->
-            (predicate.id == null || predicate.id.equals(assetUpdate.getParentId()))
-                && (predicate.type == null || predicate.type.equals(assetUpdate.getParentTypeString()))
-                && (!predicate.noParent || assetUpdate.getParentId() == null);
+    protected Predicate<AssetState> asPredicate(ParentPredicate predicate) {
+        return assetState ->
+            (predicate.id == null || predicate.id.equals(assetState.getParentId()))
+                && (predicate.type == null || predicate.type.equals(assetState.getParentTypeString()))
+                && (!predicate.noParent || assetState.getParentId() == null);
     }
 
     protected Predicate<String[]> asPredicate(PathPredicate predicate) {
         return givenPath -> Arrays.equals(predicate.path, givenPath);
     }
 
-    protected Predicate<AbstractAssetUpdate> asPredicate(TenantPredicate predicate) {
-        return assetUpdate ->
-            (predicate.realm == null || predicate.realm.equals(assetUpdate.getTenantRealm()))
-                && (predicate.realmId == null || predicate.realmId.equals(assetUpdate.getRealmId()));
+    protected Predicate<AssetState> asPredicate(TenantPredicate predicate) {
+        return assetState ->
+            (predicate.realm == null || predicate.realm.equals(assetState.getTenantRealm()))
+                && (predicate.realmId == null || predicate.realmId.equals(assetState.getRealmId()));
     }
 
-    protected Predicate<AbstractAssetUpdate> asPredicate(AttributePredicate predicate) {
-        return assetUpdate -> {
-            if (predicate.name != null && !asPredicate(predicate.name).test(assetUpdate.getAttributeName()))
+    protected Predicate<AssetState> asPredicate(AttributePredicate predicate) {
+        return assetState -> {
+            if (predicate.name != null && !asPredicate(predicate.name).test(assetState.getAttributeName()))
                 return false;
 
             if (predicate.value == null)
                 return true;
 
-            if (predicate.value instanceof AssetQuery.ValueNotEmptyPredicate) {
-                return assetUpdate.getValue().isPresent();
+            if (predicate.value instanceof BaseAssetQuery.ValueNotEmptyPredicate) {
+                return assetState.getValue().isPresent();
 
-            } else if (predicate.value instanceof AssetQuery.StringPredicate) {
+            } else if (predicate.value instanceof BaseAssetQuery.StringPredicate) {
 
-                AssetQuery.StringPredicate p = (AssetQuery.StringPredicate) predicate.value;
-                return asPredicate(p).test(assetUpdate.getValueAsString().orElse(null));
+                StringPredicate p = (StringPredicate) predicate.value;
+                return asPredicate(p).test(assetState.getValueAsString().orElse(null));
 
-            } else if (predicate.value instanceof AssetQuery.BooleanPredicate) {
+            } else if (predicate.value instanceof BaseAssetQuery.BooleanPredicate) {
 
-                AssetQuery.BooleanPredicate p = (AssetQuery.BooleanPredicate) predicate.value;
-                return asPredicate(p).test(assetUpdate.getValueAsBoolean().orElse(null));
+                BooleanPredicate p = (BooleanPredicate) predicate.value;
+                return asPredicate(p).test(assetState.getValueAsBoolean().orElse(null));
 
-            } else if (predicate.value instanceof AssetQuery.NumberPredicate) {
+            } else if (predicate.value instanceof BaseAssetQuery.NumberPredicate) {
 
-                AssetQuery.NumberPredicate p = (AssetQuery.NumberPredicate) predicate.value;
-                return asPredicate(p).test(assetUpdate.getValueAsNumber().orElse(null));
+                NumberPredicate p = (NumberPredicate) predicate.value;
+                return asPredicate(p).test(assetState.getValueAsNumber().orElse(null));
 
             } else {
                 // TODO Implement more
@@ -220,6 +221,5 @@ public class AssetQueryPredicate implements Predicate<AbstractAssetUpdate> {
             }
         };
     }
-
 
 }

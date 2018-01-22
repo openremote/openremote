@@ -2,7 +2,6 @@ package org.openremote.test.rules
 
 import org.openremote.manager.rules.RulesBuilder
 import org.openremote.model.asset.AssetQuery
-import org.openremote.model.asset.AssetState
 import org.openremote.model.asset.AssetType
 import org.openremote.model.attribute.AttributeType
 
@@ -86,20 +85,6 @@ rules.add()
         .then(
         { facts ->
             facts.put("Number value types", "fired")
-        })
-
-rules.add()
-        .name("Current Asset Update")
-        .when(
-        { facts ->
-            !facts.matchFirst("Current Asset Update").isPresent() &&
-                    facts.matchAssetState(new AssetQuery())
-                            .filter({ assetState -> assetState.processingStatus != AssetState.ProcessingStatus.COMPLETED })
-                            .findFirst().isPresent()
-        })
-        .then(
-        { facts ->
-            facts.put("Current Asset Update", "fired")
         })
 
 rules.add()

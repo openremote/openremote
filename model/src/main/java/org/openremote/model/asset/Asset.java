@@ -474,6 +474,10 @@ public class Asset implements IdentifiableEntity {
         this.parentType = parentType;
     }
 
+    public AssetType getParentWellKnownType() {
+        return AssetType.getByValue(getParentType()).orElse(AssetType.CUSTOM);
+    }
+
     public String getRealmId() {
         return realmId;
     }

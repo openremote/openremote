@@ -94,6 +94,10 @@ public abstract class Attribute extends AbstractValueTimestampHolder {
         return Optional.ofNullable(name);
     }
 
+    public String getNameOrThrow() {
+        return getName().orElseThrow(() -> new IllegalStateException("Attribute doesn't have a name"));
+    }
+
     public void setName(String name) {
         requireNonNullAndNonEmpty(name);
         this.name = name;

@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.model.asset;
+package org.openremote.manager.asset;
 
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetType;
@@ -52,9 +52,20 @@ public class AssetProcessingException extends RuntimeException {
         ATTRIBUTE_NOT_FOUND,
 
         /**
-         * A sensor update must be for an attribute with a valid agent link.
+         * An actuator update must be for an attribute with a valid agent link.
          */
         INVALID_AGENT_LINK,
+
+        /**
+         * An attribute is linked to another attribute, but the link is invalid.
+         */
+        INVALID_ATTRIBUTE_LINK,
+
+        /**
+         * An attribute is linked to another attribute, but the linked attribute can't be written
+         * because conversion to the target attribute's value failed.
+         */
+        LINKED_ATTRIBUTE_CONVERSION_FAILURE,
 
         /**
          * Attributes of an {@link AssetType#AGENT} can not be individually updated.
@@ -92,6 +103,16 @@ public class AssetProcessingException extends RuntimeException {
          * Applying the event violates constraints of the attribute.
          */
         ATTRIBUTE_VALIDATION_FAILURE,
+
+        /**
+         * Any other error, typically other runtime exceptions thrown by a processor.
+         */
+        PROCESSOR_FAILURE,
+
+        /**
+         * Writing the asset attribute state to database failed.
+         */
+        STATE_STORAGE_FAILED
     }
 
     final protected Reason reason;

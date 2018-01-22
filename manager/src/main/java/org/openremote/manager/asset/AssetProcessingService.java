@@ -20,12 +20,14 @@
 package org.openremote.manager.asset;
 
 import org.apache.camel.Exchange;
+import org.apache.camel.Processor;
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.agent.protocol.Protocol;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.message.MessageBrokerSetupService;
+import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.AuthContext;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.agent.AgentService;
@@ -33,35 +35,41 @@ import org.openremote.manager.datapoint.AssetDatapointService;
 import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.rules.RulesService;
 import org.openremote.manager.security.ManagerIdentityService;
-import org.openremote.model.asset.AssetProcessingException;
-import org.openremote.model.asset.AssetResource;
 import org.openremote.model.Constants;
+import org.openremote.model.ValidationFailure;
 import org.openremote.model.asset.*;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeEvent.Source;
+import org.openremote.model.attribute.AttributeExecuteStatus;
+import org.openremote.model.rules.AssetEvent;
+import org.openremote.model.rules.AssetState;
 import org.openremote.model.security.ClientRole;
+import org.openremote.model.value.Value;
+import org.openremote.model.value.Values;
 
+import javax.persistence.EntityManager;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
-import java.util.function.Consumer;
+import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static org.openremote.manager.asset.AssetRoute.*;
+import static org.openremote.manager.asset.AssetProcessingException.Reason.*;
 import static org.openremote.manager.event.ClientEventService.CLIENT_EVENT_TOPIC;
+import static org.openremote.model.asset.agent.AgentLink.getAgentLink;
 import static org.openremote.model.attribute.AttributeEvent.HEADER_SOURCE;
-import static org.openremote.model.attribute.AttributeEvent.Source.CLIENT;
-import static org.openremote.model.attribute.AttributeEvent.Source.INTERNAL;
+import static org.openremote.model.attribute.AttributeEvent.Source.*;
 
 /**
- * Receives {@link AttributeEvent}s from {@link AttributeEvent.Source}s and processes them.
+ * Receives {@link AttributeEvent} from {@link Source} and processes them.
  * <dl>
- * <dt>{@link AttributeEvent.Source#CLIENT}</dt>
+ * <dt>{@link Source#CLIENT}</dt>
  * <dd><p>Client events published through event bus or sent by web service. These exchanges must contain an {@link AuthContext}
  * header named {@link Constants#AUTH_CONTEXT}.</dd>
- * <dt>{@link AttributeEvent.Source#INTERNAL}</dt>
- * <dd><p>Events sent to {@link #ASSET_QUEUE} or through {@link #sendAttributeEvent} convenience method.</dd>
- * <dt>{@link AttributeEvent.Source#SENSOR}</dt>
+ * <dt>{@link Source#INTERNAL}</dt>
+ * <dd><p>Events sent to {@link #ASSET_QUEUE} or through {@link #sendAttributeEvent} convenience method by processors.</dd>
+ * <dt>{@link Source#SENSOR}</dt>
  * <dd><p>Protocol sensor updates sent to {@link Protocol#SENSOR_QUEUE}.</dd>
  * </dl>
  * NOTE: An attribute value can be changed during Asset CRUD but this does not come through
@@ -85,15 +93,12 @@ import static org.openremote.model.attribute.AttributeEvent.Source.INTERNAL;
  * <h2>Agent service processing logic</h2>
  * <p>
  * The agent service's role is to communicate asset attribute writes to actuators, through protocols.
- * When the update messages' source is {@link AttributeEvent.Source#SENSOR}, the agent service ignores the message.
+ * When the update messages' source is {@link Source#SENSOR}, the agent service ignores the message.
  * The message will also be ignored if the updated attribute is not linked to a protocol configuration.
  * <p>
- * If the updated attribute has an invalid agent link, the message status is set to {@link AssetState.ProcessingStatus#ERROR}.
- * <p>
  * If the updated attribute has a valid agent link, an {@link AttributeEvent} is sent on the {@link Protocol#ACTUATOR_TOPIC},
- * for execution on an actual device or service 'things'. The update is then marked as
- * {@link AssetState.ProcessingStatus#COMPLETED} and no further processing is necessary. The update will not reach the
- * rules engine or the database processors.
+ * for execution on an actual device or service 'things'. The update is then considered complete, and no further processing
+ * is necessary. The update will not reach the rules engine or the database.
  * <p>
  * This means that a protocol implementation is responsible for producing a new {@link AttributeEvent} to
  * indicate to the rules and database memory that the attribute value has/has not changed. The protocol should know
@@ -133,6 +138,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
 
     protected TimerService timerService;
     protected ManagerIdentityService identityService;
+    protected PersistenceService persistenceService;
     protected RulesService rulesService;
     protected AgentService agentService;
     protected AssetStorageService assetStorageService;
@@ -143,12 +149,13 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
     // Used in testing to detect if initial/startup processing has completed
     protected long lastProcessedEventTimestamp = System.currentTimeMillis();
 
-    final protected List<Consumer<AssetState>> processors = new ArrayList<>();
+    final protected List<AssetUpdateProcessor> processors = new ArrayList<>();
 
     @Override
     public void init(Container container) throws Exception {
         timerService = container.getService(TimerService.class);
         identityService = container.getService(ManagerIdentityService.class);
+        persistenceService = container.getService(PersistenceService.class);
         rulesService = container.getService(RulesService.class);
         agentService = container.getService(AgentService.class);
         assetStorageService = container.getService(AssetStorageService.class);
@@ -200,7 +207,6 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
 
         processors.add(agentService);
         processors.add(rulesService);
-        processors.add(assetStorageService);
         processors.add(assetDatapointService);
         processors.add(assetAttributeLinkingService);
 
@@ -228,7 +234,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
             .to(ASSET_QUEUE);
 
         // Process attribute events
-        /* TODO This message consumer should be transactionally consistent with the database, this is currenlty not the case
+        /* TODO This message consumer should be transactionally consistent with the database, this is currently not the case
 
          Our "if I have not processed this message before" duplicate detection:
 
@@ -238,34 +244,16 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
 
          Possible improvements moving towards at-least-once:
 
-          - Hibernate ThreadLocal Session & Transaction for the whole Camel Exchange/route
-            0. Receive attribute event, security/404 checks
-            1. Open DB local transaction
-            2. Read last asset state
-            3. Write non-duplicate attribute event
-            4. Commit DB local transaction
-            5. Commit reception on message broker
-
-          - See pseudocode here: http://activemq.apache.org/should-i-use-xa.html
-
-          - Replace at-most-once ClientEventService with at-least-once capable, embeddable message broker/protocol
-
-          - Do we want JMS/AMQP/WSS or SOME_API/MQTT/WSS? ActiveMQ or Moquette?
+         - Make AssetUpdateProcessor transactional with a two-phase commit API
+         - Replace at-most-once ClientEventService with at-least-once capable, embeddable message broker/protocol
+         - See pseudocode here: http://activemq.apache.org/should-i-use-xa.html
+         - Do we want JMS/AMQP/WSS or SOME_API/MQTT/WSS? ActiveMQ or Moquette?
         */
         from(ASSET_QUEUE)
             .routeId("AssetUpdates")
             .filter(body().isInstanceOf(AttributeEvent.class))
             .doTry()
-            .process(extractAttributeEventDetails(assetStorageService))
-            .process(validateAttributeEvent())
-            .choice()
-            .when(header(HEADER_SOURCE).isEqualTo(CLIENT))
-            .process(validateAttributeEventFromClient(assetStorageService, identityService))
-            .when(header(HEADER_SOURCE).isEqualTo(Source.SENSOR))
-            .process(validateAttributeEventFromSensor(agentService))
-            .end()
-            .process(buildAssetState(timerService))
-            .process(this::processAssetState)
+            .process(processAttributeEvent())
             .endDoTry()
             .doCatch(AssetProcessingException.class)
             .process(handleAssetProcessingException(LOG));
@@ -277,7 +265,8 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
     public void sendAttributeEvent(AttributeEvent attributeEvent) {
         sendAttributeEvent(attributeEvent, INTERNAL);
     }
-    public void sendAttributeEvent(AttributeEvent attributeEvent, AttributeEvent.Source source) {
+
+    public void sendAttributeEvent(AttributeEvent attributeEvent, Source source) {
         // Set event source time if not already set
         if (attributeEvent.getTimestamp() <= 0) {
             attributeEvent.setTimestamp(timerService.getCurrentTimeMillis());
@@ -286,46 +275,237 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
     }
 
     /**
-     * This deals with single {@link AssetState} and pushes them through the chain where each
-     * consumer is given the opportunity to consume the event or allow its progress to the next
-     * consumer, see {@link AssetState.ProcessingStatus}.
+     * This deals with single {@link AssetAttribute} updates and pushes them through the chain where each
+     * processor is given the opportunity to consume the update or allow its progress to the next
+     * processor, see {@link AssetUpdateProcessor#processAssetUpdate}.
      */
-    protected void processAssetState(Exchange exchange) {
-        AssetState assetState = exchange.getIn().getHeader(HEADER_ASSET_STATE, AssetState.class);
-        LOG.fine(">>> Processing start: " + assetState);
+    protected void processAssetUpdate(EntityManager em,
+                                      Asset asset,
+                                      AssetAttribute attribute,
+                                      Source source) throws AssetProcessingException {
+        LOG.fine(">>> Processing start: " + attribute);
+
         // Need to record time here otherwise an infinite loop generated inside one of the processors means the timestamp
         // is not updated so tests can't then detect the problem.
         lastProcessedEventTimestamp = System.currentTimeMillis();
-        processorLoop:
-        for (Consumer<AssetState> processor : processors) {
+
+        boolean complete;
+        for (AssetUpdateProcessor processor : processors) {
+            LOG.finest("==> Processor " + processor + " accepts: " + attribute);
             try {
-                LOG.finest("==> Processor " + processor + " accepts: " + assetState);
-                processor.accept(assetState);
+                complete = processor.processAssetUpdate(em, asset, attribute, source);
+            } catch (AssetProcessingException ex) {
+                throw ex;
             } catch (Throwable t) {
-                LOG.log(Level.SEVERE, "!!! Processor " + processor + " threw an exception whilst consuming: " + assetState, t);
-                assetState.setProcessingStatus(AssetState.ProcessingStatus.ERROR);
-                assetState.setError(t);
+                throw new AssetProcessingException(
+                    PROCESSOR_FAILURE,
+                    "processor '" + processor + "' threw exception: " + t.toString()
+                );
+            }
+            if (complete) {
+                LOG.finest("<== Processor " + processor + " finally handled: " + attribute);
+                break;
+            } else {
+                LOG.finest("<== Processor " + processor + " done with: " + attribute);
+            }
+        }
+
+        // Store state in database after all processors are done
+        storeAttribute(em, asset, attribute);
+
+        LOG.fine("<<< Processing complete: " + attribute);
+    }
+
+    public Processor processAttributeEvent() {
+        return exchange -> {
+            AttributeEvent event = exchange.getIn().getBody(AttributeEvent.class);
+            if (event.getEntityId() == null || event.getEntityId().isEmpty())
+                return;
+            if (event.getAttributeName() == null || event.getAttributeName().isEmpty())
+                return;
+            Source source = exchange.getIn().getHeader(HEADER_SOURCE, () -> null, Source.class);
+            if (source == null) {
+                throw new AssetProcessingException(MISSING_SOURCE);
             }
 
-            switch (assetState.getProcessingStatus()) {
-                case COMPLETED:
-                    LOG.finest("<== Processor " + processor + " finally handled: " + assetState);
-                    break processorLoop;
-                case ERROR:
-                    LOG.log(Level.SEVERE, "<== Processor " + processor + " error: " + assetState, assetState.getError());
-                    break processorLoop;
-                default:
-                    LOG.finest("<== Processor " + processor + " done with: " + assetState);
+            // Process the asset update in a database transaction, this ensures that processors
+            // will see consistent database state and we only commit if no processor failed. This
+            // still won't make this procedure consistent with the message queue from which we consume!
+            persistenceService.doTransaction(em -> {
+                ServerAsset asset = assetStorageService.find(em, event.getEntityId(), true);
+                if (asset == null)
+                    throw new AssetProcessingException(ASSET_NOT_FOUND);
+
+                AssetAttribute attribute = asset.getAttribute(event.getAttributeName()).orElse(null);
+                if (attribute == null)
+                    throw new AssetProcessingException(ATTRIBUTE_NOT_FOUND);
+
+                // Agent attributes can't be updated with events
+                if (asset.getWellKnownType() == AssetType.AGENT) {
+                    throw new AssetProcessingException(ILLEGAL_AGENT_UPDATE);
+                }
+
+                // For executable attributes, non-sensor sources can set a writable attribute execute status
+                if (attribute.isExecutable() && source != SENSOR) {
+                    Optional<AttributeExecuteStatus> status = event.getValue()
+                        .flatMap(Values::getString)
+                        .flatMap(AttributeExecuteStatus::fromString);
+
+                    if (status.isPresent() && !status.get().isWrite()) {
+                        throw new AssetProcessingException(INVALID_ATTRIBUTE_EXECUTE_STATUS);
+                    }
+                }
+
+                switch (source) {
+                    case CLIENT:
+                        AuthContext authContext = exchange.getIn().getHeader(Constants.AUTH_CONTEXT, AuthContext.class);
+                        if (authContext == null) {
+                            throw new AssetProcessingException(NO_AUTH_CONTEXT);
+                        }
+
+                        // Check realm, must be accessible
+                        if (!identityService.getIdentityProvider().isTenantActiveAndAccessible(authContext, asset)) {
+                            throw new AssetProcessingException(INSUFFICIENT_ACCESS);
+                        }
+
+                        // Check read-only
+                        if (attribute.isReadOnly() && !authContext.isSuperUser()) {
+                            throw new AssetProcessingException(INSUFFICIENT_ACCESS);
+                        }
+
+                        // Regular user must have write assets role
+                        if (!authContext.hasResourceRoleOrIsSuperUser(ClientRole.WRITE_ASSETS.getValue(), Constants.KEYCLOAK_CLIENT_ID)) {
+                            throw new AssetProcessingException(INSUFFICIENT_ACCESS);
+                        }
+
+                        // Check restricted user
+                        if (identityService.getIdentityProvider().isRestrictedUser(authContext.getUserId())) {
+                            // Must be asset linked to user
+                            if (!assetStorageService.isUserAsset(authContext.getUserId(), event.getEntityId())) {
+                                throw new AssetProcessingException(INSUFFICIENT_ACCESS);
+                            }
+                            // Must be writable by restricted client
+                            if (!attribute.isAccessRestrictedWrite()) {
+                                throw new AssetProcessingException(INSUFFICIENT_ACCESS);
+                            }
+                        }
+                        break;
+
+                    case SENSOR:
+                        Optional<AssetAttribute> protocolConfiguration =
+                            getAgentLink(attribute).flatMap(agentService::getProtocolConfiguration);
+
+                        // Sensor event must be for an attribute linked to a protocol configuration
+                        if (!protocolConfiguration.isPresent()) {
+                            throw new AssetProcessingException(INVALID_AGENT_LINK);
+                        }
+                        break;
+                }
+
+                // Either use the timestamp of the event or set event time to processing time
+                long processingTime = timerService.getCurrentTimeMillis();
+                long eventTime = event.getTimestamp() > 0 ? event.getTimestamp() : processingTime;
+
+                // Ensure timestamp of event is not in the future as that would essentially block access to
+                // the attribute until after that time (maybe that is desirable behaviour)
+                if (eventTime - processingTime > 0) {
+                    // TODO: Decide how to handle update events in the future - ignore or change timestamp
+                    throw new AssetProcessingException(
+                        EVENT_IN_FUTURE,
+                        "current time: " + new Date(processingTime) + "/" + processingTime
+                            + ", event time: " + new Date(eventTime) + "/" + eventTime
+                    );
+                }
+
+                // Check the last update timestamp of the attribute, ignoring any event that is older than last update
+                // TODO This means we drop out-of-sequence events but accept events with the same source timestamp
+                // TODO Several attribute events can occur in the same millisecond, then order of application is undefined
+                attribute.getValueTimestamp().filter(t -> t >= 0 && eventTime < t).ifPresent(
+                    lastStateTime -> {
+                        throw new AssetProcessingException(
+                            EVENT_OUTDATED,
+                            "last asset state time: " + new Date(lastStateTime) + "/" + lastStateTime
+                                + ", event time: " + new Date(eventTime) + "/" + eventTime);
+                    }
+                );
+
+                // Create a copy of the attribute and set the new value and timestamp
+                AssetAttribute updatedAttribute = attribute.deepCopy();
+                updatedAttribute.setValue(event.getValue().orElse(null), eventTime);
+
+                // Validate constraints of attribute
+                List<ValidationFailure> validationFailures = updatedAttribute.getValidationFailures();
+                if (!validationFailures.isEmpty()) {
+                    throw new AssetProcessingException(ATTRIBUTE_VALIDATION_FAILURE, validationFailures.toString());
+                }
+
+                // Push through all processors
+                processAssetUpdate(em, asset, updatedAttribute, source);
+
+                // Publish a new event for clients
+                publishClientEvent(asset, attribute);
+            });
+        };
+    }
+
+    public static Processor handleAssetProcessingException(Logger logger) {
+        return exchange -> {
+            AttributeEvent event = exchange.getIn().getBody(AttributeEvent.class);
+            Exception exception = (Exception) exchange.getProperty(Exchange.EXCEPTION_CAUGHT);
+
+            StringBuilder error = new StringBuilder();
+
+            Source source = exchange.getIn().getHeader(HEADER_SOURCE, "unknown source", Source.class);
+            if (source != null) {
+                error.append("Error processing from ").append(source);
             }
+
+            String protocolName = exchange.getIn().getHeader(Protocol.SENSOR_QUEUE_SOURCE_PROTOCOL, String.class);
+            if (protocolName != null) {
+                error.append(" (protocol: ").append(protocolName).append(")");
+            }
+
+            // TODO Better exception handling - dead letter queue?
+            if (exception instanceof AssetProcessingException) {
+                AssetProcessingException processingException = (AssetProcessingException) exception;
+                error.append(" - ").append(processingException.getReasonPhrase());
+                error.append(": ").append(event.toString());
+                logger.warning(error.toString());
+            } else {
+                error.append(": ").append(event.toString());
+                logger.log(Level.WARNING, error.toString(), exception);
+            }
+
+            // Make the exception available if MEP is InOut
+            exchange.getOut().setBody(exception);
+        };
+    }
+
+    protected void storeAttribute(EntityManager em, Asset asset, AssetAttribute attribute) throws AssetProcessingException {
+        String attributeName = attribute.getName()
+            .orElseThrow(() -> new AssetProcessingException(
+                STATE_STORAGE_FAILED,
+                "cannot store asset state for attribute with no name on: " + asset)
+            );
+        Value value = attribute.getValue().orElse(null);
+
+        // If there is no timestamp, use system time (0 or -1 are "no timestamp")
+        Optional<Long> timestamp = attribute.getValueTimestamp();
+        String valueTimestamp = Long.toString(
+            timestamp.filter(ts -> ts > 0).orElseGet(() -> timerService.getCurrentTimeMillis())
+        );
+
+        if (!assetStorageService.storeAttributeValue(em, asset.getId(), attributeName, value, valueTimestamp)) {
+            throw new AssetProcessingException(
+                STATE_STORAGE_FAILED, "database update failed, no rows updated"
+            );
         }
-        if (assetState.getProcessingStatus() != AssetState.ProcessingStatus.ERROR) {
-            if (assetState.getProcessingStatus() != AssetState.ProcessingStatus.COMPLETED)
-                assetState.setProcessingStatus(AssetState.ProcessingStatus.COMPLETED);
-            clientEventService.publishEvent(new AttributeEvent(
-                assetState.getId(), assetState.getAttributeName(), assetState.getValue().orElse(null), timerService.getCurrentTimeMillis()
-            ));
-        }
-        LOG.fine("<<< Processing complete: " + assetState);
+    }
+
+    protected void publishClientEvent(Asset asset, AssetAttribute attribute) {
+        clientEventService.publishEvent(new AttributeEvent(
+            asset.getId(), attribute.getNameOrThrow(), attribute.getValue().orElse(null), timerService.getCurrentTimeMillis()
+        ));
     }
 
     @Override

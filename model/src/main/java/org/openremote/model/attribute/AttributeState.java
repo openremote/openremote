@@ -71,15 +71,14 @@ public class AttributeState {
         return attributeRef;
     }
 
-    // TODO GWT Jackson does not like fields that have a getter with a different type than the field, so rename getter
-    public Optional<Value> getCurrentValue() {
+    public Optional<Value> getValue() {
         return Optional.ofNullable(value);
     }
 
     public ObjectValue toObjectValue() {
         ObjectValue objectValue = Values.createObject();
         objectValue.put("attributeRef", getAttributeRef().toArrayValue());
-        getCurrentValue().ifPresent(v -> objectValue.put("value", value));
+        getValue().ifPresent(v -> objectValue.put("value", value));
         return objectValue;
     }
 

@@ -11,7 +11,7 @@ package demo.rules
 
 import org.openremote.manager.rules.RulesBuilder
 import org.openremote.model.asset.AssetQuery
-import org.openremote.model.asset.AssetState
+import org.openremote.model.rules.AssetState
 import org.openremote.model.util.Pair
 
 import java.util.logging.Logger

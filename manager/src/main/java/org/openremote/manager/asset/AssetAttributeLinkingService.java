@@ -21,30 +21,29 @@ package org.openremote.manager.asset;
 
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
+import org.openremote.manager.asset.AssetProcessingException.Reason;
+import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetMeta;
 import org.openremote.model.asset.AssetQuery;
-import org.openremote.model.asset.AssetState;
-import org.openremote.model.attribute.AttributeEvent;
-import org.openremote.model.attribute.AttributeLink;
-import org.openremote.model.attribute.AttributeRef;
-import org.openremote.model.attribute.MetaItem;
+import org.openremote.model.attribute.*;
+import org.openremote.model.attribute.AttributeEvent.Source;
 import org.openremote.model.util.Pair;
 import org.openremote.model.value.*;
 
+import javax.persistence.EntityManager;
 import java.util.Locale;
 import java.util.NoSuchElementException;
 import java.util.Optional;
-import java.util.function.Consumer;
 import java.util.logging.Logger;
 
 import static org.openremote.model.asset.AssetQuery.Include;
 import static org.openremote.model.asset.AssetQuery.Select;
+import static org.openremote.model.attribute.AttributeEvent.Source.ATTRIBUTE_LINKING_SERVICE;
 import static org.openremote.model.attribute.MetaItem.isMetaNameEqualTo;
 
 /**
- * This service listens for attribute events on attributes that have one or more {@link AssetMeta#ATTRIBUTE_LINK} meta
- * items.
+ * This service processes asset updates on attributes that have one or more {@link AssetMeta#ATTRIBUTE_LINK} meta items.
  * <p>
  * If such an event occurs then the event is 'forwarded' to the linked attribute; an attribute can contain multiple
  * {@link AssetMeta#ATTRIBUTE_LINK} meta items; optionally the value forwarded to the linked attribute can be modified
@@ -57,13 +56,6 @@ import static org.openremote.model.attribute.MetaItem.isMetaNameEqualTo;
  * attribute or for a particular value to be ignored.
  * <p>
  * To convert null values the converter key of "NULL" can be used.
- * <p>
- * <b>
- * NOTE: State converters (e.g. {@link AttributeLink.ConverterType#TOGGLE}, {@link AttributeLink.ConverterType#INCREMENT}, {@link AttributeLink.ConverterType#DECREMENT}) are
- * not synchronised so if the initiating attribute (the one with the {@link AssetMeta#ATTRIBUTE_LINK} meta items)
- * generates multiple attribute events in a short period of time then the value pushed to the linked attribute may not
- * be correct.
- * </b>
  * <p>
  * Example {@link AssetMeta#ATTRIBUTE_LINK} meta items:
  * <blockquote><pre>{@code
@@ -92,7 +84,7 @@ import static org.openremote.model.attribute.MetaItem.isMetaNameEqualTo;
  * }</pre></blockquote>
  */
 // TODO: Improve AssetAttributeLinkingService so that outbound events are synchronsied with inbound
-public class AssetAttributeLinkingService implements ContainerService, Consumer<AssetState> {
+public class AssetAttributeLinkingService implements ContainerService, AssetUpdateProcessor {
 
     private static final Logger LOG = Logger.getLogger(AssetAttributeLinkingService.class.getName());
     protected AssetProcessingService assetProcessingService;
@@ -113,49 +105,57 @@ public class AssetAttributeLinkingService implements ContainerService, Consumer<
     }
 
     @Override
-    public void accept(AssetState assetState) {
-        if (assetState.getSource() == AttributeEvent.Source.ATTRIBUTE_LINKING_SERVICE) {
-            LOG.fine("Attribute update came from this service so ignoring to avoid infinite loops: " + assetState);
-            return;
+    public boolean processAssetUpdate(EntityManager em,
+                                      Asset asset,
+                                      AssetAttribute attribute,
+                                      Source source) throws AssetProcessingException {
+        if (source == ATTRIBUTE_LINKING_SERVICE) {
+            LOG.fine("Attribute update came from this service so ignoring to avoid infinite loops: " + attribute);
+            return false;
         }
 
-        assetState
-            .getAttribute()
-            .getMetaStream()
+        attribute.getMetaStream()
             .filter(isMetaNameEqualTo(AssetMeta.ATTRIBUTE_LINK))
-            .forEach(metaItem -> processLinkedAttributeUpdate(metaItem, assetState));
+            .forEach(metaItem -> processLinkedAttributeUpdate(em, metaItem, attribute.getState().orElse(null)));
+
+        return false;
     }
 
     protected void sendAttributeEvent(AttributeEvent attributeEvent) {
         LOG.fine("Sending attribute event for linked attribute: " + attributeEvent);
-        assetProcessingService.sendAttributeEvent(attributeEvent, AttributeEvent.Source.ATTRIBUTE_LINKING_SERVICE);
+        assetProcessingService.sendAttributeEvent(attributeEvent, ATTRIBUTE_LINKING_SERVICE);
     }
 
-    protected void processLinkedAttributeUpdate(MetaItem metaItem, AssetState assetState) {
-        LOG.fine("Processing attribute event for linked attribute");
+    protected void processLinkedAttributeUpdate(EntityManager em, MetaItem metaItem, AttributeState attributeState) {
+        if (attributeState == null)
+            return;
+        LOG.fine("Processing attribute state for linked attribute");
         Optional<AttributeLink> attributeLink = metaItem.getValue().flatMap(AttributeLink::fromValue);
 
         if (!attributeLink.isPresent()) {
-            LOG.info("Invalid attribute link on: " + assetState.getAttributeRef());
-            return;
+            throw new AssetProcessingException(Reason.INVALID_ATTRIBUTE_LINK);
         }
 
         // Convert the value as required
         Pair<Boolean, Value> sendConvertedValue = convertValueForLinkedAttribute(
-            assetState.getValue().orElse(null),
-            attributeLink.get(),
-            assetStorageService
+            em,
+            assetStorageService,
+            attributeState.getValue().orElse(null),
+            attributeLink.get()
         );
 
         if (!sendConvertedValue.key) {
-            // Do not forward the event (either marked as ignored or there was a problem with the value conversion)
+            // Do not forward the attribute state (conversion resulted in NULL or IGNORE)
             return;
         }
 
         sendAttributeEvent(new AttributeEvent(attributeLink.get().getAttributeRef(), sendConvertedValue.value));
     }
 
-    protected static Pair<Boolean, Value> convertValueForLinkedAttribute(Value originalValue, AttributeLink attributeLink, AssetStorageService assetStorageService) {
+    protected static Pair<Boolean, Value> convertValueForLinkedAttribute(EntityManager em,
+                                                                         AssetStorageService assetStorageService,
+                                                                         Value originalValue,
+                                                                         AttributeLink attributeLink) throws AssetProcessingException {
         return attributeLink.getConverter()
             .map(
                 converter -> {
@@ -165,7 +165,7 @@ public class AssetAttributeLinkingService implements ContainerService, Consumer<
                     return converterValue
                         .map(value ->
                             getSpecialConverter(value)
-                                .map(c -> doSpecialConversion(c, attributeLink.getAttributeRef(), assetStorageService))
+                                .map(c -> doSpecialConversion(em, assetStorageService, c, attributeLink.getAttributeRef()))
                                 .orElse(new Pair<>(true, value))) // use the converter value as the new value
                         .orElseGet(() -> new Pair<>(true, originalValue)); // use the original value
                 })
@@ -179,7 +179,10 @@ public class AssetAttributeLinkingService implements ContainerService, Consumer<
         return Optional.empty();
     }
 
-    protected static Pair<Boolean, Value> doSpecialConversion(AttributeLink.ConverterType converter, AttributeRef linkedAttributeRef, AssetStorageService assetStorageService) {
+    protected static Pair<Boolean, Value> doSpecialConversion(EntityManager em,
+                                                              AssetStorageService assetStorageService,
+                                                              AttributeLink.ConverterType converter,
+                                                              AttributeRef linkedAttributeRef) throws AssetProcessingException {
         switch (converter) {
             case IGNORE:
                 LOG.fine("Converter set to ignore value so not forwarding to linked attribute");
@@ -187,12 +190,14 @@ public class AssetAttributeLinkingService implements ContainerService, Consumer<
             case NULL:
                 return new Pair<>(true, null);
             case TOGGLE:
-                // Look up current value of the linked attribute
+                // Look up current value of the linked attribute within the same database session
                 try {
-                    Value currentValue = getCurrentValue(linkedAttributeRef, assetStorageService);
+                    Value currentValue = getCurrentValue(em, assetStorageService, linkedAttributeRef);
                     if (currentValue == null || currentValue.getType() != ValueType.BOOLEAN) {
-                        LOG.fine("Cannot toggle attribute value as attribute is not of type BOOLEAN: " + linkedAttributeRef);
-                        return new Pair<>(false, null);
+                        throw new AssetProcessingException(
+                            Reason.LINKED_ATTRIBUTE_CONVERSION_FAILURE,
+                            "cannot toggle value as attribute is not of type BOOLEAN: " + linkedAttributeRef
+                        );
                     }
                     return new Pair<>(true, Values.create(!((BooleanValue) currentValue).getBoolean()));
                 } catch (NoSuchElementException e) {
@@ -201,12 +206,14 @@ public class AssetAttributeLinkingService implements ContainerService, Consumer<
                 }
             case INCREMENT:
             case DECREMENT:
-                // Look up current value of the linked attribute
+                // Look up current value of the linked attribute within the same database session
                 try {
-                    Value currentValue = getCurrentValue(linkedAttributeRef, assetStorageService);
+                    Value currentValue = getCurrentValue(em, assetStorageService, linkedAttributeRef);
                     if (currentValue == null || currentValue.getType() != ValueType.NUMBER) {
-                        LOG.fine("Cannot increment/decrement attribute value as attribute is not of type NUMBER: " + linkedAttributeRef);
-                        return new Pair<>(false, null);
+                        throw new AssetProcessingException(
+                            Reason.LINKED_ATTRIBUTE_CONVERSION_FAILURE,
+                            "cannot increment/decrement value as attribute is not of type NUMBER: " + linkedAttributeRef
+                        );
                     }
                     int change = converter == AttributeLink.ConverterType.INCREMENT ? +1 : -1;
                     return new Pair<>(true, Values.create(((NumberValue) currentValue).getNumber() + change));
@@ -215,12 +222,18 @@ public class AssetAttributeLinkingService implements ContainerService, Consumer<
                     return new Pair<>(false, null);
                 }
             default:
-                throw new UnsupportedOperationException("Converter is not supported: " + converter);
+                throw new AssetProcessingException(
+                    Reason.LINKED_ATTRIBUTE_CONVERSION_FAILURE,
+                    "converter is not supported: " + converter
+                );
         }
     }
 
-    protected static Value getCurrentValue(AttributeRef attributeRef, AssetStorageService assetStorageService) throws NoSuchElementException {
+    protected static Value getCurrentValue(EntityManager em,
+                                           AssetStorageService assetStorageService,
+                                           AttributeRef attributeRef) throws NoSuchElementException {
         ServerAsset asset = assetStorageService.find(
+            em,
             new AssetQuery()
                 .id(attributeRef.getEntityId())
                 .select(new Select(Include.ALL, false, attributeRef.getAttributeName()))

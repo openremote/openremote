@@ -24,11 +24,7 @@ import org.jeasy.rules.core.RulesEngineParameters;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.concurrent.ManagerExecutorService;
-import org.openremote.model.asset.AssetEvent;
-import org.openremote.model.asset.AssetState;
-import org.openremote.model.rules.Assets;
-import org.openremote.model.rules.Ruleset;
-import org.openremote.model.rules.Users;
+import org.openremote.model.rules.*;
 
 import java.util.*;
 import java.util.concurrent.ScheduledFuture;
@@ -140,7 +136,7 @@ public class RulesEngine<T extends Ruleset> {
         }
     }
 
-    public Throwable getError() {
+    public RuntimeException getError() {
         synchronized (deployments) {
             List<RulesetDeployment> deploymentsWithCompilationError = new ArrayList<>();
             List<RulesetDeployment> deploymentsWithExecutionError = new ArrayList<>();
@@ -156,7 +152,7 @@ public class RulesEngine<T extends Ruleset> {
                     "Ruleset deployments have errors, failed compilation: "
                         + deploymentsWithCompilationError.size()
                         + ", failed execution: "
-                        + deploymentsWithExecutionError.size()
+                        + deploymentsWithExecutionError.size() + " - on: " + this
                 );
             }
             return null;
@@ -302,6 +298,12 @@ public class RulesEngine<T extends Ruleset> {
                 // If we still have temporary facts and there is no firing scheduled
                 if (facts.hasTemporaryFacts() && eventsTimer == null && !disableTemporaryFactExpiration) {
                     // Schedule firing again so temporary facts can be expired
+                    // TODO: Optimized algo:
+                    // 1. Check when the next temporary fact expires
+                    // 2. Schedule repeated check with GUARANTEED_MIN_EXPIRATION_MILLIS running on wall clock
+                    // 3. Check if rules clock == next temporary fact expires
+                    // 3a. If true, cancel schedule and fire
+                    // 3b. If false, keep checking
                     eventsTimer = executorService.schedule(
                         this::fire, AssetEvent.GUARANTEED_MIN_EXPIRATION_MILLIS, TimeUnit.MILLISECONDS
                     );

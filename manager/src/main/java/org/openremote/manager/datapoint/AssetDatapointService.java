@@ -7,10 +7,13 @@ import org.openremote.container.ContainerService;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.timer.TimerService;
 import org.openremote.container.web.WebService;
+import org.openremote.manager.asset.AssetProcessingException;
 import org.openremote.manager.asset.AssetStorageService;
+import org.openremote.manager.asset.AssetUpdateProcessor;
 import org.openremote.manager.security.ManagerIdentityService;
+import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.asset.AssetState;
+import org.openremote.model.attribute.AttributeEvent.Source;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.datapoint.AssetDatapoint;
 import org.openremote.model.datapoint.Datapoint;
@@ -18,18 +21,18 @@ import org.openremote.model.datapoint.DatapointInterval;
 import org.openremote.model.datapoint.NumberDatapoint;
 import org.postgresql.util.PGInterval;
 
+import javax.persistence.EntityManager;
 import java.sql.*;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.logging.Logger;
 
 /**
  * Store and retrieve datapoints for asset attributes.
  */
-public class AssetDatapointService implements ContainerService, Consumer<AssetState> {
+public class AssetDatapointService implements ContainerService, AssetUpdateProcessor {
 
     private static final Logger LOG = Logger.getLogger(AssetDatapointService.class.getName());
 
@@ -59,14 +62,18 @@ public class AssetDatapointService implements ContainerService, Consumer<AssetSt
     }
 
     @Override
-    public void accept(AssetState assetState) {
-        if (Datapoint.isDatapointsCapable(assetState.getAttribute())
-            && assetState.getAttribute().isStoreDatapoints()
-            && assetState.getAttribute().getStateEvent().isPresent()) {
-            LOG.finest("Storing datapoint for: " + assetState);
-            AssetDatapoint assetDatapoint = new AssetDatapoint(assetState.getAttribute().getStateEvent().get());
-            persistenceService.doTransaction(entityManager -> entityManager.persist(assetDatapoint));
+    public boolean processAssetUpdate(EntityManager em,
+                                      Asset asset,
+                                      AssetAttribute attribute,
+                                      Source source) throws AssetProcessingException {
+        if (Datapoint.isDatapointsCapable(attribute)
+            && attribute.isStoreDatapoints()
+            && attribute.getStateEvent().isPresent()) {
+            LOG.finest("Storing datapoint for: " + attribute);
+            AssetDatapoint assetDatapoint = new AssetDatapoint(attribute.getStateEvent().get());
+            em.persist(assetDatapoint);
         }
+        return false;
     }
 
     public List<AssetDatapoint> getDatapoints(AttributeRef attributeRef) {
