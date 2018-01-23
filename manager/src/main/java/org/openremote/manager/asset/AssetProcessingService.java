@@ -276,8 +276,9 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
 
     /**
      * This deals with single {@link AssetAttribute} updates and pushes them through the chain where each
-     * processor is given the opportunity to consume the update or allow its progress to the next
-     * processor, see {@link AssetUpdateProcessor#processAssetUpdate}.
+     * processor is given the opportunity to completely consume the update or allow its progress to the next
+     * processor, see {@link AssetUpdateProcessor#processAssetUpdate}. If no processor completely consumed the
+     * update, the attribute will be stored in the database.
      */
     protected void processAssetUpdate(EntityManager em,
                                       Asset asset,
@@ -289,7 +290,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
         // is not updated so tests can't then detect the problem.
         lastProcessedEventTimestamp = System.currentTimeMillis();
 
-        boolean complete;
+        boolean complete = false;
         for (AssetUpdateProcessor processor : processors) {
             LOG.finest("==> Processor " + processor + " accepts: " + attribute);
             try {
@@ -303,20 +304,22 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                 );
             }
             if (complete) {
-                LOG.finest("<== Processor " + processor + " finally handled: " + attribute);
+                LOG.finest("<== Processor " + processor + " completely consumed: " + attribute);
                 break;
             } else {
                 LOG.finest("<== Processor " + processor + " done with: " + attribute);
             }
         }
 
-        // Store state in database after all processors are done
-        storeAttribute(em, asset, attribute);
+        if (!complete) {
+            LOG.finest("No processor consumed the update completely, storing: " + attribute);
+            storeAttribute(em, asset, attribute);
+        }
 
         LOG.fine("<<< Processing complete: " + attribute);
     }
 
-    public Processor processAttributeEvent() {
+    protected Processor processAttributeEvent() {
         return exchange -> {
             AttributeEvent event = exchange.getIn().getBody(AttributeEvent.class);
             if (event.getEntityId() == null || event.getEntityId().isEmpty())
@@ -448,7 +451,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
         };
     }
 
-    public static Processor handleAssetProcessingException(Logger logger) {
+    protected static Processor handleAssetProcessingException(Logger logger) {
         return exchange -> {
             AttributeEvent event = exchange.getIn().getBody(AttributeEvent.class);
             Exception exception = (Exception) exchange.getProperty(Exchange.EXCEPTION_CAUGHT);

@@ -163,7 +163,7 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
         and: "a mock thing asset is created with a valid protocol attribute, an invalid protocol attribute and a plain attribute"
         def mockThing = new ServerAsset("Mock Thing Asset", AssetType.THING, mockAgent)
         mockThing.setAttributes(
-                new AssetAttribute("light1Toggle", AttributeType.BOOLEAN, Values.create(false))
+                new AssetAttribute("light1Toggle", AttributeType.BOOLEAN, Values.create(true))
                         .setMeta(
                         new MetaItem(
                                 AssetMeta.DESCRIPTION,
@@ -174,7 +174,7 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
                                 new AttributeRef(mockAgent.getId(), "mock123").toArrayValue()
                         )
                 ),
-                new AssetAttribute("light2Toggle", AttributeType.BOOLEAN, Values.create(false))
+                new AssetAttribute("light2Toggle", AttributeType.BOOLEAN, Values.create(true))
                         .setMeta(
                         new MetaItem(
                                 AssetMeta.DESCRIPTION,
@@ -205,7 +205,7 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
         )
         assetProcessingService.sendAttributeEvent(light1toggleOn)
 
-        then: "the attribute event should reach the protocol and stop at the agent service with a status of COMPLETED"
+        then: "the attribute event should reach the protocol and stop at the agent service, not be in the database"
         conditions.eventually {
             assert updatesPassedStartOfProcessingChain.size() == 1
             assert updatesPassedStartOfProcessingChain[0].nameOrThrow == "light1Toggle"
@@ -215,6 +215,9 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
             assert updatesPassedRulesService.size() == 0
             assert updatesPassedDatapointService.size() == 0
             assert updatesPassedAttributeLinkingService.size() == 0
+            // Light toggle should still be on in database
+            def asset = assetStorageService.find(mockThing.getId(), true)
+            assert asset.getAttribute("light1Toggle").get().getValueAsBoolean().get()
         }
 
         when: "the protocol updates the attributes value with the value it just received"
@@ -225,7 +228,7 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
         updatesPassedAttributeLinkingService.clear()
         mockProtocol.responseReceived()
 
-        then: "a new attribute event should occur and reach the end of the processing chain"
+        then: "a new attribute event should occur and reach the end of the processing chain, be stored in database"
         conditions.eventually {
             assert updatesPassedStartOfProcessingChain.size() == 1
             assert updatesPassedStartOfProcessingChain[0].nameOrThrow == "light1Toggle"
@@ -234,6 +237,9 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
             assert updatesPassedRulesService.size() == 1
             assert updatesPassedDatapointService.size() == 1
             assert updatesPassedAttributeLinkingService.size() == 1
+            // Light toggle should be off in database
+            def asset = assetStorageService.find(mockThing.getId(), true)
+            assert !asset.getAttribute("light1Toggle").get().getValueAsBoolean().get()
         }
 
         when: "an attribute event occurs for the invalid protocol attribute"
