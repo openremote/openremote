@@ -104,4 +104,12 @@ public class AssetState extends AbstractAssetUpdate {
             throw new IllegalStateException("Instance is immutable, processing status '" + getProcessingStatus() + "': " + this);
         }
     }
+
+    @Override
+    public String toString() {
+        String str = super.toString();
+        str += ", processingStatus='" + processingStatus + "'" +
+            ", error=" + error;
+        return str;
+    }
 }
