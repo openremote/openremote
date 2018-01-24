@@ -118,9 +118,9 @@ public class SimulatorProtocol extends AbstractProtocol {
 
     protected static final String VERSION = "1.0";
 
-    static final protected Map<AttributeRef, Instance> instances = new HashMap<>();
-    static final protected Map<AttributeRef, AttributeRef> attributeInstanceMap = new HashMap<>();
-    static final protected Map<AttributeRef, SimulatorElement> elements = new HashMap<>();
+    final protected Map<AttributeRef, Instance> instances = new HashMap<>();
+    final protected Map<AttributeRef, AttributeRef> attributeInstanceMap = new HashMap<>();
+    final protected Map<AttributeRef, SimulatorElement> elements = new HashMap<>();
 
     protected static final List<MetaItemDescriptor> PROTOCOL_META_ITEM_DESCRIPTORS = Arrays.asList(
         new MetaItemDescriptorImpl("PROTOCOL_SIMULATOR_MODE",

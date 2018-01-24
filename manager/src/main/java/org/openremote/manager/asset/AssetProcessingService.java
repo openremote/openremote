@@ -297,8 +297,11 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
         // Need to record time here otherwise an infinite loop generated inside one of the processors means the timestamp
         // is not updated so tests can't then detect the problem.
         lastProcessedEventTimestamp = System.currentTimeMillis();
+        int processorCount = 0;
         processorLoop:
         for (Consumer<AssetState> processor : processors) {
+            processorCount++;
+
             try {
                 LOG.finest("==> Processor " + processor + " accepts: " + assetState);
                 processor.accept(assetState);
@@ -322,9 +325,16 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
         if (assetState.getProcessingStatus() != AssetState.ProcessingStatus.ERROR) {
             if (assetState.getProcessingStatus() != AssetState.ProcessingStatus.COMPLETED)
                 assetState.setProcessingStatus(AssetState.ProcessingStatus.COMPLETED);
-            clientEventService.publishEvent(new AttributeEvent(
-                assetState.getId(), assetState.getAttributeName(), assetState.getValue(), timerService.getCurrentTimeMillis()
-            ));
+
+            // Only notify clients of events that reach the end of the chain
+            if (processorCount == processors.size()) {
+                clientEventService.publishEvent(new AttributeEvent(
+                    assetState.getId(),
+                    assetState.getAttributeName(),
+                    assetState.getValue(),
+                    timerService.getCurrentTimeMillis()
+                ));
+            }
         }
         LOG.fine("<<< Processing complete: " + assetState);
     }

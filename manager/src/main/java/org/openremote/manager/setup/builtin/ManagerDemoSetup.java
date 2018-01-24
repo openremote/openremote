@@ -24,11 +24,11 @@ import org.openremote.agent.protocol.simulator.SimulatorProtocol;
 import org.openremote.container.Container;
 import org.openremote.manager.asset.ServerAsset;
 import org.openremote.manager.setup.AbstractManagerSetup;
-import org.openremote.model.security.Tenant;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetState;
 import org.openremote.model.asset.UserAsset;
 import org.openremote.model.attribute.*;
+import org.openremote.model.security.Tenant;
 import org.openremote.model.simulator.element.ColorSimulatorElement;
 import org.openremote.model.simulator.element.NumberSimulatorElement;
 import org.openremote.model.simulator.element.SwitchSimulatorElement;
@@ -69,6 +69,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
     public String agentId;
     public final String agentProtocolConfigName = "simulator123";
     public String thingId;
+    public final String thingLightToggleAttributeName = "light1Toggle";
     public String smartHomeId;
     public String apartment1Id;
     public String apartment1ServiceAgentId;
@@ -162,7 +163,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         ServerAsset thing = new ServerAsset("Demo Thing", THING, agent);
         thing.setLocation(agent.getLocation());
         thing.setAttributes(
-            new AssetAttribute("light1Toggle", BOOLEAN, Values.create(true))
+            new AssetAttribute(thingLightToggleAttributeName, BOOLEAN, Values.create(true))
                 .setMeta(new Meta(
                     new MetaItem(
                         LABEL,

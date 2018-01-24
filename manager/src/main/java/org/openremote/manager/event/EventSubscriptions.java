@@ -45,10 +45,7 @@ public class EventSubscriptions {
     class SessionSubscriptions extends HashSet<SessionSubscription> {
         public void removeExpired() {
             removeIf(sessionSubscription -> {
-                    boolean expired =
-                        sessionSubscription.timestamp
-                            + (EventSubscription.RENEWAL_PERIOD_SECONDS * 1000)
-                            < timerService.getCurrentTimeMillis();
+                    boolean expired = sessionSubscription.isExpired();
                     if (expired) {
                         LOG.fine("Removing expired; " + sessionSubscription.subscription);
                     }
@@ -78,6 +75,14 @@ public class EventSubscriptions {
 
         public boolean matches(SharedEvent event) {
             return subscription.getEventType().equals(event.getEventType());
+        }
+
+        /**
+         * Subscriptions with internal consumer never expire
+         */
+        public boolean isExpired() {
+            return subscription.getInternalConsumer() == null
+                && timestamp + (EventSubscription.RENEWAL_PERIOD_SECONDS * 1000) < timerService.getCurrentTimeMillis();
         }
     }
 
@@ -145,11 +150,15 @@ public class EventSubscriptions {
                 if (sessionSubscription.subscription.getFilter() == null
                     || sessionSubscription.subscription.getFilter().apply(event)) {
                     LOG.fine("Creating message for subscribed session '" + sessionKey + "': " + event);
-                    Message msg = new DefaultMessage();
-                    msg.setBody(event); // Don't copy the event, use same reference
-                    msg.setHeaders(new HashMap<>(exchange.getIn().getHeaders())); // Copy headers
-                    msg.setHeader(WebsocketConstants.SESSION_KEY, sessionKey);
-                    messageList.add(msg);
+                    if (sessionSubscription.subscription.getInternalConsumer() == null) {
+                        Message msg = new DefaultMessage();
+                        msg.setBody(event); // Don't copy the event, use same reference
+                        msg.setHeaders(new HashMap<>(exchange.getIn().getHeaders())); // Copy headers
+                        msg.setHeader(WebsocketConstants.SESSION_KEY, sessionKey);
+                        messageList.add(msg);
+                    } else {
+                        sessionSubscription.subscription.getInternalConsumer().accept(event);
+                    }
                 }
             }
         }

@@ -237,6 +237,10 @@ public class ClientEventService implements ContainerService {
         return exchange.getIn().getHeader(WebsocketConstants.SESSION_KEY, String.class);
     }
 
+    public EventSubscriptions getEventSubscriptions() {
+        return eventSubscriptions;
+    }
+
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
