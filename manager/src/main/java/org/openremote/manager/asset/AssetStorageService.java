@@ -1177,7 +1177,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 // Did the location change?
                 Point oldLocation = persistenceEvent.getPreviousState("location");
                 Point newLocation = persistenceEvent.getCurrentState("location");
-                if ((oldLocation == null && newLocation != null) || oldLocation != newLocation || oldLocation.equalsExact(newLocation, 0)) {
+                if ((oldLocation == null && newLocation != null) || oldLocation != newLocation || (oldLocation != null && oldLocation.equalsExact(newLocation, 0))) {
                     clientEventService.publishEvent(
                         new LocationEvent(asset.getId(), asset.getCoordinates(), timerService.getCurrentTimeMillis())
                     );
