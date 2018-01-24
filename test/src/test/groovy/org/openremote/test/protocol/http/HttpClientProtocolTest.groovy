@@ -311,14 +311,13 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
                     ),
                     new MetaItem(
                         HttpClientProtocol.META_PROTOCOL_OAUTH_GRANT,
-                        Values.<ObjectValue>parse(Container.JSON.writeValueAsString(
-                            new OAuthPasswordGrant("https://mockapi/token",
-                                "TestClient",
-                                "TestSecret",
-                                "scope1 scope2",
-                                "testuser",
-                                "password")
-                        )).get()),
+                        new OAuthPasswordGrant("https://mockapi/token",
+                            "TestClient",
+                            "TestSecret",
+                            "scope1 scope2",
+                            "testuser",
+                            "password").toObjectValue()
+                    ),
                     new MetaItem(
                         HttpClientProtocol.META_PROTOCOL_FOLLOW_REDIRECTS,
                         Values.create(true)
@@ -383,14 +382,13 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
                 ),
                 new MetaItem(
                     HttpClientProtocol.META_PROTOCOL_OAUTH_GRANT,
-                    Values.<ObjectValue>parse(Container.JSON.writeValueAsString(
-                        new OAuthPasswordGrant("https://mockapi/token",
-                            "TestClient",
-                            "TestSecret",
-                            "scope1 scope2",
-                            "testuser",
-                            "password")
-                    )).get()),
+                    new OAuthPasswordGrant("https://mockapi/token",
+                        "TestClient",
+                        "TestSecret",
+                        "scope1 scope2",
+                        "testuser",
+                        "password").toObjectValue()
+                ),
                 new MetaItem(
                     HttpClientProtocol.META_PROTOCOL_FOLLOW_REDIRECTS,
                     Values.create(true)
@@ -556,14 +554,13 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
                 ),
                 new MetaItem(
                     HttpClientProtocol.META_PROTOCOL_OAUTH_GRANT,
-                    Values.<ObjectValue>parse(Container.JSON.writeValueAsString(
-                        new OAuthPasswordGrant("https://mockapi/token",
-                            "TestClient",
-                            "TestSecret",
-                            "scope1 scope2",
-                            "testuser",
-                            "password")
-                    )).get()),
+                    new OAuthPasswordGrant("https://mockapi/token",
+                        "TestClient",
+                        "TestSecret",
+                        "scope1 scope2",
+                        "testuser",
+                        "password").toObjectValue()
+                ),
                 new MetaItem(
                     HttpClientProtocol.META_FAILURE_CODES,
                     Values.createArray()
@@ -579,14 +576,13 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
                 ),
                 new MetaItem(
                     HttpClientProtocol.META_PROTOCOL_OAUTH_GRANT,
-                    Values.<ObjectValue>parse(Container.JSON.writeValueAsString(
-                        new OAuthPasswordGrant("https://mockapi/token",
-                            "TestClient",
-                            "TestSecret",
-                            "scope1 scope2",
-                            "testuser",
-                            "password")
-                    )).get()),
+                    new OAuthPasswordGrant("https://mockapi/token",
+                        "TestClient",
+                        "TestSecret",
+                        "scope1 scope2",
+                        "testuser",
+                        "password").toObjectValue()
+                ),
                 new MetaItem(
                     HttpClientProtocol.META_FAILURE_CODES,
                     Values.createArray()
@@ -602,14 +598,13 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
                 ),
                 new MetaItem(
                     HttpClientProtocol.META_PROTOCOL_OAUTH_GRANT,
-                    Values.<ObjectValue>parse(Container.JSON.writeValueAsString(
-                        new OAuthPasswordGrant("https://mockapi/token",
-                            "TestClient",
-                            "TestSecret",
-                            "scope1 scope2",
-                            "testuser",
-                            "password")
-                    )).get()),
+                    new OAuthPasswordGrant("https://mockapi/token",
+                        "TestClient",
+                        "TestSecret",
+                        "scope1 scope2",
+                        "testuser",
+                        "password").toObjectValue()
+                ),
                 new MetaItem(
                     HttpClientProtocol.META_PROTOCOL_FOLLOW_REDIRECTS,
                     Values.create(true)
