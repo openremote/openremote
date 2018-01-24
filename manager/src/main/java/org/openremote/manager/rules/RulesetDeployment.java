@@ -111,6 +111,7 @@ public class RulesetDeployment {
         scriptEngineManager = new ScriptEngineManager();
 
         // LOG and console wrapper can be in global scope for all script engines
+        // TODO Use a different logger for each RulesEngine and show messages in Manager UI for that engine
         scriptEngineManager.put("LOG", RulesEngine.RULES_LOG);
         scriptEngineManager.put("console", new JsConsole(RulesEngine.RULES_LOG));
 
@@ -178,7 +179,8 @@ public class RulesetDeployment {
             "    \"java.util.stream\",\n" +
             "    \"org.openremote.model.asset\",\n" +
             "    \"org.openremote.model.attribute\",\n" +
-            "    \"org.openremote.model.value\"\n" +
+            "    \"org.openremote.model.value\",\n" +
+            "    \"org.openremote.model.rules\"\n" +
             ");\n" +
             "var Match = Java.type(\"org.openremote.model.asset.BaseAssetQuery$Match\");\n" +
             "var Operator = Java.type(\"org.openremote.model.asset.BaseAssetQuery$Operator\");\n" +

@@ -152,8 +152,8 @@ public abstract class Ruleset {
     public Ruleset() {
     }
 
-    public Ruleset(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String templateAssetId) {
-        this(id, version, createdOn, lastModified, name, enabled, templateAssetId, null, Lang.JAVASCRIPT);
+    public Ruleset(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String templateAssetId, Lang lang) {
+        this(id, version, createdOn, lastModified, name, enabled, templateAssetId, null, lang);
     }
 
     public Ruleset(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String templateAssetId, String rules, Lang lang) {

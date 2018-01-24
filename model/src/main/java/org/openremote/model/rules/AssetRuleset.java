@@ -46,8 +46,8 @@ public class AssetRuleset extends Ruleset {
         this.assetId = assetId;
     }
 
-    public AssetRuleset(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String templateAssetId, String assetId) {
-        this(id, version, createdOn, lastModified, name, enabled, templateAssetId, null, Lang.JAVASCRIPT, null, assetId);
+    public AssetRuleset(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String templateAssetId, String assetId, Lang lang) {
+        this(id, version, createdOn, lastModified, name, enabled, templateAssetId, null, lang, null, assetId);
     }
 
     public AssetRuleset(String name, String assetId, String rules, Lang lang) {

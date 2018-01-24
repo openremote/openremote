@@ -60,7 +60,7 @@ import static org.openremote.model.asset.AssetAttribute.getAddedOrModifiedAttrib
 
 /**
  * Responsible for creating {@link RulesEngine}s for the rulesets
- * and processing {@link AssetState}  and {@link AssetEvent} messages.
+ * and processing {@link AssetState} updates.
  * <p>
  * Each message is processed in the following order:
  * <ol>
@@ -206,10 +206,9 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
         // We might process two facts for a single attribute update, if that is what the user wants
 
         // First as asset state
-        AssetState assetState = new AssetState(asset, attribute, source);
         if (attribute.isRuleState()) {
             updateAssetState(
-                assetState,
+                new AssetState(asset, attribute, source),
                 false, // Don't skip the error check on the rules engines
                 !attribute.isRuleEvent() // If it's not a rule event, fire immediately
             );
@@ -217,10 +216,10 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
 
         // Then as asset event (if there wasn't an error), this will also fire the rules engines
         if (attribute.isRuleEvent()) {
-            process(new AssetEvent(
-                assetState,
+            insertAssetEvent(
+                new AssetState(asset, attribute, source),
                 attribute.getRuleEventExpires().orElse(configEventExpires)
-            ));
+            );
         }
 
         return false;
@@ -561,13 +560,13 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
         }
     }
 
-    protected synchronized void process(AssetEvent assetEvent) {
+    protected synchronized void insertAssetEvent(AssetState assetState, String expires) {
         // Get the chain of rule engines that we need to pass through
-        List<RulesEngine> rulesEngines = getEnginesInScope(assetEvent.getRealmId(), assetEvent.getPath());
+        List<RulesEngine> rulesEngines = getEnginesInScope(assetState.getRealmId(), assetState.getPath());
 
         // Check that all engines in the scope are available
         if (rulesEngines.stream().anyMatch(RulesEngine::isError)) {
-            LOG.severe("At least one rules engine is in an error state, skipping: " + assetEvent);
+            LOG.severe("At least one rules engine is in an error state, skipping: " + assetState);
             if (LOG.isLoggable(FINEST)) {
                 for (RulesEngine rulesEngine : rulesEngines) {
                     if (rulesEngine.isError()) {
@@ -580,7 +579,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
 
         // Pass through each engine
         for (RulesEngine rulesEngine : rulesEngines) {
-            rulesEngine.insertFact(assetEvent);
+            rulesEngine.insertFact(expires, assetState);
         }
     }
 

@@ -146,7 +146,6 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets[0].id == managerDemoSetup.smartHomeId
         assets[0].name == "Smart Home"
         assets[1].id == managerDemoSetup.apartment1Id
-        assets[1].version == 0
         assets[1].createdOn == null
         assets[1].name == "Apartment 1"
         assets[1].type == null
@@ -158,7 +157,9 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets[1].tenantDisplayName == null
         assets[1].coordinates == null
         assets[1].path == null
-        assets[1].getAttributesList().size() == 7
+        assets[1].getAttributesList().size() == 9
+        assets[1].getAttribute("ventilationAuto").isPresent()
+        assets[1].getAttribute("ventilationLevel").isPresent()
         assets[1].getAttribute("alarmEnabled").isPresent()
         assets[1].getAttribute("vacationUntil").isPresent()
         assets[1].getAttribute("autoSceneSchedule").isPresent()
@@ -189,7 +190,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
 
         then: "result should match (and some values should be empty because we need an AssetQuery to get them)"
         asset.id == managerDemoSetup.apartment1Id
-        asset.version == 0
+        asset.version == 1
         asset.createdOn.time < System.currentTimeMillis()
         asset.name == "Apartment 1"
         asset.wellKnownType == AssetType.RESIDENCE
@@ -310,7 +311,6 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         then: "result should match"
         assets.size() == 3
         assets.get(0).id == managerDemoSetup.apartment1Id
-        assets.get(0).version == 0
         assets.get(0).createdOn.time < System.currentTimeMillis()
         assets.get(0).name == "Apartment 1"
         assets.get(0).wellKnownType == AssetType.RESIDENCE

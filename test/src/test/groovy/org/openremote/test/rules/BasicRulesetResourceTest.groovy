@@ -60,6 +60,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         then: "result should match"
         ruleDefinitions.length == 2
         ruleDefinitions[0].name == "Some global demo rules"
+        ruleDefinitions[0].lang == GROOVY
         ruleDefinitions[0].rules == null // Don't retrieve the (large) rules data when getting a list of rule definitions
 
         when: "some tenant rules are retrieved"
@@ -68,6 +69,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         then: "result should match"
         ruleDefinitions.length == 1
         ruleDefinitions[0].name == "Some master tenant demo rules"
+        ruleDefinitions[0].lang == GROOVY
 
         when: "some tenant rules in a non-authenticated realm are retrieved"
         ruleDefinitions = rulesetResource.getTenantRulesets(null, keycloakDemoSetup.customerATenant.id)
@@ -83,6 +85,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         then: "result should match"
         ruleDefinitions.length == 1
         ruleDefinitions[0].name == "Some apartment 2 demo rules"
+        ruleDefinitions[0].lang == GROOVY
 
         /* ############################################## WRITE ####################################### */
 
@@ -100,6 +103,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         lastModified.time < System.currentTimeMillis()
         globalRuleset.name == "Test global definition"
         globalRuleset.rules == "SomeRulesCode"
+        globalRuleset.lang == GROOVY
 
         when: "a global ruleset is updated"
         globalRuleset.name = "Renamed test global definition"

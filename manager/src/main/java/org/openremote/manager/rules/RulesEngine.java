@@ -113,7 +113,7 @@ public class RulesEngine<T extends Ruleset> {
     /**
      * @return a shallow copy of the asset event facts.
      */
-    public List<AssetEvent> getAssetEvents() {
+    public List<TemporaryFact<AssetState>> getAssetEvents() {
         synchronized (deployments) {
             return new ArrayList<>(facts.getAssetEvents());
         }
@@ -293,25 +293,12 @@ public class RulesEngine<T extends Ruleset> {
                 facts.setClock(clock);
 
                 // Remove any expired temporary facts
-                facts.removeExpiredTemporaryFacts();
+                boolean factsExpired = facts.removeExpiredTemporaryFacts();
 
-                // If we still have temporary facts and there is no firing scheduled
-                if (facts.hasTemporaryFacts() && eventsTimer == null && !disableTemporaryFactExpiration) {
-                    // Schedule firing again so temporary facts can be expired
-                    // TODO: Optimized algo:
-                    // 1. Check when the next temporary fact expires
-                    // 2. Schedule repeated check with GUARANTEED_MIN_EXPIRATION_MILLIS running on wall clock
-                    // 3. Check if rules clock == next temporary fact expires
-                    // 3a. If true, cancel schedule and fire
-                    // 3b. If false, keep checking
-                    eventsTimer = executorService.schedule(
-                        this::fire, AssetEvent.GUARANTEED_MIN_EXPIRATION_MILLIS, TimeUnit.MILLISECONDS
-                    );
-                } else if (eventsTimer != null) {
-                    // If we don't have temporary facts but there is a scheduled firing, cancel it
-                    eventsTimer.cancel(true);
-                    eventsTimer = null;
-                }
+                // TODO Optimize:
+                // Add fire(scheduledFiring) boolean
+                // Add enableTimer() as rule declaration option, each rule which uses time windows must set it
+                // Only fire if factsExpired || deployment.isAnyRuleEnabledTimer()
 
                 for (RulesetDeployment deployment : deployments.values()) {
                     try {
@@ -341,6 +328,21 @@ public class RulesEngine<T extends Ruleset> {
                         break;
                     }
                 }
+
+                // If we still have temporary facts, schedule a new firing so expired facts are removed eventually
+                if (facts.hasTemporaryFacts() && eventsTimer == null && !disableTemporaryFactExpiration) {
+                    LOG.fine("Temporary facts present, scheduling new firing of rules on: " + this);
+                    eventsTimer = executorService.scheduleAtFixedRate(
+                        this::fire,
+                        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS,
+                        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS,
+                        TimeUnit.MILLISECONDS
+                    );
+                } else if (!facts.hasTemporaryFacts() && eventsTimer != null) {
+                    LOG.fine("No temporary facts present, cancel scheduled firing of rules on: " + this);
+                    eventsTimer.cancel(false);
+                    eventsTimer = null;
+                }
             }
         });
     }
@@ -365,9 +367,7 @@ public class RulesEngine<T extends Ruleset> {
 
     public void updateFact(AssetState assetState, boolean fireImmediately) {
         synchronized (deployments) {
-            RULES_LOG.finest("Fact change (UPDATE): " + assetState + " - on: " + this);
-            facts.getAssetStates().remove(assetState);
-            facts.getAssetStates().add(assetState);
+            facts.putAssetState(assetState);
             if (fireImmediately) {
                 fire();
             }
@@ -376,18 +376,14 @@ public class RulesEngine<T extends Ruleset> {
 
     public void removeFact(AssetState assetState) {
         synchronized (deployments) {
-            RULES_LOG.finest("Fact change (DELETE): " + assetState + " - on: " + this);
-            synchronized (deployments) {
-                facts.getAssetStates().remove(assetState);
-                fire();
-            }
+            facts.removeAssetState(assetState);
+            fire();
         }
     }
 
-    public void insertFact(AssetEvent assetEvent) {
+    public void insertFact(String expires, AssetState assetState) {
         synchronized (deployments) {
-            RULES_LOG.finest("Fact change (INSERT): " + assetEvent + " - on: " + this);
-            facts.getAssetEvents().add(assetEvent);
+            facts.insertAssetEvent(expires, assetState);
             fire();
         }
     }
@@ -428,7 +424,7 @@ public class RulesEngine<T extends Ruleset> {
     protected void printSessionStats() {
         synchronized (deployments) {
             Collection<AssetState> assetStateFacts = facts.getAssetStates();
-            Collection<AssetEvent> assetEventFacts = facts.getAssetEvents();
+            Collection<TemporaryFact<AssetState>> assetEventFacts = facts.getAssetEvents();
             Map<String, Object> namedFacts = facts.getNamedFacts();
             Collection<Object> anonFacts = facts.getAnonymousFacts();
             long total = assetStateFacts.size() + assetEventFacts.size() + namedFacts.size() + anonFacts.size();

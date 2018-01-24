@@ -50,6 +50,9 @@ rules.add()
                     ).filter(
                             // in the last 12 minutes
                             facts.clock.last("12m")
+                    ).map({ co2LevelFact ->
+                        co2LevelFact.fact
+                    }
                     ).filter({ coLevel ->
                         // with increasing values
                         coLevel.isValueGreaterThanOldValue()
@@ -88,9 +91,9 @@ rules.add()
                     // and there are no sensor events
                     facts.matchAssetEvent(
                             new AssetQuery().id(roomWithoutMotionSensorTriggered.id).attributeName("co2Level")
-                    ).filter({ coLevel ->
+                    ).filter({ coLevelFact ->
                         // with increasing values
-                        coLevel.isValueGreaterThanOldValue()
+                        coLevelFact.getFact().isValueGreaterThanOldValue()
                         // in the last 12 minutes≤
                     }).filter(facts.clock.last("12m")).count() == 0
                 }).orElse(true) // or we don't have a CO2 sensor

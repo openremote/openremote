@@ -33,8 +33,8 @@ public class GlobalRuleset extends Ruleset {
     public GlobalRuleset() {
     }
 
-    public GlobalRuleset(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String templateAssetId) {
-        super(id, version, createdOn, lastModified, name, enabled, templateAssetId);
+    public GlobalRuleset(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String templateAssetId, Lang lang) {
+        super(id, version, createdOn, lastModified, name, enabled, templateAssetId, lang);
     }
 
     public GlobalRuleset(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String templateAssetId, String rules, Lang lang) {

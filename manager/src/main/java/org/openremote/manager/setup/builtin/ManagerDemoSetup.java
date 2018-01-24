@@ -50,7 +50,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
     final protected boolean importDemoScenes;
 
     // Update these numbers whenever you change a RULE_STATE flag in test data
-    public static final int DEMO_RULE_STATES_APARTMENT_1 = 23;
+    public static final int DEMO_RULE_STATES_APARTMENT_1 = 25;
     public static final int DEMO_RULE_STATES_APARTMENT_2 = 11;
     public static final int DEMO_RULE_STATES_APARTMENT_3 = 0;
     public static final int DEMO_RULE_STATES_SMART_HOME = DEMO_RULE_STATES_APARTMENT_1 + DEMO_RULE_STATES_APARTMENT_2 + DEMO_RULE_STATES_APARTMENT_3;
@@ -352,6 +352,13 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         );
         apartment1ServiceAgent = assetStorageService.merge(apartment1ServiceAgent);
         apartment1ServiceAgentId = apartment1ServiceAgent.getId();
+
+        addDemoApartmentVentilation(apartment1, true, () -> new MetaItem[]{
+            new MetaItem(AGENT_LINK, new AttributeRef(apartment1ServiceAgentId, "apartmentSimulator").toArrayValue()),
+            new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME))
+        });
+
+        apartment1 = assetStorageService.merge(apartment1);
 
         ServerAsset apartment1Livingroom = createDemoApartmentRoom(apartment1, "Living Room");
         addDemoApartmentRoomMotionSensor(apartment1Livingroom, true, () -> new MetaItem[]{

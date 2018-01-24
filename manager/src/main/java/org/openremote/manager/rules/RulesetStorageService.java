@@ -70,7 +70,7 @@ public class RulesetStorageService implements ContainerService {
         return persistenceService.doReturningTransaction(entityManager ->
             entityManager.createQuery(
                 "select new org.openremote.model.rules.GlobalRuleset(" +
-                    "rs.id, rs.version, rs.createdOn, rs.lastModified, rs.name, rs.enabled, rs.templateAssetId" +
+                    "rs.id, rs.version, rs.createdOn, rs.lastModified, rs.name, rs.enabled, rs.templateAssetId, rs.lang" +
                     ") " +
                     "from GlobalRuleset rs " +
                     "order by rs.createdOn asc",
@@ -87,7 +87,7 @@ public class RulesetStorageService implements ContainerService {
         return persistenceService.doReturningTransaction(entityManager ->
             entityManager.createQuery(
                 "select new org.openremote.model.rules.TenantRuleset(" +
-                    "rs.id, rs.version, rs.createdOn, rs.lastModified, rs.name, rs.enabled, rs.templateAssetId, rs.realmId" +
+                    "rs.id, rs.version, rs.createdOn, rs.lastModified, rs.name, rs.enabled, rs.templateAssetId, rs.realmId, rs.lang" +
                     ") " +
                     "from TenantRuleset rs " +
                     "where rs.realmId = :realmId " +
@@ -105,7 +105,7 @@ public class RulesetStorageService implements ContainerService {
         return persistenceService.doReturningTransaction(entityManager ->
             entityManager.createQuery(
                 "select new org.openremote.model.rules.AssetRuleset(" +
-                    "rs.id, rs.version, rs.createdOn, rs.lastModified, rs.name, rs.enabled, rs.templateAssetId, rs.assetId" +
+                    "rs.id, rs.version, rs.createdOn, rs.lastModified, rs.name, rs.enabled, rs.templateAssetId, rs.assetId, rs.lang" +
                     ") " +
                     "from AssetRuleset rs, Asset a " +
                     "where rs.assetId = :assetId and rs.assetId = a.id and a.realmId = :realmId " +

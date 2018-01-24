@@ -41,7 +41,6 @@ import org.openremote.model.asset.*;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeEvent.Source;
 import org.openremote.model.attribute.AttributeExecuteStatus;
-import org.openremote.model.rules.AssetEvent;
 import org.openremote.model.rules.AssetState;
 import org.openremote.model.security.ClientRole;
 import org.openremote.model.value.Value;
@@ -108,16 +107,16 @@ import static org.openremote.model.attribute.AttributeEvent.Source.*;
  * and the transport layer it uses etc.
  * <h2>Rules Service processing logic</h2>
  * <p>
- * Checks if attribute is {@link AssetAttribute#isRuleState} or {@link AssetAttribute#isRuleEvent}, and if
+ * Checks if attribute is {@link AssetAttribute#isRuleState} and {@link AssetAttribute#isRuleEvent}, and if
  * so the message is passed through the rule engines that are in scope for the asset.
  * <p>
  * For {@link AssetState} messages, the rules service keeps the facts and thus the state of rule facts
  * are in sync with the asset state changes that occur. If an asset attribute value changes,
  * the {@link AssetState} in the rules engines will be updated to reflect the change.
  * <p>
- * For {@link AssetEvent} messages (obtained by converting the {@link AssetState}), they are inserted in the rules
+ * For temporary {@link AssetState} event messages, they are inserted in the rules
  * engines in scope and expired automatically if the event lifetime set in
- * {@link RulesService#RULE_EVENT_EXPIRES} is reached, or by the rules service if the event lifetime set in the
+ * {@link RulesService#RULE_EVENT_EXPIRES} is reached, or if the event lifetime set in the
  * attribute {@link AssetMeta#RULE_EVENT_EXPIRES} is reached.
  * <h2>Asset Storage Service processing logic</h2>
  * <p>
@@ -506,6 +505,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
     }
 
     protected void publishClientEvent(Asset asset, AssetAttribute attribute) {
+        // TODO Catch "queue full" exception (e.g. when producing thousands of INFO messages in rules)?
         clientEventService.publishEvent(new AttributeEvent(
             asset.getId(), attribute.getNameOrThrow(), attribute.getValue().orElse(null), timerService.getCurrentTimeMillis()
         ));

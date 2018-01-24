@@ -185,7 +185,7 @@ public abstract class AbstractManagerSetup implements Setup {
                     new MetaItem(LABEL, Values.create("CO2 level")),
                     new MetaItem(RULE_STATE, Values.create(true)),
                     new MetaItem(RULE_EVENT, Values.create(true)),
-                    new MetaItem(RULE_EVENT_EXPIRES, Values.create("16m")),
+                    new MetaItem(RULE_EVENT_EXPIRES, Values.create("45m")),
                     new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)),
                     new MetaItem(READ_ONLY, Values.create(true)),
                     new MetaItem(STORE_DATA_POINTS, Values.create(true)),
@@ -201,6 +201,8 @@ public abstract class AbstractManagerSetup implements Setup {
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Humidity")),
                     new MetaItem(RULE_STATE, Values.create(true)),
+                    new MetaItem(RULE_EVENT, Values.create(true)),
+                    new MetaItem(RULE_EVENT_EXPIRES, Values.create("45m")),
                     new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)),
                     new MetaItem(READ_ONLY, Values.create(true)),
                     new MetaItem(STORE_DATA_POINTS, Values.create(true)),

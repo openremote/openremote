@@ -38,8 +38,8 @@ public class TenantRuleset extends Ruleset {
     public TenantRuleset() {
     }
 
-    public TenantRuleset(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String templateAssetId, String realmId) {
-        super(id, version, createdOn, lastModified, name, enabled, templateAssetId);
+    public TenantRuleset(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String templateAssetId, String realmId, Lang lang) {
+        super(id, version, createdOn, lastModified, name, enabled, templateAssetId, lang);
         this.realmId = realmId;
     }
 
@@ -49,7 +49,7 @@ public class TenantRuleset extends Ruleset {
     }
 
     public TenantRuleset(String realmId) {
-        this(null, realmId, null, Lang.JAVASCRIPT);
+        this(null, realmId, null, Lang.GROOVY);
 
     }
 

@@ -222,7 +222,7 @@ class ResidencePresenceDetectionTest extends Specification implements ManagerCon
             // Wait for event to be processed
             conditions.eventually {
                 assert apartment1Engine.assetEvents.any() {
-                    it.matches(co2LevelIncrement, SENSOR, true)
+                    it.fact.matches(co2LevelIncrement, SENSOR, true)
                 }
                 assert noEventProcessedIn(assetProcessingService, 500)
             }

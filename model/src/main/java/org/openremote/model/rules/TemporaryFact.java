@@ -19,10 +19,19 @@
  */
 package org.openremote.model.rules;
 
+import javaemul.internal.annotations.GwtIncompatible;
+import org.openremote.model.event.Event;
+
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
+
 /**
  * A rule fact that has a timestamp, it expires after a certain time.
  */
-public interface TemporaryFact {
+@GwtIncompatible
+public class TemporaryFact<T> extends Event {
 
     /**
      * This value defines the periodic firing of the rules engines when temporary
@@ -30,13 +39,51 @@ public interface TemporaryFact {
      * fact has a shorter expiration time, it's not guaranteed to be removed within
      * that time.
      */
-    int GUARANTEED_MIN_EXPIRATION_MILLIS = 3000;
+    public static final int GUARANTEED_MIN_EXPIRATION_MILLIS = 3000;
 
-    long getTimestamp();
+    final protected long expirationMilliseconds;
+    final protected T fact;
+    // These are only useful for debugging, easier to read than timestamps
+    final public LocalDateTime time;
+    final public LocalDateTime expirationTime;
 
-    long getExpirationMilliseconds();
+    public TemporaryFact(long timestamp, long expirationMilliseconds, T fact) {
+        super(timestamp);
+        this.expirationMilliseconds = expirationMilliseconds;
+        this.fact = fact;
+        this.time = LocalDateTime.ofInstant(Instant.ofEpochMilli(timestamp), ZoneId.systemDefault());
+        this.expirationTime = time.plus(expirationMilliseconds, ChronoUnit.MILLIS);
+    }
 
-    default boolean isExpired(long currentTimestamp) {
+    public long getExpirationMilliseconds() {
+        return expirationMilliseconds;
+    }
+
+    public T getFact() {
+        return fact;
+    }
+
+    public LocalDateTime getTime() {
+        return time;
+    }
+
+    public LocalDateTime getExpirationTime() {
+        return expirationTime;
+    }
+
+    public boolean isExpired(long currentTimestamp) {
         return getTimestamp() + getExpirationMilliseconds() < currentTimestamp;
     }
+
+    @Override
+    public String toString() {
+        return TemporaryFact.class.getSimpleName() + "{" +
+            "timestamp=" + timestamp +
+            ", time=" + time +
+            ", expirationMilliseconds=" + expirationMilliseconds +
+            ", expirationTime=" + expirationTime +
+            ", fact=" + fact +
+            '}';
+    }
+
 }

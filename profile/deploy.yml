@@ -290,8 +290,8 @@ services:
       # docker exec -it <container ID> psql -U openremote
 
     # Resource limits
-    mem_limit: 300m
-    memswap_limit: 300m
+    mem_limit: 400m
+    memswap_limit: 400m
 
     # Configure logging of the container
     logging:
