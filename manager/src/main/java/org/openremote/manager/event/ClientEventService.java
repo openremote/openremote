@@ -185,7 +185,6 @@ public class ClientEventService implements ContainerService {
 
                 from(ClientEventService.CLIENT_EVENT_QUEUE)
                     .routeId("ToClientWebsocketEvents")
-                    .log(LoggingLevel.INFO, "EVENT_DEBUG", "TO PUBLISH ${body}")
                     .choice()
                     .when(body().isInstanceOf(SharedEvent.class))
                     .split(method(eventSubscriptions, "splitForSubscribers"))
