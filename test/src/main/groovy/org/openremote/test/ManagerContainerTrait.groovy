@@ -1,6 +1,7 @@
 package org.openremote.test
 
 import com.google.common.collect.Lists
+import org.apache.camel.spi.BrowsableEndpoint
 import org.drools.core.time.impl.PseudoClockScheduler
 import org.openremote.agent.protocol.Protocol
 import org.openremote.container.Container
@@ -28,6 +29,7 @@ import org.openremote.manager.security.ManagerIdentityService
 import org.openremote.manager.setup.SetupService
 import org.openremote.manager.simulator.SimulatorService
 import org.openremote.manager.web.ManagerWebService
+import spock.util.concurrent.PollingConditions
 
 import java.util.concurrent.TimeUnit
 
@@ -36,6 +38,7 @@ import static org.openremote.container.security.IdentityService.IDENTITY_NETWORK
 import static org.openremote.container.timer.TimerService.Clock.PSEUDO
 import static org.openremote.container.timer.TimerService.TIMER_CLOCK_TYPE
 import static org.openremote.container.web.WebService.WEBSERVER_LISTEN_PORT
+import static org.openremote.manager.event.ClientEventService.CLIENT_EVENT_QUEUE
 import static org.openremote.manager.setup.SetupTasks.*
 
 trait ManagerContainerTrait extends ContainerTrait {
@@ -159,6 +162,18 @@ trait ManagerContainerTrait extends ContainerTrait {
                     throw new IllegalArgumentException("Knowledge session/clock not available for: " + engine)
                 }
                 clock.advanceTime(System.currentTimeMillis() - clock.currentTime, TimeUnit.MILLISECONDS)
+            }
+        }
+    }
+
+    static void noPendingExchangesOnMessageEndpoint(Container container, String... endpointName) {
+        for (String name : endpointName) {
+            def endpoint = container.getService(MessageBrokerSetupService.class).context.getEndpoint(name)
+            if (!endpoint) {
+                throw new IllegalArgumentException("Messaging endpoint not found: " + name)
+            }
+            new PollingConditions(initialDelay: 0.1, delay: 0.05).eventually {
+                assert ((BrowsableEndpoint)endpoint).exchanges.size() == 0
             }
         }
     }

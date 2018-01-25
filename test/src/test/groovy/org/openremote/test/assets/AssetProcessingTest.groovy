@@ -111,7 +111,7 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
             updatesPassedDatapointService.add(assetState)
         }
 
-        when: "the container is started with the mock protocol and consumers"
+        and: "the container is started with the mock protocol and consumers"
         def serverPort = findEphemeralPort()
         def container = startContainer(defaultConfig(serverPort), defaultServices(mockProtocol))
         def assetStorageService = container.getService(AssetStorageService.class)
@@ -119,12 +119,7 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
 
-        then: "the container should be running and initialised"
-        conditions.eventually {
-            assert noEventProcessedIn(assetProcessingService, 500)
-        }
-
-        then: "register mock asset processors"
+        and: "register mock asset processors"
         assetProcessingService.processors.add(mockDatapointServiceConsumer)
         assetProcessingService.processors.add(3, mockAssetStorageConsumer)
         assetProcessingService.processors.add(2, mockRulesServiceConsumer)

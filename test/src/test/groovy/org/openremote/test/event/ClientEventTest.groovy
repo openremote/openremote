@@ -21,7 +21,6 @@ package org.openremote.test.event
 
 import com.vividsolutions.jts.geom.Coordinate
 import com.vividsolutions.jts.geom.GeometryFactory
-import org.openremote.agent.protocol.simulator.SimulatorProtocol
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
@@ -43,8 +42,8 @@ import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
-import static org.openremote.container.util.MapAccess.getBoolean
 import static org.openremote.container.util.MapAccess.getString
+import static org.openremote.manager.event.ClientEventService.CLIENT_EVENT_QUEUE
 import static org.openremote.manager.event.ClientEventService.WEBSOCKET_EVENTS
 import static org.openremote.manager.setup.AbstractKeycloakSetup.SETUP_ADMIN_PASSWORD
 import static org.openremote.manager.setup.AbstractKeycloakSetup.SETUP_ADMIN_PASSWORD_DEFAULT
@@ -62,7 +61,7 @@ class ClientEventTest extends Specification implements ManagerContainerTrait, Gw
         given: "expected conditions"
         def conditions = new PollingConditions(timeout: 10, delay: 1)
 
-        when: "the container is started"
+        and: "the container is started"
         def serverPort = findEphemeralPort()
         def container = startContainer(defaultConfig(serverPort), defaultServices())
         def assetStorageService = container.getService(AssetStorageService.class)
@@ -70,13 +69,9 @@ class ClientEventTest extends Specification implements ManagerContainerTrait, Gw
         def agentService = container.getService(AgentService.class)
         def internalClientEventService = container.getService(org.openremote.manager.event.ClientEventService.class)
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
-        def simulatorProtocol = container.getService(SimulatorProtocol.class)
 
-        then: "the system should settle down"
-        conditions.eventually {
-            assert noEventProcessedIn(assetProcessingService, 500)
-            assert simulatorProtocol.elements.size() == 10
-        }
+        expect: "all client events happening during startup to be consumed"
+        noPendingExchangesOnMessageEndpoint(container, CLIENT_EVENT_QUEUE)
 
         when: "a client websocket connection and attached event bus and service"
         def accessToken = {

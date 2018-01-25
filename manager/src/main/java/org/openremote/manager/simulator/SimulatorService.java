@@ -150,4 +150,9 @@ public class SimulatorService extends RouteBuilder implements ContainerService {
             }
         });
     }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "{}";
+    }
 }
