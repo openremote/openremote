@@ -304,13 +304,11 @@ public class RulesEngine<T extends Ruleset> {
                     try {
                         RULES_LOG.fine("Firing rules @" + clock + " of: " + deployment);
 
-                        /* TODO Not sure if this is useful, it's too much info in most cases
                         // If full detail logging is enabled
                         if (RULES_LOG.isLoggable(Level.FINEST)) {
                             // Log asset states and events before firing (note that this will log at INFO)
                             facts.logFacts(RULES_LOG);
                         }
-                        */
 
                         engine.fire(deployment.getRules(), facts);
 
