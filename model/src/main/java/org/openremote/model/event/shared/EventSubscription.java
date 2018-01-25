@@ -21,6 +21,8 @@ package org.openremote.model.event.shared;
 
 import org.openremote.model.event.Event;
 
+import java.util.function.Consumer;
+
 /**
  * A client can subscribe to {@link SharedEvent}s on the server, providing the
  * type of event it wants to receive as well as filter criteria to restrict the
@@ -36,6 +38,10 @@ public class EventSubscription<E extends SharedEvent> {
 
     protected String eventType;
     protected EventFilter<E> filter;
+    /**
+     * Optional only set when an internal subscription is made
+     */
+    protected Consumer<E> internalConsumer;
 
     protected EventSubscription() {
     }
@@ -57,6 +63,12 @@ public class EventSubscription<E extends SharedEvent> {
         this.filter = filter;
     }
 
+    public EventSubscription(Class<E> eventClass, EventFilter<E> filter, Consumer<E> internalConsumer) {
+        this.eventType = Event.getEventType(eventClass);
+        this.filter = filter;
+        this.internalConsumer = internalConsumer;
+    }
+
     public String getEventType() {
         return eventType;
     }
@@ -75,6 +87,10 @@ public class EventSubscription<E extends SharedEvent> {
 
     public boolean isEventType(Class<? extends Event> eventClass) {
         return Event.getEventType(eventClass).equals(getEventType());
+    }
+
+    public Consumer<E> getInternalConsumer() {
+        return internalConsumer;
     }
 
     @Override

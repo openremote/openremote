@@ -100,7 +100,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         clientEventService = container.getService(ClientEventService.class);
 
         clientEventService.addSubscriptionAuthorizer((auth, subscription) -> {
-            if (!subscription.isEventType(AssetTreeModifiedEvent.class))
+            if (!subscription.isEventType(AssetTreeModifiedEvent.class) && !subscription.isEventType(LocationEvent.class))
                 return false;
             return identityService.getIdentityProvider().canSubscribeWith(
                 auth,
@@ -1161,12 +1161,16 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 // Did the location change?
                 Point oldLocation = persistenceEvent.getPreviousState("location");
                 Point newLocation = persistenceEvent.getCurrentState("location");
-                if ((oldLocation == null && newLocation != null) || oldLocation != newLocation || (oldLocation != null && oldLocation.equalsExact(newLocation, 0))) {
-                    clientEventService.publishEvent(
-                        new LocationEvent(asset.getId(), asset.getCoordinates(), timerService.getCurrentTimeMillis())
-                    );
-                }
 
+                if (!(oldLocation == null && newLocation == null)) {
+                    if (oldLocation == null || newLocation == null || !oldLocation.equalsExact(newLocation, 0)) {
+                        clientEventService.publishEvent(
+                            new LocationEvent(asset.getId(),
+                                              asset.getCoordinates(),
+                                              timerService.getCurrentTimeMillis())
+                        );
+                    }
+                }
                 break;
             case DELETE:
                 clientEventService.publishEvent(

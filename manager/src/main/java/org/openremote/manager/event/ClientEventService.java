@@ -20,6 +20,7 @@
 package org.openremote.manager.event;
 
 import org.apache.camel.Exchange;
+import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
@@ -184,6 +185,7 @@ public class ClientEventService implements ContainerService {
 
                 from(ClientEventService.CLIENT_EVENT_QUEUE)
                     .routeId("ToClientWebsocketEvents")
+                    .log(LoggingLevel.INFO, "EVENT_DEBUG", "TO PUBLISH ${body}")
                     .choice()
                     .when(body().isInstanceOf(SharedEvent.class))
                     .split(method(eventSubscriptions, "splitForSubscribers"))
@@ -235,6 +237,10 @@ public class ClientEventService implements ContainerService {
 
     public static String getSessionKey(Exchange exchange) {
         return exchange.getIn().getHeader(WebsocketConstants.SESSION_KEY, String.class);
+    }
+
+    public EventSubscriptions getEventSubscriptions() {
+        return eventSubscriptions;
     }
 
     @Override

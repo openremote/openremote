@@ -174,7 +174,7 @@ public class ServerAsset extends Asset {
 
     public static void setCoordinates(Asset asset, Point location) {
         if (location == null) {
-            asset.setCoordinates();
+            asset.setCoordinates((double[]) null);
         } else {
             asset.setCoordinates(
                 location.getCoordinate().getOrdinate(Coordinate.X),

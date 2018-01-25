@@ -69,6 +69,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
     public String agentId;
     public final String agentProtocolConfigName = "simulator123";
     public String thingId;
+    public final String thingLightToggleAttributeName = "light1Toggle";
     public String smartHomeId;
     public String apartment1Id;
     public String apartment1ServiceAgentId;
@@ -163,7 +164,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         ServerAsset thing = new ServerAsset("Demo Thing", THING, agent);
         thing.setLocation(agent.getLocation());
         thing.setAttributes(
-            new AssetAttribute("light1Toggle", BOOLEAN, Values.create(true))
+            new AssetAttribute(thingLightToggleAttributeName, BOOLEAN, Values.create(true))
                 .setMeta(new Meta(
                     new MetaItem(
                         LABEL,
@@ -301,7 +302,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
             assetDatapointService.processAssetUpdate(em, finalThing, light1PowerConsumptionAttribute, AttributeEvent.Source.SENSOR);
 
             light1PowerConsumptionAttribute.setValue(Values.create(12.22), now.minusSeconds(1).toEpochSecond() * 1000);
-            assetDatapointService.processAssetUpdate(em, finalThing, light1PowerConsumptionAttribute, AttributeEvent.Source.SENSOR);            
+            assetDatapointService.processAssetUpdate(em, finalThing, light1PowerConsumptionAttribute, AttributeEvent.Source.SENSOR);
         });
 
         // ################################ Demo assets for 'customerA' realm ###################################

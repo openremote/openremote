@@ -23,6 +23,9 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import org.openremote.container.Container;
+import org.openremote.model.value.ObjectValue;
+import org.openremote.model.value.Values;
 
 import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
@@ -84,5 +87,15 @@ public abstract class OAuthGrant {
     @JsonProperty(VALUE_KEY_SCOPE)
     public String getScope() {
         return valueMap.getFirst(VALUE_KEY_SCOPE);
+    }
+
+    public ObjectValue toObjectValue() {
+        try {
+            return Values.<ObjectValue>parse(Container.JSON.writeValueAsString(this)).orElse(null);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return null;
     }
 }
