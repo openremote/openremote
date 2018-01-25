@@ -1,6 +1,7 @@
 package org.openremote.test
 
 import com.google.common.collect.Lists
+import org.apache.camel.spi.BrowsableEndpoint
 import org.openremote.agent.protocol.Protocol
 import org.openremote.container.Container
 import org.openremote.container.ContainerService
@@ -26,6 +27,7 @@ import org.openremote.manager.security.ManagerIdentityService
 import org.openremote.manager.setup.SetupService
 import org.openremote.manager.simulator.SimulatorService
 import org.openremote.manager.web.ManagerWebService
+import spock.util.concurrent.PollingConditions
 
 import java.util.concurrent.TimeUnit
 
@@ -123,5 +125,17 @@ trait ManagerContainerTrait extends ContainerTrait {
 
     static void advancePseudoClock(long amount, TimeUnit unit, Container container) {
         withClockOf(container) { it.advanceTime(amount, unit) }
+    }
+
+    static void noPendingExchangesOnMessageEndpoint(Container container, String... endpointName) {
+        for (String name : endpointName) {
+            def endpoint = container.getService(MessageBrokerSetupService.class).context.getEndpoint(name)
+            if (!endpoint) {
+                throw new IllegalArgumentException("Messaging endpoint not found: " + name)
+            }
+            new PollingConditions(initialDelay: 0.1, delay: 0.05).eventually {
+                assert ((BrowsableEndpoint)endpoint).exchanges.size() == 0
+            }
+        }
     }
 }

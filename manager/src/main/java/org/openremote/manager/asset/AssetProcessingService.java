@@ -279,10 +279,10 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
      * processor, see {@link AssetUpdateProcessor#processAssetUpdate}. If no processor completely consumed the
      * update, the attribute will be stored in the database.
      */
-    protected void processAssetUpdate(EntityManager em,
-                                      Asset asset,
-                                      AssetAttribute attribute,
-                                      Source source) throws AssetProcessingException {
+    protected boolean processAssetUpdate(EntityManager em,
+                                         ServerAsset asset,
+                                         AssetAttribute attribute,
+                                         Source source) throws AssetProcessingException {
         LOG.fine(">>> Processing start: " + attribute);
 
         // Need to record time here otherwise an infinite loop generated inside one of the processors means the timestamp
@@ -316,6 +316,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
         }
 
         LOG.fine("<<< Processing complete: " + attribute);
+        return complete;
     }
 
     protected Processor processAttributeEvent() {
@@ -338,8 +339,8 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                 if (asset == null)
                     throw new AssetProcessingException(ASSET_NOT_FOUND);
 
-                AssetAttribute attribute = asset.getAttribute(event.getAttributeName()).orElse(null);
-                if (attribute == null)
+                AssetAttribute oldAttribute = asset.getAttribute(event.getAttributeName()).orElse(null);
+                if (oldAttribute == null)
                     throw new AssetProcessingException(ATTRIBUTE_NOT_FOUND);
 
                 // Agent attributes can't be updated with events
@@ -348,7 +349,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                 }
 
                 // For executable attributes, non-sensor sources can set a writable attribute execute status
-                if (attribute.isExecutable() && source != SENSOR) {
+                if (oldAttribute.isExecutable() && source != SENSOR) {
                     Optional<AttributeExecuteStatus> status = event.getValue()
                         .flatMap(Values::getString)
                         .flatMap(AttributeExecuteStatus::fromString);
@@ -371,7 +372,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                         }
 
                         // Check read-only
-                        if (attribute.isReadOnly() && !authContext.isSuperUser()) {
+                        if (oldAttribute.isReadOnly() && !authContext.isSuperUser()) {
                             throw new AssetProcessingException(INSUFFICIENT_ACCESS);
                         }
 
@@ -387,7 +388,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                                 throw new AssetProcessingException(INSUFFICIENT_ACCESS);
                             }
                             // Must be writable by restricted client
-                            if (!attribute.isAccessRestrictedWrite()) {
+                            if (!oldAttribute.isAccessRestrictedWrite()) {
                                 throw new AssetProcessingException(INSUFFICIENT_ACCESS);
                             }
                         }
@@ -395,7 +396,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
 
                     case SENSOR:
                         Optional<AssetAttribute> protocolConfiguration =
-                            getAgentLink(attribute).flatMap(agentService::getProtocolConfiguration);
+                            getAgentLink(oldAttribute).flatMap(agentService::getProtocolConfiguration);
 
                         // Sensor event must be for an attribute linked to a protocol configuration
                         if (!protocolConfiguration.isPresent()) {
@@ -422,7 +423,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                 // Check the last update timestamp of the attribute, ignoring any event that is older than last update
                 // TODO This means we drop out-of-sequence events but accept events with the same source timestamp
                 // TODO Several attribute events can occur in the same millisecond, then order of application is undefined
-                attribute.getValueTimestamp().filter(t -> t >= 0 && eventTime < t).ifPresent(
+                oldAttribute.getValueTimestamp().filter(t -> t >= 0 && eventTime < t).ifPresent(
                     lastStateTime -> {
                         throw new AssetProcessingException(
                             EVENT_OUTDATED,
@@ -432,7 +433,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                 );
 
                 // Create a copy of the attribute and set the new value and timestamp
-                AssetAttribute updatedAttribute = attribute.deepCopy();
+                AssetAttribute updatedAttribute = oldAttribute.deepCopy();
                 updatedAttribute.setValue(event.getValue().orElse(null), eventTime);
 
                 // Validate constraints of attribute
@@ -442,10 +443,12 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                 }
 
                 // Push through all processors
-                processAssetUpdate(em, asset, updatedAttribute, source);
+                boolean consumedCompletely = processAssetUpdate(em, asset, updatedAttribute, source);
 
-                // Publish a new event for clients
-                publishClientEvent(asset, attribute);
+                // Publish a new event for clients if no processor consumed the update completely
+                if (!consumedCompletely) {
+                    publishClientEvent(asset, updatedAttribute);
+                }
             });
         };
     }

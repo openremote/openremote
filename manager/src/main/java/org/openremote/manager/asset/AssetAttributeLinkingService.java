@@ -22,7 +22,6 @@ package org.openremote.manager.asset;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.manager.asset.AssetProcessingException.Reason;
-import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetMeta;
 import org.openremote.model.asset.AssetQuery;
@@ -106,7 +105,7 @@ public class AssetAttributeLinkingService implements ContainerService, AssetUpda
 
     @Override
     public boolean processAssetUpdate(EntityManager em,
-                                      Asset asset,
+                                      ServerAsset asset,
                                       AssetAttribute attribute,
                                       Source source) throws AssetProcessingException {
         if (source == ATTRIBUTE_LINKING_SERVICE) {

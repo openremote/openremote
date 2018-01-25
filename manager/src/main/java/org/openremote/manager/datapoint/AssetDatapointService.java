@@ -10,8 +10,8 @@ import org.openremote.container.web.WebService;
 import org.openremote.manager.asset.AssetProcessingException;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.asset.AssetUpdateProcessor;
+import org.openremote.manager.asset.ServerAsset;
 import org.openremote.manager.security.ManagerIdentityService;
-import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.attribute.AttributeEvent.Source;
 import org.openremote.model.attribute.AttributeRef;
@@ -63,7 +63,7 @@ public class AssetDatapointService implements ContainerService, AssetUpdateProce
 
     @Override
     public boolean processAssetUpdate(EntityManager em,
-                                      Asset asset,
+                                      ServerAsset asset,
                                       AssetAttribute attribute,
                                       Source source) throws AssetProcessingException {
         if (Datapoint.isDatapointsCapable(attribute)

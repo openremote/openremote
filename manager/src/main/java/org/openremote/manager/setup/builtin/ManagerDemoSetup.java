@@ -248,7 +248,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         thingId = thing.getId();
 
         // Some sample datapoints
-        final Asset finalThing = assetStorageService.find(thingId, true);
+        final ServerAsset finalThing = assetStorageService.find(thingId, true);
         ZonedDateTime now = LocalDateTime.now().atZone(ZoneId.systemDefault());
 
         AssetAttribute light1PowerConsumptionAttribute = thing.getAttribute("light1PowerConsumption")

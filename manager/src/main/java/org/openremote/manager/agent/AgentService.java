@@ -636,7 +636,10 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
      * required (i.e. the protocol is responsible for synchronising state with the database).
      */
     @Override
-    public boolean processAssetUpdate(EntityManager entityManager, Asset asset, AssetAttribute attribute, Source source) throws AssetProcessingException {
+    public boolean processAssetUpdate(EntityManager entityManager,
+                                      ServerAsset asset,
+                                      AssetAttribute attribute,
+                                      Source source) throws AssetProcessingException {
         if (source == SENSOR) {
             return false;
         }

@@ -122,7 +122,7 @@ class ClientEventTest extends Specification implements ManagerContainerTrait, Gw
         and: "the existing protocol configuration is re-enabled"
         agent.getAttribute(managerDemoSetup.agentProtocolConfigName).get().getMeta().removeIf(
             isMetaNameEqualTo(AssetMeta.DISABLED)
-        );
+        )
         agent = assetStorageService.merge(agent)
 
         then: "the protocol should be CONNECTED but no new events should have been received"
@@ -203,7 +203,7 @@ class ClientEventTest extends Specification implements ManagerContainerTrait, Gw
             ))
 
         and: "the subscribed asset is modified"
-        def currentValue = asset.getAttribute(managerDemoSetup.thingLightToggleAttributeName).get().getValueAsBoolean().orElse(false)
+        def currentValue = asset.getAttribute(managerDemoSetup.thingLightToggleAttributeName).get().getValueAsBoolean().get()
         assetProcessingService.sendAttributeEvent(new AttributeEvent(
             managerDemoSetup.thingId,
             managerDemoSetup.thingLightToggleAttributeName,
@@ -215,8 +215,7 @@ class ClientEventTest extends Specification implements ManagerContainerTrait, Gw
             assert internalReceivedEvents.size() == 1
             assert internalReceivedEvents[0].entityId == managerDemoSetup.thingId
             assert internalReceivedEvents[0].attributeName == managerDemoSetup.thingLightToggleAttributeName
-            assert internalReceivedEvents[0].value.isPresent()
-            assert internalReceivedEvents[0].value.flatMap({v -> Values.getBoolean(v)}).get() == !currentValue
+            assert Values.getBoolean(internalReceivedEvents[0].value.get()).get() == !currentValue
         }
 
         and: "an attribute event should have been received by the external subscriber"
@@ -225,7 +224,7 @@ class ClientEventTest extends Specification implements ManagerContainerTrait, Gw
             assert collectedSharedEvents[0] instanceof AttributeEvent
             assert (collectedSharedEvents[0] as AttributeEvent).entityId == managerDemoSetup.thingId
             assert (collectedSharedEvents[0] as AttributeEvent).attributeName == managerDemoSetup.thingLightToggleAttributeName
-            assert (collectedSharedEvents[0] as AttributeEvent).attributeState.currentValue.flatMap({v -> Values.getBoolean(v)}).get() == !currentValue
+            assert Values.getBoolean((collectedSharedEvents[0] as AttributeEvent).value.get()).get() == !currentValue
         }
 
         cleanup: "the client should be stopped"
