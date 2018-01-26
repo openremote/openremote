@@ -266,6 +266,11 @@ public class HttpClientProtocol extends AbstractProtocol {
             Invocation invocation = buildInvocation(requestBuilder, dynamicRequestValue);
             return invocation.submit();
         }
+
+        @Override
+        public String toString() {
+            return client.getUri() + path != null ? "/" + path : "";
+        }
     }
 
     public static final String PROTOCOL_NAME = PROTOCOL_NAMESPACE + ":httpClient";
@@ -482,14 +487,22 @@ public class HttpClientProtocol extends AbstractProtocol {
         }
 
         WebTargetBuilder webTargetBuilder = new WebTargetBuilder(baseUri);
-        webTargetBuilder.setOAuthAuthentication(oAuthGrant.orElse(null));
-        //noinspection ConstantConditions
-        username.ifPresent(stringValue ->
-            webTargetBuilder.setBasicAuthentication(stringValue.getString(), password.get().getString()));
+        if (oAuthGrant.isPresent()) {
+            LOG.info("Adding OAuth");
+            webTargetBuilder.setOAuthAuthentication(oAuthGrant.get());
+        } else {
+            //noinspection ConstantConditions
+            username.ifPresent(stringValue -> {
+                LOG.info("Adding Basic Authentication");
+                webTargetBuilder.setBasicAuthentication(stringValue.getString(),
+                                                        password.get().getString());
+            });
+        }
         headers.ifPresent(webTargetBuilder::setInjectHeaders);
         queryParams.ifPresent(webTargetBuilder::setInjectQueryParameters);
         webTargetBuilder.followRedirects(followRedirects);
 
+        LOG.fine("Creating web target client '" + baseUri + "'");
         ResteasyWebTarget client = webTargetBuilder.build();
         synchronized (clientMap) {
             clientMap.put(protocolRef, new Pair<>(client, failureCodes));
@@ -546,7 +559,7 @@ public class HttpClientProtocol extends AbstractProtocol {
             .map(StringValue::getString)
             .orElse(null);
 
-        HttpClientRequest pollingRequest = buildClientRequest(
+        HttpClientRequest pingRequest = buildClientRequest(
             client,
             pingPath,
             pingMethod,
@@ -557,15 +570,17 @@ public class HttpClientProtocol extends AbstractProtocol {
             pingBody,
             contentType);
 
+        LOG.info("Creating ping polling request '" + pingRequest +"'");
+
         synchronized (requestMap) {
-            requestMap.put(protocolRef, pollingRequest);
+            requestMap.put(protocolRef, pingRequest);
         }
 
         synchronized (pollingMap) {
             pollingMap.put(protocolRef, schedulePollingRequest(
                 null,
                 protocolRef,
-                pollingRequest,
+                pingRequest,
                 pingPollingSeconds));
         }
     }
@@ -592,7 +607,7 @@ public class HttpClientProtocol extends AbstractProtocol {
         WebTarget client = clientAndFailureCodes != null ? clientAndFailureCodes.key : null;
 
         if (client == null) {
-            LOG.finer("Attempt to link attribute to non existent protocol configuration: "
+            LOG.warning("Attempt to link attribute to non existent protocol configuration: "
                 + attribute.getReferenceOrThrow());
             return;
         }
@@ -698,6 +713,8 @@ public class HttpClientProtocol extends AbstractProtocol {
                 updateConnectionStatus,
                 body,
                 contentType);
+
+            LOG.fine("Creating HTTP request for linked attribute '" + clientRequest + "': " + attributeRef);
 
             synchronized (requestMap) {
                 requestMap.put(attributeRef, clientRequest);
@@ -837,6 +854,9 @@ public class HttpClientProtocol extends AbstractProtocol {
                                                      AttributeRef protocolConfigurationRef,
                                                      HttpClientRequest clientRequest,
                                                      int pollingSeconds) {
+
+        LOG.fine("Scheduling polling request '" + clientRequest + "' to execute every " + pollingSeconds + " seconds for attribute: " + attributeRef);
+
         return executorService.scheduleWithFixedDelay(() ->
             executePollingRequest(clientRequest, response ->
                 onPollingResponse(
@@ -882,7 +902,7 @@ public class HttpClientProtocol extends AbstractProtocol {
         int responseCode = response != null ? response.getStatus() : 500;
 
         if (request.updateConnectionStatus) {
-            updateConnectionStatus(protocolConfigurationRef, responseCode);
+            updateConnectionStatus(request, protocolConfigurationRef, responseCode);
         }
 
         Value value = null;
@@ -893,7 +913,7 @@ public class HttpClientProtocol extends AbstractProtocol {
             } catch (Exception e) {
                 LOG.log(Level.SEVERE, "Error occurred whilst trying to read response body", e);
                 if (request.updateConnectionStatus) {
-                    updateConnectionStatus(protocolConfigurationRef, 500);
+                    updateConnectionStatus(request, protocolConfigurationRef, 500);
                 }
             }
         } else if (isPermanentFailure(responseCode, request.failureCodes)) {
@@ -914,7 +934,7 @@ public class HttpClientProtocol extends AbstractProtocol {
         int responseCode = response != null ? response.getStatus() : 500;
 
         if (request.updateConnectionStatus) {
-            updateConnectionStatus(protocolConfigurationRef, responseCode);
+            updateConnectionStatus(request, protocolConfigurationRef, responseCode);
         }
 
         if (isPermanentFailure(responseCode, request.failureCodes)) {
@@ -931,7 +951,7 @@ public class HttpClientProtocol extends AbstractProtocol {
         }
     }
 
-    protected void updateConnectionStatus(AttributeRef protocolConfigurationRef, int responseCode) {
+    protected void updateConnectionStatus(HttpClientRequest request, AttributeRef protocolConfigurationRef, int responseCode) {
         Response.Status status = Response.Status.fromStatusCode(responseCode);
         ConnectionStatus connectionStatus = ConnectionStatus.CONNECTED;
         if (status == null) {
@@ -962,6 +982,8 @@ public class HttpClientProtocol extends AbstractProtocol {
             }
         }
 
+        LOG.fine("Updating connection status based on polling response code: URI=" + request +
+                     ", ResponseCode=" + responseCode + ", Status=" + connectionStatus);
         updateStatus(protocolConfigurationRef, connectionStatus);
     }
 
