@@ -909,7 +909,8 @@ public class HttpClientProtocol extends AbstractProtocol {
 
         if (response != null && response.getStatusInfo().getFamily() == Response.Status.Family.SUCCESSFUL) {
             try {
-                value = response.getEntity() != null ? Values.create(response.readEntity(String.class)) : null;
+                String responseBody = response.readEntity(String.class);
+                value = responseBody != null ? Values.create(responseBody) : null;
             } catch (Exception e) {
                 LOG.log(Level.SEVERE, "Error occurred whilst trying to read response body", e);
                 if (request.updateConnectionStatus) {
