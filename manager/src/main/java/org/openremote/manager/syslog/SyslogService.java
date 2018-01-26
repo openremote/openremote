@@ -34,6 +34,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ScheduledFuture;
 import java.util.logging.Handler;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
@@ -53,6 +54,8 @@ public class SyslogService extends Handler implements ContainerService {
     protected SyslogConfig config;
 
     final protected List<SyslogEvent> batch = new ArrayList<>();
+    protected ScheduledFuture flushBatchFuture;
+    protected ScheduledFuture deleteOldFuture;
 
     @Override
     public void init(Container container) throws Exception {
@@ -89,10 +92,10 @@ public class SyslogService extends Handler implements ContainerService {
     public void start(Container container) throws Exception {
         if (persistenceService != null) {
             // Flush batch every 3 seconds (wait 10 seconds for database (schema) to be ready in dev mode)
-            executorService.scheduleAtFixedRate(this::flushBatch, 10 * 1000, 3 * 1000);
+            flushBatchFuture = executorService.scheduleAtFixedRate(this::flushBatch, 10 * 1000, 3 * 1000);
 
             // Clear outdated events every minute
-            executorService.scheduleAtFixedRate(() -> {
+            deleteOldFuture = executorService.scheduleAtFixedRate(() -> {
                 // Not ready on startup
                 if (persistenceService.getEntityManagerFactory() == null)
                     return;
@@ -112,6 +115,14 @@ public class SyslogService extends Handler implements ContainerService {
 
     @Override
     public void stop(Container container) throws Exception {
+        if (flushBatchFuture != null) {
+            flushBatchFuture.cancel(true);
+            flushBatchFuture = null;
+        }
+        if (deleteOldFuture != null) {
+            deleteOldFuture.cancel(true);
+            deleteOldFuture = null;
+        }
     }
 
     @Override
