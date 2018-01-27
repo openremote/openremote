@@ -24,8 +24,8 @@ import org.openremote.agent.protocol.simulator.SimulatorProtocol;
 import org.openremote.container.Container;
 import org.openremote.manager.asset.ServerAsset;
 import org.openremote.manager.setup.AbstractManagerSetup;
-import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
+import org.openremote.model.asset.AssetMeta;
 import org.openremote.model.asset.UserAsset;
 import org.openremote.model.attribute.*;
 import org.openremote.model.security.Tenant;
@@ -50,7 +50,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
     final protected boolean importDemoScenes;
 
     // Update these numbers whenever you change a RULE_STATE flag in test data
-    public static final int DEMO_RULE_STATES_APARTMENT_1 = 25;
+    public static final int DEMO_RULE_STATES_APARTMENT_1 = 37;
     public static final int DEMO_RULE_STATES_APARTMENT_2 = 11;
     public static final int DEMO_RULE_STATES_APARTMENT_3 = 0;
     public static final int DEMO_RULE_STATES_SMART_HOME = DEMO_RULE_STATES_APARTMENT_1 + DEMO_RULE_STATES_APARTMENT_2 + DEMO_RULE_STATES_APARTMENT_3;
@@ -354,12 +354,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         apartment1ServiceAgent = assetStorageService.merge(apartment1ServiceAgent);
         apartment1ServiceAgentId = apartment1ServiceAgent.getId();
 
-        addDemoApartmentVentilation(apartment1, true, () -> new MetaItem[]{
-            new MetaItem(AGENT_LINK, new AttributeRef(apartment1ServiceAgentId, "apartmentSimulator").toArrayValue()),
-            new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME))
-        });
-
-        apartment1 = assetStorageService.merge(apartment1);
+        /* ############################ ROOMS ############################## */
 
         ServerAsset apartment1Livingroom = createDemoApartmentRoom(apartment1, "Living Room");
         addDemoApartmentRoomMotionSensor(apartment1Livingroom, true, () -> new MetaItem[]{
@@ -391,6 +386,81 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
             new MetaItem(AGENT_LINK, new AttributeRef(apartment1ServiceAgentId, "apartmentSimulator").toArrayValue()),
             new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME))
         });
+        addDemoApartmentSmartSwitch(apartment1Kitchen, "smartSwitchA", "Smart switch A", true, attributeIndex -> {
+            switch (attributeIndex) {
+                case 0:
+                    return new MetaItem[]{
+                        new MetaItem(AssetMeta.AGENT_LINK, new AttributeRef(apartment1ServiceAgentId, "apartmentSimulator").toArrayValue()),
+                        new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME))
+                    };
+                case 1:
+                    return new MetaItem[]{
+                        new MetaItem(AssetMeta.AGENT_LINK, new AttributeRef(apartment1ServiceAgentId, "apartmentSimulator").toArrayValue()),
+                        new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME))
+                    };
+                case 2:
+                    return new MetaItem[]{
+                        new MetaItem(AssetMeta.AGENT_LINK, new AttributeRef(apartment1ServiceAgentId, "apartmentSimulator").toArrayValue()),
+                        new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME))
+                    };
+                case 3:
+                    return new MetaItem[]{
+                        new MetaItem(AssetMeta.AGENT_LINK, new AttributeRef(apartment1ServiceAgentId, "apartmentSimulator").toArrayValue()),
+                        new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME))
+                    };
+            }
+            return null;
+        });
+        addDemoApartmentSmartSwitch(apartment1Kitchen, "smartSwitchB", "Smart switch B", true, attributeIndex -> {
+            switch (attributeIndex) {
+                case 0:
+                    return new MetaItem[]{
+                        new MetaItem(AssetMeta.AGENT_LINK, new AttributeRef(apartment1ServiceAgentId, "apartmentSimulator").toArrayValue()),
+                        new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME))
+                    };
+                case 1:
+                    return new MetaItem[]{
+                        new MetaItem(AssetMeta.AGENT_LINK, new AttributeRef(apartment1ServiceAgentId, "apartmentSimulator").toArrayValue()),
+                        new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME))
+                    };
+                case 2:
+                    return new MetaItem[]{
+                        new MetaItem(AssetMeta.AGENT_LINK, new AttributeRef(apartment1ServiceAgentId, "apartmentSimulator").toArrayValue()),
+                        new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME))
+                    };
+                case 3:
+                    return new MetaItem[]{
+                        new MetaItem(AssetMeta.AGENT_LINK, new AttributeRef(apartment1ServiceAgentId, "apartmentSimulator").toArrayValue()),
+                        new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME))
+                    };
+            }
+            return null;
+        });
+        addDemoApartmentSmartSwitch(apartment1Kitchen, "smartSwitchC", "Smart switch C", true, attributeIndex -> {
+            switch (attributeIndex) {
+                case 0:
+                    return new MetaItem[]{
+                        new MetaItem(AssetMeta.AGENT_LINK, new AttributeRef(apartment1ServiceAgentId, "apartmentSimulator").toArrayValue()),
+                        new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME))
+                    };
+                case 1:
+                    return new MetaItem[]{
+                        new MetaItem(AssetMeta.AGENT_LINK, new AttributeRef(apartment1ServiceAgentId, "apartmentSimulator").toArrayValue()),
+                        new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME))
+                    };
+                case 2:
+                    return new MetaItem[]{
+                        new MetaItem(AssetMeta.AGENT_LINK, new AttributeRef(apartment1ServiceAgentId, "apartmentSimulator").toArrayValue()),
+                        new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME))
+                    };
+                case 3:
+                    return new MetaItem[]{
+                        new MetaItem(AssetMeta.AGENT_LINK, new AttributeRef(apartment1ServiceAgentId, "apartmentSimulator").toArrayValue()),
+                        new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME))
+                    };
+            }
+            return null;
+        });
 
         apartment1Kitchen = assetStorageService.merge(apartment1Kitchen);
         apartment1KitchenId = apartment1Kitchen.getId();
@@ -403,6 +473,13 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
 
         apartment1Hallway = assetStorageService.merge(apartment1Hallway);
         apartment1HallwayId = apartment1Hallway.getId();
+
+        addDemoApartmentVentilation(apartment1, true, () -> new MetaItem[]{
+            new MetaItem(AGENT_LINK, new AttributeRef(apartment1ServiceAgentId, "apartmentSimulator").toArrayValue()),
+            new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME))
+        });
+
+        apartment1 = assetStorageService.merge(apartment1);
 
         if (importDemoScenes) {
             Scene[] scenes = new Scene[]{

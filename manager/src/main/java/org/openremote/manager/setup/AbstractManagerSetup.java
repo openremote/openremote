@@ -119,16 +119,15 @@ public abstract class AbstractManagerSetup implements Setup {
                 ),
             new AssetAttribute("lastDetectedScene", AttributeType.STRING, Values.create("home"))
                 .setMeta(
-                    new MetaItem(LABEL, Values.create("Last detecteded scene by rules")),
+                    new MetaItem(LABEL, Values.create("Last detected scene by rules")),
                     new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)),
                     new MetaItem(ACCESS_RESTRICTED_WRITE, Values.create(true)),
                     new MetaItem(READ_ONLY, Values.create(true)),
-                    new MetaItem(RULE_STATE, Values.create(true)),
-                    new MetaItem(SHOW_ON_DASHBOARD, Values.create(true))
+                    new MetaItem(RULE_STATE, Values.create(true))
                 ),
             new AssetAttribute("smartStart", AttributeType.BOOLEAN, Values.create(false))
                 .setMeta(
-                    new MetaItem(LABEL, Values.create("Enable global smart start")),
+                    new MetaItem(LABEL, Values.create("Smart Start enabled")),
                     new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)),
                     new MetaItem(ACCESS_RESTRICTED_WRITE, Values.create(true)),
                     new MetaItem(RULE_STATE, Values.create(true)),
@@ -258,10 +257,10 @@ public abstract class AbstractManagerSetup implements Setup {
 
         room.addAttributes(
             // On/Off
+            // TODO What is this? The only usage is in the frontend app, and only the LABEL meta item is displayed!
             new AssetAttribute(switchAttributePrefix + "OnOff", NUMBER)
                 .setMeta(
-                    new MetaItem(LABEL, Values.create(switchLabelPrefix + " on/off")),
-                    new MetaItem(ACCESS_RESTRICTED_WRITE, Values.create(true)),
+                    new MetaItem(LABEL, Values.create(switchLabelPrefix + " on/off status")),
                     new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)),
                     new MetaItem(RULE_STATE, Values.create(true)),
                     new MetaItem(RULE_EVENT, Values.create(true))
@@ -285,9 +284,9 @@ public abstract class AbstractManagerSetup implements Setup {
                     new MetaItem(RULE_EVENT, Values.create(true))
                 ).addMeta(shouldBeLinked ? agentLinker.apply(2) : null),
             // Smart enabled
-            new AssetAttribute(switchAttributePrefix + "SmartEnabled", NUMBER)
+            new AssetAttribute(switchAttributePrefix + "SmartStart", NUMBER)
                 .setMeta(
-                    new MetaItem(LABEL, Values.create(switchLabelPrefix + " smart control enabled")),
+                    new MetaItem(LABEL, Values.create(switchLabelPrefix + " Smart Start enabled")),
                     new MetaItem(ACCESS_RESTRICTED_WRITE, Values.create(true)),
                     new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)),
                     new MetaItem(RULE_STATE, Values.create(true)),
