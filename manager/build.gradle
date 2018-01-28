@@ -11,6 +11,8 @@ dependencies {
     compile resolveProject(":model")
 
     compile "org.xerial:sqlite-jdbc:$sqliteVersion"
+
+    compile "org.mnode.ical4j:ical4j:$ical4jVersion"
 }
 
 jar {

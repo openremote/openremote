@@ -1,7 +1,10 @@
 package org.openremote.test.assets
 
+import com.vividsolutions.jts.geom.Coordinate
+import com.vividsolutions.jts.geom.GeometryFactory
 import org.openremote.container.Container
 import org.openremote.container.persistence.PersistenceService
+import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.asset.ServerAsset
 import org.openremote.manager.setup.SetupService
@@ -10,9 +13,13 @@ import org.openremote.manager.setup.builtin.ManagerDemoSetup
 import org.openremote.model.asset.AssetMeta
 import org.openremote.model.asset.AssetQuery
 import org.openremote.model.asset.AssetType
+import org.openremote.model.asset.CalendarEventConfiguration
+import org.openremote.model.calendar.CalendarEvent
+import org.openremote.model.calendar.RecurrenceRule
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Shared
 import spock.lang.Specification
+import spock.util.concurrent.PollingConditions
 
 import javax.persistence.EntityManager
 import java.util.function.Function
@@ -35,6 +42,8 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
     @Shared
     static AssetStorageService assetStorageService
     @Shared
+    static AssetProcessingService assetProcessingService
+    @Shared
     static PersistenceService persistenceService
 
     def setupSpec() {
@@ -44,6 +53,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
         assetStorageService = container.getService(AssetStorageService.class)
+        assetProcessingService = container.getService(AssetProcessingService.class)
         persistenceService = container.getService(PersistenceService.class)
     }
 
@@ -643,5 +653,219 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assert asset.getAttribute("co2Level").isPresent()
         assert asset.getAttribute("co2Level").get().valueAsNumber.get() == 350
 
+    }
+
+    def "Location queries"() {
+
+        given: "polling conditions"
+        def conditions = new PollingConditions(timeout: 10, delay: 1)
+
+        when: "a location filtering query is executed"
+        def assets = assetStorageService.findAll(
+            new AssetQuery()
+                .select(new Select(Include.ONLY_ID_AND_NAME))
+                .location(new RadialLocationPredicate(10, 51.44541688237109d, 5.460315214821094d))
+                .tenant(new TenantPredicate(keycloakDemoSetup.masterTenant.id))
+                .orderBy(new OrderBy(NAME))
+        )
+
+        then: "assets in the queried region should be retrieved"
+        assets.size() == 5
+        assets[0].id == managerDemoSetup.agentId
+        assets[0].name == "Demo Agent"
+        assets[1].id == managerDemoSetup.thingId
+        assets[1].name == "Demo Thing"
+        assets[2].id == managerDemoSetup.groundFloorId
+        assets[2].name == "Ground Floor"
+        assets[3].id == managerDemoSetup.lobbyId
+        assets[3].name == "Lobby"
+        assets[4].id == managerDemoSetup.smartOfficeId
+        assets[4].name == "Smart Office"
+
+        when: "one of the assets in the region is moved"
+        def lobby = assetStorageService.find(managerDemoSetup.lobbyId, true)
+        lobby.setLocation(new GeometryFactory().createPoint(new Coordinate(5.46108d, 51.44593d)))
+        lobby = assetStorageService.merge(lobby)
+
+        then: "the system should settle down"
+        conditions.eventually {
+            assert noEventProcessedIn(assetProcessingService, 100)
+        }
+
+        when: "the same query is run again"
+        assets = assetStorageService.findAll(
+            new AssetQuery()
+                .select(new Select(Include.ONLY_ID_AND_NAME))
+                .location(new RadialLocationPredicate(10, 51.44541688237109d, 5.460315214821094d))
+                .tenant(new TenantPredicate(keycloakDemoSetup.masterTenant.id))
+                .orderBy(new OrderBy(NAME))
+        )
+
+        then: "the moved asset should not be included"
+        assets.size() == 4
+        !assets.any {it.name == "Lobby"}
+
+        when: "a rectangular region is used that includes previous assets and moved asset"
+        assets = assetStorageService.findAll(
+            new AssetQuery()
+                .select(new Select(Include.ONLY_ID_AND_NAME))
+                .location(new RectangularLocationPredicate(51.44540d,  5.46031d, 51.44594d, 5.46110d))
+                .tenant(new TenantPredicate(keycloakDemoSetup.masterTenant.id))
+                .orderBy(new OrderBy(NAME))
+        )
+
+        then: "all 5 assets should be returned"
+        assets.size() == 5
+        assets[0].id == managerDemoSetup.agentId
+        assets[0].name == "Demo Agent"
+        assets[1].id == managerDemoSetup.thingId
+        assets[1].name == "Demo Thing"
+        assets[2].id == managerDemoSetup.groundFloorId
+        assets[2].name == "Ground Floor"
+        assets[3].id == managerDemoSetup.lobbyId
+        assets[3].name == "Lobby"
+        assets[4].id == managerDemoSetup.smartOfficeId
+        assets[4].name == "Smart Office"
+
+        when: "a rectangular region is used that doesn't cover any assets"
+        assets = assetStorageService.findAll(
+            new AssetQuery()
+                .select(new Select(Include.ONLY_ID_AND_NAME))
+                .location(new RectangularLocationPredicate(51.44542d,  5.46032d, 51.44590d, 5.46100d))
+                .tenant(new TenantPredicate(keycloakDemoSetup.masterTenant.id))
+                .orderBy(new OrderBy(NAME))
+        )
+
+        then: "no assets should be returned"
+        assets.size() == 0
+
+        when: "the same region is used but negated"
+        assets = assetStorageService.findAll(
+            new AssetQuery()
+                .select(new Select(Include.ONLY_ID_AND_NAME))
+                .location(new RectangularLocationPredicate(51.44542d,  5.46032d, 51.44590d, 5.46100d).negate())
+                .tenant(new TenantPredicate(keycloakDemoSetup.masterTenant.id))
+                .orderBy(new OrderBy(NAME))
+        )
+
+        then: "all 5 realm assets should be returned"
+        assets.size() == 5
+        assets[0].id == managerDemoSetup.agentId
+        assets[0].name == "Demo Agent"
+        assets[1].id == managerDemoSetup.thingId
+        assets[1].name == "Demo Thing"
+        assets[2].id == managerDemoSetup.groundFloorId
+        assets[2].name == "Ground Floor"
+        assets[3].id == managerDemoSetup.lobbyId
+        assets[3].name == "Lobby"
+        assets[4].id == managerDemoSetup.smartOfficeId
+        assets[4].name == "Smart Office"
+    }
+
+    def "Calendar queries"() {
+        given: "polling conditions"
+        def conditions = new PollingConditions(timeout: 10, delay: 1)
+
+        when: "an asset is given a calendar event configuration attribute"
+        def lobby = assetStorageService.find(managerDemoSetup.lobbyId, true)
+        def calendar = Calendar.getInstance(Locale.ROOT);
+        calendar.setTimeInMillis(1517151600000) // 28/01/2018 @ 3:00pm (UTC)
+        def start = calendar.getTime()
+        calendar.add(Calendar.HOUR, 2)
+        def end = calendar.getTime()
+        def recur = new RecurrenceRule(RecurrenceRule.Frequency.DAILY, 2, 5)
+
+        lobby.addAttributes(
+            CalendarEventConfiguration.toAttribute(new CalendarEvent(start, end, recur))
+        )
+        lobby = assetStorageService.merge(lobby)
+
+        then: "the system should settle down"
+        conditions.eventually {
+            assert noEventProcessedIn(assetProcessingService, 100)
+        }
+
+        when: "a calendar event filtering query is executed for the correct date and time of the event"
+        def assets = assetStorageService.findAll(
+            new AssetQuery()
+                .select(new Select(Include.ALL_EXCEPT_PATH)) // Need attributes to do calendar filtering
+                .tenant(new TenantPredicate(keycloakDemoSetup.masterTenant.id))
+                .calendarEventActive(1517155200) // 28/01/2018 @ 4:00pm (UTC)
+                .orderBy(new OrderBy(NAME))
+        )
+
+        then: "all 5 realm assets should be returned"
+        assets.size() == 5
+        assets[0].id == managerDemoSetup.agentId
+        assets[0].name == "Demo Agent"
+        assets[1].id == managerDemoSetup.thingId
+        assets[1].name == "Demo Thing"
+        assets[2].id == managerDemoSetup.groundFloorId
+        assets[2].name == "Ground Floor"
+        assets[3].id == managerDemoSetup.lobbyId
+        assets[3].name == "Lobby"
+        assets[4].id == managerDemoSetup.smartOfficeId
+        assets[4].name == "Smart Office"
+
+        when: "a calendar event filtering query is executed for future event on a correct day but wrong time"
+        assets = assetStorageService.findAll(
+            new AssetQuery()
+                .select(new Select(Include.ALL_EXCEPT_PATH))
+                .tenant(new TenantPredicate(keycloakDemoSetup.masterTenant.id))
+                .calendarEventActive(1517335200) // 30/01/2018 @ 6:00pm (UTC)
+                .orderBy(new OrderBy(NAME))
+        )
+
+        then: "the calendar event asset should not be included"
+        assets.size() == 4
+        !assets.any {it.name == "Lobby"}
+
+        when: "a calendar event filtering query is executed for a future event on a wrong day but correct time"
+        assets = assetStorageService.findAll(
+            new AssetQuery()
+                .select(new Select(Include.ALL_EXCEPT_PATH))
+                .tenant(new TenantPredicate(keycloakDemoSetup.masterTenant.id))
+                .calendarEventActive(1517238600) // 29/01/2018 @ 3:10pm (UTC)
+                .orderBy(new OrderBy(NAME))
+        )
+
+        then: "the calendar event asset should not be included"
+        assets.size() == 4
+        !assets.any {it.name == "Lobby"}
+
+        when: "a calendar event filtering query is executed inside a valid future event date and time"
+        assets = assetStorageService.findAll(
+            new AssetQuery()
+                .select(new Select(Include.ALL_EXCEPT_PATH)) // Need attributes to do calendar filtering
+                .tenant(new TenantPredicate(keycloakDemoSetup.masterTenant.id))
+                .calendarEventActive(1517849400) // 05/02/2018 @ 4:50pm (UTC))
+                .orderBy(new OrderBy(NAME))
+        )
+
+        then: "all 5 realm assets should be returned"
+        assets.size() == 5
+        assets[0].id == managerDemoSetup.agentId
+        assets[0].name == "Demo Agent"
+        assets[1].id == managerDemoSetup.thingId
+        assets[1].name == "Demo Thing"
+        assets[2].id == managerDemoSetup.groundFloorId
+        assets[2].name == "Ground Floor"
+        assets[3].id == managerDemoSetup.lobbyId
+        assets[3].name == "Lobby"
+        assets[4].id == managerDemoSetup.smartOfficeId
+        assets[4].name == "Smart Office"
+
+        when: "a calendar event filtering query is executed for some time after the last occurrence"
+        assets = assetStorageService.findAll(
+            new AssetQuery()
+                .select(new Select(Include.ALL_EXCEPT_PATH))
+                .tenant(new TenantPredicate(keycloakDemoSetup.masterTenant.id))
+                .calendarEventActive(1518017520) // 02/07/2018 @ 3:32pm (UTC)
+                .orderBy(new OrderBy(NAME))
+        )
+
+        then: "the calendar event asset should not be included"
+        assets.size() == 4
+        !assets.any {it.name == "Lobby"}
     }
 }

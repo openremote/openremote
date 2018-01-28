@@ -19,6 +19,8 @@
  */
 package org.openremote.model.asset;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import org.openremote.model.attribute.AttributeRef;
@@ -623,6 +625,69 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> {
         }
     }
 
+    public static class CalendarEventActivePredicate {
+
+        @JsonProperty("timestamp")
+        public long timestampSeconds;
+
+        @JsonCreator
+        public CalendarEventActivePredicate(@JsonProperty("timestamp") long timestampSeconds) {
+            this.timestampSeconds = timestampSeconds;
+        }
+    }
+
+    @JsonSubTypes({
+        @JsonSubTypes.Type(value = RadialLocationPredicate.class, name = "radial"),
+        @JsonSubTypes.Type(value = BooleanPredicate.class, name = "rect")
+    })
+    @JsonTypeInfo(
+        use = JsonTypeInfo.Id.NAME,
+        include = JsonTypeInfo.As.PROPERTY,
+        property = "predicateType"
+    )
+    public static class LocationPredicate {
+    }
+
+    public static class RadialLocationPredicate extends LocationPredicate {
+
+        public boolean negated;
+        public int radius;
+        public double lat;
+        public double lng;
+
+        public RadialLocationPredicate(int radius, double lat, double lng) {
+            this.radius = radius;
+            this.lat = lat;
+            this.lng = lng;
+        }
+
+        public RadialLocationPredicate negate() {
+            negated = true;
+            return this;
+        }
+    }
+
+    public static class RectangularLocationPredicate extends LocationPredicate {
+
+        public boolean negated;
+        public double latMin;
+        public double lngMin;
+        public double latMax;
+        public double lngMax;
+
+        public RectangularLocationPredicate(double latMin, double lngMin, double latMax, double lngMax) {
+            this.latMin = latMin;
+            this.lngMin = lngMin;
+            this.latMax = latMax;
+            this.lngMax = lngMax;
+        }
+
+        public RectangularLocationPredicate negate() {
+            negated = true;
+            return this;
+        }
+    }
+
     public static class OrderBy {
 
         public enum Property {
@@ -680,6 +745,8 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> {
     public StringPredicate type;
     public AttributePredicate[] attribute;
     public AttributeMetaPredicate[] attributeMeta;
+    public CalendarEventActivePredicate calendarEventActive;
+    public LocationPredicate location;
 
     // Ordering
     public OrderBy orderBy;
@@ -802,6 +869,26 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> {
 
     public CHILD orderBy(OrderBy orderBy) {
         this.orderBy = orderBy;
+        return (CHILD) this;
+    }
+
+    /**
+     * Will filter out assets that have a {@link CalendarEventConfiguration} attribute that results in the event
+     * not being 'active/in progress' at the specified time. Assets without a {@link CalendarEventConfiguration}
+     * attribute are assumed to always be in progress (i.e. will always pass this check).
+     * <p>
+     * <b>
+     * NOTE: This predicate is applied in memory and the results should be limited as much as possible by applying
+     * other predicates to the query to avoid performance issues.
+     * </b>
+     */
+    public CHILD calendarEventActive(long timestampSeconds) {
+        calendarEventActive = new CalendarEventActivePredicate(timestampSeconds);
+        return (CHILD) this;
+    }
+
+    public CHILD location(LocationPredicate locationPredicate) {
+        this.location = locationPredicate;
         return (CHILD) this;
     }
 

@@ -20,6 +20,13 @@
 package org.openremote.manager.asset;
 
 import com.vividsolutions.jts.geom.Point;
+import net.fortuna.ical4j.filter.PeriodRule;
+import net.fortuna.ical4j.model.DateTime;
+import net.fortuna.ical4j.model.Dur;
+import net.fortuna.ical4j.model.Period;
+import net.fortuna.ical4j.model.Recur;
+import net.fortuna.ical4j.model.component.VEvent;
+import net.fortuna.ical4j.model.property.RRule;
 import org.apache.camel.builder.RouteBuilder;
 import org.hibernate.Session;
 import org.hibernate.jdbc.AbstractReturningWork;
@@ -39,6 +46,8 @@ import org.openremote.model.Constants;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.asset.*;
 import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.calendar.CalendarEvent;
+import org.openremote.model.calendar.RecurrenceRule;
 import org.openremote.model.event.shared.TenantFilter;
 import org.openremote.model.security.ClientRole;
 import org.openremote.model.security.User;
@@ -99,15 +108,13 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         identityService = container.getService(ManagerIdentityService.class);
         clientEventService = container.getService(ClientEventService.class);
 
-        clientEventService.addSubscriptionAuthorizer((auth, subscription) -> {
-            if (!subscription.isEventType(AssetTreeModifiedEvent.class) && !subscription.isEventType(LocationEvent.class))
-                return false;
-            return identityService.getIdentityProvider().canSubscribeWith(
-                auth,
-                subscription.getFilter() instanceof TenantFilter ? ((TenantFilter) subscription.getFilter()) : null,
-                ClientRole.READ_ASSETS
-            );
-        });
+        clientEventService.addSubscriptionAuthorizer((auth, subscription) ->
+            (subscription.isEventType(AssetTreeModifiedEvent.class) || subscription.isEventType(LocationEvent.class))
+                && identityService.getIdentityProvider().canSubscribeWith(
+                    auth,
+                    subscription.getFilter() instanceof TenantFilter ? ((TenantFilter) subscription.getFilter()) : null,
+                    ClientRole.READ_ASSETS)
+        );
 
         container.getService(WebService.class).getApiSingletons().add(
             new AssetResourceImpl(
@@ -528,8 +535,17 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
                 try (ResultSet rs = st.executeQuery()) {
                     List<ServerAsset> result = new ArrayList<>();
-                    while (rs.next()) {
-                        result.add(mapResultTuple(query, rs));
+                    if (query.calendarEventActive != null) {
+                        while (rs.next()) {
+                            ServerAsset asset = mapResultTuple(query, rs);
+                            if (calendarEventPredicateMatches(query.calendarEventActive, asset)) {
+                                result.add(asset);
+                            }
+                        }
+                    } else {
+                        while (rs.next()) {
+                            result.add(mapResultTuple(query, rs));
+                        }
                     }
                     return result;
                 }
@@ -575,7 +591,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
         sb.append("select A.ID as ID, A.NAME as NAME, A.ACCESS_PUBLIC_READ as ACCESS_PUBLIC_READ");
 
-        if (query.orderBy != null || includeMainProperties) {
+        if (query.orderBy != null || query.location != null || includeMainProperties) {
             sb.append(", A.CREATED_ON AS CREATED_ON, A.ASSET_TYPE AS ASSET_TYPE, A.PARENT_ID AS PARENT_ID, A.REALM_ID AS REALM_ID");
         }
 
@@ -774,6 +790,31 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             sb.append(query.name.match == AssetQuery.Match.EXACT ? " = ?" : " like ?");
             final int pos = binders.size() + 1;
             binders.add(st -> st.setString(pos, query.name.prepareValue()));
+        }
+
+        if (level == 1 && query.location != null) {
+            if (query.location instanceof RadialLocationPredicate) {
+                RadialLocationPredicate location = (RadialLocationPredicate)query.location;
+                sb.append(" and ST_Distance_Sphere(A.LOCATION, ST_MakePoint(");
+                sb.append(location.lng);
+                sb.append(",");
+                sb.append(location.lat);
+                sb.append(location.negated ? ")) > " : ")) <= ");
+                sb.append(location.radius);
+            } else if (query.location instanceof RectangularLocationPredicate) {
+                RectangularLocationPredicate location = (RectangularLocationPredicate)query.location;
+                sb.append(location.negated ? " and NOT": " and");
+                sb.append(" ST_Within(A.LOCATION,");
+                sb.append("ST_MakeEnvelope(");
+                sb.append(location.lngMin);
+                sb.append(",");
+                sb.append(location.latMin);
+                sb.append(",");
+                sb.append(location.lngMax);
+                sb.append(",");
+                sb.append(location.latMax);
+                sb.append("))");
+            }
         }
 
         if (query.parent != null) {
@@ -1189,6 +1230,40 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             .map(AssetAttribute::getStateEvent)
             .filter(Optional::isPresent)
             .map(Optional::get).toArray(AttributeEvent[]::new));
+    }
+
+    protected static boolean calendarEventPredicateMatches(CalendarEventActivePredicate eventActivePredicate, Asset asset) {
+        return CalendarEventConfiguration.getCalendarEvent(asset)
+            .map(calendarEvent -> calendarEventActiveOn(calendarEvent, new Date(1000L*eventActivePredicate.when)))
+            .orElse(true);
+    }
+
+    protected static boolean calendarEventActiveOn(CalendarEvent calendarEvent, Date when) {
+        if (calendarEvent.getRecurrence() == null) {
+            return (!when.before(calendarEvent.getStart()) && !when.after(calendarEvent.getEnd()));
+        }
+
+        RecurrenceRule recurrenceRule = calendarEvent.getRecurrence();
+        Recur recurrence;
+
+        if (recurrenceRule.getCount() != null) {
+            recurrence = new Recur(recurrenceRule.getFrequency().name(), recurrenceRule.getCount());
+        } else {
+            recurrence = new Recur(recurrenceRule.getFrequency().name(),
+                                   new net.fortuna.ical4j.model.Date(recurrenceRule.getUntil()));
+        }
+
+        if (recurrenceRule.getInterval() != null) {
+            recurrence.setInterval(recurrenceRule.getInterval());
+        }
+
+        RRule rRule = new RRule(recurrence);
+        VEvent vEvent = new VEvent(new DateTime(calendarEvent.getStart()),
+                                   new DateTime(calendarEvent.getEnd()), "");
+        vEvent.getProperties().add(rRule);
+        Period period = new Period(new DateTime(when), new Dur(0,0,1,0));
+        PeriodRule periodRule = new PeriodRule(period);
+        return periodRule.evaluate(vEvent);
     }
 
     public String toString() {
