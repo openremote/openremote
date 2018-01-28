@@ -20,9 +20,9 @@
 package org.openremote.agent.protocol.timer;
 
 import org.openremote.agent.protocol.AbstractProtocol;
-import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetMeta;
+import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.attribute.*;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.value.Value;
@@ -168,9 +168,7 @@ public class TimerProtocol extends AbstractProtocol {
             return;
         }
 
-        synchronized (cronExpressionMap) {
-            cronExpressionMap.put(protocolRef, expressionParser);
-        }
+        cronExpressionMap.put(protocolRef, expressionParser);
 
         if (protocolConfiguration.isEnabled()) {
             updateStatus(protocolRef, ConnectionStatus.CONNECTED);
@@ -192,10 +190,8 @@ public class TimerProtocol extends AbstractProtocol {
     protected void doUnlinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
         AttributeRef protocolConfigRef = protocolConfiguration.getReferenceOrThrow();
 
-        synchronized (cronExpressionMap) {
-            if (cronExpressionMap.remove(protocolConfigRef) != null) {
-                getCronScheduler().removeJob(getTimerId(protocolConfigRef));
-            }
+        if (cronExpressionMap.remove(protocolConfigRef) != null) {
+            getCronScheduler().removeJob(getTimerId(protocolConfigRef));
         }
     }
 
@@ -248,7 +244,7 @@ public class TimerProtocol extends AbstractProtocol {
                     LOG.warning("Send to actuator value for time trigger must be a non empty string");
                     return;
                 }
-                CronExpressionParser parser = getCronExpressionParser(protocolConfiguration.getReferenceOrThrow());
+                CronExpressionParser parser = cronExpressionMap.get(protocolConfiguration.getReferenceOrThrow());
                 if (parser == null) {
                     LOG.info("Ignoring trigger update because current cron expression is invalid");
                     return;
@@ -292,7 +288,7 @@ public class TimerProtocol extends AbstractProtocol {
                 break;
             case CRON_EXPRESSION:
             case TIME:
-                CronExpressionParser parser = getCronExpressionParser(protocolConfiguration.getReferenceOrThrow());
+                CronExpressionParser parser = cronExpressionMap.get(protocolConfiguration.getReferenceOrThrow());
                 if (parser == null) {
                     LOG.info("Attribute is linked to an invalid timer so it will be ignored");
                     return;
@@ -351,12 +347,6 @@ public class TimerProtocol extends AbstractProtocol {
         }
 
         return cronScheduler;
-    }
-
-    protected CronExpressionParser getCronExpressionParser(AttributeRef timerRef) {
-        synchronized (cronExpressionMap) {
-            return cronExpressionMap.get(timerRef);
-        }
     }
 
     @Override

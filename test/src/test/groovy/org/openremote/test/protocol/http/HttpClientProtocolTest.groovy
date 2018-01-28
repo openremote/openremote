@@ -24,7 +24,6 @@ import org.jboss.resteasy.util.BasicAuthHelper
 import org.openremote.agent.protocol.Protocol
 import org.openremote.agent.protocol.filter.RegexFilter
 import org.openremote.agent.protocol.http.*
-import org.openremote.container.Container
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
@@ -42,7 +41,6 @@ import org.openremote.model.value.ObjectValue
 import org.openremote.model.value.Value
 import org.openremote.model.value.Values
 import org.openremote.test.ManagerContainerTrait
-import spock.lang.Ignore
 import spock.lang.Shared
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
@@ -55,8 +53,6 @@ import java.util.concurrent.TimeUnit
 
 import static org.openremote.model.asset.agent.ProtocolConfiguration.initProtocolConfiguration
 
-@Ignore
-// TODO Often ends in deadlock in protocol doLinkAttribute()
 class HttpClientProtocolTest extends Specification implements ManagerContainerTrait {
 
     @Shared
@@ -370,7 +366,7 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
         Thread.sleep(50)
         assert mockServer.pingCount == pingCount
 
-        /* Test ping using POST with body and query parameters */
+        // Test ping using POST with body and query parameters
 
         when: "ping count is reset"
         mockServer.pingCount = 0

@@ -37,7 +37,8 @@ public class TemporaryFact<T> extends Event {
      * This value defines the periodic firing of the rules engines when temporary
      * facts are present, and therefore has an impact on system load. If a temporary
      * fact has a shorter expiration time, it's not guaranteed to be removed within
-     * that time.
+     * that time. Any time-based operation, such as matching temporary facts in a
+     * sliding time window, must be designed with this margin in mind.
      */
     public static final int GUARANTEED_MIN_EXPIRATION_MILLIS = 3000;
 

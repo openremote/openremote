@@ -295,10 +295,11 @@ public class RulesEngine<T extends Ruleset> {
                 // Remove any expired temporary facts
                 boolean factsExpired = facts.removeExpiredTemporaryFacts();
 
-                // TODO Optimize:
+                // TODO Optimize if scheduled firing of rules becomes a performance problem:
                 // Add fire(scheduledFiring) boolean
                 // Add enableTimer() as rule declaration option, each rule which uses time windows must set it
                 // Only fire if factsExpired || deployment.isAnyRuleEnabledTimer()
+                // Rules could default to enableTimer(true) and they could reduce firing frequency with enableTimer("1m")
 
                 for (RulesetDeployment deployment : deployments.values()) {
                     try {

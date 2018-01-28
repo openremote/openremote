@@ -52,8 +52,8 @@ import java.util.stream.Stream;
 
 import static java.util.logging.Level.FINEST;
 import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_TOPIC;
+import static org.openremote.container.persistence.PersistenceEvent.isPersistenceEventForEntityType;
 import static org.openremote.container.util.MapAccess.getString;
-import static org.openremote.manager.asset.AssetUpdateProcessor.isPersistenceEventForEntityType;
 import static org.openremote.model.AbstractValueTimestampHolder.VALUE_TIMESTAMP_FIELD_NAME;
 import static org.openremote.model.asset.AssetAttribute.attributesFromJson;
 import static org.openremote.model.asset.AssetAttribute.getAddedOrModifiedAttributes;

@@ -57,7 +57,7 @@ import java.util.function.Consumer;
 import java.util.logging.Logger;
 
 import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_TOPIC;
-import static org.openremote.manager.asset.AssetUpdateProcessor.isPersistenceEventForEntityType;
+import static org.openremote.container.persistence.PersistenceEvent.isPersistenceEventForEntityType;
 import static org.openremote.manager.event.ClientEventService.CLIENT_EVENT_TOPIC;
 import static org.openremote.manager.event.ClientEventService.getSessionKey;
 import static org.openremote.model.asset.BaseAssetQuery.*;

@@ -19,33 +19,12 @@
  */
 package org.openremote.manager.asset;
 
-import org.apache.camel.Predicate;
-import org.openremote.container.persistence.PersistenceEvent;
-import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.asset.AssetType;
 import org.openremote.model.attribute.AttributeEvent.Source;
 
 import javax.persistence.EntityManager;
 
 public interface AssetUpdateProcessor {
-
-    static Predicate isPersistenceEventForEntityType(Class<?> type) {
-        return exchange -> {
-            Class<?> entityType = exchange.getIn().getHeader(PersistenceEvent.HEADER_ENTITY_TYPE, Class.class);
-            return type.isAssignableFrom(entityType);
-        };
-    }
-
-    static Predicate isPersistenceEventForAssetType(AssetType assetType) {
-        return exchange -> {
-            if (!(exchange.getIn().getBody() instanceof PersistenceEvent))
-                return false;
-            PersistenceEvent persistenceEvent = exchange.getIn().getBody(PersistenceEvent.class);
-            Asset asset = (Asset) persistenceEvent.getEntity();
-            return asset.getWellKnownType() == assetType;
-        };
-    }
 
     /**
      * @param em        The current session and transaction on the database, processors may use this to query additional data.

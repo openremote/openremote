@@ -29,6 +29,7 @@ import org.openremote.model.value.ValueType;
 import org.openremote.model.value.Values;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.logging.Logger;
 
@@ -81,9 +82,7 @@ public class MacroProtocol extends AbstractProtocol {
         }
 
         void start() {
-            synchronized (executions) {
-                executions.put(attributeRef, this);
-            }
+            executions.put(attributeRef, this);
             updateLinkedAttribute(new AttributeState(attributeRef, AttributeExecuteStatus.RUNNING.asValue()));
             run();
         }
@@ -92,9 +91,7 @@ public class MacroProtocol extends AbstractProtocol {
             LOG.fine("Macro Execution cancel");
             scheduledFuture.cancel(false);
             cancelled = true;
-            synchronized (executions) {
-                executions.remove(attributeRef);
-            }
+            executions.remove(attributeRef);
             updateLinkedAttribute(new AttributeState(attributeRef, AttributeExecuteStatus.CANCELLED.asValue()));
         }
 
@@ -122,10 +119,7 @@ public class MacroProtocol extends AbstractProtocol {
             }
 
             if ((isLast && !restart)) {
-                synchronized (executions) {
-                    executions.remove(attributeRef);
-                }
-
+                executions.remove(attributeRef);
                 // Update the command Status of this attribute
                 updateLinkedAttribute(new AttributeState(attributeRef, AttributeExecuteStatus.COMPLETED.asValue()));
                 return;
@@ -139,9 +133,8 @@ public class MacroProtocol extends AbstractProtocol {
         }
     }
 
-    protected final Map<AttributeRef, Pair<Boolean, List<MacroAction>>> macroMap = new HashMap<>();
-    protected final Map<AttributeRef, AttributeRef> macroAttributeMap = new HashMap<>();
-    protected final Map<AttributeRef, MacroExecutionTask> executions = new HashMap<>();
+    protected final Map<AttributeRef, Pair<Boolean, List<MacroAction>>> macroMap = new ConcurrentHashMap<>();
+    protected final Map<AttributeRef, MacroExecutionTask> executions = new ConcurrentHashMap<>();
 
     @Override
     public String getProtocolName() {
@@ -189,37 +182,28 @@ public class MacroProtocol extends AbstractProtocol {
         AttributeRef macroRef = protocolConfiguration.getReferenceOrThrow();
         boolean isEnabled = protocolConfiguration.isEnabled();
 
-        synchronized (macroMap) {
-            // Check macro configuration is valid
-            if (!isValidMacroConfiguration(protocolConfiguration)) {
-                LOG.fine("Macro configuration is not valid: " + protocolConfiguration);
-                updateStatus(macroRef, ConnectionStatus.ERROR);
-                // Put an empty list of actions against this macro
-                macroMap.put(macroRef, new Pair<>(isEnabled, Collections.emptyList()));
-            } else {
-                // Store the macro actions for later execution requests
-                macroMap.put(macroRef, new Pair<>(isEnabled, MacroConfiguration.getMacroActions(protocolConfiguration)));
-                updateStatus(macroRef, isEnabled ? ConnectionStatus.CONNECTED : ConnectionStatus.DISABLED);
-            }
+        // Check macro configuration is valid
+        if (!isValidMacroConfiguration(protocolConfiguration)) {
+            LOG.fine("Macro configuration is not valid: " + protocolConfiguration);
+            updateStatus(macroRef, ConnectionStatus.ERROR);
+            // Put an empty list of actions against this macro
+            macroMap.put(macroRef, new Pair<>(isEnabled, Collections.emptyList()));
+        } else {
+            // Store the macro actions for later execution requests
+            macroMap.put(macroRef, new Pair<>(isEnabled, MacroConfiguration.getMacroActions(protocolConfiguration)));
+            updateStatus(macroRef, isEnabled ? ConnectionStatus.CONNECTED : ConnectionStatus.DISABLED);
         }
     }
 
     @Override
     protected void doUnlinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
         AttributeRef macroRef = protocolConfiguration.getReferenceOrThrow();
-        synchronized (macroMap) {
-            macroMap.remove(macroRef);
-        }
+        macroMap.remove(macroRef);
     }
 
     @Override
     protected void doLinkAttribute(AssetAttribute attribute, AssetAttribute protocolConfiguration) {
         AttributeRef macroRef = protocolConfiguration.getReferenceOrThrow();
-
-        // Store link between attribute and configuration
-        synchronized (macroAttributeMap) {
-            macroAttributeMap.put(attribute.getReferenceOrThrow(), macroRef);
-        }
 
         // Check for executable meta item
         if (attribute.isExecutable()) {
@@ -270,12 +254,6 @@ public class MacroProtocol extends AbstractProtocol {
 
     @Override
     protected void doUnlinkAttribute(AssetAttribute attribute, AssetAttribute protocolConfiguration) {
-        // Store the macro actions for later execution requests
-        AttributeRef reference = attribute.getReferenceOrThrow();
-
-        synchronized (macroAttributeMap) {
-            macroAttributeMap.remove(reference);
-        }
     }
 
     @Override
@@ -294,15 +272,12 @@ public class MacroProtocol extends AbstractProtocol {
             // Check if it's a cancellation request
             if (status == AttributeExecuteStatus.REQUEST_CANCEL) {
                 LOG.fine("Request received to cancel macro execution: " + event);
-                synchronized (executions) {
-                    executions.computeIfPresent(attributeRef,
-                        (attributeRef1, macroExecutionTask) -> {
-                            macroExecutionTask.cancel();
-                            return macroExecutionTask;
-                        }
-                    );
-                }
-
+                executions.computeIfPresent(attributeRef,
+                    (attributeRef1, macroExecutionTask) -> {
+                        macroExecutionTask.cancel();
+                        return macroExecutionTask;
+                    }
+                );
                 return;
             }
 
@@ -349,22 +324,20 @@ public class MacroProtocol extends AbstractProtocol {
     }
 
     protected List<MacroAction> getMacroActions(AttributeRef protocolConfigurationRef) {
-        synchronized (macroMap) {
-            Pair<Boolean, List<MacroAction>> actionsEnabledInfo;
-            actionsEnabledInfo = macroMap.get(protocolConfigurationRef);
+        Pair<Boolean, List<MacroAction>> actionsEnabledInfo;
+        actionsEnabledInfo = macroMap.get(protocolConfigurationRef);
 
-            if (actionsEnabledInfo == null || actionsEnabledInfo.value.size() == 0) {
-                LOG.fine("No macro actions found for macro configuration: " + protocolConfigurationRef);
-                return Collections.emptyList();
-            }
-
-            if (!actionsEnabledInfo.key) {
-                LOG.fine("Macro configuration is disabled");
-                return Collections.emptyList();
-            }
-
-            return actionsEnabledInfo.value;
+        if (actionsEnabledInfo == null || actionsEnabledInfo.value.size() == 0) {
+            LOG.fine("No macro actions found for macro configuration: " + protocolConfigurationRef);
+            return Collections.emptyList();
         }
+
+        if (!actionsEnabledInfo.key) {
+            LOG.fine("Macro configuration is disabled");
+            return Collections.emptyList();
+        }
+
+        return actionsEnabledInfo.value;
     }
 
     protected void executeMacro(AttributeRef attributeRef, List<MacroAction> actions, boolean repeat) {

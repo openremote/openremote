@@ -107,7 +107,7 @@ public class Simulator extends AbstractAttributeViewExtension {
 
             String elementName = simulatorState.getElementName(element);
             FormLabel formLabel = new FormLabel(elementName);
-            formLabel.addStyleName("larger");
+            formLabel.addStyleName("largest");
             formGroup.setFormLabel(formLabel);
 
             FormField formField = new FormField();

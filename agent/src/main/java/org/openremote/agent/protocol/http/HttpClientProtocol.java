@@ -81,7 +81,7 @@ import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
  * Any {@link Attribute} whose value is to be set by the HTTP server response (i.e. it has an {@link
  * #META_ATTRIBUTE_POLLING_SECONDS} {@link MetaItem}) can use the standard {@link Protocol#META_PROTOCOL_FILTERS} in
  * order to filter the received HTTP response.
- *
+ * <p>
  * <h1>Connection Status</h1>
  * <p>
  * The {@link ConnectionStatus} of the {@link ProtocolConfiguration} is determined by the ping {@link
@@ -177,13 +177,13 @@ public class HttpClientProtocol extends AbstractProtocol {
             this.contentType = contentType;
             dynamicQueryParameters = queryParameters != null
                 && queryParameters
-                    .entrySet()
-                    .stream()
-                    .anyMatch(paramNameAndValues ->
-                        paramNameAndValues.getValue() != null
-                            && paramNameAndValues.getValue()
-                            .stream()
-                            .anyMatch(val -> val.contains(DYNAMIC_VALUE_PLACEHOLDER)));
+                .entrySet()
+                .stream()
+                .anyMatch(paramNameAndValues ->
+                    paramNameAndValues.getValue() != null
+                        && paramNameAndValues.getValue()
+                        .stream()
+                        .anyMatch(val -> val.contains(DYNAMIC_VALUE_PLACEHOLDER)));
 
             if (bodyValue != null) {
                 if (contentType == null) {
@@ -457,7 +457,7 @@ public class HttpClientProtocol extends AbstractProtocol {
                     number -> Values.getIntegerCoerced(number).orElse(null)))
             .orElse(null);
 
-        Optional<MultivaluedMap<String,String>> headers = Values.getMetaItemValueOrThrow(
+        Optional<MultivaluedMap<String, String>> headers = Values.getMetaItemValueOrThrow(
             protocolConfiguration,
             META_HEADERS,
             ObjectValue.class,
@@ -465,7 +465,7 @@ public class HttpClientProtocol extends AbstractProtocol {
             true)
             .flatMap(objectValue -> getMultivaluedMap(objectValue, true));
 
-        Optional<MultivaluedMap<String,String>> queryParams = Values.getMetaItemValueOrThrow(
+        Optional<MultivaluedMap<String, String>> queryParams = Values.getMetaItemValueOrThrow(
             protocolConfiguration,
             META_QUERY_PARAMETERS,
             ObjectValue.class,
@@ -495,7 +495,7 @@ public class HttpClientProtocol extends AbstractProtocol {
             username.ifPresent(stringValue -> {
                 LOG.info("Adding Basic Authentication");
                 webTargetBuilder.setBasicAuthentication(stringValue.getString(),
-                                                        password.get().getString());
+                    password.get().getString());
             });
         }
         headers.ifPresent(webTargetBuilder::setInjectHeaders);
@@ -504,9 +504,8 @@ public class HttpClientProtocol extends AbstractProtocol {
 
         LOG.fine("Creating web target client '" + baseUri + "'");
         ResteasyWebTarget client = webTargetBuilder.build();
-        synchronized (clientMap) {
-            clientMap.put(protocolRef, new Pair<>(client, failureCodes));
-        }
+
+        clientMap.put(protocolRef, new Pair<>(client, failureCodes));
         updateStatus(protocolRef, ConnectionStatus.UNKNOWN);
 
         if (pingPath == null) {
@@ -527,7 +526,7 @@ public class HttpClientProtocol extends AbstractProtocol {
             .flatMap(AbstractValueHolder::getValue)
             .orElse(null);
 
-        MultivaluedMap<String,String> pingQueryParams = Values.getMetaItemValueOrThrow(
+        MultivaluedMap<String, String> pingQueryParams = Values.getMetaItemValueOrThrow(
             protocolConfiguration,
             META_PROTOCOL_PING_QUERY_PARAMETERS,
             ObjectValue.class,
@@ -570,30 +569,21 @@ public class HttpClientProtocol extends AbstractProtocol {
             pingBody,
             contentType);
 
-        LOG.info("Creating ping polling request '" + pingRequest +"'");
+        LOG.info("Creating ping polling request '" + pingRequest + "'");
 
-        synchronized (requestMap) {
-            requestMap.put(protocolRef, pingRequest);
-        }
-
-        synchronized (pollingMap) {
-            pollingMap.put(protocolRef, schedulePollingRequest(
-                null,
-                protocolRef,
-                pingRequest,
-                pingPollingSeconds));
-        }
+        requestMap.put(protocolRef, pingRequest);
+        pollingMap.put(protocolRef, schedulePollingRequest(
+            null,
+            protocolRef,
+            pingRequest,
+            pingPollingSeconds));
     }
 
     @Override
     protected void doUnlinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
         AttributeRef protocolConfigurationRef = protocolConfiguration.getReferenceOrThrow();
-        synchronized (clientMap) {
-            clientMap.remove(protocolConfigurationRef);
-        }
-        synchronized (requestMap) {
-            requestMap.remove(protocolConfigurationRef);
-        }
+        clientMap.remove(protocolConfigurationRef);
+        requestMap.remove(protocolConfigurationRef);
         cancelPolling(protocolConfigurationRef);
     }
 
@@ -601,9 +591,7 @@ public class HttpClientProtocol extends AbstractProtocol {
     protected void doLinkAttribute(AssetAttribute attribute, AssetAttribute protocolConfiguration) {
         AttributeRef protocolConfigurationRef = protocolConfiguration.getReferenceOrThrow();
         Pair<ResteasyWebTarget, List<Integer>> clientAndFailureCodes;
-        synchronized (clientMap) {
-            clientAndFailureCodes = clientMap.get(protocolConfigurationRef);
-        }
+        clientAndFailureCodes = clientMap.get(protocolConfigurationRef);
         WebTarget client = clientAndFailureCodes != null ? clientAndFailureCodes.key : null;
 
         if (client == null) {
@@ -666,7 +654,7 @@ public class HttpClientProtocol extends AbstractProtocol {
                 return null;
             });
 
-        MultivaluedMap<String,String> headers = Values.getMetaItemValueOrThrow(
+        MultivaluedMap<String, String> headers = Values.getMetaItemValueOrThrow(
             attribute,
             META_HEADERS,
             ObjectValue.class,
@@ -675,7 +663,7 @@ public class HttpClientProtocol extends AbstractProtocol {
             .flatMap(objectValue -> getMultivaluedMap(objectValue, true))
             .orElse(null);
 
-        MultivaluedMap<String,String> queryParams = Values.getMetaItemValueOrThrow(
+        MultivaluedMap<String, String> queryParams = Values.getMetaItemValueOrThrow(
             attribute,
             META_QUERY_PARAMETERS,
             ObjectValue.class,
@@ -700,56 +688,43 @@ public class HttpClientProtocol extends AbstractProtocol {
 
         final AttributeRef attributeRef = attribute.getReferenceOrThrow();
 
-        synchronized (pollingMap) {
-            boolean updateConnectionStatus = !pollingMap.containsKey(protocolConfigurationRef);
+        boolean updateConnectionStatus = !pollingMap.containsKey(protocolConfigurationRef);
 
-            HttpClientRequest clientRequest = buildClientRequest(
-                client,
-                path,
-                method,
-                headers,
-                queryParams,
-                failureCodes,
-                updateConnectionStatus,
-                body,
-                contentType);
+        HttpClientRequest clientRequest = buildClientRequest(
+            client,
+            path,
+            method,
+            headers,
+            queryParams,
+            failureCodes,
+            updateConnectionStatus,
+            body,
+            contentType);
 
-            LOG.fine("Creating HTTP request for linked attribute '" + clientRequest + "': " + attributeRef);
+        LOG.fine("Creating HTTP request for linked attribute '" + clientRequest + "': " + attributeRef);
 
-            synchronized (requestMap) {
-                requestMap.put(attributeRef, clientRequest);
-            }
+        requestMap.put(attributeRef, clientRequest);
 
-            pollingSeconds.ifPresent(seconds ->
-                pollingMap.put(attributeRef, schedulePollingRequest(
-                    attributeRef,
-                    protocolConfigurationRef,
-                    clientRequest,
-                    seconds)));
-        }
+        pollingSeconds.ifPresent(seconds ->
+            pollingMap.put(attributeRef, schedulePollingRequest(
+                attributeRef,
+                protocolConfigurationRef,
+                clientRequest,
+                seconds)));
     }
 
     @Override
     protected void doUnlinkAttribute(AssetAttribute attribute, AssetAttribute protocolConfiguration) {
         AttributeRef attributeRef = attribute.getReferenceOrThrow();
-        synchronized (requestMap) {
-            requestMap.remove(attributeRef);
-        }
+        requestMap.remove(attributeRef);
         cancelPolling(attributeRef);
     }
 
     @Override
     protected void processLinkedAttributeWrite(AttributeEvent event, AssetAttribute protocolConfiguration) {
         AttributeRef protocolRef = protocolConfiguration.getReferenceOrThrow();
-        HttpClientRequest request;
-        Pair<ResteasyWebTarget, List<Integer>> clientAndFailureCodes;
-
-        synchronized (requestMap) {
-            request = requestMap.get(event.getAttributeRef());
-        }
-        synchronized (clientMap) {
-            clientAndFailureCodes = clientMap.get(protocolRef);
-        }
+        HttpClientRequest request = requestMap.get(event.getAttributeRef());
+        Pair<ResteasyWebTarget, List<Integer>> clientAndFailureCodes = clientMap.get(protocolRef);
 
         // If permanent failure code occurred then protocol configuration could be about to be unlinked (disabled)
         // so the check here catches time between marked as disabled and actually being unlinked
@@ -762,7 +737,7 @@ public class HttpClientProtocol extends AbstractProtocol {
                         request,
                         response,
                         protocolRef
-                        ));
+                    ));
         } else {
             LOG.finest("Ignoring attribute write request as either attribute or protocol configuration is not linked: " + event);
         }
@@ -787,16 +762,16 @@ public class HttpClientProtocol extends AbstractProtocol {
         return !attribute.hasMetaItem(META_PROTOCOL_OAUTH_GRANT)
             ? Optional.empty()
             : Optional.of(attribute.getMetaItem(META_PROTOCOL_OAUTH_GRANT)
-                .flatMap(AbstractValueHolder::getValueAsObject)
-                .map(objValue -> {
-                    String json = objValue.toJson();
-                    try {
-                        return Container.JSON.readValue(json, OAuthGrant.class);
-                    } catch (IOException e) {
-                        throw new IllegalArgumentException("OAuth Grant meta item is not valid", e);
-                    }
-                })
-                .orElseThrow(() -> new IllegalArgumentException("OAuth grant meta item must be an ObjectValue")));
+            .flatMap(AbstractValueHolder::getValueAsObject)
+            .map(objValue -> {
+                String json = objValue.toJson();
+                try {
+                    return Container.JSON.readValue(json, OAuthGrant.class);
+                } catch (IOException e) {
+                    throw new IllegalArgumentException("OAuth Grant meta item is not valid", e);
+                }
+            })
+            .orElseThrow(() -> new IllegalArgumentException("OAuth grant meta item must be an ObjectValue")));
     }
 
     public static Optional<MultivaluedMap<String, String>> getMultivaluedMap(ObjectValue objectValue, boolean throwOnError) throws ClassCastException, IllegalArgumentException {
@@ -816,7 +791,7 @@ public class HttpClientProtocol extends AbstractProtocol {
                             }
                             break;
                         case ARRAY:
-                            Values.getArrayElements(((ArrayValue)keyAndValue.value),
+                            Values.getArrayElements(((ArrayValue) keyAndValue.value),
                                 StringValue.class,
                                 throwOnError,
                                 false,
@@ -907,7 +882,7 @@ public class HttpClientProtocol extends AbstractProtocol {
 
         Value value = null;
 
-        if (response != null && response.getStatusInfo().getFamily() == Response.Status.Family.SUCCESSFUL) {
+        if (response != null && response.hasEntity() && response.getStatusInfo().getFamily() == Response.Status.Family.SUCCESSFUL) {
             try {
                 String responseBody = response.readEntity(String.class);
                 value = responseBody != null ? Values.create(responseBody) : null;
@@ -944,12 +919,12 @@ public class HttpClientProtocol extends AbstractProtocol {
     }
 
     protected void cancelPolling(AttributeRef attributeRef) {
-        synchronized (pollingMap) {
+        withLock(() -> {
             ScheduledFuture pingPoll = pollingMap.remove(attributeRef);
             if (pingPoll != null) {
                 pingPoll.cancel(false);
             }
-        }
+        });
     }
 
     protected void updateConnectionStatus(HttpClientRequest request, AttributeRef protocolConfigurationRef, int responseCode) {
@@ -984,7 +959,7 @@ public class HttpClientProtocol extends AbstractProtocol {
         }
 
         LOG.fine("Updating connection status based on polling response code: URI=" + request +
-                     ", ResponseCode=" + responseCode + ", Status=" + connectionStatus);
+            ", ResponseCode=" + responseCode + ", Status=" + connectionStatus);
         updateStatus(protocolConfigurationRef, connectionStatus);
     }
 
