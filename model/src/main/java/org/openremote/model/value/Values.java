@@ -103,6 +103,16 @@ public class Values {
             .map(Double::intValue);
     }
 
+    /**
+     * Attempts to coerce the value into a long (where it makes sense)
+     */
+    public static Optional<Long> getLongCoerced(Value value) {
+
+        return convert(value, NumberValue.class)
+            .map(NumberValue::getNumber)
+            .map(Double::longValue);
+    }
+
     public static Optional<ObjectValue> getObject(Value value) {
         return cast(ObjectValue.class, value);
     }
