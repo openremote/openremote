@@ -1234,7 +1234,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
     protected static boolean calendarEventPredicateMatches(CalendarEventActivePredicate eventActivePredicate, Asset asset) {
         return CalendarEventConfiguration.getCalendarEvent(asset)
-            .map(calendarEvent -> calendarEventActiveOn(calendarEvent, new Date(1000L*eventActivePredicate.when)))
+            .map(calendarEvent -> calendarEventActiveOn(calendarEvent, new Date(1000L*eventActivePredicate.timestampSeconds)))
             .orElse(true);
     }
 
