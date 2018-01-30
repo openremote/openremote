@@ -314,18 +314,14 @@ public class SimulatorProtocol extends AbstractProtocol {
      * Call this to simulate a sensor update after the specified delay (it uses the last value supplied from send to actuator).
      */
     public void updateSensor(AttributeRef attributeRef, int updateSensorDelayMilliseconds) {
-        Optional<Value> value = getValue(attributeRef);
-        if (!value.isPresent())
-            return;
-        final AttributeState state = new AttributeState(attributeRef, value.get());
-        AttributeRef instanceRef = attributeInstanceMap.get(attributeRef);
-
-        if (instanceRef == null) {
-            LOG.warning("Attribute is not referenced by an instance:" + attributeRef);
-            return;
-        }
-
         withLock(() -> {
+            AttributeRef instanceRef = attributeInstanceMap.get(attributeRef);
+
+            if (instanceRef == null) {
+                LOG.warning("Attribute is not referenced by an instance:" + attributeRef);
+                return;
+            }
+
             Instance instance = instances.get(instanceRef);
 
             if (instance == null) {
@@ -337,6 +333,8 @@ public class SimulatorProtocol extends AbstractProtocol {
                 LOG.fine("Simulator protocol configuration is disabled so cannot process request");
                 return;
             }
+
+            AttributeState state = new AttributeState(attributeRef, getValue(attributeRef).orElse(null));
 
             if (updateSensorDelayMilliseconds <= 0) {
                 updateLinkedAttribute(state);
@@ -371,15 +369,15 @@ public class SimulatorProtocol extends AbstractProtocol {
      * Call this to simulate a send to actuator.
      */
     public boolean putValue(AttributeState attributeState) {
-        AttributeRef attributeRef = attributeState.getAttributeRef();
-        AttributeRef instanceRef = attributeInstanceMap.get(attributeRef);
-
-        if (instanceRef == null) {
-            LOG.warning("Attribute is not referenced by an instance:" + attributeRef);
-            return false;
-        }
-
         return withLockReturning(() -> {
+            AttributeRef attributeRef = attributeState.getAttributeRef();
+            AttributeRef instanceRef = attributeInstanceMap.get(attributeRef);
+
+            if (instanceRef == null) {
+                LOG.warning("Attribute is not referenced by an instance:" + attributeRef);
+                return false;
+            }
+
             Instance instance = instances.get(instanceRef);
             if (instance == null) {
                 LOG.warning("No instance found by name '" + instanceRef + "'");
