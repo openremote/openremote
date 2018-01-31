@@ -167,7 +167,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets[1].tenantDisplayName == null
         assets[1].coordinates == null
         assets[1].path == null
-        assets[1].getAttributesList().size() == 9
+        assets[1].getAttributesList().size() == 8
         assets[1].getAttribute("ventilationAuto").isPresent()
         assets[1].getAttribute("ventilationLevel").isPresent()
         assets[1].getAttribute("alarmEnabled").isPresent()
@@ -176,7 +176,6 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets[1].getAttribute("lastExecutedScene").isPresent()
         assets[1].getAttribute("presenceDetected").isPresent()
         assets[1].getAttribute("lastDetectedScene").isPresent()
-        assets[1].getAttribute("smartStart").isPresent()
         assets[1].getAttribute("alarmEnabled").get().meta.size() == 1
         assets[1].getAttribute("alarmEnabled").get().getMetaItem(AssetMeta.LABEL).isPresent()
         assets[1].getAttribute("alarmEnabled").get().getLabelOrName().get() == "Alarm enabled"

@@ -827,6 +827,10 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> {
         return attributes(new AttributePredicate(attributeName));
     }
 
+    public CHILD attributeName(Match match, String attributeName) {
+        return attributes(new AttributePredicate(new StringPredicate(match, attributeName)));
+    }
+
     /**
      * Match non-empty attribute value.
      */

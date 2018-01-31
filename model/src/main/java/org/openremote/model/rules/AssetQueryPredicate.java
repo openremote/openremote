@@ -88,18 +88,18 @@ public class AssetQueryPredicate implements Predicate<AssetState> {
             if (predicate.value == null)
                 return false;
 
-            String have = predicate.caseSensitive ? predicate.value : predicate.value.toUpperCase(Locale.ROOT);
-            String given = predicate.caseSensitive ? string : string.toUpperCase(Locale.ROOT);
+            String shouldMatch = predicate.caseSensitive ? predicate.value : predicate.value.toUpperCase(Locale.ROOT);
+            String have = predicate.caseSensitive ? string : string.toUpperCase(Locale.ROOT);
 
             switch (predicate.match) {
                 case BEGIN:
-                    return have.startsWith(given);
+                    return have.startsWith(shouldMatch);
                 case END:
-                    return have.endsWith(given);
+                    return have.endsWith(shouldMatch);
                 case CONTAINS:
-                    return have.contains(given);
+                    return have.contains(shouldMatch);
             }
-            return have.equals(given);
+            return have.equals(shouldMatch);
         };
     }
 

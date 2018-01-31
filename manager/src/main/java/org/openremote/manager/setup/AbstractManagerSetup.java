@@ -124,14 +124,6 @@ public abstract class AbstractManagerSetup implements Setup {
                     new MetaItem(ACCESS_RESTRICTED_WRITE, Values.create(true)),
                     new MetaItem(READ_ONLY, Values.create(true)),
                     new MetaItem(RULE_STATE, Values.create(true))
-                ),
-            new AssetAttribute("smartStart", AttributeType.BOOLEAN, Values.create(false))
-                .setMeta(
-                    new MetaItem(LABEL, Values.create("Smart Start enabled")),
-                    new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)),
-                    new MetaItem(ACCESS_RESTRICTED_WRITE, Values.create(true)),
-                    new MetaItem(RULE_STATE, Values.create(true)),
-                    new MetaItem(SHOW_ON_DASHBOARD, Values.create(true))
                 )
         );
         return apartment;
@@ -245,53 +237,58 @@ public abstract class AbstractManagerSetup implements Setup {
     }
 
     protected void addDemoApartmentSmartSwitch(ServerAsset room,
-                                               String switchAttributePrefix,
-                                               String switchLabelPrefix,
+                                               String switchName,
                                                boolean shouldBeLinked,
-                                               // Integer represents attribute number:
-                                               // 0 = On/Off
-                                               // 1 = Start time
-                                               // 2 = Stop time
-                                               // 3 = Smart enabled
+                                               // Integer represents attribute:
+                                               // 0 = Mode
+                                               // 1 = Time
+                                               // 2 = StartTime
+                                               // 3 = StopTime
+                                               // 4 = Enabled
                                                Function<Integer, MetaItem[]> agentLinker) {
 
         room.addAttributes(
-            // On/Off
-            // TODO What is this? The only usage is in the frontend app, and only the LABEL meta item is displayed!
-            new AssetAttribute(switchAttributePrefix + "OnOff", NUMBER)
+            // Mode
+            new AssetAttribute("smartSwitchMode" + switchName, STRING)
                 .setMeta(
-                    new MetaItem(LABEL, Values.create(switchLabelPrefix + " on/off status")),
+                    new MetaItem(LABEL, Values.create("Smart Switch mode " + switchName)),
+                    new MetaItem(DESCRIPTION, Values.create("NOW_ON (default when empty) or ON_AT or READY_AT")),
                     new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)),
+                    new MetaItem(ACCESS_RESTRICTED_WRITE, Values.create(true)),
                     new MetaItem(RULE_STATE, Values.create(true)),
-                    new MetaItem(RULE_EVENT, Values.create(true))
+                    new MetaItem(RULE_EVENT, Values.create(true)),
+                    new MetaItem(RULE_EVENT_EXPIRES, Values.create("48h"))
                 ).addMeta(shouldBeLinked ? agentLinker.apply(0) : null),
-            // Start time
-            new AssetAttribute(switchAttributePrefix + "StartTime", TIMESTAMP_SECONDS)
+            // Time
+            new AssetAttribute("smartSwitchBeginEnd" + switchName, TIMESTAMP_MILLIS)
                 .setMeta(
-                    new MetaItem(LABEL, Values.create(switchLabelPrefix + " earliest start time")),
-                    new MetaItem(ACCESS_RESTRICTED_WRITE, Values.create(true)),
+                    new MetaItem(LABEL, Values.create("Smart Switch begin/end cycle " + switchName)),
+                    new MetaItem(DESCRIPTION, Values.create("User-provided begin/end time of appliance cycle")),
                     new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)),
-                    new MetaItem(RULE_STATE, Values.create(true)),
-                    new MetaItem(RULE_EVENT, Values.create(true))
+                    new MetaItem(ACCESS_RESTRICTED_WRITE, Values.create(true)),
+                    new MetaItem(RULE_STATE, Values.create(true))
                 ).addMeta(shouldBeLinked ? agentLinker.apply(1) : null),
-            // Stop time
-            new AssetAttribute(switchAttributePrefix + "StopTime", TIMESTAMP_SECONDS)
+            // StartTime
+            new AssetAttribute("smartSwitchStartTime" + switchName, TIMESTAMP_SECONDS)
                 .setMeta(
-                    new MetaItem(LABEL, Values.create(switchLabelPrefix + " latest stop time")),
-                    new MetaItem(ACCESS_RESTRICTED_WRITE, Values.create(true)),
-                    new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)),
-                    new MetaItem(RULE_STATE, Values.create(true)),
-                    new MetaItem(RULE_EVENT, Values.create(true))
+                    new MetaItem(LABEL, Values.create("Smart Switch actuator earliest start time " + switchName)),
+                    new MetaItem(DESCRIPTION, Values.create("Earliest computed start time sent to actuator")),
+                    new MetaItem(RULE_STATE, Values.create(true))
                 ).addMeta(shouldBeLinked ? agentLinker.apply(2) : null),
-            // Smart enabled
-            new AssetAttribute(switchAttributePrefix + "SmartStart", NUMBER)
+            // StopTime
+            new AssetAttribute("smartSwitchStopTime" + switchName, TIMESTAMP_SECONDS)
                 .setMeta(
-                    new MetaItem(LABEL, Values.create(switchLabelPrefix + " Smart Start enabled")),
-                    new MetaItem(ACCESS_RESTRICTED_WRITE, Values.create(true)),
-                    new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)),
-                    new MetaItem(RULE_STATE, Values.create(true)),
-                    new MetaItem(RULE_EVENT, Values.create(true))
-                ).addMeta(shouldBeLinked ? agentLinker.apply(3) : null)
+                    new MetaItem(LABEL, Values.create("Smart Switch actuator latest stop time " + switchName)),
+                    new MetaItem(DESCRIPTION, Values.create("Latest computed stop time sent to actuator")),
+                    new MetaItem(RULE_STATE, Values.create(true))
+                ).addMeta(shouldBeLinked ? agentLinker.apply(3) : null),
+            // Enabled
+            new AssetAttribute("smartSwitchEnabled" + switchName, NUMBER)
+                .setMeta(
+                    new MetaItem(LABEL, Values.create("Smart Switch actuator enabled " + switchName)),
+                    new MetaItem(DESCRIPTION, Values.create("1 if actuator only provides power at ideal time between start/stop")),
+                    new MetaItem(RULE_STATE, Values.create(true))
+                ).addMeta(shouldBeLinked ? agentLinker.apply(4) : null)
         );
     }
 
