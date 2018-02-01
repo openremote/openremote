@@ -638,7 +638,7 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> {
 
     @JsonSubTypes({
         @JsonSubTypes.Type(value = RadialLocationPredicate.class, name = "radial"),
-        @JsonSubTypes.Type(value = BooleanPredicate.class, name = "rect")
+        @JsonSubTypes.Type(value = RectangularLocationPredicate.class, name = "rect")
     })
     @JsonTypeInfo(
         use = JsonTypeInfo.Id.NAME,
@@ -655,10 +655,21 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> {
         public double lat;
         public double lng;
 
-        public RadialLocationPredicate(int radius, double lat, double lng) {
+        @JsonCreator
+        public RadialLocationPredicate(@JsonProperty("radius") int radius,
+                                       @JsonProperty("lat") double lat,
+                                       @JsonProperty("lng") double lng,
+                                       @JsonProperty("negated") boolean negated) {
             this.radius = radius;
             this.lat = lat;
             this.lng = lng;
+            this.negated = negated;
+        }
+
+        public RadialLocationPredicate(@JsonProperty("radius") int radius,
+                                       @JsonProperty("lat") double lat,
+                                       @JsonProperty("lng") double lng) {
+                this(radius, lat, lng, false);
         }
 
         public RadialLocationPredicate negate() {
@@ -675,11 +686,24 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> {
         public double latMax;
         public double lngMax;
 
-        public RectangularLocationPredicate(double latMin, double lngMin, double latMax, double lngMax) {
+        @JsonCreator
+        public RectangularLocationPredicate(@JsonProperty("latMin") double latMin,
+                                            @JsonProperty("lngMin") double lngMin,
+                                            @JsonProperty("latMax") double latMax,
+                                            @JsonProperty("lngMax") double lngMax,
+                                            @JsonProperty("negated") boolean negated) {
             this.latMin = latMin;
             this.lngMin = lngMin;
             this.latMax = latMax;
             this.lngMax = lngMax;
+            this.negated = negated;
+        }
+
+        public RectangularLocationPredicate(@JsonProperty("latMin") double latMin,
+                                            @JsonProperty("lngMin") double lngMin,
+                                            @JsonProperty("latMax") double latMax,
+                                            @JsonProperty("lngMax") double lngMax) {
+            this(latMin, lngMin, latMax, lngMax, false);
         }
 
         public RectangularLocationPredicate negate() {

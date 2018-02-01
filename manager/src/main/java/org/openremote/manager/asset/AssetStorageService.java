@@ -1248,9 +1248,11 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
         if (recurrenceRule.getCount() != null) {
             recurrence = new Recur(recurrenceRule.getFrequency().name(), recurrenceRule.getCount());
-        } else {
+        } else if (recurrenceRule.getUntil() != null) {
             recurrence = new Recur(recurrenceRule.getFrequency().name(),
                                    new net.fortuna.ical4j.model.Date(recurrenceRule.getUntil()));
+        } else {
+            recurrence = new Recur(recurrenceRule.getFrequency().name(), null);
         }
 
         if (recurrenceRule.getInterval() != null) {
