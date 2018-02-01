@@ -23,28 +23,25 @@ import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebResource;
-import org.openremote.model.asset.AssetResource;
-import org.openremote.model.security.Tenant;
 import org.openremote.model.Constants;
-import org.openremote.model.asset.BaseAssetQuery.Select;
 import org.openremote.model.asset.*;
+import org.openremote.model.asset.BaseAssetQuery.Select;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.Meta;
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.http.RequestParams;
+import org.openremote.model.security.Tenant;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueException;
 import org.openremote.model.value.Values;
 
 import javax.ws.rs.WebApplicationException;
-import java.io.IOException;
 import java.util.*;
 import java.util.logging.Logger;
 
 import static javax.ws.rs.core.Response.Status.*;
-import static org.openremote.container.Container.JSON;
 import static org.openremote.model.asset.AssetQuery.*;
 import static org.openremote.model.attribute.AttributeEvent.Source.CLIENT;
 import static org.openremote.model.util.TextUtil.isNullOrEmpty;
@@ -503,14 +500,14 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
         }
     }
 
-    @Override
-    public Asset[] queryPublicAssets(RequestParams requestParams, String q) {
-        AssetQuery assetQuery;
-        try {
-            assetQuery = JSON.readValue(q, AssetQuery.class);
-        } catch (IOException ex) {
-            throw new WebApplicationException("Error parsing query parameter 'q' as JSON object", BAD_REQUEST);
-        }
-        return queryPublicAssets(requestParams, assetQuery);
-    }
+//    @Override
+//    public Asset[] queryPublicAssets(RequestParams requestParams, String q) {
+//        AssetQuery assetQuery;
+//        try {
+//            assetQuery = JSON.readValue(q, AssetQuery.class);
+//        } catch (IOException ex) {
+//            throw new WebApplicationException("Error parsing query parameter 'q' as JSON object", BAD_REQUEST);
+//        }
+//        return queryPublicAssets(requestParams, assetQuery);
+//    }
 }
