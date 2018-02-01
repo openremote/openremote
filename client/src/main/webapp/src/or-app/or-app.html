@@ -277,6 +277,8 @@
                             function _load(tag, rel) {
                                 return function (url) {
                                     return new Promise(function (resolve, reject) {
+
+                                        url = openremote.INSTANCE.managerHost + url;
                                         var element = window.document.createElement(tag);
                                         // Append loading tags to the body
                                         var parent = 'body';
@@ -313,7 +315,9 @@
                                 img: _load("img")
                             }
                         }
-                    }
+                    },
+
+                    managerHost: String
                 };
             }
 
@@ -342,6 +346,15 @@
 
                 // The app should flex and its children should be in a flexbox vertical layout
                 this.shadowRoot.host.classList.add("flex", "layout", "vertical");
+
+                // Extract manager host URI based on where this component is hosted; it is assumed that the component
+                // is being hosted in a manager instance and that is the instance you want to connect to.
+                var managerHost = '';
+                var hostURI = this.importPath;
+                if ( hostURI ) {
+                    managerHost =  '//' + new URL(hostURI).host;
+                }
+                this.managerHost = managerHost;
 
                 if (this.login) {
                     this.getSecurity().set("shellNative", this.$.shellNative);
