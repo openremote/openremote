@@ -22,6 +22,7 @@ package org.openremote.manager.rules.facade;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.asset.ServerAsset;
 import org.openremote.manager.notification.NotificationService;
+import org.openremote.manager.rules.RulesEngineId;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.model.notification.AlertNotification;
 import org.openremote.model.rules.*;
@@ -35,15 +36,13 @@ import java.util.function.Consumer;
  */
 public class UsersFacade<T extends Ruleset> extends Users {
 
-    protected final Class<T> rulesetType;
-    protected final String rulesetId;
+    protected final RulesEngineId<T> rulesEngineId;
     protected final AssetStorageService assetStorageService;
     protected final NotificationService notificationService;
     protected final ManagerIdentityService identityService;
 
-    public UsersFacade(Class<T> rulesetType, String rulesetId, AssetStorageService assetStorageService, NotificationService notificationService, ManagerIdentityService identityService) {
-        this.rulesetType = rulesetType;
-        this.rulesetId = rulesetId;
+    public UsersFacade(RulesEngineId<T> rulesEngineId, AssetStorageService assetStorageService, NotificationService notificationService, ManagerIdentityService identityService) {
+        this.rulesEngineId = rulesEngineId;
         this.assetStorageService = assetStorageService;
         this.notificationService = notificationService;
         this.identityService = identityService;
@@ -54,20 +53,20 @@ public class UsersFacade<T extends Ruleset> extends Users {
         Users.RestrictedQuery query = new Users.RestrictedQuery() {
             @Override
             public Users.RestrictedQuery tenant(UserQuery.TenantPredicate tenantPredicate) {
-                if (GlobalRuleset.class.isAssignableFrom(rulesetType))
+                if (GlobalRuleset.class.isAssignableFrom(rulesEngineId.getScope()))
                     return super.tenant(tenantPredicate);
                 throw new IllegalArgumentException("Overriding query restriction is not allowed in this rules scope");
             }
 
             @Override
             public Users.RestrictedQuery asset(UserQuery.AssetPredicate assetPredicate) {
-                if (GlobalRuleset.class.isAssignableFrom(rulesetType))
+                if (GlobalRuleset.class.isAssignableFrom(rulesEngineId.getScope()))
                     return super.asset(assetPredicate);
-                if (TenantRuleset.class.isAssignableFrom(rulesetType)) {
+                if (TenantRuleset.class.isAssignableFrom(rulesEngineId.getScope())) {
                     return super.asset(assetPredicate);
                     // TODO: should only be allowed if asset belongs to tenant
                 }
-                if (AssetRuleset.class.isAssignableFrom(rulesetType)) {
+                if (AssetRuleset.class.isAssignableFrom(rulesEngineId.getScope())) {
                     return super.asset(assetPredicate);
                     // TODO: should only be allowed if restricted asset is descendant of scope's asset
                 }
@@ -85,32 +84,45 @@ public class UsersFacade<T extends Ruleset> extends Users {
             }
         };
 
-        if (TenantRuleset.class.isAssignableFrom(rulesetType)) {
-            query.tenantPredicate = new UserQuery.TenantPredicate(rulesetId);
+        if (TenantRuleset.class.isAssignableFrom(rulesEngineId.getScope())) {
+            query.tenantPredicate = new UserQuery.TenantPredicate(
+                rulesEngineId.getRealmId().orElseThrow(() -> new IllegalArgumentException("Realm ID missing: " + rulesEngineId))
+            );
         }
-        if (AssetRuleset.class.isAssignableFrom(rulesetType)) {
-            ServerAsset restrictedAsset = assetStorageService.find(rulesetId, true);
+        if (AssetRuleset.class.isAssignableFrom(rulesEngineId.getScope())) {
+            String assetId = rulesEngineId.getAssetId().orElseThrow(() -> new IllegalStateException("Asset ID missing: " + rulesEngineId));
+            ServerAsset restrictedAsset = assetStorageService.find(assetId, true);
             if (restrictedAsset == null) {
-                throw new IllegalStateException("Asset is no longer available for this deployment: " + rulesetId);
+                // An asset was deleted in the database, but its ruleset is still deployed. This
+                // can happen while the PersistenceEvent of the deletion is not processed and the
+                // rules engine fires. This exception marks the ruleset deployment as execution
+                // error status, and as soon as the PersistenceEvent is processed, the ruleset
+                // deployment is removed and the problem resolved.
+                throw new IllegalStateException("Asset is no longer available: " + rulesEngineId);
             }
-            query.assetPredicate = new UserQuery.AssetPredicate(rulesetId);
+            query.assetPredicate = new UserQuery.AssetPredicate(assetId);
         }
         return query;
-
     }
 
     @Override
     public void storeAndNotify(String userId, AlertNotification alert) {
-        if (TenantRuleset.class.isAssignableFrom(rulesetType)) {
-            boolean userIsInTenant = identityService.getIdentityProvider().isUserInTenant(userId, rulesetId);
+        if (TenantRuleset.class.isAssignableFrom(rulesEngineId.getScope())) {
+            boolean userIsInTenant = identityService.getIdentityProvider().isUserInTenant(
+                userId,
+                rulesEngineId.getRealmId().orElseThrow(() -> new IllegalArgumentException("Realm ID missing: " + rulesEngineId))
+            );
             if (!userIsInTenant) {
-                throw new IllegalArgumentException("User not in tenant: " + rulesetId);
+                throw new IllegalArgumentException("User not in tenant " + rulesEngineId + ": " + userId);
             }
         }
-        if (AssetRuleset.class.isAssignableFrom(rulesetType)) {
-            boolean userIsLinkedToAsset = assetStorageService.isUserAsset(userId, rulesetId);
+        if (AssetRuleset.class.isAssignableFrom(rulesEngineId.getScope())) {
+            boolean userIsLinkedToAsset = assetStorageService.isUserAsset(
+                userId,
+                rulesEngineId.getAssetId().orElseThrow(() -> new IllegalStateException("Asset ID missing: " + rulesEngineId))
+            );
             if (!userIsLinkedToAsset) {
-                throw new IllegalArgumentException("User not linked to asset: " + rulesetId);
+                throw new IllegalArgumentException("User not linked to asset " + rulesEngineId + ": " + userId);
             }
         }
         notificationService.storeAndNotify(userId, alert);

@@ -22,8 +22,13 @@ package org.openremote.manager.rules;
 import org.jeasy.rules.core.InferenceRulesEngine;
 import org.jeasy.rules.core.RulesEngineParameters;
 import org.openremote.container.timer.TimerService;
+import org.openremote.manager.asset.AssetProcessingService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.concurrent.ManagerExecutorService;
+import org.openremote.manager.notification.NotificationService;
+import org.openremote.manager.rules.facade.AssetsFacade;
+import org.openremote.manager.rules.facade.UsersFacade;
+import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.model.rules.*;
 
 import java.util.*;
@@ -48,15 +53,13 @@ public class RulesEngine<T extends Ruleset> {
     final protected ManagerExecutorService executorService;
     final protected AssetStorageService assetStorageService;
 
-    // Global rules engine has neither realmId nor assetId
-    final protected String realmId;
-    final protected String assetId;
-
-    protected final Map<Long, RulesetDeployment> deployments = new LinkedHashMap<>();
-    final protected RulesFacts facts;
-    final protected InferenceRulesEngine engine;
+    final protected RulesEngineId<T> id;
     final protected Assets assetsFacade;
     final protected Users usersFacade;
+
+    final protected Map<Long, RulesetDeployment> deployments = new LinkedHashMap<>();
+    final protected RulesFacts facts;
+    final protected InferenceRulesEngine engine;
 
     protected boolean running;
     protected ScheduledFuture eventsTimer;
@@ -69,36 +72,30 @@ public class RulesEngine<T extends Ruleset> {
     protected boolean disableTemporaryFactExpiration = false;
 
     public RulesEngine(TimerService timerService,
+                       ManagerIdentityService identityService,
                        ManagerExecutorService executorService,
                        AssetStorageService assetStorageService,
-                       Assets assetsFacade,
-                       Users usersFacade,
-                       String realmId,
-                       String assetId) {
+                       AssetProcessingService assetProcessingService,
+                       NotificationService notificationService,
+                       RulesEngineId<T> id) {
         this.timerService = timerService;
         this.executorService = executorService;
         this.assetStorageService = assetStorageService;
-        this.realmId = realmId;
-        this.assetId = assetId;
+        this.id = id;
+        this.assetsFacade = new AssetsFacade<>(id, assetStorageService, assetProcessingService::sendAttributeEvent);
+        this.usersFacade = new UsersFacade<>(id, assetStorageService, notificationService, identityService);
 
         this.facts = new RulesFacts(assetsFacade, this, RULES_LOG);
         engine = new InferenceRulesEngine(
-            // TODO We skip on the first failed rule, good idea?
+            // Skip any other rules after the first failed rule (exception thrown in condition or action)
             new RulesEngineParameters(false, true, false, RulesEngineParameters.DEFAULT_RULE_PRIORITY_THRESHOLD)
         );
         engine.registerRulesEngineListener(facts);
         engine.registerRuleListener(facts);
-
-        this.assetsFacade = assetsFacade;
-        this.usersFacade = usersFacade;
     }
 
-    public String getRealmId() {
-        return realmId;
-    }
-
-    public String getAssetId() {
-        return assetId;
+    public RulesEngineId<T> getId() {
+        return id;
     }
 
     /**
@@ -320,7 +317,7 @@ public class RulesEngine<T extends Ruleset> {
                         deployment.setError(ex);
 
                         // TODO We always stop on any error, good idea?
-                        // TODO This does not include RHS runtime errors, see RuleFacts.onFailure()
+                        // TODO We only get here on LHS runtime errors, RHS runtime errors are in RuleFacts.onFailure()
                         stop();
 
                         // TODO We skip any other deployment when we hit the first error, good idea?
@@ -443,8 +440,7 @@ public class RulesEngine<T extends Ruleset> {
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
-            "realmId='" + realmId + '\'' +
-            ", assetId='" + assetId + '\'' +
+            "id='" + id + '\'' +
             ", running='" + isRunning() + '\'' +
             ", deployments='" + deploymentInfo + '\'' +
             '}';

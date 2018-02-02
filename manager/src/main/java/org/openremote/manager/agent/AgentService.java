@@ -54,9 +54,7 @@ import java.util.stream.Stream;
 
 import static org.openremote.agent.protocol.Protocol.ACTUATOR_TOPIC;
 import static org.openremote.agent.protocol.Protocol.SENSOR_QUEUE;
-import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_TOPIC;
-import static org.openremote.container.persistence.PersistenceEvent.isPersistenceEventForAssetType;
-import static org.openremote.container.persistence.PersistenceEvent.isPersistenceEventForEntityType;
+import static org.openremote.container.persistence.PersistenceEvent.*;
 import static org.openremote.manager.asset.AssetProcessingService.ASSET_QUEUE;
 import static org.openremote.model.AbstractValueTimestampHolder.VALUE_TIMESTAMP_FIELD_NAME;
 import static org.openremote.model.asset.AssetAttribute.attributesFromJson;
@@ -146,20 +144,14 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
         /// For all agents, go through their protocol configurations and find
         // assets that are linked to them, to create the binding on startup
         for (Asset agent : agents) {
-            agent.getAttributesStream()
+            linkProtocolConfigurations(agent.getAttributesStream()
                 .filter(ProtocolConfiguration::isProtocolConfiguration)
-                .forEach(this::linkProtocolConfiguration);
+            );
         }
     }
 
     @Override
     public void stop(Container container) throws Exception {
-        /* TODO Accessing the database while shutting down is not a good thing, it will hang if the JDBC pool is shutting down
-        synchronized (protocolConfigurations) {
-            new ArrayList<>(protocolConfigurations.values())
-                .forEach(protocolConfigAndConsumer -> unlinkProtocolConfiguration(protocolConfigAndConsumer.key));
-        }
-        */
     }
 
     @Override
@@ -295,9 +287,9 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
         switch (persistenceEvent.getCause()) {
             case INSERT:
                 addReplaceAgent(agent);
-                agent.getAttributesStream()
-                    .filter(ProtocolConfiguration::isProtocolConfiguration)
-                    .forEach(this::linkProtocolConfiguration);
+                linkProtocolConfigurations(
+                    agent.getAttributesStream().filter(ProtocolConfiguration::isProtocolConfiguration)
+                );
 
                 break;
             case UPDATE:
@@ -328,31 +320,30 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
 
                 // Compare protocol configurations by JSON value
                 // Unlink protocols that are in oldConfigs but not in newConfigs
-                oldProtocolConfigurations
+                unlinkProtocolConfigurations(oldProtocolConfigurations
                     .stream()
                     .filter(oldProtocolAttribute -> newProtocolConfigurations
                         .stream()
-                        .noneMatch(oldProtocolAttribute::equals
-                        )
+                        .noneMatch(oldProtocolAttribute::equals)
                     )
-                    .forEach(this::unlinkProtocolConfiguration);
+                );
 
                 // Link protocols that are in newConfigs but not in oldConfigs
-                newProtocolConfigurations
+                linkProtocolConfigurations(newProtocolConfigurations
                     .stream()
                     .filter(newProtocolAttribute -> oldProtocolConfigurations
                         .stream()
-                        .noneMatch(newProtocolAttribute::equals
-                        )
-                    ).forEach(this::linkProtocolConfiguration);
+                        .noneMatch(newProtocolAttribute::equals)
+                    )
+                );
 
                 break;
             case DELETE:
                 removeAgent(agent);
                 // Unlink any attributes that have an agent link to this agent
-                agent.getAttributesStream()
+                unlinkProtocolConfigurations(agent.getAttributesStream()
                     .filter(ProtocolConfiguration::isProtocolConfiguration)
-                    .forEach(this::unlinkProtocolConfiguration);
+                );
                 break;
         }
     }
@@ -439,111 +430,111 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
         }
     }
 
-    protected void linkProtocolConfiguration(AssetAttribute protocolConfiguration) {
-        AttributeRef protocolAttributeRef = protocolConfiguration.getReferenceOrThrow();
-        Protocol protocol = getProtocol(protocolConfiguration);
-
-        if (protocol == null) {
-            LOG.warning("Cannot find protocol that attribute is linked to: " + protocolAttributeRef);
-            return;
-        }
-
+    protected void linkProtocolConfigurations(Stream<AssetAttribute> configurations) {
         synchronized (protocolConfigurations) {
-            // Create a consumer callback for deployment status updates
-            Consumer<ConnectionStatus> deploymentStatusConsumer = status ->
-                publishProtocolConnectionStatus(protocolAttributeRef, status);
+            configurations.forEach(configuration -> {
+                AttributeRef protocolAttributeRef = configuration.getReferenceOrThrow();
+                Protocol protocol = getProtocol(configuration);
 
-            // Store the info
-            protocolConfigurations.put(
-                protocolAttributeRef,
-                new Pair<>(protocolConfiguration, null)
-            );
+                if (protocol == null) {
+                    LOG.warning("Cannot find protocol that attribute is linked to: " + protocolAttributeRef);
+                    return;
+                }
 
-            // Set status to linking
-            publishProtocolConnectionStatus(protocolAttributeRef, CONNECTING);
+                // Create a consumer callback for deployment status updates
+                Consumer<ConnectionStatus> deploymentStatusConsumer = status ->
+                    publishProtocolConnectionStatus(protocolAttributeRef, status);
 
-            // Link the protocol configuration to the protocol
-            try {
-                protocol.linkProtocolConfiguration(protocolConfiguration, deploymentStatusConsumer);
-            } catch (Exception e) {
-                LOG.log(Level.SEVERE, "Protocol threw an exception during protocol configuration linking", e);
-                // Set status to error
-                publishProtocolConnectionStatus(protocolAttributeRef, ERROR_CONFIGURATION);
-            }
+                // Store the info
+                protocolConfigurations.put(protocolAttributeRef, new Pair<>(configuration, null));
 
-            // Check protocol status and only continue linking attributes if not in error state
-            ConnectionStatus connectionStatus = getProtocolConnectionStatus(protocolAttributeRef);
-            if (connectionStatus == ERROR_CONFIGURATION || connectionStatus == ERROR) {
-                LOG.warning("Protocol connection status is showing error so not linking attributes: "
-                    + protocolConfiguration);
-                return;
-            }
+                // Set status to linking
+                publishProtocolConnectionStatus(protocolAttributeRef, CONNECTING);
+
+                // Link the protocol configuration to the protocol
+                try {
+                    protocol.linkProtocolConfiguration(configuration, deploymentStatusConsumer);
+                } catch (Exception e) {
+                    LOG.log(Level.SEVERE, "Protocol threw an exception during protocol configuration linking", e);
+                    // Set status to error
+                    publishProtocolConnectionStatus(protocolAttributeRef, ERROR_CONFIGURATION);
+                }
+
+                // Check protocol status and only continue linking attributes if not in error state
+                ConnectionStatus connectionStatus = getProtocolConnectionStatus(protocolAttributeRef);
+                if (connectionStatus == ERROR_CONFIGURATION || connectionStatus == ERROR) {
+                    LOG.warning("Protocol connection status is showing error so not linking attributes: " + configuration);
+                    return;
+                }
+
+                // Get all assets that have attributes that use this protocol configuration
+                List<ServerAsset> assets = assetStorageService.findAll(
+                    new AssetQuery()
+                        .select(new AssetQuery.Select(AssetQuery.Include.ALL))
+                        .attributeMeta(
+                            new AssetQuery.AttributeRefPredicate(
+                                AssetMeta.AGENT_LINK,
+                                protocolAttributeRef.getEntityId(),
+                                protocolAttributeRef.getAttributeName()
+                            )
+                        )
+                );
+
+                assets.forEach(
+                    asset ->
+                        getGroupedAgentLinkAttributes(
+                            asset.getAttributesStream(),
+                            assetAttribute -> getAgentLink(assetAttribute)
+                                .map(attributeRef -> attributeRef.equals(protocolAttributeRef))
+                                .orElse(false),
+                            attribute -> LOG.warning("Linked protocol configuration not found: " + attribute)
+                        ).forEach(this::linkAttributes)
+                );
+            });
         }
-
-        // Get all assets that have attributes that use this protocol configuration
-        List<ServerAsset> assets = assetStorageService.findAll(
-            new AssetQuery()
-                .select(new AssetQuery.Select(AssetQuery.Include.ALL))
-                .attributeMeta(
-                    new AssetQuery.AttributeRefPredicate(
-                        AssetMeta.AGENT_LINK,
-                        protocolAttributeRef.getEntityId(),
-                        protocolAttributeRef.getAttributeName()
-                    )
-                )
-        );
-
-        assets.forEach(
-            asset ->
-                getGroupedAgentLinkAttributes(
-                    asset.getAttributesStream(),
-                    assetAttribute -> getAgentLink(assetAttribute)
-                        .map(attributeRef -> attributeRef.equals(protocolAttributeRef))
-                        .orElse(false),
-                    attribute -> LOG.warning("Linked protocol configuration not found: " + attribute)
-                ).forEach(this::linkAttributes)
-        );
     }
 
-    protected void unlinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
-        AttributeRef protocolAttributeRef = protocolConfiguration.getReferenceOrThrow();
-
-        // Get all assets that have attributes that use this protocol configuration
-        List<ServerAsset> assets = assetStorageService.findAll(
-            new AssetQuery()
-                .select(new AssetQuery.Select(AssetQuery.Include.ALL))
-                .attributeMeta(
-                    new AssetQuery.AttributeRefPredicate(
-                        AssetMeta.AGENT_LINK,
-                        protocolAttributeRef.getEntityId(),
-                        protocolAttributeRef.getAttributeName()
-                    )
-                )
-        );
-
-        assets.forEach(
-            asset ->
-                getGroupedAgentLinkAttributes(
-                    asset.getAttributesStream(),
-                    assetAttribute -> getAgentLink(assetAttribute)
-                        .map(attributeRef -> attributeRef.equals(protocolAttributeRef))
-                        .orElse(false)
-                ).forEach(this::unlinkAttributes)
-        );
-
+    protected void unlinkProtocolConfigurations(Stream<AssetAttribute> configurations) {
         synchronized (protocolConfigurations) {
-            Protocol protocol = getProtocol(protocolConfiguration);
+            configurations.forEach(configuration -> {
+                AttributeRef protocolAttributeRef = configuration.getReferenceOrThrow();
 
-            // Unlink the protocol configuration from the protocol
-            try {
-                protocol.unlinkProtocolConfiguration(protocolConfiguration);
-            } catch (Exception e) {
-                LOG.log(Level.SEVERE, "Protocol threw an exception during protocol configuration unlinking", e);
-            }
+                // Get all assets that have attributes that use this protocol configuration
+                List<ServerAsset> assets = assetStorageService.findAll(
+                    new AssetQuery()
+                        .select(new AssetQuery.Select(AssetQuery.Include.ALL))
+                        .attributeMeta(
+                            new AssetQuery.AttributeRefPredicate(
+                                AssetMeta.AGENT_LINK,
+                                protocolAttributeRef.getEntityId(),
+                                protocolAttributeRef.getAttributeName()
+                            )
+                        )
+                );
 
-            // Set status to disconnected
-            publishProtocolConnectionStatus(protocolAttributeRef, DISCONNECTED);
-            protocolConfigurations.remove(protocolAttributeRef);
+                assets.forEach(
+                    asset ->
+                        getGroupedAgentLinkAttributes(
+                            asset.getAttributesStream(),
+                            assetAttribute -> getAgentLink(assetAttribute)
+                                .map(attributeRef -> attributeRef.equals(protocolAttributeRef))
+                                .orElse(false)
+                        ).forEach(this::unlinkAttributes)
+                );
+
+                Protocol protocol = getProtocol(configuration);
+
+                // Unlink the protocol configuration from the protocol
+                try {
+                    protocol.unlinkProtocolConfiguration(configuration);
+                } catch (Exception e) {
+                    LOG.log(Level.SEVERE, "Protocol threw an exception during protocol configuration unlinking", e);
+                }
+
+                // Set status to disconnected
+                publishProtocolConnectionStatus(protocolAttributeRef, DISCONNECTED);
+                protocolConfigurations.remove(protocolAttributeRef);
+            });
         }
     }
 
@@ -644,25 +635,27 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
             return false;
         }
 
-        return AgentLink.getAgentLink(attribute)
-            .map(ref ->
-                getProtocolConfiguration(ref)
-                    .orElseThrow(() -> new AssetProcessingException(AssetProcessingException.Reason.INVALID_AGENT_LINK))
-            )
-            .map(protocolConfiguration -> {
-                // Its' a send to actuator - push the update to the protocol
-                attribute.getStateEvent().ifPresent(attributeEvent -> {
-                    LOG.fine("Sending to actuator topic: " + attributeEvent);
-                    messageBrokerService.getProducerTemplate().sendBodyAndHeader(
-                        ACTUATOR_TOPIC,
-                        attributeEvent,
-                        Protocol.ACTUATOR_TOPIC_TARGET_PROTOCOL,
-                        protocolConfiguration.getValueAsString().orElse("")
-                    );
-                });
-                return true; // Processing complete, skip other processors
-            })
-            .orElse(false); // This is just a non protocol attribute so allow the processing to continue
+        synchronized (protocolConfigurations) {
+            return AgentLink.getAgentLink(attribute)
+                .map(ref ->
+                    getProtocolConfiguration(ref)
+                        .orElseThrow(() -> new AssetProcessingException(AssetProcessingException.Reason.INVALID_AGENT_LINK))
+                )
+                .map(protocolConfiguration -> {
+                    // Its' a send to actuator - push the update to the protocol
+                    attribute.getStateEvent().ifPresent(attributeEvent -> {
+                        LOG.fine("Sending to actuator topic: " + attributeEvent);
+                        messageBrokerService.getProducerTemplate().sendBodyAndHeader(
+                            ACTUATOR_TOPIC,
+                            attributeEvent,
+                            Protocol.ACTUATOR_TOPIC_TARGET_PROTOCOL,
+                            protocolConfiguration.getValueAsString().orElse("")
+                        );
+                    });
+                    return true; // Processing complete, skip other processors
+                })
+                .orElse(false); // This is just a non protocol attribute so allow the processing to continue
+        }
     }
 
     /**

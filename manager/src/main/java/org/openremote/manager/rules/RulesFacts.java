@@ -292,11 +292,7 @@ public class RulesFacts extends Facts implements RuleListener, RulesEngineListen
 
     @Override
     public void onFailure(Rule rule, Facts facts, Exception exception) {
-        LOG.log(
-            Level.SEVERE,
-            String.format("*** %s: %s - on %s", "Rule execution error", rule.getName(), loggingContext),
-            exception
-        );
+        throw new RuntimeException("Error executing action of rule '" + rule.getName() + "': " + exception.getMessage(), exception);
     }
 
     @SuppressWarnings("unchecked")
@@ -374,6 +370,10 @@ public class RulesFacts extends Facts implements RuleListener, RulesEngineListen
 
     public Optional<TemporaryFact<AssetState>> matchFirstAssetEvent(AssetQuery assetQuery) {
         return matchAssetEvent(assetQuery).findFirst();
+    }
+
+    public Optional<TemporaryFact<AssetState>> matchLastAssetEvent(AssetQuery assetQuery) {
+        return matchAssetEvent(assetQuery).reduce((first, second) -> second);
     }
 
     public Stream<TemporaryFact<AssetState>> matchAssetEvent(AssetQuery assetQuery) {

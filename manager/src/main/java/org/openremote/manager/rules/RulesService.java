@@ -246,9 +246,11 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
 
             // Remove any asset rules engines for assets in this realm
             assetEngines.values().stream()
-                .filter(re -> tenant.getId().equals(re.getRealmId()))
+                .filter(re -> re.getId().getRealmId().map(id -> id.equals(tenant.getId())).orElse(false))
                 .forEach(RulesEngine::stop);
-            assetEngines.entrySet().removeIf(entry -> tenant.getId().equals(entry.getValue().getRealmId()));
+            assetEngines.entrySet().removeIf(entry ->
+                entry.getValue().getId().getRealmId().map(id -> id.equals(tenant.getId())).orElse(false)
+            );
 
         } else {
             // Create tenant rules engines for this tenant if it has any rulesets
@@ -442,12 +444,12 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
         if (globalEngine == null) {
             globalEngine = new RulesEngine<>(
                 timerService,
+                identityService,
                 executorService,
                 assetStorageService,
-                new AssetsFacade<>(GlobalRuleset.class, null, assetStorageService, event -> assetProcessingService.sendAttributeEvent(event)),
-                new UsersFacade<>(GlobalRuleset.class, null, assetStorageService, notificationService, identityService),
-                null,
-                null
+                assetProcessingService,
+                notificationService,
+                new RulesEngineId<>()
             );
         }
 
@@ -474,12 +476,12 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
                 created[0] = true;
                 return new RulesEngine<>(
                     timerService,
+                    identityService,
                     executorService,
                     assetStorageService,
-                    new AssetsFacade<>(TenantRuleset.class, realmId, assetStorageService, event -> assetProcessingService.sendAttributeEvent(event)),
-                    new UsersFacade<>(TenantRuleset.class, realmId, assetStorageService, notificationService, identityService),
-                    realmId,
-                    null
+                    assetProcessingService,
+                    notificationService,
+                    new RulesEngineId<>(realmId)
                 );
             });
 
@@ -536,12 +538,12 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
                 created[0] = true;
                 return new RulesEngine<>(
                     timerService,
+                    identityService,
                     executorService,
                     assetStorageService,
-                    new AssetsFacade<>(AssetRuleset.class, assetId, assetStorageService, event -> assetProcessingService.sendAttributeEvent(event)),
-                    new UsersFacade<>(AssetRuleset.class, assetId, assetStorageService, notificationService, identityService),
-                    ruleset.getRealmId(),
-                    ruleset.getAssetId()
+                    assetProcessingService,
+                    notificationService,
+                    new RulesEngineId<>(ruleset.getRealmId(), assetId)
                 );
             });
 

@@ -112,7 +112,7 @@ import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
  * Protocol configuration (logical instance) is modified:
  * <ol>
  * <li>{@link #unlinkAttributes}</li>
- * <li>{@link #unlinkProtocolConfiguration)}</li>
+ * <li>{@link #unlinkProtocolConfiguration}</li>
  * <li>{@link #linkProtocolConfiguration}</li>
  * <li>{@link #linkAttributes}</li>
  * </ol>

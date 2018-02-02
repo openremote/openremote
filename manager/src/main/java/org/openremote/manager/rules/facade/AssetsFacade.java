@@ -21,6 +21,7 @@ package org.openremote.manager.rules.facade;
 
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.asset.ServerAsset;
+import org.openremote.manager.rules.RulesEngineId;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.BaseAssetQuery;
 import org.openremote.model.attribute.AttributeEvent;
@@ -40,14 +41,12 @@ import static org.openremote.model.asset.AssetQuery.TenantPredicate;
  */
 public class AssetsFacade<T extends Ruleset> extends Assets {
 
-    protected final Class<T> rulesetType;
-    protected final String rulesetId;
+    protected final RulesEngineId<T> rulesEngineId;
     protected final AssetStorageService assetStorageService;
     protected final Consumer<AttributeEvent> eventConsumer;
 
-    public AssetsFacade(Class<T> rulesetType, String rulesetId, AssetStorageService assetStorageService, Consumer<AttributeEvent> eventConsumer) {
-        this.rulesetType = rulesetType;
-        this.rulesetId = rulesetId;
+    public AssetsFacade(RulesEngineId<T> rulesEngineId, AssetStorageService assetStorageService, Consumer<AttributeEvent> eventConsumer) {
+        this.rulesEngineId = rulesEngineId;
         this.assetStorageService = assetStorageService;
         this.eventConsumer = eventConsumer;
     }
@@ -68,7 +67,7 @@ public class AssetsFacade<T extends Ruleset> extends Assets {
 
             @Override
             public Assets.RestrictedQuery tenant(TenantPredicate tenantPredicate) {
-                if (GlobalRuleset.class.isAssignableFrom(rulesetType))
+                if (GlobalRuleset.class.isAssignableFrom(rulesEngineId.getScope()))
                     return super.tenant(tenantPredicate);
                 throw new IllegalArgumentException("Overriding query restriction is not allowed in this rules scope");
             }
@@ -103,13 +102,18 @@ public class AssetsFacade<T extends Ruleset> extends Assets {
             }
         };
 
-        if (TenantRuleset.class.isAssignableFrom(rulesetType)) {
-            query.tenant = new TenantPredicate(rulesetId);
+        if (TenantRuleset.class.isAssignableFrom(rulesEngineId.getScope())) {
+            query.tenant = new TenantPredicate(
+                rulesEngineId.getRealmId().orElseThrow(() -> new IllegalArgumentException("Realm ID missing: " + rulesEngineId))
+            );
         }
-        if (AssetRuleset.class.isAssignableFrom(rulesetType)) {
-            ServerAsset restrictedAsset = assetStorageService.find(rulesetId, true);
+        if (AssetRuleset.class.isAssignableFrom(rulesEngineId.getScope())) {
+            ServerAsset restrictedAsset = assetStorageService.find(
+                rulesEngineId.getAssetId().orElseThrow(() -> new IllegalStateException("Asset ID missing: " + rulesEngineId)),
+                true
+            );
             if (restrictedAsset == null) {
-                throw new IllegalStateException("Asset is no longer available for this deployment: " + rulesetId);
+                throw new IllegalStateException("Asset is no longer available: " + rulesEngineId);
             }
             query.path = new PathPredicate(restrictedAsset.getPath());
         }

@@ -76,6 +76,15 @@ public class AssetQueryPredicate implements Predicate<AssetState> {
             // TODO Would require meta items in AbstractAssetUpdate
             throw new UnsupportedOperationException("Restriction by attribute meta not implemented in rules matching");
         }
+
+        if (query.select != null) {
+            throw new UnsupportedOperationException("Projection with 'select' not supported in rules matching");
+        }
+
+        if (query.orderBy != null) {
+            throw new UnsupportedOperationException("Sorting with 'orderBy' not supported in rules matching");
+        }
+
         return true;
     }
 

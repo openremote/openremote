@@ -28,7 +28,7 @@ import java.util.List;
 public class RulesBuilder {
 
     public interface Condition {
-        boolean evaluate(RulesFacts facts);
+        Object evaluate(RulesFacts facts);
     }
 
     public interface Action {
@@ -84,7 +84,19 @@ public class RulesBuilder {
                 .name(builder.name)
                 .description(builder.description)
                 .priority(builder.priority)
-                .when(facts -> builder.condition.evaluate((RulesFacts) facts))
+                .when(facts -> {
+                    Object result;
+                    try {
+                        result = builder.condition.evaluate((RulesFacts) facts);
+                    } catch (Exception ex) {
+                        throw new RuntimeException("Error evaluating condition of rule '" + builder.name + "': " + ex.getMessage(), ex);
+                    }
+                    if (result instanceof Boolean) {
+                        return (boolean)builder.condition.evaluate((RulesFacts) facts);
+                    } else {
+                        throw new IllegalArgumentException("Error evaluating condition of rule '" + builder.name + "': result is not boolean but " + result);
+                    }
+                })
                 .then(facts -> builder.action.execute((RulesFacts) facts)).build();
             rules.add(rule);
         }
