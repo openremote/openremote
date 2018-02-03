@@ -248,16 +248,15 @@ public interface AssetResource {
     @SuppressWarnings("unusable-by-js")
     Asset[] queryPublicAssets(@BeanParam RequestParams requestParams, AssetQuery query);
 
-// TODO: Disabled for now because in jsapi this hides the post method and doesn't work
-//    /**
-//     * Retrieve public assets using an {@link AssetQuery} as a JSON serialized query parameter.
-//     * <p>
-//     * Allows un-authenticated 'public' users to query public assets for a realm.
-//     */
-//    @GET
-//    @Path("public/query")
-//    @Produces(APPLICATION_JSON)
-//    @SuccessStatusCode(200)
-//    @SuppressWarnings("unusable-by-js")
-//    Asset[] queryPublicAssets(@BeanParam RequestParams requestParams, @QueryParam("q") String q);
+    /**
+     * Retrieve public assets using an {@link AssetQuery} as a JSON serialized query parameter.
+     * <p>
+     * Allows un-authenticated 'public' users to query public assets for a realm.
+     */
+    @GET
+    @Path("public/query")
+    @Produces(APPLICATION_JSON)
+    @SuccessStatusCode(200)
+    @SuppressWarnings("unusable-by-js")
+    Asset[] getPublicAssets(@BeanParam RequestParams requestParams, @QueryParam("q") String q);
 }

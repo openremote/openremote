@@ -38,10 +38,12 @@ import org.openremote.model.value.ValueException;
 import org.openremote.model.value.Values;
 
 import javax.ws.rs.WebApplicationException;
+import java.io.IOException;
 import java.util.*;
 import java.util.logging.Logger;
 
 import static javax.ws.rs.core.Response.Status.*;
+import static org.openremote.container.Container.JSON;
 import static org.openremote.model.asset.AssetQuery.*;
 import static org.openremote.model.attribute.AttributeEvent.Source.CLIENT;
 import static org.openremote.model.util.TextUtil.isNullOrEmpty;
@@ -500,14 +502,14 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
         }
     }
 
-//    @Override
-//    public Asset[] queryPublicAssets(RequestParams requestParams, String q) {
-//        AssetQuery assetQuery;
-//        try {
-//            assetQuery = JSON.readValue(q, AssetQuery.class);
-//        } catch (IOException ex) {
-//            throw new WebApplicationException("Error parsing query parameter 'q' as JSON object", BAD_REQUEST);
-//        }
-//        return queryPublicAssets(requestParams, assetQuery);
-//    }
+    @Override
+    public Asset[] getPublicAssets(RequestParams requestParams, String q) {
+        AssetQuery assetQuery;
+        try {
+            assetQuery = JSON.readValue(q, AssetQuery.class);
+        } catch (IOException ex) {
+            throw new WebApplicationException("Error parsing query parameter 'q' as JSON object", BAD_REQUEST);
+        }
+        return queryPublicAssets(requestParams, assetQuery);
+    }
 }

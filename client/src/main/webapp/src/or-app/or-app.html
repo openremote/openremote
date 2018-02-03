@@ -31,7 +31,7 @@
                 border: 2px solid var(--theme-lightgreen);
                 border-top-color: var(--theme-black);
                 border-radius: 50%;
-                -webkit-animation: loadingspin 1s linear infinite;
+                -webkit-animation: loaderSpin 1s linear infinite;
                 animation: loaderSpin 1s linear infinite;
             }
 
@@ -81,7 +81,7 @@
                          error="{{error}}"></or-app-security>
 
         <template is="dom-if" if="[[error]]">
-            <div id="errorView">
+            <div id="errorView" class="or-Viewport">
                 <h1>[[defaultErrorMessage]]</h1>
                 <h5>[[error]]</h5>
             </div>
@@ -231,7 +231,7 @@
                     /**
                      * The listeners to notify before event service WebSocket is closed.
                      */
-                    webSocketCloseListeners : {
+                    webSocketCloseListeners: {
                         type: Array,
                         value: () => {
                             return [];
@@ -349,10 +349,10 @@
 
                 // Extract manager host URI based on where this component is hosted; it is assumed that the component
                 // is being hosted in a manager instance and that is the instance you want to connect to.
-                var managerHost = '';
-                var hostURI = this.importPath;
-                if ( hostURI ) {
-                    managerHost =  '//' + new URL(hostURI).host;
+                let managerHost = '';
+                let hostURI = this.importPath;
+                if (hostURI) {
+                    managerHost = '//' + new URL(hostURI).host;
                 }
                 this.managerHost = managerHost;
 
@@ -484,7 +484,7 @@
                     }
                 );
 
-                requests.configure(this.tenantRealm);
+                requests.configure(this.managerHost + "/" + this.tenantRealm);
 
                 this.set("requests", requests);
             }
@@ -495,7 +495,7 @@
                     return;
                 }
 
-                let serviceUrl = ("https:" === location.protocol ? "wss" : "ws") + "://" + location.hostname + ":" + location.port + "/websocket/events";
+                let serviceUrl = ("https:" === location.protocol ? "wss" : "ws") + ":" + this.managerHost + "/websocket/events";
                 this.getSecurity().authorizeUrl(serviceUrl, (authenticatedServiceUrl) => {
 
                     this.webSocket = new WebSocket(authenticatedServiceUrl);

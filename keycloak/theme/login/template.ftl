@@ -32,7 +32,7 @@
 
 <or-app>
 
-    <div class="flex layout vertical center-center">
+    <div class="flex layout vertical center-center or-Viewport">
 
         <div class="layout horizontal center-center" style="margin: 1em;">
             <a href="https://www.openremote.com/">

@@ -71,123 +71,129 @@
 <!-- ############## Required: One <or-app> should wrap your frontend, you can enforce login/authentication ############## -->
 <or-app login tenant-realm="customerA">
 
-    <!-- You can use your own styles or the OpenRemote styles and theme -->
-    <a href="#" class="myAppHeadline">
-        The OpenRemote console application of the <code>customerA</code> tenant
-    </a>
+    <!-- With or-Viewport you get OpenRemote default fonts -->
+    <div class="flex layout vertical or-Viewport">
 
-    <!-- This is a container element that has some padding and visual separation from other containers -->
-    <div class="or-MainContent">
+        <!-- You can use your own styles or the OpenRemote styles and theme -->
+        <a href="#" class="myAppHeadline">
+            The OpenRemote console application of the <code>customerA</code> tenant
+        </a>
 
-        <h3 style="color: var(--theme-red);">Note: This is under development and incomplete.</h3>
+        <!-- This is a container element that has some padding and visual separation from other containers -->
+        <div class="or-MainContent">
 
-        <p>
-            On your OpenRemote installation, edit the HTML content in
-            <code>deployment/manager/consoles/customerA/</code>.
-        </p>
-        <p>
-            You can duplicate the <code>customerA</code> directory to create new console applications for other
-            tenants/realms.
-        </p>
-        <p>
-            View the source in your web browser and follow the examples on this page to write your own OpenRemote
-            application, it's easy with <a href="https://www.webcomponents.org/">Web Components</a>.
-        </p>
-    </div>
+            <h3 style="color: var(--theme-red);">Note: This is under development and incomplete.</h3>
 
-    <!-- Switch to horizontal layout but flex vertical first and take as much vertical space as needed -->
-    <div class="flex layout horizontal">
+            <p>
+                On your OpenRemote installation, edit the HTML content in
+                <code>deployment/manager/consoles/customerA/</code>.
+            </p>
+            <p>
+                You can duplicate the <code>customerA</code> directory to create new console applications for other
+                tenants/realms.
+            </p>
+            <p>
+                View the source in your web browser and follow the examples on this page to write your own OpenRemote
+                application, it's easy with <a href="https://www.webcomponents.org/">Web Components</a>.
+            </p>
+        </div>
 
-        <!-- Flex and take as much horizontal space as possible -->
-        <div class="flex layout vertical">
+        <!-- Switch to horizontal layout but flex vertical first and take as much vertical space as needed -->
+        <div class="flex layout horizontal">
 
-            <!-- Execute an asset query and show a nice scrollable list -->
-            <or-asset-list class="myAssetList flex or-MainContent or-FormList"
-                           select-include="ALL_EXCEPT_PATH_AND_ATTRIBUTES"
-                           asset-type="urn:openremote:asset:residence">
+            <!-- Flex and take as much horizontal space as possible -->
+            <div class="flex layout vertical">
 
-                <!-- Render each asset with a template -->
-                <template>
-                    <div class="or-FormListItem layout horizontal center justified">
-                        <div>Residence: {{asset.name}}</div>
-                        <div>Parent: {{asset.parentName}}</div>
-                        <div>Created On: {{asset.createdOn}}</div>
-                    </div>
-                </template>
+                <!-- Execute an asset query and show a nice scrollable list -->
+                <or-asset-list class="myAssetList flex or-MainContent or-FormList"
+                               select-include="ALL_EXCEPT_PATH_AND_ATTRIBUTES"
+                               asset-type="urn:openremote:asset:residence">
 
-            </or-asset-list>
+                    <!-- Render each asset with a template -->
+                    <template>
+                        <div class="or-FormListItem layout horizontal center justified">
+                            <div>Residence: {{asset.name}}</div>
+                            <div>Parent: {{asset.parentName}}</div>
+                            <div>Created On: {{asset.createdOn}}</div>
+                        </div>
+                    </template>
 
-            <!-- Execute an asset query and show a nice scrollable list -->
-            <or-asset-list class="myAssetList flex or-MainContent or-FormList"
-                           select-include="ALL_EXCEPT_PATH_AND_ATTRIBUTES"
-                           asset-type="urn:openremote:asset:room">
+                </or-asset-list>
 
-                <!-- Render each asset with a template -->
-                <template>
-                    <div class="or-FormListItem layout horizontal center justified">
-                        <div>Room: {{asset.name}}</div>
-                        <div>Parent: {{asset.parentName}}</div>
-                        <div>Created On: {{asset.createdOn}}</div>
-                    </div>
-                </template>
+                <!-- Execute an asset query and show a nice scrollable list -->
+                <or-asset-list class="myAssetList flex or-MainContent or-FormList"
+                               select-include="ALL_EXCEPT_PATH_AND_ATTRIBUTES"
+                               asset-type="urn:openremote:asset:room">
 
-            </or-asset-list>
+                    <!-- Render each asset with a template -->
+                    <template>
+                        <div class="or-FormListItem layout horizontal center justified">
+                            <div>Room: {{asset.name}}</div>
+                            <div>Parent: {{asset.parentName}}</div>
+                            <div>Created On: {{asset.createdOn}}</div>
+                        </div>
+                    </template>
+
+                </or-asset-list>
+
+            </div>
+
+            <!-- Flex and take as much horizontal space as possible, show scrollbars if content doesn't fit. -->
+            <div class="flex or-MainContent scroll">
+                <!-- Execute AssetQuery and subscribe for attribute changes -->
+                <or-asset type="room" id="blabla">
+
+                    <!-- Bind asset attributes to elements -->
+                    <p>
+                        Temperature of the room is: <span data-attribute="currentTemp"></span>
+                    </p>
+
+                    <form>
+                        Set desired temperature:
+                        <input data-attribute="setTemp" data-validate>
+                        <submit data-asset-action></submit>
+                        <!-- Defaults to 'update' as this is what restricted users can do -->
+                    </form>
+
+                    <!-- Show hide elements based on boolean asset attribute -->
+                    <p data-visible="humidityBool">
+                        Humidity too high!
+                    </p>
+                    <p data-attached="co2Bool">
+                        Too much CO2!
+                    </p>
+                </or-asset>
+            </div>
 
         </div>
 
-        <!-- Flex and take as much horizontal space as possible, show scrollbars if content doesn't fit. -->
-        <div class="flex or-MainContent scroll">
-            <!-- Execute AssetQuery and subscribe for attribute changes -->
-            <or-asset type="room" id="blabla">
+        <div class="or-MainContent">
+            <div class="layout horizontal or-FormGroup">
+                <div class="or-FormField">
 
-                <!-- Bind asset attributes to elements -->
-                <p>
-                    Temperature of the room is: <span data-attribute="currentTemp"></span>
-                </p>
-
-                <form>
-                    Set desired temperature:
-                    <input data-attribute="setTemp" data-validate>
-                    <submit data-asset-action></submit>
-                    <!-- Defaults to 'update' as this is what restricted users can do -->
-                </form>
-
-                <!-- Show hide elements based on boolean asset attribute -->
-                <p data-visible="humidityBool">
-                    Humidity too high!
-                </p>
-                <p data-attached="co2Bool">
-                    Too much CO2!
-                </p>
-            </or-asset>
-        </div>
-
-    </div>
-
-    <div class="or-MainContent">
-        <div class="layout horizontal or-FormGroup">
-            <div class="or-FormField">
-
-                <button class="or-FormControl or-FormButton or-PushButton"
-                        onclick="openremote.INSTANCE.toasts.showToast(
+                    <button class="or-FormControl or-FormButton or-PushButton"
+                            onclick="openremote.INSTANCE.toasts.showToast(
                             new openremote.toast.Toast(
                                 openremote.toast.Toast.Type.SUCCESS,
                                 'Welcome ' + openremote.INSTANCE.user + ', on ' + openremote.INSTANCE.tenantRealm + '. It is ' + new Date() + '.',
                                 3000
                             )
                         )">Show a toast
-                </button>
+                    </button>
 
-                <button class="or-FormControl or-FormButton or-PushButton"
-                        onclick="document.querySelectorAll('.myAssetList').forEach((assetList) => {assetList.executeQuery()})">Refresh asset lists
-                </button>
+                    <button class="or-FormControl or-FormButton or-PushButton"
+                            onclick="document.querySelectorAll('.myAssetList').forEach((assetList) => {assetList.executeQuery()})">
+                        Refresh asset lists
+                    </button>
 
-                <button class="or-FormControl or-FormButtonDanger or-PushButton"
-                        onclick="document.querySelector('or-app').logout()">Logout
-                </button>
+                    <button class="or-FormControl or-FormButtonDanger or-PushButton"
+                            onclick="document.querySelector('or-app').logout()">Logout
+                    </button>
 
+                </div>
             </div>
         </div>
+
     </div>
 
 </or-app>

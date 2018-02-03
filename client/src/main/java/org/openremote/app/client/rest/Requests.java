@@ -71,9 +71,8 @@ public class Requests {
         this.constraintViolationReader = constraintViolationReader;
     }
 
-    public void configure(String realm) {
-        Location location = Browser.getWindow().getLocation();
-        REST.apiURL = "//" + location.getHostname() + ":" + location.getPort() + "/" + realm;
+    public void configure(String apiUrl) {
+        REST.apiURL = apiUrl;
         REST.loglevel = LOG.isLoggable(Level.FINEST) ? 1 : 0;
     }
 
