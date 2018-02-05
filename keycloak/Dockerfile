@@ -119,7 +119,7 @@ RUN java -jar /usr/share/java/saxon.jar \
 
 RUN rm /opt/jboss/keycloak/*.xsl
 
-HEALTHCHECK --interval=3s --timeout=3s --start-period=2s --retries=30 CMD curl --fail http://localhost:8080/auth || exit 1
+HEALTHCHECK --interval=3s --timeout=3s --start-period=2s --retries=30 CMD curl --fail --silent http://localhost:8080/auth || exit 1
 
 EXPOSE 8080
 
