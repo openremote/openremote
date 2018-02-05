@@ -9,10 +9,10 @@ Pod::Spec.new do |s|
   s.name = "ORLib"
   s.summary = "The OpenRemote library to create console apps."
   s.requires_arc = true
-  s.version = '1.0.2'
+  s.version = '1.0.3'
   s.authors = 'OpenRemote'
   s.homepage = "http://www.openremote.com/community/"
-  s.source = { :git => 'https://github.com/openremote/openremote.git', :tag => s.version.to_s }
+  s.source = { :git => 'https://github.com/openremote/openremote.git', :tag => 'cocoapod' + s.version.to_s }
   s.dependency 'Firebase/Core', '4.6.0'
   s.dependency 'Firebase/Messaging', '4.6.0'
   s.source_files = 'console/iOS/ORLib/ORLib/*.{swift}'
