@@ -189,7 +189,7 @@ public class RulesetResourceImpl extends ManagerWebResource implements RulesetRe
     }
 
     @Override
-    public void updateTenantRuleset(@BeanParam RequestParams requestParams, Long id) {
+    public void deleteTenantRuleset(@BeanParam RequestParams requestParams, Long id) {
         TenantRuleset ruleset = rulesetStorageService.findById(TenantRuleset.class, id);
         if (ruleset == null) {
             return;

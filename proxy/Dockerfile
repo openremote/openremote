@@ -55,7 +55,7 @@ ADD cli.ini /root/.config/letsencrypt/
 
 EXPOSE 80 443
 
-HEALTHCHECK --interval=3s --timeout=3s --start-period=2s --retries=30 CMD curl --fail http://localhost:80 || exit 1
+HEALTHCHECK --interval=3s --timeout=3s --start-period=2s --retries=30 CMD curl --fail --silent http://localhost:80 || exit 1
 
 COPY entrypoint.sh /
 RUN chmod +x /entrypoint.sh
