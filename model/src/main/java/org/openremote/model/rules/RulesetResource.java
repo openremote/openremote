@@ -174,7 +174,7 @@ public interface RulesetResource {
     @SuccessStatusCode(204)
     @RolesAllowed({"write:rules"})
     @SuppressWarnings("unusable-by-js")
-    void updateTenantRuleset(@BeanParam RequestParams requestParams, @PathParam("id") Long id);
+    void deleteTenantRuleset(@BeanParam RequestParams requestParams, @PathParam("id") Long id);
 
     /* ################################################################################################# */
 

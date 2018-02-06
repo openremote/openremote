@@ -124,7 +124,7 @@ public class TenantRulesEditorActivity
 
     @Override
     protected Consumer<RequestParams<Void, Void>> deleteRequestConsumer() {
-        return params -> rulesetResource.updateTenantRuleset(params, rulesetId);
+        return params -> rulesetResource.deleteTenantRuleset(params, rulesetId);
     }
 
     @Override
