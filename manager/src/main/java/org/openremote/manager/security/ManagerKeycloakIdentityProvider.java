@@ -48,7 +48,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
 
-import static org.openremote.manager.util.JsonUtil.convert;
+import static org.openremote.container.util.JsonUtil.convert;
 import static org.openremote.model.Constants.*;
 
 public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider implements ManagerIdentityProvider {

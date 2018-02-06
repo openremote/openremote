@@ -58,8 +58,11 @@ public abstract class WebService implements ContainerService {
 
     private static final Logger LOG = Logger.getLogger(WebService.class.getName());
 
+    // Change this to 0.0.0.0 to bind on all interfaces, enabling
+    // access of the manager service from other devices in your LAN
     public static final String WEBSERVER_LISTEN_HOST = "WEBSERVER_LISTEN_HOST";
-    public static final String WEBSERVER_LISTEN_HOST_DEFAULT = "0.0.0.0";
+    public static final String WEBSERVER_LISTEN_HOST_DEFAULT = "127.0.0.1";
+
     public static final String WEBSERVER_LISTEN_PORT = "WEBSERVER_LISTEN_PORT";
     public static final int WEBSERVER_LISTEN_PORT_DEFAULT = 8080;
     public static final String WEBSERVER_DUMP_REQUESTS = "WEBSERVER_DUMP_REQUESTS";

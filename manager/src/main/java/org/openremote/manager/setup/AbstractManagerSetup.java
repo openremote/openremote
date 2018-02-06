@@ -362,13 +362,13 @@ public abstract class AbstractManagerSetup implements Setup {
             List<AssetAttribute> attributes = new ArrayList<>();
             for (DayOfWeek dayOfWeek : DayOfWeek.values()) {
                 // "MONDAY" => "Monday"
-                String dayName = dayOfWeek.name().substring(0, 1) + dayOfWeek.name().substring(1).toLowerCase(Locale.ROOT);
+                String dayOfWeekLabel = dayOfWeek.name().substring(0, 1) + dayOfWeek.name().substring(1).toLowerCase(Locale.ROOT);
                 // "0 0 7 ? *" => "0 0 7 ? * MON *"
                 String timePattern = startTime + " " + dayOfWeek.name().substring(0, 3).toUpperCase(Locale.ROOT) + " *";
                 attributes.add(
-                    initTimerConfiguration(new AssetAttribute(attributeName + dayName), timePattern,
+                    initTimerConfiguration(new AssetAttribute(attributeName + dayOfWeek.name()), timePattern,
                         new AttributeState(apartment.getId(), attributeName, Values.create("REQUEST_START")))
-                        .addMeta(new MetaItem(LABEL, Values.create(attributeLabel + " trigger " + dayName)))
+                        .addMeta(new MetaItem(LABEL, Values.create(attributeLabel + " trigger " + dayOfWeekLabel)))
                 );
             }
             return attributes.toArray(new AssetAttribute[attributes.size()]);
@@ -452,24 +452,24 @@ public abstract class AbstractManagerSetup implements Setup {
             );
             for (DayOfWeek dayOfWeek : DayOfWeek.values()) {
                 // "MONDAY" => "Monday"
-                String dayName = dayOfWeek.name().substring(0, 1) + dayOfWeek.name().substring(1).toLowerCase(Locale.ROOT);
+                String dayOfWeekLabel = dayOfWeek.name().substring(0, 1) + dayOfWeek.name().substring(1).toLowerCase(Locale.ROOT);
                 apartment.addAttributes(
                     new AssetAttribute(scene.attributeName + "Time" + dayOfWeek.name(), AttributeType.STRING)
                         .setMeta(
-                            new MetaItem(LABEL, Values.create(scene.attributeLabel + " time " + dayName)),
+                            new MetaItem(LABEL, Values.create(scene.attributeLabel + " time " + dayOfWeekLabel)),
                             new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)),
                             new MetaItem(ACCESS_RESTRICTED_WRITE, Values.create(true)),
                             new MetaItem(RULE_STATE, Values.create(true)),
                             new MetaItem(META_TIMER_VALUE_LINK, Values.create(TimerValue.TIME.toString())),
-                            new MetaItem(AGENT_LINK, new AttributeRef(agent.getId(), scene.attributeName + dayName).toArrayValue())
+                            new MetaItem(AGENT_LINK, new AttributeRef(agent.getId(), scene.attributeName + dayOfWeek.name()).toArrayValue())
                         ),
                     new AssetAttribute(scene.attributeName + "Enabled" + dayOfWeek.name(), AttributeType.BOOLEAN)
                         .setMeta(
-                            new MetaItem(LABEL, Values.create(scene.attributeLabel + " enabled " + dayName)),
+                            new MetaItem(LABEL, Values.create(scene.attributeLabel + " enabled " + dayOfWeekLabel)),
                             new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)),
                             new MetaItem(ACCESS_RESTRICTED_WRITE, Values.create(true)),
                             new MetaItem(META_TIMER_VALUE_LINK, Values.create(TimerValue.ENABLED.toString())),
-                            new MetaItem(AGENT_LINK, new AttributeRef(agent.getId(), scene.attributeName + dayName).toArrayValue())
+                            new MetaItem(AGENT_LINK, new AttributeRef(agent.getId(), scene.attributeName + dayOfWeek.name()).toArrayValue())
                         )
                 );
             }

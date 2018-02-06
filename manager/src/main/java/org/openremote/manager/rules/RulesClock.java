@@ -23,9 +23,12 @@ import org.openremote.container.timer.TimerService;
 import org.openremote.model.rules.TemporaryFact;
 import org.openremote.model.util.TimeUtil;
 
+import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalUnit;
 import java.util.function.Predicate;
 
 /**
@@ -56,6 +59,18 @@ public class RulesClock {
     public <T extends TemporaryFact> Predicate<T> last(String timeWindow) {
         double timeWindowStart = getTimestamp() - TimeUtil.parseTimeString(timeWindow);
         return fact -> timeWindowStart <= fact.getTimestamp();
+    }
+
+    public DayOfWeek getDayOfWeek() {
+        return getTime().getDayOfWeek();
+    }
+
+    public LocalDateTime getYesterday() {
+        return getTime().minus(1, ChronoUnit.DAYS);
+    }
+
+    public LocalDateTime getTomorrow() {
+        return getTime().plus(1, ChronoUnit.DAYS);
     }
 
     @Override

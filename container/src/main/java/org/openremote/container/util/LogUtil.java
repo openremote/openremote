@@ -31,6 +31,9 @@ public class LogUtil {
 
     public static final String LOGGING_CONFIG_FILE = "LOGGING_CONFIG_FILE";
 
+    protected LogUtil() {
+    }
+
     /**
      * If system property <code>java.util.logging.config.file</code> has not been set, try to load the
      * logging configuration specified in environment variable <code>LOGGING_CONFIG_FILE</code> as a file.

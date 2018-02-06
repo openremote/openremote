@@ -185,9 +185,9 @@ services:
       # the rules engine.
       # SCHEDULED_TASKS_THREADS_MAX: 4
 
-      # When asset attributes are enabled for rule events, each value update will be an event fact
-      # in a rules. You can set the global default expiration time span, after which rule event
-      # facts are retracted automatically. Default is 1 hour.
+      # When asset attributes are enabled for rule events, each value update will be a temporary
+      # fact in rules. You can set the global default expiration time span used when no other
+      # attribute-level configuration exists. Default is 1 hour.
       # RULE_EVENT_EXPIRES: '1h'
 
       # The identity provider implementation to use for managing user identities, roles, and

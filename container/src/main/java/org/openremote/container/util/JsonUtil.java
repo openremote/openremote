@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.util;
+package org.openremote.container.util;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -27,11 +27,6 @@ public class JsonUtil {
 
     protected JsonUtil() {}
 
-    /**
-     * For some reason the GWT compiler no longer likes this being in the {@link org.openremote.model.util.JsonUtil}
-     * class; no idea why as it used to compile fine with this in there???
-     */
-    // TODO: Figure out why this won't compile when located in the model JsonUtil class and then remove this class
     @SuppressWarnings("unchecked")
     public static <T> T convert(ObjectMapper objectMapper, Class<T> targetType, Object object) {
         Map<String, Object> props = objectMapper.convertValue(object, Map.class);
