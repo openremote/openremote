@@ -157,6 +157,10 @@ services:
       KEYCLOAK_HOST: keycloak
       KEYCLOAK_PORT: 8080
 
+      # The service-internal webservice interface binding, bind to all interfaces
+      # when running  in container. Default is 127.0.0.1.
+      WEBSERVER_LISTEN_HOST: 0.0.0.0
+
       # Optional: Console applications can register for push notifications through FCM.
       # NOTIFICATION_FIREBASE_URL: https://fcm.googleapis.com/fcm/send
       # NOTIFICATION_FIREBASE_API_KEY = '...'
