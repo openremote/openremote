@@ -53,9 +53,9 @@ services:
       context: ../keycloak
       dockerfile: dev.Dockerfile
     image: openremote/keycloak_dev:latest
-    # Access directly if needed
+    # Access directly if needed on localhost
     ports:
-      - "8081:8080"
+      - "127.0.0.1:8081:8080"
     volumes:
       - ../keycloak/theme:/opt/jboss/keycloak/themes/openremote
     depends_on:
@@ -66,8 +66,8 @@ services:
     extends:
       file: deploy.yml
       service: postgresql
-    # Access directly if needed
+    # Access directly if needed on localhost
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - postgresql-data:/data
