@@ -25,7 +25,7 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.MetaItemDescriptor;
-import org.openremote.model.value.Value;
+import org.openremote.model.value.*;
 
 import java.util.Arrays;
 import java.util.Locale;
@@ -35,6 +35,82 @@ import java.util.Locale;
  */
 @SuppressWarnings("unchecked")
 public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> {
+
+    public static final ArrayValue queriesAsValue(BaseAssetQuery... queries) {
+        ArrayValue arrayValue = Values.createArray();
+
+        for (BaseAssetQuery query : queries) {
+            ObjectValue objectValue = Values.createObject();
+            if (query.select != null) {
+                objectValue.put("select", query.select.toModelValue());
+            }
+            if (query.type != null) {
+                objectValue.put("type", query.type.toModelValue());
+            }
+            if (query.attribute != null && query.attribute.length > 0) {
+                ArrayValue attributeArray = Values.createArray();
+                for (AttributePredicate attributePredicate : query.attribute) {
+                    attributeArray.add(attributePredicate.toModelValue());
+                }
+                objectValue.put("attribute", attributeArray);
+            }
+            arrayValue.add(objectValue);
+        }
+        return arrayValue;
+    }
+
+    public static final BaseAssetQuery objectValueAsQuery(ObjectValue objectValue) {
+        AssetQuery assetQuery = new AssetQuery();
+
+        objectValue.getObject("select").ifPresent(selectValue -> {
+            assetQuery.select = Select.fromObjectValue(selectValue);
+        });
+
+        objectValue.getObject("type").ifPresent(typeValue -> {
+            assetQuery.type = StringPredicate.fromObjectValue(typeValue);
+        });
+
+        objectValue.getArray("attribute").ifPresent(attributeValue -> {
+            assetQuery.attribute = attributeValue.stream()
+                .map(val -> (ObjectValue) val)
+                .map(attributePredicateValue -> {
+                    AttributePredicate attributePredicate = new AttributePredicate();
+
+                    attributePredicate.name = StringPredicate.fromObjectValue(attributePredicateValue
+                        .getObject("name")
+                        .orElseThrow(() -> new IllegalArgumentException("StringPredicate missing for name in AttributePredicate"))
+                    );
+
+                    ObjectValue predicateValue = attributePredicateValue
+                        .getObject("value")
+                        .orElseThrow(() -> new IllegalArgumentException("value missing in AttributePredicate"));
+
+                    predicateValue.getString("predicateType").ifPresent(predicateType -> {
+                        switch (predicateType) {
+                            case "StringPredicate":
+                                attributePredicate.value = StringPredicate.fromObjectValue(predicateValue);
+                                break;
+                            case "BooleanPredicate":
+                                attributePredicate.value = BooleanPredicate.fromObjectValue(predicateValue);
+                                break;
+                            case "StringArrayPredicate":
+                                attributePredicate.value = StringArrayPredicate.fromObjectValue(predicateValue);
+                                break;
+                            case "DateTimePredicate":
+                                attributePredicate.value = DateTimePredicate.fromObjectValue(predicateValue);
+                                break;
+                            case "NumberPredicate":
+                                attributePredicate.value = NumberPredicate.fromObjectValue(predicateValue);
+                                break;
+                        }
+                    });
+                    return attributePredicate;
+                })
+                .toArray(AttributePredicate[]::new);
+        });
+
+        return assetQuery;
+    }
 
     public enum Include {
         ALL_EXCEPT_PATH_AND_ATTRIBUTES,
@@ -99,6 +175,35 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> {
         public Select filterAttributes(String... attributeNames) {
             this.attributeNames = attributeNames;
             return this;
+        }
+
+        public static Select fromObjectValue(ObjectValue objectValue) {
+            Select select = new Select();
+            objectValue.getString("include").ifPresent(include -> {
+                select.include = Include.valueOf(include);
+            });
+            objectValue.getString("access").ifPresent(access -> {
+                select.access = Access.valueOf(access);
+            });
+            objectValue.getBoolean("recursive").ifPresent(recursive -> {
+                select.recursive = recursive;
+            });
+            objectValue.getArray("attributeNames").ifPresent(attributeNames -> {
+                select.attributeNames = attributeNames.stream()
+                    .map(value -> (StringValue) value)
+                    .map(StringValue::getString)
+                    .toArray(String[]::new);
+            });
+            return select;
+        }
+
+        public ObjectValue toModelValue() {
+            ObjectValue objectValue = Values.createObject();
+            objectValue.put("include", Values.create(include.toString()));
+            objectValue.put("recursive", Values.create(recursive));
+            objectValue.put("access", Values.create(access.toString()));
+            objectValue.put("attributeNames", Values.createArray().addAll(Arrays.stream(attributeNames).map(Values::create).toArray(Value[]::new)));
+            return objectValue;
         }
 
         @Override
@@ -166,9 +271,16 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> {
         property = "predicateType"
     )
     public interface ValuePredicate<T> {
+        ObjectValue toModelValue();
     }
 
     public static class ValueNotEmptyPredicate implements ValuePredicate<Value> {
+        @Override
+        public ObjectValue toModelValue() {
+            ObjectValue objectValue = Values.createObject();
+            objectValue.put("predicateType", "ValueNotEmptyPredicate");
+            return objectValue;
+        }
     }
 
     public static class StringPredicate implements ValuePredicate<String> {
@@ -216,6 +328,29 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> {
             return s;
         }
 
+        public ObjectValue toModelValue() {
+            ObjectValue objectValue = Values.createObject();
+            objectValue.put("predicateType", "StringPredicate");
+            objectValue.put("match", Values.create(match.toString()));
+            objectValue.put("caseSensitive", Values.create(caseSensitive));
+            objectValue.put("value", Values.create(value));
+            return objectValue;
+        }
+
+        public static StringPredicate fromObjectValue(ObjectValue objectValue) {
+            StringPredicate stringPredicate = new StringPredicate();
+            objectValue.getString("match").ifPresent(match -> {
+                stringPredicate.match = Match.valueOf(match);
+            });
+            objectValue.getBoolean("caseSensitive").ifPresent(caseSensitive -> {
+                stringPredicate.caseSensitive = caseSensitive;
+            });
+            objectValue.getString("value").ifPresent(value -> {
+                stringPredicate.value = value;
+            });
+            return stringPredicate;
+        }
+
         @Override
         public String toString() {
             return getClass().getSimpleName() + "{" +
@@ -247,6 +382,22 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> {
                 "predicate=" + value +
                 '}';
         }
+
+        @Override
+        public ObjectValue toModelValue() {
+            ObjectValue objectValue = Values.createObject();
+            objectValue.put("predicateType", "BooleanPredicate");
+            objectValue.put("value", Values.create(value));
+            return objectValue;
+        }
+
+        public static BooleanPredicate fromObjectValue(ObjectValue objectValue) {
+            BooleanPredicate booleanPredicate = new BooleanPredicate();
+            booleanPredicate.value = objectValue
+                .getBoolean("value")
+                .orElseThrow(() -> new IllegalArgumentException("value missing for BooleanPredicate"));
+            return booleanPredicate;
+        }
     }
 
     public static class StringArrayPredicate implements ValuePredicate<String[]> {
@@ -262,6 +413,30 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> {
         public StringArrayPredicate predicates(StringPredicate... predicates) {
             this.predicates = predicates;
             return this;
+        }
+
+        @Override
+        public ObjectValue toModelValue() {
+            ObjectValue objectValue = Values.createObject();
+            objectValue.put("predicateType", "StringArrayPredicate");
+            ArrayValue valuesArray = Values.createArray();
+            for (StringPredicate stringPredicate : predicates) {
+                valuesArray.add(stringPredicate.toModelValue());
+            }
+            objectValue.put("value", valuesArray);
+            return objectValue;
+        }
+
+        public static StringArrayPredicate fromObjectValue(ObjectValue objectValue) {
+            StringArrayPredicate stringArrayPredicate = new StringArrayPredicate();
+            objectValue.getArray("value").ifPresent(arrayValue -> {
+                ;
+                stringArrayPredicate.predicates = objectValue.stream()
+                    .map(val -> (ObjectValue) val)
+                    .map(StringPredicate::fromObjectValue)
+                    .toArray(StringPredicate[]::new);
+            });
+            return stringArrayPredicate;
         }
 
         @Override
@@ -311,6 +486,34 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> {
             this.operator = Operator.BETWEEN;
             this.rangeValue = beforeValue;
             return this;
+        }
+
+        public ObjectValue toModelValue() {
+            ObjectValue objectValue = Values.createObject();
+            objectValue.put("predicateType", "StringPredicate");
+            objectValue.put("dateFormat", Values.create(dateFormat));
+            objectValue.put("value", Values.create(value));
+            objectValue.put("rangeValue", Values.create(rangeValue));
+            objectValue.put("operator", Values.create(operator.toString()));
+            return objectValue;
+        }
+
+        public static DateTimePredicate fromObjectValue(ObjectValue objectValue) {
+            DateTimePredicate dateTimePredicate = new DateTimePredicate();
+
+            objectValue.getString("dateFormat").ifPresent(format -> {
+                dateTimePredicate.dateFormat = format;
+            });
+            objectValue.getString("value").ifPresent(value -> {
+                dateTimePredicate.value = value;
+            });
+            objectValue.getString("rangeValue").ifPresent(rangeValue -> {
+                dateTimePredicate.rangeValue = rangeValue;
+            });
+            objectValue.getString("operator").ifPresent(operator -> {
+                dateTimePredicate.operator = Operator.valueOf(operator);
+            });
+            return dateTimePredicate;
         }
 
         @Override
@@ -374,6 +577,15 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> {
             return this;
         }
 
+        public ObjectValue toModelValue() {
+            ObjectValue objectValue = Values.createObject();
+            objectValue.put("predicateType", "StringPredicate");
+            objectValue.put("value", Values.create(value));
+            objectValue.put("rangeValue", Values.create(rangeValue));
+            objectValue.put("operator", Values.create(operator.toString()));
+            return objectValue;
+        }
+
         @Override
         public String toString() {
             return getClass().getSimpleName() + "{" +
@@ -382,6 +594,20 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> {
                 ", operator=" + operator +
                 ", numberType=" + numberType +
                 '}';
+        }
+
+        public static NumberPredicate fromObjectValue(ObjectValue objectValue) {
+            NumberPredicate numberPredicate = new NumberPredicate();
+            objectValue.getNumber("value").ifPresent(value -> {
+                numberPredicate.value = value;
+            });
+            objectValue.getNumber("rangeValue").ifPresent(rangeValue -> {
+                numberPredicate.rangeValue = rangeValue;
+            });
+            objectValue.getString("operator").ifPresent(operator -> {
+                numberPredicate.operator = Operator.valueOf(operator);
+            });
+            return numberPredicate;
         }
     }
 
@@ -519,6 +745,13 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> {
         public AttributePredicate value(ValuePredicate value) {
             this.value = value;
             return this;
+        }
+
+        public ObjectValue toModelValue() {
+            ObjectValue objectValue = Values.createObject();
+            objectValue.put("name", name.toModelValue());
+            objectValue.put("value", value.toModelValue());
+            return objectValue;
         }
 
         @Override
@@ -669,7 +902,7 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> {
         public RadialLocationPredicate(@JsonProperty("radius") int radius,
                                        @JsonProperty("lat") double lat,
                                        @JsonProperty("lng") double lng) {
-                this(radius, lat, lng, false);
+            this(radius, lat, lng, false);
         }
 
         public RadialLocationPredicate negate() {
