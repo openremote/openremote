@@ -68,7 +68,8 @@ public class AssetDatapointService implements ContainerService, AssetUpdateProce
                                       Source source) throws AssetProcessingException {
         if (Datapoint.isDatapointsCapable(attribute)
             && attribute.isStoreDatapoints()
-            && attribute.getStateEvent().isPresent()) {
+            && attribute.getStateEvent().isPresent()
+            && attribute.getStateEvent().get().getValue().isPresent()) { // TODO Currently can't store datapoints with null value
             LOG.finest("Storing datapoint for: " + attribute);
             AssetDatapoint assetDatapoint = new AssetDatapoint(attribute.getStateEvent().get());
             em.persist(assetDatapoint);

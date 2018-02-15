@@ -38,7 +38,7 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
         when: "a simulated sensor receives a new value"
         advancePseudoClock(10, SECONDS, container)
         def datapoint1ExpectedTimestamp = getClockTimeOf(container)
-        simulatorProtocol.putValue(managerDemoSetup.thingId, "light1PowerConsumption", Values.create(13.3))
+        simulatorProtocol.putValue(managerDemoSetup.thingId, "light1PowerConsumption", Values.create(13.3d))
         then: "the attribute should be updated"
         conditions.eventually {
             def thing = assetStorageService.find(managerDemoSetup.thingId, true)
@@ -48,7 +48,7 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
         when: "a simulated sensor receives a new value"
         advancePseudoClock(10, SECONDS, container)
         def datapoint2ExpectedTimestamp = getClockTimeOf(container)
-        simulatorProtocol.putValue(managerDemoSetup.thingId, "light1PowerConsumption", Values.create(14.4))
+        simulatorProtocol.putValue(managerDemoSetup.thingId, "light1PowerConsumption", Values.create(14.4d))
         then: "the attribute should be updated"
         conditions.eventually {
             def thing = assetStorageService.find(managerDemoSetup.thingId, true)
@@ -58,17 +58,29 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
         when: "a simulated sensor receives a new value"
         advancePseudoClock(10, SECONDS, container)
         def datapoint3ExpectedTimestamp = getClockTimeOf(container)
-        simulatorProtocol.putValue(managerDemoSetup.thingId, "light1PowerConsumption", Values.create(15.5))
+        simulatorProtocol.putValue(managerDemoSetup.thingId, "light1PowerConsumption", Values.create(15.5d))
         then: "the attribute should be updated"
         conditions.eventually {
             def thing = assetStorageService.find(managerDemoSetup.thingId, true)
             assert thing.getAttribute("light1PowerConsumption").flatMap { it.getValueAsNumber() }.orElse(null) == 15.5d
         }
 
+        when: "a simulated sensor receives a new value"
+        advancePseudoClock(10, SECONDS, container)
+        simulatorProtocol.putValue(managerDemoSetup.thingId, "light1PowerConsumption", null) // No value!
+        then: "the attribute should be updated"
+        conditions.eventually {
+            def thing = assetStorageService.find(managerDemoSetup.thingId, true)
+            assert !thing.getAttribute("light1PowerConsumption").flatMap { it.getValue() }.isPresent()
+        }
+
         expect: "the datapoints to be stored"
         conditions.eventually {
             def datapoints = assetDatapointService.getDatapoints(new AttributeRef(managerDemoSetup.thingId, "light1PowerConsumption"))
             assert datapoints.size() > 3
+
+            // Note that the "No value" sensor update should not have created a datapoint, the first
+            // datapoint is the last sensor update with an actual value
 
             assert Values.getNumber(datapoints.get(0).value).orElse(null) == 15.5d
             assert datapoints.get(0).timestamp == datapoint3ExpectedTimestamp

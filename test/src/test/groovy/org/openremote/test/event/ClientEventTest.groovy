@@ -108,7 +108,7 @@ class ClientEventTest extends Specification implements ManagerContainerTrait, Gw
             assert collectedSharedEvents[1] instanceof AgentStatusEvent
             assert (collectedSharedEvents[1] as AgentStatusEvent).protocolConfiguration.entityId == managerDemoSetup.agentId
             assert (collectedSharedEvents[1] as AgentStatusEvent).protocolConfiguration.attributeName == managerDemoSetup.agentProtocolConfigName
-            assert (collectedSharedEvents[1] as AgentStatusEvent).connectionStatus == ConnectionStatus.CONNECTING
+            assert (collectedSharedEvents[1] as AgentStatusEvent).connectionStatus == ConnectionStatus.WAITING
             assert collectedSharedEvents[2] instanceof AgentStatusEvent
             assert (collectedSharedEvents[2] as AgentStatusEvent).protocolConfiguration.entityId == managerDemoSetup.agentId
             assert (collectedSharedEvents[2] as AgentStatusEvent).protocolConfiguration.attributeName == managerDemoSetup.agentProtocolConfigName

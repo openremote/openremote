@@ -53,6 +53,7 @@ import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import static org.openremote.container.concurrent.GlobalLock.withLock;
 import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
 
 /**
@@ -919,7 +920,7 @@ public class HttpClientProtocol extends AbstractProtocol {
     }
 
     protected void cancelPolling(AttributeRef attributeRef) {
-        withLock(() -> {
+        withLock(getProtocolName(), () -> {
             ScheduledFuture pingPoll = pollingMap.remove(attributeRef);
             if (pingPoll != null) {
                 pingPoll.cancel(false);

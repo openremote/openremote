@@ -26,6 +26,7 @@ import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.agent.protocol.filter.MessageFilter;
 import org.openremote.container.Container;
+import org.openremote.container.concurrent.GlobalLock;
 import org.openremote.container.message.MessageBrokerContext;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.message.MessageBrokerSetupService;
@@ -43,21 +44,20 @@ import org.openremote.model.value.*;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static java.util.logging.Level.FINEST;
+import static org.openremote.container.concurrent.GlobalLock.withLock;
+import static org.openremote.container.concurrent.GlobalLock.withLockReturning;
 
 /**
  * Thread-safe base implementation for protocols.
  * <p>
- * Subclasses should use the {@link #withLock} and {@link #withLockReturning} methods
+ * Subclasses should use the {@link GlobalLock#withLock} and {@link GlobalLock#withLockReturning} methods
  * to guard critical sections when modifying shared state:
  * <blockquote><pre>{@code
- * withLock(() -> {
+ * withLock(getProtocolName(), () -> {
  *     // Critical section
  * });
  * }</pre></blockquote>
@@ -115,9 +115,6 @@ public abstract class AbstractProtocol implements Protocol {
     protected ProtocolExecutorService executorService;
     protected ProtocolAssetService assetService;
 
-    // Provides exclusive access to shared protocol state
-    protected final ReentrantLock lock = new ReentrantLock(true);
-
     @Override
     public void init(Container container) throws Exception {
         LOG.info("Initializing protocol: " + getProtocolName());
@@ -132,7 +129,7 @@ public abstract class AbstractProtocol implements Protocol {
         this.messageBrokerContext = container.getService(MessageBrokerSetupService.class).getContext();
         this.producerTemplate = container.getService(MessageBrokerService.class).getProducerTemplate();
 
-        withLock(() -> {
+        withLock(getProtocolName(), () -> {
             try {
                 messageBrokerContext.addRoutes(new RouteBuilder() {
                     @Override
@@ -155,7 +152,7 @@ public abstract class AbstractProtocol implements Protocol {
 
     @Override
     public void stop(Container container) throws Exception {
-        withLock(() -> {
+        withLock(getProtocolName(), () -> {
             linkedAttributes.clear();
             try {
                 messageBrokerContext.stopRoute("Actuator-" + getProtocolName(), 1, TimeUnit.MILLISECONDS);
@@ -168,7 +165,7 @@ public abstract class AbstractProtocol implements Protocol {
 
     @Override
     public void linkProtocolConfiguration(AssetAttribute protocolConfiguration, Consumer<ConnectionStatus> statusConsumer) {
-        withLock(() -> {
+        withLock(getProtocolName(), () -> {
             LOG.finer("Linking protocol configuration to protocol '" + getProtocolName() + "': " + protocolConfiguration);
             linkedProtocolConfigurations.put(
                 protocolConfiguration.getReferenceOrThrow(),
@@ -180,7 +177,7 @@ public abstract class AbstractProtocol implements Protocol {
 
     @Override
     public void unlinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
-        withLock(() -> {
+        withLock(getProtocolName(), () -> {
             LOG.finer("Unlinking protocol configuration from protocol '" + getProtocolName() + "': " + protocolConfiguration);
             doUnlinkProtocolConfiguration(protocolConfiguration);
             linkedProtocolConfigurations.remove(protocolConfiguration.getReferenceOrThrow());
@@ -189,7 +186,7 @@ public abstract class AbstractProtocol implements Protocol {
 
     @Override
     public void linkAttributes(Collection<AssetAttribute> attributes, AssetAttribute protocolConfiguration) {
-        withLock(() -> {
+        withLock(getProtocolName(), () -> {
             attributes.forEach(attribute -> {
                 LOG.fine("Linking attribute to '" + getProtocolName() + "': " + attribute);
                 AttributeRef attributeRef = attribute.getReferenceOrThrow();
@@ -220,7 +217,7 @@ public abstract class AbstractProtocol implements Protocol {
 
     @Override
     public void unlinkAttributes(Collection<AssetAttribute> attributes, AssetAttribute protocolConfiguration) throws Exception {
-        withLock(() ->
+        withLock(getProtocolName(), () ->
             attributes.forEach(attribute -> {
                 LOG.fine("Unlinking attribute on '" + getProtocolName() + "': " + attribute);
                 AttributeRef attributeRef = attribute.getReferenceOrThrow();
@@ -236,7 +233,7 @@ public abstract class AbstractProtocol implements Protocol {
      * Gets a linked attribute by its attribute ref
      */
     protected AssetAttribute getLinkedAttribute(AttributeRef attributeRef) {
-        return withLockReturning(() -> linkedAttributes.get(attributeRef));
+        return withLockReturning(getProtocolName(), () -> linkedAttributes.get(attributeRef));
     }
 
     /**
@@ -248,7 +245,7 @@ public abstract class AbstractProtocol implements Protocol {
     }
 
     protected AssetAttribute getLinkedProtocolConfiguration(AttributeRef protocolConfigurationRef) {
-        return withLockReturning(() -> {
+        return withLockReturning(getProtocolName(), () -> {
             LinkedProtocolInfo linkedProtocolInfo = linkedProtocolConfigurations.get(protocolConfigurationRef);
             // Don't bother with null check if someone calls here with an attribute not linked to this protocol
             // then they're doing something wrong so fail hard and fast
@@ -258,7 +255,7 @@ public abstract class AbstractProtocol implements Protocol {
 
     protected void processLinkedAttributeWrite(AttributeEvent event) {
         LOG.finest("Processing linked attribute write on " + getProtocolName() + ": " + event);
-        withLock(() -> {
+        withLock(getProtocolName(), () -> {
             AssetAttribute attribute = linkedAttributes.get(event.getAttributeRef());
             if (attribute == null) {
                 LOG.warning("Attribute doesn't exist on this protocol: " + event.getAttributeRef());
@@ -283,7 +280,7 @@ public abstract class AbstractProtocol implements Protocol {
      * publish new sensor values, which performs additional verification and uses a different messaging queue.
      */
     protected void sendAttributeEvent(AttributeEvent event) {
-        withLock(() -> {
+        withLock(getProtocolName(), () -> {
             // Don't allow updating linked attributes with this mechanism as it could cause an infinite loop
             if (linkedAttributes.containsKey(event.getAttributeRef())) {
                 LOG.warning("Cannot update an attribute linked to the same protocol; use updateLinkedAttribute for that: " + event);
@@ -300,7 +297,7 @@ public abstract class AbstractProtocol implements Protocol {
      */
     @SuppressWarnings("unchecked")
     protected void updateLinkedAttribute(final AttributeState finalState, long timestamp) {
-        withLock(() -> {
+        withLock(getProtocolName(), () -> {
             AttributeState state = finalState;
             AssetAttribute attribute = linkedAttributes.get(state.getAttributeRef());
 
@@ -406,7 +403,7 @@ public abstract class AbstractProtocol implements Protocol {
     }
 
     protected void updateAssetLocation(String assetId, Point location) {
-        withLock(() -> assetService.updateAssetLocation(assetId, location));
+        withLock(getProtocolName(), () -> assetService.updateAssetLocation(assetId, location));
     }
 
     /**
@@ -415,7 +412,7 @@ public abstract class AbstractProtocol implements Protocol {
      * the consumer to perform the modification.
      */
     protected void updateLinkedProtocolConfiguration(AssetAttribute protocolConfiguration, Consumer<AssetAttribute> protocolUpdater) {
-        withLock(() -> {
+        withLock(getProtocolName(), () -> {
             // Clone the protocol configuration rather than modify this one
             AssetAttribute modifiedProtocolConfiguration = protocolConfiguration.deepCopy();
             protocolUpdater.accept(modifiedProtocolConfiguration);
@@ -427,9 +424,10 @@ public abstract class AbstractProtocol implements Protocol {
      * Update the runtime status of a protocol configuration by its attribute ref
      */
     protected void updateStatus(AttributeRef protocolRef, ConnectionStatus connectionStatus) {
-        withLock(() -> {
+        withLock(getProtocolName(), () -> {
             LinkedProtocolInfo protocolInfo = linkedProtocolConfigurations.get(protocolRef);
             if (protocolInfo != null) {
+                LOG.fine("Updating protocol status to '" + connectionStatus + "': " + protocolRef);
                 protocolInfo.getConnectionStatusConsumer().accept(connectionStatus);
                 protocolInfo.setCurrentConnectionStatus(connectionStatus);
             }
@@ -440,7 +438,7 @@ public abstract class AbstractProtocol implements Protocol {
      * Gets the current runtime status of a protocol configuration.
      */
     protected ConnectionStatus getStatus(AssetAttribute protocolConfiguration) {
-        return withLockReturning(() -> {
+        return withLockReturning(getProtocolName(), () -> {
             LinkedProtocolInfo linkedProtocolInfo = linkedProtocolConfigurations.get(protocolConfiguration.getReferenceOrThrow());
             return linkedProtocolInfo.getCurrentConnectionStatus();
         });
@@ -480,38 +478,6 @@ public abstract class AbstractProtocol implements Protocol {
         return result;
     }
 
-    /**
-     * @return Defaults to 6 seconds, should be longer than it takes the router to be enabled/disabled.
-     */
-    protected int getLockTimeoutMillis() {
-        return 6000;
-    }
-
-    protected void withLock(Runnable runnable) {
-        withLockReturning(() -> {
-            runnable.run();
-            return null;
-        });
-    }
-
-    protected <R> R withLockReturning(Supplier<R> supplier) {
-        try {
-            if (lock.tryLock(getLockTimeoutMillis(), TimeUnit.MILLISECONDS)) {
-                LOG.finest("+ Acquired lock on: " + getProtocolName());
-                return supplier.get();
-            } else {
-                throw new IllegalStateException(
-                    "Could not acquire lock after waiting " + getLockTimeoutMillis() + "ms on: " + getProtocolName()
-                );
-            }
-        } catch (InterruptedException ex) {
-            LOG.log(FINEST, "Interrupted while waiting for lock on: " + getProtocolName());
-            return null;
-        } finally {
-            LOG.finest("- Releasing lock on: " + getProtocolName());
-            lock.unlock();
-        }
-    }
 
     @Override
     public String toString() {

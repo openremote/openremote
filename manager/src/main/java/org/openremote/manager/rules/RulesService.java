@@ -51,6 +51,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.util.logging.Level.FINEST;
+import static org.openremote.container.concurrent.GlobalLock.withLock;
+import static org.openremote.container.concurrent.GlobalLock.withLockReturning;
 import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_TOPIC;
 import static org.openremote.container.persistence.PersistenceEvent.isPersistenceEventForEntityType;
 import static org.openremote.container.util.MapAccess.getString;
@@ -59,17 +61,26 @@ import static org.openremote.model.asset.AssetAttribute.attributesFromJson;
 import static org.openremote.model.asset.AssetAttribute.getAddedOrModifiedAttributes;
 
 /**
- * Responsible for creating {@link RulesEngine}s for the rulesets
- * and processing {@link AssetState} updates.
+ * Manages {@link RulesEngine}s for stored {@link Ruleset}s and processes asset attribute updates.
  * <p>
- * Each message is processed in the following order:
+ * If an updated attribute {@link AssetAttribute#isRuleState}, this implementation of
+ * {@link AssetUpdateProcessor} converts the update message to an {@link AssetState} fact.
+ * This service keeps the facts and thus the state of rule facts are in sync with the asset state
+ * changes that occur. If an asset attribute value changes, the {@link AssetState} in the rules
+ * engines will be updated to reflect the change.
+ * <p>
+ * If an updated attribute {@link AssetAttribute#isRuleEvent}, another temporary {@link AssetState}
+ * fact is inserted in the rules engines in scope. This fact expires automatically if the lifetime
+ * set in {@link RulesService#RULE_EVENT_EXPIRES} is reached, or if the lifetime set in the
+ * attribute {@link AssetMeta#RULE_EVENT_EXPIRES} is reached.
+ * <p>
+ * Each asset attribute update is processed in the following order:
  * <ol>
  * <li>Global Rulesets</li>
  * <li>Tenant Rulesets</li>
- * <li>Asset Rulesets (in hierarchical order from oldest ancestor down - ordering of
- * asset rulesets with same parent asset are not guaranteed also processing order of rulesets
- * with the same scope is not guaranteed)</li>
+ * <li>Asset Rulesets (in hierarchical order from oldest ancestor down)</li>
  * </ol>
+ * Processing order of rulesets with the same scope or same parent is not guaranteed.
  */
 public class RulesService extends RouteBuilder implements ContainerService, AssetUpdateProcessor {
 
@@ -182,20 +193,17 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
 
     @Override
     public void stop(Container container) throws Exception {
-        synchronized (assetEngines) {
+        withLock(getClass().getSimpleName(), () -> {
             assetEngines.forEach((assetId, rulesEngine) -> rulesEngine.stop());
             assetEngines.clear();
-        }
-
-        synchronized (tenantEngines) {
             tenantEngines.forEach((realm, rulesEngine) -> rulesEngine.stop());
             tenantEngines.clear();
-        }
 
-        if (globalEngine != null) {
-            globalEngine.stop();
-            globalEngine = null;
-        }
+            if (globalEngine != null) {
+                globalEngine.stop();
+                globalEngine = null;
+            }
+        });
     }
 
     @Override
@@ -225,280 +233,294 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
         return false;
     }
 
-    protected synchronized void processTenantChange(Tenant tenant, PersistenceEvent.Cause cause) {
-        // Check if enabled status has changed
-        boolean wasEnabled = Arrays.asList(activeTenantIds).contains(tenant.getId());
-        boolean isEnabled = tenant.getEnabled() && cause != PersistenceEvent.Cause.DELETE;
-        activeTenantIds = identityService.getIdentityProvider().getActiveTenantIds();
+    protected void processTenantChange(Tenant tenant, PersistenceEvent.Cause cause) {
+        withLock(getClass().getSimpleName(), () -> {
+            // Check if enabled status has changed
+            boolean wasEnabled = Arrays.asList(activeTenantIds).contains(tenant.getId());
+            boolean isEnabled = tenant.getEnabled() && cause != PersistenceEvent.Cause.DELETE;
+            activeTenantIds = identityService.getIdentityProvider().getActiveTenantIds();
 
-        if (wasEnabled == isEnabled) {
-            // Nothing to do here
-            return;
-        }
-
-        if (wasEnabled) {
-            // Remove tenant rules engine for this tenant if it exists
-            RulesEngine<TenantRuleset> tenantRulesEngine = tenantEngines.get(tenant.getId());
-            if (tenantRulesEngine != null) {
-                tenantRulesEngine.stop();
-                tenantEngines.remove(tenant.getId());
+            if (wasEnabled == isEnabled) {
+                // Nothing to do here
+                return;
             }
 
-            // Remove any asset rules engines for assets in this realm
-            assetEngines.values().stream()
-                .filter(re -> re.getId().getRealmId().map(id -> id.equals(tenant.getId())).orElse(false))
-                .forEach(RulesEngine::stop);
-            assetEngines.entrySet().removeIf(entry ->
-                entry.getValue().getId().getRealmId().map(id -> id.equals(tenant.getId())).orElse(false)
-            );
+            if (wasEnabled) {
+                // Remove tenant rules engine for this tenant if it exists
+                RulesEngine<TenantRuleset> tenantRulesEngine = tenantEngines.get(tenant.getId());
+                if (tenantRulesEngine != null) {
+                    tenantRulesEngine.stop();
+                    tenantEngines.remove(tenant.getId());
+                }
 
-        } else {
-            // Create tenant rules engines for this tenant if it has any rulesets
-            rulesetStorageService
-                .findEnabledTenantRulesets(tenant.getId())
-                .forEach(this::deployTenantRuleset);
+                // Remove any asset rules engines for assets in this realm
+                assetEngines.values().stream()
+                    .filter(re -> re.getId().getRealmId().map(id -> id.equals(tenant.getId())).orElse(false))
+                    .forEach(RulesEngine::stop);
+                assetEngines.entrySet().removeIf(entry ->
+                    entry.getValue().getId().getRealmId().map(id -> id.equals(tenant.getId())).orElse(false)
+                );
 
-            // Create any asset rules engines for assets in this realm that have rulesets
-            deployAssetRulesets(rulesetStorageService.findEnabledAssetRulesets(tenant.getId()));
-        }
+            } else {
+                // Create tenant rules engines for this tenant if it has any rulesets
+                rulesetStorageService
+                    .findEnabledTenantRulesets(tenant.getId())
+                    .forEach(this::deployTenantRuleset);
+
+                // Create any asset rules engines for assets in this realm that have rulesets
+                deployAssetRulesets(rulesetStorageService.findEnabledAssetRulesets(tenant.getId()));
+            }
+        });
     }
 
-    protected synchronized void processAssetChange(ServerAsset asset, PersistenceEvent persistenceEvent) {
+    protected void processAssetChange(ServerAsset asset, PersistenceEvent persistenceEvent) {
+        withLock(getClass().getSimpleName(), () -> {
 
-        // We must load the asset from database (only when required), as the
-        // persistence event might not contain a completely loaded asset
-        BiFunction<Asset, AssetAttribute, AssetState> buildAssetState = (loadedAsset, attribute) ->
-            new AssetState(loadedAsset, attribute.deepCopy(), Source.INTERNAL);
+            // We must load the asset from database (only when required), as the
+            // persistence event might not contain a completely loaded asset
+            BiFunction<Asset, AssetAttribute, AssetState> buildAssetState = (loadedAsset, attribute) ->
+                new AssetState(loadedAsset, attribute.deepCopy(), Source.INTERNAL);
 
-        switch (persistenceEvent.getCause()) {
-            case INSERT:
+            switch (persistenceEvent.getCause()) {
+                case INSERT:
 
-                // New asset has been created so get attributes that have RULE_STATE meta
-                List<AssetAttribute> ruleStateAttributes =
-                    asset.getAttributesStream().filter(AssetAttribute::isRuleState).collect(Collectors.toList());
+                    // New asset has been created so get attributes that have RULE_STATE meta
+                    List<AssetAttribute> ruleStateAttributes =
+                        asset.getAttributesStream().filter(AssetAttribute::isRuleState).collect(Collectors.toList());
 
-                // Build an update with a fully loaded asset
-                ruleStateAttributes.forEach(attribute -> {
-                    ServerAsset loadedAsset = assetStorageService.find(asset.getId(), true);
-                    // If the asset is now gone it was deleted immediately after being inserted, nothing more to do
+                    // Build an update with a fully loaded asset
+                    ruleStateAttributes.forEach(attribute -> {
+                        ServerAsset loadedAsset = assetStorageService.find(asset.getId(), true);
+                        // If the asset is now gone it was deleted immediately after being inserted, nothing more to do
+                        if (loadedAsset == null)
+                            return;
+
+                        AssetState assetState = buildAssetState.apply(loadedAsset, attribute);
+                        LOG.fine("Asset was persisted (" + persistenceEvent.getCause() + "), inserting fact: " + assetState);
+                        updateAssetState(assetState, true, true);
+                    });
+                    break;
+
+                case UPDATE:
+
+                    int attributesIndex = Arrays.asList(persistenceEvent.getPropertyNames()).indexOf("attributes");
+                    if (attributesIndex < 0) {
+                        return;
+                    }
+
+                    // Fully load the asset
+                    final Asset loadedAsset = assetStorageService.find(asset.getId(), true);
+                    // If the asset is now gone it was deleted immediately after being updated, nothing more to do
                     if (loadedAsset == null)
                         return;
 
-                    AssetState assetState = buildAssetState.apply(loadedAsset, attribute);
-                    LOG.fine("Asset was persisted (" + persistenceEvent.getCause() + "), inserting fact: " + assetState);
-                    updateAssetState(assetState, true, true);
-                });
-                break;
+                    // Attributes have possibly changed so need to compare old and new attributes
+                    // to determine which facts to retract and which to insert
+                    List<AssetAttribute> oldRuleStateAttributes =
+                        attributesFromJson(
+                            (ObjectValue) persistenceEvent.getPreviousState()[attributesIndex],
+                            asset.getId()
+                        ).filter(AssetAttribute::isRuleState).collect(Collectors.toList());
 
-            case UPDATE:
+                    List<AssetAttribute> newRuleStateAttributes =
+                        attributesFromJson(
+                            (ObjectValue) persistenceEvent.getCurrentState()[attributesIndex],
+                            asset.getId()
+                        ).filter(AssetAttribute::isRuleState).collect(Collectors.toList());
+
+                    // Retract facts for attributes that are obsolete
+                    getAddedOrModifiedAttributes(newRuleStateAttributes, oldRuleStateAttributes, key -> key.equals(VALUE_TIMESTAMP_FIELD_NAME))
+                        .forEach(obsoleteFactAttribute -> {
+                            AssetState update = buildAssetState.apply(loadedAsset, obsoleteFactAttribute);
+                            LOG.fine("Asset was persisted (" + persistenceEvent.getCause() + "), retracting: " + update);
+                            retractAssetState(update);
+                        });
+
+                    // Insert facts for attributes that are new
+                    getAddedOrModifiedAttributes(oldRuleStateAttributes, newRuleStateAttributes, key -> key.equals(VALUE_TIMESTAMP_FIELD_NAME))
+                        .forEach(newFactAttribute -> {
+                            AssetState assetState = buildAssetState.apply(loadedAsset, newFactAttribute);
+                            LOG.fine("Asset was persisted (" + persistenceEvent.getCause() + "), updating: " + assetState);
+                            updateAssetState(assetState, true, true);
+                        });
+                    break;
+
+                case DELETE:
+                    // Retract any facts that were associated with this asset
+                    asset.getAttributesStream()
+                        .filter(AssetAttribute::isRuleState)
+                        .forEach(attribute -> {
+                            // We can't load the asset again (it was deleted), so don't use buildAssetState() and
+                            // hope that the path of the event asset has been loaded before deletion, although it is
+                            // "unlikely" anybody will access it during retraction...
+                            AssetState assetState = new AssetState(asset, attribute, Source.INTERNAL);
+                            LOG.fine("Asset was persisted (" + persistenceEvent.getCause() + "), retracting fact: " + assetState);
+                            retractAssetState(assetState);
+                        });
+                    break;
+            }
+
+            if (persistenceEvent.getCause() != PersistenceEvent.Cause.INSERT) {
 
                 int attributesIndex = Arrays.asList(persistenceEvent.getPropertyNames()).indexOf("attributes");
                 if (attributesIndex < 0) {
                     return;
                 }
 
-                // Fully load the asset
-                final Asset loadedAsset = assetStorageService.find(asset.getId(), true);
-                // If the asset is now gone it was deleted immediately after being updated, nothing more to do
-                if (loadedAsset == null)
-                    return;
-
-                // Attributes have possibly changed so need to compare old and new attributes
-                // to determine which facts to retract and which to insert
-                List<AssetAttribute> oldRuleStateAttributes =
+                // Get old template filter attributes and new ones
+                // If new collection doesn't contain them, then they are deleted and need to be processed too
+                List<AssetAttribute> oldTemplateFilterAttributes = persistenceEvent.getPreviousState() != null ? //can be null when insert
                     attributesFromJson(
                         (ObjectValue) persistenceEvent.getPreviousState()[attributesIndex],
                         asset.getId()
-                    ).filter(AssetAttribute::isRuleState).collect(Collectors.toList());
+                    ).filter(attribute -> attribute.getTypeOrThrow() == AttributeType.RULES_TEMPLATE_FILTER)
+                        .collect(Collectors.toList()) : new ArrayList<>();
 
-                List<AssetAttribute> newRuleStateAttributes =
+                List<AssetAttribute> newTemplateFilterAttributes = persistenceEvent.getCurrentState() != null ? // can be null when delete
                     attributesFromJson(
                         (ObjectValue) persistenceEvent.getCurrentState()[attributesIndex],
                         asset.getId()
-                    ).filter(AssetAttribute::isRuleState).collect(Collectors.toList());
+                    ).filter(attribute -> attribute.getTypeOrThrow() == AttributeType.RULES_TEMPLATE_FILTER)
+                        .collect(Collectors.toList()) : new ArrayList<>();
 
-                // Retract facts for attributes that are obsolete
-                getAddedOrModifiedAttributes(newRuleStateAttributes, oldRuleStateAttributes, key -> key.equals(VALUE_TIMESTAMP_FIELD_NAME))
-                    .forEach(obsoleteFactAttribute -> {
-                        AssetState update = buildAssetState.apply(loadedAsset, obsoleteFactAttribute);
-                        LOG.fine("Asset was persisted (" + persistenceEvent.getCause() + "), retracting: " + update);
-                        retractAssetState(update);
-                    });
+                if (!oldTemplateFilterAttributes.isEmpty() || !newTemplateFilterAttributes.isEmpty()) {
+                    rulesetStorageService.findTemplatedAssetRulesets(asset.getRealmId(), asset.getId())
+                        .forEach(assetRuleset -> processRulesetChange(assetRuleset, persistenceEvent.getCause()));
 
-                // Insert facts for attributes that are new
-                getAddedOrModifiedAttributes(oldRuleStateAttributes, newRuleStateAttributes, key -> key.equals(VALUE_TIMESTAMP_FIELD_NAME))
-                    .forEach(newFactAttribute -> {
-                        AssetState assetState = buildAssetState.apply(loadedAsset, newFactAttribute);
-                        LOG.fine("Asset was persisted (" + persistenceEvent.getCause() + "), updating: " + assetState);
-                        updateAssetState(assetState, true, true);
-                    });
-                break;
+                    rulesetStorageService.findTemplatedTenantRulesets(asset.getRealmId(), asset.getId())
+                        .forEach(tenantRuleset -> processRulesetChange(tenantRuleset, persistenceEvent.getCause()));
 
-            case DELETE:
-                // Retract any facts that were associated with this asset
-                asset.getAttributesStream()
-                    .filter(AssetAttribute::isRuleState)
-                    .forEach(attribute -> {
-                        // We can't load the asset again (it was deleted), so don't use buildAssetState() and
-                        // hope that the path of the event asset has been loaded before deletion, although it is
-                        // "unlikely" anybody will access it during retraction...
-                        AssetState assetState = new AssetState(asset, attribute, Source.INTERNAL);
-                        LOG.fine("Asset was persisted (" + persistenceEvent.getCause() + "), retracting fact: " + assetState);
-                        retractAssetState(assetState);
-                    });
-                break;
-        }
-
-        if (persistenceEvent.getCause() != PersistenceEvent.Cause.INSERT) {
-
-            int attributesIndex = Arrays.asList(persistenceEvent.getPropertyNames()).indexOf("attributes");
-            if (attributesIndex < 0) {
-                return;
+                    rulesetStorageService.findTemplatedGlobalRulesets(asset.getId())
+                        .forEach(globalRuleset -> processRulesetChange(globalRuleset, persistenceEvent.getCause()));
+                }
             }
-
-            // Get old template filter attributes and new ones
-            // If new collection doesn't contain them, then they are deleted and need to be processed too
-            List<AssetAttribute> oldTemplateFilterAttributes = persistenceEvent.getPreviousState() != null ? //can be null when insert
-                attributesFromJson(
-                    (ObjectValue) persistenceEvent.getPreviousState()[attributesIndex],
-                    asset.getId()
-                ).filter(attribute -> attribute.getTypeOrThrow() == AttributeType.RULES_TEMPLATE_FILTER)
-                    .collect(Collectors.toList()) : new ArrayList<>();
-
-            List<AssetAttribute> newTemplateFilterAttributes = persistenceEvent.getCurrentState() != null ? // can be null when delete
-                attributesFromJson(
-                    (ObjectValue) persistenceEvent.getCurrentState()[attributesIndex],
-                    asset.getId()
-                ).filter(attribute -> attribute.getTypeOrThrow() == AttributeType.RULES_TEMPLATE_FILTER)
-                    .collect(Collectors.toList()) : new ArrayList<>();
-
-            if (!oldTemplateFilterAttributes.isEmpty() || !newTemplateFilterAttributes.isEmpty()) {
-                rulesetStorageService.findTemplatedAssetRulesets(asset.getRealmId(), asset.getId())
-                    .forEach(assetRuleset -> processRulesetChange(assetRuleset, persistenceEvent.getCause()));
-
-                rulesetStorageService.findTemplatedTenantRulesets(asset.getRealmId(), asset.getId())
-                    .forEach(tenantRuleset -> processRulesetChange(tenantRuleset, persistenceEvent.getCause()));
-
-                rulesetStorageService.findTemplatedGlobalRulesets(asset.getId())
-                    .forEach(globalRuleset -> processRulesetChange(globalRuleset, persistenceEvent.getCause()));
-            }
-        }
+        });
     }
 
-    protected synchronized void processRulesetChange(Ruleset ruleset, PersistenceEvent.Cause cause) {
-        if (cause == PersistenceEvent.Cause.DELETE || !ruleset.isEnabled()) {
-            if (ruleset instanceof GlobalRuleset) {
-                undeployGlobalRuleset((GlobalRuleset) ruleset);
-            } else if (ruleset instanceof TenantRuleset) {
-                undeployTenantRuleset((TenantRuleset) ruleset);
-            } else if (ruleset instanceof AssetRuleset) {
-                undeployAssetRuleset((AssetRuleset) ruleset);
+    protected void processRulesetChange(Ruleset ruleset, PersistenceEvent.Cause cause) {
+        withLock(getClass().getSimpleName(), () -> {
+            if (cause == PersistenceEvent.Cause.DELETE || !ruleset.isEnabled()) {
+                if (ruleset instanceof GlobalRuleset) {
+                    undeployGlobalRuleset((GlobalRuleset) ruleset);
+                } else if (ruleset instanceof TenantRuleset) {
+                    undeployTenantRuleset((TenantRuleset) ruleset);
+                } else if (ruleset instanceof AssetRuleset) {
+                    undeployAssetRuleset((AssetRuleset) ruleset);
+                }
+            } else {
+                if (ruleset instanceof GlobalRuleset) {
+
+                    RulesEngine newEngine = deployGlobalRuleset((GlobalRuleset) ruleset);
+                    if (newEngine != null) {
+                        // Push all existing facts into the engine, this is an initial import of state so fire delayed
+                        assetStates.forEach(assetState -> newEngine.updateFact(assetState, false));
+                        newEngine.fire();
+                    }
+
+                } else if (ruleset instanceof TenantRuleset) {
+
+                    RulesEngine newEngine = deployTenantRuleset((TenantRuleset) ruleset);
+                    if (newEngine != null) {
+                        // Push all existing facts into the engine, this is an initial import of state so fire delayed
+                        assetStates.forEach(assetState -> {
+                            if (assetState.getRealmId().equals(((TenantRuleset) ruleset).getRealmId())) {
+                                newEngine.updateFact(assetState, false);
+                            }
+                        });
+                        newEngine.fire();
+                    }
+
+                } else if (ruleset instanceof AssetRuleset) {
+
+                    // Must reload from the database, the ruleset might not be completely hydrated on INSERT or UPDATE
+                    AssetRuleset assetRuleset = rulesetStorageService.findEnabledAssetRuleset(ruleset.getId());
+                    RulesEngine newEngine = deployAssetRuleset(assetRuleset);
+                    if (newEngine != null) {
+                        // Push all existing facts for this asset (and it's children into the engine), this is an
+                        // initial import of state so fire delayed
+                        getAssetStatesInScope(((AssetRuleset) ruleset).getAssetId())
+                            .forEach(assetState -> newEngine.updateFact(assetState, false));
+                        newEngine.fire();
+                    }
+                }
             }
-        } else {
-            if (ruleset instanceof GlobalRuleset) {
-
-                RulesEngine newEngine = deployGlobalRuleset((GlobalRuleset) ruleset);
-                if (newEngine != null) {
-                    // Push all existing facts into the engine, this is an initial import of state so fire delayed
-                    assetStates.forEach(assetState -> newEngine.updateFact(assetState, false));
-                    newEngine.fire();
-                }
-
-            } else if (ruleset instanceof TenantRuleset) {
-
-                RulesEngine newEngine = deployTenantRuleset((TenantRuleset) ruleset);
-                if (newEngine != null) {
-                    // Push all existing facts into the engine, this is an initial import of state so fire delayed
-                    assetStates.forEach(assetState -> {
-                        if (assetState.getRealmId().equals(((TenantRuleset) ruleset).getRealmId())) {
-                            newEngine.updateFact(assetState, false);
-                        }
-                    });
-                    newEngine.fire();
-                }
-
-            } else if (ruleset instanceof AssetRuleset) {
-
-                // Must reload from the database, the ruleset might not be completely hydrated on INSERT or UPDATE
-                AssetRuleset assetRuleset = rulesetStorageService.findEnabledAssetRuleset(ruleset.getId());
-                RulesEngine newEngine = deployAssetRuleset(assetRuleset);
-                if (newEngine != null) {
-                    // Push all existing facts for this asset (and it's children into the engine), this is an
-                    // initial import of state so fire delayed
-                    getAssetStatesInScope(((AssetRuleset) ruleset).getAssetId())
-                        .forEach(assetState -> newEngine.updateFact(assetState, false));
-                    newEngine.fire();
-                }
-            }
-        }
+        });
     }
 
     /**
      * Deploy the ruleset into the global engine creating the engine if necessary; if the engine was created then it
      * is returned from the method.
      */
-    protected synchronized RulesEngine<GlobalRuleset> deployGlobalRuleset(GlobalRuleset ruleset) {
-        boolean created = globalEngine == null;
+    protected RulesEngine<GlobalRuleset> deployGlobalRuleset(GlobalRuleset ruleset) {
+        return withLockReturning(getClass().getSimpleName(), () -> {
+            boolean created = globalEngine == null;
 
-        // Global rules have access to everything in the system
-        if (globalEngine == null) {
-            globalEngine = new RulesEngine<>(
-                timerService,
-                identityService,
-                executorService,
-                assetStorageService,
-                assetProcessingService,
-                notificationService,
-                new RulesEngineId<>()
-            );
-        }
-
-        globalEngine.addRuleset(ruleset);
-        return created ? globalEngine : null;
-    }
-
-    protected synchronized void undeployGlobalRuleset(GlobalRuleset ruleset) {
-        if (globalEngine == null) {
-            return;
-        }
-
-        if (globalEngine.removeRuleset(ruleset)) {
-            globalEngine = null;
-        }
-    }
-
-    protected synchronized RulesEngine<TenantRuleset> deployTenantRuleset(TenantRuleset ruleset) {
-        final boolean[] created = {false};
-
-        // Look for existing rules engines for this tenant
-        RulesEngine<TenantRuleset> tenentRulesEngine = tenantEngines
-            .computeIfAbsent(ruleset.getRealmId(), (realmId) -> {
-                created[0] = true;
-                return new RulesEngine<>(
+            // Global rules have access to everything in the system
+            if (globalEngine == null) {
+                globalEngine = new RulesEngine<>(
                     timerService,
                     identityService,
                     executorService,
                     assetStorageService,
                     assetProcessingService,
                     notificationService,
-                    new RulesEngineId<>(realmId)
+                    new RulesEngineId<>()
                 );
-            });
+            }
 
-        tenentRulesEngine.addRuleset(ruleset);
-
-        return created[0] ? tenentRulesEngine : null;
+            globalEngine.addRuleset(ruleset);
+            return created ? globalEngine : null;
+        });
     }
 
-    protected synchronized void undeployTenantRuleset(TenantRuleset ruleset) {
-        RulesEngine<TenantRuleset> rulesEngine = tenantEngines.get(ruleset.getRealmId());
-        if (rulesEngine == null) {
-            return;
-        }
+    protected void undeployGlobalRuleset(GlobalRuleset ruleset) {
+        withLock(getClass().getSimpleName(), () -> {
+            if (globalEngine == null) {
+                return;
+            }
 
-        if (rulesEngine.removeRuleset(ruleset)) {
-            tenantEngines.remove(ruleset.getRealmId());
-        }
+            if (globalEngine.removeRuleset(ruleset)) {
+                globalEngine = null;
+            }
+        });
+    }
+
+    protected RulesEngine<TenantRuleset> deployTenantRuleset(TenantRuleset ruleset) {
+        return withLockReturning(getClass().getSimpleName(), () -> {
+            final boolean[] created = {false};
+
+            // Look for existing rules engines for this tenant
+            RulesEngine<TenantRuleset> tenentRulesEngine = tenantEngines
+                .computeIfAbsent(ruleset.getRealmId(), (realmId) -> {
+                    created[0] = true;
+                    return new RulesEngine<>(
+                        timerService,
+                        identityService,
+                        executorService,
+                        assetStorageService,
+                        assetProcessingService,
+                        notificationService,
+                        new RulesEngineId<>(realmId)
+                    );
+                });
+
+            tenentRulesEngine.addRuleset(ruleset);
+
+            return created[0] ? tenentRulesEngine : null;
+        });
+    }
+
+    protected void undeployTenantRuleset(TenantRuleset ruleset) {
+        withLock(getClass().getSimpleName(), () -> {
+            RulesEngine<TenantRuleset> rulesEngine = tenantEngines.get(ruleset.getRealmId());
+            if (rulesEngine == null) {
+                return;
+            }
+
+            if (rulesEngine.removeRuleset(ruleset)) {
+                tenantEngines.remove(ruleset.getRealmId());
+            }
+        });
     }
 
     protected void deployAssetRulesets(List<AssetRuleset> rulesets) {
@@ -529,86 +551,94 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
             });
     }
 
-    protected synchronized RulesEngine<AssetRuleset> deployAssetRuleset(AssetRuleset ruleset) {
-        final boolean[] created = {false};
+    protected RulesEngine<AssetRuleset> deployAssetRuleset(AssetRuleset ruleset) {
+        return withLockReturning(getClass().getSimpleName(), () -> {
+            final boolean[] created = {false};
 
-        // Look for existing rules engine for this asset
-        RulesEngine<AssetRuleset> assetRulesEngine = assetEngines
-            .computeIfAbsent(ruleset.getAssetId(), (assetId) -> {
-                created[0] = true;
-                return new RulesEngine<>(
-                    timerService,
-                    identityService,
-                    executorService,
-                    assetStorageService,
-                    assetProcessingService,
-                    notificationService,
-                    new RulesEngineId<>(ruleset.getRealmId(), assetId)
-                );
-            });
+            // Look for existing rules engine for this asset
+            RulesEngine<AssetRuleset> assetRulesEngine = assetEngines
+                .computeIfAbsent(ruleset.getAssetId(), (assetId) -> {
+                    created[0] = true;
+                    return new RulesEngine<>(
+                        timerService,
+                        identityService,
+                        executorService,
+                        assetStorageService,
+                        assetProcessingService,
+                        notificationService,
+                        new RulesEngineId<>(ruleset.getRealmId(), assetId)
+                    );
+                });
 
-        assetRulesEngine.addRuleset(ruleset);
-        return created[0] ? assetRulesEngine : null;
+            assetRulesEngine.addRuleset(ruleset);
+            return created[0] ? assetRulesEngine : null;
+        });
     }
 
-    protected synchronized void undeployAssetRuleset(AssetRuleset ruleset) {
-        RulesEngine<AssetRuleset> assetRulesEngine = assetEngines.get(ruleset.getAssetId());
-        if (assetRulesEngine == null) {
-            return;
-        }
+    protected void undeployAssetRuleset(AssetRuleset ruleset) {
+        withLock(getClass().getSimpleName(), () -> {
+            RulesEngine<AssetRuleset> assetRulesEngine = assetEngines.get(ruleset.getAssetId());
+            if (assetRulesEngine == null) {
+                return;
+            }
 
-        if (assetRulesEngine.removeRuleset(ruleset)) {
-            assetEngines.remove(ruleset.getAssetId());
-        }
+            if (assetRulesEngine.removeRuleset(ruleset)) {
+                assetEngines.remove(ruleset.getAssetId());
+            }
+        });
     }
 
-    protected synchronized void insertAssetEvent(AssetState assetState, String expires) {
-        // Get the chain of rule engines that we need to pass through
-        List<RulesEngine> rulesEngines = getEnginesInScope(assetState.getRealmId(), assetState.getPath());
+    protected void insertAssetEvent(AssetState assetState, String expires) {
+        withLock(getClass().getSimpleName(), () -> {
+            // Get the chain of rule engines that we need to pass through
+            List<RulesEngine> rulesEngines = getEnginesInScope(assetState.getRealmId(), assetState.getPath());
 
-        // Check that all engines in the scope are available
-        if (rulesEngines.stream().anyMatch(RulesEngine::isError)) {
-            LOG.severe("At least one rules engine is in an error state, skipping: " + assetState);
-            if (LOG.isLoggable(FINEST)) {
+            // Check that all engines in the scope are available
+            if (rulesEngines.stream().anyMatch(RulesEngine::isError)) {
+                LOG.severe("At least one rules engine is in an error state, skipping: " + assetState);
+                if (LOG.isLoggable(FINEST)) {
+                    for (RulesEngine rulesEngine : rulesEngines) {
+                        if (rulesEngine.isError()) {
+                            LOG.log(FINEST, "Rules engine error state: " + rulesEngine, rulesEngine.getError());
+                        }
+                    }
+                }
+                return;
+            }
+
+            // Pass through each engine
+            for (RulesEngine rulesEngine : rulesEngines) {
+                rulesEngine.insertFact(expires, assetState);
+            }
+        });
+    }
+
+    protected void updateAssetState(AssetState assetState, boolean skipStatusCheck, boolean fireImmediately) {
+        withLock(getClass().getSimpleName(), () -> {
+            // TODO: implement rules processing error state handling
+
+            // Get the chain of rule engines that we need to pass through
+            List<RulesEngine> rulesEngines = getEnginesInScope(assetState.getRealmId(), assetState.getPath());
+
+            if (!skipStatusCheck) {
+                // Check that all engines in the scope are available
+                // TODO This is not very useful without locking the engines until we are done with the update
                 for (RulesEngine rulesEngine : rulesEngines) {
                     if (rulesEngine.isError()) {
-                        LOG.log(FINEST, "Rules engine error state: " + rulesEngine, rulesEngine.getError());
+                        throw rulesEngine.getError();
                     }
                 }
             }
-            return;
-        }
 
-        // Pass through each engine
-        for (RulesEngine rulesEngine : rulesEngines) {
-            rulesEngine.insertFact(expires, assetState);
-        }
-    }
+            // Remove asset state with same attribute ref as new state, add new state
+            assetStates.remove(assetState);
+            assetStates.add(assetState);
 
-    protected synchronized void updateAssetState(AssetState assetState, boolean skipStatusCheck, boolean fireImmediately) {
-        // TODO: implement rules processing error state handling
-
-        // Get the chain of rule engines that we need to pass through
-        List<RulesEngine> rulesEngines = getEnginesInScope(assetState.getRealmId(), assetState.getPath());
-
-        if (!skipStatusCheck) {
-            // Check that all engines in the scope are available
-            // TODO This is not very useful without locking the engines until we are done with the update
+            // Pass through each rules engine
             for (RulesEngine rulesEngine : rulesEngines) {
-                if (rulesEngine.isError()) {
-                    throw rulesEngine.getError();
-                }
+                rulesEngine.updateFact(assetState, fireImmediately);
             }
-        }
-
-        // Remove asset state with same attribute ref as new state, add new state
-        assetStates.remove(assetState);
-        assetStates.add(assetState);
-
-        // Pass through each rules engine
-        for (RulesEngine rulesEngine : rulesEngines) {
-            rulesEngine.updateFact(assetState, fireImmediately);
-        }
+        });
     }
 
     protected void retractAssetState(AssetState assetState) {

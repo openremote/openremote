@@ -38,6 +38,8 @@ import java.util.function.Consumer;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
+import static org.openremote.container.concurrent.GlobalLock.withLock;
+import static org.openremote.container.concurrent.GlobalLock.withLockReturning;
 import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
 import static org.openremote.model.asset.AssetMeta.RANGE_MAX;
 import static org.openremote.model.asset.AssetMeta.RANGE_MIN;
@@ -314,7 +316,7 @@ public class SimulatorProtocol extends AbstractProtocol {
      * Call this to simulate a sensor update after the specified delay (it uses the last value supplied from send to actuator).
      */
     public void updateSensor(AttributeRef attributeRef, int updateSensorDelayMilliseconds) {
-        withLock(() -> {
+        withLock(getProtocolName(), () -> {
             AttributeRef instanceRef = attributeInstanceMap.get(attributeRef);
 
             if (instanceRef == null) {
@@ -369,7 +371,7 @@ public class SimulatorProtocol extends AbstractProtocol {
      * Call this to simulate a send to actuator.
      */
     public boolean putValue(AttributeState attributeState) {
-        return withLockReturning(() -> {
+        Boolean result = withLockReturning(getProtocolName(), () -> {
             AttributeRef attributeRef = attributeState.getAttributeRef();
             AttributeRef instanceRef = attributeInstanceMap.get(attributeRef);
 
@@ -413,6 +415,7 @@ public class SimulatorProtocol extends AbstractProtocol {
 
             return true;
         });
+        return result != null ? result : false;
     }
 
     /**
@@ -426,7 +429,7 @@ public class SimulatorProtocol extends AbstractProtocol {
      * Call this to get the current value of an attribute.
      */
     public Optional<Value> getValue(AttributeRef attributeRef) {
-        return withLockReturning(() -> {
+        return withLockReturning(getProtocolName(), () -> {
             SimulatorElement element = elements.get(attributeRef);
             return element != null ? element.getValue() : Optional.empty();
         });
@@ -450,7 +453,7 @@ public class SimulatorProtocol extends AbstractProtocol {
      * Read a state snapshot.
      */
     public Optional<SimulatorState> getSimulatorState(AttributeRef protocolConfigurationRef) {
-        return withLockReturning(() -> {
+        return withLockReturning(getProtocolName(), () -> {
             LOG.info("Getting simulator state for protocol configuration: " + protocolConfigurationRef);
             if (!instances.containsKey(protocolConfigurationRef))
                 return Optional.empty();
@@ -469,7 +472,7 @@ public class SimulatorProtocol extends AbstractProtocol {
      * Write a state snapshot.
      */
     public void updateSimulatorState(SimulatorState simulatorState) {
-        withLock(() -> {
+        withLock(getProtocolName(), () -> {
             AttributeRef protocolConfigurationRef = simulatorState.getProtocolConfigurationRef();
             if (!instances.containsKey(protocolConfigurationRef)) {
                 LOG.info("Ignoring simulator update, no instance for protocol configuration: " + protocolConfigurationRef);

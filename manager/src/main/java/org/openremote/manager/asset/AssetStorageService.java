@@ -1142,7 +1142,10 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 statement.setString(6, attributeName);
 
                 int updatedRows = statement.executeUpdate();
-                LOG.fine("Stored asset '" + assetId + "' attribute '" + attributeName + "' value, affected rows: " + updatedRows);
+                LOG.fine("Stored asset '" + assetId
+                    + "' attribute '" + attributeName
+                    + "' (affected rows: " + updatedRows + ") value: "
+                    + (value != null ? value.toJson() : "null"));
                 return updatedRows == 1;
             }
         });

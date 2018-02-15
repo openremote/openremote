@@ -52,7 +52,7 @@ public class AgentStatusEvent extends TenantScopedEvent {
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
-            "realmId =" + realmId +
+            "realmId=" + realmId +
             ", protocolConfiguration=" + protocolConfiguration +
             ", connectionStatus=" + connectionStatus +
             '}';

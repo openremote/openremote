@@ -19,7 +19,7 @@ class RulesExecutionFailureTest extends Specification implements ManagerContaine
     def "Rule condition invalid return"() {
 
         given: "the container environment is started"
-        def conditions = new PollingConditions(timeout: 5, delay: 1)
+        def conditions = new PollingConditions(timeout: 10, delay: 1)
         def serverPort = findEphemeralPort()
         def container = startContainerWithPseudoClock(defaultConfig(serverPort), defaultServices())
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
@@ -56,7 +56,7 @@ class RulesExecutionFailureTest extends Specification implements ManagerContaine
     def "Rule condition throws exception"() {
 
         given: "the container environment is started"
-        def conditions = new PollingConditions(timeout: 5, delay: 1)
+        def conditions = new PollingConditions(timeout: 10, delay: 1)
         def serverPort = findEphemeralPort()
         def container = startContainerWithPseudoClock(defaultConfig(serverPort), defaultServices())
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
@@ -93,7 +93,7 @@ class RulesExecutionFailureTest extends Specification implements ManagerContaine
     def "Rule action throws exception"() {
 
         given: "the container environment is started"
-        def conditions = new PollingConditions(timeout: 5, delay: 1)
+        def conditions = new PollingConditions(timeout: 10, delay: 1)
         def serverPort = findEphemeralPort()
         def container = startContainerWithPseudoClock(defaultConfig(serverPort), defaultServices())
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)

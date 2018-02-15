@@ -37,6 +37,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import static org.openremote.container.concurrent.GlobalLock.withLock;
 import static org.openremote.manager.rules.RulesetDeployment.Status.*;
 
 public class RulesEngine<T extends Ruleset> {
@@ -102,67 +103,55 @@ public class RulesEngine<T extends Ruleset> {
      * @return a shallow copy of the asset state facts.
      */
     public Set<AssetState> getAssetStates() {
-        synchronized (deployments) {
-            return new HashSet<>(facts.getAssetStates());
-        }
+        return new HashSet<>(facts.getAssetStates());
     }
 
     /**
      * @return a shallow copy of the asset event facts.
      */
     public List<TemporaryFact<AssetState>> getAssetEvents() {
-        synchronized (deployments) {
-            return new ArrayList<>(facts.getAssetEvents());
-        }
+        return new ArrayList<>(facts.getAssetEvents());
     }
 
     public boolean isRunning() {
-        synchronized (deployments) {
-            return running;
-        }
+        return running;
     }
 
     public boolean isError() {
-        synchronized (deployments) {
-            for (RulesetDeployment deployment : deployments.values()) {
-                if (deployment.status == COMPILATION_ERROR || deployment.getStatus() == EXECUTION_ERROR) {
-                    return true;
-                }
+        for (RulesetDeployment deployment : deployments.values()) {
+            if (deployment.status == COMPILATION_ERROR || deployment.getStatus() == EXECUTION_ERROR) {
+                return true;
             }
-            return false;
         }
+        return false;
     }
 
     public RuntimeException getError() {
-        synchronized (deployments) {
-            List<RulesetDeployment> deploymentsWithCompilationError = new ArrayList<>();
-            List<RulesetDeployment> deploymentsWithExecutionError = new ArrayList<>();
-            for (RulesetDeployment deployment : deployments.values()) {
-                if (deployment.getStatus() == COMPILATION_ERROR) {
-                    deploymentsWithCompilationError.add(deployment);
-                } else if (deployment.getStatus() == EXECUTION_ERROR) {
-                    deploymentsWithExecutionError.add(deployment);
-                }
+        List<RulesetDeployment> deploymentsWithCompilationError = new ArrayList<>();
+        List<RulesetDeployment> deploymentsWithExecutionError = new ArrayList<>();
+        for (RulesetDeployment deployment : deployments.values()) {
+            if (deployment.getStatus() == COMPILATION_ERROR) {
+                deploymentsWithCompilationError.add(deployment);
+            } else if (deployment.getStatus() == EXECUTION_ERROR) {
+                deploymentsWithExecutionError.add(deployment);
             }
-            if (deploymentsWithCompilationError.size() > 0 || deploymentsWithExecutionError.size() > 0) {
-                return new RuntimeException(
-                    "Ruleset deployments have errors, failed compilation: "
-                        + deploymentsWithCompilationError.size()
-                        + ", failed execution: "
-                        + deploymentsWithExecutionError.size() + " - on: " + this
-                );
-            }
-            return null;
         }
+        if (deploymentsWithCompilationError.size() > 0 || deploymentsWithExecutionError.size() > 0) {
+            return new RuntimeException(
+                "Ruleset deployments have errors, failed compilation: "
+                    + deploymentsWithCompilationError.size()
+                    + ", failed execution: "
+                    + deploymentsWithExecutionError.size() + " - on: " + this
+            );
+        }
+        return null;
     }
 
     /**
      * @return <code>true</code> if all rulesets are {@link RulesetDeployment.Status#DEPLOYED} and this engine can be started.
      */
     public boolean isDeployed() {
-        synchronized (deployments) {
-            return deployments.values().stream().allMatch(rd -> rd.getStatus() == DEPLOYED);
-        }
+        return deployments.values().stream().allMatch(rd -> rd.getStatus() == DEPLOYED);
     }
 
     public void addRuleset(T ruleset) {
@@ -172,216 +161,199 @@ public class RulesEngine<T extends Ruleset> {
             return;
         }
 
-        synchronized (deployments) {
-            RulesetDeployment deployment = deployments.get(ruleset.getId());
+        RulesetDeployment deployment = deployments.get(ruleset.getId());
 
-            stop();
+        stop();
 
-            // Check if ruleset is already deployed (maybe an older version)
-            if (deployment != null) {
-                LOG.info("Removing ruleset deployment: " + ruleset);
-                deployments.remove(ruleset.getId());
-                updateDeploymentInfo();
-            }
+        // Check if ruleset is already deployed (maybe an older version)
+        if (deployment != null) {
+            LOG.info("Removing ruleset deployment: " + ruleset);
+            deployments.remove(ruleset.getId());
+            updateDeploymentInfo();
+        }
 
-            deployment = new RulesetDeployment(ruleset.getId(), ruleset.getName(), ruleset.getVersion());
+        deployment = new RulesetDeployment(ruleset.getId(), ruleset.getName(), ruleset.getVersion());
 
-            boolean compilationSuccessful = deployment.registerRules(ruleset, assetsFacade, usersFacade);
+        boolean compilationSuccessful = deployment.registerRules(ruleset, assetsFacade, usersFacade);
 
-            if (!compilationSuccessful) {
-                // If any other ruleset is DEPLOYED in this scope, demote to READY
-                for (RulesetDeployment rd : deployments.values()) {
-                    if (rd.getStatus() == DEPLOYED) {
-                        rd.setStatus(READY);
-                    }
+        if (!compilationSuccessful) {
+            // If any other ruleset is DEPLOYED in this scope, demote to READY
+            for (RulesetDeployment rd : deployments.values()) {
+                if (rd.getStatus() == DEPLOYED) {
+                    rd.setStatus(READY);
                 }
             }
-
-            // Add new ruleset and set its status to either DEPLOYED or COMPILATION_ERROR
-            deployment.setStatus(compilationSuccessful ? DEPLOYED : COMPILATION_ERROR);
-            deployments.put(ruleset.getId(), deployment);
-            updateDeploymentInfo();
-
-            start();
         }
+
+        // Add new ruleset and set its status to either DEPLOYED or COMPILATION_ERROR
+        deployment.setStatus(compilationSuccessful ? DEPLOYED : COMPILATION_ERROR);
+        deployments.put(ruleset.getId(), deployment);
+        updateDeploymentInfo();
+
+        start();
     }
 
     /**
      * @return <code>true</code> if this rules engine has no deployments.
      */
     public boolean removeRuleset(Ruleset ruleset) {
-        synchronized (deployments) {
-            if (!deployments.containsKey(ruleset.getId())) {
-                LOG.finer("Ruleset cannot be retracted as it was never deployed: " + ruleset);
-                return deployments.size() == 0;
-            }
+        if (!deployments.containsKey(ruleset.getId())) {
+            LOG.finer("Ruleset cannot be retracted as it was never deployed: " + ruleset);
+            return deployments.size() == 0;
+        }
 
-            stop();
+        stop();
 
-            deployments.remove(ruleset.getId());
-            updateDeploymentInfo();
+        deployments.remove(ruleset.getId());
+        updateDeploymentInfo();
 
-            // If there are no deployments with COMPILATION_ERROR, promote all which are READY to DEPLOYED
-            boolean anyDeploymentsHaveCompilationError = deployments
-                .values()
-                .stream()
-                .anyMatch(rd -> rd.getStatus() == COMPILATION_ERROR);
+        // If there are no deployments with COMPILATION_ERROR, promote all which are READY to DEPLOYED
+        boolean anyDeploymentsHaveCompilationError = deployments
+            .values()
+            .stream()
+            .anyMatch(rd -> rd.getStatus() == COMPILATION_ERROR);
 
-            if (!anyDeploymentsHaveCompilationError) {
-                deployments.values().forEach(rd -> {
-                    if (rd.getStatus() == READY) {
-                        rd.setStatus(DEPLOYED);
-                    }
-                });
-            }
+        if (!anyDeploymentsHaveCompilationError) {
+            deployments.values().forEach(rd -> {
+                if (rd.getStatus() == READY) {
+                    rd.setStatus(DEPLOYED);
+                }
+            });
+        }
 
-            if (deployments.size() > 0) {
-                start();
-                return false;
-            } else {
-                return true;
-            }
+        if (deployments.size() > 0) {
+            start();
+            return false;
+        } else {
+            return true;
         }
     }
 
     public void start() {
-        synchronized (deployments) {
-            if (isRunning()) {
-                return;
-            }
+        if (isRunning()) {
+            return;
+        }
 
-            if (!isDeployed()) {
-                LOG.fine("Cannot start rules engine, not all rulesets are status " + DEPLOYED);
-                return;
-            }
+        if (!isDeployed()) {
+            LOG.fine("Cannot start rules engine, not all rulesets are status " + DEPLOYED);
+            return;
+        }
 
-            if (deployments.size() == 0) {
-                LOG.finest("No rulesets so nothing to start");
-                return;
-            }
+        if (deployments.size() == 0) {
+            LOG.finest("No rulesets so nothing to start");
+            return;
+        }
 
-            LOG.info("Starting: " + this);
-            running = true;
-            fire();
+        LOG.info("Starting: " + this);
+        running = true;
+        fire();
 
-            // Start a background stats printer if INFO level logging is enabled
-            if (STATS_LOG.isLoggable(Level.INFO) || STATS_LOG.isLoggable(Level.FINEST)) {
-                if (STATS_LOG.isLoggable(Level.FINEST)) {
-                    LOG.info("On " + this + ", enabling periodic statistics output at INFO level every 30 seconds on category: " + STATS_LOG.getName());
-                } else {
-                    LOG.info("On " + this + ", enabling periodic full memory dump at FINEST level every 30 seconds on category: " + STATS_LOG.getName());
-                }
-                statsTimer = executorService.scheduleAtFixedRate(this::printSessionStats, 3, 30, TimeUnit.SECONDS);
+        // Start a background stats printer if INFO level logging is enabled
+        if (STATS_LOG.isLoggable(Level.INFO) || STATS_LOG.isLoggable(Level.FINEST)) {
+            if (STATS_LOG.isLoggable(Level.FINEST)) {
+                LOG.info("On " + this + ", enabling periodic statistics output at INFO level every 30 seconds on category: " + STATS_LOG.getName());
+            } else {
+                LOG.info("On " + this + ", enabling periodic full memory dump at FINEST level every 30 seconds on category: " + STATS_LOG.getName());
             }
+            statsTimer = executorService.scheduleAtFixedRate(this::printSessionStats, 3, 30, TimeUnit.SECONDS);
         }
     }
 
     public void fire() {
         // Submit a task that fires the engine for all deployments
-        executorService.submit(() -> {
-            synchronized (deployments) {
+        executorService.submit(() -> withLock(getClass().getSimpleName(), () -> {
+            if (!running) {
+                return;
+            }
 
-                if (!running) {
-                    return;
-                }
+            // Set the current clock
+            RulesClock clock = new RulesClock(timerService);
+            facts.setClock(clock);
 
-                // Set the current clock
-                RulesClock clock = new RulesClock(timerService);
-                facts.setClock(clock);
+            // Remove any expired temporary facts
+            boolean factsExpired = facts.removeExpiredTemporaryFacts();
 
-                // Remove any expired temporary facts
-                boolean factsExpired = facts.removeExpiredTemporaryFacts();
+            // TODO Optimize if scheduled firing of rules becomes a performance problem:
+            // Add fire(scheduledFiring) boolean
+            // Add enableTimer() as rule declaration option, each rule which uses time windows must set it
+            // Only fire if factsExpired || deployment.isAnyRuleEnabledTimer()
+            // Rules could default to enableTimer(true) and they could reduce firing frequency with enableTimer("1m")
 
-                // TODO Optimize if scheduled firing of rules becomes a performance problem:
-                // Add fire(scheduledFiring) boolean
-                // Add enableTimer() as rule declaration option, each rule which uses time windows must set it
-                // Only fire if factsExpired || deployment.isAnyRuleEnabledTimer()
-                // Rules could default to enableTimer(true) and they could reduce firing frequency with enableTimer("1m")
+            for (RulesetDeployment deployment : deployments.values()) {
+                try {
+                    RULES_LOG.fine("Firing rules @" + clock + " of: " + deployment);
 
-                for (RulesetDeployment deployment : deployments.values()) {
-                    try {
-                        RULES_LOG.fine("Firing rules @" + clock + " of: " + deployment);
-
-                        // If full detail logging is enabled
-                        if (RULES_LOG.isLoggable(Level.FINEST)) {
-                            // Log asset states and events before firing (note that this will log at INFO)
-                            facts.logFacts(RULES_LOG);
-                        }
-
-                        engine.fire(deployment.getRules(), facts);
-
-                    } catch (Exception ex) {
-                        LOG.log(Level.SEVERE, "On " + RulesEngine.this + ", error firing rules of: " + deployment, ex);
-
-                        deployment.setStatus(EXECUTION_ERROR);
-                        deployment.setError(ex);
-
-                        // TODO We always stop on any error, good idea?
-                        // TODO We only get here on LHS runtime errors, RHS runtime errors are in RuleFacts.onFailure()
-                        stop();
-
-                        // TODO We skip any other deployment when we hit the first error, good idea?
-                        break;
+                    // If full detail logging is enabled
+                    if (RULES_LOG.isLoggable(Level.FINEST)) {
+                        // Log asset states and events before firing (note that this will log at INFO)
+                        facts.logFacts(RULES_LOG);
                     }
-                }
 
-                // If we still have temporary facts, schedule a new firing so expired facts are removed eventually
-                if (facts.hasTemporaryFacts() && eventsTimer == null && !disableTemporaryFactExpiration) {
-                    LOG.fine("Temporary facts present, scheduling new firing of rules on: " + this);
-                    eventsTimer = executorService.scheduleAtFixedRate(
-                        this::fire,
-                        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS,
-                        TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS,
-                        TimeUnit.MILLISECONDS
-                    );
-                } else if (!facts.hasTemporaryFacts() && eventsTimer != null) {
-                    LOG.fine("No temporary facts present, cancel scheduled firing of rules on: " + this);
-                    eventsTimer.cancel(false);
-                    eventsTimer = null;
+                    engine.fire(deployment.getRules(), facts);
+
+                } catch (Exception ex) {
+                    LOG.log(Level.SEVERE, "On " + RulesEngine.this + ", error firing rules of: " + deployment, ex);
+
+                    deployment.setStatus(EXECUTION_ERROR);
+                    deployment.setError(ex);
+
+                    // TODO We always stop on any error, good idea?
+                    // TODO We only get here on LHS runtime errors, RHS runtime errors are in RuleFacts.onFailure()
+                    stop();
+
+                    // TODO We skip any other deployment when we hit the first error, good idea?
+                    break;
                 }
             }
-        });
+
+            // If we still have temporary facts, schedule a new firing so expired facts are removed eventually
+            if (facts.hasTemporaryFacts() && eventsTimer == null && !disableTemporaryFactExpiration) {
+                LOG.fine("Temporary facts present, scheduling new firing of rules on: " + this);
+                eventsTimer = executorService.scheduleAtFixedRate(
+                    this::fire,
+                    TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS,
+                    TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS,
+                    TimeUnit.MILLISECONDS
+                );
+            } else if (!facts.hasTemporaryFacts() && eventsTimer != null) {
+                LOG.fine("No temporary facts present, cancel scheduled firing of rules on: " + this);
+                eventsTimer.cancel(false);
+                eventsTimer = null;
+            }
+        }));
     }
 
     public void stop() {
-        synchronized (deployments) {
-            if (!isRunning()) {
-                return;
-            }
-            LOG.info("Stopping: " + this);
-            if (eventsTimer != null) {
-                eventsTimer.cancel(true);
-                eventsTimer = null;
-            }
-            if (statsTimer != null) {
-                statsTimer.cancel(true);
-                statsTimer = null;
-            }
-            running = false;
+        if (!isRunning()) {
+            return;
         }
+        LOG.info("Stopping: " + this);
+        if (eventsTimer != null) {
+            eventsTimer.cancel(true);
+            eventsTimer = null;
+        }
+        if (statsTimer != null) {
+            statsTimer.cancel(true);
+            statsTimer = null;
+        }
+        running = false;
     }
 
     public void updateFact(AssetState assetState, boolean fireImmediately) {
-        synchronized (deployments) {
-            facts.putAssetState(assetState);
-            if (fireImmediately) {
-                fire();
-            }
+        facts.putAssetState(assetState);
+        if (fireImmediately) {
+            fire();
         }
     }
 
     public void removeFact(AssetState assetState) {
-        synchronized (deployments) {
-            facts.removeAssetState(assetState);
-            fire();
-        }
+        facts.removeAssetState(assetState);
+        fire();
     }
 
     public void insertFact(String expires, AssetState assetState) {
-        synchronized (deployments) {
-            facts.insertAssetEvent(expires, assetState);
-            fire();
-        }
+        facts.insertAssetEvent(expires, assetState);
+        fire();
     }
 
     /* TODO
@@ -418,7 +390,7 @@ public class RulesEngine<T extends Ruleset> {
     }
 
     protected void printSessionStats() {
-        synchronized (deployments) {
+        withLock(getClass().getSimpleName(), () -> {
             Collection<AssetState> assetStateFacts = facts.getAssetStates();
             Collection<TemporaryFact<AssetState>> assetEventFacts = facts.getAssetEvents();
             Map<String, Object> namedFacts = facts.getNamedFacts();
@@ -434,7 +406,7 @@ public class RulesEngine<T extends Ruleset> {
             if (STATS_LOG.isLoggable(Level.FINEST)) {
                 facts.logFacts(STATS_LOG);
             }
-        }
+        });
     }
 
     @Override

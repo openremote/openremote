@@ -10,11 +10,11 @@ import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.asset.ServerAsset
-import org.openremote.model.asset.agent.AgentResource
 import org.openremote.model.asset.AssetAttribute
 import org.openremote.model.asset.AssetMeta
 import org.openremote.model.asset.AssetType
 import org.openremote.model.asset.agent.AgentLink
+import org.openremote.model.asset.agent.AgentResource
 import org.openremote.model.attribute.AttributeRef
 import org.openremote.model.attribute.AttributeType
 import org.openremote.model.attribute.MetaItem
@@ -218,5 +218,8 @@ class VelbusProtocolTest extends Specification implements ManagerContainerTrait 
         def memoTextAttribute = asset.getAttributesList().find {VelbusConfiguration.getVelbusDevicePropertyLink(it) == "MEMO_TEXT"}
         assert memoTextAttribute != null
         assert VelbusConfiguration.getVelbusDeviceAddress(memoTextAttribute) == 24
+
+        cleanup: "the server should be stopped"
+        stopContainer(container)
     }
 }

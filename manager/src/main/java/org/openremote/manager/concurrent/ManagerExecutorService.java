@@ -54,7 +54,7 @@ public class ManagerExecutorService implements ProtocolExecutorService {
 
     @Override
     public void stop(Container container) throws Exception {
-        scheduledTasksExecutor.shutdown();
+        scheduledTasksExecutor.shutdownNow();
     }
 
     @Override
