@@ -124,7 +124,7 @@ public abstract class AbstractProtocol implements Protocol {
     }
 
     @Override
-    public void start(Container container) throws Exception {
+    final public void start(Container container) throws Exception {
         LOG.fine("Starting protocol: " + getProtocolName());
         this.messageBrokerContext = container.getService(MessageBrokerSetupService.class).getContext();
         this.producerTemplate = container.getService(MessageBrokerService.class).getProducerTemplate();
@@ -144,6 +144,9 @@ public abstract class AbstractProtocol implements Protocol {
                             });
                     }
                 });
+
+                doStart(container);
+
             } catch (Exception ex) {
                 throw new RuntimeException(ex);
             }
@@ -151,12 +154,15 @@ public abstract class AbstractProtocol implements Protocol {
     }
 
     @Override
-    public void stop(Container container) throws Exception {
+    final public void stop(Container container) {
         withLock(getProtocolName(), () -> {
             linkedAttributes.clear();
             try {
                 messageBrokerContext.stopRoute("Actuator-" + getProtocolName(), 1, TimeUnit.MILLISECONDS);
                 messageBrokerContext.removeRoute("Actuator-" + getProtocolName());
+
+                doStop(container);
+
             } catch (Exception ex) {
                 throw new RuntimeException(ex);
             }
@@ -478,6 +484,17 @@ public abstract class AbstractProtocol implements Protocol {
         return result;
     }
 
+    /**
+     * Start any background tasks and get necessary resources.
+     */
+    protected void doStart(Container container) throws Exception {
+    }
+
+    /**
+     * Stop background tasks and close all resources.
+     */
+    protected void doStop(Container container) throws Exception {
+    }
 
     @Override
     public String toString() {

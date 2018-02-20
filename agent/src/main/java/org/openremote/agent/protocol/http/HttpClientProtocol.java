@@ -400,8 +400,7 @@ public class HttpClientProtocol extends AbstractProtocol {
     }
 
     @Override
-    public void stop(Container container) throws Exception {
-        super.stop(container);
+    protected void doStop(Container container) {
         pollingMap.forEach((attributeRef, scheduledFuture) -> scheduledFuture.cancel(true));
         pollingMap.clear();
         requestMap.clear();
