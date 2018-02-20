@@ -59,7 +59,7 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> {
         return arrayValue;
     }
 
-    public static final BaseAssetQuery objectValueAsQuery(ObjectValue objectValue) {
+    public static final AssetQuery objectValueAsQuery(ObjectValue objectValue) {
         AssetQuery assetQuery = new AssetQuery();
 
         objectValue.getObject("select").ifPresent(selectValue -> {
