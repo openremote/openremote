@@ -38,7 +38,7 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class RulesFacts extends Facts implements RuleListener, RulesEngineListener {
+public class RulesFacts extends Facts implements RuleListener {
 
     // Loop detection
     // TODO Better way than tracking rule trigger count? Max trigger could be a configurable multiple of facts count?
@@ -244,14 +244,10 @@ public class RulesFacts extends Facts implements RuleListener, RulesEngineListen
         return this;
     }
 
-    @Override
-    public void beforeEvaluate(Rules rules, Facts facts) {
-        triggerCount = 0;
-    }
-
-    @Override
-    public void afterExecute(Rules rules, Facts facts) {
-        LOG.fine("Rules triggered: " + triggerCount);
+    /**
+     * Reset rules triggered counter, used for loop detection.
+     */
+    public void resetTriggerCount() {
         triggerCount = 0;
     }
 
@@ -274,7 +270,7 @@ public class RulesFacts extends Facts implements RuleListener, RulesEngineListen
                 throw new IllegalStateException(
                     "Possible rules loop detected, exceeded max trigger count of "
                         + MAX_RULES_TRIGGERED_PER_EXECUTION
-                        + " on " + loggingContext + " for rule: " + rule.getName()
+                        + " for rule: " + rule.getName()
                 );
             }
         }

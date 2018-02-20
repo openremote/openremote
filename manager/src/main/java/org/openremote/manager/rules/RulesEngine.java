@@ -91,7 +91,6 @@ public class RulesEngine<T extends Ruleset> {
             // Skip any other rules after the first failed rule (exception thrown in condition or action)
             new RulesEngineParameters(false, true, false, RulesEngineParameters.DEFAULT_RULE_PRIORITY_THRESHOLD)
         );
-        engine.registerRulesEngineListener(facts);
         engine.registerRuleListener(facts);
     }
 
@@ -289,6 +288,7 @@ public class RulesEngine<T extends Ruleset> {
                         facts.logFacts(RULES_LOG);
                     }
 
+                    facts.resetTriggerCount();
                     engine.fire(deployment.getRules(), facts);
 
                 } catch (Exception ex) {
@@ -303,6 +303,8 @@ public class RulesEngine<T extends Ruleset> {
 
                     // TODO We skip any other deployment when we hit the first error, good idea?
                     break;
+                } finally {
+                    facts.resetTriggerCount();
                 }
             }
 
