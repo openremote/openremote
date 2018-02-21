@@ -48,6 +48,7 @@ import javax.ws.rs.client.Client;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
@@ -341,17 +342,20 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider{
         webService.getPrefixRoutes().put("/" + KeycloakResource.KEYCLOAK_CONTEXT_PATH, authProxyHandler);
     }
 
-    protected ClientRepresentation createClientApplication(String realm, String clientId, String appName, boolean enableDirectAccess) {
+    protected ClientRepresentation createClientApplication(String realm, String clientId, String appName, boolean devMode) {
         ClientRepresentation client = new ClientRepresentation();
 
         client.setClientId(clientId);
         client.setName(appName);
         client.setPublicClient(true);
 
-        if (enableDirectAccess) {
+        if (devMode) {
             // We need direct access for integration tests
             LOG.info("### Allowing direct access grants for client app '" + appName + "', this must NOT be used in production! ###");
             client.setDirectAccessGrantsEnabled(true);
+
+            // Allow any web origin (this will add CORS headers to token requests etc.)
+            client.setWebOrigins(Collections.singletonList("*"));
         }
 
         List<String> redirectUris = new ArrayList<>();

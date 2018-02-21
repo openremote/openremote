@@ -75,13 +75,18 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
 
     @Override
     protected void addClientRedirectUris(String realm, List<String> redirectUrls) {
-        // Callback URL used by Manager web client authentication, any relative path to "ourselves" is fine
-        String managerCallbackUrl = UriBuilder.fromUri("/").path(realm).path("*").build().toString();
-        redirectUrls.add(managerCallbackUrl);
+        if (devMode) {
+            // Allow any redirect URIs in dev mode
+            redirectUrls.add("*");
+        } else {
+            // Callback URL used by Manager web client authentication, any relative path to "ourselves" is fine
+            String managerCallbackUrl = UriBuilder.fromUri("/").path(realm).path("*").build().toString();
+            redirectUrls.add(managerCallbackUrl);
 
-        // Callback URL used by Console web client authentication, any relative path to "ourselves" is fine
-        String consoleCallbackUrl = UriBuilder.fromUri("/console/").path(realm).path("*").build().toString();
-        redirectUrls.add(consoleCallbackUrl);
+            // Callback URL used by Console web client authentication, any relative path to "ourselves" is fine
+            String consoleCallbackUrl = UriBuilder.fromUri("/console/").path(realm).path("*").build().toString();
+            redirectUrls.add(consoleCallbackUrl);
+        }
     }
 
     @Override

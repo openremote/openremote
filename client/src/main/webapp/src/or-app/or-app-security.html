@@ -326,8 +326,15 @@
                         this.logout();
                     }
 
+                    var managerHost = '';
+                    var hostURI = this.importPath;
+                    if ( hostURI ) {
+                        managerHost =  '//' + new URL(hostURI).host;
+                    }
+
                     let keycloakConfig = {
-                        url: window.location.protocol + "//" + window.location.host + "/auth",
+
+                        url: managerHost + "/auth",
                         realm: realm,
                         clientId: "openremote"
                     };
