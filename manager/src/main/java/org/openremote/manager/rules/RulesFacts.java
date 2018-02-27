@@ -19,7 +19,9 @@
  */
 package org.openremote.manager.rules;
 
-import org.jeasy.rules.api.*;
+import org.jeasy.rules.api.Facts;
+import org.jeasy.rules.api.Rule;
+import org.jeasy.rules.api.RuleListener;
 import org.openremote.model.asset.AssetQuery;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeExecuteStatus;
@@ -247,7 +249,7 @@ public class RulesFacts extends Facts implements RuleListener {
     /**
      * Reset rules triggered counter, used for loop detection.
      */
-    public void resetTriggerCount() {
+    public void reset() {
         triggerCount = 0;
     }
 

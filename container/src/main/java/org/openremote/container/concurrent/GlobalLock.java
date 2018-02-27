@@ -33,22 +33,57 @@ public class GlobalLock {
 
     private static final Logger LOG = Logger.getLogger(GlobalLock.class.getName());
 
-    // Provides exclusive access to shared protocol state
-    static protected final ReentrantLock lock = new ReentrantLock(true);
+    /**
+     * At least getOwner() is protected and not private...
+     */
+    static class CustomReentrantLock extends ReentrantLock {
+
+        String info;
+
+        public CustomReentrantLock() {
+            super(true);
+        }
+
+        String owner() {
+            Thread lockOwner;
+            if ((lockOwner = super.getOwner()) != null) {
+                return lockOwner.getName() + " executing " + info;
+            }
+            return "Unknown executing " + info;
+        }
+
+        public boolean tryLock(String info, long timeout, TimeUnit unit) throws InterruptedException {
+            boolean result = super.tryLock(timeout, unit);
+            if (result) {
+                this.info = info;
+            }
+            return result;
+        }
+
+        @Override
+        public void unlock() {
+            super.unlock();
+            info = null;
+        }
+    }
+
+    // Provides exclusive access to shared state
+    static protected final CustomReentrantLock lock = new CustomReentrantLock();
 
     protected GlobalLock() {
     }
 
     /**
-     * @return Defaults to 6 seconds, should be longer than it takes the router to be enabled/disabled.
+     * @return Defaults to 10 seconds.
      */
     static public int getLockTimeoutMillis() {
-        return 6000;
+        return 10000;
     }
 
     /**
      * Obtain the lock within {@link #getLockTimeoutMillis()} or throw {@link IllegalStateException}.
-     * @param info An informal text that is printed in log messages.
+     *
+     * @param info     An informal text that is printed in log messages.
      * @param runnable The guarded code to execute while holding the lock.
      */
     static public void withLock(String info, Runnable runnable) {
@@ -60,32 +95,31 @@ public class GlobalLock {
 
     /**
      * Obtain the lock within {@link #getLockTimeoutMillis()} or throw {@link IllegalStateException}.
-     * @param info An informal text that is printed in log messages.
+     *
+     * @param info     An informal text that is printed in log messages.
      * @param supplier The guarded code to execute while holding the lock.
      */
     static public <R> R withLockReturning(String info, Supplier<R> supplier) {
         try {
-            if (lock.tryLock(getLockTimeoutMillis(), TimeUnit.MILLISECONDS)) {
-                LOG.finest("+ Acquired lock on (count: " + lock.getHoldCount() + "): " + info);
-                // LOG.log(FINEST, "+ Acquired lock on (count: " + lock.getHoldCount() + "): " + info, new RuntimeException());
-                //LOG.finest("Lock on: " + Arrays.toString(Thread.currentThread().getStackTrace()));
+            if (lock.tryLock(info, getLockTimeoutMillis(), TimeUnit.MILLISECONDS)) {
+                LOG.finest("+ Acquired lock (count: " + lock.getHoldCount() + "): " + info);
                 try {
                     return supplier.get();
                 } finally {
-                    LOG.finest("- Releasing lock on (count: " + lock.getHoldCount() + "): " + info);
+                    LOG.finest("- Releasing lock (count: " + lock.getHoldCount() + "): " + info);
                     if (!lock.isHeldByCurrentThread()) {
-                        LOG.severe("Lock is held by another thread");
+                        LOG.severe("Lock is held by another thread, ensure the same thread acquires and releases the lock!");
                     } else {
                         lock.unlock();
                     }
                 }
             } else {
                 throw new IllegalStateException(
-                    "Could not acquire lock after waiting " + getLockTimeoutMillis() + "ms on: " + info
+                    "Could not acquire lock owned by " + lock.owner() + " after waiting " + getLockTimeoutMillis() + "ms: " + info
                 );
             }
         } catch (InterruptedException ex) {
-            LOG.log(FINEST, "Interrupted while waiting for lock on: " + info);
+            LOG.log(FINEST, "Interrupted while waiting for lock: " + info);
             return null;
         }
     }

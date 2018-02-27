@@ -63,6 +63,7 @@ public class RulesEngine<T extends Ruleset> {
     final protected InferenceRulesEngine engine;
 
     protected boolean running;
+    protected ScheduledFuture fireTimer;
     protected ScheduledFuture eventsTimer;
     protected ScheduledFuture statsTimer;
 
@@ -259,72 +260,86 @@ public class RulesEngine<T extends Ruleset> {
     }
 
     public void fire() {
-        // Submit a task that fires the engine for all deployments
-        executorService.submit(() -> withLock(getClass().getSimpleName(), () -> {
-            if (!running) {
-                return;
-            }
-
-            // Set the current clock
-            RulesClock clock = new RulesClock(timerService);
-            facts.setClock(clock);
-
-            // Remove any expired temporary facts
-            boolean factsExpired = facts.removeExpiredTemporaryFacts();
-
-            // TODO Optimize if scheduled firing of rules becomes a performance problem:
-            // Add fire(scheduledFiring) boolean
-            // Add enableTimer() as rule declaration option, each rule which uses time windows must set it
-            // Only fire if factsExpired || deployment.isAnyRuleEnabledTimer()
-            // Rules could default to enableTimer(true) and they could reduce firing frequency with enableTimer("1m")
-
-            for (RulesetDeployment deployment : deployments.values()) {
-                try {
-                    RULES_LOG.fine("Firing rules @" + clock + " of: " + deployment);
-
-                    // If full detail logging is enabled
-                    if (RULES_LOG.isLoggable(Level.FINEST)) {
-                        // Log asset states and events before firing (note that this will log at INFO)
-                        facts.logFacts(RULES_LOG);
-                    }
-
-                    facts.resetTriggerCount();
-                    long startTimestamp = System.currentTimeMillis();
-                    engine.fire(deployment.getRules(), facts);
-                    RULES_LOG.fine("Rules processing time: " + (System.currentTimeMillis() - startTimestamp) + "ms");
-
-                } catch (Exception ex) {
-                    LOG.log(Level.SEVERE, "On " + RulesEngine.this + ", error firing rules of: " + deployment, ex);
-
-                    deployment.setStatus(EXECUTION_ERROR);
-                    deployment.setError(ex);
-
-                    // TODO We always stop on any error, good idea?
-                    // TODO We only get here on LHS runtime errors, RHS runtime errors are in RuleFacts.onFailure()
-                    stop();
-
-                    // TODO We skip any other deployment when we hit the first error, good idea?
-                    break;
-                } finally {
-                    facts.resetTriggerCount();
-                }
-            }
-
-            // If we still have temporary facts, schedule a new firing so expired facts are removed eventually
-            if (facts.hasTemporaryFacts() && eventsTimer == null && !disableTemporaryFactExpiration) {
-                LOG.fine("Temporary facts present, scheduling new firing of rules on: " + this);
-                eventsTimer = executorService.scheduleAtFixedRate(
-                    this::fire,
-                    TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS,
-                    TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS,
-                    TimeUnit.MILLISECONDS
+        withLock(getClass().getSimpleName(), () -> {
+            // Schedule a firing within the guaranteed expiration time (so not immediately), and
+            // only if the last firing is done. This effectively limits how often the rules engine
+            // will fire, only once within the guaranteed minimum expiration time.
+            if (fireTimer == null || fireTimer.isDone()) {
+                fireTimer = executorService.schedule(
+                    () -> withLock(getClass().getSimpleName(), this::fireAllDeployments),
+                    TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS
                 );
-            } else if (!facts.hasTemporaryFacts() && eventsTimer != null) {
-                LOG.fine("No temporary facts present, cancel scheduled firing of rules on: " + this);
-                eventsTimer.cancel(false);
-                eventsTimer = null;
             }
-        }));
+        });
+    }
+
+    protected void fireAllDeployments() {
+        if (!running) {
+            return;
+        }
+
+        // Set the current clock
+        RulesClock clock = new RulesClock(timerService);
+        facts.setClock(clock);
+
+        // Remove any expired temporary facts
+        boolean factsExpired = facts.removeExpiredTemporaryFacts();
+
+        // TODO Optimize if scheduled firing of rules becomes a performance problem:
+        // Add fire(scheduledFiring) boolean
+        // Add enableTimer() as rule declaration option, each rule which uses time windows must set it
+        // Only fire if factsExpired || deployment.isAnyRuleEnabledTimer()
+        // Rules could default to enableTimer(true) and they could reduce firing frequency with enableTimer("1m")
+
+        for (RulesetDeployment deployment : deployments.values()) {
+            try {
+                RULES_LOG.fine("Firing rules @" + clock + " of: " + deployment);
+
+                // If full detail logging is enabled
+                if (RULES_LOG.isLoggable(Level.FINEST)) {
+                    // Log asset states and events before firing (note that this will log at INFO)
+                    facts.logFacts(RULES_LOG);
+                }
+
+                // Reset facts for this firing (loop detection etc.)
+                facts.reset();
+
+                long startTimestamp = System.currentTimeMillis();
+                engine.fire(deployment.getRules(), facts);
+                RULES_LOG.fine("Rules executed in: " + (System.currentTimeMillis() - startTimestamp) + "ms");
+
+            } catch (Exception ex) {
+                LOG.log(Level.SEVERE, "On " + RulesEngine.this + ", error firing rules of: " + deployment, ex);
+
+                deployment.setStatus(EXECUTION_ERROR);
+                deployment.setError(ex);
+
+                // TODO We always stop on any error, good idea?
+                // TODO We only get here on LHS runtime errors, RHS runtime errors are in RuleFacts.onFailure()
+                stop();
+
+                // TODO We skip any other deployment when we hit the first error, good idea?
+                break;
+            } finally {
+                // Reset facts after this firing (loop detection etc.)
+                facts.reset();
+            }
+        }
+
+        // If we still have temporary facts, schedule a new firing so expired facts are removed eventually
+        if (facts.hasTemporaryFacts() && eventsTimer == null && !disableTemporaryFactExpiration) {
+            LOG.fine("Temporary facts present, scheduling new firing of rules on: " + this);
+            eventsTimer = executorService.scheduleAtFixedRate(
+                this::fire,
+                TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS,
+                TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS,
+                TimeUnit.MILLISECONDS
+            );
+        } else if (!facts.hasTemporaryFacts() && eventsTimer != null) {
+            LOG.fine("No temporary facts present, cancel scheduled firing of rules on: " + this);
+            eventsTimer.cancel(false);
+            eventsTimer = null;
+        }
     }
 
     public void stop() {
@@ -332,6 +347,10 @@ public class RulesEngine<T extends Ruleset> {
             return;
         }
         LOG.info("Stopping: " + this);
+        if (fireTimer != null) {
+            fireTimer.cancel(true);
+            fireTimer = null;
+        }
         if (eventsTimer != null) {
             eventsTimer.cancel(true);
             eventsTimer = null;
