@@ -289,7 +289,9 @@ public class RulesEngine<T extends Ruleset> {
                     }
 
                     facts.resetTriggerCount();
+                    long startTimestamp = System.currentTimeMillis();
                     engine.fire(deployment.getRules(), facts);
+                    RULES_LOG.fine("Rules processing time: " + (System.currentTimeMillis() - startTimestamp) + "ms");
 
                 } catch (Exception ex) {
                     LOG.log(Level.SEVERE, "On " + RulesEngine.this + ", error firing rules of: " + deployment, ex);
