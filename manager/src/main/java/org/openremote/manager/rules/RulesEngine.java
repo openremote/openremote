@@ -64,7 +64,6 @@ public class RulesEngine<T extends Ruleset> {
 
     protected boolean running;
     protected ScheduledFuture fireTimer;
-    protected ScheduledFuture eventsTimer;
     protected ScheduledFuture statsTimer;
 
     // Only used to optimize toString(), contains the details of this engine
@@ -265,8 +264,22 @@ public class RulesEngine<T extends Ruleset> {
             // only if the last firing is done. This effectively limits how often the rules engine
             // will fire, only once within the guaranteed minimum expiration time.
             if (fireTimer == null || fireTimer.isDone()) {
+                LOG.fine("Scheduling rules firing on: " + this);
                 fireTimer = executorService.schedule(
-                    () -> withLock(getClass().getSimpleName(), this::fireAllDeployments),
+                    () -> withLock(getClass().getSimpleName(), () -> {
+
+                        // Process rules for all deployments
+                        fireAllDeployments();
+
+                        // If we still have temporary facts, schedule a new firing so expired facts are removed eventually
+                        if (facts.hasTemporaryFacts() && !disableTemporaryFactExpiration) {
+                            LOG.fine("Temporary facts present after firing rules on: " + this);
+                            executorService.schedule(this::fire, 0);
+                        } else if (!disableTemporaryFactExpiration){
+                            LOG.fine("No temporary facts present after firing rules on: " + this);
+                        }
+
+                    }),
                     TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS
                 );
             }
@@ -284,12 +297,6 @@ public class RulesEngine<T extends Ruleset> {
 
         // Remove any expired temporary facts
         boolean factsExpired = facts.removeExpiredTemporaryFacts();
-
-        // TODO Optimize if scheduled firing of rules becomes a performance problem:
-        // Add fire(scheduledFiring) boolean
-        // Add enableTimer() as rule declaration option, each rule which uses time windows must set it
-        // Only fire if factsExpired || deployment.isAnyRuleEnabledTimer()
-        // Rules could default to enableTimer(true) and they could reduce firing frequency with enableTimer("1m")
 
         for (RulesetDeployment deployment : deployments.values()) {
             try {
@@ -325,21 +332,6 @@ public class RulesEngine<T extends Ruleset> {
                 facts.reset();
             }
         }
-
-        // If we still have temporary facts, schedule a new firing so expired facts are removed eventually
-        if (facts.hasTemporaryFacts() && eventsTimer == null && !disableTemporaryFactExpiration) {
-            LOG.fine("Temporary facts present, scheduling new firing of rules on: " + this);
-            eventsTimer = executorService.scheduleAtFixedRate(
-                this::fire,
-                TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS,
-                TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS,
-                TimeUnit.MILLISECONDS
-            );
-        } else if (!facts.hasTemporaryFacts() && eventsTimer != null) {
-            LOG.fine("No temporary facts present, cancel scheduled firing of rules on: " + this);
-            eventsTimer.cancel(false);
-            eventsTimer = null;
-        }
     }
 
     public void stop() {
@@ -350,10 +342,6 @@ public class RulesEngine<T extends Ruleset> {
         if (fireTimer != null) {
             fireTimer.cancel(true);
             fireTimer = null;
-        }
-        if (eventsTimer != null) {
-            eventsTimer.cancel(true);
-            eventsTimer = null;
         }
         if (statsTimer != null) {
             statsTimer.cancel(true);
@@ -379,31 +367,6 @@ public class RulesEngine<T extends Ruleset> {
         fire();
     }
 
-    /* TODO
-        protected String compileTemplate(String templateAssetId, String rules) {
-            ServerAsset templateAsset = assetStorageService.find(templateAssetId, true);
-
-            if (templateAsset == null)
-                throw new IllegalStateException("Template asset not found: " + templateAssetId);
-
-            List<TemplateFilter> filters = templateAsset.getAttributesStream()
-                .filter(isAttributeTypeEqualTo(AttributeType.RULES_TEMPLATE_FILTER))
-                .map(attribute -> new Pair<>(attribute.getName(), attribute.getValue()))
-                .filter(pair -> pair.key.isPresent() && pair.value.isPresent())
-                .map(pair -> new Pair<>(pair.key.get(), pair.value.get()))
-                .map(pair -> TemplateFilter.fromModelValue(pair.key, pair.value))
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .collect(Collectors.toList());
-
-            LOG.fine("Rendering rules template with filters: " + filters);
-
-            ObjectDataCompiler converter = new ObjectDataCompiler();
-            InputStream is = new ByteArrayInputStream(rules.getBytes(StandardCharsets.UTF_8));
-            return converter.compile(filters, is);
-        }
-    */
-
     protected void updateDeploymentInfo() {
         deploymentInfo = Arrays.toString(
             deployments.values().stream()
@@ -418,10 +381,12 @@ public class RulesEngine<T extends Ruleset> {
             Collection<TemporaryFact<AssetState>> assetEventFacts = facts.getAssetEvents();
             Map<String, Object> namedFacts = facts.getNamedFacts();
             Collection<Object> anonFacts = facts.getAnonymousFacts();
+            long temporaryFactsCount = facts.getTemporaryFacts().count();
             long total = assetStateFacts.size() + assetEventFacts.size() + namedFacts.size() + anonFacts.size();
             STATS_LOG.info("On " + this + ", in memory facts are Total: " + total
                 + ", AssetState: " + assetStateFacts.size()
                 + ", AssetEvent: " + assetEventFacts.size()
+                + ", Temporary: " + temporaryFactsCount
                 + ", Named: " + namedFacts.size()
                 + ", Anonymous: " + anonFacts.size());
 
