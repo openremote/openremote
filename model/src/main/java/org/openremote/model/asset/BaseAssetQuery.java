@@ -222,6 +222,7 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> {
      */
     public enum Match {
         EXACT,
+        NOT_EXACT,
         BEGIN,
         END,
         CONTAINS;
@@ -246,6 +247,7 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> {
      */
     public enum Operator {
         EQUALS,
+        NOT_EQUALS,
         GREATER_THAN,
         GREATER_EQUALS,
         LESS_THAN,

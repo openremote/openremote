@@ -164,6 +164,8 @@ public class AssetQueryPredicate implements Predicate<AssetState> {
             switch (predicate.operator) {
                 case EQUALS:
                     return leftOperand.equals(rightOperand);
+                case NOT_EQUALS:
+                    return !leftOperand.equals(rightOperand);
                 case BETWEEN:
                     return leftOperand.doubleValue() >= rightOperand.doubleValue() && leftOperand.doubleValue() <= predicate.rangeValue;
                 case LESS_THAN:
