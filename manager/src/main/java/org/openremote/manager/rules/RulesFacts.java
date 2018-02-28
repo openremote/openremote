@@ -108,15 +108,15 @@ public class RulesFacts extends Facts implements RuleListener {
     public Stream<Object> getAllFacts() {
         return
             Stream.concat(
-                getNamedFacts().values().stream(),
+                getNamedFacts().values().stream().parallel(),
                 Stream.concat(
-                    getAnonymousFacts().stream(),
+                    getAnonymousFacts().stream().parallel(),
                     Stream.concat(
-                        getAssetStates().stream(),
-                        getAssetEvents().stream()
+                        getAssetStates().stream().parallel(),
+                        getAssetEvents().stream().parallel()
                     )
                 )
-            );
+            ).parallel();
     }
 
     @SuppressWarnings("unchecked")
@@ -223,11 +223,11 @@ public class RulesFacts extends Facts implements RuleListener {
     public Stream<TemporaryFact> getTemporaryFacts() {
         return Stream.concat(
             Stream.concat(
-                getAssetEvents().stream(),
-                getNamedFacts().values().stream().filter(fact -> fact instanceof TemporaryFact).map(fact -> (TemporaryFact) fact)
+                getAssetEvents().stream().parallel(),
+                getNamedFacts().values().stream().parallel().filter(fact -> fact instanceof TemporaryFact).map(fact -> (TemporaryFact) fact)
             ),
-            getAnonymousFacts().stream().filter(fact -> fact instanceof TemporaryFact).map(fact -> (TemporaryFact) fact)
-        );
+            getAnonymousFacts().stream().parallel().filter(fact -> fact instanceof TemporaryFact).map(fact -> (TemporaryFact) fact)
+        ).parallel();
     }
 
     @Override
@@ -301,13 +301,9 @@ public class RulesFacts extends Facts implements RuleListener {
             TemporaryFact temporaryFact = (TemporaryFact) fact;
             fact = temporaryFact.getFact();
         }
-        Optional<T> result = Optional.empty();
-        if (!factType.isAssignableFrom(fact.getClass())) {
-            result = Optional.empty();
-        } else if (predicate.test((T) fact)) {
-            result = Optional.of((T) fact);
-        }
-        return result;
+        return Optional.ofNullable(
+            factType.isAssignableFrom(fact.getClass()) && predicate.test((T) fact) ? (T) fact: null
+        );
     }
 
     public <T> Optional<T> matchFirst(String name) {
@@ -362,8 +358,8 @@ public class RulesFacts extends Facts implements RuleListener {
     }
 
     public Stream<AssetState> matchAssetState(AssetQuery assetQuery) {
-        return getAssetStates().stream()
-            .filter(fact -> matchFact(fact, AssetState.class, new AssetQueryPredicate(assetQuery)).isPresent());
+        Predicate<AssetState> p = new AssetQueryPredicate(assetQuery);
+        return getAssetStates().stream().parallel().filter(p);
     }
 
     public Optional<TemporaryFact<AssetState>> matchFirstAssetEvent(AssetQuery assetQuery) {
@@ -375,8 +371,9 @@ public class RulesFacts extends Facts implements RuleListener {
     }
 
     public Stream<TemporaryFact<AssetState>> matchAssetEvent(AssetQuery assetQuery) {
-        return getAssetEvents().stream()
-            .filter(fact -> matchFact(fact, AssetState.class, new AssetQueryPredicate(assetQuery)).isPresent());
+        Predicate<AssetState> p = new AssetQueryPredicate(assetQuery);
+        return getAssetEvents().stream().parallel()
+            .filter(fact -> matchFact(fact, AssetState.class, p).isPresent());
     }
 
     public RulesFacts updateAssetState(String assetId, String attributeName, Value value) {
