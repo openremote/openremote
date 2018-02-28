@@ -164,10 +164,9 @@ class BasicRulesFactsTest extends Specification {
 
         and: "the clock is advanced and temporary facts are expired"
         rulesFacts.setClock(new RulesClock(3000))
-        def factsExpired = rulesFacts.removeExpiredTemporaryFacts()
+        rulesFacts.removeExpiredTemporaryFacts()
 
         then: "all temporary facts should still be present"
-        assert !factsExpired
         assert rulesFacts.hasTemporaryFacts()
         assert rulesFacts.getAllFacts().count() == 3
         assert rulesFacts.matchFirst("foo").isPresent()
@@ -176,10 +175,9 @@ class BasicRulesFactsTest extends Specification {
 
         when: "the clock is advanced and temporary facts are expired"
         rulesFacts.setClock(new RulesClock(6000))
-        factsExpired = rulesFacts.removeExpiredTemporaryFacts()
+        rulesFacts.removeExpiredTemporaryFacts()
 
         then: "some temporary facts should still be present"
-        assert factsExpired
         assert rulesFacts.hasTemporaryFacts()
         assert rulesFacts.getAllFacts().count() == 2
         assert !rulesFacts.matchFirst("foo").isPresent()
@@ -188,10 +186,9 @@ class BasicRulesFactsTest extends Specification {
 
         when: "the clock is advanced and temporary facts are expired"
         rulesFacts.setClock(new RulesClock(12000))
-        factsExpired = rulesFacts.removeExpiredTemporaryFacts()
+        rulesFacts.removeExpiredTemporaryFacts()
 
         then: "some temporary facts should still be present"
-        assert factsExpired
         assert rulesFacts.hasTemporaryFacts()
         assert rulesFacts.getAllFacts().count() == 1
         assert !rulesFacts.matchFirst("foo").isPresent()
@@ -221,10 +218,9 @@ class BasicRulesFactsTest extends Specification {
 
         and: "the clock is advanced and temporary facts are expired"
         rulesFacts.setClock(new RulesClock(3000))
-        def factsExpired = rulesFacts.removeExpiredTemporaryFacts()
+        rulesFacts.removeExpiredTemporaryFacts()
 
         then: "all temporary facts should still be present"
-        assert !factsExpired
         assert rulesFacts.hasTemporaryFacts()
         assert rulesFacts.match(AnonFact).count() == 3
         assert rulesFacts.match(String).count() == 0
@@ -237,10 +233,9 @@ class BasicRulesFactsTest extends Specification {
 
         when: "the clock is advanced and temporary facts are expired"
         rulesFacts.setClock(new RulesClock(6000))
-        factsExpired = rulesFacts.removeExpiredTemporaryFacts()
+        rulesFacts.removeExpiredTemporaryFacts()
 
         then: "some temporary facts should still be present"
-        assert factsExpired
         assert rulesFacts.hasTemporaryFacts()
         assert rulesFacts.match(AnonFact).count() == 2
         assert rulesFacts.match(AnonFact, { fact -> fact.foo == "FOO1" }).count() == 0
@@ -249,10 +244,9 @@ class BasicRulesFactsTest extends Specification {
 
         when: "the clock is advanced and temporary facts are expired"
         rulesFacts.setClock(new RulesClock(12000))
-        factsExpired = rulesFacts.removeExpiredTemporaryFacts()
+        rulesFacts.removeExpiredTemporaryFacts()
 
         then: "some temporary facts should still be present"
-        assert factsExpired
         assert rulesFacts.hasTemporaryFacts()
         assert rulesFacts.match(AnonFact).count() == 1
         assert rulesFacts.match(AnonFact, { fact -> fact.foo == "FOO1" }).count() == 0

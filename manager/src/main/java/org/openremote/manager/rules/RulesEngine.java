@@ -296,7 +296,7 @@ public class RulesEngine<T extends Ruleset> {
         facts.setClock(clock);
 
         // Remove any expired temporary facts
-        boolean factsExpired = facts.removeExpiredTemporaryFacts();
+        facts.removeExpiredTemporaryFacts();
 
         for (RulesetDeployment deployment : deployments.values()) {
             try {

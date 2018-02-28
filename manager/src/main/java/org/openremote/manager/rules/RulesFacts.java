@@ -65,10 +65,10 @@ public class RulesFacts extends Facts implements RuleListener {
         this.loggingContext = loggingContext;
         this.LOG = logger;
 
-        asMap().put(ASSET_STATES, new HashSet<AssetState>());
-        asMap().put(ASSET_EVENTS, new ArrayList<TemporaryFact<AssetState>>());
-        asMap().put(EXECUTION_VARS, new HashMap<String, Object>());
-        asMap().put(ANONYMOUS_FACTS, new HashSet<>());
+        asMap().put(ASSET_STATES, new ArrayDeque());
+        asMap().put(ASSET_EVENTS, new ArrayDeque());
+        asMap().put(EXECUTION_VARS, new HashMap());
+        asMap().put(ANONYMOUS_FACTS, new ArrayDeque());
     }
 
     public void setClock(RulesClock clock) {
@@ -81,18 +81,18 @@ public class RulesFacts extends Facts implements RuleListener {
     }
 
     @SuppressWarnings("unchecked")
-    public Set<AssetState> getAssetStates() {
-        return (Set<AssetState>) get(ASSET_STATES);
+    public Collection<AssetState> getAssetStates() {
+        return (Collection<AssetState>) get(ASSET_STATES);
     }
 
     @SuppressWarnings("unchecked")
-    public List<TemporaryFact<AssetState>> getAssetEvents() {
-        return (List<TemporaryFact<AssetState>>) get(ASSET_EVENTS);
+    public Collection<TemporaryFact<AssetState>> getAssetEvents() {
+        return (Collection<TemporaryFact<AssetState>>) get(ASSET_EVENTS);
     }
 
     @SuppressWarnings("unchecked")
-    public Set<Object> getAnonymousFacts() {
-        return (Set<Object>) get(ANONYMOUS_FACTS);
+    public Collection<Object> getAnonymousFacts() {
+        return (Collection<Object>) get(ANONYMOUS_FACTS);
     }
 
     public Map<String, Object> getNamedFacts() {
@@ -419,9 +419,8 @@ public class RulesFacts extends Facts implements RuleListener {
         return this;
     }
 
-    public boolean removeExpiredTemporaryFacts() {
+    public void removeExpiredTemporaryFacts() {
         long currentTimestamp = (long) getClock().getTimestamp();
-        long countBefore = getTemporaryFacts().count();
         getAssetEvents().removeIf(fact -> {
             boolean result = fact.isExpired(currentTimestamp);
             if (result && LOG.isLoggable(Level.FINEST)) {
@@ -455,8 +454,6 @@ public class RulesFacts extends Facts implements RuleListener {
             }
             return result;
         });
-        long countAfter = getTemporaryFacts().count();
-        return countAfter < countBefore;
     }
 
     public boolean logFacts(Logger logger) {
