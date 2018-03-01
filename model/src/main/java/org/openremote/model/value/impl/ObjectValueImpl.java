@@ -20,15 +20,22 @@ import org.openremote.model.value.*;
 
 import java.util.*;
 import java.util.function.Predicate;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class ObjectValueImpl extends ValueImpl implements ObjectValue {
 
+    private static final Logger LOG = Logger.getLogger(ObjectValueImpl.class.getName());
+
     private static List<String> stringifyOrder(String[] keys) {
         List<String> toReturn = new ArrayList<>();
         List<String> nonNumeric = new ArrayList<>();
         for (String key : keys) {
+            if (key == null) {
+                LOG.warning("Null key in JSON object: " + Arrays.toString(keys));
+                continue;
+            }
             if (key.matches("\\d+")) {
                 toReturn.add(key);
             } else {

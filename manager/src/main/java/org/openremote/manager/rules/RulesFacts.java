@@ -22,6 +22,7 @@ package org.openremote.manager.rules;
 import org.jeasy.rules.api.Facts;
 import org.jeasy.rules.api.Rule;
 import org.jeasy.rules.api.RuleListener;
+import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetQuery;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeExecuteStatus;
@@ -46,6 +47,8 @@ public class RulesFacts extends Facts implements RuleListener {
     // TODO Better way than tracking rule trigger count? Max trigger could be a configurable multiple of facts count?
     public static final int MAX_RULES_TRIGGERED_PER_EXECUTION = 100;
 
+    public static final int INITIAL_CAPACITY = 100000;
+
     public static final String CLOCK = "INTERNAL_CLOCK";
     public static final String ASSET_STATES = "INTERNAL_ASSET_STATES";
     public static final String ASSET_EVENTS = "INTERNAL_ASSET_EVENTS";
@@ -58,6 +61,8 @@ public class RulesFacts extends Facts implements RuleListener {
 
     public RulesClock clock;
 
+    final protected Map<String, Collection<AssetState>> assetIdIndex = new HashMap<>();
+
     protected int triggerCount;
 
     public RulesFacts(Assets assetsFacade, Object loggingContext, Logger logger) {
@@ -65,10 +70,10 @@ public class RulesFacts extends Facts implements RuleListener {
         this.loggingContext = loggingContext;
         this.LOG = logger;
 
-        asMap().put(ASSET_STATES, new ArrayDeque());
-        asMap().put(ASSET_EVENTS, new ArrayDeque());
+        asMap().put(ASSET_STATES, new ArrayDeque(INITIAL_CAPACITY));
+        asMap().put(ASSET_EVENTS, new ArrayDeque(INITIAL_CAPACITY));
         asMap().put(EXECUTION_VARS, new HashMap());
-        asMap().put(ANONYMOUS_FACTS, new ArrayDeque());
+        asMap().put(ANONYMOUS_FACTS, new ArrayDeque(INITIAL_CAPACITY));
     }
 
     public void setClock(RulesClock clock) {
@@ -134,6 +139,10 @@ public class RulesFacts extends Facts implements RuleListener {
         return (T) getVars().get(var);
     }
 
+    public <T> Optional<T> getOptional(String name) {
+        return Optional.ofNullable(super.get(name));
+    }
+
     @Override
     public RulesFacts put(String name, Object fact) {
         switch (name) {
@@ -166,6 +175,12 @@ public class RulesFacts extends Facts implements RuleListener {
         }
         getAssetStates().remove(assetState);
         getAssetStates().add(assetState);
+
+        // Maintain index of all asset states for this asset by ID
+        assetIdIndex.putIfAbsent(assetState.getId(), new ArrayDeque<>());
+        assetIdIndex.get(assetState.getId()).remove(assetState);
+        assetIdIndex.get(assetState.getId()).add(assetState);
+
         return this;
     }
 
@@ -174,6 +189,13 @@ public class RulesFacts extends Facts implements RuleListener {
             LOG.finest("Fact change (DELETE): " + assetState + " - on: " + loggingContext);
         }
         getAssetStates().remove(assetState);
+
+        // Maintain index of all asset states for this asset by ID
+        Collection<AssetState> assetIdIndexCollection = assetIdIndex.get(assetState.getId());
+        if (assetIdIndexCollection != null) {
+            assetIdIndexCollection.remove(assetState);
+        }
+
         return this;
     }
 
@@ -359,7 +381,17 @@ public class RulesFacts extends Facts implements RuleListener {
 
     public Stream<AssetState> matchAssetState(AssetQuery assetQuery) {
         Predicate<AssetState> p = new AssetQueryPredicate(assetQuery);
-        return getAssetStates().stream().parallel().filter(p);
+
+        // Match against all asset states by default
+        Stream<AssetState> assetStates = getAssetStates().stream();
+
+        // If the query is by asset ID, look up a smaller stream on asset ID index
+        Collection<AssetState> indexedAssetStates;
+        if (assetQuery.id != null && ((indexedAssetStates = assetIdIndex.get(assetQuery.id)) != null)) {
+            assetStates = indexedAssetStates.stream();
+        }
+
+        return assetStates.parallel().filter(p);
     }
 
     public Optional<TemporaryFact<AssetState>> matchFirstAssetEvent(AssetQuery assetQuery) {
@@ -405,8 +437,15 @@ public class RulesFacts extends Facts implements RuleListener {
         getAssetStates()
             .removeIf(assetState -> {
                 boolean invalid = assetState.getId().equals(assetId) && assetState.getAttributeName().equals(attributeName);
-                if (invalid && LOG.isLoggable(Level.FINEST)) {
-                    LOG.finest("Fact change (INTERNAL DELETE): " + assetState + " - on: " + loggingContext);
+                if (invalid) {
+                    if (LOG.isLoggable(Level.FINEST)) {
+                        LOG.finest("Fact change (INTERNAL DELETE): " + assetState + " - on: " + loggingContext);
+                    }
+                    // Maintain index of all asset states for this asset by ID
+                    Collection<AssetState> assetIdIndexCollection = assetIdIndex.get(assetId);
+                    if (assetIdIndexCollection != null) {
+                        assetIdIndexCollection.remove(assetState);
+                    }
                 }
                 return invalid;
             });

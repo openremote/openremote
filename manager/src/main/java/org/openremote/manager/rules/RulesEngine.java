@@ -268,15 +268,21 @@ public class RulesEngine<T extends Ruleset> {
                 fireTimer = executorService.schedule(
                     () -> withLock(getClass().getSimpleName(), () -> {
 
+                        // Are temporary facts present before rules are fired?
+                        boolean hadTemporaryFactsBefore = facts.hasTemporaryFacts();
+
                         // Process rules for all deployments
                         fireAllDeployments();
 
-                        // If we still have temporary facts, schedule a new firing so expired facts are removed eventually
-                        if (facts.hasTemporaryFacts() && !disableTemporaryFactExpiration) {
-                            LOG.fine("Temporary facts present after firing rules on: " + this);
+                        // If there are temporary facts, or if there were some before and
+                        // now they are gone, schedule a new firing to guarantee processing
+                        // of expired and removed temporary facts
+                        if ((facts.hasTemporaryFacts() || (hadTemporaryFactsBefore && !facts.hasTemporaryFacts()))
+                            && !disableTemporaryFactExpiration) {
+                            LOG.fine("Temporary facts require firing rules on: " + this);
                             executorService.schedule(this::fire, 0);
-                        } else if (!disableTemporaryFactExpiration){
-                            LOG.fine("No temporary facts present after firing rules on: " + this);
+                        } else if (!disableTemporaryFactExpiration) {
+                            LOG.fine("No temporary facts present/changed when firing rules on: " + this);
                         }
 
                     }),

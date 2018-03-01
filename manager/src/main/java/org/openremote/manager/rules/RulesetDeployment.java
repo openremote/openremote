@@ -115,6 +115,16 @@ public class RulesetDeployment {
         scriptEngineManager.put("LOG", RulesEngine.RULES_LOG);
         scriptEngineManager.put("console", new JsConsole(RulesEngine.RULES_LOG));
 
+        /* TODO Sharing a static GroovyShell doesn't work, redeploying a ruleset which defines classes (e.g. Flight) is broken:
+
+        java.lang.RuntimeException: Error evaluating condition of rule '-Update flight facts when estimated landing time of flight asset is updated':
+        No signature of method: org.openremote.manager.setup.database.Script1$_run_closure2$_closure14$_closure17.doCall() is applicable for argument types: (org.openremote.manager.setup.database.Flight) values: [...]
+        Possible solutions: doCall(org.openremote.manager.setup.database.Flight), findAll(), findAll(), isCase(java.lang.Object), isCase(java.lang.Object)
+        The following classes appear as argument class and as parameter class, but are defined by different class loader:
+        org.openremote.manager.setup.database.Flight (defined by 'groovy.lang.GroovyClassLoader$InnerLoader@2cc34cd5' and 'groovy.lang.GroovyClassLoader$InnerLoader@1af957bc')
+        If one of the method suggestions matches the method you wanted to call,
+        then check your class loader setup.
+         */
         groovyShell = new GroovyShell(
             new CompilerConfiguration().addCompilationCustomizers(new SandboxTransformer())
         );

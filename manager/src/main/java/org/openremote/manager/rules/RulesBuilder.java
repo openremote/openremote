@@ -92,7 +92,7 @@ public class RulesBuilder {
                         throw new RuntimeException("Error evaluating condition of rule '" + builder.name + "': " + ex.getMessage(), ex);
                     }
                     if (result instanceof Boolean) {
-                        return (boolean)builder.condition.evaluate((RulesFacts) facts);
+                        return (boolean)result;
                     } else {
                         throw new IllegalArgumentException("Error evaluating condition of rule '" + builder.name + "': result is not boolean but " + result);
                     }
