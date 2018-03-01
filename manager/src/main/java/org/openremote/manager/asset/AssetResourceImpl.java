@@ -26,10 +26,7 @@ import org.openremote.manager.web.ManagerWebResource;
 import org.openremote.model.Constants;
 import org.openremote.model.asset.*;
 import org.openremote.model.asset.BaseAssetQuery.Select;
-import org.openremote.model.attribute.AttributeEvent;
-import org.openremote.model.attribute.AttributeRef;
-import org.openremote.model.attribute.Meta;
-import org.openremote.model.attribute.MetaItem;
+import org.openremote.model.attribute.*;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.security.Tenant;
 import org.openremote.model.util.TextUtil;
@@ -303,6 +300,16 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                         && !asset.hasAttribute(existingAttribute.getName().get()) && existingAttribute.isAccessRestrictedWrite()
                 );
             }
+
+            // If attribute is type RULES_TEMPLATE_FILTER, enforce meta item RULE_STATE
+            // TODO Only done for update(Asset) and not create(Asset) as we don't need that right now
+            // TODO Implement "Saved Filter/Searches" properly, allowing restricted users to create rule state flags is not great
+            resultAsset.getAttributesStream().forEach(attribute -> {
+                if (attribute.getType().map(attributeType -> attributeType == AttributeType.RULES_TEMPLATE_FILTER).orElse(false)
+                    && !attribute.hasMetaItem(AssetMeta.RULE_STATE)) {
+                    attribute.addMeta(new MetaItem(AssetMeta.RULE_STATE, Values.create(true)));
+                }
+            });
 
             // Store the result
             assetStorageService.merge(resultAsset, isRestrictedUser ? getUsername() : null);
