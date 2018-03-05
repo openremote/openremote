@@ -169,8 +169,11 @@ services:
       # have the name of a realm to which the console app belongs.
       # CONSOLES_DOCROOT: '/deployment/consoles'
 
-      # Optional: Custom location of the Manager UI customisations.
-      # UI_DOCROOT: '/deployment/ui'
+      # Optional: Disable HTTP redirects when a console application requests libraries which
+      # are delivered and used on the platform. This is necessary if your console application
+      # needs a different version of Polymer, Chart JS, or any of the other "bower_components"
+      # which are by default served as static resources from the manager service.
+      # CONSOLE_USE_STATIC_BOWER_COMPONENTS = 'false'
 
       # Optional: Provide a path to the map tiles database file (see https://openmaptiles.com/).
       # MAP_TILES_PATH: '/deployment/map/mapdata.mbtiles'

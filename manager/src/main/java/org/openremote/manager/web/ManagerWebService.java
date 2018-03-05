@@ -33,6 +33,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.regex.Pattern;
 
+import static org.openremote.container.util.MapAccess.getBoolean;
 import static org.openremote.container.util.MapAccess.getString;
 
 public class ManagerWebService extends WebService {
@@ -43,6 +44,8 @@ public class ManagerWebService extends WebService {
     public static final String CONSOLES_DOCROOT_DEFAULT = "deployment/manager/consoles";
     public static final String UI_DOCROOT = "UI_DOCROOT";
     public static final String UI_DOCROOT_DEFAULT = "deployment/manager/ui";
+    public static final String CONSOLE_USE_STATIC_BOWER_COMPONENTS = "CONSOLE_USE_STATIC_BOWER_COMPONENTS";
+    public static final boolean CONSOLE_USE_STATIC_BOWER_COMPONENTS_DEFAULT = true;
 
     public static final String MANAGER_PATH = "/static";
     public static final String CONSOLE_PATH = "/console";
@@ -69,9 +72,12 @@ public class ManagerWebService extends WebService {
         // Serve the Console client files unsecured
         consolesDocRoot = Paths.get(getString(container.getConfig(), CONSOLES_DOCROOT, CONSOLES_DOCROOT_DEFAULT));
         HttpHandler consoleHandler = addDeployment(devMode, identityService, consolesDocRoot, CONSOLE_PATH);
+
+        final boolean useStaticBowerComponents =
+            getBoolean(container.getConfig(), CONSOLE_USE_STATIC_BOWER_COMPONENTS, CONSOLE_USE_STATIC_BOWER_COMPONENTS_DEFAULT);
         // Special case for Console client files: When certain files are requested, serve them from the /static/*
-        // resources already deployed in Manager. In other words: Console apps should not have their own Polymer etc.
-        // resources but use the files we also use in platform components.
+        // resources already deployed in Manager. In other words: Console apps then can not have their own Polymer etc.
+        // resources but use same libraries as the platform.
         String[] consoleStaticResources = {
             "/bower_components/polymer/polymer.html",
             "/bower_components/polymer/polymer-element.html",
@@ -81,12 +87,14 @@ public class ManagerWebService extends WebService {
             // TODO Add all the other stuff but Intl is many files, no idea how we deal with this... good approach?
         };
         addRoute(exchange -> {
-                for (String consoleStaticResource : consoleStaticResources) {
-                    if (exchange.getRequestPath().endsWith(consoleStaticResource)) {
-                        exchange.setStatusCode(StatusCodes.FOUND);
-                        exchange.getResponseHeaders().put(Headers.LOCATION, "/static" + consoleStaticResource);
-                        exchange.endExchange();
-                        return;
+                if (useStaticBowerComponents) {
+                    for (String consoleStaticResource : consoleStaticResources) {
+                        if (exchange.getRequestPath().endsWith(consoleStaticResource)) {
+                            exchange.setStatusCode(StatusCodes.FOUND);
+                            exchange.getResponseHeaders().put(Headers.LOCATION, "/static" + consoleStaticResource);
+                            exchange.endExchange();
+                            return;
+                        }
                     }
                 }
                 consoleHandler.handleRequest(exchange);
