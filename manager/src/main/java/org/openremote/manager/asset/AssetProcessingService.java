@@ -37,11 +37,13 @@ import org.openremote.manager.rules.RulesService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.model.Constants;
 import org.openremote.model.ValidationFailure;
-import org.openremote.model.asset.*;
+import org.openremote.model.asset.Asset;
+import org.openremote.model.asset.AssetAttribute;
+import org.openremote.model.asset.AssetResource;
+import org.openremote.model.asset.AssetType;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeEvent.Source;
 import org.openremote.model.attribute.AttributeExecuteStatus;
-import org.openremote.model.rules.AssetState;
 import org.openremote.model.security.ClientRole;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.Values;
@@ -53,6 +55,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 import static org.openremote.container.concurrent.GlobalLock.withLock;
 import static org.openremote.manager.asset.AssetProcessingException.Reason.*;
@@ -183,6 +186,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                         // Restricted users can only get attribute events for their linked assets
                         if (!assetStorageService.isUserAsset(auth.getUserId(), assetId))
                             return false;
+                        // TODO Restricted clients should only receive events for RESTRICTED_READ attributes!
                     } else {
                         // Regular users can only get attribute events for assets in their realm
                         if (!asset.getTenantRealm().equals(auth.getAuthenticatedRealm()))
@@ -501,9 +505,15 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
 
     protected void publishClientEvent(Asset asset, AssetAttribute attribute) {
         // TODO Catch "queue full" exception (e.g. when producing thousands of INFO messages in rules)?
-        clientEventService.publishEvent(new AttributeEvent(
-            asset.getId(), attribute.getNameOrThrow(), attribute.getValue().orElse(null), timerService.getCurrentTimeMillis()
-        ));
+        clientEventService.publishEvent(
+            attribute.isAccessRestrictedRead(),
+            new AttributeEvent(
+                asset.getId(),
+                attribute.getNameOrThrow(),
+                attribute.getValue().orElse(null),
+                timerService.getCurrentTimeMillis()
+            )
+        );
     }
 
     @Override

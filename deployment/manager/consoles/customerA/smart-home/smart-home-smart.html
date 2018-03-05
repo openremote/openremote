@@ -1,0 +1,63 @@
+<link rel="import" href="smart-home-component.html">
+<link rel="import" href="smart-home-style.html">
+<link rel="import" href="smart-home-section.html">
+
+<dom-module id="smart-home-smart">
+    <template>
+        <style include="smart-home-style">
+            .smartLabel {
+                margin: 0 10px;
+            }
+        </style>
+
+        <smart-home-section>
+            <div class="layout horizontal center">
+                <img height="30" src="smart-home/img/star.png"/>
+                <!-- "All Smart" currently means enabling/disabling automatic scene switching based on schedule -->
+                <div class="flex layout horizontal smartLabel">[[localize('All Smart')]]</div>
+                <div class="layout horizontal">
+                    <input class="or-CheckBox"
+                           id="smartToggle"
+                           type="checkbox"
+                           on-change="onSmartToggleChange"
+                           checked="[[residence.attributes.sceneTimerEnabled.value]]"/>
+                    <label for="smartToggle"></label>
+                </div>
+            </div>
+        </smart-home-section>
+
+    </template>
+
+    <script>
+        class SmartHomeSmart extends SmartHomeComponent {
+            static get is() {
+                return "smart-home-smart";
+            }
+
+            ready() {
+                super.ready();
+                this.shadowRoot.host.classList.add("flex-none", "layout", "vertical");
+            }
+
+            connectedCallback() {
+                super.connectedCallback();
+                this.showComponent();
+            }
+
+            onSmartToggleChange() {
+                if (this.$.smartToggle.checked) {
+                    openremote.INSTANCE.getServiceEvents().sendAttributeEvent(
+                        this.residence.id, "enableSceneTimer", "REQUEST_START"
+                    );
+                } else {
+                    openremote.INSTANCE.getServiceEvents().sendAttributeEvent(
+                        this.residence.id, "disableSceneTimer", "REQUEST_START"
+                    );
+                }
+            }
+        }
+
+        defineAppElement(SmartHomeSmart, SmartHomeSmart.is, "SmartHomeSmart");
+    </script>
+
+</dom-module>

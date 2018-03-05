@@ -146,8 +146,11 @@ task gwtSuperDev(dependsOn: classes, type: JavaExec) {
             "-generateJsInteropExports",
             "-style", "PRETTY",
             // Change this to 0.0.0.0 to bind on all interfaces, enabling
-            // access of the code server from other devices in your LAN
-            "-bindAddress", "127.0.0.1"
+            // access of the code server from other devices in your LAN:
+            //
+            // ./gradlew -PWEBSERVER_LISTEN_HOST=0.0.0.0 gwtSuperDev
+            //
+            "-bindAddress", project.hasProperty("WEBSERVER_LISTEN_HOST") ? project.property("WEBSERVER_LISTEN_HOST") : "127.0.0.1"
 
     ]
     // Make this magic directory easily cleanable by placing it into the build folder

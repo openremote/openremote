@@ -16,8 +16,10 @@
     "tests"
   ],
   "dependencies": {
-    "polymer": "Polymer/polymer#^2.3.0",
-    "iron-flex-layout": "^2.0.0",
+    "polymer": "Polymer/polymer#^2.5.0",
+    "iron-flex-layout": "^2.0.3",
+    "app-localize-behavior": "PolymerElements/app-localize-behavior#^2.0.1",
+    "intl": "intl#^1.2.5",
     "chart.js": "^2.7.0"
   }
 }

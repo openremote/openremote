@@ -74,9 +74,9 @@ rules.add()
             AssetState beginEnd = facts.bound("beginEnd")
             LOG.info("Empty smart switch begin/end, clearing start/stop time and disabling actuator: " + beginEnd)
             String smartSwitchName = getSmartSwitchName(beginEnd)
-            facts.updateAssetState(beginEnd.id, "smartSwitch" + SmartSwitchAttribute.StartTime + smartSwitchName)
-                    .updateAssetState(beginEnd.id, "smartSwitch" + SmartSwitchAttribute.StopTime + smartSwitchName)
-                    .updateAssetState(beginEnd.id, "smartSwitch" + SmartSwitchAttribute.Enabled + smartSwitchName)
+            facts.updateAssetState(beginEnd.id, "smartSwitch" + SmartSwitchAttribute.StartTime + smartSwitchName, 0)
+                    .updateAssetState(beginEnd.id, "smartSwitch" + SmartSwitchAttribute.StopTime + smartSwitchName, 0)
+                    .updateAssetState(beginEnd.id, "smartSwitch" + SmartSwitchAttribute.Enabled + smartSwitchName, 0)
         })
 
 rules.add()
@@ -130,7 +130,7 @@ rules.add()
                     startTime.isPresent() &&
                             // the value is not the same as the expected start time
                             startTime.flatMap({ it.valueAsNumber }).map({
-                                (it * 1000) != expectedStartTime
+                                it != Math.floor(expectedStartTime / 1000)
                             }).orElse(true) // or actuator start time is empty
                 }).orElse(false)
             }).findFirst().map({ beginEnd ->
@@ -142,9 +142,9 @@ rules.add()
         { facts ->
             AssetState beginEnd = facts.bound("beginEnd")
             // Start time is user-provided begin/end (in seconds)
-            def startSeconds = beginEnd.valueAsNumber.map({ it / 1000 }).orElse(0)
-            // Stop time is start time plus (CYCLE_TIME_SECONDS + 1m)
-            def stopSeconds = startSeconds + (CYCLE_TIME_SECONDS + 60)
+            def startSeconds = Math.floor(beginEnd.valueAsNumber.map({ it / 1000 }).orElse(0))
+            // Stop time is start time plus CYCLE_TIME_SECONDS
+            def stopSeconds = startSeconds + CYCLE_TIME_SECONDS
             LOG.info("Smart switch mode is ON_AT, enabling actuator with start/stop times " +
                     LocalDateTime.ofInstant(Instant.ofEpochMilli((long) startSeconds * 1000), ZoneId.systemDefault()) +
                     "/" +
@@ -153,39 +153,7 @@ rules.add()
             String smartSwitchName = getSmartSwitchName(beginEnd)
             facts.updateAssetState(beginEnd.id, "smartSwitch" + SmartSwitchAttribute.StartTime + smartSwitchName, startSeconds)
                     .updateAssetState(beginEnd.id, "smartSwitch" + SmartSwitchAttribute.StopTime + smartSwitchName, stopSeconds)
-                    .updateAssetState(beginEnd.id, "smartSwitch" + SmartSwitchAttribute.Enabled + smartSwitchName, Values.create(1))
-        })
-
-rules.add()
-        .name("Set future end time of cycle when mode is READY_AT and cycle can't finish until end time")
-        .when(
-        { facts ->
-            smartSwitchAttributesMatch(
-                    facts, SmartSwitchAttribute.Mode
-            ).filter({ mode ->
-                SmartSwitchMode.matches(mode, SmartSwitchMode.READY_AT)
-            }).map({ modeReadyAt ->
-                smartSwitchAttributeMatch(facts, modeReadyAt, SmartSwitchAttribute.BeginEnd)
-            }).filter({ beginEnd ->
-                // Computed stop time (desired end time of cycle minus duration) is in the past
-                beginEnd.flatMap({ it.valueAsNumber })
-                        .map({ it - ((CYCLE_TIME_SECONDS + 60) * 1000) })
-                        .map({ it < facts.clock.timestamp })
-                        .orElse(false)
-            }).findFirst().map({ beginEnd ->
-                facts.bind("beginEnd", beginEnd.get())
-                true
-            }).orElse(false)
-        })
-        .then(
-        { facts ->
-            AssetState beginEnd = facts.bound("beginEnd")
-            def newBeginEnd = facts.clock.timestamp + ((CYCLE_TIME_SECONDS + 60) * 1000)
-            LOG.info("Smart switch mode is READY_AT, increasing insufficient begin/end time to " +
-                    LocalDateTime.ofInstant(Instant.ofEpochMilli((long) newBeginEnd), ZoneId.systemDefault()) +
-                    ": " + beginEnd)
-            String smartSwitchName = getSmartSwitchName(beginEnd)
-            facts.updateAssetState(beginEnd.id, "smartSwitch" + SmartSwitchAttribute.BeginEnd + smartSwitchName, newBeginEnd)
+                    .updateAssetState(beginEnd.id, "smartSwitch" + SmartSwitchAttribute.Enabled + smartSwitchName, 1)
         })
 
 rules.add()
@@ -203,8 +171,8 @@ rules.add()
                 beginEnd.flatMap({
                     it.valueAsNumber
                 }).filter({
-                    // is now or in future
-                    it >= facts.clock.timestamp
+                    // allows the cycle to complete in future
+                    (it - (CYCLE_TIME_SECONDS * 1000)) >= facts.clock.timestamp
                 }).map({ expectedStopTime ->
                     // and actuator stop time attribute
                     def stopTime = beginEnd.flatMap({
@@ -214,7 +182,7 @@ rules.add()
                     stopTime.isPresent() &&
                             // the value is not the same as the expected stop time
                             stopTime.flatMap({ it.valueAsNumber }).map({
-                                (it * 1000) != expectedStopTime
+                                it != Math.floor(expectedStopTime / 1000)
                             }).orElse(true) // or actuator stop time is empty
                 }).orElse(false)
             }).findFirst().map({ beginEnd ->
@@ -226,9 +194,9 @@ rules.add()
         { facts ->
             AssetState beginEnd = facts.bound("beginEnd")
             // Start time is current time (in seconds)
-            def startSeconds = (double) facts.clock.timestamp / 1000
+            def startSeconds = Math.floor((double) facts.clock.timestamp / 1000)
             // Stop time is user-provided smart switch time (in seconds)
-            def stopSeconds = beginEnd.valueAsNumber.map({ it / 1000 }).orElse(0)
+            def stopSeconds = Math.floor(beginEnd.valueAsNumber.map({ it / 1000 }).orElse(0))
             LOG.info("Smart switch mode is READY_AT, enabling actuator with start/stop times " +
                     LocalDateTime.ofInstant(Instant.ofEpochMilli((long) startSeconds * 1000), ZoneId.systemDefault()) + "/" +
                     LocalDateTime.ofInstant(Instant.ofEpochMilli((long) stopSeconds * 1000), ZoneId.systemDefault()) +
@@ -237,7 +205,7 @@ rules.add()
             String smartSwitchName = getSmartSwitchName(beginEnd)
             facts.updateAssetState(beginEnd.id, "smartSwitch" + SmartSwitchAttribute.StartTime + smartSwitchName, startSeconds)
                     .updateAssetState(beginEnd.id, "smartSwitch" + SmartSwitchAttribute.StopTime + smartSwitchName, stopSeconds)
-                    .updateAssetState(beginEnd.id, "smartSwitch" + SmartSwitchAttribute.Enabled + smartSwitchName, Values.create(1))
+                    .updateAssetState(beginEnd.id, "smartSwitch" + SmartSwitchAttribute.Enabled + smartSwitchName, 1)
         })
 
 rules.add()
@@ -251,9 +219,9 @@ rules.add()
             }).map({ modeOnAtOrReadyAt ->
                 smartSwitchAttributeMatch(facts, modeOnAtOrReadyAt, SmartSwitchAttribute.StopTime)
             }).filter({ stopTime ->
-                // Actuator stop time attribute is present and value (in seconds) is in the past
+                // Actuator stop time attribute is present and value (in seconds) is not zero and in the past
                 stopTime.flatMap({ it.valueAsNumber }).map({
-                    (it * 1000) < facts.clock.timestamp
+                    it > 0 && (it * 1000) < facts.clock.timestamp
                 }).orElse(false)
             }).findFirst().map({ stopTime ->
                 facts.bind("stopTime", stopTime.get())

@@ -1,0 +1,90 @@
+<!-- Intl polyfill -->
+<script src="/static/bower_components/intl/dist/Intl.js"></script>
+
+<!-- Intl langage TODO How can we do this dynamically? -->
+<script src="/static/bower_components/intl/locale-data/jsonp/en.js"></script>
+
+<!-- Provides Polymer.AppLocalizeBehavior -->
+<link rel="import" href="/static/bower_components/app-localize-behavior/app-localize-behavior.html">
+
+<dom-module id="or-view-component">
+    <script>
+        class OpenRemoteViewComponent extends Polymer.mixinBehaviors([Polymer.AppLocalizeBehavior], Polymer.Element) {
+            static get properties() {
+                return {
+                    widgetStyle: {
+                        type: openremote.style.WidgetStyle,
+                        value: () => {
+                            return openremote.WIDGET_STYLE
+                        }
+                    },
+                    // Default language for localize()
+                    language: {
+                        type: String,
+                        value: () => {
+                            let defaultLang = "en";
+                            let metas = document.getElementsByTagName('meta');
+                            if (metas) {
+                                for (let i = 0; i < metas.length; i++) {
+                                    let meta = metas[i];
+                                    if (meta.attributes.name &&
+                                        meta.attributes.name.value === "or-language" &&
+                                        meta.attributes.content &&
+                                        meta.attributes.content.value) {
+                                        return meta.attributes.content.value;
+                                    }
+                                }
+                            }
+                            return defaultLang;
+                        }
+                    },
+                    // Yes, we want the key returned if localize(key) can't find an alternative...
+                    useKeyIfMissing: {
+                        type: Boolean,
+                        value: true
+                    },
+                    // URL of locales.json to load
+                    localesResource: {
+                        type: String
+                    }
+                }
+            }
+
+            ready() {
+                super.ready();
+
+                // Load locales resources for localize() function
+                if (this.loadResources) {
+                    if (this.localesResource) {
+                        this.loadResources(this.resolveUrl(this.localesResource));
+                    }
+                } else {
+                    console.error("Missing Polymer.AppLocalizeBehavior, did you load the component?");
+                }
+
+                // View component is hidden by default, subclass decides when it's ready
+                this.hideComponent();
+            }
+
+            // Subclass MUST call this at some point, usually in overriding connectedCallback()
+            showComponent() {
+                this.shadowRoot.host.style.visibility = "visible";
+            }
+
+            hideComponent() {
+                this.shadowRoot.host.style.visibility = "hidden";
+            }
+
+            // GWT i18n resources, not the same as app-localize-behavior and localize()
+            i18n(presenter, key) {
+                return presenter ? presenter.messages()[key]() : "";
+            }
+
+            icon(name) {
+                return "fa fa-" + name;
+            }
+
+        }
+    </script>
+
+</dom-module>

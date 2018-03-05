@@ -112,7 +112,6 @@ public abstract class AbstractManagerSetup implements Setup {
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Last executed scene")),
                     new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)),
-                    new MetaItem(ACCESS_RESTRICTED_WRITE, Values.create(true)),
                     new MetaItem(READ_ONLY, Values.create(true)),
                     new MetaItem(RULE_STATE, Values.create(true)),
                     new MetaItem(SHOW_ON_DASHBOARD, Values.create(true))
@@ -120,8 +119,6 @@ public abstract class AbstractManagerSetup implements Setup {
             new AssetAttribute("lastDetectedScene", AttributeType.STRING, Values.create("home"))
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Last detected scene by rules")),
-                    new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)),
-                    new MetaItem(ACCESS_RESTRICTED_WRITE, Values.create(true)),
                     new MetaItem(READ_ONLY, Values.create(true)),
                     new MetaItem(RULE_STATE, Values.create(true))
                 )
@@ -156,15 +153,13 @@ public abstract class AbstractManagerSetup implements Setup {
                 ),
             new AssetAttribute("firstPresenceDetected", TIMESTAMP_MILLIS)
                 .setMeta(
-                    new MetaItem(LABEL, Values.create("First time someone was present in the room")),
-                    new MetaItem(RULE_STATE, Values.create(true)),
-                    new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true))
+                    new MetaItem(LABEL, Values.create("First time movement was detected")),
+                    new MetaItem(RULE_STATE, Values.create(true))
                 ),
             new AssetAttribute("lastPresenceDetected", TIMESTAMP_MILLIS)
                 .setMeta(
-                    new MetaItem(LABEL, Values.create("Last time someone was present in the room")),
-                    new MetaItem(RULE_STATE, Values.create(true)),
-                    new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true))
+                    new MetaItem(LABEL, Values.create("Last time movement was detected")),
+                    new MetaItem(RULE_STATE, Values.create(true))
                 )
         );
     }
@@ -215,7 +210,7 @@ public abstract class AbstractManagerSetup implements Setup {
                     new MetaItem(READ_ONLY, Values.create(true)),
                     new MetaItem(STORE_DATA_POINTS, Values.create(true)),
                     new MetaItem(SHOW_ON_DASHBOARD, Values.create(true)),
-                    new MetaItem(FORMAT, Values.create("%0.1f C"))
+                    new MetaItem(FORMAT, Values.create("%0.1f° C"))
                 ).addMeta(shouldBeLinked ? agentLinker.get() : null)
         );
     }
@@ -231,7 +226,7 @@ public abstract class AbstractManagerSetup implements Setup {
                     new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)),
                     new MetaItem(ACCESS_RESTRICTED_WRITE, Values.create(true)),
                     new MetaItem(SHOW_ON_DASHBOARD, Values.create(true)),
-                    new MetaItem(FORMAT, Values.create("%0.1f C"))
+                    new MetaItem(FORMAT, Values.create("%0.1f° C"))
                 ).addMeta(shouldBeLinked ? agentLinker.get() : null)
         );
     }
@@ -479,7 +474,6 @@ public abstract class AbstractManagerSetup implements Setup {
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Scene timer enabled")),
                     new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)),
-                    new MetaItem(ACCESS_RESTRICTED_WRITE, Values.create(true)),
                     new MetaItem(SHOW_ON_DASHBOARD, Values.create(true)),
                     new MetaItem(READ_ONLY, Values.create(true))
                 ),

@@ -20,6 +20,7 @@ Users users = binding.users
 @ToString(includeNames = true)
 class AlarmTrigger {
     String residenceId
+    String residenceName
     String roomName
 }
 
@@ -29,6 +30,7 @@ class AlarmTrigger {
 @ToString(includeNames = true)
 class AlertSilence {
     static String DURATION = "30m"
+    String residenceName
     String residenceId
 }
 
@@ -54,7 +56,9 @@ rules.add()
             }).map({ roomWithPresence ->
                 roomWithPresence.get()
             }).findFirst().map({ roomWithPresence ->
-                facts.bind("residenceId", roomWithPresence.parentId).bind("roomName", roomWithPresence.name)
+                facts.bind("residenceId", roomWithPresence.parentId)
+                        .bind("residenceName", roomWithPresence.parentName)
+                        .bind("roomName", roomWithPresence.name)
                 true
             }).orElse(false)
         })
@@ -62,9 +66,10 @@ rules.add()
         { facts ->
             AlarmTrigger alarmTrigger = new AlarmTrigger(
                     residenceId: facts.bound("residenceId"),
+                    residenceName: facts.bound("residenceName"),
                     roomName: facts.bound("roomName")
             )
-            LOG.info("Alarm enabled and presence detected, creating: " + alarmTrigger)
+            LOG.info("Alarm enabled and presence detected in residence, creating: $alarmTrigger")
             facts.put(alarmTrigger)
         })
 
@@ -141,9 +146,10 @@ rules.add()
                     title: "Apartment Alarm",
                     message: "Aanwezigheid in " + alarmTrigger.roomName + " (" + facts.clock.time + ")."
             )
-            alert.addLinkAction("Details", "#/Veilig")
+            alert.addLinkAction("Details", "#security")
             alert.addActuatorAction("Alarm uit", alarmTrigger.residenceId, "alarmEnabled", Values.create(false).toJson())
 
+            // This only includes users which have a device notification token (registered console device)!
             List<String> userIds = users
                     .query()
                     .asset(new UserQuery.AssetPredicate(alarmTrigger.residenceId))
@@ -154,10 +160,11 @@ rules.add()
                 users.storeAndNotify(userId, alert)
             })
 
-            AlertSilence alertSilence = new AlertSilence(residenceId: alarmTrigger.residenceId)
+            AlertSilence alertSilence = new AlertSilence(
+                    residenceName: alarmTrigger.residenceName,
+                    residenceId: alarmTrigger.residenceId
+            )
             facts.putTemporary(AlertSilence.DURATION, alertSilence)
-
-            facts.remove(alarmTrigger)
         })
 
 rules.add()

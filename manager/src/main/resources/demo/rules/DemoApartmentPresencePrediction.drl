@@ -9,233 +9,334 @@ global java.util.logging.Logger LOG;
 global org.openremote.model.rules.Assets assets;
 global org.openremote.container.util.Util util;
 
-/*
-New:
+import java.util.*
+import java.time.LocalDateTime
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
-    // ROOM
-    presenceDetected                    // true/false
-    presenceDetectedInteger             // 1 on motion sense, 0 after 2 seconds. This behavior models typical PIR sensor
-    lastPresenceDetectedTimeStamp       // Unix timestamp milliseconds
+declare CustomClock
+    @role(event)
+    @expires(45s)
+    clock: LocalDateTime
+    time: String
+    dowPrev: String
+    dow: String
+    dowNext: String
+end
 
-    // RESIDENCE
-    selfLearning                        // true/false
-    vacationDays                        // 0..123
-
-    homeSceneStartMonday                // "17:30:00"
-    homeSceneStartTuesday               // "17:45:00"
-    ...
-    awaySceneStartMonday                // "08:30:00"
-    awaySceneStartTuesday               // "08:30:00"
-
-    rule "..."
-    when
-        $dayOfWeek : util.formatDate("DAY_OF_WEEK", drools.clock.currentTime)
-        AssetState(type == RESIDENCE, attributeName matches "homeSceneStart" + $dayOfWeek, valueChanged)
-    then
-        ...
-    end
-
-Old:
-
-    presenceDetected                    // "on"
-    presenceDetectedInteger             // 0, 1
-    lastPresenceDetectedTimeStamp         // "-", hh:mm
-    presenceDetectedUI                  // "Yes"/"No", Latches for 15mins; translates to somebody/nobody is in the office
-
-    VACATION_DAYS                       // "0"
-
-    UI_ESTIMATED_TIME_ARRIVAL           // This is today
-    UI_ESTIMATED_TIME_DEPARTURE         // This is today
-    UI_ESTIMATED_TIME_ARRIVAL.mon       // "9:00"
-    UI_ESTIMATED_TIME_DEPARTURE.mon     // "17:00"
-    UI_ESTIMATED_TIME_ARRIVAL.tue       // "9:00"
-    UI_ESTIMATED_TIME_DEPARTURE.tue     // "17:00"
-    UI_ESTIMATED_TIME_ARRIVAL.wed       // "9:00"
-    UI_ESTIMATED_TIME_DEPARTURE.wed     // "17:00"
-    ...
-
-    homeActualSceneStartTime               // "-", e.g. "08:53"
-    awayActualSceneStartTime               // "-", e.g. "18:22"
-
-    currentScene                          // "-", Possible values are "-", "Departure", "Arrive"
-*/
-
-
-// ##########################################################################################################
-
-// This rule converts any manufacturer dependent movement sensor into standardized PIR behaviour.
-// Here emulate PIR from motionCount by Enervalis
-rule "person sense"
-when
-    AssetEvent(type == AssetType.ROOM, attributeName == "motionCount", isValueGreaterThanOldValue() )
-    $room: AssetEvent($id: id, type == AssetType.ROOM, attributeName=="presenceDetectedInteger", getValueAsNumber() !=1)
-then
-    LOG.info("@"+(new java.util.Date(drools.getWorkingMemory().getSessionClock().getCurrentTime())).toString());
-    assets.dispatch( new AttributeEvent($id, "lastPresenceDetectedTimeStamp", Values.create(1) ) );
+declare Scene
+    @role(event)
+    @expires(12h)
+    scene: String // scene name
+    est: String   // estimated time of scene - from the table
+    ast: String   // actual time of scene - masured
 end
 
 
-// This rule models monostable PIR sensor behaviour, which goes to off state after 2s timeout
-rule "no person sense"
-    timer(int: 2s)
+rule "PP: Update table"
 when
-    AssetEvent(type == AssetType.ROOM, attributeName == "motionCount", isValueGreaterThanOldValue())
-    AssetEvent($id: id, type == AssetType.ROOM, $s:attributeName=="presenceDetectedInteger", getValueAsNumber()!=0)
+    // Chcek if we are self learning
+    AssetState(attributeName == "autoSceneSchedule", isValueTrue())
+    // Rule's detected scene
+    $s: Scene($scene: scene, $estimated_time: est, $actual_time: ast != "-")
+    // Get estimated the table reference
+    CustomClock($dow: dow) // TODO goes wrong when updating scene after midnight and the ast is before midnight. We need dowPrev for this case.
+    AssetState($ref: id, type == AssetType.RESIDENCE, $an: attributeName matches ($scene + "SceneTime" + $dow))
 then
-    LOG.info("@"+(new java.util.Date(drools.getWorkingMemory().getSessionClock().getCurrentTime())).toString());
-    assets.dispatch( new AttributeEvent($id, "lastPresenceDetectedTimeStamp", Values.create(0)) );
-end
-
-// Fetch last time when presence was detected. This time is used for period window adjustment.
-rule "last move sense timestamp fetch"
-when
-    AssetEvent($id: id, type == AssetType.ROOM, attributeName=="presenceDetectedInteger", getValueAsNumber()==1, isValueChanged() )
-then
-    long currentTime = drools.getWorkingMemory().getSessionClock().getCurrentTime();
-    LOG.info("Move sense on "+$id+" @"+(new java.util.Date(currentTime)).toString() );
-    assets.dispatch(
-            // we want that this time stamp is persistent in memory because periods are quite long and it
-            // is likely that a rule engine can restart in this time. Experience learns that this can
-            // disturb the prediction time.
-            new AttributeEvent($id, "lastPresenceDetectedTimeStamp", Values.create(currentTime))
-    );
-end
-
-// Set the presence state which was previously used in the UI "Somebody is in the office"
-rule "Presence"
-when
-    AssetEvent(type == AssetType.ROOM, $s:attributeName=="presenceDetectedInteger", getValueAsNumber()==1)
-    AssetState(type == AssetType.RESIDENCE, attributeName=="currentScene", getValueAsString()=="Departure") // within expected attendance schedule
-    AssetState($id: id, type == AssetType.RESIDENCE, attributeName=="presenceDetectedUI", getValueAsString()!="Yes")
-then
-    assets.dispatch( new AttributeEvent($id, "presenceDetectedUI", Values.create("Yes")) );
-end
-
-rule "Absence after 15 min"
-    timer(int: 15m)
-when
-    AssetEvent($id: id, type == AssetType.ROOM, $s:attributeName=="presenceDetectedInteger", getValueAsNumber()==0)
-then
-    assets.dispatch( new AttributeEvent($id, "presenceDetectedUI", Values.create("No")) );
-end
-
-// ##########################################################################################################
-
-// The office hours starts from Arrival till Departure. This is comparable to Home or Evening scene in blok61.
-// The outside office hours are from Departure till the next day Arrival. Comparable to Away and Night.
-// There were 2 in memory variables (now AssetStates) which holds actual arrival and departure time. They need
-// to be reset before scene begins to fetch the actual time which is later used to correct the estimated time
-// in moving average calculations.
-// There are 4 rules below, one for each scene, the actual start time of a scene is reset when the preceding scene
-// starts. Perhaps we can use as a trigger one more preceding scene which give as less trouble with earlier
-// scene starting.
-
-rule "reset homeActualSceneStartTime"
-when
-    AssetState(attributeName=="currentScene", type == AssetType.RESIDENCE, getValueAsString()=="night")
-    AssetState($id: id, attributeName=="homeActualSceneStartTime", type == AssetType.RESIDENCE, getValueAsString() != "-")
-then
-    assets.dispatch( new AttributeEvent($id, "homeActualSceneStartTime", Values.create("-")) );
-end
-
-rule "reset awayActualSceneStartTime"
-when
-    AssetState(attributeName=="currentScene", type == AssetType.RESIDENCE, getValueAsString()=="home")
-    AssetState($id: id, attributeName=="awayActualSceneStartTime", type == AssetType.RESIDENCE, getValueAsString() != "-")
-then
-    assets.dispatch( new AttributeEvent($id, "awayActualSceneStartTime", Values.create("-")) );
-end
-
-rule "reset eveningActualSceneStartTime"
-when
-    AssetState(attributeName=="currentScene", type == AssetType.RESIDENCE, getValueAsString()=="away")
-    AssetState($id: id, attributeName=="eveningActualSceneStartTime", type == AssetType.RESIDENCE, getValueAsString() != "-")
-then
-    assets.dispatch( new AttributeEvent($id, "eveningActualSceneStartTime", Values.create("-")) );
-end
-
-rule "reset nightActualSceneStartTime"
-when
-    AssetState(attributeName=="currentScene", type == AssetType.RESIDENCE, getValueAsString()=="evening")
-    AssetState($id: id, attributeName=="nightActualSceneStartTime", type == AssetType.RESIDENCE, getValueAsString() != "-")
-then
-    assets.dispatch( new AttributeEvent($id, "nightActualSceneStartTime", Values.create("-")) );
-end
-
-// Removed rules:
-// rule "Move ETD to ET at arrive init"
-// rule "Move ETD to ET at arrive"
-// because they were used for the old UI display.
-
-rule "fetch the actual scene start time"
-when
-//    $timestamp : util.formatTimestamp(drools.clock.currentTime)
-    AssetState(attributeName=="currentScene", type == AssetType.RESIDENCE, $scene: getValueAsString())
-//TODO    AssetState($id:id, $attributeName: attributeName==$scene."ActualSceneStartTime", getValueAsString() == "-")
-    // TODO the actual arrive state was detected by presence sensor. Now we have 2 scenes when presence is
-    // detected and 2 when absence is detected
-    AssetEvent($id: id, type == AssetType.ROOM, attributeName=="presenceDetectedInteger", getValueAsNumber()==1)
-then
-    assets.dispatch( new AttributeEvent($id, "nightActualSceneStartTime", Values.create(drools.getWorkingMemory().getSessionClock().getCurrentTime()) ));
-end
-
-rule "fetch earlier actual home scene start time up to 30 min v02"
-when
-    // Earliest home scene start time is 4AM
-// TODO    $timestamp : util.formatTimestamp(drools.clock.currentTime) >= util.parseTimestamp("04:00")
-    AssetState($id: id, $attributeName: attributeName=="homeActualSceneStartTime", getValueAsString() == "-")
-    AssetState(attributeName=="currentScene", type == AssetType.RESIDENCE, getValueAsString() == "night")
-    AssetEvent(type == AssetType.ROOM, attributeName=="presenceDetectedInteger", getValueAsNumber()==1)
-    // Take the current value from the scene table
-    AssetState($ref: attributeRef, type == AssetType.RESIDENCE, attributeName matches ("homeSceneStart" + util.formatDayOfWeek(drools.getWorkingMemory().getSessionClock().getCurrentTime())),
-               $estimated_time: getValueAsNumber() -30 <= util.parseTimestamp(drools.getWorkingMemory().getSessionClock().getCurrentTime()) )//,
-//               drools.getWorkingMemory().getSessionClock().getCurrentTime() >= util.parseTimestamp("04:00") )
-then
-    assets.dispatch( new AttributeEvent($id, "homeActualSceneStartTime", Values.create(drools.getWorkingMemory().getSessionClock().getCurrentTime()) ));
-end
-
-// Removed rule for switching scene after departure
-// rule "Move - to ET at end of work"
-// scenes are switched by timer protocol
-
-// Removed rule
-// rule "Move - to ET on vacation"
-// it was indication in UI that vacation are active
-
-// Removed rules
-// rule "fetch actual departure time"
-// rule "fetch later departure time"
-// as "departure" is simply a start of a new scene and these should be covered by previous rules.
-// TODO scene switch could be earlier and later. Both cases need be tested for each scene.
-// As we have 2 presence scenes (home, evening) and 2 absence scenes (away, night) probably would be easier
-// to have 2 sets of rules, like in the office separate rules for Arrival adjustment time and Departure.
-
-// TODO special care must be taken for the Night scene as it can start before or after midnight.
-
-rule "adjust estimated times at next scene change"
-when
-    // Question: isn't AssetType checking relevant here? attributeName should be unique here or not?
-    // We are in the self learning mode
-    AssetState(attributeName == "selfLearning", type == AssetType.RESIDENCE, isValueTrue() )
-    // We don't do this when on Vacations
-    AssetState(attributeName == "vacationDays", type == AssetType.RESIDENCE, isValueGreaterThan(0) )
-    // Let's get in which scene are we now
-    AssetState(attributeName == "currentScene", type == AssetType.RESIDENCE, $scene: getValueAsString() )
-    // For which day of week are we calculating this?
-    // Take the current value from the scene table
-    AssetState($ref: id, type == AssetType.RESIDENCE, attributeName matches ($scene + "SceneStart" + util.formatDayOfWeek(drools.getWorkingMemory().getSessionClock().getCurrentTime())), $estimated_time: getValueAsNumber())
-    // Now take the lastPresenceDetected (TODO here we will need probably a different logic dependent on scene)
-    AssetState(attributeName == "lastPresenceDetected", type == AssetType.ROOM, $actual_time: getValueAsNumber(), isValueGreaterThan(0) )
-then
+    // Mark operation done
+    $s.setAst("-");
+    update($s);
+    // protect against errors, e.g. too large gaps, over midnight pass
+    String actual_time = _MaxTimeAdjustment($estimated_time, $actual_time);
+    LOG.info("PP: "+$scene+" EST="+$estimated_time+", AST="+$actual_time+", cor="+actual_time);
     // Take arbitrary coefficient which works good
     Double alpha = 2.0/(3+1); // 3 stays for 3 days exponential average
     // Calculate exponential moving average from the known formula
-    long new_estimated_time = (long) (alpha*util.parseTimestamp($actual_time) + (1-alpha)*util.parseTimestamp($estimated_time));
-    // Update value in the table
-    assets.dispatch( new AttributeEvent($ref, "newEstimatedTime", Values.create(new_estimated_time)) );
+    long new_estimated_time = (long) (alpha*util.parseTimestamp(actual_time) +
+                                  (1-alpha)*util.parseTimestamp($estimated_time));
+    String new_estimated_time_str = util.formatTimestampWithSeconds(new_estimated_time);
+    LOG.info("PP: updated time for "+$scene+" from "+$estimated_time+" to "+new_estimated_time_str+" by measured (cor)"+actual_time);
+    // Update the value in the table
+    assets.dispatch( new AttributeEvent($ref, $an, Values.create(new_estimated_time_str)) );
 end
 
-// ##########################################################################################################
+
+rule "PP: Set custom clock fields"
+    timer (cron: 0 * * * * ? *)
+then
+    CustomClock cc = new CustomClock();
+
+    Instant instant = Instant.ofEpochMilli( drools.getWorkingMemory().getSessionClock().getCurrentTime() );
+    LocalDateTime res = LocalDateTime.ofInstant(instant, ZoneId.systemDefault());
+    cc.setClock(res);
+    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
+
+    cc.setTime( cc.getClock().format(formatter) );
+    cc.setDow( cc.getClock().getDayOfWeek().toString() );
+    cc.setDowNext( cc.getClock().getDayOfWeek().plus(1).toString() );
+    cc.setDowPrev( cc.getClock().getDayOfWeek().plus(-1).toString() );
+
+    insert(cc);
+end
 
 
+rule "PP: Get current scheduled scene home"
+when
+    CustomClock($dow: dow, $t: time)
+    AssetState(attributeName matches ("home.*"+$dow), type == AssetType.RESIDENCE, $ts: getValueAsString())
+    AssetState(attributeName matches ("away.*"+$dow), type == AssetType.RESIDENCE, $te: getValueAsString(), _TradingTimes($t, $ts, $te))
+    not Scene(scene == "home");
+    // There should be movement in the living room
+    AssetState(attributeName == "presenceDetected", name == "Living Room", type == AssetType.ROOM, isValueTrue() )
+    // The first movement in the living room is the actual scene start
+    AssetState(attributeName == "firstPresenceDetected", type == AssetType.ROOM, name == "Living Room", $ast: getValueTimestamp(), value != null, isValueGreaterThan(0) )
+then
+    Scene s = new Scene();
+    s.setScene("home");
+    s.setEst($ts);
+    String ast = util.formatTimestampWithSeconds($ast);
+    LOG.info("PP: HOME @ AST"+" "+ast);
+    s.setAst(ast);
+    insert(s);
+end
 
+
+rule "PP: Get current scheduled scene away"
+when
+    CustomClock($dow: dow, $t: time)
+    AssetState(attributeName matches ("away.*"+$dow), type == AssetType.RESIDENCE, $ts: getValueAsString())
+    AssetState(attributeName matches ("evening.*"+$dow), type == AssetType.RESIDENCE, $te: getValueAsString(), _TradingTimes($t, $ts, $te))
+    not Scene(scene == "away");
+    // There should be no movement in the whole apartment
+    AssetState(attributeName == "presenceDetected", type == AssetType.RESIDENCE, valueFalse )
+    // Actual scene start is the last movement in the Living Room
+    AssetState($id: id, attributeName == "lastPresenceDetected", type == AssetType.ROOM, name == "Living Room", $ast: getValueTimestamp(), value != null)
+    AssetState(id==$id, attributeName == "firstPresenceDetected", isValueGreaterThan(0))
+then
+    Scene s = new Scene();
+    s.setScene("away");
+    s.setEst($ts);
+    String ast = util.formatTimestampWithSeconds($ast);
+    LOG.info("PP: AWAY @ AST"+" "+ast);
+    s.setAst(ast);
+    insert(s);
+    // Clear first movements in all rooms
+    assets.dispatch( new AttributeEvent($id, "firstPresenceDetected", Values.create(0)) );
+end
+
+
+rule "PP: Get current scheduled scene evening"
+when
+    CustomClock($dow: dow, $t: time)
+    AssetState(attributeName matches ("evening.*"+$dow), type == AssetType.RESIDENCE, $ts: getValueAsString())
+    AssetState(attributeName matches ("night.*"+$dow), type == AssetType.RESIDENCE, $te: getValueAsString(), _TradingTimes($t, $ts, $te))
+    not Scene(scene == "evening");
+    // There should be presence in the apartment
+    AssetState(attributeName == "presenceDetected", type == AssetType.RESIDENCE, isValueTrue() )
+    // Actual scene start is the first movement in the living room
+    AssetState(attributeName == "firstPresenceDetected", type == AssetType.ROOM, name == "Living Room", $ast: getValueTimestamp(), value != null, isValueGreaterThan(0) )
+then
+    Scene s = new Scene();
+    s.setScene("evening");
+    s.setEst($ts);
+    String ast = util.formatTimestampWithSeconds($ast);
+    LOG.info("PP: EVENING @ AST"+" "+ast);
+    s.setAst(ast);
+    insert(s);
+end
+
+
+rule "PP: Get current scheduled scene night"
+when
+    CustomClock($dow: dow, $dowNext: dowNext, $t: time)
+    AssetState(attributeName matches ("night.*"+$dow), type == AssetType.RESIDENCE, $ts: getValueAsString())
+    AssetState(attributeName matches ("home.*"+$dowNext), type == AssetType.RESIDENCE, $te: getValueAsString(), _TradingTimes($t, $ts, $te))
+    not Scene(scene == "night");
+    // No presence in the living room
+    AssetState($id: id, attributeName == "presenceDetected", name == "Living Room", type == AssetType.ROOM, valueFalse )
+    // Scene start is the last movement in the living room
+    AssetState(id == $id, attributeName == "lastPresenceDetected", type == AssetType.ROOM, name == "Living Room", $ast: getValueTimestamp(), value != null)
+    AssetState(id == $id, attributeName == "firstPresenceDetected", isValueGreaterThan(0))
+then
+    Scene s = new Scene();
+    s.setScene("night");
+    s.setEst($ts);
+    String ast = util.formatTimestampWithSeconds($ast);
+    LOG.info("PP: NIGHT @ AST"+" "+ast);
+    s.setAst(ast);
+    insert(s);
+    // Clear first movements everywhere except the bedroom
+    assets.dispatch( new AttributeEvent($id, "firstPresenceDetected", Values.create(0)) );
+end
+
+
+function String _ShiftTimeWithSeconds(Object o, int min){
+  if(o==null){
+    return("-");
+  }
+  String mt = o.toString();
+  SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
+  Date date = null;
+  if(mt.substring(0,1).equals("-")){
+    date = new Date();
+    date.setTime(date.getTime()+60*60000);
+  }else{
+    date = sdf.parse(mt);
+    date.setTime(date.getTime()+min*60000);
+  }
+  return(sdf.format(date));
+}
+
+
+function long _GetTime(Object o){
+  if(o==null){
+    return(0L);
+  }
+  String mt = o.toString();
+  SimpleDateFormat sdf;
+  if(mt.length()==8){
+    sdf = new SimpleDateFormat("HH:mm:ss");
+  }else if(mt.length()==5){
+    sdf = new SimpleDateFormat("HH:mm");
+  }else{
+    return(0L);
+  }
+  Date date = null;
+  date = sdf.parse(mt);
+  return(date.getTime());
+}
+
+function boolean _TradingTimes(Object now, Object start, Object endt){
+  long _now = _GetTime(now);
+  long _start = _GetTime(start);
+  long _end = _GetTime(endt);
+  while(_start < _now){ _start += 86400000L; }
+  while(_end   < _now){ _end += 86400000L; }
+  return(_end < _start);
+}
+
+function String _MaxTimeAdjustment(Object estimated, Object actual){
+// This function checks if the actual time is within range +- 60min of estimated time and adjust it if necessary.
+  int MAX = 60; // maximum difference in minutes
+  if(estimated==null) return("-");
+  if(actual==null) return(estimated.toString());
+  long _estimated = _GetTime(estimated);
+  long _actual = _GetTime(actual);
+  if(_TradingTimes(actual, _ShiftTimeWithSeconds(estimated, -MAX), _ShiftTimeWithSeconds(estimated, MAX))){
+    // Within 1h
+    return(actual.toString());
+  }
+  // Here we have a shift > 1h and < 12h, so ceil it to 1h
+  if(java.lang.Math.abs(_estimated-_actual) > 12*60*60000){
+    // we need good over the midnight passing
+    _estimated = _GetTime(_ShiftTimeWithSeconds(estimated, 12*60));
+    _actual = _GetTime(_ShiftTimeWithSeconds(actual, 12*60));
+  }else if(java.lang.Math.abs(_estimated-_actual) == 12*60*60000){
+    // exactly 12h difference -> do not adjust
+    return(estimated.toString());
+  }
+
+  if(_estimated > _actual){
+    return(_ShiftTimeWithSeconds(estimated, -MAX));
+  }
+  // else <=
+  return(_ShiftTimeWithSeconds(estimated, MAX));
+}
+
+// TODO special care must be taken for the night scene as it can start before or after midnight.
+
+// TODO below with over the midnight scenes
+rule "PP: Get current scheduled scene still previous evening"
+// From table find out in which scene we should be
+// scenes are prevevening-prevnight-home-away-evening-night
+when
+    CustomClock($dow: dow, $dowPrev: dowPrev, $t: time)
+    AssetState(attributeName matches ("evening.*"+$dowPrev), type == AssetType.RESIDENCE, $ts: getValueAsString())
+    AssetState(attributeName matches ("night.*"+$dowPrev), type == AssetType.RESIDENCE, $te: getValueAsString(), _TradingTimes($t, $ts, $te))
+then
+//    LOG.info("@"+$c.toString() );
+end
+
+rule "PP: Get current scheduled scene prev night"
+// From table find out in which scene we should be
+// scenes are prevevening-prevnight-home-away-evening-night
+when
+    CustomClock($dow: dow, $dowPrev: dowPrev, $t: time)
+    AssetState(attributeName matches ("night.*"+$dowPrev), type == AssetType.RESIDENCE, $ts: getValueAsString())
+    AssetState(attributeName matches ("home.*"+$dow), type == AssetType.RESIDENCE, $te: getValueAsString(), _TradingTimes($t, $ts, $te))
+then
+//    LOG.info("@"+$c.toString() );
+end
+
+
+rule "PP: dash scene home"
+when
+    CustomClock($dow: dow, $t: time)
+    AssetState($ref: id, attributeName matches ("home.*"+$dow), type == AssetType.RESIDENCE, $ts: getValueAsString())
+    AssetState($ref == id, attributeName matches ("away.*"+$dow), type == AssetType.RESIDENCE, $te: getValueAsString(), _TradingTimes($t, $ts, $te))
+    $apartment: AssetState($ref == id, type == AssetType.RESIDENCE, attributeName == "lastDetectedScene", $val: getValueAsString() != "home", $val != "away")
+then
+    LOG.info("PP: dash home in "+$apartment.toString());
+    assets.dispatch( new AttributeEvent($ref, "lastDetectedScene", Values.create("home")) );
+end
+
+
+rule "PP: before scene home to reset the first presence"
+when
+    CustomClock($dow: dow, $t: time)
+    AssetState(attributeName matches ("home.*"+$dow), type == AssetType.RESIDENCE, $ts: getValueAsString(), _TradingTimes($t, _ShiftTimeWithSeconds($ts,-30), _ShiftTimeWithSeconds($ts,-29)))
+    $room: AssetState($ref: id, type == AssetType.ROOM, attributeName == "firstPresenceDetected", isValueGreaterThan(0) )
+    AssetState($ref == id, type == AssetType.ROOM, attributeName == "presenceDetected", valueFalse)
+then
+    LOG.info("PP: home reset first presence in "+$room.toString());
+    assets.dispatch( new AttributeEvent($ref, "firstPresenceDetected", Values.create(0)) );
+end
+
+
+rule "PP: dash scene away"
+when
+    CustomClock($dow: dow, $t: time)
+    AssetState($ref: id, attributeName matches ("away.*"+$dow), type == AssetType.RESIDENCE, $ts: getValueAsString())
+    AssetState($ref == id, attributeName matches ("evening.*"+$dow), type == AssetType.RESIDENCE, $te: getValueAsString(), _TradingTimes($t, $ts, $te))
+    $apartment: AssetState($ref == id, type == AssetType.RESIDENCE, attributeName == "lastDetectedScene", $val: getValueAsString() != "away", $val != "evening")
+then
+    LOG.info("PP: dash away in "+$apartment.toString());
+    assets.dispatch( new AttributeEvent($ref, "lastDetectedScene", Values.create("away")) );
+end
+
+
+rule "PP: dash scene evening"
+when
+    CustomClock($dow: dow, $t: time)
+    AssetState($ref: id, attributeName matches ("evening.*"+$dow), type == AssetType.RESIDENCE, $ts: getValueAsString())
+    AssetState($ref == id, attributeName matches ("night.*"+$dow), type == AssetType.RESIDENCE, $te: getValueAsString(), _TradingTimes($t, $ts, $te))
+    $apartment: AssetState($ref == id, type == AssetType.RESIDENCE, attributeName == "lastDetectedScene", $val: getValueAsString() != "evening", $val != "night")
+then
+    LOG.info("PP: dash evening in "+$apartment.toString());
+    assets.dispatch( new AttributeEvent($ref, "lastDetectedScene", Values.create("evening")) );
+end
+
+
+rule "PP: before scene evening to reset the first presence"
+when
+    CustomClock($dow: dow, $t: time)
+    AssetState(attributeName matches ("evening.*"+$dow), type == AssetType.RESIDENCE, $ts: getValueAsString(), _TradingTimes($t, _ShiftTimeWithSeconds($ts,-30), _ShiftTimeWithSeconds($ts,-29)))
+    $room: AssetState($ref: id, type == AssetType.ROOM, attributeName == "firstPresenceDetected", isValueGreaterThan(0) )
+    AssetState($ref == id, type == AssetType.ROOM, attributeName == "presenceDetected", valueFalse)
+then
+    LOG.info("PP: evening reset first presence in "+$room.toString());
+    assets.dispatch( new AttributeEvent($ref, "firstPresenceDetected", Values.create(0)) );
+end
+
+
+rule "PP: dash scene night"
+when
+    CustomClock($dow: dow, $dowNext: dowNext, $t: time)
+    AssetState($ref: id, attributeName matches ("night.*"+$dow), type == AssetType.RESIDENCE, $ts: getValueAsString())
+    AssetState($ref == id, attributeName matches ("home.*"+$dowNext), type == AssetType.RESIDENCE, $te: getValueAsString(), _TradingTimes($t, $ts, $te))
+    $apartment: AssetState($ref == id, type == AssetType.RESIDENCE, attributeName == "lastDetectedScene", $val: getValueAsString() != "night", $val != "home")
+then
+    LOG.info("PP: dash night in "+$apartment.toString());
+    assets.dispatch( new AttributeEvent($ref, "lastDetectedScene", Values.create("night")) );
+end

@@ -4,6 +4,8 @@
 <!-- App services/dependencies -->
 <link rel="import" href="or-shell-native.html">
 <link rel="import" href="or-app-security.html">
+<link rel="import" href="or-app-events.html">
+<link rel="import" href="or-view-component.html">
 
 <!-- Promise API polyfill on IE 11  -->
 <script src="/static/3rdparty/es6-promise.js"></script>
@@ -80,6 +82,8 @@
                          user="{{user}}"
                          error="{{error}}"></or-app-security>
 
+        <or-app-events id="appEvents"></or-app-events>
+
         <template is="dom-if" if="[[error]]">
             <div id="errorView" class="or-Viewport">
                 <h1>[[defaultErrorMessage]]</h1>
@@ -94,47 +98,6 @@
     </template>
 
     <script>
-
-        class OpenRemoteViewComponent extends Polymer.Element {
-            static get properties() {
-                return {
-                    widgetStyle: {
-                        type: openremote.style.WidgetStyle,
-                        value: () => {
-                            return openremote.WIDGET_STYLE
-                        }
-                    }
-                }
-            }
-
-            ready() {
-                super.ready();
-
-                // View component should flex and its children should be in a flexbox vertical layout by default
-                this.shadowRoot.host.classList.add("flex", "layout", "vertical");
-
-                // View component is hidden by default, subclass decides when it's ready
-                this.hideComponent();
-            }
-
-            showComponent() {
-                this.shadowRoot.host.style.visibility = "visible";
-            }
-
-            hideComponent() {
-                this.shadowRoot.host.style.visibility = "hidden";
-            }
-
-            i18n(presenter, key) {
-                return presenter ? presenter.messages()[key]() : "";
-            }
-
-            icon(name) {
-                return "fa fa-" + name;
-            }
-
-        }
-
         /**
          * Singleton per window/document, registers itself as window.openremote.INSTANCE.
          *
@@ -286,6 +249,7 @@
 
                                         // Important success and error for the promise
                                         element.onload = function () {
+                                            console.debug("Loaded resource: " + url);
                                             resolve(url);
                                         };
                                         element.onerror = function () {
@@ -504,6 +468,14 @@
                         console.log("Connected to event service: " + serviceUrl);
                         this.set("status", "CONNECTED");
 
+                        // The events component is always registered as a message consumer and connection close listener
+                        this.addServiceMessageConsumer(data => {
+                            this.getServiceEvents().onServiceMessageReceived(data);
+                        });
+                        this.addServiceConnectionCloseListener(() => {
+                            this.getServiceEvents().onConnectionClose();
+                        });
+
                         // Close socket on unload/refresh of page
                         window.addEventListener("beforeunload", () => {
                             console.log("Page unloaded, closing event service connection");
@@ -551,6 +523,10 @@
                     console.log("Closing WebSocket");
                     this.webSocket.close();
                 }
+            }
+
+            getServiceEvents() {
+                return this.$.appEvents;
             }
 
             addServiceMessageConsumer(consumer) {
@@ -625,7 +601,7 @@
             // jsinterop components are loaded. Here we register types defined in JS so they are
             // available when jsinterop components are loaded/started.
             window.addEventListener('AppInit', function () {
-                console.log("Setting type in global scope: " + is);
+                console.debug("Setting type in global scope: " + is);
                 // Sets openremote.foo.bar.MyType = element so we can have the type in GWT jsinterop
                 let x = openremote;
                 for (let i = 0; i < interopNames.length; i++) {
@@ -641,7 +617,7 @@
             // initialization (see above). Now the actual web component elements can be defined/upgraded,
             // this is when component constructors etc. lifecycle starts.
             window.addEventListener('AppReady', function () {
-                console.log("Upgrading element: " + is);
+                console.debug("Upgrading element: " + is);
                 customElements.define(is, element);
             });
         }

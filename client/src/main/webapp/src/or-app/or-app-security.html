@@ -217,7 +217,7 @@
 
                     // Clear native shell stored tokens
                     if (this.shellNative && this.shellNative.enabled) {
-                        this.shellNative.postNativeShellMessage({type: 'token', data: {}});
+                        this.shellNative.postNativeShellMessage({type: 'logout'});
                     }
 
                     // Navigate to start page on logout, drop the hash (also, Keycloak has a bug where it
@@ -236,6 +236,13 @@
             getFullName() {
                 if (this.authenticated && this.keycloak) {
                     return this.keycloak.tokenParsed.name;
+                }
+                return this.user;
+            }
+
+            getUserId() {
+                if (this.authenticated && this.keycloak) {
+                    return this.keycloak.tokenParsed.sub;
                 }
                 return this.user;
             }

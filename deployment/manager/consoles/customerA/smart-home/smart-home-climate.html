@@ -1,0 +1,363 @@
+<link rel="import" href="smart-home-component.html">
+<link rel="import" href="smart-home-style.html">
+<link rel="import" href="smart-home-section.html">
+<link rel="import" href="smart-home-smart.html">
+
+<dom-module id="smart-home-climate">
+    <template>
+        <style include="smart-home-style">
+
+            .roomLabel {
+                padding: 0 10px;
+            }
+
+            .roomItem,
+            .ventilationItem {
+                margin: 10px 0;
+            }
+
+            .ventilationLabel {
+                margin: 0 10px;
+            }
+
+            .attributeValue {
+                margin-left: 20px;
+                font-size: 1.2em;
+                line-height: 1;
+                white-space: nowrap;
+            }
+        </style>
+
+        <smart-home-smart residence="[[residence]]"></smart-home-smart>
+
+        <smart-home-section>
+            <template is="dom-repeat" items="[[roomsTemperature]]">
+                <div class="layout horizontal center roomItem">
+                    <div class="layout vertical center-center">
+                        <img height="30" src="smart-home/img/temperature.png"/>
+                    </div>
+                    <div class="flex layout horizontal center roomLabel">
+                        [[localize(item.roomName)]]
+                    </div>
+                    <template is="dom-if" if="[[item.targetTemperature]]">
+                        <div class="targetTemperature">
+                            <div class="or-Select">
+                                <select value="{{item.targetTemperature::change}}"
+                                        on-change="onTargetTemperatureChange"
+                                        title="Target Temperature">
+                                    <!-- TODO dom-repeat here is tricky, no matter where the items are computed, it's not working -->
+                                    <option value="11">[[formatAttributeValue(item.targetTemperatureFormat,11.0)]]
+                                    </option>
+                                    <option value="11.5">[[formatAttributeValue(item.targetTemperatureFormat,11.5)]]
+                                    </option>
+                                    <option value="12">[[formatAttributeValue(item.targetTemperatureFormat,12.0)]]
+                                    </option>
+                                    <option value="12.5">[[formatAttributeValue(item.targetTemperatureFormat,12.5)]]
+                                    </option>
+                                    <option value="13">[[formatAttributeValue(item.targetTemperatureFormat,13.0)]]
+                                    </option>
+                                    <option value="13.5">[[formatAttributeValue(item.targetTemperatureFormat,13.5)]]
+                                    </option>
+                                    <option value="14">[[formatAttributeValue(item.targetTemperatureFormat,14.0)]]
+                                    </option>
+                                    <option value="14.5">[[formatAttributeValue(item.targetTemperatureFormat,14.5)]]
+                                    </option>
+                                    <option value="15">[[formatAttributeValue(item.targetTemperatureFormat,15.0)]]
+                                    </option>
+                                    <option value="15.5">[[formatAttributeValue(item.targetTemperatureFormat,15.5)]]
+                                    </option>
+                                    <option value="16">[[formatAttributeValue(item.targetTemperatureFormat,16.0)]]
+                                    </option>
+                                    <option value="16.5">[[formatAttributeValue(item.targetTemperatureFormat,16.5)]]
+                                    </option>
+                                    <option value="17">[[formatAttributeValue(item.targetTemperatureFormat,17.0)]]
+                                    </option>
+                                    <option value="17.5">[[formatAttributeValue(item.targetTemperatureFormat,17.5)]]
+                                    </option>
+                                    <option value="18">[[formatAttributeValue(item.targetTemperatureFormat,18.0)]]
+                                    </option>
+                                    <option value="18.5">[[formatAttributeValue(item.targetTemperatureFormat,18.5)]]
+                                    </option>
+                                    <option value="19">[[formatAttributeValue(item.targetTemperatureFormat,19.0)]]
+                                    </option>
+                                    <option value="19.5">[[formatAttributeValue(item.targetTemperatureFormat,19.5)]]
+                                    </option>
+                                    <option value="20">[[formatAttributeValue(item.targetTemperatureFormat,20.0)]]
+                                    </option>
+                                    <option value="20.5">[[formatAttributeValue(item.targetTemperatureFormat,20.5)]]
+                                    </option>
+                                    <option value="21">[[formatAttributeValue(item.targetTemperatureFormat,21.0)]]
+                                    </option>
+                                    <option value="21.5">[[formatAttributeValue(item.targetTemperatureFormat,21.5)]]
+                                    </option>
+                                    <option value="22">[[formatAttributeValue(item.targetTemperatureFormat,22.0)]]
+                                    </option>
+                                    <option value="22.5">[[formatAttributeValue(item.targetTemperatureFormat,22.5)]]
+                                    </option>
+                                    <option value="23">[[formatAttributeValue(item.targetTemperatureFormat,23.0)]]
+                                    </option>
+                                    <option value="23.5">[[formatAttributeValue(item.targetTemperatureFormat,23.5)]]
+                                    </option>
+                                    <option value="24">[[formatAttributeValue(item.targetTemperatureFormat,24.0)]]
+                                    </option>
+                                    <option value="24.5">[[formatAttributeValue(item.targetTemperatureFormat,24.5)]]
+                                    </option>
+                                    <option value="25">[[formatAttributeValue(item.targetTemperatureFormat,25.0)]]
+                                    </option>
+                                    <option value="25.5">[[formatAttributeValue(item.targetTemperatureFormat,25.5)]]
+                                    </option>
+                                    <option value="26">[[formatAttributeValue(item.targetTemperatureFormat,26.0)]]
+                                    </option>
+                                    <option value="26.5">[[formatAttributeValue(item.targetTemperatureFormat,26.5)]]
+                                    </option>
+                                    <option value="27">[[formatAttributeValue(item.targetTemperatureFormat,27.0)]]
+                                    </option>
+                                    <option value="27.5">[[formatAttributeValue(item.targetTemperatureFormat,27.5)]]
+                                    </option>
+                                    <option value="28">[[formatAttributeValue(item.targetTemperatureFormat,28.0)]]
+                                    </option>
+                                    <option value="28.5">[[formatAttributeValue(item.targetTemperatureFormat,28.5)]]
+                                    </option>
+                                    <option value="29">[[formatAttributeValue(item.targetTemperatureFormat,29.0)]]
+                                    </option>
+                                    <option value="29.5">[[formatAttributeValue(item.targetTemperatureFormat,29.5)]]
+                                    </option>
+                                    <option value="30">[[formatAttributeValue(item.targetTemperatureFormat,30.0)]]
+                                    </option>
+                                    <option value="30.5">[[formatAttributeValue(item.targetTemperatureFormat,30.5)]]
+                                    </option>
+                                    <option value="31">[[formatAttributeValue(item.targetTemperatureFormat,31.0)]]
+                                    </option>
+                                </select>
+                            </div>
+                        </div>
+                    </template>
+                    <div class="attributeValue">
+                        [[formatAttributeValue(item.currentTemperatureFormat, item.currentTemperature)]]
+                    </div>
+                </div>
+            </template>
+        </smart-home-section>
+
+        <smart-home-section>
+            <template is="dom-repeat" items="[[roomsCO2]]">
+                <div class="layout horizontal center roomItem">
+                    <div class="layout vertical center-center">
+                        <img height="30" src="smart-home/img/co2.png"/>
+                    </div>
+                    <div class="flex layout horizontal center roomLabel">
+                        [[localize(item.roomName)]]
+                    </div>
+                    <div class="attributeValue">
+                        [[formatAttributeValue(item.co2LevelFormat, item.co2Level)]]
+                    </div>
+                </div>
+            </template>
+        </smart-home-section>
+
+        <smart-home-section>
+            <template is="dom-repeat" items="[[roomsHumidity]]">
+                <div class="layout horizontal center roomItem">
+                    <div class="layout vertical center-center">
+                        <img height="30" src="smart-home/img/humidity.png"/>
+                    </div>
+                    <div class="flex layout horizontal center roomLabel">
+                        [[localize(item.roomName)]]
+                    </div>
+                    <div class="attributeValue">
+                        [[formatAttributeValue(item.humidityFormat, item.humidity)]]
+                    </div>
+                </div>
+            </template>
+        </smart-home-section>
+
+        <template is="dom-if" if="[[ventilationMode]]">
+            <smart-home-section>
+                <div class="layout horizontal center ventilationItem">
+                    <div class="layout vertical center-center">
+                        <img height="30" src="smart-home/img/ventilation.png"/>
+                    </div>
+                    <div class="flex layout horizontal ventilationLabel">
+                        [[localize('Ventilation')]]
+                    </div>
+                    <div class="ventilationMode">
+                        <div class="or-Select">
+                            <select value="{{ventilationMode::change}}"
+                                    title="[[localize('Ventilation Mode')]]">
+                                <option value="AUTO">[[localize('Auto')]]</option>
+                                <option value="LOW">[[localize('Low')]]</option>
+                                <option value="MEDIUM">[[localize('Medium')]]</option>
+                                <option value="HIGH">[[localize('High')]]</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </smart-home-section>
+        </template>
+
+    </template>
+
+    <script>
+        class SmartHomeClimate extends SmartHomeComponent {
+            static get is() {
+                return "smart-home-climate";
+            }
+
+            static get properties() {
+                return {
+                    roomsTemperature: {
+                        type: Array,
+                        computed: "computeRoomsTemperature(rooms.*)"
+                    },
+                    roomsCO2: {
+                        type: Array,
+                        computed: "computeRoomsCO2(rooms.*)"
+                    },
+                    roomsHumidity: {
+                        type: Array,
+                        computed: "computeRoomsHumidity(rooms.*)"
+                    },
+                    ventilationMode: {
+                        type: String,
+                        observer: "onVentilationModeChange"
+                    }
+                }
+            }
+
+            static get observers() {
+                return [
+                    "onResidenceChange(residence.*)"
+                ]
+            }
+
+            ready() {
+                super.ready();
+                this.shadowRoot.host.classList.add("flex", "layout", "vertical");
+            }
+
+            connectedCallback() {
+                super.connectedCallback();
+                this.showComponent();
+            }
+
+            computeRoomsTemperature(targetTemperateOptions) {
+                let roomsTemperature = [];
+                if (!this.rooms)
+                    return roomsTemperature;
+                this.rooms.forEach(room => {
+                    if ("currentTemperature" in room.attributes || "targetTemperature" in room.attributes) {
+                        roomsTemperature.push({
+                            roomId: room.id,
+                            roomName: room.name,
+                            currentTemperature: room.attributes.currentTemperature ? room.attributes.currentTemperature.value : null,
+                            currentTemperatureFormat: room.attributes.currentTemperature.meta.filter(m => m.name === "urn:openremote:asset:meta:format").map(m => m.value)[0],
+                            targetTemperature: room.attributes.targetTemperature ? room.attributes.targetTemperature.value : null,
+                            targetTemperatureFormat: room.attributes.targetTemperature ? room.attributes.targetTemperature.meta.filter(m => m.name === "urn:openremote:asset:meta:format").map(m => m.value)[0] : null,
+                        });
+                    }
+                })
+                return roomsTemperature;
+            }
+
+            computeRoomsCO2() {
+                let roomsCO2 = [];
+                if (!this.rooms)
+                    return roomsCO2;
+                this.rooms.forEach(room => {
+                    if ("co2Level" in room.attributes) {
+                        roomsCO2.push({
+                            roomId: room.id,
+                            roomName: room.name,
+                            co2Level: room.attributes.co2Level.value,
+                            co2LevelFormat: room.attributes.co2Level.meta.filter(m => m.name === "urn:openremote:asset:meta:format").map(m => m.value)[0],
+                        });
+                    }
+                })
+                return roomsCO2;
+            }
+
+            computeRoomsHumidity() {
+                let roomsHumidity = [];
+                if (!this.rooms)
+                    return roomsHumidity;
+                this.rooms.forEach(room => {
+                    if ("humidity" in room.attributes) {
+                        roomsHumidity.push({
+                            roomId: room.id,
+                            roomName: room.name,
+                            humidity: room.attributes.humidity.value,
+                            humidityFormat: room.attributes.humidity.meta.filter(m => m.name === "urn:openremote:asset:meta:format").map(m => m.value)[0],
+                        });
+                    }
+                })
+                return roomsHumidity;
+            }
+
+            formatAttributeValue(formatString, value) {
+                return value ? sprintf(formatString, value) : "-";
+            }
+
+            onResidenceChange(changeRecord) {
+                let ventilationMode = null;
+                if ("ventilationAuto" in this.residence.attributes && this.residence.attributes.ventilationAuto.value) {
+                    ventilationMode = "AUTO";
+                } else if ("ventilationLevel" in this.residence.attributes) {
+                    if (!this.residence.attributes.ventilationLevel.value) {
+                        ventilationMode = "LOW";
+                    } else if (this.residence.attributes.ventilationLevel.value <= 64) {
+                        ventilationMode = "LOW";
+                    } else if (this.residence.attributes.ventilationLevel.value <= 128) {
+                        ventilationMode = "MEDIUM";
+                    } else if (this.residence.attributes.ventilationLevel.value <= 255) {
+                        ventilationMode = "HIGH";
+                    }
+                }
+                this.set("ventilationMode", ventilationMode);
+            }
+
+            onTargetTemperatureChange(e) {
+                // Must use async operation as roomTemperature.targetTemperature will only be set after this listener returns
+                setTimeout(() => {
+                    let roomTemperature = e.model.item;
+                    openremote.INSTANCE.getServiceEvents().sendAttributeEvent(
+                        roomTemperature.roomId, "targetTemperature", parseInt(roomTemperature.targetTemperature)
+                    );
+                }, 1);
+            }
+
+            onVentilationModeChange() {
+                if (this.ventilationMode === "AUTO") {
+                    if (!this.residence.attributes.ventilationAuto.value) {
+                        openremote.INSTANCE.getServiceEvents().sendAttributeEvent(
+                            this.residence.id, "ventilationAuto", true
+                        );
+                    }
+                    return;
+                }
+                let ventilationLevel = null;
+                if (this.ventilationMode === "LOW") {
+                    ventilationLevel = 64;
+                } else if (this.ventilationMode === "MEDIUM") {
+                    ventilationLevel = 128;
+                } else if (this.ventilationMode === "HIGH") {
+                    ventilationLevel = 255;
+                }
+
+                if (this.residence.attributes.ventilationAuto.value) {
+                    openremote.INSTANCE.getServiceEvents().sendAttributeEvent(
+                        this.residence.id, "ventilationAuto", false
+                    );
+                }
+
+                if (this.residence.attributes.ventilationLevel.value !== ventilationLevel) {
+                    openremote.INSTANCE.getServiceEvents().sendAttributeEvent(
+                        this.residence.id, "ventilationLevel", ventilationLevel
+                    );
+                }
+            }
+        }
+
+        defineAppElement(SmartHomeClimate, SmartHomeClimate.is, "SmartHomeClimate");
+    </script>
+
+</dom-module>

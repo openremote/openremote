@@ -1,0 +1,9 @@
+{
+  "ignoredDependencies": [
+    "polymer",
+    "iron-flex-layout",
+    "app-localize-behavior",
+    "intl",
+    "chart.js"
+  ]
+}

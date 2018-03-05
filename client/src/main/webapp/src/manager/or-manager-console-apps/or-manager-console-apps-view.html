@@ -80,6 +80,11 @@
                 }
             }
 
+            ready() {
+                super.ready();
+                this.shadowRoot.host.classList.add("flex", "layout", "vertical");
+            }
+
             connectedCallback() {
                 super.connectedCallback();
 

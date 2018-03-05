@@ -170,7 +170,7 @@ public abstract class AbstractProtocol implements Protocol {
     }
 
     @Override
-    public void linkProtocolConfiguration(AssetAttribute protocolConfiguration, Consumer<ConnectionStatus> statusConsumer) {
+    final public void linkProtocolConfiguration(AssetAttribute protocolConfiguration, Consumer<ConnectionStatus> statusConsumer) {
         withLock(getProtocolName(), () -> {
             LOG.finer("Linking protocol configuration to protocol '" + getProtocolName() + "': " + protocolConfiguration);
             linkedProtocolConfigurations.put(
@@ -182,7 +182,7 @@ public abstract class AbstractProtocol implements Protocol {
     }
 
     @Override
-    public void unlinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
+    final public void unlinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
         withLock(getProtocolName(), () -> {
             LOG.finer("Unlinking protocol configuration from protocol '" + getProtocolName() + "': " + protocolConfiguration);
             doUnlinkProtocolConfiguration(protocolConfiguration);
@@ -191,7 +191,7 @@ public abstract class AbstractProtocol implements Protocol {
     }
 
     @Override
-    public void linkAttributes(Collection<AssetAttribute> attributes, AssetAttribute protocolConfiguration) {
+    final public void linkAttributes(Collection<AssetAttribute> attributes, AssetAttribute protocolConfiguration) {
         withLock(getProtocolName(), () -> {
             attributes.forEach(attribute -> {
                 LOG.fine("Linking attribute to '" + getProtocolName() + "': " + attribute);
@@ -222,7 +222,7 @@ public abstract class AbstractProtocol implements Protocol {
     }
 
     @Override
-    public void unlinkAttributes(Collection<AssetAttribute> attributes, AssetAttribute protocolConfiguration) throws Exception {
+    final public void unlinkAttributes(Collection<AssetAttribute> attributes, AssetAttribute protocolConfiguration) throws Exception {
         withLock(getProtocolName(), () ->
             attributes.forEach(attribute -> {
                 LOG.fine("Unlinking attribute on '" + getProtocolName() + "': " + attribute);
@@ -259,7 +259,7 @@ public abstract class AbstractProtocol implements Protocol {
         });
     }
 
-    protected void processLinkedAttributeWrite(AttributeEvent event) {
+    final protected void processLinkedAttributeWrite(AttributeEvent event) {
         LOG.finest("Processing linked attribute write on " + getProtocolName() + ": " + event);
         withLock(getProtocolName(), () -> {
             AssetAttribute attribute = linkedAttributes.get(event.getAttributeRef());
@@ -277,7 +277,7 @@ public abstract class AbstractProtocol implements Protocol {
      * timestamp. Use {@link #updateLinkedAttribute} to publish new sensor values, which performs additional
      * verification and uses a different messaging queue.
      */
-    protected void sendAttributeEvent(AttributeState state) {
+    final protected void sendAttributeEvent(AttributeState state) {
         sendAttributeEvent(new AttributeEvent(state, timerService.getCurrentTimeMillis()));
     }
 
@@ -285,7 +285,7 @@ public abstract class AbstractProtocol implements Protocol {
      * Send an arbitrary {@link AttributeEvent} through the processing chain. Use {@link #updateLinkedAttribute} to
      * publish new sensor values, which performs additional verification and uses a different messaging queue.
      */
-    protected void sendAttributeEvent(AttributeEvent event) {
+    final protected void sendAttributeEvent(AttributeEvent event) {
         withLock(getProtocolName(), () -> {
             // Don't allow updating linked attributes with this mechanism as it could cause an infinite loop
             if (linkedAttributes.containsKey(event.getAttributeRef())) {
@@ -302,7 +302,7 @@ public abstract class AbstractProtocol implements Protocol {
      * before sending on the sensor queue.
      */
     @SuppressWarnings("unchecked")
-    protected void updateLinkedAttribute(final AttributeState finalState, long timestamp) {
+    final protected void updateLinkedAttribute(final AttributeState finalState, long timestamp) {
         withLock(getProtocolName(), () -> {
             AttributeState state = finalState;
             AssetAttribute attribute = linkedAttributes.get(state.getAttributeRef());
@@ -404,11 +404,11 @@ public abstract class AbstractProtocol implements Protocol {
      * Update the value of a linked attribute, with the current system time as event time see
      * {@link #updateLinkedAttribute(AttributeState, long)} for more details.
      */
-    protected void updateLinkedAttribute(AttributeState state) {
+    final protected void updateLinkedAttribute(AttributeState state) {
         updateLinkedAttribute(state, timerService.getCurrentTimeMillis());
     }
 
-    protected void updateAssetLocation(String assetId, Point location) {
+    final protected void updateAssetLocation(String assetId, Point location) {
         withLock(getProtocolName(), () -> assetService.updateAssetLocation(assetId, location));
     }
 
@@ -417,7 +417,7 @@ public abstract class AbstractProtocol implements Protocol {
      * persist changing data e.g. authorization tokens. First this clones the existing protocolConfiguration and calls
      * the consumer to perform the modification.
      */
-    protected void updateLinkedProtocolConfiguration(AssetAttribute protocolConfiguration, Consumer<AssetAttribute> protocolUpdater) {
+    final protected void updateLinkedProtocolConfiguration(AssetAttribute protocolConfiguration, Consumer<AssetAttribute> protocolUpdater) {
         withLock(getProtocolName(), () -> {
             // Clone the protocol configuration rather than modify this one
             AssetAttribute modifiedProtocolConfiguration = protocolConfiguration.deepCopy();
@@ -429,7 +429,7 @@ public abstract class AbstractProtocol implements Protocol {
     /**
      * Update the runtime status of a protocol configuration by its attribute ref
      */
-    protected void updateStatus(AttributeRef protocolRef, ConnectionStatus connectionStatus) {
+    final protected void updateStatus(AttributeRef protocolRef, ConnectionStatus connectionStatus) {
         withLock(getProtocolName(), () -> {
             LinkedProtocolInfo protocolInfo = linkedProtocolConfigurations.get(protocolRef);
             if (protocolInfo != null) {
@@ -443,7 +443,7 @@ public abstract class AbstractProtocol implements Protocol {
     /**
      * Gets the current runtime status of a protocol configuration.
      */
-    protected ConnectionStatus getStatus(AssetAttribute protocolConfiguration) {
+    final protected ConnectionStatus getStatus(AssetAttribute protocolConfiguration) {
         return withLockReturning(getProtocolName(), () -> {
             LinkedProtocolInfo linkedProtocolInfo = linkedProtocolConfigurations.get(protocolConfiguration.getReferenceOrThrow());
             return linkedProtocolInfo.getCurrentConnectionStatus();
@@ -451,7 +451,7 @@ public abstract class AbstractProtocol implements Protocol {
     }
 
     @Override
-    public ProtocolDescriptor getProtocolDescriptor() {
+    final public ProtocolDescriptor getProtocolDescriptor() {
         return new ProtocolDescriptor(
             getProtocolName(),
             getProtocolDisplayName(),

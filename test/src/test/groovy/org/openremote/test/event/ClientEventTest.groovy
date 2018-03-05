@@ -76,11 +76,11 @@ class ClientEventTest extends Specification implements ManagerContainerTrait, Gw
         when: "a client websocket connection and attached event bus and service"
         def accessToken = {
             authenticate(
-                container,
-                MASTER_REALM,
-                KEYCLOAK_CLIENT_ID,
-                MASTER_REALM_ADMIN_USER,
-                getString(container.getConfig(), SETUP_ADMIN_PASSWORD, SETUP_ADMIN_PASSWORD_DEFAULT)
+                    container,
+                    MASTER_REALM,
+                    KEYCLOAK_CLIENT_ID,
+                    MASTER_REALM_ADMIN_USER,
+                    getString(container.getConfig(), SETUP_ADMIN_PASSWORD, SETUP_ADMIN_PASSWORD_DEFAULT)
             ).token
         }
         List<SharedEvent> collectedSharedEvents = []
@@ -94,7 +94,7 @@ class ClientEventTest extends Specification implements ManagerContainerTrait, Gw
         and: "an existing protocol configuration is disabled"
         def agent = assetStorageService.find(managerDemoSetup.agentId, true)
         agent.getAttribute(managerDemoSetup.agentProtocolConfigName).get().addMeta(
-            new MetaItem(AssetMeta.DISABLED)
+                new MetaItem(AssetMeta.DISABLED)
         )
         agent = assetStorageService.merge(agent)
 
@@ -121,14 +121,14 @@ class ClientEventTest extends Specification implements ManagerContainerTrait, Gw
 
         and: "the existing protocol configuration is re-enabled"
         agent.getAttribute(managerDemoSetup.agentProtocolConfigName).get().getMeta().removeIf(
-            isMetaNameEqualTo(AssetMeta.DISABLED)
+                isMetaNameEqualTo(AssetMeta.DISABLED)
         )
         agent = assetStorageService.merge(agent)
 
         then: "the protocol should be CONNECTED but no new events should have been received"
         conditions.eventually {
             assert agentService.getProtocolConnectionStatus(
-                new AttributeRef(managerDemoSetup.agentId, managerDemoSetup.agentProtocolConfigName)
+                    new AttributeRef(managerDemoSetup.agentId, managerDemoSetup.agentProtocolConfigName)
             ) == ConnectionStatus.CONNECTED
             assert collectedSharedEvents.isEmpty()
         }
@@ -193,21 +193,22 @@ class ClientEventTest extends Specification implements ManagerContainerTrait, Gw
         and: "an internal attribute event subscription is made"
         List<AttributeEvent> internalReceivedEvents = []
         internalClientEventService.getEventSubscriptions().update(
-            ClientEventTest.class.getName(),
-            new EventSubscription<>(
-                AttributeEvent.class,
-                new AttributeEvent.EntityIdFilter(managerDemoSetup.thingId),
-                {attributeEvent ->
-                    internalReceivedEvents.add(attributeEvent as AttributeEvent)
-                }
-            ))
+                ClientEventTest.class.getName(),
+                false,
+                new EventSubscription<>(
+                        AttributeEvent.class,
+                        new AttributeEvent.EntityIdFilter(managerDemoSetup.thingId),
+                        { attributeEvent ->
+                            internalReceivedEvents.add(attributeEvent as AttributeEvent)
+                        }
+                ))
 
         and: "the subscribed asset is modified"
         def currentValue = asset.getAttribute(managerDemoSetup.thingLightToggleAttributeName).get().getValueAsBoolean().get()
         assetProcessingService.sendAttributeEvent(new AttributeEvent(
-            managerDemoSetup.thingId,
-            managerDemoSetup.thingLightToggleAttributeName,
-            Values.create(!currentValue)))
+                managerDemoSetup.thingId,
+                managerDemoSetup.thingLightToggleAttributeName,
+                Values.create(!currentValue)))
 
         // TODO: Only 1 attribute event should reach the subscribers below
         then: "an attribute event should have been received by the internal subscriber"

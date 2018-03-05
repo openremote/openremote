@@ -21,6 +21,8 @@ package org.openremote.manager.web;
 
 import io.undertow.server.HttpHandler;
 import io.undertow.servlet.api.DeploymentInfo;
+import io.undertow.util.Headers;
+import io.undertow.util.StatusCodes;
 import org.openremote.container.Container;
 import org.openremote.container.security.IdentityService;
 import org.openremote.container.web.WebService;
@@ -66,7 +68,30 @@ public class ManagerWebService extends WebService {
 
         // Serve the Console client files unsecured
         consolesDocRoot = Paths.get(getString(container.getConfig(), CONSOLES_DOCROOT, CONSOLES_DOCROOT_DEFAULT));
-        addRoute(addDeployment(devMode, identityService, consolesDocRoot, CONSOLE_PATH), CONSOLE_PATH, CONSOLE_PATTERN);
+        HttpHandler consoleHandler = addDeployment(devMode, identityService, consolesDocRoot, CONSOLE_PATH);
+        // Special case for Console client files: When certain files are requested, serve them from the /static/*
+        // resources already deployed in Manager. In other words: Console apps should not have their own Polymer etc.
+        // resources but use the files we also use in platform components.
+        String[] consoleStaticResources = {
+            "/bower_components/polymer/polymer.html",
+            "/bower_components/polymer/polymer-element.html",
+            "/bower_components/iron-flex-layout/iron-flex-layout.html",
+            "/bower_components/iron-flex-layout/iron-flex-layout-classes.html",
+            "/bower_components/chart.js/dist/Chart.js",
+            // TODO Add all the other stuff but Intl is many files, no idea how we deal with this... good approach?
+        };
+        addRoute(exchange -> {
+                for (String consoleStaticResource : consoleStaticResources) {
+                    if (exchange.getRequestPath().endsWith(consoleStaticResource)) {
+                        exchange.setStatusCode(StatusCodes.FOUND);
+                        exchange.getResponseHeaders().put(Headers.LOCATION, "/static" + consoleStaticResource);
+                        exchange.endExchange();
+                        return;
+                    }
+                }
+                consoleHandler.handleRequest(exchange);
+            }, CONSOLE_PATH, CONSOLE_PATTERN
+        );
 
         // Serve the UI deployment files unsecured
         uiDocRoot = Paths.get(getString(container.getConfig(), UI_DOCROOT, UI_DOCROOT_DEFAULT));

@@ -1,0 +1,107 @@
+<link rel="import" href="smart-home-component.html">
+<link rel="import" href="smart-home-style.html">
+
+<dom-module id="smart-home-header">
+    <template>
+        <style include="smart-home-style">
+
+            .header {
+                background-color: var(--theme-darkgrey);
+                padding: 7px 15px;
+                min-height: 34px;
+            }
+
+            .headerItem ::slotted(*) {
+                color: var(--theme-white);
+                text-decoration: none;
+                font-size: 20px;
+                cursor: pointer;
+            }
+
+            .nav {
+                background-color: var(--theme-white);
+            }
+
+            .navItem {
+                color: var(--theme-mediumgrey);
+                text-align: center;
+                padding: 10px;
+                cursor: pointer;
+                text-decoration: none;
+                border-top: 3px solid transparent;
+                border-bottom: 3px solid transparent;
+            }
+
+            .navItem.active {
+                color: var(--theme-black);
+                border-bottom: 3px solid var(--theme-lightgreen);
+                font-weight: 600;
+            }
+
+        </style>
+
+        <div class="flex-none layout horizontal center header">
+            <div class="flex layout horizontal center">
+
+                <div class="flex layout horizontal headerItem">
+                    <slot name="leftItem"></slot>
+                </div>
+
+                <div class="layout horizontal headerItem">
+                    <slot name="rightItem"></slot>
+                </div>
+
+            </div>
+        </div>
+
+        <template is="dom-if" if="[[!hideNav]]">
+            <div class="flex-none layout horizontal nav">
+                <a href="#scenes" class$="[[getNavItemClass(activeNav, 'scenes')]]">{{localize('Home')}}</a>
+                <a href="#energy" class$="[[getNavItemClass(activeNav, 'energy')]]">{{localize('Energy')}}</a>
+                <a href="#security" class$="[[getNavItemClass(activeNav, 'security')]]">{{localize('Security')}}</a>
+                <a href="#climate" class$="[[getNavItemClass(activeNav, 'climate')]]">{{localize('Climate')}}</a>
+            </div>
+        </template>
+
+    </template>
+
+    <script>
+        class SmartHomeHeader extends SmartHomeComponent {
+            static get is() {
+                return "smart-home-header";
+            }
+
+            static get properties() {
+                return {
+                    hideNav: {
+                        type: Boolean,
+                        value: false
+                    },
+                    activeNav: {
+                        type: String
+                    },
+                }
+            }
+
+            ready() {
+                super.ready();
+
+                this.shadowRoot.host.classList.add("flex-none", "layout", "vertical");
+            }
+
+            connectedCallback() {
+                super.connectedCallback();
+                this.showComponent();
+            }
+
+            getNavItemClass(active, item) {
+                return active === item
+                    ? "flex layout horizontal center-center navItem active"
+                    : "flex layout horizontal center-center navItem";
+            }
+        }
+
+        defineAppElement(SmartHomeHeader, SmartHomeHeader.is, "SmartHomeHeader");
+    </script>
+
+</dom-module>

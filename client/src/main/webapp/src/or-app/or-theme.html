@@ -4,441 +4,475 @@
     <template>
         <style include="colors">
 
-    ::-webkit-scrollbar-track {
-        background-color: var(--theme-black);
-    }
-
-    ::-webkit-scrollbar-thumb {
-        background-color: var(--theme-lightgreen);
-    }
-
-    .or-Viewport {
-        background-color: var(--theme-white);
-    }
-
-    .or-Header {
-        color: var(--theme-white);
-        background-color: var(--theme-darkgrey);
-    }
-
-    .or-Footer {
-        color: var(--theme-white);
-        background-color: var(--theme-black);
-    }
-
-    .or-Footer a {
-        color: var(--theme-white) !important;
-    }
-
-    .or-NavItem {
-        background: transparent;
-        color: var(--theme-white) !important;
-    }
-
-    .or-NavItem.or-PushButton {
-        background: transparent;
-    }
-
-    .or-NavItem.active {
-        background: var(--theme-black) !important;
-        color: var(--theme-lightgreen) !important;
-        border-top-color: var(--theme-lightgreen) !important;
-    }
-
-    .or-SecondaryNav {
-        background-color: var(--theme-black);
-        color: var(--theme-white);
-    }
-
-    .or-SecondaryNavItem {
-        background: transparent;
-    }
-
-    .or-SecondaryNavItem.or-PushButton {
-        background: transparent;
-        color: var(--theme-white);
-    }
-
-    .or-SecondaryNavItem.or-PushButton.primary {
-        color: var(--theme-lightgreen);
-    }
-
-    .or-SecondaryNavItem.or-FormInputText,
-    .or-SecondaryNavItem.or-FormInputNumber {
-        background: var(--theme-white);
-        color: var(--theme-black);
-    }
-
-    .or-SecondaryNavItem a {
-        color: var(--theme-white) !important;
-    }
-
-    .or-SecondaryNavItem.active {
-        color: var(--theme-lightgreen) !important;
-    }
-
-    .or-SecondaryNavItem.active a {
-        color: var(--theme-lightgreen) !important;
-    }
-
-    .or-SidebarContent {
-        background-color: var(--theme-black);
-        color: var(--theme-white);
-    }
-
-    .or-MainContent {
-
-    }
-
-    .or-PushButton,
-    .or-FormFileUploadLabel {
-        background-color: var(--theme-lightgrey);
-        color: var(--theme-black);
-    }
-
-    .or-Hyperlink a,
-    .or-Hyperlink a:visited {
-        color: var(--theme-darkgrey);
-    }
-
-    .or-UnorderedList {
-        color: var(--theme-darkgrey);
-    }
-
-    .or-Headline {
-        color: var(--theme-darkgrey);
-    }
-
-    .or-HeadlineSub {
-        color: var(--theme-mediumgrey);
-    }
-
-    .or-FormMessages.error {
-        background-color: var(--theme-red);
-        color: var(--theme-white);
-        border-color: transparent;
-    }
-
-    .or-FormMessages.success {
-        color: var(--theme-darkgrey);
-        background-color: var(--theme-lightgreen)
-    }
-
-    .or-FormMessages.info {
-        color: var(--theme-black);
-        background-color: var(--theme-lightgrey)
-    }
-
-    .or-FormGroup {
-        background-image: -webkit-linear-gradient(45deg, var(--theme-brightgrey) 0%, var(--theme-white) 100%);
-        background-image: -moz-linear-gradient(45deg, var(--theme-brightgrey) 0%, var(--theme-white) 100%);
-        background-image: linear-gradient(45deg, var(--theme-brightgrey) 0%, var(--theme-white) 100%);
-    }
-
-    .or-PopupPanelContent .or-FormGroup {
-        background-image: -webkit-linear-gradient(45deg, var(--theme-lightergrey) 0%, var(--theme-brightgrey) 100%);
-        background-image: -moz-linear-gradient(45deg, var(--theme-lightergrey) 0%, var(--theme-brightgrey) 100%);
-        background-image: linear-gradient(45deg, var(--theme-lightergrey) 0%, var(--theme-brightgrey) 100%);
-    }
-
-    .or-FormGroup.expanded {
-    }
-
-    .or-FormSection .or-FormSection {
-        background-image: -webkit-linear-gradient(45deg, var(--theme-lightergrey) 0%, var(--theme-white) 100%);
-        background-image: -moz-linear-gradient(45deg, var(--theme-lightergrey) 0%, var(--theme-white) 100%);
-        background-image: linear-gradient(45deg, var(--theme-lightergrey) 0%, var(--theme-white) 100%);
-    }
-
-    .or-FormSection .or-FormSection .or-FormGroup {
-        background: inherit
-    }
-
-    .or-FormSectionLabel {
-        color: var(--theme-mediumgrey);
-    }
-
-    .or-FormLabel.error,
-    .or-FormLabel.error + .or-FormInfoLabel {
-        color: var(--theme-red);
-    }
-
-    .or-FormField.error .or-FormControl {
-        border-color: var(--theme-red);
-    }
-
-    .or-FormField.error .or-FormOutputText {
-        border-color: transparent;
-    }
-
-    .or-FormField.error .or-FormInfoLabel,
-    .or-FormField.error .or-FormInfoLabel .or-FormControl {
-        color: var(--theme-mediumgrey);
-        border-color: transparent;
-    }
-
-    .or-FormControl.error {
-        background-color: var(--theme-red) !important;
-        color: var(--theme-white) !important;
-    }
-
-    .or-FormControl.primary {
-        background-color: var(--theme-lightgreen);
-    }
-
-    .or-FormLabel {
-        color: var(--theme-darkgrey);
-    }
-
-    .or-FormField {
-
-    }
-
-    .or-FormInfoLabel {
-        color: var(--theme-mediumgrey);
-    }
-
-    .or-FormControl {
-
-    }
-
-    .or-FormInputText,
-    .or-FormInputNumber {
-        border-color: var(--theme-darkgrey);
-        background: transparent;
-    }
-
-    .or-FormInputText:focus,
-    .or-FormInputNumber:focus {
-        border-color: var(--theme-lightgreen);
-    }
-
-    .or-FormInputText[readOnly]:focus,
-    .or-FormInputNumber[readOnly]:focus {
-        border-color: transparent;
-    }
-
-    .or-FormTextArea {
-        background-color: var(--theme-brightgrey);
-    }
-
-    .or-FormTextArea.border {
-        border-color: var(--theme-darkgrey);
-    }
-
-    .or-FormButton {
-    }
-
-    .or-FormButtonPrimary {
-        color: var(--theme-black);
-        background: var(--theme-lightgreen);
-    }
-
-    .or-FormButtonDown {
-        color: var(--theme-lightgrey);
-        background: var(--theme-black);
-    }
-
-    .or-FormButtonDanger {
-        color: var(--theme-white);
-        background: var(--theme-red);
-    }
-
-    .or-FormButton:focus,
-    .or-FormButtonDanger:focus,
-    .or-FormButtonDown:focus,
-    .or-FormButtonPrimary:focus {
-        border-color: var(--theme-black);
-    }
-
-    .or-Divider {
-        background-image: -webkit-linear-gradient(left, var(--theme-white), var(--theme-lightgreen), var(--theme-white));
-        background-image: -moz-linear-gradient(left, var(--theme-white), var(--theme-lightgreen), var(--theme-white));
-        background-image: linear-gradient(left, var(--theme-white), var(--theme-lightgreen), var(--theme-white));
-    }
-
-    .or-PushButton-up-disabled:focus {
-        border-color: transparent;
-    }
-
-    .or-FormListBox,
-    .or-FormValueListBox {
-        border-color: var(--theme-darkgrey);
-    }
-
-    .or-FormListBox:focus,
-    .or-FormValueListBox:focus {
-        border-color: var(--theme-lightgreen);
-    }
-
-    .or-FormCheckBox:checked {
-        color: var(--theme-lightgreen);
-    }
-
-    .or-FormTableHeaderCell {
-        border-color: var(--theme-mediumgrey);
-        color: var(--theme-darkgrey);
-    }
-
-    .or-FormTableHoveredRow {
-        background-color: var(--theme-lightgrey) !important;
-    }
-
-    .or-FormTableEvenRow {
-        background-color: var(--theme-brightgrey);
-    }
-
-    .or-FormTableOddRow {
-        background-color: var(--theme-white);
-    }
-
-    .or-FormTreeItem {
-        color: var(--theme-white);
-    }
-
-    .or-FormTreeItemImage {
-    }
-
-    .or-FormTreeTopItem {
-    }
-
-    .or-FormTreeKeyboardSelectedItem {
-        background-color: var(--theme-mediumgrey);
-    }
-
-    .or-FormTreeKeyboardSelectedItem .or-FormTreeIcon {
-        color: var(--theme-white);
-    }
-
-    .or-FormTreeSelectedItem {
-        background-color: var(--theme-lightgreen);
-    }
-
-    .or-FormTreeSelectedItem .or-FormTreeItem {
-        color: var(--theme-black);
-    }
-
-    .or-FormTreeEmptyMessage {
-        color: var(--theme-mediumgrey);
-    }
-
-    .or-FormTreeShowMoreButton {
-        color: var(--theme-lightgreen);
-    }
-
-    .or-FormTreeIcon {
-        color: var(--theme-mediumgrey);
-    }
-
-    .or-FormAnchor,
-    .or-FormAnchor a:visited {
-        color: var(--theme-darkgrey);
-    }
-
-    .or-MainContent {
-        background-color: var(--theme-white);
-        box-shadow: inset 0px 2px 4px 0px var(--theme-mediumgrey);
-        -webkit-box-shadow: inset 0px 2px 4px 0px var(--theme-mediumgrey);
-        -moz-box-shadow: inset 0px 2px 4px 0px var(--theme-mediumgrey);
-    }
-
-    .or-FormList {
-        background-color: var(--theme-lightgrey);
-    }
-
-    .or-FormListItem {
-        background: var(--theme-white);
-    }
-
-    .or-FormListItem .warn {
-        color: var(--theme-yellow);
-    }
-
-    .or-FormListItem .error {
-        color: var(--theme-red);
-    }
-
-    .or-FormListEmptyMessage {
-        color: var(--theme-mediumgrey);
-    }
-
-    .or-ToastInfo {
-        background-color: var(--theme-lightgrey);
-        color: var(--theme-black);
-    }
-
-    .or-ToastSuccess {
-        background-color: var(--theme-lightgreen);
-        color: var(--theme-black);
-    }
-
-    .or-ToastFailure {
-        background-color: var(--theme-red);
-        color: var(--theme-white);
-    }
-
-    .or-PopupPanel {
-        background-color: var(--theme-brightgrey);
-        color: var(--theme-black);
-    }
-
-    .or-PopupPanelHeader {
-        background-color: var(--theme-lightgreen);
-        color: var(--theme-black);
-    }
-
-    .or-PopupPanelContent {
-    }
-
-    .or-PopupPanelFooter {
-        background-color: var(--theme-black);
-        color: var(--theme-white);
-    }
-
-    .or-PopupPanelGlass {
-        background-color: rgba(0, 0, 0, 0.44);
-    }
-
-    .or-SplitPanelHandle {
-        background-color: var(--theme-black);
-        color: var(--theme-white);
-    }
-
-    .or-ItemWithBorder {
-        border-color: var(--theme-lightgrey);
-    }
-
-    .or-PopupPanelContent.or-HighlightBackground,
-    .or-HighlightBackground .or-ValueEditor {
-        background-color: var(--theme-lightgreen);
-        border-color: transparent;
-        color: white;
-    }
-
-    .or-HighlightBackground .or-ValueEditor .or-FormControl {
-        color: var(--theme-white);
-        border-color: transparent;
-    }
-
-    .or-BorderRed {
-        border-color: var(--theme-red);
-    }
-
-    .or-BorderGreen {
-        border-color: var(--theme-mediumgreen);
-    }
-
-    .or-BorderYellow {
-        border-color: var(--theme-yellow);
-    }
-
-    .or-BorderDefault {
-        border-color: var(--theme-lightergrey);
-    }
-
-    .or-DatapointBrowser {
-    }
-
-</style>
-</template>
+            .or-Viewport {
+                background-color: var(--theme-white);
+            }
+
+            .or-Header {
+                color: var(--theme-white);
+                background-color: var(--theme-darkgrey);
+            }
+
+            .or-Footer {
+                color: var(--theme-white);
+                background-color: var(--theme-black);
+            }
+
+            .or-Footer a {
+                color: var(--theme-white) !important;
+            }
+
+            .or-NavItem {
+                background: transparent;
+                color: var(--theme-white) !important;
+            }
+
+            .or-NavItem.or-PushButton {
+                background: transparent;
+            }
+
+            .or-NavItem.active {
+                background: var(--theme-black) !important;
+                color: var(--theme-lightgreen) !important;
+                border-top-color: var(--theme-lightgreen) !important;
+            }
+
+            .or-SecondaryNav {
+                background-color: var(--theme-black);
+                color: var(--theme-white);
+            }
+
+            .or-SecondaryNavItem {
+                background: transparent;
+            }
+
+            .or-SecondaryNavItem.or-PushButton {
+                background: transparent;
+                color: var(--theme-white);
+            }
+
+            .or-SecondaryNavItem.or-PushButton.primary {
+                color: var(--theme-lightgreen);
+            }
+
+            .or-SecondaryNavItem.or-FormInputText,
+            .or-SecondaryNavItem.or-FormInputNumber {
+                background: var(--theme-white);
+                color: var(--theme-black);
+            }
+
+            .or-SecondaryNavItem a {
+                color: var(--theme-white) !important;
+            }
+
+            .or-SecondaryNavItem.active {
+                color: var(--theme-lightgreen) !important;
+            }
+
+            .or-SecondaryNavItem.active a {
+                color: var(--theme-lightgreen) !important;
+            }
+
+            .or-SidebarContent {
+                background-color: var(--theme-black);
+                color: var(--theme-white);
+            }
+
+            .or-MainContent {
+
+            }
+
+            .or-PushButton,
+            .or-FormFileUploadLabel {
+                background-color: var(--theme-lightgrey);
+                color: var(--theme-black);
+            }
+
+            .or-Hyperlink a,
+            .or-Hyperlink a:visited {
+                color: var(--theme-darkgrey);
+            }
+
+            .or-UnorderedList {
+                color: var(--theme-darkgrey);
+            }
+
+            .or-Headline {
+                color: var(--theme-darkgrey);
+            }
+
+            .or-HeadlineSub {
+                color: var(--theme-mediumgrey);
+            }
+
+            .or-FormMessages.error {
+                background-color: var(--theme-red);
+                color: var(--theme-white);
+                border-color: transparent;
+            }
+
+            .or-FormMessages.success {
+                color: var(--theme-darkgrey);
+                background-color: var(--theme-lightgreen)
+            }
+
+            .or-FormMessages.info {
+                color: var(--theme-black);
+                background-color: var(--theme-lightgrey)
+            }
+
+            .or-FormGroup {
+                background-image: -webkit-linear-gradient(45deg, var(--theme-brightgrey) 0%, var(--theme-white) 100%);
+                background-image: -moz-linear-gradient(45deg, var(--theme-brightgrey) 0%, var(--theme-white) 100%);
+                background-image: linear-gradient(45deg, var(--theme-brightgrey) 0%, var(--theme-white) 100%);
+            }
+
+            .or-PopupPanelContent .or-FormGroup {
+                background-image: -webkit-linear-gradient(45deg, var(--theme-lightergrey) 0%, var(--theme-brightgrey) 100%);
+                background-image: -moz-linear-gradient(45deg, var(--theme-lightergrey) 0%, var(--theme-brightgrey) 100%);
+                background-image: linear-gradient(45deg, var(--theme-lightergrey) 0%, var(--theme-brightgrey) 100%);
+            }
+
+            .or-FormGroup.expanded {
+            }
+
+            .or-FormSection .or-FormSection {
+                background-image: -webkit-linear-gradient(45deg, var(--theme-lightergrey) 0%, var(--theme-white) 100%);
+                background-image: -moz-linear-gradient(45deg, var(--theme-lightergrey) 0%, var(--theme-white) 100%);
+                background-image: linear-gradient(45deg, var(--theme-lightergrey) 0%, var(--theme-white) 100%);
+            }
+
+            .or-FormSection .or-FormSection .or-FormGroup {
+                background: inherit
+            }
+
+            .or-FormSectionLabel {
+                color: var(--theme-mediumgrey);
+            }
+
+            .or-FormLabel.error,
+            .or-FormLabel.error + .or-FormInfoLabel {
+                color: var(--theme-red);
+            }
+
+            .or-FormField.error .or-FormControl {
+                border-color: var(--theme-red);
+            }
+
+            .or-FormField.error .or-FormOutputText {
+                border-color: transparent;
+            }
+
+            .or-FormField.error .or-FormInfoLabel,
+            .or-FormField.error .or-FormInfoLabel .or-FormControl {
+                color: var(--theme-mediumgrey);
+                border-color: transparent;
+            }
+
+            .or-FormControl.error {
+                background-color: var(--theme-red) !important;
+                color: var(--theme-white) !important;
+            }
+
+            .or-FormControl.primary {
+                background-color: var(--theme-lightgreen);
+            }
+
+            .or-FormLabel {
+                color: var(--theme-darkgrey);
+            }
+
+            .or-FormField {
+
+            }
+
+            .or-FormInfoLabel {
+                color: var(--theme-mediumgrey);
+            }
+
+            .or-FormControl {
+
+            }
+
+            .or-FormInputText,
+            .or-FormInputNumber {
+                border-color: var(--theme-darkgrey);
+                background: transparent;
+            }
+
+            .or-FormInputText:focus,
+            .or-FormInputNumber:focus {
+                border-color: var(--theme-lightgreen);
+            }
+
+            .or-FormInputText[readOnly]:focus,
+            .or-FormInputNumber[readOnly]:focus {
+                border-color: transparent;
+            }
+
+            .or-FormTextArea {
+                background-color: var(--theme-brightgrey);
+            }
+
+            .or-FormTextArea.border {
+                border-color: var(--theme-darkgrey);
+            }
+
+            .or-FormButton {
+            }
+
+            .or-FormButtonPrimary {
+                color: var(--theme-black);
+                background: var(--theme-lightgreen);
+            }
+
+            .or-FormButtonDown {
+                color: var(--theme-lightgrey);
+                background: var(--theme-black);
+            }
+
+            .or-FormButtonDanger {
+                color: var(--theme-white);
+                background: var(--theme-red);
+            }
+
+            .or-FormButton:focus,
+            .or-FormButtonDanger:focus,
+            .or-FormButtonDown:focus,
+            .or-FormButtonPrimary:focus {
+                border-color: var(--theme-black);
+            }
+
+            .or-Divider {
+                background-image: -webkit-linear-gradient(left, var(--theme-white), var(--theme-lightgreen), var(--theme-white));
+                background-image: -moz-linear-gradient(left, var(--theme-white), var(--theme-lightgreen), var(--theme-white));
+                background-image: linear-gradient(left, var(--theme-white), var(--theme-lightgreen), var(--theme-white));
+            }
+
+            .or-PushButton-up-disabled:focus {
+                border-color: transparent;
+            }
+
+            .or-FormListBox,
+            .or-FormValueListBox {
+                border-color: var(--theme-darkgrey);
+            }
+
+            .or-FormListBox:focus,
+            .or-FormValueListBox:focus {
+                border-color: var(--theme-lightgreen);
+            }
+
+            .or-FormCheckBox:checked {
+                color: var(--theme-lightgreen);
+            }
+
+            .or-FormTableHeaderCell {
+                border-color: var(--theme-mediumgrey);
+                color: var(--theme-darkgrey);
+            }
+
+            .or-FormTableHoveredRow {
+                background-color: var(--theme-lightgrey) !important;
+            }
+
+            .or-FormTableEvenRow {
+                background-color: var(--theme-brightgrey);
+            }
+
+            .or-FormTableOddRow {
+                background-color: var(--theme-white);
+            }
+
+            .or-FormTreeItem {
+                color: var(--theme-white);
+            }
+
+            .or-FormTreeItemImage {
+            }
+
+            .or-FormTreeTopItem {
+            }
+
+            .or-FormTreeKeyboardSelectedItem {
+                background-color: var(--theme-mediumgrey);
+            }
+
+            .or-FormTreeKeyboardSelectedItem .or-FormTreeIcon {
+                color: var(--theme-white);
+            }
+
+            .or-FormTreeSelectedItem {
+                background-color: var(--theme-lightgreen);
+            }
+
+            .or-FormTreeSelectedItem .or-FormTreeItem {
+                color: var(--theme-black);
+            }
+
+            .or-FormTreeEmptyMessage {
+                color: var(--theme-mediumgrey);
+            }
+
+            .or-FormTreeShowMoreButton {
+                color: var(--theme-lightgreen);
+            }
+
+            .or-FormTreeIcon {
+                color: var(--theme-mediumgrey);
+            }
+
+            .or-FormAnchor,
+            .or-FormAnchor a:visited {
+                color: var(--theme-darkgrey);
+            }
+
+            .or-MainContent {
+                background-color: var(--theme-white);
+                box-shadow: inset 0px 2px 4px 0px var(--theme-mediumgrey);
+                -webkit-box-shadow: inset 0px 2px 4px 0px var(--theme-mediumgrey);
+                -moz-box-shadow: inset 0px 2px 4px 0px var(--theme-mediumgrey);
+            }
+
+            .or-FormList {
+                background-color: var(--theme-lightgrey);
+            }
+
+            .or-FormListItem {
+                background: var(--theme-white);
+            }
+
+            .or-FormListItem .warn {
+                color: var(--theme-yellow);
+            }
+
+            .or-FormListItem .error {
+                color: var(--theme-red);
+            }
+
+            .or-FormListEmptyMessage {
+                color: var(--theme-mediumgrey);
+            }
+
+            .or-ToastInfo {
+                background-color: var(--theme-lightgrey);
+                color: var(--theme-black);
+            }
+
+            .or-ToastSuccess {
+                background-color: var(--theme-lightgreen);
+                color: var(--theme-black);
+            }
+
+            .or-ToastFailure {
+                background-color: var(--theme-red);
+                color: var(--theme-white);
+            }
+
+            .or-PopupPanel {
+                background-color: var(--theme-brightgrey);
+                color: var(--theme-black);
+            }
+
+            .or-PopupPanelHeader {
+                background-color: var(--theme-lightgreen);
+                color: var(--theme-black);
+            }
+
+            .or-PopupPanelContent {
+            }
+
+            .or-PopupPanelFooter {
+                background-color: var(--theme-black);
+                color: var(--theme-white);
+            }
+
+            .or-PopupPanelGlass {
+                background-color: rgba(0, 0, 0, 0.44);
+            }
+
+            .or-SplitPanelHandle {
+                background-color: var(--theme-black);
+                color: var(--theme-white);
+            }
+
+            .or-ItemWithBorder {
+                border-color: var(--theme-lightgrey);
+            }
+
+            .or-PopupPanelContent.or-HighlightBackground,
+            .or-HighlightBackground .or-ValueEditor {
+                background-color: var(--theme-lightgreen);
+                border-color: transparent;
+                color: white;
+            }
+
+            .or-HighlightBackground .or-ValueEditor .or-FormControl {
+                color: var(--theme-white);
+                border-color: transparent;
+            }
+
+            .or-BorderRed {
+                border-color: var(--theme-red);
+            }
+
+            .or-BorderGreen {
+                border-color: var(--theme-mediumgreen);
+            }
+
+            .or-BorderYellow {
+                border-color: var(--theme-yellow);
+            }
+
+            .or-BorderDefault {
+                border-color: var(--theme-lightergrey);
+            }
+
+            .or-DatapointBrowser {
+            }
+
+            .or-Select select {
+                background-color: var(--theme-lightgreen);
+                color: var(--theme-black);
+            }
+
+            .or-Select select:-moz-focusring {
+                color: transparent;
+                text-shadow: 0 0 0 var(--theme-black);
+            }
+
+            .or-Select option:not(:checked) {
+                color: var(--theme-black);
+            }
+
+            .or-CheckBox + label:before {
+                background-color: var(--theme-lightgreen);
+            }
+
+            .or-CheckBox:checked + label:after {
+                -webkit-box-shadow: 2px 0 0 var(--theme-black), 4px 0 0 var(--theme-black), 4px -2px 0 var(--theme-black), 4px -4px 0 var(--theme-black), 4px -6px 0 var(--theme-black), 4px -8px 0 var(--theme-black);
+                box-shadow: 2px 0 0 var(--theme-black), 4px 0 0 var(--theme-black), 4px -2px 0 var(--theme-black), 4px -4px 0 var(--theme-black), 4px -6px 0 var(--theme-black), 4px -8px 0 var(--theme-black);
+                background-color: var(--theme-black);
+            }
+
+            .or-CheckBox:disabled + label:before,
+            .or-CheckBox:disabled:hover + label:before {
+                -webkit-box-shadow: none;
+                box-shadow: none;
+                background-color: var(--theme-lightergrey);
+            }
+
+            .or-CheckBox:disabled:checked + label:after {
+                -webkit-box-shadow: 2px 0 0 var(--theme-mediumgrey), 4px 0 0 var(--theme-mediumgrey), 4px -2px 0 var(--theme-mediumgrey), 4px -4px 0 var(--theme-mediumgrey), 4px -6px 0 var(--theme-mediumgrey), 4px -8px 0 var(--theme-mediumgrey);
+                box-shadow: 2px 0 0 var(--theme-mediumgrey), 4px 0 0 var(--theme-mediumgrey), 4px -2px 0 var(--theme-mediumgrey), 4px -4px 0 var(--theme-mediumgrey), 4px -6px 0 var(--theme-mediumgrey), 4px -8px 0 var(--theme-mediumgrey);
+                background-color: var(--theme-mediumgrey);
+            }
+
+            .or-InputTime {
+                background-color: var(--theme-lightgreen);
+                color: var(--theme-black);
+            }
+
+        </style>
+    </template>
 </dom-module>

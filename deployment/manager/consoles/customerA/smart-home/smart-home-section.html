@@ -1,0 +1,40 @@
+<link rel="import" href="smart-home-component.html">
+<link rel="import" href="smart-home-style.html">
+
+<dom-module id="smart-home-section">
+    <template>
+        <style include="smart-home-style">
+            :host {
+                background-color: var(--theme-white);
+                border-radius: 10px;
+                margin: 10px 10px 0 10px;
+                padding: 10px;
+                -webkit-box-shadow: 4px 4px 15px 0px rgba(0,0,0,0.2);
+                -moz-box-shadow: 4px 4px 15px 0px rgba(0,0,0,0.2);
+                box-shadow: 4px 4px 15px 0px rgba(0,0,0,0.2);
+            }
+        </style>
+        <slot></slot>
+    </template>
+
+    <script>
+        class SmartHomeSection extends SmartHomeComponent {
+            static get is() {
+                return "smart-home-section";
+            }
+
+            ready() {
+                super.ready();
+                this.shadowRoot.host.classList.add("flex-none", "layout", "vertical");
+            }
+
+            connectedCallback() {
+                super.connectedCallback();
+                this.showComponent();
+            }
+        }
+
+        defineAppElement(SmartHomeSection, SmartHomeSection.is, "SmartHomeSection");
+    </script>
+
+</dom-module>

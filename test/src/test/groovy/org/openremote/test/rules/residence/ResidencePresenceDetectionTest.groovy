@@ -200,6 +200,7 @@ class ResidencePresenceDetectionTest extends Specification implements ManagerCon
         )
         simulatorProtocol.putValue(motionSensorTrigger)
 
+        /* See rules, this leads to many false negatives when windows are open in the room
         then: "presence should not be detected"
         new PollingConditions(initialDelay: 3, timeout: 5, delay: 1).eventually {
             def roomAsset = assetStorageService.find(managerDemoSetup.apartment1LivingroomId, true)
@@ -229,6 +230,7 @@ class ResidencePresenceDetectionTest extends Specification implements ManagerCon
 
             advancePseudoClock(5, MINUTES, container)
         }
+        */
 
         then: "presence should be detected and the last motion sensor trigger is the last detected timestamp"
         conditions.eventually {
@@ -237,13 +239,40 @@ class ResidencePresenceDetectionTest extends Specification implements ManagerCon
             assert roomAsset.getAttribute("lastPresenceDetected").get().getValueAsNumber().get() == expectedLastPresenceDetected
         }
 
-        when: "motion sensor is not triggered (nobody moving in the room but maybe present)"
+        when: "motion sensor is not triggered (someone might be resting in the room)"
         def motionSensorNoTrigger = new AttributeEvent(
                 managerDemoSetup.apartment1LivingroomId, "motionSensor", Values.create(0)
         )
         simulatorProtocol.putValue(motionSensorNoTrigger)
 
-        and: "there is no CO2 level increase for a while (nobody present in the room)"
+        and: "the CO2 level increases (someone breathing in the room)"
+        // The CO2 level increments 3 times, 5 minutes apart
+        for (i in 1..3) {
+
+            def co2LevelIncrement = new AttributeEvent(
+                    managerDemoSetup.apartment1LivingroomId, "co2Level", Values.create(400 + i)
+            )
+            simulatorProtocol.putValue(co2LevelIncrement)
+
+            // Wait for event to be processed
+            conditions.eventually {
+                assert apartment1Engine.assetEvents.any() {
+                    it.fact.matches(co2LevelIncrement, SENSOR, true)
+                }
+                assert noEventProcessedIn(assetProcessingService, 500)
+            }
+
+            advancePseudoClock(5, MINUTES, container)
+        }
+
+        then: "presence should be detected and the last motion sensor trigger is the last detected timestamp"
+        conditions.eventually {
+            def roomAsset = assetStorageService.find(managerDemoSetup.apartment1LivingroomId, true)
+            assert roomAsset.getAttribute("presenceDetected").get().getValueAsBoolean().get()
+            assert roomAsset.getAttribute("lastPresenceDetected").get().getValueAsNumber().get() == expectedLastPresenceDetected
+        }
+
+        when: "there is no CO2 level increase for a while (nobody resting in the room)"
         advancePseudoClock(20, MINUTES, container)
 
         then: "presence should be gone but the last timestamp still available"
@@ -257,39 +286,39 @@ class ResidencePresenceDetectionTest extends Specification implements ManagerCon
         stopContainer(container)
     }
 
-    /* TODO Migrate to JS, didn't compile even with Drools
-    def "Presence prediction rules compilation"() {
+        /* TODO Migrate to JS, didn't compile even with Drools
+        def "Presence prediction rules compilation"() {
 
-        given: "the container environment is started"
-        def conditions = new PollingConditions(timeout: 100, delay: 1)
-        def serverPort = findEphemeralPort()
-        def container = startContainerWithPseudoClock(defaultConfig(serverPort), defaultServices())
-        def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
-        def rulesService = container.getService(RulesService.class)
-        def assetStorageService = container.getService(AssetStorageService.class)
-        def rulesetStorageService = container.getService(RulesetStorageService.class)
-        def simulatorProtocol = container.getService(SimulatorProtocol.class)
-        RulesEngine apartment1Engine = null
+            given: "the container environment is started"
+            def conditions = new PollingConditions(timeout: 100, delay: 1)
+            def serverPort = findEphemeralPort()
+            def container = startContainerWithPseudoClock(defaultConfig(serverPort), defaultServices())
+            def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
+            def rulesService = container.getService(RulesService.class)
+            def assetStorageService = container.getService(AssetStorageService.class)
+            def rulesetStorageService = container.getService(RulesetStorageService.class)
+            def simulatorProtocol = container.getService(SimulatorProtocol.class)
+            RulesEngine apartment1Engine = null
 
-        and: "some rules"
-        Ruleset ruleset = new AssetRuleset(
-                "Demo Apartment - Presence Detection with motion sensor",
-                managerDemoSetup.apartment1Id,
-                getClass().getResource("/demo/rules/DemoApartmentPresencePrediction.drl").text
-        )
-        rulesetStorageService.merge(ruleset)
+            and: "some rules"
+            Ruleset ruleset = new AssetRuleset(
+                    "Demo Apartment - Presence Detection with motion sensor",
+                    managerDemoSetup.apartment1Id,
+                    getClass().getResource("/demo/rules/DemoApartmentPresencePrediction.drl").text
+            )
+            rulesetStorageService.merge(ruleset)
 
-        expect: "the rule engines to become available and be running"
-        conditions.eventually {
-            apartment1Engine = rulesService.assetEngines.get(managerDemoSetup.apartment1Id)
-            assert apartment1Engine != null
-            assert apartment1Engine.isRunning()
-//            assert apartment1Engine.knowledgeSession.factCount == DEMO_RULE_STATES_APARTMENT_1
+            expect: "the rule engines to become available and be running"
+            conditions.eventually {
+                apartment1Engine = rulesService.assetEngines.get(managerDemoSetup.apartment1Id)
+                assert apartment1Engine != null
+                assert apartment1Engine.isRunning()
+    //            assert apartment1Engine.knowledgeSession.factCount == DEMO_RULE_STATES_APARTMENT_1
+            }
+
+            cleanup: "the server should be stopped"
+            stopContainer(container)
         }
-
-        cleanup: "the server should be stopped"
-        stopContainer(container)
-    }
-    */
+        */
 
 }

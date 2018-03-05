@@ -124,7 +124,7 @@ class ResidenceNotifyAlarmTriggerTest extends Specification implements ManagerCo
             assert alerts[0].message.startsWith("Aanwezigheid in Living Room")
             assert alerts[0].actions.length() == 2
             assert alerts[0].actions.getObject(0).orElse(null) == new AlertAction("Details", ActionType.LINK).objectValue
-            assert alerts[0].appUrl == "#/Veilig"
+            assert alerts[0].appUrl == "#security"
             assert alerts[0].actions.getObject(1).orElse(null) == new AlertAction("Alarm uit", ActionType.ACTUATOR, managerDemoSetup.apartment1Id, "alarmEnabled", Values.create(false).toJson()).objectValue
         }
 

@@ -32,6 +32,8 @@ import org.openremote.model.event.shared.SharedEvent;
 import java.util.*;
 import java.util.logging.Logger;
 
+import static org.openremote.manager.event.ClientEventService.HEADER_ACCESS_RESTRICTED;
+
 /**
  * Manages subscriptions to events for WebSocket sessions.
  */
@@ -54,9 +56,9 @@ public class EventSubscriptions {
             );
         }
 
-        public void update(EventSubscription eventSubscription) {
+        public void update(boolean restrictedUser, EventSubscription eventSubscription) {
             cancel(eventSubscription.getEventType());
-            add(new SessionSubscription(timerService.getCurrentTimeMillis(), eventSubscription));
+            add(new SessionSubscription(restrictedUser, timerService.getCurrentTimeMillis(), eventSubscription));
         }
 
         public void cancel(String eventType) {
@@ -65,16 +67,18 @@ public class EventSubscriptions {
     }
 
     class SessionSubscription {
+        final boolean restrictedUser;
         final long timestamp;
         final EventSubscription subscription;
 
-        public SessionSubscription(long timestamp, EventSubscription subscription) {
+        public SessionSubscription(boolean restrictedUser, long timestamp, EventSubscription subscription) {
+            this.restrictedUser = restrictedUser;
             this.timestamp = timestamp;
             this.subscription = subscription;
         }
 
-        public boolean matches(SharedEvent event) {
-            return subscription.getEventType().equals(event.getEventType());
+        public boolean matches(boolean accessibleForRestrictedUsers, SharedEvent event) {
+            return (!restrictedUser || accessibleForRestrictedUsers) && subscription.getEventType().equals(event.getEventType());
         }
 
         /**
@@ -98,13 +102,13 @@ public class EventSubscriptions {
         }, 5000, 1000);
     }
 
-    public void update(String sessionKey, EventSubscription subscription) {
+    public void update(String sessionKey, boolean restrictedUser, EventSubscription subscription) {
         synchronized (this.sessionSubscriptions) {
             // TODO Check if the user can actually subscribe to the events it wants, how do we do that?
             LOG.fine("For session '" + sessionKey + "', updating: " + subscription);
             SessionSubscriptions sessionSubscriptions =
                 this.sessionSubscriptions.computeIfAbsent(sessionKey, k -> new SessionSubscriptions());
-            sessionSubscriptions.update(subscription);
+            sessionSubscriptions.update(restrictedUser, subscription);
         }
     }
 
@@ -134,6 +138,8 @@ public class EventSubscriptions {
         if (event == null)
             return messageList;
 
+        boolean accessibleForRestrictedUsers = exchange.getIn().getHeader(HEADER_ACCESS_RESTRICTED, false, Boolean.class);
+
         Set<Map.Entry<String, SessionSubscriptions>> sessionSubscriptionsSet;
         synchronized (this.sessionSubscriptions) {
             sessionSubscriptionsSet = new HashSet<>(sessionSubscriptions.entrySet());
@@ -144,7 +150,8 @@ public class EventSubscriptions {
             SessionSubscriptions subscriptions = entry.getValue();
 
             for (SessionSubscription sessionSubscription : subscriptions) {
-                if (!sessionSubscription.matches(event))
+
+                if (!sessionSubscription.matches(accessibleForRestrictedUsers, event))
                     continue;
 
                 if (sessionSubscription.subscription.getFilter() == null

@@ -1,0 +1,134 @@
+<link rel="import" href="smart-home-component.html">
+<link rel="import" href="smart-home-style.html">
+<link rel="import" href="smart-home-section.html">
+<link rel="import" href="smart-home-smart.html">
+
+<dom-module id="smart-home-security">
+    <template>
+        <style include="smart-home-style">
+
+            .alarm {
+                margin: 10px 0;
+            }
+
+            .residencePresenceStatus {
+                padding: 10px 20px;
+            }
+
+            .roomLabel {
+                padding: 0 10px;
+            }
+
+            .presenceStatus {
+                color: var(--theme-mediumgrey);
+            }
+
+            .roomPresenceStatusItem {
+                margin: 10px 0;
+            }
+
+        </style>
+
+        <smart-home-smart residence="[[residence]]"></smart-home-smart>
+
+        <smart-home-section>
+
+            <div class="layout horizontal center alarm">
+                <template is="dom-if" if="[[residence.attributes.presenceDetected.value]]">
+                    <img height="80" src="smart-home/img/eye_large_active.png"/>
+                </template>
+                <template is="dom-if" if="[[!residence.attributes.presenceDetected.value]]">
+                    <img height="80" src="smart-home/img/eye_large.png"/>
+                </template>
+                <div class="flex layout vertical residencePresenceStatus">
+                    <div>[[localize('Alarm')]]</div>
+                    <div class="presenceStatus">
+                        [[computePresenceStatus(residence.attributes.presenceDetected.value)]]
+                    </div>
+                </div>
+                <div class="layout horizontal">
+                    <input class="or-CheckBox"
+                           id="alarmEnabled"
+                           type="checkbox"
+                           on-change="onAlarmEnabledChange"
+                           checked="[[residence.attributes.alarmEnabled.value]]"/>
+                    <label for="alarmEnabled"></label>
+                </div>
+            </div>
+
+            <div class="layout vertical">
+                <template is="dom-repeat" items="[[roomsPresenceStatus]]">
+                    <div class="layout horizontal center roomPresenceStatusItem">
+                        <div class="layout vertical center-center">
+                            <img height="30" src="smart-home/img/eye.png"/>
+                        </div>
+                        <div class="flex layout horizontal roomLabel">
+                            [[localize(item.roomName)]]
+                        </div>
+                        <div class="presenceStatus">
+                            [[computePresenceStatus(item.presenceDetected)]]
+                        </div>
+                    </div>
+                </template>
+            </div>
+
+        </smart-home-section>
+
+    </template>
+
+    <script>
+        class SmartHomeSecurity extends SmartHomeComponent {
+            static get is() {
+                return "smart-home-security";
+            }
+
+            static get properties() {
+                return {
+                    roomsPresenceStatus: {
+                        type: Array,
+                        computed: "computeRoomsPresenceStatus(rooms.*)"
+                    }
+                }
+            }
+
+            ready() {
+                super.ready();
+                this.shadowRoot.host.classList.add("flex", "layout", "vertical");
+            }
+
+            connectedCallback() {
+                super.connectedCallback();
+                this.showComponent();
+            }
+
+            onAlarmEnabledChange() {
+                openremote.INSTANCE.getServiceEvents().sendAttributeEvent(
+                    this.residence.id, "alarmEnabled", this.$.alarmEnabled.checked
+                );
+            }
+
+            computePresenceStatus(presenceDetected) {
+                return presenceDetected === true ? this.localize("Presence detected") : this.localize("No presence");
+            }
+
+            computeRoomsPresenceStatus(rooms) {
+                let roomsPresenceStatus = [];
+                if (!this.rooms)
+                    return roomsPresenceStatus;
+                this.rooms.forEach(room => {
+                    if ("presenceDetected" in room.attributes) {
+                        roomsPresenceStatus.push({
+                            roomId: room.id,
+                            roomName: room.name,
+                            presenceDetected: room.attributes.presenceDetected.value
+                        });
+                    }
+                })
+                return roomsPresenceStatus;
+            }
+        }
+
+        defineAppElement(SmartHomeSecurity, SmartHomeSecurity.is, "SmartHomeSecurity");
+    </script>
+
+</dom-module>

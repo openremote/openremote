@@ -39,6 +39,10 @@ rules.add()
             }).findFirst().map({ roomWithMotionSensorTriggered ->
 
                 facts.bind("room", roomWithMotionSensorTriggered)
+                true
+
+                /* Results in many false negatives when somebody is moving in the room but
+                   windows are open, and therefore CO2 is not increasing
 
                 // and there is a CO2 sensor in the room
                 facts.matchFirstAssetState(
@@ -58,6 +62,7 @@ rules.add()
                         coLevel.isValueGreaterThanOldValue()
                     }).count() >= 2 // at least 2
                 }).orElse(true) // or we don't have a CO2 sensor
+                */
 
             }).orElse(false)
         })
@@ -94,7 +99,7 @@ rules.add()
                     ).filter({ coLevelFact ->
                         // with increasing values
                         coLevelFact.getFact().isValueGreaterThanOldValue()
-                        // in the last 12 minutes≤
+                        // in the last 12 minutes
                     }).filter(facts.clock.last("12m")).count() == 0
                 }).orElse(true) // or we don't have a CO2 sensor
 

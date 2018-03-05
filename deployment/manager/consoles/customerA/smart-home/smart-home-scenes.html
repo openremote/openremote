@@ -1,0 +1,96 @@
+<link rel="import" href="smart-home-component.html">
+<link rel="import" href="smart-home-style.html">
+<link rel="import" href="smart-home-section.html">
+<link rel="import" href="smart-home-smart.html">
+
+<dom-module id="smart-home-scenes">
+    <template>
+        <style include="smart-home-style">
+
+            .sceneItem {
+                font-weight: 600;
+                width: 100px;
+                height: 100px;
+                margin: 10px;
+                cursor: pointer;
+                -webkit-user-select: none;
+                -moz-user-select: none;
+                -ms-user-select: none;
+                user-select: none;
+                box-sizing: border-box;
+                -moz-box-sizing: border-box;
+                -webkit-box-sizing: border-box;
+                background-color: var(--theme-darkgrey);
+                color: var(--theme-white);
+            }
+
+            .sceneItem.selected {
+                background-color: var(--theme-lightergrey);
+                color: var(--theme-mediumgrey);
+            }
+
+            .sceneItem.active {
+                background-color: var(--theme-lightgreen);
+                color: var(--theme-black);
+            }
+
+        </style>
+
+        <smart-home-smart residence="[[residence]]"></smart-home-smart>
+
+        <smart-home-section>
+            <div class="layout horizontal center-center">
+                <div id="HOME"
+                     class$="[[getItemClass(residence.attributes.lastExecutedScene.value, 'HOME')]]"
+                     on-click="switchScene">{{localize('At Home')}}</div>
+                <div id="AWAY"
+                     class$="[[getItemClass(residence.attributes.lastExecutedScene.value, 'AWAY')]]"
+                     on-click="switchScene">{{localize('Away')}}</div>
+            </div>
+            <div class="layout horizontal center-center">
+                <div id="EVENING"
+                     class$="[[getItemClass(residence.attributes.lastExecutedScene.value, 'EVENING')]]"
+                     on-click="switchScene">{{localize('Evening')}}</div>
+                <div id="NIGHT"
+                     class$="[[getItemClass(residence.attributes.lastExecutedScene.value, 'NIGHT')]]"
+                     on-click="switchScene">{{localize('Night')}}</div>
+            </div>
+        </smart-home-section>
+
+    </template>
+
+    <script>
+        class SmartHomeScenes extends SmartHomeComponent {
+            static get is() {
+                return "smart-home-scenes";
+            }
+
+            ready() {
+                super.ready();
+                this.shadowRoot.host.classList.add("flex", "layout", "vertical");
+            }
+
+            connectedCallback() {
+                super.connectedCallback();
+                this.showComponent();
+            }
+
+            getItemClass(scene, item) {
+                return scene === item
+                    ? "layout horizontal center-center sceneItem active"
+                    : "layout horizontal center-center sceneItem";
+            }
+
+            switchScene(e) {
+                let sceneItem = Polymer.dom(e).localTarget;
+                sceneItem.classList.add("selected");
+                openremote.INSTANCE.getServiceEvents().sendAttributeEvent(
+                    this.residence.id, sceneItem.id.toLowerCase() + "Scene", "REQUEST_START"
+                );
+            }
+        }
+
+        defineAppElement(SmartHomeScenes, SmartHomeScenes.is, "SmartHomeScenes");
+    </script>
+
+</dom-module>

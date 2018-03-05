@@ -20,7 +20,6 @@
 package org.openremote.manager.event;
 
 import org.apache.camel.Exchange;
-import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
@@ -30,6 +29,7 @@ import org.openremote.container.security.AuthContext;
 import org.openremote.container.timer.TimerService;
 import org.openremote.container.web.socket.WebsocketConstants;
 import org.openremote.manager.concurrent.ManagerExecutorService;
+import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.model.Constants;
 import org.openremote.model.event.shared.CancelEventSubscription;
 import org.openremote.model.event.shared.EventSubscription;
@@ -38,6 +38,7 @@ import org.openremote.model.event.shared.UnauthorizedEventSubscription;
 import org.openremote.model.syslog.SyslogEvent;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.logging.Logger;
 
@@ -101,9 +102,12 @@ public class ClientEventService implements ContainerService {
 
     public static final String CLIENT_EVENT_QUEUE = "seda://ClientEventQueue?multipleConsumers=false&waitForTaskToComplete=NEVER&purgeWhenStopping=true&discardIfNoConsumers=true&size=25000";
 
+    public static final String HEADER_ACCESS_RESTRICTED = ClientEventService.class.getName() + ".HEADER_ACCESS_RESTRICTED";
+
     final protected Collection<EventSubscriptionAuthorizer> eventSubscriptionAuthorizers = new CopyOnWriteArraySet<>();
     protected TimerService timerService;
     protected MessageBrokerService messageBrokerService;
+    protected ManagerIdentityService identityService;
     protected EventSubscriptions eventSubscriptions;
 
     protected boolean stopped;
@@ -112,6 +116,7 @@ public class ClientEventService implements ContainerService {
     public void init(Container container) throws Exception {
         timerService = container.getService(TimerService.class);
         messageBrokerService = container.getService(MessageBrokerService.class);
+        identityService = container.getService(ManagerIdentityService.class);
 
         eventSubscriptions = new EventSubscriptions(
             container.getService(TimerService.class),
@@ -154,7 +159,8 @@ public class ClientEventService implements ContainerService {
                         AuthContext authContext = exchange.getIn().getHeader(Constants.AUTH_CONTEXT, AuthContext.class);
                         if (eventSubscriptionAuthorizers.stream()
                             .anyMatch(authorizer -> authorizer.apply(authContext, subscription))) {
-                            eventSubscriptions.update(sessionKey, subscription);
+                            boolean restrictedUser = identityService.getIdentityProvider().isRestrictedUser(authContext.getUserId());
+                            eventSubscriptions.update(sessionKey, restrictedUser, subscription);
                         } else {
                             LOG.warning("Unauthorized subscription from '"
                                 + authContext.getUsername() + "' in realm '" + authContext.getAuthenticatedRealm()
@@ -209,6 +215,13 @@ public class ClientEventService implements ContainerService {
     }
 
     public void publishEvent(SharedEvent event) {
+        publishEvent(true, event);
+    }
+
+    /**
+     * @param accessRestricted <code>true</code> if this event can be received by restricted user sessions.
+     */
+    public void publishEvent(boolean accessRestricted, SharedEvent event) {
         // Only publish if service is not stopped
         if (stopped) {
             return;
@@ -219,7 +232,8 @@ public class ClientEventService implements ContainerService {
             if (!(event instanceof SyslogEvent)) {
                 LOG.fine("Publishing: " + event);
             }
-            messageBrokerService.getProducerTemplate().sendBody(CLIENT_EVENT_QUEUE, event);
+            messageBrokerService.getProducerTemplate()
+                .sendBodyAndHeader(CLIENT_EVENT_QUEUE, event, HEADER_ACCESS_RESTRICTED, accessRestricted);
         }
     }
 

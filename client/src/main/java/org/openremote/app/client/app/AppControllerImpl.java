@@ -122,6 +122,7 @@ public class AppControllerImpl implements AppController, AppView.Presenter {
             AppPlaceController appPlaceController = (AppPlaceController) placeController;
             appPlaceController.stop();
         }
+        // TODO Must remove open popup panels (e.g. confirmation dialogs, map info panel)!
         environment.getEventService().stop();
     }
 }
