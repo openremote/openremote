@@ -339,6 +339,7 @@ public abstract class WebService implements ContainerService {
         resteasyDeployment.getProviders().add(new WebServiceExceptions.ForbiddenResteasyExceptionMapper(devMode));
         resteasyDeployment.getProviders().add(new JacksonConfig());
         resteasyDeployment.getProviders().add(new CORSFilter());
+        resteasyDeployment.getProviders().add(new GZIPEncodingInterceptor(!container.isDevMode()));
         resteasyDeployment.getActualProviderClasses().add(ModelValueMessageBodyConverter.class);
         resteasyDeployment.getActualProviderClasses().add(AlreadyGzippedWriterInterceptor.class);
         resteasyDeployment.getActualProviderClasses().add(ClientErrorExceptionHandler.class);

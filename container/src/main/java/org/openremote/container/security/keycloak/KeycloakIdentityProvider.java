@@ -22,10 +22,13 @@ package org.openremote.container.security.keycloak;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
+import io.undertow.server.HttpHandler;
+import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.ResponseCodeHandler;
 import io.undertow.server.handlers.proxy.ProxyHandler;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.LoginConfig;
+import io.undertow.util.HttpString;
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
 import org.keycloak.adapters.KeycloakConfigResolver;
 import org.keycloak.adapters.KeycloakDeployment;
@@ -55,13 +58,14 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static javax.ws.rs.core.Response.Status.Family.REDIRECTION;
 import static javax.ws.rs.core.Response.Status.Family.SUCCESSFUL;
 import static org.openremote.container.util.MapAccess.getInteger;
 import static org.openremote.container.util.MapAccess.getString;
 import static org.openremote.container.web.WebClient.getTarget;
 
-public abstract class KeycloakIdentityProvider implements IdentityProvider{
+public abstract class KeycloakIdentityProvider implements IdentityProvider {
 
     private static final Logger LOG = Logger.getLogger(KeycloakIdentityProvider.class.getName());
 
@@ -103,7 +107,7 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider{
     protected KeycloakConfigResolver keycloakConfigResolver;
 
     // Optional reverse proxy that listens to AUTH_PATH and forwards requests to Keycloak
-    protected ProxyHandler authProxyHandler;
+    protected HttpHandler authProxyHandler;
 
     // Configuration options for new realms
     final protected int sessionTimeoutSeconds;
@@ -176,11 +180,18 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider{
             return keycloakDeployment;
         };
 
-        authProxyHandler = new ProxyHandler(
+        ProxyHandler proxyHandler = new ProxyHandler(
             new io.undertow.server.handlers.proxy.SimpleProxyClientProvider(keycloakServiceUri.clone().replacePath("").build()),
             getInteger(container.getConfig(), KEYCLOAK_REQUEST_TIMEOUT, KEYCLOAK_REQUEST_TIMEOUT_DEFAULT),
             ResponseCodeHandler.HANDLE_404
         ).setReuseXForwarded(true);
+        authProxyHandler = exchange -> {
+            proxyHandler.handleRequest(exchange);
+            // Let the client cache the keycloak.js file for 12 hours
+            if (exchange.getRequestPath().endsWith("keycloak.js") && !exchange.isResponseComplete()) {
+                exchange.getResponseHeaders().put(HttpString.tryFromString("Cache-Control"), "public,max-age=" + (12 * 60 * 60) + ",must-revalidate");
+            }
+        };
 
     }
 
@@ -229,7 +240,7 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider{
      *                   problems.
      */
     final protected RealmsResource getRealms(String forwardFor, String accessToken) {
-        return getTarget(httpClient, keycloakServiceUri.build(), accessToken, forwardFor, forwardFor != null ? externalServerUri.build(): null)
+        return getTarget(httpClient, keycloakServiceUri.build(), accessToken, forwardFor, forwardFor != null ? externalServerUri.build() : null)
             .proxy(RealmsResource.class);
     }
 
@@ -257,7 +268,7 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider{
             try {
                 pingKeycloak();
                 keycloakAvailable = true;
-            } catch(Exception ex) {
+            } catch (Exception ex) {
                 LOG.info("Keycloak server not available, waiting...");
                 try {
                     Thread.sleep(3000);

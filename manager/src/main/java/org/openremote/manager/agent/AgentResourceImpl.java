@@ -39,6 +39,7 @@ import org.openremote.model.http.RequestParams;
 import org.openremote.model.util.Pair;
 
 import javax.ws.rs.*;
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import java.util.HashMap;
 import java.util.List;
@@ -89,10 +90,16 @@ public class AgentResourceImpl extends ManagerWebResource implements AgentResour
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
 
-        return withAgentConnector(agentId, agentConnector -> {
+        List<AgentStatusEvent> result = withAgentConnector(agentId, agentConnector -> {
             LOG.finer("Asking connector '" + agentConnector.getClass().getSimpleName() + "' for connection status");
             return agentConnector.value.getConnectionStatus(agentConnector.key);
         });
+
+        // Compress response (the request attribute enables the interceptor)
+        request.setAttribute(HttpHeaders.CONTENT_ENCODING, "gzip");
+        response.setHeader(HttpHeaders.CONTENT_ENCODING, "gzip");
+
+        return result;
     }
 
     @Override

@@ -35,6 +35,7 @@ import org.openremote.model.value.ValueException;
 import org.openremote.model.value.Values;
 
 import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.HttpHeaders;
 import java.io.IOException;
 import java.util.*;
 import java.util.logging.Logger;
@@ -95,6 +96,11 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                     it.remove();
                 }
             }
+
+            // Compress response (the request attribute enables the interceptor)
+            request.setAttribute(HttpHeaders.CONTENT_ENCODING, "gzip");
+            response.setHeader(HttpHeaders.CONTENT_ENCODING, "gzip");
+
             return assets.toArray(new ServerAsset[assets.size()]);
         } catch (IllegalStateException ex) {
             throw new WebApplicationException(ex, BAD_REQUEST);
@@ -117,7 +123,13 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             if (userId != null && !identityService.getIdentityProvider().isUserInTenant(userId, realmId))
                 throw new WebApplicationException(BAD_REQUEST);
 
-            return assetStorageService.findUserAssets(realmId, userId, assetId).toArray(new UserAsset[0]);
+            UserAsset[] result = assetStorageService.findUserAssets(realmId, userId, assetId).toArray(new UserAsset[0]);
+
+            // Compress response (the request attribute enables the interceptor)
+            request.setAttribute(HttpHeaders.CONTENT_ENCODING, "gzip");
+            response.setHeader(HttpHeaders.CONTENT_ENCODING, "gzip");
+
+            return result;
 
         } catch (IllegalStateException ex) {
             throw new WebApplicationException(ex, BAD_REQUEST);
@@ -192,6 +204,10 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                 LOG.fine("Forbidden access for user '" + getUsername() + "': " + asset);
                 throw new WebApplicationException(FORBIDDEN);
             }
+
+            // Compress response (the request attribute enables the interceptor)
+            request.setAttribute(HttpHeaders.CONTENT_ENCODING, "gzip");
+            response.setHeader(HttpHeaders.CONTENT_ENCODING, "gzip");
 
             return asset;
 
@@ -471,6 +487,11 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             }
 
             List<ServerAsset> result = assetStorageService.findAll(query);
+
+            // Compress response (the request attribute enables the interceptor)
+            request.setAttribute(HttpHeaders.CONTENT_ENCODING, "gzip");
+            response.setHeader(HttpHeaders.CONTENT_ENCODING, "gzip");
+
             return result.toArray(new Asset[result.size()]);
 
         } catch (IllegalStateException ex) {
@@ -503,6 +524,11 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
 
         try {
             List<ServerAsset> result = assetStorageService.findAll(query);
+
+            // Compress response (the request attribute enables the interceptor)
+            request.setAttribute(HttpHeaders.CONTENT_ENCODING, "gzip");
+            response.setHeader(HttpHeaders.CONTENT_ENCODING, "gzip");
+
             return result.toArray(new Asset[result.size()]);
         } catch (IllegalStateException ex) {
             throw new WebApplicationException(ex, BAD_REQUEST);
@@ -517,6 +543,13 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
         } catch (IOException ex) {
             throw new WebApplicationException("Error parsing query parameter 'q' as JSON object", BAD_REQUEST);
         }
-        return queryPublicAssets(requestParams, assetQuery);
+
+        Asset[] result = queryPublicAssets(requestParams, assetQuery);
+
+        // Compress response (the request attribute enables the interceptor)
+        request.setAttribute(HttpHeaders.CONTENT_ENCODING, "gzip");
+        response.setHeader(HttpHeaders.CONTENT_ENCODING, "gzip");
+
+        return result;
     }
 }
