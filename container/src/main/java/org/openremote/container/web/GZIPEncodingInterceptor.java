@@ -86,6 +86,9 @@ public class GZIPEncodingInterceptor implements WriterInterceptor {
             // Any content length set will be obsolete
             context.getHeaders().remove("Content-Length");
 
+            // TODO Also need to set the header here
+            context.getHeaders().add(HttpHeaders.CONTENT_ENCODING, "gzip");
+
             context.setOutputStream(gzipOutputStream);
             try {
                 context.proceed();

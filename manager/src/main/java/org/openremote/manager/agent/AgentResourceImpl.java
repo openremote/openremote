@@ -97,7 +97,6 @@ public class AgentResourceImpl extends ManagerWebResource implements AgentResour
 
         // Compress response (the request attribute enables the interceptor)
         request.setAttribute(HttpHeaders.CONTENT_ENCODING, "gzip");
-        response.setHeader(HttpHeaders.CONTENT_ENCODING, "gzip");
 
         return result;
     }

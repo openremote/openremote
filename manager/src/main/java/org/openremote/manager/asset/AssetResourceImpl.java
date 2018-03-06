@@ -99,7 +99,6 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
 
             // Compress response (the request attribute enables the interceptor)
             request.setAttribute(HttpHeaders.CONTENT_ENCODING, "gzip");
-            response.setHeader(HttpHeaders.CONTENT_ENCODING, "gzip");
 
             return assets.toArray(new ServerAsset[assets.size()]);
         } catch (IllegalStateException ex) {
@@ -127,7 +126,6 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
 
             // Compress response (the request attribute enables the interceptor)
             request.setAttribute(HttpHeaders.CONTENT_ENCODING, "gzip");
-            response.setHeader(HttpHeaders.CONTENT_ENCODING, "gzip");
 
             return result;
 
@@ -207,7 +205,6 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
 
             // Compress response (the request attribute enables the interceptor)
             request.setAttribute(HttpHeaders.CONTENT_ENCODING, "gzip");
-            response.setHeader(HttpHeaders.CONTENT_ENCODING, "gzip");
 
             return asset;
 
@@ -490,7 +487,6 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
 
             // Compress response (the request attribute enables the interceptor)
             request.setAttribute(HttpHeaders.CONTENT_ENCODING, "gzip");
-            response.setHeader(HttpHeaders.CONTENT_ENCODING, "gzip");
 
             return result.toArray(new Asset[result.size()]);
 
@@ -527,7 +523,6 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
 
             // Compress response (the request attribute enables the interceptor)
             request.setAttribute(HttpHeaders.CONTENT_ENCODING, "gzip");
-            response.setHeader(HttpHeaders.CONTENT_ENCODING, "gzip");
 
             return result.toArray(new Asset[result.size()]);
         } catch (IllegalStateException ex) {
@@ -548,7 +543,6 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
 
         // Compress response (the request attribute enables the interceptor)
         request.setAttribute(HttpHeaders.CONTENT_ENCODING, "gzip");
-        response.setHeader(HttpHeaders.CONTENT_ENCODING, "gzip");
 
         return result;
     }
