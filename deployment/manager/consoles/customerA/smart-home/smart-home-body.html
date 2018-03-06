@@ -21,12 +21,7 @@
 
             ready() {
                 super.ready();
-                this.shadowRoot.host.classList.add("flex", "layout", "vertical", "scroll");
-            }
-
-            connectedCallback() {
-                super.connectedCallback();
-                this.showComponent();
+                this.shadowRoot.host.classList.add("scroll");
             }
         }
 

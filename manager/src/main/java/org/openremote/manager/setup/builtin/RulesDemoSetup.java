@@ -71,6 +71,20 @@ public class RulesDemoSetup extends AbstractManagerSetup {
             );
             apartmentActionsRulesetId = rulesetStorageService.merge(ruleset).getId();
         }
+        try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/DemoResidenceNotifyAlarmTrigger.groovy")) {
+            String rules = IOUtils.toString(inputStream, Charset.forName("utf-8"));
+            Ruleset ruleset = new AssetRuleset(
+                "Demo Residence - Notify Alarm Trigger", managerDemoSetup.apartment1Id, rules, Ruleset.Lang.GROOVY
+            );
+            apartmentActionsRulesetId = rulesetStorageService.merge(ruleset).getId();
+        }
+        try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/DemoResidenceSmartSwitch.groovy")) {
+            String rules = IOUtils.toString(inputStream, Charset.forName("utf-8"));
+            Ruleset ruleset = new AssetRuleset(
+                "Demo Residence - Smart Start Switch", managerDemoSetup.apartment1Id, rules, Ruleset.Lang.GROOVY
+            );
+            apartmentActionsRulesetId = rulesetStorageService.merge(ruleset).getId();
+        }
 
         // Apartment 2
         try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/DemoResidenceAllLightsOff.js")) {

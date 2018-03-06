@@ -24,7 +24,7 @@ import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.Label;
 import jsinterop.annotations.JsType;
 import org.openremote.app.client.style.WidgetStyle;
-import org.openremote.app.client.widget.MessagesIcon;
+import org.openremote.app.client.widget.IconLabel;
 import org.openremote.app.client.widget.PopupPanel;
 
 import javax.inject.Inject;
@@ -235,15 +235,15 @@ public class PopupToastDisplay implements ToastDisplay {
             switch (toast.getType()) {
                 case INFO:
                     content.addStyleName(widgetStyle.ToastInfo());
-                    content.add(new MessagesIcon("info-circle"));
+                    content.add(new IconLabel("info-circle"));
                     break;
                 case SUCCESS:
                     content.addStyleName(widgetStyle.ToastSuccess());
-                    content.add(new MessagesIcon("check"));
+                    content.add(new IconLabel("check"));
                     break;
                 default:
                     content.addStyleName(widgetStyle.ToastFailure());
-                    content.add(new MessagesIcon("warning"));
+                    content.add(new IconLabel("warning"));
                     break;
             }
 

@@ -41,8 +41,8 @@ public class SyslogItem {
     public interface Templates extends SafeHtmlTemplates {
         @Template(
             "<div class=\"layout horizontal center\" style=\"font-weight: 600; margin-bottom: 0.2em;\">" +
-                "<span class=\"or-IconLabel or-MessagesIcon fa fa-{0} {1}\"></span>" +
-                "<span style=\"font-size:smaller; margin-left: 1em;\">{2}</span>" +
+                "<span class=\"or-Icon fa fa-{0} {1}\"></span>" +
+                "<span style=\"font-size:smaller;\">{2}</span>" +
                 "<span class=\"flex layout horizontal end-justified\" style=\"font-size:smaller; margin-left: 1em;\">{3}</span>" +
                 "</div>" +
                 "<div style=\"font-size:smaller;white-space:pre-line;\">{4}</div>"

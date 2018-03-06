@@ -24,7 +24,7 @@ import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsType;
 import jsinterop.base.Any;
 
-@JsType(isNative = true, namespace = JsPackage.GLOBAL, name = "OpenRemoteViewComponent")
+@JsType(isNative = true, namespace = JsPackage.GLOBAL, name = "OpenRemoteComponent")
 public abstract class ViewComponent extends HTMLElement {
 
     public native void showComponent();

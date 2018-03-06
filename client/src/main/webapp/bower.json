@@ -19,6 +19,8 @@
     "polymer": "Polymer/polymer#^2.5.0",
     "iron-flex-layout": "^2.0.3",
     "app-localize-behavior": "PolymerElements/app-localize-behavior#^2.0.1",
+    "app-route": "PolymerElements/app-route#^2.0.3",
+    "moment": "moment#^2.20.1",
     "intl": "intl#^1.2.5",
     "chart.js": "^2.7.0"
   }

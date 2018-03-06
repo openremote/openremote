@@ -182,6 +182,10 @@
                 color: var(--theme-darkgrey);
             }
 
+            .or-FormLabel .or-Icon {
+                color: var(--theme-lightgrey);
+            }
+
             .or-FormField {
 
             }
@@ -298,7 +302,7 @@
                 background-color: var(--theme-mediumgrey);
             }
 
-            .or-FormTreeKeyboardSelectedItem .or-FormTreeIcon {
+            .or-FormTreeKeyboardSelectedItem .or-Icon {
                 color: var(--theme-white);
             }
 
@@ -318,7 +322,7 @@
                 color: var(--theme-lightgreen);
             }
 
-            .or-FormTreeIcon {
+            .or-FormTreeItem .or-Icon {
                 color: var(--theme-mediumgrey);
             }
 
@@ -468,9 +472,27 @@
                 background-color: var(--theme-mediumgrey);
             }
 
-            .or-InputTime {
+            .or-InputTime,
+            .or-InputDate {
+                background-color: var(--theme-black);
+                color: var(--theme-lightgreen);
+            }
+
+            .or-InputTime[required],
+            .or-InputDate[required] {
                 background-color: var(--theme-lightgreen);
                 color: var(--theme-black);
+            }
+
+            .or-InputTime[empty],
+            .or-InputDate[empty] {
+                background-color: var(--theme-lightergrey);
+                color: var(--theme-mediumgrey);
+            }
+
+            .or-InputDate::-webkit-calendar-picker-indicator {
+                background: transparent;
+                color: var(--theme-mediumgrey);
             }
 
         </style>

@@ -1,0 +1,178 @@
+<!-- sprintf for formatting asset attribute values -->
+<script src="/static/3rdparty/sprintf/1.0.3/sprintf.min.js"></script>
+
+<!-- Moment.js because we need a proper time/date API -->
+<script src="/static/bower_components/moment/moment.js"></script>
+
+<!-- URL/page routing -->
+<link rel="import" href="/static/bower_components/app-route/app-location.html">
+
+<!-- Intl polyfill -->
+<script src="/static/bower_components/intl/dist/Intl.js"></script>
+
+<!-- Intl langage TODO How can we do this dynamically? -->
+<script src="/static/bower_components/intl/locale-data/jsonp/en.js"></script>
+
+<!-- Provides Polymer.AppLocalizeBehavior -->
+<link rel="import" href="/static/bower_components/app-localize-behavior/app-localize-behavior.html">
+
+<dom-module id="or-component">
+    <script>
+        class OpenRemoteComponent extends Polymer.mixinBehaviors([Polymer.AppLocalizeBehavior], Polymer.Element) {
+            static get properties() {
+                return {
+                    appLocation: {
+                        type: Object,
+                        observer: "onAppLocationChange"
+                    },
+                    /**
+                     * The name of the active view (#view hash in window location).
+                     */
+                    view: {
+                        type: String
+                    },
+                    /**
+                     * The name of the active sub-view (#view:subView hash in window location).
+                     */
+                    subView: {
+                        type: String
+                    },
+                    /**
+                     * The default view if no view hash is in window location URL. Override in subclass.
+                     */
+                    defaultView: {
+                        type: String
+                    },
+                    widgetStyle: {
+                        type: openremote.style.WidgetStyle,
+                        value: () => {
+                            return openremote.WIDGET_STYLE
+                        }
+                    },
+                    // Default language for localize()
+                    language: {
+                        type: String,
+                        value: () => {
+                            let defaultLang = "en";
+                            let metas = document.getElementsByTagName('meta');
+                            if (metas) {
+                                for (let i = 0; i < metas.length; i++) {
+                                    let meta = metas[i];
+                                    if (meta.attributes.name &&
+                                        meta.attributes.name.value === "or-language" &&
+                                        meta.attributes.content &&
+                                        meta.attributes.content.value) {
+                                        return meta.attributes.content.value;
+                                    }
+                                }
+                            }
+                            return defaultLang;
+                        }
+                    },
+                    // Yes, we want the key returned if localize(key) can't find an alternative...
+                    useKeyIfMissing: {
+                        type: Boolean,
+                        value: true
+                    },
+                    // URL of locales.json to load
+                    localesResource: {
+                        type: String
+                    }
+                }
+            }
+
+            ready() {
+                super.ready();
+
+                // Load locales resources for localize() function
+                if (this.loadResources) {
+                    if (this.localesResource) {
+                        this.loadResources(this.resolveUrl(this.localesResource));
+                    }
+                } else {
+                    console.error("Missing Polymer.AppLocalizeBehavior, did you load the component?");
+                }
+
+                // View component is hidden until connected to DOM
+                this.hideComponent();
+            }
+
+            connectedCallback() {
+                super.connectedCallback();
+
+                // Show component after next render, this prevents flickering
+                Polymer.RenderStatus.afterNextRender(this, function() {
+                    this.showComponent();
+                });
+            }
+
+            onAppLocationChange(appLocation) {
+                // TODO The "state" case is a bug in Keycloak 2.x with Firefox that's difficult to track down
+                if ((!appLocation.path || appLocation.path.startsWith('state')) && this.defaultView) {
+                    window.location.hash = "#" + this.defaultView
+                } else {
+                    let views = appLocation.path.split(":");
+                    this.set("view", views.length >= 1 ? views[0] : undefined);
+                    this.set("subView", views.length >= 2 ? views[1] : undefined);
+                }
+            }
+
+            isActiveView(activeView, view) {
+                return activeView === view;
+            }
+
+            showComponent() {
+                this.shadowRoot.host.style.visibility = "visible";
+            }
+
+            hideComponent() {
+                this.shadowRoot.host.style.visibility = "hidden";
+            }
+
+            // GWT i18n resources, not the same as app-localize-behavior and localize()
+            i18n(presenter, key) {
+                return presenter ? presenter.messages()[key]() : "";
+            }
+
+            icon(name) {
+                return "or-Icon fa fa-" + name;
+            }
+
+            setError(e) {
+                openremote.INSTANCE.set("error", e);
+            }
+
+            getUserId() {
+                return openremote.INSTANCE.getSecurity().getUserId();
+            }
+
+            logout() {
+                openremote.INSTANCE.logout();
+            }
+
+            requests() {
+                return openremote.INSTANCE.requests;
+            }
+
+            subscribeAttributeEvents(subscribedAssetIds) {
+                openremote.INSTANCE.getServiceEvents().subscribeAttributeEvents(subscribedAssetIds);
+            }
+
+            addAttributeEventListener(listener) {
+                openremote.INSTANCE.getServiceEvents().addEventListener("attribute", listener);
+            }
+
+            sendAttributeEvent(assetId, attributeName, value) {
+                openremote.INSTANCE.getServiceEvents().sendAttributeEvent(
+                    assetId, attributeName, value
+                );
+            }
+
+            formatAttributeValue(formatString, value, defaultLabel) {
+                return value ? sprintf(formatString, value) : (defaultLabel ? defaultLabel : "-");
+            }
+
+        }
+    </script>
+
+</dom-module>

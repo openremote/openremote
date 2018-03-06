@@ -1,11 +1,7 @@
 <!-- The OpenRemote web components -->
 <link rel="import" href="/static/src/or-app/or-app.html">
 
-<!-- Dependencies of this app -->
-<script src="/static/3rdparty/sprintf/1.0.3/sprintf.min.js"></script>
-<script src="../bower_components/moment/moment.js"></script>
-
-<link rel="import" href="../bower_components/app-route/app-location.html">
+<!-- You can add other dependencies in bower.json and then load them here -->
 
 <link rel="import" href="smart-home-component.html">
 <link rel="import" href="smart-home-style.html">
@@ -29,7 +25,7 @@
             <template is="dom-if" if="[[!isActiveView(view, 'settings')]]">
                 <slot slot="leftItem"
                       name="logo">
-                    <a href="https://www.openremote.com/"
+                    <a href="http://www.openremote.com/"
                        class="layout horizontal center"
                        style=" text-decoration: none;">
                         <svg style="pointer-events: none; display: block; width: 2em; height:2em; margin-right: 0.4em;"
@@ -45,14 +41,14 @@
                     </a>
                 </slot>
                 <a slot="rightItem"
-                   href="#settings"><span class="or-Icon fa fa-cog"></span></a>
+                   href="#settings"><span class$="[[icon('cog')]]"></span></a>
             </template>
 
             <template is="dom-if" if="[[isActiveView(view, 'settings')]]">
                 <a slot="leftItem"
-                   href="#scenes"><span class="or-Icon fa fa-arrow-left"></span>[[localize('Settings')]]</a>
+                   href="#scenes"><span class$="[[icon('arrow-left')]]"></span>[[localize('Settings')]]</a>
                 <div slot="rightItem"
-                     on-click="logout"><span class="or-Icon fa fa-sign-out"></span>[[localize('Log out')]]
+                     on-click="logout"><span class$="[[icon('sign-out')]]"></span>[[localize('Log out')]]
                 </div>
             </template>
 
@@ -89,21 +85,12 @@
 
             static get properties() {
                 return {
-                    appLocation: {
-                        type: Object,
-                        observer: "onAppLocationChange"
-                    },
                     /**
-                     * The name of the active view (#view hash in window location).
+                     * The default start page.
                      */
-                    view: {
-                        type: String
-                    },
-                    /**
-                     * The name of the active sub-view (#view:subView hash in window location).
-                     */
-                    subView: {
-                        type: String
+                    defaultView: {
+                        type: String,
+                        value: "scenes"
                     },
                     /**
                      * The residence asset of the current user.
@@ -124,21 +111,19 @@
             ready() {
                 super.ready();
 
-                this.shadowRoot.host.classList.add("flex", "layout", "vertical");
-
                 console.log("Ready, initialising application state");
-                openremote.INSTANCE.requests.sendAndReturn(
+                this.requests().sendAndReturn(
                     (requestParams) => {
                         let query = {
                             select: {include: "ALL"},
-                            userId: openremote.INSTANCE.getSecurity().getUserId()
+                            userId: this.getUserId()
                         }
                         openremote.REST.AssetResource.queryAssets(requestParams, query);
                     },
                     200,
                     (response) => {
                         if (!response) {
-                            openremote.INSTANCE.set("error", "No assets assigned to user.");
+                            this.setError("error", "No assets assigned to user.");
                             return;
                         }
                         response.forEach(asset => {
@@ -153,40 +138,20 @@
                             }
                         })
                         if (!this.residence) {
-                            openremote.INSTANCE.set("error", "No residence asset found for user.");
+                            this.setError("No residence asset found for user.");
                         }
 
                         // Subscribe to attribute events on residence and all rooms
-                        openremote.INSTANCE.getServiceEvents().addEventListener("attribute", e => {
+                        this.addAttributeEventListener(e => {
                             this.onServiceAttributeEvent(e.detail);
                         });
                         let subscribedAssetIds = [this.residence.id];
                         this.rooms.forEach(room => {
                             subscribedAssetIds.push(room.id);
                         })
-                        openremote.INSTANCE.getServiceEvents().subscribeAttributeEvents(subscribedAssetIds);
+                        this.subscribeAttributeEvents(subscribedAssetIds);
                     }
                 );
-            }
-
-            connectedCallback() {
-                super.connectedCallback();
-                this.showComponent();
-            }
-
-            onAppLocationChange(appLocation) {
-                // TODO The "state" case is a bug in Keycloak 2.x with Firefox that's difficult to track down
-                if (!appLocation.path || appLocation.path.startsWith('state')) {
-                    window.location.hash = "#scenes" // Default page
-                } else {
-                    let views = appLocation.path.split(":");
-                    this.set("view", views.length >= 1 ? views[0] : undefined);
-                    this.set("subView", views.length >= 2 ? views[1] : undefined);
-                }
-            }
-
-            isActiveView(activeView, view) {
-                return activeView === view;
             }
 
             onServiceAttributeEvent(e) {
@@ -209,10 +174,6 @@
                         this.set("rooms." + this.rooms.indexOf(room) + ".attributes." + attributeName + ".valueTimestamp", e.timestamp);
                     }
                 });
-            }
-
-            logout() {
-                openremote.INSTANCE.logout();
             }
         }
 

@@ -19,7 +19,10 @@
  */
 package org.openremote.app.client.widget;
 
-import com.google.gwt.dom.client.*;
+import com.google.gwt.dom.client.DivElement;
+import com.google.gwt.dom.client.Document;
+import com.google.gwt.dom.client.LabelElement;
+import com.google.gwt.dom.client.SpanElement;
 import com.google.gwt.user.client.ui.ComplexPanel;
 
 public class FormLabel extends ComplexPanel {
@@ -38,8 +41,6 @@ public class FormLabel extends ComplexPanel {
         getElement().addClassName("or-FormLabel layout horizontal center");
 
         iconElement = (SpanElement) Document.get().createElement(SpanElement.TAG);
-        iconElement.addClassName("or-FormLabelIcon");
-        iconElement.getStyle().setTextAlign(Style.TextAlign.RIGHT);
 
         labelElement = (LabelElement) Document.get().createElement(LabelElement.TAG);
         labelElement.setHtmlFor(Document.get().createUniqueId());
@@ -78,6 +79,7 @@ public class FormLabel extends ComplexPanel {
 
     public void setIcon(String icon) {
         if (this.icon != null) {
+            iconElement.removeClassName("or-Icon");
             iconElement.removeClassName("fa");
             iconElement.removeClassName("fa-" + icon);
         } else {
@@ -85,6 +87,7 @@ public class FormLabel extends ComplexPanel {
         }
         this.icon = icon;
         if (icon != null) {
+            iconElement.addClassName("or-Icon");
             iconElement.addClassName("fa");
             iconElement.addClassName("fa-" + icon);
         }

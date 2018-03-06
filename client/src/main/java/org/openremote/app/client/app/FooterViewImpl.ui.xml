@@ -5,7 +5,7 @@
     <ui:style>
         .footer {
             font-size: small;
-            padding: 0.4em;
+            padding: 1em 2em;
         }
 
         .navItem {
@@ -21,7 +21,11 @@
         }
 
         .brand {
-            font-size: x-small;
+            font-size: smaller;
+        }
+
+        .brandAnchor {
+            padding: 0 !important;
         }
     </ui:style>
 
@@ -41,7 +45,7 @@
             <g:HTMLPanel styleName="{style.logoItem}">
                 <g:HTMLPanel styleName="layout horizontal center {style.logo}">
                     <div class="{widgetStyle.Hyperlink} {style.brand}">
-                        <g:Anchor href="https://openremote.com/">OpenRemote Inc.</g:Anchor>
+                        <g:Anchor href="https://openremote.com/" styleName="{style.brandAnchor}">OpenRemote Inc.</g:Anchor>
                     </div>
                 </g:HTMLPanel>
             </g:HTMLPanel>

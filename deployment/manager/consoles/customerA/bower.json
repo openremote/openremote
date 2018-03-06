@@ -16,7 +16,5 @@
     "tests"
   ],
   "dependencies": {
-    "app-route": "PolymerElements/app-route#^2.0.3",
-    "moment": "moment#^2.20.1"
   }
 }

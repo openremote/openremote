@@ -104,7 +104,7 @@ window.renderBasicAuthForm = function () {
         '<div class="or-HeadlineSub" style="margin-left: 0.2em;">OpenRemote Login</div></div>' +
         '</div>' +
         '<div class="basicAuthMessage layout horizontal center or-FormMessages error" style="display: none;">' +
-        '<div class="or-MessagesIcon fa fa-warning"></div>' +
+        '<div class="or-Icon fa fa-warning"></div>' +
         '<span class="basicAuthMessageText"></span>' +
         '</div>' +
         '<form class="layout vertical or-Form">' +

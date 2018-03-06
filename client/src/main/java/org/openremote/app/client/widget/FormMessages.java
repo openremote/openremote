@@ -33,10 +33,7 @@ public class FormMessages extends FlowPanel {
         addStyleName(widgetStyle.FormMessages());
         addStyleName(success ? "success" : "error");
 
-        IconLabel iconLabel = new IconLabel();
-        add(iconLabel);
-        iconLabel.addStyleName(widgetStyle.MessagesIcon());
-        iconLabel.setIcon(success ? "check" : "warning");
+        add(new IconLabel(success ? "check" : "warning"));
 
         add(panel);
 

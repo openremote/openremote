@@ -35,14 +35,12 @@ public class WidgetStyle {
     public String MainContent = "or-MainContent";
     public String PushButton = "or-PushButton";
     public String Hyperlink = "or-Hyperlink";
-    public String HyperlinkIcon = "or-HyperlinkIcon";
     public String UnorderedList = "or-UnorderedList";
     public String Divider = "or-Divider";
     public String Toast = "or-Toast";
     public String ToastInfo = "or-ToastInfo";
     public String ToastSuccess = "or-ToastSuccess";
     public String ToastFailure = "or-ToastFailure";
-    public String MessagesIcon = "or-MessagesIcon";
     public String PopupPanel = "or-PopupPanel";
     public String PopupPanelHeader = "or-PopupPanelHeader";
     public String PopupPanelContent = "or-PopupPanelContent";
@@ -177,11 +175,6 @@ public class WidgetStyle {
     }
 
     @JsIgnore
-    public String HyperlinkIcon() {
-        return HyperlinkIcon;
-    }
-
-    @JsIgnore
     public String UnorderedList() {
         return UnorderedList;
     }
@@ -209,11 +202,6 @@ public class WidgetStyle {
     @JsIgnore
     public String ToastFailure() {
         return ToastFailure;
-    }
-
-    @JsIgnore
-    public String MessagesIcon() {
-        return MessagesIcon;
     }
 
     @JsIgnore

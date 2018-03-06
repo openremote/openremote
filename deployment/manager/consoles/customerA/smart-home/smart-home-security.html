@@ -91,18 +91,8 @@
                 }
             }
 
-            ready() {
-                super.ready();
-                this.shadowRoot.host.classList.add("flex", "layout", "vertical");
-            }
-
-            connectedCallback() {
-                super.connectedCallback();
-                this.showComponent();
-            }
-
             onAlarmEnabledChange() {
-                openremote.INSTANCE.getServiceEvents().sendAttributeEvent(
+                this.sendAttributeEvent(
                     this.residence.id, "alarmEnabled", this.$.alarmEnabled.checked
                 );
             }

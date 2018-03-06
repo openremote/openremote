@@ -39,8 +39,9 @@
             }
 
             .or-NavItem {
-                margin: 0.4em 1.2em 0 1.2em;
-                font-size: 1.1em;
+                margin: 0.4em 1.2em 0 1.2em !important;
+                padding: 0.4em !important;
+                font-size: 1.1em !important;
                 border-radius: 0 !important;
                 border-bottom: 0.4em solid transparent;
                 border-top: 0.2em solid transparent;
@@ -126,8 +127,9 @@
                 -ms-user-select: none; /* IE/Edge */
                 -webkit-touch-callout: none; /* iOS Safari */
                 cursor: pointer;
-                padding: 0.4em;
+                padding: 0 0.4em;
                 border-radius: 0.15em;
+                font-size: inherit;
                 font-weight: 600;
                 display: inline-block;
                 white-space: nowrap;
@@ -158,10 +160,6 @@
                 opacity: inherit;
             }
 
-            .or-PushButtonIcon + .html-face:not(:empty) {
-                margin-left: 0.6em;
-            }
-
             .or-PushButton.or-PushButton-up-disabled {
                 cursor: not-allowed;
                 opacity: .44;
@@ -171,6 +169,14 @@
             .or-PushButton.or-PushButton-up-disabled:active {
                 -webkit-filter: inherit;
                 filter: inherit;
+            }
+
+            .or-PushButton .or-Icon {
+                margin: 0;
+            }
+
+            .or-PushButton .or-Icon + .html-face:not(:empty) {
+                margin-left: 0.4em;
             }
 
             .or-Divider {
@@ -184,10 +190,6 @@
                 white-space: nowrap;
             }
 
-            .or-HyperlinkIcon {
-                width: 0.8em;
-            }
-
             .or-Hyperlink a,
             .or-Hyperlink a:visited,
             .or-FormAnchor,
@@ -196,7 +198,7 @@
                 font-weight: 600;
                 text-decoration: none;
                 display: inline-block;
-                padding: 0.4em 0.8em;
+                padding: 0.4em 0;
                 border-radius: 0.2em;
             }
 
@@ -228,17 +230,13 @@
                 margin: 0 0 0.8em 0;
             }
 
-            .or-HeadlineIcon,
+            .or-Headline .or-Icon,
             .or-HeadlineText {
                 font-size: x-large !important;
             }
 
             .or-HeadlineText {
                 font-weight: 600;
-            }
-
-            .or-HeadlineIcon {
-                margin-right: 0.4em;
             }
 
             .or-HeadlineSub {
@@ -252,10 +250,6 @@
                 margin: 0;
                 padding: 0;
                 white-space: nowrap;
-            }
-
-            .or-MessagesIcon {
-                font-size: larger;
             }
 
             .or-Form {
@@ -279,8 +273,8 @@
                 margin: 1em;
             }
 
-            .or-Toast .or-MessagesIcon,
-            .or-FormMessages .or-MessagesIcon {
+            .or-Toast .or-Icon,
+            .or-FormMessages .or-Icon {
                 margin: 0em 0.4em 0 0;
             }
 
@@ -329,17 +323,6 @@
                 font-weight: 600;
                 white-space: normal;
                 overflow: hidden;
-            }
-
-            .or-FormLabelIcon {
-                margin-right: 0.4em;
-                font-size: 1.2em;
-                opacity: 0.4;
-                align-self: flex-end;
-            }
-
-            .or-FormInlineLabelIcon {
-                margin-right: 0.4em;
             }
 
             .or-FormLabel.inline {
@@ -562,11 +545,6 @@
                 font-weight: 600;
             }
 
-            .or-FormTreeIcon {
-                margin-left: 0.4em;
-                width: 1.6em;
-            }
-
             .or-FormList {
                 overflow: auto;
             }
@@ -667,7 +645,7 @@
                 line-height: 1;
                 outline: 0;
                 border: 0;
-                border-radius: 0;
+                border-radius: 0.15em;
                 appearance: none;
                 -webkit-appearance: none;
                 -moz-appearance: none;
@@ -677,8 +655,8 @@
                 -webkit-tap-highlight-color: transparent;
             }
 
-            .or-Select select::-ms-expand {
-                display: none;
+            .or-Select select option {
+                padding-top: 0.4em;
             }
 
             .or-Select select:disabled {
@@ -722,6 +700,7 @@
                 content: '';
                 vertical-align: text-top;
                 pointer-events: none;
+                border-radius: 0.15em;
             }
 
             .or-CheckBox:checked + label:after {
@@ -737,23 +716,23 @@
 
             .or-Icon {
                 display: inline-block;
-                margin: 0 0.3em;
+                margin-right: 0.4em;
             }
 
             .or-Input {
                 font-family: 'Open Sans', 'Roboto', Helvetica, Arial, Lucida, sans-serif;
             }
 
-            .or-InputTime {
+            .or-InputTime,
+            .or-InputDate {
                 font-weight: 600;
                 font-size: 1em;
                 cursor: pointer;
                 white-space: nowrap;
                 min-height: 1.5em;
-                max-width: 5.5em;
                 padding: 0 0.4em;
                 border: 0;
-                border-radius: 0;
+                border-radius: 0.15em;
                 appearance: none;
                 -webkit-appearance: none;
                 -moz-appearance: none;
@@ -762,9 +741,11 @@
                 -webkit-box-sizing: content-box;;
             }
 
-            .or-InputTime::-webkit-clear-button,
-            .or-InputTime::-webkit-inner-spin-button {
-                display: none;
+            .or-InputTime::-webkit-datetime-edit,
+            .or-InputDate::-webkit-datetime-edit {
+                margin: 0;
+                padding: 0;
+                max-width: 5.8em;
             }
 
             .or-InputTime::-webkit-datetime-edit-text,
@@ -778,7 +759,45 @@
             .or-InputTime::-webkit-datetime-edit-month-field,
             .or-InputTime::-webkit-datetime-edit-second-field,
             .or-InputTime::-webkit-datetime-edit-week-field,
-            .or-InputTime::-webkit-datetime-edit-year-field{
+            .or-InputTime::-webkit-datetime-edit-year-field,
+            .or-InputDate::-webkit-datetime-edit-text,
+            .or-InputDate::-webkit-datetime-edit-fields-wrapper,
+            .or-InputDate::-webkit-date-and-time-value,
+            .or-InputDate::-webkit-datetime-edit-ampm-field,
+            .or-InputDate::-webkit-datetime-edit-day-field,
+            .or-InputDate::-webkit-datetime-edit-hour-field,
+            .or-InputDate::-webkit-datetime-edit-millisecond-field,
+            .or-InputDate::-webkit-datetime-edit-minute-field,
+            .or-InputDate::-webkit-datetime-edit-month-field,
+            .or-InputDate::-webkit-datetime-edit-second-field,
+            .or-InputDate::-webkit-datetime-edit-week-field,
+            .or-InputDate::-webkit-datetime-edit-year-field {
+                margin: 0;
+                padding: 0;
+            }
+
+            .or-InputTime::-webkit-clear-button,
+            .or-InputDate::-webkit-clear-button {
+                margin: 0 0.4em 0 0;
+            }
+
+            .or-InputTime[required]::-webkit-clear-button,
+            .or-InputDate[required]::-webkit-clear-button,
+            .or-InputTime::-webkit-inner-spin-button,
+            .or-InputDate::-webkit-inner-spin-button {
+                display: none;
+            }
+
+            .or-InputTime {
+                max-width: 5.5em;
+            }
+
+            .or-InputDate {
+                min-width: 0.7em;
+                max-width: 8em;
+            }
+
+            .or-InputDate::-webkit-calendar-picker-indicator {
                 margin: 0;
                 padding: 0;
             }

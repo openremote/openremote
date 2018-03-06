@@ -68,10 +68,10 @@
 
         <#if displayMessage && message?has_content>
             <div class="layout horizontal or-FormMessages ${message.type}">
-                <#if message.type=='success' ><div class="or-MessagesIcon fa fa-check"></div></#if>
-                <#if message.type=='warning' ><div class="or-MessagesIcon fa fa-warning"></div></#if>
-                <#if message.type=='error' ><div class="or-MessagesIcon fa fa-warning"></div></#if>
-                <#if message.type=='info' ><div class="or-MessagesIcon fa fa-info"></div></#if>
+                <#if message.type=='success' ><div class="or-Icon fa fa-check"></div></#if>
+                <#if message.type=='warning' ><div class="or-Icon fa fa-warning"></div></#if>
+                <#if message.type=='error' ><div class="or-Icon fa fa-warning"></div></#if>
+                <#if message.type=='info' ><div class="or-Icon fa fa-info"></div></#if>
                 ${message.summary}
             </div>
         </#if>

@@ -12,7 +12,7 @@
         }
 
         .navItem {
-            margin-right: 0.8em;
+            margin: 0;
         }
 
         .navItemFirst {

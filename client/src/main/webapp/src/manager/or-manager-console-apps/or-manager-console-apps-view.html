@@ -27,7 +27,7 @@
 
                 <template is="dom-repeat" id="appsList" items="[[apps]]">
                     <div class$="navItem [[widgetStyle.SecondaryNavItem]] [[widgetStyle.Hyperlink]] [[item.active]]">
-                        <div class$="[[widgetStyle.HyperlinkIcon]] [[icon('connectdevelop')]]"></div>
+                        <div class$="[[icon('connectdevelop')]]"></div>
                         <a on-click="onAppSelected">[[item.tenant.displayName]]</a>
                     </div>
                 </template>
@@ -59,7 +59,7 @@
     </template>
 
     <script>
-        class OpenRemoteManagerConsoleAppsView extends OpenRemoteViewComponent {
+        class OpenRemoteManagerConsoleAppsView extends OpenRemoteComponent {
 
             static get is() {
                 return "or-manager-console-apps-view";

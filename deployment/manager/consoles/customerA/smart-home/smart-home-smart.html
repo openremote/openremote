@@ -36,24 +36,13 @@
 
             ready() {
                 super.ready();
-                this.shadowRoot.host.classList.add("flex-none", "layout", "vertical");
+                this.shadowRoot.host.classList.add("flex-none");
             }
 
-            connectedCallback() {
-                super.connectedCallback();
-                this.showComponent();
-            }
-
-            onSmartToggleChange() {
-                if (this.$.smartToggle.checked) {
-                    openremote.INSTANCE.getServiceEvents().sendAttributeEvent(
-                        this.residence.id, "enableSceneTimer", "REQUEST_START"
-                    );
-                } else {
-                    openremote.INSTANCE.getServiceEvents().sendAttributeEvent(
-                        this.residence.id, "disableSceneTimer", "REQUEST_START"
-                    );
-                }
+            onSmartToggleChange(e) {
+                this.sendAttributeEvent(
+                    this.residence.id, e.target.checked ? "enableSceneTimer" : "disableSceneTimer", "REQUEST_START"
+                );
             }
         }
 

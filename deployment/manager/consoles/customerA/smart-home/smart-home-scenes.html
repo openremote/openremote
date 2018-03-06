@@ -12,6 +12,7 @@
                 width: 100px;
                 height: 100px;
                 margin: 10px;
+                border-radius: 0.15em;
                 cursor: pointer;
                 -webkit-user-select: none;
                 -moz-user-select: none;
@@ -65,16 +66,6 @@
                 return "smart-home-scenes";
             }
 
-            ready() {
-                super.ready();
-                this.shadowRoot.host.classList.add("flex", "layout", "vertical");
-            }
-
-            connectedCallback() {
-                super.connectedCallback();
-                this.showComponent();
-            }
-
             getItemClass(scene, item) {
                 return scene === item
                     ? "layout horizontal center-center sceneItem active"
@@ -84,7 +75,7 @@
             switchScene(e) {
                 let sceneItem = Polymer.dom(e).localTarget;
                 sceneItem.classList.add("selected");
-                openremote.INSTANCE.getServiceEvents().sendAttributeEvent(
+                this.sendAttributeEvent(
                     this.residence.id, sceneItem.id.toLowerCase() + "Scene", "REQUEST_START"
                 );
             }

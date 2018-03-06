@@ -8,13 +8,56 @@
                 background-color: var(--theme-white);
                 border-radius: 10px;
                 margin: 10px 10px 0 10px;
+                -webkit-box-shadow: 4px 4px 15px 0px rgba(0, 0, 0, 0.2);
+                -moz-box-shadow: 4px 4px 15px 0px rgba(0, 0, 0, 0.2);
+                box-shadow: 4px 4px 15px 0px rgba(0, 0, 0, 0.2);
+            }
+
+            .title {
                 padding: 10px;
-                -webkit-box-shadow: 4px 4px 15px 0px rgba(0,0,0,0.2);
-                -moz-box-shadow: 4px 4px 15px 0px rgba(0,0,0,0.2);
-                box-shadow: 4px 4px 15px 0px rgba(0,0,0,0.2);
+                font-weight: 600;
+                -webkit-user-select: none;
+                -moz-user-select: none;
+                -ms-user-select: none;
+                user-select: none;
+                cursor: pointer;
+                color: var(--theme-darkgrey);
+            }
+
+            .content {
+                padding: 10px;
+                height: auto;
+                overflow: auto;
+            }
+
+            .content[collapsed] {
+                padding: 0;
+                height: 0;
+                overflow: hidden;
+            }
+
+            .expandCollapseIcon {
+                text-align: right;
+                color: var(--theme-darkgrey);
             }
         </style>
-        <slot></slot>
+
+        <template is="dom-if" if="[[title]]">
+            <div class="layout horizontal">
+                <div class="flex layout horizontal center title"
+                     on-click="onTitleClicked">
+                    <span class="flex or-Icon">&nbsp;</span>
+                    <span class="">[[title]]</span>
+                    <span class$="flex [[icon('plus')]] expandCollapseIcon" hidden$="[[!collapsed]]"></span>
+                    <span class$="flex [[icon('minus')]] expandCollapseIcon" hidden$="[[collapsed]]"></span>
+                </div>
+            </div>
+        </template>
+
+        <div class="layout vertical content" collapsed$="[[collapsed]]">
+            <slot></slot>
+        </div>
+
     </template>
 
     <script>
@@ -23,14 +66,26 @@
                 return "smart-home-section";
             }
 
-            ready() {
-                super.ready();
-                this.shadowRoot.host.classList.add("flex-none", "layout", "vertical");
+            static get properties() {
+                return {
+                    title: {
+                        type: String,
+                        reflectToAttribute:true
+                    },
+                    collapsed: {
+                        type: Boolean,
+                        value: false
+                    }
+                }
             }
 
-            connectedCallback() {
-                super.connectedCallback();
-                this.showComponent();
+            ready() {
+                super.ready();
+                this.shadowRoot.host.classList.add("flex-none");
+            }
+
+            onTitleClicked() {
+                this.set("collapsed", !this.collapsed);
             }
         }
 

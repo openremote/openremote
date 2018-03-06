@@ -168,10 +168,7 @@ public class AdminUserNotificationEditorImpl implements AdminUserNotificationEdi
         if (isNullOrEmpty(notificationTitle)
             || isNullOrEmpty(notificationMessage)
             || isNullOrEmpty(notificationAppUrl)) {
-            IconLabel warningLabel = new IconLabel();
-            warningLabel.setIcon("warning");
-            warningLabel.addStyleName(widgetStyle.MessagesIcon());
-            errorPanel.add(warningLabel);
+            errorPanel.add(new IconLabel("warning"));
             InlineLabel errorMessage = new InlineLabel(managerMessages.enterTitleMessageAppurlForNotification());
             errorPanel.add(errorMessage);
             errorPanel.setVisible(true);

@@ -85,13 +85,7 @@
 
             ready() {
                 super.ready();
-
-                this.shadowRoot.host.classList.add("flex-none", "layout", "vertical");
-            }
-
-            connectedCallback() {
-                super.connectedCallback();
-                this.showComponent();
+                this.shadowRoot.host.classList.add("flex-none");
             }
 
             getNavItemClass(active, item) {

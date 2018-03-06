@@ -55,10 +55,11 @@ public class Hyperlink extends com.google.gwt.user.client.ui.Hyperlink {
     }
 
     public void setIcon(String icon) {
+        iconLabel.getElement().removeClassName("or-Icon fa");
+        iconLabel.getElement().removeClassName("fa-" + this.icon);
         this.icon = icon;
-        iconLabel.getElement().removeClassName("or-HyperlinkIcon");
         if (icon != null) {
-            iconLabel.getElement().addClassName("or-HyperlinkIcon fa fa-" + icon);
+            iconLabel.getElement().addClassName("or-Icon fa fa-" + icon);
         }
     }
 

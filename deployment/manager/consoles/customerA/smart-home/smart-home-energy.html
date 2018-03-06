@@ -121,34 +121,24 @@
                 }
             }
 
-            ready() {
-                super.ready();
-                this.shadowRoot.host.classList.add("flex", "layout", "vertical");
-            }
-
-            connectedCallback() {
-                super.connectedCallback();
-                this.showComponent();
-            }
-
-            computeSmartSwitches(rooms) {
+            computeSmartSwitches() {
                 let smartSwitches = [];
                 if (!this.rooms)
                     return smartSwitches;
                 this.rooms.forEach(room => {
                     if ("smartSwitchModeA" in room.attributes && "smartSwitchBeginEndA" in room.attributes) {
                         smartSwitches.push(
-                            this.computeSmartSwitch(room.id, this.localize("Smart Switch A"), "A", room.attributes.smartSwitchModeA.value, room.attributes.smartSwitchBeginEndA.value)
+                            this.computeSmartSwitch(room.id, this.localize("Switch A"), "A", room.attributes.smartSwitchModeA.value, room.attributes.smartSwitchBeginEndA.value)
                         );
                     }
                     if ("smartSwitchModeB" in room.attributes && "smartSwitchBeginEndB" in room.attributes) {
                         smartSwitches.push(
-                            this.computeSmartSwitch(room.id, this.localize("Smart Switch B"), "B", room.attributes.smartSwitchModeB.value, room.attributes.smartSwitchBeginEndB.value)
+                            this.computeSmartSwitch(room.id, this.localize("Switch B"), "B", room.attributes.smartSwitchModeB.value, room.attributes.smartSwitchBeginEndB.value)
                         );
                     }
                     if ("smartSwitchModeC" in room.attributes && "smartSwitchBeginEndC" in room.attributes) {
                         smartSwitches.push(
-                            this.computeSmartSwitch(room.id, this.localize("Smart Switch C"), "C", room.attributes.smartSwitchModeC.value, room.attributes.smartSwitchBeginEndC.value)
+                            this.computeSmartSwitch(room.id, this.localize("Switch C"), "C", room.attributes.smartSwitchModeC.value, room.attributes.smartSwitchBeginEndC.value)
                         );
                     }
                 })
@@ -168,47 +158,40 @@
             }
 
             onSmartSwitchModeChange(e) {
-                // Must use async operation as smartSwitch.mode will only be set after this listener returns
-                setTimeout(() => {
-                    let smartSwitch = e.model.item;
+                let smartSwitch = e.model.item;
+                let smartSwitchMode = e.target.value; // model.item.mode is not updated yet when this event listener runs
+                let beginEndTimestamp = this.computeSmartSwitchBeginEndTimestamp(smartSwitchMode, smartSwitch.hourMinute);
 
-                    openremote.INSTANCE.getServiceEvents().sendAttributeEvent(
-                        smartSwitch.roomId, "smartSwitchMode" + smartSwitch.suffix, smartSwitch.mode
-                    );
-
-                    let beginEndTimestamp = this.computeSmartSwitchBeginEndTimestamp(smartSwitch.mode, smartSwitch.hourMinute);
-                    openremote.INSTANCE.getServiceEvents().sendAttributeEvent(
-                        smartSwitch.roomId, "smartSwitchBeginEnd" + smartSwitch.suffix, beginEndTimestamp
-                    );
-                }, 1);
+                this.sendAttributeEvent(
+                    smartSwitch.roomId, "smartSwitchMode" + smartSwitch.suffix, smartSwitchMode
+                );
+                this.sendAttributeEvent(
+                    smartSwitch.roomId, "smartSwitchBeginEnd" + smartSwitch.suffix, beginEndTimestamp
+                );
             }
 
             onSmartSwitchHourMinuteChange(e) {
-                // Must use async operation as smartSwitch.hourMinute will only be set after this listener returns
-                setTimeout(() => {
-                    let smartSwitch = e.model.item;
+                let smartSwitch = e.model.item;
+                let hourMinute = e.target.value; // model.item.hourMinute is not updated yet when this event listener runs
+                let beginEndTimestamp = this.computeSmartSwitchBeginEndTimestamp(smartSwitch.mode, hourMinute);
 
-                    // If entered time is empty, switch to now on
-                    if (!smartSwitch.hourMinute) {
-                        openremote.INSTANCE.getServiceEvents().sendAttributeEvent(
-                            smartSwitch.roomId, "smartSwitchMode" + smartSwitch.suffix, "NOW_ON"
-                        );
-                        return;
-                    }
-
-                    let beginEndTimestamp = this.computeSmartSwitchBeginEndTimestamp(smartSwitch.mode, smartSwitch.hourMinute);
-
-                    // Delay/debounce sending the change to service, the user is probably still editing
-                    // the hour/minute (cursor keys, spinner button)
-                    this.smartSwitchHourMinuteChangeDebouncer[smartSwitch] = Polymer.Debouncer.debounce(
-                        this.smartSwitchHourMinuteChangeDebouncer[smartSwitch],
-                        Polymer.Async.timeOut.after(3000),
-                        () => {
-                            openremote.INSTANCE.getServiceEvents().sendAttributeEvent(
-                                smartSwitch.roomId, "smartSwitchBeginEnd" + smartSwitch.suffix, beginEndTimestamp
+                // Delay/debounce sending the change to service, the user is probably still editing
+                // the hour/minute (cursor keys, spinner button)
+                this.smartSwitchHourMinuteChangeDebouncer[smartSwitch] = Polymer.Debouncer.debounce(
+                    this.smartSwitchHourMinuteChangeDebouncer[smartSwitch],
+                    Polymer.Async.timeOut.after(3000),
+                    () => {
+                        // If entered time is empty, switch to now on
+                        if (!hourMinute) {
+                            this.sendAttributeEvent(
+                                smartSwitch.roomId, "smartSwitchMode" + smartSwitch.suffix, "NOW_ON"
                             );
-                        });
-                }, 1);
+                            return;
+                        }
+                        this.sendAttributeEvent(
+                            smartSwitch.roomId, "smartSwitchBeginEnd" + smartSwitch.suffix, beginEndTimestamp
+                        );
+                    });
             }
 
             computeSmartSwitchBeginEndTimestamp(mode, hourMinute) {
@@ -236,7 +219,7 @@
                     }
                 }
 
-                return hourMinuteMoment ? parseInt(hourMinuteMoment.format("x")) : null;
+                return hourMinuteMoment ? hourMinuteMoment.valueOf() : null;
             }
 
         }

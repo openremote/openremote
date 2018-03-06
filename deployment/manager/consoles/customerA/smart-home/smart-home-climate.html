@@ -39,7 +39,7 @@
                     <div class="flex layout horizontal center roomLabel">
                         [[localize(item.roomName)]]
                     </div>
-                    <template is="dom-if" if="[[item.targetTemperature]]">
+                    <template is="dom-if" if="[[item.roomHasTargetTemperature]]">
                         <div class="targetTemperature">
                             <div class="or-Select">
                                 <select value="{{item.targetTemperature::change}}"
@@ -132,9 +132,11 @@
                             </div>
                         </div>
                     </template>
-                    <div class="attributeValue">
-                        [[formatAttributeValue(item.currentTemperatureFormat, item.currentTemperature)]]
-                    </div>
+                    <template is="dom-if" if="[[item.roomHasCurrentTemperature]]">
+                        <div class="attributeValue">
+                            [[formatAttributeValue(item.currentTemperatureFormat, item.currentTemperature)]]
+                        </div>
+                    </template>
                 </div>
             </template>
         </smart-home-section>
@@ -230,17 +232,7 @@
                 ]
             }
 
-            ready() {
-                super.ready();
-                this.shadowRoot.host.classList.add("flex", "layout", "vertical");
-            }
-
-            connectedCallback() {
-                super.connectedCallback();
-                this.showComponent();
-            }
-
-            computeRoomsTemperature(targetTemperateOptions) {
+            computeRoomsTemperature() {
                 let roomsTemperature = [];
                 if (!this.rooms)
                     return roomsTemperature;
@@ -249,10 +241,20 @@
                         roomsTemperature.push({
                             roomId: room.id,
                             roomName: room.name,
-                            currentTemperature: room.attributes.currentTemperature ? room.attributes.currentTemperature.value : null,
-                            currentTemperatureFormat: room.attributes.currentTemperature.meta.filter(m => m.name === "urn:openremote:asset:meta:format").map(m => m.value)[0],
-                            targetTemperature: room.attributes.targetTemperature ? room.attributes.targetTemperature.value : null,
-                            targetTemperatureFormat: room.attributes.targetTemperature ? room.attributes.targetTemperature.meta.filter(m => m.name === "urn:openremote:asset:meta:format").map(m => m.value)[0] : null,
+                            roomHasCurrentTemperature: "currentTemperature" in room.attributes,
+                            currentTemperature: room.attributes.currentTemperature
+                                ? room.attributes.currentTemperature.value
+                                : null,
+                            currentTemperatureFormat: room.attributes.currentTemperature
+                                ? room.attributes.currentTemperature.meta.filter(m => m.name === "urn:openremote:asset:meta:format").map(m => m.value)[0]
+                                : null,
+                            roomHasTargetTemperature: "targetTemperature" in room.attributes,
+                            targetTemperature: room.attributes.targetTemperature
+                                ? room.attributes.targetTemperature.value
+                                : null,
+                            targetTemperatureFormat: room.attributes.targetTemperature
+                                ? room.attributes.targetTemperature.meta.filter(m => m.name === "urn:openremote:asset:meta:format").map(m => m.value)[0]
+                                : null,
                         });
                     }
                 })
@@ -293,11 +295,7 @@
                 return roomsHumidity;
             }
 
-            formatAttributeValue(formatString, value) {
-                return value ? sprintf(formatString, value) : "-";
-            }
-
-            onResidenceChange(changeRecord) {
+            onResidenceChange() {
                 let ventilationMode = null;
                 if ("ventilationAuto" in this.residence.attributes && this.residence.attributes.ventilationAuto.value) {
                     ventilationMode = "AUTO";
@@ -316,19 +314,15 @@
             }
 
             onTargetTemperatureChange(e) {
-                // Must use async operation as roomTemperature.targetTemperature will only be set after this listener returns
-                setTimeout(() => {
-                    let roomTemperature = e.model.item;
-                    openremote.INSTANCE.getServiceEvents().sendAttributeEvent(
-                        roomTemperature.roomId, "targetTemperature", parseInt(roomTemperature.targetTemperature)
-                    );
-                }, 1);
+                this.sendAttributeEvent(
+                    e.model.item.roomId, "targetTemperature", parseInt(e.target.value)
+                );
             }
 
             onVentilationModeChange() {
                 if (this.ventilationMode === "AUTO") {
                     if (!this.residence.attributes.ventilationAuto.value) {
-                        openremote.INSTANCE.getServiceEvents().sendAttributeEvent(
+                        this.sendAttributeEvent(
                             this.residence.id, "ventilationAuto", true
                         );
                     }
@@ -344,13 +338,13 @@
                 }
 
                 if (this.residence.attributes.ventilationAuto.value) {
-                    openremote.INSTANCE.getServiceEvents().sendAttributeEvent(
+                    this.sendAttributeEvent(
                         this.residence.id, "ventilationAuto", false
                     );
                 }
 
                 if (this.residence.attributes.ventilationLevel.value !== ventilationLevel) {
-                    openremote.INSTANCE.getServiceEvents().sendAttributeEvent(
+                    this.sendAttributeEvent(
                         this.residence.id, "ventilationLevel", ventilationLevel
                     );
                 }

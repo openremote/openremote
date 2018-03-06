@@ -37,11 +37,11 @@ public class PushButton extends com.google.gwt.user.client.ui.PushButton {
     }
 
     public void setIcon(String icon) {
-        iconLabel.getElement().removeClassName("or-PushButtonIcon fa");
+        iconLabel.getElement().removeClassName("or-Icon fa");
         iconLabel.getElement().removeClassName("fa-" + this.icon);
         this.icon = icon;
         if (icon != null) {
-            iconLabel.getElement().addClassName("or-PushButtonIcon fa fa-" + icon);
+            iconLabel.getElement().addClassName("or-Icon fa fa-" + icon);
         }
     }
 

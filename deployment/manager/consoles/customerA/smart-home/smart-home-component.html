@@ -1,6 +1,7 @@
 <dom-module id="smart-home-component">
     <script>
-        class SmartHomeComponent extends OpenRemoteViewComponent {
+        class SmartHomeComponent extends OpenRemoteComponent {
+
             static get properties() {
                 return {
                     localesResource: {
@@ -8,6 +9,11 @@
                         value: "locales.json"
                     }
                 }
+            }
+
+            ready() {
+                super.ready();
+                this.shadowRoot.host.classList.add("layout", "vertical");
             }
         }
     </script>

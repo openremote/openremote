@@ -5,11 +5,35 @@
 <dom-module id="smart-home-settings">
     <template>
         <style include="smart-home-style">
+            .infoLabel {
+                font-size: smaller;
+                font-style: italic;
+                color: var(--theme-darkgrey);
+                margin: 0.8em;
+            }
         </style>
 
-        <smart-home-section class="center-center">
-            <div>[[residence.name]]</div>
+        <smart-home-section title="[[localize('Vacation')]]">
+            <div class="layout horizontal center">
+                <div class="flex">[[localize('On vacation until')]]</div>
+                <input class="or-Input or-InputDate"
+                       title="[[localize('End of vacation')]]"
+                       type="date"
+                       empty$="[[vacationUntilEmpty]]"
+                       value="[[vacationUntil]]"
+                       on-input="onVacationUntilChanged"/>
+            </div>
         </smart-home-section>
+
+        <smart-home-section title="[[localize('Weekly Schedule')]]" collapsed>
+            TODO
+        </smart-home-section>
+
+        <smart-home-section title="[[localize('Scenes')]]" collapsed>
+            TODO
+        </smart-home-section>
+
+        <div class="layout horizontal center-center infoLabel">[[residence.name]]</div>
 
     </template>
 
@@ -19,14 +43,41 @@
                 return "smart-home-settings";
             }
 
-            ready() {
-                super.ready();
-                this.shadowRoot.host.classList.add("flex", "layout", "vertical");
+            static get properties() {
+                return {
+                    vacationUntilEmpty: {
+                        type: Boolean,
+                        computed: "computeVacationUntilEmpty(residence.*)"
+                    },
+                    vacationUntil: {
+                        type: String,
+                        computed: "computeVacationUntil(residence.*)"
+                    },
+                    smartSwitchHourMinuteChangeDebouncer: {
+                        type: Object,
+                        value: {}
+                    }
+                }
             }
 
-            connectedCallback() {
-                super.connectedCallback();
-                this.showComponent();
+            computeVacationUntilEmpty() {
+                return !this.residence.attributes.vacationUntil || !this.residence.attributes.vacationUntil.value;
+            }
+
+            computeVacationUntil() {
+                return this.residence.attributes.vacationUntil && this.residence.attributes.vacationUntil.value
+                    ? moment(this.residence.attributes.vacationUntil.value).format("YYYY-MM-DD")
+                    : moment().add(7, "days").format("YYYY-MM-DD"); // Show 1 week in future if no vacation until set
+            }
+
+            onVacationUntilChanged(e) {
+                let vacationUntilMoment = moment(e.target.value, "YYYY-MM-DD");
+                this.sendAttributeEvent(
+                    this.residence.id,
+                    "vacationUntil",
+                    // Vacation until must be in future or clear
+                    vacationUntilMoment.isAfter(moment()) ? vacationUntilMoment.valueOf() : undefined
+                );
             }
         }
 

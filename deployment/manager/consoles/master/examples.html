@@ -14,31 +14,27 @@
 
     <!-- Optional: Load more application resources after authentication -->
     <script>
-        window.addEventListener('AppReady', function (e) {
+        window.addEventListener("AppReady", function (e) {
             console.log("Loading customerA console app resources...");
             let app = e.detail.app;
 
             // Load resources in parallel
             Promise.all([
-                app.load.css("/static/3rdparty/mapbox-gl-js/0.42.2/mapbox-gl.css"),
-                app.load.js("/static/3rdparty/mapbox-gl-js/0.42.2/mapbox-gl.js"),
-
-                app.load.js("/static/bower_components/chart.js/dist/Chart.js"),
-
-                app.load.js("/static/3rdparty/sprintf/1.0.3/sprintf.min.js")
+                /*
+                app.load.css("/console/master/something.css"),
+                app.load.js("/console/master/something.js"),
+                */
             ]).then(() => {
-
                 /*
                 // Load resources sequentially
                 app.load.js("/resource1")
                     .then(() => {
-                        return app.load.js("/resource2")
+                        return app.load.js("/some/resource")
                     })
                     .catch(e => {
                         app.set("error", e);
                     });
                 */
-
             }).catch(e => {
                 app.set("error", e);
             });
@@ -69,27 +65,18 @@
 <body class="layout vertical">
 
 <!-- ############## Required: One <or-app> should wrap your frontend, you can enforce login/authentication ############## -->
-<or-app login tenant-realm="customerA">
+<or-app login tenant-realm="master">
 
     <!-- With or-Viewport you get OpenRemote default fonts -->
     <div class="flex layout vertical or-Viewport">
 
         <!-- You can use your own styles or the OpenRemote styles and theme -->
         <a href="#" class="myAppHeadline">
-            The OpenRemote console application of the <code>customerA</code> tenant
+            OpenRemote Console App Examples
         </a>
 
         <!-- This is a container element that has some padding and visual separation from other containers -->
         <div class="or-MainContent">
-
-            <p>
-                On your OpenRemote installation, edit the HTML content in
-                <code>deployment/manager/consoles/customerA/</code>.
-            </p>
-            <p>
-                You can duplicate the <code>customerA</code> directory to create new console applications for other
-                tenants/realms.
-            </p>
             <p>
                 View the source in your web browser and follow the examples on this page to write your own OpenRemote
                 application, it's easy with <a href="https://www.webcomponents.org/">Web Components</a>.
@@ -104,13 +91,12 @@
 
                 <!-- Execute an asset query and show a nice scrollable list -->
                 <or-asset-list class="myAssetList flex or-MainContent or-FormList"
-                               select-include="ALL_EXCEPT_PATH_AND_ATTRIBUTES"
-                               asset-type="urn:openremote:asset:residence">
+                               select-include="ALL_EXCEPT_PATH_AND_ATTRIBUTES">
 
                     <!-- Render each asset with a template -->
                     <template>
                         <div class="or-FormListItem layout horizontal center justified">
-                            <div>Residence: {{asset.name}}</div>
+                            <div>Asset Name: {{asset.name}}</div>
                             <div>Parent: {{asset.parentName}}</div>
                             <div>Created On: {{asset.createdOn}}</div>
                         </div>
@@ -121,12 +107,12 @@
                 <!-- Execute an asset query and show a nice scrollable list -->
                 <or-asset-list class="myAssetList flex or-MainContent or-FormList"
                                select-include="ALL_EXCEPT_PATH_AND_ATTRIBUTES"
-                               asset-type="urn:openremote:asset:room">
+                               asset-type="urn:openremote:asset:building">
 
                     <!-- Render each asset with a template -->
                     <template>
                         <div class="or-FormListItem layout horizontal center justified">
-                            <div>Room: {{asset.name}}</div>
+                            <div>Asset Name: {{asset.name}}</div>
                             <div>Parent: {{asset.parentName}}</div>
                             <div>Created On: {{asset.createdOn}}</div>
                         </div>
@@ -169,30 +155,88 @@
 
         </div>
 
+        <!-- Use OpenRemote UI classes for pretty widgets -->
         <div class="or-MainContent">
-            <div class="layout horizontal or-FormGroup">
-                <div class="or-FormField">
+            <div class="layout vertical">
 
-                    <button class="or-FormControl or-FormButton or-PushButton"
+                <div class="layout horizontal center justified" style="margin: 1em;">
+
+                    <button class="or-PushButton"
                             onclick="openremote.INSTANCE.toasts.showToast(
                             new openremote.toast.Toast(
                                 openremote.toast.Toast.Type.SUCCESS,
                                 'Welcome ' + openremote.INSTANCE.user + ', on ' + openremote.INSTANCE.tenantRealm + '. It is ' + new Date() + '.',
                                 3000
-                            )
-                        )">Show a toast
+                            ))">
+                        <span class="or-Icon fa fa-eye"></span>
+                        <span class="html-face">Show toast</span>
                     </button>
 
-                    <button class="or-FormControl or-FormButton or-PushButton"
+                    <button class="or-FormButtonPrimary or-PushButton"
                             onclick="document.querySelectorAll('.myAssetList').forEach((assetList) => {assetList.executeQuery()})">
-                        Refresh asset lists
+                        <span class="or-Icon fa fa-refresh"></span>
+                        <span class="html-face">Refresh asset list</span>
                     </button>
 
-                    <button class="or-FormControl or-FormButtonDanger or-PushButton"
-                            onclick="document.querySelector('or-app').logout()">Logout
+                    <button class="or-FormButtonDanger or-PushButton"
+                            onclick="document.querySelector('or-app').logout()">
+                        <span class="or-Icon fa fa-sign-out"></span>
+                        <span class="html-face">Logout</span>
                     </button>
+
+                    <div>
+                        <input class="or-CheckBox"
+                               id="toggle1"
+                               type="checkbox"/>
+                        <label for="toggle1"></label>
+                    </div>
+
+                    <div>
+                        <input class="or-CheckBox"
+                               id="toggle2"
+                               type="checkbox"
+                               checked/>
+                        <label for="toggle2"></label>
+                    </div>
+
+                    <div>
+                        <input class="or-CheckBox"
+                               id="toggle3"
+                               type="checkbox"
+                               disabled/>
+                        <label for="toggle3"></label>
+                    </div>
+
+                    <div>
+                        <input class="or-CheckBox"
+                               id="toggle4"
+                               type="checkbox"
+                               checked disabled/>
+                        <label for="toggle4"></label>
+                    </div>
+
+                    <div class="or-Select">
+                        <select title="Some single-select options">
+                            <option value="foo">Option Foo</option>
+                            <option value="bar">Option Bar</option>
+                            <option value="Baz">Option Baz</option>
+                        </select>
+                    </div>
+
+                    <input class="or-Input or-InputTime"
+                           title="Some time input"
+                           type="time"
+                           step="60"
+                           required
+                           value="14:23"/>
+
+                    <input class="or-Input or-InputDate"
+                           title="Some date input"
+                           type="date"
+                           value="2018-11-06"/>
 
                 </div>
+
             </div>
         </div>
 

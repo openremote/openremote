@@ -13,9 +13,9 @@
     "Away": "Weg",
     "Evening": "Avond",
     "Night": "Nacht",
-    "Smart Switch A": "Afwas",
-    "Smart Switch B": "Was",
-    "Smart Switch C": "Droger",
+    "Switch A": "Afwas",
+    "Switch B": "Was",
+    "Switch C": "Droger",
     "Now on": "Nu aan",
     "On at": "Aan om",
     "Ready at": "Klaar om",
@@ -40,6 +40,6 @@
     "Auto": "Auto",
     "Low": "Laag",
     "Medium": "Medium",
-    "High": "Hoge"
+    "High": "Hoog"
   }
 }

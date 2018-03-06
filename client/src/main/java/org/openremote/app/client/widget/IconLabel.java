@@ -26,7 +26,7 @@ public class IconLabel extends InlineLabel {
     protected String icon;
 
     public IconLabel(String icon) {
-        setStyleName("or-IconLabel");
+        setStyleName("or-Icon");
         setIcon(icon);
     }
 

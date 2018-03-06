@@ -161,10 +161,7 @@ public class JsonEditorImpl implements JsonEditor {
             error = ex.getMessage();
         }
         if (error != null) {
-            IconLabel warningLabel = new IconLabel();
-            warningLabel.setIcon("warning");
-            warningLabel.addStyleName(widgetStyle.MessagesIcon());
-            errorPanel.add(warningLabel);
+            errorPanel.add(new IconLabel("warning"));
             InlineLabel errorMessage = new InlineLabel(error);
             errorPanel.add(errorMessage);
             errorPanel.setVisible(true);

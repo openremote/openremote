@@ -29,7 +29,7 @@ public class Headline extends FlowPanel {
 
     private static final Logger LOG = Logger.getLogger(Headline.class.getName());
 
-    protected InlineLabel iconLabel;
+    protected InlineLabel iconLabel =new InlineLabel();
     protected String icon;
     protected InlineLabel headlineLabel;
     protected Label headlineSubLabel;
@@ -41,10 +41,8 @@ public class Headline extends FlowPanel {
     public Headline(String text) {
         setStyleName("or-Headline");
 
-        iconLabel = new InlineLabel();
-        iconLabel.setStyleName("or-HeadlineIcon fa");
         add(iconLabel);
-
+        
         headlineLabel = new InlineLabel();
         headlineLabel.setStyleName("or-HeadlineText");
         add(headlineLabel);
@@ -78,12 +76,11 @@ public class Headline extends FlowPanel {
     }
 
     public void setIcon(String icon) {
-        if (this.icon != null && this.icon.length() > 0) {
-            iconLabel.removeStyleName("fa-" + this.icon);
-        }
+        iconLabel.getElement().removeClassName("or-Icon fa");
+        iconLabel.getElement().removeClassName("fa-" + this.icon);
         this.icon = icon;
-        if (icon != null && icon.length() > 0) {
-            iconLabel.addStyleName("fa-" + icon);
+        if (icon != null) {
+            iconLabel.getElement().addClassName("or-Icon fa fa-" + icon);
         }
     }
 }
