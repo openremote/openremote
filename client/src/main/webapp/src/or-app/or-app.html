@@ -106,7 +106,7 @@
          * 1a. If authentication is required, perform authentication, then fire AppInit.
          * 1b. If no authentication is required, fire AppInit.
          *
-         * 2. Any element registered with defineAppElement() will be set in the openremote namespace
+         * 2. Any element registered with defineAppElement() will be set in the 'openremote' namespace
          *    so its class is available in GWT jsinterop.
          *
          * 3. The GWT jsinterop components will be loaded, then fire AppLoaded.
@@ -453,7 +453,7 @@
                 this.set("requests", requests);
             }
 
-            connectEvents() {
+            connectEvents(onConnected) {
                 // Only authenticated apps can connect to the event service
                 if (!this.login) {
                     return;
@@ -481,6 +481,10 @@
                             console.log("Page unloaded, closing event service connection");
                             this.disconnectEvents();
                         });
+
+                        if (onConnected) {
+                            onConnected()
+                        }
                     };
 
                     this.webSocket.onerror = () => {
@@ -576,21 +580,29 @@
             openremote.INSTANCE.registerToasts();
             openremote.INSTANCE.registerRequests();
 
-            // Connect the WebSocket to event service endpoint
-            openremote.INSTANCE.connectEvents();
-
-            // Load the authenticated tenant details
-            openremote.INSTANCE.loadTenantDetails(() => {
-
+            // Run this when everything is ready
+            let appReady = () => {
                 // Check if there was a problem
                 if (!openremote.INSTANCE.error) {
                     // If not, any other code can run and we are ready
+                    console.log("Application ready");
                     dispatchEvent(new CustomEvent("AppReady", {detail: {app: openremote.INSTANCE}}));
                 }
-
                 // Now show the app/document body
                 openremote.INSTANCE.showApp();
-            })
+            };
+
+            // If login is required, must be able to connect WebSocket and load tenant
+            if (openremote.INSTANCE.login) {
+                // Connect the WebSocket to event service endpoint
+                openremote.INSTANCE.connectEvents(() => {
+                    // Load the authenticated tenant details
+                    openremote.INSTANCE.loadTenantDetails(appReady);
+                });
+            } else {
+                // If no login is required, just start
+                appReady();
+            }
         });
 
         // Elements which depend on jsinterop components must be initialized at the right time
