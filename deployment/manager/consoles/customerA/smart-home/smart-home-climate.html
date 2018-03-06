@@ -315,7 +315,7 @@
 
             onTargetTemperatureChange(e) {
                 this.sendAttributeEvent(
-                    e.model.item.roomId, "targetTemperature", parseInt(e.target.value)
+                    e.model.item.roomId, "targetTemperature", parseFloat(e.target.value)
                 );
             }
 
