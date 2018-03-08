@@ -22,7 +22,6 @@ package org.openremote.manager.rules;
 import org.jeasy.rules.api.Facts;
 import org.jeasy.rules.api.Rule;
 import org.jeasy.rules.api.RuleListener;
-import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetQuery;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeExecuteStatus;
@@ -324,7 +323,7 @@ public class RulesFacts extends Facts implements RuleListener {
             fact = temporaryFact.getFact();
         }
         return Optional.ofNullable(
-            factType.isAssignableFrom(fact.getClass()) && predicate.test((T) fact) ? (T) fact: null
+            factType.isAssignableFrom(fact.getClass()) && predicate.test((T) fact) ? (T) fact : null
         );
     }
 

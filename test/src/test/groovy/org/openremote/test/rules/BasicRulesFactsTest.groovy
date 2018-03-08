@@ -1,5 +1,7 @@
 package org.openremote.test.rules
 
+import groovy.transform.EqualsAndHashCode
+import groovy.transform.ToString
 import org.openremote.container.Container
 import org.openremote.manager.rules.RulesClock
 import org.openremote.manager.rules.RulesEngine
@@ -11,6 +13,7 @@ import java.util.stream.Collectors
 
 class BasicRulesFactsTest extends Specification {
 
+    @ToString(includeNames = true)
     class AnonFact {
         String foo
         double bar
@@ -21,15 +24,17 @@ class BasicRulesFactsTest extends Specification {
             this.bar = bar
             this.baz = baz
         }
+    }
 
+    @EqualsAndHashCode(includes = "id")
+    @ToString(includeNames = true)
+    class AnonFactWithId {
+        String id
+        String foo
 
-        @Override
-        String toString() {
-            return getClass().getSimpleName() + "{" +
-                    "foo='" + foo + '\'' +
-                    ", bar=" + bar +
-                    ", baz=" + baz +
-                    '}'
+        AnonFactWithId(String id, String foo) {
+            this.id = id
+            this.foo = foo
         }
     }
 
@@ -153,6 +158,130 @@ class BasicRulesFactsTest extends Specification {
         then: "the fact should be removed"
         assert !rulesFacts.matchFirst({ fact -> fact.foo == "NEWFOO1" }).isPresent()
         assert rulesFacts.anonymousFacts.size() == 2
+    }
+
+    def "Handle anonymous facts with value equality"() {
+
+        when: "some anonymous facts are added"
+        rulesFacts.put(new AnonFact("NOID1", 1, true))
+        rulesFacts.put(new AnonFact("NOID2", 2, true))
+        rulesFacts.put(new AnonFactWithId("ONE", "FOO1"))
+        rulesFacts.put(new AnonFactWithId("ONE", "FOO2"))
+        rulesFacts.put(new AnonFactWithId("ONE", "FOO3"))
+        rulesFacts.put(new AnonFactWithId("TWO", "BAR"))
+        rulesFacts.put(new AnonFactWithId("THREE", "BAZ"))
+
+        then: "facts should be present"
+        assert rulesFacts.allFacts.count() == 5
+        assert rulesFacts.assetStates.size() == 0
+        assert rulesFacts.assetEvents.size() == 0
+        assert rulesFacts.namedFacts.size() == 0
+        assert rulesFacts.anonymousFacts.size() == 5
+        assert rulesFacts.vars.size() == 0
+        assert !rulesFacts.hasTemporaryFacts()
+
+        and: "matching should succeed"
+        assert rulesFacts.match(AnonFact).count() == 2
+        assert rulesFacts.match(AnonFactWithId).count() == 3
+        assert rulesFacts.match(AnonFactWithId, { it.foo == "FOO3"}).count() == 1
+        assert rulesFacts.matchFirst(AnonFactWithId, { it.foo == "FOO3"}).isPresent()
+
+        when: "an anonymous fact is updated"
+        rulesFacts.put(new AnonFactWithId("ONE", "FOO4"))
+
+        then: "updated facts should be present"
+        assert rulesFacts.allFacts.count() == 5
+        assert rulesFacts.assetStates.size() == 0
+        assert rulesFacts.assetEvents.size() == 0
+        assert rulesFacts.namedFacts.size() == 0
+        assert rulesFacts.anonymousFacts.size() == 5
+        assert rulesFacts.vars.size() == 0
+        assert !rulesFacts.hasTemporaryFacts()
+
+        and: "matching should succeed"
+        assert rulesFacts.match(AnonFact).count() == 2
+        assert rulesFacts.match(AnonFactWithId).count() == 3
+        assert rulesFacts.match(AnonFactWithId, { it.foo == "FOO3"}).count() == 0
+        assert !rulesFacts.matchFirst(AnonFactWithId, { it.foo == "FOO3"}).isPresent()
+        assert rulesFacts.match(AnonFactWithId, { it.foo == "FOO4"}).count() == 1
+        assert rulesFacts.matchFirst(AnonFactWithId, { it.foo == "FOO4"}).isPresent()
+
+        when: "an anonymous fact is removed"
+        rulesFacts.remove(new AnonFactWithId("ONE", "whatever"))
+
+        then: "the fact should be removed"
+        assert rulesFacts.match(AnonFact).count() == 2
+        assert rulesFacts.match(AnonFactWithId).count() == 2
+        assert rulesFacts.match(AnonFactWithId, { it.foo == "FOO4"}).count() == 0
+        assert !rulesFacts.matchFirst(AnonFactWithId, { it.foo == "FOO4"}).isPresent()
+        assert rulesFacts.anonymousFacts.size() == 4
+    }
+
+    def "Handle anonymous and named facts of same type"() {
+
+        when: "some anonymous and named facts are added"
+
+        def fact1 = new AnonFactWithId("ONE", "FOO")
+        def fact2 = new AnonFactWithId("TWO", "BAR")
+        def fact3 = new AnonFactWithId("THREE", "BAZ")
+        rulesFacts.put(fact1)
+        rulesFacts.put(fact2)
+        rulesFacts.put(fact3)
+        rulesFacts.put("Anon-$fact1.foo", fact1)
+        rulesFacts.put("Anon-$fact2.foo", fact2)
+        rulesFacts.put("Anon-$fact3.foo", fact3)
+
+        then: "facts should be present"
+        assert rulesFacts.allFacts.count() == 6
+        assert rulesFacts.assetStates.size() == 0
+        assert rulesFacts.assetEvents.size() == 0
+        assert rulesFacts.namedFacts.size() == 3
+        assert rulesFacts.anonymousFacts.size() == 3
+        assert rulesFacts.vars.size() == 0
+        assert !rulesFacts.hasTemporaryFacts()
+
+        and: "matching should succeed"
+        assert rulesFacts.match(AnonFactWithId).count() == 6
+        assert rulesFacts.match(AnonFactWithId, { it.foo == "FOO"}).count() == 2
+        assert rulesFacts.matchFirst(AnonFactWithId, { it.foo == "FOO"}).isPresent()
+
+        when: "an anonymous fact is updated"
+        rulesFacts.put(new AnonFactWithId("ONE", "NEW"))
+
+        then: "updated facts should be present"
+        assert rulesFacts.allFacts.count() == 6
+        assert rulesFacts.assetStates.size() == 0
+        assert rulesFacts.assetEvents.size() == 0
+        assert rulesFacts.namedFacts.size() == 3
+        assert rulesFacts.anonymousFacts.size() == 3
+        assert rulesFacts.vars.size() == 0
+        assert !rulesFacts.hasTemporaryFacts()
+
+        and: "matching should succeed"
+        assert rulesFacts.match(AnonFactWithId).count() == 6
+        assert rulesFacts.match(AnonFactWithId, { it.foo == "FOO"}).count() == 1
+        assert rulesFacts.matchFirst(AnonFactWithId, { it.foo == "FOO"}).isPresent()
+        assert rulesFacts.match(AnonFactWithId, { it.foo == "NEW"}).count() == 1
+        assert rulesFacts.matchFirst(AnonFactWithId, { it.foo == "NEW"}).isPresent()
+
+        when: "an anonymous fact is removed"
+        rulesFacts.remove(new AnonFactWithId("ONE", "whatever"))
+
+        then: "updated facts should be present"
+        assert rulesFacts.allFacts.count() == 5
+        assert rulesFacts.assetStates.size() == 0
+        assert rulesFacts.assetEvents.size() == 0
+        assert rulesFacts.namedFacts.size() == 3
+        assert rulesFacts.anonymousFacts.size() == 2
+        assert rulesFacts.vars.size() == 0
+        assert !rulesFacts.hasTemporaryFacts()
+
+        then: "the fact should be removed"
+        assert rulesFacts.match(AnonFactWithId).count() == 5
+        assert rulesFacts.match(AnonFactWithId, { it.foo == "FOO"}).count() == 1
+        assert rulesFacts.matchFirst(AnonFactWithId, { it.foo == "FOO"}).isPresent()
+        assert rulesFacts.match(AnonFactWithId, { it.foo == "NEW"}).count() == 0
+        assert !rulesFacts.matchFirst(AnonFactWithId, { it.foo == "NEW"}).isPresent()
     }
 
     def "Handle temporary named facts"() {

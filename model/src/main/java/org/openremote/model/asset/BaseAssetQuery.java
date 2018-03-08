@@ -463,13 +463,13 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> {
             this.value = value;
         }
 
-        public DateTimePredicate(String afterValue, String beforeValue) {
+        public DateTimePredicate(String rangeStart, String rangeEnd) {
             this.operator = Operator.BETWEEN;
-            this.value = afterValue;
-            this.rangeValue = beforeValue;
+            this.value = rangeStart;
+            this.rangeValue = rangeEnd;
         }
 
-        public DateTimePredicate dateMatch(Operator dateMatch) {
+        public DateTimePredicate operator(Operator dateMatch) {
             this.operator = dateMatch;
             return this;
         }
@@ -484,9 +484,9 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> {
             return this;
         }
 
-        public DateTimePredicate rangeValue(String beforeValue) {
+        public DateTimePredicate rangeValue(String rangeEnd) {
             this.operator = Operator.BETWEEN;
-            this.rangeValue = beforeValue;
+            this.rangeValue = rangeEnd;
             return this;
         }
 
