@@ -61,6 +61,7 @@ public class RulesFacts extends Facts implements RuleListener {
     public RulesClock clock;
 
     final protected Map<String, Collection<AssetState>> assetIdIndex = new HashMap<>();
+    final protected Map<String, Collection<AssetState>> assetTypeIndex = new HashMap<>();
 
     protected int triggerCount;
 
@@ -180,6 +181,11 @@ public class RulesFacts extends Facts implements RuleListener {
         assetIdIndex.get(assetState.getId()).remove(assetState);
         assetIdIndex.get(assetState.getId()).add(assetState);
 
+        // Maintain index of all asset states for this asset by type
+        assetTypeIndex.putIfAbsent(assetState.getTypeString(), new ArrayDeque<>());
+        assetTypeIndex.get(assetState.getTypeString()).remove(assetState);
+        assetTypeIndex.get(assetState.getTypeString()).add(assetState);
+
         return this;
     }
 
@@ -193,6 +199,12 @@ public class RulesFacts extends Facts implements RuleListener {
         Collection<AssetState> assetIdIndexCollection = assetIdIndex.get(assetState.getId());
         if (assetIdIndexCollection != null) {
             assetIdIndexCollection.remove(assetState);
+        }
+
+        // Maintain index of all asset states for this asset by type
+        Collection<AssetState> assetTypeIndexCollection = assetTypeIndex.get(assetState.getTypeString());
+        if (assetTypeIndexCollection != null) {
+            assetTypeIndexCollection.remove(assetState);
         }
 
         return this;
@@ -385,9 +397,15 @@ public class RulesFacts extends Facts implements RuleListener {
         Stream<AssetState> assetStates = getAssetStates().stream();
 
         // If the query is by asset ID, look up a smaller stream on asset ID index
-        Collection<AssetState> indexedAssetStates;
-        if (assetQuery.id != null && ((indexedAssetStates = assetIdIndex.get(assetQuery.id)) != null)) {
-            assetStates = indexedAssetStates.stream();
+        Collection<AssetState> assetStatesForId;
+        if (assetQuery.id != null && ((assetStatesForId = assetIdIndex.get(assetQuery.id)) != null)) {
+            return assetStatesForId.stream().parallel().filter(p);
+        }
+
+        // If the query is by asset type, look up a smaller stream on asset type index
+        Collection<AssetState> assetStatesForType;
+        if (assetQuery.type != null && ((assetStatesForType = assetTypeIndex.get(assetQuery.type.value)) != null)) {
+            return assetStatesForType.stream().parallel().filter(p);
         }
 
         return assetStates.parallel().filter(p);
@@ -441,9 +459,14 @@ public class RulesFacts extends Facts implements RuleListener {
                         LOG.finest("Fact change (INTERNAL DELETE): " + assetState + " - on: " + loggingContext);
                     }
                     // Maintain index of all asset states for this asset by ID
-                    Collection<AssetState> assetIdIndexCollection = assetIdIndex.get(assetId);
+                    Collection<AssetState> assetIdIndexCollection = assetIdIndex.get(assetState.getId());
                     if (assetIdIndexCollection != null) {
                         assetIdIndexCollection.remove(assetState);
+                    }
+                    // Maintain index of all asset states for this asset by type
+                    Collection<AssetState> assetTypeIndexCollection = assetTypeIndex.get(assetState.getTypeString());
+                    if (assetTypeIndexCollection != null) {
+                        assetTypeIndexCollection.remove(assetState);
                     }
                 }
                 return invalid;
