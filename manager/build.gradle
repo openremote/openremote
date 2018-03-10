@@ -13,6 +13,8 @@ dependencies {
     compile "org.xerial:sqlite-jdbc:$sqliteVersion"
 
     compile "org.mnode.ical4j:ical4j:$ical4jVersion"
+
+    compile "net.jafama:jafama:$jafamaVersion"
 }
 
 jar {
