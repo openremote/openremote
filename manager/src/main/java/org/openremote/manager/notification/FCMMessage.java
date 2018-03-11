@@ -20,6 +20,9 @@
 package org.openremote.manager.notification;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.openremote.model.value.ObjectValue;
+
+import java.util.Map;
 
 public class FCMMessage extends FCMBaseMessage {
 
@@ -27,6 +30,7 @@ public class FCMMessage extends FCMBaseMessage {
     protected boolean contentAvailable;
     protected boolean mutableContent;
     protected String priority;
+    protected Map<String, String> data;
 
     public FCMMessage(FCMNotification notification, boolean contentAvailable, boolean mutableContent, String priority, String to) {
         super(to);
@@ -70,6 +74,14 @@ public class FCMMessage extends FCMBaseMessage {
         this.priority = priority;
     }
 
+    public Map<String, String> getData() {
+        return data;
+    }
+
+    public void setData(Map<String, String> data) {
+        this.data = data;
+    }
+
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
@@ -77,6 +89,7 @@ public class FCMMessage extends FCMBaseMessage {
             ", contentAvailable=" + contentAvailable +
             ", mutableContent=" + mutableContent +
             ", priority='" + priority + '\'' +
+            ", data='" + data + '\'' +
             '}';
     }
 }

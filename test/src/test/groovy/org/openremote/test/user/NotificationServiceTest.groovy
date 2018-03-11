@@ -1,6 +1,7 @@
 package org.openremote.test.user
 
 import org.openremote.container.timer.TimerService
+import org.openremote.manager.notification.FCMBaseMessage
 import org.openremote.manager.notification.FCMDeliveryService
 import org.openremote.manager.notification.NotificationService
 import org.openremote.manager.setup.SetupService
@@ -23,6 +24,8 @@ import static org.openremote.manager.setup.AbstractKeycloakSetup.SETUP_ADMIN_PAS
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID
 import static org.openremote.model.Constants.MASTER_REALM
 import static org.openremote.model.Constants.MASTER_REALM_ADMIN_USER
+import static org.openremote.manager.notification.FCMDeliveryService.NOTIFICATION_FIREBASE_API_KEY
+import static org.openremote.manager.notification.FCMDeliveryService.NOTIFICATION_FIREBASE_URL
 
 class NotificationServiceTest extends Specification implements ManagerContainerTrait {
 
@@ -30,14 +33,17 @@ class NotificationServiceTest extends Specification implements ManagerContainerT
 
         given: "the server container is started"
         def serverPort = findEphemeralPort()
-        def container = startContainer(defaultConfig(serverPort), defaultServices())
+        def container = startContainer(defaultConfig(serverPort) << [
+            (NOTIFICATION_FIREBASE_API_KEY): "test",
+            (NOTIFICATION_FIREBASE_URL): "test"
+        ], defaultServices())
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
 
         and: "a mock FCM delivery service"
         def mockFCMDeliveryService = Spy(FCMDeliveryService, constructorArgs: [container]) {
             // Always "deliver" to FCM
-            sendPickupSignalThroughFCM(*_) >> {
+            sendFCMMessage(_ as FCMBaseMessage) >> {
                 return true
             }
         }

@@ -29,10 +29,12 @@ import org.openremote.model.notification.AlertNotification;
 import org.openremote.model.notification.DeliveryStatus;
 import org.openremote.model.user.UserQuery;
 
+import javax.persistence.EntityManager;
 import javax.persistence.Query;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Consumer;
 
 public class NotificationService implements ContainerService {
 
@@ -99,7 +101,10 @@ public class NotificationService implements ContainerService {
         persistenceService.doTransaction(entityManager -> entityManager.merge(notification));
 
         // Try to queue through FCM in a separate transaction
-        persistenceService.doTransaction(fcmDeliveryService.deliverPendingToFCM(userId, findAllTokenForUser(userId)));
+        Consumer<EntityManager> fcmMessageGenerator = fcmDeliveryService.deliverPendingToFCM(userId, findAllTokenForUser(userId));
+        if (fcmMessageGenerator != null) {
+            persistenceService.doTransaction(fcmMessageGenerator);
+        }
     }
 
     public List<AlertNotification> getNotificationsOfUser(String userId, DeliveryStatus deliveryStatus) {
