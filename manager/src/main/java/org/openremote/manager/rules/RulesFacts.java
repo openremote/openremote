@@ -140,8 +140,19 @@ public class RulesFacts extends Facts implements RuleListener {
         return (T) getVars().get(var);
     }
 
+    @SuppressWarnings("unchecked")
+    @Override
+    public <T> T get(String name) {
+        Object fact = super.get(name);
+        if (fact != null && fact instanceof TemporaryFact) {
+            TemporaryFact temporaryFact = (TemporaryFact) fact;
+            fact = temporaryFact.getFact();
+        }
+        return (T) fact;
+    }
+
     public <T> Optional<T> getOptional(String name) {
-        return Optional.ofNullable(super.get(name));
+        return Optional.ofNullable(get(name));
     }
 
     @Override

@@ -20,21 +20,17 @@ import org.openremote.model.value.*;
 
 import java.util.*;
 import java.util.function.Predicate;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class ObjectValueImpl extends ValueImpl implements ObjectValue {
-
-    private static final Logger LOG = Logger.getLogger(ObjectValueImpl.class.getName());
 
     private static List<String> stringifyOrder(String[] keys) {
         List<String> toReturn = new ArrayList<>();
         List<String> nonNumeric = new ArrayList<>();
         for (String key : keys) {
             if (key == null) {
-                LOG.warning("Null key in JSON object: " + Arrays.toString(keys));
-                continue;
+                throw new IllegalStateException("Null key in JSON object: " + Arrays.toString(keys));
             }
             if (key.matches("\\d+")) {
                 toReturn.add(key);
@@ -116,24 +112,36 @@ public class ObjectValueImpl extends ValueImpl implements ObjectValue {
 
     @Override
     public ObjectValue put(String key, Value value) {
+        if (key == null) {
+            throw new NullPointerException("Null keys are not allowed in JSON objects");
+        }
         map.put(key, value);
         return this;
     }
 
     @Override
     public ObjectValue put(String key, String value) {
+        if (key == null) {
+            throw new NullPointerException("Null keys are not allowed in JSON objects");
+        }
         map.put(key, factory.create(value));
         return this;
     }
 
     @Override
     public ObjectValue put(String key, double value) {
+        if (key == null) {
+            throw new NullPointerException("Null keys are not allowed in JSON objects");
+        }
         put(key, factory.create(value));
         return this;
     }
 
     @Override
     public ObjectValue put(String key, boolean bool) {
+        if (key == null) {
+            throw new NullPointerException("Null keys are not allowed in JSON objects");
+        }
         put(key, factory.create(bool));
         return this;
     }

@@ -301,6 +301,10 @@ class BasicRulesFactsTest extends Specification {
         assert rulesFacts.matchFirst("foo").isPresent()
         assert rulesFacts.matchFirst("bar").isPresent()
         assert rulesFacts.matchFirst("baz").isPresent()
+        assert rulesFacts.get("foo") == "FOO"
+        assert rulesFacts.getOptional("foo").get() == "FOO"
+        assert rulesFacts.get("abc") == null
+        assert !rulesFacts.getOptional("abc").isPresent()
 
         when: "the clock is advanced and temporary facts are expired"
         rulesFacts.setClock(new RulesClock(6000))
