@@ -249,7 +249,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
             // Lock the global context, we can only process attribute events when the
             // context isn't locked. Agent- and RulesService lock the context while protocols
             // or rulesets are modified.
-            .process(exchange -> withLock("AssetQueueProcessor", () -> {
+            .process(exchange -> withLock(getClass().getSimpleName() + "::processFromAssetQueue", () -> {
 
                 AttributeEvent event = exchange.getIn().getBody(AttributeEvent.class);
                 LOG.finest("Processing: " + event);

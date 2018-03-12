@@ -316,7 +316,7 @@ public class SimulatorProtocol extends AbstractProtocol {
      * Call this to simulate a sensor update after the specified delay (it uses the last value supplied from send to actuator).
      */
     public void updateSensor(AttributeRef attributeRef, int updateSensorDelayMilliseconds) {
-        withLock(getProtocolName(), () -> {
+        withLock(getProtocolName() + "::updateSensor", () -> {
             AttributeRef instanceRef = attributeInstanceMap.get(attributeRef);
 
             if (instanceRef == null) {
@@ -371,7 +371,7 @@ public class SimulatorProtocol extends AbstractProtocol {
      * Call this to simulate a send to actuator.
      */
     public boolean putValue(AttributeState attributeState) {
-        Boolean result = withLockReturning(getProtocolName(), () -> {
+        Boolean result = withLockReturning(getProtocolName() + "::putValue", () -> {
             AttributeRef attributeRef = attributeState.getAttributeRef();
             AttributeRef instanceRef = attributeInstanceMap.get(attributeRef);
 
@@ -429,7 +429,7 @@ public class SimulatorProtocol extends AbstractProtocol {
      * Call this to get the current value of an attribute.
      */
     public Optional<Value> getValue(AttributeRef attributeRef) {
-        return withLockReturning(getProtocolName(), () -> {
+        return withLockReturning(getProtocolName() + "::getValue", () -> {
             SimulatorElement element = elements.get(attributeRef);
             return element != null ? element.getValue() : Optional.empty();
         });
@@ -453,7 +453,7 @@ public class SimulatorProtocol extends AbstractProtocol {
      * Read a state snapshot.
      */
     public Optional<SimulatorState> getSimulatorState(AttributeRef protocolConfigurationRef) {
-        return withLockReturning(getProtocolName(), () -> {
+        return withLockReturning(getProtocolName() + "::getSimulatorState", () -> {
             LOG.info("Getting simulator state for protocol configuration: " + protocolConfigurationRef);
             if (!instances.containsKey(protocolConfigurationRef))
                 return Optional.empty();
@@ -472,7 +472,7 @@ public class SimulatorProtocol extends AbstractProtocol {
      * Write a state snapshot.
      */
     public void updateSimulatorState(SimulatorState simulatorState) {
-        withLock(getProtocolName(), () -> {
+        withLock(getProtocolName() + "::updateSimulatorState", () -> {
             AttributeRef protocolConfigurationRef = simulatorState.getProtocolConfigurationRef();
             if (!instances.containsKey(protocolConfigurationRef)) {
                 LOG.info("Ignoring simulator update, no instance for protocol configuration: " + protocolConfigurationRef);

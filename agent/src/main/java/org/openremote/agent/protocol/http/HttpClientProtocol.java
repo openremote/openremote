@@ -919,7 +919,7 @@ public class HttpClientProtocol extends AbstractProtocol {
     }
 
     protected void cancelPolling(AttributeRef attributeRef) {
-        withLock(getProtocolName(), () -> {
+        withLock(getProtocolName() + "::cancelPolling", () -> {
             ScheduledFuture pingPoll = pollingMap.remove(attributeRef);
             if (pingPoll != null) {
                 pingPoll.cancel(false);

@@ -129,7 +129,7 @@ public abstract class AbstractProtocol implements Protocol {
         this.messageBrokerContext = container.getService(MessageBrokerSetupService.class).getContext();
         this.producerTemplate = container.getService(MessageBrokerService.class).getProducerTemplate();
 
-        withLock(getProtocolName(), () -> {
+        withLock(getProtocolName() + "::start", () -> {
             try {
                 messageBrokerContext.addRoutes(new RouteBuilder() {
                     @Override
@@ -155,7 +155,7 @@ public abstract class AbstractProtocol implements Protocol {
 
     @Override
     final public void stop(Container container) {
-        withLock(getProtocolName(), () -> {
+        withLock(getProtocolName() + "::stop", () -> {
             linkedAttributes.clear();
             try {
                 messageBrokerContext.stopRoute("Actuator-" + getProtocolName(), 1, TimeUnit.MILLISECONDS);
@@ -171,7 +171,7 @@ public abstract class AbstractProtocol implements Protocol {
 
     @Override
     final public void linkProtocolConfiguration(AssetAttribute protocolConfiguration, Consumer<ConnectionStatus> statusConsumer) {
-        withLock(getProtocolName(), () -> {
+        withLock(getProtocolName() + "::linkProtocolConfiguration", () -> {
             LOG.finer("Linking protocol configuration to protocol '" + getProtocolName() + "': " + protocolConfiguration);
             linkedProtocolConfigurations.put(
                 protocolConfiguration.getReferenceOrThrow(),
@@ -183,7 +183,7 @@ public abstract class AbstractProtocol implements Protocol {
 
     @Override
     final public void unlinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
-        withLock(getProtocolName(), () -> {
+        withLock(getProtocolName() + "::unlinkProtocolConfiguration", () -> {
             LOG.finer("Unlinking protocol configuration from protocol '" + getProtocolName() + "': " + protocolConfiguration);
             doUnlinkProtocolConfiguration(protocolConfiguration);
             linkedProtocolConfigurations.remove(protocolConfiguration.getReferenceOrThrow());
@@ -192,7 +192,7 @@ public abstract class AbstractProtocol implements Protocol {
 
     @Override
     final public void linkAttributes(Collection<AssetAttribute> attributes, AssetAttribute protocolConfiguration) {
-        withLock(getProtocolName(), () -> {
+        withLock(getProtocolName() + "::linkAttributes", () -> {
             attributes.forEach(attribute -> {
                 LOG.fine("Linking attribute to '" + getProtocolName() + "': " + attribute);
                 AttributeRef attributeRef = attribute.getReferenceOrThrow();
@@ -223,7 +223,7 @@ public abstract class AbstractProtocol implements Protocol {
 
     @Override
     final public void unlinkAttributes(Collection<AssetAttribute> attributes, AssetAttribute protocolConfiguration) throws Exception {
-        withLock(getProtocolName(), () ->
+        withLock(getProtocolName() + "::unlinkAttributes", () ->
             attributes.forEach(attribute -> {
                 LOG.fine("Unlinking attribute on '" + getProtocolName() + "': " + attribute);
                 AttributeRef attributeRef = attribute.getReferenceOrThrow();
@@ -239,7 +239,7 @@ public abstract class AbstractProtocol implements Protocol {
      * Gets a linked attribute by its attribute ref
      */
     protected AssetAttribute getLinkedAttribute(AttributeRef attributeRef) {
-        return withLockReturning(getProtocolName(), () -> linkedAttributes.get(attributeRef));
+        return withLockReturning(getProtocolName()  + "::getLinkedAttribute", () -> linkedAttributes.get(attributeRef));
     }
 
     /**
@@ -251,7 +251,7 @@ public abstract class AbstractProtocol implements Protocol {
     }
 
     protected AssetAttribute getLinkedProtocolConfiguration(AttributeRef protocolConfigurationRef) {
-        return withLockReturning(getProtocolName(), () -> {
+        return withLockReturning(getProtocolName() + "::getLinkedProtocolConfigurations", () -> {
             LinkedProtocolInfo linkedProtocolInfo = linkedProtocolConfigurations.get(protocolConfigurationRef);
             // Don't bother with null check if someone calls here with an attribute not linked to this protocol
             // then they're doing something wrong so fail hard and fast
@@ -261,7 +261,7 @@ public abstract class AbstractProtocol implements Protocol {
 
     final protected void processLinkedAttributeWrite(AttributeEvent event) {
         LOG.finest("Processing linked attribute write on " + getProtocolName() + ": " + event);
-        withLock(getProtocolName(), () -> {
+        withLock(getProtocolName() + "::processLinkedAttributeWrite", () -> {
             AssetAttribute attribute = linkedAttributes.get(event.getAttributeRef());
             if (attribute == null) {
                 LOG.warning("Attribute doesn't exist on this protocol: " + event.getAttributeRef());
@@ -286,7 +286,7 @@ public abstract class AbstractProtocol implements Protocol {
      * publish new sensor values, which performs additional verification and uses a different messaging queue.
      */
     final protected void sendAttributeEvent(AttributeEvent event) {
-        withLock(getProtocolName(), () -> {
+        withLock(getProtocolName() + "::sendAttributeEvent", () -> {
             // Don't allow updating linked attributes with this mechanism as it could cause an infinite loop
             if (linkedAttributes.containsKey(event.getAttributeRef())) {
                 LOG.warning("Cannot update an attribute linked to the same protocol; use updateLinkedAttribute for that: " + event);
@@ -303,7 +303,7 @@ public abstract class AbstractProtocol implements Protocol {
      */
     @SuppressWarnings("unchecked")
     final protected void updateLinkedAttribute(final AttributeState finalState, long timestamp) {
-        withLock(getProtocolName(), () -> {
+        withLock(getProtocolName() + "::updateLinkedAttribute", () -> {
             AttributeState state = finalState;
             AssetAttribute attribute = linkedAttributes.get(state.getAttributeRef());
 
@@ -418,7 +418,7 @@ public abstract class AbstractProtocol implements Protocol {
      * the consumer to perform the modification.
      */
     final protected void updateLinkedProtocolConfiguration(AssetAttribute protocolConfiguration, Consumer<AssetAttribute> protocolUpdater) {
-        withLock(getProtocolName(), () -> {
+        withLock(getProtocolName() + "::updateLinkedProtocolConfiguration", () -> {
             // Clone the protocol configuration rather than modify this one
             AssetAttribute modifiedProtocolConfiguration = protocolConfiguration.deepCopy();
             protocolUpdater.accept(modifiedProtocolConfiguration);
@@ -430,7 +430,7 @@ public abstract class AbstractProtocol implements Protocol {
      * Update the runtime status of a protocol configuration by its attribute ref
      */
     final protected void updateStatus(AttributeRef protocolRef, ConnectionStatus connectionStatus) {
-        withLock(getProtocolName(), () -> {
+        withLock(getProtocolName() + "::updateStatus", () -> {
             LinkedProtocolInfo protocolInfo = linkedProtocolConfigurations.get(protocolRef);
             if (protocolInfo != null) {
                 LOG.fine("Updating protocol status to '" + connectionStatus + "': " + protocolRef);
@@ -444,7 +444,7 @@ public abstract class AbstractProtocol implements Protocol {
      * Gets the current runtime status of a protocol configuration.
      */
     final protected ConnectionStatus getStatus(AssetAttribute protocolConfiguration) {
-        return withLockReturning(getProtocolName(), () -> {
+        return withLockReturning(getProtocolName() + "::getStatus", () -> {
             LinkedProtocolInfo linkedProtocolInfo = linkedProtocolConfigurations.get(protocolConfiguration.getReferenceOrThrow());
             return linkedProtocolInfo.getCurrentConnectionStatus();
         });

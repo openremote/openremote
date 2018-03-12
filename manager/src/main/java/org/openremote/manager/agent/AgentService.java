@@ -435,7 +435,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
     }
 
     protected void linkProtocolConfigurations(Stream<AssetAttribute> configurations) {
-        withLock(getClass().getSimpleName(), () -> configurations.forEach(configuration -> {
+        withLock(getClass().getSimpleName() + "::linkProtocolConfigurations", () -> configurations.forEach(configuration -> {
             AttributeRef protocolAttributeRef = configuration.getReferenceOrThrow();
             Protocol protocol = getProtocol(configuration);
 
@@ -497,7 +497,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
     }
 
     protected void unlinkProtocolConfigurations(Stream<AssetAttribute> configurations) {
-        withLock(getClass().getSimpleName(), () -> configurations.forEach(configuration -> {
+        withLock(getClass().getSimpleName() + "::unlinkProtocolConfigurations", () -> configurations.forEach(configuration -> {
             AttributeRef protocolAttributeRef = configuration.getReferenceOrThrow();
 
             // Get all assets that have attributes that use this protocol configuration
@@ -539,7 +539,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
     }
 
     protected void publishProtocolConnectionStatus(AttributeRef protocolRef, ConnectionStatus connectionStatus) {
-        withLock(getClass().getSimpleName(), () -> {
+        withLock(getClass().getSimpleName() + "::publishProtocolConnectionStatus", () -> {
             Pair<AssetAttribute, ConnectionStatus> protocolDeploymentInfo = protocolConfigurations.get(protocolRef);
             if (protocolDeploymentInfo != null && protocolDeploymentInfo.value != connectionStatus) {
                 LOG.info("Agent protocol status updated to " + connectionStatus + ": " + protocolRef);
@@ -559,7 +559,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
     }
 
     public ConnectionStatus getProtocolConnectionStatus(AttributeRef protocolRef) {
-        return withLockReturning(getClass().getSimpleName(), () ->
+        return withLockReturning(getClass().getSimpleName() + "::getProtocolConnectionStatus", () ->
             Optional.ofNullable(protocolConfigurations.get(protocolRef))
                 .map(pair -> pair.value)
                 .orElse(null));
@@ -570,7 +570,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
     }
 
     protected void linkAttributes(AssetAttribute protocolConfiguration, Collection<AssetAttribute> attributes) {
-        withLock(getClass().getSimpleName(), () -> {
+        withLock(getClass().getSimpleName() + "::linkAttributes", () -> {
             LOG.fine("Linking all attributes that use protocol attribute: " + protocolConfiguration);
             Protocol protocol = getProtocol(protocolConfiguration);
 
@@ -594,7 +594,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
     }
 
     protected void unlinkAttributes(AssetAttribute protocolConfiguration, Collection<AssetAttribute> attributes) {
-        withLock(getClass().getSimpleName(), () -> {
+        withLock(getClass().getSimpleName() + "::unlinkAttributes", () -> {
             LOG.fine("Unlinking all attributes that use protocol attribute: " + protocolConfiguration);
             Protocol protocol = getProtocol(protocolConfiguration);
 
@@ -634,7 +634,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
             return false;
         }
 
-        Boolean result = withLockReturning(getClass().getSimpleName(), () ->
+        Boolean result = withLockReturning(getClass().getSimpleName() + "::processAssetUpdate", () ->
             AgentLink.getAgentLink(attribute)
                 .map(ref ->
                     getProtocolConfiguration(ref)
@@ -699,7 +699,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
     }
 
     public Optional<AssetAttribute> getProtocolConfiguration(AttributeRef protocolRef) {
-        return withLockReturning(getClass().getSimpleName(), () -> {
+        return withLockReturning(getClass().getSimpleName() + "::getProtocolConfiguration", () -> {
             Pair<AssetAttribute, ConnectionStatus> deploymentStatusPair = protocolConfigurations.get(protocolRef);
             return deploymentStatusPair == null ? Optional.empty() : Optional.of(deploymentStatusPair.key);
         });
@@ -714,16 +714,16 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
     }
 
     protected void addReplaceAgent(Asset agent) {
-        withLock(getClass().getSimpleName(), () -> getAgents().put(agent.getId(), agent)
+        withLock(getClass().getSimpleName() + "::addReplaceAgent", () -> getAgents().put(agent.getId(), agent)
         );
     }
 
     protected void removeAgent(Asset agent) {
-        withLock(getClass().getSimpleName(), () -> getAgents().remove(agent.getId()));
+        withLock(getClass().getSimpleName() + "::removeAgent", () -> getAgents().remove(agent.getId()));
     }
 
     public Map<String, Asset> getAgents() {
-        return withLockReturning(getClass().getSimpleName(), () -> {
+        return withLockReturning(getClass().getSimpleName() + "::getAgents", () -> {
             if (agentMap == null) {
                 agentMap = assetStorageService.findAll(new AssetQuery()
                     .select(new AssetQuery.Select(AssetQuery.Include.ALL))

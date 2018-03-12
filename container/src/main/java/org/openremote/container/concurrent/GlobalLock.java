@@ -77,7 +77,7 @@ public class GlobalLock {
      * @return Defaults to 10 seconds.
      */
     static public int getLockTimeoutMillis() {
-        return 10000;
+        return 30000;
     }
 
     /**

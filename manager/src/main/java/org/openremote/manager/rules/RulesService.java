@@ -193,7 +193,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
 
     @Override
     public void stop(Container container) throws Exception {
-        withLock(getClass().getSimpleName(), () -> {
+        withLock(getClass().getSimpleName() + "::stop", () -> {
             assetEngines.forEach((assetId, rulesEngine) -> rulesEngine.stop());
             assetEngines.clear();
             tenantEngines.forEach((realm, rulesEngine) -> rulesEngine.stop());
@@ -234,7 +234,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
     }
 
     protected void processTenantChange(Tenant tenant, PersistenceEvent.Cause cause) {
-        withLock(getClass().getSimpleName(), () -> {
+        withLock(getClass().getSimpleName() + "::processTenantChange", () -> {
             // Check if enabled status has changed
             boolean wasEnabled = Arrays.asList(activeTenantIds).contains(tenant.getId());
             boolean isEnabled = tenant.getEnabled() && cause != PersistenceEvent.Cause.DELETE;
@@ -274,7 +274,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
     }
 
     protected void processAssetChange(ServerAsset asset, PersistenceEvent persistenceEvent) {
-        withLock(getClass().getSimpleName(), () -> {
+        withLock(getClass().getSimpleName() + "::processAssetChange", () -> {
 
             // We must load the asset from database (only when required), as the
             // persistence event might not contain a completely loaded asset
@@ -398,7 +398,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
     }
 
     protected void processRulesetChange(Ruleset ruleset, PersistenceEvent.Cause cause) {
-        withLock(getClass().getSimpleName(), () -> {
+        withLock(getClass().getSimpleName() + "::processRulesetChange", () -> {
             if (cause == PersistenceEvent.Cause.DELETE || !ruleset.isEnabled()) {
                 if (ruleset instanceof GlobalRuleset) {
                     undeployGlobalRuleset((GlobalRuleset) ruleset);
@@ -452,7 +452,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
      * is returned from the method.
      */
     protected RulesEngine<GlobalRuleset> deployGlobalRuleset(GlobalRuleset ruleset) {
-        return withLockReturning(getClass().getSimpleName(), () -> {
+        return withLockReturning(getClass().getSimpleName() + "::deployGlobalRuleset", () -> {
             boolean created = globalEngine == null;
 
             // Global rules have access to everything in the system
@@ -474,7 +474,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
     }
 
     protected void undeployGlobalRuleset(GlobalRuleset ruleset) {
-        withLock(getClass().getSimpleName(), () -> {
+        withLock(getClass().getSimpleName() + "::undeployGlobalRuleset", () -> {
             if (globalEngine == null) {
                 return;
             }
@@ -486,7 +486,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
     }
 
     protected RulesEngine<TenantRuleset> deployTenantRuleset(TenantRuleset ruleset) {
-        return withLockReturning(getClass().getSimpleName(), () -> {
+        return withLockReturning(getClass().getSimpleName() + "::deployTenantRuleset", () -> {
             final boolean[] created = {false};
 
             // Look for existing rules engines for this tenant
@@ -511,7 +511,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
     }
 
     protected void undeployTenantRuleset(TenantRuleset ruleset) {
-        withLock(getClass().getSimpleName(), () -> {
+        withLock(getClass().getSimpleName() + "::undeployTenantRuleset", () -> {
             RulesEngine<TenantRuleset> rulesEngine = tenantEngines.get(ruleset.getRealmId());
             if (rulesEngine == null) {
                 return;
@@ -552,7 +552,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
     }
 
     protected RulesEngine<AssetRuleset> deployAssetRuleset(AssetRuleset ruleset) {
-        return withLockReturning(getClass().getSimpleName(), () -> {
+        return withLockReturning(getClass().getSimpleName() + "::deployAssetRuleset", () -> {
             final boolean[] created = {false};
 
             // Look for existing rules engine for this asset
@@ -576,7 +576,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
     }
 
     protected void undeployAssetRuleset(AssetRuleset ruleset) {
-        withLock(getClass().getSimpleName(), () -> {
+        withLock(getClass().getSimpleName() + "::undeployAssetRuleset", () -> {
             RulesEngine<AssetRuleset> assetRulesEngine = assetEngines.get(ruleset.getAssetId());
             if (assetRulesEngine == null) {
                 return;
@@ -589,7 +589,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
     }
 
     protected void insertAssetEvent(AssetState assetState, String expires) {
-        withLock(getClass().getSimpleName(), () -> {
+        withLock(getClass().getSimpleName() + "::insertAssetEvent", () -> {
             // Get the chain of rule engines that we need to pass through
             List<RulesEngine> rulesEngines = getEnginesInScope(assetState.getRealmId(), assetState.getPath());
 
@@ -614,7 +614,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
     }
 
     protected void updateAssetState(AssetState assetState, boolean skipStatusCheck, boolean fireImmediately) {
-        withLock(getClass().getSimpleName(), () -> {
+        withLock(getClass().getSimpleName() + "::updateAssetState", () -> {
             // TODO: implement rules processing error state handling
 
             // Get the chain of rule engines that we need to pass through

@@ -259,14 +259,14 @@ public class RulesEngine<T extends Ruleset> {
     }
 
     public void fire() {
-        withLock(getClass().getSimpleName(), () -> {
+        withLock(toString() + "::scheduleFire", () -> {
             // Schedule a firing within the guaranteed expiration time (so not immediately), and
             // only if the last firing is done. This effectively limits how often the rules engine
             // will fire, only once within the guaranteed minimum expiration time.
             if (fireTimer == null || fireTimer.isDone()) {
                 LOG.fine("Scheduling rules firing on: " + this);
                 fireTimer = executorService.schedule(
-                    () -> withLock(getClass().getSimpleName(), () -> {
+                    () -> withLock(RulesEngine.this.toString() + "::fire", () -> {
 
                         // Are temporary facts present before rules are fired?
                         boolean hadTemporaryFactsBefore = facts.hasTemporaryFacts();
@@ -382,7 +382,7 @@ public class RulesEngine<T extends Ruleset> {
     }
 
     protected void printSessionStats() {
-        withLock(getClass().getSimpleName(), () -> {
+        withLock(toString() + "::printSessionStats", () -> {
             Collection<AssetState> assetStateFacts = facts.getAssetStates();
             Collection<TemporaryFact<AssetState>> assetEventFacts = facts.getAssetEvents();
             Map<String, Object> namedFacts = facts.getNamedFacts();
@@ -392,9 +392,9 @@ public class RulesEngine<T extends Ruleset> {
             STATS_LOG.info("On " + this + ", in memory facts are Total: " + total
                 + ", AssetState: " + assetStateFacts.size()
                 + ", AssetEvent: " + assetEventFacts.size()
-                + ", Temporary: " + temporaryFactsCount
                 + ", Named: " + namedFacts.size()
-                + ", Anonymous: " + anonFacts.size());
+                + ", Anonymous: " + anonFacts.size()
+                + ", Temporary: " + temporaryFactsCount);
 
             // Additional details if FINEST is enabled
             if (STATS_LOG.isLoggable(Level.FINEST)) {
