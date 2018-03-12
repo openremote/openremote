@@ -22,6 +22,9 @@ package org.openremote.container.timer;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -108,6 +111,10 @@ public class TimerService implements ContainerService {
 
     public long getCurrentTimeMillis() {
         return getClock().getCurrentTimeMillis();
+    }
+
+    public ZonedDateTime getNow() {
+        return Instant.ofEpochMilli(getCurrentTimeMillis()).atZone(ZoneId.systemDefault());
     }
 
     @Override
