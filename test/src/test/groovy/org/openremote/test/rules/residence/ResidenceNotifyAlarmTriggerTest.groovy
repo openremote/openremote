@@ -2,6 +2,7 @@ package org.openremote.test.rules.residence
 
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
+import org.openremote.manager.notification.FCMBaseMessage
 import org.openremote.manager.notification.FCMDeliveryService
 import org.openremote.manager.notification.NotificationService
 import org.openremote.manager.rules.RulesEngine
@@ -10,25 +11,24 @@ import org.openremote.manager.rules.RulesetStorageService
 import org.openremote.manager.setup.SetupService
 import org.openremote.manager.setup.builtin.KeycloakDemoSetup
 import org.openremote.manager.setup.builtin.ManagerDemoSetup
-import org.openremote.model.notification.NotificationResource
 import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.notification.ActionType
 import org.openremote.model.notification.AlertAction
+import org.openremote.model.notification.NotificationResource
 import org.openremote.model.rules.AssetRuleset
 import org.openremote.model.rules.Ruleset
 import org.openremote.model.value.Values
 import org.openremote.test.ManagerContainerTrait
-import spock.lang.Ignore
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
 import java.util.concurrent.TimeUnit
 
+import static org.openremote.manager.notification.FCMDeliveryService.NOTIFICATION_FIREBASE_API_KEY
+import static org.openremote.manager.notification.FCMDeliveryService.NOTIFICATION_FIREBASE_URL
 import static org.openremote.manager.setup.builtin.ManagerDemoSetup.DEMO_RULE_STATES_APARTMENT_1
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID
 
-@Ignore
-// TODO Broken
 class ResidenceNotifyAlarmTriggerTest extends Specification implements ManagerContainerTrait {
 
     def "Trigger notification when presence is detected and alarm enabled"() {
@@ -36,7 +36,10 @@ class ResidenceNotifyAlarmTriggerTest extends Specification implements ManagerCo
         given: "the container environment is started"
         def conditions = new PollingConditions(timeout: 15, delay: 1)
         def serverPort = findEphemeralPort()
-        def container = startContainerWithPseudoClock(defaultConfig(serverPort), defaultServices())
+        def container = startContainerWithPseudoClock(defaultConfig(serverPort) << [
+            (NOTIFICATION_FIREBASE_API_KEY): "test",
+            (NOTIFICATION_FIREBASE_URL): "test"
+        ], defaultServices())
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def rulesService = container.getService(RulesService.class)
@@ -48,7 +51,7 @@ class ResidenceNotifyAlarmTriggerTest extends Specification implements ManagerCo
         and: "a mock FCM delivery service"
         def mockFCMDeliveryService = Spy(FCMDeliveryService, constructorArgs: [container]) {
             // Always "deliver" to FCM
-            sendPickupSignalThroughFCM(*_) >> {
+            sendFCMMessage(_ as FCMBaseMessage) >> {
                 return true
             }
         }
