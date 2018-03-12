@@ -25,6 +25,9 @@ import org.jeasy.rules.core.RuleBuilder;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Call {@link #add()} to add rules.
+ */
 public class RulesBuilder {
 
     public interface Condition {
@@ -43,16 +46,26 @@ public class RulesBuilder {
         protected Action action = facts -> {
         };
 
+        /**
+         * Required (short) rule name.
+         */
         public Builder name(String name) {
             this.name = name;
             return this;
         }
 
+        /**
+         * Optional longer description.
+         */
         public Builder description(String description) {
             this.description = description;
             return this;
         }
 
+        /**
+         * Lower priority rules execute before higher priority rules.
+         * Default priority is <code>Integer.MAX_VALUE - 1</code>.
+         */
         public Builder priority(int priority) {
             this.priority = priority;
             return this;

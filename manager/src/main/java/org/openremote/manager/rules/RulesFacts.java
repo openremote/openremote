@@ -33,6 +33,7 @@ import org.openremote.model.util.TimeUtil;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.Values;
 
+import java.time.Duration;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.logging.Level;
@@ -225,6 +226,10 @@ public class RulesFacts extends Facts implements RuleListener {
 
     public RulesFacts putTemporary(String expires, Object value) {
         return putTemporary(TimeUtil.parseTimeString(expires), value);
+    }
+
+    public RulesFacts putTemporary(Duration expires, Object value) {
+        return putTemporary(expires.toMillis(), value);
     }
 
     public RulesFacts putTemporary(double expires, Object value) {

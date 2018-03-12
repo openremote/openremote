@@ -23,12 +23,8 @@ import org.openremote.container.timer.TimerService;
 import org.openremote.model.rules.TemporaryFact;
 import org.openremote.model.util.TimeUtil;
 
-import java.time.DayOfWeek;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
+import java.time.*;
 import java.time.temporal.ChronoUnit;
-import java.time.temporal.TemporalUnit;
 import java.util.function.Predicate;
 
 /**
@@ -54,6 +50,14 @@ public class RulesClock {
 
     public LocalDateTime getTime() {
         return time;
+    }
+
+    public ZonedDateTime getZonedTime() {
+        return time.atZone(ZoneId.systemDefault());
+    }
+
+    public Instant getInstant() {
+        return getZonedTime().toInstant();
     }
 
     public <T extends TemporaryFact> Predicate<T> last(String timeWindow) {
