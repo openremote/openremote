@@ -21,12 +21,9 @@ package org.openremote.agent.protocol.velbus;
 
 import io.netty.buffer.ByteBuf;
 import org.openremote.agent.protocol.AbstractSerialMessageProcessor;
-import org.openremote.agent.protocol.AbstractSocketMessageProcessor;
 import org.openremote.agent.protocol.ProtocolExecutorService;
 
 import java.util.List;
-
-import static org.openremote.agent.protocol.velbus.VelbusPacket.MAX_PACKET_SIZE;
 
 public class VelbusSerialMessageProcessor extends AbstractSerialMessageProcessor<VelbusPacket> {
 
@@ -35,12 +32,12 @@ public class VelbusSerialMessageProcessor extends AbstractSerialMessageProcessor
     }
 
     @Override
-    protected void decode(ByteBuf buf, List<VelbusPacket> messages) throws Exception {
+    protected void decode(ByteBuf buf, List<VelbusPacket> messages) {
         VelbusPacketEncoderDecoder.decode(buf, messages);
     }
 
     @Override
-    protected void encode(VelbusPacket message, ByteBuf buf) throws Exception {
+    protected void encode(VelbusPacket message, ByteBuf buf) {
         VelbusPacketEncoderDecoder.encode(message, buf);
     }
 }

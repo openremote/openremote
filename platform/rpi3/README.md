@@ -37,7 +37,7 @@ This will download packages from the Internet, so make sure your machine is conn
 Start OpenRemote with:
 
 ```
-sudo DATABASE_PASSWORD='dbsecret' SETUP_BASIC_IDENTITY_ADMIN_PASSWORD='secret123' IDENTITY_NETWORK_HOST=<IP of your Raspberry Pi3> ./openremote-run.sh
+sudo DATABASE_PASSWORD='dbsecret' SETUP_ADMIN_PASSWORD='secret123' IDENTITY_NETWORK_HOST=<IP of your Raspberry Pi3> ./openremote-run.sh
 ```
 
 Open the Manager UI on `http://<IP of your Raspberry Pi 3>/` and login with `admin` and your password.

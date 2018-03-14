@@ -1,0 +1,55 @@
+<ui:UiBinder xmlns:ui="urn:ui:com.google.gwt.uibinder"
+             xmlns:g="urn:import:com.google.gwt.user.client.ui"
+             xmlns:w="urn:import:org.openremote.app.client.widget">
+
+    <ui:style>
+        .footer {
+            font-size: small;
+            padding: 1em 2em;
+        }
+
+        .navItem {
+            margin: 0 1em;
+        }
+
+        .logoItem {
+            margin-left: 1em;
+        }
+
+        .logo {
+            margin-right: 1em;
+        }
+
+        .brand {
+            font-size: smaller;
+        }
+
+        .brandAnchor {
+            padding: 0 !important;
+        }
+    </ui:style>
+
+    <ui:with field="managerMessages" type="org.openremote.app.client.i18n.ManagerMessages"/>
+    <ui:with field="widgetStyle" type="org.openremote.app.client.style.WidgetStyle"/>
+
+    <g:HTMLPanel styleName="flex layout horizontal center"
+                 addStyleNames="{style.footer} {widgetStyle.Footer}">
+
+        <div class="flex layout horizontal center end-justified ">
+            <w:PushButton
+                    ui:field="fullscreenButton"
+                    addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem}"
+                    icon="expand"
+                    text="{managerMessages.fullscreen}"/>
+
+            <g:HTMLPanel styleName="{style.logoItem}">
+                <g:HTMLPanel styleName="layout horizontal center {style.logo}">
+                    <div class="{widgetStyle.Hyperlink} {style.brand}">
+                        <g:Anchor href="https://openremote.com/" styleName="{style.brandAnchor}">OpenRemote Inc.</g:Anchor>
+                    </div>
+                </g:HTMLPanel>
+            </g:HTMLPanel>
+        </div>
+    </g:HTMLPanel>
+
+</ui:UiBinder>

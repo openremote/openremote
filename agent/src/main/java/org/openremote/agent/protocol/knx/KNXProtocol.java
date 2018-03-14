@@ -1,33 +1,8 @@
 package org.openremote.agent.protocol.knx;
 
-import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
-import static org.openremote.model.attribute.MetaItem.isMetaNameEqualTo;
-import static org.openremote.model.util.TextUtil.REGEXP_PATTERN_INTEGER_POSITIVE_NON_ZERO;
-import static org.openremote.model.util.TextUtil.isNullOrEmpty;
-
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.function.Consumer;
-import java.util.logging.Logger;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
-
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.stream.StreamResult;
-import javax.xml.transform.stream.StreamSource;
-
-import org.apache.commons.io.IOUtils;
 import org.openremote.agent.protocol.AbstractProtocol;
-import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.agent.protocol.ProtocolLinkedAttributeImport;
-import org.openremote.container.util.Util;
+import org.openremote.container.util.CodecUtil;
 import org.openremote.model.AbstractValueHolder;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.asset.Asset;
@@ -35,20 +10,13 @@ import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetMeta;
 import org.openremote.model.asset.AssetType;
 import org.openremote.model.asset.agent.AgentLink;
-import org.openremote.model.attribute.AttributeEvent;
-import org.openremote.model.attribute.AttributeRef;
-import org.openremote.model.attribute.AttributeState;
-import org.openremote.model.attribute.AttributeType;
-import org.openremote.model.attribute.AttributeValidationResult;
-import org.openremote.model.attribute.MetaItem;
-import org.openremote.model.attribute.MetaItemDescriptor;
-import org.openremote.model.attribute.MetaItemDescriptorImpl;
+import org.openremote.model.asset.agent.ConnectionStatus;
+import org.openremote.model.attribute.*;
 import org.openremote.model.file.FileInfo;
 import org.openremote.model.util.Pair;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueType;
 import org.openremote.model.value.Values;
-
 import tuwien.auto.calimero.GroupAddress;
 import tuwien.auto.calimero.KNXException;
 import tuwien.auto.calimero.KNXFormatException;
@@ -59,6 +27,24 @@ import tuwien.auto.calimero.datapoint.StateDP;
 import tuwien.auto.calimero.xml.KNXMLException;
 import tuwien.auto.calimero.xml.XmlInputFactory;
 import tuwien.auto.calimero.xml.XmlReader;
+
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.stream.StreamResult;
+import javax.xml.transform.stream.StreamSource;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.util.*;
+import java.util.function.Consumer;
+import java.util.logging.Logger;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
+
+import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
+import static org.openremote.model.attribute.MetaItem.isMetaNameEqualTo;
+import static org.openremote.model.util.TextUtil.REGEXP_PATTERN_INTEGER_POSITIVE_NON_ZERO;
+import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 
 /**
  * This protocol is used to connect to a KNX bus via an IP interface.
@@ -445,7 +431,7 @@ public class KNXProtocol extends AbstractProtocol implements ProtocolLinkedAttri
 
         try {
             boolean fileFound = false;
-            byte[] data = Util.decodeBase64(fileInfo.getContents());
+            byte[] data = CodecUtil.decodeBase64(fileInfo.getContents());
             zin = new ZipInputStream(new ByteArrayInputStream(data));
             ZipEntry zipEntry = zin.getNextEntry();
             while (zipEntry != null) {

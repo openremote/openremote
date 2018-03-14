@@ -1,0 +1,608 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 48;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		4C11BB2D2002318A006722D4 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 4C11BB2C2002318A006722D4 /* GoogleService-Info.plist */; };
+		4C5C57911FE17E0800C13164 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C5C57901FE17E0800C13164 /* AppDelegate.swift */; };
+		4C5C57961FE17E0800C13164 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 4C5C57941FE17E0800C13164 /* Main.storyboard */; };
+		4C5C57981FE17E0800C13164 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 4C5C57971FE17E0800C13164 /* Assets.xcassets */; };
+		4C5C579B1FE17E0800C13164 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 4C5C57991FE17E0800C13164 /* LaunchScreen.storyboard */; };
+		4C5C57A91FE17E9A00C13164 /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C5C57A81FE17E9A00C13164 /* NotificationService.swift */; };
+		4C5C57AD1FE17E9A00C13164 /* NotificationService.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 4C5C57A61FE17E9A00C13164 /* NotificationService.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		533AF522E91F3A168A61A155 /* Pods_NotificationService.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C33B7EA5FDD7CD2B200BB292 /* Pods_NotificationService.framework */; };
+		745D4E3E0E4659E8D532BCB4 /* Pods_OpenRemoteApp.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C71D8848F376BB85FB36813F /* Pods_OpenRemoteApp.framework */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		4C5C57AB1FE17E9A00C13164 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 4C5C57851FE17E0800C13164 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 4C5C57A51FE17E9A00C13164;
+			remoteInfo = NotificationService;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		4C5C57B11FE17E9A00C13164 /* Embed App Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				4C5C57AD1FE17E9A00C13164 /* NotificationService.appex in Embed App Extensions */,
+			);
+			name = "Embed App Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		4C11BB2C2002318A006722D4 /* GoogleService-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = "GoogleService-Info.plist"; path = "OpenRemoteApp/GoogleService-Info.plist"; sourceTree = "<group>"; };
+		4C11BB2E200232BE006722D4 /* OpenRemoteApp.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = OpenRemoteApp.entitlements; sourceTree = "<group>"; };
+		4C5C578D1FE17E0800C13164 /* OpenRemoteApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = OpenRemoteApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		4C5C57901FE17E0800C13164 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		4C5C57951FE17E0800C13164 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
+		4C5C57971FE17E0800C13164 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		4C5C579A1FE17E0800C13164 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
+		4C5C579C1FE17E0800C13164 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		4C5C57A61FE17E9A00C13164 /* NotificationService.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = NotificationService.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		4C5C57A81FE17E9A00C13164 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
+		4C5C57AA1FE17E9A00C13164 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		6249BC146B82E48514C35274 /* Pods-OpenRemoteApp.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-OpenRemoteApp.release.xcconfig"; path = "Pods/Target Support Files/Pods-OpenRemoteApp/Pods-OpenRemoteApp.release.xcconfig"; sourceTree = "<group>"; };
+		70B8E16EFB2F872AC0397DE5 /* Pods-NotificationService.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-NotificationService.debug.xcconfig"; path = "Pods/Target Support Files/Pods-NotificationService/Pods-NotificationService.debug.xcconfig"; sourceTree = "<group>"; };
+		C33B7EA5FDD7CD2B200BB292 /* Pods_NotificationService.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_NotificationService.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		C71D8848F376BB85FB36813F /* Pods_OpenRemoteApp.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_OpenRemoteApp.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		FB93D125B872DE05BAEB4945 /* Pods-NotificationService.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-NotificationService.release.xcconfig"; path = "Pods/Target Support Files/Pods-NotificationService/Pods-NotificationService.release.xcconfig"; sourceTree = "<group>"; };
+		FE9B277C832E79ADE129A6D1 /* Pods-OpenRemoteApp.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-OpenRemoteApp.debug.xcconfig"; path = "Pods/Target Support Files/Pods-OpenRemoteApp/Pods-OpenRemoteApp.debug.xcconfig"; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		4C5C578A1FE17E0800C13164 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				745D4E3E0E4659E8D532BCB4 /* Pods_OpenRemoteApp.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		4C5C57A31FE17E9A00C13164 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				533AF522E91F3A168A61A155 /* Pods_NotificationService.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		4C5C57841FE17E0800C13164 = {
+			isa = PBXGroup;
+			children = (
+				4C11BB2C2002318A006722D4 /* GoogleService-Info.plist */,
+				4C5C578F1FE17E0800C13164 /* OpenRemoteApp */,
+				4C5C57A71FE17E9A00C13164 /* NotificationService */,
+				4C5C578E1FE17E0800C13164 /* Products */,
+				F0F4731015788A04AFAED34E /* Pods */,
+				58120D821DFD7F352C43662A /* Frameworks */,
+			);
+			sourceTree = "<group>";
+		};
+		4C5C578E1FE17E0800C13164 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				4C5C578D1FE17E0800C13164 /* OpenRemoteApp.app */,
+				4C5C57A61FE17E9A00C13164 /* NotificationService.appex */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		4C5C578F1FE17E0800C13164 /* OpenRemoteApp */ = {
+			isa = PBXGroup;
+			children = (
+				4C11BB2E200232BE006722D4 /* OpenRemoteApp.entitlements */,
+				4C5C57901FE17E0800C13164 /* AppDelegate.swift */,
+				4C5C57941FE17E0800C13164 /* Main.storyboard */,
+				4C5C57971FE17E0800C13164 /* Assets.xcassets */,
+				4C5C57991FE17E0800C13164 /* LaunchScreen.storyboard */,
+				4C5C579C1FE17E0800C13164 /* Info.plist */,
+			);
+			path = OpenRemoteApp;
+			sourceTree = "<group>";
+		};
+		4C5C57A71FE17E9A00C13164 /* NotificationService */ = {
+			isa = PBXGroup;
+			children = (
+				4C5C57A81FE17E9A00C13164 /* NotificationService.swift */,
+				4C5C57AA1FE17E9A00C13164 /* Info.plist */,
+			);
+			path = NotificationService;
+			sourceTree = "<group>";
+		};
+		58120D821DFD7F352C43662A /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				C33B7EA5FDD7CD2B200BB292 /* Pods_NotificationService.framework */,
+				C71D8848F376BB85FB36813F /* Pods_OpenRemoteApp.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		F0F4731015788A04AFAED34E /* Pods */ = {
+			isa = PBXGroup;
+			children = (
+				70B8E16EFB2F872AC0397DE5 /* Pods-NotificationService.debug.xcconfig */,
+				FB93D125B872DE05BAEB4945 /* Pods-NotificationService.release.xcconfig */,
+				FE9B277C832E79ADE129A6D1 /* Pods-OpenRemoteApp.debug.xcconfig */,
+				6249BC146B82E48514C35274 /* Pods-OpenRemoteApp.release.xcconfig */,
+			);
+			name = Pods;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		4C5C578C1FE17E0800C13164 /* OpenRemoteApp */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 4C5C579F1FE17E0800C13164 /* Build configuration list for PBXNativeTarget "OpenRemoteApp" */;
+			buildPhases = (
+				5CCDFAB0EA3073DD8150C99A /* [CP] Check Pods Manifest.lock */,
+				4C5C57891FE17E0800C13164 /* Sources */,
+				4C5C578A1FE17E0800C13164 /* Frameworks */,
+				4C5C578B1FE17E0800C13164 /* Resources */,
+				4C5C57B11FE17E9A00C13164 /* Embed App Extensions */,
+				8F293E2545B0279AC2CAF14A /* [CP] Embed Pods Frameworks */,
+				E11427C21A17056B0546F7BD /* [CP] Copy Pods Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				4C5C57AC1FE17E9A00C13164 /* PBXTargetDependency */,
+			);
+			name = OpenRemoteApp;
+			productName = OpenRemoteApp;
+			productReference = 4C5C578D1FE17E0800C13164 /* OpenRemoteApp.app */;
+			productType = "com.apple.product-type.application";
+		};
+		4C5C57A51FE17E9A00C13164 /* NotificationService */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 4C5C57AE1FE17E9A00C13164 /* Build configuration list for PBXNativeTarget "NotificationService" */;
+			buildPhases = (
+				B615D7D73F17A7733FCCA9A2 /* [CP] Check Pods Manifest.lock */,
+				4C5C57A21FE17E9A00C13164 /* Sources */,
+				4C5C57A31FE17E9A00C13164 /* Frameworks */,
+				4C5C57A41FE17E9A00C13164 /* Resources */,
+				D1A509DBCF475E9A94CDBCE8 /* [CP] Copy Pods Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = NotificationService;
+			productName = NotificationService;
+			productReference = 4C5C57A61FE17E9A00C13164 /* NotificationService.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		4C5C57851FE17E0800C13164 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastSwiftUpdateCheck = 0920;
+				LastUpgradeCheck = 0920;
+				ORGANIZATIONNAME = OpenRemote;
+				TargetAttributes = {
+					4C5C578C1FE17E0800C13164 = {
+						CreatedOnToolsVersion = 9.2;
+						ProvisioningStyle = Automatic;
+						SystemCapabilities = {
+							com.apple.BackgroundModes = {
+								enabled = 1;
+							};
+							com.apple.Push = {
+								enabled = 1;
+							};
+						};
+					};
+					4C5C57A51FE17E9A00C13164 = {
+						CreatedOnToolsVersion = 9.2;
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 4C5C57881FE17E0800C13164 /* Build configuration list for PBXProject "OpenRemoteApp" */;
+			compatibilityVersion = "Xcode 8.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 4C5C57841FE17E0800C13164;
+			productRefGroup = 4C5C578E1FE17E0800C13164 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				4C5C578C1FE17E0800C13164 /* OpenRemoteApp */,
+				4C5C57A51FE17E9A00C13164 /* NotificationService */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		4C5C578B1FE17E0800C13164 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4C5C579B1FE17E0800C13164 /* LaunchScreen.storyboard in Resources */,
+				4C11BB2D2002318A006722D4 /* GoogleService-Info.plist in Resources */,
+				4C5C57981FE17E0800C13164 /* Assets.xcassets in Resources */,
+				4C5C57961FE17E0800C13164 /* Main.storyboard in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		4C5C57A41FE17E9A00C13164 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		5CCDFAB0EA3073DD8150C99A /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-OpenRemoteApp-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+		8F293E2545B0279AC2CAF14A /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"${SRCROOT}/Pods/Target Support Files/Pods-OpenRemoteApp/Pods-OpenRemoteApp-frameworks.sh",
+				"${BUILT_PRODUCTS_DIR}/GoogleToolboxForMac/GoogleToolboxForMac.framework",
+				"${BUILT_PRODUCTS_DIR}/ORLib/ORLib.framework",
+				"${BUILT_PRODUCTS_DIR}/Protobuf/Protobuf.framework",
+				"${BUILT_PRODUCTS_DIR}/nanopb/nanopb.framework",
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputPaths = (
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/GoogleToolboxForMac.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/ORLib.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/Protobuf.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/nanopb.framework",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-OpenRemoteApp/Pods-OpenRemoteApp-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		B615D7D73F17A7733FCCA9A2 /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-NotificationService-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+		D1A509DBCF475E9A94CDBCE8 /* [CP] Copy Pods Resources */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "[CP] Copy Pods Resources";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-NotificationService/Pods-NotificationService-resources.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		E11427C21A17056B0546F7BD /* [CP] Copy Pods Resources */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "[CP] Copy Pods Resources";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-OpenRemoteApp/Pods-OpenRemoteApp-resources.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		4C5C57891FE17E0800C13164 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4C5C57911FE17E0800C13164 /* AppDelegate.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		4C5C57A21FE17E9A00C13164 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4C5C57A91FE17E9A00C13164 /* NotificationService.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		4C5C57AC1FE17E9A00C13164 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 4C5C57A51FE17E9A00C13164 /* NotificationService */;
+			targetProxy = 4C5C57AB1FE17E9A00C13164 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin PBXVariantGroup section */
+		4C5C57941FE17E0800C13164 /* Main.storyboard */ = {
+			isa = PBXVariantGroup;
+			children = (
+				4C5C57951FE17E0800C13164 /* Base */,
+			);
+			name = Main.storyboard;
+			sourceTree = "<group>";
+		};
+		4C5C57991FE17E0800C13164 /* LaunchScreen.storyboard */ = {
+			isa = PBXVariantGroup;
+			children = (
+				4C5C579A1FE17E0800C13164 /* Base */,
+			);
+			name = LaunchScreen.storyboard;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
+
+/* Begin XCBuildConfiguration section */
+		4C5C579D1FE17E0800C13164 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 11.2;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		4C5C579E1FE17E0800C13164 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 11.2;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = iphoneos;
+				SWIFT_OPTIMIZATION_LEVEL = "-Owholemodule";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		4C5C57A01FE17E0800C13164 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = FE9B277C832E79ADE129A6D1 /* Pods-OpenRemoteApp.debug.xcconfig */;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = OpenRemoteApp/OpenRemoteApp.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = MD7Q2M7GWA;
+				INFOPLIST_FILE = OpenRemoteApp/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = org.openremote.OpenRemoteApp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 4.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		4C5C57A11FE17E0800C13164 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 6249BC146B82E48514C35274 /* Pods-OpenRemoteApp.release.xcconfig */;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = OpenRemoteApp/OpenRemoteApp.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = MD7Q2M7GWA;
+				INFOPLIST_FILE = OpenRemoteApp/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = org.openremote.OpenRemoteApp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 4.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		4C5C57AF1FE17E9A00C13164 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 70B8E16EFB2F872AC0397DE5 /* Pods-NotificationService.debug.xcconfig */;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = MD7Q2M7GWA;
+				INFOPLIST_FILE = NotificationService/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = org.openremote.OpenRemoteApp.NotificationService;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 4.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		4C5C57B01FE17E9A00C13164 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = FB93D125B872DE05BAEB4945 /* Pods-NotificationService.release.xcconfig */;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = MD7Q2M7GWA;
+				INFOPLIST_FILE = NotificationService/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = org.openremote.OpenRemoteApp.NotificationService;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 4.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		4C5C57881FE17E0800C13164 /* Build configuration list for PBXProject "OpenRemoteApp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				4C5C579D1FE17E0800C13164 /* Debug */,
+				4C5C579E1FE17E0800C13164 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		4C5C579F1FE17E0800C13164 /* Build configuration list for PBXNativeTarget "OpenRemoteApp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				4C5C57A01FE17E0800C13164 /* Debug */,
+				4C5C57A11FE17E0800C13164 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		4C5C57AE1FE17E9A00C13164 /* Build configuration list for PBXNativeTarget "NotificationService" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				4C5C57AF1FE17E9A00C13164 /* Debug */,
+				4C5C57B01FE17E9A00C13164 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 4C5C57851FE17E0800C13164 /* Project object */;
+}

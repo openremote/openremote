@@ -13,7 +13,7 @@
 #
 # Steps to create a permanent installation:
 #
-# 1. DO NOT FORGET TO CHANGE KEYCLOAK_PASSWORD!
+# 1. DO NOT FORGET TO CHANGE SETUP_ADMIN_PASSWORD!
 #
 # 2. Consider setting a custom DOMAINNAME, LE_EMAIL, and IDENTITY_NETWORK_HOST, see deploy.yml
 #
@@ -25,7 +25,7 @@
 # 4. Execute once:
 #
 #   SETUP_WIPE_CLEAN_INSTALL=true \
-#   KEYCLOAK_PASSWORD=secret \
+#   SETUP_ADMIN_PASSWORD=secret \
 #   docker-compose -p openremote -f profile/demo.yml up
 #
 # This creates the initial database and optionally imports some examples. Inspect the
@@ -99,7 +99,7 @@ services:
       SETUP_WIPE_CLEAN_INSTALL: 'true'
       # When you are ready to permanently install your project, replace it with the next lines...
       # SETUP_WIPE_CLEAN_INSTALL: # Allow override on CLI
-      # KEYCLOAK_PASSWORD: # Allow override on CLI
+      # SETUP_ADMIN_PASSWORD: # Allow override on CLI
 
   keycloak:
     extends:
@@ -110,9 +110,9 @@ services:
         condition: service_healthy
     environment:
       # CHANGE THIS PASSWORD BEFORE STARTING THE STACK! THIS IS ONLY FOR DEMO!
-      KEYCLOAK_PASSWORD: secret
+      SETUP_ADMIN_PASSWORD: secret
       # When you are ready to permanently install your project, replace it with the next line ...
-      # KEYCLOAK_PASSWORD: # Allow override on CLI
+      # SETUP_ADMIN_PASSWORD: # Allow override on CLI
 
   # This configuration stores postgresql data in a Docker volume. You manage this volume
   # independently from your stack with with 'docker volume ls', 'docker volume rm', etc.

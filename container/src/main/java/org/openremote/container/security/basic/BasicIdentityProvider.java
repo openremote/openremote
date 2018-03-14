@@ -96,7 +96,7 @@ public abstract class BasicIdentityProvider implements IdentityProvider {
         Object[] idAndPassword = persistenceService.doReturningTransaction(em -> {
                 try {
                     return (Object[]) em.createNativeQuery(
-                        "select U.ID, U.PASSWORD from USER_ENTITY U where U.USERNAME = :username"
+                        "select U.ID, U.PASSWORD from PUBLIC.USER_ENTITY U where U.USERNAME = :username"
                     ).setParameter("username", username).getSingleResult();
                 } catch (NoResultException | NonUniqueResultException ex) {
                     return null;

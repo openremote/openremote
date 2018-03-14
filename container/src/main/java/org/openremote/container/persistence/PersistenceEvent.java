@@ -19,7 +19,12 @@
  */
 package org.openremote.container.persistence;
 
+import org.apache.camel.Predicate;
+import org.openremote.model.asset.Asset;
+import org.openremote.model.asset.AssetType;
+
 import java.util.Arrays;
+import java.util.Objects;
 
 public class PersistenceEvent<T> {
 
@@ -31,6 +36,27 @@ public class PersistenceEvent<T> {
 
     public enum Cause {
         INSERT, UPDATE, DELETE
+    }
+
+    public static Predicate isPersistenceEventForEntityType(Class<?> type) {
+        return exchange -> {
+            Class<?> entityType = exchange.getIn().getHeader(PersistenceEvent.HEADER_ENTITY_TYPE, Class.class);
+            return type.isAssignableFrom(entityType);
+        };
+    }
+
+    public static Predicate isPersistenceEventForAssetType(AssetType assetType) {
+        return isPersistenceEventForAssetType(assetType.getValue());
+    }
+
+    public static Predicate isPersistenceEventForAssetType(String assetType) {
+        return exchange -> {
+            if (!(exchange.getIn().getBody() instanceof PersistenceEvent))
+                return false;
+            PersistenceEvent persistenceEvent = exchange.getIn().getBody(PersistenceEvent.class);
+            Asset asset = (Asset) persistenceEvent.getEntity();
+            return Objects.equals(asset.getType(), assetType);
+        };
     }
 
     final protected Cause cause;

@@ -1,7 +1,7 @@
 #!/bin/bash
 
-if [ $KEYCLOAK_USER ] && [ $KEYCLOAK_PASSWORD ]; then
-    keycloak/bin/add-user-keycloak.sh --user $KEYCLOAK_USER --password $KEYCLOAK_PASSWORD
+if [ $SETUP_ADMIN_PASSWORD ]; then
+    keycloak/bin/add-user-keycloak.sh --user admin --password $SETUP_ADMIN_PASSWORD
 fi
 
 exec /opt/jboss/keycloak/bin/standalone.sh $@

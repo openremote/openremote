@@ -46,7 +46,9 @@ public enum SyslogCategory {
         false,
         "RulesService",
         "RulesEngine",
-        "RuleExecutionLogger"
+        "RuleExecutionLogger",
+        "Rules",
+        "RulesEngineStats"
     ),
     PROTOCOL(
         "Protocol",
@@ -98,6 +100,11 @@ public enum SyslogCategory {
         SyslogLevel level = SyslogLevel.getLevel(record.getLevel().intValue());
         if (level == null)
             return null;
+
+        // Only log org.openremote records!
+        if (!record.getLoggerName().startsWith("org.openremote"))
+            return null;
+
         for (SyslogCategory category : values()) {
             String loggerName = category.getLoggerName(record);
             if (loggerName != null) {

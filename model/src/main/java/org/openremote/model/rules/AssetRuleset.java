@@ -46,17 +46,17 @@ public class AssetRuleset extends Ruleset {
         this.assetId = assetId;
     }
 
-    public AssetRuleset(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String templateAssetId, String assetId) {
-        this(id, version, createdOn, lastModified, name, enabled, templateAssetId, null, null, assetId);
+    public AssetRuleset(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String templateAssetId, String assetId, Lang lang) {
+        this(id, version, createdOn, lastModified, name, enabled, templateAssetId, null, lang, null, assetId);
     }
 
-    public AssetRuleset(String name, String assetId, String rules) {
-        super(name, rules);
+    public AssetRuleset(String name, String assetId, String rules, Lang lang) {
+        super(name, rules, lang);
         this.assetId = assetId;
     }
 
-    public AssetRuleset(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String templateAssetId, String rules, String assetId, String realmId) {
-        super(id, version, createdOn, lastModified, name, enabled, templateAssetId, rules);
+    public AssetRuleset(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String templateAssetId, String rules, Lang lang, String assetId, String realmId) {
+        super(id, version, createdOn, lastModified, name, enabled, templateAssetId, rules, lang);
         this.assetId = assetId;
         this.realmId = realmId;
     }
@@ -83,6 +83,7 @@ public class AssetRuleset extends Ruleset {
                 "id='" + id + '\'' +
                 ", version='" + version + '\'' +
                 ", name='" + name + '\'' +
+                ", lang='" + lang + '\'' +
                 ", createdOn='" + createdOn + '\'' +
                 ", lastModified='" + lastModified + '\'' +
                 ", enabled='" + enabled + '\'' +

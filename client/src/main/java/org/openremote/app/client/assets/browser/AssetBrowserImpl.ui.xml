@@ -1,0 +1,79 @@
+<ui:UiBinder xmlns:ui="urn:ui:com.google.gwt.uibinder"
+             xmlns:g="urn:import:com.google.gwt.user.client.ui"
+             xmlns:w="urn:import:org.openremote.app.client.widget">
+
+    <ui:with field="managerMessages" type="org.openremote.app.client.i18n.ManagerMessages"/>
+    <ui:with field="widgetStyle" type="org.openremote.app.client.style.WidgetStyle"/>
+
+    <ui:style>
+        .view {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .navItem {
+            margin: 0;
+        }
+
+        .navItemFirst {
+            margin-left: 0.2em !important;
+            margin-right: 0.8em !important;
+        }
+
+        .searchInput {
+            font-size: smaller !important;
+            padding: 0.4em !important;
+            height: 0.8em;
+            min-width: 7em;
+        }
+
+        .assetTreeContainer {
+            overflow: auto;
+        }
+    </ui:style>
+
+    <g:HTMLPanel styleName="flex layout vertical"
+                 addStyleNames="{style.view}">
+
+        <g:HTMLPanel
+                styleName="layout horizontal center {widgetStyle.SecondaryNav}">
+
+            <!-- TODO Depends on AssetQuery/Rules Designer work
+            <w:FormInputText ui:field="searchInput"
+                             addStyleNames="flex {style.navItemFirst} {style.searchInput} {widgetStyle.SecondaryNavItem}"
+                             autofocus="true"
+                             placeholder="{managerMessages.search}..."
+                             tabIndex="0"/>
+
+            <w:PushButton ui:field="filterButton"
+                          addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem}"
+                          text="{managerMessages.filter}"
+                          icon="filter"
+                          tabIndex="99999"/>
+
+            <w:PushButton ui:field="sortButton"
+                          addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem}"
+                          text="{managerMessages.sort}"
+                          icon="sort"
+                          tabIndex="99999"/>
+          -->
+
+        </g:HTMLPanel>
+
+        <g:HTMLPanel
+                styleName="layout horizontal center {widgetStyle.SecondaryNav}">
+
+            <w:Hyperlink
+                    ui:field="createAssetLink"
+                    addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem}"
+                    icon="plus-square"
+                    targetHistoryToken="assetEdit:"
+                    text="{managerMessages.createAsset}"/>
+
+        </g:HTMLPanel>
+
+        <g:SimplePanel ui:field="assetTreeContainer" addStyleNames="{style.assetTreeContainer}"/>
+
+    </g:HTMLPanel>
+
+</ui:UiBinder>

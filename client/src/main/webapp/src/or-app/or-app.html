@@ -1,0 +1,638 @@
+<!-- The style will load theme and polymer -->
+<link rel="import" href="or-style.html">
+
+<!-- App services/dependencies -->
+<link rel="import" href="or-shell-native.html">
+<link rel="import" href="or-app-security.html">
+<link rel="import" href="or-app-events.html">
+<link rel="import" href="or-component.html">
+
+<!-- Promise API polyfill on IE 11  -->
+<script src="/static/3rdparty/es6-promise.js"></script>
+
+<dom-module id="or-app">
+
+    <template>
+
+        <style include="or-style">
+
+            /* Children of or-app might be hidden by host page, some have to be visible */
+            #loader,
+            #errorView {
+                visibility: visible !important;
+            }
+
+            #loader {
+                z-index: 9999;
+                position: fixed;
+                bottom: 0.8em;
+                right: 0.4em;
+                pointer-events: none;
+                width: 0.8em;
+                height: 0.8em;
+                border: 2px solid var(--theme-lightgreen);
+                border-top-color: var(--theme-black);
+                border-radius: 50%;
+                -webkit-animation: loaderSpin 1s linear infinite;
+                animation: loaderSpin 1s linear infinite;
+            }
+
+            @-webkit-keyframes loaderSpin {
+                100% {
+                    -webkit-transform: rotate(360deg);
+                    transform: rotate(360deg);
+                }
+            }
+
+            @keyframes loaderSpin {
+                100% {
+                    -webkit-transform: rotate(360deg);
+                    transform: rotate(360deg);
+                }
+            }
+
+            #errorView {
+                padding: 1em;
+            }
+
+            #errorView h1 {
+                color: var(--theme-darkgrey);
+            }
+
+            /* Slots are not shown until we are ready */
+            #slots {
+                display: none;
+            }
+
+            /* Example how to style slotted children
+            #slots ::slotted(*) {
+                border: 1px solid var(--theme-red);
+            }
+            */
+        </style>
+
+        <div id="loader"></div>
+
+        <or-shell-native id="shellNative"></or-shell-native>
+
+        <or-app-security id="appSecurity"
+                         login="{{login}}"
+                         realm="{{tenantRealm}}"
+                         authenticated="{{authenticated}}"
+                         user="{{user}}"
+                         error="{{error}}"></or-app-security>
+
+        <or-app-events id="appEvents"></or-app-events>
+
+        <template is="dom-if" if="[[error]]">
+            <div id="errorView" class="or-Viewport">
+                <h1>[[defaultErrorMessage]]</h1>
+                <h5>[[error]]</h5>
+            </div>
+        </template>
+
+        <div id="slots" class="flex layout vertical">
+            <slot id="slot"></slot>
+        </div>
+
+    </template>
+
+    <script>
+        /**
+         * Singleton per window/document, registers itself as window.openremote.INSTANCE.
+         *
+         * When this component is used, the following startup procedure runs:
+         *
+         * 1a. If authentication is required, perform authentication, then fire AppInit.
+         * 1b. If no authentication is required, fire AppInit.
+         *
+         * 2. Any element registered with defineAppElement() will be set in the 'openremote' namespace
+         *    so its class is available in GWT jsinterop.
+         *
+         * 3. The GWT jsinterop components will be loaded, then fire AppLoaded.
+         *
+         * 4. This component will finish its initialization, then fire AppReady.
+         *
+         * 5. Any element registered with defineAppElement() will be finally defined/started.
+         */
+        class OpenRemoteApp extends Polymer.Element {
+
+            static get is() {
+                return "or-app";
+            }
+
+            static get properties() {
+                return {
+                    /**
+                     * True if this app should enforce an authenticated user.
+                     */
+                    login: Boolean,
+
+                    /**
+                     * Name of the OpenRemote tenant realm this app wants to connect to
+                     * and possibly login and authenticate with.
+                     */
+                    tenantRealm: {
+                        type: String,
+                        notify: true,
+                        reflectToAttribute: true
+                    },
+
+                    /**
+                     * Details of the tenant, available when authenticated and ready.
+                     */
+                    tenant: Object,
+
+                    /**
+                     * Whether the user is authenticated.
+                     */
+                    authenticated: {
+                        type: Boolean,
+                        notify: true,
+                        reflectToAttribute: true,
+                        observer: "onAuthenticated"
+                    },
+
+                    /**
+                     * Name of the OpenRemote user to authenticate, available for two-way binding.
+                     */
+                    user: {
+                        type: String,
+                        notify: true,
+                        reflectToAttribute: true
+                    },
+
+                    /**
+                     * Toasts display.
+                     */
+                    toasts: {
+                        type: Object
+                    },
+
+                    /**
+                     * Interface for execution of HTTP requests to OpenRemote service.
+                     */
+                    requests: {
+                        type: Object
+                    },
+
+                    /**
+                     *  The WebSocket connection to the event service.
+                     */
+                    webSocket: Object,
+
+                    /**
+                     * The message consumers on the event service WebSocket.
+                     */
+                    webSocketConsumers: {
+                        type: Array,
+                        value: () => {
+                            return [];
+                        }
+                    },
+
+                    /**
+                     * The listeners to notify before event service WebSocket is closed.
+                     */
+                    webSocketCloseListeners: {
+                        type: Array,
+                        value: () => {
+                            return [];
+                        }
+                    },
+
+                    /**
+                     * CONNECTED, DISCONNECTED, available for two-way binding.
+                     */
+                    status: {
+                        type: String,
+                        notify: true,
+                        reflectToAttribute: true,
+                        value: () => {
+                            return "DISCONNECTED";
+                        }
+                    },
+
+                    /**
+                     * The current error state, if any.
+                     */
+                    error: {
+                        type: String,
+                        observer: "onAppError"
+                    },
+
+                    /**
+                     * The message that should be shown to the user, before the error state.
+                     */
+                    defaultErrorMessage: {
+                        type: String,
+                        value: function () {
+                            return "Service not available or application error, please try again later.";
+                        }
+                    },
+
+                    /**
+                     * Produces promises to load JS, CSS, HTML, IMG resources.
+                     */
+                    load: {
+                        type: Object,
+                        value: function () {
+                            function _load(tag, rel) {
+                                return function (url) {
+                                    return new Promise(function (resolve, reject) {
+
+                                        url = openremote.INSTANCE.managerHost + url;
+                                        var element = window.document.createElement(tag);
+                                        // Append loading tags to the body
+                                        var parent = 'body';
+                                        var attr = 'src';
+
+                                        // Important success and error for the promise
+                                        element.onload = function () {
+                                            console.debug("Loaded resource: " + url);
+                                            resolve(url);
+                                        };
+                                        element.onerror = function () {
+                                            reject("Loading failed as '" + tag + "': " + url);
+                                        };
+
+                                        switch (tag) {
+                                            case 'script':
+                                                element.async = false;
+                                                break;
+                                            case 'link':
+                                                element.rel = rel;
+                                                attr = 'href';
+                                                break;
+                                        }
+
+                                        element[attr] = url;
+                                        window.document[parent].appendChild(element);
+                                    });
+                                };
+                            }
+
+                            return {
+                                css: _load("link", "stylesheet"),
+                                import: _load("link", "import"),
+                                js: _load("script"),
+                                img: _load("img")
+                            }
+                        }
+                    },
+
+                    managerHost: String
+                };
+            }
+
+            constructor() {
+                super();
+
+                // Hack the custom-style element into <head>
+                let customStyle = document.createElement("custom-style");
+                let style = document.createElement("style");
+                style.setAttribute("include", "or-style");
+                customStyle.appendChild(style);
+                document.head.appendChild(customStyle);
+            }
+
+            ready() {
+                super.ready();
+
+                // This is a singleton for the window/main document
+                if (window.openremote && window.openremote.INSTANCE) {
+                    this.set("error", "An instance of &lt;or-app> is already registered on this window, please use only one per document.")
+                    return;
+                }
+                // Register this as constant on window for GWT and others to access
+                console.debug("Registering as window.openremote.INSTANCE");
+                window.openremote = {INSTANCE: this};
+
+                // The app should flex and its children should be in a flexbox vertical layout
+                this.shadowRoot.host.classList.add("flex", "layout", "vertical");
+
+                // Extract manager host URI based on where this component is hosted; it is assumed that the component
+                // is being hosted in a manager instance and that is the instance you want to connect to.
+                let managerHost = '';
+                let hostURI = this.importPath;
+                if (hostURI) {
+                    managerHost = '//' + new URL(hostURI).host;
+                }
+                this.managerHost = managerHost;
+
+                if (this.login) {
+                    this.getSecurity().set("shellNative", this.$.shellNative);
+                    this.getSecurity().startAuthentication();
+                } else {
+                    console.debug("No authentication required");
+                    this.initialize();
+                }
+            }
+
+            onAuthenticated(authenticated) {
+                if (authenticated) {
+                    console.debug("User authenticated: " + this.user);
+                    this.initialize();
+                }
+            }
+
+            logout() {
+                if (this.getSecurity()) {
+                    this.getSecurity().logout();
+                }
+            }
+
+            initialize() {
+                // This event is usually used to load other application resources which are not
+                // components, from the main document. We also use it to set registered element
+                // classes/types in the "openremote" namespace.
+                console.log("Application init, loading components");
+                window.dispatchEvent(new CustomEvent("AppInit", {detail: {app: this}}));
+
+                // Load service-generated REST API and GWT jsinterop components, in that order
+                this.load.js("/jsapi")
+                    .then(() => {
+                        // We must set a base for jsinterop components or the GWT module loader will not be able to find
+                        // it on Firefox/Safari, for some reason it uses a data URI to load the nocache.js, which then
+                        // doesn't have a base for the next loading stage...
+                        let baseUrlMeta = document.createElement("meta");
+                        baseUrlMeta.setAttribute("name", "gwt:property");
+                        baseUrlMeta.setAttribute("content", "baseUrl=/static/gwt/App/");
+                        document.head.appendChild(baseUrlMeta);
+
+                        // When this is done, it will fire AppLoaded on window
+                        return this.load.js("/static/gwt/App/App.nocache.js")
+                    })
+                    .catch((e) => {
+                        this.set("error", e);
+                    });
+            }
+
+            onAppError(error) {
+                console.error("Application error, disabling app: " + error);
+
+                // Remove all slotted children, effectively disabling the app
+                this.$.slot.assignedNodes({flatten: false}).forEach((node) => {
+                    node.parentElement.removeChild(node);
+                });
+
+                // Disable login/token refresh
+                this.set("login", false);
+                this.disconnectEvents();
+
+                // Hide the slots
+                this.$.slots.style.display = "none";
+
+                // Hide the loader
+                this.hideLoader();
+
+                // Fire an event so others can react to an error
+                window.dispatchEvent(new CustomEvent("AppError", {detail: {app: this, error: error}}));
+            }
+
+            showApp() {
+                console.debug("Showing application");
+
+                // The children of or-app, the slots, and the slotted elements may be hidden, show them
+                document.querySelectorAll("or-app > *").forEach((node) => {
+                    if (node.style) {
+                        node.style.visibility = "visible";
+                    }
+                });
+                this.$.slots.style.display = "inherit";
+                // Safari bug, this will trigger another repaint, the first stops in some weird half-rendered state
+                this.$.slots.style.webkitTransform = 'scale(1)';
+                this.$.slot.assignedNodes({flatten: false}).forEach((node) => {
+                    if (node.style) {
+                        node.style.visibility = "visible";
+                    }
+                });
+
+                // Hide the loader
+                this.hideLoader();
+            }
+
+            hideLoader() {
+                this.$.loader.style.display = "none";
+            }
+
+            showLoader() {
+                this.$.loader.style.display = "inherit";
+            }
+
+            getSecurity() {
+                return this.$.appSecurity;
+            }
+
+            registerWidgetStyle() {
+                openremote.WIDGET_STYLE = new openremote.style.WidgetStyle();
+            }
+
+            registerToasts() {
+                let toastDisplay = new openremote.toast.PopupToastDisplay(openremote.WIDGET_STYLE);
+                this.set("toasts", new openremote.toast.Toasts(toastDisplay));
+            }
+
+            registerRequests() {
+                let requests = new openremote.REST.Requests(
+                    (requestParams, onComplete) => {
+                        this.getSecurity().authorizeRequestParams(requestParams, onComplete);
+                    },
+                    this.showLoader.bind(this),
+                    this.hideLoader.bind(this),
+                    (requestError) => {
+                        this.set("error", "Request error (response status: " + requestError.statusCode + ") - " + requestError.message);
+                    },
+                    (constraintViolationReportJson) => {
+                        return JSON.parse(constraintViolationReportJson);
+                    }
+                );
+
+                requests.configure(this.managerHost + "/" + this.tenantRealm);
+
+                this.set("requests", requests);
+            }
+
+            connectEvents(onConnected) {
+                // Only authenticated apps can connect to the event service
+                if (!this.login) {
+                    return;
+                }
+
+                let serviceUrl = ("https:" === location.protocol ? "wss" : "ws") + ":" + this.managerHost + "/websocket/events";
+                this.getSecurity().authorizeUrl(serviceUrl, (authenticatedServiceUrl) => {
+
+                    this.webSocket = new WebSocket(authenticatedServiceUrl);
+
+                    this.webSocket.onopen = () => {
+                        console.log("Connected to event service: " + serviceUrl);
+                        this.set("status", "CONNECTED");
+
+                        // The events component is always registered as a message consumer and connection close listener
+                        this.addServiceMessageConsumer(data => {
+                            this.getServiceEvents().onServiceMessageReceived(data);
+                        });
+                        this.addServiceConnectionCloseListener(() => {
+                            this.getServiceEvents().onConnectionClose();
+                        });
+
+                        // Close socket on unload/refresh of page
+                        window.addEventListener("beforeunload", () => {
+                            console.log("Page unloaded, closing event service connection");
+                            this.disconnectEvents();
+                        });
+
+                        if (onConnected) {
+                            onConnected()
+                        }
+                    };
+
+                    this.webSocket.onerror = () => {
+                        this.set("webSocket", undefined);
+                        this.set("status", "DISCONNECTED");
+                        this.set("error", "Error connecting to event service: " + serviceUrl);
+                    };
+
+                    this.webSocket.onclose = (e) => {
+                        this.set("webSocket", undefined);
+                        this.set("status", "DISCONNECTED");
+                        if (!this.error) {
+                            if (e.code === 1000) {
+                                // Do nothing, we closed the socket
+                            } else if (e.code === 1001) {
+                                this.set("error", "Server closed connection to event service: " + serviceUrl);
+                            } else if (e.code === 1006) {
+                                this.set("error", "Event service connection was closed, server not reachable?");
+                            } else {
+                                let msg = e.reason ? e.reason : serviceUrl;
+                                this.set("error", "Event service connection was closed (clean: " + e.wasClean + ", code: " + e.code + "): " + msg);
+                            }
+                        }
+                    };
+
+                    this.webSocket.onmessage = (e) => {
+                        console.debug("Received on event service WebSocket: " + e.data);
+                        for (let consumer of this.webSocketConsumers) {
+                            consumer(e.data);
+                        }
+                    };
+                });
+            }
+
+            disconnectEvents() {
+                if (this.webSocket && this.webSocket.readyState === this.webSocket.OPEN) {
+                    for (let listener of this.webSocketCloseListeners) {
+                        listener();
+                    }
+                    console.log("Closing WebSocket");
+                    this.webSocket.close();
+                }
+            }
+
+            getServiceEvents() {
+                return this.$.appEvents;
+            }
+
+            addServiceMessageConsumer(consumer) {
+                this.webSocketConsumers.push(consumer);
+            }
+
+            addServiceConnectionCloseListener(listener) {
+                this.webSocketCloseListeners.push(listener);
+            }
+
+            sendServiceMessage(message) {
+                if (this.webSocket) {
+                    console.debug("Sending on event service WebSocket: " + message);
+                    this.webSocket.send(message);
+                }
+            }
+
+            loadTenantDetails(onComplete) {
+                if (!this.login) {
+                    onComplete();
+                    return;
+                }
+                this.requests.sendAndReturn(
+                    (requestParams) => {
+                        openremote.REST.TenantResource.get(requestParams, this.tenantRealm);
+                    },
+                    200,
+                    (response) => {
+                        this.set("tenant", response);
+                        onComplete();
+                    },
+                    (exception) => {
+                        this.set("error", exception);
+                    }
+                );
+            }
+        }
+
+        // Upgrade immediately, so you can't use jsinterop in this class!
+        customElements.define(OpenRemoteApp.is, OpenRemoteApp);
+
+        // This is fired after jsinterop components are loaded/started, finalize initialization
+        window.addEventListener('AppLoaded', function () {
+
+            // These things are using jsinterop components
+            openremote.INSTANCE.registerWidgetStyle();
+            openremote.INSTANCE.registerToasts();
+            openremote.INSTANCE.registerRequests();
+
+            // Run this when everything is ready
+            let appReady = () => {
+                // Check if there was a problem
+                if (!openremote.INSTANCE.error) {
+                    // If not, any other code can run and we are ready
+                    console.log("Application ready");
+                    dispatchEvent(new CustomEvent("AppReady", {detail: {app: openremote.INSTANCE}}));
+                }
+                // Now show the app/document body
+                openremote.INSTANCE.showApp();
+            };
+
+            // If login is required, must be able to connect WebSocket and load tenant
+            if (openremote.INSTANCE.login) {
+                // Connect the WebSocket to event service endpoint
+                openremote.INSTANCE.connectEvents(() => {
+                    // Load the authenticated tenant details
+                    openremote.INSTANCE.loadTenantDetails(appReady);
+                });
+            } else {
+                // If no login is required, just start
+                appReady();
+            }
+        });
+
+        // Elements which depend on jsinterop components must be initialized at the right time
+        function defineAppElement(element, is, ...interopNames) {
+            // TODO We could do this better, with a single listener that handles all elements
+
+            // This is fired after authentication or when no authentication is needed, before the
+            // jsinterop components are loaded. Here we register types defined in JS so they are
+            // available when jsinterop components are loaded/started.
+            window.addEventListener('AppInit', function () {
+                console.debug("Setting type in global scope: " + is);
+                // Sets openremote.foo.bar.MyType = element so we can have the type in GWT jsinterop
+                let x = openremote;
+                for (let i = 0; i < interopNames.length; i++) {
+                    let name = interopNames[i];
+                    if (!x[name]) {
+                        x[name] = i === interopNames.length - 1 ? element : {}
+                    }
+                    x = x[name];
+                }
+            });
+
+            // This is fired after jsinterop components are loaded/started and after we have done any other
+            // initialization (see above). Now the actual web component elements can be defined/upgraded,
+            // this is when component constructors etc. lifecycle starts.
+            window.addEventListener('AppReady', function () {
+                console.debug("Upgrading element: " + is);
+                customElements.define(is, element);
+            });
+        }
+    </script>
+
+</dom-module>

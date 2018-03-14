@@ -20,10 +20,10 @@
 package org.openremote.agent.protocol.simulator;
 
 import org.openremote.agent.protocol.AbstractProtocol;
-import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.AbstractValueHolder;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.asset.AssetAttribute;
+import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.attribute.*;
 import org.openremote.model.simulator.SimulatorElement;
 import org.openremote.model.simulator.SimulatorState;
@@ -38,6 +38,8 @@ import java.util.function.Consumer;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
+import static org.openremote.container.concurrent.GlobalLock.withLock;
+import static org.openremote.container.concurrent.GlobalLock.withLockReturning;
 import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
 import static org.openremote.model.asset.AssetMeta.RANGE_MAX;
 import static org.openremote.model.asset.AssetMeta.RANGE_MIN;
@@ -118,9 +120,9 @@ public class SimulatorProtocol extends AbstractProtocol {
 
     protected static final String VERSION = "1.0";
 
-    static final protected Map<AttributeRef, Instance> instances = new HashMap<>();
-    static final protected Map<AttributeRef, AttributeRef> attributeInstanceMap = new HashMap<>();
-    static final protected Map<AttributeRef, SimulatorElement> elements = new HashMap<>();
+    final protected Map<AttributeRef, Instance> instances = new HashMap<>();
+    final protected Map<AttributeRef, AttributeRef> attributeInstanceMap = new HashMap<>();
+    final protected Map<AttributeRef, SimulatorElement> elements = new HashMap<>();
 
     protected static final List<MetaItemDescriptor> PROTOCOL_META_ITEM_DESCRIPTORS = Arrays.asList(
         new MetaItemDescriptorImpl("PROTOCOL_SIMULATOR_MODE",
@@ -197,50 +199,43 @@ public class SimulatorProtocol extends AbstractProtocol {
     protected void doLinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
         AttributeRef protocolRef = protocolConfiguration.getReferenceOrThrow();
 
-        synchronized (instances) {
-            instances
-                .computeIfAbsent(
-                    protocolRef,
-                    ref -> {
-                        Mode mode = protocolConfiguration
-                            .getMetaItem(CONFIG_MODE)
-                            .map(item ->
-                                item.getValueAsString()
-                                    .map(value -> {
-                                        try {
-                                            return Mode.valueOf(value);
-                                        } catch (Exception e) {
-                                            LOG.fine("Invalid Mode value '" + item + "' provided");
-                                            return null;
-                                        }
-                                    })
-                                    .orElse(null)
-                            )
-                            .orElse(Mode.WRITE_THROUGH_IMMEDIATE);
+        instances.computeIfAbsent(
+            protocolRef,
+            ref -> {
+                Mode mode = protocolConfiguration
+                    .getMetaItem(CONFIG_MODE)
+                    .map(item ->
+                        item.getValueAsString()
+                            .map(value -> {
+                                try {
+                                    return Mode.valueOf(value);
+                                } catch (Exception e) {
+                                    LOG.fine("Invalid Mode value '" + item + "' provided");
+                                    return null;
+                                }
+                            })
+                            .orElse(null)
+                    )
+                    .orElse(Mode.WRITE_THROUGH_IMMEDIATE);
 
-                        int writeDelay = protocolConfiguration.getMetaItem(CONFIG_WRITE_DELAY_MILLISECONDS)
-                            .flatMap(AbstractValueHolder::getValueAsInteger)
-                            .orElse(DEFAULT_WRITE_DELAY);
+                int writeDelay = protocolConfiguration.getMetaItem(CONFIG_WRITE_DELAY_MILLISECONDS)
+                    .flatMap(AbstractValueHolder::getValueAsInteger)
+                    .orElse(DEFAULT_WRITE_DELAY);
 
-                        updateStatus(protocolRef, protocolConfiguration.isEnabled() ? ConnectionStatus.CONNECTED : ConnectionStatus.DISABLED);
-                        return new Instance(mode, writeDelay, protocolConfiguration.isEnabled());
-                    }
-                );
-        }
+                updateStatus(protocolRef, protocolConfiguration.isEnabled() ? ConnectionStatus.CONNECTED : ConnectionStatus.DISABLED);
+                return new Instance(mode, writeDelay, protocolConfiguration.isEnabled());
+            }
+        );
     }
 
     @Override
     protected void doUnlinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
         AttributeRef configRef = protocolConfiguration.getReferenceOrThrow();
-
-        synchronized (instances) {
-            instances.remove(configRef);
-        }
+        instances.remove(configRef);
     }
 
     @Override
     protected void doLinkAttribute(AssetAttribute attribute, AssetAttribute protocolConfiguration) {
-
         // Get element type from the attribute meta
         Optional<String> elementType = getElementType(attribute);
         if (!elementType.isPresent()) {
@@ -268,20 +263,15 @@ public class SimulatorProtocol extends AbstractProtocol {
 
         LOG.info("Putting element '" + element + "' for: " + attribute);
 
-        synchronized (instances) {
-            elements.put(attributeRef, element);
-            attributeInstanceMap.put(attributeRef, configRef);
-        }
+        elements.put(attributeRef, element);
+        attributeInstanceMap.put(attributeRef, configRef);
     }
 
     @Override
     protected void doUnlinkAttribute(AssetAttribute attribute, AssetAttribute protocolConfiguration) {
         AttributeRef attributeRef = attribute.getReferenceOrThrow();
-
-        synchronized (instances) {
-            elements.remove(attributeRef);
-            attributeInstanceMap.remove(attributeRef);
-        }
+        elements.remove(attributeRef);
+        attributeInstanceMap.remove(attributeRef);
     }
 
     @Override
@@ -326,38 +316,34 @@ public class SimulatorProtocol extends AbstractProtocol {
      * Call this to simulate a sensor update after the specified delay (it uses the last value supplied from send to actuator).
      */
     public void updateSensor(AttributeRef attributeRef, int updateSensorDelayMilliseconds) {
-        Optional<Value> value = getValue(attributeRef);
-        if (!value.isPresent())
-            return;
-        final AttributeState state = new AttributeState(attributeRef, value.get());
-        AttributeRef instanceRef = attributeInstanceMap.get(attributeRef);
+        withLock(getProtocolName() + "::updateSensor", () -> {
+            AttributeRef instanceRef = attributeInstanceMap.get(attributeRef);
 
-        if (instanceRef == null) {
-            LOG.warning("Attribute is not referenced by an instance:" + attributeRef);
-            return;
-        }
+            if (instanceRef == null) {
+                LOG.warning("Attribute is not referenced by an instance:" + attributeRef);
+                return;
+            }
 
-        Instance instance;
+            Instance instance = instances.get(instanceRef);
 
-        synchronized (instances) {
-            instance = instances.get(instanceRef);
-        }
+            if (instance == null) {
+                LOG.warning("No instance found by name '" + instanceRef + "'");
+                return;
+            }
 
-        if (instance == null) {
-            LOG.warning("No instance found by name '" + instanceRef + "'");
-            return;
-        }
+            if (!instance.isEnabled()) {
+                LOG.fine("Simulator protocol configuration is disabled so cannot process request");
+                return;
+            }
 
-        if (!instance.isEnabled()) {
-            LOG.fine("Simulator protocol configuration is disabled so cannot process request");
-            return;
-        }
+            AttributeState state = new AttributeState(attributeRef, getValue(attributeRef).orElse(null));
 
-        if (updateSensorDelayMilliseconds <= 0) {
-            updateLinkedAttribute(state);
-        } else {
-            executorService.schedule(() -> updateLinkedAttribute(state), updateSensorDelayMilliseconds);
-        }
+            if (updateSensorDelayMilliseconds <= 0) {
+                updateLinkedAttribute(state);
+            } else {
+                executorService.schedule(() -> updateLinkedAttribute(state), updateSensorDelayMilliseconds);
+            }
+        });
     }
 
     /**
@@ -385,19 +371,16 @@ public class SimulatorProtocol extends AbstractProtocol {
      * Call this to simulate a send to actuator.
      */
     public boolean putValue(AttributeState attributeState) {
-        AttributeRef attributeRef = attributeState.getAttributeRef();
-        AttributeRef instanceRef = attributeInstanceMap.get(attributeRef);
+        Boolean result = withLockReturning(getProtocolName() + "::putValue", () -> {
+            AttributeRef attributeRef = attributeState.getAttributeRef();
+            AttributeRef instanceRef = attributeInstanceMap.get(attributeRef);
 
-        if (instanceRef == null) {
-            LOG.warning("Attribute is not referenced by an instance:" + attributeRef);
-            return false;
-        }
+            if (instanceRef == null) {
+                LOG.warning("Attribute is not referenced by an instance:" + attributeRef);
+                return false;
+            }
 
-        Instance instance;
-
-        synchronized (instances) {
-            instance = instances.get(instanceRef);
-
+            Instance instance = instances.get(instanceRef);
             if (instance == null) {
                 LOG.warning("No instance found by name '" + instanceRef + "'");
                 return false;
@@ -416,7 +399,7 @@ public class SimulatorProtocol extends AbstractProtocol {
             }
 
             Optional<Value> oldValue = element.getValue();
-            element.setValue(attributeState.getCurrentValue().orElse(null));
+            element.setValue(attributeState.getValue().orElse(null));
             List<ValidationFailure> failures = element.getValidationFailures();
 
             if (!failures.isEmpty()) {
@@ -425,13 +408,14 @@ public class SimulatorProtocol extends AbstractProtocol {
                 LOG.warning("Failed to update simulator element, state validation failures " + failures + ": " + attributeRef);
                 return false;
             }
-        }
 
-        if (instance.getMode() != Mode.MANUAL) {
-            updateSensor(attributeRef, instance.getMode() == Mode.WRITE_THROUGH_IMMEDIATE ? 0 : instance.getDelayMilliseconds());
-        }
+            if (instance.getMode() != Mode.MANUAL) {
+                updateSensor(attributeRef, instance.getMode() == Mode.WRITE_THROUGH_IMMEDIATE ? 0 : instance.getDelayMilliseconds());
+            }
 
-        return true;
+            return true;
+        });
+        return result != null ? result : false;
     }
 
     /**
@@ -445,10 +429,10 @@ public class SimulatorProtocol extends AbstractProtocol {
      * Call this to get the current value of an attribute.
      */
     public Optional<Value> getValue(AttributeRef attributeRef) {
-        synchronized (instances) {
+        return withLockReturning(getProtocolName() + "::getValue", () -> {
             SimulatorElement element = elements.get(attributeRef);
             return element != null ? element.getValue() : Optional.empty();
-        }
+        });
     }
 
     public List<SimulatorElement> getLinkedElements(AttributeRef protocolConfigurationRef) {
@@ -469,7 +453,7 @@ public class SimulatorProtocol extends AbstractProtocol {
      * Read a state snapshot.
      */
     public Optional<SimulatorState> getSimulatorState(AttributeRef protocolConfigurationRef) {
-        synchronized (instances) {
+        return withLockReturning(getProtocolName() + "::getSimulatorState", () -> {
             LOG.info("Getting simulator state for protocol configuration: " + protocolConfigurationRef);
             if (!instances.containsKey(protocolConfigurationRef))
                 return Optional.empty();
@@ -481,14 +465,14 @@ public class SimulatorProtocol extends AbstractProtocol {
                     linkedElements.toArray(new SimulatorElement[linkedElements.size()])
                 )
             );
-        }
+        });
     }
 
     /**
      * Write a state snapshot.
      */
     public void updateSimulatorState(SimulatorState simulatorState) {
-        synchronized (instances) {
+        withLock(getProtocolName() + "::updateSimulatorState", () -> {
             AttributeRef protocolConfigurationRef = simulatorState.getProtocolConfigurationRef();
             if (!instances.containsKey(protocolConfigurationRef)) {
                 LOG.info("Ignoring simulator update, no instance for protocol configuration: " + protocolConfigurationRef);
@@ -498,7 +482,7 @@ public class SimulatorProtocol extends AbstractProtocol {
             for (SimulatorElement updatedElement : simulatorState.getElements()) {
                 putValue(updatedElement.getAttributeRef(), updatedElement.getValue().orElse(null));
             }
-        }
+        });
     }
 
     protected SimulatorElement createElement(String elementType, AssetAttribute attribute) {

@@ -22,10 +22,13 @@ package org.openremote.container.security.keycloak;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
+import io.undertow.server.HttpHandler;
+import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.ResponseCodeHandler;
 import io.undertow.server.handlers.proxy.ProxyHandler;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.LoginConfig;
+import io.undertow.util.HttpString;
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
 import org.keycloak.adapters.KeycloakConfigResolver;
 import org.keycloak.adapters.KeycloakDeployment;
@@ -48,19 +51,21 @@ import javax.ws.rs.client.Client;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static javax.ws.rs.core.Response.Status.Family.REDIRECTION;
 import static javax.ws.rs.core.Response.Status.Family.SUCCESSFUL;
 import static org.openremote.container.util.MapAccess.getInteger;
 import static org.openremote.container.util.MapAccess.getString;
 import static org.openremote.container.web.WebClient.getTarget;
 
-public abstract class KeycloakIdentityProvider implements IdentityProvider{
+public abstract class KeycloakIdentityProvider implements IdentityProvider {
 
     private static final Logger LOG = Logger.getLogger(KeycloakIdentityProvider.class.getName());
 
@@ -75,8 +80,13 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider{
     public static final int KEYCLOAK_REQUEST_TIMEOUT_DEFAULT = 10000;
     public static final String KEYCLOAK_CLIENT_POOL_SIZE = "KEYCLOAK_CLIENT_POOL_SIZE";
     public static final int KEYCLOAK_CLIENT_POOL_SIZE_DEFAULT = 20;
-    public static final String KEYCLOAK_SESSION_TIMEOUT_SECONDS = "IDENTITY_SESSION_TIMEOUT_SECONDS";
-    public static final int KEYCLOAK_SESSION_TIMEOUT_SECONDS_DEFAULT = 10800; // 3 hours
+
+    public static final String IDENTITY_SESSION_TIMEOUT_SECONDS = "IDENTITY_SESSION_TIMEOUT_SECONDS";
+    public static final int IDENTITY_SESSION_TIMEOUT_SECONDS_DEFAULT = 60 * 60 * 3; // 3 hours
+    public static final String IDENTITY_SESSION_OFFLINE_TIMEOUT_SECONDS = "IDENTITY_SESSION_OFFLINE_TIMEOUT_SECONDS";
+    public static final int IDENTITY_SESSION_OFFLINE_TIMEOUT_SECONDS_DEFAULT = 60 * 60 * 48; // 2 days
+    public static final String IDENTITY_SESSION_MAX_SECONDS = "IDENTITY_SESSION_MAX_SECONDS";
+    public static final int IDENTITY_SESSION_MAX_SECONDS_DEFAULT = 60 * 60 * 10; // 10 hours
 
     // Each realm in Keycloak has a client application with this identifier
     final protected String clientId;
@@ -97,10 +107,12 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider{
     protected KeycloakConfigResolver keycloakConfigResolver;
 
     // Optional reverse proxy that listens to AUTH_PATH and forwards requests to Keycloak
-    protected ProxyHandler authProxyHandler;
+    protected HttpHandler authProxyHandler;
 
     // Configuration options for new realms
     final protected int sessionTimeoutSeconds;
+    final protected int sessionOfflineTimeoutSeconds;
+    final protected int sessionMaxSeconds;
 
     // This will pass authentication ("NOT ATTEMPTED" state), but later fail any role authorization
     final protected KeycloakDeployment notAuthenticatedKeycloakDeployment = new KeycloakDeployment();
@@ -110,7 +122,18 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider{
         this.clientId = clientId;
         this.externalServerUri = externalServerUri;
 
-        sessionTimeoutSeconds = getInteger(container.getConfig(), KEYCLOAK_SESSION_TIMEOUT_SECONDS, KEYCLOAK_SESSION_TIMEOUT_SECONDS_DEFAULT);
+        sessionTimeoutSeconds = getInteger(container.getConfig(), IDENTITY_SESSION_TIMEOUT_SECONDS, IDENTITY_SESSION_TIMEOUT_SECONDS_DEFAULT);
+        if (sessionTimeoutSeconds < 60) {
+            throw new IllegalArgumentException(IDENTITY_SESSION_TIMEOUT_SECONDS + " must be more than 60 seconds");
+        }
+        sessionOfflineTimeoutSeconds = getInteger(container.getConfig(), IDENTITY_SESSION_OFFLINE_TIMEOUT_SECONDS, IDENTITY_SESSION_OFFLINE_TIMEOUT_SECONDS_DEFAULT);
+        if (sessionOfflineTimeoutSeconds < 60) {
+            throw new IllegalArgumentException(IDENTITY_SESSION_OFFLINE_TIMEOUT_SECONDS + " must be more than 60 seconds");
+        }
+        sessionMaxSeconds = getInteger(container.getConfig(), IDENTITY_SESSION_MAX_SECONDS, IDENTITY_SESSION_MAX_SECONDS_DEFAULT);
+        if (sessionMaxSeconds < 60) {
+            throw new IllegalArgumentException(IDENTITY_SESSION_MAX_SECONDS + " must be more than 60 seconds");
+        }
 
         keycloakServiceUri =
             UriBuilder.fromPath("/")
@@ -157,11 +180,18 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider{
             return keycloakDeployment;
         };
 
-        authProxyHandler = new ProxyHandler(
+        ProxyHandler proxyHandler = new ProxyHandler(
             new io.undertow.server.handlers.proxy.SimpleProxyClientProvider(keycloakServiceUri.clone().replacePath("").build()),
             getInteger(container.getConfig(), KEYCLOAK_REQUEST_TIMEOUT, KEYCLOAK_REQUEST_TIMEOUT_DEFAULT),
             ResponseCodeHandler.HANDLE_404
         ).setReuseXForwarded(true);
+        authProxyHandler = exchange -> {
+            proxyHandler.handleRequest(exchange);
+            // Let the client cache the keycloak.js file for 12 hours
+            if (exchange.getRequestPath().endsWith("keycloak.js") && !exchange.isResponseComplete()) {
+                exchange.getResponseHeaders().put(HttpString.tryFromString("Cache-Control"), "public,max-age=" + (12 * 60 * 60) + ",must-revalidate");
+            }
+        };
 
     }
 
@@ -210,7 +240,7 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider{
      *                   problems.
      */
     final protected RealmsResource getRealms(String forwardFor, String accessToken) {
-        return getTarget(httpClient, keycloakServiceUri.build(), accessToken, forwardFor, forwardFor != null ? externalServerUri.build(): null)
+        return getTarget(httpClient, keycloakServiceUri.build(), accessToken, forwardFor, forwardFor != null ? externalServerUri.build() : null)
             .proxy(RealmsResource.class);
     }
 
@@ -222,8 +252,12 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider{
         realmRepresentation.setLoginTheme("openremote");
         realmRepresentation.setAccountTheme("openremote");
         realmRepresentation.setEmailTheme("openremote");
-        realmRepresentation.setSsoSessionIdleTimeout(sessionTimeoutSeconds);
 
+        realmRepresentation.setSsoSessionIdleTimeout(sessionTimeoutSeconds);
+        realmRepresentation.setOfflineSessionIdleTimeout(sessionOfflineTimeoutSeconds);
+        realmRepresentation.setSsoSessionMaxLifespan(sessionMaxSeconds);
+
+        // Service-internal network (between manager and keycloak service containers) does not use SSL
         realmRepresentation.setSslRequired(SslRequired.NONE.toString());
     }
 
@@ -234,7 +268,7 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider{
             try {
                 pingKeycloak();
                 keycloakAvailable = true;
-            } catch(Exception ex) {
+            } catch (Exception ex) {
                 LOG.info("Keycloak server not available, waiting...");
                 try {
                     Thread.sleep(3000);
@@ -319,26 +353,25 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider{
         webService.getPrefixRoutes().put("/" + KeycloakResource.KEYCLOAK_CONTEXT_PATH, authProxyHandler);
     }
 
-    protected ClientRepresentation createClientApplication(String realm, String clientId, String appName, boolean enableDirectAccess) {
+    protected ClientRepresentation createClientApplication(String realm, String clientId, String appName, boolean devMode) {
         ClientRepresentation client = new ClientRepresentation();
 
         client.setClientId(clientId);
         client.setName(appName);
         client.setPublicClient(true);
 
-        if (enableDirectAccess) {
+        if (devMode) {
             // We need direct access for integration tests
             LOG.info("### Allowing direct access grants for client app '" + appName + "', this must NOT be used in production! ###");
             client.setDirectAccessGrantsEnabled(true);
+
+            // Allow any web origin (this will add CORS headers to token requests etc.)
+            client.setWebOrigins(Collections.singletonList("*"));
         }
 
         List<String> redirectUris = new ArrayList<>();
         addClientRedirectUris(realm, redirectUris);
         client.setRedirectUris(redirectUris);
-
-        // Redirect URL for logout etc, go to /<realm>/
-        String baseUrl = UriBuilder.fromUri("/").path(realm).build().toString();
-        client.setBaseUrl(baseUrl);
 
         return client;
     }

@@ -25,20 +25,18 @@ import org.openremote.agent.protocol.ProtocolExecutorService;
 
 import java.util.List;
 
-import static org.openremote.agent.protocol.velbus.VelbusPacket.MAX_PACKET_SIZE;
-
 public class VelbusSocketMessageProcessor extends AbstractSocketMessageProcessor<VelbusPacket> {
 
     public VelbusSocketMessageProcessor(String host, int port, ProtocolExecutorService executorService) {
         super(host, port, executorService);
     }
     @Override
-    protected void decode(ByteBuf buf, List<VelbusPacket> messages) throws Exception {
+    protected void decode(ByteBuf buf, List<VelbusPacket> messages) {
         VelbusPacketEncoderDecoder.decode(buf, messages);
     }
 
     @Override
-    protected void encode(VelbusPacket message, ByteBuf buf) throws Exception {
+    protected void encode(VelbusPacket message, ByteBuf buf) {
         VelbusPacketEncoderDecoder.encode(message, buf);
     }
 }

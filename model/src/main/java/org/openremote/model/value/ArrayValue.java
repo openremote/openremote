@@ -20,6 +20,8 @@ import java.util.stream.Stream;
 
 public interface ArrayValue extends Value {
 
+    boolean indexContainsNull(int index);
+
     Optional<Value> get(int index);
 
     Optional<String> getString(int index);
@@ -61,4 +63,6 @@ public interface ArrayValue extends Value {
     boolean contains(String string);
 
     boolean contains(double number);
+
+    int indexOf(String string);
 }

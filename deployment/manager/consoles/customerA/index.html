@@ -1,34 +1,55 @@
 <!doctype html>
 <html>
 <head>
-    <title>OpenRemote Console Application</title>
+    <title>OpenRemote SmartHome Example</title>
 
-    <!-- ############## YOU NEED THESE LINES IN YOUR OPENREMOTE APP ############### -->
-    <script src="bower_components/webcomponentsjs/webcomponents-lite.js"></script>
-    <link rel="import" href="components/openremote/openremote-app.html">
-    <!-- ################################################################################## -->
+    <!-- Some sensible meta tags -->
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0,maximum-scale=1, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+
+    <!-- The language of the SmartHome app -->
+    <meta name="or-language" content="en">
+
+    <!-- ############## Required: Load WebComponents polyfill and components ############### -->
+    <script src="/static/bower_components/webcomponentsjs/webcomponents-lite.js"></script>
+
+    <!-- Load the SmartHome app -->
+    <link rel="import" href="/console/customerA/smart-home/smart-home-app.html">
+
+    <style type="text/css">
+        /* Recommended: Avoid flickering during loading/styling by hiding children of or-app */
+        or-app > * {
+            visibility: hidden;
+        }
+
+        /* Styles for the SmartHome app */
+        html, body {
+            margin: 0;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        body {
+            background: var(--theme-mediumgrey);
+            font-family: 'Open Sans', 'Roboto', Helvetica, Arial, Lucida, sans-serif;
+        }
+    </style>
 
 </head>
+
 <body>
-<h1>The OpenRemote console application of the <code>customerA</code> tenant</h1>
-<p>
-    On your OpenRemote installation, edit the HTML content in <code>deployment/manager/consoles/customerA/</code>.
-</p>
-<p>
-    You can duplicate the <code>customerA</code> directory to create new console applications for other tenants/realms.
-</p>
-<p>
-    View the source in your web browser and follow the examples on this page to write your own OpenRemote
-    application, it's easy with <a href="https://www.webcomponents.org/">Web Components</a>.
-</p>
 
+<or-app login tenant-realm="customerA">
 
-<div>
-    <openremote-app tenant="customerA" login-when-ready="true" timeout="10" verbose="true">
-        <button onclick="document.querySelector('openremote-app').connect()">Click to connect</button>
-    </openremote-app>
-</div>
+    <smart-home-app>
+        <!-- You can override the logo
+        <img slot="logo" height="20" src="mylogo.png"/>
+        -->
+    </smart-home-app>
 
+</or-app>
 
 </body>
 </html>

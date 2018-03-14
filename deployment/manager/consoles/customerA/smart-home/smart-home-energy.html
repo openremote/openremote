@@ -1,0 +1,231 @@
+<link rel="import" href="smart-home-component.html">
+<link rel="import" href="smart-home-style.html">
+<link rel="import" href="smart-home-section.html">
+<link rel="import" href="smart-home-smart.html">
+
+<dom-module id="smart-home-energy">
+    <template>
+        <style include="smart-home-style">
+
+            .smartSwitchItem {
+                margin: 10px 0;
+            }
+
+            .smartSwitchLabel {
+                padding: 0 10px;
+            }
+
+            .smartSwitchMode {
+            }
+
+            .smartSwitchTomorrow {
+                padding-left: 5px;
+                font-size: 0.7em;
+            }
+
+            .smartSwitchTimeInput {
+                margin-left: 5px;
+            }
+
+        </style>
+
+        <smart-home-smart residence="[[residence]]"></smart-home-smart>
+
+        <smart-home-section>
+            <template is="dom-repeat" items="[[smartSwitches]]">
+                <div class="layout horizontal center smartSwitchItem">
+                    <div><img height="30" src="smart-home/img/home_on.png"/></div>
+                    <div class="flex layout horizontal smartSwitchLabel">
+                        [[item.label]]
+                    </div>
+                    <div class="layout horizontal smartSwitchMode">
+                        <div class="or-Select">
+                            <select value="{{item.mode::change}}"
+                                    on-change="onSmartSwitchModeChange"
+                                    title="[[localize('Mode')]]">
+                                <option value="NOW_ON">[[localize('Now on')]]</option>
+                                <option value="ON_AT">[[localize('On at')]]</option>
+                                <option value="READY_AT">[[localize('Ready at')]]</option>
+                            </select>
+                        </div>
+                    </div>
+                    <template is="dom-if" if="[[item.hourMinuteVisible]]">
+                        <div class="layout horizontal center">
+                            <template is="dom-if" if="[[item.hourMinuteTomorrow]]">
+                                <div class="smartSwitchTomorrow">([[localize('tomorrow')]])</div>
+                            </template>
+                            <input class="or-Input or-InputTime smartSwitchTimeInput"
+                                   title="[[localize('Begin/end of cycle')]]"
+                                   type="time"
+                                   step="60"
+                                   required
+                                   value="{{item.hourMinute::input}}"
+                                   on-input="onSmartSwitchHourMinuteChange"/>
+                        </div>
+                    </template>
+                </div>
+            </template>
+        </smart-home-section>
+
+        <!-- TODO This section is not functional, not bound to any assets
+        <smart-home-section>
+            <div class="layout horizontal center">
+                <div class="flex" style="position: relative; padding-left: 10px;">
+                    <div style="position: absolute;">
+                        <div style="position: relative; left: 40px; top: 65px;">12%</div>
+                        <div style="position: relative; top: 65px; left: 41px; font-size: x-small;">[[localize('Green')]]</div>
+                    </div>
+                    <img width="110" height="110" src="smart-home/img/home_large_energy.png"/>
+                </div>
+                <div class="layout vertical" style="font-size: smaller; margin-right: 5px;">
+
+                    <div class="layout horizontal" style="margin: 5px 0;">
+                        <div class="flex" style="padding-right: 20px;">[[localize('Usage today')]]</div>
+                        <div>418W</div>
+                    </div>
+
+                    <div class="layout horizontal" style="margin: 5px 0; color: var(--theme-mediumgrey)">
+                        <div class="flex">[[localize('Zone & Battery')]]</div>
+                        <div>9%</div>
+                    </div>
+
+                    <div style="margin-bottom:5px;width:87%;height:10px; background-color: var(--theme-lightgreen);"></div>
+                    <div class="" style="width:17%;height:10px; background-color: var(--theme-mediumgrey)"></div>
+
+                    <div class="layout horizontal" style="margin: 5px 0; color: var(--theme-mediumgrey)">
+                        <div class="flex">[[localize('Grid')]]</div>
+                        <div>91%</div>
+                    </div>
+                </div>
+            </div>
+        </smart-home-section>
+        -->
+
+    </template>
+
+    <script>
+        class SmartHomeEnergy extends SmartHomeComponent {
+            static get is() {
+                return "smart-home-energy";
+            }
+
+            static get properties() {
+                return {
+                    smartSwitches: {
+                        type: Array,
+                        computed: "computeSmartSwitches(rooms.*)"
+                    },
+                    smartSwitchHourMinuteChangeDebouncer: {
+                        type: Object,
+                        value: {}
+                    }
+                }
+            }
+
+            computeSmartSwitches() {
+                let smartSwitches = [];
+                if (!this.rooms)
+                    return smartSwitches;
+                this.rooms.forEach(room => {
+                    if ("smartSwitchModeA" in room.attributes && "smartSwitchBeginEndA" in room.attributes) {
+                        smartSwitches.push(
+                            this.computeSmartSwitch(room.id, this.localize("Switch A"), "A", room.attributes.smartSwitchModeA.value, room.attributes.smartSwitchBeginEndA.value)
+                        );
+                    }
+                    if ("smartSwitchModeB" in room.attributes && "smartSwitchBeginEndB" in room.attributes) {
+                        smartSwitches.push(
+                            this.computeSmartSwitch(room.id, this.localize("Switch B"), "B", room.attributes.smartSwitchModeB.value, room.attributes.smartSwitchBeginEndB.value)
+                        );
+                    }
+                    if ("smartSwitchModeC" in room.attributes && "smartSwitchBeginEndC" in room.attributes) {
+                        smartSwitches.push(
+                            this.computeSmartSwitch(room.id, this.localize("Switch C"), "C", room.attributes.smartSwitchModeC.value, room.attributes.smartSwitchBeginEndC.value)
+                        );
+                    }
+                })
+                return smartSwitches;
+            }
+
+            computeSmartSwitch(roomId, label, attributeSuffix, mode, beginEnd) {
+                return {
+                    roomId: roomId,
+                    label: label,
+                    suffix: attributeSuffix,
+                    mode: mode ? mode : "NOW_ON", // Default to NOW_ON when mode is empty
+                    hourMinute: beginEnd ? moment(beginEnd).format("HH:mm") : null,
+                    hourMinuteVisible: mode && (mode === "ON_AT" || mode === "READY_AT"),
+                    hourMinuteTomorrow: beginEnd ? moment(beginEnd).isAfter(moment(), "day") : false,
+                }
+            }
+
+            onSmartSwitchModeChange(e) {
+                let smartSwitch = e.model.item;
+                let smartSwitchMode = e.target.value; // model.item.mode is not updated yet when this event listener runs
+                let beginEndTimestamp = this.computeSmartSwitchBeginEndTimestamp(smartSwitchMode, smartSwitch.hourMinute);
+
+                this.sendAttributeEvent(
+                    smartSwitch.roomId, "smartSwitchMode" + smartSwitch.suffix, smartSwitchMode
+                );
+                this.sendAttributeEvent(
+                    smartSwitch.roomId, "smartSwitchBeginEnd" + smartSwitch.suffix, beginEndTimestamp
+                );
+            }
+
+            onSmartSwitchHourMinuteChange(e) {
+                let smartSwitch = e.model.item;
+                let hourMinute = e.target.value; // model.item.hourMinute is not updated yet when this event listener runs
+                let beginEndTimestamp = this.computeSmartSwitchBeginEndTimestamp(smartSwitch.mode, hourMinute);
+
+                // Delay/debounce sending the change to service, the user is probably still editing
+                // the hour/minute (cursor keys, spinner button)
+                this.smartSwitchHourMinuteChangeDebouncer[smartSwitch] = Polymer.Debouncer.debounce(
+                    this.smartSwitchHourMinuteChangeDebouncer[smartSwitch],
+                    Polymer.Async.timeOut.after(3000),
+                    () => {
+                        // If entered time is empty, switch to now on
+                        if (!hourMinute) {
+                            this.sendAttributeEvent(
+                                smartSwitch.roomId, "smartSwitchMode" + smartSwitch.suffix, "NOW_ON"
+                            );
+                            return;
+                        }
+                        this.sendAttributeEvent(
+                            smartSwitch.roomId, "smartSwitchBeginEnd" + smartSwitch.suffix, beginEndTimestamp
+                        );
+                    });
+            }
+
+            computeSmartSwitchBeginEndTimestamp(mode, hourMinute) {
+                // Get the moment of the user-supplied hour/minute or current time +2m
+                let hourMinuteMoment = hourMinute ? moment(hourMinute, "HH:mm") : moment().add(2, "minutes");
+
+                // Try to correct hour/minute depending on selected mode
+                if (!mode || mode === "NOW_ON") {
+
+                    // No mode or now on, empty begin/end timestamp
+                    hourMinuteMoment = null;
+
+                } else if (mode === "ON_AT") {
+
+                    // If it's not one minute in the future (time it takes to process event on server), add one day
+                    if (hourMinuteMoment.isBefore(moment().add(1, "minutes"))) {
+                        hourMinuteMoment = hourMinuteMoment.add(1, "days");
+                    }
+
+                } else if (mode === "READY_AT") {
+
+                    // If cycle can't finish in the next (2.5h cycle duration, +1m for event processing), add one day
+                    if (hourMinuteMoment.isBefore(moment().add(151, "minutes"))) {
+                        hourMinuteMoment = hourMinuteMoment.add(1, "days");
+                    }
+                }
+
+                return hourMinuteMoment ? hourMinuteMoment.valueOf() : null;
+            }
+
+        }
+
+        defineAppElement(SmartHomeEnergy, SmartHomeEnergy.is, "SmartHomeEnergy");
+    </script>
+
+</dom-module>

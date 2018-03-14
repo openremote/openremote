@@ -1,0 +1,23 @@
+<ui:UiBinder xmlns:ui="urn:ui:com.google.gwt.uibinder"
+             xmlns:g="urn:import:com.google.gwt.user.client.ui"
+             xmlns:an="urn:import:org.openremote.app.client.admin.navigation">
+
+    <ui:with field="managerMessages" type="org.openremote.app.client.i18n.ManagerMessages"/>
+    <ui:with field="widgetStyle" type="org.openremote.app.client.style.WidgetStyle"/>
+
+    <ui:style>
+        .adminContentContainer {
+            overflow: hidden;
+        }
+    </ui:style>
+
+    <g:HTMLPanel styleName="flex layout horizontal">
+
+        <an:AdminNavigation ui:field="adminNavigation"/>
+
+        <g:HTMLPanel ui:field="adminContentContainer"
+                     styleName="flex layout vertical {style.adminContentContainer}">
+        </g:HTMLPanel>
+    </g:HTMLPanel>
+
+</ui:UiBinder>

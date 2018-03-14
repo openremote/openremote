@@ -64,11 +64,13 @@
                     </div>
                 </div>
 
-                <div class="or-FormField">
-                    <input class="or-FormControl or-FormButtonPrimary or-PushButton"
+                <div class="or-FormField layout horizontal center-center">
+                    <button class="or-FormControl or-FormButtonPrimary or-PushButton"
                            name="login"
-                           type="submit"
-                           value="${msg("doLogIn")}"/>
+                           type="submit">
+                        <span class="or-Icon fa fa-sign-in"></span>
+                        <span class="html-face">${msg("doLogIn")}</span>
+                    </button>
                 </div>
             </div>
         </form>

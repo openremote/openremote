@@ -1,12 +1,13 @@
 package org.openremote.test.user
 
 import org.openremote.container.timer.TimerService
-import org.openremote.manager.server.notification.FCMDeliveryService
-import org.openremote.manager.server.notification.NotificationService
-import org.openremote.manager.server.setup.SetupService
-import org.openremote.manager.server.setup.builtin.KeycloakDemoSetup
-import org.openremote.manager.server.setup.builtin.ManagerDemoSetup
-import org.openremote.manager.shared.notification.NotificationResource
+import org.openremote.manager.notification.FCMBaseMessage
+import org.openremote.manager.notification.FCMDeliveryService
+import org.openremote.manager.notification.NotificationService
+import org.openremote.manager.setup.SetupService
+import org.openremote.manager.setup.builtin.KeycloakDemoSetup
+import org.openremote.manager.setup.builtin.ManagerDemoSetup
+import org.openremote.model.notification.NotificationResource
 import org.openremote.model.notification.ActionType
 import org.openremote.model.notification.AlertAction
 import org.openremote.model.notification.AlertNotification
@@ -18,11 +19,13 @@ import spock.lang.Specification
 import javax.ws.rs.WebApplicationException
 
 import static org.openremote.container.util.MapAccess.getString
-import static org.openremote.manager.server.setup.AbstractKeycloakSetup.KEYCLOAK_PASSWORD
-import static org.openremote.manager.server.setup.AbstractKeycloakSetup.KEYCLOAK_PASSWORD_DEFAULT
+import static org.openremote.manager.setup.AbstractKeycloakSetup.SETUP_ADMIN_PASSWORD
+import static org.openremote.manager.setup.AbstractKeycloakSetup.SETUP_ADMIN_PASSWORD_DEFAULT
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID
 import static org.openremote.model.Constants.MASTER_REALM
 import static org.openremote.model.Constants.MASTER_REALM_ADMIN_USER
+import static org.openremote.manager.notification.FCMDeliveryService.NOTIFICATION_FIREBASE_API_KEY
+import static org.openremote.manager.notification.FCMDeliveryService.NOTIFICATION_FIREBASE_URL
 
 class NotificationServiceTest extends Specification implements ManagerContainerTrait {
 
@@ -30,14 +33,17 @@ class NotificationServiceTest extends Specification implements ManagerContainerT
 
         given: "the server container is started"
         def serverPort = findEphemeralPort()
-        def container = startContainer(defaultConfig(serverPort), defaultServices())
+        def container = startContainer(defaultConfig(serverPort) << [
+            (NOTIFICATION_FIREBASE_API_KEY): "test",
+            (NOTIFICATION_FIREBASE_URL): "test"
+        ], defaultServices())
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
 
         and: "a mock FCM delivery service"
         def mockFCMDeliveryService = Spy(FCMDeliveryService, constructorArgs: [container]) {
             // Always "deliver" to FCM
-            sendPickupSignalThroughFCM(*_) >> {
+            sendFCMMessage(_ as FCMBaseMessage) >> {
                 return true
             }
         }
@@ -67,7 +73,7 @@ class NotificationServiceTest extends Specification implements ManagerContainerT
                 MASTER_REALM,
                 KEYCLOAK_CLIENT_ID,
                 MASTER_REALM_ADMIN_USER,
-                getString(container.getConfig(), KEYCLOAK_PASSWORD, KEYCLOAK_PASSWORD_DEFAULT)
+                getString(container.getConfig(), SETUP_ADMIN_PASSWORD, SETUP_ADMIN_PASSWORD_DEFAULT)
         ).token
 
         def notification = new AlertNotification(

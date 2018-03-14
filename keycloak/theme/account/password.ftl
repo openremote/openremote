@@ -6,7 +6,7 @@
     <div class="flex or-MainContent">
 
         <div class="or-Headline">
-            <span class="or-HeadlineIcon fa fa-key"></span>
+            <span class="or-Icon fa fa-key"></span>
             <span class="or-HeadlineText">${msg("changePasswordHtmlTitle")}</span>
         </div>
 
@@ -57,7 +57,7 @@
             <div class="or-FormField">
                 <button type="submit" class="or-FormControl or-FormButtonPrimary or-PushButton"
                         name="submitAction" value="Save">
-                    <span class="or-PushButtonIcon fa fa-save"></span><span class="html-face">${msg("doSave")}</span>
+                    <span class="or-Icon fa fa-save"></span><span class="html-face">${msg("doSave")}</span>
                 </button>
             </div>
         </div>

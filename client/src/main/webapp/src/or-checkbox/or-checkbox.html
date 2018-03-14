@@ -1,0 +1,71 @@
+<link rel="import" href="../or-app/or-style.html">
+
+<dom-module id="or-checkbox">
+
+    <template>
+        <style include="or-style">
+            :host {
+                width: 1.5em;
+                height: 1.5em;
+                background-color: var(--theme-lightgreen);
+                color: var(--theme-black);
+                cursor: pointer;
+                -webkit-tap-highlight-color: transparent;
+                -webkit-touch-callout: none;
+                -webkit-user-select: none;
+                -moz-user-select: none;
+                -ms-user-select: none;
+                user-select: none;
+            }
+
+            :host(:hover) {
+                opacity: .8;
+            }
+
+            .mark {
+                margin: 0 !important;
+            }
+        </style>
+
+        <span class$="mark [[icon('check')]]" hidden$="[[!checked]]"></span>
+
+    </template>
+
+    <script>
+        class OpenRemoteCheckbox extends OpenRemoteComponent {
+
+            static get is() {
+                return "or-checkbox";
+            }
+
+            static get properties() {
+                return {
+                    checked: {
+                        type: Boolean,
+                        value: false,
+                        notify: true
+                    }
+                }
+            }
+
+
+            ready() {
+                super.ready();
+                this.shadowRoot.host.classList.add("layout", "vertical", "center-center")
+                this.shadowRoot.host.addEventListener("click", () => {
+                    this.set("checked", !this.checked);
+                    this.dispatchEvent(new CustomEvent("change", {detail: this.checked}));
+                });
+            }
+
+            connectedCallback() {
+                super.connectedCallback();
+                this.showComponent();
+            }
+
+        }
+
+        defineAppElement(OpenRemoteCheckbox, OpenRemoteCheckbox.is, "Checkbox");
+    </script>
+
+</dom-module>

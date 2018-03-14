@@ -19,8 +19,6 @@
  */
 package org.openremote.model.attribute;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueType;
@@ -106,19 +104,12 @@ public class AttributeLink {
         return attributeRef;
     }
 
-    @JsonIgnore
     public Optional<ObjectValue> getConverter() {
         return Optional.ofNullable(converter);
     }
 
     public void setConverter(ObjectValue converter) {
         this.converter = converter;
-    }
-
-    // For GWT jackson only
-    @JsonProperty("converter")
-    private ObjectValue getConverterPrivate() {
-        return converter;
     }
 
     public ObjectValue toObjectValue() {

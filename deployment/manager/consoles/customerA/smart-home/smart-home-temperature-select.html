@@ -1,0 +1,68 @@
+<link rel="import" href="smart-home-component.html">
+<link rel="import" href="smart-home-style.html">
+
+<dom-module id="smart-home-temperature-select">
+    <template>
+        <style include="smart-home-style">
+        </style>
+
+        <div class="or-Select">
+            <select value="[[temperature]]"
+                    on-change="onTemperatureChange"
+                    title="[[localize('Temperature')]]">
+                <template is="dom-repeat" items="[[availableTemperatures]]" as="t">
+                    <option value="[[t]]" selected$="[[isSelected(temperature, t)]]">
+                        [[formatAttributeValue(temperatureFormat, t)]]
+                    </option>
+                </template>
+            </select>
+        </div>
+    </template>
+
+    <script>
+        class SmartHomeTemperatureSelect extends SmartHomeComponent {
+            static get is() {
+                return "smart-home-temperature-select";
+            }
+
+            static get properties() {
+                return {
+                    temperatureFormat: {
+                        type: String
+                    },
+                    temperature: {
+                        type: Number,
+                    },
+                    availableTemperatures: {
+                        type: Array,
+                        value: () => {
+                            let temperatures = [];
+                            // Support temperatures from 11 to 31 degrees
+                            for(let t = 11; t <= 31; t++) {
+                                temperatures.push(t);
+                            }
+                            return temperatures
+                        }
+                    }
+                }
+            }
+
+            ready() {
+                super.ready();
+                this.shadowRoot.host.classList.add("flex-none");
+            }
+
+            isSelected(temperature, t) {
+                return temperature === t;
+            }
+
+            onTemperatureChange(e) {
+                this.set("temperature", parseInt(e.target.value));
+                this.dispatchEvent(new CustomEvent("change", {detail: this.temperature}));
+            }
+        }
+
+        defineAppElement(SmartHomeTemperatureSelect, SmartHomeTemperatureSelect.is, "SmartHomeTemperatureSelect");
+    </script>
+
+</dom-module>

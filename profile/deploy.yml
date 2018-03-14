@@ -92,15 +92,15 @@ services:
       TZ: Europe/Zurich
 
       # If developer mode is enabled, all setup tasks will be executed on application startup.
-      # This will clean all data in Keycloak and the Manager database, and then import demo/test
-      # data. Some caching and other runtime performance-optimizations will also be disabled.
+      # This will clean all data in the database, and then import demo/test data. Some caching and
+      # other runtime performance-optimizations will also be disabled.
       DEV_MODE: 'false'
 
-      # This switch can wipe all your Manager and Keycloak data, this is the factory reset!
+      # This switch can wipe your database, this is the factory reset!
       SETUP_WIPE_CLEAN_INSTALL: 'true'
       # When you are ready to permanently install your project, replace it with the next lines...
       # SETUP_WIPE_CLEAN_INSTALL: # Allow override on CLI
-      # KEYCLOAK_PASSWORD: # Allow override on CLI
+      # SETUP_ADMIN_PASSWORD: # Allow override on CLI
 
       # Optional: Configure SMTP smart host for Keycloak, to send password reset emails etc.
       #SETUP_KEYCLOAK_EMAIL_HOST: smtp-host.demo.tld
@@ -115,6 +115,7 @@ services:
       SETUP_IMPORT_DEMO_USERS: 'true'
       SETUP_IMPORT_DEMO_ASSETS: 'true'
       SETUP_IMPORT_DEMO_RULES: 'true'
+      SETUP_IMPORT_DEMO_SCENES: 'true'
 
       # Create a demo agent with example configurations for all built-in protocols:
       #
@@ -156,6 +157,10 @@ services:
       KEYCLOAK_HOST: keycloak
       KEYCLOAK_PORT: 8080
 
+      # The service-internal webservice interface binding, bind to all interfaces
+      # when running  in container. Default is 127.0.0.1.
+      WEBSERVER_LISTEN_HOST: 0.0.0.0
+
       # Optional: Console applications can register for push notifications through FCM.
       # NOTIFICATION_FIREBASE_URL: https://fcm.googleapis.com/fcm/send
       # NOTIFICATION_FIREBASE_API_KEY = '...'
@@ -164,8 +169,11 @@ services:
       # have the name of a realm to which the console app belongs.
       # CONSOLES_DOCROOT: '/deployment/consoles'
 
-      # Optional: Custom location of the Manager UI customisations.
-      # UI_DOCROOT: '/deployment/ui'
+      # Optional: Disable HTTP redirects when a console application requests libraries which
+      # are delivered and used on the platform. This is necessary if your console application
+      # needs a different version of Polymer, Chart JS, or any of the other "bower_components"
+      # which are by default served as static resources from the manager service.
+      # CONSOLE_USE_STATIC_BOWER_COMPONENTS = 'false'
 
       # Optional: Provide a path to the map tiles database file (see https://openmaptiles.com/).
       # MAP_TILES_PATH: '/deployment/map/mapdata.mbtiles'
@@ -177,18 +185,16 @@ services:
       # Override logging.properties with a file of your choice.
       # LOGGING_CONFIG_FILE: '/deployment/logging.properties'
 
-      # The number of threads and therefore rules engines that can be instantiated (default unlimited).
-      # RULES_THREADS_MAX: 32
-
       # The number of threads and therefore background tasks that can be executed at the same
       # time. Used by scheduled, usually short-lived and non-blocking tasks, such as protocols
       # polling a remote service at regular interval, or the internal checks for expired client
-      # subscriptions on the event bus (default depends on detected CPU cores).
+      # subscriptions on the event bus (default depends on detected CPU cores). Also used by
+      # the rules engine.
       # SCHEDULED_TASKS_THREADS_MAX: 4
 
-      # When asset attributes are enabled for rule events, each value update will be an event fact
-      # in a rules knowledge session. You can set the global default expiration time span, after which
-      # rule event facts are retracted automatically. Default is 1 hour.
+      # When asset attributes are enabled for rule events, each value update will be a temporary
+      # fact in rules. You can set the global default expiration time span used when no other
+      # attribute-level configuration exists. Default is 1 hour.
       # RULE_EVENT_EXPIRES: '1h'
 
       # The identity provider implementation to use for managing user identities, roles, and
@@ -196,23 +202,22 @@ services:
       # provides full multi-tenancy identity and role management. The basic provider supports
       # only superusers and their text passwords, managed in a simple database table.
       # IDENTITY_PROVIDER: 'basic'
-      # SETUP_BASIC_IDENTITY_ADMIN_PASSWORD: 'secret'
 
       # Location of the static manager (UI and API) resources, you don't need to override this
-      # unless you want to deploy a modified version of the Manager UI.
-      # MANAGER_DOCROOT: 'manager/client/src/main/webapp'
+      # unless you want to deploy a modified version of the Manager UI and JavaScript components.
+      # MANAGER_DOCROOT: 'client/src/main/webapp'
 
       # Custom JVM options (increase heap size if required)
       JAVA_OPTS: '-Xms400m -Xmx400m
                   -XX:CompressedClassSpaceSize=25m -XX:MaxMetaspaceSize=150m
-                  -XX:InitialCodeCacheSize=25m -XX:ReservedCodeCacheSize=25m
+                  -XX:InitialCodeCacheSize=50m -XX:ReservedCodeCacheSize=50m
                   -XX:MaxDirectMemorySize=25m
                   -XX:NativeMemoryTracking=summary
                   -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/javadump.core.hprof'
 
     # Resource limits
-    mem_limit: 700m
-    memswap_limit: 700m
+    mem_limit: 800m
+    memswap_limit: 800m
 
     # Configure logging of the container, see deployment/logging.properties
     logging:
@@ -237,13 +242,10 @@ services:
       # Switch to DEBUG to diagnose Keycloak problems.
       KEYCLOAK_LOGLEVEL: INFO
 
-      # The master realm superuser, you should not change this.
-      KEYCLOAK_USER: admin
-
       # CHANGE THIS PASSWORD BEFORE STARTING THE STACK! THIS IS ONLY FOR DEMO!
-      KEYCLOAK_PASSWORD: secret
+      SETUP_ADMIN_PASSWORD: secret
       # When you are ready to permanently install your project, replace it with the next line ...
-      # KEYCLOAK_PASSWORD: # Allow override on CLI
+      # SETUP_ADMIN_PASSWORD: # Allow override on CLI
 
       # Configure how Keycloak connects to the database
       POSTGRES_DATABASE: openremote
@@ -253,15 +255,15 @@ services:
       # Custom JVM options (increase heap size if required)
       JAVA_OPTS: '-Xms300m -Xmx300m
                   -XX:CompressedClassSpaceSize=25m -XX:MaxMetaspaceSize=150m
-                  -XX:InitialCodeCacheSize=25m -XX:ReservedCodeCacheSize=25m
+                  -XX:InitialCodeCacheSize=50m -XX:ReservedCodeCacheSize=50m
                   -XX:MaxDirectMemorySize=25m
                   -XX:NativeMemoryTracking=summary
                   -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/javadump.core.hprof
                   -Djava.net.preferIPv4Stack=true -Djboss.modules.system.pkgs=org.jboss.byteman -Djava.awt.headless=true'
 
     # Resource limits
-    mem_limit: 600m
-    memswap_limit: 600m
+    mem_limit: 700m
+    memswap_limit: 700m
 
     # Configure logging of the container
     logging:
@@ -295,8 +297,8 @@ services:
       # docker exec -it <container ID> psql -U openremote
 
     # Resource limits
-    mem_limit: 300m
-    memswap_limit: 300m
+    mem_limit: 400m
+    memswap_limit: 400m
 
     # Configure logging of the container
     logging:

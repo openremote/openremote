@@ -62,11 +62,7 @@ public enum AttributeType {
      * into {@link TemplateFilter} and available in the template as
      * {@link TemplateFilter#TEMPLATE_PARAM_ASSET_STATE} and {@link TemplateFilter#TEMPLATE_PARAM_ASSET_EVENT}.
      */
-    RULES_TEMPLATE_FILTER("filter", ValueType.ARRAY, value ->
-        TemplateFilter.fromModelValue("test", value).isPresent()
-            ? Optional.empty()
-            : Optional.of(new ValidationFailure(ATTRIBUTE_TYPE_INVALID_TEMPLATE_FILTER))
-    ),
+    RULES_TEMPLATE_FILTER("filter", ValueType.ARRAY, value -> Optional.empty()),
 
     PERCENTAGE("percent", ValueType.NUMBER,
         value -> Values.getNumber(value)
@@ -235,6 +231,10 @@ public enum AttributeType {
 
     FLOW_GPM("tachometer", ValueType.NUMBER, value -> Optional.empty(),
         new MetaItem(FORMAT, Values.create("%0.5f gpm"))
+    ),
+
+    DIRECTION_DECIMAL_DEGREES("compass", ValueType.NUMBER, value -> Optional.empty(),
+        new MetaItem(FORMAT, Values.create("%0.1f deg"))
     );
 
     public static final String DEFAULT_ICON = "circle-thin";

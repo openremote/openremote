@@ -26,6 +26,7 @@ import org.openremote.container.security.keycloak.AccessTokenAuthContext;
 import org.openremote.container.security.AuthContext;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.*;
 
@@ -40,7 +41,10 @@ public class WebResource implements AuthContext {
     protected Application application;
 
     @Context
-    HttpServletRequest request;
+    protected HttpServletRequest request;
+
+    @Context
+    protected HttpServletResponse response;
 
     @Context
     protected UriInfo uriInfo;

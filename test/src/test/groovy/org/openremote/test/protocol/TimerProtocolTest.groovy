@@ -2,11 +2,11 @@ package org.openremote.test.protocol
 
 import org.openremote.agent.protocol.timer.TimerProtocol
 import org.openremote.agent.protocol.timer.TimerValue
-import org.openremote.manager.server.asset.AssetProcessingService
-import org.openremote.manager.server.asset.AssetStorageService
-import org.openremote.manager.server.asset.ServerAsset
-import org.openremote.manager.server.setup.SetupService
-import org.openremote.manager.server.setup.builtin.ManagerDemoSetup
+import org.openremote.manager.asset.AssetProcessingService
+import org.openremote.manager.asset.AssetStorageService
+import org.openremote.manager.asset.ServerAsset
+import org.openremote.manager.setup.SetupService
+import org.openremote.manager.setup.builtin.ManagerDemoSetup
 import org.openremote.model.asset.AssetAttribute
 import org.openremote.model.asset.AssetQuery
 import org.openremote.model.asset.AssetType
@@ -26,7 +26,7 @@ class TimerProtocolTest extends Specification implements ManagerContainerTrait {
     def "Check timer protocol agent and device asset deployment"() {
 
         given: "expected conditions"
-        def conditions = new PollingConditions(timeout: 20, initialDelay: 0)
+        def conditions = new PollingConditions(timeout: 10, initialDelay: 0)
 
         when: "the container starts"
         def serverPort = findEphemeralPort()
@@ -40,6 +40,7 @@ class TimerProtocolTest extends Specification implements ManagerContainerTrait {
 
         then: "the container should be running and attributes linked"
         conditions.eventually {
+            assert isContainerRunning()
             assert noEventProcessedIn(assetProcessingService, 500)
 
             apartment1 = assetStorageService.find(managerDemoSetup.apartment1Id, true)
@@ -59,7 +60,7 @@ class TimerProtocolTest extends Specification implements ManagerContainerTrait {
 
         and: "the quartz job has the correct time"
         conditions.eventually {
-            def awaySceneFridayRef = new AttributeRef(sceneAgent.id, "awaySceneFriday")
+            def awaySceneFridayRef = new AttributeRef(sceneAgent.id, "awaySceneFRIDAY")
             def timerId = timerProtocol.getTimerId(awaySceneFridayRef)
             def jobKey = JobKey.jobKey("cronJob1", timerId)
             def jobDetail = timerProtocol.cronScheduler.scheduler.getJobDetail(jobKey)
@@ -71,19 +72,29 @@ class TimerProtocolTest extends Specification implements ManagerContainerTrait {
             assert cronTrigger.cronExpression == "0 30 8 ? * FRI *"
         }
 
+        and: "all protocol linked attributes should be linked"
+        conditions.eventually {
+            assert timerProtocol.linkedAttributes.size() == 56
+        }
+
         when: "a trigger is disabled"
         def disableScene = new AttributeEvent(managerDemoSetup.apartment1Id, "awaySceneEnabledFRIDAY", Values.create(false))
         assetProcessingService.sendAttributeEvent(disableScene)
 
         then: "the corresponding cron job should be removed from the cron scheduler"
         conditions.eventually {
-            def awaySceneFridayRef = new AttributeRef(sceneAgent.id, "awaySceneFriday")
+            def awaySceneFridayRef = new AttributeRef(sceneAgent.id, "awaySceneFRIDAY")
             def timerId = timerProtocol.getTimerId(awaySceneFridayRef)
             def jobKey = JobKey.jobKey("cronJob1", timerId)
             def jobDetail = timerProtocol.cronScheduler.scheduler.getJobDetail(jobKey)
             def triggers = timerProtocol.cronScheduler.scheduler.getTriggersOfJob(jobKey)
             assert jobDetail == null
             assert triggers.isEmpty()
+        }
+
+        and: "all protocol linked attributes should be re-linked"
+        conditions.eventually {
+            assert timerProtocol.linkedAttributes.size() == 56
         }
     
         when: "the trigger is re-enabled"
@@ -92,7 +103,7 @@ class TimerProtocolTest extends Specification implements ManagerContainerTrait {
 
         then: "the quartz job should be recreated and have the correct time"
         conditions.eventually {
-            def awaySceneFridayRef = new AttributeRef(sceneAgent.id, "awaySceneFriday")
+            def awaySceneFridayRef = new AttributeRef(sceneAgent.id, "awaySceneFRIDAY")
             def timerId = timerProtocol.getTimerId(awaySceneFridayRef)
             def jobKey = JobKey.jobKey("cronJob1", timerId)
             def jobDetail = timerProtocol.cronScheduler.scheduler.getJobDetail(jobKey)
@@ -110,7 +121,7 @@ class TimerProtocolTest extends Specification implements ManagerContainerTrait {
 
         then: "the quartz job should have the new trigger time"
         conditions.eventually {
-            def awaySceneFridayRef = new AttributeRef(sceneAgent.id, "awaySceneFriday")
+            def awaySceneFridayRef = new AttributeRef(sceneAgent.id, "awaySceneFRIDAY")
             def timerId = timerProtocol.getTimerId(awaySceneFridayRef)
             def jobKey = JobKey.jobKey("cronJob1", timerId)
             def jobDetail = timerProtocol.cronScheduler.scheduler.getJobDetail(jobKey)
@@ -126,7 +137,7 @@ class TimerProtocolTest extends Specification implements ManagerContainerTrait {
         apartment1.addAttributes(
                 new AssetAttribute("awaySceneCronFRIDAY", AttributeType.STRING)
                     .addMeta(
-                        AgentLink.asAgentLinkMetaItem(new AttributeRef(sceneAgent.id, "awaySceneFriday")),
+                        AgentLink.asAgentLinkMetaItem(new AttributeRef(sceneAgent.id, "awaySceneFRIDAY")),
                         TimerValue.CRON_EXPRESSION.asMetaItem()
                 )
         )
@@ -135,7 +146,7 @@ class TimerProtocolTest extends Specification implements ManagerContainerTrait {
         then: "the attributes value should contain the timers cron expression"
         conditions.eventually {
             apartment1 = assetStorageService.find(apartment1.id, true)
-            apartment1.getAttribute("awaySceneCronFRIDAY").get().getValueAsString() == "0 0 4 ? * FRI *"
+            apartment1.getAttribute("awaySceneCronFRIDAY").get().getValueAsString().get() == "0 0 4 ? * FRI *"
         }
 
         when: "the trigger cron expression is modified"
@@ -144,7 +155,7 @@ class TimerProtocolTest extends Specification implements ManagerContainerTrait {
 
         then: "the quartz job should have the new cron expression"
         conditions.eventually {
-            def awaySceneFridayRef = new AttributeRef(sceneAgent.id, "awaySceneFriday")
+            def awaySceneFridayRef = new AttributeRef(sceneAgent.id, "awaySceneFRIDAY")
             def timerId = timerProtocol.getTimerId(awaySceneFridayRef)
             def jobKey = JobKey.jobKey("cronJob1", timerId)
             def jobDetail = timerProtocol.cronScheduler.scheduler.getJobDetail(jobKey)
@@ -157,24 +168,24 @@ class TimerProtocolTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "a timer action is executed"
-        timerProtocol.doTriggerAction(sceneAgent.getAttribute("awaySceneFriday").get())
+        timerProtocol.doTriggerAction(sceneAgent.getAttribute("awaySceneFRIDAY").get())
 
         then: "the linked macro should have been executed"
         conditions.eventually {
             apartment1 = assetStorageService.find(apartment1.id, true)
-            apartment1.getAttribute("awayScene").get().getValueAsString() == "COMPLETED"
-            apartment1.getAttribute("lastExecutedScene").get().getValueAsString() == "AWAY"
+            apartment1.getAttribute("awayScene").get().getValueAsString().get() == "COMPLETED"
+            apartment1.getAttribute("lastExecutedScene").get().getValueAsString().get() == "AWAY"
         }
 
         when: "a trigger is deleted"
         sceneAgent = assetStorageService.find(sceneAgent.id)
-        sceneAgent.removeAttribute("awaySceneFriday")
+        sceneAgent.removeAttribute("awaySceneFRIDAY")
         sceneAgent = assetStorageService.merge(sceneAgent)
 
         then: "the corresponding cron job should be removed from the cron scheduler"
         conditions.eventually {
-            assert !sceneAgent.getAttribute("awaySceneFriday").isPresent()
-            def awaySceneFridayRef = new AttributeRef(sceneAgent.id, "awaySceneFriday")
+            assert !sceneAgent.getAttribute("awaySceneFRIDAY").isPresent()
+            def awaySceneFridayRef = new AttributeRef(sceneAgent.id, "awaySceneFRIDAY")
             def timerId = timerProtocol.getTimerId(awaySceneFridayRef)
             def jobKey = JobKey.jobKey("cronJob1", timerId)
             def jobDetail = timerProtocol.cronScheduler.scheduler.getJobDetail(jobKey)

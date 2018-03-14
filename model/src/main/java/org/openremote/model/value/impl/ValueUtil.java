@@ -31,6 +31,7 @@ public class ValueUtil {
 
     private static class StringifyValueVisitor extends ValueVisitor {
 
+        private static final String NULL_LITERAL = "null";
         private static final Set<String> skipKeys;
 
         static {
@@ -97,6 +98,11 @@ public class ValueUtil {
         @Override
         public void visit(boolean bool, ValueContext ctx) {
             sb.append(bool);
+        }
+
+        @Override
+        public void visitNull(ValueContext ctx) {
+            sb.append(NULL_LITERAL);
         }
 
         @Override

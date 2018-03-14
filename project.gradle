@@ -39,6 +39,7 @@ idea {
     module {
         outputDir file('build/classes/main')
         testOutputDir file('build/classes/test')
+        excludeDirs += file(".node")
     }
 }
 if(project.convention.findPlugin(JavaPluginConvention)) {
@@ -99,6 +100,22 @@ task bowerPrune(type: NodeTask) {
     inputs.file("${project.projectDir}/bower.json")
     outputs.dir("${project.projectDir}/bower_components")
 }
+
+// TODO Test this... Add polymer tasks, we really only want to compile ES6 to ES5, maybe some minification!
+/*
+task polymerInstall(type: NpmTask) {
+    dependsOn nodeSetup
+    args = ['install', '-g', 'polymer-cli']
+    outputs.upToDateWhen {
+        nodeModuleGlobal('polymer-cli', 'polymer-cli').exists()
+    }
+}
+task polymerServe(type: NodeTask) {
+    dependsOn polymerInstall
+    script = nodeModuleGlobal('polymer-cli', 'polymer-cli')
+    args = ['serve']
+}
+*/
 
 // Configure Java build
 plugins.withType(JavaPlugin).whenPluginAdded {

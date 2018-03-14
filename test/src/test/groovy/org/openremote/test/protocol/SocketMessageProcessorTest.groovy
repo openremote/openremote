@@ -22,10 +22,11 @@ package org.openremote.test.protocol
 import io.netty.buffer.ByteBuf
 import io.netty.util.CharsetUtil
 import org.openremote.agent.protocol.AbstractSocketMessageProcessor
+import org.openremote.agent.protocol.tcp.TcpStringServer
 import org.openremote.model.asset.agent.ConnectionStatus
-import org.openremote.manager.server.concurrent.ManagerExecutorService
+import org.openremote.manager.concurrent.ManagerExecutorService
 import org.openremote.test.ManagerContainerTrait
-import org.openremote.test.SimpleSocketServer
+
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
@@ -42,7 +43,10 @@ class SocketMessageProcessorTest extends Specification implements ManagerContain
 
         and: "a simple socket echo server"
         def socketServerPort = findEphemeralPort()
-        def socketServer = new SimpleSocketServer(socketServerPort, true)
+        def socketServer = new TcpStringServer(new InetSocketAddress(socketServerPort), ";", Integer.MAX_VALUE, true)
+        socketServer.addMessageConsumer({
+            channel, message -> socketServer.sendMessage(message)
+        })
 
         and: "the container is started"
         def serverPort = findEphemeralPort()
@@ -56,7 +60,7 @@ class SocketMessageProcessorTest extends Specification implements ManagerContain
                 protocolExecutorService) {
 
             @Override
-            protected void decode(ByteBuf buf, List<String> messages) throws Exception {
+            protected void decode(ByteBuf buf, List<String> messages) {
                 ByteBuf bytes = buf.readBytes(buf.readableBytes())
                 String msg = bytes.toString(CharsetUtil.UTF_8)
                 bytes.release()
@@ -64,7 +68,7 @@ class SocketMessageProcessorTest extends Specification implements ManagerContain
             }
 
             @Override
-            protected void encode(String message, ByteBuf buf) throws Exception {
+            protected void encode(String message, ByteBuf buf) {
                 buf.writeBytes(message.getBytes(CharsetUtil.UTF_8))
             }
         }
@@ -82,7 +86,7 @@ class SocketMessageProcessorTest extends Specification implements ManagerContain
         when: "the server is started"
         socketServer.start()
 
-        then: "the server should be connected"
+        then: "the server should be running"
         conditions.eventually {
             assert socketServer.channelFuture.isDone()
             assert socketServer.channelFuture.isSuccess()
@@ -98,7 +102,7 @@ class SocketMessageProcessorTest extends Specification implements ManagerContain
         }
 
         when: "the server sends a message"
-        socketServer.sendMessage("Hello world".getBytes(CharsetUtil.UTF_8))
+        socketServer.sendMessage("Hello world")
 
         then: "we should receive the message"
         conditions.eventually {
@@ -106,7 +110,7 @@ class SocketMessageProcessorTest extends Specification implements ManagerContain
         }
 
         when: "we send a message to the server"
-        messageProcessor.sendMessage("Test")
+        messageProcessor.sendMessage("Test;")
 
         then: "we should get the same message back"
         conditions.eventually {
@@ -129,10 +133,11 @@ class SocketMessageProcessorTest extends Specification implements ManagerContain
         conditions.eventually {
             assert messageProcessor.connectionStatus == ConnectionStatus.CONNECTED
             assert connectionStatus == ConnectionStatus.CONNECTED
+            assert socketServer.allChannels.size() == 2
         }
 
         when: "the server sends a message"
-        socketServer.sendMessage("Is there anyone there?".getBytes(CharsetUtil.UTF_8))
+        socketServer.sendMessage("Is there anyone there?")
 
         then: "we should receive the message"
         conditions.eventually {
@@ -140,7 +145,7 @@ class SocketMessageProcessorTest extends Specification implements ManagerContain
         }
 
         when: "we send a message to the server"
-        messageProcessor.sendMessage("Yes there is!")
+        messageProcessor.sendMessage("Yes there is!;")
 
         then: "we should get the same message back"
         conditions.eventually {
@@ -166,7 +171,7 @@ class SocketMessageProcessorTest extends Specification implements ManagerContain
         }
 
         when: "the server sends a message"
-        socketServer.sendMessage("Is there anyone there?".getBytes(CharsetUtil.UTF_8))
+        socketServer.sendMessage("Is there anyone there?")
 
         then: "we should receive the message"
         conditions.eventually {
@@ -174,7 +179,7 @@ class SocketMessageProcessorTest extends Specification implements ManagerContain
         }
 
         when: "we send a message to the server"
-        messageProcessor.sendMessage("Yes there is!")
+        messageProcessor.sendMessage("Yes there is!;")
 
         then: "we should get the same message back"
         conditions.eventually {

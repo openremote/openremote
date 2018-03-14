@@ -36,7 +36,7 @@ public class ValueFactoryImpl implements ValueFactory {
 
     @Override
     public BooleanValue create(boolean bool) {
-        return new BooleanValueImpl(bool);
+        return BooleanValueImpl.create(bool);
     }
 
     @Override
@@ -55,6 +55,6 @@ public class ValueFactoryImpl implements ValueFactory {
             // some clients send in (json) expecting an eval is required
             jsonString = jsonString.substring(1, jsonString.length() - 1);
         }
-        return new ValueTokenizer(this, jsonString).nextValue();
+        return Optional.ofNullable(new ValueTokenizer(this, jsonString).nextValue());
     }
 }

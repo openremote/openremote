@@ -23,7 +23,7 @@ import org.openremote.agent.protocol.*;
 import org.openremote.agent.protocol.velbus.device.DevicePropertyValue;
 import org.openremote.agent.protocol.velbus.device.FeatureProcessor;
 import org.openremote.agent.protocol.velbus.device.VelbusDeviceType;
-import org.openremote.container.util.Util;
+import org.openremote.container.util.CodecUtil;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetMeta;
@@ -261,9 +261,9 @@ public abstract class AbstractVelbusProtocol extends AbstractProtocol implements
 
     @Override
     public Asset[] discoverLinkedAssetAttributes(AssetAttribute protocolConfiguration, FileInfo fileInfo) throws IllegalStateException {
-        Document xmlDoc = null;
+        Document xmlDoc;
         try {
-            String xmlStr = fileInfo.isBinary() ? new String(Util.decodeBase64(fileInfo.getContents()), "UTF8") : fileInfo.getContents();
+            String xmlStr = fileInfo.isBinary() ? new String(CodecUtil.decodeBase64(fileInfo.getContents()), "UTF8") : fileInfo.getContents();
             LOG.info("Parsing VELBUS project file: " + fileInfo.getName());
 
             xmlDoc = DocumentBuilderFactory
@@ -376,7 +376,7 @@ public abstract class AbstractVelbusProtocol extends AbstractProtocol implements
                                     propertyDescriptor.getDisplayName(),
                                     propertyDescriptor.getAttributeType(),
                                     propertyDescriptor.isReadOnly(),
-                                    propertyDescriptor.isExecutable(),
+                                    false,
                                     createLinkedAttributeMetaItems(
                                         deviceAddress,
                                         propertyDescriptor.getLinkName()

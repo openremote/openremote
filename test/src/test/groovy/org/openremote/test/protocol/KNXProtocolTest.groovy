@@ -26,10 +26,10 @@ import static org.openremote.model.asset.AssetMeta.LABEL
 
 import org.openremote.agent.protocol.knx.KNXProtocol
 import org.openremote.model.asset.agent.ConnectionStatus
-import org.openremote.manager.server.agent.AgentService
-import org.openremote.manager.server.asset.AssetProcessingService
-import org.openremote.manager.server.asset.AssetStorageService
-import org.openremote.manager.server.asset.ServerAsset
+import org.openremote.manager.agent.AgentService
+import org.openremote.manager.asset.AssetProcessingService
+import org.openremote.manager.asset.AssetStorageService
+import org.openremote.manager.asset.ServerAsset
 import org.openremote.model.Constants
 import org.openremote.model.asset.AssetAttribute
 import org.openremote.model.asset.AssetMeta

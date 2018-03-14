@@ -23,7 +23,6 @@ import com.google.gwt.regexp.shared.RegExp;
 import org.openremote.model.AbstractValueHolder;
 import org.openremote.model.HasUniqueResourceName;
 import org.openremote.model.ValidationFailure;
-import org.openremote.model.asset.AssetMeta;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Value;

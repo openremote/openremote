@@ -1,0 +1,74 @@
+<ui:UiBinder xmlns:ui="urn:ui:com.google.gwt.uibinder"
+             xmlns:g="urn:import:com.google.gwt.user.client.ui"
+             xmlns:w="urn:import:org.openremote.app.client.widget"
+             xmlns:syslog="urn:import:org.openremote.app.client.admin.syslog">
+
+    <ui:with field="managerMessages" type="org.openremote.app.client.i18n.ManagerMessages"/>
+    <ui:with field="widgetStyle" type="org.openremote.app.client.style.WidgetStyle"/>
+
+    <ui:style>
+        .formMessages {
+            max-width: 30em;
+        }
+
+        .expirationInput {
+            width: 3em;
+        }
+    </ui:style>
+
+    <g:HTMLPanel styleName="flex layout vertical">
+
+        <g:HTMLPanel
+                styleName="flex-none layout horizontal center end-justified {widgetStyle.SecondaryNav}">
+
+        </g:HTMLPanel>
+
+        <w:Form ui:field="form" addStyleNames="flex">
+
+            <g:FlowPanel styleName="flex-none layout vertical {widgetStyle.MainContent}">
+
+                <w:Headline icon="list-alt"
+                                 text="{managerMessages.syslog}"/>
+
+                <w:FormGroup>
+                    <w:label>
+                        <w:FormLabel addStyleNames="inline"
+                                          text="{managerMessages.store}"/>
+                    </w:label>
+                    <w:field>
+                        <w:FormField>
+                            <g:FlowPanel addStyleNames="layout horizontal center">
+                                <w:FormListBox ui:field="storeLevelListBox"/>
+                                <w:FormLabel addStyleNames="inline" text="{managerMessages.eventsFor}"/>
+                                <w:FormInputText ui:field="expirationInputText"
+                                                      addStyleNames="{style.expirationInput}"/>
+                                <w:FormListBox ui:field="expirationListBox"/>
+                            </g:FlowPanel>
+                        </w:FormField>
+                    </w:field>
+                    <w:actions>
+                        <w:FormGroupActions>
+                            <w:FormButton ui:field="saveSettingsButton"
+                                               icon="save"
+                                               primary="true"
+                                               text="{managerMessages.saveSettings}"/>
+
+                            <w:FormButton ui:field="removeAllButton"
+                                               icon="trash"
+                                               danger="true"
+                                               text="{managerMessages.removeAll}"/>
+                        </w:FormGroupActions>
+                    </w:actions>
+                </w:FormGroup>
+
+            </g:FlowPanel>
+
+            <syslog:SyslogItems ui:field="syslogItems"/>
+
+            <syslog:SyslogFilter ui:field="syslogFilter"/>
+
+        </w:Form>
+
+    </g:HTMLPanel>
+
+</ui:UiBinder>

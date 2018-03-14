@@ -19,22 +19,30 @@
  */
 package org.openremote.agent.protocol;
 
+import org.openremote.agent.protocol.filter.MessageFilter;
+import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
-import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.asset.AssetMeta;
-import org.openremote.model.asset.AssetType;
+import org.openremote.model.AbstractValueHolder;
+import org.openremote.model.asset.*;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.asset.agent.ProtocolConfiguration;
-import org.openremote.model.attribute.AttributeValidationResult;
 import org.openremote.model.asset.agent.ProtocolDescriptor;
-import org.openremote.model.attribute.AttributeEvent;
-import org.openremote.model.attribute.AttributeType;
-import org.openremote.model.attribute.MetaItem;
+import org.openremote.model.attribute.*;
+import org.openremote.model.value.ArrayValue;
+import org.openremote.model.value.NumberValue;
+import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.ValueType;
 
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
 import java.util.function.Consumer;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
 
 /**
  * A protocol is a thread-safe singleton {@link ContainerService} that connects devices and
@@ -70,6 +78,11 @@ import java.util.function.Consumer;
  * a linked attributes' value by sending  an {@link AttributeEvent} messages on the
  * {@link #SENSOR_QUEUE}, including the source protocol name in header {@link #SENSOR_QUEUE_SOURCE_PROTOCOL}.
  * <p>
+ * As well as an {@link AssetMeta#AGENT_LINK} meta item; if an attribute also has an {@link AssetMeta#LOCATION_LINK}
+ * meta item then the protocol should push location data into the {@link Asset} location property (if the protocol and
+ * device support it and the attribute is correctly configured to receive location data and the value must be of type
+ * {@link ArrayValue} and contain two {@link NumberValue}s representing longitude and latitude in that order.
+ * <p>
  * If the user writes a new value into the linked attribute, the protocol translates this value
  * change into a device (or service) action. Write operations on attributes linked to a protocol
  * configuration can be consumed by the protocol on the {@link #ACTUATOR_TOPIC} where the message
@@ -79,6 +92,10 @@ import java.util.function.Consumer;
  * Data type conversion is also delegated to the protocol implementation: If an attribute has a particular
  * {@link AttributeType} and therefore a base {@link ValueType}, the protocol implementation must
  * receive and send value change messages with values of that type.
+ * <p>
+ * Generic protocols should implement support for filtering state messages from devices (or services) before the
+ * protocol updates the linked attribute, to implement this protocols should use the {@link #META_PROTOCOL_FILTERS}
+ * {@link MetaItem}.
  * <p>
  * NOTE: That {@link #linkProtocolConfiguration} will always be called
  * before {@link #linkAttributes} and {@link #unlinkAttributes} will always be called before
@@ -95,7 +112,7 @@ import java.util.function.Consumer;
  * Protocol configuration (logical instance) is modified:
  * <ol>
  * <li>{@link #unlinkAttributes}</li>
- * <li>{@link #unlinkProtocolConfiguration)}</li>
+ * <li>{@link #unlinkProtocolConfiguration}</li>
  * <li>{@link #linkProtocolConfiguration}</li>
  * <li>{@link #linkAttributes}</li>
  * </ol>
@@ -124,8 +141,19 @@ import java.util.function.Consumer;
  */
 public interface Protocol extends ContainerService {
 
+    Logger LOG = Logger.getLogger(Protocol.class.getName());
     String ACTUATOR_TOPIC_TARGET_PROTOCOL = "Protocol";
     String SENSOR_QUEUE_SOURCE_PROTOCOL = "Protocol";
+
+    /**
+     * {@link MetaItem} for defining {@link MessageFilter}s to apply to values before they are sent on the
+     * {@link #SENSOR_QUEUE} (i.e. before it is used to update a protocol linked attribute); this is particularly
+     * useful for generic protocols. The {@link MetaItem} value should be an {@link ArrayValue} of {@link ObjectValue}s
+     * where each {@link ObjectValue} represents a serialised {@link MessageFilter}. The message should pass through the
+     * filters in array order.
+     */
+    String META_PROTOCOL_FILTERS = PROTOCOL_NAMESPACE + ":filters";
+
 
     // TODO: Some of these options should be configurable depending on expected load etc.
 
@@ -169,9 +197,12 @@ public interface Protocol extends ContainerService {
 
     /**
      * Links the protocol configuration to the protocol; the protocol is responsible for calling the statusConsumer
-     * to indicate the runtime state of the protocol configuration.
+     * to indicate the runtime state of the protocol configuration. If the {@link ConnectionStatus} is set to
+     * {@link ConnectionStatus#ERROR} or {@link ConnectionStatus#ERROR_CONFIGURATION} or this method throws an exception
+     * then attribute linking will be skipped for this {@link ProtocolConfiguration}.
      */
-    void linkProtocolConfiguration(AssetAttribute protocolConfiguration, Consumer<ConnectionStatus> statusConsumer);
+    void linkProtocolConfiguration(AssetAttribute protocolConfiguration, Consumer<ConnectionStatus> statusConsumer)
+        throws Exception;
 
     /**
      * Un-links the protocol configuration from the protocol; called whenever a protocolConfiguration is modified
@@ -196,4 +227,49 @@ public interface Protocol extends ContainerService {
      * protocol configuration is well formed but not necessarily that it connects to a working system).
      */
     AttributeValidationResult validateProtocolConfiguration(AssetAttribute protocolConfiguration);
+
+    /**
+     * Extract the {@link MessageFilter}s from the specified {@link Attribute}
+     */
+    static Optional<List<MessageFilter>> getLinkedAttributeMessageFilters(Attribute attribute) {
+        if (attribute == null) {
+            return Optional.empty();
+        }
+
+        Optional<ArrayValue> arrayValueOptional = attribute.getMetaItem(META_PROTOCOL_FILTERS)
+            .flatMap(AbstractValueHolder::getValueAsArray);
+
+        if (!arrayValueOptional.isPresent()) {
+            return Optional.empty();
+        }
+
+        try {
+            ArrayValue arrayValue = arrayValueOptional.get();
+            List<MessageFilter> messageFilters = new ArrayList<>(arrayValue.length());
+            for (int i = 0; i < arrayValue.length(); i++) {
+                ObjectValue objValue = arrayValue.getObject(i).orElseThrow(() ->
+                    new IllegalArgumentException("Attribute protocol filters meta item is invalid"));
+                MessageFilter filter = deserialiseMessageFilter(objValue);
+                messageFilters.add(filter);
+            }
+            return messageFilters.isEmpty() ? Optional.empty() : Optional.of(messageFilters);
+        } catch (IllegalArgumentException e) {
+            LOG.log(Level.WARNING, e.getMessage(), e);
+        }
+
+        return Optional.empty();
+    }
+
+    /**
+     * Deserialise a {@link MessageFilter} from an {@link ObjectValue}
+     */
+    static MessageFilter deserialiseMessageFilter(ObjectValue objectValue) throws IllegalArgumentException {
+        String json = objectValue.toJson();
+        try {
+            return Container.JSON.readValue(json, MessageFilter.class);
+        } catch (IOException ioException) {
+            LOG.log(Level.WARNING, "Failed to deserialise message filter", ioException);
+            throw new IllegalArgumentException(ioException);
+        }
+    }
 }

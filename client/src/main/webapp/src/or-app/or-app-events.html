@@ -1,0 +1,113 @@
+<dom-module id="or-app-events">
+    <script>
+        class AppEvents extends Polymer.Element {
+
+            static get is() {
+                return "or-app-events";
+            }
+
+            static get properties() {
+                return {
+                    app: {
+                        type: Object
+                    },
+                    renewalPeriodSeconds: {
+                        type: Number,
+                        value: 300
+                    },
+                    activeSubscriptions: {
+                        type: Object,
+                        value: {}
+                    }
+                };
+            }
+
+            ready() {
+                super.ready();
+            }
+
+            sendAttributeEvent(assetId, attributeName, value) {
+                let attributeEvent = {
+                    eventType: "attribute",
+                    attributeState: {
+                        attributeRef: {entityId: assetId, attributeName: attributeName},
+                        value: value
+                    }
+                }
+                openremote.INSTANCE.sendServiceMessage("EVENT" + JSON.stringify(attributeEvent));
+            }
+
+            subscribeAttributeEvents(assetIds) {
+                this.subscribe({
+                    eventType: "attribute",
+                    filter: {
+                        filterType: "attribute-entity-id",
+                        entityId: assetIds
+                    }
+                });
+            }
+
+            subscribe(subscription) {
+                if (subscription.eventType in this.activeSubscriptions) {
+                    clearInterval(this.activeSubscriptions[subscription.eventType]);
+                }
+                let message = "SUBSCRIBE" + JSON.stringify(subscription);
+                openremote.INSTANCE.sendServiceMessage(message);
+                let interval = setInterval(
+                    () => openremote.INSTANCE.sendServiceMessage(message), this.renewalPeriodSeconds / 2 * 1000
+                );
+                this.set("activeSubscriptions." + subscription.eventType, interval);
+            }
+
+            unsubscribe(eventType) {
+                if (eventType in this.activeSubscriptions) {
+                    clearInterval(this.activeSubscriptions[eventType]);
+                    let message = "UNSUBSCRIBE" + JSON.stringify({eventType: eventType});
+                    openremote.INSTANCE.sendServiceMessage(message);
+                    delete this.activeSubscriptions[eventType];
+                    this.notifyPath("activeSubscriptions." + eventType);
+                }
+            }
+
+            onConnectionClose() {
+                Object.keys(this.activeSubscriptions).forEach(eventType => {
+                    this.unsubscribe(eventType);
+                });
+                this.set("activeSubscriptions", {});
+            }
+
+            onServiceMessageReceived(data) {
+                if (!data)
+                    return;
+                if (data.startsWith("UNAUTHORIZED")) {
+                    openremote.INSTANCE.setError("Unauthorized event subscription.");
+                } else if (data.startsWith("EVENT")) {
+                    data = data.substring("EVENT".length);
+                    if (data.startsWith("[")) {
+                        // Handle array of events
+                        let events = JSON.parse(data);
+                        if (!Array.isArray(events)) {
+                            return;
+                        }
+                        events.forEach(event => {
+                            if (!event.eventType) {
+                                return;
+                            }
+                            this.dispatchEvent(new CustomEvent(event.eventType, {detail: event}))
+                        });
+                    } else {
+                        let event = JSON.parse(data);
+                        if (!event.eventType) {
+                            return;
+                        }
+                        this.dispatchEvent(new CustomEvent(event.eventType,  {detail: event}))
+                    }
+                }
+            }
+        }
+
+        // Upgrade immediately, so you can't use jsinterop here!
+        customElements.define(AppEvents.is, AppEvents);
+    </script>
+
+</dom-module>

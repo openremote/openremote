@@ -27,6 +27,9 @@ import java.util.Map;
  */
 public class MapAccess {
 
+    protected MapAccess() {
+    }
+
     static public String getString(Map<String, String> map, String key, String defaultValue) {
         return map.containsKey(key) ? map.get(key) : defaultValue;
     }

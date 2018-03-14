@@ -158,7 +158,7 @@ public class AttributeEvent extends SharedEvent {
     }
 
     public Optional<Value> getValue() {
-        return getAttributeState().getCurrentValue();
+        return getAttributeState().getValue();
     }
 
     @Override

@@ -69,14 +69,14 @@ ENV MAP_SETTINGS_PATH /deployment/map/mapsettings.json
 
 EXPOSE 8080
 
-HEALTHCHECK --interval=3s --timeout=3s --start-period=2s --retries=30 CMD curl --fail http://localhost:8080 || exit 1
+HEALTHCHECK --interval=3s --timeout=3s --start-period=2s --retries=120 CMD curl --fail --silent http://localhost:8080 || exit 1
 
 WORKDIR /opt/app
 
 ADD deployment /deployment
 RUN mkdir -p /deployment/extensions
 
-ADD server /opt/app
+ADD lib /opt/app/lib
 ADD client /opt/app
 
-ENTRYPOINT java $JAVA_OPTS -cp /opt/app/lib/*:/deployment/extensions/* org.openremote.manager.server.Main
+ENTRYPOINT java $JAVA_OPTS -cp /opt/app/lib/*:/deployment/extensions/* org.openremote.manager.Main

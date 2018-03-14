@@ -6,15 +6,15 @@ import org.openremote.agent.protocol.velbus.AbstractVelbusProtocol
 import org.openremote.agent.protocol.velbus.VelbusConfiguration
 import org.openremote.agent.protocol.velbus.VelbusPacket
 import org.openremote.agent.protocol.velbus.VelbusSerialProtocol
-import org.openremote.manager.server.agent.AgentService
-import org.openremote.manager.server.asset.AssetProcessingService
-import org.openremote.manager.server.asset.AssetStorageService
-import org.openremote.manager.server.asset.ServerAsset
-import org.openremote.manager.shared.agent.AgentResource
+import org.openremote.manager.agent.AgentService
+import org.openremote.manager.asset.AssetProcessingService
+import org.openremote.manager.asset.AssetStorageService
+import org.openremote.manager.asset.ServerAsset
 import org.openremote.model.asset.AssetAttribute
 import org.openremote.model.asset.AssetMeta
 import org.openremote.model.asset.AssetType
 import org.openremote.model.asset.agent.AgentLink
+import org.openremote.model.asset.agent.AgentResource
 import org.openremote.model.attribute.AttributeRef
 import org.openremote.model.attribute.AttributeType
 import org.openremote.model.attribute.MetaItem
@@ -28,8 +28,8 @@ import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
 import static org.openremote.container.util.MapAccess.getString
-import static org.openremote.manager.server.setup.AbstractKeycloakSetup.KEYCLOAK_PASSWORD
-import static org.openremote.manager.server.setup.AbstractKeycloakSetup.KEYCLOAK_PASSWORD_DEFAULT
+import static org.openremote.manager.setup.AbstractKeycloakSetup.SETUP_ADMIN_PASSWORD
+import static org.openremote.manager.setup.AbstractKeycloakSetup.SETUP_ADMIN_PASSWORD_DEFAULT
 import static org.openremote.model.Constants.*
 import static org.openremote.model.asset.agent.ProtocolConfiguration.initProtocolConfiguration
 
@@ -177,7 +177,7 @@ class VelbusProtocolTest extends Specification implements ManagerContainerTrait 
             MASTER_REALM,
             KEYCLOAK_CLIENT_ID,
             MASTER_REALM_ADMIN_USER,
-            getString(container.getConfig(), KEYCLOAK_PASSWORD, KEYCLOAK_PASSWORD_DEFAULT)
+            getString(container.getConfig(), SETUP_ADMIN_PASSWORD, SETUP_ADMIN_PASSWORD_DEFAULT)
         ).token
 
         and: "the agent resource"
@@ -218,5 +218,8 @@ class VelbusProtocolTest extends Specification implements ManagerContainerTrait 
         def memoTextAttribute = asset.getAttributesList().find {VelbusConfiguration.getVelbusDevicePropertyLink(it) == "MEMO_TEXT"}
         assert memoTextAttribute != null
         assert VelbusConfiguration.getVelbusDeviceAddress(memoTextAttribute) == 24
+
+        cleanup: "the server should be stopped"
+        stopContainer(container)
     }
 }

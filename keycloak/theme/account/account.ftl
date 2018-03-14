@@ -6,7 +6,7 @@
     <div class="flex or-MainContent">
 
         <div class="or-Headline">
-            <span class="or-HeadlineIcon fa fa-user"></span>
+            <span class="or-Icon fa fa-user"></span>
             <span class="or-HeadlineText">${msg("editAccountHtmlTitle")}</span>
             <div class="or-HeadlineSub">* ${msg("requiredFields")}</div>
         </div>
@@ -68,12 +68,12 @@
                 <button type="submit"
                         class="or-FormControl or-FormButtonPrimary or-PushButton"
                         name="submitAction" value="Save">
-                    <span class="or-PushButtonIcon fa fa-save"></span><span class="html-face">${msg("doSave")}</span>
+                    <span class="or-Icon fa fa-save"></span><span class="html-face">${msg("doSave")}</span>
                 </button>
                 <button type="submit"
                         class="or-FormControl or-FormButton or-PushButton"
                         name="submitAction" value="Cancel">
-                    <span class="or-PushButtonIcon fa fa-close"></span><span class="html-face">${msg("doCancel")}</span>
+                    <span class="or-Icon fa fa-close"></span><span class="html-face">${msg("doCancel")}</span>
                 </button>
             </div>
         </div>

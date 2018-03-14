@@ -19,15 +19,73 @@
  */
 package org.openremote.agent.protocol;
 
+import com.vividsolutions.jts.geom.Point;
 import org.openremote.container.ContainerService;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
+import org.openremote.model.asset.AssetMeta;
 import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.attribute.MetaItem;
+
+import java.util.function.Predicate;
 
 /**
  * Interface for protocols to perform limited asset related operations.
  */
 public interface ProtocolAssetService extends ContainerService {
+
+    /**
+     * Options when merging and storing assets from protocols.
+     */
+    class MergeOptions {
+
+        final protected String assignToUserName;
+        final protected Predicate<String> ignoredAttributeNames;
+        final protected Predicate<String> ignoredAttributeKeys;
+
+        public MergeOptions(String assignToUserName) {
+            this(assignToUserName, null, null);
+        }
+
+        public MergeOptions(Predicate<String> ignoredAttributeNames, Predicate<String> ignoredAttributeKeys) {
+            this(null, ignoredAttributeNames, ignoredAttributeKeys);
+        }
+
+        public MergeOptions(String assignToUserName, Predicate<String> ignoredAttributeKeys) {
+            this(assignToUserName, null, ignoredAttributeKeys);
+        }
+
+        public MergeOptions(String assignToUserName, Predicate<String> ignoredAttributeNames, Predicate<String> ignoredAttributeKeys) {
+            this.assignToUserName = assignToUserName;
+            this.ignoredAttributeNames = ignoredAttributeNames;
+            this.ignoredAttributeKeys = ignoredAttributeKeys;
+        }
+
+        /**
+         * Assigns the merged asset to the given user, can be <code>null</code> to not assign
+         * the asset to a user. The {@link #mergeAsset} call returns <code>null</code> if the
+         * user doesn't exist or the asset couldn't be assigned.
+         */
+        public String getAssignToUserName() {
+            return assignToUserName;
+        }
+
+        /**
+         * Compare existing and merged asset state before doing the actual storage merge. If only the
+         * ignored attributes have changed, don't perform the merge on storage.
+         */
+        public Predicate<String> getIgnoredAttributeNames() {
+            return ignoredAttributeNames;
+        }
+
+        /**
+         * Compare existing and merged asset state before doing the actual storage merge. If only the
+         * ignored keys of any attributes have changed, don't perform the merge on storage.
+         */
+        public Predicate<String> getIgnoredAttributeKeys() {
+            return ignoredAttributeKeys;
+        }
+    }
 
     /**
      * Protocols can update their own protocol configuration, for example, to store configuration
@@ -36,19 +94,28 @@ public interface ProtocolAssetService extends ContainerService {
     void updateProtocolConfiguration(AssetAttribute protocolConfiguration);
 
     /**
+     * Protocols can update an assets location. This is generally to be used for linked attributes
+     * that also have a {@link AssetMeta#LOCATION_LINK} {@link MetaItem}. Set location to null to
+     * clear an asset's location.
+     */
+    void updateAssetLocation(String assetId, Point location);
+
+    /**
      * Protocols may store assets in the context or update existing assets. A unique identifier
      * must be set by the protocol implementor, as well as a parent identifier. This operation
-     * stores transient or detached state and returns the current state.
+     * stores transient or detached state and returns the current state. It will override any
+     * existing stored asset data, ignoring versions.
      */
     Asset mergeAsset(Asset asset);
 
     /**
-     * Protocols may store assets in the context or update existing assets and assigns the given asset to the given user.
-     * A unique identifier must be set by the protocol implementor, as well as a parent identifier. This operation
-     * stores transient or detached state and returns the current state.
-     * Returns null if user doesn't exist or asset couldn't be assigned.
+     * Protocols may store assets in the context or update existing assets. A unique identifier
+     * must be set by the protocol implementor, as well as a parent identifier. This operation
+     * stores transient or detached state and returns the current state. It will override any
+     * existing stored asset data, ignoring versions. This call may return <code>null</code>
+     * if the desired {@link MergeOptions} were not successful.
      */
-    Asset mergeAsset(Asset asset, String userName);
+    Asset mergeAsset(Asset asset, MergeOptions options);
 
     /**
      * Protocols may remove assets from the context store.

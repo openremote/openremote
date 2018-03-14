@@ -38,28 +38,28 @@ public class TenantRuleset extends Ruleset {
     public TenantRuleset() {
     }
 
-    public TenantRuleset(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String templateAssetId, String realmId) {
-        super(id, version, createdOn, lastModified, name, enabled, templateAssetId);
+    public TenantRuleset(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String templateAssetId, String realmId, Lang lang) {
+        super(id, version, createdOn, lastModified, name, enabled, templateAssetId, lang);
         this.realmId = realmId;
     }
 
-    public TenantRuleset(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String templateAssetId, String rules, String realmId) {
-        super(id, version, createdOn, lastModified, name, enabled, templateAssetId, rules);
+    public TenantRuleset(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String templateAssetId, String rules, Lang lang, String realmId) {
+        super(id, version, createdOn, lastModified, name, enabled, templateAssetId, rules, lang);
         this.realmId = realmId;
     }
 
     public TenantRuleset(String realmId) {
-        this(null, realmId, null);
+        this(null, realmId, null, Lang.GROOVY);
 
     }
 
-    public TenantRuleset(String name, String realmId, String rules) {
-        super(name, rules);
+    public TenantRuleset(String name, String realmId, String rules, Lang lang) {
+        super(name, rules, lang);
         this.realmId = realmId;
     }
 
-    public TenantRuleset(String name, String realmId, String rules, String templateAssetId) {
-        super(name, rules, templateAssetId);
+    public TenantRuleset(String name, String realmId, String rules, Lang lang, String templateAssetId) {
+        super(name, rules, lang, templateAssetId);
         this.realmId = realmId;
     }
 
@@ -77,6 +77,7 @@ public class TenantRuleset extends Ruleset {
             "id='" + id + '\'' +
             ", version='" + version + '\'' +
             ", name='" + name + '\'' +
+            ", lang='" + lang + '\'' +
             ", createdOn='" + createdOn + '\'' +
             ", lastModified='" + lastModified + '\'' +
             ", enabled='" + enabled + '\'' +

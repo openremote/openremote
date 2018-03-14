@@ -1,11 +1,11 @@
 {
-  "name": "customer-a-demo",
+  "name": "smarthome-example",
   "version": "3.0.0",
   "homepage": "http://openremote.com/",
   "authors": [
     "OpenRemote Inc. <support@openremote.io>"
   ],
-  "description": "OR Manager",
+  "description": "OpenRemote SmartHome Example App",
   "main": "index.html",
   "license": "APGLv3",
   "ignore": [
@@ -16,8 +16,5 @@
     "tests"
   ],
   "dependencies": {
-    "polymer": "Polymer/polymer#^2.2.0",
-    "iron-flex-layout": "^2.0.0",
-    "font-awesome": "~4.7.0"
   }
 }

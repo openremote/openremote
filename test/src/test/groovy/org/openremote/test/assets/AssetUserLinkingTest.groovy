@@ -1,11 +1,11 @@
 package org.openremote.test.assets
 
 import org.openremote.container.timer.TimerService
-import org.openremote.manager.server.security.ManagerIdentityService
-import org.openremote.manager.server.setup.SetupService
-import org.openremote.manager.server.setup.builtin.KeycloakDemoSetup
-import org.openremote.manager.server.setup.builtin.ManagerDemoSetup
-import org.openremote.manager.shared.asset.AssetResource
+import org.openremote.manager.security.ManagerIdentityService
+import org.openremote.manager.setup.SetupService
+import org.openremote.manager.setup.builtin.KeycloakDemoSetup
+import org.openremote.manager.setup.builtin.ManagerDemoSetup
+import org.openremote.model.asset.AssetResource
 import org.openremote.model.asset.UserAsset
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
@@ -13,8 +13,8 @@ import spock.lang.Specification
 import javax.ws.rs.WebApplicationException
 
 import static org.openremote.container.util.MapAccess.getString
-import static org.openremote.manager.server.setup.AbstractKeycloakSetup.KEYCLOAK_PASSWORD
-import static org.openremote.manager.server.setup.AbstractKeycloakSetup.KEYCLOAK_PASSWORD_DEFAULT
+import static org.openremote.manager.setup.AbstractKeycloakSetup.SETUP_ADMIN_PASSWORD
+import static org.openremote.manager.setup.AbstractKeycloakSetup.SETUP_ADMIN_PASSWORD_DEFAULT
 import static org.openremote.model.Constants.*
 
 class AssetUserLinkingTest extends Specification implements ManagerContainerTrait {
@@ -34,7 +34,7 @@ class AssetUserLinkingTest extends Specification implements ManagerContainerTrai
                 MASTER_REALM,
                 KEYCLOAK_CLIENT_ID,
                 MASTER_REALM_ADMIN_USER,
-                getString(container.getConfig(), KEYCLOAK_PASSWORD, KEYCLOAK_PASSWORD_DEFAULT)
+                getString(container.getConfig(), SETUP_ADMIN_PASSWORD, SETUP_ADMIN_PASSWORD_DEFAULT)
         ).token
 
         and: "the asset resource"
@@ -51,7 +51,7 @@ class AssetUserLinkingTest extends Specification implements ManagerContainerTrai
         def userAssets = assetResource.getUserAssetLinks(null, keycloakDemoSetup.customerATenant.id, null, null)
 
         then: "result should match"
-        userAssets.length == 4
+        userAssets.length == 5
         userAssets.any {
             it.id.realmId == keycloakDemoSetup.customerATenant.id &&
                     it.id.userId == keycloakDemoSetup.testuser3Id &&
@@ -79,6 +79,14 @@ class AssetUserLinkingTest extends Specification implements ManagerContainerTrai
         userAssets.any {
             it.id.realmId == keycloakDemoSetup.customerATenant.id &&
                     it.id.userId == keycloakDemoSetup.testuser3Id &&
+                    it.id.assetId == managerDemoSetup.apartment1HallwayId &&
+                    it.assetName == "Hallway" &&
+                    it.parentAssetName == "Apartment 1" &&
+                    it.userFullName == "testuser3 (Testuserfirst Testuserlast)"
+        }
+        userAssets.any {
+            it.id.realmId == keycloakDemoSetup.customerATenant.id &&
+                    it.id.userId == keycloakDemoSetup.testuser3Id &&
                     it.id.assetId == managerDemoSetup.apartment2Id &&
                     it.assetName == "Apartment 2" &&
                     it.parentAssetName == "Smart Home" &&
@@ -89,7 +97,7 @@ class AssetUserLinkingTest extends Specification implements ManagerContainerTrai
         userAssets = assetResource.getUserAssetLinks(null, keycloakDemoSetup.customerATenant.id, keycloakDemoSetup.testuser3Id, null)
 
         then: "result should match"
-        userAssets.length == 4
+        userAssets.length == 5
 
         when: "the realm and user don't match"
         assetResource.getUserAssetLinks(null, keycloakDemoSetup.customerBTenant.id, keycloakDemoSetup.testuser3Id, null)

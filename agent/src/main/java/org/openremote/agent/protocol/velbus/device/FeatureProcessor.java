@@ -21,7 +21,6 @@ package org.openremote.agent.protocol.velbus.device;
 
 import org.openremote.agent.protocol.velbus.VelbusPacket;
 import org.openremote.model.attribute.AttributeType;
-import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.util.EnumUtil;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueType;
@@ -44,14 +43,13 @@ public abstract class FeatureProcessor {
         protected final String linkName;
         protected final AttributeType attributeType;
         protected final boolean readOnly;
-        protected final boolean executable;
 
         public PropertyDescriptor(
             String name,
             String displayName,
             String linkName,
             AttributeType attributeType) {
-            this(name, displayName, linkName, attributeType, false, false);
+            this(name, displayName, linkName, attributeType, false);
         }
 
         public PropertyDescriptor(
@@ -59,14 +57,12 @@ public abstract class FeatureProcessor {
             String displayName,
             String linkName,
             AttributeType attributeType,
-            boolean readOnly,
-            boolean executable) {
+            boolean readOnly) {
             this.name = name;
             this.displayName = displayName;
             this.linkName = linkName;
             this.attributeType = attributeType;
             this.readOnly = readOnly;
-            this.executable = executable;
         }
 
         public String getName() {
@@ -83,10 +79,6 @@ public abstract class FeatureProcessor {
 
         public boolean isReadOnly() {
             return readOnly;
-        }
-
-        public boolean isExecutable() {
-            return executable;
         }
 
         public String getLinkName() {
@@ -123,7 +115,7 @@ public abstract class FeatureProcessor {
         }
 
         public static LedState fromCode(int code) {
-            for (LedState type : LedState.values()) {
+            for (LedState type : values) {
                 if (type.getCode() == code) {
                     return type;
                 }

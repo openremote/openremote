@@ -32,7 +32,7 @@ services:
       SETUP_WIPE_CLEAN_INSTALL: 'true'
 
       # If you force clean, a new master admin user will be created with this password.
-      SETUP_BASIC_IDENTITY_ADMIN_PASSWORD: secret
+      SETUP_ADMIN_PASSWORD: secret
 
       # Other demo data can be imported as needed, these examples only use the simulator protocol.
       SETUP_IMPORT_DEMO_USERS: 'true'

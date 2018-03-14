@@ -24,6 +24,6 @@ package org.openremote.model.asset;
  * likes self referencing generic type parameters but hard to tell as the errors
  * generated are not helpful.
  */
-public class AssetQuery extends AbstractAssetQuery<AssetQuery> {
+public class AssetQuery extends BaseAssetQuery<AssetQuery> {
 
 }

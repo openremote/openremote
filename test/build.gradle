@@ -5,8 +5,8 @@ dependencies {
 
     compile "org.codehaus.groovy:groovy:$groovyVersion"
 
-    compile resolveProject(":manager:server")
-    compile resolveProject(":manager:client")
+    compile resolveProject(":manager")
+    compile resolveProject(":client")
 
     compile "junit:junit:$junitVersion"
     compile "org.spockframework:spock-core:$spockVersion"
@@ -39,4 +39,9 @@ dependencies {
 
 test {
     workingDir = findProject(":openremote") != null ? resolveProject("").projectDir : rootProject.projectDir
+    testLogging {
+        outputs.upToDateWhen {false}
+        // Enable this to show STDOUT/STDERR on console when running tests
+        // showStandardStreams = true
+    }
 }

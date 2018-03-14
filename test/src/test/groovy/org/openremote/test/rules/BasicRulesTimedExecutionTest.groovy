@@ -1,20 +1,19 @@
 package org.openremote.test.rules
 
-import org.openremote.manager.server.rules.RulesEngine
-import org.openremote.manager.server.rules.RulesService
-import org.openremote.manager.server.rules.RulesetStorageService
+import org.openremote.manager.rules.RulesEngine
+import org.openremote.manager.rules.RulesService
+import org.openremote.manager.rules.RulesetStorageService
 import org.openremote.model.rules.GlobalRuleset
 import org.openremote.model.rules.Ruleset
 import org.openremote.test.ManagerContainerTrait
+import spock.lang.Ignore
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
 import static java.util.concurrent.TimeUnit.SECONDS
-import static org.openremote.container.timer.TimerService.Clock.PSEUDO
-import static org.openremote.container.timer.TimerService.TIMER_CLOCK_TYPE
-import static org.openremote.manager.server.setup.builtin.ManagerDemoSetup.DEMO_RULE_STATES_GLOBAL
-import static org.openremote.test.RulesTestUtil.createRulesExecutionListener
+import static org.openremote.manager.setup.builtin.ManagerDemoSetup.DEMO_RULE_STATES_GLOBAL
 
+@Ignore // TODO Implement timer/deferred actions in rules engine
 class BasicRulesTimedExecutionTest extends Specification implements ManagerContainerTrait {
 
     RulesEngine globalEngine
@@ -36,9 +35,9 @@ class BasicRulesTimedExecutionTest extends Specification implements ManagerConta
         def rulesetStorageService = container.getService(RulesetStorageService.class)
 
         and: "registered rules execution listeners"
-        rulesService.rulesEngineListeners = { rulesEngine ->
+        rulesService.ruleEngineExecutionListeners = { rulesEngine ->
             if (rulesEngine.id == RulesService.ID_GLOBAL_RULES_ENGINE) {
-                return createRulesExecutionListener(globalEngineFiredRules)
+                return createRuleExecutionListener(globalEngineFiredRules)
             }
         }
 
@@ -78,9 +77,9 @@ class BasicRulesTimedExecutionTest extends Specification implements ManagerConta
         def rulesetStorageService = container.getService(RulesetStorageService.class)
 
         and: "registered rules execution listeners"
-        rulesService.rulesEngineListeners = { rulesEngine ->
+        rulesService.ruleEngineExecutionListeners = { rulesEngine ->
             if (rulesEngine.id == RulesService.ID_GLOBAL_RULES_ENGINE) {
-                return createRulesExecutionListener(globalEngineFiredRules)
+                return createRuleExecutionListener(globalEngineFiredRules)
             }
         }
 
@@ -105,7 +104,7 @@ class BasicRulesTimedExecutionTest extends Specification implements ManagerConta
         }
 
         when: "the clock is advanced by a few seconds"
-        advancePseudoClocks(100, SECONDS, container, globalEngine)
+        advancePseudoClock(100, SECONDS, container, globalEngine)
         // TODO Weird behavior of timer rules, pseudo clock, and active mode: More than 5 seconds is needed to fire rule twice
         // even more strange it stops at 2 even when advanced for more time. The same problems are with timer(cron: )
         // realtime clock seems to be OK

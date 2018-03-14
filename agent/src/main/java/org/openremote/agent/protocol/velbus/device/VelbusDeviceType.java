@@ -1,9 +1,5 @@
 package org.openremote.agent.protocol.velbus.device;
 
-import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.util.Pair;
-import org.openremote.model.value.ValueType;
-
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;

@@ -1,0 +1,87 @@
+<ui:UiBinder xmlns:ui="urn:ui:com.google.gwt.uibinder"
+             xmlns:g="urn:import:com.google.gwt.user.client.ui"
+             xmlns:w="urn:import:org.openremote.app.client.widget">
+
+    <ui:with field="managerMessages" type="org.openremote.app.client.i18n.ManagerMessages"/>
+    <ui:with field="widgetStyle" type="org.openremote.app.client.style.WidgetStyle"/>
+
+    <ui:style>
+        .navItem {
+            margin: 0 1em;
+        }
+
+        .noRulesetsLabel {
+            max-width: 30em;
+        }
+    </ui:style>
+
+    <ui:style field="tableStyle" type="org.openremote.app.client.rules.RulesetTable.Style">
+        .nameColumn {
+            width: 100%;
+        }
+
+        .createOnColumn {
+        }
+
+        .lastModifiedColumn {
+        }
+
+        .langColumn {
+        }
+
+        .enabledColumn {
+        }
+
+        .templateColumn {
+        }
+
+    </ui:style>
+
+    <w:FlexSplitPanel handleStyle="{widgetStyle.SplitPanelHandle}"
+                           firstPanelWidth="250"
+                           firstPanelMinWidth="0"
+                           secondPanelMinWidth="400">
+        <w:first>
+            <g:HTMLPanel ui:field="sidebarContainer"
+                         styleName="flex layout vertical {widgetStyle.SidebarContent}"/>
+        </w:first>
+        <w:second>
+            <g:HTMLPanel styleName="flex layout vertical">
+
+                <g:HTMLPanel
+                        styleName="layout horizontal center end-justified {widgetStyle.SecondaryNav}">
+
+                    <w:Hyperlink
+                            ui:field="createLink"
+                            addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem}"
+                            icon="plus-square"
+                            visible="false"
+                            text="{managerMessages.newRuleset}"/>
+
+                    <w:Hyperlink
+                            addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem}"
+                            icon="chain"
+                            targetHistoryToken="globalRules:"
+                            text="{managerMessages.manageGlobalRulesets}"/>
+
+                </g:HTMLPanel>
+
+                <g:HTMLPanel ui:field="mainContent"
+                             styleName="flex {widgetStyle.MainContent}">
+
+                    <w:Headline ui:field="headline" icon="chain"
+                                     sub="{managerMessages.manageTenantRulesets}"/>
+
+                    <g:Label ui:field="noRulesetsLabel"
+                             addStyleNames="{style.noRulesetsLabel} {widgetStyle.FormMessages} info"
+                             visible="true"
+                             text="{managerMessages.noRulesetsFound}"/>
+
+                </g:HTMLPanel>
+
+            </g:HTMLPanel>
+
+        </w:second>
+    </w:FlexSplitPanel>
+
+</ui:UiBinder>

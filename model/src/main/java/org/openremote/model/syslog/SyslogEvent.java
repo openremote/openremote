@@ -102,7 +102,7 @@ public class SyslogEvent extends SharedEvent {
     @Column(name = "SUBCATEGORY", length = 1024)
     protected String subCategory;
 
-    @Column(name = "MESSAGE", length = 131072)
+    @Column(name = "MESSAGE", length = 262144)
     protected String message;
 
     protected SyslogEvent() {
