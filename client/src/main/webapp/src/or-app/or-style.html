@@ -6,27 +6,10 @@
 <dom-module id="or-style">
     <template>
         <style include="or-theme or-icons iron-flex iron-flex-alignment iron-flex-factors iron-positioning">
-
-            * html, body {
-                box-sizing: border-box;
-            }
-
-            html, body {
-                width: 100%;
-                height: 100vh;
-                min-height: 100%;
-                margin: 0;
-                overflow: hidden;
-            }
-
-            *:focus {
-                outline: 0;
-            }
-
             .or-Viewport {
                 width: 100%;
                 height: 100vh;
-                min-height: 100%;
+                min-height: 100vh;
                 margin: 0;
             }
 
@@ -642,7 +625,6 @@
                 padding: 0 0.4em;
                 font-size: 1em;
                 min-height: 1.5em;
-                line-height: 1;
                 outline: 0;
                 border: 0;
                 border-radius: 0.15em;
@@ -664,54 +646,8 @@
                 pointer-events: none;
             }
 
-            .or-CheckBox {
-                position: absolute;
-                opacity: 0;
-                margin: 0;
-                cursor: pointer;
-                -webkit-touch-callout: none;
-                -webkit-user-select: none;
-                -moz-user-select: none;
-                -ms-user-select: none;
-                user-select: none;
-                -webkit-tap-highlight-color: transparent;
-            }
-
-            .or-CheckBox:disabled {
-                cursor: default;
-            }
-
-            .or-CheckBox,
-            .or-CheckBox + label,
-            .or-CheckBox + label:before {
-                font-size: 1em;
-                display: inline-block;
-                width: 1.5em;
-                height: 1.5em;
-            }
-
-            .or-CheckBox + label {
-                position: relative;
-                padding: 0;
-                pointer-events: none;
-            }
-
-            .or-CheckBox + label:before {
-                content: '';
-                vertical-align: text-top;
-                pointer-events: none;
-                border-radius: 0.15em;
-            }
-
-            .or-CheckBox:checked + label:after {
-                content: '';
-                position: absolute;
-                left: 0.4em;
-                top: 0.7em;
-                width: 0.2em;
-                height: 0.2em;
-                -webkit-transform: rotate(45deg);
-                transform: rotate(45deg);
+            .or-Select select:focus {
+                outline: 0;
             }
 
             .or-Icon {
@@ -739,6 +675,11 @@
                 box-sizing: content-box;
                 -moz-box-sizing: content-box;;
                 -webkit-box-sizing: content-box;;
+            }
+
+            .or-InputTime:focus,
+            .or-InputDate:focus {
+                outline: 0;
             }
 
             .or-InputTime::-webkit-datetime-edit,

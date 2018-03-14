@@ -16,6 +16,9 @@
 <dom-module id="smart-home-app">
     <template>
         <style include="smart-home-style">
+            :host {
+                min-height: 100vh;
+            }
         </style>
 
         <app-location use-hash-as-path route="{{appLocation}}"></app-location>
@@ -57,22 +60,22 @@
         <smart-home-body>
 
             <smart-home-scenes hidden$="[[!isActiveView(view, 'scenes')]]"
-                           residence="[[residence]]"></smart-home-scenes>
+                               residence="[[residence]]"></smart-home-scenes>
 
             <smart-home-energy hidden$="[[!isActiveView(view, 'energy')]]"
-                           residence="[[residence]]"
-                           rooms="[[rooms]]"></smart-home-energy>
+                               residence="[[residence]]"
+                               rooms="[[rooms]]"></smart-home-energy>
 
             <smart-home-security hidden$="[[!isActiveView(view, 'security')]]"
-                             residence="[[residence]]"
-                             rooms="[[rooms]]"></smart-home-security>
+                                 residence="[[residence]]"
+                                 rooms="[[rooms]]"></smart-home-security>
 
             <smart-home-climate hidden$="[[!isActiveView(view, 'climate')]]"
-                            residence="[[residence]]"
-                            rooms="[[rooms]]"></smart-home-climate>
+                                residence="[[residence]]"
+                                rooms="[[rooms]]"></smart-home-climate>
 
             <smart-home-settings hidden$="[[!isActiveView(view, 'settings')]]"
-                             residence="[[residence]]"></smart-home-settings>
+                                 residence="[[residence]]"></smart-home-settings>
 
         </smart-home-body>
     </template>
@@ -110,6 +113,8 @@
 
             ready() {
                 super.ready();
+
+                this.shadowRoot.host.classList.add("flex", "layout", "vertical");
 
                 console.log("Ready, initialising application state");
                 this.requests().sendAndReturn(

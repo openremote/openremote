@@ -2,6 +2,7 @@
 <link rel="import" href="smart-home-style.html">
 <link rel="import" href="smart-home-section.html">
 <link rel="import" href="smart-home-smart.html">
+<link rel="import" href="smart-home-temperature-select.html">
 
 <dom-module id="smart-home-climate">
     <template>
@@ -41,95 +42,10 @@
                     </div>
                     <template is="dom-if" if="[[item.roomHasTargetTemperature]]">
                         <div class="targetTemperature">
-                            <div class="or-Select">
-                                <select value="{{item.targetTemperature::change}}"
-                                        on-change="onTargetTemperatureChange"
-                                        title="Target Temperature">
-                                    <!-- TODO dom-repeat here is tricky, no matter where the items are computed, it's not working -->
-                                    <option value="11">[[formatAttributeValue(item.targetTemperatureFormat,11.0)]]
-                                    </option>
-                                    <option value="11.5">[[formatAttributeValue(item.targetTemperatureFormat,11.5)]]
-                                    </option>
-                                    <option value="12">[[formatAttributeValue(item.targetTemperatureFormat,12.0)]]
-                                    </option>
-                                    <option value="12.5">[[formatAttributeValue(item.targetTemperatureFormat,12.5)]]
-                                    </option>
-                                    <option value="13">[[formatAttributeValue(item.targetTemperatureFormat,13.0)]]
-                                    </option>
-                                    <option value="13.5">[[formatAttributeValue(item.targetTemperatureFormat,13.5)]]
-                                    </option>
-                                    <option value="14">[[formatAttributeValue(item.targetTemperatureFormat,14.0)]]
-                                    </option>
-                                    <option value="14.5">[[formatAttributeValue(item.targetTemperatureFormat,14.5)]]
-                                    </option>
-                                    <option value="15">[[formatAttributeValue(item.targetTemperatureFormat,15.0)]]
-                                    </option>
-                                    <option value="15.5">[[formatAttributeValue(item.targetTemperatureFormat,15.5)]]
-                                    </option>
-                                    <option value="16">[[formatAttributeValue(item.targetTemperatureFormat,16.0)]]
-                                    </option>
-                                    <option value="16.5">[[formatAttributeValue(item.targetTemperatureFormat,16.5)]]
-                                    </option>
-                                    <option value="17">[[formatAttributeValue(item.targetTemperatureFormat,17.0)]]
-                                    </option>
-                                    <option value="17.5">[[formatAttributeValue(item.targetTemperatureFormat,17.5)]]
-                                    </option>
-                                    <option value="18">[[formatAttributeValue(item.targetTemperatureFormat,18.0)]]
-                                    </option>
-                                    <option value="18.5">[[formatAttributeValue(item.targetTemperatureFormat,18.5)]]
-                                    </option>
-                                    <option value="19">[[formatAttributeValue(item.targetTemperatureFormat,19.0)]]
-                                    </option>
-                                    <option value="19.5">[[formatAttributeValue(item.targetTemperatureFormat,19.5)]]
-                                    </option>
-                                    <option value="20">[[formatAttributeValue(item.targetTemperatureFormat,20.0)]]
-                                    </option>
-                                    <option value="20.5">[[formatAttributeValue(item.targetTemperatureFormat,20.5)]]
-                                    </option>
-                                    <option value="21">[[formatAttributeValue(item.targetTemperatureFormat,21.0)]]
-                                    </option>
-                                    <option value="21.5">[[formatAttributeValue(item.targetTemperatureFormat,21.5)]]
-                                    </option>
-                                    <option value="22">[[formatAttributeValue(item.targetTemperatureFormat,22.0)]]
-                                    </option>
-                                    <option value="22.5">[[formatAttributeValue(item.targetTemperatureFormat,22.5)]]
-                                    </option>
-                                    <option value="23">[[formatAttributeValue(item.targetTemperatureFormat,23.0)]]
-                                    </option>
-                                    <option value="23.5">[[formatAttributeValue(item.targetTemperatureFormat,23.5)]]
-                                    </option>
-                                    <option value="24">[[formatAttributeValue(item.targetTemperatureFormat,24.0)]]
-                                    </option>
-                                    <option value="24.5">[[formatAttributeValue(item.targetTemperatureFormat,24.5)]]
-                                    </option>
-                                    <option value="25">[[formatAttributeValue(item.targetTemperatureFormat,25.0)]]
-                                    </option>
-                                    <option value="25.5">[[formatAttributeValue(item.targetTemperatureFormat,25.5)]]
-                                    </option>
-                                    <option value="26">[[formatAttributeValue(item.targetTemperatureFormat,26.0)]]
-                                    </option>
-                                    <option value="26.5">[[formatAttributeValue(item.targetTemperatureFormat,26.5)]]
-                                    </option>
-                                    <option value="27">[[formatAttributeValue(item.targetTemperatureFormat,27.0)]]
-                                    </option>
-                                    <option value="27.5">[[formatAttributeValue(item.targetTemperatureFormat,27.5)]]
-                                    </option>
-                                    <option value="28">[[formatAttributeValue(item.targetTemperatureFormat,28.0)]]
-                                    </option>
-                                    <option value="28.5">[[formatAttributeValue(item.targetTemperatureFormat,28.5)]]
-                                    </option>
-                                    <option value="29">[[formatAttributeValue(item.targetTemperatureFormat,29.0)]]
-                                    </option>
-                                    <option value="29.5">[[formatAttributeValue(item.targetTemperatureFormat,29.5)]]
-                                    </option>
-                                    <option value="30">[[formatAttributeValue(item.targetTemperatureFormat,30.0)]]
-                                    </option>
-                                    <option value="30.5">[[formatAttributeValue(item.targetTemperatureFormat,30.5)]]
-                                    </option>
-                                    <option value="31">[[formatAttributeValue(item.targetTemperatureFormat,31.0)]]
-                                    </option>
-                                </select>
-                            </div>
+                            <smart-home-temperature-select
+                                    temperature="[[item.targetTemperature]]"
+                                    on-change="onTargetTemperatureChange"
+                                    temperature-format="[[item.targetTemperatureFormat]]"></smart-home-temperature-select>
                         </div>
                     </template>
                     <template is="dom-if" if="[[item.roomHasCurrentTemperature]]">
@@ -250,7 +166,7 @@
                                 : null,
                             roomHasTargetTemperature: "targetTemperature" in room.attributes,
                             targetTemperature: room.attributes.targetTemperature
-                                ? room.attributes.targetTemperature.value
+                                ? parseInt(room.attributes.targetTemperature.value) // TODO Currently we cut off decimal (19.5 -> 19)
                                 : null,
                             targetTemperatureFormat: room.attributes.targetTemperature
                                 ? room.attributes.targetTemperature.meta.filter(m => m.name === "urn:openremote:asset:meta:format").map(m => m.value)[0]
@@ -315,7 +231,7 @@
 
             onTargetTemperatureChange(e) {
                 this.sendAttributeEvent(
-                    e.model.item.roomId, "targetTemperature", parseFloat(e.target.value)
+                    e.model.item.roomId, "targetTemperature", parseFloat(e.detail)
                 );
             }
 

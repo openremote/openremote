@@ -600,9 +600,9 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         asset.getAttribute("co2Level").isPresent()
         asset.getAttribute("co2Level").get().meta.size() == 11
         asset.getAttribute("lastPresenceDetected").isPresent()
-        asset.getAttribute("lastPresenceDetected").get().meta.size() == 2
+        asset.getAttribute("lastPresenceDetected").get().meta.size() == 3
         asset.getAttribute("motionSensor").isPresent()
-        asset.getAttribute("motionSensor").get().meta.size() == 7
+        asset.getAttribute("motionSensor").get().meta.size() == 6
 
         when: "a query is executed to select a subset of protected attributes"
         asset = assetStorageService.find(

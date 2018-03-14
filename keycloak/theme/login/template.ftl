@@ -24,6 +24,16 @@
         or-app > * {
             visibility: hidden;
         }
+
+        html, body {
+            margin: 0;
+            height: 100vh;
+        }
+
+        *:focus {
+            outline: 0;
+        }
+
     </style>
 
 </head>

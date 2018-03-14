@@ -2,6 +2,7 @@
 <link rel="import" href="smart-home-style.html">
 <link rel="import" href="smart-home-section.html">
 <link rel="import" href="smart-home-smart.html">
+<link rel="import" href="/static/src/or-checkbox/or-checkbox.html">
 
 <dom-module id="smart-home-security">
     <template>
@@ -47,12 +48,8 @@
                     </div>
                 </div>
                 <div class="layout horizontal">
-                    <input class="or-CheckBox"
-                           id="alarmEnabled"
-                           type="checkbox"
-                           on-change="onAlarmEnabledChange"
-                           checked="[[residence.attributes.alarmEnabled.value]]"/>
-                    <label for="alarmEnabled"></label>
+                    <or-checkbox checked="[[residence.attributes.alarmEnabled.value]]"
+                                 on-change="onAlarmEnabledChange"></or-checkbox>
                 </div>
             </div>
 
@@ -91,9 +88,9 @@
                 }
             }
 
-            onAlarmEnabledChange() {
+            onAlarmEnabledChange(e) {
                 this.sendAttributeEvent(
-                    this.residence.id, "alarmEnabled", this.$.alarmEnabled.checked
+                    this.residence.id, "alarmEnabled", e.detail
                 );
             }
 

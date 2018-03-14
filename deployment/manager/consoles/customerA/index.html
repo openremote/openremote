@@ -25,12 +25,13 @@
         }
 
         /* Styles for the SmartHome app */
-        html {
-            height: 100%;
+        html, body {
+            margin: 0;
+            min-height: 100vh;
+            overflow: hidden;
         }
 
         body {
-            min-height: 100%;
             background: var(--theme-mediumgrey);
             font-family: 'Open Sans', 'Roboto', Helvetica, Arial, Lucida, sans-serif;
         }
@@ -38,7 +39,7 @@
 
 </head>
 
-<body class="layout vertical">
+<body>
 
 <or-app login tenant-realm="customerA">
 

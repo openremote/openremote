@@ -88,6 +88,7 @@ public abstract class AbstractManagerSetup implements Setup {
                     new MetaItem(LABEL, Values.create("Presence detected")),
                     new MetaItem(DESCRIPTION, Values.create("Presence detected in any room")),
                     new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)),
+                    new MetaItem(READ_ONLY, Values.create(true)),
                     new MetaItem(RULE_STATE, Values.create(true)),
                     new MetaItem(STORE_DATA_POINTS, Values.create(true)),
                     new MetaItem(SHOW_ON_DASHBOARD, Values.create(true))
@@ -116,6 +117,7 @@ public abstract class AbstractManagerSetup implements Setup {
                     new MetaItem(RULE_STATE, Values.create(true)),
                     new MetaItem(SHOW_ON_DASHBOARD, Values.create(true))
                 ),
+            // TODO Unused, can be removed? Port schedule prediction from DRL...
             new AssetAttribute("lastDetectedScene", AttributeType.STRING, Values.create("home"))
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Last detected scene by rules")),
@@ -139,8 +141,7 @@ public abstract class AbstractManagerSetup implements Setup {
                     new MetaItem(LABEL, Values.create("Motion sensor")),
                     new MetaItem(DESCRIPTION, Values.create("Greater than zero when motion is sensed")),
                     new MetaItem(READ_ONLY, Values.create(true)),
-                    new MetaItem(RULE_STATE, Values.create(true)),
-                    new MetaItem(STORE_DATA_POINTS, Values.create(true))
+                    new MetaItem(RULE_STATE, Values.create(true))
                 ).addMeta(shouldBeLinked ? agentLinker.get() : null),
             new AssetAttribute("presenceDetected", AttributeType.BOOLEAN)
                 .setMeta(
@@ -148,17 +149,20 @@ public abstract class AbstractManagerSetup implements Setup {
                     new MetaItem(DESCRIPTION, Values.create("Someone is moving or resting in the room")),
                     new MetaItem(RULE_STATE, Values.create(true)),
                     new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)),
+                    new MetaItem(READ_ONLY, Values.create(true)),
                     new MetaItem(STORE_DATA_POINTS, Values.create(true)),
                     new MetaItem(SHOW_ON_DASHBOARD, Values.create(true))
                 ),
             new AssetAttribute("firstPresenceDetected", TIMESTAMP_MILLIS)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("First time movement was detected")),
+                    new MetaItem(READ_ONLY, Values.create(true)),
                     new MetaItem(RULE_STATE, Values.create(true))
                 ),
             new AssetAttribute("lastPresenceDetected", TIMESTAMP_MILLIS)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Last time movement was detected")),
+                    new MetaItem(READ_ONLY, Values.create(true)),
                     new MetaItem(RULE_STATE, Values.create(true))
                 )
         );
@@ -226,7 +230,7 @@ public abstract class AbstractManagerSetup implements Setup {
                     new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)),
                     new MetaItem(ACCESS_RESTRICTED_WRITE, Values.create(true)),
                     new MetaItem(SHOW_ON_DASHBOARD, Values.create(true)),
-                    new MetaItem(FORMAT, Values.create("%0.1f° C"))
+                    new MetaItem(FORMAT, Values.create("%0f° C"))
                 ).addMeta(shouldBeLinked ? agentLinker.get() : null)
         );
     }
@@ -268,6 +272,7 @@ public abstract class AbstractManagerSetup implements Setup {
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Smart Switch actuator earliest start time " + switchName)),
                     new MetaItem(DESCRIPTION, Values.create("Earliest computed start time sent to actuator")),
+                    new MetaItem(READ_ONLY, Values.create(true)),
                     new MetaItem(RULE_STATE, Values.create(true))
                 ).addMeta(shouldBeLinked ? agentLinker.apply(2) : null),
             // StopTime
@@ -275,6 +280,7 @@ public abstract class AbstractManagerSetup implements Setup {
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Smart Switch actuator latest stop time " + switchName)),
                     new MetaItem(DESCRIPTION, Values.create("Latest computed stop time sent to actuator")),
+                    new MetaItem(READ_ONLY, Values.create(true)),
                     new MetaItem(RULE_STATE, Values.create(true))
                 ).addMeta(shouldBeLinked ? agentLinker.apply(3) : null),
             // Enabled
@@ -282,6 +288,7 @@ public abstract class AbstractManagerSetup implements Setup {
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Smart Switch actuator enabled " + switchName)),
                     new MetaItem(DESCRIPTION, Values.create("1 if actuator only provides power at ideal time between start/stop")),
+                    new MetaItem(READ_ONLY, Values.create(true)),
                     new MetaItem(RULE_STATE, Values.create(true))
                 ).addMeta(shouldBeLinked ? agentLinker.apply(4) : null)
         );

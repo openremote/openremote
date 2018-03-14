@@ -7,7 +7,7 @@
             :host {
                 background-color: var(--theme-white);
                 border-radius: 10px;
-                margin: 10px 10px 0 10px;
+                margin: 10px;
                 -webkit-box-shadow: 4px 4px 15px 0px rgba(0, 0, 0, 0.2);
                 -moz-box-shadow: 4px 4px 15px 0px rgba(0, 0, 0, 0.2);
                 box-shadow: 4px 4px 15px 0px rgba(0, 0, 0, 0.2);
@@ -22,18 +22,16 @@
                 user-select: none;
                 cursor: pointer;
                 color: var(--theme-darkgrey);
+                -webkit-tap-highlight-color: transparent;
+                -webkit-touch-callout: none;
             }
 
             .content {
                 padding: 10px;
-                height: auto;
-                overflow: auto;
             }
 
             .content[collapsed] {
-                padding: 0;
-                height: 0;
-                overflow: hidden;
+                display: none;
             }
 
             .expandCollapseIcon {
@@ -43,13 +41,13 @@
         </style>
 
         <template is="dom-if" if="[[title]]">
-            <div class="layout horizontal">
+            <div class="layout horizontal" hidden$="[[!title]]">
                 <div class="flex layout horizontal center title"
                      on-click="onTitleClicked">
                     <span class="flex or-Icon">&nbsp;</span>
                     <span class="">[[title]]</span>
-                    <span class$="flex [[icon('plus')]] expandCollapseIcon" hidden$="[[!collapsed]]"></span>
-                    <span class$="flex [[icon('minus')]] expandCollapseIcon" hidden$="[[collapsed]]"></span>
+                    <span class$="flex [[icon('caret-down')]] expandCollapseIcon" hidden$="[[!collapsed]]"></span>
+                    <span class$="flex [[icon('caret-up')]] expandCollapseIcon" hidden$="[[collapsed]]"></span>
                 </div>
             </div>
         </template>
@@ -81,7 +79,7 @@
 
             ready() {
                 super.ready();
-                this.shadowRoot.host.classList.add("flex-none");
+                this.shadowRoot.host.classList.add("flex-none", "layout", "vertical");
             }
 
             onTitleClicked() {

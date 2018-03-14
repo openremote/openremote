@@ -4,9 +4,6 @@
 <dom-module id="smart-home-body">
     <template>
         <style include="smart-home-style">
-            :host {
-                margin-bottom: 10px;
-            }
         </style>
 
         <slot></slot>
@@ -21,7 +18,7 @@
 
             ready() {
                 super.ready();
-                this.shadowRoot.host.classList.add("scroll");
+                this.shadowRoot.host.classList.add("scroll", "layout", "vertical");
             }
         }
 

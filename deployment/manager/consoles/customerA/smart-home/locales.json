@@ -40,6 +40,21 @@
     "Auto": "Auto",
     "Low": "Laag",
     "Medium": "Medium",
-    "High": "Hoog"
+    "High": "Hoog",
+    "Vacation": "Vakantie",
+    "On vacation until": "Op vakantie tot",
+    "Weekly Schedule": "Weekschema",
+    "Monday": "Maandag",
+    "Tuesday": "Dinsdag",
+    "Wednesday": "Woensdag",
+    "Thursday": "Donderdag",
+    "Friday": "Vrijdag",
+    "Saturday": "Zaterdag",
+    "Sunday": "Zondag",
+    "Scene start time": "Scene start time",
+    "Scene Configuration": "Scene Configuratie",
+    "Temperature": "Temperatuur",
+    "Enabled": "Geactiveerd",
+    "Scene": "Scene"
   }
 }

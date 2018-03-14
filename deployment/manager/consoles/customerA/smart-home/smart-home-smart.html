@@ -1,6 +1,7 @@
 <link rel="import" href="smart-home-component.html">
 <link rel="import" href="smart-home-style.html">
 <link rel="import" href="smart-home-section.html">
+<link rel="import" href="/static/src/or-checkbox/or-checkbox.html">
 
 <dom-module id="smart-home-smart">
     <template>
@@ -16,12 +17,8 @@
                 <!-- "All Smart" currently means enabling/disabling automatic scene switching based on schedule -->
                 <div class="flex layout horizontal smartLabel">[[localize('All Smart')]]</div>
                 <div class="layout horizontal">
-                    <input class="or-CheckBox"
-                           id="smartToggle"
-                           type="checkbox"
-                           on-change="onSmartToggleChange"
-                           checked="[[residence.attributes.sceneTimerEnabled.value]]"/>
-                    <label for="smartToggle"></label>
+                    <or-checkbox checked="[[residence.attributes.sceneTimerEnabled.value]]"
+                                 on-change="onSmartToggleChange"></or-checkbox>
                 </div>
             </div>
         </smart-home-section>
@@ -41,7 +38,7 @@
 
             onSmartToggleChange(e) {
                 this.sendAttributeEvent(
-                    this.residence.id, e.target.checked ? "enableSceneTimer" : "disableSceneTimer", "REQUEST_START"
+                    this.residence.id, e.detail ? "enableSceneTimer" : "disableSceneTimer", "REQUEST_START"
                 );
             }
         }
