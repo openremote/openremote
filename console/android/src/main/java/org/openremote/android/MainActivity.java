@@ -8,7 +8,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
-import android.database.Cursor;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
@@ -24,7 +23,6 @@ import android.view.View;
 import android.webkit.CookieManager;
 import android.webkit.DownloadListener;
 import android.webkit.JavascriptInterface;
-import android.webkit.MimeTypeMap;
 import android.webkit.SslErrorHandler;
 import android.webkit.URLUtil;
 import android.webkit.WebChromeClient;
@@ -216,6 +214,10 @@ public class MainActivity extends Activity {
         webView.setWebViewClient(new WebViewClient() {
             @Override
             public void onReceivedHttpError(WebView view, WebResourceRequest request, WebResourceResponse errorResponse) {
+                //TODO should we ignore images?
+                if (request.getUrl().getLastPathSegment().endsWith("png") || request.getUrl().getLastPathSegment().endsWith("jpg"))
+                    return;
+
                 if (request.getUrl().getLastPathSegment().equals("token") && request.getMethod().equals("POST")) {
                     webAppInterface.tokenService.clearToken();
                     reloadWebView(getCurrentFocus());
@@ -239,6 +241,10 @@ public class MainActivity extends Activity {
 
             @Override
             public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
+                //TODO should we ignore images?
+                if (request.getUrl().getLastPathSegment().endsWith("png") || request.getUrl().getLastPathSegment().endsWith("jpg"))
+                    return;
+
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                     // Remote debugging sessions from Chrome trigger "ERR_CACHE_MISS" that don't hurt, but we should not redirect the view
                     if (isRemoteDebuggingEnabled() && error.getErrorCode() == ERROR_UNKNOWN) {
