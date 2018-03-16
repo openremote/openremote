@@ -2,6 +2,8 @@
 <link rel="import" href="or-style.html">
 
 <!-- App services/dependencies -->
+<link rel="import" href="or-busy-indicator.html">
+<link rel="import" href="or-error-view.html">
 <link rel="import" href="or-shell-native.html">
 <link rel="import" href="or-app-security.html">
 <link rel="import" href="or-app-events.html">
@@ -16,49 +18,6 @@
 
         <style include="or-style">
 
-            /* Children of or-app might be hidden by host page, some have to be visible */
-            #loader,
-            #errorView {
-                visibility: visible !important;
-            }
-
-            #loader {
-                z-index: 9999;
-                position: fixed;
-                bottom: 0.8em;
-                right: 0.4em;
-                pointer-events: none;
-                width: 0.8em;
-                height: 0.8em;
-                border: 2px solid var(--theme-lightgreen);
-                border-top-color: var(--theme-black);
-                border-radius: 50%;
-                -webkit-animation: loaderSpin 1s linear infinite;
-                animation: loaderSpin 1s linear infinite;
-            }
-
-            @-webkit-keyframes loaderSpin {
-                100% {
-                    -webkit-transform: rotate(360deg);
-                    transform: rotate(360deg);
-                }
-            }
-
-            @keyframes loaderSpin {
-                100% {
-                    -webkit-transform: rotate(360deg);
-                    transform: rotate(360deg);
-                }
-            }
-
-            #errorView {
-                padding: 1em;
-            }
-
-            #errorView h1 {
-                color: var(--theme-darkgrey);
-            }
-
             /* Slots are not shown until we are ready */
             #slots {
                 display: none;
@@ -71,7 +30,7 @@
             */
         </style>
 
-        <div id="loader"></div>
+        <or-busy-indicator id="busyIndicator"></or-busy-indicator>
 
         <or-shell-native id="shellNative"></or-shell-native>
 
@@ -85,10 +44,7 @@
         <or-app-events id="appEvents"></or-app-events>
 
         <template is="dom-if" if="[[error]]">
-            <div id="errorView" class="or-Viewport">
-                <h1>[[defaultErrorMessage]]</h1>
-                <h5>[[error]]</h5>
-            </div>
+            <or-error-view id="errorView" error="[[error]]"></or-error-view>
         </template>
 
         <div id="slots" class="flex layout vertical">
@@ -219,16 +175,6 @@
                     error: {
                         type: String,
                         observer: "onAppError"
-                    },
-
-                    /**
-                     * The message that should be shown to the user, before the error state.
-                     */
-                    defaultErrorMessage: {
-                        type: String,
-                        value: function () {
-                            return "Service not available or application error, please try again later.";
-                        }
                     },
 
                     /**
@@ -368,6 +314,10 @@
                     });
             }
 
+            setError(error) {
+                this.set("error", error);
+            }
+
             onAppError(error) {
                 console.error("Application error, disabling app: " + error);
 
@@ -383,8 +333,7 @@
                 // Hide the slots
                 this.$.slots.style.display = "none";
 
-                // Hide the loader
-                this.hideLoader();
+                this.hideBusyIndicator();
 
                 // Fire an event so others can react to an error
                 window.dispatchEvent(new CustomEvent("AppError", {detail: {app: this, error: error}}));
@@ -408,16 +357,15 @@
                     }
                 });
 
-                // Hide the loader
-                this.hideLoader();
+                this.hideBusyIndicator();
             }
 
-            hideLoader() {
-                this.$.loader.style.display = "none";
+            hideBusyIndicator() {
+                this.$.busyIndicator.hide();
             }
 
-            showLoader() {
-                this.$.loader.style.display = "inherit";
+            showBusyIndicator() {
+                this.$.busyIndicator.show();
             }
 
             getSecurity() {
@@ -438,8 +386,8 @@
                     (requestParams, onComplete) => {
                         this.getSecurity().authorizeRequestParams(requestParams, onComplete);
                     },
-                    this.showLoader.bind(this),
-                    this.hideLoader.bind(this),
+                    this.showBusyIndicator.bind(this),
+                    this.hideBusyIndicator.bind(this),
                     (requestError) => {
                         this.set("error", "Request error (response status: " + requestError.statusCode + ") - " + requestError.message);
                     },
@@ -490,7 +438,7 @@
                     this.webSocket.onerror = () => {
                         this.set("webSocket", undefined);
                         this.set("status", "DISCONNECTED");
-                        this.set("error", "Error connecting to event service: " + serviceUrl);
+                        this.set("error", "Error connecting to " + serviceUrl);
                     };
 
                     this.webSocket.onclose = (e) => {
@@ -500,12 +448,12 @@
                             if (e.code === 1000) {
                                 // Do nothing, we closed the socket
                             } else if (e.code === 1001) {
-                                this.set("error", "Server closed connection to event service: " + serviceUrl);
+                                this.set("error", "Connection closed by server.");
                             } else if (e.code === 1006) {
-                                this.set("error", "Event service connection was closed, server not reachable?");
+                                this.set("error", "Network or server offline.");
                             } else {
                                 let msg = e.reason ? e.reason : serviceUrl;
-                                this.set("error", "Event service connection was closed (clean: " + e.wasClean + ", code: " + e.code + "): " + msg);
+                                this.set("error", "Connection closed (clean: " + e.wasClean + ", code: " + e.code + "): " + msg);
                             }
                         }
                     };

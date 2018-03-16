@@ -212,7 +212,7 @@
             }
 
             onResidenceChange() {
-                let ventilationMode = null;
+                let ventilationMode;
                 if ("ventilationAuto" in this.residence.attributes && this.residence.attributes.ventilationAuto.value) {
                     ventilationMode = "AUTO";
                 } else if ("ventilationLevel" in this.residence.attributes) {
