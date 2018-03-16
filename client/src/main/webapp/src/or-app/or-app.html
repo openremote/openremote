@@ -35,6 +35,7 @@
         <or-shell-native id="shellNative"></or-shell-native>
 
         <or-app-security id="appSecurity"
+                         host-configuration="[[hostConfiguration]]"
                          login="{{login}}"
                          realm="{{tenantRealm}}"
                          authenticated="{{authenticated}}"
@@ -186,8 +187,10 @@
                             function _load(tag, rel) {
                                 return function (url) {
                                     return new Promise(function (resolve, reject) {
+                                        if (url.startsWith("/")) {
+                                            url = openremote.INSTANCE.hostConfiguration.protocol + "//" + openremote.INSTANCE.hostConfiguration.host + url;
+                                        }
 
-                                        url = openremote.INSTANCE.managerHost + url;
                                         var element = window.document.createElement(tag);
                                         // Append loading tags to the body
                                         var parent = 'body';
@@ -227,7 +230,14 @@
                         }
                     },
 
-                    managerHost: String
+                    hostConfiguration: {
+                        type: Object,
+                        value: () => {
+                            let a = document.createElement("a");
+                            a.href = this.importPath;
+                            return a;
+                        }
+                    }
                 };
             }
 
@@ -256,15 +266,6 @@
 
                 // The app should flex and its children should be in a flexbox vertical layout
                 this.shadowRoot.host.classList.add("flex", "layout", "vertical");
-
-                // Extract manager host URI based on where this component is hosted; it is assumed that the component
-                // is being hosted in a manager instance and that is the instance you want to connect to.
-                let managerHost = '';
-                let hostURI = this.importPath;
-                if (hostURI) {
-                    managerHost = '//' + new URL(hostURI).host;
-                }
-                this.managerHost = managerHost;
 
                 if (this.login) {
                     this.getSecurity().set("shellNative", this.$.shellNative);
@@ -396,7 +397,7 @@
                     }
                 );
 
-                requests.configure(this.managerHost + "/" + this.tenantRealm);
+                requests.configure(this.hostConfiguration.protocol + "//" + this.hostConfiguration.host + "/" + this.tenantRealm);
 
                 this.set("requests", requests);
             }
@@ -407,7 +408,7 @@
                     return;
                 }
 
-                let serviceUrl = ("https:" === location.protocol ? "wss" : "ws") + ":" + this.managerHost + "/websocket/events";
+                let serviceUrl = ("https:" === location.protocol ? "wss" : "ws") + "://" + this.hostConfiguration.host + "/websocket/events";
                 this.getSecurity().authorizeUrl(serviceUrl, (authenticatedServiceUrl) => {
 
                     this.webSocket = new WebSocket(authenticatedServiceUrl);

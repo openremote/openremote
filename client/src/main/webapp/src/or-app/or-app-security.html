@@ -332,15 +332,8 @@
                         this.logout();
                     }
 
-                    var managerHost = '';
-                    var hostURI = this.importPath;
-                    if (hostURI) {
-                        managerHost = '//' + new URL(hostURI).host;
-                    }
-
                     let keycloakConfig = {
-
-                        url: managerHost + "/auth",
+                        url: this.hostConfiguration.protocol + "//" + this.hostConfiguration.host + "/auth",
                         realm: realm,
                         clientId: "openremote"
                     };
@@ -357,7 +350,7 @@
                 // Require login and enable invisible login status iframe of Keycloak: This sets a cookie that
                 // expires when the max session lifespan has been reached, then logs you out when the
                 // cookie disappears.
-                this.keycloak.init({onLoad: "login-required", checkLoginIframe: true, checkLoginIframeInterval: 5})
+                this.keycloak.init({onLoad: "login-required", checkLoginIframe: true, checkLoginIframeInterval: 5, })
                     .success((authenticated) => {
                         if (authenticated) {
                             this.onKeycloakAuthSuccess()
