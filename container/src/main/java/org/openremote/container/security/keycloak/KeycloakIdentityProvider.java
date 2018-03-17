@@ -81,10 +81,10 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
 
     public static final String IDENTITY_SESSION_TIMEOUT_MINUTES = "IDENTITY_SESSION_TIMEOUT_MINUTES";
     public static final int IDENTITY_SESSION_TIMEOUT_MINUTES_DEFAULT = 60 * 24; // 1 day
-    public static final String IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES = "IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES";
-    public static final int IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES_DEFAULT = 60 * 24; // 1 day
     public static final String IDENTITY_SESSION_MAX_MINUTES = "IDENTITY_SESSION_MAX_MINUTES";
-    public static final int IDENTITY_SESSION_MAX_MINUTES_DEFAULT = 60 * 24 * 14; // 14 days
+    public static final int IDENTITY_SESSION_MAX_MINUTES_DEFAULT = 60 * 24; // 1 day
+    public static final String IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES = "IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES";
+    public static final int IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES_DEFAULT = 60 * 24 * 14; // 14 days
 
     // Each realm in Keycloak has a client application with this identifier
     final protected String clientId;
@@ -109,8 +109,8 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
 
     // Configuration options for new realms
     final protected int sessionTimeoutSeconds;
-    final protected int sessionOfflineTimeoutSeconds;
     final protected int sessionMaxSeconds;
+    final protected int sessionOfflineTimeoutSeconds;
 
     // This will pass authentication ("NOT ATTEMPTED" state), but later fail any role authorization
     final protected KeycloakDeployment notAuthenticatedKeycloakDeployment = new KeycloakDeployment();
@@ -124,13 +124,13 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
         if (sessionTimeoutSeconds < 60) {
             throw new IllegalArgumentException(IDENTITY_SESSION_TIMEOUT_MINUTES + " must be more than 1 minute");
         }
-        sessionOfflineTimeoutSeconds = getInteger(container.getConfig(), IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES, IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES_DEFAULT) * 60;
-        if (sessionOfflineTimeoutSeconds < 60) {
-            throw new IllegalArgumentException(IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES + " must be more than 1 minute");
-        }
         sessionMaxSeconds = getInteger(container.getConfig(), IDENTITY_SESSION_MAX_MINUTES, IDENTITY_SESSION_MAX_MINUTES_DEFAULT) * 60;
         if (sessionMaxSeconds < 60) {
             throw new IllegalArgumentException(IDENTITY_SESSION_MAX_MINUTES + " must be more than 1 minute");
+        }
+        sessionOfflineTimeoutSeconds = getInteger(container.getConfig(), IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES, IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES_DEFAULT) * 60;
+        if (sessionOfflineTimeoutSeconds < 60) {
+            throw new IllegalArgumentException(IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES + " must be more than 1 minute");
         }
 
         keycloakServiceUri =
@@ -252,8 +252,8 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
         realmRepresentation.setEmailTheme("openremote");
 
         realmRepresentation.setSsoSessionIdleTimeout(sessionTimeoutSeconds);
-        realmRepresentation.setOfflineSessionIdleTimeout(sessionOfflineTimeoutSeconds);
         realmRepresentation.setSsoSessionMaxLifespan(sessionMaxSeconds);
+        realmRepresentation.setOfflineSessionIdleTimeout(sessionOfflineTimeoutSeconds);
 
         // Service-internal network (between manager and keycloak service containers) does not use SSL
         realmRepresentation.setSslRequired(SslRequired.NONE.toString());
