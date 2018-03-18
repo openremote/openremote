@@ -64,4 +64,11 @@ public class UniqueIdentifierGenerator implements IdentifierGenerator {
     public static String generateId(String name) {
         return Url62.encode(nameGenerator.generate(name));
     }
+
+    /**
+     * Generates the same UUID value encoded as Base62, 22 characters long, if the bytes are given.
+     */
+    public static String generateId(byte[] bytes) {
+        return Url62.encode(nameGenerator.generate(bytes));
+    }
 }
