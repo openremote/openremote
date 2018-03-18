@@ -62,6 +62,8 @@ public abstract class Ruleset {
                 "import org.openremote.model.asset.*\n" +
                 "import org.openremote.model.attribute.*\n" +
                 "import org.openremote.model.value.*\n" +
+                "import org.openremote.model.rules.*\n" +
+                "import java.util.logging.*\n" +
                 "\n" +
                 "Logger LOG = binding.LOG\n" +
                 "RulesBuilder rules = binding.rules\n" +
@@ -72,12 +74,12 @@ public abstract class Ruleset {
                 "        .description(\"An example rule that sets 'bar' on someAttribute when it is 'foo'\")\n" +
                 "        .when(\n" +
                 "        { facts ->\n" +
-                "            facts.matchAssetState(\n" +
+                "            facts.matchFirstAssetState(\n" +
                 "                    new AssetQuery().type(AssetType.THING).attributeValue(\"someAttribute\", \"foo\")\n" +
-                "            ).map({ thing ->\n" +
+                "            ).map { thing ->\n" +
                 "                facts.bind(\"assetId\", thing.id)\n" +
                 "                true\n" +
-                "            }).orElse(false)\n" +
+                "            }.orElse(false)\n" +
                 "        })\n" +
                 "        .then(\n" +
                 "        { facts ->\n" +
@@ -138,32 +140,28 @@ public abstract class Ruleset {
     @Column(name = "ENABLED", nullable = false)
     protected boolean enabled = true;
 
-    @Column(name = "TEMPLATE_ASSET_ID", nullable = true)
-    protected String templateAssetId;
-
     @Column(name = "RULES", nullable = false)
     protected String rules;
 
     @NotNull
     @Enumerated(EnumType.STRING)
     @Column(name = "RULES_LANG", nullable = false)
-    protected Lang lang = Lang.JAVASCRIPT;
+    protected Lang lang = Lang.GROOVY;
 
     public Ruleset() {
     }
 
-    public Ruleset(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String templateAssetId, Lang lang) {
-        this(id, version, createdOn, lastModified, name, enabled, templateAssetId, null, lang);
+    public Ruleset(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, Lang lang) {
+        this(id, version, createdOn, lastModified, name, enabled, null, lang);
     }
 
-    public Ruleset(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String templateAssetId, String rules, Lang lang) {
+    public Ruleset(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String rules, Lang lang) {
         this.id = id;
         this.version = version;
         this.createdOn = createdOn;
         this.lastModified = lastModified;
         this.name = name;
         this.enabled = enabled;
-        this.templateAssetId = templateAssetId;
         this.rules = rules;
         this.lang = lang;
     }
@@ -172,13 +170,6 @@ public abstract class Ruleset {
         this.name = name;
         this.rules = rules;
         this.lang = lang;
-    }
-
-    public Ruleset(String name, String rules, Lang lang, String templateAssetId) {
-        this.name = name;
-        this.rules = rules;
-        this.lang = lang;
-        this.templateAssetId = templateAssetId;
     }
 
     public Long getId() {
@@ -221,14 +212,6 @@ public abstract class Ruleset {
 
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
-    }
-
-    public String getTemplateAssetId() {
-        return templateAssetId;
-    }
-
-    public void setTemplateAssetId(String templateAssetId) {
-        this.templateAssetId = templateAssetId;
     }
 
     public String getRules() {

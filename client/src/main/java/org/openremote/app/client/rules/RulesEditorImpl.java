@@ -26,18 +26,15 @@ import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
 import com.google.gwt.uibinder.client.UiHandler;
 import com.google.gwt.user.client.ui.HTMLPanel;
-import com.google.gwt.user.client.ui.Widget;
 import com.google.inject.Provider;
 import elemental.client.Browser;
 import elemental.html.AnchorElement;
 import elemental.html.Blob;
 import elemental.html.FileReader;
-import org.openremote.app.client.widget.*;
 import org.openremote.app.client.Environment;
 import org.openremote.app.client.app.dialog.Confirmation;
 import org.openremote.app.client.assets.browser.AssetBrowser;
-import org.openremote.app.client.assets.browser.AssetSelector;
-import org.openremote.app.client.assets.browser.AssetTreeNode;
+import org.openremote.app.client.widget.*;
 import org.openremote.model.rules.Ruleset;
 
 import javax.inject.Inject;
@@ -73,9 +70,6 @@ public class RulesEditorImpl extends FormViewImpl implements RulesEditor {
     @UiField
     FileUploadLabelled rulesFileUpload;
 
-    @UiField(provided = true)
-    AssetSelector templateAssetSelector;
-
     @UiField
     FormTextArea rulesTextArea;
 
@@ -99,32 +93,6 @@ public class RulesEditorImpl extends FormViewImpl implements RulesEditor {
                            Environment environment) {
         super(confirmationDialogProvider, environment.getWidgetStyle());
         this.assetBrowser = assetBrowser;
-
-        templateAssetSelector = new AssetSelector(
-            assetBrowser.getPresenter(),
-            environment.getMessages(),
-            environment.getMessages().templateAsset(),
-            environment.getMessages().selectAssetDescription(),
-            false,
-            true,
-            treeNode -> {
-                if (presenter != null) {
-                    presenter.onTemplateAssetSelection(treeNode);
-                }
-            }
-        ) {
-            @Override
-            public void beginSelection() {
-                RulesEditorImpl.this.setOpaque(true);
-                super.beginSelection();
-            }
-
-            @Override
-            public void endSelection() {
-                super.endSelection();
-                RulesEditorImpl.this.setOpaque(false);
-            }
-        };
 
         RulesEditorImpl.UI ui = GWT.create(RulesEditorImpl.UI.class);
         initWidget(ui.createAndBindUi(this));
@@ -247,11 +215,6 @@ public class RulesEditorImpl extends FormViewImpl implements RulesEditor {
     @Override
     public String getRules() {
         return rulesTextArea.getText();
-    }
-
-    @Override
-    public void setTemplateAssetNode(AssetTreeNode assetTreeNode) {
-        templateAssetSelector.setSelectedNode(assetTreeNode);
     }
 
     @Override

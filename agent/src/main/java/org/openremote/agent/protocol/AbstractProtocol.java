@@ -67,6 +67,10 @@ import static org.openremote.container.concurrent.GlobalLock.withLockReturning;
  *     return ...;
  * });
  * }</pre></blockquote>
+ *
+ * All <code>abstract</code> methods are always called within lock scope. An implementation can rely on this lock
+ * and safely modify internal, protocol-specific shared state. However, if a protocol implementation schedules
+ * an asynchronous task, this task must obtain the lock to call any protocol operations.
  */
 public abstract class AbstractProtocol implements Protocol {
 

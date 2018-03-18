@@ -19,10 +19,10 @@
  */
 package org.openremote.manager.setup.builtin;
 
-import com.fasterxml.uuid.Generators;
 import org.hibernate.Session;
 import org.openremote.container.Container;
 import org.openremote.container.security.basic.PasswordStorage;
+import org.openremote.container.util.UniqueIdentifierGenerator;
 import org.openremote.manager.persistence.ManagerPersistenceService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.setup.Setup;
@@ -67,7 +67,7 @@ public class BasicIdentityDemoSetup implements Setup {
         persistenceService.doTransaction(em -> em.unwrap(Session.class).doWork(connection -> {
             String sql = "insert into PUBLIC.USER_ENTITY(ID, REALM_ID, USERNAME, PASSWORD, ENABLED) values (?, 'master', 'admin', ?, true)";
             PreparedStatement st = connection.prepareStatement(sql);
-            st.setString(1, Generators.randomBasedGenerator().generate().toString());
+            st.setString(1, UniqueIdentifierGenerator.generateId());
             st.setString(2, PasswordStorage.createHash(demoAdminPassword));
             st.executeUpdate();
             st.close();

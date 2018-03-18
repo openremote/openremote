@@ -38,13 +38,13 @@ public class TenantRuleset extends Ruleset {
     public TenantRuleset() {
     }
 
-    public TenantRuleset(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String templateAssetId, String realmId, Lang lang) {
-        super(id, version, createdOn, lastModified, name, enabled, templateAssetId, lang);
+    public TenantRuleset(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String realmId, Lang lang) {
+        super(id, version, createdOn, lastModified, name, enabled, lang);
         this.realmId = realmId;
     }
 
-    public TenantRuleset(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String templateAssetId, String rules, Lang lang, String realmId) {
-        super(id, version, createdOn, lastModified, name, enabled, templateAssetId, rules, lang);
+    public TenantRuleset(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String rules, Lang lang, String realmId) {
+        super(id, version, createdOn, lastModified, name, enabled, rules, lang);
         this.realmId = realmId;
     }
 
@@ -55,11 +55,6 @@ public class TenantRuleset extends Ruleset {
 
     public TenantRuleset(String name, String realmId, String rules, Lang lang) {
         super(name, rules, lang);
-        this.realmId = realmId;
-    }
-
-    public TenantRuleset(String name, String realmId, String rules, Lang lang, String templateAssetId) {
-        super(name, rules, lang, templateAssetId);
         this.realmId = realmId;
     }
 

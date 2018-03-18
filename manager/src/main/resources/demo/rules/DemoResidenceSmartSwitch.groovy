@@ -54,9 +54,9 @@ rules.add()
         { facts ->
             smartSwitchAttributesMatch(
                     facts, SmartSwitchAttribute.BeginEnd
-            ).filter({ beginEnd ->
+            ).filter { beginEnd ->
                 !beginEnd.value.isPresent()
-            }).filter({ emptyBeginEnd ->
+            }.filter { emptyBeginEnd ->
                 // Any of start time, stop time, or enabled is greater than zero
                 def startTime = smartSwitchAttributeMatch(facts, emptyBeginEnd, SmartSwitchAttribute.StartTime)
                 def stopTime = smartSwitchAttributeMatch(facts, emptyBeginEnd, SmartSwitchAttribute.StopTime)
@@ -64,10 +64,10 @@ rules.add()
                 (startTime.isPresent() && startTime.get().isValueGreaterThan(0)) ||
                         (stopTime.isPresent() && stopTime.get().isValueGreaterThan(0)) ||
                         (enabled.isPresent() && enabled.get().isValueGreaterThan(0))
-            }).findFirst().map({ emptyBeginEnd ->
+            }.findFirst().map { emptyBeginEnd ->
                 facts.bind("beginEnd", emptyBeginEnd)
                 true
-            }).orElse(false)
+            }.orElse(false)
         })
         .then(
         { facts ->
@@ -85,18 +85,18 @@ rules.add()
         { facts ->
             smartSwitchAttributesMatch(
                     facts, SmartSwitchAttribute.Mode
-            ).filter({ mode ->
+            ).filter { mode ->
                 SmartSwitchMode.matches(mode, SmartSwitchMode.NOW_ON)
-            }).filter { modeNowOn ->
+            }.filter { modeNowOn ->
                 // Begin/end time of cycle is greater than zero
                 smartSwitchAttributeMatch(facts, modeNowOn, SmartSwitchAttribute.BeginEnd)
-                        .flatMap({ it.valueAsNumber })
-                        .map({ it > 0 })
+                        .flatMap { it.valueAsNumber }
+                        .map { it > 0 }
                         .orElse(false)
-            }.findFirst().map({ modeNowOn ->
+            }.findFirst().map { modeNowOn ->
                 facts.bind("mode", modeNowOn)
                 true
-            }).orElse(false)
+            }.orElse(false)
         })
         .then(
         { facts ->
@@ -112,31 +112,31 @@ rules.add()
         { facts ->
             smartSwitchAttributesMatch(
                     facts, SmartSwitchAttribute.Mode
-            ).filter({ mode ->
+            ).filter { mode ->
                 SmartSwitchMode.matches(mode, SmartSwitchMode.ON_AT)
-            }).map({ modeOnAt ->
+            }.map { modeOnAt ->
                 smartSwitchAttributeMatch(facts, modeOnAt, SmartSwitchAttribute.BeginEnd)
-            }).filter({ beginEnd ->
+            }.filter { beginEnd ->
                 // User-provided begin/end time of cycle
-                beginEnd.flatMap({ it.valueAsNumber }).filter({
+                beginEnd.flatMap { it.valueAsNumber }.filter {
                     // is now or in future
                     it >= facts.clock.timestamp
-                }).map({ expectedStartTime ->
+                }.map { expectedStartTime ->
                     // and actuator start time attribute
-                    def startTime = beginEnd.flatMap({
+                    def startTime = beginEnd.flatMap {
                         smartSwitchAttributeMatch(facts, it, SmartSwitchAttribute.StartTime)
-                    })
+                    }
                     // is present
                     startTime.isPresent() &&
                             // the value is not the same as the expected start time
-                            startTime.flatMap({ it.valueAsNumber }).map({
+                            startTime.flatMap { it.valueAsNumber }.map {
                                 it != Math.floor(expectedStartTime / 1000)
-                            }).orElse(true) // or actuator start time is empty
-                }).orElse(false)
-            }).findFirst().map({ beginEnd ->
+                            }.orElse(true) // or actuator start time is empty
+                }.orElse(false)
+            }.findFirst().map { beginEnd ->
                 facts.bind("beginEnd", beginEnd.get())
                 true
-            }).orElse(false)
+            }.orElse(false)
         })
         .then(
         { facts ->
@@ -162,33 +162,31 @@ rules.add()
         { facts ->
             smartSwitchAttributesMatch(
                     facts, SmartSwitchAttribute.Mode
-            ).filter({ mode ->
+            ).filter { mode ->
                 SmartSwitchMode.matches(mode, SmartSwitchMode.READY_AT)
-            }).map({ modeReadyAt ->
+            }.map { modeReadyAt ->
                 smartSwitchAttributeMatch(facts, modeReadyAt, SmartSwitchAttribute.BeginEnd)
-            }).filter({ beginEnd ->
+            }.filter { beginEnd ->
                 // User-provided begin/end time of cycle
-                beginEnd.flatMap({
-                    it.valueAsNumber
-                }).filter({
+                beginEnd.flatMap { it.valueAsNumber }.filter {
                     // allows the cycle to complete in future
                     (it - (CYCLE_TIME_SECONDS * 1000)) >= facts.clock.timestamp
-                }).map({ expectedStopTime ->
+                }.map { expectedStopTime ->
                     // and actuator stop time attribute
-                    def stopTime = beginEnd.flatMap({
+                    def stopTime = beginEnd.flatMap {
                         smartSwitchAttributeMatch(facts, it, SmartSwitchAttribute.StopTime)
-                    })
+                    }
                     // is present
                     stopTime.isPresent() &&
                             // the value is not the same as the expected stop time
-                            stopTime.flatMap({ it.valueAsNumber }).map({
+                            stopTime.flatMap { it.valueAsNumber }.map {
                                 it != Math.floor(expectedStopTime / 1000)
-                            }).orElse(true) // or actuator stop time is empty
-                }).orElse(false)
-            }).findFirst().map({ beginEnd ->
+                            }.orElse(true) // or actuator stop time is empty
+                }.orElse(false)
+            }.findFirst().map { beginEnd ->
                 facts.bind("beginEnd", beginEnd.get())
                 true
-            }).orElse(false)
+            }.orElse(false)
         })
         .then(
         { facts ->
@@ -214,19 +212,19 @@ rules.add()
         { facts ->
             smartSwitchAttributesMatch(
                     facts, SmartSwitchAttribute.Mode
-            ).filter({ mode ->
+            ).filter { mode ->
                 SmartSwitchMode.matches(mode, SmartSwitchMode.ON_AT) || SmartSwitchMode.matches(mode, SmartSwitchMode.READY_AT)
-            }).map({ modeOnAtOrReadyAt ->
+            }.map { modeOnAtOrReadyAt ->
                 smartSwitchAttributeMatch(facts, modeOnAtOrReadyAt, SmartSwitchAttribute.StopTime)
-            }).filter({ stopTime ->
+            }.filter { stopTime ->
                 // Actuator stop time attribute is present and value (in seconds) is not zero and in the past
-                stopTime.flatMap({ it.valueAsNumber }).map({
+                stopTime.flatMap { it.valueAsNumber }.map {
                     it > 0 && (it * 1000) < facts.clock.timestamp
-                }).orElse(false)
-            }).findFirst().map({ stopTime ->
+                }.orElse(false)
+            }.findFirst().map { stopTime ->
                 facts.bind("stopTime", stopTime.get())
                 true
-            }).orElse(false)
+            }.orElse(false)
         })
         .then(
         { facts ->

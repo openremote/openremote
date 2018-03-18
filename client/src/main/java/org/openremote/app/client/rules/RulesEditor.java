@@ -19,8 +19,6 @@
  */
 package org.openremote.app.client.rules;
 
-import org.openremote.app.client.assets.browser.AssetTreeNode;
-import org.openremote.app.client.assets.browser.BrowserTreeNode;
 import org.openremote.app.client.widget.FormView;
 import org.openremote.model.rules.Ruleset;
 
@@ -34,9 +32,6 @@ public interface RulesEditor extends RulesView, FormView {
         void delete();
 
         void cancel();
-
-        void onTemplateAssetSelection(BrowserTreeNode browserTreeNode);
-
         void onLanguageChange(Ruleset.Lang lang);
     }
 
@@ -61,8 +56,6 @@ public interface RulesEditor extends RulesView, FormView {
     void setRules(String rules);
 
     String getRules();
-
-    void setTemplateAssetNode(AssetTreeNode assetTreeNode);
 
     void enableCreate(boolean enable);
 

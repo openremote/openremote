@@ -30,15 +30,15 @@ rules.add()
             facts.matchAssetState(
                     new AssetQuery().type(RESIDENCE)
                             .attributeValue("vacationUntil", GREATER_THAN, facts.clock.timestamp)
-            ).filter({ residenceWithVacationUntil ->
-                facts.match(VacationMode).noneMatch({
+            ).filter { residenceWithVacationUntil ->
+                facts.match(VacationMode).noneMatch {
                     vacationMode -> vacationMode.residenceId == residenceWithVacationUntil.id
-                })
-            }).findFirst().map({ residenceWithoutVacationMode ->
+                }
+            }.findFirst().map { residenceWithoutVacationMode ->
                 facts.bind("residenceId", residenceWithoutVacationMode.id)
                         .bind("vacationUntil", residenceWithoutVacationMode.valueAsNumber.get())
                 true
-            }).orElse(false)
+            }.orElse(false)
         })
         .then(
         { facts ->
@@ -62,16 +62,16 @@ rules.add()
             facts.matchAssetState(
                     new AssetQuery().type(RESIDENCE)
                             .attributeValue("vacationUntil", LESS_EQUALS, facts.clock.timestamp)
-            ).filter({ residenceWithVacationUntilInPast ->
+            ).filter { residenceWithVacationUntilInPast ->
                 residenceWithVacationUntilInPast.getValueAsNumber().isPresent()
-            }).filter({ residenceWithVacationUntilInPast ->
-                facts.match(VacationMode).noneMatch({
+            }.filter { residenceWithVacationUntilInPast ->
+                facts.match(VacationMode).noneMatch {
                     vacationMode -> vacationMode.residenceId == residenceWithVacationUntilInPast.id
-                })
-            }).findFirst().map({ residenceWithVacationUntilInPastWithoutVacationMode ->
+                }
+            }.findFirst().map { residenceWithVacationUntilInPastWithoutVacationMode ->
                 facts.bind("residence", residenceWithVacationUntilInPastWithoutVacationMode)
                 true
-            }).orElse(false)
+            }.orElse(false)
         })
         .then(
         { facts ->
@@ -85,18 +85,18 @@ rules.add()
         .name("Remove vacation mode when residence has different vacation until")
         .when(
         { facts ->
-            facts.matchFirst(VacationMode, { vacationMode ->
+            facts.matchFirst(VacationMode) { vacationMode ->
                 facts.matchFirstAssetState(
                         new AssetQuery().type(RESIDENCE)
                                 .id(vacationMode.residenceId)
                                 .attributeValue("vacationUntil")
-                ).map({ residence ->
+                ).map { residence ->
                     vacationMode.until != residence.valueAsNumber.get()
-                }).orElse(false)
-            }).map({ vacationMode ->
+                }.orElse(false)
+            }.map { vacationMode ->
                 facts.bind("vacationMode", vacationMode)
                 true
-            }).orElse(false)
+            }.orElse(false)
         })
         .then(
         { facts ->
@@ -109,15 +109,15 @@ rules.add()
         .name("Remove vacation mode when residence has no vacation until, enable scene timers")
         .when(
         { facts ->
-            facts.matchFirst(VacationMode, { vacationMode ->
+            facts.matchFirst(VacationMode) { vacationMode ->
                 !facts.matchFirstAssetState(
                         new AssetQuery().type(RESIDENCE)
                                 .id(vacationMode.residenceId)
                                 .attributeValue("vacationUntil")).isPresent()
-            }).map({ vacationMode ->
+            }.map { vacationMode ->
                 facts.bind("vacationMode", vacationMode)
                 true
-            }).orElse(false)
+            }.orElse(false)
         })
         .then(
         { facts ->

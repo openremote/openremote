@@ -69,7 +69,6 @@ public abstract class Datapoint implements Serializable {
     @Column(name = "TIMESTAMP", nullable = false)
     protected long timestamp;
 
-    @Id
     @Column(name = "VALUE", columnDefinition = "jsonb", nullable = false)
     @org.hibernate.annotations.Type(type = PERSISTENCE_JSON_VALUE_TYPE)
     protected Value value;

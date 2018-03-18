@@ -27,9 +27,6 @@
 
         .enabledColumn {
         }
-
-        .templateColumn {
-        }
     </ui:style>
 
     <w:FlexSplitPanel handleStyle="{widgetStyle.SplitPanelHandle}"

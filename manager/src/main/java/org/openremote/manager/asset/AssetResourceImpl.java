@@ -405,11 +405,10 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             ServerAsset serverAsset = ServerAsset.map(asset, new ServerAsset());
 
             // Allow client to set identifier
-            // TODO Instead should return asset identifier instead of NO CONTENT
             if (asset.getId() != null) {
                 // At least some sanity check, we must hope that the client has set a unique ID
-                if (asset.getId().length() < 22) {
-                    LOG.fine("Identifier value is too short, can't persist asset: " + asset);
+                if (asset.getId().length() != 22) {
+                    LOG.fine("Identifier value must be 22 characters, can't persist asset: " + asset);
                     throw new WebApplicationException(BAD_REQUEST);
                 }
                 serverAsset.setId(asset.getId());

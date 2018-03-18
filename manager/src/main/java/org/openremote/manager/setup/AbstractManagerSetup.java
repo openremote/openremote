@@ -27,6 +27,7 @@ import org.openremote.container.Container;
 import org.openremote.manager.asset.AssetProcessingService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.asset.ServerAsset;
+import org.openremote.manager.concurrent.ManagerExecutorService;
 import org.openremote.manager.datapoint.AssetDatapointService;
 import org.openremote.manager.persistence.ManagerPersistenceService;
 import org.openremote.manager.rules.RulesetStorageService;
@@ -52,6 +53,7 @@ import static org.openremote.model.attribute.AttributeType.*;
 
 public abstract class AbstractManagerSetup implements Setup {
 
+    final protected ManagerExecutorService executorService;
     final protected ManagerPersistenceService persistenceService;
     final protected ManagerIdentityService identityService;
     final protected AssetStorageService assetStorageService;
@@ -62,6 +64,7 @@ public abstract class AbstractManagerSetup implements Setup {
     final protected SetupService setupService;
 
     public AbstractManagerSetup(Container container) {
+        this.executorService = container.getService(ManagerExecutorService.class);
         this.persistenceService = container.getService(ManagerPersistenceService.class);
         this.identityService = container.getService(ManagerIdentityService.class);
         this.assetStorageService = container.getService(AssetStorageService.class);
@@ -481,7 +484,7 @@ public abstract class AbstractManagerSetup implements Setup {
             }
         }
         apartment.addAttributes(
-            new AssetAttribute("sceneTimerEnabled", AttributeType.BOOLEAN)
+            new AssetAttribute("sceneTimerEnabled", AttributeType.BOOLEAN, Values.create(true)) // The scene timer is enabled when the timer protocol starts
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Scene timer enabled")),
                     new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)),

@@ -8,6 +8,7 @@
     <persistence-unit name="OpenRemotePU" transaction-type="RESOURCE_LOCAL">
 
         <class>org.openremote.container.persistence</class>
+        <class>org.openremote.container.util</class>
 
         <class>org.openremote.manager.asset.ServerAsset</class>
         <class>org.openremote.model.notification.DeviceNotificationToken</class>

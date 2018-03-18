@@ -17,9 +17,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.container.persistence;
+package org.openremote.container.util;
 
+import com.devskiller.friendly_id.Url62;
 import com.fasterxml.uuid.Generators;
+import com.fasterxml.uuid.impl.NameBasedGenerator;
 import com.fasterxml.uuid.impl.RandomBasedGenerator;
 import org.hibernate.HibernateException;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
@@ -29,12 +31,15 @@ import org.openremote.model.IdentifiableEntity;
 import java.io.Serializable;
 
 /**
- * Generate a globally unique identifier value if the persisted entity instance is of
+ * Generate a globally unique identifier value.
+ * <p>
+ * This is a Hibernate identifier generator as well: Assigns a random UUID if the persisted entity instance is of
  * type {@link IdentifiableEntity} and if its {@link IdentifiableEntity#getId()} method returns <code>null</code>.
  */
 public class UniqueIdentifierGenerator implements IdentifierGenerator {
 
-    final protected RandomBasedGenerator generator = Generators.randomBasedGenerator();
+    static final protected RandomBasedGenerator randomGenerator = Generators.randomBasedGenerator();
+    static final protected NameBasedGenerator nameGenerator = Generators.nameBasedGenerator();
 
     @Override
     public Serializable generate(SharedSessionContractImplementor session, Object object) throws HibernateException {
@@ -43,6 +48,20 @@ public class UniqueIdentifierGenerator implements IdentifierGenerator {
             if (identifiableEntity.getId() != null)
                 return identifiableEntity.getId();
         }
-        return generator.generate().toString();
+        return generateId();
+    }
+
+    /**
+     * Generates a random UUID value encoded as Base62, 22 characters long.
+     */
+    public static String generateId() {
+        return Url62.encode(randomGenerator.generate());
+    }
+
+    /**
+     * Generates the same UUID value encoded as Base62, 22 characters long, if the name is the same.
+     */
+    public static String generateId(String name) {
+        return Url62.encode(nameGenerator.generate(name));
     }
 }

@@ -22,8 +22,6 @@ package org.openremote.model.attribute;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.ValueHolder;
 import org.openremote.model.asset.AssetMeta;
-import org.openremote.model.rules.Ruleset;
-import org.openremote.model.rules.template.TemplateFilter;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueType;
 import org.openremote.model.value.Values;
@@ -32,7 +30,6 @@ import java.util.Optional;
 import java.util.function.Function;
 
 import static org.openremote.model.asset.AssetMeta.FORMAT;
-import static org.openremote.model.attribute.AttributeType.AttributeTypeFailureReason.ATTRIBUTE_TYPE_INVALID_TEMPLATE_FILTER;
 import static org.openremote.model.attribute.AttributeType.AttributeTypeFailureReason.ATTRIBUTE_TYPE_VALUE_DOES_NOT_MATCH;
 
 /**
@@ -55,13 +52,7 @@ public enum AttributeType {
 
     ARRAY("ellipsis-h", ValueType.ARRAY, value -> Optional.empty()),
 
-    /**
-     * When {@link Ruleset#templateAssetId} references an asset, use the attribute to customize the
-     * template when the ruleset is deployed. The attribute name is available in the template as
-     * parameter {@link TemplateFilter#TEMPLATE_PARAM_FILTER_NAME}, the attribute value is converted
-     * into {@link TemplateFilter} and available in the template as
-     * {@link TemplateFilter#TEMPLATE_PARAM_ASSET_STATE} and {@link TemplateFilter#TEMPLATE_PARAM_ASSET_EVENT}.
-     */
+    // TODO Implement "Saved Filter/Searches" properly, see AssetResourceImpl
     RULES_TEMPLATE_FILTER("filter", ValueType.ARRAY, value -> Optional.empty()),
 
     PERCENTAGE("percent", ValueType.NUMBER,
@@ -240,8 +231,7 @@ public enum AttributeType {
     public static final String DEFAULT_ICON = "circle-thin";
 
     public enum AttributeTypeFailureReason implements ValidationFailure.Reason {
-        ATTRIBUTE_TYPE_VALUE_DOES_NOT_MATCH,
-        ATTRIBUTE_TYPE_INVALID_TEMPLATE_FILTER
+        ATTRIBUTE_TYPE_VALUE_DOES_NOT_MATCH
     }
 
     final protected String icon;

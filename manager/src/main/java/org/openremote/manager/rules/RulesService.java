@@ -29,15 +29,12 @@ import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.*;
 import org.openremote.manager.concurrent.ManagerExecutorService;
 import org.openremote.manager.notification.NotificationService;
-import org.openremote.manager.rules.facade.AssetsFacade;
-import org.openremote.manager.rules.facade.UsersFacade;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetMeta;
 import org.openremote.model.asset.AssetQuery;
 import org.openremote.model.attribute.AttributeEvent.Source;
-import org.openremote.model.attribute.AttributeType;
 import org.openremote.model.rules.*;
 import org.openremote.model.security.Tenant;
 import org.openremote.model.util.Pair;
@@ -358,41 +355,6 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
                             retractAssetState(assetState);
                         });
                     break;
-            }
-
-            if (persistenceEvent.getCause() != PersistenceEvent.Cause.INSERT) {
-
-                int attributesIndex = Arrays.asList(persistenceEvent.getPropertyNames()).indexOf("attributes");
-                if (attributesIndex < 0) {
-                    return;
-                }
-
-                // Get old template filter attributes and new ones
-                // If new collection doesn't contain them, then they are deleted and need to be processed too
-                List<AssetAttribute> oldTemplateFilterAttributes = persistenceEvent.getPreviousState() != null ? //can be null when insert
-                    attributesFromJson(
-                        (ObjectValue) persistenceEvent.getPreviousState()[attributesIndex],
-                        asset.getId()
-                    ).filter(attribute -> attribute.getTypeOrThrow() == AttributeType.RULES_TEMPLATE_FILTER)
-                        .collect(Collectors.toList()) : new ArrayList<>();
-
-                List<AssetAttribute> newTemplateFilterAttributes = persistenceEvent.getCurrentState() != null ? // can be null when delete
-                    attributesFromJson(
-                        (ObjectValue) persistenceEvent.getCurrentState()[attributesIndex],
-                        asset.getId()
-                    ).filter(attribute -> attribute.getTypeOrThrow() == AttributeType.RULES_TEMPLATE_FILTER)
-                        .collect(Collectors.toList()) : new ArrayList<>();
-
-                if (!oldTemplateFilterAttributes.isEmpty() || !newTemplateFilterAttributes.isEmpty()) {
-                    rulesetStorageService.findTemplatedAssetRulesets(asset.getRealmId(), asset.getId())
-                        .forEach(assetRuleset -> processRulesetChange(assetRuleset, persistenceEvent.getCause()));
-
-                    rulesetStorageService.findTemplatedTenantRulesets(asset.getRealmId(), asset.getId())
-                        .forEach(tenantRuleset -> processRulesetChange(tenantRuleset, persistenceEvent.getCause()));
-
-                    rulesetStorageService.findTemplatedGlobalRulesets(asset.getId())
-                        .forEach(globalRuleset -> processRulesetChange(globalRuleset, persistenceEvent.getCause()));
-                }
             }
         });
     }

@@ -15,18 +15,6 @@ create sequence OPENREMOTE_SEQUENCE
   ############################# TABLES #############################
  */
 
-create table ALERT_NOTIFICATION (
-  ID              int8                     not null,
-  ACTIONS         jsonb,
-  APP_URL         varchar(255)             not null,
-  CREATED_ON      timestamp with time zone not null,
-  DELIVERY_STATUS varchar(255),
-  MESSAGE         varchar(255)             not null,
-  TITLE           varchar(255)             not null,
-  USER_ID         varchar(255),
-  primary key (ID)
-);
-
 create table ASSET (
   ID                 varchar(43)              not null,
   ATTRIBUTES         jsonb,
@@ -43,23 +31,74 @@ create table ASSET (
 );
 
 create table ASSET_DATAPOINT (
-  VALUE          jsonb        not null,
   TIMESTAMP      int8         not null,
   ENTITY_ID      varchar(36)  not null,
   ATTRIBUTE_NAME varchar(255) not null,
-  primary key (VALUE, TIMESTAMP, ENTITY_ID, ATTRIBUTE_NAME)
+  VALUE          jsonb        not null,
+  primary key (TIMESTAMP, ENTITY_ID, ATTRIBUTE_NAME)
+);
+
+create table GLOBAL_RULESET (
+  ID            int8                     not null,
+  CREATED_ON    timestamp with time zone not null,
+  ENABLED       boolean                  not null,
+  LAST_MODIFIED timestamp with time zone not null,
+  NAME          varchar(255)             not null,
+  RULES         text                     not null,
+  RULES_LANG    varchar(255)             not null default 'GROOVY',
+  OBJ_VERSION   int8                     not null,
+  primary key (ID)
 );
 
 create table ASSET_RULESET (
-  ID                int8                     not null,
-  CREATED_ON        timestamp with time zone not null,
-  ENABLED           boolean                  not null,
-  LAST_MODIFIED     timestamp with time zone not null,
-  NAME              varchar(255)             not null,
-  RULES             text                     not null,
-  TEMPLATE_ASSET_ID varchar(255),
-  OBJ_VERSION       int8                     not null,
-  ASSET_ID          varchar(255)             not null,
+  ID            int8                     not null,
+  CREATED_ON    timestamp with time zone not null,
+  ENABLED       boolean                  not null,
+  LAST_MODIFIED timestamp with time zone not null,
+  NAME          varchar(255)             not null,
+  RULES         text                     not null,
+  RULES_LANG    varchar(255)             not null default 'GROOVY',
+  OBJ_VERSION   int8                     not null,
+  ASSET_ID      char(22)                 not null,
+  primary key (ID)
+);
+
+create table TENANT_RULESET (
+  ID            int8                     not null,
+  CREATED_ON    timestamp with time zone not null,
+  ENABLED       boolean                  not null,
+  LAST_MODIFIED timestamp with time zone not null,
+  NAME          varchar(255)             not null,
+  RULES         text                     not null,
+  RULES_LANG    varchar(255)             not null default 'GROOVY',
+  OBJ_VERSION   int8                     not null,
+  REALM_ID      varchar(255)             not null,
+  primary key (ID)
+);
+
+create table USER_ASSET (
+  ASSET_ID   char(22)                 not null,
+  REALM_ID   varchar(36)              not null,
+  USER_ID    varchar(36)              not null,
+  CREATED_ON timestamp with time zone not null,
+  primary key (ASSET_ID, REALM_ID, USER_ID)
+);
+
+create table USER_CONFIGURATION (
+  USER_ID    varchar(36) not null,
+  RESTRICTED boolean     not null,
+  primary key (USER_ID)
+);
+
+create table ALERT_NOTIFICATION (
+  ID              int8                     not null,
+  ACTIONS         jsonb,
+  APP_URL         varchar(255)             not null,
+  CREATED_ON      timestamp with time zone not null,
+  DELIVERY_STATUS varchar(255),
+  MESSAGE         varchar(255)             not null,
+  TITLE           varchar(255)             not null,
+  USER_ID         varchar(255),
   primary key (ID)
 );
 
@@ -72,18 +111,6 @@ create table DEVICE_NOTIFICATION_TOKEN (
   primary key (DEVICE_ID, USER_ID)
 );
 
-create table GLOBAL_RULESET (
-  ID                int8                     not null,
-  CREATED_ON        timestamp with time zone not null,
-  ENABLED           boolean                  not null,
-  LAST_MODIFIED     timestamp with time zone not null,
-  NAME              varchar(255)             not null,
-  RULES             text                     not null,
-  TEMPLATE_ASSET_ID varchar(255),
-  OBJ_VERSION       int8                     not null,
-  primary key (ID)
-);
-
 create table SYSLOG_EVENT (
   ID          int8         not null,
   TIMESTAMP   int8         not null,
@@ -92,33 +119,6 @@ create table SYSLOG_EVENT (
   MESSAGE     varchar(131072),
   SUBCATEGORY varchar(1024),
   primary key (ID)
-);
-
-create table TENANT_RULESET (
-  ID                int8                     not null,
-  CREATED_ON        timestamp with time zone not null,
-  ENABLED           boolean                  not null,
-  LAST_MODIFIED     timestamp with time zone not null,
-  NAME              varchar(255)             not null,
-  RULES             text                     not null,
-  TEMPLATE_ASSET_ID varchar(255),
-  OBJ_VERSION       int8                     not null,
-  REALM_ID          varchar(255)             not null,
-  primary key (ID)
-);
-
-create table USER_ASSET (
-  ASSET_ID   varchar(36)              not null,
-  REALM_ID   varchar(36)              not null,
-  USER_ID    varchar(36)              not null,
-  CREATED_ON timestamp with time zone not null,
-  primary key (ASSET_ID, REALM_ID, USER_ID)
-);
-
-create table USER_CONFIGURATION (
-  USER_ID    varchar(36) not null,
-  RESTRICTED boolean     not null,
-  primary key (USER_ID)
 );
 
 /*

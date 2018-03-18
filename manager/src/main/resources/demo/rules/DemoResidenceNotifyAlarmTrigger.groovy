@@ -40,27 +40,27 @@ rules.add()
         { facts ->
             facts.matchAssetState(
                     new AssetQuery().type(RESIDENCE).attributeValue("alarmEnabled", true)
-            ).filter({ residenceWithAlarmEnabled ->
-                !facts.matchFirst(AlarmTrigger, { alarmTrigger ->
+            ).filter { residenceWithAlarmEnabled ->
+                !facts.matchFirst(AlarmTrigger) { alarmTrigger ->
                     alarmTrigger.residenceId == residenceWithAlarmEnabled.id
-                }).isPresent()
-            }).map({ residenceWithoutAlarmTrigger ->
+                }.isPresent()
+            }.map { residenceWithoutAlarmTrigger ->
                 // Map to Optional<AssetState> of the "first" room in the residence with presence detected
                 facts.matchFirstAssetState(
                         new AssetQuery().type(ROOM)
                                 .parent(residenceWithoutAlarmTrigger.id)
                                 .attributeValue("presenceDetected", true)
                 )
-            }).filter({ roomWithPresence ->
-                roomWithPresence.isPresent()
-            }).map({ roomWithPresence ->
-                roomWithPresence.get()
-            }).findFirst().map({ roomWithPresence ->
+            }.filter {
+                it.isPresent()
+            }.map {
+                it.get()
+            }.findFirst().map { roomWithPresence ->
                 facts.bind("residenceId", roomWithPresence.parentId)
                         .bind("residenceName", roomWithPresence.parentName)
                         .bind("roomName", roomWithPresence.name)
                 true
-            }).orElse(false)
+            }.orElse(false)
         })
         .then(
         { facts ->
@@ -77,16 +77,16 @@ rules.add()
         .name("Remove alarm trigger when no presence is detected in any room of residence")
         .when(
         { facts ->
-            facts.matchFirst(AlarmTrigger, { alarmTrigger ->
+            facts.matchFirst(AlarmTrigger) { alarmTrigger ->
                 !facts.matchFirstAssetState(
                         new AssetQuery().type(ROOM)
                                 .parent(alarmTrigger.residenceId)
                                 .attributeValue("presenceDetected", true)
                 ).isPresent()
-            }).map({ alarmTrigger ->
+            }.map { alarmTrigger ->
                 facts.bind("alarmTrigger", alarmTrigger)
                 true
-            }).orElse(false)
+            }.orElse(false)
         })
         .then(
         { facts ->
@@ -99,16 +99,16 @@ rules.add()
         .name("Remove alarm trigger when residence alarm is disabled")
         .when(
         { facts ->
-            facts.matchFirst(AlarmTrigger, { alarmTrigger ->
+            facts.matchFirst(AlarmTrigger) { alarmTrigger ->
                 facts.matchFirstAssetState(
                         new AssetQuery().type(RESIDENCE)
                                 .id(alarmTrigger.residenceId)
                                 .attributeValue("alarmEnabled", false)
                 ).isPresent()
-            }).map({ alarmTrigger ->
+            }.map { alarmTrigger ->
                 facts.bind("alarmTrigger", alarmTrigger)
                 true
-            }).orElse(false)
+            }.orElse(false)
         }).then(
         { facts ->
             AlarmTrigger alarmTrigger = facts.bound("alarmTrigger")
@@ -122,22 +122,22 @@ rules.add()
         { facts ->
             facts.matchAssetState(
                     new AssetQuery().type(RESIDENCE).attributeValue("alarmEnabled", true)
-            ).map({ residenceWithAlarmEnabled ->
+            ).map { residenceWithAlarmEnabled ->
                 facts.matchFirst(AlarmTrigger, { alarmTrigger ->
                     alarmTrigger.residenceId == residenceWithAlarmEnabled.id
                 })
-            }).filter({ alarmTrigger ->
+            }.filter { alarmTrigger ->
                 // there is an alarm trigger and alerts are not silenced for this residence
                 alarmTrigger.isPresent() &&
                         !facts.matchFirst(AlertSilence, { alertSilence ->
                             alertSilence.residenceId == alarmTrigger.get().residenceId
                         }).isPresent()
-            }).map({ alarmTrigger ->
-                alarmTrigger.get()
-            }).findFirst().map({ alarmTrigger ->
+            }.map {
+                it.get()
+            }.findFirst().map { alarmTrigger ->
                 facts.bind("alarmTrigger", alarmTrigger)
                 true
-            }).orElse(false)
+            }.orElse(false)
         }).then(
         { facts ->
             AlarmTrigger alarmTrigger = facts.bound("alarmTrigger")
@@ -173,18 +173,18 @@ rules.add()
         { facts ->
             facts.matchAssetState(
                     new AssetQuery().type(RESIDENCE).attributeValue("alarmEnabled", false)
-            ).map({ residenceWithAlarmEnabled ->
-                facts.matchFirst(AlertSilence, { alertSilence ->
+            ).map { residenceWithAlarmEnabled ->
+                facts.matchFirst(AlertSilence) { alertSilence ->
                     alertSilence.residenceId == residenceWithAlarmEnabled.id
-                })
-            }).filter({ alertSilence ->
-                alertSilence.isPresent()
-            }).map({ alertSilence ->
-                alertSilence.get()
-            }).findFirst().map({ alertSilence ->
+                }
+            }.filter {
+                it.isPresent()
+            }.map {
+                it.get()
+            }.findFirst().map { alertSilence ->
                 facts.bind("alertSilence", alertSilence)
                 true
-            }).orElse(false)
+            }.orElse(false)
         }).then(
         { facts ->
             AlertSilence alertSilence = facts.bound("alertSilence")
