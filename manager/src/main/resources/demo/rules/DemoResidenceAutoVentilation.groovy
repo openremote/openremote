@@ -52,9 +52,9 @@ Closure<Boolean> roomThresholdMatch =
             // Any room of the residence which has a level greater than zero
             def roomWithMaxLevel = facts.matchAssetState(
                     new AssetQuery().type(ROOM).parent(residence.id).attributeValue(attribute, GREATER_THAN, 0)
-            ).max { roomWithLevelAboveZero ->
+            ).max { roomA, roomB ->
                 // get the room with the highest level
-                roomWithLevelAboveZero.valueAsNumber.orElse(0)
+                Double.compare(roomA.valueAsNumber.orElse(0), roomB.valueAsNumber.orElse(0))
             }
 
             if (roomWithMaxLevel.isPresent()) {

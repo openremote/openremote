@@ -207,12 +207,10 @@ services:
       # For the Keycloak identity provider, you may configure session timeouts of frontend apps. This
       # will only be applied on newly created realms, or once on the master realm when clean setup runs.
       #
-      # The idle session timeout, logging the user out if no requests are made, default is 1 day.
-      # Note that WebSocket events do not count as requests and therefore do not extend the session!
-      # IDENTITY_SESSION_TIMEOUT_MINUTES : 1440
-      # The max session lifespan, always logging the user out when expired, default is 1 day.
+      # Validity of non-offline refresh tokens, force login when expired on web app, default is 1 day.
       # IDENTITY_SESSION_MAX_MINUTES: 1440
-      # The max offline token lifespan, forcing login on native console when app not used, default is 14 days.
+      #
+      # Validity of offline refresh tokens, force login on native console app, default is 14 days.
       # IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES: 20160
 
       # Location of the static manager (UI and API) resources, you don't need to override this

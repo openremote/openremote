@@ -156,6 +156,13 @@
                     },
 
                     /**
+                     * Periodic access token update interval, checking if the refresh token is still valid.
+                     */
+                    keycloakUpdateTokenInterval: {
+                        type: Number
+                    },
+
+                    /**
                      * Hold credentials when basic authentication is successful to authorize future requests.
                      */
                     basicAuthPassword: String,
@@ -210,13 +217,19 @@
                     return;
 
                 this.set("authenticated", false);
+
+                // Let native shell know about logout
+                if (this.shellNative && this.shellNative.enabled) {
+                    this.shellNative.postNativeShellMessage({type: 'logout'});
+                }
+
                 let logoutUrl = location.protocol + "//" + location.host + location.pathname;
 
                 if (this.keycloak) {
-
-                    // Clear native shell stored tokens
-                    if (this.shellNative && this.shellNative.enabled) {
-                        this.shellNative.postNativeShellMessage({type: 'logout'});
+                    // Clear refresh token check interval
+                    if (this.keycloakUpdateTokenInterval) {
+                        clearInterval(this.keycloakUpdateTokenInterval);
+                        delete this.keycloakUpdateTokenInterval;
                     }
 
                     // Navigate to start page on logout, drop the hash (also, Keycloak has a bug where it
@@ -290,18 +303,10 @@
                 if (!this.authenticated) {
                     onComplete();
                 } else if (this.keycloak) {
-                    // Token must be good for X more seconds, should be half of Constants.ACCESS_TOKEN_LIFESPAN_SECONDS
-                    let minValiditySeconds = 30;
-                    this.keycloak.updateToken(minValiditySeconds)
-                        .success((tokenRefreshed) => {
-                            console.debug("For request authorization, access token was refreshed from auth server: " + tokenRefreshed)
-                            requestParams.withBearerAuth(this.keycloak.token);
-                            onComplete();
-                        })
-                        .error(() => {
-                            console.warn("For request authorization, Access token refresh failed, session expired, logging out...");
-                            this.logout();
-                        });
+                    this.updateKeycloakAccessToken(() => {
+                        requestParams.withBearerAuth(this.keycloak.token);
+                        onComplete();
+                    });
                 } else {
                     requestParams.setUsername(this.user);
                     requestParams.setPassword(this.basicAuthPassword);
@@ -315,12 +320,14 @@
                 }
                 serviceUrl = serviceUrl + "?Auth-Realm=" + this.realm;
                 if (this.keycloak) {
-                    // TODO Should use keycloak.updateToken()?
-                    serviceUrl = serviceUrl + "&Authorization=Bearer " + this.keycloak.token;
+                    this.updateKeycloakAccessToken(() => {
+                        serviceUrl = serviceUrl + "&Authorization=Bearer " + this.keycloak.token;
+                        onComplete(serviceUrl);
+                    });
                 } else {
                     serviceUrl = serviceUrl + "&Authorization=Basic " + window.btoa(this.user + ":" + this.basicAuthPassword);
+                    onComplete(serviceUrl);
                 }
-                onComplete(serviceUrl);
             }
 
             computeKeycloak(realm) {
@@ -347,67 +354,108 @@
 
             startKeycloakAuthentication() {
                 console.debug("Keycloak authentication init");
-                // Require login and enable invisible login status iframe of Keycloak: This sets a cookie that
-                // expires when the max session lifespan has been reached, then logs you out when the
-                // cookie disappears.
-                this.keycloak.init({onLoad: "login-required", checkLoginIframe: true, checkLoginIframeInterval: 5, })
-                    .success((authenticated) => {
-                        if (authenticated) {
-                            this.onKeycloakAuthSuccess()
-                        } else {
-                            this.onKeycloakAuthFailure()
-                        }
-                    })
-                    .error((e) => {
-                        this.set("error", e)
-                    });
+
+                let initOptions = {
+                    checkLoginIframe: false, // Disable login status iframe checking, it doesn't work well with offline tokens
+                    refreshToken: this.getNativeOfflineRefreshToken() // Try to use a stored offline refresh token
+                }
+
+                if (initOptions.refreshToken) {
+                    console.log("Using native shell offline refresh token to initialize Keycloak");
+                }
+
+                // Always force a login when Keycloak clears tokens or isn't happy with the refresh token
+                this.keycloak.onAuthLogout = () => {
+                    console.log("On authentication logout (Keycloak tokens cleared?), doing login");
+                    this.doKeycloakLogin()
+                }
+                this.keycloak.onAuthRefreshError = () => {
+                    console.log("On authentication update token failure (Keycloak invalid refresh token?), doing login");
+                    this.doKeycloakLogin()
+                }
+
+                this.keycloak.init(initOptions).success((authenticated) => {
+                    if (authenticated) {
+                        this.onKeycloakAuthSuccess()
+                    } else {
+                        console.log("On authentication failure, doing login");
+                        this.doKeycloakLogin()
+                    }
+                }).error((e) => {
+                    this.set("error", e)
+                });
             }
 
             onKeycloakAuthSuccess() {
-                console.log("Keycloak authentication successful");
-
+                // If native shell is enabled, we need an offline refresh token
                 if (this.shellNative && this.shellNative.enabled) {
-                    // Transfer tokens to native shell so they can be stored for future usage
+
+                    // If we don't have an offline refresh token, try to get one
+                    if (this.keycloak.refreshTokenParsed.typ !== "Offline") {
+                        console.debug("Native shell enabled, requesting offline refresh token")
+                        this.doKeycloakLogin()
+                        return;
+                    }
+
+                    // Transfer offline refresh token to native shell so it can be stored for future usage
+                    console.debug("Native shell enabled, storing offline refresh token");
                     this.shellNative.postNativeShellMessage({
                         type: 'token',
-                        data: {
-                            token: this.keycloak.token,
-                            refreshToken: this.keycloak.refreshToken,
-                            idToken: this.keycloak.idToken
-                        }
+                        data: {refreshToken: this.keycloak.refreshToken}
                     });
                 }
-                // Set authenticated user
+
+                console.log("Keycloak authentication successful");
                 this.set("user", this.keycloak.tokenParsed.preferred_username);
                 this.set("authenticated", true);
+
+                // Check every 10 seconds if the refresh token can still get an access token
+                if (this.keycloakUpdateTokenInterval) {
+                    clearInterval(this.keycloakUpdateTokenInterval);
+                }
+                this.keycloakUpdateTokenInterval = setInterval(() => {
+                    this.updateKeycloakAccessToken()
+                }, 10000);
             }
 
-            onKeycloakAuthFailure() {
-                console.log("Keycloak authentication failure");
-
+            doKeycloakLogin() {
                 if (this.login) {
-                    console.debug("Login required, trying again for realm: " + this.realm);
-
+                    console.debug("Attempting login for realm: " + this.realm);
                     let options = {};
                     if (this.shellNative && this.shellNative.enabled) {
-
-                        // If we run in native shell, always try to use or obtain an offline refresh token
-                        console.debug("Native shell enabled, login attempt with scope_offline");
+                        // If we run in native shell, request offline token
+                        console.debug("Native shell enabled, login attempt with scope=offline_access");
                         options.scope = "offline_access";
-
-                        // Get offline token from native shell to try again
-                        let savedTokensString = this.shellNative.readNativeShellMessage('token');
-                        if (savedTokensString && savedTokensString.length > 0) {
-                            console.debug("Native shell has stored offline tokens, using them for next login attempt");
-                            let savedTokens = JSON.parse(savedTokensString);
-                            // TODO We should only need the refresh token?
-                            this.keycloak.token = savedTokens.token;
-                            this.keycloak.refreshToken = savedTokens.refreshToken;
-                            this.keycloak.idToken = savedTokens.idToken;
-                        }
                     }
                     this.keycloak.login(options);
                 }
+            }
+
+            updateKeycloakAccessToken(callback) {
+                // Access token must be good for X more seconds, should be half of Constants.ACCESS_TOKEN_LIFESPAN_SECONDS
+                this.keycloak.updateToken(30)
+                    .success((tokenRefreshed) => {
+                        // If refreshed from server, it means the refresh token was still good for another access token
+                        console.debug("Access token update success, refreshed from server: " + tokenRefreshed);
+                        callback && callback(tokenRefreshed)
+                    })
+                    .error(() => {
+                        // Refresh token expired (either SSO max session duration or offline idle timeout), see
+                        // IDENTITY_SESSION_MAX_MINUTES and IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES server config
+                        console.info("Access token update failed, refresh token expired, login required");
+                        this.doKeycloakLogin();
+                    });
+            }
+
+            getNativeOfflineRefreshToken() {
+                if (this.shellNative && this.shellNative.enabled) {
+                    let storedToken = this.shellNative.readNativeShellMessage('token');
+                    if (storedToken && storedToken.length > 0) {
+                        let storedTokenParsed = JSON.parse(storedToken);
+                        return storedTokenParsed.refreshToken;
+                    }
+                }
+                return undefined;
             }
 
             startBasicAuthentication() {

@@ -320,24 +320,29 @@
             }
 
             onAppError(error) {
-                console.error("Application error, disabling app: " + error);
-
-                // Remove all slotted children, effectively disabling the app
-                this.$.slot.assignedNodes({flatten: false}).forEach((node) => {
-                    node.parentElement.removeChild(node);
-                });
+                console.error("Application error: " + error);
 
                 // Disable login/token refresh
                 this.set("login", false);
                 this.disconnectEvents();
 
-                // Hide the slots
-                this.$.slots.style.display = "none";
+                // If we run in native shell, show native error screen
+                if (this.$.shellNative.enabled) {
+                    this.$.shellNative.postNativeShellMessage({type: 'error', data: {error: error}});
+                } else {
+                    // Remove all slotted children, effectively disabling the app
+                    this.$.slot.assignedNodes({flatten: false}).forEach((node) => {
+                        node.parentElement.removeChild(node);
+                    });
 
-                this.hideBusyIndicator();
+                    // Hide the slots
+                    this.$.slots.style.display = "none";
 
-                // Fire an event so others can react to an error
-                window.dispatchEvent(new CustomEvent("AppError", {detail: {app: this, error: error}}));
+                    this.hideBusyIndicator();
+
+                    // Fire an event so others can react to an error
+                    window.dispatchEvent(new CustomEvent("AppError", {detail: {app: this, error: error}}));
+                }
             }
 
             showApp() {
@@ -427,7 +432,6 @@
 
                         // Close socket on unload/refresh of page
                         window.addEventListener("beforeunload", () => {
-                            console.log("Page unloaded, closing event service connection");
                             this.disconnectEvents();
                         });
 
@@ -473,7 +477,7 @@
                     for (let listener of this.webSocketCloseListeners) {
                         listener();
                     }
-                    console.log("Closing WebSocket");
+                    console.log("Closing event service connection");
                     this.webSocket.close();
                 }
             }

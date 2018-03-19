@@ -58,11 +58,6 @@
                 this.set("assetTemplate", assetTemplate);
             }
 
-            connectedCallback() {
-                super.connectedCallback();
-                this.showComponent();
-            }
-
             executeQuery(selectInclude, assetType) {
 
                 // If called without parameters, use last known parameters

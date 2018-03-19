@@ -79,8 +79,6 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
     public static final String KEYCLOAK_CLIENT_POOL_SIZE = "KEYCLOAK_CLIENT_POOL_SIZE";
     public static final int KEYCLOAK_CLIENT_POOL_SIZE_DEFAULT = 20;
 
-    public static final String IDENTITY_SESSION_TIMEOUT_MINUTES = "IDENTITY_SESSION_TIMEOUT_MINUTES";
-    public static final int IDENTITY_SESSION_TIMEOUT_MINUTES_DEFAULT = 60 * 24; // 1 day
     public static final String IDENTITY_SESSION_MAX_MINUTES = "IDENTITY_SESSION_MAX_MINUTES";
     public static final int IDENTITY_SESSION_MAX_MINUTES_DEFAULT = 60 * 24; // 1 day
     public static final String IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES = "IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES";
@@ -120,14 +118,14 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
         this.clientId = clientId;
         this.externalServerUri = externalServerUri;
 
-        sessionTimeoutSeconds = getInteger(container.getConfig(), IDENTITY_SESSION_TIMEOUT_MINUTES, IDENTITY_SESSION_TIMEOUT_MINUTES_DEFAULT) * 60;
-        if (sessionTimeoutSeconds < 60) {
-            throw new IllegalArgumentException(IDENTITY_SESSION_TIMEOUT_MINUTES + " must be more than 1 minute");
-        }
         sessionMaxSeconds = getInteger(container.getConfig(), IDENTITY_SESSION_MAX_MINUTES, IDENTITY_SESSION_MAX_MINUTES_DEFAULT) * 60;
         if (sessionMaxSeconds < 60) {
             throw new IllegalArgumentException(IDENTITY_SESSION_MAX_MINUTES + " must be more than 1 minute");
         }
+        // Use the same, as a session is never idle because we periodically check if the refresh token is
+        // still good in frontend code, this check will reset the idle timeout anyway
+        sessionTimeoutSeconds = sessionMaxSeconds;
+
         sessionOfflineTimeoutSeconds = getInteger(container.getConfig(), IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES, IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES_DEFAULT) * 60;
         if (sessionOfflineTimeoutSeconds < 60) {
             throw new IllegalArgumentException(IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES + " must be more than 1 minute");
