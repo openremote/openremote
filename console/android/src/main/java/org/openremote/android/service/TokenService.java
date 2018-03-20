@@ -34,9 +34,7 @@ public class TokenService {
     private static final Logger LOG = Logger.getLogger(TokenService.class.getName());
 
     private final SharedPreferences sharedPref;
-    private final String tokenKey;
     private final String refreshTokenKey;
-    private final String tokenIdKey;
     private final String fcmTokenKey;
     private final String deviceIdKey;
     private final String realm;
@@ -56,61 +54,60 @@ public class TokenService {
         oauth2Service = retrofit.create(OAuth2Service.class);
         notificationService = retrofit.create(NotificationService.class);
         sharedPref = PreferenceManager.getDefaultSharedPreferences(context);
-        tokenKey = context.getString(R.string.SHARED_PREF_TOKEN);
         refreshTokenKey = context.getString(R.string.SHARED_PREF_REFRESH_TOKEN);
-        tokenIdKey = context.getString(R.string.SHARED_PREF_TOKEN_ID);
         fcmTokenKey = context.getString(R.string.SHARED_PREF_FCM_TOKEN);
         deviceIdKey = context.getString(R.string.SHARED_PREF_DEVICE_ID);
         realm = context.getString(R.string.OR_REALM);
         String refreshToken = sharedPref.getString(refreshTokenKey, null);
         String fcmToken =  sharedPref.getString(fcmTokenKey, null);
         String deviceId = sharedPref.getString(deviceIdKey, null);
-        if (refreshToken != null && fcmToken != null) {
+        if (refreshToken != null && fcmToken != null && deviceId != null) {
+            LOG.fine("On create, have refresh token, sending FCM token");
             sendFCMToken(fcmToken, deviceId);
         } else {
-            LOG.fine("On create, no refresh or FCM token, skipping update...");
+            LOG.fine("On create, no refresh or FCM token or device ID, skipping update...");
         }
     }
 
-    public void saveToken(String token, String refreshToken, String idToken) {
-        LOG.fine("Saving access, refresh, and id tokens");
+    public void saveToken(String refreshToken) {
+        LOG.fine("Saving offline refresh token");
         SharedPreferences.Editor editor = sharedPref.edit();
-        editor.putString(tokenKey, token);
         editor.putString(refreshTokenKey, refreshToken);
-        editor.putString(tokenIdKey, idToken);
         editor.commit();
 
         String fcmToken =  sharedPref.getString(fcmTokenKey, null);
         String deviceId = sharedPref.getString(deviceIdKey, null);
         if (fcmToken != null && deviceId != null) {
+            LOG.fine("On save refresh token, sending FCM token");
             sendFCMToken(fcmToken, deviceId);
         } else {
-            LOG.fine("On save tokens, no device id or FCM token, skipping update...");
+            LOG.fine("On save refresh token, no device ID or FCM token, skipping update...");
         }
     }
 
     public String getJsonToken() {
-
-        String token = sharedPref.getString(tokenKey, null);
         String refreshToken = sharedPref.getString(refreshTokenKey, null);
-        String idToken = sharedPref.getString(tokenIdKey, null);
-        return refreshToken == null ? null : "{ \"token\" :\"" + token + "\", \"refreshToken\": \"" + refreshToken + "\", \"idToken\": \"" + idToken + "\"}";
+        return refreshToken == null ? null : "{ \"refreshToken\": \"" + refreshToken + "\"}";
     }
 
-    public void getAuthorization(final TokenCallback callback) {
+    public void withAccessToken(final TokenCallback callback) {
         Call<Map<String, String>> call = oauth2Service.refreshToken(realm, "refresh_token", "openremote", sharedPref.getString(refreshTokenKey, null));
         call.enqueue(new Callback<Map<String, String>>() {
             @Override
             public void onResponse(Call<Map<String, String>> call, Response<Map<String, String>> response) {
-                LOG.fine("Refresh access token response: " + response.body());
-                if (response.body() != null) {
-                    try {
-                        callback.onToken("Bearer " + response.body().get("access_token"));
-                    } catch (IOException e) {
-                        callback.onFailure(e);
+                if (response.isSuccessful()) {
+                    if (response.body() != null) {
+                        try {
+                            LOG.fine("Access token successfully updated");
+                            callback.onToken("Bearer " + response.body().get("access_token"));
+                        } catch (IOException e) {
+                            callback.onFailure(e);
+                        }
+                    } else {
+                        callback.onFailure(new NullPointerException("No response body on update access token request"));
                     }
                 } else {
-                    callback.onFailure(new NullPointerException());
+                    callback.onFailure(new IllegalStateException("Unsuccessful response in update access token request: " + response.code()));
                 }
             }
 
@@ -139,8 +136,8 @@ public class TokenService {
     }
 
     private void sendFCMToken(final String fcmToken, final String id) {
-        LOG.fine("Sending FCM token for device id: " + id);
-        getAuthorization(new TokenCallback() {
+        LOG.fine("Sending FCM token for device ID: " + id);
+        withAccessToken(new TokenCallback() {
             @Override
             public void onToken(String accessToken) {
                 Call call = notificationService.updateToken(realm, accessToken, fcmToken, id, "ANDROID");
@@ -149,9 +146,9 @@ public class TokenService {
                         @Override
                         public void onResponse(Call call, Response response) {
                             if (response.code() != 204) {
-                                LOG.severe("Sending FCM device token failed for device id: " + id  +", response code: " + response.code());
+                                LOG.severe("Sending FCM device token failed for device ID: " + id  +", response code: " + response.code());
                             } else {
-                                LOG.fine("Sending FCM device token successful for device id: " + id);
+                                LOG.fine("Sending FCM device token successful for device ID: " + id);
 
                                 // #40: Don't clean-up the FCM information from SharedPreferences, this means they are always sent
                                 // This ensures that if it gets cleaned from server, it is re-send again and notifications can be send
@@ -166,15 +163,14 @@ public class TokenService {
 
                         @Override
                         public void onFailure(Call call, Throwable t) {
-                            LOG.log(Level.SEVERE, "Sending FCM device token failed for device id: " + id, t);
+                            LOG.log(Level.SEVERE, "Sending FCM device token failed for device ID: " + id, t);
                         }
                     });
-
             }
 
             @Override
             public void onFailure(Throwable t) {
-                LOG.log(Level.SEVERE, "Sending FCM device token failed, couldn't get access token, for device id: " + id, t);
+                LOG.log(Level.SEVERE, "Sending FCM device token failed (no access token), for device ID: " + id, t);
             }
         });
 
@@ -182,7 +178,7 @@ public class TokenService {
 
     public void getAlerts(final Callback<List<AlertNotification>> callback) {
 
-        getAuthorization(new TokenCallback() {
+        withAccessToken(new TokenCallback() {
             @Override
             public void onToken(String accessToken) {
                 notificationService.getAlertNotification(realm, accessToken).enqueue(callback);
@@ -197,15 +193,13 @@ public class TokenService {
 
     public void clearToken() {
         SharedPreferences.Editor editor = sharedPref.edit();
-        editor.remove(tokenKey);
         editor.remove(refreshTokenKey);
-        editor.remove(tokenIdKey);
         editor.commit();
     }
 
     public void deleteAlert(final Long id) {
 
-        getAuthorization(new TokenCallback() {
+        withAccessToken(new TokenCallback() {
             @Override
             public void onToken(String accessToken) throws IOException {
                 notificationService.deleteNotification(realm, accessToken,id).enqueue(new Callback<Void>() {
@@ -228,13 +222,14 @@ public class TokenService {
 
             @Override
             public void onFailure(Throwable t) {
-                LOG.log(Level.SEVERE, "Error deleting notification: " + id, t);
+                // TODO We should tell the user to login again or it will never work
+                LOG.log(Level.SEVERE, "Error deleting notification (no access token): " + id, t);
             }
         });
     }
 
     public void executeAction(final AlertAction alertAction) {
-        getAuthorization(new TokenCallback() {
+        withAccessToken(new TokenCallback() {
             @Override
             public void onToken(String accessToken) throws IOException {
                 notificationService.updateAssetAction(realm, accessToken,alertAction.getAssetId(),alertAction.getAttributeName(),alertAction.getRawJson()).enqueue(new Callback<Void>() {
@@ -257,7 +252,8 @@ public class TokenService {
 
             @Override
             public void onFailure(Throwable t) {
-                LOG.log(Level.SEVERE, "Error executing asset write: " + alertAction, t);
+                // TODO We should tell the user to login again or it will never work
+                LOG.log(Level.SEVERE, "Error executing asset write (no access token): " + alertAction, t);
             }
         });
 
