@@ -2,6 +2,8 @@
 <link rel="import" href="or-style.html">
 
 <!-- App services/dependencies -->
+<link rel="import" href="or-busy-indicator.html">
+<link rel="import" href="or-error-view.html">
 <link rel="import" href="or-shell-native.html">
 <link rel="import" href="or-app-security.html">
 <link rel="import" href="or-app-events.html">
@@ -16,49 +18,6 @@
 
         <style include="or-style">
 
-            /* Children of or-app might be hidden by host page, some have to be visible */
-            #loader,
-            #errorView {
-                visibility: visible !important;
-            }
-
-            #loader {
-                z-index: 9999;
-                position: fixed;
-                bottom: 0.8em;
-                right: 0.4em;
-                pointer-events: none;
-                width: 0.8em;
-                height: 0.8em;
-                border: 2px solid var(--theme-lightgreen);
-                border-top-color: var(--theme-black);
-                border-radius: 50%;
-                -webkit-animation: loaderSpin 1s linear infinite;
-                animation: loaderSpin 1s linear infinite;
-            }
-
-            @-webkit-keyframes loaderSpin {
-                100% {
-                    -webkit-transform: rotate(360deg);
-                    transform: rotate(360deg);
-                }
-            }
-
-            @keyframes loaderSpin {
-                100% {
-                    -webkit-transform: rotate(360deg);
-                    transform: rotate(360deg);
-                }
-            }
-
-            #errorView {
-                padding: 1em;
-            }
-
-            #errorView h1 {
-                color: var(--theme-darkgrey);
-            }
-
             /* Slots are not shown until we are ready */
             #slots {
                 display: none;
@@ -71,11 +30,12 @@
             */
         </style>
 
-        <div id="loader"></div>
+        <or-busy-indicator id="busyIndicator"></or-busy-indicator>
 
         <or-shell-native id="shellNative"></or-shell-native>
 
         <or-app-security id="appSecurity"
+                         host-configuration="[[hostConfiguration]]"
                          login="{{login}}"
                          realm="{{tenantRealm}}"
                          authenticated="{{authenticated}}"
@@ -85,10 +45,7 @@
         <or-app-events id="appEvents"></or-app-events>
 
         <template is="dom-if" if="[[error]]">
-            <div id="errorView" class="or-Viewport">
-                <h1>[[defaultErrorMessage]]</h1>
-                <h5>[[error]]</h5>
-            </div>
+            <or-error-view id="errorView" error="[[error]]"></or-error-view>
         </template>
 
         <div id="slots" class="flex layout vertical">
@@ -222,16 +179,6 @@
                     },
 
                     /**
-                     * The message that should be shown to the user, before the error state.
-                     */
-                    defaultErrorMessage: {
-                        type: String,
-                        value: function () {
-                            return "Service not available or application error, please try again later.";
-                        }
-                    },
-
-                    /**
                      * Produces promises to load JS, CSS, HTML, IMG resources.
                      */
                     load: {
@@ -240,8 +187,10 @@
                             function _load(tag, rel) {
                                 return function (url) {
                                     return new Promise(function (resolve, reject) {
+                                        if (url.startsWith("/")) {
+                                            url = openremote.INSTANCE.hostConfiguration.protocol + "//" + openremote.INSTANCE.hostConfiguration.host + url;
+                                        }
 
-                                        url = openremote.INSTANCE.managerHost + url;
                                         var element = window.document.createElement(tag);
                                         // Append loading tags to the body
                                         var parent = 'body';
@@ -281,7 +230,14 @@
                         }
                     },
 
-                    managerHost: String
+                    hostConfiguration: {
+                        type: Object,
+                        value: () => {
+                            let a = document.createElement("a");
+                            a.href = this.importPath;
+                            return a;
+                        }
+                    }
                 };
             }
 
@@ -310,15 +266,6 @@
 
                 // The app should flex and its children should be in a flexbox vertical layout
                 this.shadowRoot.host.classList.add("flex", "layout", "vertical");
-
-                // Extract manager host URI based on where this component is hosted; it is assumed that the component
-                // is being hosted in a manager instance and that is the instance you want to connect to.
-                let managerHost = '';
-                let hostURI = this.importPath;
-                if (hostURI) {
-                    managerHost = '//' + new URL(hostURI).host;
-                }
-                this.managerHost = managerHost;
 
                 if (this.login) {
                     this.getSecurity().set("shellNative", this.$.shellNative);
@@ -368,26 +315,34 @@
                     });
             }
 
-            onAppError(error) {
-                console.error("Application error, disabling app: " + error);
+            setError(error) {
+                this.set("error", error);
+            }
 
-                // Remove all slotted children, effectively disabling the app
-                this.$.slot.assignedNodes({flatten: false}).forEach((node) => {
-                    node.parentElement.removeChild(node);
-                });
+            onAppError(error) {
+                console.error("Application error: " + error);
 
                 // Disable login/token refresh
                 this.set("login", false);
                 this.disconnectEvents();
 
-                // Hide the slots
-                this.$.slots.style.display = "none";
+                // If we run in native shell, show native error screen
+                if (this.$.shellNative.enabled) {
+                    this.$.shellNative.postNativeShellMessage({type: 'error', data: {error: error}});
+                } else {
+                    // Remove all slotted children, effectively disabling the app
+                    this.$.slot.assignedNodes({flatten: false}).forEach((node) => {
+                        node.parentElement.removeChild(node);
+                    });
 
-                // Hide the loader
-                this.hideLoader();
+                    // Hide the slots
+                    this.$.slots.style.display = "none";
 
-                // Fire an event so others can react to an error
-                window.dispatchEvent(new CustomEvent("AppError", {detail: {app: this, error: error}}));
+                    this.hideBusyIndicator();
+
+                    // Fire an event so others can react to an error
+                    window.dispatchEvent(new CustomEvent("AppError", {detail: {app: this, error: error}}));
+                }
             }
 
             showApp() {
@@ -408,16 +363,15 @@
                     }
                 });
 
-                // Hide the loader
-                this.hideLoader();
+                this.hideBusyIndicator();
             }
 
-            hideLoader() {
-                this.$.loader.style.display = "none";
+            hideBusyIndicator() {
+                this.$.busyIndicator.hide();
             }
 
-            showLoader() {
-                this.$.loader.style.display = "inherit";
+            showBusyIndicator() {
+                this.$.busyIndicator.show();
             }
 
             getSecurity() {
@@ -438,8 +392,8 @@
                     (requestParams, onComplete) => {
                         this.getSecurity().authorizeRequestParams(requestParams, onComplete);
                     },
-                    this.showLoader.bind(this),
-                    this.hideLoader.bind(this),
+                    this.showBusyIndicator.bind(this),
+                    this.hideBusyIndicator.bind(this),
                     (requestError) => {
                         this.set("error", "Request error (response status: " + requestError.statusCode + ") - " + requestError.message);
                     },
@@ -448,7 +402,7 @@
                     }
                 );
 
-                requests.configure(this.managerHost + "/" + this.tenantRealm);
+                requests.configure(this.hostConfiguration.protocol + "//" + this.hostConfiguration.host + "/" + this.tenantRealm);
 
                 this.set("requests", requests);
             }
@@ -459,7 +413,7 @@
                     return;
                 }
 
-                let serviceUrl = ("https:" === location.protocol ? "wss" : "ws") + ":" + this.managerHost + "/websocket/events";
+                let serviceUrl = ("https:" === location.protocol ? "wss" : "ws") + "://" + this.hostConfiguration.host + "/websocket/events";
                 this.getSecurity().authorizeUrl(serviceUrl, (authenticatedServiceUrl) => {
 
                     this.webSocket = new WebSocket(authenticatedServiceUrl);
@@ -478,7 +432,6 @@
 
                         // Close socket on unload/refresh of page
                         window.addEventListener("beforeunload", () => {
-                            console.log("Page unloaded, closing event service connection");
                             this.disconnectEvents();
                         });
 
@@ -490,7 +443,7 @@
                     this.webSocket.onerror = () => {
                         this.set("webSocket", undefined);
                         this.set("status", "DISCONNECTED");
-                        this.set("error", "Error connecting to event service: " + serviceUrl);
+                        this.set("error", "Error connecting to " + serviceUrl);
                     };
 
                     this.webSocket.onclose = (e) => {
@@ -500,12 +453,12 @@
                             if (e.code === 1000) {
                                 // Do nothing, we closed the socket
                             } else if (e.code === 1001) {
-                                this.set("error", "Server closed connection to event service: " + serviceUrl);
+                                this.set("error", "Connection closed by server.");
                             } else if (e.code === 1006) {
-                                this.set("error", "Event service connection was closed, server not reachable?");
+                                this.set("error", "Network or server offline.");
                             } else {
                                 let msg = e.reason ? e.reason : serviceUrl;
-                                this.set("error", "Event service connection was closed (clean: " + e.wasClean + ", code: " + e.code + "): " + msg);
+                                this.set("error", "Connection closed (clean: " + e.wasClean + ", code: " + e.code + "): " + msg);
                             }
                         }
                     };
@@ -524,7 +477,7 @@
                     for (let listener of this.webSocketCloseListeners) {
                         listener();
                     }
-                    console.log("Closing WebSocket");
+                    console.log("Closing event service connection");
                     this.webSocket.close();
                 }
             }

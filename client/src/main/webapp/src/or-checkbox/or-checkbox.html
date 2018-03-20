@@ -57,12 +57,6 @@
                     this.dispatchEvent(new CustomEvent("change", {detail: this.checked}));
                 });
             }
-
-            connectedCallback() {
-                super.connectedCallback();
-                this.showComponent();
-            }
-
         }
 
         defineAppElement(OpenRemoteCheckbox, OpenRemoteCheckbox.is, "Checkbox");

@@ -1,6 +1,5 @@
 package org.openremote.test.assets
 
-import com.fasterxml.uuid.Generators
 import org.openremote.manager.setup.SetupService
 import org.openremote.manager.setup.builtin.KeycloakDemoSetup
 import org.openremote.manager.setup.builtin.ManagerDemoSetup
@@ -132,8 +131,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
 
         when: "an asset is created in the authenticated realm"
         def testAsset = new Asset("Test Room", AssetType.ROOM, null, keycloakDemoSetup.masterTenant.id)
-        testAsset.setId(Generators.randomBasedGenerator().generate().toString())
-        assetResource.create(null, testAsset)
+        testAsset = assetResource.create(null, testAsset)
         testAsset = assetResource.get(null, testAsset.getId())
 
         then: "the asset should exist"
@@ -333,8 +331,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
 
         when: "an asset is created in the authenticated realm"
         def testAsset = new Asset("Test Room", AssetType.ROOM)  // Note: no realm means auth realm
-        testAsset.setId(Generators.randomBasedGenerator().generate().toString())
-        assetResource.create(null, testAsset)
+        testAsset = assetResource.create(null, testAsset)
         testAsset = assetResource.get(null, testAsset.getId())
 
         then: "the asset should exist"
@@ -492,7 +489,6 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
 
         when: "an asset is created in a foreign realm"
         def testAsset = new Asset("Test Room", AssetType.ROOM, null, keycloakDemoSetup.masterTenant.id)
-        testAsset.setId(Generators.randomBasedGenerator().generate().toString())
         assetResource.create(null, testAsset)
 
         then: "access should be forbidden"
@@ -510,7 +506,6 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
 
         when: "an asset is created in the authenticated realm"
         testAsset = new Asset("Test Room", AssetType.ROOM, null, keycloakDemoSetup.customerATenant.id)
-        testAsset.setId(Generators.randomBasedGenerator().generate().toString())
         assetResource.create(null, testAsset)
 
         then: "access should be forbidden"
@@ -698,7 +693,6 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
 
         when: "an asset is created in a foreign realm"
         def testAsset = new Asset("Test Room", AssetType.ROOM, null, keycloakDemoSetup.masterTenant.id)
-        testAsset.setId(Generators.randomBasedGenerator().generate().toString())
         assetResource.create(null, testAsset)
 
         then: "access should be forbidden"
@@ -743,7 +737,6 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
 
         when: "an asset is created in the authenticated realm"
         testAsset = new Asset("Test Room", AssetType.ROOM, null, keycloakDemoSetup.customerATenant.id)
-        testAsset.setId(Generators.randomBasedGenerator().generate().toString())
         assetResource.create(null, testAsset)
 
         then: "access should be forbidden"

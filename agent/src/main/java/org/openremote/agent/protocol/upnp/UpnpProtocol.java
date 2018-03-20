@@ -9,6 +9,7 @@ import org.fourthline.cling.registry.DefaultRegistryListener;
 import org.fourthline.cling.registry.Registry;
 import org.fourthline.cling.registry.RegistryListener;
 import org.openremote.agent.protocol.AbstractProtocol;
+import org.openremote.container.util.UniqueIdentifierGenerator;
 import org.openremote.model.AbstractValueHolder;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
@@ -221,8 +222,8 @@ public class UpnpProtocol extends AbstractProtocol {
     }
 
     protected String getAssetId(Device device) {
-        return Generators.nameBasedGenerator().generate(
+        return UniqueIdentifierGenerator.generateId(
             device.getIdentity().getUdn().getIdentifierString()
-        ).toString();
+        );
     }
 }

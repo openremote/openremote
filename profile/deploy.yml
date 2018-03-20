@@ -102,7 +102,7 @@ services:
       # SETUP_WIPE_CLEAN_INSTALL: # Allow override on CLI
       # SETUP_ADMIN_PASSWORD: # Allow override on CLI
 
-      # Optional: Configure SMTP smart host for Keycloak, to send password reset emails etc.
+      # Configure SMTP smart host for Keycloak, to send password reset emails etc.
       #SETUP_KEYCLOAK_EMAIL_HOST: smtp-host.demo.tld
       #SETUP_KEYCLOAK_EMAIL_USER: 'smtp-user'
       #SETUP_KEYCLOAK_EMAIL_PASSWORD: 'smtp-password'
@@ -161,24 +161,24 @@ services:
       # when running  in container. Default is 127.0.0.1.
       WEBSERVER_LISTEN_HOST: 0.0.0.0
 
-      # Optional: Console applications can register for push notifications through FCM.
+      # Console applications can register for push notifications through FCM.
       # NOTIFICATION_FIREBASE_URL: https://fcm.googleapis.com/fcm/send
       # NOTIFICATION_FIREBASE_API_KEY = '...'
 
-      # Optional: Custom location of the static console applications, each subdirectory must
+      # Custom location of the static console applications, each subdirectory must
       # have the name of a realm to which the console app belongs.
       # CONSOLES_DOCROOT: '/deployment/consoles'
 
-      # Optional: Disable HTTP redirects when a console application requests libraries which
+      # Disable HTTP redirects when a console application requests libraries which
       # are delivered and used on the platform. This is necessary if your console application
       # needs a different version of Polymer, Chart JS, or any of the other "bower_components"
       # which are by default served as static resources from the manager service.
       # CONSOLE_USE_STATIC_BOWER_COMPONENTS = 'false'
 
-      # Optional: Provide a path to the map tiles database file (see https://openmaptiles.com/).
+      # Provide a path to the map tiles database file (see https://openmaptiles.com/).
       # MAP_TILES_PATH: '/deployment/map/mapdata.mbtiles'
 
-      # Optional: Override the map settings such as center location and zoom when opening the
+      # Override the map settings such as center location and zoom when opening the
       # manager's map, as well as other style details and colours.
       # MAP_SETTINGS_PATH: '/deployment/map/mapsettings.json'
 
@@ -199,9 +199,19 @@ services:
 
       # The identity provider implementation to use for managing user identities, roles, and
       # access authorization. The default is Keycloak, which requires a separate service but
-      # provides full multi-tenancy identity and role management. The basic provider supports
-      # only superusers and their text passwords, managed in a simple database table.
+      # provides full multi-tenancy identity, role permissions, and user session timeouts.
+      # The basic provider supports only superusers and their text passwords, managed in a
+      # simple database table, and always requires a new login when a page is reloaded.
       # IDENTITY_PROVIDER: 'basic'
+
+      # For the Keycloak identity provider, you may configure session timeouts of frontend apps. This
+      # will only be applied on newly created realms, or once on the master realm when clean setup runs.
+      #
+      # Validity of non-offline refresh tokens, force login when expired on web app, default is 1 day.
+      # IDENTITY_SESSION_MAX_MINUTES: 1440
+      #
+      # Validity of offline refresh tokens, force login on native console app, default is 14 days.
+      # IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES: 20160
 
       # Location of the static manager (UI and API) resources, you don't need to override this
       # unless you want to deploy a modified version of the Manager UI and JavaScript components.

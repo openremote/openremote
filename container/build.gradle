@@ -14,6 +14,7 @@ dependencies {
     compile "org.slf4j:log4j-over-slf4j:$slf4jVersion"
 
     compile "com.google.guava:guava:$guavaVersion"
+    compile "com.devskiller.friendly-id:friendly-id:$friendlyIdVersion"
 
     compile "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider:$jacksonVersion"
 

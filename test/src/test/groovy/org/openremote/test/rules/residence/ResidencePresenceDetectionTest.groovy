@@ -304,7 +304,7 @@ class ResidencePresenceDetectionTest extends Specification implements ManagerCon
             Ruleset ruleset = new AssetRuleset(
                     "Demo Apartment - Presence Detection with motion sensor",
                     managerDemoSetup.apartment1Id,
-                    getClass().getResource("/demo/rules/DemoApartmentPresencePrediction.drl").text
+                    getClass().getResource("/demo/rules/LegacyDemoApartmentPresencePrediction.drl").text
             )
             rulesetStorageService.merge(ruleset)
 

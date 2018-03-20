@@ -1,6 +1,7 @@
 package org.openremote.test.assets
 
 import com.fasterxml.uuid.Generators
+import org.openremote.container.util.UniqueIdentifierGenerator
 import org.openremote.model.asset.Asset
 import org.openremote.model.asset.AssetAttribute
 import org.openremote.model.value.Values
@@ -30,7 +31,7 @@ class AssetModelTest extends Specification {
         !asset.getAttributesList()[1].getAssetId().isPresent()
 
         when: "the asset identifier is set later"
-        def id = Generators.randomBasedGenerator().generate().toString()
+        def id = UniqueIdentifierGenerator.generateId()
         asset.setId(id)
 
         then: "the attributes should have an identifier"

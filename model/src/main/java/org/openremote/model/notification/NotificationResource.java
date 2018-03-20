@@ -128,6 +128,7 @@ public interface NotificationResource {
                             @PathParam("userId") String userId,
                             @PathParam("alertId") Long id);
 
+    // TODO Fails silently on native apps when called with expired offline token?
     @GET
     @Path("alert")
     @Produces(APPLICATION_JSON)

@@ -359,10 +359,6 @@ public interface ManagerMessages extends Messages {
 
     String executable();
 
-    String template();
-
-    String templateAsset();
-
     String noAssetSelected();
 
     String clearSelection();

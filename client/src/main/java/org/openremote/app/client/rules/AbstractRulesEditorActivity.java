@@ -23,14 +23,11 @@ import org.openremote.app.client.Environment;
 import org.openremote.app.client.assets.AssetBrowsingActivity;
 import org.openremote.app.client.assets.browser.AssetBrowser;
 import org.openremote.app.client.assets.browser.AssetBrowserSelection;
-import org.openremote.app.client.assets.browser.AssetTreeNode;
-import org.openremote.app.client.assets.browser.BrowserTreeNode;
 import org.openremote.app.client.event.ShowSuccessEvent;
 import org.openremote.app.client.mvp.AcceptsView;
 import org.openremote.app.client.mvp.AppActivity;
 import org.openremote.app.client.rest.EntityReader;
 import org.openremote.app.client.rest.EntityWriter;
-import org.openremote.model.asset.Asset;
 import org.openremote.model.event.bus.EventBus;
 import org.openremote.model.event.bus.EventRegistration;
 import org.openremote.model.http.ConstraintViolation;
@@ -56,7 +53,6 @@ public abstract class AbstractRulesEditorActivity<T extends Ruleset, PLACE exten
 
     protected Long rulesetId;
     protected T ruleset;
-    protected Asset templateAsset;
 
     @Inject
     public AbstractRulesEditorActivity(Environment environment,
@@ -125,7 +121,6 @@ public abstract class AbstractRulesEditorActivity<T extends Ruleset, PLACE exten
         ruleset.setRules(ruleset.getLang().getEmptyRulesExample());
         clearViewMessages();
         writeToView();
-        writeTemplateAssetToView();
         view.setFormBusy(false);
     }
 
@@ -133,16 +128,7 @@ public abstract class AbstractRulesEditorActivity<T extends Ruleset, PLACE exten
         this.ruleset = ruleset;
         clearViewMessages();
         writeToView();
-        if (ruleset.getTemplateAssetId() != null) {
-            assetBrowserPresenter.loadAsset(ruleset.getTemplateAssetId(), loadedAsset -> {
-                this.templateAsset = loadedAsset;
-                writeTemplateAssetToView();
-                view.setFormBusy(false);
-            });
-        } else {
-            writeTemplateAssetToView();
-            view.setFormBusy(false);
-        }
+        view.setFormBusy(false);
     }
 
     @Override
@@ -191,17 +177,6 @@ public abstract class AbstractRulesEditorActivity<T extends Ruleset, PLACE exten
     }
 
     @Override
-    public void onTemplateAssetSelection(BrowserTreeNode treeNode) {
-        if (treeNode == null) {
-            templateAsset = null;
-        } else if (treeNode instanceof AssetTreeNode){
-            assetBrowserPresenter.loadAsset(treeNode.getId(), loadedAsset -> {
-                templateAsset = loadedAsset;
-            });
-        }
-    }
-
-    @Override
     public void onLanguageChange(Ruleset.Lang lang) {
         if (!view.getRules().equals(ruleset.getLang().getEmptyRulesExample())) {
             view.showConfirmation(
@@ -231,24 +206,11 @@ public abstract class AbstractRulesEditorActivity<T extends Ruleset, PLACE exten
         view.enableDelete(rulesetId != null);
     }
 
-    protected void writeTemplateAssetToView() {
-        if (templateAsset != null) {
-            view.setTemplateAssetNode(new AssetTreeNode(templateAsset));
-        } else {
-            view.setTemplateAssetNode(null);
-        }
-    }
-
     protected void readFromView() {
         ruleset.setName(view.getName());
         ruleset.setEnabled(view.getRulesetEnabled());
         ruleset.setLang(view.getLang());
         ruleset.setRules(view.getRules());
-        if (templateAsset != null) {
-            ruleset.setTemplateAssetId(templateAsset.getId());
-        } else {
-            ruleset.setTemplateAssetId(null);
-        }
     }
 
     protected void clearViewMessages() {

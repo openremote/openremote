@@ -67,7 +67,7 @@ public class UserAsset {
         @Column(name = "USER_ID", length = 36)
         protected String userId;
 
-        @Column(name = "ASSET_ID", length = 36)
+        @Column(name = "ASSET_ID", length = 22, columnDefinition = "char(22)")
         protected String assetId;
 
         protected Id() {

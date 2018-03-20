@@ -8,7 +8,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
-import android.database.Cursor;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
@@ -16,15 +15,17 @@ import android.net.http.SslError;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.view.KeyEvent;
 import android.view.View;
+import android.webkit.ConsoleMessage;
 import android.webkit.CookieManager;
+import android.webkit.CookieSyncManager;
 import android.webkit.DownloadListener;
 import android.webkit.JavascriptInterface;
-import android.webkit.MimeTypeMap;
 import android.webkit.SslErrorHandler;
 import android.webkit.URLUtil;
 import android.webkit.WebChromeClient;
@@ -92,10 +93,12 @@ public class MainActivity extends Activity {
             // Stop and clear web view
             LOG.fine("Clearing web view");
             webView.loadUrl("about:blank");
+            webView.setVisibility(View.GONE);
         }
 
         public void hide() {
             errorView.setVisibility(View.GONE);
+            webView.setVisibility(View.VISIBLE);
         }
     }
 
@@ -202,7 +205,7 @@ public class MainActivity extends Activity {
         webView.addJavascriptInterface(webAppInterface, "MobileInterface");
         WebSettings webSettings = webView.getSettings();
         webSettings.setJavaScriptEnabled(true);
-        webSettings.setAppCacheEnabled(true);
+        webSettings.setCacheMode(WebSettings.LOAD_DEFAULT);
         webSettings.setDomStorageEnabled(true);
         webSettings.setDatabaseEnabled(true);
         webView.setOnLongClickListener(new View.OnLongClickListener() {
@@ -216,11 +219,24 @@ public class MainActivity extends Activity {
         webView.setWebViewClient(new WebViewClient() {
             @Override
             public void onReceivedHttpError(WebView view, WebResourceRequest request, WebResourceResponse errorResponse) {
-                if (request.getUrl().getLastPathSegment().equals("token") && request.getMethod().equals("POST")) {
+                //TODO should we ignore images?
+                if (request.getUrl().getLastPathSegment() != null &&
+                    (request.getUrl().getLastPathSegment().endsWith("png")
+                        || request.getUrl().getLastPathSegment().endsWith("jpg"))
+                    )
+                    return;
+
+                // When initialising Keycloak with an invalid offline refresh token (e.g. wrong nonce because
+                // server was reinstalled), we detect the failure and then don't show an error view. We clear the stored
+                // invalid token. The web app will then start a new login.
+                if (request.getUrl().getLastPathSegment() != null &&
+                    request.getUrl().getLastPathSegment().equals("token") &&
+                    request.getMethod().equals("POST") &&
+                    errorResponse.getStatusCode() == 400) {
                     webAppInterface.tokenService.clearToken();
-                    reloadWebView(getCurrentFocus());
                     return;
                 }
+
                 LOG.warning("Error requesting '" + request.getUrl() + "', response code: " + errorResponse.getStatusCode());
                 errorViewHolder.show(R.string.httpError, R.string.httpErrorExplain, true, true);
             }
@@ -239,17 +255,48 @@ public class MainActivity extends Activity {
 
             @Override
             public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
+                //TODO should we ignore images?
+                if (request.getUrl().getLastPathSegment() != null &&
+                    (request.getUrl().getLastPathSegment().endsWith("png")
+                        || request.getUrl().getLastPathSegment().endsWith("jpg"))
+                    )
+                    return;
+
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+
                     // Remote debugging sessions from Chrome trigger "ERR_CACHE_MISS" that don't hurt, but we should not redirect the view
                     if (isRemoteDebuggingEnabled() && error.getErrorCode() == ERROR_UNKNOWN) {
                         return;
                     }
+
+                    // Remote debugging session from Chrome wants to load about:blank and then fails with "ERROR_UNSUPPORTED_SCHEME", ignore
+                    if (request.getUrl().toString().equals("about:blank") && error.getErrorCode() == ERROR_UNSUPPORTED_SCHEME) {
+                        return;
+                    }
+
                     LOG.warning("Error requesting '" + request.getUrl() + "': " + error.getErrorCode());
                 }
                 errorViewHolder.show(R.string.fatalError, R.string.fatalErrorExplain, false, true);
             }
         });
-        webView.setWebChromeClient(new WebChromeClient());
+        webView.setWebChromeClient(new WebChromeClient() {
+            @Override
+            public boolean onConsoleMessage(ConsoleMessage consoleMessage) {
+                String msg = "WebApp console (" + consoleMessage.sourceId() + ":" + consoleMessage.lineNumber() + "): " + consoleMessage.message();
+                switch (consoleMessage.messageLevel()) {
+                    case DEBUG:
+                    case TIP:
+                        LOG.fine(msg);
+                        break;
+                    case LOG:
+                        LOG.info(msg);
+                        break;
+                    default:
+                        LOG.severe(msg);
+                }
+                return true;
+            }
+        });
 
         webView.setDownloadListener(new DownloadListener() {
             @Override
@@ -261,7 +308,7 @@ public class MainActivity extends Activity {
                     ActivityCompat.requestPermissions((MainActivity) context, new String[]{writePermission}, WRITE_PERMISSION_REQUEST);
                 } else {
                     DownloadManager.Request request = new
-                            DownloadManager.Request(Uri.parse(url));
+                        DownloadManager.Request(Uri.parse(url));
 
                     request.setMimeType(mimetype);
                     //------------------------COOKIE!!------------------------
@@ -317,16 +364,23 @@ public class MainActivity extends Activity {
             JSONObject data = reader.optJSONObject("data");
             switch (messageType) {
                 case "token":
-                    tokenService.saveToken(data.getString("token"), data.getString("refreshToken"), data.getString("idToken"));
+                    LOG.fine("Received WebApp message, storing offline refresh token");
+                    tokenService.saveToken(data.getString("refreshToken"));
                     break;
                 case "logout":
+                    LOG.fine("Received WebApp message, logout");
                     tokenService.clearToken();
                     break;
-                case "status":
-                    // TODO: status that we want to receive from webview | waiting to know if it's relevant to show error if bad connectivity meybe a conter or timmout retry should be consider
-                    // currently
-                    // websocket drop with error
-                    // websocket connect back (success)
+                case "error":
+                    LOG.fine("Received WebApp message, error: " + data.getString("error"));
+                    Handler mainHandler = new Handler(context.getMainLooper());
+                    mainHandler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            errorViewHolder.show(R.string.fatalError, R.string.fatalErrorExplain, true, true);
+                        }
+                    });
+                    break;
                 default:
             }
         }
@@ -344,6 +398,8 @@ public class MainActivity extends Activity {
     }
 
     protected void onConnectivityChanged(boolean connectivity) {
+        LOG.info("Connectivity changed: " + connectivity);
+        // TODO Should check if about:blank && connectivity == true, otherwise no reload necessary
         if (connectivity) {
             reloadWebView(getCurrentFocus());
         } else {
@@ -356,7 +412,7 @@ public class MainActivity extends Activity {
         @Override
         public void onReceive(Context context, Intent intent) {
             ConnectivityManager cm
-                    = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+                = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
 
             NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
             onConnectivityChanged(activeNetwork != null && activeNetwork.isConnectedOrConnecting());

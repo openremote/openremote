@@ -33,7 +33,7 @@ import java.util.Date;
 @Table(name = "ASSET_RULESET")
 public class AssetRuleset extends Ruleset {
 
-    @Column(name = "ASSET_ID", nullable = false)
+    @Column(name = "ASSET_ID", length = 22, nullable = false, columnDefinition = "char(22)")
     protected String assetId;
 
     @Transient
@@ -46,8 +46,8 @@ public class AssetRuleset extends Ruleset {
         this.assetId = assetId;
     }
 
-    public AssetRuleset(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String templateAssetId, String assetId, Lang lang) {
-        this(id, version, createdOn, lastModified, name, enabled, templateAssetId, null, lang, null, assetId);
+    public AssetRuleset(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String assetId, Lang lang) {
+        this(id, version, createdOn, lastModified, name, enabled, null, lang, null, assetId);
     }
 
     public AssetRuleset(String name, String assetId, String rules, Lang lang) {
@@ -55,8 +55,8 @@ public class AssetRuleset extends Ruleset {
         this.assetId = assetId;
     }
 
-    public AssetRuleset(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String templateAssetId, String rules, Lang lang, String assetId, String realmId) {
-        super(id, version, createdOn, lastModified, name, enabled, templateAssetId, rules, lang);
+    public AssetRuleset(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String rules, Lang lang, String assetId, String realmId) {
+        super(id, version, createdOn, lastModified, name, enabled, rules, lang);
         this.assetId = assetId;
         this.realmId = realmId;
     }

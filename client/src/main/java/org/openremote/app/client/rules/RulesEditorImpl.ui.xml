@@ -1,7 +1,6 @@
 <ui:UiBinder xmlns:ui="urn:ui:com.google.gwt.uibinder"
              xmlns:g="urn:import:com.google.gwt.user.client.ui"
-             xmlns:w="urn:import:org.openremote.app.client.widget"
-             xmlns:assetBrowser="urn:import:org.openremote.app.client.assets.browser">
+             xmlns:w="urn:import:org.openremote.app.client.widget">
 
     <ui:with field="managerMessages" type="org.openremote.app.client.i18n.ManagerMessages"/>
     <ui:with field="widgetStyle" type="org.openremote.app.client.style.WidgetStyle"/>
@@ -85,8 +84,6 @@
                                 </w:FormGroupActions>
                             </w:actions>
                         </w:FormGroup>
-
-                        <assetBrowser:AssetSelector ui:field="templateAssetSelector"/>
                     </g:HTMLPanel>
 
                     <g:HTMLPanel addStyleNames="flex layout vertical {style.rulesTextArea} {widgetStyle.MainContent}">

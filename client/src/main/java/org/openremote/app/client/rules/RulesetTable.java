@@ -30,8 +30,8 @@ import org.openremote.app.client.i18n.ManagerMessages;
 import org.openremote.app.client.style.FormTableStyle;
 import org.openremote.app.client.widget.FormTable;
 import org.openremote.app.client.widget.IconCell;
-import org.openremote.model.rules.Ruleset;
 import org.openremote.model.Constants;
+import org.openremote.model.rules.Ruleset;
 
 public class RulesetTable<R extends Ruleset> extends FormTable<R> {
 
@@ -43,8 +43,6 @@ public class RulesetTable<R extends Ruleset> extends FormTable<R> {
         String langColumn();
 
         String enabledColumn();
-
-        String templateColumn();
 
         String createOnColumn();
 
@@ -105,13 +103,6 @@ public class RulesetTable<R extends Ruleset> extends FormTable<R> {
         }
     };
 
-    final protected Column<R, String> templateColumn = new Column<R, String>(new IconCell()) {
-        @Override
-        public String getValue(R ruleset) {
-            return ruleset.getTemplateAssetId() != null ? "check-circle" : "circle-thin";
-        }
-    };
-
     public RulesetTable(ManagerMessages managerMessages,
                         Style style,
                         FormTableStyle formTableStyle) {
@@ -144,10 +135,6 @@ public class RulesetTable<R extends Ruleset> extends FormTable<R> {
         addColumn(enabledColumn, createHeader(managerMessages.enabled()));
         addColumnStyleName(i++, style.enabledColumn());
         enabledColumn.setHorizontalAlignment(HasHorizontalAlignment.ALIGN_CENTER);
-
-        addColumn(templateColumn, createHeader(managerMessages.template()));
-        addColumnStyleName(i++, style.templateColumn());
-        templateColumn.setHorizontalAlignment(HasHorizontalAlignment.ALIGN_CENTER);
     }
 
     @Override

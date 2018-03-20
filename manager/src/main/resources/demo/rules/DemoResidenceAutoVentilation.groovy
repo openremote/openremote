@@ -38,13 +38,13 @@ Closure<Stream<AssetState>> residenceWithVentilationAutoMatch =
             // Any residence where auto ventilation is on
             facts.matchAssetState(
                     new AssetQuery().type(RESIDENCE).attributeValue("ventilationAuto", true)
-            ).filter({ residenceWithVentilationAuto ->
+            ).filter { residenceWithVentilationAuto ->
                 facts.matchFirstAssetState(
                         // and ventilation level is above/below/equal/etc. threshold
                         new AssetQuery().id(residenceWithVentilationAuto.id)
                                 .attributeValue("ventilationLevel", operator, ventilationLevelThreshold)
                 ).isPresent()
-            })
+            }
         }
 
 Closure<Boolean> roomThresholdMatch =
@@ -52,24 +52,24 @@ Closure<Boolean> roomThresholdMatch =
             // Any room of the residence which has a level greater than zero
             def roomWithMaxLevel = facts.matchAssetState(
                     new AssetQuery().type(ROOM).parent(residence.id).attributeValue(attribute, GREATER_THAN, 0)
-            ).max({ roomWithLevelAboveZero ->
+            ).max { roomA, roomB ->
                 // get the room with the highest level
-                roomWithLevelAboveZero.valueAsNumber.orElse(0)
-            })
+                Double.compare(roomA.valueAsNumber.orElse(0), roomB.valueAsNumber.orElse(0))
+            }
 
             if (roomWithMaxLevel.isPresent()) {
                 // if we have a room with max level
-                return roomWithMaxLevel.filter({ room ->
+                return roomWithMaxLevel.filter { room ->
                     // and the level is above/below threshold
                     room.valueAsNumber.filter({ level -> above ? level > threshold : level <= threshold }).isPresent()
-                }).filter({ roomAboveBelowThreshold ->
+                }.filter { roomAboveBelowThreshold ->
                     // and no level above/below threshold in the time window
                     facts.matchAssetEvent(
                             new AssetQuery()
                                     .id(roomAboveBelowThreshold.id)
                                     .attributeValue(attribute, above ? LESS_EQUALS : GREATER_THAN, threshold)
                     ).filter(facts.clock.last(timeWindow)).count() == 0
-                }).isPresent()
+                }.isPresent()
             } else {
                 // if we don't have a room with max level (empty attribute?), it's always "below threshold"
                 return !above
@@ -82,7 +82,7 @@ rules.add()
         { facts ->
             residenceWithVentilationAutoMatch(
                     facts, LESS_THAN, VENTILATION_LEVEL_MEDIUM
-            ).filter({ residence ->
+            ).filter { residence ->
                 def roomAboveThresholdCO2 = roomThresholdMatch(
                         facts, residence, "co2Level", true, VENTILATION_THRESHOLD_MEDIUM_CO2_LEVEL, VENTILATION_THRESHOLD_MEDIUM_CO2_TIME_WINDOW
                 )
@@ -90,10 +90,10 @@ rules.add()
                         facts, residence, "humidity", true, VENTILATION_THRESHOLD_MEDIUM_HUMIDITY, VENTILATION_THRESHOLD_MEDIUM_HUMIDITY_TIME_WINDOW
                 )
                 roomAboveThresholdCO2 || roomAboveThresholdHumidity
-            }).findFirst().map({ residence ->
+            }.findFirst().map { residence ->
                 facts.bind("residence", residence)
                 true
-            }).orElse(false)
+            }.orElse(false)
         })
         .then(
         { facts ->
@@ -108,7 +108,7 @@ rules.add()
         { facts ->
             residenceWithVentilationAutoMatch(
                     facts, GREATER_THAN, VENTILATION_LEVEL_LOW
-            ).filter({ residence ->
+            ).filter { residence ->
                 def roomBelowThresholdCO2 = roomThresholdMatch(
                         facts, residence, "co2Level", false, VENTILATION_THRESHOLD_MEDIUM_CO2_LEVEL, VENTILATION_THRESHOLD_MEDIUM_TIME_WINDOW
                 )
@@ -116,10 +116,10 @@ rules.add()
                         facts, residence, "humidity", false, VENTILATION_THRESHOLD_MEDIUM_HUMIDITY, VENTILATION_THRESHOLD_MEDIUM_TIME_WINDOW
                 )
                 roomBelowThresholdCO2 && roomBelowThresholdHumidity
-            }).findFirst().map({ residence ->
+            }.findFirst().map { residence ->
                 facts.bind("residence", residence)
                 true
-            }).orElse(false)
+            }.orElse(false)
         })
         .then(
         { facts ->
@@ -134,7 +134,7 @@ rules.add()
         { facts ->
             residenceWithVentilationAutoMatch(
                     facts, LESS_THAN, VENTILATION_LEVEL_HIGH
-            ).filter({ residence ->
+            ).filter { residence ->
                 def roomAboveThresholdCO2 = roomThresholdMatch(
                         facts, residence, "co2Level", true, VENTILATION_THRESHOLD_HIGH_CO2_LEVEL, VENTILATION_THRESHOLD_HIGH_CO2_TIME_WINDOW
                 )
@@ -142,10 +142,10 @@ rules.add()
                         facts, residence, "humidity", true, VENTILATION_THRESHOLD_HIGH_HUMIDITY, VENTILATION_THRESHOLD_HIGH_HUMIDITY_TIME_WINDOW
                 )
                 roomAboveThresholdCO2 || roomAboveThresholdHumidity
-            }).findFirst().map({ residence ->
+            }.findFirst().map { residence ->
                 facts.bind("residence", residence)
                 true
-            }).orElse(false)
+            }.orElse(false)
         })
         .then(
         { facts ->
@@ -160,7 +160,7 @@ rules.add()
         { facts ->
             residenceWithVentilationAutoMatch(
                     facts, GREATER_THAN, VENTILATION_LEVEL_MEDIUM
-            ).filter({ residence ->
+            ).filter { residence ->
                 def roomBelowThresholdCO2 = roomThresholdMatch(
                         facts, residence, "co2Level", false, VENTILATION_THRESHOLD_HIGH_CO2_LEVEL, VENTILATION_THRESHOLD_HIGH_TIME_WINDOW
                 )
@@ -168,10 +168,10 @@ rules.add()
                         facts, residence, "humidity", false, VENTILATION_THRESHOLD_HIGH_HUMIDITY, VENTILATION_THRESHOLD_HIGH_TIME_WINDOW
                 )
                 roomBelowThresholdCO2 && roomBelowThresholdHumidity
-            }).findFirst().map({ residence ->
+            }.findFirst().map { residence ->
                 facts.bind("residence", residence)
                 true
-            }).orElse(false)
+            }.orElse(false)
         })
         .then(
         { facts ->

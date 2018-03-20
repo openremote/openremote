@@ -95,7 +95,7 @@ public class FCMDeliveryService {
 
         return entityManager -> {
             List<AlertNotification> pendingNotifications = entityManager.createQuery(
-                "SELECT an FROM AlertNotification an WHERE an.userId =:userId and an.deliveryStatus = :deliveryStatus",
+                "SELECT an FROM AlertNotification an WHERE an.userId = :userId and an.deliveryStatus = :deliveryStatus",
                 AlertNotification.class
             ).setParameter("userId", userId).setParameter("deliveryStatus", DeliveryStatus.PENDING).getResultList();
 

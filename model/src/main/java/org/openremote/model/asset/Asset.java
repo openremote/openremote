@@ -222,7 +222,7 @@ import static org.openremote.model.asset.AssetAttribute.*;
 public class Asset implements IdentifiableEntity {
 
     @Id
-    @Column(name = "ID", length = 43) // TODO Is this ideal long-term for reads when keys must be distributed on cluster?
+    @Column(name = "ID", length = 22, columnDefinition = "char(22)")
     @GeneratedValue(generator = PERSISTENCE_UNIQUE_ID_GENERATOR)
     protected String id;
 
