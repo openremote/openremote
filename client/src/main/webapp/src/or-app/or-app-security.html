@@ -174,6 +174,12 @@
                 };
             }
 
+            static get observers() {
+                return [
+                    "onLoginChange(login)"
+                ]
+            }
+
             ready() {
                 super.ready();
 
@@ -208,6 +214,13 @@
                 }
             }
 
+            onLoginChange(login) {
+                // If login is no longer required and Keycloak is available, stop checking access token
+                if (!login && this.keycloak) {
+                    this.stopKeycloakAccessTokenCheck();
+                }
+            }
+
             /**
              * Called either manually by the user or when auth token refresh fails (refresh token invalid).
              */
@@ -226,11 +239,7 @@
                 let logoutUrl = location.protocol + "//" + location.host + location.pathname;
 
                 if (this.keycloak) {
-                    // Clear refresh token check interval
-                    if (this.keycloakUpdateTokenInterval) {
-                        clearInterval(this.keycloakUpdateTokenInterval);
-                        delete this.keycloakUpdateTokenInterval;
-                    }
+                    this.stopKeycloakAccessTokenCheck();
 
                     // Navigate to start page on logout, drop the hash (also, Keycloak has a bug where it
                     // puts the hash into redirect_uri instead of redirect_fragment and then denies that
@@ -410,9 +419,7 @@
                 this.set("authenticated", true);
 
                 // Check every 10 seconds if the refresh token can still get an access token
-                if (this.keycloakUpdateTokenInterval) {
-                    clearInterval(this.keycloakUpdateTokenInterval);
-                }
+                this.stopKeycloakAccessTokenCheck();
                 this.keycloakUpdateTokenInterval = setInterval(() => {
                     this.updateKeycloakAccessToken()
                 }, 10000);
@@ -445,6 +452,14 @@
                         console.info("Access token update failed, refresh token expired, login required");
                         this.doKeycloakLogin();
                     });
+            }
+
+            stopKeycloakAccessTokenCheck() {
+                // Clear refresh token check interval
+                if (this.keycloakUpdateTokenInterval) {
+                    clearInterval(this.keycloakUpdateTokenInterval);
+                    delete this.keycloakUpdateTokenInterval;
+                }
             }
 
             getNativeOfflineRefreshToken() {
