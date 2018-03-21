@@ -20,6 +20,7 @@
 package org.openremote.app.client.assets.asset;
 
 import com.google.gwt.http.client.URL;
+import com.google.gwt.i18n.client.DateTimeFormat;
 import com.google.inject.Provider;
 import org.openremote.app.client.Environment;
 import org.openremote.app.client.app.dialog.JsonEditor;
@@ -57,10 +58,7 @@ import org.openremote.model.simulator.SimulatorState;
 import org.openremote.model.value.Values;
 
 import javax.inject.Inject;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 
@@ -230,7 +228,7 @@ public class AssetViewActivity
 
             if (assetAttributeRef.map(ref -> ref.equals(attributeEvent.getAttributeRef())).orElse(false)) {
                 assetAttribute.setValue(attributeEvent.getValue().orElse(null), attributeEvent.getTimestamp());
-                attributeView.onAttributeChanged(System.currentTimeMillis());
+                attributeView.onAttributeChanged(attributeEvent.getTimestamp());
                 break;
             }
         }
@@ -393,13 +391,22 @@ public class AssetViewActivity
     /*###########################################################################################*/
 
     protected DatapointBrowser createDatapointBrowser(AssetAttribute attribute, AttributeViewImpl view) {
-        return new DatapointBrowser(environment, this.view.getStyle(), view, attribute, 675, 200) {
-            @SuppressWarnings("ConstantConditions")
+        return new DatapointBrowser(environment,
+            this.view.getStyle(),
+            view,
+            attribute,
+            675,
+            200,
+            DatapointInterval.HOUR,
+            attribute.getValueTimestamp().orElse(System.currentTimeMillis())
+        ) {
             @Override
             protected void queryDatapoints(DatapointInterval interval,
                                            long timestamp,
                                            Consumer<NumberDatapoint[]> consumer) {
-                queryDataPoints(attribute.getName().get(), interval, timestamp, consumer);
+                attribute.getName().ifPresent(attributeName ->
+                    queryDataPoints(attributeName, interval, timestamp, consumer)
+                );
             }
         };
     }
