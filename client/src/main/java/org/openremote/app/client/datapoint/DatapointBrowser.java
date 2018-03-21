@@ -25,13 +25,13 @@ import com.google.gwt.text.shared.AbstractRenderer;
 import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.Label;
 import elemental.client.Browser;
-import org.openremote.app.client.interop.chartjs.Chart;
-import org.openremote.app.client.interop.chartjs.ChartUtil;
-import org.openremote.app.client.widget.*;
 import org.openremote.app.client.Environment;
 import org.openremote.app.client.assets.attributes.AbstractAttributeViewExtension;
 import org.openremote.app.client.assets.attributes.AttributeView;
 import org.openremote.app.client.assets.attributes.AttributeViewImpl;
+import org.openremote.app.client.interop.chartjs.Chart;
+import org.openremote.app.client.interop.chartjs.ChartUtil;
+import org.openremote.app.client.widget.*;
 import org.openremote.model.Constants;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.attribute.AttributeValidationResult;
@@ -58,10 +58,6 @@ public abstract class DatapointBrowser extends AbstractAttributeViewExtension {
     FormValueListBox<DatapointInterval> intervalListBox;
     FormOutputText timeOutput;
     FormButton nextButton;
-
-    public DatapointBrowser(Environment environment, AttributeView.Style style, AttributeViewImpl parentView, AssetAttribute attribute, int width, int height) {
-        this(environment, style, parentView, attribute, width, height, DatapointInterval.HOUR, System.currentTimeMillis());
-    }
 
     public DatapointBrowser(Environment environment, AttributeView.Style style, AttributeViewImpl parentView, AssetAttribute attribute, int width, int height, DatapointInterval interval, long timestamp) {
         super(environment, style, parentView, attribute, environment.getMessages().historicalData());
@@ -102,6 +98,9 @@ public abstract class DatapointBrowser extends AbstractAttributeViewExtension {
     }
 
     public void refresh(long timestamp) {
+        // Keep timestamp so when chart is != null at some point, it has the latest refresh timestamp
+        this.timestamp = timestamp;
+
         if (chart == null) {
             return;
         }
@@ -109,12 +108,13 @@ public abstract class DatapointBrowser extends AbstractAttributeViewExtension {
     }
 
     public void refresh(long timestamp, DatapointInterval interval) {
+        // Keep timestamp so when chart is != null at some point, it has the latest refresh timestamp
+        this.timestamp = timestamp;
+        this.interval = interval;
+
         if (chart == null) {
             return;
         }
-
-        this.timestamp = timestamp;
-        this.interval = interval;
 
         timeOutput.setText(
             DateTimeFormat.getFormat(Constants.DEFAULT_DATETIME_FORMAT).format(new Date(timestamp))
