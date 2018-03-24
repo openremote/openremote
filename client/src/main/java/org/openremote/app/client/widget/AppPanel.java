@@ -24,6 +24,37 @@ import org.openremote.model.interop.Consumer;
 
 public interface AppPanel {
 
+    enum Position {
+        /**
+         * Centered in viewport, no margins.
+         */
+        CENTER,
+        /**
+         * Relative to target with optional margins.
+         */
+        TARGET_AUTO,
+        /**
+         * Relative to bottom right of target with optional margins.
+         */
+        TARGET_BOTTOM_RIGHT,
+        /**
+         * Relative to top left of target with optional margins.
+         */
+        TARGET_TOP_LEFT
+    }
+
+    void setTarget(UIObject target);
+
+    void setPosition(Position position);
+
+    void setMarginTop(int marginTop);
+
+    void setMarginRight(int marginRight);
+
+    void setMarginBottom(int marginBottom);
+
+    void setMarginLeft(int marginLeft);
+
     void setAutoHide(boolean autoHide);
 
     void setAutoHideOnHistoryEvents(boolean autoHide);
@@ -32,20 +63,11 @@ public interface AppPanel {
 
     void setOpenCloseConsumer(Consumer<Boolean> openCloseConsumer);
 
-    boolean isShowing();
+    boolean isOpen();
 
-    void show();
+    void open();
 
-    void showRelativeTo(UIObject target);
+    void close();
 
     void toggle();
-
-    void toggleRelativeTo(UIObject target);
-
-    void showCenter();
-
-    void hide();
-
-    void resize();
-
 }

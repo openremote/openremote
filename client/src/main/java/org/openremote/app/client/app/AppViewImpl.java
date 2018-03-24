@@ -26,15 +26,14 @@ import com.google.gwt.user.client.ui.AcceptsOneWidget;
 import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.SimplePanel;
+import elemental2.dom.DomGlobal;
+import elemental2.dom.HTMLDivElement;
 import org.openremote.app.client.i18n.ManagerMessages;
 import org.openremote.app.client.style.WidgetStyle;
 
 import javax.inject.Inject;
-import java.util.logging.Logger;
 
 public class AppViewImpl extends Composite implements AppView {
-
-    private static final Logger LOG = Logger.getLogger(AppViewImpl.class.getName());
 
     interface UI extends UiBinder<FlowPanel, AppViewImpl> {
     }
@@ -81,5 +80,19 @@ public class AppViewImpl extends Composite implements AppView {
     @Override
     public AcceptsOneWidget getFooterPanel() {
         return footer;
+    }
+
+    @Override
+    protected void onDetach() {
+        super.onDetach();
+
+        // TODO Not a very pretty hack to close all popup panels on app error
+        DomGlobal.document.querySelectorAll(".or-PopupPanel").forEach((p0, p1, p2) -> {
+            if (p0 instanceof HTMLDivElement) {
+                HTMLDivElement htmlDivElement = (HTMLDivElement) p0;
+                htmlDivElement.parentNode.removeChild(htmlDivElement);
+            }
+            return null;
+        });
     }
 }

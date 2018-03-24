@@ -23,13 +23,16 @@ import com.google.gwt.core.client.GWT;
 import com.google.gwt.resources.client.CssResource;
 import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
-import com.google.gwt.user.client.ui.*;
+import com.google.gwt.user.client.ui.FlowPanel;
+import com.google.gwt.user.client.ui.HTMLPanel;
+import com.google.gwt.user.client.ui.Label;
+import com.google.gwt.user.client.ui.Widget;
 import elemental.client.Browser;
+import org.openremote.app.client.i18n.ManagerMessages;
+import org.openremote.app.client.style.WidgetStyle;
 import org.openremote.app.client.widget.AbstractAppPanel;
 import org.openremote.app.client.widget.FormLabel;
 import org.openremote.app.client.widget.IconLabel;
-import org.openremote.app.client.i18n.ManagerMessages;
-import org.openremote.app.client.style.WidgetStyle;
 import org.openremote.app.client.widget.PopupPanel;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.value.Value;
@@ -114,7 +117,7 @@ public class MapInfoPanel extends AbstractAppPanel {
         panel.setHeight(Math.min((infoItems.size() * itemHeightPixels), totalMaxHeight) + "px");
 
         // If the panel is already shown, "blink" it so users know there is an update
-        if (isShowing()) {
+        if (isOpen()) {
             contentPanel.addStyleName(widgetStyle.HighlightBackground());
             Browser.getWindow().setTimeout(() -> {
                 contentPanel.removeStyleName(widgetStyle.HighlightBackground());

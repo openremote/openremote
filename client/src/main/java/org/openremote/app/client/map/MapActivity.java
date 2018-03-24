@@ -98,13 +98,19 @@ public class MapActivity extends AssetBrowsingActivity<MapPlace> implements MapV
 
         registrations.add(eventBus.register(AssetBrowserSelection.class, event -> {
             if (event.getSelectedNode() instanceof TenantTreeNode) {
-                environment.getPlaceController().goTo(
-                    new MapTenantPlace(event.getSelectedNode().getId())
-                );
+                String selectedRealmId = event.getSelectedNode().getId();
+                if (this.realmId == null || !this.realmId.equals(selectedRealmId)) {
+                    environment.getPlaceController().goTo(
+                        new MapTenantPlace(event.getSelectedNode().getId())
+                    );
+                }
             } else if (event.getSelectedNode() instanceof AssetTreeNode) {
-                environment.getPlaceController().goTo(
-                    new MapAssetPlace(event.getSelectedNode().getId())
-                );
+                String selectedAssetId = event.getSelectedNode().getId();
+                if (this.assetId == null || !this.assetId.equals(selectedAssetId)) {
+                    environment.getPlaceController().goTo(
+                        new MapAssetPlace(event.getSelectedNode().getId())
+                    );
+                }
             }
         }));
 
@@ -131,7 +137,7 @@ public class MapActivity extends AssetBrowsingActivity<MapPlace> implements MapV
 
         if (!view.isMapInitialised()) {
             environment.getApp().getRequests().sendAndReturn(
-                objectValueMapper::read,
+                objectValueMapper,
                 mapResource::getSettings,
                 200,
                 view::initialiseMap

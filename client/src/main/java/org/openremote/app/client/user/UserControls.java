@@ -36,6 +36,8 @@ public interface UserControls {
                         String userProfilePlaceToken,
                         boolean hasManageAccountRole);
 
-    void toggleRelativeTo(UIObject target);
+    void setTarget(UIObject target);
+
+    void toggle();
 
 }

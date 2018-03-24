@@ -74,7 +74,7 @@ public class AdminUserNotificationEditorImpl implements AdminUserNotificationEdi
             if (notification != null) {
                 if (onSend != null)
                     onSend.accept(notification);
-                dialog.hide();
+                dialog.close();
             }
         });
         dialog.getFooterPanel().add(sendButton);
@@ -86,7 +86,7 @@ public class AdminUserNotificationEditorImpl implements AdminUserNotificationEdi
         cancelButton.addStyleName(widgetStyle.PushButton());
         cancelButton.addStyleName(widgetStyle.FormButton());
         cancelButton.addClickHandler(event -> {
-            dialog.hide();
+            dialog.close();
             if (onClose != null)
                 onClose.run();
         });
@@ -157,7 +157,7 @@ public class AdminUserNotificationEditorImpl implements AdminUserNotificationEdi
     }
 
     public void show() {
-        dialog.showCenter();
+        dialog.open();
     }
 
     protected AlertNotification buildAlertNotification() {

@@ -21,11 +21,10 @@ package org.openremote.app.client.app;
 
 import com.google.gwt.place.shared.PlaceController;
 import com.google.inject.Inject;
-import org.openremote.app.client.AppSecurity;
 import org.openremote.app.client.OpenRemoteApp;
 import org.openremote.app.client.admin.syslog.AdminSyslogPlace;
-import org.openremote.app.client.apps.ConsoleAppsPlace;
 import org.openremote.app.client.apps.ConsoleAppSelection;
+import org.openremote.app.client.apps.ConsoleAppsPlace;
 import org.openremote.app.client.assets.AssetsDashboardPlace;
 import org.openremote.app.client.assets.asset.AssetViewPlace;
 import org.openremote.app.client.assets.browser.AssetBrowserSelection;

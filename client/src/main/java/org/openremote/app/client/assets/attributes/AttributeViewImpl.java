@@ -164,6 +164,13 @@ public class AttributeViewImpl extends FormGroup implements AttributeView {
     @Override
     public void setEditMode(boolean editMode) {
         this.editMode = editMode;
+        getFormLabel().removeStyleName("larger");
+        getFormLabel().removeStyleName("largest");
+        if (editMode) {
+            getFormLabel().addStyleName("largest");
+        } else {
+            getFormLabel().addStyleName("larger");
+        }
     }
 
     @Override

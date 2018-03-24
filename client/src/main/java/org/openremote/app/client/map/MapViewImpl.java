@@ -20,14 +20,16 @@
 package org.openremote.app.client.map;
 
 import com.google.gwt.core.client.GWT;
+import com.google.gwt.core.client.Scheduler;
 import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
 import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.HTMLPanel;
-import com.google.inject.Provider;
-import elemental.client.Browser;
+import com.google.gwt.user.client.ui.SimplePanel;
+import elemental2.dom.DomGlobal;
 import org.openremote.app.client.assets.browser.AssetBrowser;
 import org.openremote.app.client.style.WidgetStyle;
+import org.openremote.app.client.widget.AppPanel;
 import org.openremote.app.client.widget.FlexSplitPanel;
 import org.openremote.app.client.widget.Hyperlink;
 import org.openremote.app.client.widget.MapWidget;
@@ -36,8 +38,11 @@ import org.openremote.model.value.ObjectValue;
 
 import javax.inject.Inject;
 import java.util.List;
+import java.util.logging.Logger;
 
 public class MapViewImpl extends Composite implements MapView {
+
+    private static final Logger LOG = Logger.getLogger(MapViewImpl.class.getName());
 
     interface UI extends UiBinder<FlexSplitPanel, MapViewImpl> {
     }
@@ -58,24 +63,20 @@ public class MapViewImpl extends Composite implements MapView {
     MapWidget mapWidget;
 
     final AssetBrowser assetBrowser;
-    final Provider<MapInfoPanel> infoPanelProvider;
-    MapInfoPanel infoPanel;
+    final MapInfoPanel mapInfoPanel;
 
     Presenter presenter;
 
     @Inject
-    public MapViewImpl(AssetBrowser assetBrowser, Provider<MapInfoPanel> infoPanelProvider) {
+    public MapViewImpl(AssetBrowser assetBrowser, MapInfoPanel mapInfoPanel) {
         this.assetBrowser = assetBrowser;
-        this.infoPanelProvider = infoPanelProvider;
+        this.mapInfoPanel = mapInfoPanel;
 
         UI ui = GWT.create(UI.class);
         initWidget(ui.createAndBindUi(this));
 
-        splitPanel.setOnResize(() -> {
-            mapWidget.resize();
-            if (infoPanel != null)
-                infoPanel.resize();
-        });
+        // Resize the map when the splitter is moved
+        splitPanel.setOnResize(() -> mapWidget.resize());
     }
 
     @Override
@@ -89,10 +90,8 @@ public class MapViewImpl extends Composite implements MapView {
         viewAssetLink.setTargetHistoryToken("");
 */
         showDroppedPin(GeoJSON.EMPTY_FEATURE_COLLECTION);
-        if (infoPanel != null) {
-            infoPanel.hide();
-            infoPanel = null;
-        }
+
+        mapInfoPanel.close();
 
         if (presenter != null) {
             assetBrowser.asWidget().removeFromParent();
@@ -112,8 +111,32 @@ public class MapViewImpl extends Composite implements MapView {
     public void initialiseMap(ObjectValue mapOptions) {
         mapWidget.initialise(mapOptions, () -> {
             mapWidget.addNavigationControl();
-            if (presenter != null)
-                presenter.onMapReady();
+
+            mapInfoPanel.setTarget(mapWidget);
+            mapInfoPanel.setPosition(AppPanel.Position.TARGET_BOTTOM_RIGHT);
+            mapInfoPanel.setMarginRight(10);
+            mapInfoPanel.setMarginBottom(30);
+
+            // The info panel has to move when the map is resized
+            mapWidget.addResizeListener(() -> {
+                if (mapInfoPanel.isOpen()) {
+                    mapInfoPanel.open();
+                }
+            });
+
+            // Wait until first resize is done to finalize map init
+            final MapWidget.ResizeListener initResizeListener = new MapWidget.ResizeListener() {
+                @Override
+                public void onResize() {
+                    mapWidget.removeResizeListener(this);
+                    if (presenter != null)
+                        presenter.onMapReady();
+                }
+            };
+            mapWidget.addResizeListener(initResizeListener);
+
+            // Resize to fit in viewport
+            mapWidget.resize();
         });
     }
 
@@ -140,16 +163,10 @@ public class MapViewImpl extends Composite implements MapView {
     public void showInfoItems(List<MapInfoItem> infoItems) {
         if (!mapWidget.isMapReady())
             return;
-
-        if (infoPanel == null) {
-            infoPanel = infoPanelProvider.get();
-        }
-
-        infoPanel.setItems(infoItems);
-
-        mapWidget.resize();
-        Browser.getWindow().setTimeout(
-            () -> infoPanel.showBottomRightOf(mapWidget, 10, 30), 100
-        );
+        // TODO There is something wrong with the offset calculation in popup panels, this helps
+        DomGlobal.setTimeout(p0 -> {
+            mapInfoPanel.setItems(infoItems);
+            mapInfoPanel.open();
+        }, 100);
     }
 }
