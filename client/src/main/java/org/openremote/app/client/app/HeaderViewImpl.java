@@ -142,6 +142,7 @@ public class HeaderViewImpl extends Composite implements HeaderView {
 
     @UiHandler("userButton")
     public void userClicked(final ClickEvent event) {
-        presenter.getUserControls().toggleRelativeTo(userButton);
+        presenter.getUserControls().setTarget(userButton);
+        presenter.getUserControls().toggle();
     }
 }

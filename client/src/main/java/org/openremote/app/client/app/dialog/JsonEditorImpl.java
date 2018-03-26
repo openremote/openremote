@@ -70,7 +70,7 @@ public class JsonEditorImpl implements JsonEditor {
             if (value != null) {
                 if (onApply != null)
                     onApply.accept(value);
-                dialog.hide();
+                dialog.close();
             }
         });
         dialog.getFooterPanel().add(okButton);
@@ -97,7 +97,7 @@ public class JsonEditorImpl implements JsonEditor {
             if (errorPanel.isVisible() && onReset != null) {
                 onReset.run();
             }
-            dialog.hide();
+            dialog.close();
             if (onCancel != null)
                 onCancel.run();
         });
@@ -146,7 +146,7 @@ public class JsonEditorImpl implements JsonEditor {
 
     @Override
     public void show() {
-        dialog.showCenter();
+        dialog.open();
     }
 
     protected Value parseValue() {

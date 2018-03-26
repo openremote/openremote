@@ -211,6 +211,9 @@ services:
       # IDENTITY_SESSION_MAX_MINUTES: 1440
       #
       # Validity of offline refresh tokens, force login on native console app, default is 14 days.
+      # Note that production offline tokens should be valid for months or years: When the offline token
+      # expires, the native console app can no longer contact the service in the background (e.g. when
+      # processing push notifications) and will therefore fail silently until the user logs in again.
       # IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES: 20160
 
       # Location of the static manager (UI and API) resources, you don't need to override this

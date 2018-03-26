@@ -20,7 +20,6 @@
 package org.openremote.app.client.assets.asset;
 
 import com.google.gwt.http.client.URL;
-import com.google.gwt.i18n.client.DateTimeFormat;
 import com.google.inject.Provider;
 import org.openremote.app.client.Environment;
 import org.openremote.app.client.app.dialog.JsonEditor;
@@ -58,7 +57,10 @@ import org.openremote.model.simulator.SimulatorState;
 import org.openremote.model.value.Values;
 
 import javax.inject.Inject;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 
 import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 

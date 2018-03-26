@@ -31,12 +31,11 @@ public abstract class AbstractAppPanel implements AppPanel {
     final protected PopupPanel popupPanel;
 
     protected UIObject target;
+    protected Position position = Position.CENTER;
     protected int marginTop;
     protected int marginRight;
     protected int marginBottom;
     protected int marginLeft;
-    protected UIObject bottomRightTarget;
-    protected UIObject topLeftTarget;
     protected Consumer<Boolean> openCloseConsumer;
 
     protected HandlerRegistration windowHandlerRegistration;
@@ -50,7 +49,11 @@ public abstract class AbstractAppPanel implements AppPanel {
 
         popupPanel.addAttachHandler(event -> {
             if (event.isAttached()) {
-                windowHandlerRegistration = Window.addResizeHandler(e -> resize());
+                windowHandlerRegistration = Window.addResizeHandler(e -> {
+                    if (isOpen()) {
+                        open();
+                    }
+                });
                 if (openCloseConsumer != null) {
                     openCloseConsumer.accept(true);
                 }
@@ -66,18 +69,46 @@ public abstract class AbstractAppPanel implements AppPanel {
             }
             if (target != null) {
                 popupPanel.removeAutoHidePartner(target.getElement());
-                target = null;
             }
-            if (bottomRightTarget != null)
-                bottomRightTarget = null;
-            if (topLeftTarget != null)
-                topLeftTarget  = null;
         });
 
     }
 
     public PopupPanel getPopupPanel() {
         return popupPanel;
+    }
+
+    @Override
+    public void setTarget(UIObject target) {
+        if (this.target != null) {
+            popupPanel.removeAutoHidePartner(this.target.getElement());
+        }
+        this.target = target;
+    }
+
+    @Override
+    public void setPosition(Position position) {
+        this.position = position;
+    }
+
+    @Override
+    public void setMarginTop(int marginTop) {
+        this.marginTop = marginTop;
+    }
+
+    @Override
+    public void setMarginRight(int marginRight) {
+        this.marginRight = marginRight;
+    }
+
+    @Override
+    public void setMarginBottom(int marginBottom) {
+        this.marginBottom = marginBottom;
+    }
+
+    @Override
+    public void setMarginLeft(int marginLeft) {
+        this.marginLeft = marginLeft;
     }
 
     @Override
@@ -102,88 +133,51 @@ public abstract class AbstractAppPanel implements AppPanel {
 
 
     @Override
-    public boolean isShowing() {
+    public boolean isOpen() {
         return popupPanel.isShowing();
     }
 
     @Override
-    public void show() {
-        popupPanel.show();
-    }
+    public void open() {
+        if (position == Position.CENTER) {
+            popupPanel.center();
+        } else if (target != null) {
 
-    @Override
-    public void showRelativeTo(UIObject target) {
-        popupPanel.showRelativeTo(target);
-        popupPanel.addAutoHidePartner(target.getElement());
-        this.target = target;
-    }
+            popupPanel.removeAutoHidePartner(target.getElement());
+            popupPanel.addAutoHidePartner(target.getElement());
 
-    public void showBottomRightOf(UIObject bottomRightTarget, int marginRight, int marginBottom) {
-        this.bottomRightTarget = bottomRightTarget;
-        this.marginRight = marginRight;
-        this.marginBottom = marginBottom;
-        getPopupPanel().setPopupPositionAndShow((offsetWidth, offsetHeight) -> {
-                int bottom = bottomRightTarget.getAbsoluteTop() + bottomRightTarget.getOffsetHeight();
-                int right = bottomRightTarget.getAbsoluteLeft() + bottomRightTarget.getOffsetWidth();
-                int top = bottom - offsetHeight - marginBottom;
-                int left = right - offsetWidth - marginRight;
-                getPopupPanel().setPopupPosition(left, top);
+            if (position == Position.TARGET_AUTO) {
+                popupPanel.showRelativeTo(target);
+            } else if (position == Position.TARGET_BOTTOM_RIGHT) {
+                getPopupPanel().setPopupPositionAndShow((offsetWidth, offsetHeight) -> {
+                    int bottom = target.getAbsoluteTop() + target.getOffsetHeight();
+                    int right = target.getAbsoluteLeft() + target.getOffsetWidth();
+                    int top = bottom - offsetHeight - marginBottom;
+                    int left = right - offsetWidth - marginRight;
+                    getPopupPanel().setPopupPosition(left, top);
+                });
+            } else if (position == Position.TARGET_TOP_LEFT) {
+                getPopupPanel().setPopupPositionAndShow((offsetWidth, offsetHeight) -> {
+                        int top = target.getAbsoluteTop() + marginTop;
+                        int left = target.getAbsoluteLeft() + marginLeft;
+                        getPopupPanel().setPopupPosition(left, top);
+                    }
+                );
             }
-        );
-    }
-
-    public void showTopLeftOf(UIObject topLeftTarget, int marginTop, int marginLeft) {
-        this.topLeftTarget = topLeftTarget;
-        this.marginTop = marginTop;
-        this.marginLeft = marginLeft;
-        getPopupPanel().setPopupPositionAndShow((offsetWidth, offsetHeight) -> {
-                int top = topLeftTarget.getAbsoluteTop() + marginTop;
-                int left = topLeftTarget.getAbsoluteLeft() + marginLeft;
-                getPopupPanel().setPopupPosition(left, top);
-            }
-        );
+        }
     }
 
     @Override
     public void toggle() {
-        if (isShowing()) {
-            hide();
+        if (isOpen()) {
+            close();
         } else {
-            show();
+            open();
         }
     }
 
     @Override
-    public void toggleRelativeTo(UIObject target) {
-        if (isShowing()) {
-            hide();
-        } else {
-            showRelativeTo(target);
-        }
-    }
-
-    @Override
-    public void hide() {
+    public void close() {
         popupPanel.hide();
-    }
-
-    @Override
-    public void showCenter() {
-        popupPanel.center();
-    }
-
-    @Override
-    public void resize() {
-        if (isShowing()) {
-            if (target != null) {
-                popupPanel.showRelativeTo(target);
-            } else if (bottomRightTarget != null) {
-                showBottomRightOf(bottomRightTarget, marginRight, marginBottom);
-            } else if (topLeftTarget != null) {
-                showTopLeftOf(topLeftTarget, marginTop, marginLeft);
-            } else {
-                showCenter();
-            }
-        }
     }
 }

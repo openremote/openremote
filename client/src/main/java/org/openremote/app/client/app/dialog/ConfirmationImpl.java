@@ -51,7 +51,7 @@ public class ConfirmationImpl implements Confirmation {
         confirmButton.addStyleName(widgetStyle.PushButton());
         confirmButton.addStyleName(widgetStyle.FormButtonPrimary());
         confirmButton.addClickHandler(event -> {
-            dialog.hide();
+            dialog.close();
             if (onConfirm != null)
                 onConfirm.run();
         });
@@ -64,7 +64,7 @@ public class ConfirmationImpl implements Confirmation {
         cancelButton.addStyleName(widgetStyle.PushButton());
         cancelButton.addStyleName(widgetStyle.FormButton());
         cancelButton.addClickHandler(event -> {
-            dialog.hide();
+            dialog.close();
             if (onCancel != null)
                 onCancel.run();
         });
@@ -93,6 +93,6 @@ public class ConfirmationImpl implements Confirmation {
 
     @Override
     public void show() {
-        dialog.showCenter();
+        dialog.open();
     }
 }

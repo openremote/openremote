@@ -28,6 +28,8 @@ import org.openremote.model.value.ArrayValue;
 import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Values;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Logger;
 
 import static org.openremote.model.value.Values.create;
@@ -38,6 +40,10 @@ public class MapWidget extends FlowPanel {
 
     public interface ClickListener {
         void onClick(double lng, double lat);
+    }
+
+    public interface ResizeListener {
+        void onResize();
     }
 
     // Feature IDs
@@ -116,6 +122,7 @@ public class MapWidget extends FlowPanel {
 
     protected String hostElementId;
     protected ClickListener clickListener;
+    protected List<ResizeListener> resizeListeners = new ArrayList<>();
     protected Popup popup;
     protected MapboxMap mapboxMap;
     protected boolean mapReady;
@@ -128,6 +135,14 @@ public class MapWidget extends FlowPanel {
 
     public void setClickListener(ClickListener clickListener) {
         this.clickListener = clickListener;
+    }
+
+    public void addResizeListener(ResizeListener resizeListener) {
+        this.resizeListeners.add(resizeListener);
+    }
+
+    public void removeResizeListener(ResizeListener resizeListener) {
+        this.resizeListeners.remove(resizeListener);
     }
 
     public boolean isInitialised() {
@@ -150,7 +165,6 @@ public class MapWidget extends FlowPanel {
         mapboxMap.on(EventType.LOAD, eventData -> {
             initFeatureLayers();
             mapReady = true;
-            resize();
             if (onReady != null) {
                 onReady.run();
             }
@@ -161,6 +175,8 @@ public class MapWidget extends FlowPanel {
                 clickListener.onClick(eventData.getLngLat().getLng(), eventData.getLngLat().getLat());
             }
         });
+
+        mapboxMap.on(EventType.RESIZE, eventData -> resizeListeners.forEach(ResizeListener::onResize));
     }
 
     public boolean isMapReady() {
@@ -177,8 +193,6 @@ public class MapWidget extends FlowPanel {
         if (!isMapReady())
             throw new IllegalStateException("Map not ready");
         mapboxMap.resize();
-        // This is not reliable, so do it again a bit later
-        DomGlobal.setTimeout(p -> mapboxMap.resize(), 200);
     }
 
     public void setOpaque(boolean opaque) {

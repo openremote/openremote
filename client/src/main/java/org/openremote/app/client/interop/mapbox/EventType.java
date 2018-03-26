@@ -23,6 +23,7 @@ public class EventType {
     private EventType(){}
 
     public static final String LOAD = "load";
+    public static final String RESIZE = "resize";
     public static final String CLICK = "click";
     public static final String DOUBLE_CLICK = "dblclick";
     public static final String DRAG = "drag";

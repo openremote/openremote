@@ -56,6 +56,7 @@ public class UserControlsImpl extends AbstractAppPanel implements UserControls {
     @Inject
     public UserControlsImpl() {
         super(GWT.create(UI.class));
+        setPosition(Position.TARGET_AUTO);
         setAutoHide(true);
         setAutoHideOnHistoryEvents(true);
     }
