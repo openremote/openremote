@@ -90,7 +90,7 @@ public class User {
 
     @NotNull(message = "{User.username.NotNull}")
     @Size(min = 3, max = 255, message = "{User.username.Size}")
-    @Pattern(regexp = "[a-zA-Z0-9]+", message = "{User.username.Pattern}")
+    @Pattern(regexp = "[a-zA-Z0-9-_]+", message = "{User.username.Pattern}")
     public String getUsername() {
         return username;
     }
