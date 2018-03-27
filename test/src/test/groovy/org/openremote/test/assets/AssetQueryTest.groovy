@@ -76,7 +76,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets.size() == 1
         assets[0].id == managerDemoSetup.agentId
         assets[0].name == "Demo Agent"
-        assets[0].type == null
+        assets[0].type == AssetType.AGENT.getValue()
         assets[0].parentId == null
         assets[0].parentName == null
         assets[0].parentType == null
@@ -158,7 +158,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets[1].id == managerDemoSetup.apartment1Id
         assets[1].createdOn == null
         assets[1].name == "Apartment 1"
-        assets[1].type == null
+        assets[1].type == AssetType.RESIDENCE.getValue()
         assets[1].parentId == null
         assets[1].parentName == null
         assets[1].parentType == null
