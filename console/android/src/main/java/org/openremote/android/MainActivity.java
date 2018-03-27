@@ -23,7 +23,6 @@ import android.view.KeyEvent;
 import android.view.View;
 import android.webkit.ConsoleMessage;
 import android.webkit.CookieManager;
-import android.webkit.CookieSyncManager;
 import android.webkit.DownloadListener;
 import android.webkit.JavascriptInterface;
 import android.webkit.SslErrorHandler;
@@ -222,7 +221,8 @@ public class MainActivity extends Activity {
                 //TODO should we ignore images?
                 if (request.getUrl().getLastPathSegment() != null &&
                     (request.getUrl().getLastPathSegment().endsWith("png")
-                        || request.getUrl().getLastPathSegment().endsWith("jpg"))
+                        || request.getUrl().getLastPathSegment().endsWith("jpg")
+                        || request.getUrl().getLastPathSegment().endsWith("ico"))
                     )
                     return;
 
@@ -258,7 +258,8 @@ public class MainActivity extends Activity {
                 //TODO should we ignore images?
                 if (request.getUrl().getLastPathSegment() != null &&
                     (request.getUrl().getLastPathSegment().endsWith("png")
-                        || request.getUrl().getLastPathSegment().endsWith("jpg"))
+                        || request.getUrl().getLastPathSegment().endsWith("jpg")
+                        || request.getUrl().getLastPathSegment().endsWith("ico"))
                     )
                     return;
 
