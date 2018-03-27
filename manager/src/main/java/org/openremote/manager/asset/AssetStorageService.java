@@ -1180,6 +1180,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             case ONLY_ID_AND_NAME_AND_ATTRIBUTE_NAMES:
                 ServerAsset asset = new ServerAsset();
                 asset.setId(rs.getString("ID"));
+                asset.setType(rs.getString("ASSET_TYPE"));
                 asset.setName(rs.getString("NAME"));
                 asset.setAccessPublicRead(rs.getBoolean("ACCESS_PUBLIC_READ"));
                 if (query.select.include != AssetQuery.Include.ONLY_ID_AND_NAME) {
