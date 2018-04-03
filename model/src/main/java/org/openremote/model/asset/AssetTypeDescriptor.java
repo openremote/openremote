@@ -19,25 +19,15 @@
  */
 package org.openremote.model.asset;
 
-import org.openremote.model.attribute.MetaItemDescriptor;
+import java.util.stream.Stream;
 
-/**
- * The built-in and well-known asset model.
- */
-public class DefaultAssetModelProvider implements AssetModelProvider {
+public interface AssetTypeDescriptor {
 
-    @Override
-    public MetaItemDescriptor[] getMetaItemDescriptors() {
-        return AssetMeta.values();
-    }
+    String getName();
 
-    @Override
-    public AssetType[] getAssetTypeDescriptors() {
-        return AssetType.values();
-    }
+    String getValue();
 
-    @Override
-    public String toString() {
-        return getClass().getSimpleName() + "{}";
-    }
+    String getIcon();
+
+    Stream<AssetAttribute> getDefaultAttributes();
 }

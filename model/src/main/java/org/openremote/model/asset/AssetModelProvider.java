@@ -28,4 +28,5 @@ public interface AssetModelProvider {
 
     MetaItemDescriptor[] getMetaItemDescriptors();
 
+    AssetTypeDescriptor[] getAssetTypeDescriptors();
 }

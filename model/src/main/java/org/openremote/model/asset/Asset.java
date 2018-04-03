@@ -49,6 +49,7 @@ import static org.openremote.model.Constants.PERSISTENCE_UNIQUE_ID_GENERATOR;
 import static org.openremote.model.asset.AssetAttribute.*;
 
 // @formatter:off
+
 /**
  * The main model class of this software.
  * <p>
@@ -88,133 +89,133 @@ import static org.openremote.model.asset.AssetAttribute.*;
  * <p>
  * Example JSON representation of an asset tree:
  * <blockquote><pre>{@code
-{
-  "id": "0oI7Gf_kTh6WyRJFUTr8Lg",
-  "version": 0,
-  "createdOn": 1489042784142,
-  "name": "Smart Home",
-  "type": "urn:openremote:asset:building",
-  "accessPublicRead": false,
-  "realmId": "c38a3fdf-9d74-4dac-940c-50d3dce1d248",
-  "tenantRealm": "customerA",
-  "tenantDisplayName": "Customer A",
-  "path": [
-    "0oI7Gf_kTh6WyRJFUTr8Lg"
-  ],
-  "coordinates": [
-    5.469751699216005,
-    51.44760787406028
-  ]
-}
+ * {
+ * "id": "0oI7Gf_kTh6WyRJFUTr8Lg",
+ * "version": 0,
+ * "createdOn": 1489042784142,
+ * "name": "Smart Home",
+ * "type": "urn:openremote:asset:building",
+ * "accessPublicRead": false,
+ * "realmId": "c38a3fdf-9d74-4dac-940c-50d3dce1d248",
+ * "tenantRealm": "customerA",
+ * "tenantDisplayName": "Customer A",
+ * "path": [
+ * "0oI7Gf_kTh6WyRJFUTr8Lg"
+ * ],
+ * "coordinates": [
+ * 5.469751699216005,
+ * 51.44760787406028
+ * ]
+ * }
  * }</pre></blockquote>
  * <blockquote><pre>{@code
-{
-  "id": "B0x8ZOqZQHGjq_l0RxAJBA",
-  "version": 0,
-  "createdOn": 1489042784148,
-  "name": "Apartment 1",
-  "type": "urn:openremote:asset:residence",
-  "accessPublicRead": false,
-  "parentId": "0oI7Gf_kTh6WyRJFUTr8Lg",
-  "parentName": "Smart Home",
-  "parentType": "urn:openremote:asset:building",
-  "realmId": "c38a3fdf-9d74-4dac-940c-50d3dce1d248",
-  "tenantRealm": "customerA",
-  "tenantDisplayName": "Customer A",
-  "path": [
-    "B0x8ZOqZQHGjq_l0RxAJBA",
-    "0oI7Gf_kTh6WyRJFUTr8Lg"
-  ],
-  "coordinates": [
-    5.469751699216005,
-    51.44760787406028
-  ]
-}
+ * {
+ * "id": "B0x8ZOqZQHGjq_l0RxAJBA",
+ * "version": 0,
+ * "createdOn": 1489042784148,
+ * "name": "Apartment 1",
+ * "type": "urn:openremote:asset:residence",
+ * "accessPublicRead": false,
+ * "parentId": "0oI7Gf_kTh6WyRJFUTr8Lg",
+ * "parentName": "Smart Home",
+ * "parentType": "urn:openremote:asset:building",
+ * "realmId": "c38a3fdf-9d74-4dac-940c-50d3dce1d248",
+ * "tenantRealm": "customerA",
+ * "tenantDisplayName": "Customer A",
+ * "path": [
+ * "B0x8ZOqZQHGjq_l0RxAJBA",
+ * "0oI7Gf_kTh6WyRJFUTr8Lg"
+ * ],
+ * "coordinates": [
+ * 5.469751699216005,
+ * 51.44760787406028
+ * ]
+ * }
  * }</pre></blockquote>
  * <blockquote><pre>{@code
-{
-  "id": "bzlRiJmSSMCl8HIUt9-lMg",
-  "version": 0,
-  "createdOn": 1489042784157,
-  "name": "Living Room",
-  "type": "urn:openremote:asset:room",
-  "accessPublicRead": false,
-  "parentId": "B0x8ZOqZQHGjq_l0RxAJBA",
-  "parentName": "Apartment 1",
-  "parentType": "urn:openremote:asset:residence",
-  "realmId": "c38a3fdf-9d74-4dac-940c-50d3dce1d248",
-  "tenantRealm": "customerA",
-  "tenantDisplayName": "Customer A",
-  "path": [
-    "bzlRiJmSSMCl8HIUt9-lMg",
-    "B0x8ZOqZQHGjq_l0RxAJBA",
-    "0oI7Gf_kTh6WyRJFUTr8Lg"
-  ],
-  "coordinates": [
-    5.469751699216005,
-    51.44760787406028
-  ]
-}
+ * {
+ * "id": "bzlRiJmSSMCl8HIUt9-lMg",
+ * "version": 0,
+ * "createdOn": 1489042784157,
+ * "name": "Living Room",
+ * "type": "urn:openremote:asset:room",
+ * "accessPublicRead": false,
+ * "parentId": "B0x8ZOqZQHGjq_l0RxAJBA",
+ * "parentName": "Apartment 1",
+ * "parentType": "urn:openremote:asset:residence",
+ * "realmId": "c38a3fdf-9d74-4dac-940c-50d3dce1d248",
+ * "tenantRealm": "customerA",
+ * "tenantDisplayName": "Customer A",
+ * "path": [
+ * "bzlRiJmSSMCl8HIUt9-lMg",
+ * "B0x8ZOqZQHGjq_l0RxAJBA",
+ * "0oI7Gf_kTh6WyRJFUTr8Lg"
+ * ],
+ * "coordinates": [
+ * 5.469751699216005,
+ * 51.44760787406028
+ * ]
+ * }
  * }</pre></blockquote>
  * <blockquote><pre>{@code
-{
-  "id": "W7GV_lFeQVyHLlgHgE3dEQ",
-  "version": 0,
-  "createdOn": 1489042784164,
-  "name": "Living Room Thermostat",
-  "type": "urn:openremote:asset:thing",
-  "accessPublicRead": false,
-  "parentId": "bzlRiJmSSMCl8HIUt9-lMg",
-  "parentName": "Living Room",
-  "parentType": "urn:openremote:asset:room",
-  "realmId": "c38a3fdf-9d74-4dac-940c-50d3dce1d248",
-  "tenantRealm": "customerA",
-  "tenantDisplayName": "Customer A",
-  "path": [
-    "W7GV_lFeQVyHLlgHgE3dEQ",
-    "bzlRiJmSSMCl8HIUt9-lMg",
-    "B0x8ZOqZQHGjq_l0RxAJBA",
-    "0oI7Gf_kTh6WyRJFUTr8Lg"
-  ],
-  "coordinates": [
-    5.460315214821094,
-    51.44541688237109
-  ],
-  "attributes": {
-    "currentTemperature": {
-      "meta": [
-        {
-          "name": "urn:openremote:asset:meta:label",
-          "value": "Current Temp"
-        },
-        {
-          "name": "urn:openremote:asset:meta:accessRestrictedRead",
-          "value": true
-        },
-        {
-          "name": "urn:openremote:asset:meta:readOnly",
-          "value": true
-        },
-        {
-          "name": "urn:openremote:foo:bar",
-          "value": "FOO"
-        },
-        {
-          "name": "urn:thirdparty:bar",
-          "value": "BAR"
-        }
-      ],
-      "type": "Decimal",
-      "value": 19.2,
-      "valueTimestamp": 1.489670166115E12
-    },
-    "somethingPrivate": {
-      "type": "String",
-      "value": "Foobar",
-      "valueTimestamp": 1.489670156115E12
-    }
-  }
-}
+ * {
+ * "id": "W7GV_lFeQVyHLlgHgE3dEQ",
+ * "version": 0,
+ * "createdOn": 1489042784164,
+ * "name": "Living Room Thermostat",
+ * "type": "urn:openremote:asset:thing",
+ * "accessPublicRead": false,
+ * "parentId": "bzlRiJmSSMCl8HIUt9-lMg",
+ * "parentName": "Living Room",
+ * "parentType": "urn:openremote:asset:room",
+ * "realmId": "c38a3fdf-9d74-4dac-940c-50d3dce1d248",
+ * "tenantRealm": "customerA",
+ * "tenantDisplayName": "Customer A",
+ * "path": [
+ * "W7GV_lFeQVyHLlgHgE3dEQ",
+ * "bzlRiJmSSMCl8HIUt9-lMg",
+ * "B0x8ZOqZQHGjq_l0RxAJBA",
+ * "0oI7Gf_kTh6WyRJFUTr8Lg"
+ * ],
+ * "coordinates": [
+ * 5.460315214821094,
+ * 51.44541688237109
+ * ],
+ * "attributes": {
+ * "currentTemperature": {
+ * "meta": [
+ * {
+ * "name": "urn:openremote:asset:meta:label",
+ * "value": "Current Temp"
+ * },
+ * {
+ * "name": "urn:openremote:asset:meta:accessRestrictedRead",
+ * "value": true
+ * },
+ * {
+ * "name": "urn:openremote:asset:meta:readOnly",
+ * "value": true
+ * },
+ * {
+ * "name": "urn:openremote:foo:bar",
+ * "value": "FOO"
+ * },
+ * {
+ * "name": "urn:thirdparty:bar",
+ * "value": "BAR"
+ * }
+ * ],
+ * "type": "Decimal",
+ * "value": 19.2,
+ * "valueTimestamp": 1.489670166115E12
+ * },
+ * "somethingPrivate": {
+ * "type": "String",
+ * "value": "Foobar",
+ * "valueTimestamp": 1.489670156115E12
+ * }
+ * }
+ * }
  * }</pre></blockquote>
  */
 // @formatter:on
@@ -409,10 +410,12 @@ public class Asset implements IdentifiableEntity {
     }
 
     public boolean hasTypeWellKnown() {
+        //TODO replace with AssetModel getValues, through a http request
         return AssetType.getByValue(getType()).isPresent();
     }
 
     public AssetType getWellKnownType() {
+        //TODO replace with AssetModel getValues, through a http request
         return AssetType.getByValue(getType()).orElse(AssetType.CUSTOM);
     }
 
@@ -420,7 +423,7 @@ public class Asset implements IdentifiableEntity {
         this.type = type;
     }
 
-    public void setType(AssetType type) {
+    public void setType(AssetTypeDescriptor type) {
         setType(type != null ? type.getValue() : null);
     }
 
@@ -475,6 +478,7 @@ public class Asset implements IdentifiableEntity {
     }
 
     public AssetType getParentWellKnownType() {
+        //TODO replace with AssetModel getValues, through a http request
         return AssetType.getByValue(getParentType()).orElse(AssetType.CUSTOM);
     }
 
@@ -585,7 +589,7 @@ public class Asset implements IdentifiableEntity {
     }
 
     public Asset setAttributes(List<AssetAttribute> attributes) {
-        ((ObservableList)getAttributesList()).clear(false);
+        ((ObservableList) getAttributesList()).clear(false);
         getAttributesList().addAll(attributes);
         return this;
     }

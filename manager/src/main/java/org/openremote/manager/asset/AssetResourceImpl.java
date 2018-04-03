@@ -414,6 +414,16 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                 serverAsset.setId(asset.getId());
             }
 
+            AssetModel.getAssetTypeDescriptor(asset.getType()).ifPresent(descriptor -> {
+                serverAsset.addAttributes(descriptor.getDefaultAttributes()
+                    .filter(assetAttribute ->
+                        serverAsset.getAttributesStream().noneMatch(serverAttribute ->
+                            serverAttribute.getNameOrThrow().equalsIgnoreCase(assetAttribute.getNameOrThrow())
+                        )
+                    ).toArray(AssetAttribute[]::new)
+                );
+            });
+
             return assetStorageService.merge(serverAsset);
 
         } catch (IllegalStateException ex) {

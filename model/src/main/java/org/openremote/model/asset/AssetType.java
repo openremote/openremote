@@ -36,7 +36,7 @@ import static org.openremote.model.attribute.AttributeType.STRING;
  * <p>
  * TODO https://people.eecs.berkeley.edu/~arka/papers/buildsys2015_metadatasurvey.pdf
  */
-public enum AssetType {
+public enum AssetType implements AssetTypeDescriptor {
 
     CUSTOM(null, "cube"),
 
@@ -89,29 +89,37 @@ public enum AssetType {
         this.defaultAttributes = defaultAttributes;
     }
 
+    @Override
+    public String getName() {
+        return this.name();
+    }
+
+    @Override
     public String getValue() {
         return value;
     }
 
+    @Override
     public String getIcon() {
         return icon;
     }
 
+    @Override
     public Stream<AssetAttribute> getDefaultAttributes() {
         return defaultAttributes != null ? Arrays.stream(defaultAttributes) : Stream.empty();
     }
 
-    public static AssetType[] valuesSorted() {
-        List<AssetType> list = new ArrayList<>(Arrays.asList(values()));
+    public static AssetTypeDescriptor[] valuesSorted() {
+        List<AssetTypeDescriptor> list = new ArrayList<>(Arrays.asList(values()));
 
-        list.sort(Comparator.comparing(Enum::name));
+        list.sort(Comparator.comparing(AssetTypeDescriptor::getName));
         if (list.contains(CUSTOM)) {
             // CUSTOM should be first
             list.remove(CUSTOM);
             list.add(0, CUSTOM);
         }
 
-        return list.toArray(new AssetType[list.size()]);
+        return list.toArray(new AssetTypeDescriptor[list.size()]);
     }
 
     public static Optional<AssetType> getByValue(String value) {

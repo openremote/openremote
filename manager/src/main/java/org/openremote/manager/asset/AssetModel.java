@@ -20,6 +20,7 @@
 package org.openremote.manager.asset;
 
 import org.openremote.model.asset.AssetModelProvider;
+import org.openremote.model.asset.AssetTypeDescriptor;
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.attribute.MetaItemDescriptor;
 
@@ -28,6 +29,7 @@ import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.joining;
+import static org.openremote.model.asset.AssetType.CUSTOM;
 import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 
 /**
@@ -41,6 +43,8 @@ public class AssetModel {
     public final static String META_ITEM_RESTRICTED_READ_SQL_FRAGMENT;
     public final static String META_ITEM_PUBLIC_READ_SQL_FRAGMENT;
 
+    public final static AssetTypeDescriptor[] WELL_KNOWN_ASSET_TYPES;
+
     static {
         List<MetaItemDescriptor> metaItemDescriptorList = new ArrayList<>();
         ServiceLoader.load(AssetModelProvider.class).forEach(assetModelProvider -> {
@@ -53,6 +57,14 @@ public class AssetModel {
             " ('" + streamMetaItemDescriptors().filter(i -> i.getAccess().restrictedRead).map(MetaItemDescriptor::getUrn).collect(joining("','")) + "')";
         META_ITEM_PUBLIC_READ_SQL_FRAGMENT =
             " ('" + streamMetaItemDescriptors().filter(i -> i.getAccess().publicRead).map(MetaItemDescriptor::getUrn).collect(joining("','")) + "')";
+
+        List<AssetTypeDescriptor> assetTypeList = new ArrayList<>();
+        ServiceLoader.load(AssetModelProvider.class).forEach(assetModelProvider -> {
+            LOG.fine("Adding asset type descriptors of: " + assetModelProvider);
+            assetTypeList.addAll(Arrays.asList(assetModelProvider.getAssetTypeDescriptors()));
+        });
+
+        WELL_KNOWN_ASSET_TYPES = assetTypeList.toArray(new AssetTypeDescriptor[assetTypeList.size()]);
     }
 
     public static Stream<MetaItemDescriptor> streamMetaItemDescriptors() {
@@ -85,5 +97,29 @@ public class AssetModel {
         return getMetaItemDescriptor(metaItem.getName().orElse(null))
             .map(meta -> meta.getAccess().publicRead)
             .orElse(false);
+    }
+
+    public static AssetTypeDescriptor[] getAssetTypesSorted() {
+        List<AssetTypeDescriptor> list = new ArrayList<>(Arrays.asList(WELL_KNOWN_ASSET_TYPES));
+
+        list.sort(Comparator.comparing(AssetTypeDescriptor::getName));
+        if (list.contains(CUSTOM)) {
+            // CUSTOM should be first
+            list.remove(CUSTOM);
+            list.add(0, CUSTOM);
+        }
+
+        return list.toArray(new AssetTypeDescriptor[list.size()]);
+    }
+
+    public static Optional<AssetTypeDescriptor> getAssetTypeDescriptor(String urn) {
+        if (urn == null)
+            return Optional.empty();
+
+        for (AssetTypeDescriptor assetType : WELL_KNOWN_ASSET_TYPES) {
+            if (urn.equals(assetType.getValue()))
+                return Optional.of(assetType);
+        }
+        return Optional.empty();
     }
 }

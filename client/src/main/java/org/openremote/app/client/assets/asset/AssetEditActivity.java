@@ -37,12 +37,10 @@ import org.openremote.app.client.widget.AttributeLinkEditor;
 import org.openremote.app.client.widget.AttributeRefEditor;
 import org.openremote.app.client.widget.FormButton;
 import org.openremote.app.client.widget.ValueEditors;
+import org.openremote.manager.asset.AssetModel;
 import org.openremote.model.ValueHolder;
 import org.openremote.model.asset.*;
-import org.openremote.model.asset.agent.AgentLink;
-import org.openremote.model.asset.agent.AgentResource;
-import org.openremote.model.asset.agent.ProtocolConfiguration;
-import org.openremote.model.asset.agent.ProtocolDescriptor;
+import org.openremote.model.asset.agent.*;
 import org.openremote.model.attribute.*;
 import org.openremote.model.http.ConstraintViolation;
 import org.openremote.model.interop.Consumer;
@@ -202,7 +200,7 @@ public class AssetEditActivity
     }
 
     @Override
-    public void onAssetTypeSelected(AssetType type) {
+    public void onAssetTypeSelected(AssetTypeDescriptor type) {
         asset.setType(type);
         writeAttributeTypesToView(this::writeAttributesToView);
     }
@@ -570,6 +568,7 @@ public class AssetEditActivity
 
     protected void writeAttributeTypesToView(Runnable onComplete) {
         view.selectWellKnownType(asset.getWellKnownType());
+        //TODO replace with AssetModel getValuesSorted, through a http request
         view.setAvailableWellKnownTypes(AssetType.valuesSorted());
         view.setType(asset.getType());
         view.setTypeEditable(isNullOrEmpty(assetId));

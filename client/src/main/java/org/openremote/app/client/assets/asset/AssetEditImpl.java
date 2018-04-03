@@ -29,8 +29,6 @@ import com.google.gwt.uibinder.client.UiField;
 import com.google.gwt.uibinder.client.UiHandler;
 import com.google.gwt.user.client.ui.*;
 import com.google.inject.Provider;
-import org.openremote.app.client.widget.*;
-import org.openremote.app.client.widget.PushButton;
 import org.openremote.app.client.Environment;
 import org.openremote.app.client.app.dialog.Confirmation;
 import org.openremote.app.client.app.dialog.JsonEditor;
@@ -39,9 +37,12 @@ import org.openremote.app.client.assets.browser.AssetBrowser;
 import org.openremote.app.client.assets.browser.AssetSelector;
 import org.openremote.app.client.assets.browser.BrowserTreeNode;
 import org.openremote.app.client.assets.navigation.AssetNavigation;
+import org.openremote.app.client.widget.*;
+import org.openremote.app.client.widget.PushButton;
 import org.openremote.model.Constants;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetType;
+import org.openremote.model.asset.AssetTypeDescriptor;
 import org.openremote.model.geo.GeoJSON;
 import org.openremote.model.util.Pair;
 import org.openremote.model.value.ObjectValue;
@@ -126,7 +127,7 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
     @UiField
     FormGroup typeGroup;
     @UiField(provided = true)
-    FormValueListBox<AssetType> typeListBox;
+    FormValueListBox<AssetTypeDescriptor> typeListBox;
     @UiField
     FormInputText typeInput;
     @UiField
@@ -202,12 +203,12 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
         };
 
         typeListBox = new FormValueListBox<>(
-            new AbstractRenderer<AssetType>() {
+            new AbstractRenderer<AssetTypeDescriptor>() {
                 @Override
-                public String render(AssetType assetType) {
+                public String render(AssetTypeDescriptor assetType) {
                     if (assetType == null)
                         assetType = AssetType.CUSTOM;
-                    return environment.getMessages().assetTypeLabel(assetType.name());
+                    return environment.getMessages().assetTypeLabel(assetType.getName());
                 }
             }
         );
@@ -437,24 +438,25 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
     /* ############################################################################ */
 
     @Override
-    public void selectWellKnownType(AssetType assetType) {
+    public void selectWellKnownType(AssetTypeDescriptor assetType) {
         typeListBox.setValue(assetType);
         typeInput.setVisible(assetType == AssetType.CUSTOM);
     }
 
     @Override
-    public void setAvailableWellKnownTypes(AssetType[] assetTypes) {
+    public void setAvailableWellKnownTypes(AssetTypeDescriptor[] assetTypes) {
         typeListBox.setAcceptableValues(Arrays.asList(assetTypes));
     }
 
     @Override
     public void setType(String type) {
         typeInput.setValue(type);
-        AssetType assetType = AssetType.getByValue(type).orElse(AssetType.CUSTOM);
+        //TODO replace with AssetModel getValues, through a http request
+        AssetTypeDescriptor assetType = AssetType.getByValue(type).orElse(AssetType.CUSTOM);
         if (assetType == AssetType.CUSTOM) {
             headline.setSub(type);
         } else {
-            headline.setSub(managerMessages.assetTypeLabel(assetType.name()));
+            headline.setSub(managerMessages.assetTypeLabel(assetType.getName()));
         }
     }
 
@@ -477,7 +479,7 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
     }
 
     @Override
-    public void setAvailableAttributeTypes(List<Pair<String,String>> displayNamesAndTypes) {
+    public void setAvailableAttributeTypes(List<Pair<String, String>> displayNamesAndTypes) {
         newAttributeTypeListBox.clear();
         newAttributeTypeListBox.addItem(managerMessages.selectType(), "");
         displayNamesAndTypes.forEach(
