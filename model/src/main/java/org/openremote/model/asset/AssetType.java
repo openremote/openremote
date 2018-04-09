@@ -81,11 +81,17 @@ public enum AssetType implements AssetTypeDescriptor {
 
     final protected String value;
     final protected String icon;
+    final protected boolean accessPublicRead;
     final protected AssetAttribute[] defaultAttributes;
 
     AssetType(String value, String icon, AssetAttribute... defaultAttributes) {
+        this(value, icon, false, defaultAttributes);
+    }
+
+    AssetType(String value, String icon, boolean accessPublicRead, AssetAttribute... defaultAttributes) {
         this.value = value;
         this.icon = icon;
+        this.accessPublicRead = accessPublicRead;
         this.defaultAttributes = defaultAttributes;
     }
 
@@ -102,6 +108,11 @@ public enum AssetType implements AssetTypeDescriptor {
     @Override
     public String getIcon() {
         return icon;
+    }
+
+    @Override
+    public boolean getAccessPublicRead() {
+        return accessPublicRead;
     }
 
     @Override

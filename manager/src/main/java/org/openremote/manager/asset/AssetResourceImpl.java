@@ -416,6 +416,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
 
             AssetModel.getAssetTypeDescriptor(asset.getType()).ifPresent(descriptor -> {
 
+                serverAsset.setAccessPublicRead(descriptor.getAccessPublicRead());
                 //Add default meta items if not present
                 serverAsset.getAttributesStream().forEach(serverAssetAttribute ->
                     descriptor.getDefaultAttributes().filter(defaultAttribute ->

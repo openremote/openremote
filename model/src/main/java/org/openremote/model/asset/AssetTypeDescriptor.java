@@ -29,5 +29,7 @@ public interface AssetTypeDescriptor {
 
     String getIcon();
 
+    boolean getAccessPublicRead();
+
     Stream<AssetAttribute> getDefaultAttributes();
 }
