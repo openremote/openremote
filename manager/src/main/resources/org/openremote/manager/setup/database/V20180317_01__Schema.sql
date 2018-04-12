@@ -182,3 +182,10 @@ alter table USER_ASSET
 
 alter table USER_ASSET
   add foreign key (REALM_ID) references PUBLIC.REALM (ID) on delete cascade;
+
+/*
+  ############################# INDICES #############################
+ */
+
+create index ASSET_PARENT_ID on ASSET(PARENT_ID);
+
