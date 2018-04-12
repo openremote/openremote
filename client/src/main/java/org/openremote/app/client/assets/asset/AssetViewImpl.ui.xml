@@ -48,7 +48,7 @@
 
     <w:FlexSplitPanel ui:field="splitPanel"
                            handleStyle="{widgetStyle.SplitPanelHandle}"
-                           firstPanelWidth="250"
+                           firstPanelWidth="300"
                            firstPanelMinWidth="0"
                            secondPanelMinWidth="400">
 
