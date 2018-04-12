@@ -40,6 +40,7 @@ public class TemporaryFact<T> extends Event {
      * operation, such as matching temporary facts in a sliding time window, must
      * be designed with this margin in mind.
      */
+    // TODO This is not true, need to add GlobalLockTimeout
     public static final int GUARANTEED_MIN_EXPIRATION_MILLIS = 3000;
 
     final protected long expirationMilliseconds;

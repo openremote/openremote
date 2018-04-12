@@ -91,7 +91,7 @@ public class AgentResourceImpl extends ManagerWebResource implements AgentResour
         }
 
         List<AgentStatusEvent> result = withAgentConnector(agentId, agentConnector -> {
-            LOG.finer("Asking connector '" + agentConnector.getClass().getSimpleName() + "' for connection status");
+            LOG.finer("Asking connector '" + agentConnector.value.getClass().getSimpleName() + "' for connection status");
             return agentConnector.value.getConnectionStatus(agentConnector.key);
         });
 

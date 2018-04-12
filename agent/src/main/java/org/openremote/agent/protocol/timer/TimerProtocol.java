@@ -223,7 +223,7 @@ public class TimerProtocol extends AbstractProtocol {
                 if (enabled == protocolConfiguration.isEnabled()) {
                     LOG.finer("Protocol configuration enabled status is already: " + enabled);
                 } else {
-                    LOG.fine("Updating protocol configuration enabled status");
+                    LOG.fine("Updating protocol configuration enabled status: " + enabled);
                     updateLinkedProtocolConfiguration(
                         protocolConfiguration,
                         protocolConfig -> protocolConfig.setDisabled(!enabled)
@@ -317,7 +317,7 @@ public class TimerProtocol extends AbstractProtocol {
             return;
         }
 
-        LOG.fine("Executing timer action: " + triggerConfiguration.getReferenceOrThrow());
+        LOG.info("Executing timer action: " + triggerConfiguration.getReferenceOrThrow());
         getAction(triggerConfiguration)
             .ifPresent(this::sendAttributeEvent);
     }
