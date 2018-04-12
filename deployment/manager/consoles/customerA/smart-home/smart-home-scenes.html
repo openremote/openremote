@@ -42,18 +42,18 @@
         <smart-home-section>
             <div class="layout horizontal center-center">
                 <div id="HOME"
-                     class$="[[getItemClass(residence.attributes.lastExecutedScene.value, 'HOME')]]"
+                     class$="layout horizontal center-center sceneItem [[getItemClass(residence.attributes.lastExecutedScene.value, 'HOME')]]"
                      on-click="switchScene">{{localize('At Home')}}</div>
                 <div id="AWAY"
-                     class$="[[getItemClass(residence.attributes.lastExecutedScene.value, 'AWAY')]]"
+                     class$="layout horizontal center-center sceneItem [[getItemClass(residence.attributes.lastExecutedScene.value, 'AWAY')]]"
                      on-click="switchScene">{{localize('Away')}}</div>
             </div>
             <div class="layout horizontal center-center">
                 <div id="EVENING"
-                     class$="[[getItemClass(residence.attributes.lastExecutedScene.value, 'EVENING')]]"
+                     class$="layout horizontal center-center sceneItem [[getItemClass(residence.attributes.lastExecutedScene.value, 'EVENING')]]"
                      on-click="switchScene">{{localize('Evening')}}</div>
                 <div id="NIGHT"
-                     class$="[[getItemClass(residence.attributes.lastExecutedScene.value, 'NIGHT')]]"
+                     class$="layout horizontal center-center sceneItem [[getItemClass(residence.attributes.lastExecutedScene.value, 'NIGHT')]]"
                      on-click="switchScene">{{localize('Night')}}</div>
             </div>
         </smart-home-section>
@@ -66,10 +66,8 @@
                 return "smart-home-scenes";
             }
 
-            getItemClass(scene, item) {
-                return scene === item
-                    ? "layout horizontal center-center sceneItem active"
-                    : "layout horizontal center-center sceneItem";
+            getItemClass(lastExecutedScene, item) {
+                return lastExecutedScene === item ? "active" : "";
             }
 
             switchScene(e) {
