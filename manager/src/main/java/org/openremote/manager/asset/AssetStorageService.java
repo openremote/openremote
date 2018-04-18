@@ -530,24 +530,25 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             @Override
             public List<ServerAsset> execute(Connection connection) throws SQLException {
                 LOG.fine("Executing: " + querySql.querySql);
-                PreparedStatement st = connection.prepareStatement(querySql.querySql);
-                querySql.apply(st);
+                try (PreparedStatement st = connection.prepareStatement(querySql.querySql)) {
+                    querySql.apply(st);
 
-                try (ResultSet rs = st.executeQuery()) {
-                    List<ServerAsset> result = new ArrayList<>();
-                    if (query.calendarEventActive != null) {
-                        while (rs.next()) {
-                            ServerAsset asset = mapResultTuple(query, rs);
-                            if (calendarEventPredicateMatches(query.calendarEventActive, asset)) {
-                                result.add(asset);
+                    try (ResultSet rs = st.executeQuery()) {
+                        List<ServerAsset> result = new ArrayList<>();
+                        if (query.calendarEventActive != null) {
+                            while (rs.next()) {
+                                ServerAsset asset = mapResultTuple(query, rs);
+                                if (calendarEventPredicateMatches(query.calendarEventActive, asset)) {
+                                    result.add(asset);
+                                }
+                            }
+                        } else {
+                            while (rs.next()) {
+                                result.add(mapResultTuple(query, rs));
                             }
                         }
-                    } else {
-                        while (rs.next()) {
-                            result.add(mapResultTuple(query, rs));
-                        }
+                        return result;
                     }
-                    return result;
                 }
             }
         });

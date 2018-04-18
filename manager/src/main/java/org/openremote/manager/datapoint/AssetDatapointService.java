@@ -177,29 +177,30 @@ public class AssetDatapointService implements ContainerService, AssetUpdateProce
                         " order by TS asc "
                     );
 
-                    PreparedStatement st = connection.prepareStatement(query.toString());
+                    try (PreparedStatement st = connection.prepareStatement(query.toString())) {
 
-                    long timestampSeconds = timestamp / 1000;
-                    st.setString(1, truncateX);
-                    st.setLong(2, timestampSeconds);
-                    st.setObject(3, new PGInterval(interval));
-                    st.setLong(4, timestampSeconds);
-                    st.setObject(5, new PGInterval(step));
-                    st.setString(6, truncateX);
-                    st.setLong(7, timestampSeconds);
-                    st.setObject(8, new PGInterval(interval));
-                    st.setLong(9, timestampSeconds);
-                    st.setString(10, attributeRef.getEntityId());
-                    st.setString(11, attributeRef.getAttributeName());
+                        long timestampSeconds = timestamp / 1000;
+                        st.setString(1, truncateX);
+                        st.setLong(2, timestampSeconds);
+                        st.setObject(3, new PGInterval(interval));
+                        st.setLong(4, timestampSeconds);
+                        st.setObject(5, new PGInterval(step));
+                        st.setString(6, truncateX);
+                        st.setLong(7, timestampSeconds);
+                        st.setObject(8, new PGInterval(interval));
+                        st.setLong(9, timestampSeconds);
+                        st.setString(10, attributeRef.getEntityId());
+                        st.setString(11, attributeRef.getAttributeName());
 
-                    try (ResultSet rs = st.executeQuery()) {
-                        List<NumberDatapoint> result = new ArrayList<>();
-                        while (rs.next()) {
-                            String label = labelFunction.apply(rs.getTimestamp(1));
-                            Number value = rs.getObject(2) != null ? rs.getDouble(2) : null;
-                            result.add(new NumberDatapoint(label, value));
+                        try (ResultSet rs = st.executeQuery()) {
+                            List<NumberDatapoint> result = new ArrayList<>();
+                            while (rs.next()) {
+                                String label = labelFunction.apply(rs.getTimestamp(1));
+                                Number value = rs.getObject(2) != null ? rs.getDouble(2) : null;
+                                result.add(new NumberDatapoint(label, value));
+                            }
+                            return result.toArray(new NumberDatapoint[result.size()]);
                         }
-                        return result.toArray(new NumberDatapoint[result.size()]);
                     }
                 }
             })

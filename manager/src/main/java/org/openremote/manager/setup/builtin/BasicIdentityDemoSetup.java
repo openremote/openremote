@@ -66,11 +66,11 @@ public class BasicIdentityDemoSetup implements Setup {
 
         persistenceService.doTransaction(em -> em.unwrap(Session.class).doWork(connection -> {
             String sql = "insert into PUBLIC.USER_ENTITY(ID, REALM_ID, USERNAME, PASSWORD, ENABLED) values (?, 'master', 'admin', ?, true)";
-            PreparedStatement st = connection.prepareStatement(sql);
-            st.setString(1, UniqueIdentifierGenerator.generateId());
-            st.setString(2, PasswordStorage.createHash(demoAdminPassword));
-            st.executeUpdate();
-            st.close();
+            try (PreparedStatement st = connection.prepareStatement(sql)) {
+                st.setString(1, UniqueIdentifierGenerator.generateId());
+                st.setString(2, PasswordStorage.createHash(demoAdminPassword));
+                st.executeUpdate();
+            }
         }));
 
     }

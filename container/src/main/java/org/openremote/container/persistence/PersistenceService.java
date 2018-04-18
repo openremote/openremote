@@ -177,9 +177,8 @@ public class PersistenceService implements ContainerService {
             R result = entityManagerFunction.apply(em);
             tx.commit();
             return result;
-        } catch (RuntimeException ex) {
-            // TODO Check that this is good tx code, no idea how this stupid transaction API works. Should we use JTA?
-            if (tx != null && tx.isActive() && tx.getRollbackOnly()) {
+        } catch (Exception ex) {
+            if (tx != null && tx.isActive()) {
                 try {
                     LOG.log(Level.FINE, "Rolling back failed transaction, cause follows", ex);
                     tx.rollback();
