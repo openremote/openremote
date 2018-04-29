@@ -23,6 +23,7 @@ import org.jeasy.rules.api.Facts;
 import org.jeasy.rules.api.Rule;
 import org.jeasy.rules.api.RuleListener;
 import org.openremote.model.asset.AssetQuery;
+import org.openremote.model.asset.BaseAssetQuery;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeExecuteStatus;
 import org.openremote.model.rules.AssetQueryPredicate;
@@ -65,6 +66,8 @@ public class RulesFacts extends Facts implements RuleListener {
     final protected Map<String, Collection<AssetState>> assetTypeIndex = new HashMap<>();
 
     protected int triggerCount;
+    protected boolean trackLocationRules;
+    protected Map<AssetState, Set<BaseAssetQuery.LocationPredicate>> assetStateLocationPredicateMap = null;
 
     public RulesFacts(Assets assetsFacade, Object loggingContext, Logger logger) {
         this.assetsFacade = assetsFacade;
@@ -75,6 +78,17 @@ public class RulesFacts extends Facts implements RuleListener {
         asMap().put(ASSET_EVENTS, new ArrayDeque(INITIAL_CAPACITY));
         asMap().put(EXECUTION_VARS, new HashMap());
         asMap().put(ANONYMOUS_FACTS, new ArrayDeque(INITIAL_CAPACITY));
+    }
+
+    protected void startTrackingLocationRules() {
+        trackLocationRules = true;
+    }
+
+    protected Map<AssetState, Set<BaseAssetQuery.LocationPredicate>> stopTrackingLocationRules() {
+        trackLocationRules = false;
+        Map<AssetState, Set<BaseAssetQuery.LocationPredicate>> assetStateLocationPredicateMap = this.assetStateLocationPredicateMap;
+        this.assetStateLocationPredicateMap = null;
+        return assetStateLocationPredicateMap;
     }
 
     public void setClock(RulesClock clock) {
@@ -407,6 +421,23 @@ public class RulesFacts extends Facts implements RuleListener {
     }
 
     public Stream<AssetState> matchAssetState(AssetQuery assetQuery) {
+
+        if (trackLocationRules) {
+            if (assetQuery.location != null) {
+                LOG.fine("Location predicate found");
+                // Collect asset states only where the attribute is location (location predicates only make sense when the location
+                // attribute is exposed to rules - we don't support RULE_EVENT facts just RULE_STATE
+                if (assetStateLocationPredicateMap == null) {
+                    // TODO: Use static reference to well known location attribute when it is implemented
+                    Collection<AssetState> locationAssetStates = getAssetStates().stream().filter(assetState -> assetState.getAttributeName().equalsIgnoreCase("location")).collect(Collectors.toSet());
+                    assetStateLocationPredicateMap = new HashMap<>(locationAssetStates.size());
+                    locationAssetStates.forEach(assetState -> assetStateLocationPredicateMap.put(assetState, new HashSet<>()));
+                }
+
+                assetStateLocationPredicateMap.forEach((assetState, locationPredicates) -> locationPredicates.add(assetQuery.location));
+            }
+        }
+
         Predicate<AssetState> p = new AssetQueryPredicate(assetQuery);
 
         // Match against all asset states by default

@@ -58,7 +58,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         def ruleDefinitions = rulesetResource.getGlobalRulesets(null)
 
         then: "result should match"
-        ruleDefinitions.length == 2
+        ruleDefinitions.length == 3
         ruleDefinitions[0].name == "Some global demo rules"
         ruleDefinitions[0].lang == GROOVY
         ruleDefinitions[0].rules == null // Don't retrieve the (large) rules data when getting a list of rule definitions
@@ -92,7 +92,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         when: "global ruleset is created"
         def globalRuleset = new GlobalRuleset("Test global definition", "SomeRulesCode", GROOVY)
         rulesetResource.createGlobalRuleset(null, globalRuleset)
-        def rulesetId = rulesetResource.getGlobalRulesets(null)[2].id
+        def rulesetId = rulesetResource.getGlobalRulesets(null)[3].id
         globalRuleset = rulesetResource.getGlobalRuleset(null, rulesetId)
         def lastModified = globalRuleset.lastModified
 
