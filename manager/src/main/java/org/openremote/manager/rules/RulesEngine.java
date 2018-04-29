@@ -29,11 +29,14 @@ import org.openremote.manager.notification.NotificationService;
 import org.openremote.manager.rules.facade.AssetsFacade;
 import org.openremote.manager.rules.facade.UsersFacade;
 import org.openremote.manager.security.ManagerIdentityService;
+import org.openremote.model.asset.AssetMeta;
+import org.openremote.model.asset.BaseAssetQuery;
 import org.openremote.model.rules.*;
 
 import java.util.*;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -57,12 +60,14 @@ public class RulesEngine<T extends Ruleset> {
     final protected RulesEngineId<T> id;
     final protected Assets assetsFacade;
     final protected Users usersFacade;
+    final protected BiConsumer<RulesEngine, Map<AssetState, Set<BaseAssetQuery.LocationPredicate>>> assetLocationPredicateMapConsumer;
 
     final protected Map<Long, RulesetDeployment> deployments = new LinkedHashMap<>();
     final protected RulesFacts facts;
     final protected InferenceRulesEngine engine;
 
     protected boolean running;
+    protected boolean trackLocationPredicates;
     protected ScheduledFuture fireTimer;
     protected ScheduledFuture statsTimer;
 
@@ -78,13 +83,15 @@ public class RulesEngine<T extends Ruleset> {
                        AssetStorageService assetStorageService,
                        AssetProcessingService assetProcessingService,
                        NotificationService notificationService,
-                       RulesEngineId<T> id) {
+                       RulesEngineId<T> id,
+                       BiConsumer<RulesEngine, Map<AssetState, Set<BaseAssetQuery.LocationPredicate>>> assetLocationPredicateMapConsumer) {
         this.timerService = timerService;
         this.executorService = executorService;
         this.assetStorageService = assetStorageService;
         this.id = id;
         this.assetsFacade = new AssetsFacade<>(id, assetStorageService, assetProcessingService::sendAttributeEvent);
         this.usersFacade = new UsersFacade<>(id, assetStorageService, notificationService, identityService);
+        this.assetLocationPredicateMapConsumer = assetLocationPredicateMapConsumer;
 
         this.facts = new RulesFacts(assetsFacade, this, RULES_LOG);
         engine = new InferenceRulesEngine(
@@ -245,6 +252,7 @@ public class RulesEngine<T extends Ruleset> {
 
         LOG.info("Starting: " + this);
         running = true;
+        trackLocationPredicates = true;
         fire();
 
         // Start a background stats printer if INFO level logging is enabled
@@ -297,6 +305,10 @@ public class RulesEngine<T extends Ruleset> {
             return;
         }
 
+        if (trackLocationPredicates && assetLocationPredicateMapConsumer != null) {
+            facts.startTrackingLocationRules();
+        }
+
         // Set the current clock
         RulesClock clock = new RulesClock(timerService);
         facts.setClock(clock);
@@ -338,9 +350,20 @@ public class RulesEngine<T extends Ruleset> {
                 facts.reset();
             }
         }
+
+        if (trackLocationPredicates) {
+            trackLocationPredicates = false;
+            if (assetLocationPredicateMapConsumer != null) {
+                processLocationRules(facts.stopTrackingLocationRules());
+            }
+        }
     }
 
     public void stop() {
+        stop(false);
+    }
+
+    public void stop(boolean systemShutdownInProgress) {
         if (!isRunning()) {
             return;
         }
@@ -354,10 +377,15 @@ public class RulesEngine<T extends Ruleset> {
             statsTimer = null;
         }
         running = false;
+
+        if (!systemShutdownInProgress && assetLocationPredicateMapConsumer != null) {
+            assetLocationPredicateMapConsumer.accept(this, null);
+        }
     }
 
     public void updateFact(AssetState assetState, boolean fireImmediately) {
         facts.putAssetState(assetState);
+        trackLocationPredicates = assetState.getAttributeName().equals("location");
         if (fireImmediately) {
             fire();
         }
@@ -365,11 +393,13 @@ public class RulesEngine<T extends Ruleset> {
 
     public void removeFact(AssetState assetState) {
         facts.removeAssetState(assetState);
+        trackLocationPredicates = assetState.getAttributeName().equals("location");
         fire();
     }
 
     public void insertFact(String expires, AssetState assetState) {
         facts.insertAssetEvent(expires, assetState);
+        trackLocationPredicates = assetState.getAttributeName().equals("location");
         fire();
     }
 
@@ -401,6 +431,16 @@ public class RulesEngine<T extends Ruleset> {
                 facts.logFacts(STATS_LOG);
             }
         });
+    }
+
+    /**
+     * This is called with all the asset's that have a location attribute marked with {@link AssetMeta#RULE_STATE} and
+     * that are in the scope of a rule containing a location predicate.
+     */
+    protected void processLocationRules(Map<AssetState, Set<BaseAssetQuery.LocationPredicate>> assetStateLocationPredicateMap) {
+        if (assetLocationPredicateMapConsumer != null) {
+            assetLocationPredicateMapConsumer.accept(this, assetStateLocationPredicateMap);
+        }
     }
 
     @Override

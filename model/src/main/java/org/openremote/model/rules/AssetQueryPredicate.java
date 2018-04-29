@@ -85,6 +85,18 @@ public class AssetQueryPredicate implements Predicate<AssetState> {
             throw new UnsupportedOperationException("Sorting with 'orderBy' not supported in rules matching");
         }
 
+        if (query.location != null) {
+            // Cannot use JTS libraries here without moving this class into manager module
+            // TODO: decide whether to use JTS lib or do simple approx calcs (e.g. (x - center_x)^2 + (y - center_y)^2 < radius^2)
+            if (query.location instanceof RadialLocationPredicate) {
+                RadialLocationPredicate radialLocationPredicate = (RadialLocationPredicate)query.location;
+                return false;
+            } else if (query.location instanceof RectangularLocationPredicate) {
+                return false;
+            }
+            throw new UnsupportedOperationException("Location predicate '" + query.location.getClass().getSimpleName() + "' not supported in rules matching");
+        }
+
         return true;
     }
 

@@ -53,10 +53,11 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
     public static final int DEMO_RULE_STATES_APARTMENT_1 = 37;
     public static final int DEMO_RULE_STATES_APARTMENT_2 = 11;
     public static final int DEMO_RULE_STATES_APARTMENT_3 = 0;
+    public static final int DEMO_RULE_STATES_SMART_OFFICE = 1;
     public static final int DEMO_RULE_STATES_SMART_HOME = DEMO_RULE_STATES_APARTMENT_1 + DEMO_RULE_STATES_APARTMENT_2 + DEMO_RULE_STATES_APARTMENT_3;
     public static final int DEMO_RULE_STATES_CUSTOMER_A = DEMO_RULE_STATES_SMART_HOME;
 
-    public static final int DEMO_RULE_STATES_GLOBAL = DEMO_RULE_STATES_CUSTOMER_A;
+    public static final int DEMO_RULE_STATES_GLOBAL = DEMO_RULE_STATES_CUSTOMER_A + DEMO_RULE_STATES_SMART_OFFICE;
 
     public static final int DEMO_RULE_STATES_APARTMENT_1_WITH_SCENES = DEMO_RULE_STATES_APARTMENT_1 + 28;
     public static final int DEMO_RULE_STATES_SMART_HOME_WITH_SCENES = DEMO_RULE_STATES_APARTMENT_1_WITH_SCENES + DEMO_RULE_STATES_APARTMENT_2 + DEMO_RULE_STATES_APARTMENT_3;
@@ -140,6 +141,10 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
 
         ServerAsset lobby = new ServerAsset("Lobby", ROOM, groundFloor);
         lobby.setLocation(groundFloor.getLocation());
+        lobby.addAttributes(
+            new AssetAttribute("location", AttributeType.ARRAY)
+        );
+
         lobby = assetStorageService.merge(lobby);
         lobbyId = lobby.getId();
 
@@ -242,7 +247,9 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                         new MetaItem(
                             STORE_DATA_POINTS, Values.create(true))
                     )
-                )
+                ),
+            new AssetAttribute("location", ARRAY)
+                .setMeta(new MetaItem(RULE_STATE))
         );
         thing = assetStorageService.merge(thing);
         thingId = thing.getId();

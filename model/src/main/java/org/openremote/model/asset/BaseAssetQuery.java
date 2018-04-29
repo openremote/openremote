@@ -29,6 +29,7 @@ import org.openremote.model.value.*;
 
 import java.util.Arrays;
 import java.util.Locale;
+import java.util.Objects;
 
 /**
  * Encapsulate asset query restriction, projection, and ordering of results.
@@ -872,19 +873,23 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> {
     }
 
     @JsonSubTypes({
-        @JsonSubTypes.Type(value = RadialLocationPredicate.class, name = "radial"),
-        @JsonSubTypes.Type(value = RectangularLocationPredicate.class, name = "rect")
+        @JsonSubTypes.Type(value = RadialLocationPredicate.class, name = RadialLocationPredicate.name),
+        @JsonSubTypes.Type(value = RectangularLocationPredicate.class, name = RectangularLocationPredicate.name)
     })
     @JsonTypeInfo(
         use = JsonTypeInfo.Id.NAME,
         include = JsonTypeInfo.As.PROPERTY,
         property = "predicateType"
     )
-    public static class LocationPredicate {
+
+    public abstract static class LocationPredicate {
+        // TODO: switch return type to location object
+        public abstract double[] getCentrePoint();
     }
 
     public static class RadialLocationPredicate extends LocationPredicate {
 
+        public static final String name = "radial";
         public boolean negated;
         public int radius;
         public double lat;
@@ -911,10 +916,32 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> {
             negated = true;
             return this;
         }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            RadialLocationPredicate that = (RadialLocationPredicate) o;
+            return negated == that.negated &&
+                radius == that.radius &&
+                Double.compare(that.lat, lat) == 0 &&
+                Double.compare(that.lng, lng) == 0;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(name, negated, radius, lat, lng);
+        }
+
+        @Override
+        public double[] getCentrePoint() {
+            return new double[] {lng, lat};
+        }
     }
 
     public static class RectangularLocationPredicate extends LocationPredicate {
 
+        public static final String name = "rect";
         public boolean negated;
         public double latMin;
         public double lngMin;
@@ -944,6 +971,30 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> {
         public RectangularLocationPredicate negate() {
             negated = true;
             return this;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            RectangularLocationPredicate that = (RectangularLocationPredicate) o;
+            return negated == that.negated &&
+                Double.compare(that.latMin, latMin) == 0 &&
+                Double.compare(that.lngMin, lngMin) == 0 &&
+                Double.compare(that.latMax, latMax) == 0 &&
+                Double.compare(that.lngMax, lngMax) == 0;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(name, negated, latMin, lngMin, latMax, lngMax);
+        }
+
+        @Override
+        public double[] getCentrePoint() {
+            double x = (lngMin+lngMax)/2;
+            double y = (latMin+latMax)/2;
+            return new double[] {x,y};
         }
     }
 

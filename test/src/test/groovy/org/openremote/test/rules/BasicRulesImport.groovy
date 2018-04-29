@@ -17,6 +17,7 @@ class BasicRulesImport {
 
     final Long globalRulesetId
     final Long globalRuleset2Id
+    final Long globalRuleset3Id
     final Long masterRulesetId
     final Long customerARulesetId
     final Long customerBRulesetId
@@ -49,6 +50,13 @@ class BasicRulesImport {
         )
         ruleset.setEnabled(false)
         globalRuleset2Id = rulesetStorageService.merge(ruleset).id
+
+        ruleset = new GlobalRuleset(
+            "Location predicate demo rules",
+            getClass().getResource("/org/openremote/test/rules/BasicLocationPredicate.groovy").text,
+            GROOVY
+        )
+        globalRuleset3Id = rulesetStorageService.merge(ruleset).id
 
         ruleset = new TenantRuleset(
                 "Some master tenant demo rules",
@@ -109,10 +117,9 @@ class BasicRulesImport {
         globalEngine.disableTemporaryFactExpiration = true
         assert globalEngine != null
         assert globalEngine.isRunning()
-        assert globalEngine != null
-        assert globalEngine.isRunning()
-        assert globalEngine.deployments.size() == 1
+        assert globalEngine.deployments.size() == 2
         assert globalEngine.deployments.values().any { it -> it.name == "Some global demo rules" && it.status == DEPLOYED }
+        assert globalEngine.deployments.values().any { it -> it.name == "Location predicate demo rules" && it.status == DEPLOYED }
 
         assert rulesService.tenantEngines.size() == 2
         masterEngine = rulesService.tenantEngines.get(keycloakDemoSetup.masterTenant.id)
