@@ -21,8 +21,11 @@ package org.openremote.model.rules;
 
 import com.vividsolutions.jts.geom.*;
 import com.vividsolutions.jts.util.GeometricShapeFactory;
+import com.vividsolutions.jts.geom.*;
+import com.vividsolutions.jts.util.GeometricShapeFactory;
 import org.openremote.model.asset.BaseAssetQuery;
 import org.openremote.model.asset.BaseAssetQuery.*;
+import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.ObjectValue;
 
 import java.util.Arrays;
