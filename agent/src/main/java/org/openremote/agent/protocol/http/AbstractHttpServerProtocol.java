@@ -126,7 +126,7 @@ public abstract class AbstractHttpServerProtocol extends AbstractProtocol {
     protected static AlreadyGzippedWriterInterceptor alreadtGzippedWriterInterceptor;
     protected static ClientErrorExceptionHandler clientErrorExceptionHandler;
     protected static WebServiceExceptions.ServletUndertowExceptionHandler undertowExceptionHandler;
-    protected static final Map<AttributeRef, Pair<DeploymentInfo, HttpHandler>> deployments = new HashMap<>();
+    protected static final Map<AttributeRef, List<Pair<DeploymentInfo, HttpHandler>>> deployments = new HashMap<>();
     protected int deploymentCounter = 0;
     protected Container container;
     protected boolean devMode;
@@ -382,7 +382,11 @@ public abstract class AbstractHttpServerProtocol extends AbstractProtocol {
 
         try {
             httpHandler = manager.start();
-            deployments.put(protocolConfiguration.getReferenceOrThrow(), new Pair<>(deploymentInfo, httpHandler));
+
+            List<Pair<DeploymentInfo, HttpHandler>> deploymentList = deployments.getOrDefault(protocolConfiguration.getReferenceOrThrow(), new ArrayList<>());
+            deploymentList.add(new Pair<>(deploymentInfo, httpHandler));
+            deployments.put(protocolConfiguration.getReferenceOrThrow(), deploymentList);
+
             LOG.info("Registering HTTP Server Protocol request handler '"
                 + this.getClass().getSimpleName()
                 + "' for request path: "
@@ -394,31 +398,31 @@ public abstract class AbstractHttpServerProtocol extends AbstractProtocol {
     }
 
     protected void undeploy(AssetAttribute protocolConfiguration) {
-        Pair<DeploymentInfo, HttpHandler> deploymentInfoHttpHandlerPair = deployments.get(protocolConfiguration.getReferenceOrThrow());
+        for (Pair<DeploymentInfo, HttpHandler> deploymentInfoHttpHandlerPair : deployments.get(protocolConfiguration.getReferenceOrThrow())) {
+            if (deploymentInfoHttpHandlerPair == null) {
+                LOG.info("Deployment doesn't exist for protocol configuration: " + protocolConfiguration);
+                return;
+            }
 
-        if (deploymentInfoHttpHandlerPair == null) {
-            LOG.info("Deployment doesn't exist for protocol configuration: " + protocolConfiguration);
-            return;
-        }
+            DeploymentInfo deploymentInfo = deploymentInfoHttpHandlerPair.key;
 
-        DeploymentInfo deploymentInfo = deploymentInfoHttpHandlerPair.key;
-
-        try {
-            LOG.info("Un-registering HTTP Server Protocol request handler '"
-                + this.getClass().getSimpleName()
-                + "' for request path: "
-                + deploymentInfo.getContextPath());
-            webService.getRequestPathHandler().removePrefixPath(deploymentInfo.getContextPath());
-            DeploymentManager manager = Servlets.defaultContainer().getDeployment(deploymentInfo.getDeploymentName());
-            manager.stop();
-            manager.undeploy();
-            Servlets.defaultContainer().removeDeployment(deploymentInfo);
-            deployments.remove(protocolConfiguration.getReferenceOrThrow());
-        } catch (Exception ex) {
-            LOG.log(Level.WARNING,
-                "An exception occurred whilst un-deploying protocolConfiguration: " + protocolConfiguration.getReferenceOrThrow(),
-                ex);
-            throw new RuntimeException(ex);
+            try {
+                LOG.info("Un-registering HTTP Server Protocol request handler '"
+                    + this.getClass().getSimpleName()
+                    + "' for request path: "
+                    + deploymentInfo.getContextPath());
+                webService.getRequestPathHandler().removePrefixPath(deploymentInfo.getContextPath());
+                DeploymentManager manager = Servlets.defaultContainer().getDeployment(deploymentInfo.getDeploymentName());
+                manager.stop();
+                manager.undeploy();
+                Servlets.defaultContainer().removeDeployment(deploymentInfo);
+                deployments.remove(protocolConfiguration.getReferenceOrThrow());
+            } catch (Exception ex) {
+                LOG.log(Level.WARNING,
+                    "An exception occurred whilst un-deploying protocolConfiguration: " + protocolConfiguration.getReferenceOrThrow(),
+                    ex);
+                throw new RuntimeException(ex);
+            }
         }
     }
 }
