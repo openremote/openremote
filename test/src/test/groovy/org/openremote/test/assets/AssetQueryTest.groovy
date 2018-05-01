@@ -6,10 +6,11 @@ import org.openremote.container.Container
 import org.openremote.container.persistence.PersistenceService
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
-import org.openremote.manager.asset.ServerAsset
+
 import org.openremote.manager.setup.SetupService
 import org.openremote.manager.setup.builtin.KeycloakDemoSetup
 import org.openremote.manager.setup.builtin.ManagerDemoSetup
+import org.openremote.model.asset.Asset
 import org.openremote.model.asset.AssetMeta
 import org.openremote.model.asset.AssetQuery
 import org.openremote.model.asset.AssetType
@@ -188,10 +189,10 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets[10].id == managerDemoSetup.apartment3LivingroomId
 
         when: "an asset is loaded by identifier through JPA"
-        def asset = persistenceService.doReturningTransaction(new Function<EntityManager, ServerAsset>() {
+        def asset = persistenceService.doReturningTransaction(new Function<EntityManager, Asset>() {
             @Override
-            ServerAsset apply(EntityManager em) {
-                em.find(ServerAsset.class, managerDemoSetup.apartment1Id)
+            Asset apply(EntityManager em) {
+                em.find(Asset.class, managerDemoSetup.apartment1Id)
             }
         })
 

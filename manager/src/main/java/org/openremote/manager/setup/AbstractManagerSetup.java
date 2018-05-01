@@ -26,12 +26,12 @@ import org.openremote.agent.protocol.timer.TimerValue;
 import org.openremote.container.Container;
 import org.openremote.manager.asset.AssetProcessingService;
 import org.openremote.manager.asset.AssetStorageService;
-import org.openremote.manager.asset.ServerAsset;
 import org.openremote.manager.concurrent.ManagerExecutorService;
 import org.openremote.manager.datapoint.AssetDatapointService;
 import org.openremote.manager.persistence.ManagerPersistenceService;
 import org.openremote.manager.rules.RulesetStorageService;
 import org.openremote.manager.security.ManagerIdentityService;
+import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.attribute.*;
 import org.openremote.model.value.Values;
@@ -76,9 +76,8 @@ public abstract class AbstractManagerSetup implements Setup {
 
     // ################################ Demo apartment with complex scenes ###################################
 
-    protected ServerAsset createDemoApartment(ServerAsset parent, String name) {
-        ServerAsset apartment = new ServerAsset(name, RESIDENCE, parent);
-        apartment.setLocation(parent.getLocation());
+    protected Asset createDemoApartment(Asset parent, String name) {
+        Asset apartment = new Asset(name, RESIDENCE, parent);
         apartment.setAttributes(
             new AssetAttribute("alarmEnabled", AttributeType.BOOLEAN)
                 .setMeta(new Meta(
@@ -135,13 +134,12 @@ public abstract class AbstractManagerSetup implements Setup {
         return apartment;
     }
 
-    protected ServerAsset createDemoApartmentRoom(ServerAsset apartment, String name) {
-        ServerAsset room = new ServerAsset(name, ROOM, apartment);
-        room.setLocation(apartment.getLocation());
+    protected Asset createDemoApartmentRoom(Asset apartment, String name) {
+        Asset room = new Asset(name, ROOM, apartment);
         return room;
     }
 
-    protected void addDemoApartmentRoomMotionSensor(ServerAsset room, boolean shouldBeLinked, Supplier<MetaItem[]> agentLinker) {
+    protected void addDemoApartmentRoomMotionSensor(Asset room, boolean shouldBeLinked, Supplier<MetaItem[]> agentLinker) {
         room.addAttributes(
             new AssetAttribute("motionSensor", NUMBER)
                 .setMeta(
@@ -175,7 +173,7 @@ public abstract class AbstractManagerSetup implements Setup {
         );
     }
 
-    protected void addDemoApartmentRoomCO2Sensor(ServerAsset room, boolean shouldBeLinked, Supplier<MetaItem[]> agentLinker) {
+    protected void addDemoApartmentRoomCO2Sensor(Asset room, boolean shouldBeLinked, Supplier<MetaItem[]> agentLinker) {
         room.addAttributes(
             new AssetAttribute("co2Level", CO2_PPM)
                 .setMeta(
@@ -192,7 +190,7 @@ public abstract class AbstractManagerSetup implements Setup {
         );
     }
 
-    protected void addDemoApartmentRoomHumiditySensor(ServerAsset room, boolean shouldBeLinked, Supplier<MetaItem[]> agentLinker) {
+    protected void addDemoApartmentRoomHumiditySensor(Asset room, boolean shouldBeLinked, Supplier<MetaItem[]> agentLinker) {
         room.addAttributes(
             new AssetAttribute("humidity", HUMIDITY_PERCENTAGE)
                 .setMeta(
@@ -209,7 +207,7 @@ public abstract class AbstractManagerSetup implements Setup {
         );
     }
 
-    protected void addDemoApartmentRoomThermometer(ServerAsset room,
+    protected void addDemoApartmentRoomThermometer(Asset room,
                                                    boolean shouldBeLinked,
                                                    Supplier<MetaItem[]> agentLinker) {
         room.addAttributes(
@@ -226,7 +224,7 @@ public abstract class AbstractManagerSetup implements Setup {
         );
     }
 
-    protected void addDemoApartmentTemperatureControl(ServerAsset room,
+    protected void addDemoApartmentTemperatureControl(Asset room,
                                                       boolean shouldBeLinked,
                                                       Supplier<MetaItem[]> agentLinker) {
         room.addAttributes(
@@ -242,7 +240,7 @@ public abstract class AbstractManagerSetup implements Setup {
         );
     }
 
-    protected void addDemoApartmentSmartSwitch(ServerAsset room,
+    protected void addDemoApartmentSmartSwitch(Asset room,
                                                String switchName,
                                                boolean shouldBeLinked,
                                                // Integer represents attribute:
@@ -301,7 +299,7 @@ public abstract class AbstractManagerSetup implements Setup {
         );
     }
 
-    protected void addDemoApartmentVentilation(ServerAsset apartment,
+    protected void addDemoApartmentVentilation(Asset apartment,
                                                boolean shouldBeLinked,
                                                Supplier<MetaItem[]> agentLinker) {
         apartment.addAttributes(
@@ -348,13 +346,13 @@ public abstract class AbstractManagerSetup implements Setup {
             this.targetTemperature = targetTemperature;
         }
 
-        AssetAttribute createMacroAttribute(ServerAsset apartment, ServerAsset... rooms) {
+        AssetAttribute createMacroAttribute(Asset apartment, Asset... rooms) {
             AssetAttribute attribute = initProtocolConfiguration(new AssetAttribute(attributeName), MacroProtocol.PROTOCOL_NAME)
                 .addMeta(new MetaItem(LABEL, Values.create(attributeLabel)));
             attribute.getMeta().add(
                 new MacroAction(new AttributeState(new AttributeRef(apartment.getId(), "alarmEnabled"), Values.create(alarmEnabled))).toMetaItem()
             );
-            for (ServerAsset room : rooms) {
+            for (Asset room : rooms) {
                 if (room.hasAttribute("targetTemperature")) {
                     attribute.getMeta().add(
                         new MacroAction(new AttributeState(new AttributeRef(room.getId(), "targetTemperature"), Values.create(targetTemperature))).toMetaItem()
@@ -367,7 +365,7 @@ public abstract class AbstractManagerSetup implements Setup {
             return attribute;
         }
 
-        AssetAttribute[] createTimerAttributes(ServerAsset apartment) {
+        AssetAttribute[] createTimerAttributes(Asset apartment) {
             List<AssetAttribute> attributes = new ArrayList<>();
             for (DayOfWeek dayOfWeek : DayOfWeek.values()) {
                 // "MONDAY" => "Monday"
@@ -384,9 +382,8 @@ public abstract class AbstractManagerSetup implements Setup {
         }
     }
 
-    protected ServerAsset createDemoApartmentSceneAgent(ServerAsset apartment, Scene[] scenes, ServerAsset... rooms) {
-        ServerAsset agent = new ServerAsset("Scene Agent", AGENT, apartment);
-        agent.setLocation(apartment.getLocation());
+    protected Asset createDemoApartmentSceneAgent(Asset apartment, Scene[] scenes, Asset... rooms) {
+        Asset agent = new Asset("Scene Agent", AGENT, apartment);
         for (Scene scene : scenes) {
             agent.addAttributes(scene.createMacroAttribute(apartment, rooms));
         }
@@ -399,7 +396,7 @@ public abstract class AbstractManagerSetup implements Setup {
         return agent;
     }
 
-    protected void addDemoApartmentSceneEnableDisableTimer(ServerAsset apartment, ServerAsset agent, Scene[] scenes) {
+    protected void addDemoApartmentSceneEnableDisableTimer(Asset apartment, Asset agent, Scene[] scenes) {
         AssetAttribute enableAllMacro = initProtocolConfiguration(new AssetAttribute("enableSceneTimer"), MacroProtocol.PROTOCOL_NAME)
             .addMeta(new MetaItem(LABEL, Values.create("Enable scene timer")));
         for (Scene scene : scenes) {
@@ -431,7 +428,7 @@ public abstract class AbstractManagerSetup implements Setup {
         agent.addAttributes(disableAllMacro);
     }
 
-    protected void linkDemoApartmentWithSceneAgent(ServerAsset apartment, ServerAsset agent, Scene[] scenes) {
+    protected void linkDemoApartmentWithSceneAgent(Asset apartment, Asset agent, Scene[] scenes) {
         for (Scene scene : scenes) {
             apartment.addAttributes(
                 new AssetAttribute(scene.attributeName, AttributeType.STRING, Values.create(AttributeExecuteStatus.READY.name()))

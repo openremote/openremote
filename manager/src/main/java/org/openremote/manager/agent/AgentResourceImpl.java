@@ -21,7 +21,6 @@ package org.openremote.manager.agent;
 
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
-import org.openremote.manager.asset.ServerAsset;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebResource;
 import org.openremote.model.asset.agent.AgentResource;
@@ -254,8 +253,8 @@ public class AgentResourceImpl extends ManagerWebResource implements AgentResour
             asset.setId(null);
             asset.setParent(parentAsset);
             asset.setRealmId(realmId);
-            ServerAsset serverAsset = ServerAsset.map(asset, new ServerAsset());
-            assets[i] = assetStorageService.merge(serverAsset);
+            Asset newAsset = Asset.map(asset, new Asset());
+            assets[i] = assetStorageService.merge(newAsset);
         }
     }
 }

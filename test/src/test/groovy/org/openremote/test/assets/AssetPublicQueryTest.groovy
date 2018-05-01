@@ -3,10 +3,11 @@ package org.openremote.test.assets
 import org.openremote.container.Container
 import org.openremote.container.persistence.PersistenceService
 import org.openremote.manager.asset.AssetStorageService
-import org.openremote.manager.asset.ServerAsset
+
 import org.openremote.manager.setup.SetupService
 import org.openremote.manager.setup.builtin.KeycloakDemoSetup
 import org.openremote.manager.setup.builtin.ManagerDemoSetup
+import org.openremote.model.asset.Asset
 import org.openremote.model.asset.AssetResource
 import org.openremote.model.asset.AssetAttribute
 import org.openremote.model.asset.AssetQuery
@@ -51,7 +52,7 @@ class AssetPublicQueryTest extends Specification implements ManagerContainerTrai
         persistenceService = container.getService(PersistenceService.class)
         assetResource = getClientTarget(serverUri(serverPort), MASTER_REALM).proxy(AssetResource.class)
 
-        ServerAsset somePublicAsset = new ServerAsset("Some Public Asset", THING)
+        Asset somePublicAsset = new Asset("Some Public Asset", THING)
         somePublicAsset.setParentId(managerDemoSetup.smartOfficeId)
         somePublicAsset.setAccessPublicRead(true)
         somePublicAsset.setAttributes(

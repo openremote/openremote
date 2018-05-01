@@ -21,9 +21,9 @@ package org.openremote.manager.datapoint;
 
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
-import org.openremote.manager.asset.ServerAsset;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebResource;
+import org.openremote.model.asset.Asset;
 import org.openremote.model.datapoint.AssetDatapointResource;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.datapoint.Datapoint;
@@ -64,7 +64,7 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
                 throw new WebApplicationException(Response.Status.FORBIDDEN);
             }
 
-            ServerAsset asset = assetStorageService.find(assetId, true);
+            Asset asset = assetStorageService.find(assetId, true);
 
             if (asset == null) {
                 throw new WebApplicationException(Response.Status.NOT_FOUND);

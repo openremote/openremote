@@ -4,9 +4,10 @@ import org.openremote.agent.protocol.timer.TimerProtocol
 import org.openremote.agent.protocol.timer.TimerValue
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
-import org.openremote.manager.asset.ServerAsset
+
 import org.openremote.manager.setup.SetupService
 import org.openremote.manager.setup.builtin.ManagerDemoSetup
+import org.openremote.model.asset.Asset
 import org.openremote.model.asset.AssetAttribute
 import org.openremote.model.asset.AssetQuery
 import org.openremote.model.asset.AssetType
@@ -35,8 +36,8 @@ class TimerProtocolTest extends Specification implements ManagerContainerTrait {
         def assetProcessingService = container.getService(AssetProcessingService.class)
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def timerProtocol = container.getService(TimerProtocol.class)
-        ServerAsset sceneAgent
-        ServerAsset apartment1
+        Asset sceneAgent
+        Asset apartment1
 
         then: "the container should be running and attributes linked"
         conditions.eventually {

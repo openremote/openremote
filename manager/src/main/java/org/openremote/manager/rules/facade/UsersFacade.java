@@ -20,10 +20,10 @@
 package org.openremote.manager.rules.facade;
 
 import org.openremote.manager.asset.AssetStorageService;
-import org.openremote.manager.asset.ServerAsset;
 import org.openremote.manager.notification.NotificationService;
 import org.openremote.manager.rules.RulesEngineId;
 import org.openremote.manager.security.ManagerIdentityService;
+import org.openremote.model.asset.Asset;
 import org.openremote.model.notification.AlertNotification;
 import org.openremote.model.rules.*;
 import org.openremote.model.user.UserQuery;
@@ -91,7 +91,7 @@ public class UsersFacade<T extends Ruleset> extends Users {
         }
         if (AssetRuleset.class.isAssignableFrom(rulesEngineId.getScope())) {
             String assetId = rulesEngineId.getAssetId().orElseThrow(() -> new IllegalStateException("Asset ID missing: " + rulesEngineId));
-            ServerAsset restrictedAsset = assetStorageService.find(assetId, true);
+            Asset restrictedAsset = assetStorageService.find(assetId, true);
             if (restrictedAsset == null) {
                 // An asset was deleted in the database, but its ruleset is still deployed. This
                 // can happen while the PersistenceEvent of the deletion is not processed and the

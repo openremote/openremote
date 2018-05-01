@@ -19,6 +19,7 @@
  */
 package org.openremote.test.protocol
 
+import org.openremote.model.asset.Asset
 import tuwien.auto.calimero.server.knxnetip.DefaultServiceContainer
 
 import static org.openremote.model.asset.AssetMeta.DESCRIPTION
@@ -29,7 +30,7 @@ import org.openremote.model.asset.agent.ConnectionStatus
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
-import org.openremote.manager.asset.ServerAsset
+
 import org.openremote.model.Constants
 import org.openremote.model.asset.AssetAttribute
 import org.openremote.model.asset.AssetMeta
@@ -86,7 +87,7 @@ class KNXProtocolTest extends Specification implements ManagerContainerTrait {
         
 
         when: "a KNX agent that uses the KNX protocol is created with a valid protocol configuration"
-        def knxAgent = new ServerAsset()
+        def knxAgent = new Asset()
         knxAgent.setName("KNX Agent")
         knxAgent.setType(AssetType.AGENT)
         knxAgent.setAttributes(
@@ -117,7 +118,7 @@ class KNXProtocolTest extends Specification implements ManagerContainerTrait {
 
 
         when: "a thing asset is created that links it's attributes to the knx protocol configuration"
-        def knxThing = new ServerAsset("Living Room Assset", AssetType.THING, knxAgent)
+        def knxThing = new Asset("Living Room Assset", AssetType.THING, knxAgent)
         knxThing.setAttributes(
                 new AssetAttribute("light1ToggleOnOff", AttributeType.BOOLEAN)
                     .setMeta(

@@ -193,7 +193,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
         }
 
         AttributeRef protocolRef = protocolConfiguration.getReference().get();
-        ServerAsset agent = assetStorageService.find(protocolRef.getEntityId(), true);
+        Asset agent = assetStorageService.find(protocolRef.getEntityId(), true);
         if (agent == null || agent.getWellKnownType() != AssetType.AGENT || !agent.hasAttribute(protocolRef.getAttributeName())) {
             LOG.warning("Protocol configuration doesn't belong to a valid agent: " + protocolConfiguration);
             return;
@@ -213,19 +213,6 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
     }
 
     @Override
-    public void updateAssetLocation(String assetId, Point location) {
-        ServerAsset asset = assetStorageService.find(assetId, true);
-        if (asset == null) {
-            LOG.warning("Asset with requested ID doesn't exist: " + assetId);
-            return;
-        }
-
-        asset.setLocation(location);
-        LOG.fine("Updating asset location '" + assetId + "': " + Arrays.toString(asset.getCoordinates()));
-        assetStorageService.merge(asset);
-    }
-
-    @Override
     public Asset mergeAsset(Asset asset) {
         Objects.requireNonNull(asset.getId());
         Objects.requireNonNull(asset.getParentId());
@@ -237,12 +224,12 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
         Objects.requireNonNull(asset.getId());
         Objects.requireNonNull(asset.getParentId());
 
-        ServerAsset updatedAsset = ServerAsset.map(asset, new ServerAsset());
+        Asset updatedAsset = Asset.map(asset, new Asset());
         // Use the unique identifier provided by the protocol, it manages its own identifier space
         updatedAsset.setId(asset.getId());
 
         if (options != null && (options.getIgnoredAttributeNames() != null || options.getIgnoredAttributeKeys() != null)) {
-            ServerAsset existingAsset = assetStorageService.find(updatedAsset.getId(), true);
+            Asset existingAsset = assetStorageService.find(updatedAsset.getId(), true);
             if (existingAsset != null) {
                 // Check if any attributes except the ignored ones were modified
                 List<AssetAttribute> existingAttributes = existingAsset.getAttributesList();
@@ -471,7 +458,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
             }
 
             // Get all assets that have attributes that use this protocol configuration
-            List<ServerAsset> assets = assetStorageService.findAll(
+            List<Asset> assets = assetStorageService.findAll(
                 new AssetQuery()
                     .select(new AssetQuery.Select(AssetQuery.Include.ALL))
                     .attributeMeta(
@@ -501,7 +488,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
             AttributeRef protocolAttributeRef = configuration.getReferenceOrThrow();
 
             // Get all assets that have attributes that use this protocol configuration
-            List<ServerAsset> assets = assetStorageService.findAll(
+            List<Asset> assets = assetStorageService.findAll(
                 new AssetQuery()
                     .select(new AssetQuery.Select(AssetQuery.Include.ALL))
                     .attributeMeta(
@@ -627,7 +614,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
      */
     @Override
     public boolean processAssetUpdate(EntityManager entityManager,
-                                      ServerAsset asset,
+                                      Asset asset,
                                       AssetAttribute attribute,
                                       Source source) throws AssetProcessingException {
         if (source == SENSOR) {

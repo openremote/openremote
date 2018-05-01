@@ -19,6 +19,8 @@
  */
 package org.openremote.test.protocol
 
+import org.openremote.model.asset.Asset
+
 import static org.openremote.model.Constants.*
 import static org.openremote.manager.setup.AbstractKeycloakSetup.SETUP_ADMIN_PASSWORD
 import static org.openremote.manager.setup.AbstractKeycloakSetup.SETUP_ADMIN_PASSWORD_DEFAULT
@@ -29,7 +31,7 @@ import org.openremote.model.asset.agent.ConnectionStatus
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
-import org.openremote.manager.asset.ServerAsset
+
 import org.openremote.model.asset.agent.AgentResource
 import org.openremote.model.Constants
 import org.openremote.model.asset.AssetAttribute
@@ -61,7 +63,7 @@ class KNXImportTest extends Specification implements ManagerContainerTrait {
         def knxProtocol = container.getService(KNXProtocol.class)
         
         when: "a KNX agent that uses the KNX protocol is created. to test the import we don't need a valid protocol configuration"
-        def knxAgent = new ServerAsset()
+        def knxAgent = new Asset()
         knxAgent.setName("KNX Agent")
         knxAgent.setType(AssetType.AGENT)
         knxAgent.setAttributes(

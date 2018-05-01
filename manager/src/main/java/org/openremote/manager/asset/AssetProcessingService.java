@@ -266,7 +266,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                 // will see consistent database state and we only commit if no processor failed. This
                 // still won't make this procedure consistent with the message queue from which we consume!
                 persistenceService.doTransaction(em -> {
-                    ServerAsset asset = assetStorageService.find(em, event.getEntityId(), true);
+                    Asset asset = assetStorageService.find(em, event.getEntityId(), true);
                     if (asset == null)
                         throw new AssetProcessingException(ASSET_NOT_FOUND);
 
@@ -409,7 +409,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
      * update, the attribute will be stored in the database.
      */
     protected boolean processAssetUpdate(EntityManager em,
-                                         ServerAsset asset,
+                                         Asset asset,
                                          AssetAttribute attribute,
                                          Source source) throws AssetProcessingException {
         LOG.fine(">>> Processing start: " + attribute);

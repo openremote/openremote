@@ -5,6 +5,7 @@ import org.openremote.manager.asset.*
 import org.openremote.manager.setup.SetupService
 import org.openremote.manager.setup.builtin.KeycloakDemoSetup
 import org.openremote.manager.setup.builtin.ManagerDemoSetup
+import org.openremote.model.asset.Asset
 import org.openremote.model.asset.AssetAttribute
 import org.openremote.model.asset.AssetMeta
 import org.openremote.model.asset.AssetType
@@ -91,7 +92,7 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
 
         AssetUpdateProcessor firstProcessor = new AssetUpdateProcessor() {
             @Override
-            boolean processAssetUpdate(EntityManager em, ServerAsset asset, AssetAttribute attribute, AttributeEvent.Source source) throws AssetProcessingException {
+            boolean processAssetUpdate(EntityManager em, Asset asset, AssetAttribute attribute, AttributeEvent.Source source) throws AssetProcessingException {
                 updatesPassedStartOfProcessingChain.add(attribute)
                 false
             }
@@ -99,7 +100,7 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
 
         AssetUpdateProcessor afterAgentServiceProcessor = new AssetUpdateProcessor() {
             @Override
-            boolean processAssetUpdate(EntityManager em, ServerAsset asset, AssetAttribute attribute, AttributeEvent.Source source) throws AssetProcessingException {
+            boolean processAssetUpdate(EntityManager em, Asset asset, AssetAttribute attribute, AttributeEvent.Source source) throws AssetProcessingException {
                 updatesPassedAgentService.add(attribute)
                 false
             }
@@ -107,7 +108,7 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
 
         AssetUpdateProcessor afterRulesServiceProcessor = new AssetUpdateProcessor() {
             @Override
-            boolean processAssetUpdate(EntityManager em, ServerAsset asset, AssetAttribute attribute, AttributeEvent.Source source) throws AssetProcessingException {
+            boolean processAssetUpdate(EntityManager em, Asset asset, AssetAttribute attribute, AttributeEvent.Source source) throws AssetProcessingException {
                 updatesPassedRulesService.add(attribute)
                 false
             }
@@ -115,7 +116,7 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
 
         AssetUpdateProcessor afterDatapointServiceProcessor = new AssetUpdateProcessor() {
             @Override
-            boolean processAssetUpdate(EntityManager em, ServerAsset asset, AssetAttribute attribute, AttributeEvent.Source source) throws AssetProcessingException {
+            boolean processAssetUpdate(EntityManager em, Asset asset, AssetAttribute attribute, AttributeEvent.Source source) throws AssetProcessingException {
                 updatesPassedDatapointService.add(attribute)
                 false
             }
@@ -123,7 +124,7 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
 
         AssetUpdateProcessor afterAttributeLinkingServiceProcessor = new AssetUpdateProcessor() {
             @Override
-            boolean processAssetUpdate(EntityManager em, ServerAsset asset, AssetAttribute attribute, AttributeEvent.Source source) throws AssetProcessingException {
+            boolean processAssetUpdate(EntityManager em, Asset asset, AssetAttribute attribute, AttributeEvent.Source source) throws AssetProcessingException {
                 updatesPassedAttributeLinkingService.add(attribute)
                 false
             }
@@ -150,7 +151,7 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
         assetProcessingService.processors.add(8, afterAttributeLinkingServiceProcessor)
 
         when: "a mock agent that uses the mock protocol is created"
-        def mockAgent = new ServerAsset()
+        def mockAgent = new Asset()
         mockAgent.setName("Mock Agent")
         mockAgent.setType(AssetType.AGENT)
         mockAgent.setAttributes(
@@ -160,7 +161,7 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
         mockAgent = assetStorageService.merge(mockAgent)
 
         and: "a mock thing asset is created with a valid protocol attribute, an invalid protocol attribute and a plain attribute"
-        def mockThing = new ServerAsset("Mock Thing Asset", AssetType.THING, mockAgent)
+        def mockThing = new Asset("Mock Thing Asset", AssetType.THING, mockAgent)
         mockThing.setAttributes(
                 new AssetAttribute("light1Toggle", AttributeType.BOOLEAN, Values.create(true))
                         .setMeta(

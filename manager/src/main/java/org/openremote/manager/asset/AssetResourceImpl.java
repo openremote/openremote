@@ -71,7 +71,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             }
 
             if (!isRestrictedUser()) {
-                List<ServerAsset> result = assetStorageService.findAll(
+                List<Asset> result = assetStorageService.findAll(
                     new AssetQuery()
                         .parent(new ParentPredicate(true))
                         .tenant(new TenantPredicate().realm(getAuthenticatedRealm()))
@@ -79,7 +79,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                 return result.toArray(new Asset[result.size()]);
             }
 
-            List<ServerAsset> assets = assetStorageService.findAll(
+            List<Asset> assets = assetStorageService.findAll(
                 new AssetQuery().select(
                     new Select(Include.ALL_EXCEPT_PATH_AND_ATTRIBUTES, Access.RESTRICTED_READ)
                 ).userId(getUserId())
@@ -88,9 +88,9 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             // Filter assets that might have been moved into a different realm and can no longer be accessed by user
             // TODO: Should we forbid moving assets between realms?
             Tenant authenticatedTenant = getAuthenticatedTenant();
-            Iterator<ServerAsset> it = assets.iterator();
+            Iterator<Asset> it = assets.iterator();
             while (it.hasNext()) {
-                ServerAsset asset = it.next();
+                Asset asset = it.next();
                 if (!asset.getRealmId().equals(authenticatedTenant.getId())) {
                     LOG.warning("User '" + getUsername() + "' linked to asset in other realm, skipping: " + asset);
                     it.remove();
@@ -100,7 +100,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             // Compress response (the request attribute enables the interceptor)
             request.setAttribute(HttpHeaders.CONTENT_ENCODING, "gzip");
 
-            return assets.toArray(new ServerAsset[assets.size()]);
+            return assets.toArray(new Asset[assets.size()]);
         } catch (IllegalStateException ex) {
             throw new WebApplicationException(ex, BAD_REQUEST);
         }
@@ -144,7 +144,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
         if (!identityService.getIdentityProvider().isUserInTenant(userId, realmId))
             throw new WebApplicationException(BAD_REQUEST);
 
-        ServerAsset asset;
+        Asset asset;
         if ((asset = assetStorageService.find(assetId)) == null || !asset.getRealmId().equals(realmId)) {
             throw new WebApplicationException(BAD_REQUEST);
         }
@@ -183,7 +183,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
     @Override
     public Asset get(RequestParams requestParams, String assetId) {
         try {
-            ServerAsset asset;
+            Asset asset;
 
             // Check restricted
             if (isRestrictedUser()) {
@@ -216,29 +216,28 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
     @Override
     public void update(RequestParams requestParams, String assetId, Asset asset) {
         try {
-            ServerAsset serverAsset = assetStorageService.find(assetId, true);
-            if (serverAsset == null)
+            Asset storageAsset = assetStorageService.find(assetId, true);
+            if (storageAsset == null)
                 throw new WebApplicationException(NOT_FOUND);
 
             // Current and new realm of asset must be accessible
-            if (!isTenantActiveAndAccessible(serverAsset) || !isTenantActiveAndAccessible(asset)) {
-                LOG.fine("Current or new tenant not accessible by user '" + getUsername() + "', can't update: " + serverAsset);
+            if (!isTenantActiveAndAccessible(storageAsset) || !isTenantActiveAndAccessible(asset)) {
+                LOG.fine("Current or new tenant not accessible by user '" + getUsername() + "', can't update: " + storageAsset);
                 throw new WebApplicationException(FORBIDDEN);
             }
 
             boolean isRestrictedUser = isRestrictedUser();
 
             // The asset that will ultimately be stored (override/ignore some values for restricted users)
-            ServerAsset resultAsset = ServerAsset.map(
+            Asset resultAsset = storageAsset.map(
                 asset,
-                serverAsset,
-                isRestrictedUser ? serverAsset.getName() : null, // TODO We could allow restricted users to update names?
-                isRestrictedUser ? serverAsset.getRealmId() : null, // Restricted users can not change realm
-                isRestrictedUser ? serverAsset.getParentId() : null, // Restricted users can not change realm
-                serverAsset.getType(), // The type an never change
-                null, // Anybody can set a new location
-                isRestrictedUser ? serverAsset.isAccessPublicRead() : null, // Restricted user can not change access public flag
-                isRestrictedUser ? serverAsset.getAttributes() : null // Restricted users need manual attribute merging (see below)
+                storageAsset,
+                isRestrictedUser ? storageAsset.getName() : null, // TODO We could allow restricted users to update names?
+                isRestrictedUser ? storageAsset.getRealmId() : null, // Restricted users can not change realm
+                isRestrictedUser ? storageAsset.getParentId() : null, // Restricted users can not change realm
+                storageAsset.getType(), // The type an never change
+                isRestrictedUser ? storageAsset.isAccessPublicRead() : null, // Restricted user can not change access public flag
+                isRestrictedUser ? storageAsset.getAttributes() : null // Restricted users need manual attribute merging (see below)
             );
 
             // For restricted users, merge existing and updated attributes depending on write permissions
@@ -402,7 +401,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                 throw new WebApplicationException(FORBIDDEN);
             }
 
-            ServerAsset serverAsset = ServerAsset.map(asset, new ServerAsset());
+            Asset newAsset = Asset.map(asset, new Asset());
 
             // Allow client to set identifier
             if (asset.getId() != null) {
@@ -411,20 +410,20 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                     LOG.fine("Identifier value must be 22 characters, can't persist asset: " + asset);
                     throw new WebApplicationException(BAD_REQUEST);
                 }
-                serverAsset.setId(asset.getId());
+                newAsset.setId(asset.getId());
             }
 
             AssetModel.getAssetTypeDescriptor(asset.getType()).ifPresent(descriptor -> {
 
-                serverAsset.setAccessPublicRead(descriptor.getAccessPublicRead());
+                newAsset.setAccessPublicRead(descriptor.getAccessPublicRead());
                 //Add default meta items if not present
-                serverAsset.getAttributesStream().forEach(serverAssetAttribute ->
+                newAsset.getAttributesStream().forEach(AssetAttribute ->
                     descriptor.getDefaultAttributes().filter(defaultAttribute ->
-                        defaultAttribute.getNameOrThrow().equalsIgnoreCase(serverAssetAttribute.getNameOrThrow())
+                        defaultAttribute.getNameOrThrow().equalsIgnoreCase(AssetAttribute.getNameOrThrow())
                     ).findFirst().ifPresent(defaultAttribute -> {
-                        serverAssetAttribute.addMeta(
+                        AssetAttribute.addMeta(
                             defaultAttribute.getMetaStream().filter(defaultMeta ->
-                                serverAssetAttribute.getMetaStream().noneMatch(serverMeta ->
+                                AssetAttribute.getMetaStream().noneMatch(serverMeta ->
                                     serverMeta.equals(defaultMeta))
                             ).toArray(MetaItem[]::new)
                         );
@@ -432,16 +431,16 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                 );
 
                 //Add missing attributes
-                serverAsset.addAttributes(descriptor.getDefaultAttributes()
+                newAsset.addAttributes(descriptor.getDefaultAttributes()
                     .filter(assetAttribute ->
-                        serverAsset.getAttributesStream().noneMatch(serverAttribute ->
+                        newAsset.getAttributesStream().noneMatch(serverAttribute ->
                             serverAttribute.getNameOrThrow().equalsIgnoreCase(assetAttribute.getNameOrThrow())
                         )
                     ).toArray(AssetAttribute[]::new)
                 );
             });
 
-            return assetStorageService.merge(serverAsset);
+            return assetStorageService.merge(newAsset);
 
         } catch (IllegalStateException ex) {
             throw new WebApplicationException(ex, BAD_REQUEST);
@@ -454,7 +453,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             if (isRestrictedUser()) {
                 throw new WebApplicationException(FORBIDDEN);
             }
-            ServerAsset asset = assetStorageService.find(assetId, true);
+            Asset asset = assetStorageService.find(assetId, true);
             if (asset == null)
                 return;
 
@@ -509,7 +508,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                 query.tenant(new TenantPredicate(tenant.getId()));
             }
 
-            List<ServerAsset> result = assetStorageService.findAll(query);
+            List<Asset> result = assetStorageService.findAll(query);
 
             // Compress response (the request attribute enables the interceptor)
             request.setAttribute(HttpHeaders.CONTENT_ENCODING, "gzip");
@@ -545,7 +544,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
         }
 
         try {
-            List<ServerAsset> result = assetStorageService.findAll(query);
+            List<Asset> result = assetStorageService.findAll(query);
 
             // Compress response (the request attribute enables the interceptor)
             request.setAttribute(HttpHeaders.CONTENT_ENCODING, "gzip");

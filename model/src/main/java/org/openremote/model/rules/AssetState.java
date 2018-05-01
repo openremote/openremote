@@ -89,8 +89,6 @@ public class AssetState implements Comparable<AssetState> {
 
     final protected String tenantRealm;
 
-    final protected double[] coordinates;
-
     public AssetState(AssetState that) {
         this.attributeName = that.attributeName;
         this.attributeType = that.attributeType;
@@ -112,7 +110,6 @@ public class AssetState implements Comparable<AssetState> {
         this.parentType = that.parentType;
         this.realmId = that.realmId;
         this.tenantRealm = that.tenantRealm;
-        this.coordinates = that.coordinates;
     }
 
     public AssetState(Asset asset, AssetAttribute attribute, AttributeEvent.Source source) {
@@ -136,7 +133,6 @@ public class AssetState implements Comparable<AssetState> {
         this.parentType = asset.getParentWellKnownType();
         this.realmId = asset.getRealmId();
         this.tenantRealm = asset.getTenantRealm();
-        this.coordinates = asset.getCoordinates();
     }
 
     public String getAttributeName() {
@@ -217,10 +213,6 @@ public class AssetState implements Comparable<AssetState> {
 
     public String getTenantRealm() {
         return tenantRealm;
-    }
-
-    public double[] getCoordinates() {
-        return coordinates;
     }
 
     public boolean isValueChanged() {

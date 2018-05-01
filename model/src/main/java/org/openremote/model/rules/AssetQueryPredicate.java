@@ -19,8 +19,11 @@
  */
 package org.openremote.model.rules;
 
+import com.vividsolutions.jts.geom.*;
+import com.vividsolutions.jts.util.GeometricShapeFactory;
 import org.openremote.model.asset.BaseAssetQuery;
 import org.openremote.model.asset.BaseAssetQuery.*;
+import org.openremote.model.value.ObjectValue;
 
 import java.util.Arrays;
 import java.util.Locale;
@@ -89,7 +92,7 @@ public class AssetQueryPredicate implements Predicate<AssetState> {
             // Cannot use JTS libraries here without moving this class into manager module
             // TODO: decide whether to use JTS lib or do simple approx calcs (e.g. (x - center_x)^2 + (y - center_y)^2 < radius^2)
             if (query.location instanceof RadialLocationPredicate) {
-                RadialLocationPredicate radialLocationPredicate = (RadialLocationPredicate)query.location;
+                RadialLocationPredicate radialLocationPredicate = (RadialLocationPredicate) query.location;
                 return false;
             } else if (query.location instanceof RectangularLocationPredicate) {
                 return false;
@@ -210,6 +213,31 @@ public class AssetQueryPredicate implements Predicate<AssetState> {
                 && (predicate.realmId == null || predicate.realmId.equals(assetState.getRealmId()));
     }
 
+    protected Predicate<Coordinate> asPredicate(LocationPredicate predicate) {
+        return coordinate -> {
+            if (predicate instanceof RadialLocationPredicate) {
+                RadialLocationPredicate radialLocationPredicate = (RadialLocationPredicate) predicate;
+                GeometricShapeFactory shapeFactory = new GeometricShapeFactory();
+                shapeFactory.setCentre(new Coordinate(radialLocationPredicate.lat, radialLocationPredicate.lng));
+                shapeFactory.setSize(radialLocationPredicate.radius * 2);
+                Polygon circle = shapeFactory.createCircle();
+
+                GeometryFactory geometryFactory = new GeometryFactory();
+                Point point = geometryFactory.createPoint(coordinate);
+                return point.within(circle);
+
+            } else if (predicate instanceof RectangularLocationPredicate) {
+                RectangularLocationPredicate rectangularLocationPredicate = (RectangularLocationPredicate) predicate;
+                Envelope envelope = new Envelope(rectangularLocationPredicate.latMin,
+                    rectangularLocationPredicate.lngMin,
+                    rectangularLocationPredicate.latMax,
+                    rectangularLocationPredicate.lngMax);
+                return envelope.contains(coordinate);
+            }
+            return false;
+        };
+    }
+
     protected Predicate<AssetState> asPredicate(AttributePredicate predicate) {
         return assetState -> {
             if (predicate.name != null && !asPredicate(predicate.name).test(assetState.getAttributeName()))
@@ -236,6 +264,14 @@ public class AssetQueryPredicate implements Predicate<AssetState> {
                 NumberPredicate p = (NumberPredicate) predicate.value;
                 return asPredicate(p).test(assetState.getValueAsNumber().orElse(null));
 
+            } else if (predicate.value instanceof BaseAssetQuery.LocationPredicate) {
+                LocationPredicate p = (LocationPredicate) predicate.value;
+                ObjectValue objectValue = assetState.getValueAsObject().orElse(null);
+                if (objectValue != null) {
+                    Coordinate coordinate = new Coordinate(objectValue.getNumber("latitude").orElse(0d), objectValue.getNumber("longitude").orElse(0d));
+                    return asPredicate(p).test(coordinate);
+                }
+                return false;
             } else {
                 // TODO Implement more
                 throw new UnsupportedOperationException(

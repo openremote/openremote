@@ -77,20 +77,6 @@ public enum AssetMeta implements MetaItemDescriptor {
     ),
 
     /**
-     * Links an attribute to the location of the owning {@link Asset}; this is intended to be coupled with
-     * {@link #AGENT_LINK} to allow protocols to write an {@link Asset}'s location.
-     */
-    LOCATION_LINK(
-        ASSET_META_NAMESPACE + ":locationLink",
-        ACCESS_PRIVATE,
-        ValueType.BOOLEAN,
-        null,
-        null,
-        Values.create(true),
-        true
-    ),
-
-    /**
      * Links the attribute to another attribute, so an attribute event on the attribute triggers the same attribute
      * event on the linked attribute.
      */

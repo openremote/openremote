@@ -27,8 +27,9 @@ import org.openremote.agent.protocol.http.*
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
-import org.openremote.manager.asset.ServerAsset
+
 import org.openremote.model.Constants
+import org.openremote.model.asset.Asset
 import org.openremote.model.asset.AssetAttribute
 import org.openremote.model.asset.AssetMeta
 import org.openremote.model.asset.AssetType
@@ -297,7 +298,7 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
         }
 
         and: "an agent with a HTTP client protocol configuration is created"
-        def agent = new ServerAsset()
+        def agent = new Asset()
         agent.setRealmId(Constants.MASTER_REALM)
         agent.setName("Test Agent")
         agent.setType(AssetType.AGENT)
@@ -458,7 +459,7 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
         }
 
         when: "an asset is created with attributes linked to the http protocol configuration"
-        def asset = new ServerAsset("Test Asset", AssetType.THING, agent)
+        def asset = new Asset("Test Asset", AssetType.THING, agent)
         asset.setAttributes(
             // attribute that sends requests to the server using PUT with dynamic body and custom header to override parent
             new AssetAttribute("putRequestWithHeaders", AttributeType.OBJECT)
@@ -622,7 +623,7 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
         }
 
         when: "attributes are linked to these protocol configurations"
-        def asset2 = new ServerAsset("Test Asset 2", AssetType.THING, agent)
+        def asset2 = new Asset("Test Asset 2", AssetType.THING, agent)
         asset2.addAttributes(
             new AssetAttribute("getSuccess", AttributeType.STRING)
                 .addMeta(

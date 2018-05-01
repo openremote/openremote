@@ -100,7 +100,7 @@ public enum AttributeType {
     TEMPERATURE_CELCIUS("thermometer", ValueType.NUMBER, value -> Values.getNumber(value)
         .filter(n -> n < -273.15)
         .map(n -> new ValidationFailure(ValueHolder.ValueFailureReason.VALUE_TEMPERATURE_OUT_OF_RANGE)),
-            new MetaItem(FORMAT, Values.create("%0.1f C")
+        new MetaItem(FORMAT, Values.create("%0.1f C")
         )
     ),
 
@@ -226,7 +226,11 @@ public enum AttributeType {
 
     DIRECTION_DECIMAL_DEGREES("compass", ValueType.NUMBER, value -> Optional.empty(),
         new MetaItem(FORMAT, Values.create("%0.1f deg"))
-    );
+    ),
+
+    LOCATION("map-marker", ValueType.OBJECT, value -> Values.getObject(value)
+        .filter(object -> !object.hasKey("latitude") || !object.hasKey("longitude"))
+        .map(object -> new ValidationFailure(ValueHolder.ValueFailureReason.VALUE_INVALID)));
 
     public static final String DEFAULT_ICON = "circle-thin";
 

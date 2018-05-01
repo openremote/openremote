@@ -26,7 +26,7 @@ import org.openremote.agent.protocol.filter.SubStringFilter
 import org.openremote.manager.agent.AgentService
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
-import org.openremote.manager.asset.ServerAsset
+import org.openremote.model.asset.Asset
 import org.openremote.model.asset.AssetAttribute
 import org.openremote.model.asset.AssetMeta
 import org.openremote.model.asset.AssetType
@@ -165,7 +165,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait, 
         def assetProcessingService = container.getService(AssetProcessingService.class)
 
         when: "a mock agent that uses the mock protocol is created with several protocol configurations"
-        def mockAgent = new ServerAsset()
+        def mockAgent = new Asset()
         mockAgent.setName("Mock Agent")
         mockAgent.setType(AssetType.AGENT)
         mockAgent.setAttributes(
@@ -205,7 +205,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait, 
         }
 
         when: "a mock thing asset is created that links to the mock protocol configurations"
-        def mockThing = new ServerAsset("Mock Thing Asset", AssetType.THING, mockAgent)
+        def mockThing = new Asset("Mock Thing Asset", AssetType.THING, mockAgent)
         mockThing.setAttributes(
             new AssetAttribute("lightToggle1", AttributeType.BOOLEAN)
                 .setMeta(

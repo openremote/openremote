@@ -157,7 +157,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
             .filter(isPersistenceEventForEntityType(Asset.class))
             .process(exchange -> {
                 PersistenceEvent persistenceEvent = exchange.getIn().getBody(PersistenceEvent.class);
-                final ServerAsset eventAsset = (ServerAsset) persistenceEvent.getEntity();
+                final Asset eventAsset = (Asset) persistenceEvent.getEntity();
                 processAssetChange(eventAsset, persistenceEvent);
             });
     }
@@ -190,13 +190,13 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
         deployAssetRulesets(rulesetStorageService.findEnabledAssetRulesets());
 
         LOG.info("Loading all assets with fact attributes to initialize state of rules engines");
-        Stream<Pair<ServerAsset, Stream<AssetAttribute>>> assetRuleAttributes = findRuleStateAttributes();
+        Stream<Pair<Asset, Stream<AssetAttribute>>> assetRuleAttributes = findRuleStateAttributes();
 
         // Push each rule attribute as an asset update through the rule engine chain
         // that will ensure the insert only happens to the engines in scope
         assetRuleAttributes
             .forEach(pair -> {
-                ServerAsset asset = pair.key;
+                Asset asset = pair.key;
                 pair.value.forEach(ruleAttribute -> {
                     AssetState assetState = new AssetState(asset, ruleAttribute, Source.INTERNAL);
                     updateAssetState(assetState, true, true);
@@ -222,7 +222,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
 
     @Override
     public boolean processAssetUpdate(EntityManager em,
-                                      ServerAsset asset,
+                                      Asset asset,
                                       AssetAttribute attribute,
                                       Source source) throws AssetProcessingException {
         // We might process two facts for a single attribute update, if that is what the user wants
@@ -288,7 +288,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
         });
     }
 
-    protected void processAssetChange(ServerAsset asset, PersistenceEvent persistenceEvent) {
+    protected void processAssetChange(Asset asset, PersistenceEvent persistenceEvent) {
         withLock(getClass().getSimpleName() + "::processAssetChange", () -> {
 
             // We must load the asset from database (only when required), as the
@@ -305,7 +305,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
 
                     // Build an update with a fully loaded asset
                     ruleStateAttributes.forEach(attribute -> {
-                        ServerAsset loadedAsset = assetStorageService.find(asset.getId(), true);
+                        Asset loadedAsset = assetStorageService.find(asset.getId(), true);
                         // If the asset is now gone it was deleted immediately after being inserted, nothing more to do
                         if (loadedAsset == null)
                             return;
@@ -526,7 +526,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
                 .stream(activeTenantIds)
                 .anyMatch(at -> es.getKey().equals(at)))
             .forEach(es -> {
-                List<Pair<ServerAsset, List<AssetRuleset>>> tenantAssetAndRules = es.getValue();
+                List<Pair<Asset, List<AssetRuleset>>> tenantAssetAndRules = es.getValue();
 
                 // RT: Not sure we need ordering here for starting engines so removing it
                 // Order rulesets by asset hierarchy within this tenant
@@ -678,8 +678,8 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
         return rulesEngines;
     }
 
-    protected Stream<Pair<ServerAsset, Stream<AssetAttribute>>> findRuleStateAttributes() {
-        List<ServerAsset> assets = assetStorageService.findAll(
+    protected Stream<Pair<Asset, Stream<AssetAttribute>>> findRuleStateAttributes() {
+        List<Asset> assets = assetStorageService.findAll(
             new AssetQuery()
                 .select(new AssetQuery.Select(AssetQuery.Include.ALL))
                 .attributeMeta(
@@ -689,7 +689,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
                 ));
 
         return assets.stream()
-            .map((ServerAsset asset) ->
+            .map((Asset asset) ->
                      new Pair<>(asset, asset.getAttributesStream().filter(AssetAttribute::isRuleState))
             );
     }

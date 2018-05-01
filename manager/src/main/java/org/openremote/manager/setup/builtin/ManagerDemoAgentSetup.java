@@ -23,8 +23,8 @@ import org.openremote.agent.protocol.knx.KNXProtocol;
 import org.openremote.agent.protocol.upnp.UpnpProtocol;
 import org.openremote.agent.protocol.velbus.VelbusSerialProtocol;
 import org.openremote.container.Container;
-import org.openremote.manager.asset.ServerAsset;
 import org.openremote.manager.setup.AbstractManagerSetup;
+import org.openremote.model.asset.Asset;
 import org.openremote.model.security.Tenant;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.attribute.MetaItem;
@@ -82,7 +82,7 @@ public class ManagerDemoAgentSetup extends AbstractManagerSetup {
         Tenant masterTenant = keycloakDemoSetup.masterTenant;
         masterRealmId = masterTenant.getId();
 
-        ServerAsset agent = new ServerAsset("Demo Agent", AGENT);
+        Asset agent = new Asset("Demo Agent", AGENT);
         agent.setRealmId(masterRealmId);
         agent = assetStorageService.merge(agent);
 
@@ -95,7 +95,7 @@ public class ManagerDemoAgentSetup extends AbstractManagerSetup {
                         new MetaItem(KNXProtocol.META_KNX_LOCAL_IP, Values.create(knxLocalIp))
                     )
             );
-            ServerAsset knxDevices = new ServerAsset("KNX Devices", THING, agent, masterRealmId);
+            Asset knxDevices = new Asset("KNX Devices", THING, agent, masterRealmId);
             knxDevices = assetStorageService.merge(knxDevices);
         }
 
@@ -107,13 +107,13 @@ public class ManagerDemoAgentSetup extends AbstractManagerSetup {
                         new MetaItem(VelbusSerialProtocol.META_VELBUS_SERIAL_PORT, Values.create(velbusComPort))
                     )
             );
-            ServerAsset velbusDevices = new ServerAsset("VELBUS Devices", THING, agent, masterRealmId);
+            Asset velbusDevices = new Asset("VELBUS Devices", THING, agent, masterRealmId);
             velbusDevices = assetStorageService.merge(velbusDevices);
         }
 
         if (upnp) {
             LOG.info("Enable UPnP demo protocol configuration");
-            ServerAsset upnpDevices = new ServerAsset("UPnP Devices", THING, agent, masterRealmId);
+            Asset upnpDevices = new Asset("UPnP Devices", THING, agent, masterRealmId);
             upnpDevices = assetStorageService.merge(upnpDevices);
             agent.addAttributes(
                 initProtocolConfiguration(new AssetAttribute("upnpConfig"), UpnpProtocol.PROTOCOL_NAME)

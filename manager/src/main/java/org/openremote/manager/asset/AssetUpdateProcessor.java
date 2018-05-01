@@ -20,6 +20,7 @@
 package org.openremote.manager.asset;
 
 import org.openremote.container.concurrent.GlobalLock;
+import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.attribute.AttributeEvent.Source;
 
@@ -43,7 +44,7 @@ public interface AssetUpdateProcessor {
      * @return <code>true</code> if processing is complete and subsequent processor should be skipped.
      * @throws AssetProcessingException When processing failed and the update can not continue.
      */
-    boolean processAssetUpdate(EntityManager em, ServerAsset asset, AssetAttribute attribute, Source source) throws AssetProcessingException;
+    boolean processAssetUpdate(EntityManager em, Asset asset, AssetAttribute attribute, Source source) throws AssetProcessingException;
 
     /* TODO Processors should be transactional, so an exception in one processor can roll back the update in others */
     // void commit();

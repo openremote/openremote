@@ -152,11 +152,12 @@ public class MapActivity extends AssetBrowsingActivity<MapPlace> implements MapV
         super.onStop();
         view.setPresenter(null);
 
-        if (asset != null && asset.hasGeoFeature() || dashboardAttributes.size() > 0) {
-            environment.getEventService().unsubscribe(
-                AttributeEvent.class
-            );
-        }
+        //TODO location update
+//        if (asset != null && asset.hasGeoFeature() || dashboardAttributes.size() > 0) {
+//            environment.getEventService().unsubscribe(
+//                AttributeEvent.class
+//            );
+//        }
     }
 
     @Override
@@ -172,13 +173,14 @@ public class MapActivity extends AssetBrowsingActivity<MapPlace> implements MapV
                     new AssetViewPlace(assetId)
                 ));
                 showAssetOnMap();
-                if (asset.hasGeoFeature() || dashboardAttributes.size() > 0) {
-                    showAssetInfoItems();
-                    environment.getEventService().subscribe(
-                        AttributeEvent.class,
-                        new AttributeEvent.EntityIdFilter(asset.getId())
-                    );
-                }
+                //TODO location update
+//                if (asset.hasGeoFeature() || dashboardAttributes.size() > 0) {
+//                    showAssetInfoItems();
+//                    environment.getEventService().subscribe(
+//                        AttributeEvent.class,
+//                        new AttributeEvent.EntityIdFilter(asset.getId())
+//                    );
+//                }
             });
         } else if (realmId != null) {
             // TODO: Tenant map not implemented
@@ -186,11 +188,12 @@ public class MapActivity extends AssetBrowsingActivity<MapPlace> implements MapV
     }
 
     protected void showAssetOnMap() {
-        if (asset.hasGeoFeature()) {
-            GeoJSON geoFeature = asset.getGeoFeature(30);
-            view.showDroppedPin(geoFeature);
-            view.flyTo(asset.getCoordinates());
-        }
+        //TODO location update
+//        if (asset.hasGeoFeature()) {
+//            GeoJSON geoFeature = asset.getGeoFeature(30);
+//            view.showDroppedPin(geoFeature);
+//            view.flyTo(asset.getCoordinates());
+//        }
     }
 
     protected void showAssetInfoItems() {
@@ -205,14 +208,15 @@ public class MapActivity extends AssetBrowsingActivity<MapPlace> implements MapV
             )
             .sorted(Comparator.comparing(MapInfoItem::getLabel))
             .collect(Collectors.toList());
-        if (asset.hasGeoFeature()) {
-            infoItems.add(0, new MapInfoItem(
-                "map-marker",
-                environment.getMessages().location(),
-                null,
-                Values.create(asset.getCoordinatesLabel())
-            ));
-        }
+        //TODO location update
+//        if (asset.hasGeoFeature()) {
+//            infoItems.add(0, new MapInfoItem(
+//                "map-marker",
+//                environment.getMessages().location(),
+//                null,
+//                Values.create(asset.getCoordinatesLabel())
+//            ));
+//        }
         view.showInfoItems(infoItems);
     }
 

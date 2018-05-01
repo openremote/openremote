@@ -461,9 +461,11 @@ public class AssetEditActivity
     public void centerMap() {
         if (selectedCoordinates != null) {
             view.flyTo(selectedCoordinates);
-        } else if (asset.getCoordinates() != null) {
-            view.flyTo(asset.getCoordinates());
         }
+        //TODO location update
+        /*else if (asset.getCoordinates() != null) {
+            view.flyTo(asset.getCoordinates());
+        }*/
     }
 
     @Override
@@ -661,7 +663,8 @@ public class AssetEditActivity
             asset.setType(view.getType());
         }
         if (selectedCoordinates != null) {
-            asset.setCoordinates(selectedCoordinates);
+            //TODO location update
+            //asset.setCoordinates(selectedCoordinates);
         }
     }
 

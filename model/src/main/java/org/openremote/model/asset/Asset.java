@@ -23,19 +23,13 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.hibernate.annotations.Formula;
 import org.openremote.model.IdentifiableEntity;
 import org.openremote.model.attribute.Attribute;
-import org.openremote.model.geo.GeoJSON;
-import org.openremote.model.geo.GeoJSONFeature;
-import org.openremote.model.geo.GeoJSONGeometry;
 import org.openremote.model.util.ObservableList;
-import org.openremote.model.util.TextUtil;
 import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Values;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
@@ -77,9 +71,6 @@ import static org.openremote.model.asset.AssetAttribute.*;
  * root asset in the tree. This is a transient property and only resolved and usable when
  * the asset is loaded from storage and as calculating it is costly, might be empty when
  * certain optimized loading operations are used.
- * <p>
- * The {@link #coordinates} are a pair of LNG/LAT values with the location of the asset.
- * <p>
  * An asset may have dynamically-typed {@link #attributes} with an underlying
  * {@link ObjectValue} model. Use the {@link Attribute} etc. class to work with this API.
  * This property can be empty when certain optimized loading operations are used.
@@ -268,9 +259,6 @@ public class Asset implements IdentifiableEntity {
     protected String tenantDisplayName;
 
     @Transient
-    protected double[] coordinates;
-
-    @Transient
     @JsonIgnore
     protected ObservableList<AssetAttribute> attributeList;
 
@@ -339,7 +327,6 @@ public class Asset implements IdentifiableEntity {
         this.path = path;
         this.attributes = attributes;
     }
-
 
     public Asset addAttributes(AssetAttribute... attributes) throws IllegalArgumentException {
         Arrays.asList(attributes).forEach(
@@ -512,18 +499,6 @@ public class Asset implements IdentifiableEntity {
         this.tenantDisplayName = tenantDisplayName;
     }
 
-    public boolean hasCoordinates() {
-        return getCoordinates() != null && getCoordinates().length > 0;
-    }
-
-    public double[] getCoordinates() {
-        return coordinates;
-    }
-
-    public void setCoordinates(double... coordinates) {
-        this.coordinates = coordinates;
-    }
-
     /**
      * NOTE: This is a transient and optional property, set only in database query results.
      * <p>
@@ -598,31 +573,6 @@ public class Asset implements IdentifiableEntity {
         return setAttributes(Arrays.asList(attributes));
     }
 
-    /**
-     * This assumes {@link #getCoordinates} array index 0 is Lng and index 1 is Lat,
-     * which is true for PostGIS backend. Because Lat/Lng is the 'right way', we flip
-     * it here for display. Rounding to 5 decimal places gives us precision of about 1 meter.
-     */
-    public String getCoordinatesLabel() {
-        return
-            new BigDecimal(getCoordinates()[1]).setScale(5, RoundingMode.HALF_UP) + " " +
-                new BigDecimal(getCoordinates()[0]).setScale(5, RoundingMode.HALF_UP) + " Lat|Lng";
-    }
-
-    public boolean hasGeoFeature() {
-        return getCoordinates() != null && getCoordinates().length == 2;
-    }
-
-    public GeoJSON getGeoFeature(int maxNameLength) {
-        if (!hasGeoFeature())
-            return GeoJSON.EMPTY_FEATURE_COLLECTION;
-        return new GeoJSON("FeatureCollection").setFeatures(
-            new GeoJSONFeature("Feature")
-                .setProperty("id", getId())
-                .setProperty("title", TextUtil.ellipsize(getName(), maxNameLength))
-                .setGeometry(new GeoJSONGeometry(getCoordinates()))
-        );
-    }
 
     @Override
     public String toString() {
@@ -647,7 +597,6 @@ public class Asset implements IdentifiableEntity {
             ", realmId='" + realmId + '\'' +
             ", tenantRealm='" + tenantRealm + '\'' +
             ", tenantDisplayName='" + tenantDisplayName + '\'' +
-            ", coordinates=" + Arrays.toString(coordinates) +
             ", path=" + Arrays.toString(path) +
             ", attributes=" + attributes +
             '}';
@@ -676,5 +625,39 @@ public class Asset implements IdentifiableEntity {
             return;
 
         asset.getAttributesList().removeIf(filter);
+    }
+
+    public static Asset map(Asset assetToMap, Asset asset) {
+        return map(assetToMap, asset, null, null, null, null, null, null);
+    }
+
+    public static Asset map(Asset assetToMap, Asset asset,
+                            String overrideName,
+                            String overrideRealmId,
+                            String overrideParentId,
+                            String overrideType,
+                            Boolean overrideAccessPublicRead,
+                            ObjectValue overrideAttributes) {
+        asset.setVersion(assetToMap.getVersion());
+        asset.setName(overrideName != null ? overrideName : assetToMap.getName());
+        if (overrideType != null) {
+            asset.setType(overrideType);
+        } else {
+            asset.setType(assetToMap.getType());
+        }
+
+        asset.setAccessPublicRead(overrideAccessPublicRead != null ? overrideAccessPublicRead : assetToMap.isAccessPublicRead());
+
+        asset.setParentId(overrideParentId != null ? overrideParentId : assetToMap.getParentId());
+        asset.setParentName(null);
+        asset.setParentType(null);
+
+        asset.setRealmId(overrideRealmId != null ? overrideRealmId : assetToMap.getRealmId());
+        asset.setTenantRealm(null);
+        asset.setTenantDisplayName(null);
+
+        asset.setAttributes(overrideAttributes != null ? overrideAttributes : assetToMap.getAttributes());
+
+        return asset;
     }
 }

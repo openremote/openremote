@@ -94,13 +94,6 @@ public interface ProtocolAssetService extends ContainerService {
     void updateProtocolConfiguration(AssetAttribute protocolConfiguration);
 
     /**
-     * Protocols can update an assets location. This is generally to be used for linked attributes
-     * that also have a {@link AssetMeta#LOCATION_LINK} {@link MetaItem}. Set location to null to
-     * clear an asset's location.
-     */
-    void updateAssetLocation(String assetId, Point location);
-
-    /**
      * Protocols may store assets in the context or update existing assets. A unique identifier
      * must be set by the protocol implementor, as well as a parent identifier. This operation
      * stores transient or detached state and returns the current state. It will override any

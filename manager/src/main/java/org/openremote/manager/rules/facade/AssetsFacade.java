@@ -20,7 +20,6 @@
 package org.openremote.manager.rules.facade;
 
 import org.openremote.manager.asset.AssetStorageService;
-import org.openremote.manager.asset.ServerAsset;
 import org.openremote.manager.rules.RulesEngineId;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.BaseAssetQuery;
@@ -84,7 +83,7 @@ public class AssetsFacade<T extends Ruleset> extends Assets {
 
             @Override
             public String getResult() {
-                ServerAsset asset = assetStorageService.find(this);
+                Asset asset = assetStorageService.find(this);
                 return asset != null ? asset.getId() : null;
             }
 
@@ -108,7 +107,7 @@ public class AssetsFacade<T extends Ruleset> extends Assets {
             );
         }
         if (AssetRuleset.class.isAssignableFrom(rulesEngineId.getScope())) {
-            ServerAsset restrictedAsset = assetStorageService.find(
+            Asset restrictedAsset = assetStorageService.find(
                 rulesEngineId.getAssetId().orElseThrow(() -> new IllegalStateException("Asset ID missing: " + rulesEngineId)),
                 true
             );

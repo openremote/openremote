@@ -15,7 +15,7 @@ import org.openremote.app.client.event.SubscriptionFailureEvent
 import org.openremote.app.client.i18n.ManagerMessages
 import org.openremote.app.client.style.WidgetStyle
 import org.openremote.manager.asset.AssetStorageService
-import org.openremote.manager.asset.ServerAsset
+
 import org.openremote.manager.security.ManagerIdentityService
 import org.openremote.manager.setup.AbstractKeycloakSetup
 import org.openremote.manager.setup.SetupService
@@ -204,7 +204,7 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
 
         when: "an asset is created in the database"
         collectedSharedEvents.clear()
-        asset = new ServerAsset("My Test Asset", AssetType.THING, asset)
+        asset = new Asset("My Test Asset", AssetType.THING, asset)
         asset = assetStorageService.merge(asset)
 
         then: "a tree modified event should be received from the server"

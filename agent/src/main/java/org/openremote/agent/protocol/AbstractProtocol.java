@@ -19,9 +19,6 @@
  */
 package org.openremote.agent.protocol;
 
-import com.vividsolutions.jts.geom.Coordinate;
-import com.vividsolutions.jts.geom.GeometryFactory;
-import com.vividsolutions.jts.geom.Point;
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.agent.protocol.filter.MessageFilter;
@@ -40,7 +37,9 @@ import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.asset.agent.ProtocolConfiguration;
 import org.openremote.model.asset.agent.ProtocolDescriptor;
 import org.openremote.model.attribute.*;
-import org.openremote.model.value.*;
+import org.openremote.model.value.Value;
+import org.openremote.model.value.ValueType;
+import org.openremote.model.value.Values;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -67,7 +66,7 @@ import static org.openremote.container.concurrent.GlobalLock.withLockReturning;
  *     return ...;
  * });
  * }</pre></blockquote>
- *
+ * <p>
  * All <code>abstract</code> methods are always called within lock scope. An implementation can rely on this lock
  * and safely modify internal, protocol-specific shared state. However, if a protocol implementation schedules
  * an asynchronous task, this task must obtain the lock to call any protocol operations.
@@ -112,7 +111,6 @@ public abstract class AbstractProtocol implements Protocol {
     protected final Map<AttributeRef, AssetAttribute> linkedAttributes = new HashMap<>();
     protected final Map<AttributeRef, LinkedProtocolInfo> linkedProtocolConfigurations = new HashMap<>();
     protected final Map<AttributeRef, List<MessageFilter>> linkedAttributeFilters = new HashMap<>();
-    protected final List<AttributeRef> locationLinkedAttributes = new ArrayList<>();
     protected MessageBrokerContext messageBrokerContext;
     protected ProducerTemplate producerTemplate;
     protected TimerService timerService;
@@ -209,17 +207,12 @@ public abstract class AbstractProtocol implements Protocol {
                     linkedAttributeFilters.put(attributeRef, mFilters);
                 });
 
-                attribute.getMetaItem(AssetMeta.LOCATION_LINK).ifPresent(metaItem -> {
-                    locationLinkedAttributes.add(attribute.getReferenceOrThrow());
-                });
-
                 try {
                     doLinkAttribute(attribute, protocolConfiguration);
                 } catch (Exception e) {
                     LOG.log(Level.SEVERE, "Failed to link attribute to protocol: " + attribute, e);
                     linkedAttributes.remove(attributeRef);
                     linkedAttributeFilters.remove(attributeRef);
-                    locationLinkedAttributes.remove(attributeRef);
                 }
             });
         });
@@ -233,7 +226,6 @@ public abstract class AbstractProtocol implements Protocol {
                 AttributeRef attributeRef = attribute.getReferenceOrThrow();
                 linkedAttributes.remove(attributeRef);
                 linkedAttributeFilters.remove(attributeRef);
-                locationLinkedAttributes.remove(attributeRef);
                 doUnlinkAttribute(attribute, protocolConfiguration);
             })
         );
@@ -243,7 +235,7 @@ public abstract class AbstractProtocol implements Protocol {
      * Gets a linked attribute by its attribute ref
      */
     protected AssetAttribute getLinkedAttribute(AttributeRef attributeRef) {
-        return withLockReturning(getProtocolName()  + "::getLinkedAttribute", () -> linkedAttributes.get(attributeRef));
+        return withLockReturning(getProtocolName() + "::getLinkedAttribute", () -> linkedAttributes.get(attributeRef));
     }
 
     /**
@@ -371,36 +363,6 @@ public abstract class AbstractProtocol implements Protocol {
             AttributeEvent attributeEvent = new AttributeEvent(state, timestamp);
             LOG.fine("Sending on sensor queue: " + attributeEvent);
             producerTemplate.sendBodyAndHeader(SENSOR_QUEUE, attributeEvent, Protocol.SENSOR_QUEUE_SOURCE_PROTOCOL, getProtocolName());
-
-            if (locationLinkedAttributes.contains(state.getAttributeRef())) {
-
-                // Check value type is compatible
-                Point location = state.getValue().map(value -> {
-                    if (value.getType() != ValueType.ARRAY) {
-                        LOG.warning("Location linked attribute type is not an array");
-                        return null;
-                    }
-
-                    Optional<List<NumberValue>> coordinates = Values.getArrayElements((ArrayValue) value, NumberValue.class, false, false);
-                    if (!coordinates.isPresent()
-                        || coordinates.get().size() != 2
-                        || Math.abs(coordinates.get().get(0).getNumber()) > 180
-                        || Math.abs(coordinates.get().get(1).getNumber()) > 90) {
-                        LOG.warning("Location linked attribute value must contain longitude then latitude in a 2 value number array");
-                        return null;
-                    }
-
-                    try {
-                        return new GeometryFactory().createPoint(
-                            new Coordinate(coordinates.get().get(0).getNumber(), coordinates.get().get(1).getNumber())
-                        );
-                    } catch (Exception e) {
-                        return null;
-                    }
-                }).orElse(null);
-
-                updateAssetLocation(state.getAttributeRef().getEntityId(), location);
-            }
         });
     }
 
@@ -410,10 +372,6 @@ public abstract class AbstractProtocol implements Protocol {
      */
     final protected void updateLinkedAttribute(AttributeState state) {
         updateLinkedAttribute(state, timerService.getCurrentTimeMillis());
-    }
-
-    final protected void updateAssetLocation(String assetId, Point location) {
-        withLock(getProtocolName(), () -> assetService.updateAssetLocation(assetId, location));
     }
 
     /**

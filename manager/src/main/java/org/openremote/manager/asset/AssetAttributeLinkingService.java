@@ -22,6 +22,7 @@ package org.openremote.manager.asset;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.manager.asset.AssetProcessingException.Reason;
+import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetMeta;
 import org.openremote.model.asset.AssetQuery;
@@ -105,7 +106,7 @@ public class AssetAttributeLinkingService implements ContainerService, AssetUpda
 
     @Override
     public boolean processAssetUpdate(EntityManager em,
-                                      ServerAsset asset,
+                                      Asset asset,
                                       AssetAttribute attribute,
                                       Source source) throws AssetProcessingException {
         if (source == ATTRIBUTE_LINKING_SERVICE) {
@@ -231,7 +232,7 @@ public class AssetAttributeLinkingService implements ContainerService, AssetUpda
     protected static Value getCurrentValue(EntityManager em,
                                            AssetStorageService assetStorageService,
                                            AttributeRef attributeRef) throws NoSuchElementException {
-        ServerAsset asset = assetStorageService.find(
+        Asset asset = assetStorageService.find(
             em,
             new AssetQuery()
                 .id(attributeRef.getEntityId())

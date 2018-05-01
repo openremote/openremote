@@ -3,7 +3,7 @@ package org.openremote.test.rules
 import org.openremote.container.Container
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
-import org.openremote.manager.asset.ServerAsset
+
 import org.openremote.manager.rules.RulesEngine
 import org.openremote.manager.rules.RulesService
 import org.openremote.manager.rules.RulesetStorageService
@@ -11,6 +11,7 @@ import org.openremote.manager.rules.geofence.GeofenceAssetAdapter
 import org.openremote.manager.setup.SetupService
 import org.openremote.manager.setup.builtin.KeycloakDemoSetup
 import org.openremote.manager.setup.builtin.ManagerDemoSetup
+import org.openremote.model.asset.Asset
 import org.openremote.model.asset.AssetAttribute
 import org.openremote.model.asset.AssetMeta
 import org.openremote.model.asset.AssetType
@@ -215,7 +216,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         when: "a Kitchen room asset is inserted into apartment that contains a RULE_STATE = true meta flag"
         rulesImport.resetRulesFired()
         def apartment2 = assetStorageService.find(managerDemoSetup.apartment2Id)
-        def asset = new ServerAsset("Kitchen", AssetType.ROOM, apartment2)
+        def asset = new Asset("Kitchen", AssetType.ROOM, apartment2)
         asset.setRealmId(keycloakDemoSetup.customerATenant.getId())
         def attributes = [
                 new AssetAttribute("testString", AttributeType.STRING, Values.create("test"))
