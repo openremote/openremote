@@ -11,12 +11,15 @@ import org.openremote.manager.setup.SetupService
 import org.openremote.manager.setup.builtin.KeycloakDemoSetup
 import org.openremote.manager.setup.builtin.ManagerDemoSetup
 import org.openremote.model.asset.Asset
+import org.openremote.model.asset.AssetAttribute
 import org.openremote.model.asset.AssetMeta
 import org.openremote.model.asset.AssetQuery
 import org.openremote.model.asset.AssetType
 import org.openremote.model.asset.CalendarEventConfiguration
+import org.openremote.model.attribute.AttributeDescriptorImpl
 import org.openremote.model.calendar.CalendarEvent
 import org.openremote.model.calendar.RecurrenceRule
+import org.openremote.model.value.Values
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Shared
 import spock.lang.Specification
@@ -25,6 +28,7 @@ import spock.util.concurrent.PollingConditions
 import javax.persistence.EntityManager
 import java.util.function.Function
 
+import static org.openremote.model.asset.AssetAttribute.createWithDescriptor
 import static org.openremote.model.asset.BaseAssetQuery.*
 import static org.openremote.model.asset.BaseAssetQuery.Access.PRIVATE_READ
 import static org.openremote.model.asset.BaseAssetQuery.Access.RESTRICTED_READ
@@ -84,7 +88,6 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets[0].realmId == null
         assets[0].tenantRealm == null
         assets[0].tenantDisplayName == null
-        assets[0].coordinates == null
         assets[0].path == null
 
         when: "a user filtering query is executed that returns only IDs, names and attribute names"
@@ -166,7 +169,6 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets[1].realmId == null
         assets[1].tenantRealm == null
         assets[1].tenantDisplayName == null
-        assets[1].coordinates == null
         assets[1].path == null
         assets[1].getAttributesList().size() == 6
         assets[1].getAttribute("ventilationAuto").isPresent()
@@ -208,7 +210,6 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         asset.realmId == keycloakDemoSetup.customerATenant.id
         asset.tenantRealm == null
         asset.tenantDisplayName == null
-        asset.coordinates.length == 2
         asset.path.length == 2
         asset.path[0] == managerDemoSetup.apartment1Id
         asset.path[1] == managerDemoSetup.smartHomeId
@@ -232,7 +233,6 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         asset.realmId == keycloakDemoSetup.masterTenant.id
         asset.tenantRealm == keycloakDemoSetup.masterTenant.realm
         asset.tenantDisplayName == keycloakDemoSetup.masterTenant.displayName
-        asset.coordinates.length == 2
         asset.path == null
         asset.attributesList.size() == 0
 
@@ -255,7 +255,6 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         asset.realmId == keycloakDemoSetup.masterTenant.id
         asset.tenantRealm == keycloakDemoSetup.masterTenant.realm
         asset.tenantDisplayName == keycloakDemoSetup.masterTenant.displayName
-        asset.coordinates.length == 2
         asset.path.length == 1
         asset.path[0] == managerDemoSetup.smartOfficeId
         asset.getAttribute("geoStreet").get().getValueAsString().get() == "Torenallee 20"
@@ -280,7 +279,6 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets.get(0).realmId == keycloakDemoSetup.masterTenant.id
         assets.get(0).tenantRealm == keycloakDemoSetup.masterTenant.realm
         assets.get(0).tenantDisplayName == keycloakDemoSetup.masterTenant.displayName
-        assets.get(0).coordinates.length == 2
         assets.get(0).path == null
         assets.get(0).attributesList.size() == 0
 
@@ -305,7 +303,6 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets.get(0).realmId == keycloakDemoSetup.masterTenant.id
         assets.get(0).tenantRealm == keycloakDemoSetup.masterTenant.realm
         assets.get(0).tenantDisplayName == keycloakDemoSetup.masterTenant.displayName
-        assets.get(0).coordinates.length == 2
         assets.get(0).path.length == 1
         assets.get(0).path[0] == managerDemoSetup.smartOfficeId
         assets.get(0).getAttribute("geoStreet").get().getValueAsString().get() == "Torenallee 20"
@@ -328,7 +325,6 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets.get(0).realmId == keycloakDemoSetup.customerATenant.id
         assets.get(0).tenantRealm == keycloakDemoSetup.customerATenant.realm
         assets.get(0).tenantDisplayName == keycloakDemoSetup.customerATenant.displayName
-        assets.get(0).coordinates.length == 2
         assets.get(0).path == null
         assets.get(0).attributesList.size() == 0
         assets.get(1).id == managerDemoSetup.apartment2Id
@@ -594,7 +590,6 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         asset.realmId == keycloakDemoSetup.customerATenant.id
         asset.tenantRealm == keycloakDemoSetup.customerATenant.realm
         asset.tenantDisplayName == keycloakDemoSetup.customerATenant.displayName
-        asset.coordinates.length == 2
         asset.path != null
         asset.getAttributesList().size() == 3
         asset.getAttribute("co2Level").isPresent()
@@ -623,7 +618,6 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         asset.realmId == keycloakDemoSetup.customerATenant.id
         asset.tenantRealm == keycloakDemoSetup.customerATenant.realm
         asset.tenantDisplayName == keycloakDemoSetup.customerATenant.displayName
-        asset.coordinates.length == 2
         asset.path != null
         asset.getAttributesList().size() == 1
         asset.getAttribute("co2Level").isPresent()
@@ -681,7 +675,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
 
         when: "one of the assets in the region is moved"
         def lobby = assetStorageService.find(managerDemoSetup.lobbyId, true)
-        lobby.setLocation(new GeometryFactory().createPoint(new Coordinate(5.46108d, 51.44593d)))
+        lobby.replaceAttribute(createWithDescriptor(AttributeDescriptorImpl.LOCATION, Values.createObject().put("latitude", 51.44593d).put("longitude", 5.46108d)))
         lobby = assetStorageService.merge(lobby)
 
         then: "the system should settle down"

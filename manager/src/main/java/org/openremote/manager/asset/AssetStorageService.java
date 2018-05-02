@@ -808,9 +808,9 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             if (query.location instanceof RadialLocationPredicate) {
                 RadialLocationPredicate location = (RadialLocationPredicate) query.location;
                 sb.append(" and ST_Distance_Sphere(ST_MakePoint(");
-                sb.append("(A.attributes -> 'location' -> 'value' ->> 'latitude')::numeric");
                 sb.append("(A.attributes -> 'location' -> 'value' ->> 'longitude')::numeric");
-                sb.append(")), ST_MakePoint(");
+                sb.append(", (A.attributes -> 'location' -> 'value' ->> 'latitude')::numeric");
+                sb.append("), ST_MakePoint(");
                 sb.append(location.lng);
                 sb.append(",");
                 sb.append(location.lat);
@@ -819,11 +819,11 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             } else if (query.location instanceof RectangularLocationPredicate) {
                 RectangularLocationPredicate location = (RectangularLocationPredicate) query.location;
                 sb.append(location.negated ? " and NOT" : " and");
-                sb.append(" ST_Within(ST_MakePoint(,");
-                sb.append("(A.attributes -> 'location' -> 'value' ->> 'latitude')::numeric");
+                sb.append(" ST_Within(ST_MakePoint(");
                 sb.append("(A.attributes -> 'location' -> 'value' ->> 'longitude')::numeric");
+                sb.append(", (A.attributes -> 'location' -> 'value' ->> 'latitude')::numeric");
                 sb.append(")");
-                sb.append("ST_MakeEnvelope(");
+                sb.append(", ST_MakeEnvelope(");
                 sb.append(location.lngMin);
                 sb.append(",");
                 sb.append(location.latMin);
