@@ -20,7 +20,6 @@
 package org.openremote.model.attribute;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.gwt.regexp.shared.RegExp;
 import org.openremote.model.AbstractValueTimestampHolder;
 import org.openremote.model.HasUniqueResourceName;

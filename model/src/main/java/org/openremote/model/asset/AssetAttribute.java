@@ -488,4 +488,8 @@ public class AssetAttribute extends Attribute {
         }
         return Optional.of(objectValue);
     }
+
+    public static AssetAttribute createWithDescriptor(AttributeDescriptor descriptor, Value value) {
+        return new AssetAttribute(descriptor.getName(), descriptor.getType(), value);
+    }
 }

@@ -21,6 +21,7 @@ package org.openremote.manager.asset;
 
 import org.openremote.model.asset.AssetModelProvider;
 import org.openremote.model.asset.AssetTypeDescriptor;
+import org.openremote.model.attribute.AttributeDescriptor;
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.attribute.MetaItemDescriptor;
 
@@ -45,6 +46,8 @@ public class AssetModel {
 
     public final static AssetTypeDescriptor[] WELL_KNOWN_ASSET_TYPES;
 
+    public final static AttributeDescriptor[] WELL_KNOWN_ATTRIBUTE_TYPES;
+
     static {
         List<MetaItemDescriptor> metaItemDescriptorList = new ArrayList<>();
         ServiceLoader.load(AssetModelProvider.class).forEach(assetModelProvider -> {
@@ -65,6 +68,14 @@ public class AssetModel {
         });
 
         WELL_KNOWN_ASSET_TYPES = assetTypeList.toArray(new AssetTypeDescriptor[assetTypeList.size()]);
+
+        List<AttributeDescriptor> attributeList = new ArrayList<>();
+        ServiceLoader.load(AssetModelProvider.class).forEach(assetModelProvider -> {
+            LOG.fine("Adding asset type descriptors of: " + assetModelProvider);
+            attributeList.addAll(Arrays.asList(assetModelProvider.getAttributeDescriptors()));
+        });
+
+        WELL_KNOWN_ATTRIBUTE_TYPES = attributeList.toArray(new AttributeDescriptor[attributeList.size()]);
     }
 
     public static Stream<MetaItemDescriptor> streamMetaItemDescriptors() {
@@ -119,6 +130,17 @@ public class AssetModel {
         for (AssetTypeDescriptor assetType : WELL_KNOWN_ASSET_TYPES) {
             if (urn.equals(assetType.getValue()))
                 return Optional.of(assetType);
+        }
+        return Optional.empty();
+    }
+
+    public static Optional<AttributeDescriptor> getAttributeDescriptor(String name) {
+        if (name == null)
+            return Optional.empty();
+
+        for (AttributeDescriptor attributeDescriptor : WELL_KNOWN_ATTRIBUTE_TYPES) {
+            if (name.equals(attributeDescriptor.getName()))
+                return Optional.of(attributeDescriptor);
         }
         return Optional.empty();
     }

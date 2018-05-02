@@ -440,6 +440,24 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                 );
             });
 
+            asset.getAttributesStream().forEach(assetAttribute -> {
+                AssetModel.getAttributeDescriptor(assetAttribute.name).ifPresent(wellKnownAttribute -> {
+                    if (!wellKnownAttribute.getType().equals(assetAttribute.getTypeOrThrow())) {
+                        throw new IllegalStateException(
+                            String.format("Well known attribute isn't of the correct type. Attribute name: %s. Expected type: %s",
+                                assetAttribute.name, wellKnownAttribute.getType().name()));
+                    }
+
+                    wellKnownAttribute.getType()
+                        .isValidValue(assetAttribute.getValue().orElseThrow(() -> new IllegalStateException("Value is empty for " + assetAttribute.name)))
+                        .ifPresent(validationFailure -> {
+                            throw new IllegalStateException(
+                                String.format("Validation failed for %s with reason %s", assetAttribute.name, validationFailure.getReason().name())
+                            );
+                        });
+                });
+            });
+
             return assetStorageService.merge(newAsset);
 
         } catch (IllegalStateException ex) {

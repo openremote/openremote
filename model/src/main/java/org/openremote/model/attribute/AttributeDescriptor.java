@@ -17,34 +17,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.model.asset;
+package org.openremote.model.attribute;
 
-import org.openremote.model.attribute.AttributeDescriptor;
-import org.openremote.model.attribute.AttributeDescriptorImpl;
-import org.openremote.model.attribute.MetaItemDescriptor;
+public interface AttributeDescriptor {
 
-/**
- * The built-in and well-known asset model.
- */
-public class DefaultAssetModelProvider implements AssetModelProvider {
+    String getName();
 
-    @Override
-    public MetaItemDescriptor[] getMetaItemDescriptors() {
-        return AssetMeta.values();
-    }
-
-    @Override
-    public AssetType[] getAssetTypeDescriptors() {
-        return AssetType.values();
-    }
-
-    @Override
-    public AttributeDescriptor[] getAttributeDescriptors() {
-        return AttributeDescriptorImpl.values();
-    }
-
-    @Override
-    public String toString() {
-        return getClass().getSimpleName() + "{}";
-    }
+    AttributeType getType();
 }
