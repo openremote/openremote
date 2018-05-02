@@ -20,6 +20,7 @@
 package org.openremote.model.asset;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.hibernate.annotations.Check;
 import org.hibernate.annotations.Formula;
 import org.openremote.model.IdentifiableEntity;
 import org.openremote.model.attribute.Attribute;
@@ -210,7 +211,9 @@ import static org.openremote.model.asset.AssetAttribute.*;
  * }</pre></blockquote>
  */
 // @formatter:on
-@MappedSuperclass
+@Entity
+@Table(name = "ASSET")
+@Check(constraints = "ID != PARENT_ID")
 public class Asset implements IdentifiableEntity {
 
     @Id

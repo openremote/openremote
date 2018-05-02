@@ -10,7 +10,7 @@
         <class>org.openremote.container.persistence</class>
         <class>org.openremote.container.util</class>
 
-        <class>org.openremote.manager.asset.Asset</class>
+        <class>org.openremote.model.asset.Asset</class>
         <class>org.openremote.model.notification.DeviceNotificationToken</class>
         <class>org.openremote.model.notification.AlertNotification</class>
         <class>org.openremote.model.notification.AlertAction</class>
