@@ -20,10 +20,12 @@
 package org.openremote.manager.rules.geofence;
 
 import org.openremote.container.ContainerService;
+import org.openremote.manager.rules.RulesEngine;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.BaseAssetQuery;
 import org.openremote.model.rules.AssetState;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -67,6 +69,6 @@ public interface GeofenceAssetAdapter extends ContainerService {
      * their own state rather than 'pushing' geofences to the asset(s) it can be assumed that they were previously sent,
      * hence adapters should be more concerned with delta changes (but this is really up to the adapter).
      */
-    void processLocationPredicates(Map<AssetState, Set<BaseAssetQuery.LocationPredicate>> assetLocationPredicateMap,
+    void processLocationPredicates(List<RulesEngine.AssetStateLocationPredicates> assetLocationPredicates,
                                    boolean initialising);
 }

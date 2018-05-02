@@ -26,7 +26,6 @@ import org.openremote.model.asset.AssetQuery;
 import org.openremote.model.asset.BaseAssetQuery;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeExecuteStatus;
-import org.openremote.model.rules.AssetQueryPredicate;
 import org.openremote.model.rules.AssetState;
 import org.openremote.model.rules.Assets;
 import org.openremote.model.rules.TemporaryFact;
@@ -84,11 +83,15 @@ public class RulesFacts extends Facts implements RuleListener {
         trackLocationRules = true;
     }
 
-    protected Map<AssetState, Set<BaseAssetQuery.LocationPredicate>> stopTrackingLocationRules() {
+    protected List<RulesEngine.AssetStateLocationPredicates> stopTrackingLocationRules() {
         trackLocationRules = false;
         Map<AssetState, Set<BaseAssetQuery.LocationPredicate>> assetStateLocationPredicateMap = this.assetStateLocationPredicateMap;
         this.assetStateLocationPredicateMap = null;
-        return assetStateLocationPredicateMap;
+        return assetStateLocationPredicateMap.entrySet().stream()
+            .map(assetStateSetEntry ->
+                     new RulesEngine.AssetStateLocationPredicates(
+                         assetStateSetEntry.getKey(),
+                         assetStateSetEntry.getValue())).collect(Collectors.toList());
     }
 
     public void setClock(RulesClock clock) {

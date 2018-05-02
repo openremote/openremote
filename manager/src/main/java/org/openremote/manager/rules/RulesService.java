@@ -101,8 +101,8 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
     protected String[] activeTenantIds;
 
     protected Collection<GeofenceAssetAdapter> geofenceAssetAdapters;
-    protected BiConsumer<RulesEngine, Map<AssetState, Set<BaseAssetQuery.LocationPredicate>>> locationPredicateRulesConsumer;
-    protected Map<RulesEngine, Map<AssetState, Set<BaseAssetQuery.LocationPredicate>>> engineAssetLocationPredicateMap = new HashMap<>();
+    protected BiConsumer<RulesEngine, List<RulesEngine.AssetStateLocationPredicates>> locationPredicateRulesConsumer;
+    protected Map<RulesEngine, List<RulesEngine.AssetStateLocationPredicates>> engineAssetLocationPredicateMap = new HashMap<>();
     protected Set<AssetState> modifiedAssetLocationPredicates = new HashSet<>();
     protected ScheduledFuture scheduledGeofenceProcessor;
     protected boolean firstGeofenceProcessorRun = true;
@@ -700,57 +700,64 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
      * identify the asset's (via {@link AssetState}) that have modified {@link BaseAssetQuery.LocationPredicate}s and to
      * notify the {@link GeofenceAssetAdapter}s.
      */
-    protected void onEngineLocationRulesChanged(RulesEngine rulesEngine, Map<AssetState, Set<BaseAssetQuery.LocationPredicate>> newAssetStateLocationPredicateMap) {
+    protected void onEngineLocationRulesChanged(RulesEngine rulesEngine, List<RulesEngine.AssetStateLocationPredicates> newEngineAssetStateLocationPredicates) {
         withLock(getClass().getSimpleName() + "::onEngineLocationRulesChanged", () -> {
             int initialModifiedCount = modifiedAssetLocationPredicates.size();
 
-            if (newAssetStateLocationPredicateMap == null) {
+            if (newEngineAssetStateLocationPredicates == null) {
                 engineAssetLocationPredicateMap.computeIfPresent(rulesEngine,
-                                                                 (re, existingAssetStateLocationPredicateMap) -> {
+                                                                 (re, existingAssetStateLocationPredicates) -> {
                                                                      // All location predicates have been removed so record each asset state as modified
                                                                      modifiedAssetLocationPredicates.addAll(
-                                                                         existingAssetStateLocationPredicateMap.keySet());
+                                                                         existingAssetStateLocationPredicates.stream().map(RulesEngine.AssetStateLocationPredicates::getAssetState).collect(Collectors.toList()));
                                                                      // Remove this engine from the map
                                                                      return null;
                                                                  });
             } else {
-                engineAssetLocationPredicateMap.compute(rulesEngine, (re, existingAssetStateLocationPredicateMap) -> {
+                engineAssetLocationPredicateMap.compute(rulesEngine, (re, existingEngineAssetStateLocationPredicates) -> {
                     // Check if this not the first time this engine has been seen with location predicates so we can check
                     // for any removed asset states
-                    if (existingAssetStateLocationPredicateMap == null) {
+                    if (existingEngineAssetStateLocationPredicates == null) {
                         // All asset states are new so record them all as modified
-                        modifiedAssetLocationPredicates.addAll(newAssetStateLocationPredicateMap.keySet());
+                        modifiedAssetLocationPredicates.addAll(newEngineAssetStateLocationPredicates.stream().map(RulesEngine.AssetStateLocationPredicates::getAssetState).collect(Collectors.toList()));
                     } else {
                         // Find obsolete and modified asset states
-                        existingAssetStateLocationPredicateMap.forEach((existingAssetState, existingLocationPredicates) -> {
+                        existingEngineAssetStateLocationPredicates.forEach(existingAssetStateLocationPredicates -> {
                             // Check if there are no longer any location predicates for this asset
-                            newAssetStateLocationPredicateMap.compute(existingAssetState,
-                                                                      (as, newLocationPredicates) -> {
-                                                                          if (newLocationPredicates == null) {
-                                                                              // This means that there are no longer any location predicates so old ones are obsolete
-                                                                              modifiedAssetLocationPredicates.add(
-                                                                                  existingAssetState);
-                                                                          } else {
-                                                                              // Compare existing and new location predicate sets if there is any change then record it
-                                                                              if (!newLocationPredicates.equals(
-                                                                                  existingLocationPredicates)) {
-                                                                                  modifiedAssetLocationPredicates.add(
-                                                                                      existingAssetState);
-                                                                              }
-                                                                          }
-                                                                          return newLocationPredicates;
-                                                                      });
+                            Optional<RulesEngine.AssetStateLocationPredicates> newAssetStateLocationPredicates = newEngineAssetStateLocationPredicates.stream()
+                                .filter(assetStateLocationPredicates ->
+                                            assetStateLocationPredicates.assetState.equals(
+                                                existingAssetStateLocationPredicates.getAssetState()))
+                                .findFirst();
+
+                            if (newAssetStateLocationPredicates.isPresent()) {
+                                // Compare existing and new location predicate sets if there is any change then record it
+                                if (!newAssetStateLocationPredicates.get().getLocationPredicates().equals(
+                                    existingAssetStateLocationPredicates.getLocationPredicates())) {
+                                    modifiedAssetLocationPredicates.add(
+                                        existingAssetStateLocationPredicates.getAssetState());
+                                }
+                            } else {
+                                // This means that there are no longer any location predicates so old ones are obsolete
+                                modifiedAssetLocationPredicates.add(
+                                    existingAssetStateLocationPredicates.getAssetState());
+                            }
                         });
+
                         // Check for asset states in the new map but not in the old one
-                        newAssetStateLocationPredicateMap.forEach((newAssetState, newLocationPredicates) -> existingAssetStateLocationPredicateMap.computeIfAbsent(
-                            newAssetState,
-                            as -> {
+                        newEngineAssetStateLocationPredicates.forEach(newAssetStateLocationPredicates -> {
+                            boolean isNewAssetState = existingEngineAssetStateLocationPredicates.stream()
+                                .noneMatch(assetStateLocationPredicates ->
+                                               assetStateLocationPredicates.assetState.equals(
+                                                   newAssetStateLocationPredicates.getAssetState()));
+
+                            if (isNewAssetState) {
                                 // This means that all predicates for this asset are new
-                                modifiedAssetLocationPredicates.add(newAssetState);
-                                return null;
-                            }));
+                                modifiedAssetLocationPredicates.add(newAssetStateLocationPredicates.getAssetState());
+                            }
+                        });
                     }
-                    return newAssetStateLocationPredicateMap;
+                    return newEngineAssetStateLocationPredicates;
                 });
             }
 
@@ -770,32 +777,34 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
             firstGeofenceProcessorRun = false;
 
             // Find all location predicates associated with modified asset states and pass through to geofence adapters
-            Map<AssetState, Set<BaseAssetQuery.LocationPredicate>> assetLocationPredicateMap = new HashMap<>(
+            List<RulesEngine.AssetStateLocationPredicates> assetLocationPredicates = new ArrayList<>(
                 modifiedAssetLocationPredicates.size());
 
             modifiedAssetLocationPredicates.forEach(assetState -> {
-                Set<BaseAssetQuery.LocationPredicate> locationPredicates = new HashSet<>();
-                engineAssetLocationPredicateMap.forEach((rulesEngine, assetStateSetMap) ->
-                                                            assetStateSetMap.computeIfPresent(assetState,
-                                                                                              (as, engineLocationPredicates) -> {
-                                                                                                  locationPredicates.addAll(
-                                                                                                      engineLocationPredicates);
-                                                                                                  return engineLocationPredicates;
+                RulesEngine.AssetStateLocationPredicates locationPredicates = new RulesEngine.AssetStateLocationPredicates(assetState, new HashSet<>());
+                engineAssetLocationPredicateMap.forEach((rulesEngine, engineAssetStateLocationPredicates) ->
+                                                            engineAssetStateLocationPredicates.stream().filter(assetStateLocationPredicates ->
+                                                                                                             assetStateLocationPredicates.assetState.equals(
+                                                                                                                 assetState))
+                                                                .findFirst()
+                                                                .ifPresent(assetStateLocationPredicate -> {
+                                                                                                  locationPredicates.getLocationPredicates().addAll(
+                                                                                                      assetStateLocationPredicate.getLocationPredicates());
                                                                                               }));
 
-                assetLocationPredicateMap.put(assetState, locationPredicates);
+                assetLocationPredicates.add(locationPredicates);
             });
 
             // Clear modified assets ready for next batch
             modifiedAssetLocationPredicates.clear();
             scheduledGeofenceProcessor = null;
 
-            Map<AssetState, Set<BaseAssetQuery.LocationPredicate>> unmodifiableAssetStateLocationPredicateMap =
-                Collections.unmodifiableMap(assetLocationPredicateMap);
+            List<RulesEngine.AssetStateLocationPredicates> unmodifiableAssetStateLocationPredicates =
+                Collections.unmodifiableList(assetLocationPredicates);
 
-            LOG.info("Processing asset geofence updates: asset count=" + assetLocationPredicateMap.size());
+            LOG.info("Processing asset geofence updates: asset count=" + assetLocationPredicates.size());
             for (GeofenceAssetAdapter geofenceAssetAdapter : geofenceAssetAdapters) {
-                geofenceAssetAdapter.processLocationPredicates(unmodifiableAssetStateLocationPredicateMap, isFirstRun);
+                geofenceAssetAdapter.processLocationPredicates(unmodifiableAssetStateLocationPredicates, isFirstRun);
             }
         });
     }

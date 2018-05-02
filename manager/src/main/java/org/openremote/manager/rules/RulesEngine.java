@@ -29,6 +29,7 @@ import org.openremote.manager.notification.NotificationService;
 import org.openremote.manager.rules.facade.AssetsFacade;
 import org.openremote.manager.rules.facade.UsersFacade;
 import org.openremote.manager.security.ManagerIdentityService;
+import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetMeta;
 import org.openremote.model.asset.BaseAssetQuery;
 import org.openremote.model.rules.*;
@@ -45,6 +46,28 @@ import static org.openremote.manager.rules.RulesetDeployment.Status.*;
 
 public class RulesEngine<T extends Ruleset> {
 
+    /**
+     * Identifies a set of {@link BaseAssetQuery.LocationPredicate}s associated with a particular {@link Asset}
+     */
+    public static final class AssetStateLocationPredicates {
+
+        protected final AssetState assetState;
+        protected final Set<BaseAssetQuery.LocationPredicate> locationPredicates;
+
+        public AssetStateLocationPredicates(AssetState assetState, Set<BaseAssetQuery.LocationPredicate> locationPredicates) {
+            this.assetState = assetState;
+            this.locationPredicates = locationPredicates;
+        }
+
+        public AssetState getAssetState() {
+            return assetState;
+        }
+
+        public Set<BaseAssetQuery.LocationPredicate> getLocationPredicates() {
+            return locationPredicates;
+        }
+    }
+
     public static final Logger LOG = Logger.getLogger(RulesEngine.class.getName());
 
     // Separate logger for execution of rules
@@ -60,7 +83,7 @@ public class RulesEngine<T extends Ruleset> {
     final protected RulesEngineId<T> id;
     final protected Assets assetsFacade;
     final protected Users usersFacade;
-    final protected BiConsumer<RulesEngine, Map<AssetState, Set<BaseAssetQuery.LocationPredicate>>> assetLocationPredicateMapConsumer;
+    final protected BiConsumer<RulesEngine, List<AssetStateLocationPredicates>> assetLocationPredicatesConsumer;
 
     final protected Map<Long, RulesetDeployment> deployments = new LinkedHashMap<>();
     final protected RulesFacts facts;
@@ -84,14 +107,15 @@ public class RulesEngine<T extends Ruleset> {
                        AssetProcessingService assetProcessingService,
                        NotificationService notificationService,
                        RulesEngineId<T> id,
-                       BiConsumer<RulesEngine, Map<AssetState, Set<BaseAssetQuery.LocationPredicate>>> assetLocationPredicateMapConsumer) {
+                       // Change to a class
+                       BiConsumer<RulesEngine, List<AssetStateLocationPredicates>> assetLocationPredicatesConsumer) {
         this.timerService = timerService;
         this.executorService = executorService;
         this.assetStorageService = assetStorageService;
         this.id = id;
         this.assetsFacade = new AssetsFacade<>(id, assetStorageService, assetProcessingService::sendAttributeEvent);
         this.usersFacade = new UsersFacade<>(id, assetStorageService, notificationService, identityService);
-        this.assetLocationPredicateMapConsumer = assetLocationPredicateMapConsumer;
+        this.assetLocationPredicatesConsumer = assetLocationPredicatesConsumer;
 
         this.facts = new RulesFacts(assetsFacade, this, RULES_LOG);
         engine = new InferenceRulesEngine(
@@ -305,7 +329,7 @@ public class RulesEngine<T extends Ruleset> {
             return;
         }
 
-        if (trackLocationPredicates && assetLocationPredicateMapConsumer != null) {
+        if (trackLocationPredicates && assetLocationPredicatesConsumer != null) {
             facts.startTrackingLocationRules();
         }
 
@@ -353,7 +377,7 @@ public class RulesEngine<T extends Ruleset> {
 
         if (trackLocationPredicates) {
             trackLocationPredicates = false;
-            if (assetLocationPredicateMapConsumer != null) {
+            if (assetLocationPredicatesConsumer != null) {
                 processLocationRules(facts.stopTrackingLocationRules());
             }
         }
@@ -378,8 +402,8 @@ public class RulesEngine<T extends Ruleset> {
         }
         running = false;
 
-        if (!systemShutdownInProgress && assetLocationPredicateMapConsumer != null) {
-            assetLocationPredicateMapConsumer.accept(this, null);
+        if (!systemShutdownInProgress && assetLocationPredicatesConsumer != null) {
+            assetLocationPredicatesConsumer.accept(this, null);
         }
     }
 
@@ -437,9 +461,9 @@ public class RulesEngine<T extends Ruleset> {
      * This is called with all the asset's that have a location attribute marked with {@link AssetMeta#RULE_STATE} and
      * that are in the scope of a rule containing a location predicate.
      */
-    protected void processLocationRules(Map<AssetState, Set<BaseAssetQuery.LocationPredicate>> assetStateLocationPredicateMap) {
-        if (assetLocationPredicateMapConsumer != null) {
-            assetLocationPredicateMapConsumer.accept(this, assetStateLocationPredicateMap);
+    protected void processLocationRules(List<AssetStateLocationPredicates> assetStateLocationPredicates) {
+        if (assetLocationPredicatesConsumer != null) {
+            assetLocationPredicatesConsumer.accept(this, assetStateLocationPredicates);
         }
     }
 

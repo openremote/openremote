@@ -424,7 +424,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         def conditions = new PollingConditions(timeout: 10, initialDelay: 0.5, delay: 0.5)
 
         and: "a mock geofence adapter"
-        Map<AssetState, Set<BaseAssetQuery.LocationPredicate>> geofenceChangeMap = null
+        List<RulesEngine.AssetStateLocationPredicates> geofenceChanges = null
         def geofenceInit = false;
         def testGeofenceAdapter = new GeofenceAssetAdapter() {
 
@@ -434,8 +434,8 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
             }
 
             @Override
-            void processLocationPredicates(Map<AssetState, Set<BaseAssetQuery.LocationPredicate>> assetLocationPredicateMap, boolean initialising) {
-                geofenceChangeMap = assetLocationPredicateMap
+            void processLocationPredicates(List<RulesEngine.AssetStateLocationPredicates> assetLocationPredicates, boolean initialising) {
+                geofenceChanges = assetLocationPredicates
                 geofenceInit = initialising
             }
 
@@ -486,10 +486,10 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
 
         and: "the mock geofence adapter should have been initialised with the demo thing assets location predicate"
         conditions.eventually {
-            assert geofenceChangeMap != null
+            assert geofenceChanges != null
             assert geofenceInit
-            assert geofenceChangeMap.size() == 1
-            def thingGeofences = geofenceChangeMap.find({ it.key.id == managerDemoSetup.thingId }).value
+            assert geofenceChanges.size() == 1
+            def thingGeofences = geofenceChanges.find({ it.assetState.id == managerDemoSetup.thingId }).locationPredicates
             assert thingGeofences.size() == 1
             BaseAssetQuery.RadialLocationPredicate locPredicate = thingGeofences.find { it instanceof BaseAssetQuery.RadialLocationPredicate && it.centrePoint[0] == 100 && it.centrePoint[1] == 50 && it.radius == 100 }
             assert locPredicate != null
@@ -502,10 +502,10 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
 
         then: "the mock geofence adapter should be notified of the new lobby asset with a location predicate"
         conditions.eventually {
-            assert geofenceChangeMap != null
+            assert geofenceChanges != null
             assert !geofenceInit
-            assert geofenceChangeMap.size() == 1
-            def lobbyGeofences = geofenceChangeMap.find({ it.key.id == managerDemoSetup.lobbyId }).value
+            assert geofenceChanges.size() == 1
+            def lobbyGeofences = geofenceChanges.find({ it.assetState.id == managerDemoSetup.lobbyId }).locationPredicates
             assert lobbyGeofences.size() == 1
             BaseAssetQuery.RadialLocationPredicate locPredicate = lobbyGeofences.find { it instanceof BaseAssetQuery.RadialLocationPredicate && it.centrePoint[0] == 100 && it.centrePoint[1] == 50 && it.radius == 100 }
             assert locPredicate != null
@@ -534,10 +534,10 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
 
         then: "the mock geofence adapter should have been notified of the new location predicates for the demo thing and lobby assets"
         conditions.eventually {
-            assert geofenceChangeMap != null
+            assert geofenceChanges != null
             assert !geofenceInit
-            assert geofenceChangeMap.size() == 2
-            Set<BaseAssetQuery.LocationPredicate> thingGeofences = geofenceChangeMap.find{ it.key.id == managerDemoSetup.thingId }.value
+            assert geofenceChanges.size() == 2
+            Set<BaseAssetQuery.LocationPredicate> thingGeofences = geofenceChanges.find{ it.assetState.id == managerDemoSetup.thingId }.locationPredicates
             assert thingGeofences.size() == 3
             BaseAssetQuery.RadialLocationPredicate rad1Predicate = thingGeofences.find { it instanceof BaseAssetQuery.RadialLocationPredicate && it.centrePoint[0] == 100 && it.centrePoint[1] == 50 && it.radius == 100 }
             BaseAssetQuery.RadialLocationPredicate rad2Predicate = thingGeofences.find { it instanceof BaseAssetQuery.RadialLocationPredicate && it.centrePoint[0] == 50 && it.centrePoint[1] == 0 && it.radius == 200 }
@@ -545,7 +545,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
             assert rad1Predicate != null
             assert rad2Predicate != null
             assert rect1Predicate != null
-            def lobbyGeofences = geofenceChangeMap.find({ it.key.id == managerDemoSetup.lobbyId }).value
+            def lobbyGeofences = geofenceChanges.find({ it.assetState.id == managerDemoSetup.lobbyId }).locationPredicates
             assert lobbyGeofences.size() == 3
             assert lobbyGeofences.any { it == rad1Predicate }
             assert lobbyGeofences.any { it == rad2Predicate }
@@ -557,15 +557,15 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
 
         then: "the mock geofence adapter should be notified that the demo thing and lobby asset's rules with location predicates have changed"
         conditions.eventually {
-            assert geofenceChangeMap != null
-            assert geofenceChangeMap.size() == 2
-            Set<BaseAssetQuery.LocationPredicate> thingGeofences = geofenceChangeMap.find{ it.key.id == managerDemoSetup.thingId }.value
+            assert geofenceChanges != null
+            assert geofenceChanges.size() == 2
+            Set<BaseAssetQuery.LocationPredicate> thingGeofences = geofenceChanges.find{ it.assetState.id == managerDemoSetup.thingId }.locationPredicates
             assert thingGeofences.size() == 2
             BaseAssetQuery.RadialLocationPredicate rad2Predicate = thingGeofences.find { it instanceof BaseAssetQuery.RadialLocationPredicate && it.centrePoint[0] == 50 && it.centrePoint[1] == 0 && it.radius == 200 }
             BaseAssetQuery.RectangularLocationPredicate rect1Predicate = thingGeofences.find { it instanceof BaseAssetQuery.RectangularLocationPredicate && it.centrePoint[0] == 75 && it.centrePoint[1] == 25 && it.lngMax == 100 && it.latMax == 50 }
             assert rad2Predicate != null
             assert rect1Predicate != null
-            def lobbyGeofences = geofenceChangeMap.find({ it.key.id == managerDemoSetup.lobbyId }).value
+            def lobbyGeofences = geofenceChanges.find({ it.assetState.id == managerDemoSetup.lobbyId }).locationPredicates
             assert lobbyGeofences.size() == 2
             assert lobbyGeofences.any { it == rad2Predicate }
             assert lobbyGeofences.any { it == rect1Predicate }
@@ -577,10 +577,10 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
 
         then: "the mock geofence adapter should be notified that the lobby asset no longer has any rules with location predicates"
         conditions.eventually {
-            assert geofenceChangeMap != null
+            assert geofenceChanges != null
             assert !geofenceInit
-            assert geofenceChangeMap.size() == 1
-            def lobbyGeofences = geofenceChangeMap.find({ it.key.id == managerDemoSetup.lobbyId }).value
+            assert geofenceChanges.size() == 1
+            def lobbyGeofences = geofenceChanges.find({ it.assetState.id == managerDemoSetup.lobbyId }).locationPredicates
             assert lobbyGeofences.size() == 0
         }
 
