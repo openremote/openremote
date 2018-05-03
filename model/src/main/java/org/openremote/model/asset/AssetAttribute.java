@@ -490,6 +490,7 @@ public class AssetAttribute extends Attribute {
     }
 
     public static AssetAttribute createWithDescriptor(AttributeDescriptor descriptor, Value value) {
-        return new AssetAttribute(descriptor.getName(), descriptor.getType(), value);
+        return new AssetAttribute(descriptor.getName(), descriptor.getType(), value)
+            .setMeta(descriptor.getDefaultMetaItems());
     }
 }

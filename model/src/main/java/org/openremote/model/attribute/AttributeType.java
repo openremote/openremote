@@ -230,7 +230,8 @@ public enum AttributeType {
 
     LOCATION("map-marker", ValueType.OBJECT, value -> Values.getObject(value)
         .filter(object -> !object.hasKey("latitude") || !object.hasKey("longitude"))
-        .map(object -> new ValidationFailure(ValueHolder.ValueFailureReason.VALUE_INVALID)));
+        .map(object -> new ValidationFailure(ValueHolder.ValueFailureReason.VALUE_INVALID))
+    );
 
     public static final String DEFAULT_ICON = "circle-thin";
 

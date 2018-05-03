@@ -53,7 +53,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
     public static final int DEMO_RULE_STATES_APARTMENT_1 = 37;
     public static final int DEMO_RULE_STATES_APARTMENT_2 = 11;
     public static final int DEMO_RULE_STATES_APARTMENT_3 = 0;
-    public static final int DEMO_RULE_STATES_SMART_OFFICE = 1;
+    public static final int DEMO_RULE_STATES_SMART_OFFICE = 2;
     public static final int DEMO_RULE_STATES_SMART_HOME = DEMO_RULE_STATES_APARTMENT_1 + DEMO_RULE_STATES_APARTMENT_2 + DEMO_RULE_STATES_APARTMENT_3;
     public static final int DEMO_RULE_STATES_CUSTOMER_A = DEMO_RULE_STATES_SMART_HOME;
 
@@ -108,7 +108,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         smartOffice.setName("Smart Office");
         smartOffice.setType(BUILDING);
         List<AssetAttribute> smartOfficeAttributes = Arrays.asList(
-            new AssetAttribute("location", LOCATION, locationValue),
+            AssetAttribute.createWithDescriptor(AttributeDescriptorImpl.LOCATION, locationValue),
             new AssetAttribute("geoStreet", STRING, Values.create("Torenallee 20"))
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Street")),
@@ -168,7 +168,8 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         agentId = agent.getId();
 
         Asset thing = new Asset("Demo Thing", THING, agent)
-            .addAttributes(AssetAttribute.createWithDescriptor(AttributeDescriptorImpl.LOCATION, locationValue));
+            .addAttributes(AssetAttribute.createWithDescriptor(AttributeDescriptorImpl.LOCATION, locationValue)
+                .setMeta(new MetaItem(RULE_STATE, Values.create(true))));
         thing.addAttributes(
             new AssetAttribute(thingLightToggleAttributeName, BOOLEAN, Values.create(true))
                 .setMeta(new Meta(

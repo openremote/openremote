@@ -24,4 +24,6 @@ public interface AttributeDescriptor {
     String getName();
 
     AttributeType getType();
+
+    MetaItem[] getDefaultMetaItems();
 }
