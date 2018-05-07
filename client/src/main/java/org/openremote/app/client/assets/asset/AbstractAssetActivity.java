@@ -204,10 +204,9 @@ public abstract class AbstractAssetActivity<V
         view.getAssetNavigation().setEnabled(assetId != null);
         view.setName(asset.getName());
         view.setCreatedOn(asset.getCreatedOn());
-        //TODO location update
-//        view.setLocation(asset.getCoordinates());
-//        view.showDroppedPin(asset.getGeoFeature(20));
-//        view.flyTo(asset.getCoordinates());
+        view.setLocation(asset.getCoordinates());
+        view.showDroppedPin(asset.getGeoFeature(20));
+        view.flyTo(asset.getCoordinates());
         view.setAccessPublicRead(asset.isAccessPublicRead());
     }
 

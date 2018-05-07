@@ -462,10 +462,9 @@ public class AssetEditActivity
         if (selectedCoordinates != null) {
             view.flyTo(selectedCoordinates);
         }
-        //TODO location update
-        /*else if (asset.getCoordinates() != null) {
+        else if (asset.getCoordinates() != null) {
             view.flyTo(asset.getCoordinates());
-        }*/
+        }
     }
 
     @Override
@@ -663,8 +662,7 @@ public class AssetEditActivity
             asset.setType(view.getType());
         }
         if (selectedCoordinates != null) {
-            //TODO location update
-            //asset.setCoordinates(selectedCoordinates);
+            asset.setCoordinates(selectedCoordinates);
         }
     }
 

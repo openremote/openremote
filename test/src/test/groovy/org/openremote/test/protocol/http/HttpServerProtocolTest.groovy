@@ -335,7 +335,8 @@ class HttpServerProtocolTest extends Specification implements ManagerContainerTr
         testAsset.setAttributes(
             new AssetAttribute("attribute1", AttributeType.STRING, Values.create("Test"))
         )
-        testAsset.setLocation(new GeometryFactory().createPoint(new Coordinate(1d, 2d)))
+        double[] coordinates = [1d, 2d]
+        testAsset.setCoordinates(coordinates)
         authenticatedTestResource.postAsset(testAsset)
 
         then: "the asset should be stored in the test protocol"
@@ -344,9 +345,8 @@ class HttpServerProtocolTest extends Specification implements ManagerContainerTr
             assert testServerProtocol.resource1.postedAssets.get(0).name == "Test Asset"
             assert testServerProtocol.resource1.postedAssets.get(0).hasTypeWellKnown()
             assert testServerProtocol.resource1.postedAssets.get(0).wellKnownType == AssetType.THING
-            //TODO location update
-//            assert testServerProtocol.resource1.postedAssets.get(0).coordinates[0] == 1d
-//            assert testServerProtocol.resource1.postedAssets.get(0).coordinates[1] == 2d
+            assert testServerProtocol.resource1.postedAssets.get(0).coordinates[0] == 1d
+            assert testServerProtocol.resource1.postedAssets.get(0).coordinates[1] == 2d
         }
 
         when: "the authenticated test resource is used to get an asset"
@@ -355,9 +355,8 @@ class HttpServerProtocolTest extends Specification implements ManagerContainerTr
         then: "the asset should match the posted asset"
         assert asset.name == testAsset.name
         assert asset.wellKnownType == testAsset.wellKnownType
-        //TODO location update
-//        assert asset.coordinates[0] == testAsset.coordinates[0]
-//        assert asset.coordinates[1] == testAsset.coordinates[1]
+        assert asset.coordinates[0] == testAsset.coordinates[0]
+        assert asset.coordinates[1] == testAsset.coordinates[1]
 
         when: "the un-authenticated test resource is used to post an asset"
         testResource.postAsset(testAsset)
@@ -395,7 +394,8 @@ class HttpServerProtocolTest extends Specification implements ManagerContainerTr
         testAsset.setAttributes(
             new AssetAttribute("attribute2", AttributeType.STRING, Values.create("Test"))
         )
-        testAsset.setLocation(new GeometryFactory().createPoint(new Coordinate(3d, 4d)))
+        coordinates = [3d, 4d]
+        testAsset.setCoordinates(coordinates)
         authenticatedTestResource.postAsset(testAsset)
 
         then: "the asset should be stored in the test protocol"
@@ -404,9 +404,8 @@ class HttpServerProtocolTest extends Specification implements ManagerContainerTr
             assert testServerProtocol.resource1.postedAssets.get(1).name == "Test Asset 2"
             assert testServerProtocol.resource1.postedAssets.get(1).hasTypeWellKnown()
             assert testServerProtocol.resource1.postedAssets.get(1).wellKnownType == AssetType.THING
-            //TODO location update
-//            assert testServerProtocol.resource1.postedAssets.get(1).coordinates[0] == 3d
-//            assert testServerProtocol.resource1.postedAssets.get(1).coordinates[1] == 4d
+            assert testServerProtocol.resource1.postedAssets.get(1).coordinates[0] == 3d
+            assert testServerProtocol.resource1.postedAssets.get(1).coordinates[1] == 4d
         }
 
         when: "the new test resource is used to get an asset"
@@ -415,9 +414,8 @@ class HttpServerProtocolTest extends Specification implements ManagerContainerTr
         then: "the asset should match the posted asset"
         assert asset.name == testAsset.name
         assert asset.wellKnownType == testAsset.wellKnownType
-        //TODO location update
-//        assert asset.coordinates[0] == testAsset.coordinates[0]
-//        assert asset.coordinates[1] == testAsset.coordinates[1]
+        assert asset.coordinates[0] == testAsset.coordinates[0]
+        assert asset.coordinates[1] == testAsset.coordinates[1]
 
         when: "a protocol configuration is deleted"
         agent.removeAttribute("protocolConfig")

@@ -164,8 +164,7 @@ public class AssetViewActivity
 
     @Override
     public void centerMap() {
-        //TODO location update
-        //view.flyTo(asset.getCoordinates());
+        view.flyTo(asset.getCoordinates());
     }
 
     @Override

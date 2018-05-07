@@ -24,13 +24,19 @@ import org.hibernate.annotations.Check;
 import org.hibernate.annotations.Formula;
 import org.openremote.model.IdentifiableEntity;
 import org.openremote.model.attribute.Attribute;
+import org.openremote.model.geo.GeoJSON;
+import org.openremote.model.geo.GeoJSONFeature;
+import org.openremote.model.geo.GeoJSONGeometry;
 import org.openremote.model.util.ObservableList;
+import org.openremote.model.util.TextUtil;
 import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Values;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
@@ -42,6 +48,7 @@ import java.util.stream.Stream;
 import static org.openremote.model.Constants.PERSISTENCE_JSON_OBJECT_TYPE;
 import static org.openremote.model.Constants.PERSISTENCE_UNIQUE_ID_GENERATOR;
 import static org.openremote.model.asset.AssetAttribute.*;
+import static org.openremote.model.attribute.AttributeDescriptorImpl.LOCATION;
 
 // @formatter:off
 
@@ -608,6 +615,63 @@ public class Asset implements IdentifiableEntity {
 //    ---------------------------------------------------
 //    FUNCTIONAL METHODS BELOW
 //    ---------------------------------------------------
+
+    public double[] getCoordinates() {
+        Optional<AssetAttribute> locationAttribute = getAttributesStream()
+            .filter(attribute -> attribute.getNameOrThrow().equals(LOCATION.getName()))
+            .findFirst();
+        if (locationAttribute.isPresent()) {
+            double[] coordinates = new double[2];
+            locationAttribute.get().getValueAsObject().ifPresent(objectValue -> {
+                coordinates[1] = objectValue.getNumber("latitude").orElse(0d);
+                coordinates[0] = objectValue.getNumber("longitude").orElse(0d);
+            });
+            return coordinates;
+        } else {
+            return null;
+        }
+    }
+
+    public void setCoordinates(double[] coordinates) {
+        AssetAttribute locationAttribute = getAttributesStream()
+            .filter(attribute -> attribute.getNameOrThrow().equals(LOCATION.getName()))
+            .findFirst().orElse(new AssetAttribute(LOCATION.getName(), LOCATION.getType()));
+
+        ObjectValue objectValue = locationAttribute.getValueAsObject().orElse(Values.createObject());
+        objectValue
+            .put("latitude", coordinates[1])
+            .put("longitude", coordinates[0]);
+        locationAttribute.setValue(objectValue);
+
+        replaceAttribute(locationAttribute);
+    }
+
+    /**
+     * -     * This assumes {@link #getCoordinates} array index 0 is Lng and index 1 is Lat,
+     * -     * which is true for PostGIS backend. Because Lat/Lng is the 'right way', we flip
+     * -     * it here for display. Rounding to 5 decimal places gives us precision of about 1 meter.
+     * -
+     */
+    public String getCoordinatesLabel() {
+        return
+            new BigDecimal(getCoordinates()[1]).setScale(5, RoundingMode.HALF_UP) + " " +
+                new BigDecimal(getCoordinates()[0]).setScale(5, RoundingMode.HALF_UP) + " Lat|Lng";
+    }
+
+    public boolean hasGeoFeature() {
+        return getCoordinates() != null && getCoordinates().length == 2;
+    }
+
+    public GeoJSON getGeoFeature(int maxNameLength) {
+        if (!hasGeoFeature())
+            return GeoJSON.EMPTY_FEATURE_COLLECTION;
+        return new GeoJSON("FeatureCollection").setFeatures(
+            new GeoJSONFeature("Feature")
+                .setProperty("id", getId())
+                .setProperty("title", TextUtil.ellipsize(getName(), maxNameLength))
+                .setGeometry(new GeoJSONGeometry(getCoordinates()))
+        );
+    }
 
     public static boolean isAssetNameEqualTo(Asset asset, String name) {
         return asset != null && asset.getName().equals(name);
