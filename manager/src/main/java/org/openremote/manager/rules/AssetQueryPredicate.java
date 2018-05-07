@@ -90,15 +90,12 @@ public class AssetQueryPredicate implements Predicate<AssetState> {
         }
 
         if (query.location != null) {
-            // Cannot use JTS libraries here without moving this class into manager module
-            // TODO: decide whether to use JTS lib or do simple approx calcs (e.g. (x - center_x)^2 + (y - center_y)^2 < radius^2)
-            if (query.location instanceof RadialLocationPredicate) {
-                RadialLocationPredicate radialLocationPredicate = (RadialLocationPredicate) query.location;
-                return false;
-            } else if (query.location instanceof RectangularLocationPredicate) {
-                return false;
+            ObjectValue objectValue = assetState.getValueAsObject().orElse(null);
+            if (objectValue != null) {
+                Coordinate coordinate = new Coordinate(objectValue.getNumber("latitude").orElse(0d), objectValue.getNumber("longitude").orElse(0d));
+                return asPredicate(query.location).test(coordinate);
             }
-            throw new UnsupportedOperationException("Location predicate '" + query.location.getClass().getSimpleName() + "' not supported in rules matching");
+            return false;
         }
 
         return true;
@@ -234,8 +231,9 @@ public class AssetQueryPredicate implements Predicate<AssetState> {
                     rectangularLocationPredicate.latMax,
                     rectangularLocationPredicate.lngMax);
                 return envelope.contains(coordinate);
+            } else {
+                throw new UnsupportedOperationException("Location predicate '" + query.location.getClass().getSimpleName() + "' not supported in rules matching");
             }
-            return false;
         };
     }
 
@@ -264,15 +262,6 @@ public class AssetQueryPredicate implements Predicate<AssetState> {
 
                 NumberPredicate p = (NumberPredicate) predicate.value;
                 return asPredicate(p).test(assetState.getValueAsNumber().orElse(null));
-
-            } else if (predicate.value instanceof BaseAssetQuery.LocationPredicate) {
-                LocationPredicate p = (LocationPredicate) predicate.value;
-                ObjectValue objectValue = assetState.getValueAsObject().orElse(null);
-                if (objectValue != null) {
-                    Coordinate coordinate = new Coordinate(objectValue.getNumber("latitude").orElse(0d), objectValue.getNumber("longitude").orElse(0d));
-                    return asPredicate(p).test(coordinate);
-                }
-                return false;
             } else {
                 // TODO Implement more
                 throw new UnsupportedOperationException(

@@ -55,7 +55,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 
 import static org.openremote.container.concurrent.GlobalLock.withLock;
 import static org.openremote.manager.asset.AssetProcessingException.Reason.*;
@@ -289,6 +288,18 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                             throw new AssetProcessingException(INVALID_ATTRIBUTE_EXECUTE_STATUS);
                         }
                     }
+
+                    //Check if attribute is well known and the value is valid
+                    AssetModel.getAttributeDescriptor(oldAttribute.name).ifPresent(wellKnownAttribute -> {
+                        //Check if the value is valid
+                        wellKnownAttribute.getType()
+                            .isValidValue(event.getValue().orElseThrow(() -> new AssetProcessingException(INVALID_VALUE_FOR_WELL_KNOWN_ATTRIBUTE)))
+                            .ifPresent(validationFailure -> {
+                                throw new AssetProcessingException(
+                                    INVALID_VALUE_FOR_WELL_KNOWN_ATTRIBUTE
+                                );
+                            });
+                    });
 
                     switch (source) {
                         case CLIENT:

@@ -112,7 +112,12 @@ public class AssetProcessingException extends RuntimeException {
         /**
          * Writing the asset attribute state to database failed.
          */
-        STATE_STORAGE_FAILED
+        STATE_STORAGE_FAILED,
+
+        /**
+         * The event value is not the excepted value for the attribute
+         */
+        INVALID_VALUE_FOR_WELL_KNOWN_ATTRIBUTE
     }
 
     final protected Reason reason;

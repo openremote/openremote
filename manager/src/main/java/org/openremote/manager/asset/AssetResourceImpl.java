@@ -253,6 +253,9 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                     // Proper validation happens on merge(), here we only need the name to continue
                     String updatedAttributeName = updatedAttribute.getNameOrThrow();
 
+                    //Check if a well known attribute is added
+                    checkForWellKnownAttributes(asset);
+
                     // Check if attribute is present on the asset in storage
                     Optional<AssetAttribute> serverAttribute = resultAsset.getAttribute(updatedAttributeName);
                     if (serverAttribute.isPresent()) {
@@ -331,6 +334,28 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
         }
     }
 
+    private void checkForWellKnownAttributes(Asset asset) {
+        asset.getAttributesStream().forEach(assetAttribute -> {
+            AssetModel.getAttributeDescriptor(assetAttribute.name).ifPresent(wellKnownAttribute -> {
+                //Check if the type matches
+                if (!wellKnownAttribute.getType().equals(assetAttribute.getTypeOrThrow())) {
+                    throw new IllegalStateException(
+                        String.format("Well known attribute isn't of the correct type. Attribute name: %s. Expected type: %s",
+                            assetAttribute.name, wellKnownAttribute.getType().name()));
+                }
+
+                //Check if the value is valid
+                wellKnownAttribute.getType()
+                    .isValidValue(assetAttribute.getValue().orElseThrow(() -> new IllegalStateException("Value is empty for " + assetAttribute.name)))
+                    .ifPresent(validationFailure -> {
+                        throw new IllegalStateException(
+                            String.format("Validation failed for %s with reason %s", assetAttribute.name, validationFailure.getReason().name())
+                        );
+                    });
+            });
+        });
+    }
+
     @Override
     public void writeAttributeValue(RequestParams requestParams, String assetId, String attributeName, String rawJson) {
         try {
@@ -364,6 +389,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                         case INVALID_AGENT_LINK:
                         case ILLEGAL_AGENT_UPDATE:
                         case INVALID_ATTRIBUTE_EXECUTE_STATUS:
+                        case INVALID_VALUE_FOR_WELL_KNOWN_ATTRIBUTE:
                             throw new IllegalStateException(processingException);
                         default:
                             throw processingException;
@@ -440,23 +466,8 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                 );
             });
 
-            asset.getAttributesStream().forEach(assetAttribute -> {
-                AssetModel.getAttributeDescriptor(assetAttribute.name).ifPresent(wellKnownAttribute -> {
-                    if (!wellKnownAttribute.getType().equals(assetAttribute.getTypeOrThrow())) {
-                        throw new IllegalStateException(
-                            String.format("Well known attribute isn't of the correct type. Attribute name: %s. Expected type: %s",
-                                assetAttribute.name, wellKnownAttribute.getType().name()));
-                    }
-
-                    wellKnownAttribute.getType()
-                        .isValidValue(assetAttribute.getValue().orElseThrow(() -> new IllegalStateException("Value is empty for " + assetAttribute.name)))
-                        .ifPresent(validationFailure -> {
-                            throw new IllegalStateException(
-                                String.format("Validation failed for %s with reason %s", assetAttribute.name, validationFailure.getReason().name())
-                            );
-                        });
-                });
-            });
+            //Check if a well known attribute is added
+            checkForWellKnownAttributes(asset);
 
             return assetStorageService.merge(newAsset);
 
