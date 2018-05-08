@@ -153,7 +153,7 @@ public class MapViewImpl extends Composite implements MapView {
     }
 
     @Override
-    public void flyTo(double[] coordinates) {
+    public void flyTo(ObjectValue coordinates) {
         if (mapWidget.isMapReady()) {
             mapWidget.flyTo(coordinates);
         }

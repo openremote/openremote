@@ -189,7 +189,7 @@ public class MapActivity extends AssetBrowsingActivity<MapPlace> implements MapV
         if (asset.hasGeoFeature()) {
             GeoJSON geoFeature = asset.getGeoFeature(30);
             view.showDroppedPin(geoFeature);
-            view.flyTo(asset.getCoordinates());
+            view.flyTo(asset.getCoordinates().get());
         }
     }
 

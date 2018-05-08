@@ -294,7 +294,7 @@ public class AssetViewImpl extends Composite implements AssetView {
     /* ############################################################################ */
 
     @Override
-    public void setLocation(double[] coordinates) {
+    public void setLocation(ObjectValue coordinates) {
         if (locationOutput.setCoordinates(managerMessages.selectLocation(), coordinates)) {
             locationGroup.setVisible(true);
             mapWidget.setVisible(true);
@@ -327,7 +327,7 @@ public class AssetViewImpl extends Composite implements AssetView {
     }
 
     @Override
-    public void flyTo(double[] coordinates) {
+    public void flyTo(ObjectValue coordinates) {
         if (mapWidget.isMapReady()) {
             mapWidget.flyTo(coordinates);
         }

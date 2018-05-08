@@ -69,11 +69,11 @@ public interface AssetBaseView<P extends AssetBaseView.Presenter> extends IsWidg
 
     boolean isMapInitialised();
 
-    void setLocation(double[] coordinates);
+    void setLocation(ObjectValue coordinates);
 
     void showDroppedPin(GeoJSON geoFeature);
 
-    void flyTo(double[] coordinates);
+    void flyTo(ObjectValue coordinates);
 
     void setAccessPublicRead(boolean enabled);
 

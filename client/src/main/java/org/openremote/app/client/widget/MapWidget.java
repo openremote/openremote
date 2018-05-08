@@ -229,15 +229,15 @@ public class MapWidget extends FlowPanel {
         mapboxMap.getSource(featureSourceId).setData(geoFeature.getObjectValue().asAny());
     }
 
-    public void flyTo(double[] coordinates) {
+    public void flyTo(ObjectValue coordinates) {
         if (!isMapReady())
             throw new IllegalStateException("Map not ready");
-        if (coordinates == null || coordinates.length != 2)
+        if (coordinates == null || !coordinates.hasKey("latitude") || !coordinates.hasKey("longitude"))
             return;
         ObjectValue options = Values.createObject();
         ArrayValue center = Values.createArray();
-        center.set(0, coordinates[0]);
-        center.set(1, coordinates[1]);
+        center.set(0, coordinates.getNumber("longitude").get());
+        center.set(1, coordinates.getNumber("latitude").get());
         options.put("center", center);
         mapboxMap.flyTo(options.asAny());
     }

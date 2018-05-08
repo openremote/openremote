@@ -49,8 +49,10 @@ import org.openremote.model.interop.Consumer;
 import org.openremote.model.map.MapResource;
 import org.openremote.model.util.EnumUtil;
 import org.openremote.model.util.Pair;
+import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueType;
+import org.openremote.model.value.Values;
 
 import javax.inject.Inject;
 import java.util.*;
@@ -82,7 +84,7 @@ public class AssetEditActivity
     protected final Consumer<ConstraintViolation[]> validationErrorHandler;
     protected List<ProtocolDescriptor> protocolDescriptors = new ArrayList<>();
     protected List<MetaItemDescriptor> metaItemDescriptors = new ArrayList<>(Arrays.asList(AssetMeta.values())); // TODO Get meta item descriptors from server
-    double[] selectedCoordinates;
+    ObjectValue selectedCoordinates;
     protected List<AssetAttribute> initialAssetAttributes;
 
     @Inject
@@ -190,7 +192,7 @@ public class AssetEditActivity
 
     @Override
     public void onMapClicked(double lng, double lat) {
-        selectedCoordinates = new double[]{lng, lat};
+        selectedCoordinates = Values.createObject().put("longitude", lng).put("latitude", lat);
         view.hideMapPopup();
         view.showMapPopup(lng, lat, environment.getMessages().selectedLocation());
         view.setLocation(selectedCoordinates);
@@ -462,8 +464,8 @@ public class AssetEditActivity
         if (selectedCoordinates != null) {
             view.flyTo(selectedCoordinates);
         }
-        else if (asset.getCoordinates() != null) {
-            view.flyTo(asset.getCoordinates());
+        else if (asset.getCoordinates().isPresent()) {
+            view.flyTo(asset.getCoordinates().get());
         }
     }
 

@@ -327,7 +327,7 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
     }
 
     @Override
-    public void setLocation(double[] coordinates) {
+    public void setLocation(ObjectValue coordinates) {
         if (locationOutput.setCoordinates(managerMessages.selectLocation(), coordinates)) {
             centerMapButton.setEnabled(true);
         } else {
@@ -374,7 +374,7 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
     }
 
     @Override
-    public void flyTo(double[] coordinates) {
+    public void flyTo(ObjectValue coordinates) {
         if (mapWidget.isMapReady()) {
             mapWidget.flyTo(coordinates);
         }

@@ -41,7 +41,7 @@ public interface MapView extends IsWidget {
 
     void showDroppedPin(GeoJSON geoFeature);
 
-    void flyTo(double[] coordinates);
+    void flyTo(ObjectValue coordinates);
 
     void showInfoItems(List<MapInfoItem> infoItems);
 }

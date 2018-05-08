@@ -27,12 +27,11 @@ import org.openremote.model.Constants;
 import org.openremote.model.asset.*;
 import org.openremote.model.asset.BaseAssetQuery.Select;
 import org.openremote.model.attribute.*;
+import org.openremote.model.geo.GeoJSONGeometry;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.security.Tenant;
 import org.openremote.model.util.TextUtil;
-import org.openremote.model.value.Value;
-import org.openremote.model.value.ValueException;
-import org.openremote.model.value.Values;
+import org.openremote.model.value.*;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.HttpHeaders;
@@ -599,5 +598,52 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
         request.setAttribute(HttpHeaders.CONTENT_ENCODING, "gzip");
 
         return result;
+    }
+
+    @Override
+    public void updateLocation(RequestParams requestParams, String assetId, GeoJSONGeometry location) {
+        try {
+            Asset asset = get(requestParams, assetId);
+
+            AssetAttribute locationAttribute = asset.getAttribute(AttributeDescriptorImpl.LOCATION.getName())
+                .orElse(AssetAttribute.createWithDescriptor(AttributeDescriptorImpl.LOCATION));
+
+            ObjectValue currentCoordinates = locationAttribute.getValueAsObject().orElse(Values.createObject());
+            ArrayValue arrayValue = location.getObjectValue().getArray("coordinates").orElseThrow(() -> new IllegalStateException("location doesn't contain 'coordinates' key"));
+            locationAttribute.setValue(currentCoordinates.put("latitude", arrayValue.getNumber(0).orElse(0d)).put("longitude", arrayValue.getNumber(1).orElse(0d)));
+
+            asset.replaceAttribute(locationAttribute);
+
+            asset = assetStorageService.merge(asset);
+
+        } catch (IllegalStateException ex) {
+            throw new WebApplicationException(ex, BAD_REQUEST);
+        }
+    }
+
+    @Override
+    public void updatePublicAssetLocation(RequestParams requestParams, String assetId, GeoJSONGeometry location) {
+        try {
+            Asset[] result = queryPublicAssets(requestParams, new AssetQuery().id(assetId));
+
+            if (result.length == 0) {
+                throw new WebApplicationException(NOT_FOUND);
+            }
+
+            Asset asset = result[0];
+
+            AssetAttribute locationAttribute = asset.getAttribute(AttributeDescriptorImpl.LOCATION.getName())
+                .orElse(AssetAttribute.createWithDescriptor(AttributeDescriptorImpl.LOCATION));
+
+            ObjectValue currentCoordinates = locationAttribute.getValueAsObject().orElse(Values.createObject());
+            ArrayValue arrayValue = location.getObjectValue().getArray("coordinates").orElseThrow(() -> new IllegalStateException("location doesn't contain 'coordinates' key"));
+            locationAttribute.setValue(currentCoordinates.put("latitude", arrayValue.getNumber(0).orElse(0d)).put("longitude", arrayValue.getNumber(1).orElse(0d)));
+
+            asset.replaceAttribute(locationAttribute);
+
+            asset = assetStorageService.merge(asset);
+        } catch (IllegalStateException ex) {
+            throw new WebApplicationException(ex, BAD_REQUEST);
+        }
     }
 }

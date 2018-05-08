@@ -20,6 +20,9 @@
 package org.openremote.model.asset;
 
 import jsinterop.annotations.JsType;
+import org.openremote.model.geo.GeoJSON;
+import org.openremote.model.geo.GeoJSONFeature;
+import org.openremote.model.geo.GeoJSONGeometry;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.http.SuccessStatusCode;
 
@@ -47,12 +50,13 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
  * <p>
  * The only operations, always limited to linked assets, a restricted user is able to perform are:
  * <ul>
- *     <li>{@link #getCurrentUserAssets}</li>
- *     <li>{@link #queryAssets}</li>
- *     <li>{@link #queryPublicAssets}</li>
- *     <li>{@link #get}</li>
- *     <li>{@link #update}</li>
- *     <li>{@link #writeAttributeValue}</li>
+ * <li>{@link #getCurrentUserAssets}</li>
+ * <li>{@link #queryAssets}</li>
+ * <li>{@link #queryPublicAssets}</li>
+ * <li>{@link #get}</li>
+ * <li>{@link #update}</li>
+ * <li>{@link #writeAttributeValue}</li>
+ * <li>{@link #updateLocation}</li>
  * </ul>
  */
 @Path("asset")
@@ -60,6 +64,7 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 public interface AssetResource {
 
     // TODO This returns the same as #queryAssets, can it be removed?
+
     /**
      * Retrieve the linked assets of the currently authenticated user. If the request is made by the superuser, an empty
      * result is returned. If the request is made by a regular user, but the user has no linked assets and is therefore
@@ -259,4 +264,27 @@ public interface AssetResource {
     @SuccessStatusCode(200)
     @SuppressWarnings("unusable-by-js")
     Asset[] getPublicAssets(@BeanParam RequestParams requestParams, @QueryParam("q") String q);
+
+    /**
+     * Updates the attribute "location" of the asset
+     */
+    @POST
+    @Path("{assetId}/updateLocation")
+    @Consumes(APPLICATION_JSON)
+    @SuccessStatusCode(204)
+    @RolesAllowed({"write:assets"})
+    @SuppressWarnings("unusable-by-js")
+    void updateLocation(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId, GeoJSONGeometry location);
+
+    /**
+     * Updated the attribute "location" of the public asset
+     * <p>
+     * Allows un-authenticated 'public' users to update public assets for a realm.
+     */
+    @POST
+    @Path("public/{assetId}/updateLocation")
+    @Consumes(APPLICATION_JSON)
+    @SuccessStatusCode(204)
+    @SuppressWarnings("unusable-by-js")
+    void updatePublicAssetLocation(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId, GeoJSONGeometry location);
 }

@@ -21,9 +21,12 @@ package org.openremote.model.geo;
 
 import org.openremote.model.AbstractTypeHolder;
 import org.openremote.model.value.ArrayValue;
+import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Values;
 
 public class GeoJSONGeometry extends AbstractTypeHolder {
+
+    public GeoJSONGeometry() {}
 
     public GeoJSONGeometry(String type) {
         super(type);
@@ -32,12 +35,10 @@ public class GeoJSONGeometry extends AbstractTypeHolder {
     /**
      * Of type "Point".
      */
-    public GeoJSONGeometry(double[] coordinates) {
+    public GeoJSONGeometry(ObjectValue coordinates) {
         this("Point");
-        ArrayValue array = Values.createArray();
-        for (int i = 0; i < coordinates.length; i++) {
-            array.set(i, coordinates[i]);
-        }
-        objectValue.put("coordinates", array);
+
+        objectValue.put("latitude", coordinates.getNumber("latitude").orElse(0d));
+        objectValue.put("longitude", coordinates.getNumber("longitude").orElse(0d));
     }
 }
