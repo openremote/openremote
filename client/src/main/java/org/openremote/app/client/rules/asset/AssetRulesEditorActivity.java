@@ -34,7 +34,7 @@ import org.openremote.model.event.bus.EventRegistration;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.interop.Consumer;
 import org.openremote.model.rules.AssetRuleset;
-import org.openremote.model.rules.RulesetResource;
+import org.openremote.model.rules.RulesResource;
 
 import javax.inject.Inject;
 import java.util.Collection;
@@ -52,7 +52,7 @@ public class AssetRulesEditorActivity
     public AssetRulesEditorActivity(Environment environment,
                                     AssetBrowser.Presenter assetBrowserPresenter,
                                     RulesEditor view,
-                                    RulesetResource rulesetResource,
+                                    RulesResource rulesetResource,
                                     AssetMapper assetMapper,
                                     AssetResource assetResource,
                                     AssetRulesetMapper assetRulesetMapper) {

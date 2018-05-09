@@ -32,7 +32,7 @@ import org.openremote.model.event.bus.EventBus;
 import org.openremote.model.event.bus.EventRegistration;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.interop.Consumer;
-import org.openremote.model.rules.RulesetResource;
+import org.openremote.model.rules.RulesResource;
 import org.openremote.model.rules.TenantRuleset;
 import org.openremote.model.security.TenantResource;
 
@@ -52,7 +52,7 @@ public class TenantRulesEditorActivity
     public TenantRulesEditorActivity(Environment environment,
                                      AssetBrowser.Presenter assetBrowserPresenter,
                                      RulesEditor view,
-                                     RulesetResource rulesetResource,
+                                     RulesResource rulesetResource,
                                      TenantMapper tenantMapper,
                                      TenantResource tenantResource,
                                      TenantRulesetMapper tenantRulesetMapper) {

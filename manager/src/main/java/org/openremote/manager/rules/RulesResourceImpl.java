@@ -23,7 +23,7 @@ import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebResource;
-import org.openremote.model.rules.RulesetResource;
+import org.openremote.model.rules.RulesResource;
 import org.openremote.model.security.Tenant;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.http.RequestParams;
@@ -40,17 +40,17 @@ import java.util.logging.Logger;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 
-public class RulesetResourceImpl extends ManagerWebResource implements RulesetResource {
+public class RulesResourceImpl extends ManagerWebResource implements RulesResource {
 
-    private static final Logger LOG = Logger.getLogger(RulesetResourceImpl.class.getName());
+    private static final Logger LOG = Logger.getLogger(RulesResourceImpl.class.getName());
 
     final protected RulesetStorageService rulesetStorageService;
     final protected AssetStorageService assetStorageService;
 
-    public RulesetResourceImpl(TimerService timerService,
-                               ManagerIdentityService identityService,
-                               RulesetStorageService rulesetStorageService,
-                               AssetStorageService assetStorageService) {
+    public RulesResourceImpl(TimerService timerService,
+                             ManagerIdentityService identityService,
+                             RulesetStorageService rulesetStorageService,
+                             AssetStorageService assetStorageService) {
         super(timerService, identityService);
         this.rulesetStorageService = rulesetStorageService;
         this.assetStorageService = assetStorageService;

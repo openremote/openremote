@@ -26,7 +26,7 @@ import org.openremote.app.client.assets.browser.AssetBrowser;
 import org.openremote.app.client.mvp.AcceptsView;
 import org.openremote.app.client.rules.AbstractRulesEditorActivity;
 import org.openremote.app.client.rules.RulesEditor;
-import org.openremote.model.rules.RulesetResource;
+import org.openremote.model.rules.RulesResource;
 import org.openremote.model.event.bus.EventBus;
 import org.openremote.model.event.bus.EventRegistration;
 import org.openremote.model.http.RequestParams;
@@ -45,7 +45,7 @@ public class GlobalRulesEditorActivity
     public GlobalRulesEditorActivity(Environment environment,
                                      AssetBrowser.Presenter assetBrowserPresenter,
                                      RulesEditor view,
-                                     RulesetResource rulesetResource,
+                                     RulesResource rulesetResource,
                                      GlobalRulesetMapper globalRulesetMapper) {
         super(environment, assetBrowserPresenter, view, rulesetResource);
         this.globalRulesetMapper = globalRulesetMapper;

@@ -44,7 +44,7 @@ public class RulesetStorageService implements ContainerService {
         identityService = container.getService(ManagerIdentityService.class);
 
         container.getService(WebService.class).getApiSingletons().add(
-            new RulesetResourceImpl(
+            new RulesResourceImpl(
                 container.getService(TimerService.class),
                 container.getService(ManagerIdentityService.class),
                 this,

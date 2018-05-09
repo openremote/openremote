@@ -32,7 +32,7 @@ import org.openremote.model.asset.AssetResource;
 import org.openremote.model.event.bus.EventBus;
 import org.openremote.model.event.bus.EventRegistration;
 import org.openremote.model.rules.AssetRuleset;
-import org.openremote.model.rules.RulesetResource;
+import org.openremote.model.rules.RulesResource;
 
 import javax.inject.Inject;
 import java.util.Collection;
@@ -45,7 +45,7 @@ public class AssetRulesListActivity
     final AssetResource assetResource;
     final AssetMapper assetMapper;
     final AssetRulesetArrayMapper assetRulesetArrayMapper;
-    final RulesetResource rulesetResource;
+    final RulesResource rulesetResource;
 
     String assetId;
     Asset asset;
@@ -57,7 +57,7 @@ public class AssetRulesListActivity
                                   AssetResource assetResource,
                                   AssetMapper assetMapper,
                                   AssetRulesetArrayMapper assetRulesetArrayMapper,
-                                  RulesetResource rulesetResource) {
+                                  RulesResource rulesetResource) {
         super(environment, assetBrowserPresenter);
         this.view = view;
         this.assetResource = assetResource;

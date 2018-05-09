@@ -35,7 +35,7 @@ import org.openremote.model.http.RequestParams;
 import org.openremote.model.interop.Consumer;
 import org.openremote.model.interop.Runnable;
 import org.openremote.model.rules.Ruleset;
-import org.openremote.model.rules.RulesetResource;
+import org.openremote.model.rules.RulesResource;
 
 import javax.inject.Inject;
 import java.util.Collection;
@@ -48,7 +48,7 @@ public abstract class AbstractRulesEditorActivity<T extends Ruleset, PLACE exten
     private static final Logger LOG = Logger.getLogger(AbstractRulesEditorActivity.class.getName());
 
     final protected RulesEditor view;
-    final protected RulesetResource rulesetResource;
+    final protected RulesResource rulesetResource;
     final protected Consumer<ConstraintViolation[]> validationErrorHandler;
 
     protected Long rulesetId;
@@ -58,7 +58,7 @@ public abstract class AbstractRulesEditorActivity<T extends Ruleset, PLACE exten
     public AbstractRulesEditorActivity(Environment environment,
                                        AssetBrowser.Presenter assetBrowserPresenter,
                                        RulesEditor view,
-                                       RulesetResource rulesetResource) {
+                                       RulesResource rulesetResource) {
         super(environment, assetBrowserPresenter);
         this.view = view;
         this.rulesetResource = rulesetResource;

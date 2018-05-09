@@ -31,7 +31,7 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
 @Path("rules")
 @JsType(isNative = true)
-public interface RulesetResource {
+public interface RulesResource {
 
     /**
      * Retrieve global rules. Only the superuser can perform this operation, a 403 status is

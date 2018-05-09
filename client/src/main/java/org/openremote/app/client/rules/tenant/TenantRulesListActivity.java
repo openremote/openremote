@@ -29,7 +29,7 @@ import org.openremote.app.client.mvp.AppActivity;
 import org.openremote.app.client.rules.RulesModule;
 import org.openremote.model.event.bus.EventBus;
 import org.openremote.model.event.bus.EventRegistration;
-import org.openremote.model.rules.RulesetResource;
+import org.openremote.model.rules.RulesResource;
 import org.openremote.model.rules.TenantRuleset;
 import org.openremote.model.security.TenantResource;
 
@@ -44,7 +44,7 @@ public class TenantRulesListActivity
     final TenantMapper tenantMapper;
     final TenantResource tenantResource;
     final TenantRulesetArrayMapper tenantRulesetArrayMapper;
-    final RulesetResource rulesetResource;
+    final RulesResource rulesetResource;
 
     String realmId;
 
@@ -55,7 +55,7 @@ public class TenantRulesListActivity
                                    TenantMapper tenantMapper,
                                    TenantResource tenantResource,
                                    TenantRulesetArrayMapper tenantRulesetArrayMapper,
-                                   RulesetResource rulesetResource) {
+                                   RulesResource rulesetResource) {
         super(environment, assetBrowserPresenter);
         this.view = view;
         this.tenantMapper = tenantMapper;

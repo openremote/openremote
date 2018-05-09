@@ -29,7 +29,7 @@ import org.openremote.app.client.rules.RulesModule;
 import org.openremote.model.event.bus.EventBus;
 import org.openremote.model.event.bus.EventRegistration;
 import org.openremote.model.rules.GlobalRuleset;
-import org.openremote.model.rules.RulesetResource;
+import org.openremote.model.rules.RulesResource;
 
 import javax.inject.Inject;
 import java.util.Collection;
@@ -40,14 +40,14 @@ public class GlobalRulesListActivity
 
     final GlobalRulesList view;
     final GlobalRulesetArrayMapper globalRulesetArrayMapper;
-    final RulesetResource rulesetResource;
+    final RulesResource rulesetResource;
 
     @Inject
     public GlobalRulesListActivity(Environment environment,
                                    AssetBrowser.Presenter assetBrowserPresenter,
                                    GlobalRulesList view,
                                    GlobalRulesetArrayMapper globalRulesetArrayMapper,
-                                   RulesetResource rulesetResource) {
+                                   RulesResource rulesetResource) {
         super(environment, assetBrowserPresenter);
         this.view = view;
         this.globalRulesetArrayMapper = globalRulesetArrayMapper;

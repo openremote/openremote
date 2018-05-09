@@ -33,7 +33,7 @@ import org.openremote.app.client.rules.asset.AssetRulesListImpl;
 import org.openremote.app.client.rules.asset.AssetRulesListPlace;
 import org.openremote.app.client.rules.global.*;
 import org.openremote.app.client.rules.tenant.*;
-import org.openremote.model.rules.RulesetResource;
+import org.openremote.model.rules.RulesResource;
 
 public class RulesModule extends AbstractGinModule {
 
@@ -69,7 +69,7 @@ public class RulesModule extends AbstractGinModule {
 
     @Provides
     @Singleton
-    public native RulesetResource getRulesetResource() /*-{
+    public native RulesResource getRulesetResource() /*-{
         return $wnd.openremote.REST.RulesetResource;
     }-*/;
 }
