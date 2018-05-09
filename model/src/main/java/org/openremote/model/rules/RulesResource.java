@@ -20,8 +20,11 @@
 package org.openremote.model.rules;
 
 import jsinterop.annotations.JsType;
+import org.openremote.model.asset.AssetMeta;
+import org.openremote.model.attribute.AttributeDescriptorImpl;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.http.SuccessStatusCode;
+import org.openremote.model.rules.geofence.GeofenceDefinition;
 
 import javax.annotation.security.RolesAllowed;
 import javax.validation.Valid;
@@ -34,8 +37,8 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 public interface RulesResource {
 
     /**
-     * Retrieve global rules. Only the superuser can perform this operation, a 403 status is
-     * returned if a regular user tries to access global rulesets.
+     * Retrieve global rules. Only the superuser can perform this operation, a 403 status is returned if a regular user
+     * tries to access global rulesets.
      */
     @GET
     @Produces(APPLICATION_JSON)
@@ -45,9 +48,9 @@ public interface RulesResource {
     GlobalRuleset[] getGlobalRulesets(@BeanParam RequestParams requestParams);
 
     /**
-     * Retrieve rules of a tenant. The superuser can retrieve rules of all realms, a 403 status
-     * is returned if a regular user tries to access rulesets outside of its authenticated realm.
-     * An empty result will be returned if the realm can not be found.
+     * Retrieve rules of a tenant. The superuser can retrieve rules of all realms, a 403 status is returned if a regular
+     * user tries to access rulesets outside of its authenticated realm. An empty result will be returned if the realm
+     * can not be found.
      */
     @GET
     @Path("tenant/for/{realmId}")
@@ -58,10 +61,9 @@ public interface RulesResource {
     TenantRuleset[] getTenantRulesets(@BeanParam RequestParams requestParams, @PathParam("realmId") String realmId);
 
     /**
-     * Retrieve rules of an asset. The superuser can retrieve rules of all realms and assets, a 403 status
-     * is returned if a regular user tries to access ruleset outside of its authenticated realm, or
-     * if the user is restricted and the asset is not one of its linked assets. An empty result will be returned
-     * if the asset can not be found.
+     * Retrieve rules of an asset. The superuser can retrieve rules of all realms and assets, a 403 status is returned
+     * if a regular user tries to access ruleset outside of its authenticated realm, or if the user is restricted and
+     * the asset is not one of its linked assets. An empty result will be returned if the asset can not be found.
      */
     @GET
     @Path("asset/for/{assetId}")
@@ -74,8 +76,8 @@ public interface RulesResource {
     /* ################################################################################################# */
 
     /**
-     * Create a global ruleset. Only the superuser can perform this operation, a 403 status is
-     * returned if a regular user tries to access global ruleset.
+     * Create a global ruleset. Only the superuser can perform this operation, a 403 status is returned if a regular
+     * user tries to access global ruleset.
      */
     @POST
     @Consumes(APPLICATION_JSON)
@@ -86,8 +88,8 @@ public interface RulesResource {
     void createGlobalRuleset(@BeanParam RequestParams requestParams, @Valid GlobalRuleset ruleset);
 
     /**
-     * Retrieve a global ruleset. Only the superuser can perform this operation, a 403 status is
-     * returned if a regular user tries to access global ruleset.
+     * Retrieve a global ruleset. Only the superuser can perform this operation, a 403 status is returned if a regular
+     * user tries to access global ruleset.
      */
     @GET
     @Path("{id}")
@@ -98,8 +100,8 @@ public interface RulesResource {
     GlobalRuleset getGlobalRuleset(@BeanParam RequestParams requestParams, @PathParam("id") Long id);
 
     /**
-     * Update a global rules ruleset. Only the superuser can perform this operation, a 403 status is
-     * returned if a regular user tries to access global ruleset.
+     * Update a global rules ruleset. Only the superuser can perform this operation, a 403 status is returned if a
+     * regular user tries to access global ruleset.
      */
     @PUT
     @Path("{id}")
@@ -110,8 +112,8 @@ public interface RulesResource {
     void updateGlobalRuleset(@BeanParam RequestParams requestParams, @PathParam("id") Long id, @Valid GlobalRuleset ruleset);
 
     /**
-     * Deletes a global ruleset. Only the superuser can perform this operation, a 403 status is
-     * returned if a regular user tries to access global ruleset.
+     * Deletes a global ruleset. Only the superuser can perform this operation, a 403 status is returned if a regular
+     * user tries to access global ruleset.
      */
     @DELETE
     @Path("{id}")
@@ -124,9 +126,8 @@ public interface RulesResource {
     /* ################################################################################################# */
 
     /**
-     * Create a tenant ruleset. The superuser can create rules in all realms, a 403 status
-     * is returned if a regular user tries to access ruleset outside of its authenticated realm,
-     * or if the user is restricted.
+     * Create a tenant ruleset. The superuser can create rules in all realms, a 403 status is returned if a regular user
+     * tries to access ruleset outside of its authenticated realm, or if the user is restricted.
      */
     @POST
     @Path("tenant")
@@ -138,9 +139,8 @@ public interface RulesResource {
     void createTenantRuleset(@BeanParam RequestParams requestParams, @Valid TenantRuleset ruleset);
 
     /**
-     * Retrieve a tenant ruleset. The superuser can retrieve rules of all realms, a 403 status
-     * is returned if a regular user tries to access ruleset outside of its authenticated realm, or
-     * if the user is restricted.
+     * Retrieve a tenant ruleset. The superuser can retrieve rules of all realms, a 403 status is returned if a regular
+     * user tries to access ruleset outside of its authenticated realm, or if the user is restricted.
      */
     @GET
     @Path("tenant/{id}")
@@ -151,9 +151,8 @@ public interface RulesResource {
     TenantRuleset getTenantRuleset(@BeanParam RequestParams requestParams, @PathParam("id") Long id);
 
     /**
-     * Update a tenant ruleset. The superuser can update rules of all realms, a 403 status
-     * is returned if a regular user tries to access rulesets outside of its authenticated realm,
-     * or if the user is restricted.
+     * Update a tenant ruleset. The superuser can update rules of all realms, a 403 status is returned if a regular user
+     * tries to access rulesets outside of its authenticated realm, or if the user is restricted.
      */
     @PUT
     @Path("tenant/{id}")
@@ -164,9 +163,8 @@ public interface RulesResource {
     void updateTenantRuleset(@BeanParam RequestParams requestParams, @PathParam("id") Long id, @Valid TenantRuleset ruleset);
 
     /**
-     * Delete a tenant ruleset. The superuser can delete rules of all realms, a 403 status
-     * is returned if a regular user tries to access rulesets outside of its authenticated realm,
-     * or if the user is restricted.
+     * Delete a tenant ruleset. The superuser can delete rules of all realms, a 403 status is returned if a regular user
+     * tries to access rulesets outside of its authenticated realm, or if the user is restricted.
      */
     @DELETE
     @Path("tenant/{id}")
@@ -179,9 +177,9 @@ public interface RulesResource {
     /* ################################################################################################# */
 
     /**
-     * Create an asset ruleset. The superuser can create rules for all assets, a 403 status
-     * is returned if a regular user tries to access ruleset outside of its authenticated realm,
-     * or if the user is restricted and does not have access to the asset.
+     * Create an asset ruleset. The superuser can create rules for all assets, a 403 status is returned if a regular
+     * user tries to access ruleset outside of its authenticated realm, or if the user is restricted and does not have
+     * access to the asset.
      */
     @POST
     @Path("asset")
@@ -193,9 +191,9 @@ public interface RulesResource {
     void createAssetRuleset(@BeanParam RequestParams requestParams, @Valid AssetRuleset ruleset);
 
     /**
-     * Retrieve an asset ruleset. The superuser can retrieve rules of all assets, a 403 status
-     * is returned if a regular user tries to access ruleset outside of its authenticated realm, or
-     * if the user is restricted and does not have access to the asset.
+     * Retrieve an asset ruleset. The superuser can retrieve rules of all assets, a 403 status is returned if a regular
+     * user tries to access ruleset outside of its authenticated realm, or if the user is restricted and does not have
+     * access to the asset.
      */
     @GET
     @Path("asset/{id}")
@@ -206,9 +204,9 @@ public interface RulesResource {
     AssetRuleset getAssetRuleset(@BeanParam RequestParams requestParams, @PathParam("id") Long id);
 
     /**
-     * Update an asset ruleset. The superuser can update rules of all assets, a 403 status
-     * is returned if a regular user tries to access ruleset outside of its authenticated realm,
-     * or if the user is restricted and does not have access to the asset.
+     * Update an asset ruleset. The superuser can update rules of all assets, a 403 status is returned if a regular user
+     * tries to access ruleset outside of its authenticated realm, or if the user is restricted and does not have access
+     * to the asset.
      */
     @PUT
     @Path("asset/{id}")
@@ -219,9 +217,9 @@ public interface RulesResource {
     void updateAssetRuleset(@BeanParam RequestParams requestParams, @PathParam("id") Long id, @Valid AssetRuleset ruleset);
 
     /**
-     * Delete an asset ruleset. The superuser can delete rules of all assets, a 403 status
-     * is returned if a regular user tries to access ruleset outside of its authenticated realm,
-     * or if the user is restricted and does not have access to the asset.
+     * Delete an asset ruleset. The superuser can delete rules of all assets, a 403 status is returned if a regular user
+     * tries to access ruleset outside of its authenticated realm, or if the user is restricted and does not have access
+     * to the asset.
      */
     @DELETE
     @Path("asset/{id}")
@@ -231,4 +229,19 @@ public interface RulesResource {
     @SuppressWarnings("unusable-by-js")
     void deleteAssetRuleset(@BeanParam RequestParams requestParams, @PathParam("id") Long id);
 
+
+    /**
+     * Get the geofences for the specified asset; if this method is accessed anonymously (public read) then the asset
+     * must have public read enabled and the {@link AttributeDescriptorImpl#CONSOLE_PROVIDER_GEOFENCE} attribute must
+     * have a {@link AssetMeta#ACCESS_PUBLIC_READ} meta item. Otherwise the asset must be linked to the logged in user.
+     * If neither of these conditions are met then a 403 is returned.
+     * <p>
+     * The attribute must also have a valid {@link AssetMeta#GEOFENCE_ADAPTER}.
+     */
+    @GET
+    @Path("geofences/{assetId}")
+    @Produces(APPLICATION_JSON)
+    @SuccessStatusCode(200)
+    @SuppressWarnings("unusable-by-js")
+    GeofenceDefinition[] getAssetGeofences(@PathParam("assetId") String assetId);
 }

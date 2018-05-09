@@ -21,15 +21,14 @@ package org.openremote.container.web;
 
 import org.keycloak.KeycloakPrincipal;
 import org.openremote.container.Container;
+import org.openremote.container.security.AuthContext;
 import org.openremote.container.security.basic.BasicAuthContext;
 import org.openremote.container.security.keycloak.AccessTokenAuthContext;
-import org.openremote.container.security.AuthContext;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.*;
-
 import java.security.Principal;
 
 import static javax.ws.rs.core.Response.Status.FORBIDDEN;
@@ -69,6 +68,10 @@ public class WebResource implements AuthContext {
 
     public String getRequestRealm() {
         return request.getHeader(WebService.REQUEST_HEADER_REALM);
+    }
+
+    public boolean isAuthenticated() {
+        return securityContext.getUserPrincipal() != null;
     }
 
     @SuppressWarnings("unchecked")

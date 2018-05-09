@@ -23,13 +23,17 @@ import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebResource;
-import org.openremote.model.rules.RulesResource;
-import org.openremote.model.security.Tenant;
 import org.openremote.model.asset.Asset;
+import org.openremote.model.asset.AssetQuery;
+import org.openremote.model.asset.BaseAssetQuery;
+import org.openremote.model.attribute.AttributeDescriptorImpl;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.rules.AssetRuleset;
 import org.openremote.model.rules.GlobalRuleset;
+import org.openremote.model.rules.RulesResource;
 import org.openremote.model.rules.TenantRuleset;
+import org.openremote.model.rules.geofence.GeofenceDefinition;
+import org.openremote.model.security.Tenant;
 
 import javax.ws.rs.BeanParam;
 import javax.ws.rs.WebApplicationException;
@@ -46,14 +50,17 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
 
     final protected RulesetStorageService rulesetStorageService;
     final protected AssetStorageService assetStorageService;
+    final protected RulesService rulesService;
 
     public RulesResourceImpl(TimerService timerService,
                              ManagerIdentityService identityService,
                              RulesetStorageService rulesetStorageService,
-                             AssetStorageService assetStorageService) {
+                             AssetStorageService assetStorageService,
+                             RulesService rulesService) {
         super(timerService, identityService);
         this.rulesetStorageService = rulesetStorageService;
         this.assetStorageService = assetStorageService;
+        this.rulesService = rulesService;
     }
 
     /* ################################################################################################# */
@@ -264,7 +271,8 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
             throw new WebApplicationException("Requested ID and ruleset ID don't match", BAD_REQUEST);
         }
         if (!existingRuleset.getAssetId().equals(ruleset.getAssetId())) {
-            throw new WebApplicationException("Can't update asset ID, delete and create the ruleset to reassign", BAD_REQUEST);
+            throw new WebApplicationException("Can't update asset ID, delete and create the ruleset to reassign",
+                                              BAD_REQUEST);
         }
         rulesetStorageService.merge(ruleset);
     }
@@ -286,6 +294,33 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
         rulesetStorageService.delete(AssetRuleset.class, id);
+    }
+
+    @Override
+    public GeofenceDefinition[] getAssetGeofences(String assetId) {
+        Asset asset;
+
+        asset = assetStorageService.find(
+            new AssetQuery()
+                .select(new BaseAssetQuery.Select(BaseAssetQuery.Include.ONLY_ID_AND_NAME))
+                .id(assetId));
+
+        if (asset == null)
+            return new GeofenceDefinition[0];
+
+        if (isAuthenticated()) {
+            if (!isRealmAccessibleByUser(asset.getTenantRealm())) {
+                throw new WebApplicationException(Response.Status.FORBIDDEN);
+            }
+            if (isRestrictedUser() && !assetStorageService.isUserAsset(getUserId(), assetId)) {
+                throw new WebApplicationException(Response.Status.FORBIDDEN);
+            }
+        } else //noinspection ConstantConditions
+            if (!asset.getAttribute(AttributeDescriptorImpl.CONSOLE_PROVIDER_GEOFENCE.getName()).get().isAccessPublicRead()) {
+                throw new WebApplicationException(Response.Status.FORBIDDEN);
+            }
+
+        return rulesService.getAssetGeofences(assetId);
     }
 
 }

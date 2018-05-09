@@ -1,13 +1,10 @@
 package org.openremote.test.rules
 
-import org.openremote.container.Container
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
-
 import org.openremote.manager.rules.RulesEngine
 import org.openremote.manager.rules.RulesService
 import org.openremote.manager.rules.RulesetStorageService
-import org.openremote.manager.rules.geofence.GeofenceAssetAdapter
 import org.openremote.manager.setup.SetupService
 import org.openremote.manager.setup.builtin.KeycloakDemoSetup
 import org.openremote.manager.setup.builtin.ManagerDemoSetup
@@ -15,14 +12,11 @@ import org.openremote.model.asset.Asset
 import org.openremote.model.asset.AssetAttribute
 import org.openremote.model.asset.AssetMeta
 import org.openremote.model.asset.AssetType
-import org.openremote.model.asset.BaseAssetQuery
 import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.attribute.AttributeType
 import org.openremote.model.attribute.Meta
 import org.openremote.model.attribute.MetaItem
 import org.openremote.model.rules.AssetRuleset
-import org.openremote.model.rules.AssetState
-import org.openremote.model.rules.GlobalRuleset
 import org.openremote.model.rules.Ruleset
 import org.openremote.model.rules.TenantRuleset
 import org.openremote.model.value.Values
@@ -70,7 +64,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         when: "an attribute event is pushed into the system for an attribute with RULE_STATE meta set to true"
         rulesImport.resetRulesFired()
         def apartment2LivingRoomPresenceDetectedChange = new AttributeEvent(
-                managerDemoSetup.apartment2LivingroomId, "presenceDetected", Values.create(true)
+            managerDemoSetup.apartment2LivingroomId, "presenceDetected", Values.create(true)
         )
         assetProcessingService.sendAttributeEvent(apartment2LivingRoomPresenceDetectedChange)
 
@@ -89,7 +83,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         when: "an attribute event is pushed into the system for an attribute with no RULE_STATE meta"
         rulesImport.resetRulesFired()
         def apartment2LivingRoomWindowOpenChange = new AttributeEvent(
-                managerDemoSetup.apartment2LivingroomId, "windowOpen", Values.create(true)
+            managerDemoSetup.apartment2LivingroomId, "windowOpen", Values.create(true)
         )
         assetProcessingService.sendAttributeEvent(apartment2LivingRoomWindowOpenChange)
 
@@ -135,10 +129,10 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
 
         when: "a LHS filtering test rule definition is loaded into the smart home asset"
         def assetRuleset = new AssetRuleset(
-                "Some smart home asset rules",
-                managerDemoSetup.smartHomeId,
-                getClass().getResource("/org/openremote/test/rules/BasicSmartHomeMatchAllAssetStates.groovy").text,
-                Ruleset.Lang.GROOVY
+            "Some smart home asset rules",
+            managerDemoSetup.smartHomeId,
+            getClass().getResource("/org/openremote/test/rules/BasicSmartHomeMatchAllAssetStates.groovy").text,
+            Ruleset.Lang.GROOVY
         )
         rulesetStorageService.merge(assetRuleset)
         RulesEngine smartHomeEngine = null
@@ -171,7 +165,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         when: "an attribute event occurs"
         rulesImport.resetRulesFired(smartHomeEngine)
         def apartment2LivingRoomPresenceDetectedChange = new AttributeEvent(
-                managerDemoSetup.apartment2LivingroomId, "presenceDetected", Values.create(true)
+            managerDemoSetup.apartment2LivingroomId, "presenceDetected", Values.create(true)
         )
         assetProcessingService.sendAttributeEvent(apartment2LivingRoomPresenceDetectedChange)
 
@@ -219,11 +213,11 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         def asset = new Asset("Kitchen", AssetType.ROOM, apartment2)
         asset.setRealmId(keycloakDemoSetup.customerATenant.getId())
         def attributes = [
-                new AssetAttribute("testString", AttributeType.STRING, Values.create("test"))
-                        .setMeta(
-                        new Meta(new MetaItem(AssetMeta.RULE_STATE, Values.create(true))
-                        )
+            new AssetAttribute("testString", AttributeType.STRING, Values.create("test"))
+                .setMeta(
+                new Meta(new MetaItem(AssetMeta.RULE_STATE, Values.create(true))
                 )
+            )
         ]
         asset.setAttributes(attributes)
         asset = assetStorageService.merge(asset)
@@ -250,11 +244,11 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         when: "the Kitchen room asset is modified to add a new attribute but RULE_STATE = true meta is not changed"
         rulesImport.resetRulesFired()
         attributes = [
-                new AssetAttribute("testString", AttributeType.STRING, Values.create("test"))
-                        .setMeta(
-                        new MetaItem(AssetMeta.RULE_STATE, Values.create(true))
-                ),
-                new AssetAttribute("testInteger", AttributeType.NUMBER, Values.create(0))
+            new AssetAttribute("testString", AttributeType.STRING, Values.create("test"))
+                .setMeta(
+                new MetaItem(AssetMeta.RULE_STATE, Values.create(true))
+            ),
+            new AssetAttribute("testInteger", AttributeType.NUMBER, Values.create(0))
         ]
         asset.setAttributes(attributes)
         asset = assetStorageService.merge(asset)
@@ -276,11 +270,11 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         when: "the Kitchen room asset is modified to set the RULE_STATE to false"
         rulesImport.resetRulesFired()
         attributes = [
-                new AssetAttribute("testString", AttributeType.STRING, Values.create("test"))
-                        .setMeta(
-                        new MetaItem(AssetMeta.RULE_STATE, Values.create(false))
-                ),
-                new AssetAttribute("testInteger", AttributeType.NUMBER, Values.create(0))
+            new AssetAttribute("testString", AttributeType.STRING, Values.create("test"))
+                .setMeta(
+                new MetaItem(AssetMeta.RULE_STATE, Values.create(false))
+            ),
+            new AssetAttribute("testInteger", AttributeType.NUMBER, Values.create(0))
         ]
         asset.setAttributes(attributes)
         asset = assetStorageService.merge(asset)
@@ -305,14 +299,14 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         when: "the Kitchen room asset is modified to set all attributes to RULE_STATE = true"
         rulesImport.resetRulesFired()
         attributes = [
-                new AssetAttribute("testString", AttributeType.STRING, Values.create("test"))
-                        .setMeta(
-                        new MetaItem(AssetMeta.RULE_STATE, Values.create(true))
-                ),
-                new AssetAttribute("testInteger", AttributeType.NUMBER, Values.create(0))
-                        .setMeta(
-                        new MetaItem(AssetMeta.RULE_STATE, Values.create(true))
-                )
+            new AssetAttribute("testString", AttributeType.STRING, Values.create("test"))
+                .setMeta(
+                new MetaItem(AssetMeta.RULE_STATE, Values.create(true))
+            ),
+            new AssetAttribute("testInteger", AttributeType.NUMBER, Values.create(0))
+                .setMeta(
+                new MetaItem(AssetMeta.RULE_STATE, Values.create(true))
+            )
         ]
         asset.setAttributes(attributes)
         asset = assetStorageService.merge(asset)
@@ -383,10 +377,10 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
 
         when: "a broken RHS rule is loaded into the customerA engine"
         def ruleset = new TenantRuleset(
-                "Some broken test rules",
-                keycloakDemoSetup.customerATenant.id,
-                getClass().getResource("/org/openremote/test/rules/BasicBrokenRules.groovy").text,
-                Ruleset.Lang.GROOVY
+            "Some broken test rules",
+            keycloakDemoSetup.customerATenant.id,
+            getClass().getResource("/org/openremote/test/rules/BasicBrokenRules.groovy").text,
+            Ruleset.Lang.GROOVY
         )
         rulesetStorageService.merge(ruleset)
 
@@ -404,7 +398,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
 
         when: "an attribute event occurs"
         def apartment2LivingRoomPresenceDetectedChange = new AttributeEvent(
-                managerDemoSetup.apartment2LivingroomId, "presenceDetected", Values.create(true)
+            managerDemoSetup.apartment2LivingroomId, "presenceDetected", Values.create(true)
         )
         assetProcessingService.sendAttributeEvent(apartment2LivingRoomPresenceDetectedChange)
 
@@ -413,175 +407,6 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
             def asset = assetStorageService.find(managerDemoSetup.apartment2LivingroomId, true)
             assert asset.getAttribute("presenceDetected").get().getValueAsBoolean().isPresent()
             assert !asset.getAttribute("presenceDetected").get().getValueAsBoolean().get()
-        }
-
-        cleanup: "the server should be stopped"
-        stopContainer(container)
-    }
-
-    def "Check tracking of location predicate rules"() {
-        given: "expected conditions"
-        def conditions = new PollingConditions(timeout: 10, initialDelay: 0.5, delay: 0.5)
-
-        and: "a mock geofence adapter"
-        List<RulesEngine.AssetStateLocationPredicates> geofenceChanges = null
-        def geofenceInit = false;
-        def testGeofenceAdapter = new GeofenceAssetAdapter() {
-
-            @Override
-            int getPriority() {
-                return Integer.MAX_VALUE
-            }
-
-            @Override
-            void processLocationPredicates(List<RulesEngine.AssetStateLocationPredicates> assetLocationPredicates, boolean initialising) {
-                geofenceChanges = assetLocationPredicates
-                geofenceInit = initialising
-            }
-
-            @Override
-            void init(Container container) throws Exception {
-
-            }
-
-            @Override
-            void start(Container container) throws Exception {
-
-            }
-
-            @Override
-            void stop(Container container) throws Exception {
-
-            }
-        }
-
-        and: "the container is started"
-        def serverPort = findEphemeralPort()
-        RulesService.GEOFENCE_PROCESSING_DEBOUNCE_MILLIS = 50
-        def container = startContainer(defaultConfig(serverPort), defaultServices(testGeofenceAdapter))
-        def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
-        def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
-        def rulesService = container.getService(RulesService.class)
-        def rulesetStorageService = container.getService(RulesetStorageService.class)
-        def assetStorageService = container.getService(AssetStorageService.class)
-        def assetProcessingService = container.getService(AssetProcessingService.class)
-
-        and: "some test rulesets have been imported"
-        def rulesImport = new BasicRulesImport(rulesetStorageService, keycloakDemoSetup, managerDemoSetup)
-
-        expect: "the rules engines to be ready"
-        conditions.eventually {
-            rulesImport.assertEnginesReady(rulesService, keycloakDemoSetup, managerDemoSetup)
-        }
-
-        and: "the demo attributes marked with RULE_STATE = true meta should be inserted into the engines"
-        conditions.eventually {
-            assert rulesService.assetStates.size() == DEMO_RULE_STATES_GLOBAL
-            assert rulesImport.globalEngine.assetStates.size() == DEMO_RULE_STATES_GLOBAL
-            assert rulesImport.masterEngine.assetStates.size() == DEMO_RULE_STATES_SMART_OFFICE
-            assert rulesImport.customerAEngine.assetStates.size() == DEMO_RULE_STATES_CUSTOMER_A
-            assert rulesImport.apartment2Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_2
-            assert rulesImport.apartment3Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_3
-        }
-
-        and: "the mock geofence adapter should have been initialised with the demo thing assets location predicate"
-        conditions.eventually {
-            assert geofenceChanges != null
-            assert geofenceInit
-            assert geofenceChanges.size() == 1
-            def thingGeofences = geofenceChanges.find({ it.assetState.id == managerDemoSetup.thingId }).locationPredicates
-            assert thingGeofences.size() == 1
-            BaseAssetQuery.RadialLocationPredicate locPredicate = thingGeofences.find { it instanceof BaseAssetQuery.RadialLocationPredicate && it.centrePoint[0] == 100 && it.centrePoint[1] == 50 && it.radius == 100 }
-            assert locPredicate != null
-        }
-
-        when: "another asset's location attribute is marked as RULE_STATE"
-        def lobby = assetStorageService.find(managerDemoSetup.lobbyId, true)
-        lobby.getAttribute("location").get().addMeta(new MetaItem(AssetMeta.RULE_STATE))
-        lobby = assetStorageService.merge(lobby)
-
-        then: "the mock geofence adapter should be notified of the new lobby asset with a location predicate"
-        conditions.eventually {
-            assert geofenceChanges != null
-            assert !geofenceInit
-            assert geofenceChanges.size() == 1
-            def lobbyGeofences = geofenceChanges.find({ it.assetState.id == managerDemoSetup.lobbyId }).locationPredicates
-            assert lobbyGeofences.size() == 1
-            BaseAssetQuery.RadialLocationPredicate locPredicate = lobbyGeofences.find { it instanceof BaseAssetQuery.RadialLocationPredicate && it.centrePoint[0] == 100 && it.centrePoint[1] == 50 && it.radius == 100 }
-            assert locPredicate != null
-        }
-
-        when: "a new ruleset is deployed with multiple location predicate rules on the lobby asset"
-        def lobbyRuleset = new AssetRuleset(
-            "Lobby location predicates",
-            managerDemoSetup.lobbyId,
-            getClass().getResource("/org/openremote/test/rules/BasicLocationPredicate2.groovy").text,
-            Ruleset.Lang.GROOVY
-        )
-        rulesetStorageService.merge(lobbyRuleset)
-        RulesEngine lobbyEngine = null
-
-        then: "the new rule engine should be created and be running"
-        conditions.eventually {
-            lobbyEngine = rulesService.assetEngines.get(managerDemoSetup.lobbyId)
-            assert lobbyEngine != null
-            assert lobbyEngine.isRunning()
-            assert lobbyEngine.deployments.size() == 1
-            assert lobbyEngine.deployments.values().any({
-                it.name == "Lobby location predicates" && it.status == DEPLOYED
-            })
-        }
-
-        then: "the mock geofence adapter should have been notified of the new location predicates for the demo thing and lobby assets"
-        conditions.eventually {
-            assert geofenceChanges != null
-            assert !geofenceInit
-            assert geofenceChanges.size() == 2
-            Set<BaseAssetQuery.LocationPredicate> thingGeofences = geofenceChanges.find{ it.assetState.id == managerDemoSetup.thingId }.locationPredicates
-            assert thingGeofences.size() == 3
-            BaseAssetQuery.RadialLocationPredicate rad1Predicate = thingGeofences.find { it instanceof BaseAssetQuery.RadialLocationPredicate && it.centrePoint[0] == 100 && it.centrePoint[1] == 50 && it.radius == 100 }
-            BaseAssetQuery.RadialLocationPredicate rad2Predicate = thingGeofences.find { it instanceof BaseAssetQuery.RadialLocationPredicate && it.centrePoint[0] == 50 && it.centrePoint[1] == 0 && it.radius == 200 }
-            BaseAssetQuery.RectangularLocationPredicate rect1Predicate = thingGeofences.find { it instanceof BaseAssetQuery.RectangularLocationPredicate && it.centrePoint[0] == 75 && it.centrePoint[1] == 25 && it.lngMax == 100 && it.latMax == 50 }
-            assert rad1Predicate != null
-            assert rad2Predicate != null
-            assert rect1Predicate != null
-            def lobbyGeofences = geofenceChanges.find({ it.assetState.id == managerDemoSetup.lobbyId }).locationPredicates
-            assert lobbyGeofences.size() == 3
-            assert lobbyGeofences.any { it == rad1Predicate }
-            assert lobbyGeofences.any { it == rad2Predicate }
-            assert lobbyGeofences.any { it == rect1Predicate }
-        }
-
-        when: "a location predicate ruleset is removed"
-        rulesetStorageService.delete(GlobalRuleset.class, rulesImport.globalRuleset3Id)
-
-        then: "the mock geofence adapter should be notified that the demo thing and lobby asset's rules with location predicates have changed"
-        conditions.eventually {
-            assert geofenceChanges != null
-            assert geofenceChanges.size() == 2
-            Set<BaseAssetQuery.LocationPredicate> thingGeofences = geofenceChanges.find{ it.assetState.id == managerDemoSetup.thingId }.locationPredicates
-            assert thingGeofences.size() == 2
-            BaseAssetQuery.RadialLocationPredicate rad2Predicate = thingGeofences.find { it instanceof BaseAssetQuery.RadialLocationPredicate && it.centrePoint[0] == 50 && it.centrePoint[1] == 0 && it.radius == 200 }
-            BaseAssetQuery.RectangularLocationPredicate rect1Predicate = thingGeofences.find { it instanceof BaseAssetQuery.RectangularLocationPredicate && it.centrePoint[0] == 75 && it.centrePoint[1] == 25 && it.lngMax == 100 && it.latMax == 50 }
-            assert rad2Predicate != null
-            assert rect1Predicate != null
-            def lobbyGeofences = geofenceChanges.find({ it.assetState.id == managerDemoSetup.lobbyId }).locationPredicates
-            assert lobbyGeofences.size() == 2
-            assert lobbyGeofences.any { it == rad2Predicate }
-            assert lobbyGeofences.any { it == rect1Predicate }
-        }
-
-        when: "the RULE_STATE meta is removed from the lobby asset's location attribute"
-        lobby.getAttribute("location").get().getMeta().removeIf({ it.name.orElse(null) == AssetMeta.RULE_STATE.urn })
-        lobby = assetStorageService.merge(lobby)
-
-        then: "the mock geofence adapter should be notified that the lobby asset no longer has any rules with location predicates"
-        conditions.eventually {
-            assert geofenceChanges != null
-            assert !geofenceInit
-            assert geofenceChanges.size() == 1
-            def lobbyGeofences = geofenceChanges.find({ it.assetState.id == managerDemoSetup.lobbyId }).locationPredicates
-            assert lobbyGeofences.size() == 0
         }
 
         cleanup: "the server should be stopped"

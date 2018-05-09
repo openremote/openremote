@@ -19,30 +19,29 @@
  */
 package org.openremote.manager.rules.geofence;
 
+import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.manager.rules.RulesEngine;
+import org.openremote.model.AbstractValueHolder;
 import org.openremote.model.asset.Asset;
+import org.openremote.model.asset.AssetMeta;
 import org.openremote.model.asset.BaseAssetQuery;
-import org.openremote.model.rules.AssetState;
+import org.openremote.model.attribute.AttributeDescriptorImpl;
+import org.openremote.model.rules.geofence.GeofenceDefinition;
 
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.Optional;
 
 /**
  * Defines an adapter that can take a collection of {@link BaseAssetQuery.LocationPredicate} that apply to a given
  * {@link Asset} and can convert the {@link BaseAssetQuery.LocationPredicate}s into Geofences that can be implemented by
  * the asset(s) itself.
  * <p>
- * The adapter is notified when the {@link BaseAssetQuery.LocationPredicate}s {@link Asset} map changes; if a map entry
- * contains a null or empty collection of {@link BaseAssetQuery.LocationPredicate}s then it means that there are no
- * longer any associated with that {@link Asset} so the adapter should clear any that already exist on that {@link
- * Asset}, it is the adapters job to maintain state if required (see initialising flag on {@link
+ * The adapter is notified when the {@link Asset}s {@link RulesEngine.AssetStateLocationPredicates} change; if the
+ * {@link RulesEngine.AssetStateLocationPredicates#getLocationPredicates()} is null or empty then it means that there
+ * are no longer any associated with that {@link Asset} so the adapter should clear any that already exist on that
+ * {@link Asset}, it is the adapters job to maintain state if required (see initialising flag on {@link
  * #processLocationPredicates}).
- * <p>
- * When an adapter consumes a {@link BaseAssetQuery.LocationPredicate} for an {@link Asset} then it should remove that
- * value from the collection (the map entry cannot be removed so adapters must only modify the entry collection value).
- * This means that the next adapter won't be able to consume the same {@link BaseAssetQuery.LocationPredicate}.
  * <p>
  * How the gefences are implemented and 'pushed' to the {@link Asset}s is up to the adapter but when a geofence is
  * triggered on an asset then the asset should update its own location by posting to the asset/location endpoint, the
@@ -54,14 +53,33 @@ import java.util.Set;
  * geofence)</li>
  * </ul>
  */
-public interface GeofenceAssetAdapter extends ContainerService {
+public abstract class GeofenceAssetAdapter implements ContainerService {
+
+    public static Optional<String> getAssetGeofenceAdapterName(Asset asset) {
+        return asset.getAttribute(AttributeDescriptorImpl.CONSOLE_PROVIDER_GEOFENCE.getName())
+            .flatMap(attr -> attr.getMetaItem(AssetMeta.GEOFENCE_ADAPTER))
+            .flatMap(AbstractValueHolder::getValueAsString);
+    }
+
+    @Override
+    public void init(Container container) throws Exception {
+
+    }
+
+    @Override
+    public void start(Container container) throws Exception {
+
+    }
+
+    @Override
+    public void stop(Container container) throws Exception {
+
+    }
 
     /**
-     * An integer indicating where this adapter should be placed in the adapter chain; adapters are ordered by priority
-     * so a higher priority means the adapter will be called sooner (i.e. it will have a chance to consume {@link
-     * BaseAssetQuery.LocationPredicate}s before adapters with a lower priority).
+     * Get the name of this adapter
      */
-    int getPriority();
+    public abstract String getName();
 
     /**
      * The initialising flag is used to indicate that the system is just initialising and the adapter is being made
@@ -69,6 +87,11 @@ public interface GeofenceAssetAdapter extends ContainerService {
      * their own state rather than 'pushing' geofences to the asset(s) it can be assumed that they were previously sent,
      * hence adapters should be more concerned with delta changes (but this is really up to the adapter).
      */
-    void processLocationPredicates(List<RulesEngine.AssetStateLocationPredicates> assetLocationPredicates,
-                                   boolean initialising);
+    public abstract void processLocationPredicates(List<RulesEngine.AssetStateLocationPredicates> modifiedAssetLocationPredicates,
+                                                   boolean initialising);
+
+    /**
+     * Called to return the active geofences for the specified {@link Asset}.
+     */
+    public abstract GeofenceDefinition[] getAssetGeofences(String assetId);
 }

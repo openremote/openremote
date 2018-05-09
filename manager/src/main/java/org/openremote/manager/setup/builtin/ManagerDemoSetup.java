@@ -47,8 +47,6 @@ import static org.openremote.model.attribute.AttributeType.*;
 
 public class ManagerDemoSetup extends AbstractManagerSetup {
 
-    final protected boolean importDemoScenes;
-
     // Update these numbers whenever you change a RULE_STATE flag in test data
     public static final int DEMO_RULE_STATES_APARTMENT_1 = 37;
     public static final int DEMO_RULE_STATES_APARTMENT_2 = 11;
@@ -56,21 +54,19 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
     public static final int DEMO_RULE_STATES_SMART_OFFICE = 2;
     public static final int DEMO_RULE_STATES_SMART_HOME = DEMO_RULE_STATES_APARTMENT_1 + DEMO_RULE_STATES_APARTMENT_2 + DEMO_RULE_STATES_APARTMENT_3;
     public static final int DEMO_RULE_STATES_CUSTOMER_A = DEMO_RULE_STATES_SMART_HOME;
-
     public static final int DEMO_RULE_STATES_GLOBAL = DEMO_RULE_STATES_CUSTOMER_A + DEMO_RULE_STATES_SMART_OFFICE;
-
     public static final int DEMO_RULE_STATES_APARTMENT_1_WITH_SCENES = DEMO_RULE_STATES_APARTMENT_1 + 28;
     public static final int DEMO_RULE_STATES_SMART_HOME_WITH_SCENES = DEMO_RULE_STATES_APARTMENT_1_WITH_SCENES + DEMO_RULE_STATES_APARTMENT_2 + DEMO_RULE_STATES_APARTMENT_3;
     public static final int DEMO_RULE_STATES_CUSTOMER_A_WITH_SCENES = DEMO_RULE_STATES_SMART_HOME_WITH_SCENES;
     public static final int DEMO_RULE_STATES_GLOBAL_WITH_SCENES = DEMO_RULE_STATES_CUSTOMER_A_WITH_SCENES;
-
+    public final String agentProtocolConfigName = "simulator123";
+    public final String thingLightToggleAttributeName = "light1Toggle";
+    final protected boolean importDemoScenes;
     public String smartOfficeId;
     public String groundFloorId;
     public String lobbyId;
     public String agentId;
-    public final String agentProtocolConfigName = "simulator123";
     public String thingId;
-    public final String thingLightToggleAttributeName = "light1Toggle";
     public String smartHomeId;
     public String apartment1Id;
     public String apartment1ServiceAgentId;
@@ -84,6 +80,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
     public String apartment3LivingroomId;
     public String masterRealmId;
     public String customerARealmId;
+    public String consoleId;
 
     public ManagerDemoSetup(Container container, boolean importDemoScenes) {
         super(container);
@@ -101,7 +98,8 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
 
         // ################################ Demo assets for 'master' realm ###################################
 
-        ObjectValue locationValue = Values.createObject().put("latitude", 51.44541688237109).put("longitude", 5.460315214821094);
+        ObjectValue locationValue = Values.createObject().put("latitude", 51.44541688237109).put("longitude",
+                                                                                                 5.460315214821094);
 
         Asset smartOffice = new Asset();
         smartOffice.setRealmId(masterTenant.getId());
@@ -169,7 +167,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
 
         Asset thing = new Asset("Demo Thing", THING, agent)
             .addAttributes(AssetAttribute.createWithDescriptor(AttributeDescriptorImpl.LOCATION, locationValue)
-                .setMeta(new MetaItem(RULE_STATE, Values.create(true))));
+                               .setMeta(new MetaItem(RULE_STATE, Values.create(true))));
         thing.addAttributes(
             new AssetAttribute(thingLightToggleAttributeName, BOOLEAN, Values.create(true))
                 .setMeta(new Meta(
@@ -191,67 +189,66 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                 ),
             new AssetAttribute("light1Dimmer", PERCENTAGE) // No initial value!
                 .setMeta(new Meta(
-                        new MetaItem(
-                            LABEL,
-                            Values.create("Light 1 Dimmer")),
-                        new MetaItem(
-                            DESCRIPTION,
-                            Values.create("Dimmer for living room light")),
-                        new MetaItem(
-                            RANGE_MIN,
-                            Values.create(0)),
-                        new MetaItem(
-                            RANGE_MAX,
-                            Values.create(100)),
-                        new MetaItem(
-                            AGENT_LINK,
-                            new AttributeRef(agent.getId(), agentProtocolConfigName).toArrayValue()),
-                        new MetaItem(
-                            SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME_RANGE)),
-                        new MetaItem(
-                            SimulatorProtocol.CONFIG_MODE, Values.create(SimulatorProtocol.Mode.WRITE_THROUGH_DELAYED.toString()))
-                    )
+                             new MetaItem(
+                                 LABEL,
+                                 Values.create("Light 1 Dimmer")),
+                             new MetaItem(
+                                 DESCRIPTION,
+                                 Values.create("Dimmer for living room light")),
+                             new MetaItem(
+                                 RANGE_MIN,
+                                 Values.create(0)),
+                             new MetaItem(
+                                 RANGE_MAX,
+                                 Values.create(100)),
+                             new MetaItem(
+                                 AGENT_LINK,
+                                 new AttributeRef(agent.getId(), agentProtocolConfigName).toArrayValue()),
+                             new MetaItem(
+                                 SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME_RANGE)),
+                             new MetaItem(
+                                 SimulatorProtocol.CONFIG_MODE,
+                                 Values.create(SimulatorProtocol.Mode.WRITE_THROUGH_DELAYED.toString()))
+                         )
                 ),
             new AssetAttribute("light1Color", COLOR_RGB, new ColorRGB(88, 123, 88).asArrayValue())
                 .setMeta(new Meta(
-                        new MetaItem(
-                            LABEL,
-                            Values.create("Light 1 Color")),
-                        new MetaItem(
-                            DESCRIPTION,
-                            Values.create("Color of living room light")),
-                        new MetaItem(
-                            AGENT_LINK,
-                            new AttributeRef(agent.getId(), agentProtocolConfigName).toArrayValue()),
-                        new MetaItem(
-                            SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(ColorSimulatorElement.ELEMENT_NAME))
-                    )
+                             new MetaItem(
+                                 LABEL,
+                                 Values.create("Light 1 Color")),
+                             new MetaItem(
+                                 DESCRIPTION,
+                                 Values.create("Color of living room light")),
+                             new MetaItem(
+                                 AGENT_LINK,
+                                 new AttributeRef(agent.getId(), agentProtocolConfigName).toArrayValue()),
+                             new MetaItem(
+                                 SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(ColorSimulatorElement.ELEMENT_NAME))
+                         )
                 ),
             new AssetAttribute("light1PowerConsumption", ENERGY_KWH, Values.create(12.345))
                 .setMeta(new Meta(
-                        new MetaItem(
-                            LABEL,
-                            Values.create("Light 1 Usage")),
-                        new MetaItem(
-                            DESCRIPTION,
-                            Values.create("Total energy consumption of living room light")),
-                        new MetaItem(
-                            READ_ONLY,
-                            Values.create(true)),
-                        new MetaItem(
-                            FORMAT,
-                            Values.create("%3d kWh")),
-                        new MetaItem(
-                            AGENT_LINK,
-                            new AttributeRef(agent.getId(), agentProtocolConfigName).toArrayValue()),
-                        new MetaItem(
-                            SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME)),
-                        new MetaItem(
-                            STORE_DATA_POINTS, Values.create(true))
-                    )
-                ),
-            new AssetAttribute("locations", ARRAY)
-                .setMeta(new MetaItem(RULE_STATE))
+                             new MetaItem(
+                                 LABEL,
+                                 Values.create("Light 1 Usage")),
+                             new MetaItem(
+                                 DESCRIPTION,
+                                 Values.create("Total energy consumption of living room light")),
+                             new MetaItem(
+                                 READ_ONLY,
+                                 Values.create(true)),
+                             new MetaItem(
+                                 FORMAT,
+                                 Values.create("%3d kWh")),
+                             new MetaItem(
+                                 AGENT_LINK,
+                                 new AttributeRef(agent.getId(), agentProtocolConfigName).toArrayValue()),
+                             new MetaItem(
+                                 SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME)),
+                             new MetaItem(
+                                 STORE_DATA_POINTS, Values.create(true))
+                         )
+                )
         );
         thing = assetStorageService.merge(thing);
         thingId = thing.getId();
@@ -264,54 +261,102 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
             .orElseThrow(() -> new RuntimeException("Invalid test data"));
 
         persistenceService.doTransaction(em -> {
-            assetDatapointService.processAssetUpdate(em, finalThing, light1PowerConsumptionAttribute, AttributeEvent.Source.SENSOR);
+            assetDatapointService.processAssetUpdate(em,
+                                                     finalThing,
+                                                     light1PowerConsumptionAttribute,
+                                                     AttributeEvent.Source.SENSOR);
 
             light1PowerConsumptionAttribute.setValue(Values.create(0.11), now.minusDays(80).toEpochSecond() * 1000);
-            assetDatapointService.processAssetUpdate(em, finalThing, light1PowerConsumptionAttribute, AttributeEvent.Source.SENSOR);
+            assetDatapointService.processAssetUpdate(em,
+                                                     finalThing,
+                                                     light1PowerConsumptionAttribute,
+                                                     AttributeEvent.Source.SENSOR);
 
             light1PowerConsumptionAttribute.setValue(Values.create(1.22), now.minusDays(40).toEpochSecond() * 1000);
-            assetDatapointService.processAssetUpdate(em, finalThing, light1PowerConsumptionAttribute, AttributeEvent.Source.SENSOR);
+            assetDatapointService.processAssetUpdate(em,
+                                                     finalThing,
+                                                     light1PowerConsumptionAttribute,
+                                                     AttributeEvent.Source.SENSOR);
 
             light1PowerConsumptionAttribute.setValue(Values.create(2.33), now.minusDays(20).toEpochSecond() * 1000);
-            assetDatapointService.processAssetUpdate(em, finalThing, light1PowerConsumptionAttribute, AttributeEvent.Source.SENSOR);
+            assetDatapointService.processAssetUpdate(em,
+                                                     finalThing,
+                                                     light1PowerConsumptionAttribute,
+                                                     AttributeEvent.Source.SENSOR);
 
             light1PowerConsumptionAttribute.setValue(Values.create(3.44), now.minusDays(10).toEpochSecond() * 1000);
-            assetDatapointService.processAssetUpdate(em, finalThing, light1PowerConsumptionAttribute, AttributeEvent.Source.SENSOR);
+            assetDatapointService.processAssetUpdate(em,
+                                                     finalThing,
+                                                     light1PowerConsumptionAttribute,
+                                                     AttributeEvent.Source.SENSOR);
 
             light1PowerConsumptionAttribute.setValue(Values.create(4.55), now.minusDays(8).toEpochSecond() * 1000);
 
             light1PowerConsumptionAttribute.setValue(Values.create(5.66), now.minusDays(6).toEpochSecond() * 1000);
-            assetDatapointService.processAssetUpdate(em, finalThing, light1PowerConsumptionAttribute, AttributeEvent.Source.SENSOR);
+            assetDatapointService.processAssetUpdate(em,
+                                                     finalThing,
+                                                     light1PowerConsumptionAttribute,
+                                                     AttributeEvent.Source.SENSOR);
 
             light1PowerConsumptionAttribute.setValue(Values.create(6.77), now.minusDays(3).toEpochSecond() * 1000);
-            assetDatapointService.processAssetUpdate(em, finalThing, light1PowerConsumptionAttribute, AttributeEvent.Source.SENSOR);
+            assetDatapointService.processAssetUpdate(em,
+                                                     finalThing,
+                                                     light1PowerConsumptionAttribute,
+                                                     AttributeEvent.Source.SENSOR);
 
             light1PowerConsumptionAttribute.setValue(Values.create(7.88), now.minusDays(1).toEpochSecond() * 1000);
-            assetDatapointService.processAssetUpdate(em, finalThing, light1PowerConsumptionAttribute, AttributeEvent.Source.SENSOR);
+            assetDatapointService.processAssetUpdate(em,
+                                                     finalThing,
+                                                     light1PowerConsumptionAttribute,
+                                                     AttributeEvent.Source.SENSOR);
 
             light1PowerConsumptionAttribute.setValue(Values.create(8.99), now.minusHours(10).toEpochSecond() * 1000);
-            assetDatapointService.processAssetUpdate(em, finalThing, light1PowerConsumptionAttribute, AttributeEvent.Source.SENSOR);
+            assetDatapointService.processAssetUpdate(em,
+                                                     finalThing,
+                                                     light1PowerConsumptionAttribute,
+                                                     AttributeEvent.Source.SENSOR);
 
             light1PowerConsumptionAttribute.setValue(Values.create(9.11), now.minusHours(5).toEpochSecond() * 1000);
-            assetDatapointService.processAssetUpdate(em, finalThing, light1PowerConsumptionAttribute, AttributeEvent.Source.SENSOR);
+            assetDatapointService.processAssetUpdate(em,
+                                                     finalThing,
+                                                     light1PowerConsumptionAttribute,
+                                                     AttributeEvent.Source.SENSOR);
 
             light1PowerConsumptionAttribute.setValue(Values.create(10.22), now.minusHours(2).toEpochSecond() * 1000);
-            assetDatapointService.processAssetUpdate(em, finalThing, light1PowerConsumptionAttribute, AttributeEvent.Source.SENSOR);
+            assetDatapointService.processAssetUpdate(em,
+                                                     finalThing,
+                                                     light1PowerConsumptionAttribute,
+                                                     AttributeEvent.Source.SENSOR);
 
             light1PowerConsumptionAttribute.setValue(Values.create(11.33), now.minusHours(1).toEpochSecond() * 1000);
-            assetDatapointService.processAssetUpdate(em, finalThing, light1PowerConsumptionAttribute, AttributeEvent.Source.SENSOR);
+            assetDatapointService.processAssetUpdate(em,
+                                                     finalThing,
+                                                     light1PowerConsumptionAttribute,
+                                                     AttributeEvent.Source.SENSOR);
 
             light1PowerConsumptionAttribute.setValue(Values.create(11.44), now.minusMinutes(30).toEpochSecond() * 1000);
-            assetDatapointService.processAssetUpdate(em, finalThing, light1PowerConsumptionAttribute, AttributeEvent.Source.SENSOR);
+            assetDatapointService.processAssetUpdate(em,
+                                                     finalThing,
+                                                     light1PowerConsumptionAttribute,
+                                                     AttributeEvent.Source.SENSOR);
 
             light1PowerConsumptionAttribute.setValue(Values.create(12.00), now.minusMinutes(5).toEpochSecond() * 1000);
-            assetDatapointService.processAssetUpdate(em, finalThing, light1PowerConsumptionAttribute, AttributeEvent.Source.SENSOR);
+            assetDatapointService.processAssetUpdate(em,
+                                                     finalThing,
+                                                     light1PowerConsumptionAttribute,
+                                                     AttributeEvent.Source.SENSOR);
 
             light1PowerConsumptionAttribute.setValue(Values.create(12.11), now.minusSeconds(5).toEpochSecond() * 1000);
-            assetDatapointService.processAssetUpdate(em, finalThing, light1PowerConsumptionAttribute, AttributeEvent.Source.SENSOR);
+            assetDatapointService.processAssetUpdate(em,
+                                                     finalThing,
+                                                     light1PowerConsumptionAttribute,
+                                                     AttributeEvent.Source.SENSOR);
 
             light1PowerConsumptionAttribute.setValue(Values.create(12.22), now.minusSeconds(1).toEpochSecond() * 1000);
-            assetDatapointService.processAssetUpdate(em, finalThing, light1PowerConsumptionAttribute, AttributeEvent.Source.SENSOR);
+            assetDatapointService.processAssetUpdate(em,
+                                                     finalThing,
+                                                     light1PowerConsumptionAttribute,
+                                                     AttributeEvent.Source.SENSOR);
         });
 
         // ################################ Demo assets for 'customerA' realm ###################################
@@ -406,18 +451,27 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                 switch (attributeIndex) {
                     case 2:
                         return new MetaItem[]{
-                            new MetaItem(AssetMeta.AGENT_LINK, new AttributeRef(apartment1ServiceAgentId, "apartmentSimulator").toArrayValue()),
-                            new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME))
+                            new MetaItem(AssetMeta.AGENT_LINK,
+                                         new AttributeRef(apartment1ServiceAgentId,
+                                                          "apartmentSimulator").toArrayValue()),
+                            new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT,
+                                         Values.create(NumberSimulatorElement.ELEMENT_NAME))
                         };
                     case 3:
                         return new MetaItem[]{
-                            new MetaItem(AssetMeta.AGENT_LINK, new AttributeRef(apartment1ServiceAgentId, "apartmentSimulator").toArrayValue()),
-                            new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME))
+                            new MetaItem(AssetMeta.AGENT_LINK,
+                                         new AttributeRef(apartment1ServiceAgentId,
+                                                          "apartmentSimulator").toArrayValue()),
+                            new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT,
+                                         Values.create(NumberSimulatorElement.ELEMENT_NAME))
                         };
                     case 4:
                         return new MetaItem[]{
-                            new MetaItem(AssetMeta.AGENT_LINK, new AttributeRef(apartment1ServiceAgentId, "apartmentSimulator").toArrayValue()),
-                            new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME))
+                            new MetaItem(AssetMeta.AGENT_LINK,
+                                         new AttributeRef(apartment1ServiceAgentId,
+                                                          "apartmentSimulator").toArrayValue()),
+                            new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT,
+                                         Values.create(NumberSimulatorElement.ELEMENT_NAME))
                         };
                 }
                 return null;
@@ -573,12 +627,37 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         apartment3Livingroom = assetStorageService.merge(apartment3Livingroom);
         apartment3LivingroomId = apartment3Livingroom.getId();
 
+        Asset console = new Asset("Demo Android Console", CONSOLE, lobby)
+            .addAttributes(
+                new AssetAttribute(AttributeDescriptorImpl.LOCATION.getName(),
+                                   AttributeDescriptorImpl.LOCATION.getType())
+                    .setMeta(new MetaItem(RULE_STATE)),
+                new AssetAttribute(AttributeDescriptorImpl.CONSOLE_PROVIDER_GEOFENCE.getName(),
+                                   AttributeDescriptorImpl.CONSOLE_PROVIDER_GEOFENCE.getType())
+                    .setMeta(
+                        new MetaItem(GEOFENCE_ADAPTER, Values.create("ORConsole")),
+                        new MetaItem(ACCESS_PUBLIC_READ)
+                    )
+            );
+        console = assetStorageService.merge(console);
+        consoleId = console.getId();
+
         // ################################ Link demo users and assets ###################################
 
-        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.customerATenant.getId(), keycloakDemoSetup.testuser3Id, apartment1Id));
-        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.customerATenant.getId(), keycloakDemoSetup.testuser3Id, apartment1LivingroomId));
-        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.customerATenant.getId(), keycloakDemoSetup.testuser3Id, apartment1KitchenId));
-        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.customerATenant.getId(), keycloakDemoSetup.testuser3Id, apartment1HallwayId));
-        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.customerATenant.getId(), keycloakDemoSetup.testuser3Id, apartment2Id));
+        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.customerATenant.getId(),
+                                                         keycloakDemoSetup.testuser3Id,
+                                                         apartment1Id));
+        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.customerATenant.getId(),
+                                                         keycloakDemoSetup.testuser3Id,
+                                                         apartment1LivingroomId));
+        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.customerATenant.getId(),
+                                                         keycloakDemoSetup.testuser3Id,
+                                                         apartment1KitchenId));
+        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.customerATenant.getId(),
+                                                         keycloakDemoSetup.testuser3Id,
+                                                         apartment1HallwayId));
+        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.customerATenant.getId(),
+                                                         keycloakDemoSetup.testuser3Id,
+                                                         apartment2Id));
     }
 }

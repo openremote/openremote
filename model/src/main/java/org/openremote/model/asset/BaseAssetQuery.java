@@ -37,82 +37,6 @@ import java.util.Objects;
 @SuppressWarnings("unchecked")
 public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> {
 
-    public static final ArrayValue queriesAsValue(BaseAssetQuery... queries) {
-        ArrayValue arrayValue = Values.createArray();
-
-        for (BaseAssetQuery query : queries) {
-            ObjectValue objectValue = Values.createObject();
-            if (query.select != null) {
-                objectValue.put("select", query.select.toModelValue());
-            }
-            if (query.type != null) {
-                objectValue.put("type", query.type.toModelValue());
-            }
-            if (query.attribute != null && query.attribute.length > 0) {
-                ArrayValue attributeArray = Values.createArray();
-                for (AttributePredicate attributePredicate : query.attribute) {
-                    attributeArray.add(attributePredicate.toModelValue());
-                }
-                objectValue.put("attribute", attributeArray);
-            }
-            arrayValue.add(objectValue);
-        }
-        return arrayValue;
-    }
-
-    public static final AssetQuery objectValueAsQuery(ObjectValue objectValue) {
-        AssetQuery assetQuery = new AssetQuery();
-
-        objectValue.getObject("select").ifPresent(selectValue -> {
-            assetQuery.select = Select.fromObjectValue(selectValue);
-        });
-
-        objectValue.getObject("type").ifPresent(typeValue -> {
-            assetQuery.type = StringPredicate.fromObjectValue(typeValue);
-        });
-
-        objectValue.getArray("attribute").ifPresent(attributeValue -> {
-            assetQuery.attribute = attributeValue.stream()
-                .map(val -> (ObjectValue) val)
-                .map(attributePredicateValue -> {
-                    AttributePredicate attributePredicate = new AttributePredicate();
-
-                    attributePredicate.name = StringPredicate.fromObjectValue(attributePredicateValue
-                        .getObject("name")
-                        .orElseThrow(() -> new IllegalArgumentException("StringPredicate missing for name in AttributePredicate"))
-                    );
-
-                    ObjectValue predicateValue = attributePredicateValue
-                        .getObject("value")
-                        .orElseThrow(() -> new IllegalArgumentException("value missing in AttributePredicate"));
-
-                    predicateValue.getString("predicateType").ifPresent(predicateType -> {
-                        switch (predicateType) {
-                            case "StringPredicate":
-                                attributePredicate.value = StringPredicate.fromObjectValue(predicateValue);
-                                break;
-                            case "BooleanPredicate":
-                                attributePredicate.value = BooleanPredicate.fromObjectValue(predicateValue);
-                                break;
-                            case "StringArrayPredicate":
-                                attributePredicate.value = StringArrayPredicate.fromObjectValue(predicateValue);
-                                break;
-                            case "DateTimePredicate":
-                                attributePredicate.value = DateTimePredicate.fromObjectValue(predicateValue);
-                                break;
-                            case "NumberPredicate":
-                                attributePredicate.value = NumberPredicate.fromObjectValue(predicateValue);
-                                break;
-                        }
-                    });
-                    return attributePredicate;
-                })
-                .toArray(AttributePredicate[]::new);
-        });
-
-        return assetQuery;
-    }
-
     public enum Include {
         ALL_EXCEPT_PATH_AND_ATTRIBUTES,
         ALL_EXCEPT_PATH,
@@ -126,96 +50,6 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> {
         PRIVATE_READ,
         RESTRICTED_READ,
         PUBLIC_READ
-    }
-
-    public static class Select {
-        public Include include;
-        public boolean recursive;
-        public Access access;
-        public String[] attributeNames;
-
-        public Select() {
-        }
-
-        public Select(Include include) {
-            this(include, Access.PRIVATE_READ);
-        }
-
-        public Select(Include include, Access access) {
-            this(include, false, access);
-        }
-
-        public Select(Include include, boolean recursive, Access access) {
-            this(include, recursive, access, (String[]) null);
-        }
-
-        public Select(Include include, boolean recursive, String... attributeNames) {
-            this(include, recursive, Access.PRIVATE_READ, attributeNames);
-        }
-
-        public Select(Include include, boolean recursive, Access access, String... attributeNames) {
-            if (include == null) {
-                include = Include.ALL_EXCEPT_PATH_AND_ATTRIBUTES;
-            }
-            this.include = include;
-            this.access = access;
-            this.recursive = recursive;
-            this.attributeNames = attributeNames;
-        }
-
-        public Select include(Include include) {
-            this.include = include;
-            return this;
-        }
-
-        public Select filterAccess(Access access) {
-            this.access = access;
-            return this;
-        }
-
-        public Select filterAttributes(String... attributeNames) {
-            this.attributeNames = attributeNames;
-            return this;
-        }
-
-        public static Select fromObjectValue(ObjectValue objectValue) {
-            Select select = new Select();
-            objectValue.getString("include").ifPresent(include -> {
-                select.include = Include.valueOf(include);
-            });
-            objectValue.getString("access").ifPresent(access -> {
-                select.access = Access.valueOf(access);
-            });
-            objectValue.getBoolean("recursive").ifPresent(recursive -> {
-                select.recursive = recursive;
-            });
-            objectValue.getArray("attributeNames").ifPresent(attributeNames -> {
-                select.attributeNames = attributeNames.stream()
-                    .map(value -> (StringValue) value)
-                    .map(StringValue::getString)
-                    .toArray(String[]::new);
-            });
-            return select;
-        }
-
-        public ObjectValue toModelValue() {
-            ObjectValue objectValue = Values.createObject();
-            objectValue.put("include", Values.create(include.toString()));
-            objectValue.put("recursive", Values.create(recursive));
-            objectValue.put("access", Values.create(access.toString()));
-            objectValue.put("attributeNames", Values.createArray().addAll(Arrays.stream(attributeNames).map(Values::create).toArray(Value[]::new)));
-            return objectValue;
-        }
-
-        @Override
-        public String toString() {
-            return getClass().getSimpleName() + "{" +
-                "include=" + include +
-                ", recursive=" + recursive +
-                ", access=" + access +
-                ", attributeNames=" + Arrays.toString(attributeNames) +
-                '}';
-        }
     }
 
     /**
@@ -274,10 +108,104 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> {
         property = "predicateType"
     )
     public interface ValuePredicate<T> {
+
         ObjectValue toModelValue();
     }
 
+    public static class Select {
+
+        public Include include;
+        public boolean recursive;
+        public Access access;
+        public String[] attributeNames;
+
+        public Select() {
+        }
+
+        public Select(Include include) {
+            this(include, Access.PRIVATE_READ);
+        }
+
+        public Select(Include include, Access access) {
+            this(include, false, access);
+        }
+
+        public Select(Include include, boolean recursive, Access access) {
+            this(include, recursive, access, (String[]) null);
+        }
+
+        public Select(Include include, boolean recursive, String... attributeNames) {
+            this(include, recursive, Access.PRIVATE_READ, attributeNames);
+        }
+
+        public Select(Include include, boolean recursive, Access access, String... attributeNames) {
+            if (include == null) {
+                include = Include.ALL_EXCEPT_PATH_AND_ATTRIBUTES;
+            }
+            this.include = include;
+            this.access = access;
+            this.recursive = recursive;
+            this.attributeNames = attributeNames;
+        }
+
+        public static Select fromObjectValue(ObjectValue objectValue) {
+            Select select = new Select();
+            objectValue.getString("include").ifPresent(include -> {
+                select.include = Include.valueOf(include);
+            });
+            objectValue.getString("access").ifPresent(access -> {
+                select.access = Access.valueOf(access);
+            });
+            objectValue.getBoolean("recursive").ifPresent(recursive -> {
+                select.recursive = recursive;
+            });
+            objectValue.getArray("attributeNames").ifPresent(attributeNames -> {
+                select.attributeNames = attributeNames.stream()
+                    .map(value -> (StringValue) value)
+                    .map(StringValue::getString)
+                    .toArray(String[]::new);
+            });
+            return select;
+        }
+
+        public Select include(Include include) {
+            this.include = include;
+            return this;
+        }
+
+        public Select filterAccess(Access access) {
+            this.access = access;
+            return this;
+        }
+
+        public Select filterAttributes(String... attributeNames) {
+            this.attributeNames = attributeNames;
+            return this;
+        }
+
+        public ObjectValue toModelValue() {
+            ObjectValue objectValue = Values.createObject();
+            objectValue.put("include", Values.create(include.toString()));
+            objectValue.put("recursive", Values.create(recursive));
+            objectValue.put("access", Values.create(access.toString()));
+            objectValue.put("attributeNames",
+                            Values.createArray().addAll(Arrays.stream(attributeNames).map(Values::create).toArray(Value[]::new)));
+            return objectValue;
+        }
+
+        @Override
+        public String toString() {
+            return getClass().getSimpleName() + "{" +
+                "include=" + include +
+                ", recursive=" + recursive +
+                ", access=" + access +
+                ", attributeNames=" + Arrays.toString(attributeNames) +
+                '}';
+        }
+    }
+
     public static class ValueNotEmptyPredicate implements ValuePredicate<Value> {
+
         @Override
         public ObjectValue toModelValue() {
             ObjectValue objectValue = Values.createObject();
@@ -287,6 +215,7 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> {
     }
 
     public static class StringPredicate implements ValuePredicate<String> {
+
         public Match match = Match.EXACT;
         public boolean caseSensitive = true;
         public String value;
@@ -307,6 +236,20 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> {
             this.match = match;
             this.caseSensitive = caseSensitive;
             this.value = value;
+        }
+
+        public static StringPredicate fromObjectValue(ObjectValue objectValue) {
+            StringPredicate stringPredicate = new StringPredicate();
+            objectValue.getString("match").ifPresent(match -> {
+                stringPredicate.match = Match.valueOf(match);
+            });
+            objectValue.getBoolean("caseSensitive").ifPresent(caseSensitive -> {
+                stringPredicate.caseSensitive = caseSensitive;
+            });
+            objectValue.getString("value").ifPresent(value -> {
+                stringPredicate.value = value;
+            });
+            return stringPredicate;
         }
 
         public StringPredicate match(Match match) {
@@ -340,20 +283,6 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> {
             return objectValue;
         }
 
-        public static StringPredicate fromObjectValue(ObjectValue objectValue) {
-            StringPredicate stringPredicate = new StringPredicate();
-            objectValue.getString("match").ifPresent(match -> {
-                stringPredicate.match = Match.valueOf(match);
-            });
-            objectValue.getBoolean("caseSensitive").ifPresent(caseSensitive -> {
-                stringPredicate.caseSensitive = caseSensitive;
-            });
-            objectValue.getString("value").ifPresent(value -> {
-                stringPredicate.value = value;
-            });
-            return stringPredicate;
-        }
-
         @Override
         public String toString() {
             return getClass().getSimpleName() + "{" +
@@ -365,6 +294,7 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> {
     }
 
     public static class BooleanPredicate implements ValuePredicate<Boolean> {
+
         public boolean value;
 
         public BooleanPredicate() {
@@ -372,6 +302,14 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> {
 
         public BooleanPredicate(boolean value) {
             this.value = value;
+        }
+
+        public static BooleanPredicate fromObjectValue(ObjectValue objectValue) {
+            BooleanPredicate booleanPredicate = new BooleanPredicate();
+            booleanPredicate.value = objectValue
+                .getBoolean("value")
+                .orElseThrow(() -> new IllegalArgumentException("value missing for BooleanPredicate"));
+            return booleanPredicate;
         }
 
         public BooleanPredicate value(boolean value) {
@@ -393,17 +331,10 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> {
             objectValue.put("value", Values.create(value));
             return objectValue;
         }
-
-        public static BooleanPredicate fromObjectValue(ObjectValue objectValue) {
-            BooleanPredicate booleanPredicate = new BooleanPredicate();
-            booleanPredicate.value = objectValue
-                .getBoolean("value")
-                .orElseThrow(() -> new IllegalArgumentException("value missing for BooleanPredicate"));
-            return booleanPredicate;
-        }
     }
 
     public static class StringArrayPredicate implements ValuePredicate<String[]> {
+
         public StringPredicate[] predicates = new StringPredicate[0];
 
         public StringArrayPredicate() {
@@ -411,6 +342,18 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> {
 
         public StringArrayPredicate(StringPredicate... predicates) {
             this.predicates = predicates;
+        }
+
+        public static StringArrayPredicate fromObjectValue(ObjectValue objectValue) {
+            StringArrayPredicate stringArrayPredicate = new StringArrayPredicate();
+            objectValue.getArray("value").ifPresent(arrayValue -> {
+                ;
+                stringArrayPredicate.predicates = objectValue.stream()
+                    .map(val -> (ObjectValue) val)
+                    .map(StringPredicate::fromObjectValue)
+                    .toArray(StringPredicate[]::new);
+            });
+            return stringArrayPredicate;
         }
 
         public StringArrayPredicate predicates(StringPredicate... predicates) {
@@ -430,18 +373,6 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> {
             return objectValue;
         }
 
-        public static StringArrayPredicate fromObjectValue(ObjectValue objectValue) {
-            StringArrayPredicate stringArrayPredicate = new StringArrayPredicate();
-            objectValue.getArray("value").ifPresent(arrayValue -> {
-                ;
-                stringArrayPredicate.predicates = objectValue.stream()
-                    .map(val -> (ObjectValue) val)
-                    .map(StringPredicate::fromObjectValue)
-                    .toArray(StringPredicate[]::new);
-            });
-            return stringArrayPredicate;
-        }
-
         @Override
         public String toString() {
             return getClass().getSimpleName() + "{" +
@@ -451,6 +382,7 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> {
     }
 
     public static class DateTimePredicate implements ValuePredicate<Long> {
+
         public String value;
         public String rangeValue; // Used as upper bound when Operator.BETWEEN
         public Operator operator = Operator.EQUALS;
@@ -468,6 +400,24 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> {
             this.operator = Operator.BETWEEN;
             this.value = rangeStart;
             this.rangeValue = rangeEnd;
+        }
+
+        public static DateTimePredicate fromObjectValue(ObjectValue objectValue) {
+            DateTimePredicate dateTimePredicate = new DateTimePredicate();
+
+            objectValue.getString("dateFormat").ifPresent(format -> {
+                dateTimePredicate.dateFormat = format;
+            });
+            objectValue.getString("value").ifPresent(value -> {
+                dateTimePredicate.value = value;
+            });
+            objectValue.getString("rangeValue").ifPresent(rangeValue -> {
+                dateTimePredicate.rangeValue = rangeValue;
+            });
+            objectValue.getString("operator").ifPresent(operator -> {
+                dateTimePredicate.operator = Operator.valueOf(operator);
+            });
+            return dateTimePredicate;
         }
 
         public DateTimePredicate operator(Operator dateMatch) {
@@ -501,24 +451,6 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> {
             return objectValue;
         }
 
-        public static DateTimePredicate fromObjectValue(ObjectValue objectValue) {
-            DateTimePredicate dateTimePredicate = new DateTimePredicate();
-
-            objectValue.getString("dateFormat").ifPresent(format -> {
-                dateTimePredicate.dateFormat = format;
-            });
-            objectValue.getString("value").ifPresent(value -> {
-                dateTimePredicate.value = value;
-            });
-            objectValue.getString("rangeValue").ifPresent(rangeValue -> {
-                dateTimePredicate.rangeValue = rangeValue;
-            });
-            objectValue.getString("operator").ifPresent(operator -> {
-                dateTimePredicate.operator = Operator.valueOf(operator);
-            });
-            return dateTimePredicate;
-        }
-
         @Override
         public String toString() {
             return getClass().getSimpleName() + "{" +
@@ -531,6 +463,7 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> {
     }
 
     public static class NumberPredicate implements ValuePredicate<Double> {
+
         public double value;
         public double rangeValue; // Used as upper bound when Operator.BETWEEN
         public Operator operator = Operator.EQUALS;
@@ -557,6 +490,20 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> {
             this.value = value;
             this.operator = operator;
             this.numberType = numberType;
+        }
+
+        public static NumberPredicate fromObjectValue(ObjectValue objectValue) {
+            NumberPredicate numberPredicate = new NumberPredicate();
+            objectValue.getNumber("value").ifPresent(value -> {
+                numberPredicate.value = value;
+            });
+            objectValue.getNumber("rangeValue").ifPresent(rangeValue -> {
+                numberPredicate.rangeValue = rangeValue;
+            });
+            objectValue.getString("operator").ifPresent(operator -> {
+                numberPredicate.operator = Operator.valueOf(operator);
+            });
+            return numberPredicate;
         }
 
         public NumberPredicate predicate(double predicate) {
@@ -598,23 +545,10 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> {
                 ", numberType=" + numberType +
                 '}';
         }
-
-        public static NumberPredicate fromObjectValue(ObjectValue objectValue) {
-            NumberPredicate numberPredicate = new NumberPredicate();
-            objectValue.getNumber("value").ifPresent(value -> {
-                numberPredicate.value = value;
-            });
-            objectValue.getNumber("rangeValue").ifPresent(rangeValue -> {
-                numberPredicate.rangeValue = rangeValue;
-            });
-            objectValue.getString("operator").ifPresent(operator -> {
-                numberPredicate.operator = Operator.valueOf(operator);
-            });
-            return numberPredicate;
-        }
     }
 
     public static class ParentPredicate {
+
         public String id;
         public String type;
         public boolean noParent;
@@ -660,6 +594,7 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> {
     }
 
     public static class PathPredicate {
+
         public String[] path;
 
         public PathPredicate() {
@@ -687,6 +622,7 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> {
     }
 
     public static class TenantPredicate {
+
         public String realmId;
         public String realm;
 
@@ -717,6 +653,7 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> {
     }
 
     public static class AttributePredicate {
+
         public StringPredicate name;
         public ValuePredicate value;
 
@@ -767,6 +704,7 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> {
     }
 
     public static class AttributeMetaPredicate {
+
         public StringPredicate itemNamePredicate;
         public ValuePredicate itemValuePredicate;
 
@@ -883,6 +821,7 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> {
     )
 
     public abstract static class LocationPredicate {
+
         // TODO: switch return type to location object
         public abstract double[] getCentrePoint();
     }
@@ -917,6 +856,18 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> {
             return this;
         }
 
+        public int getRadius() {
+            return radius;
+        }
+
+        public double getLat() {
+            return lat;
+        }
+
+        public double getLng() {
+            return lng;
+        }
+
         @Override
         public boolean equals(Object o) {
             if (this == o) return true;
@@ -935,7 +886,7 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> {
 
         @Override
         public double[] getCentrePoint() {
-            return new double[] {lng, lat};
+            return new double[]{lng, lat};
         }
     }
 
@@ -973,6 +924,22 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> {
             return this;
         }
 
+        public double getLatMin() {
+            return latMin;
+        }
+
+        public double getLngMin() {
+            return lngMin;
+        }
+
+        public double getLatMax() {
+            return latMax;
+        }
+
+        public double getLngMax() {
+            return lngMax;
+        }
+
         @Override
         public boolean equals(Object o) {
             if (this == o) return true;
@@ -992,9 +959,9 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> {
 
         @Override
         public double[] getCentrePoint() {
-            double x = (lngMin+lngMax)/2;
-            double y = (latMin+latMax)/2;
-            return new double[] {x,y};
+            double x = (lngMin + lngMax) / 2;
+            double y = (latMin + latMax) / 2;
+            return new double[]{x, y};
         }
     }
 
@@ -1041,10 +1008,8 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> {
                 '}';
         }
     }
-
     // Projection
     public Select select;
-
     // Restriction predicates
     public String id;
     public StringPredicate name;
@@ -1057,11 +1022,86 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> {
     public AttributeMetaPredicate[] attributeMeta;
     public CalendarEventActivePredicate calendarEventActive;
     public LocationPredicate location;
-
     // Ordering
     public OrderBy orderBy;
-
     protected BaseAssetQuery() {
+    }
+
+    public static final ArrayValue queriesAsValue(BaseAssetQuery... queries) {
+        ArrayValue arrayValue = Values.createArray();
+
+        for (BaseAssetQuery query : queries) {
+            ObjectValue objectValue = Values.createObject();
+            if (query.select != null) {
+                objectValue.put("select", query.select.toModelValue());
+            }
+            if (query.type != null) {
+                objectValue.put("type", query.type.toModelValue());
+            }
+            if (query.attribute != null && query.attribute.length > 0) {
+                ArrayValue attributeArray = Values.createArray();
+                for (AttributePredicate attributePredicate : query.attribute) {
+                    attributeArray.add(attributePredicate.toModelValue());
+                }
+                objectValue.put("attribute", attributeArray);
+            }
+            arrayValue.add(objectValue);
+        }
+        return arrayValue;
+    }
+
+    public static final AssetQuery objectValueAsQuery(ObjectValue objectValue) {
+        AssetQuery assetQuery = new AssetQuery();
+
+        objectValue.getObject("select").ifPresent(selectValue -> {
+            assetQuery.select = Select.fromObjectValue(selectValue);
+        });
+
+        objectValue.getObject("type").ifPresent(typeValue -> {
+            assetQuery.type = StringPredicate.fromObjectValue(typeValue);
+        });
+
+        objectValue.getArray("attribute").ifPresent(attributeValue -> {
+            assetQuery.attribute = attributeValue.stream()
+                .map(val -> (ObjectValue) val)
+                .map(attributePredicateValue -> {
+                    AttributePredicate attributePredicate = new AttributePredicate();
+
+                    attributePredicate.name = StringPredicate.fromObjectValue(attributePredicateValue
+                                                                                  .getObject("name")
+                                                                                  .orElseThrow(() -> new IllegalArgumentException(
+                                                                                      "StringPredicate missing for name in AttributePredicate"))
+                    );
+
+                    ObjectValue predicateValue = attributePredicateValue
+                        .getObject("value")
+                        .orElseThrow(() -> new IllegalArgumentException("value missing in AttributePredicate"));
+
+                    predicateValue.getString("predicateType").ifPresent(predicateType -> {
+                        switch (predicateType) {
+                            case "StringPredicate":
+                                attributePredicate.value = StringPredicate.fromObjectValue(predicateValue);
+                                break;
+                            case "BooleanPredicate":
+                                attributePredicate.value = BooleanPredicate.fromObjectValue(predicateValue);
+                                break;
+                            case "StringArrayPredicate":
+                                attributePredicate.value = StringArrayPredicate.fromObjectValue(predicateValue);
+                                break;
+                            case "DateTimePredicate":
+                                attributePredicate.value = DateTimePredicate.fromObjectValue(predicateValue);
+                                break;
+                            case "NumberPredicate":
+                                attributePredicate.value = NumberPredicate.fromObjectValue(predicateValue);
+                                break;
+                        }
+                    });
+                    return attributePredicate;
+                })
+                .toArray(AttributePredicate[]::new);
+        });
+
+        return assetQuery;
     }
 
     public CHILD select(Select select) {
@@ -1187,13 +1227,13 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> {
     }
 
     /**
-     * Will filter out assets that have a {@link CalendarEventConfiguration} attribute that results in the event
-     * not being 'active/in progress' at the specified time. Assets without a {@link CalendarEventConfiguration}
-     * attribute are assumed to always be in progress (i.e. will always pass this check).
-     * <p>
+     * Will filter out assets that have a {@link CalendarEventConfiguration} attribute that results in the event not
+     * being 'active/in progress' at the specified time. Assets without a {@link CalendarEventConfiguration} attribute
+     * are assumed to always be in progress (i.e. will always pass this check).
+     *
      * <b>
-     * NOTE: This predicate is applied in memory and the results should be limited as much as possible by applying
-     * other predicates to the query to avoid performance issues.
+     * NOTE: This predicate is applied in memory and the results should be limited as much as possible by applying other
+     * predicates to the query to avoid performance issues.
      * </b>
      */
     public CHILD calendarEventActive(long timestampSeconds) {

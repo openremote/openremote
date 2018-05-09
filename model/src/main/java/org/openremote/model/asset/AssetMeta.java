@@ -36,8 +36,8 @@ import static org.openremote.model.attribute.MetaItemDescriptor.Access.ACCESS_PR
 import static org.openremote.model.util.TextUtil.REGEXP_PATTERN_DOUBLE;
 
 /**
- * Asset attribute meta item name is an arbitrary string. It should be URI. This enum contains
- * the well-known URIs for functionality we can depend on in our platform.
+ * Asset attribute meta item name is an arbitrary string. It should be URI. This enum contains the well-known URIs for
+ * functionality we can depend on in our platform.
  * <p>
  * A custom project can add its own asset meta items through {@link AssetModelProvider}.
  * <p>
@@ -46,8 +46,8 @@ import static org.openremote.model.util.TextUtil.REGEXP_PATTERN_DOUBLE;
 public enum AssetMeta implements MetaItemDescriptor {
 
     /**
-     * Marks an attribute of an agent asset as a {@link org.openremote.model.asset.agent.ProtocolConfiguration}.
-     * The attribute value is a protocol URN.
+     * Marks an attribute of an agent asset as a {@link org.openremote.model.asset.agent.ProtocolConfiguration}. The
+     * attribute value is a protocol URN.
      */
     PROTOCOL_CONFIGURATION(
         ASSET_META_NAMESPACE + ":protocolConfiguration",
@@ -72,8 +72,9 @@ public enum AssetMeta implements MetaItemDescriptor {
         false,
         value ->
             Optional.ofNullable(AttributeRef.isAttributeRef(value)
-                ? null
-                : new ValidationFailure(META_ITEM_VALUE_MISMATCH, AttributeRef.class.getSimpleName()))
+                                    ? null
+                                    : new ValidationFailure(META_ITEM_VALUE_MISMATCH,
+                                                            AttributeRef.class.getSimpleName()))
     ),
 
     /**
@@ -90,8 +91,9 @@ public enum AssetMeta implements MetaItemDescriptor {
         false,
         value ->
             Optional.ofNullable(AttributeLink.isAttributeLink(value)
-                ? null
-                : new ValidationFailure(META_ITEM_VALUE_MISMATCH, AttributeLink.class.getSimpleName()))
+                                    ? null
+                                    : new ValidationFailure(META_ITEM_VALUE_MISMATCH,
+                                                            AttributeLink.class.getSimpleName()))
     ),
 
     /**
@@ -155,9 +157,9 @@ public enum AssetMeta implements MetaItemDescriptor {
         false),
 
     /**
-     * Marks the attribute as read-only for non-superuser clients. South-bound {@link AttributeEvent}s
-     * by regular or restricted users are ignored. North-bound {@link AttributeEvent}s made by protocols and
-     * rules engine are possible.
+     * Marks the attribute as read-only for non-superuser clients. South-bound {@link AttributeEvent}s by regular or
+     * restricted users are ignored. North-bound {@link AttributeEvent}s made by protocols and rules engine are
+     * possible.
      */
     READ_ONLY(
         ASSET_META_NAMESPACE + ":readOnly",
@@ -169,8 +171,8 @@ public enum AssetMeta implements MetaItemDescriptor {
         true),
 
     /**
-     * Marks the attribute as readable by restricted clients and therefore users who are linked to
-     * the asset, see {@link UserAsset}.
+     * Marks the attribute as readable by restricted clients and therefore users who are linked to the asset, see {@link
+     * UserAsset}.
      */
     ACCESS_RESTRICTED_READ(
         ASSET_META_NAMESPACE + ":accessRestrictedRead",
@@ -182,8 +184,8 @@ public enum AssetMeta implements MetaItemDescriptor {
         true),
 
     /**
-     * Marks the attribute as writable by restricted clients and therefore users who are linked to
-     * the asset, see {@link UserAsset}.
+     * Marks the attribute as writable by restricted clients and therefore users who are linked to the asset, see {@link
+     * UserAsset}.
      */
     ACCESS_RESTRICTED_WRITE(
         ASSET_META_NAMESPACE + ":accessRestrictedWrite",
@@ -275,11 +277,11 @@ public enum AssetMeta implements MetaItemDescriptor {
         true),
 
     /**
-     * Should attribute writes be processed by the rules engines as {@link AssetState} facts,
-     * with a lifecycle that reflects the state of the asset attribute. Each attribute will have one
-     * fact at all times in rules memory. These state facts are kept in sync with asset changes: When
-     * the attribute is updated, the fact will be updated (replaced). If you want evaluate the change
-     * history of an attribute, you typically need to combine this with {@link #RULE_EVENT}.
+     * Should attribute writes be processed by the rules engines as {@link AssetState} facts, with a lifecycle that
+     * reflects the state of the asset attribute. Each attribute will have one fact at all times in rules memory. These
+     * state facts are kept in sync with asset changes: When the attribute is updated, the fact will be updated
+     * (replaced). If you want evaluate the change history of an attribute, you typically need to combine this with
+     * {@link #RULE_EVENT}.
      */
     RULE_STATE(
         ASSET_META_NAMESPACE + ":ruleState",
@@ -291,11 +293,11 @@ public enum AssetMeta implements MetaItemDescriptor {
         true),
 
     /**
-     * Should attribute writes be processed by the rules engines as temporary facts. When an attribute
-     * is updated, the change will be inserted as a new {@link AssetState} temporary fact in rules engines.
-     * These facts expire automatically after a defined time, see {@link #RULE_EVENT_EXPIRES}. If you want
-     * to match (multiple) {@link AssetState}s for the same attribute over time, to evaluate the change
-     * history of an attribute, add this meta item.
+     * Should attribute writes be processed by the rules engines as temporary facts. When an attribute is updated, the
+     * change will be inserted as a new {@link AssetState} temporary fact in rules engines. These facts expire
+     * automatically after a defined time, see {@link #RULE_EVENT_EXPIRES}. If you want to match (multiple) {@link
+     * AssetState}s for the same attribute over time, to evaluate the change history of an attribute, add this meta
+     * item.
      */
     RULE_EVENT(
         ASSET_META_NAMESPACE + ":ruleEvent",
@@ -307,11 +309,12 @@ public enum AssetMeta implements MetaItemDescriptor {
         true),
 
     /**
-     * Set maximum lifetime of {@link AssetState} temporary facts in rules, for example "1h30m5s". The rules
-     * engine will remove temporary {@link AssetState} facts if they are older than this value (using event
-     * source/value timestamp, not event processing time).
+     * Set maximum lifetime of {@link AssetState} temporary facts in rules, for example "1h30m5s". The rules engine will
+     * remove temporary {@link AssetState} facts if they are older than this value (using event source/value timestamp,
+     * not event processing time).
      * <p>
-     * The default expiration for asset events can be configured with environment variable <code>RULE_EVENT_EXPIRES</code>.
+     * The default expiration for asset events can be configured with environment variable
+     * <code>RULE_EVENT_EXPIRES</code>.
      * <p>
      * Also see {@link TemporaryFact#GUARANTEED_MIN_EXPIRATION_MILLIS}.
      */
@@ -319,13 +322,15 @@ public enum AssetMeta implements MetaItemDescriptor {
         ASSET_META_NAMESPACE + ":ruleEventExpires",
         new Access(true, false, true),
         ValueType.STRING,
-        "^([+-])?((\\d+)[Dd])?\\s*((\\d+)[Hh])?\\s*((\\d+)[Mm])?\\s*((\\d+)[Ss])?\\s*((\\d+)([Mm][Ss])?)?$", // See TimeUtil
+        "^([+-])?((\\d+)[Dd])?\\s*((\\d+)[Hh])?\\s*((\\d+)[Mm])?\\s*((\\d+)[Ss])?\\s*((\\d+)([Mm][Ss])?)?$",
+        // See TimeUtil
         PatternFailure.DAYS_HOURS_MINS_SECONDS.name(),
         null,
         false),
 
     /**
-     * Disabled flag to be used by asset attributes that could require this functionality (e.g. {@link org.openremote.model.asset.agent.ProtocolConfiguration})
+     * Disabled flag to be used by asset attributes that could require this functionality (e.g. {@link
+     * org.openremote.model.asset.agent.ProtocolConfiguration})
      */
     DISABLED(
         ASSET_META_NAMESPACE + ":disabled",
@@ -346,7 +351,17 @@ public enum AssetMeta implements MetaItemDescriptor {
         null,
         null,
         Values.create(true),
-        true);
+        true),
+
+    GEOFENCE_ADAPTER(
+        ASSET_META_NAMESPACE + ":geofence:adapter",
+        new Access(false, true, true),
+        ValueType.STRING,
+        null,
+        null,
+        null,
+        false
+    );
 
     final protected String urn;
     final protected Access access;
