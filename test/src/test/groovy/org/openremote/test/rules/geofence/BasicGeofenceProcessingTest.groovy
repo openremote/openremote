@@ -9,24 +9,27 @@ import org.openremote.manager.rules.geofence.ORConsoleGeofenceAssetAdapter
 import org.openremote.manager.setup.SetupService
 import org.openremote.manager.setup.builtin.KeycloakDemoSetup
 import org.openremote.manager.setup.builtin.ManagerDemoSetup
+import org.openremote.model.asset.Asset
+import org.openremote.model.asset.AssetAttribute
 import org.openremote.model.asset.AssetMeta
-import org.openremote.model.asset.BaseAssetQuery
+import org.openremote.model.attribute.AttributeDescriptorImpl
 import org.openremote.model.attribute.MetaItem
 import org.openremote.model.rules.AssetRuleset
 import org.openremote.model.rules.GlobalRuleset
 import org.openremote.model.rules.Ruleset
+import org.openremote.model.value.Values
 import org.openremote.test.ManagerContainerTrait
 import org.openremote.test.rules.BasicRulesImport
-import spock.lang.Ignore
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
 import static org.openremote.manager.rules.RulesetDeployment.Status.DEPLOYED
 import static org.openremote.manager.setup.builtin.ManagerDemoSetup.*
+import static org.openremote.model.asset.AssetMeta.*
+import static org.openremote.model.asset.AssetType.CONSOLE
 
 class BasicGeofenceProcessingTest extends Specification implements ManagerContainerTrait {
 
-    @Ignore
     def "Check tracking of location predicate rules"() {
         given: "expected conditions"
         def conditions = new PollingConditions(timeout: 10, initialDelay: 0.5, delay: 0.5)
@@ -69,28 +72,38 @@ class BasicGeofenceProcessingTest extends Specification implements ManagerContai
             assert geofences[0].lat == 50
             assert geofences[0].lng == 100
             assert geofences[0].id == managerDemoSetup.consoleId + "_-174661203"
-            assert geofences[0].postUrl == "/master/asset/location/" + managerDemoSetup.consoleId
+            assert geofences[0].postUrl == "/master/asset/public/${managerDemoSetup.consoleId}/updateLocation"
         }
 
-        when: "another asset's location attribute is marked as RULE_STATE"
-        def lobby = assetStorageService.find(managerDemoSetup.lobbyId, true)
-        lobby.getAttribute("location").get().addMeta(new MetaItem(AssetMeta.RULE_STATE))
-        lobby = assetStorageService.merge(lobby)
+        when: "another console asset is added with its location attribute marked as RULE_STATE and it has a CONSOLE_PROVIDER_GEOFENCE attribute"
+        Asset console2 = new Asset("Demo Android Console 2", CONSOLE)
+            .addAttributes(
+            new AssetAttribute(AttributeDescriptorImpl.LOCATION.getName(),
+                               AttributeDescriptorImpl.LOCATION.getType())
+                .setMeta(new MetaItem(RULE_STATE)),
+            new AssetAttribute(AttributeDescriptorImpl.CONSOLE_PROVIDER_GEOFENCE.getName(),
+                               AttributeDescriptorImpl.CONSOLE_PROVIDER_GEOFENCE.getType())
+                .setMeta(
+                new MetaItem(GEOFENCE_ADAPTER, Values.create("ORConsole")),
+                new MetaItem(ACCESS_PUBLIC_READ)
+            )
+        )
+        console2.setParentId(managerDemoSetup.lobbyId)
+        console2 = assetStorageService.merge(console2)
+        def console2Id = console2.getId()
 
-        then: "the geofence adapter should be notified of the new lobby asset with a location predicate"
+        then: "the geofence adapter should be notified of the new console asset with the existing location predicate"
         conditions.eventually {
-            assert geofenceChanges != null
-            assert !geofenceInit
-            assert geofenceChanges.size() == 1
-            def lobbyGeofences = geofenceChanges.find({it.assetState.id == managerDemoSetup.lobbyId}).locationPredicates
-            assert lobbyGeofences.size() == 1
-            BaseAssetQuery.RadialLocationPredicate locPredicate = lobbyGeofences.find {
-                it instanceof BaseAssetQuery.RadialLocationPredicate && it.centrePoint[0] == 100 && it.centrePoint[1] == 50 && it.radius == 100
-            }
-            assert locPredicate != null
+            def geofences = geofenceAdapter.getAssetGeofences(console2Id)
+            assert geofences.size() == 1
+            assert geofences[0].radius == 100
+            assert geofences[0].lat == 50
+            assert geofences[0].lng == 100
+            assert geofences[0].id == console2Id + "_-174661203"
+            assert geofences[0].postUrl == "/master/asset/public/${console2Id}/updateLocation"
         }
 
-        when: "a new ruleset is deployed with multiple location predicate rules on the lobby asset"
+        when: "a new ruleset is deployed with multiple location predicate rules (including a duplicate and a rectangular predicate) on the lobby asset"
         def lobbyRuleset = new AssetRuleset(
             "Lobby location predicates",
             managerDemoSetup.lobbyId,
@@ -111,71 +124,79 @@ class BasicGeofenceProcessingTest extends Specification implements ManagerContai
             })
         }
 
-        then: "the mock geofence adapter should have been notified of the new location predicates for the demo thing and lobby assets"
+        then: "the geofence adapter should have been notified of the new radial location predicates for the console assets (but shouldn't contain the rectangular or duplicate predicates)"
         conditions.eventually {
-            assert geofenceChanges != null
-            assert !geofenceInit
-            assert geofenceChanges.size() == 2
-            Set<BaseAssetQuery.LocationPredicate> thingGeofences = geofenceChanges.find {
-                it.assetState.id == managerDemoSetup.thingId
-            }.locationPredicates
-            assert thingGeofences.size() == 3
-            BaseAssetQuery.RadialLocationPredicate rad1Predicate = thingGeofences.find {
-                it instanceof BaseAssetQuery.RadialLocationPredicate && it.centrePoint[0] == 100 && it.centrePoint[1] == 50 && it.radius == 100
+            def console1Geofences = geofenceAdapter.getAssetGeofences(managerDemoSetup.consoleId)
+            def console2Geofences = geofenceAdapter.getAssetGeofences(console2Id)
+            assert console1Geofences.size() == 1
+            assert console2Geofences.size() == 2
+            assert console1Geofences[0].radius == 100
+            assert console1Geofences[0].lat == 50
+            assert console1Geofences[0].lng == 100
+            assert console1Geofences[0].id == managerDemoSetup.consoleId + "_-174661203"
+            assert console1Geofences[0].postUrl == "/master/asset/public/${managerDemoSetup.consoleId}/updateLocation"
+
+            def console2Geofence1 = console2Geofences.find {
+                it.radius == 100 &&
+                it.lat == 50 &&
+                it.lng == 100 &&
+                it.id == console2Id + "_-174661203" &&
+                it.postUrl == "/master/asset/public/${console2Id}/updateLocation"
             }
-            BaseAssetQuery.RadialLocationPredicate rad2Predicate = thingGeofences.find {
-                it instanceof BaseAssetQuery.RadialLocationPredicate && it.centrePoint[0] == 50 && it.centrePoint[1] == 0 && it.radius == 200
+            assert console2Geofence1 != null
+
+            def console2Geofence2 = console2Geofences.find {
+                it.radius == 50 &&
+                it.lat == 0 &&
+                it.lng == -60 &&
+                it.id == console2Id + "_-1397479941" &&
+                it.postUrl == "/master/asset/public/${console2Id}/updateLocation"
             }
-            BaseAssetQuery.RectangularLocationPredicate rect1Predicate = thingGeofences.find {
-                it instanceof BaseAssetQuery.RectangularLocationPredicate && it.centrePoint[0] == 75 && it.centrePoint[1] == 25 && it.lngMax == 100 && it.latMax == 50
-            }
-            assert rad1Predicate != null
-            assert rad2Predicate != null
-            assert rect1Predicate != null
-            def lobbyGeofences = geofenceChanges.find({it.assetState.id == managerDemoSetup.lobbyId}).locationPredicates
-            assert lobbyGeofences.size() == 3
-            assert lobbyGeofences.any {it == rad1Predicate}
-            assert lobbyGeofences.any {it == rad2Predicate}
-            assert lobbyGeofences.any {it == rect1Predicate}
+            assert console2Geofence2 != null
         }
+
 
         when: "a location predicate ruleset is removed"
         rulesetStorageService.delete(GlobalRuleset.class, rulesImport.globalRuleset3Id)
 
-        then: "the mock geofence adapter should be notified that the demo thing and lobby asset's rules with location predicates have changed"
+        then: "the geofence adapter should be notified and update to reflect the changes"
         conditions.eventually {
-            assert geofenceChanges != null
-            assert geofenceChanges.size() == 2
-            Set<BaseAssetQuery.LocationPredicate> thingGeofences = geofenceChanges.find {
-                it.assetState.id == managerDemoSetup.thingId
-            }.locationPredicates
-            assert thingGeofences.size() == 2
-            BaseAssetQuery.RadialLocationPredicate rad2Predicate = thingGeofences.find {
-                it instanceof BaseAssetQuery.RadialLocationPredicate && it.centrePoint[0] == 50 && it.centrePoint[1] == 0 && it.radius == 200
+            def console1Geofences = geofenceAdapter.getAssetGeofences(managerDemoSetup.consoleId)
+            def console2Geofences = geofenceAdapter.getAssetGeofences(console2Id)
+            assert console1Geofences.size() == 0
+            assert console2Geofences.size() == 2
+
+            def console2Geofence1 = console2Geofences.find {
+                it.radius == 100 &&
+                    it.lat == 50 &&
+                    it.lng == 100 &&
+                    it.id == console2Id + "_-174661203" &&
+                    it.postUrl == "/master/asset/public/${console2Id}/updateLocation"
             }
-            BaseAssetQuery.RectangularLocationPredicate rect1Predicate = thingGeofences.find {
-                it instanceof BaseAssetQuery.RectangularLocationPredicate && it.centrePoint[0] == 75 && it.centrePoint[1] == 25 && it.lngMax == 100 && it.latMax == 50
+            assert console2Geofence1 != null
+
+            def console2Geofence2 = console2Geofences.find {
+                it.radius == 50 &&
+                    it.lat == 0 &&
+                    it.lng == -60 &&
+                    it.id == console2Id + "_-1397479941" &&
+                    it.postUrl == "/master/asset/public/${console2Id}/updateLocation"
             }
-            assert rad2Predicate != null
-            assert rect1Predicate != null
-            def lobbyGeofences = geofenceChanges.find({it.assetState.id == managerDemoSetup.lobbyId}).locationPredicates
-            assert lobbyGeofences.size() == 2
-            assert lobbyGeofences.any {it == rad2Predicate}
-            assert lobbyGeofences.any {it == rect1Predicate}
+            assert console2Geofence2 != null
         }
 
-        when: "the RULE_STATE meta is removed from the lobby asset's location attribute"
-        lobby.getAttribute("location").get().getMeta().removeIf({it.name.orElse(null) == AssetMeta.RULE_STATE.urn})
-        lobby = assetStorageService.merge(lobby)
+        when: "the RULE_STATE meta is removed from the second console asset's location attribute"
+        console2.getAttribute(AttributeDescriptorImpl.LOCATION.getName()).get().getMeta().removeIf({it.name.orElse(null) == AssetMeta.RULE_STATE.urn})
+        console2 = assetStorageService.merge(console2)
 
-        then: "the mock geofence adapter should be notified that the lobby asset no longer has any rules with location predicates"
+        then: "the geofence adapter should be notified that the console asset no longer has any rules with location predicates"
         conditions.eventually {
-            assert geofenceChanges != null
-            assert !geofenceInit
-            assert geofenceChanges.size() == 1
-            def lobbyGeofences = geofenceChanges.find({it.assetState.id == managerDemoSetup.lobbyId}).locationPredicates
-            assert lobbyGeofences.size() == 0
+            def console2Geofences = geofenceAdapter.getAssetGeofences(console2Id)
+            assert console2Geofences.size() == 0
+            assert geofenceAdapter.assetLocationPredicatesMap.isEmpty()
         }
+
+        // TODO: Verify the RulesResource code path
 
         cleanup: "the server should be stopped"
         stopContainer(container)

@@ -7,7 +7,7 @@ import org.openremote.model.asset.BaseAssetQuery
 RulesBuilder rules = binding.rules
 
 rules.add()
-        .name("Location predicate")
+        .name("Radial location predicate")
         .when(
         { facts ->
             facts.matchFirstAssetState(new AssetQuery().location(new BaseAssetQuery.RadialLocationPredicate(100, 50, 100))).isPresent() &&
@@ -15,5 +15,5 @@ rules.add()
         })
         .then(
         { facts ->
-            facts.put("Location", "fired")
+            facts.put("RadialLocation", "fired")
         })

@@ -47,7 +47,7 @@ import java.util.*;
 public class ORConsoleGeofenceAssetAdapter extends GeofenceAssetAdapter {
 
     public static final String NAME = "ORConsole";
-    public static final String POST_URL_TEMPLATE = "/asset/location/";
+    public static final String LOCATION_POST_URL_FORMAT_TEMPLATE = "/%1$s/asset/public/%2$s/updateLocation";
     protected Map<String, RulesEngine.AssetStateLocationPredicates> assetLocationPredicatesMap = new HashMap<>();
     protected NotificationService notificationService;
 
@@ -65,29 +65,33 @@ public class ORConsoleGeofenceAssetAdapter extends GeofenceAssetAdapter {
     @Override
     public void processLocationPredicates(List<RulesEngine.AssetStateLocationPredicates> modifiedAssetLocationPredicates, boolean initialising) {
 
-        Set<AssetState> notifyAssets = new HashSet<>(modifiedAssetLocationPredicates.size());
-
         modifiedAssetLocationPredicates.forEach(assetStateLocationPredicates -> {
             assetStateLocationPredicates
                 .getLocationPredicates()
                 .removeIf(locationPredicate ->
                               !(locationPredicate instanceof BaseAssetQuery.RadialLocationPredicate));
 
-            if (initialising) {
-                assetLocationPredicatesMap.put(assetStateLocationPredicates.getAssetState().getId(),
-                                               assetStateLocationPredicates);
-            } else {
+            if (!initialising) {
+                Set<AssetState> notifyAssets = new HashSet<>(modifiedAssetLocationPredicates.size());
+
                 RulesEngine.AssetStateLocationPredicates existingPredicates = assetLocationPredicatesMap.get(
                     assetStateLocationPredicates.getAssetState().getId());
-                if (!existingPredicates.getLocationPredicates().isEmpty() || !assetStateLocationPredicates.getLocationPredicates().isEmpty()) {
+                if ((existingPredicates == null || existingPredicates.getLocationPredicates().isEmpty()) && !assetStateLocationPredicates.getLocationPredicates().isEmpty()) {
                     // We're not comparing before and after state as RulesService has done that although it could be
                     // that rectangular location predicates have changed but this will do for now
                     notifyAssets.add(assetStateLocationPredicates.getAssetState());
                 }
+
+                notifyAssets.forEach(assetState -> notifyAssetGeofencesChanged(assetState.getId()));
+            }
+
+            if (assetStateLocationPredicates.getLocationPredicates().isEmpty()) {
+                assetLocationPredicatesMap.remove(assetStateLocationPredicates.getAssetState().getId());
+            } else {
+                assetLocationPredicatesMap.put(assetStateLocationPredicates.getAssetState().getId(),
+                                               assetStateLocationPredicates);
             }
         });
-
-        notifyAssets.forEach(assetState -> notifyAssetGeofencesChanged(assetState.getId()));
     }
 
     @Override
@@ -107,7 +111,7 @@ public class ORConsoleGeofenceAssetAdapter extends GeofenceAssetAdapter {
     protected GeofenceDefinition locationPredicateToGeofenceDefinition(AssetState assetState, BaseAssetQuery.LocationPredicate locationPredicate) {
         BaseAssetQuery.RadialLocationPredicate radialLocationPredicate = (BaseAssetQuery.RadialLocationPredicate) locationPredicate;
         String id = assetState.getId() + "_" + Integer.toString(radialLocationPredicate.hashCode());
-        String postUrl = "/" + assetState.getTenantRealm() + POST_URL_TEMPLATE + assetState.getId();
+        String postUrl = String.format(LOCATION_POST_URL_FORMAT_TEMPLATE, assetState.getTenantRealm(), assetState.getId());
         return new GeofenceDefinition(id,
                                       radialLocationPredicate.getLat(),
                                       radialLocationPredicate.getLng(),
@@ -117,5 +121,6 @@ public class ORConsoleGeofenceAssetAdapter extends GeofenceAssetAdapter {
 
     protected void notifyAssetGeofencesChanged(String assetId) {
         // TODO: implement geofence push notification
+        notificationService.findDeviceToken()
     }
 }

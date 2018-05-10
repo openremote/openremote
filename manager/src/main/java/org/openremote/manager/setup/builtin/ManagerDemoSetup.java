@@ -627,7 +627,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         apartment3Livingroom = assetStorageService.merge(apartment3Livingroom);
         apartment3LivingroomId = apartment3Livingroom.getId();
 
-        Asset console = new Asset("Demo Android Console", CONSOLE, lobby)
+        Asset console = new Asset("Demo Android Console", CONSOLE, groundFloor)
             .addAttributes(
                 new AssetAttribute(AttributeDescriptorImpl.LOCATION.getName(),
                                    AttributeDescriptorImpl.LOCATION.getType())

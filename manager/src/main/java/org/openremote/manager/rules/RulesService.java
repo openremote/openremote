@@ -53,6 +53,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.util.logging.Level.FINEST;
+import static java.util.logging.Level.SEVERE;
 import static org.openremote.container.concurrent.GlobalLock.withLock;
 import static org.openremote.container.concurrent.GlobalLock.withLockReturning;
 import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_TOPIC;
@@ -429,10 +430,11 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
             case INSERT:
             case UPDATE:
 
-                geofenceAdapterName
-                    .map(name -> assetIdGeofenceAdapterMap.put(asset.getId(), geofenceAssetAdapters.get(name)))
-                    .orElseGet(() -> assetIdGeofenceAdapterMap.remove(asset.getId()));
-
+                if (geofenceAdapterName.isPresent()) {
+                    assetIdGeofenceAdapterMap.put(asset.getId(), geofenceAssetAdapters.get(geofenceAdapterName.get()));
+                } else {
+                    assetIdGeofenceAdapterMap.remove(asset.getId());
+                }
                 break;
             case DELETE:
 
@@ -876,13 +878,14 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
 
                                          assetLocationPredicates.add(locationPredicates);
                                      }
-                                 );
+                                                    );
 
                                  LOG.info("Processing asset geofence updates for adapter '" + geofenceAdapter.getName() + "': asset count=" + assetLocationPredicates.size());
                                  geofenceAdapter.processLocationPredicates(assetLocationPredicates, isFirstRun);
                              }
-                    );
-
+                            );
+            } catch (Exception e) {
+                LOG.log(SEVERE, "Exception thrown by geofence adapter whilst processing location predicates", e);
             } finally {
                 // Clear modified assets ready for next batch
                 modifiedAssetLocationPredicates.clear();

@@ -7,16 +7,28 @@ import org.openremote.model.asset.BaseAssetQuery
 RulesBuilder rules = binding.rules
 
 rules.add()
-        .name("Radial location predicate")
+        .name("Another radial location predicate")
         .when(
         { facts ->
-            facts.matchFirstAssetState(new AssetQuery().location(new BaseAssetQuery.RadialLocationPredicate(200, 0, 50))).isPresent() &&
+            facts.matchFirstAssetState(new AssetQuery().location(new BaseAssetQuery.RadialLocationPredicate(50, 0, -60))).isPresent() &&
                 !facts.matchFirst("RadialLocation").isPresent()
         })
         .then(
         { facts ->
-            facts.put("RadialLocation", "fired")
+            facts.put("RadialLocation2", "fired")
         })
+
+rules.add()
+    .name("Duplicate radial location predicate")
+    .when(
+    { facts ->
+        facts.matchFirstAssetState(new AssetQuery().location(new BaseAssetQuery.RadialLocationPredicate(100, 50, 100))).isPresent() &&
+            !facts.matchFirst("Location").isPresent()
+    })
+    .then(
+    { facts ->
+        facts.put("Location", "fired")
+    })
 
 rules.add()
         .name("Rectangular location predicate")
