@@ -138,7 +138,8 @@ class ClientEventTest extends Specification implements ManagerContainerTrait, Gw
 
         and: "an assets location is changed"
         def asset = assetStorageService.find(managerDemoSetup.thingId, true)
-        asset.setLocation(new GeometryFactory().createPoint(new Coordinate(120.1d, 50.43d)))
+        double[] coordinates = [120.1d, 50.43d]
+        asset.setCoordinates(coordinates)
         asset = assetStorageService.merge(asset)
 
         then: "the location event should have been received"
@@ -151,7 +152,7 @@ class ClientEventTest extends Specification implements ManagerContainerTrait, Gw
         }
 
         when: "the assets location is set to null"
-        asset.setLocation(null)
+        asset.setCoordinates(null)
         asset = assetStorageService.merge(asset)
 
         then: "the location event should have been received with null coordinates"
@@ -163,7 +164,8 @@ class ClientEventTest extends Specification implements ManagerContainerTrait, Gw
         }
 
         when: "the location is changed"
-        asset.setLocation(new GeometryFactory().createPoint(new Coordinate(-10.11d, -50.233d)))
+        coordinates = [-10.11d, -50.233d]
+        asset.setCoordinates(coordinates)
         asset = assetStorageService.merge(asset)
 
         then: "the location event should have been received"
@@ -176,7 +178,8 @@ class ClientEventTest extends Specification implements ManagerContainerTrait, Gw
         }
 
         when: "the location is set with the same value"
-        asset.setLocation(new GeometryFactory().createPoint(new Coordinate(-10.11d, -50.233d)))
+        coordinates = [-10.11d, -50.233d]
+        asset.setCoordinates(coordinates)
         asset = assetStorageService.merge(asset)
 
         then: "no location event should have been received"

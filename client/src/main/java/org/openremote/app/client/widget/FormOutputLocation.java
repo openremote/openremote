@@ -22,7 +22,7 @@ package org.openremote.app.client.widget;
 import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.InlineLabel;
-import org.openremote.model.value.ObjectValue;
+import org.openremote.model.geo.GeoJSONPoint;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -34,7 +34,7 @@ public class FormOutputLocation extends Composite {
     protected FormButton toggleButton = new FormButton();
 
     protected boolean reversed = false;
-    protected ObjectValue coordinates;
+    protected GeoJSONPoint coordinates;
 
     public FormOutputLocation() {
         initWidget(panel);
@@ -52,9 +52,9 @@ public class FormOutputLocation extends Composite {
         });
     }
 
-    public boolean setCoordinates(String noLocationText, ObjectValue coordinates) {
-        if (coordinates != null && coordinates.hasKey("latitude") && coordinates.hasKey("longitude")) {
-            this.coordinates = coordinates;
+    public boolean setCoordinates(String noLocationText, GeoJSONPoint point) {
+        if (point != null && point.hasCoordinates()) {
+            this.coordinates = point;
             toggleButton.setVisible(true);
             update();
             return true;
@@ -68,16 +68,15 @@ public class FormOutputLocation extends Composite {
         // TODO: This assumes 0 is Lng and 1 is Lat, which is true for PostGIS backend
         // Rounding to 5 decimals gives us precision of about 1 meter, should be enough
         if (reversed) {
-            coordinatesLabel.setText(round(coordinates.getNumber("latitude").orElse(0d), 5) + " " + round(coordinates.getNumber("longitude").orElse(0d), 5));
+            coordinatesLabel.setText(round(coordinates.getLongitude(), 5) + " " + round(coordinates.getLatitude(), 5));
             toggleButton.getUpFace().setText("Lng | Lat");
             toggleButton.getDownFace().setText("Lng | Lat");
         } else {
-            coordinatesLabel.setText(round(coordinates.getNumber("longitude").orElse(0d), 5) + " " + round(coordinates.getNumber("latitude").orElse(0d), 5));
+            coordinatesLabel.setText(round(coordinates.getLatitude(), 5) + " " + round(coordinates.getLongitude(), 5));
             toggleButton.getUpFace().setText("Lat | Lng");
             toggleButton.getDownFace().setText("Lat | Lng");
         }
     }
-
     protected String round(double d, int places) {
         return new BigDecimal(d).setScale(places, RoundingMode.HALF_UP).toString();
     }

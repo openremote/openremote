@@ -19,11 +19,15 @@
  */
 package org.openremote.model.attribute;
 
+import org.openremote.model.value.Value;
+
 public interface AttributeDescriptor {
 
     String getName();
 
-    AttributeType getType();
+    AttributeValueType getType();
 
     MetaItem[] getDefaultMetaItems();
+
+    Value getDefaultValue();
 }

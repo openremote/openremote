@@ -25,6 +25,7 @@ import org.openremote.app.client.assets.browser.BrowserTreeNode;
 import org.openremote.app.client.assets.navigation.AssetNavigation;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.geo.GeoJSON;
+import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.value.ObjectValue;
 
 import java.util.Date;
@@ -69,11 +70,11 @@ public interface AssetBaseView<P extends AssetBaseView.Presenter> extends IsWidg
 
     boolean isMapInitialised();
 
-    void setLocation(ObjectValue coordinates);
+    void setLocation(GeoJSONPoint point);
 
     void showDroppedPin(GeoJSON geoFeature);
 
-    void flyTo(ObjectValue coordinates);
+    void flyTo(GeoJSONPoint point);
 
     void setAccessPublicRead(boolean enabled);
 

@@ -26,7 +26,7 @@ import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetType;
 import org.openremote.model.attribute.AttributeEvent;
-import org.openremote.model.attribute.AttributeType;
+import org.openremote.model.attribute.AttributeValueType;
 import org.openremote.model.value.ArrayValue;
 import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Value;
@@ -51,7 +51,7 @@ public class AssetState implements Comparable<AssetState> {
 
     final protected String attributeName;
 
-    final protected AttributeType attributeType;
+    final protected AttributeValueType attributeValueType;
 
     final protected Value value;
 
@@ -91,7 +91,7 @@ public class AssetState implements Comparable<AssetState> {
 
     public AssetState(AssetState that) {
         this.attributeName = that.attributeName;
-        this.attributeType = that.attributeType;
+        this.attributeValueType = that.attributeValueType;
         this.value = that.value;
         this.timestamp = that.timestamp;
         this.time = that.time;
@@ -114,7 +114,7 @@ public class AssetState implements Comparable<AssetState> {
 
     public AssetState(Asset asset, AssetAttribute attribute, AttributeEvent.Source source) {
         this.attributeName = attribute.getNameOrThrow();
-        this.attributeType = attribute.getTypeOrThrow();
+        this.attributeValueType = attribute.getTypeOrThrow();
         this.value = attribute.getValue().orElse(null);
         this.timestamp = attribute.getValueTimestamp().orElse(-1L);
         this.time = timestamp > 0 ? LocalDateTime.ofInstant(Instant.ofEpochMilli(timestamp), ZoneId.systemDefault()) : null;
@@ -139,8 +139,8 @@ public class AssetState implements Comparable<AssetState> {
         return attributeName;
     }
 
-    public AttributeType getAttributeType() {
-        return attributeType;
+    public AttributeValueType getAttributeValueType() {
+        return attributeValueType;
     }
 
     public Optional<Value> getValue() {
@@ -333,7 +333,7 @@ public class AssetState implements Comparable<AssetState> {
             ", parentName='" + getParentName() + '\'' +
             ", type='" + getType() + '\'' +
             ", attributeName='" + getAttributeName() + '\'' +
-            ", attributeType=" + getAttributeType() +
+            ", attributeValueType=" + getAttributeValueType() +
             ", value=" + (getValue().isPresent() ? getValue().get().toJson() : "null") + // TODO Performance?
             ", timestamp=" + getTimestamp() +
             ", time=" + getTime() +

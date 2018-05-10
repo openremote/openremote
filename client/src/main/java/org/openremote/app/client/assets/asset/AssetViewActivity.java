@@ -164,7 +164,7 @@ public class AssetViewActivity
 
     @Override
     public void centerMap() {
-        view.flyTo(asset.getCoordinates().orElse(null));
+        view.flyTo(asset.getPoint());
     }
 
     @Override

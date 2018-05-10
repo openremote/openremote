@@ -12,7 +12,7 @@ import org.openremote.manager.setup.builtin.ManagerDemoSetup
 import org.openremote.model.asset.Asset
 import org.openremote.model.asset.AssetAttribute
 import org.openremote.model.asset.AssetMeta
-import org.openremote.model.attribute.AttributeDescriptorImpl
+import org.openremote.model.attribute.AttributeValue
 import org.openremote.model.attribute.MetaItem
 import org.openremote.model.rules.AssetRuleset
 import org.openremote.model.rules.GlobalRuleset
@@ -78,11 +78,11 @@ class BasicGeofenceProcessingTest extends Specification implements ManagerContai
         when: "another console asset is added with its location attribute marked as RULE_STATE and it has a CONSOLE_PROVIDER_GEOFENCE attribute"
         Asset console2 = new Asset("Demo Android Console 2", CONSOLE)
             .addAttributes(
-            new AssetAttribute(AttributeDescriptorImpl.LOCATION.getName(),
-                               AttributeDescriptorImpl.LOCATION.getType())
+            new AssetAttribute(AttributeValue.LOCATION.getName(),
+                               AttributeValue.LOCATION.getType())
                 .setMeta(new MetaItem(RULE_STATE)),
-            new AssetAttribute(AttributeDescriptorImpl.CONSOLE_PROVIDER_GEOFENCE.getName(),
-                               AttributeDescriptorImpl.CONSOLE_PROVIDER_GEOFENCE.getType())
+            new AssetAttribute(AttributeValue.CONSOLE_PROVIDER_GEOFENCE.getName(),
+                               AttributeValue.CONSOLE_PROVIDER_GEOFENCE.getType())
                 .setMeta(
                 new MetaItem(GEOFENCE_ADAPTER, Values.create("ORConsole")),
                 new MetaItem(ACCESS_PUBLIC_READ)
@@ -186,7 +186,7 @@ class BasicGeofenceProcessingTest extends Specification implements ManagerContai
         }
 
         when: "the RULE_STATE meta is removed from the second console asset's location attribute"
-        console2.getAttribute(AttributeDescriptorImpl.LOCATION.getName()).get().getMeta().removeIf({it.name.orElse(null) == AssetMeta.RULE_STATE.urn})
+        console2.getAttribute(AttributeValue.LOCATION.getName()).get().getMeta().removeIf({it.name.orElse(null) == AssetMeta.RULE_STATE.urn})
         console2 = assetStorageService.merge(console2)
 
         then: "the geofence adapter should be notified that the console asset no longer has any rules with location predicates"

@@ -3,7 +3,7 @@ package org.openremote.test.rules
 import org.openremote.manager.rules.RulesBuilder
 import org.openremote.model.asset.AssetQuery
 import org.openremote.model.asset.AssetType
-import org.openremote.model.attribute.AttributeType
+import org.openremote.model.attribute.AttributeValueType
 
 RulesBuilder rules = binding.rules
 
@@ -37,7 +37,7 @@ rules.add()
         { facts ->
             !facts.matchFirst("Kitchen Number Attributes").isPresent() &&
                     facts.matchAssetState(new AssetQuery().name("Kitchen"))
-                            .filter({ assetState -> assetState.attributeType == AttributeType.NUMBER })
+                            .filter({ assetState -> assetState.attributeValueType == AttributeValueType.NUMBER })
                             .findFirst().isPresent()
         })
         .then(
@@ -51,7 +51,7 @@ rules.add()
         { facts ->
             !facts.matchFirst("Boolean attributes").isPresent() &&
                     facts.matchAssetState(new AssetQuery())
-                            .filter({ assetState -> assetState.attributeType == AttributeType.BOOLEAN })
+                            .filter({ assetState -> assetState.attributeValueType == AttributeValueType.BOOLEAN })
                             .findFirst().isPresent()
         })
         .then(
@@ -65,7 +65,7 @@ rules.add()
         { facts ->
             !facts.matchFirst("String Attributes").isPresent() &&
                     facts.matchAssetState(new AssetQuery())
-                            .filter({ assetState -> assetState.attributeType == AttributeType.STRING })
+                            .filter({ assetState -> assetState.attributeValueType == AttributeValueType.STRING })
                             .findFirst().isPresent()
         })
         .then(

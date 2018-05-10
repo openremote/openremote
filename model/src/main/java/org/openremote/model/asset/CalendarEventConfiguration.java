@@ -21,14 +21,12 @@ package org.openremote.model.asset;
 
 import org.openremote.model.AbstractValueHolder;
 import org.openremote.model.attribute.Attribute;
-import org.openremote.model.attribute.AttributeType;
+import org.openremote.model.attribute.AttributeValueType;
 import org.openremote.model.calendar.CalendarEvent;
 import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Value;
 
 import java.util.Optional;
-
-import static org.openremote.model.Constants.NAMESPACE;
 
 /**
  * An {@link Attribute} that can be added to an {@link Asset} to indicate that the asset is time sensitive. This is to
@@ -78,6 +76,6 @@ public final class CalendarEventConfiguration {
     }
 
     public static AssetAttribute toAttribute(CalendarEvent calendarEvent) {
-        return new AssetAttribute(CALENDAR_EVENT_ATTRIBUTE_NAME, AttributeType.OBJECT, calendarEvent.toValue());
+        return new AssetAttribute(CALENDAR_EVENT_ATTRIBUTE_NAME, AttributeValueType.OBJECT, calendarEvent.toValue());
     }
 }

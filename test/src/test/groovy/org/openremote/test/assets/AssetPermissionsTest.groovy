@@ -8,7 +8,7 @@ import org.openremote.model.asset.Asset
 import org.openremote.model.asset.AssetAttribute
 import org.openremote.model.asset.AssetQuery
 import org.openremote.model.asset.AssetType
-import org.openremote.model.attribute.AttributeType
+import org.openremote.model.attribute.AttributeValueType
 import org.openremote.model.attribute.Meta
 import org.openremote.model.attribute.MetaItem
 import org.openremote.model.value.Values
@@ -25,8 +25,8 @@ import static org.openremote.model.Constants.*
 import static org.openremote.model.asset.BaseAssetQuery.ParentPredicate
 import static org.openremote.model.asset.BaseAssetQuery.TenantPredicate
 import static org.openremote.model.asset.AssetMeta.*
-import static org.openremote.model.attribute.AttributeType.BOOLEAN
-import static org.openremote.model.attribute.AttributeType.NUMBER
+import static org.openremote.model.attribute.AttributeValueType.BOOLEAN
+import static org.openremote.model.attribute.AttributeValueType.NUMBER
 import static org.openremote.model.attribute.MetaItem.isMetaNameEqualTo
 
 class AssetPermissionsTest extends Specification implements ManagerContainerTrait {
@@ -578,8 +578,6 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         apartment1.realmId == keycloakDemoSetup.customerATenant.id
         apartment1.type == AssetType.RESIDENCE.value
         apartment1.parentId == managerDemoSetup.smartHomeId
-        apartment1.coordinates[0] == 5.470945d
-        apartment1.coordinates[1] == 51.438d
         apartment1.path == null
         apartment1.attributesList.size() == 0
 
@@ -671,7 +669,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         def resultAttributes = apartment1Livingroom.getAttributesList()
         resultAttributes.size() == 5
         def currentTemperature = apartment1Livingroom.getAttribute("currentTemperature").get()
-        currentTemperature.getType().get() == AttributeType.TEMPERATURE_CELCIUS
+        currentTemperature.getType().get() == AttributeValueType.TEMPERATURE_CELCIUS
         !currentTemperature.getValue().isPresent()
         Meta resultMeta = currentTemperature.getMeta()
         resultMeta.size() == 6

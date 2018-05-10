@@ -1,6 +1,5 @@
 package org.openremote.agent.protocol.upnp;
 
-import com.fasterxml.uuid.Generators;
 import org.fourthline.cling.UpnpService;
 import org.fourthline.cling.UpnpServiceImpl;
 import org.fourthline.cling.model.message.header.STAllHeader;
@@ -28,7 +27,7 @@ import java.util.logging.Logger;
 
 import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
 import static org.openremote.model.asset.AssetMeta.LABEL;
-import static org.openremote.model.attribute.AttributeType.STRING;
+import static org.openremote.model.attribute.AttributeValueType.STRING;
 
 // TODO Experimental
 

@@ -21,7 +21,7 @@ package org.openremote.model.simulator.element;
 
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.attribute.AttributeRef;
-import org.openremote.model.attribute.AttributeType;
+import org.openremote.model.attribute.AttributeValueType;
 import org.openremote.model.simulator.SimulatorElement;
 import org.openremote.model.value.Values;
 
@@ -43,7 +43,7 @@ public class NumberSimulatorElement extends SimulatorElement {
     }
 
     public NumberSimulatorElement(AttributeRef attributeRef, Integer min, Integer max) {
-        super(attributeRef, AttributeType.NUMBER);
+        super(attributeRef, AttributeValueType.NUMBER);
         this.min = min;
         this.max = max;
     }

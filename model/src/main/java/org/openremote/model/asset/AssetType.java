@@ -27,8 +27,8 @@ import java.util.stream.Stream;
 
 import static org.openremote.model.Constants.ASSET_NAMESPACE;
 import static org.openremote.model.asset.AssetMeta.*;
-import static org.openremote.model.attribute.AttributeType.NUMBER;
-import static org.openremote.model.attribute.AttributeType.STRING;
+import static org.openremote.model.attribute.AttributeValueType.NUMBER;
+import static org.openremote.model.attribute.AttributeValueType.STRING;
 
 /**
  * Asset type is an arbitrary string. It should be URI. This enum contains the well-known URIs for functionality we want

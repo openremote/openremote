@@ -34,7 +34,7 @@ import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetResource;
 import org.openremote.model.attribute.AttributeEvent;
-import org.openremote.model.attribute.AttributeType;
+import org.openremote.model.attribute.AttributeValueType;
 import org.openremote.model.event.bus.EventBus;
 import org.openremote.model.event.bus.EventRegistration;
 import org.openremote.model.geo.GeoJSON;
@@ -189,7 +189,7 @@ public class MapActivity extends AssetBrowsingActivity<MapPlace> implements MapV
         if (asset.hasGeoFeature()) {
             GeoJSON geoFeature = asset.getGeoFeature(30);
             view.showDroppedPin(geoFeature);
-            view.flyTo(asset.getCoordinates().get());
+            view.flyTo(asset.getPoint());
         }
     }
 
@@ -197,7 +197,7 @@ public class MapActivity extends AssetBrowsingActivity<MapPlace> implements MapV
         List<MapInfoItem> infoItems = dashboardAttributes.stream()
             .filter(attribute -> attribute.getLabel().isPresent())
             .map(attribute -> new MapInfoItem(
-                    attribute.getType().map(AttributeType::getIcon).orElse(AttributeType.DEFAULT_ICON),
+                    attribute.getType().map(AttributeValueType::getIcon).orElse(AttributeValueType.DEFAULT_ICON),
                     attribute.getLabel().get(),
                     attribute.getFormat().orElse(null),
                     attribute.getValue().orElse(null)

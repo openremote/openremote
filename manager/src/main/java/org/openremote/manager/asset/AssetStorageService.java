@@ -44,6 +44,7 @@ import org.openremote.manager.security.UserConfiguration;
 import org.openremote.model.Constants;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.asset.*;
+import org.openremote.model.attribute.AttributeValue;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.calendar.CalendarEvent;
 import org.openremote.model.calendar.RecurrenceRule;
@@ -63,11 +64,13 @@ import java.util.*;
 import java.util.Date;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
+import java.util.stream.Stream;
 
 import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_TOPIC;
 import static org.openremote.container.persistence.PersistenceEvent.isPersistenceEventForEntityType;
 import static org.openremote.manager.event.ClientEventService.CLIENT_EVENT_TOPIC;
 import static org.openremote.manager.event.ClientEventService.getSessionKey;
+import static org.openremote.model.asset.AssetAttribute.attributesFromJson;
 import static org.openremote.model.asset.BaseAssetQuery.*;
 import static org.openremote.model.asset.BaseAssetQuery.Access.PRIVATE_READ;
 import static org.openremote.model.asset.BaseAssetQuery.Access.RESTRICTED_READ;
@@ -1315,6 +1318,23 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                         new AssetTreeModifiedEvent(timerService.getCurrentTimeMillis(), asset.getRealmId(), asset.getId())
                     );
                     break;
+                }
+
+                // Did the location change?
+                Stream<AssetAttribute> oldAttributes = attributesFromJson(persistenceEvent.getPreviousState("attributes"), asset.getId());
+                Stream<AssetAttribute> currentAttributes = attributesFromJson(persistenceEvent.getCurrentState("attributes"), asset.getId());
+
+                Optional<AssetAttribute> oldLocation = oldAttributes.filter(assetAttribute -> assetAttribute.name.equals(AttributeValue.LOCATION.getName())).findFirst();
+                Optional<AssetAttribute> currentLocation = currentAttributes.filter(assetAttribute -> assetAttribute.name.equals(AttributeValue.LOCATION.getName())).findFirst();
+
+                if (!(!oldLocation.isPresent() && !currentLocation.isPresent())) {
+                    if (!oldLocation.isPresent() || !currentLocation.isPresent() || !oldLocation.get().equals(currentLocation.get())) {
+                        clientEventService.publishEvent(
+                            new LocationEvent(asset.getId(),
+                                asset.getCoordinates(),
+                                timerService.getCurrentTimeMillis())
+                        );
+                    }
                 }
                 break;
             case DELETE:

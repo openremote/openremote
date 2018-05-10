@@ -20,7 +20,7 @@
 package org.openremote.agent.protocol.velbus.device;
 
 import org.openremote.agent.protocol.velbus.VelbusPacket;
-import org.openremote.model.attribute.AttributeType;
+import org.openremote.model.attribute.AttributeValueType;
 import org.openremote.model.util.EnumUtil;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueType;
@@ -71,22 +71,22 @@ public class CounterProcessor extends FeatureProcessor {
     }
 
     public static final List<PropertyDescriptor> SUPPORTED_PROPERTIES = Arrays.asList(
-        new PropertyDescriptor("counter1Enabled", "Counter 1 Enabled", "COUNTER1_ENABLED", AttributeType.BOOLEAN, true),
-        new PropertyDescriptor("counter2Enabled", "Counter 2 Enabled", "COUNTER2_ENABLED", AttributeType.BOOLEAN, true),
-        new PropertyDescriptor("counter3Enabled", "Counter 3 Enabled", "COUNTER3_ENABLED", AttributeType.BOOLEAN, true),
-        new PropertyDescriptor("counter4Enabled", "Counter 4 Enabled", "COUNTER4_ENABLED", AttributeType.BOOLEAN, true),
-        new PropertyDescriptor("counter1Units", "Counter 1 Units", "COUNTER1_UNITS", AttributeType.STRING, true),
-        new PropertyDescriptor("counter2Units", "Counter 2 Units", "COUNTER2_UNITS", AttributeType.STRING, true),
-        new PropertyDescriptor("counter3Units", "Counter 3 Units", "COUNTER3_UNITS", AttributeType.STRING, true),
-        new PropertyDescriptor("counter4Units", "Counter 4 Units", "COUNTER4_UNITS", AttributeType.STRING, true),
-        new PropertyDescriptor("counter1Instant", "Counter 1 Instant", "COUNTER1_INSTANT", AttributeType.NUMBER, true),
-        new PropertyDescriptor("counter2Instant", "Counter 2 Instant", "COUNTER2_INSTANT", AttributeType.NUMBER, true),
-        new PropertyDescriptor("counter3Instant", "Counter 3 Instant", "COUNTER3_INSTANT", AttributeType.NUMBER, true),
-        new PropertyDescriptor("counter4Instant", "Counter 4 Instant", "COUNTER4_INSTANT", AttributeType.NUMBER, true),
-        new PropertyDescriptor("counter1", "Counter 1", "COUNTER1", AttributeType.NUMBER),
-        new PropertyDescriptor("counter2", "Counter 2", "COUNTER2", AttributeType.NUMBER),
-        new PropertyDescriptor("counter3", "Counter 3", "COUNTER3", AttributeType.NUMBER),
-        new PropertyDescriptor("counter4", "Counter 4", "COUNTER4", AttributeType.NUMBER)
+        new PropertyDescriptor("counter1Enabled", "Counter 1 Enabled", "COUNTER1_ENABLED", AttributeValueType.BOOLEAN, true),
+        new PropertyDescriptor("counter2Enabled", "Counter 2 Enabled", "COUNTER2_ENABLED", AttributeValueType.BOOLEAN, true),
+        new PropertyDescriptor("counter3Enabled", "Counter 3 Enabled", "COUNTER3_ENABLED", AttributeValueType.BOOLEAN, true),
+        new PropertyDescriptor("counter4Enabled", "Counter 4 Enabled", "COUNTER4_ENABLED", AttributeValueType.BOOLEAN, true),
+        new PropertyDescriptor("counter1Units", "Counter 1 Units", "COUNTER1_UNITS", AttributeValueType.STRING, true),
+        new PropertyDescriptor("counter2Units", "Counter 2 Units", "COUNTER2_UNITS", AttributeValueType.STRING, true),
+        new PropertyDescriptor("counter3Units", "Counter 3 Units", "COUNTER3_UNITS", AttributeValueType.STRING, true),
+        new PropertyDescriptor("counter4Units", "Counter 4 Units", "COUNTER4_UNITS", AttributeValueType.STRING, true),
+        new PropertyDescriptor("counter1Instant", "Counter 1 Instant", "COUNTER1_INSTANT", AttributeValueType.NUMBER, true),
+        new PropertyDescriptor("counter2Instant", "Counter 2 Instant", "COUNTER2_INSTANT", AttributeValueType.NUMBER, true),
+        new PropertyDescriptor("counter3Instant", "Counter 3 Instant", "COUNTER3_INSTANT", AttributeValueType.NUMBER, true),
+        new PropertyDescriptor("counter4Instant", "Counter 4 Instant", "COUNTER4_INSTANT", AttributeValueType.NUMBER, true),
+        new PropertyDescriptor("counter1", "Counter 1", "COUNTER1", AttributeValueType.NUMBER),
+        new PropertyDescriptor("counter2", "Counter 2", "COUNTER2", AttributeValueType.NUMBER),
+        new PropertyDescriptor("counter3", "Counter 3", "COUNTER3", AttributeValueType.NUMBER),
+        new PropertyDescriptor("counter4", "Counter 4", "COUNTER4", AttributeValueType.NUMBER)
     );
 
     @Override

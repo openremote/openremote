@@ -22,7 +22,7 @@ import static org.openremote.model.asset.BaseAssetQuery.*
 import static org.openremote.model.asset.AssetMeta.ACCESS_PUBLIC_READ
 import static org.openremote.model.asset.AssetMeta.LABEL
 import static org.openremote.model.asset.AssetType.THING
-import static org.openremote.model.attribute.AttributeType.NUMBER
+import static org.openremote.model.attribute.AttributeValueType.NUMBER
 
 class AssetPublicQueryTest extends Specification implements ManagerContainerTrait {
 

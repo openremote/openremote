@@ -20,9 +20,7 @@
 package org.openremote.model.asset;
 
 import jsinterop.annotations.JsType;
-import org.openremote.model.geo.GeoJSON;
-import org.openremote.model.geo.GeoJSONFeature;
-import org.openremote.model.geo.GeoJSONGeometry;
+import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.http.SuccessStatusCode;
 
@@ -274,7 +272,7 @@ public interface AssetResource {
     @SuccessStatusCode(204)
     @RolesAllowed({"write:assets"})
     @SuppressWarnings("unusable-by-js")
-    void updateLocation(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId, GeoJSONGeometry location);
+    void updateLocation(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId, GeoJSONPoint location);
 
     /**
      * Updated the attribute "location" of the public asset
@@ -286,5 +284,5 @@ public interface AssetResource {
     @Consumes(APPLICATION_JSON)
     @SuccessStatusCode(204)
     @SuppressWarnings("unusable-by-js")
-    void updatePublicAssetLocation(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId, GeoJSONGeometry location);
+    void updatePublicAssetLocation(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId, GeoJSONPoint location);
 }

@@ -44,6 +44,7 @@ import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetType;
 import org.openremote.model.asset.AssetTypeDescriptor;
 import org.openremote.model.geo.GeoJSON;
+import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.util.Pair;
 import org.openremote.model.value.ObjectValue;
 
@@ -327,8 +328,8 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
     }
 
     @Override
-    public void setLocation(ObjectValue coordinates) {
-        if (locationOutput.setCoordinates(managerMessages.selectLocation(), coordinates)) {
+    public void setLocation(GeoJSONPoint point) {
+        if (locationOutput.setCoordinates(managerMessages.selectLocation(), point)) {
             centerMapButton.setEnabled(true);
         } else {
             centerMapButton.setEnabled(false);
@@ -374,9 +375,9 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
     }
 
     @Override
-    public void flyTo(ObjectValue coordinates) {
+    public void flyTo(GeoJSONPoint point) {
         if (mapWidget.isMapReady()) {
-            mapWidget.flyTo(coordinates);
+            mapWidget.flyTo(point);
         }
     }
 

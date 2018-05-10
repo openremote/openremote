@@ -20,7 +20,7 @@
 package org.openremote.agent.protocol.velbus.device;
 
 import org.openremote.agent.protocol.velbus.VelbusPacket;
-import org.openremote.model.attribute.AttributeType;
+import org.openremote.model.attribute.AttributeValueType;
 import org.openremote.model.util.EnumUtil;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueType;
@@ -115,28 +115,28 @@ public class AnalogInputProcessor extends FeatureProcessor {
     protected static final String EmptySensorText = "               ";
 
     protected static final List<PropertyDescriptor> METEO_PROPERTIES = Arrays.asList(
-        new PropertyDescriptor("rainfall", "Rainfall", "RAINFALL", AttributeType.RAINFALL, true),
-        new PropertyDescriptor("lightLevel", "Light Level", "LIGHT", AttributeType.BRIGHTNESS_LUX, true),
-        new PropertyDescriptor("windSpeed", "Wind Speed", "WIND", AttributeType.SPEED_KPH, true)
+        new PropertyDescriptor("rainfall", "Rainfall", "RAINFALL", AttributeValueType.RAINFALL, true),
+        new PropertyDescriptor("lightLevel", "Light Level", "LIGHT", AttributeValueType.BRIGHTNESS_LUX, true),
+        new PropertyDescriptor("windSpeed", "Wind Speed", "WIND", AttributeValueType.SPEED_KPH, true)
     );
 
     protected static final List<PropertyDescriptor> IO_PROPERTIES = Arrays.asList(
-        new PropertyDescriptor("sensor1", "Sensor 1", "SENSOR1", AttributeType.NUMBER, true),
-        new PropertyDescriptor("sensor2", "Sensor 2", "SENSOR2", AttributeType.NUMBER, true),
-        new PropertyDescriptor("sensor3", "Sensor 3", "SENSOR3", AttributeType.NUMBER, true),
-        new PropertyDescriptor("sensor4", "Sensor 4", "SENSOR4", AttributeType.NUMBER, true),
-        new PropertyDescriptor("sensor1Text", "Sensor 1 Text", "SENSOR1_TEXT", AttributeType.STRING, true),
-        new PropertyDescriptor("sensor2Text", "Sensor 2 Text", "SENSOR2_TEXT", AttributeType.STRING, true),
-        new PropertyDescriptor("sensor3Text", "Sensor 3 Text", "SENSOR3_TEXT", AttributeType.STRING, true),
-        new PropertyDescriptor("sensor4Text", "Sensor 4 Text", "SENSOR4_TEXT", AttributeType.STRING, true),
-        new PropertyDescriptor("sensor1Type", "Sensor 1 Type", "SENSOR1_TYPE", AttributeType.STRING, true),
-        new PropertyDescriptor("sensor2Type", "Sensor 2 Type", "SENSOR2_TYPE", AttributeType.STRING, true),
-        new PropertyDescriptor("sensor3Type", "Sensor 3 Type", "SENSOR3_TYPE", AttributeType.STRING, true),
-        new PropertyDescriptor("sensor4Type", "Sensor 4 Type", "SENSOR4_TYPE", AttributeType.STRING, true),
-        new PropertyDescriptor("sensor1Mode", "Sensor 1 Mode", "SENSOR1_MODE", AttributeType.STRING, true),
-        new PropertyDescriptor("sensor2Mode", "Sensor 2 Mode", "SENSOR2_MODE", AttributeType.STRING, true),
-        new PropertyDescriptor("sensor3Mode", "Sensor 3 Mode", "SENSOR3_MODE", AttributeType.STRING, true),
-        new PropertyDescriptor("sensor4Mode", "Sensor 4 Mode", "SENSOR4_MODE", AttributeType.STRING, true)
+        new PropertyDescriptor("sensor1", "Sensor 1", "SENSOR1", AttributeValueType.NUMBER, true),
+        new PropertyDescriptor("sensor2", "Sensor 2", "SENSOR2", AttributeValueType.NUMBER, true),
+        new PropertyDescriptor("sensor3", "Sensor 3", "SENSOR3", AttributeValueType.NUMBER, true),
+        new PropertyDescriptor("sensor4", "Sensor 4", "SENSOR4", AttributeValueType.NUMBER, true),
+        new PropertyDescriptor("sensor1Text", "Sensor 1 Text", "SENSOR1_TEXT", AttributeValueType.STRING, true),
+        new PropertyDescriptor("sensor2Text", "Sensor 2 Text", "SENSOR2_TEXT", AttributeValueType.STRING, true),
+        new PropertyDescriptor("sensor3Text", "Sensor 3 Text", "SENSOR3_TEXT", AttributeValueType.STRING, true),
+        new PropertyDescriptor("sensor4Text", "Sensor 4 Text", "SENSOR4_TEXT", AttributeValueType.STRING, true),
+        new PropertyDescriptor("sensor1Type", "Sensor 1 Type", "SENSOR1_TYPE", AttributeValueType.STRING, true),
+        new PropertyDescriptor("sensor2Type", "Sensor 2 Type", "SENSOR2_TYPE", AttributeValueType.STRING, true),
+        new PropertyDescriptor("sensor3Type", "Sensor 3 Type", "SENSOR3_TYPE", AttributeValueType.STRING, true),
+        new PropertyDescriptor("sensor4Type", "Sensor 4 Type", "SENSOR4_TYPE", AttributeValueType.STRING, true),
+        new PropertyDescriptor("sensor1Mode", "Sensor 1 Mode", "SENSOR1_MODE", AttributeValueType.STRING, true),
+        new PropertyDescriptor("sensor2Mode", "Sensor 2 Mode", "SENSOR2_MODE", AttributeValueType.STRING, true),
+        new PropertyDescriptor("sensor3Mode", "Sensor 3 Mode", "SENSOR3_MODE", AttributeValueType.STRING, true),
+        new PropertyDescriptor("sensor4Mode", "Sensor 4 Mode", "SENSOR4_MODE", AttributeValueType.STRING, true)
     );
 
     @Override

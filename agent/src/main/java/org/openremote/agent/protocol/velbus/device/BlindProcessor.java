@@ -20,7 +20,7 @@
 package org.openremote.agent.protocol.velbus.device;
 
 import org.openremote.agent.protocol.velbus.VelbusPacket;
-import org.openremote.model.attribute.AttributeType;
+import org.openremote.model.attribute.AttributeValueType;
 import org.openremote.model.util.EnumUtil;
 import org.openremote.model.util.Pair;
 import org.openremote.model.value.Value;
@@ -128,37 +128,37 @@ public class BlindProcessor extends OutputChannelProcessor {
         }
     }
 
-    protected final static List<Pair<String, AttributeType>> CHANNEL_PROPERTIES = Arrays.asList(
+    protected final static List<Pair<String, AttributeValueType>> CHANNEL_PROPERTIES = Arrays.asList(
         // RW - ChannelState
-        new Pair<>("", AttributeType.STRING),
+        new Pair<>("", AttributeValueType.STRING),
         // R - ChannelSetting
-        new Pair<>("_SETTING", AttributeType.STRING),
+        new Pair<>("_SETTING", AttributeValueType.STRING),
         // R - Read LED status for up
-        new Pair<>("_LED_UP", AttributeType.STRING),
+        new Pair<>("_LED_UP", AttributeValueType.STRING),
        // R - Read LED status for down
-        new Pair<>("_LED_DOWN", AttributeType.STRING),
+        new Pair<>("_LED_DOWN", AttributeValueType.STRING),
         // RW - True/False
-        new Pair<>("_LOCKED", AttributeType.BOOLEAN),
+        new Pair<>("_LOCKED", AttributeValueType.BOOLEAN),
         // RW - True/False
-        new Pair<>("_INHIBITED", AttributeType.BOOLEAN),
+        new Pair<>("_INHIBITED", AttributeValueType.BOOLEAN),
         // W - Position 0-100% (0 = halt)
-        new Pair<>("_POSITION", AttributeType.NUMBER),
+        new Pair<>("_POSITION", AttributeValueType.NUMBER),
         // W - Up for specified time in seconds (0 = halt, -1 = indefinitely)
-        new Pair<>("_UP", AttributeType.NUMBER),
+        new Pair<>("_UP", AttributeValueType.NUMBER),
         // W - Down for specified time in seconds (0 = halt, -1 = indefinitely)
-        new Pair<>("_DOWN", AttributeType.NUMBER),
+        new Pair<>("_DOWN", AttributeValueType.NUMBER),
         // W - Forced up for specified time in seconds (0 = halt, -1 = indefinitely)
-        new Pair<>("_FORCE_UP", AttributeType.NUMBER),
+        new Pair<>("_FORCE_UP", AttributeValueType.NUMBER),
         // W - Forced down for specified time in seconds (0 = cancel, -1 = indefinitely)
-        new Pair<>("_FORCE_DOWN", AttributeType.NUMBER),
+        new Pair<>("_FORCE_DOWN", AttributeValueType.NUMBER),
         // W - Lock (force off) for specified time in seconds (0 = unlock, -1 = indefinitely)
-        new Pair<>("_LOCK", AttributeType.NUMBER),
+        new Pair<>("_LOCK", AttributeValueType.NUMBER),
         // W - Inhibit for specified time in seconds (0 = unlock, -1 = indefinitely)
-        new Pair<>("_INHIBIT", AttributeType.NUMBER),
+        new Pair<>("_INHIBIT", AttributeValueType.NUMBER),
         // W - Inhibit up for specified time in seconds (0 = un-inhibit, -1 = indefinitely)
-        new Pair<>("_INHIBIT_UP", AttributeType.NUMBER),
+        new Pair<>("_INHIBIT_UP", AttributeValueType.NUMBER),
         // W - Inhibit down for specified time in seconds (0 = un-inhibit, -1 = indefinitely)
-        new Pair<>("_INHIBIT_DOWN", AttributeType.NUMBER)
+        new Pair<>("_INHIBIT_DOWN", AttributeValueType.NUMBER)
     );
 
     @Override

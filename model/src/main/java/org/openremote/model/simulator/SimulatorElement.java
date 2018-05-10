@@ -24,7 +24,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.ValueHolder;
 import org.openremote.model.attribute.AttributeRef;
-import org.openremote.model.attribute.AttributeType;
+import org.openremote.model.attribute.AttributeValueType;
 import org.openremote.model.simulator.element.ColorSimulatorElement;
 import org.openremote.model.simulator.element.NumberSimulatorElement;
 import org.openremote.model.simulator.element.SwitchSimulatorElement;
@@ -51,14 +51,14 @@ import java.util.Optional;
 public abstract class SimulatorElement implements ValueHolder {
 
     public AttributeRef attributeRef;
-    public AttributeType expectedType;
+    public AttributeValueType expectedType;
     // TODO GWT jackson doesn't like fields with the same name as getters in the hierarchy
     public Value elementValue = null;
 
     protected SimulatorElement() {
     }
 
-    public SimulatorElement(AttributeRef attributeRef, AttributeType expectedType) {
+    public SimulatorElement(AttributeRef attributeRef, AttributeValueType expectedType) {
         this.attributeRef = attributeRef;
         this.expectedType = expectedType;
     }
@@ -67,7 +67,7 @@ public abstract class SimulatorElement implements ValueHolder {
         return attributeRef;
     }
 
-    public AttributeType getExpectedType() {
+    public AttributeValueType getExpectedType() {
         return expectedType;
     }
 

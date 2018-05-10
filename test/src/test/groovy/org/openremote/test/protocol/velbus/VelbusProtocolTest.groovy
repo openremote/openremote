@@ -16,7 +16,7 @@ import org.openremote.model.asset.AssetType
 import org.openremote.model.asset.agent.AgentLink
 import org.openremote.model.asset.agent.AgentResource
 import org.openremote.model.attribute.AttributeRef
-import org.openremote.model.attribute.AttributeType
+import org.openremote.model.attribute.AttributeValueType
 import org.openremote.model.attribute.MetaItem
 import org.openremote.model.file.FileInfo
 import org.openremote.model.util.TextUtil
@@ -110,7 +110,7 @@ class VelbusProtocolTest extends Specification implements ManagerContainerTrait 
         and: "a device asset is created"
         def device = new Asset("VELBUS Demo VMBGPOD", AssetType.THING, agent)
         device.setAttributes(
-            new AssetAttribute("ch1State", AttributeType.STRING)
+            new AssetAttribute("ch1State", AttributeValueType.STRING)
                 .setMeta(
                     new MetaItem(
                         AbstractVelbusProtocol.META_VELBUS_DEVICE_ADDRESS,

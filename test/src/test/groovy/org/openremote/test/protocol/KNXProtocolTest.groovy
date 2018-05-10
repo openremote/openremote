@@ -120,7 +120,7 @@ class KNXProtocolTest extends Specification implements ManagerContainerTrait {
         when: "a thing asset is created that links it's attributes to the knx protocol configuration"
         def knxThing = new Asset("Living Room Assset", AssetType.THING, knxAgent)
         knxThing.setAttributes(
-                new AssetAttribute("light1ToggleOnOff", AttributeType.BOOLEAN)
+                new AssetAttribute("light1ToggleOnOff", AttributeValueType.BOOLEAN)
                     .setMeta(
                         new MetaItem(LABEL, Values.create("Light 1 Toggle On/Off")),
                         new MetaItem(DESCRIPTION, Values.create("Light 1 for living room")),

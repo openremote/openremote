@@ -27,7 +27,7 @@ import org.openremote.model.Constants;
 import org.openremote.model.asset.*;
 import org.openremote.model.asset.BaseAssetQuery.Select;
 import org.openremote.model.attribute.*;
-import org.openremote.model.geo.GeoJSONGeometry;
+import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.security.Tenant;
 import org.openremote.model.util.TextUtil;
@@ -319,7 +319,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             // TODO Only done for update(Asset) and not create(Asset) as we don't need that right now
             // TODO Implement "Saved Filter/Searches" properly, allowing restricted users to create rule state flags is not great
             resultAsset.getAttributesStream().forEach(attribute -> {
-                if (attribute.getType().map(attributeType -> attributeType == AttributeType.RULES_TEMPLATE_FILTER).orElse(false)
+                if (attribute.getType().map(attributeType -> attributeType == AttributeValueType.RULES_TEMPLATE_FILTER).orElse(false)
                     && !attribute.hasMetaItem(AssetMeta.RULE_STATE)) {
                     attribute.addMeta(new MetaItem(AssetMeta.RULE_STATE, Values.create(true)));
                 }
@@ -601,12 +601,12 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
     }
 
     @Override
-    public void updateLocation(RequestParams requestParams, String assetId, GeoJSONGeometry location) {
+    public void updateLocation(RequestParams requestParams, String assetId, GeoJSONPoint location) {
         try {
             Asset asset = get(requestParams, assetId);
 
-            AssetAttribute locationAttribute = asset.getAttribute(AttributeDescriptorImpl.LOCATION.getName())
-                .orElse(AssetAttribute.createWithDescriptor(AttributeDescriptorImpl.LOCATION));
+            AssetAttribute locationAttribute = asset.getAttribute(AttributeValue.LOCATION.getName())
+                .orElse(AssetAttribute.createWithDescriptor(AttributeValue.LOCATION));
 
             ObjectValue currentCoordinates = locationAttribute.getValueAsObject().orElse(Values.createObject());
             ArrayValue arrayValue = location.getObjectValue().getArray("coordinates").orElseThrow(() -> new IllegalStateException("location doesn't contain 'coordinates' key"));
@@ -622,7 +622,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
     }
 
     @Override
-    public void updatePublicAssetLocation(RequestParams requestParams, String assetId, GeoJSONGeometry location) {
+    public void updatePublicAssetLocation(RequestParams requestParams, String assetId, GeoJSONPoint location) {
         try {
             Asset[] result = queryPublicAssets(requestParams, new AssetQuery().id(assetId));
 
@@ -632,8 +632,9 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
 
             Asset asset = result[0];
 
-            AssetAttribute locationAttribute = asset.getAttribute(AttributeDescriptorImpl.LOCATION.getName())
-                .orElse(AssetAttribute.createWithDescriptor(AttributeDescriptorImpl.LOCATION));
+            //TODO do we need a PUBLIC_WRITE metaitem?
+            AssetAttribute locationAttribute = asset.getAttribute(AttributeValue.LOCATION.getName())
+                .orElse(AssetAttribute.createWithDescriptor(AttributeValue.LOCATION));
 
             ObjectValue currentCoordinates = locationAttribute.getValueAsObject().orElse(Values.createObject());
             ArrayValue arrayValue = location.getObjectValue().getArray("coordinates").orElseThrow(() -> new IllegalStateException("location doesn't contain 'coordinates' key"));

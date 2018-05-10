@@ -34,6 +34,7 @@ import org.openremote.app.client.widget.FlexSplitPanel;
 import org.openremote.app.client.widget.Hyperlink;
 import org.openremote.app.client.widget.MapWidget;
 import org.openremote.model.geo.GeoJSON;
+import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.value.ObjectValue;
 
 import javax.inject.Inject;
@@ -153,9 +154,9 @@ public class MapViewImpl extends Composite implements MapView {
     }
 
     @Override
-    public void flyTo(ObjectValue coordinates) {
+    public void flyTo(GeoJSONPoint point) {
         if (mapWidget.isMapReady()) {
-            mapWidget.flyTo(coordinates);
+            mapWidget.flyTo(point);
         }
     }
 

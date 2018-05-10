@@ -23,7 +23,7 @@ import org.openremote.model.AbstractValueHolder;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetType;
-import org.openremote.model.attribute.AttributeType;
+import org.openremote.model.attribute.AttributeValueType;
 import org.openremote.model.security.UserPasswordCredentials;
 import org.openremote.model.value.Values;
 
@@ -74,7 +74,7 @@ public final class Agent {
             if (isNullOrEmpty(url)) {
                 asset.removeAttribute(URL_ATTRIBUTE_NAME);
             } else {
-                asset.replaceAttribute(new AssetAttribute(URL_ATTRIBUTE_NAME, AttributeType.STRING, Values.create(url)));
+                asset.replaceAttribute(new AssetAttribute(URL_ATTRIBUTE_NAME, AttributeValueType.STRING, Values.create(url)));
             }
         }
     }
@@ -98,7 +98,7 @@ public final class Agent {
             if (Objects.isNull(credentials)) {
                 asset.removeAttribute(CREDENTIALS_ATTRIBUTE_NAME);
             } else {
-                asset.replaceAttribute(new AssetAttribute(CREDENTIALS_ATTRIBUTE_NAME, AttributeType.OBJECT, credentials.toObjectValue()));
+                asset.replaceAttribute(new AssetAttribute(CREDENTIALS_ATTRIBUTE_NAME, AttributeValueType.OBJECT, credentials.toObjectValue()));
             }
         }
     }

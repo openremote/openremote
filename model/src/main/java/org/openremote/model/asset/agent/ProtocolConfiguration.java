@@ -21,7 +21,7 @@ package org.openremote.model.asset.agent;
 
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.attribute.AttributeType;
+import org.openremote.model.attribute.AttributeValueType;
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.value.Values;
@@ -56,7 +56,7 @@ final public class ProtocolConfiguration {
         }
         isValidProtocolNameOrThrow(protocolName);
         attribute.setReadOnly(true);
-        attribute.setType(AttributeType.STRING);
+        attribute.setType(AttributeValueType.STRING);
         attribute.setValue(Values.create(protocolName));
         attribute.getMeta().add(new MetaItem(PROTOCOL_CONFIGURATION, Values.create(true)));
         return attribute;

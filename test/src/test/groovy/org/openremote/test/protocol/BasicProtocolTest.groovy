@@ -207,7 +207,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait, 
         when: "a mock thing asset is created that links to the mock protocol configurations"
         def mockThing = new Asset("Mock Thing Asset", AssetType.THING, mockAgent)
         mockThing.setAttributes(
-            new AssetAttribute("lightToggle1", AttributeType.BOOLEAN)
+            new AssetAttribute("lightToggle1", AttributeValueType.BOOLEAN)
                 .setMeta(
                     new MetaItem("MOCK_ATTRIBUTE_REQUIRED_META", Values.create(true)),
                     new MetaItem(
@@ -215,7 +215,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait, 
                         new AttributeRef(mockAgent.getId(), "mockConfig1").toArrayValue()
                     )
                 ),
-            new AssetAttribute("tempTarget1", AttributeType.NUMBER)
+            new AssetAttribute("tempTarget1", AttributeValueType.NUMBER)
                 .setMeta(
                     new MetaItem("MOCK_ATTRIBUTE_REQUIRED_META", Values.create(true)),
                     new MetaItem(
@@ -223,14 +223,14 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait, 
                         new AttributeRef(mockAgent.getId(), "mockConfig1").toArrayValue()
                     )
                 ),
-            new AssetAttribute("invalidToggle1", AttributeType.BOOLEAN)
+            new AssetAttribute("invalidToggle1", AttributeValueType.BOOLEAN)
                 .setMeta(
                     new MetaItem(
                         AssetMeta.AGENT_LINK,
                         new AttributeRef(mockAgent.getId(), "mockConfig1").toArrayValue()
                     )
                 ),
-            new AssetAttribute("lightToggle2", AttributeType.BOOLEAN)
+            new AssetAttribute("lightToggle2", AttributeValueType.BOOLEAN)
                 .setMeta(
                 new MetaItem("MOCK_ATTRIBUTE_REQUIRED_META", Values.create(true)),
                 new MetaItem(
@@ -238,7 +238,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait, 
                         new AttributeRef(mockAgent.getId(), "mockConfig2").toArrayValue()
                 )
             ),
-            new AssetAttribute("tempTarget2", AttributeType.NUMBER)
+            new AssetAttribute("tempTarget2", AttributeValueType.NUMBER)
                 .setMeta(
                 new MetaItem("MOCK_ATTRIBUTE_REQUIRED_META", Values.create(true)),
                 new MetaItem(
@@ -246,7 +246,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait, 
                         new AttributeRef(mockAgent.getId(), "mockConfig2").toArrayValue()
                 )
             ),
-            new AssetAttribute("lightToggle3", AttributeType.BOOLEAN)
+            new AssetAttribute("lightToggle3", AttributeValueType.BOOLEAN)
                 .setMeta(
                 new MetaItem("MOCK_ATTRIBUTE_REQUIRED_META", Values.create(true)),
                 new MetaItem(
@@ -254,7 +254,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait, 
                         new AttributeRef(mockAgent.getId(), "mockConfig3").toArrayValue()
                 )
             ),
-            new AssetAttribute("tempTarget3", AttributeType.NUMBER)
+            new AssetAttribute("tempTarget3", AttributeValueType.NUMBER)
                 .setMeta(
                 new MetaItem("MOCK_ATTRIBUTE_REQUIRED_META", Values.create(true)),
                 new MetaItem(
@@ -262,7 +262,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait, 
                         new AttributeRef(mockAgent.getId(), "mockConfig3").toArrayValue()
                 )
             ),
-            new AssetAttribute("lightToggle4", AttributeType.BOOLEAN)
+            new AssetAttribute("lightToggle4", AttributeValueType.BOOLEAN)
                 .setMeta(
                 new MetaItem("MOCK_ATTRIBUTE_REQUIRED_META", Values.create(true)),
                 new MetaItem(
@@ -270,7 +270,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait, 
                         new AttributeRef(mockAgent.getId(), "mockConfig4").toArrayValue()
                 )
             ),
-            new AssetAttribute("tempTarget4", AttributeType.NUMBER)
+            new AssetAttribute("tempTarget4", AttributeValueType.NUMBER)
                     .setMeta(
                     new MetaItem("MOCK_ATTRIBUTE_REQUIRED_META", Values.create(true)),
                     new MetaItem(
@@ -278,14 +278,14 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait, 
                             new AttributeRef(mockAgent.getId(), "mockConfig4").toArrayValue()
                     )
             ),
-            new AssetAttribute("invalidToggle5", AttributeType.BOOLEAN, Values.create(false))
+            new AssetAttribute("invalidToggle5", AttributeValueType.BOOLEAN, Values.create(false))
                 .setMeta(
                     new MetaItem(
                         AssetMeta.AGENT_LINK,
                         new AttributeRef(mockAgent.getId(), "INVALID CONFIG").toArrayValue()
                     )
                 ),
-            new AssetAttribute("plainAttribute", AttributeType.STRING, Values.create("demo"))
+            new AssetAttribute("plainAttribute", AttributeValueType.STRING, Values.create("demo"))
                 .setMeta(
                 new MetaItem(
                         AssetMeta.DESCRIPTION,
@@ -293,7 +293,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait, 
                 ),
                 new MetaItem(AssetMeta.READ_ONLY, Values.create(true))
             ),
-            new AssetAttribute("filterRegex", AttributeType.NUMBER)
+            new AssetAttribute("filterRegex", AttributeValueType.NUMBER)
                 .setMeta(
                 new MetaItem("MOCK_ATTRIBUTE_REQUIRED_META", Values.create(true)),
                 new MetaItem(
@@ -305,7 +305,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait, 
                     Values.createArray().add(new RegexFilter("\\w(\\d+)", 1, 2).toValue().get())
                 )
             ),
-            new AssetAttribute("filterSubstring", AttributeType.STRING)
+            new AssetAttribute("filterSubstring", AttributeValueType.STRING)
                 .setMeta(
                 new MetaItem("MOCK_ATTRIBUTE_REQUIRED_META", Values.create(true)),
                 new MetaItem(
@@ -317,7 +317,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait, 
                     Values.createArray().add(new SubStringFilter(10, 12).toValue().get())
                 )
             ),
-            new AssetAttribute("filterRegexSubstring", AttributeType.NUMBER)
+            new AssetAttribute("filterRegexSubstring", AttributeValueType.NUMBER)
                 .setMeta(
                 new MetaItem("MOCK_ATTRIBUTE_REQUIRED_META", Values.create(true)),
                 new MetaItem(

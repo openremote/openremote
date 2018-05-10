@@ -514,7 +514,7 @@ public class KNXProtocol extends AbstractProtocol implements ProtocolLinkedAttri
         }
 
         String attrName = assetName.replaceAll(" ", "");
-        AttributeType type = TypeMapper.toAttributeType(datapoint);
+        AttributeValueType type = TypeMapper.toAttributeType(datapoint);
 
         AssetAttribute attr = asset.getAttribute(attrName).orElse(new AssetAttribute(attrName, type).setMeta(
                         new MetaItem(AssetMeta.LABEL, Values.create(name)), 

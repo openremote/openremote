@@ -20,7 +20,7 @@
 package org.openremote.model.asset;
 
 import org.openremote.model.attribute.AttributeDescriptor;
-import org.openremote.model.attribute.AttributeDescriptorImpl;
+import org.openremote.model.attribute.AttributeValue;
 import org.openremote.model.attribute.MetaItemDescriptor;
 
 /**
@@ -40,7 +40,7 @@ public class DefaultAssetModelProvider implements AssetModelProvider {
 
     @Override
     public AttributeDescriptor[] getAttributeDescriptors() {
-        return AttributeDescriptorImpl.values();
+        return AttributeValue.values();
     }
 
     @Override

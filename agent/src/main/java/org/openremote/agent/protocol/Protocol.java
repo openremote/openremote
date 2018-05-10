@@ -90,7 +90,7 @@ import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
  * header {@link #ACTUATOR_TOPIC_TARGET_PROTOCOL}.
  * <p>
  * Data type conversion is also delegated to the protocol implementation: If an attribute has a particular
- * {@link AttributeType} and therefore a base {@link ValueType}, the protocol implementation must
+ * {@link AttributeValueType} and therefore a base {@link ValueType}, the protocol implementation must
  * receive and send value change messages with values of that type.
  * <p>
  * Generic protocols should implement support for filtering state messages from devices (or services) before the

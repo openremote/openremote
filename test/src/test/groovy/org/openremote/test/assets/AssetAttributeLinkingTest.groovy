@@ -38,13 +38,13 @@ class AssetAttributeLinkingTest extends Specification implements ManagerContaine
         when: "assets are created"
         def asset1 = new Asset("Asset 1", AssetType.THING, null, Constants.MASTER_REALM)
         asset1.setAttributes(
-            new AssetAttribute("button", AttributeType.STRING, Values.create("RELEASED"), getClockTimeOf(container))
+            new AssetAttribute("button", AttributeValueType.STRING, Values.create("RELEASED"), getClockTimeOf(container))
         )
         asset1 = assetStorageService.merge(asset1)
         def asset2 = new Asset("Asset 2", AssetType.THING, null, Constants.MASTER_REALM)
         asset2.setAttributes(
-                new AssetAttribute("lightOnOff", AttributeType.BOOLEAN, Values.create(false), getClockTimeOf(container)),
-                new AssetAttribute("counter", AttributeType.NUMBER, Values.create(0), getClockTimeOf(container))
+                new AssetAttribute("lightOnOff", AttributeValueType.BOOLEAN, Values.create(false), getClockTimeOf(container)),
+                new AssetAttribute("counter", AttributeValueType.NUMBER, Values.create(0), getClockTimeOf(container))
         )
         asset2 = assetStorageService.merge(asset2)
 

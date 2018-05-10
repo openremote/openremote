@@ -53,15 +53,15 @@ public class AssetAttribute extends Attribute {
         super(name);
     }
 
-    public AssetAttribute(String name, AttributeType type) {
+    public AssetAttribute(String name, AttributeValueType type) {
         super(name, type);
     }
 
-    public AssetAttribute(String name, AttributeType type, Value value, long timestamp) {
+    public AssetAttribute(String name, AttributeValueType type, Value value, long timestamp) {
         super(name, type, value, timestamp);
     }
 
-    public AssetAttribute(String name, AttributeType type, Value value) {
+    public AssetAttribute(String name, AttributeValueType type, Value value) {
         super(name, type, value);
     }
 
@@ -70,20 +70,22 @@ public class AssetAttribute extends Attribute {
         setAssetId(assetId);
     }
 
-    public AssetAttribute(String assetId, String name, AttributeType type) {
+    public AssetAttribute(String assetId, String name, AttributeValueType type) {
         super(name, type);
         setAssetId(assetId);
     }
 
-    public AssetAttribute(String assetId, String name, AttributeType type, Value value) {
+    public AssetAttribute(String assetId, String name, AttributeValueType type, Value value) {
         super(name, type, value);
         setAssetId(assetId);
     }
 
-    public AssetAttribute(String assetId, String name, AttributeType type, Value value, long timestamp) {
+    public AssetAttribute(String assetId, String name, AttributeValueType type, Value value, long timestamp) {
         super(name, type, value, timestamp);
         setAssetId(assetId);
     }
+
+    //TODO constructor which takes a AttributeDescriptor
 
     public Optional<String> getAssetId() {
         return Optional.ofNullable(assetId);
@@ -494,7 +496,7 @@ public class AssetAttribute extends Attribute {
     }
 
     public static AssetAttribute createWithDescriptor(AttributeDescriptor descriptor, Value value) {
-        return new AssetAttribute(descriptor.getName(), descriptor.getType(), value)
+        return new AssetAttribute(descriptor.getName(), descriptor.getType(), Optional.ofNullable(value).orElse(descriptor.getDefaultValue()))
             .setMeta(descriptor.getDefaultMetaItems());
     }
 }

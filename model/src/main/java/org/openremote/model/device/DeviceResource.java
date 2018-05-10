@@ -53,7 +53,7 @@ extends Attribute {
         return false;
         return attribute.hasMetadataElement(DEVICE_RESOURCE)
             && attribute.getMetadata().getElement(DEVICE_RESOURCE).getName().equals(DEVICE_RESOURCE_TYPE)
-            && AttributeType.isValid(attribute.getMetadata().getElement(DEVICE_RESOURCE).getValue().asString())
+            && AttributeValueType.isValid(attribute.getMetadata().getElement(DEVICE_RESOURCE).getValue().asString())
             && attribute.hasMetadataElement(ACCESS)
             && attribute.getMetadata().getElement(ACCESS).getName().equals(ACCESS_TYPE);
     }
@@ -66,8 +66,8 @@ extends Attribute {
         super(name, jsonObject);
     }
 
-    public DeviceResource(String name, String key, AttributeType resourceType, Access access) {
-        super(name, AttributeType.STRING, Json.create(key));
+    public DeviceResource(String name, String key, AttributeValueType resourceType, Access access) {
+        super(name, AttributeValueType.STRING, Json.create(key));
         /*
         setMetadata(new Metadata()
             .putElement(
@@ -79,12 +79,12 @@ extends Attribute {
         );
     }
 
-    public AttributeType getResourceType() {
+    public AttributeValueType getResourceType() {
         return null;
 
         return getMetadata().hasElement(DEVICE_RESOURCE)
-            && AttributeType.isValid(getMetadata().getElement(DEVICE_RESOURCE).getValue().asString())
-            ? AttributeType.fromValue(getMetadata().getElement(DEVICE_RESOURCE).getValue().asString())
+            && AttributeValueType.isValid(getMetadata().getElement(DEVICE_RESOURCE).getValue().asString())
+            ? AttributeValueType.fromValue(getMetadata().getElement(DEVICE_RESOURCE).getValue().asString())
             : null;
     }
 
@@ -103,7 +103,7 @@ extends Attribute {
     public DeviceResource setPassive(boolean passive) {
         if (passive) {
             getMetadata().putElement(
-                new MetadataElement(PASSIVE, AttributeType.BOOLEAN.getValue(), Json.create(true))
+                new MetadataElement(PASSIVE, AttributeValueType.BOOLEAN.getValue(), Json.create(true))
             );
         } else {
             getMetadata().removeElement(PASSIVE);
@@ -119,7 +119,7 @@ extends Attribute {
     public DeviceResource setConstant(boolean constant) {
         if (constant) {
             getMetadata().putElement(
-                new MetadataElement(CONSTANT, AttributeType.BOOLEAN.getValue(), Json.create(true))
+                new MetadataElement(CONSTANT, AttributeValueType.BOOLEAN.getValue(), Json.create(true))
             );
         } else {
             getMetadata().removeElement(CONSTANT);

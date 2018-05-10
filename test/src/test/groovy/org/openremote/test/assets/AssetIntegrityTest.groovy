@@ -1,6 +1,5 @@
 package org.openremote.test.assets
 
-import com.fasterxml.uuid.Generators
 import org.openremote.manager.setup.SetupService
 import org.openremote.manager.setup.builtin.KeycloakDemoSetup
 import org.openremote.manager.setup.builtin.ManagerDemoSetup
@@ -8,7 +7,7 @@ import org.openremote.model.asset.AssetResource
 import org.openremote.model.asset.Asset
 import org.openremote.model.asset.AssetAttribute
 import org.openremote.model.asset.AssetType
-import org.openremote.model.attribute.AttributeType
+import org.openremote.model.attribute.AttributeValueType
 import org.openremote.model.value.Values
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
@@ -56,7 +55,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
         when: "an asset is stored with an illegal attribute name"
         testAsset = assetResource.get(null, testAsset.getId())
         testAsset.setAttributes(
-            new AssetAttribute(testAsset.id, "illegal- Attribute:name&&&", AttributeType.STRING)
+            new AssetAttribute(testAsset.id, "illegal- Attribute:name&&&", AttributeValueType.STRING)
         )
 
         assetResource.update(null, testAsset.getId(), testAsset)
@@ -68,7 +67,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
         when: "an asset is stored with a non-empty attribute value"
         testAsset = assetResource.get(null, testAsset.getId())
         testAsset.setAttributes(
-                new AssetAttribute("foo", AttributeType.STRING, Values.create("bar"), getClockTimeOf(container))
+                new AssetAttribute("foo", AttributeValueType.STRING, Values.create("bar"), getClockTimeOf(container))
         )
         assetResource.update(null, testAsset.id, testAsset)
         testAsset = assetResource.get(null, testAsset.getId())

@@ -19,8 +19,6 @@
  */
 package org.openremote.test.protocol.http
 
-import com.vividsolutions.jts.geom.Coordinate
-import com.vividsolutions.jts.geom.GeometryFactory
 import org.jboss.resteasy.spi.ResteasyUriInfo
 import org.jboss.resteasy.util.BasicAuthHelper
 import org.openremote.agent.protocol.http.*
@@ -30,7 +28,7 @@ import org.openremote.manager.asset.AssetStorageService
 import org.openremote.model.asset.Asset
 import org.openremote.model.asset.AssetAttribute
 import org.openremote.model.asset.AssetType
-import org.openremote.model.attribute.AttributeType
+import org.openremote.model.attribute.AttributeValueType
 import org.openremote.model.attribute.MetaItem
 import org.openremote.model.value.ObjectValue
 import org.openremote.model.value.Values
@@ -333,7 +331,7 @@ class HttpServerProtocolTest extends Specification implements ManagerContainerTr
         def testAsset = new Asset("Test Asset", AssetType.THING)
         testAsset.setId("12345")
         testAsset.setAttributes(
-            new AssetAttribute("attribute1", AttributeType.STRING, Values.create("Test"))
+            new AssetAttribute("attribute1", AttributeValueType.STRING, Values.create("Test"))
         )
         double[] coordinates = [1d, 2d]
         testAsset.setCoordinates(coordinates)
@@ -392,7 +390,7 @@ class HttpServerProtocolTest extends Specification implements ManagerContainerTr
         testAsset = new Asset("Test Asset 2", AssetType.THING)
         testAsset.setId("67890")
         testAsset.setAttributes(
-            new AssetAttribute("attribute2", AttributeType.STRING, Values.create("Test"))
+            new AssetAttribute("attribute2", AttributeValueType.STRING, Values.create("Test"))
         )
         coordinates = [3d, 4d]
         testAsset.setCoordinates(coordinates)

@@ -27,7 +27,7 @@ import org.openremote.app.client.widget.*;
 import org.openremote.app.client.Environment;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.agent.ConnectionStatus;
-import org.openremote.model.attribute.AttributeType;
+import org.openremote.model.attribute.AttributeValueType;
 import org.openremote.model.attribute.AttributeValidationResult;
 import org.openremote.model.interop.Consumer;
 import org.openremote.model.value.Value;
@@ -195,7 +195,7 @@ public class AttributeViewImpl extends FormGroup implements AttributeView {
 
     protected IsWidget createAttributeValueEditor() {
         return valueEditorSupplier.createValueEditor(attribute,
-            attribute.getType().map(AttributeType::getValueType).orElse(null),
+            attribute.getType().map(AttributeValueType::getValueType).orElse(null),
             style,
             null,
             this::notifyAttributeModified);
@@ -251,7 +251,7 @@ public class AttributeViewImpl extends FormGroup implements AttributeView {
         } else if (attribute.isProtocolConfiguration()) {
             formLabel.setIcon("gears");
         } else {
-            formLabel.setIcon(attribute.getType().map(AttributeType::getIcon).orElse(AttributeType.DEFAULT_ICON));
+            formLabel.setIcon(attribute.getType().map(AttributeValueType::getIcon).orElse(AttributeValueType.DEFAULT_ICON));
         }
 
         getFormLabel().setText(getAttributeLabel());
@@ -266,7 +266,7 @@ public class AttributeViewImpl extends FormGroup implements AttributeView {
                 infoText.append(connectionStatus != null ? connectionStatus.toString() : environment.getMessages().waitingForStatus());
             }
         } else if (attribute.getType().isPresent()) {
-            infoText.append(environment.getMessages().attributeType(attribute.getType().get().name()));
+            infoText.append(environment.getMessages().attributeValueType(attribute.getType().get().name()));
         }
         getAttributeDescription()
             .ifPresent(description -> {

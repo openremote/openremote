@@ -72,19 +72,19 @@ public abstract class Attribute extends AbstractValueTimestampHolder {
         setName(name);
     }
 
-    protected Attribute(String name, AttributeType type) {
+    protected Attribute(String name, AttributeValueType type) {
         this(name);
         setName(name);
         setType(type);
     }
 
-    protected Attribute(String name, AttributeType type, Value value, long timestamp) {
+    protected Attribute(String name, AttributeValueType type, Value value, long timestamp) {
         this(name, type);
         setValue(value);
         setValueTimestamp(timestamp);
     }
 
-    protected Attribute(String name, AttributeType type, Value value) {
+    protected Attribute(String name, AttributeValueType type, Value value) {
         this(name, type);
         setValue(value);
     }
@@ -106,19 +106,19 @@ public abstract class Attribute extends AbstractValueTimestampHolder {
         this.name = null;
     }
 
-    public Optional<AttributeType> getType() {
-        return getObjectValue().getString(TYPE_FIELD_NAME).flatMap(name -> EnumUtil.enumFromString(AttributeType.class, name));
+    public Optional<AttributeValueType> getType() {
+        return getObjectValue().getString(TYPE_FIELD_NAME).flatMap(name -> EnumUtil.enumFromString(AttributeValueType.class, name));
     }
 
     /**
      * The below is used in a sufficient number of places to provide it here as a utility method
      * with a standardised exception message.
      */
-    public AttributeType getTypeOrThrow() {
+    public AttributeValueType getTypeOrThrow() {
         return getType().orElseThrow(() -> new IllegalStateException("Attribute doesn't have a type"));
     }
 
-    public void setType(AttributeType type) {
+    public void setType(AttributeValueType type) {
         Objects.requireNonNull(type);
         getObjectValue().put(TYPE_FIELD_NAME, Values.create(type.name()));
     }
@@ -272,7 +272,7 @@ public abstract class Attribute extends AbstractValueTimestampHolder {
         return attribute -> isAttributeNameEqualTo(attribute, name);
     }
 
-    public static <A extends Attribute> boolean isAttributeTypeEqualTo(A attribute, AttributeType type) {
+    public static <A extends Attribute> boolean isAttributeTypeEqualTo(A attribute, AttributeValueType type) {
         if (attribute == null)
             return false;
         return attribute
@@ -281,7 +281,7 @@ public abstract class Attribute extends AbstractValueTimestampHolder {
             .orElse(type == null);
     }
 
-    public static <A extends Attribute> Predicate<A> isAttributeTypeEqualTo(AttributeType type) {
+    public static <A extends Attribute> Predicate<A> isAttributeTypeEqualTo(AttributeValueType type) {
         return attribute -> isAttributeTypeEqualTo(attribute, type);
     }
 

@@ -20,7 +20,7 @@
 package org.openremote.agent.protocol.velbus.device;
 
 import org.openremote.agent.protocol.velbus.VelbusPacket;
-import org.openremote.model.attribute.AttributeType;
+import org.openremote.model.attribute.AttributeValueType;
 import org.openremote.model.value.Value;
 
 import java.util.Arrays;
@@ -29,9 +29,9 @@ import java.util.List;
 public class TemperatureProcessor extends FeatureProcessor {
 
     protected static final List<PropertyDescriptor> SUPPORTED_PROPERTIES = Arrays.asList(
-        new PropertyDescriptor("tempCurrent", "Temp Current", "TEMP_CURRENT", AttributeType.TEMPERATURE_CELCIUS, true),
-        new PropertyDescriptor("tempMin", "Temp Min", "TEMP_MIN", AttributeType.TEMPERATURE_CELCIUS, true),
-        new PropertyDescriptor("tempMax", "Temp Max", "TEMP_MAX", AttributeType.TEMPERATURE_CELCIUS, true)
+        new PropertyDescriptor("tempCurrent", "Temp Current", "TEMP_CURRENT", AttributeValueType.TEMPERATURE_CELCIUS, true),
+        new PropertyDescriptor("tempMin", "Temp Min", "TEMP_MIN", AttributeValueType.TEMPERATURE_CELCIUS, true),
+        new PropertyDescriptor("tempMax", "Temp Max", "TEMP_MAX", AttributeValueType.TEMPERATURE_CELCIUS, true)
     );
 
     @Override

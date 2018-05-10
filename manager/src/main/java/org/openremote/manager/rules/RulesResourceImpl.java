@@ -26,7 +26,7 @@ import org.openremote.manager.web.ManagerWebResource;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetQuery;
 import org.openremote.model.asset.BaseAssetQuery;
-import org.openremote.model.attribute.AttributeDescriptorImpl;
+import org.openremote.model.attribute.AttributeValue;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.rules.AssetRuleset;
 import org.openremote.model.rules.GlobalRuleset;
@@ -316,7 +316,7 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
                 throw new WebApplicationException(Response.Status.FORBIDDEN);
             }
         } else //noinspection ConstantConditions
-            if (!asset.getAttribute(AttributeDescriptorImpl.CONSOLE_PROVIDER_GEOFENCE.getName()).get().isAccessPublicRead()) {
+            if (!asset.getAttribute(AttributeValue.CONSOLE_PROVIDER_GEOFENCE.getName()).get().isAccessPublicRead()) {
                 throw new WebApplicationException(Response.Status.FORBIDDEN);
             }
 

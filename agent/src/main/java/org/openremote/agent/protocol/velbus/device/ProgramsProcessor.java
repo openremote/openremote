@@ -20,7 +20,7 @@
 package org.openremote.agent.protocol.velbus.device;
 
 import org.openremote.agent.protocol.velbus.VelbusPacket;
-import org.openremote.model.attribute.AttributeType;
+import org.openremote.model.attribute.AttributeValueType;
 import org.openremote.model.util.EnumUtil;
 import org.openremote.model.util.Pair;
 import org.openremote.model.value.Value;
@@ -81,19 +81,19 @@ public class ProgramsProcessor extends ChannelProcessor {
     protected static final String PROGRAM_STEPS_ENABLED_SUFFIX = "_PROGRAM_STEPS_ENABLED";
     protected static final String PROGRAM_STEPS_DISABLED_SECONDS_SUFFIX = "_PROGRAM_STEPS_DISABLED_SECONDS";
     protected static final List<PropertyDescriptor> STATIC_PROPERTIES = Arrays.asList(
-        new PropertyDescriptor("allProgramStepsEnabled", "All Program Steps Enabled", "ALL" + PROGRAM_STEPS_ENABLED_SUFFIX, AttributeType.BOOLEAN),
-        new PropertyDescriptor("allProgramStepsDisableSeconds", "All Program Steps Disable (s)", "ALL" + PROGRAM_STEPS_DISABLED_SECONDS_SUFFIX, AttributeType.NUMBER),
-        new PropertyDescriptor("sunriseEnabled", "Sunrise Enabled", "SUNRISE_ENABLED", AttributeType.BOOLEAN),
-        new PropertyDescriptor("sunsetEnabled", "Sunset Enabled", "SUNSET_ENABLED", AttributeType.BOOLEAN),
-        new PropertyDescriptor("alarm1Enabled", "Alarm 1 Enabled", "ALARM1_ENABLED", AttributeType.BOOLEAN),
-        new PropertyDescriptor("alarm2Enabled", "Alarm 2 Enabled", "ALARM2_ENABLED", AttributeType.BOOLEAN),
-        new PropertyDescriptor("alarm1Master", "Alarm 1 Master", "ALARM1_MASTER", AttributeType.BOOLEAN),
-        new PropertyDescriptor("alarm2Master", "Alarm 2 Master", "ALARM2_MASTER", AttributeType.BOOLEAN),
-        new PropertyDescriptor("alarm1WakeTime", "Alarm 1 Wake Time", "ALARM1_WAKE_TIME", AttributeType.STRING),
-        new PropertyDescriptor("alarm2WakeTime", "Alarm 2 Wake Time", "ALARM2_WAKE_TIME", AttributeType.STRING),
-        new PropertyDescriptor("alarm1BedTime", "Alarm 1 Bed Time", "ALARM1_BED_TIME", AttributeType.STRING),
-        new PropertyDescriptor("alarm2BedTime", "Alarm 2 Bed Time", "ALARM2_BED_TIME", AttributeType.STRING),
-        new PropertyDescriptor("program", "Current Program", "Program", AttributeType.STRING)
+        new PropertyDescriptor("allProgramStepsEnabled", "All Program Steps Enabled", "ALL" + PROGRAM_STEPS_ENABLED_SUFFIX, AttributeValueType.BOOLEAN),
+        new PropertyDescriptor("allProgramStepsDisableSeconds", "All Program Steps Disable (s)", "ALL" + PROGRAM_STEPS_DISABLED_SECONDS_SUFFIX, AttributeValueType.NUMBER),
+        new PropertyDescriptor("sunriseEnabled", "Sunrise Enabled", "SUNRISE_ENABLED", AttributeValueType.BOOLEAN),
+        new PropertyDescriptor("sunsetEnabled", "Sunset Enabled", "SUNSET_ENABLED", AttributeValueType.BOOLEAN),
+        new PropertyDescriptor("alarm1Enabled", "Alarm 1 Enabled", "ALARM1_ENABLED", AttributeValueType.BOOLEAN),
+        new PropertyDescriptor("alarm2Enabled", "Alarm 2 Enabled", "ALARM2_ENABLED", AttributeValueType.BOOLEAN),
+        new PropertyDescriptor("alarm1Master", "Alarm 1 Master", "ALARM1_MASTER", AttributeValueType.BOOLEAN),
+        new PropertyDescriptor("alarm2Master", "Alarm 2 Master", "ALARM2_MASTER", AttributeValueType.BOOLEAN),
+        new PropertyDescriptor("alarm1WakeTime", "Alarm 1 Wake Time", "ALARM1_WAKE_TIME", AttributeValueType.STRING),
+        new PropertyDescriptor("alarm2WakeTime", "Alarm 2 Wake Time", "ALARM2_WAKE_TIME", AttributeValueType.STRING),
+        new PropertyDescriptor("alarm1BedTime", "Alarm 1 Bed Time", "ALARM1_BED_TIME", AttributeValueType.STRING),
+        new PropertyDescriptor("alarm2BedTime", "Alarm 2 Bed Time", "ALARM2_BED_TIME", AttributeValueType.STRING),
+        new PropertyDescriptor("program", "Current Program", "Program", AttributeValueType.STRING)
     );
 
 
@@ -103,8 +103,8 @@ public class ProgramsProcessor extends ChannelProcessor {
         List<PropertyDescriptor> properties = new ArrayList<>(maxChannelNumber * 2 + STATIC_PROPERTIES.size());
 
         for (int i=1; i<=maxChannelNumber; i++) {
-            properties.add(new PropertyDescriptor("ch" + i + "ProgramStepsEnabled", "CH" + i + " Program Steps Enabled", "CH" + i + PROGRAM_STEPS_ENABLED_SUFFIX, AttributeType.BOOLEAN));
-            properties.add(new PropertyDescriptor("ch" + i + "ProgramStepsDisableSeconds", "CH" + i + " Program Steps Disable (s)", "CH" + i + PROGRAM_STEPS_DISABLED_SECONDS_SUFFIX, AttributeType.NUMBER));
+            properties.add(new PropertyDescriptor("ch" + i + "ProgramStepsEnabled", "CH" + i + " Program Steps Enabled", "CH" + i + PROGRAM_STEPS_ENABLED_SUFFIX, AttributeValueType.BOOLEAN));
+            properties.add(new PropertyDescriptor("ch" + i + "ProgramStepsDisableSeconds", "CH" + i + " Program Steps Disable (s)", "CH" + i + PROGRAM_STEPS_DISABLED_SECONDS_SUFFIX, AttributeValueType.NUMBER));
         }
 
         properties.addAll(STATIC_PROPERTIES);

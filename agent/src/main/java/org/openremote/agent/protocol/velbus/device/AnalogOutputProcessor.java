@@ -20,7 +20,7 @@
 package org.openremote.agent.protocol.velbus.device;
 
 import org.openremote.agent.protocol.velbus.VelbusPacket;
-import org.openremote.model.attribute.AttributeType;
+import org.openremote.model.attribute.AttributeValueType;
 import org.openremote.model.util.EnumUtil;
 import org.openremote.model.util.Pair;
 import org.openremote.model.value.Value;
@@ -96,29 +96,29 @@ public class AnalogOutputProcessor extends OutputChannelProcessor {
     protected final static String IO_PREFIX = "OUTPUT";
     protected static final Pattern IO_CHANNEL_REGEX = Pattern.compile("^OUTPUT(\\d+)(.*$|$)");
 
-    protected final static List<Pair<String, AttributeType>> CHANNEL_PROPERTIES = Arrays.asList(
+    protected final static List<Pair<String, AttributeValueType>> CHANNEL_PROPERTIES = Arrays.asList(
         // RW - ChannelState
-        new Pair<>("", AttributeType.STRING),
+        new Pair<>("", AttributeValueType.STRING),
         // R - ChannelSetting
-        new Pair<>("_SETTING", AttributeType.STRING),
+        new Pair<>("_SETTING", AttributeValueType.STRING),
         // R - Read LED status
-        new Pair<>("_LED", AttributeType.STRING),
+        new Pair<>("_LED", AttributeValueType.STRING),
         // RW - True/False
-        new Pair<>("_LOCKED", AttributeType.BOOLEAN),
+        new Pair<>("_LOCKED", AttributeValueType.BOOLEAN),
         // RW - True/False
-        new Pair<>("_INHIBITED", AttributeType.BOOLEAN),
+        new Pair<>("_INHIBITED", AttributeValueType.BOOLEAN),
         // W - Dim level and speed (LEVEL:SPEED)
-        new Pair<>("_LEVEL_AND_SPEED", AttributeType.STRING),
+        new Pair<>("_LEVEL_AND_SPEED", AttributeValueType.STRING),
         // RW - Dim level 0-100% (-1 to stop current dimming)
-        new Pair<>("_LEVEL", AttributeType.NUMBER),
+        new Pair<>("_LEVEL", AttributeValueType.NUMBER),
         // W - On for specified time in seconds (0 to cancel)
-        new Pair<>("_ON", AttributeType.NUMBER),
+        new Pair<>("_ON", AttributeValueType.NUMBER),
         // W - Forced on for specified time in seconds (0 to cancel)
-        new Pair<>("_FORCE_ON", AttributeType.NUMBER),
+        new Pair<>("_FORCE_ON", AttributeValueType.NUMBER),
         // W - Lock (force off) for specified time in seconds (0 to unlock)
-        new Pair<>("_LOCK", AttributeType.NUMBER),
+        new Pair<>("_LOCK", AttributeValueType.NUMBER),
         // W - Inhibit for specified time in seconds (0 to un-inhibit)
-        new Pair<>("_INHIBIT", AttributeType.NUMBER)
+        new Pair<>("_INHIBIT", AttributeValueType.NUMBER)
     );
 
     @Override
@@ -131,12 +131,12 @@ public class AnalogOutputProcessor extends OutputChannelProcessor {
 
     @Override
     public List<PropertyDescriptor> getPropertyDescriptors(VelbusDeviceType deviceType) {
-        List<Pair<String, AttributeType>> propertySuffixes = new ArrayList<>(CHANNEL_PROPERTIES);
+        List<Pair<String, AttributeValueType>> propertySuffixes = new ArrayList<>(CHANNEL_PROPERTIES);
         final String chPrefix = deviceType == VelbusDeviceType.VMB4AN ? "Output " : "CH";
 
         if (deviceType == VelbusDeviceType.VMB4AN) {
-            propertySuffixes.add(new Pair<>("_VALUE", AttributeType.NUMBER));
-            propertySuffixes.add(new Pair<>("_VALUE_AND_SPEED", AttributeType.STRING));
+            propertySuffixes.add(new Pair<>("_VALUE", AttributeValueType.NUMBER));
+            propertySuffixes.add(new Pair<>("_VALUE_AND_SPEED", AttributeValueType.STRING));
         }
 
         int channelCount = deviceType == VelbusDeviceType.VMB4AN ? 4 : ChannelProcessor.getMaxChannelNumber(deviceType);

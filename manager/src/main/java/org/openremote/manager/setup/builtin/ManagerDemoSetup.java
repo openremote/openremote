@@ -22,10 +22,7 @@ package org.openremote.manager.setup.builtin;
 import org.openremote.agent.protocol.simulator.SimulatorProtocol;
 import org.openremote.container.Container;
 import org.openremote.manager.setup.AbstractManagerSetup;
-import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.asset.AssetMeta;
-import org.openremote.model.asset.UserAsset;
+import org.openremote.model.asset.*;
 import org.openremote.model.attribute.*;
 import org.openremote.model.security.Tenant;
 import org.openremote.model.simulator.element.ColorSimulatorElement;
@@ -43,7 +40,7 @@ import java.util.List;
 import static org.openremote.model.asset.AssetMeta.*;
 import static org.openremote.model.asset.AssetType.*;
 import static org.openremote.model.asset.agent.ProtocolConfiguration.initProtocolConfiguration;
-import static org.openremote.model.attribute.AttributeType.*;
+import static org.openremote.model.attribute.AttributeValueType.*;
 
 public class ManagerDemoSetup extends AbstractManagerSetup {
 
@@ -106,13 +103,13 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         smartOffice.setName("Smart Office");
         smartOffice.setType(BUILDING);
         List<AssetAttribute> smartOfficeAttributes = Arrays.asList(
-            AssetAttribute.createWithDescriptor(AttributeDescriptorImpl.LOCATION, locationValue),
+            AssetAttribute.createWithDescriptor(AttributeValue.LOCATION, locationValue),
             new AssetAttribute("geoStreet", STRING, Values.create("Torenallee 20"))
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Street")),
                     new MetaItem(ABOUT, Values.create("http://project-haystack.org/tag/geoStreet"))
                 ),
-            new AssetAttribute("geoPostalCode", AttributeType.NUMBER, Values.create(5617))
+            new AssetAttribute("geoPostalCode", AttributeValueType.NUMBER, Values.create(5617))
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Postal Code")),
                     new MetaItem(ABOUT, Values.create("http://project-haystack.org/tag/geoPostalCode"))
@@ -134,14 +131,14 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         smartOfficeId = smartOffice.getId();
 
         Asset groundFloor = new Asset("Ground Floor", FLOOR, smartOffice)
-            .addAttributes(AssetAttribute.createWithDescriptor(AttributeDescriptorImpl.LOCATION, locationValue));
+            .addAttributes(AssetAttribute.createWithDescriptor(AttributeValue.LOCATION, locationValue));
         groundFloor = assetStorageService.merge(groundFloor);
         groundFloorId = groundFloor.getId();
 
         Asset lobby = new Asset("Lobby", ROOM, groundFloor)
-            .addAttributes(AssetAttribute.createWithDescriptor(AttributeDescriptorImpl.LOCATION, locationValue));
+            .addAttributes(AssetAttribute.createWithDescriptor(AttributeValue.LOCATION, locationValue));
         lobby.addAttributes(
-            new AssetAttribute("lobbyLocations", AttributeType.ARRAY)
+            new AssetAttribute("lobbyLocations", AttributeValueType.ARRAY)
         );
 
         lobby = assetStorageService.merge(lobby);
@@ -149,7 +146,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
 
         Asset agent = new Asset("Demo Agent", AGENT, lobby);
         agent.addAttributes(
-            AssetAttribute.createWithDescriptor(AttributeDescriptorImpl.LOCATION, locationValue),
+            AssetAttribute.createWithDescriptor(AttributeValue.LOCATION, locationValue),
             initProtocolConfiguration(new AssetAttribute(agentProtocolConfigName), SimulatorProtocol.PROTOCOL_NAME)
                 .addMeta(
                     new MetaItem(
@@ -166,7 +163,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         agentId = agent.getId();
 
         Asset thing = new Asset("Demo Thing", THING, agent)
-            .addAttributes(AssetAttribute.createWithDescriptor(AttributeDescriptorImpl.LOCATION, locationValue)
+            .addAttributes(AssetAttribute.createWithDescriptor(AttributeValue.LOCATION, locationValue)
                                .setMeta(new MetaItem(RULE_STATE, Values.create(true))));
         thing.addAttributes(
             new AssetAttribute(thingLightToggleAttributeName, BOOLEAN, Values.create(true))
@@ -368,13 +365,13 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         smartHome.setName("Smart Home");
         smartHome.setType(BUILDING);
         smartHome.addAttributes(
-            AssetAttribute.createWithDescriptor(AttributeDescriptorImpl.LOCATION, locationValueA),
+            AssetAttribute.createWithDescriptor(AttributeValue.LOCATION, locationValueA),
             new AssetAttribute("geoStreet", STRING, Values.create("Wilhelminaplein 21C"))
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Street")),
                     new MetaItem(ABOUT, Values.create("http://project-haystack.org/tag/geoStreet"))
                 ),
-            new AssetAttribute("geoPostalCode", AttributeType.NUMBER, Values.create(5611))
+            new AssetAttribute("geoPostalCode", AttributeValueType.NUMBER, Values.create(5611))
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Postal Code")),
                     new MetaItem(ABOUT, Values.create("http://project-haystack.org/tag/geoPostalCode"))
@@ -395,7 +392,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
 
         // The "Apartment 1" is the demo apartment with complex scenes
         Asset apartment1 = createDemoApartment(smartHome, "Apartment 1")
-            .addAttributes(new AssetAttribute("location", LOCATION, locationValueA));
+            .addAttributes(AssetAttribute.createWithDescriptor(AttributeValue.LOCATION, locationValueA));
         apartment1 = assetStorageService.merge(apartment1);
         apartment1Id = apartment1.getId();
 
@@ -414,7 +411,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         /* ############################ ROOMS ############################## */
 
         Asset apartment1Livingroom = createDemoApartmentRoom(apartment1, "Living Room")
-            .addAttributes(AssetAttribute.createWithDescriptor(AttributeDescriptorImpl.LOCATION, locationValueA));
+            .addAttributes(AssetAttribute.createWithDescriptor(AttributeValue.LOCATION, locationValueA));
         addDemoApartmentRoomMotionSensor(apartment1Livingroom, true, () -> new MetaItem[]{
             new MetaItem(AGENT_LINK, new AttributeRef(apartment1ServiceAgentId, "apartmentSimulator").toArrayValue()),
             new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME))
@@ -440,7 +437,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         apartment1LivingroomId = apartment1Livingroom.getId();
 
         Asset apartment1Kitchen = createDemoApartmentRoom(apartment1, "Kitchen")
-            .addAttributes(AssetAttribute.createWithDescriptor(AttributeDescriptorImpl.LOCATION, locationValueA));
+            .addAttributes(AssetAttribute.createWithDescriptor(AttributeValue.LOCATION, locationValueA));
         addDemoApartmentRoomMotionSensor(apartment1Kitchen, true, () -> new MetaItem[]{
             new MetaItem(AGENT_LINK, new AttributeRef(apartment1ServiceAgentId, "apartmentSimulator").toArrayValue()),
             new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME))
@@ -482,7 +479,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         apartment1KitchenId = apartment1Kitchen.getId();
 
         Asset apartment1Hallway = createDemoApartmentRoom(apartment1, "Hallway")
-            .addAttributes(AssetAttribute.createWithDescriptor(AttributeDescriptorImpl.LOCATION, locationValueA));
+            .addAttributes(AssetAttribute.createWithDescriptor(AttributeValue.LOCATION, locationValueA));
         addDemoApartmentRoomMotionSensor(apartment1Hallway, true, () -> new MetaItem[]{
             new MetaItem(AGENT_LINK, new AttributeRef(apartment1ServiceAgentId, "apartmentSimulator").toArrayValue()),
             new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME))
@@ -508,7 +505,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
 
             Asset demoApartmentSceneAgent = createDemoApartmentSceneAgent(
                 apartment1, scenes, apartment1Livingroom, apartment1Kitchen, apartment1Hallway
-            ).addAttributes(AssetAttribute.createWithDescriptor(AttributeDescriptorImpl.LOCATION, locationValueA));
+            ).addAttributes(AssetAttribute.createWithDescriptor(AttributeValue.LOCATION, locationValueA));
 
             demoApartmentSceneAgent = assetStorageService.merge(demoApartmentSceneAgent);
 
@@ -518,8 +515,8 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
 
         Asset apartment2 = new Asset("Apartment 2", RESIDENCE, smartHome);
         apartment2.addAttributes(
-            AssetAttribute.createWithDescriptor(AttributeDescriptorImpl.LOCATION, locationValueA),
-            new AssetAttribute("allLightsOffSwitch", AttributeType.BOOLEAN, Values.create(true))
+            AssetAttribute.createWithDescriptor(AttributeValue.LOCATION, locationValueA),
+            new AssetAttribute("allLightsOffSwitch", AttributeValueType.BOOLEAN, Values.create(true))
                 .setMeta(
                     new MetaItem(LABEL, Values.create("All Lights Off Switch")),
                     new MetaItem(DESCRIPTION, Values.create("When triggered, turns all lights in the apartment off")),
@@ -532,43 +529,43 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
 
         Asset apartment2Livingroom = new Asset("Living Room", ROOM, apartment2);
         apartment2Livingroom.addAttributes(
-            AssetAttribute.createWithDescriptor(AttributeDescriptorImpl.LOCATION, locationValueA),
-            new AssetAttribute("motionSensor", AttributeType.BOOLEAN, Values.create(false))
+            AssetAttribute.createWithDescriptor(AttributeValue.LOCATION, locationValueA),
+            new AssetAttribute("motionSensor", AttributeValueType.BOOLEAN, Values.create(false))
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Motion Sensor")),
                     new MetaItem(DESCRIPTION, Values.create("PIR sensor that sends 'true' when motion is sensed")),
                     new MetaItem(RULE_STATE, Values.create(true)),
                     new MetaItem(RULE_EVENT, Values.create(true))
                 ),
-            new AssetAttribute("presenceDetected", AttributeType.BOOLEAN, Values.create(false))
+            new AssetAttribute("presenceDetected", AttributeValueType.BOOLEAN, Values.create(false))
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Presence Detected")),
                     new MetaItem(DESCRIPTION, Values.create("Someone is currently present in the room")),
                     new MetaItem(RULE_STATE, Values.create(true))
                 ),
-            new AssetAttribute("firstPresenceDetected", AttributeType.TIMESTAMP_MILLIS)
+            new AssetAttribute("firstPresenceDetected", AttributeValueType.TIMESTAMP_MILLIS)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("First Presence Timestamp")),
                     new MetaItem(DESCRIPTION, Values.create("Timestamp of the first detected presence")),
                     new MetaItem(RULE_STATE, Values.create(true))
                 ),
-            new AssetAttribute("lastPresenceDetected", AttributeType.TIMESTAMP_MILLIS)
+            new AssetAttribute("lastPresenceDetected", AttributeValueType.TIMESTAMP_MILLIS)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Last Presence Timestamp")),
                     new MetaItem(DESCRIPTION, Values.create("Timestamp of last detected presence")),
                     new MetaItem(RULE_STATE, Values.create(true))
                 ),
-            new AssetAttribute("co2Level", AttributeType.CO2_PPM, Values.create(350))
+            new AssetAttribute("co2Level", AttributeValueType.CO2_PPM, Values.create(350))
                 .setMeta(
                     new MetaItem(LABEL, Values.create("CO2 Level")),
                     new MetaItem(RULE_STATE, Values.create(true))
                 ),
-            new AssetAttribute("lightSwitch", AttributeType.BOOLEAN, Values.create(true))
+            new AssetAttribute("lightSwitch", AttributeValueType.BOOLEAN, Values.create(true))
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Light Switch")),
                     new MetaItem(RULE_STATE, Values.create(true))
                 ),
-            new AssetAttribute("windowOpen", AttributeType.BOOLEAN, Values.create(false))
+            new AssetAttribute("windowOpen", AttributeValueType.BOOLEAN, Values.create(false))
                 .setMeta(
                     new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true))
                 )
@@ -578,33 +575,33 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
 
         Asset apartment2Bathroom = new Asset("Bathroom", ROOM, apartment2);
         apartment2Bathroom.addAttributes(
-            AssetAttribute.createWithDescriptor(AttributeDescriptorImpl.LOCATION, locationValueA),
-            new AssetAttribute("motionSensor", AttributeType.BOOLEAN, Values.create(false))
+            AssetAttribute.createWithDescriptor(AttributeValue.LOCATION, locationValueA),
+            new AssetAttribute("motionSensor", AttributeValueType.BOOLEAN, Values.create(false))
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Motion Sensor")),
                     new MetaItem(DESCRIPTION, Values.create("PIR sensor that sends 'true' when motion is sensed")),
                     new MetaItem(RULE_STATE, Values.create(true)),
                     new MetaItem(RULE_EVENT, Values.create(true))
                 ),
-            new AssetAttribute("presenceDetected", AttributeType.BOOLEAN, Values.create(false))
+            new AssetAttribute("presenceDetected", AttributeValueType.BOOLEAN, Values.create(false))
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Presence Detected")),
                     new MetaItem(DESCRIPTION, Values.create("Someone is currently present in the room")),
                     new MetaItem(RULE_STATE, Values.create(true))
                 ),
-            new AssetAttribute("firstPresenceDetected", AttributeType.TIMESTAMP_MILLIS)
+            new AssetAttribute("firstPresenceDetected", AttributeValueType.TIMESTAMP_MILLIS)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("First Presence Timestamp")),
                     new MetaItem(DESCRIPTION, Values.create("Timestamp of the first detected presence")),
                     new MetaItem(RULE_STATE, Values.create(true))
                 ),
-            new AssetAttribute("lastPresenceDetected", AttributeType.TIMESTAMP_MILLIS)
+            new AssetAttribute("lastPresenceDetected", AttributeValueType.TIMESTAMP_MILLIS)
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Last Presence Timestamp")),
                     new MetaItem(DESCRIPTION, Values.create("Timestamp of last detected presence")),
                     new MetaItem(RULE_STATE, Values.create(true))
                 ),
-            new AssetAttribute("lightSwitch", AttributeType.BOOLEAN, Values.create(true))
+            new AssetAttribute("lightSwitch", AttributeValueType.BOOLEAN, Values.create(true))
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Light Switch")),
                     new MetaItem(RULE_STATE, Values.create(true))
@@ -614,14 +611,14 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         apartment2BathroomId = apartment2Bathroom.getId();
 
         Asset apartment3 = new Asset("Apartment 3", RESIDENCE, smartHome)
-            .addAttributes(AssetAttribute.createWithDescriptor(AttributeDescriptorImpl.LOCATION, locationValueA));
+            .addAttributes(AssetAttribute.createWithDescriptor(AttributeValue.LOCATION, locationValueA));
         apartment3 = assetStorageService.merge(apartment3);
         apartment3Id = apartment3.getId();
 
         Asset apartment3Livingroom = new Asset("Living Room", ROOM, apartment3)
-            .addAttributes(AssetAttribute.createWithDescriptor(AttributeDescriptorImpl.LOCATION, locationValueA));
+            .addAttributes(AssetAttribute.createWithDescriptor(AttributeValue.LOCATION, locationValueA));
         apartment3Livingroom.addAttributes(
-            new AssetAttribute("lightSwitch", AttributeType.BOOLEAN)
+            new AssetAttribute("lightSwitch", AttributeValueType.BOOLEAN)
         );
 
         apartment3Livingroom = assetStorageService.merge(apartment3Livingroom);
@@ -629,11 +626,11 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
 
         Asset console = new Asset("Demo Android Console", CONSOLE, groundFloor)
             .addAttributes(
-                new AssetAttribute(AttributeDescriptorImpl.LOCATION.getName(),
-                                   AttributeDescriptorImpl.LOCATION.getType())
+                new AssetAttribute(AttributeValue.LOCATION.getName(),
+                                   AttributeValue.LOCATION.getType())
                     .setMeta(new MetaItem(RULE_STATE)),
-                new AssetAttribute(AttributeDescriptorImpl.CONSOLE_PROVIDER_GEOFENCE.getName(),
-                                   AttributeDescriptorImpl.CONSOLE_PROVIDER_GEOFENCE.getType())
+                new AssetAttribute(AttributeValue.CONSOLE_PROVIDER_GEOFENCE.getName(),
+                                   AttributeValue.CONSOLE_PROVIDER_GEOFENCE.getType())
                     .setMeta(
                         new MetaItem(GEOFENCE_ADAPTER, Values.create("ORConsole")),
                         new MetaItem(ACCESS_PUBLIC_READ)

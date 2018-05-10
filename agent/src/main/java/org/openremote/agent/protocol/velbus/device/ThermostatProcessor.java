@@ -20,7 +20,7 @@
 package org.openremote.agent.protocol.velbus.device;
 
 import org.openremote.agent.protocol.velbus.VelbusPacket;
-import org.openremote.model.attribute.AttributeType;
+import org.openremote.model.attribute.AttributeValueType;
 import org.openremote.model.util.EnumUtil;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueType;
@@ -130,36 +130,36 @@ public class ThermostatProcessor extends FeatureProcessor {
     }
 
     protected static final List<PropertyDescriptor> THERMOSTAT_PROPERTIES = Arrays.asList(
-        new PropertyDescriptor("heater", "Heater", "HEATER", AttributeType.STRING, true),
-        new PropertyDescriptor("boost", "Boost", "BOOST", AttributeType.STRING, true),
-        new PropertyDescriptor("pump", "Pump", "PUMP", AttributeType.STRING, true),
-        new PropertyDescriptor("cooler", "Cooler", "COOLER", AttributeType.STRING, true),
-        new PropertyDescriptor("tempAlarm1", "Temp Alarm 1", "TEMP_ALARM1", AttributeType.STRING, true),
-        new PropertyDescriptor("tempAlarm2", "Temp Alarm 2", "TEMP_ALARM2", AttributeType.STRING, true),
-        new PropertyDescriptor("tempAlarm3", "Temp Alarm 3", "TEMP_ALARM3", AttributeType.STRING, true),
-        new PropertyDescriptor("tempAlarm4", "Temp Alarm 4", "TEMP_ALARM4", AttributeType.STRING, true),
-        new PropertyDescriptor("tempState", "Thermostat State", "TEMP_STATE", AttributeType.STRING),
-        new PropertyDescriptor("tempStateDisable", "Thermostat Disable (s)", "TEMP_STATE_DISABLE_SECONDS", AttributeType.TIME_SECONDS),
+        new PropertyDescriptor("heater", "Heater", "HEATER", AttributeValueType.STRING, true),
+        new PropertyDescriptor("boost", "Boost", "BOOST", AttributeValueType.STRING, true),
+        new PropertyDescriptor("pump", "Pump", "PUMP", AttributeValueType.STRING, true),
+        new PropertyDescriptor("cooler", "Cooler", "COOLER", AttributeValueType.STRING, true),
+        new PropertyDescriptor("tempAlarm1", "Temp Alarm 1", "TEMP_ALARM1", AttributeValueType.STRING, true),
+        new PropertyDescriptor("tempAlarm2", "Temp Alarm 2", "TEMP_ALARM2", AttributeValueType.STRING, true),
+        new PropertyDescriptor("tempAlarm3", "Temp Alarm 3", "TEMP_ALARM3", AttributeValueType.STRING, true),
+        new PropertyDescriptor("tempAlarm4", "Temp Alarm 4", "TEMP_ALARM4", AttributeValueType.STRING, true),
+        new PropertyDescriptor("tempState", "Thermostat State", "TEMP_STATE", AttributeValueType.STRING),
+        new PropertyDescriptor("tempStateDisable", "Thermostat Disable (s)", "TEMP_STATE_DISABLE_SECONDS", AttributeValueType.TIME_SECONDS),
         // Get current mode or set mode until next program step
-        new PropertyDescriptor("tempMode", "Thermostat Mode", "TEMP_MODE", AttributeType.STRING),
+        new PropertyDescriptor("tempMode", "Thermostat Mode", "TEMP_MODE", AttributeValueType.STRING),
         // MINS VALUE: 0 = Until next program step, -1 = Permanent, 1-65279 = for N mins
-        new PropertyDescriptor("coolComfortMins", "Thermostat Cool Comfort (mins)", "TEMP_MODE_COOL_COMFORT_MINS", AttributeType.TIME_MINUTES),
-        new PropertyDescriptor("coolDayMins", "Cool Day (mins)", "TEMP_MODE_COOL_DAY_MINS", AttributeType.TIME_MINUTES),
-        new PropertyDescriptor("coolNightMins", "Cool Night (mins)", "TEMP_MODE_COOL_NIGHT_MINS", AttributeType.TIME_MINUTES),
-        new PropertyDescriptor("coolSafeMins", "Cool Safe (mins)", "TEMP_MODE_COOL_SAFE_MINS", AttributeType.TIME_MINUTES),
-        new PropertyDescriptor("heatComfortMins", "Heat Comfort (mins)", "TEMP_MODE_HEAT_COMFORT_MINS", AttributeType.TIME_MINUTES),
-        new PropertyDescriptor("heatDayMins", "Heat Day (mins)", "TEMP_MODE_HEAT_DAY_MINS", AttributeType.TIME_MINUTES),
-        new PropertyDescriptor("heatNightMins", "Heat Night (mins)", "TEMP_MODE_HEAT_NIGHT_MINS", AttributeType.TIME_MINUTES),
-        new PropertyDescriptor("heatSafeMins", "Heat Safe (mins)", "TEMP_MODE_HEAT_SAFE_MINS", AttributeType.TIME_MINUTES),
-        new PropertyDescriptor("tempTargetCurrent", "Temp Target Current", "TEMP_TARGET_CURRENT", AttributeType.TEMPERATURE_CELCIUS),
-        new PropertyDescriptor("tempTargetCoolComfort", "Temp Target Cool Comfort", "TEMP_TARGET_COOL_COMFORT", AttributeType.TEMPERATURE_CELCIUS),
-        new PropertyDescriptor("tempTargetCoolDay", "Temp Target Cool Day", "TEMP_TARGET_COOL_DAY", AttributeType.TEMPERATURE_CELCIUS),
-        new PropertyDescriptor("tempTargetCoolNight", "Temp Target Cool Night", "TEMP_TARGET_COOL_NIGHT", AttributeType.TEMPERATURE_CELCIUS),
-        new PropertyDescriptor("tempTargetCoolSafe", "Temp Target Cool Safe", "TEMP_TARGET_COOL_SAFE", AttributeType.TEMPERATURE_CELCIUS),
-        new PropertyDescriptor("tempTargetHeatComfort", "Temp Target Heat Comfort", "TEMP_TARGET_HEAT_COMFORT", AttributeType.TEMPERATURE_CELCIUS),
-        new PropertyDescriptor("tempTargetHeatDay", "Temp Target Heat Day", "TEMP_TARGET_HEAT_DAY", AttributeType.TEMPERATURE_CELCIUS),
-        new PropertyDescriptor("tempTargetHeatNight", "Temp Target Heat Night", "TEMP_TARGET_HEAT_NIGHT", AttributeType.TEMPERATURE_CELCIUS),
-        new PropertyDescriptor("tempTargetHeatSafe", "Temp Target Heat Safe", "TEMP_TARGET_HEAT_SAFE", AttributeType.TEMPERATURE_CELCIUS)
+        new PropertyDescriptor("coolComfortMins", "Thermostat Cool Comfort (mins)", "TEMP_MODE_COOL_COMFORT_MINS", AttributeValueType.TIME_MINUTES),
+        new PropertyDescriptor("coolDayMins", "Cool Day (mins)", "TEMP_MODE_COOL_DAY_MINS", AttributeValueType.TIME_MINUTES),
+        new PropertyDescriptor("coolNightMins", "Cool Night (mins)", "TEMP_MODE_COOL_NIGHT_MINS", AttributeValueType.TIME_MINUTES),
+        new PropertyDescriptor("coolSafeMins", "Cool Safe (mins)", "TEMP_MODE_COOL_SAFE_MINS", AttributeValueType.TIME_MINUTES),
+        new PropertyDescriptor("heatComfortMins", "Heat Comfort (mins)", "TEMP_MODE_HEAT_COMFORT_MINS", AttributeValueType.TIME_MINUTES),
+        new PropertyDescriptor("heatDayMins", "Heat Day (mins)", "TEMP_MODE_HEAT_DAY_MINS", AttributeValueType.TIME_MINUTES),
+        new PropertyDescriptor("heatNightMins", "Heat Night (mins)", "TEMP_MODE_HEAT_NIGHT_MINS", AttributeValueType.TIME_MINUTES),
+        new PropertyDescriptor("heatSafeMins", "Heat Safe (mins)", "TEMP_MODE_HEAT_SAFE_MINS", AttributeValueType.TIME_MINUTES),
+        new PropertyDescriptor("tempTargetCurrent", "Temp Target Current", "TEMP_TARGET_CURRENT", AttributeValueType.TEMPERATURE_CELCIUS),
+        new PropertyDescriptor("tempTargetCoolComfort", "Temp Target Cool Comfort", "TEMP_TARGET_COOL_COMFORT", AttributeValueType.TEMPERATURE_CELCIUS),
+        new PropertyDescriptor("tempTargetCoolDay", "Temp Target Cool Day", "TEMP_TARGET_COOL_DAY", AttributeValueType.TEMPERATURE_CELCIUS),
+        new PropertyDescriptor("tempTargetCoolNight", "Temp Target Cool Night", "TEMP_TARGET_COOL_NIGHT", AttributeValueType.TEMPERATURE_CELCIUS),
+        new PropertyDescriptor("tempTargetCoolSafe", "Temp Target Cool Safe", "TEMP_TARGET_COOL_SAFE", AttributeValueType.TEMPERATURE_CELCIUS),
+        new PropertyDescriptor("tempTargetHeatComfort", "Temp Target Heat Comfort", "TEMP_TARGET_HEAT_COMFORT", AttributeValueType.TEMPERATURE_CELCIUS),
+        new PropertyDescriptor("tempTargetHeatDay", "Temp Target Heat Day", "TEMP_TARGET_HEAT_DAY", AttributeValueType.TEMPERATURE_CELCIUS),
+        new PropertyDescriptor("tempTargetHeatNight", "Temp Target Heat Night", "TEMP_TARGET_HEAT_NIGHT", AttributeValueType.TEMPERATURE_CELCIUS),
+        new PropertyDescriptor("tempTargetHeatSafe", "Temp Target Heat Safe", "TEMP_TARGET_HEAT_SAFE", AttributeValueType.TEMPERATURE_CELCIUS)
     );
 
     @Override

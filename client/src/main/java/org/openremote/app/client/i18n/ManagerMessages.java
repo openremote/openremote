@@ -327,7 +327,7 @@ public interface ManagerMessages extends Messages {
 
     String commandRequestSent(String name);
 
-    String attributeType(@Select String name);
+    String attributeValueType(@Select String name);
 
     String validationFailureOnAttribute(String attributeName);
 

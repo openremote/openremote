@@ -26,7 +26,7 @@ import org.openremote.model.AbstractValueHolder;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetMeta;
 import org.openremote.model.asset.BaseAssetQuery;
-import org.openremote.model.attribute.AttributeDescriptorImpl;
+import org.openremote.model.attribute.AttributeValue;
 import org.openremote.model.rules.geofence.GeofenceDefinition;
 
 import java.util.List;
@@ -56,7 +56,7 @@ import java.util.Optional;
 public abstract class GeofenceAssetAdapter implements ContainerService {
 
     public static Optional<String> getAssetGeofenceAdapterName(Asset asset) {
-        return asset.getAttribute(AttributeDescriptorImpl.CONSOLE_PROVIDER_GEOFENCE.getName())
+        return asset.getAttribute(AttributeValue.CONSOLE_PROVIDER_GEOFENCE.getName())
             .flatMap(attr -> attr.getMetaItem(AssetMeta.GEOFENCE_ADAPTER))
             .flatMap(AbstractValueHolder::getValueAsString);
     }

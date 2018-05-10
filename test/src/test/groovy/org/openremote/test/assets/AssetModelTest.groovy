@@ -1,6 +1,5 @@
 package org.openremote.test.assets
 
-import com.fasterxml.uuid.Generators
 import org.openremote.container.util.UniqueIdentifierGenerator
 import org.openremote.model.asset.Asset
 import org.openremote.model.asset.AssetAttribute
@@ -12,7 +11,7 @@ import java.util.stream.Collectors
 import static org.openremote.model.AbstractValueTimestampHolder.VALUE_TIMESTAMP_FIELD_NAME
 import static org.openremote.model.asset.AssetAttribute.getAddedOrModifiedAttributes
 import static org.openremote.model.asset.AssetType.THING
-import static org.openremote.model.attribute.AttributeType.STRING
+import static org.openremote.model.attribute.AttributeValueType.STRING
 
 class AssetModelTest extends Specification {
 

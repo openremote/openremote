@@ -20,7 +20,7 @@
 package org.openremote.agent.protocol.velbus.device;
 
 import org.openremote.agent.protocol.velbus.VelbusPacket;
-import org.openremote.model.attribute.AttributeType;
+import org.openremote.model.attribute.AttributeValueType;
 import org.openremote.model.util.EnumUtil;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueType;
@@ -41,27 +41,27 @@ public abstract class FeatureProcessor {
         protected final String name;
         protected final String displayName;
         protected final String linkName;
-        protected final AttributeType attributeType;
+        protected final AttributeValueType attributeValueType;
         protected final boolean readOnly;
 
         public PropertyDescriptor(
             String name,
             String displayName,
             String linkName,
-            AttributeType attributeType) {
-            this(name, displayName, linkName, attributeType, false);
+            AttributeValueType attributeValueType) {
+            this(name, displayName, linkName, attributeValueType, false);
         }
 
         public PropertyDescriptor(
             String name,
             String displayName,
             String linkName,
-            AttributeType attributeType,
+            AttributeValueType attributeValueType,
             boolean readOnly) {
             this.name = name;
             this.displayName = displayName;
             this.linkName = linkName;
-            this.attributeType = attributeType;
+            this.attributeValueType = attributeValueType;
             this.readOnly = readOnly;
         }
 
@@ -73,8 +73,8 @@ public abstract class FeatureProcessor {
             return displayName;
         }
 
-        public AttributeType getAttributeType() {
-            return attributeType;
+        public AttributeValueType getAttributeValueType() {
+            return attributeValueType;
         }
 
         public boolean isReadOnly() {

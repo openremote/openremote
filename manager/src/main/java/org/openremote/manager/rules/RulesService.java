@@ -35,7 +35,7 @@ import org.openremote.manager.notification.NotificationService;
 import org.openremote.manager.rules.geofence.GeofenceAssetAdapter;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.model.asset.*;
-import org.openremote.model.attribute.AttributeDescriptorImpl;
+import org.openremote.model.attribute.AttributeValue;
 import org.openremote.model.attribute.AttributeEvent.Source;
 import org.openremote.model.rules.*;
 import org.openremote.model.rules.geofence.GeofenceDefinition;
@@ -184,7 +184,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
                 new AssetQuery()
                     .select(new BaseAssetQuery.Select(BaseAssetQuery.Include.ALL_EXCEPT_PATH,
                                                       false,
-                                                      AttributeDescriptorImpl.CONSOLE_PROVIDER_GEOFENCE.getName()))
+                                                      AttributeValue.CONSOLE_PROVIDER_GEOFENCE.getName()))
                     .attributeMeta(
                         new AssetQuery.AttributeMetaPredicate(
                             AssetMeta.GEOFENCE_ADAPTER)

@@ -42,7 +42,7 @@ public class GeoJSONFeature extends AbstractTypeHolder {
         return this;
     }
 
-    public GeoJSONFeature setGeometry(GeoJSONGeometry geometry) {
+    public GeoJSONFeature setGeometry(GeoJSONPoint geometry) {
         if (geometry != null) {
             objectValue.put("geometry", geometry.getObjectValue());
         } else {

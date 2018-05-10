@@ -48,19 +48,19 @@ public class AttributeLink {
 
         /**
          * Toggle the value of the linked attribute; the linked attribute's type must be
-         * {@link AttributeType#BOOLEAN}
+         * {@link AttributeValueType#BOOLEAN}
          */
         TOGGLE("@TOGGLE"),
 
         /**
          * Increment the value of the linked attribute; the linked attribute's type must be
-         * {@link AttributeType#NUMBER}
+         * {@link AttributeValueType#NUMBER}
          */
         INCREMENT("@INCREMENT"),
 
         /**
          * Decrement the value of the linked attribute; the linked attribute's type must be
-         * {@link AttributeType#NUMBER}
+         * {@link AttributeValueType#NUMBER}
          */
         DECREMENT("@DECREMENT");
 

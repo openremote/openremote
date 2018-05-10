@@ -198,7 +198,7 @@ public abstract class AbstractVelbusProtocol extends AbstractProtocol implements
         String property = getVelbusDevicePropertyLink(attribute);
 
         AttributeRef attributeRef = attribute.getReferenceOrThrow();
-        ValueType valueType = attribute.getType().orElse(AttributeType.STRING).getValueType();
+        ValueType valueType = attribute.getType().orElse(AttributeValueType.STRING).getValueType();
         LOG.fine("Linking attribute to device '" +deviceAddress + "' and property '" + property + "': " + attributeRef);
 
         Consumer<DevicePropertyValue> propertyValueConsumer = propertyValue ->
@@ -301,12 +301,12 @@ public abstract class AbstractVelbusProtocol extends AbstractProtocol implements
             name = isNullOrEmpty(name) ? deviceType.toString() : name;
             Asset device = new Asset(name, AssetType.THING);
             device.setAttributes(
-                new AssetAttribute("build", AttributeType.STRING, Values.create(build))
+                new AssetAttribute("build", AttributeValueType.STRING, Values.create(build))
                     .setMeta(
                         new MetaItem(AssetMeta.LABEL, Values.create("Build")),
                         new MetaItem(AssetMeta.READ_ONLY, Values.create(true))
                     ),
-                new AssetAttribute("serialNumber", AttributeType.STRING, Values.create(serial))
+                new AssetAttribute("serialNumber", AttributeValueType.STRING, Values.create(serial))
                     .setMeta(
                         new MetaItem(AssetMeta.LABEL, Values.create("Serial No")),
                         new MetaItem(AssetMeta.READ_ONLY, Values.create(true))
@@ -315,7 +315,7 @@ public abstract class AbstractVelbusProtocol extends AbstractProtocol implements
 
             getLinkedAttributeDescriptors(deviceType.get(), baseAddress)
                 .forEach(descriptor -> {
-                    AssetAttribute attribute = new AssetAttribute(descriptor.getName(), descriptor.getAttributeType())
+                    AssetAttribute attribute = new AssetAttribute(descriptor.getName(), descriptor.getAttributeValueType())
                         .setMeta(
                             agentLink,
                             new MetaItem(AssetMeta.LABEL, Values.create(descriptor.getDisplayName()))
@@ -374,7 +374,7 @@ public abstract class AbstractVelbusProtocol extends AbstractProtocol implements
                                 new LinkedAttributeDescriptor(
                                     propertyDescriptor.getName(),
                                     propertyDescriptor.getDisplayName(),
-                                    propertyDescriptor.getAttributeType(),
+                                    propertyDescriptor.getAttributeValueType(),
                                     propertyDescriptor.isReadOnly(),
                                     false,
                                     createLinkedAttributeMetaItems(

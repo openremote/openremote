@@ -20,7 +20,7 @@
 package org.openremote.agent.protocol.velbus.device;
 
 import org.openremote.agent.protocol.velbus.VelbusPacket;
-import org.openremote.model.attribute.AttributeType;
+import org.openremote.model.attribute.AttributeValueType;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.Values;
 
@@ -44,7 +44,7 @@ public class OledProcessor extends FeatureProcessor {
     @Override
     public List<PropertyDescriptor> getPropertyDescriptors(VelbusDeviceType deviceType) {
         return Collections.singletonList(
-            new PropertyDescriptor("memoText", "Memo Text", "MEMO_TEXT", AttributeType.STRING)
+            new PropertyDescriptor("memoText", "Memo Text", "MEMO_TEXT", AttributeValueType.STRING)
         );
     }
 

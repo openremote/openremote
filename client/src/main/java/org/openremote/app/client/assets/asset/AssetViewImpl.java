@@ -44,6 +44,7 @@ import org.openremote.model.Constants;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetType;
 import org.openremote.model.geo.GeoJSON;
+import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.value.ObjectValue;
 
 import javax.inject.Inject;
@@ -294,8 +295,8 @@ public class AssetViewImpl extends Composite implements AssetView {
     /* ############################################################################ */
 
     @Override
-    public void setLocation(ObjectValue coordinates) {
-        if (locationOutput.setCoordinates(managerMessages.selectLocation(), coordinates)) {
+    public void setLocation(GeoJSONPoint point) {
+        if (locationOutput.setCoordinates(managerMessages.selectLocation(), point)) {
             locationGroup.setVisible(true);
             mapWidget.setVisible(true);
             mapWidget.resize();
@@ -327,9 +328,9 @@ public class AssetViewImpl extends Composite implements AssetView {
     }
 
     @Override
-    public void flyTo(ObjectValue coordinates) {
+    public void flyTo(GeoJSONPoint point) {
         if (mapWidget.isMapReady()) {
-            mapWidget.flyTo(coordinates);
+            mapWidget.flyTo(point);
         }
     }
 

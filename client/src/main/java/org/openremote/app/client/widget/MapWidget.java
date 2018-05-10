@@ -24,6 +24,7 @@ import com.google.gwt.user.client.ui.FlowPanel;
 import elemental2.dom.DomGlobal;
 import org.openremote.app.client.interop.mapbox.*;
 import org.openremote.model.geo.GeoJSON;
+import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.value.ArrayValue;
 import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Values;
@@ -229,15 +230,15 @@ public class MapWidget extends FlowPanel {
         mapboxMap.getSource(featureSourceId).setData(geoFeature.getObjectValue().asAny());
     }
 
-    public void flyTo(ObjectValue coordinates) {
+    public void flyTo(GeoJSONPoint point) {
         if (!isMapReady())
             throw new IllegalStateException("Map not ready");
-        if (coordinates == null || !coordinates.hasKey("latitude") || !coordinates.hasKey("longitude"))
+        if (point == null || !point.hasCoordinates())
             return;
         ObjectValue options = Values.createObject();
         ArrayValue center = Values.createArray();
-        center.set(0, coordinates.getNumber("longitude").get());
-        center.set(1, coordinates.getNumber("latitude").get());
+        center.set(0, point.getLongitude());
+        center.set(1, point.getLatitude());
         options.put("center", center);
         mapboxMap.flyTo(options.asAny());
     }

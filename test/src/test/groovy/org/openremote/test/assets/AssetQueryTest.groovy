@@ -1,7 +1,5 @@
 package org.openremote.test.assets
 
-import com.vividsolutions.jts.geom.Coordinate
-import com.vividsolutions.jts.geom.GeometryFactory
 import org.openremote.container.Container
 import org.openremote.container.persistence.PersistenceService
 import org.openremote.manager.asset.AssetProcessingService
@@ -11,12 +9,11 @@ import org.openremote.manager.setup.SetupService
 import org.openremote.manager.setup.builtin.KeycloakDemoSetup
 import org.openremote.manager.setup.builtin.ManagerDemoSetup
 import org.openremote.model.asset.Asset
-import org.openremote.model.asset.AssetAttribute
 import org.openremote.model.asset.AssetMeta
 import org.openremote.model.asset.AssetQuery
 import org.openremote.model.asset.AssetType
 import org.openremote.model.asset.CalendarEventConfiguration
-import org.openremote.model.attribute.AttributeDescriptorImpl
+import org.openremote.model.attribute.AttributeValue
 import org.openremote.model.calendar.CalendarEvent
 import org.openremote.model.calendar.RecurrenceRule
 import org.openremote.model.value.Values
@@ -675,7 +672,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
 
         when: "one of the assets in the region is moved"
         def lobby = assetStorageService.find(managerDemoSetup.lobbyId, true)
-        lobby.replaceAttribute(createWithDescriptor(AttributeDescriptorImpl.LOCATION, Values.createObject().put("latitude", 51.44593d).put("longitude", 5.46108d)))
+        lobby.replaceAttribute(createWithDescriptor(AttributeValue.LOCATION, Values.createObject().put("latitude", 51.44593d).put("longitude", 5.46108d)))
         lobby = assetStorageService.merge(lobby)
 
         then: "the system should settle down"
@@ -785,18 +782,20 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
                 .orderBy(new OrderBy(NAME))
         )
 
-        then: "all 5 realm assets should be returned"
-        assets.size() == 5
+        then: "all 6 realm assets should be returned"
+        assets.size() == 6
         assets[0].id == managerDemoSetup.agentId
         assets[0].name == "Demo Agent"
-        assets[1].id == managerDemoSetup.thingId
-        assets[1].name == "Demo Thing"
-        assets[2].id == managerDemoSetup.groundFloorId
-        assets[2].name == "Ground Floor"
-        assets[3].id == managerDemoSetup.lobbyId
-        assets[3].name == "Lobby"
-        assets[4].id == managerDemoSetup.smartOfficeId
-        assets[4].name == "Smart Office"
+        assets[1].id == managerDemoSetup.consoleId
+        assets[1].name == "Demo Android Console"
+        assets[2].id == managerDemoSetup.thingId
+        assets[2].name == "Demo Thing"
+        assets[3].id == managerDemoSetup.groundFloorId
+        assets[3].name == "Ground Floor"
+        assets[4].id == managerDemoSetup.lobbyId
+        assets[4].name == "Lobby"
+        assets[5].id == managerDemoSetup.smartOfficeId
+        assets[5].name == "Smart Office"
 
         when: "a calendar event filtering query is executed for future event on a correct day but wrong time"
         assets = assetStorageService.findAll(
@@ -808,7 +807,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         )
 
         then: "the calendar event asset should not be included"
-        assets.size() == 4
+        assets.size() == 5
         !assets.any {it.name == "Lobby"}
 
         when: "a calendar event filtering query is executed for a future event on a wrong day but correct time"
@@ -821,7 +820,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         )
 
         then: "the calendar event asset should not be included"
-        assets.size() == 4
+        assets.size() == 5
         !assets.any {it.name == "Lobby"}
 
         when: "a calendar event filtering query is executed inside a valid future event date and time"
@@ -833,18 +832,20 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
                 .orderBy(new OrderBy(NAME))
         )
 
-        then: "all 5 realm assets should be returned"
-        assets.size() == 5
+        then: "all 6 realm assets should be returned"
+        assets.size() == 6
         assets[0].id == managerDemoSetup.agentId
         assets[0].name == "Demo Agent"
-        assets[1].id == managerDemoSetup.thingId
-        assets[1].name == "Demo Thing"
-        assets[2].id == managerDemoSetup.groundFloorId
-        assets[2].name == "Ground Floor"
-        assets[3].id == managerDemoSetup.lobbyId
-        assets[3].name == "Lobby"
-        assets[4].id == managerDemoSetup.smartOfficeId
-        assets[4].name == "Smart Office"
+        assets[1].id == managerDemoSetup.consoleId
+        assets[1].name == "Demo Android Console"
+        assets[2].id == managerDemoSetup.thingId
+        assets[2].name == "Demo Thing"
+        assets[3].id == managerDemoSetup.groundFloorId
+        assets[3].name == "Ground Floor"
+        assets[4].id == managerDemoSetup.lobbyId
+        assets[4].name == "Lobby"
+        assets[5].id == managerDemoSetup.smartOfficeId
+        assets[5].name == "Smart Office"
 
         when: "a calendar event filtering query is executed for some time after the last occurrence"
         assets = assetStorageService.findAll(
@@ -856,7 +857,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         )
 
         then: "the calendar event asset should not be included"
-        assets.size() == 4
+        assets.size() == 5
         !assets.any {it.name == "Lobby"}
     }
 }

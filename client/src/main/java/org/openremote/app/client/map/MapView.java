@@ -21,6 +21,7 @@ package org.openremote.app.client.map;
 
 import com.google.gwt.user.client.ui.IsWidget;
 import org.openremote.model.geo.GeoJSON;
+import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.value.ObjectValue;
 
 import java.util.List;
@@ -41,7 +42,7 @@ public interface MapView extends IsWidget {
 
     void showDroppedPin(GeoJSON geoFeature);
 
-    void flyTo(ObjectValue coordinates);
+    void flyTo(GeoJSONPoint point);
 
     void showInfoItems(List<MapInfoItem> infoItems);
 }

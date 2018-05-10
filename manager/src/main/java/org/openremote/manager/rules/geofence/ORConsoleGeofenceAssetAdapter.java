@@ -25,7 +25,7 @@ import org.openremote.manager.rules.RulesEngine;
 import org.openremote.model.asset.AssetMeta;
 import org.openremote.model.asset.AssetType;
 import org.openremote.model.asset.BaseAssetQuery;
-import org.openremote.model.attribute.AttributeDescriptorImpl;
+import org.openremote.model.attribute.AttributeValue;
 import org.openremote.model.rules.AssetState;
 import org.openremote.model.rules.geofence.GeofenceDefinition;
 
@@ -36,7 +36,7 @@ import java.util.*;
  * Android and iOS Consoles):
  * <ul>
  * <li>Asset type: {@link AssetType#CONSOLE}</li>
- * <li>Has the required {@link AttributeDescriptorImpl#CONSOLE_PROVIDER_GEOFENCE} attribute with an
+ * <li>Has the required {@link AttributeValue#CONSOLE_PROVIDER_GEOFENCE} attribute with an
  * {@link AssetMeta#GEOFENCE_ADAPTER} with a value of "ORConsole"</li>
  * </ul>
  * <p>
@@ -121,6 +121,6 @@ public class ORConsoleGeofenceAssetAdapter extends GeofenceAssetAdapter {
 
     protected void notifyAssetGeofencesChanged(String assetId) {
         // TODO: implement geofence push notification
-        notificationService.findDeviceToken()
+//        notificationService.findDeviceToken(assetId);
     }
 }

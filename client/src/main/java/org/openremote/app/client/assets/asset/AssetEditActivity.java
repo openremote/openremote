@@ -44,15 +44,14 @@ import org.openremote.model.asset.agent.AgentResource;
 import org.openremote.model.asset.agent.ProtocolConfiguration;
 import org.openremote.model.asset.agent.ProtocolDescriptor;
 import org.openremote.model.attribute.*;
+import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.http.ConstraintViolation;
 import org.openremote.model.interop.Consumer;
 import org.openremote.model.map.MapResource;
 import org.openremote.model.util.EnumUtil;
 import org.openremote.model.util.Pair;
-import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueType;
-import org.openremote.model.value.Values;
 
 import javax.inject.Inject;
 import java.util.*;
@@ -84,7 +83,7 @@ public class AssetEditActivity
     protected final Consumer<ConstraintViolation[]> validationErrorHandler;
     protected List<ProtocolDescriptor> protocolDescriptors = new ArrayList<>();
     protected List<MetaItemDescriptor> metaItemDescriptors = new ArrayList<>(Arrays.asList(AssetMeta.values())); // TODO Get meta item descriptors from server
-    ObjectValue selectedCoordinates;
+    protected GeoJSONPoint selectedCoordinates;
     protected List<AssetAttribute> initialAssetAttributes;
 
     @Inject
@@ -192,7 +191,7 @@ public class AssetEditActivity
 
     @Override
     public void onMapClicked(double lng, double lat) {
-        selectedCoordinates = Values.createObject().put("longitude", lng).put("latitude", lat);
+        selectedCoordinates = new GeoJSONPoint(new double[]{lng, lat});
         view.hideMapPopup();
         view.showMapPopup(lng, lat, environment.getMessages().selectedLocation());
         view.setLocation(selectedCoordinates);
@@ -236,16 +235,16 @@ public class AssetEditActivity
             // This is a protocol configuration add request
             attribute = protocolDescriptor.get().getConfigurationTemplate().deepCopy();
         } else {
-            AttributeType attributeType = EnumUtil.enumFromString(AttributeType.class, type).orElse(null);
+            AttributeValueType attributeValueType = EnumUtil.enumFromString(AttributeValueType.class, type).orElse(null);
 
-            if (attributeType == null) {
+            if (attributeValueType == null) {
                 showFailureMessage(environment.getMessages().invalidAttributeType());
                 return false;
             }
 
             attribute = new AssetAttribute();
-            attribute.setType(attributeType);
-            attribute.addMeta(attributeType.getDefaultMetaItems());
+            attribute.setType(attributeValueType);
+            attribute.addMeta(attributeValueType.getDefaultMetaItems());
         }
 
         attribute.setName(name);
@@ -463,9 +462,8 @@ public class AssetEditActivity
     public void centerMap() {
         if (selectedCoordinates != null) {
             view.flyTo(selectedCoordinates);
-        }
-        else if (asset.getCoordinates().isPresent()) {
-            view.flyTo(asset.getCoordinates().get());
+        } else if (asset.getCoordinates() != null) {
+            view.flyTo(asset.getPoint());
         }
     }
 
@@ -644,9 +642,9 @@ public class AssetEditActivity
     }
 
     protected List<Pair<String, String>> attributeTypesToList() {
-        return Arrays.stream(AttributeType.values())
+        return Arrays.stream(AttributeValueType.values())
             .map(Enum::name)
-            .map(attrType -> new Pair<>(environment.getMessages().attributeType(attrType), attrType))
+            .map(attrType -> new Pair<>(environment.getMessages().attributeValueType(attrType), attrType))
             .sorted(Comparator.comparing(a -> a.key))
             .collect(Collectors.toList());
     }
@@ -664,7 +662,7 @@ public class AssetEditActivity
             asset.setType(view.getType());
         }
         if (selectedCoordinates != null) {
-            asset.setCoordinates(selectedCoordinates);
+            asset.setCoordinates(new double[]{selectedCoordinates.getLongitude(), selectedCoordinates.getLatitude()});
         }
     }
 

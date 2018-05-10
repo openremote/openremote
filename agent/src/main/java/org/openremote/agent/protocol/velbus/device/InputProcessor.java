@@ -20,7 +20,7 @@
 package org.openremote.agent.protocol.velbus.device;
 
 import org.openremote.agent.protocol.velbus.VelbusPacket;
-import org.openremote.model.attribute.AttributeType;
+import org.openremote.model.attribute.AttributeValueType;
 import org.openremote.model.util.EnumUtil;
 import org.openremote.model.util.Pair;
 import org.openremote.model.value.Value;
@@ -144,25 +144,25 @@ public class InputProcessor extends ChannelProcessor {
                 switch (propertyType) {
                     case CHANNEL_STATE:
                         if (deviceType != VelbusDeviceType.VMB4AN) {
-                            properties.add(new PropertyDescriptor("ch"+i+"State", "CH" + i, "CH" + i, AttributeType.STRING));
+                            properties.add(new PropertyDescriptor("ch"+i+"State", "CH" + i, "CH" + i, AttributeValueType.STRING));
                         }
                         break;
                     case LED_STATE:
                         if (deviceType != VelbusDeviceType.VMB4AN) {
-                            properties.add(new PropertyDescriptor("ch"+i+"LedState", "CH" + i + "LED State", "CH" + i + propertyType.getPropertySuffix(), AttributeType.STRING));
+                            properties.add(new PropertyDescriptor("ch"+i+"LedState", "CH" + i + "LED State", "CH" + i + propertyType.getPropertySuffix(), AttributeValueType.STRING));
                         }
                         break;
                     case LOCK_STATE:
-                        properties.add(new PropertyDescriptor("ch"+i+"Locked", "CH" + i + " Locked", "CH" + i + propertyType.getPropertySuffix(), AttributeType.BOOLEAN));
+                        properties.add(new PropertyDescriptor("ch"+i+"Locked", "CH" + i + " Locked", "CH" + i + propertyType.getPropertySuffix(), AttributeValueType.BOOLEAN));
                         break;
                     case LOCK_DURATION:
-                        properties.add(new PropertyDescriptor("ch"+i+"LockDuration", "CH" + i + " Lock Duration (s)", "CH" + i + propertyType.getPropertySuffix(), AttributeType.NUMBER));
+                        properties.add(new PropertyDescriptor("ch"+i+"LockDuration", "CH" + i + " Lock Duration (s)", "CH" + i + propertyType.getPropertySuffix(), AttributeValueType.NUMBER));
                         break;
                     case ENABLED_STATE:
-                        properties.add(new PropertyDescriptor("ch"+i+"Enabled", "CH" + i + " Enabled", "CH" + i + propertyType.getPropertySuffix(), AttributeType.BOOLEAN, true));
+                        properties.add(new PropertyDescriptor("ch"+i+"Enabled", "CH" + i + " Enabled", "CH" + i + propertyType.getPropertySuffix(), AttributeValueType.BOOLEAN, true));
                         break;
                     case INVERTED_STATE:
-                        properties.add(new PropertyDescriptor("ch"+i+"Inverted", "CH" + i + " Inverted", "CH" + i + propertyType.getPropertySuffix(), AttributeType.BOOLEAN, true));
+                        properties.add(new PropertyDescriptor("ch"+i+"Inverted", "CH" + i + " Inverted", "CH" + i + propertyType.getPropertySuffix(), AttributeValueType.BOOLEAN, true));
                         break;
                 }
 

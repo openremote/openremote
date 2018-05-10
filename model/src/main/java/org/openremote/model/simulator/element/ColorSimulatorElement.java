@@ -20,7 +20,7 @@
 package org.openremote.model.simulator.element;
 
 import org.openremote.model.attribute.AttributeRef;
-import org.openremote.model.attribute.AttributeType;
+import org.openremote.model.attribute.AttributeValueType;
 import org.openremote.model.simulator.SimulatorElement;
 
 public class ColorSimulatorElement extends SimulatorElement {
@@ -31,6 +31,6 @@ public class ColorSimulatorElement extends SimulatorElement {
     }
 
     public ColorSimulatorElement(AttributeRef attributeRef) {
-        super(attributeRef, AttributeType.COLOR_RGB);
+        super(attributeRef, AttributeValueType.COLOR_RGB);
     }
 }

@@ -13,7 +13,7 @@ import org.openremote.model.asset.AssetAttribute
 import org.openremote.model.asset.AssetMeta
 import org.openremote.model.asset.AssetType
 import org.openremote.model.attribute.AttributeEvent
-import org.openremote.model.attribute.AttributeType
+import org.openremote.model.attribute.AttributeValueType
 import org.openremote.model.attribute.Meta
 import org.openremote.model.attribute.MetaItem
 import org.openremote.model.rules.AssetRuleset
@@ -213,7 +213,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         def asset = new Asset("Kitchen", AssetType.ROOM, apartment2)
         asset.setRealmId(keycloakDemoSetup.customerATenant.getId())
         def attributes = [
-            new AssetAttribute("testString", AttributeType.STRING, Values.create("test"))
+            new AssetAttribute("testString", AttributeValueType.STRING, Values.create("test"))
                 .setMeta(
                 new Meta(new MetaItem(AssetMeta.RULE_STATE, Values.create(true))
                 )
@@ -244,11 +244,11 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         when: "the Kitchen room asset is modified to add a new attribute but RULE_STATE = true meta is not changed"
         rulesImport.resetRulesFired()
         attributes = [
-            new AssetAttribute("testString", AttributeType.STRING, Values.create("test"))
+            new AssetAttribute("testString", AttributeValueType.STRING, Values.create("test"))
                 .setMeta(
                 new MetaItem(AssetMeta.RULE_STATE, Values.create(true))
             ),
-            new AssetAttribute("testInteger", AttributeType.NUMBER, Values.create(0))
+            new AssetAttribute("testInteger", AttributeValueType.NUMBER, Values.create(0))
         ]
         asset.setAttributes(attributes)
         asset = assetStorageService.merge(asset)
@@ -270,11 +270,11 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         when: "the Kitchen room asset is modified to set the RULE_STATE to false"
         rulesImport.resetRulesFired()
         attributes = [
-            new AssetAttribute("testString", AttributeType.STRING, Values.create("test"))
+            new AssetAttribute("testString", AttributeValueType.STRING, Values.create("test"))
                 .setMeta(
                 new MetaItem(AssetMeta.RULE_STATE, Values.create(false))
             ),
-            new AssetAttribute("testInteger", AttributeType.NUMBER, Values.create(0))
+            new AssetAttribute("testInteger", AttributeValueType.NUMBER, Values.create(0))
         ]
         asset.setAttributes(attributes)
         asset = assetStorageService.merge(asset)
@@ -299,11 +299,11 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         when: "the Kitchen room asset is modified to set all attributes to RULE_STATE = true"
         rulesImport.resetRulesFired()
         attributes = [
-            new AssetAttribute("testString", AttributeType.STRING, Values.create("test"))
+            new AssetAttribute("testString", AttributeValueType.STRING, Values.create("test"))
                 .setMeta(
                 new MetaItem(AssetMeta.RULE_STATE, Values.create(true))
             ),
-            new AssetAttribute("testInteger", AttributeType.NUMBER, Values.create(0))
+            new AssetAttribute("testInteger", AttributeValueType.NUMBER, Values.create(0))
                 .setMeta(
                 new MetaItem(AssetMeta.RULE_STATE, Values.create(true))
             )
@@ -412,4 +412,6 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         cleanup: "the server should be stopped"
         stopContainer(container)
     }
+
+    //TODO add test for location Predicates in AssetQueryPredicate
 }

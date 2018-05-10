@@ -11,7 +11,7 @@ extends Attribute {
     }
 
     public CapabilityRef(String name, String capabilityType, Attributes resourceRefs) {
-        super(name, AttributeType.OBJECT);
+        super(name, AttributeValueType.OBJECT);
         jsonObject.put("name", name);
         setCapabilityType(capabilityType);
         setResourceRefs(resourceRefs);
