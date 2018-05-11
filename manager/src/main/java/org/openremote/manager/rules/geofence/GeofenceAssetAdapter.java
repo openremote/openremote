@@ -19,18 +19,12 @@
  */
 package org.openremote.manager.rules.geofence;
 
-import org.openremote.container.Container;
-import org.openremote.container.ContainerService;
 import org.openremote.manager.rules.RulesEngine;
-import org.openremote.model.AbstractValueHolder;
 import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.AssetMeta;
 import org.openremote.model.asset.BaseAssetQuery;
-import org.openremote.model.attribute.AttributeValue;
 import org.openremote.model.rules.geofence.GeofenceDefinition;
 
 import java.util.List;
-import java.util.Optional;
 
 /**
  * Defines an adapter that can take a collection of {@link BaseAssetQuery.LocationPredicate} that apply to a given
@@ -53,45 +47,34 @@ import java.util.Optional;
  * geofence)</li>
  * </ul>
  */
-public abstract class GeofenceAssetAdapter implements ContainerService {
+public interface GeofenceAssetAdapter {
 
-    public static Optional<String> getAssetGeofenceAdapterName(Asset asset) {
-        return asset.getAttribute(AttributeValue.CONSOLE_PROVIDER_GEOFENCE.getName())
-            .flatMap(attr -> attr.getMetaItem(AssetMeta.GEOFENCE_ADAPTER))
-            .flatMap(AbstractValueHolder::getValueAsString);
-    }
-
-    @Override
-    public void init(Container container) throws Exception {
-
-    }
-
-    @Override
-    public void start(Container container) throws Exception {
-
-    }
-
-    @Override
-    public void stop(Container container) throws Exception {
-
-    }
+    /**
+     * Adapters with a higher priority are called first
+     */
+    int getPriority();
 
     /**
      * Get the name of this adapter
      */
-    public abstract String getName();
+    String getName();
 
     /**
      * The initialising flag is used to indicate that the system is just initialising and the adapter is being made
      * aware of existing {@link BaseAssetQuery.LocationPredicate}s; generally adapters should use this to initialise
      * their own state rather than 'pushing' geofences to the asset(s) it can be assumed that they were previously sent,
      * hence adapters should be more concerned with delta changes (but this is really up to the adapter).
+     * <p>
+     * If an adapter handles the location predicates for a particular asset then the adapter should remove that item
+     * from the list to prevent other adapters from also handling it. If an {@link RulesEngine.AssetStateLocationPredicates#getLocationPredicates()}
+     * is empty then it means there are no longer any location predicates associated with that asset
      */
-    public abstract void processLocationPredicates(List<RulesEngine.AssetStateLocationPredicates> modifiedAssetLocationPredicates,
-                                                   boolean initialising);
+    void processLocationPredicates(List<RulesEngine.AssetStateLocationPredicates> modifiedAssetLocationPredicates,
+                                   boolean initialising);
 
     /**
-     * Called to return the active geofences for the specified {@link Asset}.
+     * Called to return the active geofences for the specified {@link Asset}; if this adapter supports the requested
+     * asset then it should return a non null value to prevent the request from being sent to other geofence adapters.
      */
-    public abstract GeofenceDefinition[] getAssetGeofences(String assetId);
+    GeofenceDefinition[] getAssetGeofences(String assetId);
 }

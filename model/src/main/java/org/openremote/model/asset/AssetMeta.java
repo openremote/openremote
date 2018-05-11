@@ -351,17 +351,7 @@ public enum AssetMeta implements MetaItemDescriptor {
         null,
         null,
         Values.create(true),
-        true),
-
-    GEOFENCE_ADAPTER(
-        ASSET_META_NAMESPACE + ":geofence:adapter",
-        new Access(false, true, true),
-        ValueType.STRING,
-        null,
-        null,
-        null,
-        false
-    );
+        true);
 
     final protected String urn;
     final protected Access access;

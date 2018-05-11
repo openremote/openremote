@@ -20,8 +20,6 @@
 package org.openremote.model.rules;
 
 import jsinterop.annotations.JsType;
-import org.openremote.model.asset.AssetMeta;
-import org.openremote.model.attribute.AttributeValue;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.http.SuccessStatusCode;
 import org.openremote.model.rules.geofence.GeofenceDefinition;
@@ -232,11 +230,8 @@ public interface RulesResource {
 
     /**
      * Get the geofences for the specified asset; if this method is accessed anonymously (public read) then the asset
-     * must have public read enabled and the {@link AttributeValue#CONSOLE_PROVIDER_GEOFENCE} attribute must
-     * have a {@link AssetMeta#ACCESS_PUBLIC_READ} meta item. Otherwise the asset must be linked to the logged in user.
+     * must have public read enabled. Otherwise the asset must be linked to the logged in user.
      * If neither of these conditions are met then a 403 is returned.
-     * <p>
-     * The attribute must also have a valid {@link AssetMeta#GEOFENCE_ADAPTER}.
      */
     @GET
     @Path("geofences/{assetId}")

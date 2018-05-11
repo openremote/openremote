@@ -13,7 +13,7 @@ import org.openremote.model.asset.AssetMeta
 import org.openremote.model.asset.AssetQuery
 import org.openremote.model.asset.AssetType
 import org.openremote.model.asset.CalendarEventConfiguration
-import org.openremote.model.attribute.AttributeValue
+import org.openremote.model.attribute.AttributeType
 import org.openremote.model.calendar.CalendarEvent
 import org.openremote.model.calendar.RecurrenceRule
 import org.openremote.model.value.Values
@@ -672,7 +672,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
 
         when: "one of the assets in the region is moved"
         def lobby = assetStorageService.find(managerDemoSetup.lobbyId, true)
-        lobby.replaceAttribute(createWithDescriptor(AttributeValue.LOCATION, Values.createObject().put("latitude", 51.44593d).put("longitude", 5.46108d)))
+        lobby.replaceAttribute(createWithDescriptor(AttributeType.LOCATION, Values.createObject().put("latitude", 51.44593d).put("longitude", 5.46108d)))
         lobby = assetStorageService.merge(lobby)
 
         then: "the system should settle down"

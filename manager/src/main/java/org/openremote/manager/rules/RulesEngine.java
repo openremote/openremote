@@ -51,16 +51,16 @@ public class RulesEngine<T extends Ruleset> {
      */
     public static final class AssetStateLocationPredicates {
 
-        protected final AssetState assetState;
+        protected final String assetId;
         protected final Set<BaseAssetQuery.LocationPredicate> locationPredicates;
 
-        public AssetStateLocationPredicates(AssetState assetState, Set<BaseAssetQuery.LocationPredicate> locationPredicates) {
-            this.assetState = assetState;
+        public AssetStateLocationPredicates(String assetId, Set<BaseAssetQuery.LocationPredicate> locationPredicates) {
+            this.assetId = assetId;
             this.locationPredicates = locationPredicates;
         }
 
-        public AssetState getAssetState() {
-            return assetState;
+        public String getAssetId() {
+            return assetId;
         }
 
         public Set<BaseAssetQuery.LocationPredicate> getLocationPredicates() {
@@ -178,7 +178,8 @@ public class RulesEngine<T extends Ruleset> {
     }
 
     /**
-     * @return <code>true</code> if all rulesets are {@link RulesetDeployment.Status#DEPLOYED} and this engine can be started.
+     * @return <code>true</code> if all rulesets are {@link RulesetDeployment.Status#DEPLOYED} and this engine can be
+     * started.
      */
     public boolean isDeployed() {
         return deployments.values().stream().allMatch(rd -> rd.getStatus() == DEPLOYED);
@@ -319,7 +320,7 @@ public class RulesEngine<T extends Ruleset> {
 
                     }),
                     TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS
-                );
+                                                    );
             }
         });
     }
@@ -432,7 +433,7 @@ public class RulesEngine<T extends Ruleset> {
             deployments.values().stream()
                 .map(RulesetDeployment::toString)
                 .toArray(String[]::new)
-        );
+                                        );
     }
 
     protected void printSessionStats() {
@@ -444,11 +445,11 @@ public class RulesEngine<T extends Ruleset> {
             long temporaryFactsCount = facts.getTemporaryFacts().count();
             long total = assetStateFacts.size() + assetEventFacts.size() + namedFacts.size() + anonFacts.size();
             STATS_LOG.info("On " + this + ", in memory facts are Total: " + total
-                + ", AssetState: " + assetStateFacts.size()
-                + ", AssetEvent: " + assetEventFacts.size()
-                + ", Named: " + namedFacts.size()
-                + ", Anonymous: " + anonFacts.size()
-                + ", Temporary: " + temporaryFactsCount);
+                               + ", AssetState: " + assetStateFacts.size()
+                               + ", AssetEvent: " + assetEventFacts.size()
+                               + ", Named: " + namedFacts.size()
+                               + ", Anonymous: " + anonFacts.size()
+                               + ", Temporary: " + temporaryFactsCount);
 
             // Additional details if FINEST is enabled
             if (STATS_LOG.isLoggable(Level.FINEST)) {

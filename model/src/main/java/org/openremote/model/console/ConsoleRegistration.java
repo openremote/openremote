@@ -17,34 +17,21 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.model.asset;
+package org.openremote.model.console;
 
-import org.openremote.model.attribute.AttributeDescriptor;
-import org.openremote.model.attribute.AttributeType;
-import org.openremote.model.attribute.MetaItemDescriptor;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
-/**
- * The built-in and well-known asset model.
- */
-public class DefaultAssetModelProvider implements AssetModelProvider {
+public class ConsoleRegistration {
 
-    @Override
-    public MetaItemDescriptor[] getMetaItemDescriptors() {
-        return AssetMeta.values();
+    protected String id;
+
+    @JsonCreator
+    public ConsoleRegistration(@JsonProperty("id") String id) {
+        this.id = id;
     }
 
-    @Override
-    public AssetType[] getAssetTypeDescriptors() {
-        return AssetType.values();
-    }
-
-    @Override
-    public AttributeDescriptor[] getAttributeDescriptors() {
-        return AttributeType.values();
-    }
-
-    @Override
-    public String toString() {
-        return getClass().getSimpleName() + "{}";
+    public String getId() {
+        return id;
     }
 }

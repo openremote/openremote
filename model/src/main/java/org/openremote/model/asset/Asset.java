@@ -23,7 +23,9 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.hibernate.annotations.Check;
 import org.hibernate.annotations.Formula;
 import org.openremote.model.IdentifiableEntity;
+import org.openremote.model.ValidationFailure;
 import org.openremote.model.attribute.Attribute;
+import org.openremote.model.attribute.AttributeDescriptor;
 import org.openremote.model.geo.GeoJSON;
 import org.openremote.model.geo.GeoJSONFeature;
 import org.openremote.model.geo.GeoJSONPoint;
@@ -48,7 +50,7 @@ import java.util.stream.Stream;
 import static org.openremote.model.Constants.PERSISTENCE_JSON_OBJECT_TYPE;
 import static org.openremote.model.Constants.PERSISTENCE_UNIQUE_ID_GENERATOR;
 import static org.openremote.model.asset.AssetAttribute.*;
-import static org.openremote.model.attribute.AttributeValue.LOCATION;
+import static org.openremote.model.attribute.AttributeType.LOCATION;
 
 // @formatter:off
 
@@ -222,6 +224,11 @@ import static org.openremote.model.attribute.AttributeValue.LOCATION;
 @Table(name = "ASSET")
 @Check(constraints = "ID != PARENT_ID")
 public class Asset implements IdentifiableEntity {
+
+    public enum AssetTypeFailureReason implements ValidationFailure.Reason {
+        ASSET_TYPE_MISMATCH,
+        ASSET_TYPE_NOT_SUPPORTED
+    }
 
     @Id
     @Column(name = "ID", length = 22, columnDefinition = "char(22)")
@@ -561,6 +568,10 @@ public class Asset implements IdentifiableEntity {
 
     public boolean hasAttribute(String name) {
         return attributes != null && attributes.hasKey(name);
+    }
+
+    public Optional<AssetAttribute> getAttribute(AttributeDescriptor descriptor) {
+        return getAttribute(descriptor.getName());
     }
 
     public Optional<AssetAttribute> getAttribute(String name) {

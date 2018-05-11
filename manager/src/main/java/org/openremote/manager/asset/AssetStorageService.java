@@ -44,7 +44,7 @@ import org.openremote.manager.security.UserConfiguration;
 import org.openremote.model.Constants;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.asset.*;
-import org.openremote.model.attribute.AttributeValue;
+import org.openremote.model.attribute.AttributeType;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.calendar.CalendarEvent;
 import org.openremote.model.calendar.RecurrenceRule;
@@ -1176,6 +1176,15 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                         }
                         break;
                 }
+            } else if (attributePredicate.value instanceof AssetQuery.ObjectValueKeyPredicate) {
+                ObjectValueKeyPredicate keyPredicate = (ObjectValueKeyPredicate)attributePredicate.value;
+                if (keyPredicate.negated) {
+                    attributeBuilder.append(" and NOT(AX.VALUE #> '{value}' ?? ? ) ");
+                } else {
+                    attributeBuilder.append(" and AX.VALUE #> '{value}' ?? ? ");
+                }
+                final int pos = binders.size() + 1;
+                binders.add(st -> st.setString(pos, keyPredicate.key));
             }
         }
 
@@ -1324,8 +1333,8 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 Stream<AssetAttribute> oldAttributes = attributesFromJson(persistenceEvent.getPreviousState("attributes"), asset.getId());
                 Stream<AssetAttribute> currentAttributes = attributesFromJson(persistenceEvent.getCurrentState("attributes"), asset.getId());
 
-                Optional<AssetAttribute> oldLocation = oldAttributes.filter(assetAttribute -> assetAttribute.name.equals(AttributeValue.LOCATION.getName())).findFirst();
-                Optional<AssetAttribute> currentLocation = currentAttributes.filter(assetAttribute -> assetAttribute.name.equals(AttributeValue.LOCATION.getName())).findFirst();
+                Optional<AssetAttribute> oldLocation = oldAttributes.filter(assetAttribute -> assetAttribute.name.equals(AttributeType.LOCATION.getName())).findFirst();
+                Optional<AssetAttribute> currentLocation = currentAttributes.filter(assetAttribute -> assetAttribute.name.equals(AttributeType.LOCATION.getName())).findFirst();
 
                 if (!(!oldLocation.isPresent() && !currentLocation.isPresent())) {
                     if (!oldLocation.isPresent() || !currentLocation.isPresent() || !oldLocation.get().equals(currentLocation.get())) {

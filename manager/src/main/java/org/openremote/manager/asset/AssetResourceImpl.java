@@ -605,8 +605,8 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
         try {
             Asset asset = get(requestParams, assetId);
 
-            AssetAttribute locationAttribute = asset.getAttribute(AttributeValue.LOCATION.getName())
-                .orElse(AssetAttribute.createWithDescriptor(AttributeValue.LOCATION));
+            AssetAttribute locationAttribute = asset.getAttribute(AttributeType.LOCATION.getName())
+                .orElse(AssetAttribute.createWithDescriptor(AttributeType.LOCATION));
 
             ObjectValue currentCoordinates = locationAttribute.getValueAsObject().orElse(Values.createObject());
             ArrayValue arrayValue = location.getObjectValue().getArray("coordinates").orElseThrow(() -> new IllegalStateException("location doesn't contain 'coordinates' key"));
@@ -633,8 +633,8 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             Asset asset = result[0];
 
             //TODO do we need a PUBLIC_WRITE metaitem?
-            AssetAttribute locationAttribute = asset.getAttribute(AttributeValue.LOCATION.getName())
-                .orElse(AssetAttribute.createWithDescriptor(AttributeValue.LOCATION));
+            AssetAttribute locationAttribute = asset.getAttribute(AttributeType.LOCATION.getName())
+                .orElse(AssetAttribute.createWithDescriptor(AttributeType.LOCATION));
 
             ObjectValue currentCoordinates = locationAttribute.getValueAsObject().orElse(Values.createObject());
             ArrayValue arrayValue = location.getObjectValue().getArray("coordinates").orElseThrow(() -> new IllegalStateException("location doesn't contain 'coordinates' key"));

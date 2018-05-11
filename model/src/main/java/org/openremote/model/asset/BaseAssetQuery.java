@@ -547,6 +547,35 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> {
         }
     }
 
+    public static class ObjectValueKeyPredicate implements ValuePredicate<String> {
+
+        public boolean negated;
+        public String key;
+
+        public ObjectValueKeyPredicate(String hasKey) {
+            key = hasKey;
+        }
+
+        public ObjectValueKeyPredicate(String hasKey, boolean negate) {
+            key = hasKey;
+            negated = negate;
+        }
+
+        public ObjectValueKeyPredicate negate() {
+            negated = !negated;
+            return this;
+        }
+
+        @Override
+        public ObjectValue toModelValue() {
+            ObjectValue objectValue = Values.createObject();
+            objectValue.put("predicateType", "ObjectValueKeyPredicate");
+            objectValue.put("negated", Values.create(negated));
+            objectValue.put("key", Values.create(key));
+            return objectValue;
+        }
+    }
+
     public static class ParentPredicate {
 
         public String id;

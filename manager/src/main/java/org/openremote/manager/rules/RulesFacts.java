@@ -66,7 +66,7 @@ public class RulesFacts extends Facts implements RuleListener {
 
     protected int triggerCount;
     protected boolean trackLocationRules;
-    protected Map<AssetState, Set<BaseAssetQuery.LocationPredicate>> assetStateLocationPredicateMap = null;
+    protected Map<String, Set<BaseAssetQuery.LocationPredicate>> assetStateLocationPredicateMap = null;
 
     public RulesFacts(Assets assetsFacade, Object loggingContext, Logger logger) {
         this.assetsFacade = assetsFacade;
@@ -85,7 +85,7 @@ public class RulesFacts extends Facts implements RuleListener {
 
     protected List<RulesEngine.AssetStateLocationPredicates> stopTrackingLocationRules() {
         trackLocationRules = false;
-        Map<AssetState, Set<BaseAssetQuery.LocationPredicate>> assetStateLocationPredicateMap = this.assetStateLocationPredicateMap;
+        Map<String, Set<BaseAssetQuery.LocationPredicate>> assetStateLocationPredicateMap = this.assetStateLocationPredicateMap;
         this.assetStateLocationPredicateMap = null;
         return assetStateLocationPredicateMap.entrySet().stream()
             .map(assetStateSetEntry ->
@@ -434,7 +434,7 @@ public class RulesFacts extends Facts implements RuleListener {
                     // TODO: Use static reference to well known location attribute when it is implemented
                     Collection<AssetState> locationAssetStates = getAssetStates().stream().filter(assetState -> assetState.getAttributeName().equalsIgnoreCase("location")).collect(Collectors.toSet());
                     assetStateLocationPredicateMap = new HashMap<>(locationAssetStates.size());
-                    locationAssetStates.forEach(assetState -> assetStateLocationPredicateMap.put(assetState, new HashSet<>()));
+                    locationAssetStates.forEach(assetState -> assetStateLocationPredicateMap.put(assetState.getId(), new HashSet<>()));
                 }
 
                 assetStateLocationPredicateMap.forEach((assetState, locationPredicates) -> locationPredicates.add(assetQuery.location));
