@@ -25,13 +25,13 @@ import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetType;
 import org.openremote.model.attribute.AttributeType;
-import org.openremote.model.attribute.AttributeValidationResult;
 import org.openremote.model.util.Pair;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.Values;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -68,33 +68,33 @@ public final class ConsoleConfigration {
         return asset != null && asset.getWellKnownType() == AssetType.CONSOLE;
     }
 
-    public static boolean validateConsoleConfiguration(Asset asset, AttributeValidationResult result) {
+    public static boolean validateConsoleConfiguration(Asset asset, List<ValidationFailure> validationFailures) {
         boolean valid = isConsole(asset);
 
         if (!valid) {
-            if (result != null) {
-                result.addAttributeFailure(new ValidationFailure(Asset.AssetTypeFailureReason.ASSET_TYPE_MISMATCH));
+            if (validationFailures != null) {
+                validationFailures.add(new ValidationFailure(Asset.AssetTypeFailureReason.ASSET_TYPE_MISMATCH));
             }
             return false;
         }
 
         if (!getConsoleName(asset).isPresent()) {
-            if (result != null) {
-                result.addAttributeFailure(new ValidationFailure(ValidationFailureReason.NAME_MISSING_OR_INVALID));
+            if (validationFailures != null) {
+                validationFailures.add(new ValidationFailure(ValidationFailureReason.NAME_MISSING_OR_INVALID));
             }
             valid = false;
         }
 
         if (!getConsoleVersion(asset).isPresent()) {
-            if (result != null) {
-                result.addAttributeFailure(new ValidationFailure(ValidationFailureReason.VERSION_MISSING_OR_INVALID));
+            if (validationFailures != null) {
+                validationFailures.add(new ValidationFailure(ValidationFailureReason.VERSION_MISSING_OR_INVALID));
             }
             valid = false;
         }
 
         if (!getConsolePlatform(asset).isPresent()) {
-            if (result != null) {
-                result.addAttributeFailure(new ValidationFailure(ValidationFailureReason.PLATFORM_MISSING_OR_INVALID));
+            if (validationFailures != null) {
+                validationFailures.add(new ValidationFailure(ValidationFailureReason.PLATFORM_MISSING_OR_INVALID));
             }
             valid = false;
         }
@@ -102,8 +102,8 @@ public final class ConsoleConfigration {
         Value providerValue = asset.getAttribute(AttributeType.CONSOLE_PROVIDERS.getName()).flatMap(AbstractValueHolder::getValue).orElse(null);
 
         if (providerValue != null && !getConsoleProviders(asset).isPresent()) {
-            if (result != null) {
-                result.addAttributeFailure(new ValidationFailure(ValidationFailureReason.PROVIDERS_INVALID));
+            if (validationFailures != null) {
+                validationFailures.add(new ValidationFailure(ValidationFailureReason.PROVIDERS_INVALID));
             }
             valid = false;
         }

@@ -38,6 +38,7 @@ import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.AuthContext;
 import org.openremote.container.timer.TimerService;
 import org.openremote.container.web.WebService;
+import org.openremote.manager.asset.console.ConsoleResourceImpl;
 import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.security.UserConfiguration;
@@ -126,6 +127,12 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 container.getService(MessageBrokerService.class)
             )
         );
+
+        container.getService(WebService.class).getApiSingletons().add(
+            new ConsoleResourceImpl(container.getService(TimerService.class),
+                                    identityService,
+                                    this)
+                                                                     );
 
         container.getService(MessageBrokerSetupService.class).getContext().addRoutes(this);
     }
@@ -412,7 +419,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         return persistenceService.doReturningTransaction(entityManager -> {
             if (isNullOrEmpty(userId) && isNullOrEmpty(assetId)) {
                 return entityManager.createQuery(
-                    "select ua from UserAsset ua where ua.id.realmId = :realmId order by ua.createdOn desc", UserAsset.class
+                    "select ua from UserAsset ua where ua.id.realmIód = :realmId order by ua.createdOn desc", UserAsset.class
                 ).setParameter("realmId", realmId).getResultList();
             } else if (isNullOrEmpty(assetId)) {
                 return entityManager.createQuery(

@@ -20,7 +20,7 @@
 package org.openremote.model.console;
 
 import jsinterop.annotations.JsType;
-import org.openremote.model.asset.AssetType;
+import org.openremote.model.asset.Asset;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.http.SuccessStatusCode;
 
@@ -36,16 +36,18 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 public interface ConsoleResource {
 
     /**
-     * Creates or updates the registration for the specified console; if the {@link ConsoleConfigration} contains an ID
-     * then it is an update operation otherwise it is a create operation, in both cases a {@link ConsoleRegistration} is
-     * returned which contains the {@link ConsoleConfigration#getId()} value.
+     * Creates or updates the registration for the specified console; if the console {@link Asset} contains an ID
+     * then it is an update operation otherwise it is a create operation, in both cases the saved {@link Asset} is
+     * returned which should be used for future calls to this endpoint.
      * <p>
-     * The console definition is converted to an asset of type {@link AssetType#CONSOLE}
+     * This is a public endpoint and allows the registration of anonymous consoles; if there is an authenticated user
+     * then the console asset will be linked to that user. If multiple users login on the same console then it will be
+     * associated with each user (i.e. a 1-many relationship).
      */
     @POST
     @Path("register")
     @SuccessStatusCode(204)
     @Consumes(APPLICATION_JSON)
     @SuppressWarnings("unusable-by-js")
-    ConsoleRegistration register(@BeanParam RequestParams requestParams, ConsoleConfigration consoleDefinition);
+    Asset register(@BeanParam RequestParams requestParams, Asset console);
 }
