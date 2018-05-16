@@ -148,7 +148,7 @@ public final class ConsoleConfigration {
     }
 
     public static Optional<Map<String, ConsoleProvider>> getConsoleProviders(Asset asset) {
-        return asset == null ? Optional.empty() : asset.getAttribute(AttributeType.CONSOLE_VERSION).flatMap(ConsoleConfigration::getConsoleProviders);
+        return asset == null ? Optional.empty() : asset.getAttribute(AttributeType.CONSOLE_PROVIDERS).flatMap(ConsoleConfigration::getConsoleProviders);
     }
 
     public static Optional<ConsoleProvider> getConsoleProvider(Asset asset, String providerName) {

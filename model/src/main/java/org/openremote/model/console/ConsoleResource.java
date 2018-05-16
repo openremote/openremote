@@ -24,10 +24,7 @@ import org.openremote.model.asset.Asset;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.http.SuccessStatusCode;
 
-import javax.ws.rs.BeanParam;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
+import javax.ws.rs.*;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
@@ -48,6 +45,7 @@ public interface ConsoleResource {
     @Path("register")
     @SuccessStatusCode(204)
     @Consumes(APPLICATION_JSON)
+    @Produces(APPLICATION_JSON)
     @SuppressWarnings("unusable-by-js")
     Asset register(@BeanParam RequestParams requestParams, Asset console);
 }

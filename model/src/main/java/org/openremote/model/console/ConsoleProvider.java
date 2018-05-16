@@ -89,6 +89,7 @@ public class ConsoleProvider {
         obj.put("version", getVersion());
         obj.put("requiresPermission", isRequiresPermission());
         obj.put("hasPermission", isHasPermission());
+        obj.put("disabled", isDisabled());
         if (data != null) {
             obj.put("data", getData());
         }

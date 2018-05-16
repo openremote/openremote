@@ -19,6 +19,7 @@
  */
 package org.openremote.manager.asset.console;
 
+import org.openremote.container.Container;
 import org.openremote.container.timer.TimerService;
 import org.openremote.container.util.UniqueIdentifierGenerator;
 import org.openremote.manager.asset.AssetStorageService;
@@ -64,8 +65,23 @@ public class ConsoleResourceImpl extends ManagerWebResource implements ConsoleRe
         // Set parent asset (if not set)
         if (TextUtil.isNullOrEmpty(console.getParentId())) {
             console.setParentId(getConsoleParentAssetId(getRequestRealm()));
-            console = assetStorageService.merge(console);
         }
+
+        // If console has an id and asset exists then ensure it matches the existing asset type and console name matches
+        if (!TextUtil.isNullOrEmpty(console.getId())) {
+            Asset existingConsole = assetStorageService.find(console.getId(), true);
+            // If asset doesn't exist then no harm in registering console using the supplied ID
+            if (existingConsole != null) {
+                if (existingConsole.getWellKnownType() != AssetType.CONSOLE) {
+                    throw new BadRequestException(Response.status(Response.Status.BAD_REQUEST).entity(new ValidationFailure[] {new ValidationFailure(Asset.AssetTypeFailureReason.ASSET_TYPE_MISMATCH)}).build());
+                }
+                if (!ConsoleConfigration.getConsoleName(console).orElse("").equals(ConsoleConfigration.getConsoleName(existingConsole).orElse(null))) {
+                    throw new BadRequestException(Response.status(Response.Status.BAD_REQUEST).entity(new ValidationFailure[] {new ValidationFailure(ConsoleConfigration.ValidationFailureReason.NAME_MISSING_OR_INVALID)}).build());
+                }
+            }
+        }
+
+        console = assetStorageService.merge(console);
 
         // If authenticated link the console to this user
         if (isAuthenticated()) {
