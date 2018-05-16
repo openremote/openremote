@@ -2,6 +2,7 @@ package org.openremote.test.console
 
 import org.openremote.container.util.UniqueIdentifierGenerator
 import org.openremote.manager.asset.AssetStorageService
+import org.openremote.manager.asset.console.ConsoleResourceImpl
 import org.openremote.manager.rules.geofence.ORConsoleGeofenceAssetAdapter
 import org.openremote.manager.setup.SetupService
 import org.openremote.manager.setup.builtin.KeycloakDemoSetup
@@ -93,6 +94,7 @@ class ConsoleAssetTest extends Specification implements ManagerContainerTrait {
         assert consolePushProvider.data.get("token").flatMap{Values.getString(it)}.orElse(null) == "23123213ad2313b0897efd"
 
         assert !TextUtil.isNullOrEmpty(returnedConsole.getId())
+        assert returnedConsole.getParentId() == ConsoleResourceImpl.consoleParentAssetIdGenerator(MASTER_REALM)
         assert returnedConsole.name == console.name
         assert ConsoleConfigration.getConsoleName(returnedConsole).orElse(null) == ConsoleConfigration.getConsoleName(console).orElse(null)
         assert ConsoleConfigration.getConsoleVersion(returnedConsole).orElse(null) == ConsoleConfigration.getConsoleVersion(console).orElse(null)
@@ -111,6 +113,11 @@ class ConsoleAssetTest extends Specification implements ManagerContainerTrait {
         assert returnedConsolePushProvider.hasPermission
         assert !returnedConsolePushProvider.disabled
         assert returnedConsolePushProvider.data.get("token").flatMap{Values.getString(it)}.orElse(null) == "23123213ad2313b0897efd"
+
+        and: "the console should have been linked to the authenticated user"
+        def userAssets = assetStorageService.findUserAssets(MASTER_REALM, keycloakDemoSetup.testuser1Id, consoleId)
+        assert userAssets.size() == 1
+        assert userAssets.get(0).assetName == "Test Android Console"
 
         when: "the console is modified and registration is updated"
         returnedConsoleGeofenceProvider.hasPermission = true

@@ -78,6 +78,9 @@ public class ConsoleResourceImpl extends ManagerWebResource implements ConsoleRe
                 if (!ConsoleConfigration.getConsoleName(console).orElse("").equals(ConsoleConfigration.getConsoleName(existingConsole).orElse(null))) {
                     throw new BadRequestException(Response.status(Response.Status.BAD_REQUEST).entity(new ValidationFailure[] {new ValidationFailure(ConsoleConfigration.ValidationFailureReason.NAME_MISSING_OR_INVALID)}).build());
                 }
+
+                // Use the same parent as the existing asset
+                console.setParentId(existingConsole.getParentId());
             }
         }
 
