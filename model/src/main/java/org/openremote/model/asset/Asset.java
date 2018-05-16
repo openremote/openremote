@@ -379,6 +379,10 @@ public class Asset implements IdentifiableEntity {
         return this;
     }
 
+    public Asset removeAttribute(AttributeDescriptor attributeDescriptor) {
+        return removeAttribute(attributeDescriptor.getName());
+    }
+
     public String getId() {
         return id;
     }
