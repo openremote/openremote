@@ -22,6 +22,7 @@ package org.openremote.model.asset;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.hibernate.annotations.Check;
 import org.hibernate.annotations.Formula;
+import org.openremote.model.AbstractValueHolder;
 import org.openremote.model.IdentifiableEntity;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.attribute.Attribute;
@@ -636,19 +637,20 @@ public class Asset implements IdentifiableEntity {
      * and the second element is the latitude
      */
     public double[] getCoordinates() {
-        Optional<AssetAttribute> locationAttribute = getAttributesStream()
+        return getAttributesStream()
             .filter(attribute -> attribute.getNameOrThrow().equals(LOCATION.getName()))
-            .findFirst();
-        if (locationAttribute.isPresent()) {
-            double[] coordinates = new double[2];
-            locationAttribute.get().getValueAsObject().ifPresent(objectValue -> {
-                coordinates[1] = objectValue.getNumber("latitude").orElse(0d);
-                coordinates[0] = objectValue.getNumber("longitude").orElse(0d);
-            });
-            return coordinates;
-        } else {
-            return null;
-        }
+            .findFirst()
+            .flatMap(AbstractValueHolder::getValueAsObject)
+            .map(obj -> {
+                Optional<Double> lat = obj.getNumber("latitude");
+                Optional<Double> lng = obj.getNumber("longitude");
+                if (lat.isPresent() && lng.isPresent()) {
+                    return new double[]{lat.get(), lng.get()};
+                }
+
+                return null;
+            })
+            .orElse(null);
     }
 
     public GeoJSONPoint getPoint() {
@@ -693,7 +695,8 @@ public class Asset implements IdentifiableEntity {
     }
 
     public boolean hasGeoFeature() {
-        return getCoordinates() != null && getCoordinates().length == 2;
+        double[] coordinates = getCoordinates();
+        return coordinates != null && coordinates.length == 2;
     }
 
     public GeoJSON getGeoFeature(int maxNameLength) {
