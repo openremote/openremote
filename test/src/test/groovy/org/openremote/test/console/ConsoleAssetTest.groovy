@@ -9,7 +9,7 @@ import org.openremote.manager.setup.builtin.KeycloakDemoSetup
 import org.openremote.manager.setup.builtin.ManagerDemoSetup
 import org.openremote.model.asset.Asset
 import org.openremote.model.attribute.AttributeType
-import org.openremote.model.console.ConsoleConfigration
+import org.openremote.model.console.ConsoleConfiguration
 import org.openremote.model.console.ConsoleProvider
 import org.openremote.model.console.ConsoleResource
 import org.openremote.model.util.TextUtil
@@ -48,7 +48,7 @@ class ConsoleAssetTest extends Specification implements ManagerContainerTrait {
         def consoleResource = getClientTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(ConsoleResource.class)
 
         when: "a new console registers"
-        def console = ConsoleConfigration.initConsoleConfiguration(
+        def console = ConsoleConfiguration.initConsoleConfiguration(
             new Asset("Test Android Console", CONSOLE),
             "Test Android Console",
             "1.0",
@@ -75,11 +75,11 @@ class ConsoleAssetTest extends Specification implements ManagerContainerTrait {
         def consoleId = returnedConsole.getId()
 
         then: "the returned console should have an id and match what was sent"
-        assert ConsoleConfigration.getConsoleName(console).orElse(null) == "Test Android Console"
-        assert ConsoleConfigration.getConsoleVersion(console).orElse(null) == "1.0"
-        assert ConsoleConfigration.getConsolePlatform(console).orElse(null) == "Android 7.1.2"
-        def consoleGeofenceProvider = ConsoleConfigration.getConsoleProvider(console, "geofence").orElse(null)
-        def consolePushProvider = ConsoleConfigration.getConsoleProvider(console, "push").orElse(null)
+        assert ConsoleConfiguration.getConsoleName(console).orElse(null) == "Test Android Console"
+        assert ConsoleConfiguration.getConsoleVersion(console).orElse(null) == "1.0"
+        assert ConsoleConfiguration.getConsolePlatform(console).orElse(null) == "Android 7.1.2"
+        def consoleGeofenceProvider = ConsoleConfiguration.getConsoleProvider(console, "geofence").orElse(null)
+        def consolePushProvider = ConsoleConfiguration.getConsoleProvider(console, "push").orElse(null)
         assert consoleGeofenceProvider != null
         assert consoleGeofenceProvider.version == ORConsoleGeofenceAssetAdapter.NAME
         assert consoleGeofenceProvider.requiresPermission
@@ -96,11 +96,11 @@ class ConsoleAssetTest extends Specification implements ManagerContainerTrait {
         assert !TextUtil.isNullOrEmpty(returnedConsole.getId())
         assert returnedConsole.getParentId() == ConsoleResourceImpl.consoleParentAssetIdGenerator(MASTER_REALM)
         assert returnedConsole.name == console.name
-        assert ConsoleConfigration.getConsoleName(returnedConsole).orElse(null) == ConsoleConfigration.getConsoleName(console).orElse(null)
-        assert ConsoleConfigration.getConsoleVersion(returnedConsole).orElse(null) == ConsoleConfigration.getConsoleVersion(console).orElse(null)
-        assert ConsoleConfigration.getConsolePlatform(returnedConsole).orElse(null) == ConsoleConfigration.getConsolePlatform(console).orElse(null)
-        def returnedConsoleGeofenceProvider = ConsoleConfigration.getConsoleProvider(returnedConsole, "geofence").orElse(null)
-        def returnedConsolePushProvider = ConsoleConfigration.getConsoleProvider(returnedConsole, "push").orElse(null)
+        assert ConsoleConfiguration.getConsoleName(returnedConsole).orElse(null) == ConsoleConfiguration.getConsoleName(console).orElse(null)
+        assert ConsoleConfiguration.getConsoleVersion(returnedConsole).orElse(null) == ConsoleConfiguration.getConsoleVersion(console).orElse(null)
+        assert ConsoleConfiguration.getConsolePlatform(returnedConsole).orElse(null) == ConsoleConfiguration.getConsolePlatform(console).orElse(null)
+        def returnedConsoleGeofenceProvider = ConsoleConfiguration.getConsoleProvider(returnedConsole, "geofence").orElse(null)
+        def returnedConsolePushProvider = ConsoleConfiguration.getConsoleProvider(returnedConsole, "push").orElse(null)
         assert returnedConsoleGeofenceProvider != null
         assert returnedConsoleGeofenceProvider.version == ORConsoleGeofenceAssetAdapter.NAME
         assert returnedConsoleGeofenceProvider.requiresPermission
@@ -121,8 +121,8 @@ class ConsoleAssetTest extends Specification implements ManagerContainerTrait {
 
         when: "the console is modified and registration is updated"
         returnedConsoleGeofenceProvider.hasPermission = true
-        ConsoleConfigration.addOrReplaceConsoleProvider(returnedConsole, "geofence", returnedConsoleGeofenceProvider)
-        ConsoleConfigration.addOrReplaceConsoleProvider(returnedConsole, "test", new ConsoleProvider(
+        ConsoleConfiguration.addOrReplaceConsoleProvider(returnedConsole, "geofence", returnedConsoleGeofenceProvider)
+        ConsoleConfiguration.addOrReplaceConsoleProvider(returnedConsole, "test", new ConsoleProvider(
             "Test 1.0",
             false,
             false,
@@ -133,7 +133,7 @@ class ConsoleAssetTest extends Specification implements ManagerContainerTrait {
 
         then: "the returned console should contain the updated data and have the same id"
         assert returnedConsole.getId() == consoleId
-        def returnedConsoleTestProvider = ConsoleConfigration.getConsoleProvider(returnedConsole, "test").orElse(null)
+        def returnedConsoleTestProvider = ConsoleConfiguration.getConsoleProvider(returnedConsole, "test").orElse(null)
         assert returnedConsoleTestProvider != null
         assert returnedConsoleTestProvider.version == "Test 1.0"
         assert !returnedConsoleTestProvider.requiresPermission
@@ -153,16 +153,16 @@ class ConsoleAssetTest extends Specification implements ManagerContainerTrait {
         def unusedId = UniqueIdentifierGenerator.generateId("UnusedConsoleId")
         returnedConsole.setId(unusedId)
         returnedConsole = consoleResource.register(null, returnedConsole)
-        returnedConsoleGeofenceProvider = ConsoleConfigration.getConsoleProvider(returnedConsole, "geofence").orElse(null)
-        returnedConsolePushProvider = ConsoleConfigration.getConsoleProvider(returnedConsole, "push").orElse(null)
-        returnedConsoleTestProvider = ConsoleConfigration.getConsoleProvider(returnedConsole, "test").orElse(null)
+        returnedConsoleGeofenceProvider = ConsoleConfiguration.getConsoleProvider(returnedConsole, "geofence").orElse(null)
+        returnedConsolePushProvider = ConsoleConfiguration.getConsoleProvider(returnedConsole, "push").orElse(null)
+        returnedConsoleTestProvider = ConsoleConfiguration.getConsoleProvider(returnedConsole, "test").orElse(null)
 
         then: "the console should be registered successfully and the returned console should match the supplied console"
         assert unusedId.equals(returnedConsole.getId())
         assert returnedConsole.name == console.name
-        assert ConsoleConfigration.getConsoleName(returnedConsole).orElse(null) == ConsoleConfigration.getConsoleName(console).orElse(null)
-        assert ConsoleConfigration.getConsoleVersion(returnedConsole).orElse(null) == ConsoleConfigration.getConsoleVersion(console).orElse(null)
-        assert ConsoleConfigration.getConsolePlatform(returnedConsole).orElse(null) == ConsoleConfigration.getConsolePlatform(console).orElse(null)
+        assert ConsoleConfiguration.getConsoleName(returnedConsole).orElse(null) == ConsoleConfiguration.getConsoleName(console).orElse(null)
+        assert ConsoleConfiguration.getConsoleVersion(returnedConsole).orElse(null) == ConsoleConfiguration.getConsoleVersion(console).orElse(null)
+        assert ConsoleConfiguration.getConsolePlatform(returnedConsole).orElse(null) == ConsoleConfiguration.getConsolePlatform(console).orElse(null)
         assert returnedConsoleGeofenceProvider != null
         assert returnedConsoleGeofenceProvider.version == ORConsoleGeofenceAssetAdapter.NAME
         assert returnedConsoleGeofenceProvider.requiresPermission

@@ -31,7 +31,7 @@ import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetQuery;
 import org.openremote.model.asset.BaseAssetQuery;
 import org.openremote.model.attribute.AttributeType;
-import org.openremote.model.console.ConsoleConfigration;
+import org.openremote.model.console.ConsoleConfiguration;
 import org.openremote.model.console.ConsoleProvider;
 import org.openremote.model.rules.geofence.GeofenceDefinition;
 
@@ -220,7 +220,7 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
     }
 
     protected static boolean isLinkedToORConsoleGeofenceAdapter(Asset asset) {
-        return ConsoleConfigration.getConsoleProvider(asset, "geofence")
+        return ConsoleConfiguration.getConsoleProvider(asset, "geofence")
             .map(ConsoleProvider::getVersion).map(NAME::equals).orElse(false);
     }
 }

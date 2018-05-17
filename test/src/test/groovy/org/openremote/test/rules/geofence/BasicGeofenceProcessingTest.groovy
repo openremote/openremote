@@ -13,7 +13,7 @@ import org.openremote.model.asset.AssetAttribute
 import org.openremote.model.asset.AssetMeta
 import org.openremote.model.attribute.AttributeType
 import org.openremote.model.attribute.MetaItem
-import org.openremote.model.console.ConsoleConfigration
+import org.openremote.model.console.ConsoleConfiguration
 import org.openremote.model.console.ConsoleProvider
 import org.openremote.model.rules.AssetRuleset
 import org.openremote.model.rules.GlobalRuleset
@@ -75,7 +75,7 @@ class BasicGeofenceProcessingTest extends Specification implements ManagerContai
         }
 
         when: "another console asset is added with its location attribute marked as RULE_STATE and it has a CONSOLE_PROVIDER_GEOFENCE attribute"
-        Asset console2 = ConsoleConfigration.initConsoleConfiguration(
+        Asset console2 = ConsoleConfiguration.initConsoleConfiguration(
             new Asset("Demo Android Console 2", CONSOLE),
             "Demo Android Console",
             "1.0",
@@ -92,7 +92,7 @@ class BasicGeofenceProcessingTest extends Specification implements ManagerContai
                     ))
                 }
             })
-                                            .addAttributes(
+                                             .addAttributes(
             new AssetAttribute(AttributeType.LOCATION.getName(),
                                AttributeType.LOCATION.getType())
                 .setMeta(new MetaItem(RULE_STATE))

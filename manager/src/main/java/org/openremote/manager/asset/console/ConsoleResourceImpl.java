@@ -19,7 +19,6 @@
  */
 package org.openremote.manager.asset.console;
 
-import org.openremote.container.Container;
 import org.openremote.container.timer.TimerService;
 import org.openremote.container.util.UniqueIdentifierGenerator;
 import org.openremote.manager.asset.AssetStorageService;
@@ -29,7 +28,7 @@ import org.openremote.model.ValidationFailure;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetType;
 import org.openremote.model.asset.UserAsset;
-import org.openremote.model.console.ConsoleConfigration;
+import org.openremote.model.console.ConsoleConfiguration;
 import org.openremote.model.console.ConsoleResource;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.util.TextUtil;
@@ -58,7 +57,7 @@ public class ConsoleResourceImpl extends ManagerWebResource implements ConsoleRe
     public Asset register(RequestParams requestParams, Asset console) {
         // Validate the console
         List<ValidationFailure> failures = new ArrayList<>();
-        if (!ConsoleConfigration.validateConsoleConfiguration(console, failures)) {
+        if (!ConsoleConfiguration.validateConsoleConfiguration(console, failures)) {
             throw new BadRequestException(Response.status(Response.Status.BAD_REQUEST).entity(failures).build());
         }
 
@@ -75,8 +74,8 @@ public class ConsoleResourceImpl extends ManagerWebResource implements ConsoleRe
                 if (existingConsole.getWellKnownType() != AssetType.CONSOLE) {
                     throw new BadRequestException(Response.status(Response.Status.BAD_REQUEST).entity(new ValidationFailure[] {new ValidationFailure(Asset.AssetTypeFailureReason.ASSET_TYPE_MISMATCH)}).build());
                 }
-                if (!ConsoleConfigration.getConsoleName(console).orElse("").equals(ConsoleConfigration.getConsoleName(existingConsole).orElse(null))) {
-                    throw new BadRequestException(Response.status(Response.Status.BAD_REQUEST).entity(new ValidationFailure[] {new ValidationFailure(ConsoleConfigration.ValidationFailureReason.NAME_MISSING_OR_INVALID)}).build());
+                if (!ConsoleConfiguration.getConsoleName(console).orElse("").equals(ConsoleConfiguration.getConsoleName(existingConsole).orElse(null))) {
+                    throw new BadRequestException(Response.status(Response.Status.BAD_REQUEST).entity(new ValidationFailure[] {new ValidationFailure(ConsoleConfiguration.ValidationFailureReason.NAME_MISSING_OR_INVALID)}).build());
                 }
 
                 // Use the same parent as the existing asset

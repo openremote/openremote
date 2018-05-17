@@ -37,7 +37,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-public final class ConsoleConfigration {
+public final class ConsoleConfiguration {
 
     public enum ValidationFailureReason implements ValidationFailure.Reason {
         NAME_MISSING_OR_INVALID,
@@ -46,7 +46,7 @@ public final class ConsoleConfigration {
         PROVIDERS_INVALID
     }
 
-    private ConsoleConfigration() {}
+    private ConsoleConfiguration() {}
 
     public static Asset initConsoleConfiguration(Asset asset, String name, String version, String platform, Map<String, ConsoleProvider> providerMap) {
         if (!isConsole(asset)) {
@@ -148,7 +148,7 @@ public final class ConsoleConfigration {
     }
 
     public static Optional<Map<String, ConsoleProvider>> getConsoleProviders(Asset asset) {
-        return asset == null ? Optional.empty() : asset.getAttribute(AttributeType.CONSOLE_PROVIDERS).flatMap(ConsoleConfigration::getConsoleProviders);
+        return asset == null ? Optional.empty() : asset.getAttribute(AttributeType.CONSOLE_PROVIDERS).flatMap(ConsoleConfiguration::getConsoleProviders);
     }
 
     public static Optional<ConsoleProvider> getConsoleProvider(Asset asset, String providerName) {

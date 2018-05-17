@@ -28,7 +28,7 @@ import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetMeta;
 import org.openremote.model.asset.UserAsset;
 import org.openremote.model.attribute.*;
-import org.openremote.model.console.ConsoleConfigration;
+import org.openremote.model.console.ConsoleConfiguration;
 import org.openremote.model.console.ConsoleProvider;
 import org.openremote.model.security.Tenant;
 import org.openremote.model.simulator.element.ColorSimulatorElement;
@@ -631,7 +631,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         apartment3Livingroom = assetStorageService.merge(apartment3Livingroom);
         apartment3LivingroomId = apartment3Livingroom.getId();
 
-        Asset console = ConsoleConfigration.initConsoleConfiguration(
+        Asset console = ConsoleConfiguration.initConsoleConfiguration(
             new Asset("Demo Android Console", CONSOLE, groundFloor),
             "Demo Android Console",
             "1.0",
