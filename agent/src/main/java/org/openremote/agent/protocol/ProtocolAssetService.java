@@ -23,9 +23,7 @@ import com.vividsolutions.jts.geom.Point;
 import org.openremote.container.ContainerService;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.asset.AssetMeta;
 import org.openremote.model.attribute.AttributeEvent;
-import org.openremote.model.attribute.MetaItem;
 
 import java.util.function.Predicate;
 

@@ -214,16 +214,19 @@ public class AssetQueryPredicate implements Predicate<AssetState> {
     protected Predicate<Coordinate> asPredicate(LocationPredicate predicate) {
         return coordinate -> {
             if (predicate instanceof RadialLocationPredicate) {
-                return false;
+//                return false;
+
+                //TODO: remove Hibernate spatial
+                //Find Geo Library with proper license to do this stuff!
                 // TODO: Fix this
-//                RadialLocationPredicate radialLocationPredicate = (RadialLocationPredicate) predicate;
-//                GeometricShapeFactory shapeFactory = new GeometricShapeFactory();
-//                shapeFactory.setCentre(new Coordinate(radialLocationPredicate.lat, radialLocationPredicate.lng));
-//                shapeFactory.setSize(radialLocationPredicate.radius * 2);
-//                Polygon circle = shapeFactory.createCircle();
-//                GeometryFactory geometryFactory = new GeometryFactory();
-//                Point point = geometryFactory.createPoint(coordinate);
-//                return point.within(circle);
+                RadialLocationPredicate radialLocationPredicate = (RadialLocationPredicate) predicate;
+                GeometricShapeFactory shapeFactory = new GeometricShapeFactory();
+                shapeFactory.setCentre(new Coordinate(radialLocationPredicate.lat, radialLocationPredicate.lng));
+                shapeFactory.setSize(radialLocationPredicate.radius * 2);
+                Polygon circle = shapeFactory.createCircle();
+                GeometryFactory geometryFactory = new GeometryFactory();
+                Point point = geometryFactory.createPoint(coordinate);
+                return point.within(circle);
 
             } else if (predicate instanceof RectangularLocationPredicate) {
                 // Again this is a euclidean plane so doesn't work perfectly for WGS lat/lng - the bigger the rectangle to less accurate it is)

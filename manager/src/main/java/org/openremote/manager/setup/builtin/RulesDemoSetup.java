@@ -38,6 +38,7 @@ public class RulesDemoSetup extends AbstractManagerSetup {
     }
 
     public Long apartmentActionsRulesetId;
+    public Long smartOfficeRulesetId;
 
     @Override
     public void onStart() throws Exception {
@@ -93,6 +94,14 @@ public class RulesDemoSetup extends AbstractManagerSetup {
                 "Demo Residence - All Lights Off", managerDemoSetup.apartment2Id, rules, Ruleset.Lang.JAVASCRIPT
             );
             apartmentActionsRulesetId = rulesetStorageService.merge(ruleset).getId();
+        }
+
+        try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/ConsoleLocationPredicate.groovy")) {
+            String rules = IOUtils.toString(inputStream, Charset.forName("utf-8"));
+            Ruleset ruleset = new AssetRuleset(
+                "Demo Console Location", managerDemoSetup.smartOfficeId, rules, Ruleset.Lang.GROOVY
+            );
+            smartOfficeRulesetId = rulesetStorageService.merge(ruleset).getId();
         }
     }
 }

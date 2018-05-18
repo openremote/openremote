@@ -45,8 +45,8 @@ import org.openremote.manager.security.UserConfiguration;
 import org.openremote.model.Constants;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.asset.*;
-import org.openremote.model.attribute.AttributeType;
 import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.attribute.AttributeType;
 import org.openremote.model.calendar.CalendarEvent;
 import org.openremote.model.calendar.RecurrenceRule;
 import org.openremote.model.event.shared.TenantFilter;
@@ -130,9 +130,9 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
         container.getService(WebService.class).getApiSingletons().add(
             new ConsoleResourceImpl(container.getService(TimerService.class),
-                                    identityService,
-                                    this)
-                                                                     );
+                identityService,
+                this)
+        );
 
         container.getService(MessageBrokerSetupService.class).getContext().addRoutes(this);
     }
@@ -595,15 +595,9 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         StringBuilder sb = new StringBuilder();
         AssetQuery.Include include = query.select.include;
         boolean recursive = query.select.recursive;
-        boolean includeMainProperties = include == ALL ||
-            include == AssetQuery.Include.ALL_EXCEPT_PATH ||
-            include == ALL_EXCEPT_PATH_AND_ATTRIBUTES;
 
         sb.append("select A.ID as ID, A.NAME as NAME, A.ACCESS_PUBLIC_READ as ACCESS_PUBLIC_READ");
-
-        if (query.orderBy != null || query.location != null || includeMainProperties) {
-            sb.append(", A.CREATED_ON AS CREATED_ON, A.ASSET_TYPE AS ASSET_TYPE, A.PARENT_ID AS PARENT_ID, A.REALM_ID AS REALM_ID");
-        }
+        sb.append(", A.CREATED_ON AS CREATED_ON, A.ASSET_TYPE AS ASSET_TYPE, A.PARENT_ID AS PARENT_ID, A.REALM_ID AS REALM_ID");
 
         if (include == AssetQuery.Include.ONLY_ID_AND_NAME) {
             return sb.toString();
@@ -1184,7 +1178,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                         break;
                 }
             } else if (attributePredicate.value instanceof AssetQuery.ObjectValueKeyPredicate) {
-                ObjectValueKeyPredicate keyPredicate = (ObjectValueKeyPredicate)attributePredicate.value;
+                ObjectValueKeyPredicate keyPredicate = (ObjectValueKeyPredicate) attributePredicate.value;
                 if (keyPredicate.negated) {
                     attributeBuilder.append(" and NOT(AX.VALUE #> '{value}' ?? ? ) ");
                 } else {

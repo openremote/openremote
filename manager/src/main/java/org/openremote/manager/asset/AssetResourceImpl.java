@@ -637,10 +637,14 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                 .orElse(AssetAttribute.createWithDescriptor(AttributeType.LOCATION));
 
             ObjectValue currentCoordinates = locationAttribute.getValueAsObject().orElse(Values.createObject());
-            ArrayValue arrayValue = location.getObjectValue().getArray("coordinates").orElseThrow(() -> new IllegalStateException("location doesn't contain 'coordinates' key"));
-            locationAttribute.setValue(currentCoordinates.put("latitude", arrayValue.getNumber(0).orElse(0d)).put("longitude", arrayValue.getNumber(1).orElse(0d)));
+            ArrayValue arrayValue = location.getObjectValue().getArray("coordinates").orElse(null);
+            if (arrayValue != null) {
+                locationAttribute.setValue(currentCoordinates.put("latitude", arrayValue.getNumber(0).orElse(0d)).put("longitude", arrayValue.getNumber(1).orElse(0d)));
 
-            asset.replaceAttribute(locationAttribute);
+                asset.replaceAttribute(locationAttribute);
+            } else {
+                asset.removeAttribute(locationAttribute.name);
+            }
 
             asset = assetStorageService.merge(asset);
         } catch (IllegalStateException ex) {

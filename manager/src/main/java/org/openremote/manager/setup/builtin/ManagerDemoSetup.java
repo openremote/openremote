@@ -652,6 +652,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                                    AttributeType.LOCATION.getType())
                     .setMeta(new MetaItem(RULE_STATE))
             );
+        console.setAccessPublicRead(true);
         console = assetStorageService.merge(console);
         consoleId = console.getId();
 

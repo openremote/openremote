@@ -632,6 +632,7 @@ public class Asset implements IdentifiableEntity {
 //    FUNCTIONAL METHODS BELOW
 //    ---------------------------------------------------
 
+    //TODO return GeoJSONPoint and remove getPoint
     /**
      * Complies to the GeoJSON specification RFC 7946, which means the first element in the array is longitude
      * and the second element is the latitude
