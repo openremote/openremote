@@ -604,18 +604,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
     public void updateLocation(RequestParams requestParams, String assetId, GeoJSONPoint location) {
         try {
             Asset asset = get(requestParams, assetId);
-
-            AssetAttribute locationAttribute = asset.getAttribute(AttributeType.LOCATION.getName())
-                .orElse(AssetAttribute.createWithDescriptor(AttributeType.LOCATION));
-
-            ObjectValue currentCoordinates = locationAttribute.getValueAsObject().orElse(Values.createObject());
-            ArrayValue arrayValue = location.getObjectValue().getArray("coordinates").orElseThrow(() -> new IllegalStateException("location doesn't contain 'coordinates' key"));
-            locationAttribute.setValue(currentCoordinates.put("latitude", arrayValue.getNumber(0).orElse(0d)).put("longitude", arrayValue.getNumber(1).orElse(0d)));
-
-            asset.replaceAttribute(locationAttribute);
-
-            asset = assetStorageService.merge(asset);
-
+            updateAssetLocation(asset, location);
         } catch (IllegalStateException ex) {
             throw new WebApplicationException(ex, BAD_REQUEST);
         }
@@ -631,24 +620,27 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             }
 
             Asset asset = result[0];
-
             //TODO do we need a PUBLIC_WRITE metaitem?
-            AssetAttribute locationAttribute = asset.getAttribute(AttributeType.LOCATION.getName())
-                .orElse(AssetAttribute.createWithDescriptor(AttributeType.LOCATION));
-
-            ObjectValue currentCoordinates = locationAttribute.getValueAsObject().orElse(Values.createObject());
-            ArrayValue arrayValue = location.getObjectValue().getArray("coordinates").orElse(null);
-            if (arrayValue != null) {
-                locationAttribute.setValue(currentCoordinates.put("latitude", arrayValue.getNumber(0).orElse(0d)).put("longitude", arrayValue.getNumber(1).orElse(0d)));
-
-                asset.replaceAttribute(locationAttribute);
-            } else {
-                asset.removeAttribute(locationAttribute.name);
-            }
-
-            asset = assetStorageService.merge(asset);
+            updateAssetLocation(asset, location);
         } catch (IllegalStateException ex) {
             throw new WebApplicationException(ex, BAD_REQUEST);
         }
+    }
+
+    protected void updateAssetLocation(Asset asset, GeoJSONPoint location) {
+            Value locationValue = Optional.ofNullable(location)
+                .map(loc -> {
+                    ObjectValue objValue = Values.createObject();
+                    objValue.put("latitude", loc.getLatitude());
+                    objValue.put("longitude", loc.getLongitude());
+                    return objValue;
+                })
+                .orElse(null);
+
+        AssetAttribute locationAttribute = asset.getAttribute(AttributeType.LOCATION)
+            .orElse(AssetAttribute.createWithDescriptor(AttributeType.LOCATION));
+        locationAttribute.setValue(locationValue);
+        asset.replaceAttribute(locationAttribute);
+        assetStorageService.merge(asset);
     }
 }
