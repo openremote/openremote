@@ -170,7 +170,7 @@
                     /**
                      * This component can be bound to the native shell, optional.
                      */
-                    shellNative: ShellNative
+                    console: OpenRemoteConsole
                 };
             }
 
@@ -207,7 +207,7 @@
                 if (this.keycloak) {
                     this.startKeycloakAuthentication()
                 } else {
-                    if (this.shellNative && this.shellNative.enabled) {
+                    if (this.console && this.console.enabled) {
                         window.alert("This OpenRemote service uses the basic identity provider, the application will not store credentials.")
                     }
                     this.startBasicAuthentication();
@@ -232,8 +232,8 @@
                 this.set("authenticated", false);
 
                 // Let native shell know about logout
-                if (this.shellNative && this.shellNative.enabled) {
-                    this.shellNative.postNativeShellMessage({type: 'logout'});
+                if (this.console && this.console.enabled) {
+                    this.console.postNativeShellMessage({type: 'logout'});
                 }
 
                 let logoutUrl = location.protocol + "//" + location.host + location.pathname;
@@ -397,7 +397,7 @@
 
             onKeycloakAuthSuccess() {
                 // If native shell is enabled, we need an offline refresh token
-                if (this.shellNative && this.shellNative.enabled) {
+                if (this.console && this.console.enabled) {
 
                     // If we don't have an offline refresh token, try to get one
                     if (this.keycloak.refreshTokenParsed.typ !== "Offline") {
@@ -408,7 +408,7 @@
 
                     // Transfer offline refresh token to native shell so it can be stored for future usage
                     console.debug("Native shell enabled, storing offline refresh token");
-                    this.shellNative.postNativeShellMessage({
+                    this.console.postNativeShellMessage({
                         type: 'token',
                         data: {refreshToken: this.keycloak.refreshToken}
                     });
@@ -429,7 +429,7 @@
                 if (this.login) {
                     console.debug("Attempting login for realm: " + this.realm);
                     let options = {};
-                    if (this.shellNative && this.shellNative.enabled) {
+                    if (this.console && this.console.enabled) {
                         // If we run in native shell, request offline token
                         console.debug("Native shell enabled, login attempt with scope=offline_access");
                         options.scope = "offline_access";
@@ -463,8 +463,8 @@
             }
 
             getNativeOfflineRefreshToken() {
-                if (this.shellNative && this.shellNative.enabled) {
-                    let storedToken = this.shellNative.readNativeShellMessage('token');
+                if (this.console && this.console.enabled) {
+                    let storedToken = this.console.readNativeShellMessage('token');
                     if (storedToken && storedToken.length > 0) {
                         let storedTokenParsed = JSON.parse(storedToken);
                         return storedTokenParsed.refreshToken;

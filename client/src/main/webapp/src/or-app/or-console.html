@@ -1,0 +1,397 @@
+<script src="/static/3rdparty/platform.js"></script>
+
+<dom-module id="or-console">
+    <template>
+
+        <iron-query-params id="queryParams"></iron-query-params>
+
+    </template>
+
+    <script>
+        class OpenRemoteConsole extends Polymer.Element {
+
+            constructor() {
+                super();
+                this._messageCallbacks = [];
+                this._pendingProviderInits = [];
+                this._pendingProviderEnables = [];
+                this._initialised = false;
+            }
+
+            static get is() {
+                return "or-console";
+            }
+
+            static get properties() {
+                return {
+                    /**
+                     * True if this console runs on an Apple iOS device.
+                     */
+                    shellApple: {
+                        type: Boolean,
+                        value: function () {
+                            return navigator.platform.substr(0, 2) === 'iP' && window.webkit && window.webkit.messageHandlers;
+                        }
+                    },
+
+                    /**
+                     * True if this console runs on an Android device.
+                     */
+                    shellAndroid: {
+                        type: Boolean,
+                        value: function () {
+                            return !!window.MobileInterface;
+                        }
+                    },
+
+                    /**
+                     * True if the console is running on Android or Apple.
+                     */
+                    enabled: {
+                        type: Boolean,
+                        computed: "computeEnabled(shellApple, shellAndroid)"
+                    },
+
+                    /**
+                     * Name of the console that is running. if not provided then fallback to platform.js name
+                     */
+                    name: {
+                        type: String,
+                        notify: true,
+                        value: function () {
+                            return window.platform.name;
+                        }
+                    },
+
+                    /**
+                     * Name of the console that is running. if not provided then fallback to platform.js version
+                     */
+                    version: {
+                        type: String,
+                        notify: true,
+                        value: function () {
+                            return window.platform.version;
+                        }
+                    },
+
+                    /**
+                     * Name of the console that is running. if not provided then fallback to platform.js os
+                     */
+                    platform: {
+                        type: String,
+                        notify: true,
+                        value: function () {
+                            return window.platform.name + " " + window.platform.os.toString();
+                        }
+                    },
+
+                    /**
+                     * Array of providers the console supports
+                     */
+                    providers: {
+                        type: Array,
+                        notify: true,
+                        value: null
+                    },
+
+                    /**
+                     * Flag indicating whether the providers should be auto enabled (useful if the client doesn't
+                     * want to manage enabling providers at an appropriate time to ask for permissions)
+                     */
+                    autoEnable: {
+                        type: Boolean,
+                        notify: true
+                    },
+
+                    /**
+                     * OpenRemote requests object for calling JAX-RS endpoints
+                     */
+                    requests: {
+                        type: Object,
+                        value: null,
+                        notify: true
+                    },
+
+                    /**
+                     * Contains the existing console registration object
+                     */
+                    registration: {
+                        type: Object,
+                        value: function() {
+                            let consoleStr = window.localStorage.getItem("OpenRemoteConsole");
+                            return consoleStr ? JSON.parse(consoleStr) :  {};
+                        }
+                    }
+                };
+            }
+
+            ready() {
+                super.ready();
+
+                this.$.queryParams.paramsString = window.location.search.slice(1);
+                let queryParams = this.$.queryParams.paramsObject;
+
+                // If console query parameters set then they take precedence
+                if (queryParams.consoleName) {
+                    this.name = queryParams.consoleName;
+                }
+                if (queryParams.consoleVersion) {
+                    this.version = queryParams.consoleVersion;
+                }
+                if (queryParams.consolePlatform) {
+                    this.platform = queryParams.consolePlatform;
+                }
+
+                if (queryParams.consoleProviders) {
+                    let providersStr = queryParams.consoleProviders;
+                    if (providersStr) {
+                        this.providers = providersStr.split(" ")
+                    }
+                }
+
+                if (queryParams.consoleAutoEnable) {
+                    this.autoEnable = queryParams.consoleAutoEnable === "TRUE" || queryParams.consoleAutoEnable === "true";
+                }
+
+                console.debug("Console settings: isMobile=" + this.enabled + " name=" + this.name + " version=" + this.version + " platform=" + this.platform + " providers=" + JSON.stringify(this.providers) + " autoEnable=" + this.autoEnable);
+            }
+
+            initialise() {
+                if (this._initialised) {
+                    return;
+                }
+                this._initialised = true;
+                console.debug("Console: initialising");
+                this.registration.name = this.name;
+                this.registration.version = this.version;
+                this.registration.platform = this.platform;
+                if (!this.registration.providers) {
+                    this.registration.providers = {}
+                }
+
+                if (this.providers && this.providers.length > 0) {
+                    this._pendingProviderInits = this.providers.slice();
+
+                    for (let providerName of this.providers) {
+                        this.initialiseProvider(providerName);
+                    }
+                } else {
+                    this.register(() => {}, () => {});
+                }
+            }
+
+            computeEnabled(shellApple, shellAndroid) {
+                return shellApple || shellAndroid
+            }
+
+            postNativeShellMessage(jsonMessage) {
+                if (this.shellAndroid) {
+                    return window.MobileInterface.postMessage(JSON.stringify(jsonMessage));
+                }
+                if (this.shellApple) {
+                    console.debug(jsonMessage);
+                    return window.webkit.messageHandlers.int.postMessage(jsonMessage);
+                }
+            }
+
+            readNativeShellMessage(messageKey) {
+                if (this.shellAndroid) {
+                    return window.MobileInterface.getMessage(messageKey);
+                }
+                if (this.shellApple) {
+                    return prompt(messageKey);
+                }
+            }
+
+            // CONSOLE COMMUNICATION METHODS BELOW
+
+            initialiseProvider(name) {
+                console.debug("Console: initialising provider '" + name + "'");
+                this.sendProviderMessage(
+                    name,
+                    "PROVIDER_INIT"
+                )
+            }
+
+            enableProvider(name, data) {
+                console.debug("Console: enabling provider '" + name + "'");
+                this.sendProviderMessage(
+                    name,
+                    "PROVIDER_ENABLE",
+                    data
+                )
+            }
+
+            disableProvider(name) {
+                console.debug("Console: disabling provider '" + name + "'");
+                this.sendProviderMessage(
+                    name,
+                    "PROVIDER_DISABLE"
+                )
+            }
+
+            sendProviderMessage(name, action, data) {
+                if (this.providers.indexOf(name) < 0) {
+                    console.debug("Send provider message failed: console doesn't support provider '" + name + "'");
+                    return;
+                }
+
+                let msg = {
+                    provider: name,
+                    action: action
+                };
+                if (data) {
+                    msg.data = data;
+                }
+
+                if (this.enabled) {
+                    this.postNativeShellMessage(msg)
+                } else {
+                    // TODO: Implement web browser provider handling (web push etc.)
+                }
+            }
+
+            registerMessageCallback(callback) {
+                if (this._messageCallbacks.indexOf(callback) < 0) {
+                    this._messageCallbacks.push(callback);
+                }
+            }
+
+            unregisterMessageCallback(callback) {
+                let index = this._messageCallbacks.indexOf(callback);
+                if (index >= 0) {
+                    this._messageCallbacks.splice(index, 1);
+                }
+            }
+
+            register(successFn, failureFn) {
+                console.debug("Console: updating registration");
+                if (!this.requests) {
+                    console.debug("Cannot register console as requests object not set");
+                    failureFn();
+                    return;
+                }
+
+                this.requests.sendAndReturn(
+                    (requestParams) => {
+                        openremote.REST.ConsoleResource.register(requestParams, this.registration);
+                    },
+                    200,
+                    (response) => {
+                        this.registration.id = response.id;
+                        console.debug("Console: registration successful");
+                        console.debug("Console: updating locally stored registration");
+                        window.localStorage.setItem("OpenRemoteConsole", JSON.stringify(this.registration));
+                        successFn();
+                    })
+            }
+
+            handleProviderResponse(msg) {
+                if (!msg) {
+                    return;
+                }
+
+                let msgJson = JSON.parse(msg);
+                let name = msgJson.provider;
+                let action = msgJson.action;
+
+                switch(action) {
+                    case "PROVIDER_INIT":
+
+                        let index = this._pendingProviderInits.indexOf(name);
+                        if (index >= 0) {
+                            this._pendingProviderInits.splice(index, 1);
+                        }
+
+                        if (!this.registration.providers[name]) {
+                            this.registration.providers[name] = {
+                                disabled: false
+                            }
+                        }
+
+                        this.registration.providers[name].version = msgJson.version;
+                        this.registration.providers[name].requiresPermission = msgJson.requiresPermission;
+                        this.registration.providers[name].hasPermission = msgJson.hasPermission;
+
+                        if (!msgJson.success) {
+                            console.debug("Provider initialisation failed: '" + name + "'");
+                            this.registration.providers[name].disabled = true;
+                        }
+
+                        // Check if all providers have been initialised
+                        if (this._pendingProviderInits.length === 0) {
+
+                            for (let providerName of this.providers) {
+
+                                // Enable providers that don't require permissions, already have permissions or autoEnable is true
+                                // Don't enable providers marked as disabled
+                                if (msgJson.success && !this.registration.providers[name].disabled && (this.autoEnable || !msgJson.requiresPermission || msgJson.hasPermission)) {
+
+                                    this._pendingProviderEnables.push(providerName);
+
+                                    // Some providers require special handling for enabling
+                                    switch (providerName) {
+                                        case "geofence":
+                                            if (!this.registration.id) {
+                                                // Console hasn't yet been registered so do that first then enable the geofence provider
+                                                this.register(() => {
+                                                    this.enableProvider(name, {consoleId: this.registration.id});
+                                                }, () => {
+                                                    console.debug("Failed to register console so cannot get console ID to enable goefence provider");
+                                                })
+                                            } else {
+                                                this.enableProvider(name, {consoleId: this.registration.id});
+                                            }
+                                            break;
+                                        default:
+                                            this.enableProvider(name);
+                                            break;
+                                    }
+                                }
+                            }
+                        }
+
+                        break;
+                    case "PROVIDER_ENABLE":
+
+                        let enableIndex = this._pendingProviderEnables.indexOf(name);
+                        if (enableIndex >= 0) {
+                            this._pendingProviderEnables.splice(enableIndex, 1);
+                        }
+
+                        this.registration.providers[name].hasPermission = msgJson.hasOwnProperty("hasPermission") ? msgJson.hasPermission : true;
+                        this.registration.providers[name].data = msgJson.data;
+
+                        if (msgJson.success) {
+                            console.debug("Provider enabled: '" + name + "'");
+                        } else {
+                            console.debug("Provider enable failure: '" + name + "'");
+                            this.registration.providers[name].disabled = true;
+                            this.disableProvider(name);
+                        }
+
+                        // Check if all providers have been initialised
+                        if (this._pendingProviderEnables.length === 0) {
+                            this.register(()=> {}, () => {});
+                        }
+                        break;
+                    case "PROVIDER_DISABLE":
+                        this.registration.providers[name].disabled = true;
+                        break;
+                }
+
+                this._notifyProviderCallbacks(msgJson);
+            }
+
+            _notifyProviderCallbacks(msgJson) {
+                for (let callback of this._messageCallbacks) {
+                    callback(msgJson);
+                }
+            }
+        }
+
+        // Upgrade immediately, so you can't use jsinterop here!
+        customElements.define(OpenRemoteConsole.is, OpenRemoteConsole);
+    </script>
+
+</dom-module>

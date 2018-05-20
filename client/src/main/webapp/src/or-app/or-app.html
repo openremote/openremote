@@ -2,9 +2,10 @@
 <link rel="import" href="or-style.html">
 
 <!-- App services/dependencies -->
+<link rel="import" href="../../bower_components/iron-location/iron-query-params.html">
 <link rel="import" href="or-busy-indicator.html">
 <link rel="import" href="or-error-view.html">
-<link rel="import" href="or-shell-native.html">
+<link rel="import" href="or-console.html">
 <link rel="import" href="or-app-security.html">
 <link rel="import" href="or-app-events.html">
 <link rel="import" href="or-component.html">
@@ -32,7 +33,13 @@
 
         <or-busy-indicator id="busyIndicator"></or-busy-indicator>
 
-        <or-shell-native id="shellNative"></or-shell-native>
+        <or-console id="console"
+                         name="[[consoleName]]"
+                         version="[[consoleVersion]]"
+                         platform="[[consolePlatform]]"
+                         providers="[[consoleProviders]]"
+                         requests="[[requests]]"
+                         auto-enable="[[consoleAutoEnable]]"></or-console>
 
         <or-app-security id="appSecurity"
                          host-configuration="[[hostConfiguration]]"
@@ -237,6 +244,30 @@
                             a.href = this.importPath;
                             return a;
                         }
+                    },
+
+                    console: {
+                        type: OpenRemoteConsole
+                    },
+
+                    consoleName: {
+                        type: String
+                    },
+
+                    consoleVersion: {
+                        type: String
+                    },
+
+                    consolePlatform: {
+                        type: String
+                    },
+
+                    consoleProviders: {
+                        type: Array
+                    },
+
+                    consoleAutoEnable: {
+                        type: Boolean
                     }
                 };
             }
@@ -257,9 +288,13 @@
 
                 // This is a singleton for the window/main document
                 if (window.openremote && window.openremote.INSTANCE) {
-                    this.set("error", "An instance of &lt;or-app> is already registered on this window, please use only one per document.")
+                    this.set("error", "An instance of &lt;or-app> is already registered on this window, please use only one per document.");
                     return;
                 }
+
+                // Expose console to the openremote instance
+                this.set("console", this.$.console);
+
                 // Register this as constant on window for GWT and others to access
                 console.debug("Registering as window.openremote.INSTANCE");
                 window.openremote = {INSTANCE: this};
@@ -268,7 +303,7 @@
                 this.shadowRoot.host.classList.add("flex", "layout", "vertical");
 
                 if (this.login) {
-                    this.getSecurity().set("shellNative", this.$.shellNative);
+                    this.getSecurity().set("console", this.$.console);
                     this.getSecurity().startAuthentication();
                 } else {
                     console.debug("No authentication required");
@@ -327,8 +362,8 @@
                 this.disconnectEvents();
 
                 // If we run in native shell, show native error screen
-                if (this.$.shellNative.enabled) {
-                    this.$.shellNative.postNativeShellMessage({type: 'error', data: {error: error}});
+                if (this.$.console.enabled) {
+                    this.$.console.postNativeShellMessage({type: 'error', data: {error: error}});
                 } else {
                     // Remove all slotted children, effectively disabling the app
                     this.$.slot.assignedNodes({flatten: false}).forEach((node) => {
@@ -405,6 +440,7 @@
                 requests.configure(this.hostConfiguration.protocol + "//" + this.hostConfiguration.host + "/" + this.tenantRealm);
 
                 this.set("requests", requests);
+                this.$.console.set("reguests", requests);
             }
 
             connectEvents(onConnected) {
@@ -532,6 +568,10 @@
             openremote.INSTANCE.registerWidgetStyle();
             openremote.INSTANCE.registerToasts();
             openremote.INSTANCE.registerRequests();
+
+            // TODO: Implement this in a better way
+            // Initialise the console
+            openremote.INSTANCE.console.initialise();
 
             // Run this when everything is ready
             let appReady = () => {
