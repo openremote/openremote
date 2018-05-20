@@ -19,6 +19,7 @@
  */
 package org.openremote.manager.asset.console;
 
+import org.openremote.container.security.IdentityService;
 import org.openremote.container.timer.TimerService;
 import org.openremote.container.util.UniqueIdentifierGenerator;
 import org.openremote.manager.asset.AssetStorageService;
@@ -29,6 +30,7 @@ import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetType;
 import org.openremote.model.asset.UserAsset;
 import org.openremote.model.console.ConsoleConfiguration;
+import org.openremote.model.console.ConsoleRegistration;
 import org.openremote.model.console.ConsoleResource;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.util.TextUtil;
@@ -54,42 +56,51 @@ public class ConsoleResourceImpl extends ManagerWebResource implements ConsoleRe
     }
 
     @Override
-    public Asset register(RequestParams requestParams, Asset console) {
-        // Validate the console
+    public ConsoleRegistration register(RequestParams requestParams, ConsoleRegistration consoleRegistration) {
+        // Validate the console registration
         List<ValidationFailure> failures = new ArrayList<>();
-        if (!ConsoleConfiguration.validateConsoleConfiguration(console, failures)) {
+        if (!ConsoleConfiguration.validateConsoleRegistration(consoleRegistration, failures)) {
             throw new BadRequestException(Response.status(Response.Status.BAD_REQUEST).entity(failures).build());
         }
 
-        // Set parent asset (if not set)
-        if (TextUtil.isNullOrEmpty(console.getParentId())) {
-            console.setParentId(getConsoleParentAssetId(getRequestRealm()));
-        }
+        Asset consoleAsset = null;
 
-        // If console has an id and asset exists then ensure it matches the existing asset type and console name matches
-        if (!TextUtil.isNullOrEmpty(console.getId())) {
-            Asset existingConsole = assetStorageService.find(console.getId(), true);
+        // If console registration has an id and asset exists then ensure asset type is console
+        if (!TextUtil.isNullOrEmpty(consoleRegistration.getId())) {
+            consoleAsset = assetStorageService.find(consoleRegistration.getId(), true);
             // If asset doesn't exist then no harm in registering console using the supplied ID
-            if (existingConsole != null) {
-                if (existingConsole.getWellKnownType() != AssetType.CONSOLE) {
+            if (consoleAsset != null) {
+                if (consoleAsset.getWellKnownType() != AssetType.CONSOLE) {
                     throw new BadRequestException(Response.status(Response.Status.BAD_REQUEST).entity(new ValidationFailure[] {new ValidationFailure(Asset.AssetTypeFailureReason.ASSET_TYPE_MISMATCH)}).build());
                 }
-                if (!ConsoleConfiguration.getConsoleName(console).orElse("").equals(ConsoleConfiguration.getConsoleName(existingConsole).orElse(null))) {
-                    throw new BadRequestException(Response.status(Response.Status.BAD_REQUEST).entity(new ValidationFailure[] {new ValidationFailure(ConsoleConfiguration.ValidationFailureReason.NAME_MISSING_OR_INVALID)}).build());
-                }
-
-                // Use the same parent as the existing asset
-                console.setParentId(existingConsole.getParentId());
             }
         }
 
-        console = assetStorageService.merge(console);
-
-        // If authenticated link the console to this user
-        if (isAuthenticated()) {
-            assetStorageService.storeUserAsset(new UserAsset(getAuthenticatedTenant().getId(), getUserId(), console.getId()));
+        if (consoleAsset == null) {
+            consoleAsset = ConsoleConfiguration.initConsoleConfiguration(
+                new Asset(consoleRegistration.getName(), AssetType.CONSOLE),
+                consoleRegistration.getName(),
+                consoleRegistration.getVersion(),
+                consoleRegistration.getPlatform(),
+                consoleRegistration.getProviders());
+            consoleAsset.setRealmId(getRequestTenant().getId());
+            consoleAsset.setParentId(getConsoleParentAssetId(getRequestRealm()));
+            consoleAsset.setId(consoleRegistration.getId());
         }
-        return console;
+
+        ConsoleConfiguration.setConsoleName(consoleAsset, consoleRegistration.getName());
+        ConsoleConfiguration.setConsoleVersion(consoleAsset, consoleRegistration.getVersion());
+        ConsoleConfiguration.setConsolePlatform(consoleAsset, consoleRegistration.getPlatform());
+        ConsoleConfiguration.setConsolProviders(consoleAsset, consoleRegistration.getProviders());
+
+        consoleAsset = assetStorageService.merge(consoleAsset);
+        consoleRegistration.setId(consoleAsset.getId());
+
+        // If authenticated and not super user link the console to this user
+        if (isAuthenticated() && !isSuperUser()) {
+            assetStorageService.storeUserAsset(new UserAsset(getAuthenticatedTenant().getId(), getUserId(), consoleAsset.getId()));
+        }
+        return consoleRegistration;
     }
 
     public String getConsoleParentAssetId(String realm) {
@@ -102,7 +113,7 @@ public class ConsoleResourceImpl extends ManagerWebResource implements ConsoleRe
                 if (consoleParent == null) {
                     consoleParent = new Asset(CONSOLE_PARENT_ASSET_NAME, AssetType.THING);
                     consoleParent.setId(id);
-                    consoleParent.setRealmId(getRequestRealm());
+                    consoleParent.setRealmId(getRequestTenant().getId());
                     assetStorageService.merge(consoleParent);
                 }
 

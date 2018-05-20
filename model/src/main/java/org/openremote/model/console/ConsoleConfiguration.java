@@ -21,6 +21,7 @@ package org.openremote.model.console;
 
 import org.openremote.model.AbstractValueHolder;
 import org.openremote.model.ValidationFailure;
+import org.openremote.model.ValueHolder;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetType;
@@ -104,6 +105,40 @@ public final class ConsoleConfiguration {
         if (providerValue != null && !getConsoleProviders(asset).isPresent()) {
             if (validationFailures != null) {
                 validationFailures.add(new ValidationFailure(ValidationFailureReason.PROVIDERS_INVALID));
+            }
+            valid = false;
+        }
+
+        return valid;
+    }
+
+    public static boolean validateConsoleRegistration(ConsoleRegistration consoleRegistration, List<ValidationFailure> validationFailures) {
+        boolean valid = true;
+
+        if (consoleRegistration == null) {
+            if (validationFailures != null) {
+                validationFailures.add(new ValidationFailure(ValueHolder.ValueFailureReason.VALUE_INVALID));
+            }
+            return false;
+        }
+
+        if (TextUtil.isNullOrEmpty(consoleRegistration.getName())) {
+            if (validationFailures != null) {
+                validationFailures.add(new ValidationFailure(ValidationFailureReason.NAME_MISSING_OR_INVALID));
+            }
+            valid = false;
+        }
+
+        if (TextUtil.isNullOrEmpty(consoleRegistration.getVersion())) {
+            if (validationFailures != null) {
+                validationFailures.add(new ValidationFailure(ValidationFailureReason.VERSION_MISSING_OR_INVALID));
+            }
+            valid = false;
+        }
+
+        if (TextUtil.isNullOrEmpty(consoleRegistration.getPlatform())) {
+            if (validationFailures != null) {
+                validationFailures.add(new ValidationFailure(ValidationFailureReason.PLATFORM_MISSING_OR_INVALID));
             }
             valid = false;
         }
