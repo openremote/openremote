@@ -1,5 +1,6 @@
 // Common configuration applied to all projects
-import static org.apache.tools.ant.taskdefs.condition.Os.*
+import static org.apache.tools.ant.taskdefs.condition.Os.FAMILY_WINDOWS
+import static org.apache.tools.ant.taskdefs.condition.Os.isFamily
 
 // Build plugins
 buildscript {
@@ -16,6 +17,9 @@ buildscript {
 
 // Default repositories for dependency resolution
 repositories {
+    maven {
+        url = "http://download.osgeo.org/webdav/geotools/"
+    }
     mavenCentral()
     jcenter()
     maven {
@@ -42,7 +46,7 @@ idea {
         excludeDirs += file(".node")
     }
 }
-if(project.convention.findPlugin(JavaPluginConvention)) {
+if (project.convention.findPlugin(JavaPluginConvention)) {
     // Change the output directory for the main and test source sets back to the old path
     sourceSets.main.output.classesDirs = new File(buildDir, "classes/main")
     sourceSets.test.output.classesDirs = new File(buildDir, "classes/test")

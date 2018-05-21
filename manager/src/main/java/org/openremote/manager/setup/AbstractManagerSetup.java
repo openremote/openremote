@@ -19,7 +19,6 @@
  */
 package org.openremote.manager.setup;
 
-import com.vividsolutions.jts.geom.GeometryFactory;
 import org.openremote.agent.protocol.macro.MacroAction;
 import org.openremote.agent.protocol.macro.MacroProtocol;
 import org.openremote.agent.protocol.timer.TimerValue;
@@ -60,7 +59,6 @@ public abstract class AbstractManagerSetup implements Setup {
     final protected AssetProcessingService assetProcessingService;
     final protected AssetDatapointService assetDatapointService;
     final protected RulesetStorageService rulesetStorageService;
-    final protected GeometryFactory geometryFactory = new GeometryFactory();
     final protected SetupService setupService;
 
     public AbstractManagerSetup(Container container) {

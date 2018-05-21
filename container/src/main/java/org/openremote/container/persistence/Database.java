@@ -22,7 +22,7 @@ package org.openremote.container.persistence;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import org.hibernate.cfg.AvailableSettings;
-import org.hibernate.spatial.dialect.postgis.PostgisPG95Dialect;
+import org.hibernate.dialect.PostgreSQL95Dialect;
 import org.openremote.container.concurrent.ContainerThreadFactory;
 
 import java.util.HashMap;
@@ -53,7 +53,7 @@ public interface Database {
             @Override
             public Map<String, Object> createProperties() {
                 Map<String, Object> properties = new HashMap<>();
-                properties.put(AvailableSettings.DIALECT, PostgisPG95Dialect.class.getName());
+                properties.put(AvailableSettings.DIALECT, PostgreSQL95Dialect.class.getName());
                 return properties;
             }
 
@@ -61,7 +61,7 @@ public interface Database {
             public void open(Map<String, Object> properties, String connectionUrl, String username, String password, int connectionTimeoutSeconds, int minIdle, int maxPoolSize) {
                 hikariConfig = new HikariConfig();
                 hikariConfig.setRegisterMbeans(true);
-                hikariConfig.setPoolName(properties.containsKey(PROPERTY_POOL_NAME)? properties.get(PROPERTY_POOL_NAME).toString() : "or-pool");
+                hikariConfig.setPoolName(properties.containsKey(PROPERTY_POOL_NAME) ? properties.get(PROPERTY_POOL_NAME).toString() : "or-pool");
                 hikariConfig.setThreadFactory(new ContainerThreadFactory("Database Connections"));
                 hikariConfig.setDataSourceClassName("org.postgresql.ds.PGSimpleDataSource");
                 hikariConfig.addDataSourceProperty("url", connectionUrl);

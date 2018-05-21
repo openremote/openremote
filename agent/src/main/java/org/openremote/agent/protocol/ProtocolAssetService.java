@@ -19,7 +19,6 @@
  */
 package org.openremote.agent.protocol;
 
-import com.vividsolutions.jts.geom.Point;
 import org.openremote.container.ContainerService;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;

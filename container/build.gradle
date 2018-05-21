@@ -39,9 +39,6 @@ dependencies {
     compile "org.flywaydb:flyway-core:$flywaydbVersion"
     compile "com.zaxxer:HikariCP:$hikaricpVersion"
     compile "org.hibernate:hibernate-core:$hibernateVersion"
-    compile("org.hibernate:hibernate-spatial:$hibernateVersion") {
-        exclude group: "org.slf4j"
-    }
     compile "org.hibernate:hibernate-validator:$hibernateValidatorVersion"
 
     compile "org.apache.camel:camel-core:$camelVersion"
