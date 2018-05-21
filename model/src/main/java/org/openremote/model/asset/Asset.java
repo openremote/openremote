@@ -646,7 +646,7 @@ public class Asset implements IdentifiableEntity {
                 Optional<Double> lat = obj.getNumber("latitude");
                 Optional<Double> lng = obj.getNumber("longitude");
                 if (lat.isPresent() && lng.isPresent()) {
-                    return new double[]{lat.get(), lng.get()};
+                    return new double[]{lng.get(), lat.get()};
                 }
 
                 return null;

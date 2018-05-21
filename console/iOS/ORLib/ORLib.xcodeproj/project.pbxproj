@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		4C31CE9F20AD80860073FA97 /* GeofenceProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C31CE9E20AD80860073FA97 /* GeofenceProvider.swift */; };
 		4C4C2FB81FD8044A0071CBDA /* ORNotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C4C2FB71FD8044A0071CBDA /* ORNotificationService.swift */; };
 		4C82D73F1FC58ED2009DE853 /* ORLib.h in Headers */ = {isa = PBXBuildFile; fileRef = 4C82D73D1FC58ED2009DE853 /* ORLib.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		4C82D74A1FC58F4E009DE853 /* ORViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C82D7451FC58F4E009DE853 /* ORViewController.swift */; };
@@ -21,6 +22,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		4C31CE9E20AD80860073FA97 /* GeofenceProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeofenceProvider.swift; sourceTree = "<group>"; };
 		4C4C2FB71FD8044A0071CBDA /* ORNotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ORNotificationService.swift; sourceTree = "<group>"; };
 		4C82D73A1FC58ED2009DE853 /* ORLib.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = ORLib.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		4C82D73D1FC58ED2009DE853 /* ORLib.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ORLib.h; sourceTree = "<group>"; };
@@ -82,6 +84,7 @@
 				4C82D73D1FC58ED2009DE853 /* ORLib.h */,
 				4C82D73E1FC58ED2009DE853 /* Info.plist */,
 				4C4C2FB71FD8044A0071CBDA /* ORNotificationService.swift */,
+				4C31CE9E20AD80860073FA97 /* GeofenceProvider.swift */,
 			);
 			path = ORLib;
 			sourceTree = "<group>";
@@ -221,6 +224,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				4C31CE9F20AD80860073FA97 /* GeofenceProvider.swift in Sources */,
 				4C4C2FB81FD8044A0071CBDA /* ORNotificationService.swift in Sources */,
 				4C82D7581FC590FB009DE853 /* ErrorManager.swift in Sources */,
 				4C82D74E1FC58F4E009DE853 /* ORLoginViewController.swift in Sources */,
