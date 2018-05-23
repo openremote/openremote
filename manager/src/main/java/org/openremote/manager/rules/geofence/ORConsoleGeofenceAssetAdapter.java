@@ -24,10 +24,12 @@ import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.message.MessageBrokerSetupService;
 import org.openremote.container.persistence.PersistenceEvent;
+import org.openremote.container.security.IdentityService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.notification.NotificationService;
 import org.openremote.manager.rules.RulesEngine;
 import org.openremote.manager.rules.RulesService;
+import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetQuery;
 import org.openremote.model.asset.BaseAssetQuery;
@@ -35,6 +37,8 @@ import org.openremote.model.attribute.AttributeType;
 import org.openremote.model.console.ConsoleConfiguration;
 import org.openremote.model.console.ConsoleProvider;
 import org.openremote.model.rules.geofence.GeofenceDefinition;
+import org.openremote.model.security.Tenant;
+import org.openremote.model.util.TextUtil;
 
 import java.util.*;
 import java.util.logging.Logger;
@@ -60,6 +64,7 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
     protected Map<String, RulesEngine.AssetStateLocationPredicates> assetLocationPredicatesMap = new HashMap<>();
     protected NotificationService notificationService;
     protected AssetStorageService assetStorageService;
+    protected ManagerIdentityService identityService;
     protected Map<String, String> consoleIdRealmMap;
 
 
@@ -67,7 +72,7 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
     public void init(Container container) throws Exception {
         this.assetStorageService = container.getService(AssetStorageService.class);
         this.notificationService = container.getService(NotificationService.class);
-
+        this.identityService = container.getService(ManagerIdentityService.class);
         container.getService(MessageBrokerSetupService.class).getContext().addRoutes(this);
     }
 
@@ -210,7 +215,8 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
                 case UPDATE:
 
                     if (isLinkedToORConsoleGeofenceAdapter(asset)) {
-                        consoleIdRealmMap.put(asset.getId(), asset.getTenantRealm());
+                        String realm = TextUtil.isNullOrEmpty(asset.getTenantRealm()) ? identityService.getIdentityProvider().getTenantForRealmId(asset.getRealmId()).getRealm() : asset.getTenantRealm();
+                        consoleIdRealmMap.put(asset.getId(), realm);
                     } else {
                         consoleIdRealmMap.remove(asset.getId());
                     }
