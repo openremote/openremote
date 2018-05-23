@@ -419,7 +419,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         return persistenceService.doReturningTransaction(entityManager -> {
             if (isNullOrEmpty(userId) && isNullOrEmpty(assetId)) {
                 return entityManager.createQuery(
-                    "select ua from UserAsset ua where ua.id.realmIód = :realmId order by ua.createdOn desc", UserAsset.class
+                    "select ua from UserAsset ua where ua.id.realmId = :realmId order by ua.createdOn desc", UserAsset.class
                 ).setParameter("realmId", realmId).getResultList();
             } else if (isNullOrEmpty(assetId)) {
                 return entityManager.createQuery(
