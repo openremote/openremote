@@ -26,6 +26,7 @@ import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetType;
 import org.openremote.model.attribute.AttributeType;
+import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.util.Pair;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.value.ObjectValue;
@@ -37,6 +38,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
+
+import static org.openremote.model.asset.AssetMeta.RULE_STATE;
 
 public final class ConsoleConfiguration {
 
@@ -61,6 +64,12 @@ public final class ConsoleConfiguration {
         setConsoleVersion(asset, version);
         setConsolePlatform(asset, platform);
         setConsolProviders(asset, providerMap);
+
+        asset.replaceAttribute(
+            new AssetAttribute(AttributeType.LOCATION.getName(),
+                               AttributeType.LOCATION.getType())
+                .setMeta(new MetaItem(RULE_STATE))
+                      );
 
         return asset;
     }

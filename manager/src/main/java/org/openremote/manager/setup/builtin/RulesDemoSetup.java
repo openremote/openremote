@@ -24,6 +24,7 @@ import org.openremote.container.Container;
 import org.openremote.manager.setup.AbstractManagerSetup;
 import org.openremote.model.rules.AssetRuleset;
 import org.openremote.model.rules.Ruleset;
+import org.openremote.model.rules.TenantRuleset;
 
 import java.io.InputStream;
 import java.nio.charset.Charset;
@@ -38,7 +39,7 @@ public class RulesDemoSetup extends AbstractManagerSetup {
     }
 
     public Long apartmentActionsRulesetId;
-    public Long smartOfficeRulesetId;
+    public Long customerARulesetId;
 
     @Override
     public void onStart() throws Exception {
@@ -98,10 +99,10 @@ public class RulesDemoSetup extends AbstractManagerSetup {
 
         try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/ConsoleLocationPredicate.groovy")) {
             String rules = IOUtils.toString(inputStream, Charset.forName("utf-8"));
-            Ruleset ruleset = new AssetRuleset(
-                "Demo Console Location", managerDemoSetup.smartOfficeId, rules, Ruleset.Lang.GROOVY
+            Ruleset ruleset = new TenantRuleset(
+                "Demo Console Location", keycloakDemoSetup.customerATenant.getId(), rules, Ruleset.Lang.GROOVY
             );
-            smartOfficeRulesetId = rulesetStorageService.merge(ruleset).getId();
+            customerARulesetId = rulesetStorageService.merge(ruleset).getId();
         }
     }
 }

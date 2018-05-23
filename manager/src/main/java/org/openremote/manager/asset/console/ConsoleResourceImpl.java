@@ -33,6 +33,7 @@ import org.openremote.model.console.ConsoleConfiguration;
 import org.openremote.model.console.ConsoleRegistration;
 import org.openremote.model.console.ConsoleResource;
 import org.openremote.model.http.RequestParams;
+import org.openremote.model.security.Tenant;
 import org.openremote.model.util.TextUtil;
 
 import javax.ws.rs.BadRequestException;
@@ -83,6 +84,9 @@ public class ConsoleResourceImpl extends ManagerWebResource implements ConsoleRe
                 consoleRegistration.getVersion(),
                 consoleRegistration.getPlatform(),
                 consoleRegistration.getProviders());
+            if (!isAuthenticated() || isSuperUser()) {
+                consoleAsset.setAccessPublicRead(true);
+            }
             consoleAsset.setRealmId(getRequestTenant().getId());
             consoleAsset.setParentId(getConsoleParentAssetId(getRequestRealm()));
             consoleAsset.setId(consoleRegistration.getId());
@@ -108,21 +112,25 @@ public class ConsoleResourceImpl extends ManagerWebResource implements ConsoleRe
             String id = realmConsoleParentMap.get(realm);
 
             if (TextUtil.isNullOrEmpty(id)) {
-                id = consoleParentAssetIdGenerator(realm);
-                Asset consoleParent = assetStorageService.find(id, false);
-                if (consoleParent == null) {
-                    consoleParent = new Asset(CONSOLE_PARENT_ASSET_NAME, AssetType.THING);
-                    consoleParent.setId(id);
-                    consoleParent.setRealmId(getRequestTenant().getId());
-                    assetStorageService.merge(consoleParent);
-                }
-
-                realmConsoleParentMap.put(realm, id);
+                Asset consoleParent = getConsoleParentAsset(assetStorageService, getRequestTenant());
+                realmConsoleParentMap.put(realm, consoleParent.getId());
                 return id;
             } else {
                 return id;
             }
         });
+    }
+
+    public static Asset getConsoleParentAsset(AssetStorageService assetStorageService, Tenant tenant) {
+        String id = consoleParentAssetIdGenerator(tenant.getRealm());
+        Asset consoleParent = assetStorageService.find(id, false);
+        if (consoleParent == null) {
+            consoleParent = new Asset(CONSOLE_PARENT_ASSET_NAME, AssetType.THING);
+            consoleParent.setId(id);
+            consoleParent.setRealmId(tenant.getId());
+            assetStorageService.merge(consoleParent);
+        }
+        return consoleParent;
     }
 
     protected static String consoleParentAssetIdGenerator(String realm) {

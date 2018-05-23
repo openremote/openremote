@@ -11,7 +11,7 @@ rules.add()
         .when(
         { facts ->
             facts.matchFirstAssetState(new AssetQuery().location(new BaseAssetQuery.RadialLocationPredicate(100, 50, 100))).isPresent() &&
-                    !facts.matchFirst("Location").isPresent()
+                    !facts.matchFirst("RadialLocation").isPresent()
         })
         .then(
         { facts ->

@@ -82,7 +82,7 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
                                 new BaseAssetQuery.ObjectValueKeyPredicate("geofence")))
             .stream()
             .filter(ORConsoleGeofenceAssetAdapter::isLinkedToORConsoleGeofenceAdapter)
-            .collect(Collectors.toMap(Asset::getId, Asset::getRealmId));
+            .collect(Collectors.toMap(Asset::getId, Asset::getTenantRealm));
     }
 
     @Override
@@ -206,7 +206,7 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
                 case UPDATE:
 
                     if (isLinkedToORConsoleGeofenceAdapter(asset)) {
-                        consoleIdRealmMap.put(asset.getId(), asset.getRealmId());
+                        consoleIdRealmMap.put(asset.getId(), asset.getTenantRealm());
                     } else {
                         consoleIdRealmMap.remove(asset.getId());
                     }

@@ -342,15 +342,18 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
 
             switch (persistenceEvent.getCause()) {
                 case INSERT:
-
+                {
                     // New asset has been created so get attributes that have RULE_STATE meta
                     List<AssetAttribute> ruleStateAttributes =
                         asset.getAttributesStream().filter(AssetAttribute::isRuleState).collect(Collectors.toList());
 
+                    // Asset used to be loaded for each attribute which is inefficient
+                    Asset loadedAsset = ruleStateAttributes.isEmpty() ? null : assetStorageService.find(asset.getId(),
+                                                                                                        true);
+
                     // Build an update with a fully loaded asset
                     ruleStateAttributes.forEach(attribute -> {
-                        // TODO: Why is the asset loaded for each attribute?
-                        Asset loadedAsset = assetStorageService.find(asset.getId(), true);
+
                         // If the asset is now gone it was deleted immediately after being inserted, nothing more to do
                         if (loadedAsset == null)
                             return;
@@ -360,16 +363,15 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
                         updateAssetState(assetState, true, true);
                     });
                     break;
-
-                case UPDATE:
-
+                }
+                case UPDATE: {
                     int attributesIndex = Arrays.asList(persistenceEvent.getPropertyNames()).indexOf("attributes");
                     if (attributesIndex < 0) {
                         return;
                     }
 
                     // Fully load the asset
-                    final Asset loadedAsset = assetStorageService.find(asset.getId(), true);
+                    Asset loadedAsset = assetStorageService.find(asset.getId(), true);
                     // If the asset is now gone it was deleted immediately after being updated, nothing more to do
                     if (loadedAsset == null)
                         return;
@@ -408,7 +410,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
                             updateAssetState(assetState, true, true);
                         });
                     break;
-
+                }
                 case DELETE:
                     // Retract any facts that were associated with this asset
                     asset.getAttributesStream()

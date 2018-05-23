@@ -21,6 +21,7 @@ package org.openremote.manager.setup.builtin;
 
 import org.openremote.agent.protocol.simulator.SimulatorProtocol;
 import org.openremote.container.Container;
+import org.openremote.manager.asset.console.ConsoleResourceImpl;
 import org.openremote.manager.rules.geofence.ORConsoleGeofenceAssetAdapter;
 import org.openremote.manager.setup.AbstractManagerSetup;
 import org.openremote.model.asset.Asset;
@@ -631,9 +632,12 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         apartment3Livingroom = assetStorageService.merge(apartment3Livingroom);
         apartment3LivingroomId = apartment3Livingroom.getId();
 
+
+        Asset consoleParent = ConsoleResourceImpl.getConsoleParentAsset(assetStorageService, keycloakDemoSetup.customerATenant);
+
         Asset console = ConsoleConfiguration.initConsoleConfiguration(
-            new Asset("Demo Android Console", CONSOLE, groundFloor),
-            "Demo Android Console",
+            new Asset("Demo Console", CONSOLE, consoleParent),
+            "Demo Console",
             "1.0",
             "Android 7.1.2",
             new HashMap<String, ConsoleProvider>() {
@@ -641,18 +645,12 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                     put("geofence", new ConsoleProvider(
                         ORConsoleGeofenceAssetAdapter.NAME,
                         true,
-                        false,
+                        true,
                         false,
                         null
                     ));
                 }
-            })
-            .addAttributes(
-                new AssetAttribute(AttributeType.LOCATION.getName(),
-                                   AttributeType.LOCATION.getType())
-                    .setMeta(new MetaItem(RULE_STATE))
-            );
-        console.setAccessPublicRead(true);
+            });
         console = assetStorageService.merge(console);
         consoleId = console.getId();
 
@@ -673,5 +671,9 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.customerATenant.getId(),
                                                          keycloakDemoSetup.testuser3Id,
                                                          apartment2Id));
+
+        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.customerATenant.getId(),
+                                                         keycloakDemoSetup.testuser3Id,
+                                                         consoleId));
     }
 }
