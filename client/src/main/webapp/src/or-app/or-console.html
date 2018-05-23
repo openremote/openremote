@@ -251,7 +251,7 @@
                 }
 
                 if (this.enabled) {
-                    this.postNativeShellMessage(msg)
+                    this.postNativeShellMessage({type: "postMessage", data: msg})
                 } else {
                     // TODO: Implement web browser provider handling (web push etc.)
                 }
