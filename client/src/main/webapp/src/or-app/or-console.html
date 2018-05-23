@@ -90,8 +90,7 @@
                      */
                     providers: {
                         type: Array,
-                        notify: true,
-                        value: null
+                        notify: true
                     },
 
                     /**
@@ -104,15 +103,6 @@
                     },
 
                     /**
-                     * OpenRemote requests object for calling JAX-RS endpoints
-                     */
-                    requests: {
-                        type: Object,
-                        value: null,
-                        notify: true
-                    },
-
-                    /**
                      * Contains the existing console registration object
                      */
                     registration: {
@@ -121,6 +111,14 @@
                             let consoleStr = window.localStorage.getItem("OpenRemoteConsole");
                             return consoleStr ? JSON.parse(consoleStr) :  {};
                         }
+                    },
+
+                    /**
+                     * Name of the tenant realm being used for requests
+                     */
+                    realm: {
+                        type: String,
+                        notify: true
                     }
                 };
             }
@@ -151,6 +149,8 @@
 
                 if (queryParams.consoleAutoEnable) {
                     this.autoEnable = queryParams.consoleAutoEnable === "TRUE" || queryParams.consoleAutoEnable === "true";
+                } else {
+                    this.autoEnable = this.autoEnable === true;
                 }
 
                 console.debug("Console settings: isMobile=" + this.enabled + " name=" + this.name + " version=" + this.version + " platform=" + this.platform + " providers=" + JSON.stringify(this.providers) + " autoEnable=" + this.autoEnable);
@@ -161,6 +161,12 @@
                     return;
                 }
                 this._initialised = true;
+
+                if (!this.realm) {
+                    console.debug("Console: cannot initialise as no tenant realm defined");
+                    return;
+                }
+
                 console.debug("Console: initialising");
                 this.registration.name = this.name;
                 this.registration.version = this.version;
@@ -266,13 +272,13 @@
 
             register(successFn, failureFn) {
                 console.debug("Console: updating registration");
-                if (!this.requests) {
+                if (!window.openremote.INSTANCE.requests) {
                     console.debug("Cannot register console as requests object not set");
                     failureFn();
                     return;
                 }
 
-                this.requests.sendAndReturn(
+                window.openremote.INSTANCE.requests.sendAndReturn(
                     (requestParams) => {
                         openremote.REST.ConsoleResource.register(requestParams, this.registration);
                     },

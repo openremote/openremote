@@ -38,7 +38,7 @@
                          version="[[consoleVersion]]"
                          platform="[[consolePlatform]]"
                          providers="[[consoleProviders]]"
-                         requests="[[requests]]"
+                         realm="[[tenantRealm]]"
                          auto-enable="[[consoleAutoEnable]]"></or-console>
 
         <or-app-security id="appSecurity"
@@ -569,10 +569,6 @@
             openremote.INSTANCE.registerToasts();
             openremote.INSTANCE.registerRequests();
 
-            // TODO: Implement this in a better way
-            // Initialise the console
-            openremote.INSTANCE.console.initialise();
-
             // Run this when everything is ready
             let appReady = () => {
                 // Check if there was a problem
@@ -581,6 +577,11 @@
                     console.log("Application ready");
                     dispatchEvent(new CustomEvent("AppReady", {detail: {app: openremote.INSTANCE}}));
                 }
+
+                // TODO: Implement this in a better way
+                // Initialise the console
+                openremote.INSTANCE.console.initialise();
+
                 // Now show the app/document body
                 openremote.INSTANCE.showApp();
             };
