@@ -280,9 +280,12 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
     public GeofenceDefinition[] getAssetGeofences(String assetId) {
         return withLockReturning(getClass().getSimpleName() + "::getAssetGeofences", () -> {
 
+            LOG.finest("Requesting geofences for asset: " + assetId);
+
             for (GeofenceAssetAdapter geofenceAdapter : geofenceAssetAdapters) {
                 GeofenceDefinition[] geofences = geofenceAdapter.getAssetGeofences(assetId);
                 if (geofences != null) {
+                    LOG.finest("Retrieved geofences from geofence adapter '" + geofenceAdapter.getName() + "' for asset: " + assetId);
                     return geofences;
                 }
             }
@@ -651,6 +654,8 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
         withLock(getClass().getSimpleName() + "::updateAssetState", () -> {
             // TODO: implement rules processing error state handling
 
+            LOG.fine("Updating asset state: " + assetState);
+
             // Get the chain of rule engines that we need to pass through
             List<RulesEngine> rulesEngines = getEnginesInScope(assetState.getRealmId(), assetState.getPath());
 
@@ -818,17 +823,14 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
             }
 
             if (assetsWithModifiedLocationPredicates.size() != initialModifiedCount) {
-                if (scheduledGeofenceProcessor != null) {
-                    scheduledGeofenceProcessor.cancel(false);
-                }
-                scheduledGeofenceProcessor = executorService.schedule(this::processModifiedGeofences,
-                                                                      GEOFENCE_PROCESSING_DEBOUNCE_MILLIS);
+                processModifiedGeofences();
             }
         });
     }
 
     protected void processModifiedGeofences() {
         withLock(getClass().getSimpleName() + "::processModifiedGeofences", () -> {
+            LOG.finest("Processing geofence modifications: modified asset geofence count=" + assetsWithModifiedLocationPredicates.size());
             boolean isFirstRun = firstGeofenceProcessorRun;
             firstGeofenceProcessorRun = false;
 
@@ -859,11 +861,11 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
                 });
 
                 for (GeofenceAssetAdapter geofenceAssetAdapter : geofenceAssetAdapters) {
-                    LOG.info("Passing modified geofences to adapter: " + geofenceAssetAdapter.getName());
+                    LOG.finest("Passing modified geofences to adapter: " + geofenceAssetAdapter.getName());
                     geofenceAssetAdapter.processLocationPredicates(assetLocationPredicates, isFirstRun);
 
                     if (assetLocationPredicates.isEmpty()) {
-                        LOG.info("All modified geofences handled");
+                        LOG.finest("All modified geofences handled");
                         break;
                     }
                 }

@@ -27,6 +27,7 @@ import org.openremote.container.persistence.PersistenceEvent;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.notification.NotificationService;
 import org.openremote.manager.rules.RulesEngine;
+import org.openremote.manager.rules.RulesService;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetQuery;
 import org.openremote.model.asset.BaseAssetQuery;
@@ -36,6 +37,7 @@ import org.openremote.model.console.ConsoleProvider;
 import org.openremote.model.rules.geofence.GeofenceDefinition;
 
 import java.util.*;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import static org.openremote.container.concurrent.GlobalLock.withLock;
@@ -52,6 +54,7 @@ import static org.openremote.model.asset.AssetType.CONSOLE;
  */
 public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements GeofenceAssetAdapter, ContainerService {
 
+    private static final Logger LOG = Logger.getLogger(ORConsoleGeofenceAssetAdapter.class.getName());
     public static final String NAME = "ORConsole";
     public static final String LOCATION_POST_URL_FORMAT_TEMPLATE = "/%1$s/asset/public/%2$s/updateLocation";
     protected Map<String, RulesEngine.AssetStateLocationPredicates> assetLocationPredicatesMap = new HashMap<>();
@@ -160,6 +163,7 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
         String realm = consoleIdRealmMap.get(assetId);
 
         if (realm == null) {
+            LOG.finest("Console ID not found in map so cannot retrieve geofences");
             // Asset not supported by this adapter
             return null;
         }

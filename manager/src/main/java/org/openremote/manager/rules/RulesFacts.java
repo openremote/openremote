@@ -80,10 +80,12 @@ public class RulesFacts extends Facts implements RuleListener {
     }
 
     protected void startTrackingLocationRules() {
+        LOG.finer("Tracking location predicate rules: started");
         trackLocationRules = true;
     }
 
     protected List<RulesEngine.AssetStateLocationPredicates> stopTrackingLocationRules() {
+        LOG.finer("Tracking location predicate rules: stopping");
         trackLocationRules = false;
         Map<String, Set<BaseAssetQuery.LocationPredicate>> assetStateLocationPredicateMap = this.assetStateLocationPredicateMap;
         this.assetStateLocationPredicateMap = null;

@@ -410,7 +410,7 @@ public class RulesEngine<T extends Ruleset> {
 
     public void updateFact(AssetState assetState, boolean fireImmediately) {
         facts.putAssetState(assetState);
-        trackLocationPredicates = assetState.getAttributeName().equals("location");
+        trackLocationPredicates = trackLocationPredicates || assetState.getAttributeName().equals("location");
         if (fireImmediately) {
             fire();
         }
@@ -418,13 +418,13 @@ public class RulesEngine<T extends Ruleset> {
 
     public void removeFact(AssetState assetState) {
         facts.removeAssetState(assetState);
-        trackLocationPredicates = assetState.getAttributeName().equals("location");
+        trackLocationPredicates = trackLocationPredicates || assetState.getAttributeName().equals("location");
         fire();
     }
 
     public void insertFact(String expires, AssetState assetState) {
         facts.insertAssetEvent(expires, assetState);
-        trackLocationPredicates = assetState.getAttributeName().equals("location");
+        trackLocationPredicates = trackLocationPredicates || assetState.getAttributeName().equals("location");
         fire();
     }
 
