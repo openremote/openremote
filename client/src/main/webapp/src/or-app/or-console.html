@@ -182,7 +182,7 @@
                         this.initialiseProvider(providerName);
                     }
                 } else {
-                    this.register(() => {}, () => {});
+                    this.register(() => {}, () => {}, true);
                 }
             }
 
@@ -379,9 +379,9 @@
                             this.disableProvider(name);
                         }
 
-                        // Check if all providers have been initialised
+                        // Check if all providers have been enabled
                         if (this._pendingProviderEnables.length === 0) {
-                            this.register(()=> {}, () => {});
+                            this.register(()=> {}, () => {}, true);
                         }
                         break;
                     case "PROVIDER_DISABLE":
