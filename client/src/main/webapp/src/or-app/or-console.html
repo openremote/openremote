@@ -270,7 +270,7 @@
                 }
             }
 
-            register(successFn, failureFn) {
+            register(successFn, failureFn, raiseReadyEvent) {
                 console.debug("Console: updating registration");
                 if (!window.openremote.INSTANCE.requests) {
                     console.debug("Cannot register console as requests object not set");
@@ -289,6 +289,9 @@
                         console.debug("Console: updating locally stored registration");
                         window.localStorage.setItem("OpenRemoteConsole", JSON.stringify(this.registration));
                         successFn();
+                        if (raiseReadyEvent) {
+                            window.dispatchEvent(new CustomEvent("ConsoleReady"));
+                        }
                     })
             }
 
