@@ -24,11 +24,9 @@ import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.message.MessageBrokerSetupService;
 import org.openremote.container.persistence.PersistenceEvent;
-import org.openremote.container.security.IdentityService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.notification.NotificationService;
 import org.openremote.manager.rules.RulesEngine;
-import org.openremote.manager.rules.RulesService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetQuery;
@@ -37,7 +35,6 @@ import org.openremote.model.attribute.AttributeType;
 import org.openremote.model.console.ConsoleConfiguration;
 import org.openremote.model.console.ConsoleProvider;
 import org.openremote.model.rules.geofence.GeofenceDefinition;
-import org.openremote.model.security.Tenant;
 import org.openremote.model.util.TextUtil;
 
 import java.util.*;
@@ -60,7 +57,7 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
 
     private static final Logger LOG = Logger.getLogger(ORConsoleGeofenceAssetAdapter.class.getName());
     public static final String NAME = "ORConsole";
-    public static final String LOCATION_POST_URL_FORMAT_TEMPLATE = "/%1$s/asset/public/%2$s/updateLocation";
+    public static final String LOCATION_POST_URL_FORMAT_TEMPLATE = "/asset/public/%1$s/updateLocation";
     protected Map<String, RulesEngine.AssetStateLocationPredicates> assetLocationPredicatesMap = new HashMap<>();
     protected NotificationService notificationService;
     protected AssetStorageService assetStorageService;
@@ -183,16 +180,14 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
         return assetStateLocationPredicates.getLocationPredicates().stream()
             .map(locationPredicate ->
                      locationPredicateToGeofenceDefinition(assetStateLocationPredicates.getAssetId(),
-                                                           realm,
                                                            locationPredicate))
             .toArray(GeofenceDefinition[]::new);
     }
 
-    protected GeofenceDefinition locationPredicateToGeofenceDefinition(String assetId, String realm, BaseAssetQuery.LocationPredicate locationPredicate) {
+    protected GeofenceDefinition locationPredicateToGeofenceDefinition(String assetId, BaseAssetQuery.LocationPredicate locationPredicate) {
         BaseAssetQuery.RadialLocationPredicate radialLocationPredicate = (BaseAssetQuery.RadialLocationPredicate) locationPredicate;
         String id = assetId + "_" + Integer.toString(radialLocationPredicate.hashCode());
         String postUrl = String.format(LOCATION_POST_URL_FORMAT_TEMPLATE,
-                                       realm,
                                        assetId);
         return new GeofenceDefinition(id,
                                       radialLocationPredicate.getLat(),
