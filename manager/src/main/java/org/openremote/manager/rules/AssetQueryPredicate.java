@@ -215,6 +215,7 @@ public class AssetQueryPredicate implements Predicate<AssetState> {
     protected Predicate<Coordinate> asPredicate(LocationPredicate predicate) {
         return coordinate -> {
             if (predicate instanceof RadialLocationPredicate) {
+                //TODO geotools version to gradle properties
                 RadialLocationPredicate radialLocationPredicate = (RadialLocationPredicate) predicate;
                 GeodeticCalculator calculator = new GeodeticCalculator();
                 calculator.setStartingGeographicPoint(radialLocationPredicate.lng, radialLocationPredicate.lat);

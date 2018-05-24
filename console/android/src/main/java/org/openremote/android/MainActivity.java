@@ -38,10 +38,14 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.openremote.android.service.GeofenceProvider;
 import org.openremote.android.service.TokenService;
 
+import java.util.Map;
 import java.util.logging.Logger;
 
 public class MainActivity extends Activity {
@@ -54,6 +58,8 @@ public class MainActivity extends Activity {
     protected WebView webView;
     protected ErrorViewHolder errorViewHolder;
     protected Context context;
+
+    protected GeofenceProvider geofenceProvider;
 
     BroadcastReceiver onDownloadCompleteReciever = new BroadcastReceiver() {
         public void onReceive(Context ctxt, Intent intent) {
@@ -199,7 +205,7 @@ public class MainActivity extends Activity {
     protected void initializeWebView() {
         LOG.fine("Initializing web view");
 
-        final WebAppInterface webAppInterface = new WebAppInterface(this);
+        final WebAppInterface webAppInterface = new WebAppInterface(this, webView);
 
         webView.addJavascriptInterface(webAppInterface, "MobileInterface");
         WebSettings webSettings = webView.getSettings();
@@ -220,19 +226,19 @@ public class MainActivity extends Activity {
             public void onReceivedHttpError(WebView view, WebResourceRequest request, WebResourceResponse errorResponse) {
                 //TODO should we ignore images?
                 if (request.getUrl().getLastPathSegment() != null &&
-                    (request.getUrl().getLastPathSegment().endsWith("png")
-                        || request.getUrl().getLastPathSegment().endsWith("jpg")
-                        || request.getUrl().getLastPathSegment().endsWith("ico"))
-                    )
+                        (request.getUrl().getLastPathSegment().endsWith("png")
+                                || request.getUrl().getLastPathSegment().endsWith("jpg")
+                                || request.getUrl().getLastPathSegment().endsWith("ico"))
+                        )
                     return;
 
                 // When initialising Keycloak with an invalid offline refresh token (e.g. wrong nonce because
                 // server was reinstalled), we detect the failure and then don't show an error view. We clear the stored
                 // invalid token. The web app will then start a new login.
                 if (request.getUrl().getLastPathSegment() != null &&
-                    request.getUrl().getLastPathSegment().equals("token") &&
-                    request.getMethod().equals("POST") &&
-                    errorResponse.getStatusCode() == 400) {
+                        request.getUrl().getLastPathSegment().equals("token") &&
+                        request.getMethod().equals("POST") &&
+                        errorResponse.getStatusCode() == 400) {
                     webAppInterface.tokenService.clearToken();
                     return;
                 }
@@ -257,10 +263,10 @@ public class MainActivity extends Activity {
             public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
                 //TODO should we ignore images?
                 if (request.getUrl().getLastPathSegment() != null &&
-                    (request.getUrl().getLastPathSegment().endsWith("png")
-                        || request.getUrl().getLastPathSegment().endsWith("jpg")
-                        || request.getUrl().getLastPathSegment().endsWith("ico"))
-                    )
+                        (request.getUrl().getLastPathSegment().endsWith("png")
+                                || request.getUrl().getLastPathSegment().endsWith("jpg")
+                                || request.getUrl().getLastPathSegment().endsWith("ico"))
+                        )
                     return;
 
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -309,7 +315,7 @@ public class MainActivity extends Activity {
                     ActivityCompat.requestPermissions((MainActivity) context, new String[]{writePermission}, WRITE_PERMISSION_REQUEST);
                 } else {
                     DownloadManager.Request request = new
-                        DownloadManager.Request(Uri.parse(url));
+                            DownloadManager.Request(Uri.parse(url));
 
                     request.setMimeType(mimetype);
                     //------------------------COOKIE!!------------------------
@@ -340,6 +346,21 @@ public class MainActivity extends Activity {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 Toast.makeText(getApplicationContext(), R.string.downloading_file, Toast.LENGTH_LONG).show();
             }
+        } else if (requestCode == GeofenceProvider.Companion.getLocationReponseCode()) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                try {
+                    Map<String, Object> initData = geofenceProvider.initialize();
+                    final String jsonString = new ObjectMapper().writeValueAsString(initData);
+                    this.runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            webView.evaluateJavascript(String.format("openremote.INSTANCE.console.handleProviderResponse('%s')", jsonString), null);
+                        }
+                    });
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
         } else {
             super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         }
@@ -347,10 +368,14 @@ public class MainActivity extends Activity {
 
     protected class WebAppInterface {
 
+        private final Activity activity;
         private final TokenService tokenService;
+        private final WebView webView;
 
-        public WebAppInterface(Activity activity) {
+        public WebAppInterface(Activity activity, WebView webView) {
             tokenService = new TokenService(activity);
+            this.activity = activity;
+            this.webView = webView;
         }
 
         @JavascriptInterface
@@ -381,6 +406,53 @@ public class MainActivity extends Activity {
                             errorViewHolder.show(R.string.fatalError, R.string.fatalErrorExplain, true, true);
                         }
                     });
+                    break;
+                case "provider":
+                    String action = data.getString("action");
+                    if (action != null) {
+                        String provider = data.getString("provider");
+                        if (provider.equalsIgnoreCase("geofence")) {
+                            if (action.equalsIgnoreCase("PROVIDER_INIT")) {
+                                geofenceProvider = new GeofenceProvider(activity);
+                                if (!geofenceProvider.checkPermission()) {
+                                    geofenceProvider.registerPermissions();
+                                } else {
+                                    try {
+                                        Map<String, Object> initData = geofenceProvider.initialize();
+                                        final String jsonString = new ObjectMapper().writeValueAsString(initData);
+                                        activity.runOnUiThread(new Runnable() {
+                                            @Override
+                                            public void run() {
+                                                webView.evaluateJavascript(String.format("openremote.INSTANCE.console.handleProviderResponse('%s')", jsonString), null);
+                                            }
+                                        });
+                                    } catch (Exception e) {
+                                        e.printStackTrace();
+                                    }
+                                }
+                            } else if (action.equalsIgnoreCase("PROVIDER_ENABLE")) {
+                                JSONObject innerData = data.getJSONObject("data");
+                                if (innerData != null) {
+                                    String consoleId = innerData.getString("consoleId");
+                                    if (consoleId != null) {
+                                        try {
+                                            Map<String, Object> enableData = geofenceProvider.enable(String.format("%s/%s", getString(R.string.OR_BASE_SERVER), getString(R.string.OR_REALM)), consoleId);
+                                            final String jsonString = new ObjectMapper().writeValueAsString(enableData);
+
+                                            activity.runOnUiThread(new Runnable() {
+                                                @Override
+                                                public void run() {
+                                                    webView.evaluateJavascript(String.format("openremote.INSTANCE.console.handleProviderResponse('%s')", jsonString), null);
+                                                }
+                                            });
+                                        } catch (Exception e) {
+                                            e.printStackTrace();
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                     break;
                 default:
             }
@@ -413,7 +485,7 @@ public class MainActivity extends Activity {
         @Override
         public void onReceive(Context context, Intent intent) {
             ConnectivityManager cm
-                = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+                    = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
 
             NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
             onConnectivityChanged(activeNetwork != null && activeNetwork.isConnectedOrConnecting());
@@ -423,7 +495,6 @@ public class MainActivity extends Activity {
     protected boolean isRemoteDebuggingEnabled() {
         return Boolean.valueOf(getString(R.string.ENABLE_REMOTE_DEBUGGING));
     }
-
 }
 
 
