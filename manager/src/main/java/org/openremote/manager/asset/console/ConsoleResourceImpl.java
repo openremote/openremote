@@ -90,6 +90,7 @@ public class ConsoleResourceImpl extends ManagerWebResource implements ConsoleRe
             consoleAsset.setRealmId(getRequestTenant().getId());
             consoleAsset.setParentId(getConsoleParentAssetId(getRequestRealm()));
             consoleAsset.setId(consoleRegistration.getId());
+            consoleAsset.setAccessPublicRead(true);
         }
 
         ConsoleConfiguration.setConsoleName(consoleAsset, consoleRegistration.getName());

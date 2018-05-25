@@ -613,14 +613,17 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
     @Override
     public void updatePublicAssetLocation(RequestParams requestParams, String assetId, GeoJSONPoint location) {
         try {
-            Asset[] result = queryPublicAssets(requestParams, new AssetQuery().id(assetId));
+            Asset asset = assetStorageService.find(assetId, true);
 
-            if (result.length == 0) {
+            if (asset == null) {
                 throw new WebApplicationException(NOT_FOUND);
             }
 
-            Asset asset = result[0];
             //TODO do we need a PUBLIC_WRITE metaitem?
+            if (!asset.isAccessPublicRead()) {
+                throw new WebApplicationException(FORBIDDEN);
+            }
+
             updateAssetLocation(asset, location);
         } catch (IllegalStateException ex) {
             throw new WebApplicationException(ex, BAD_REQUEST);
