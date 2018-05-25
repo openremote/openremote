@@ -31,6 +31,7 @@ import org.jeasy.rules.api.Rules;
 import org.jeasy.rules.core.RuleBuilder;
 import org.kohsuke.groovy.sandbox.GroovyValueFilter;
 import org.kohsuke.groovy.sandbox.SandboxTransformer;
+import org.openremote.manager.rules.facade.ConsolesFacade;
 import org.openremote.model.rules.Assets;
 import org.openremote.model.rules.Ruleset;
 import org.openremote.model.rules.Users;
@@ -159,18 +160,18 @@ public class RulesetDeployment {
         return rules;
     }
 
-    public boolean registerRules(Ruleset ruleset, Assets assetsFacade, Users usersFacade) {
+    public boolean registerRules(Ruleset ruleset, Assets assetsFacade, Users usersFacade, ConsolesFacade consolesFacade) {
         RulesEngine.LOG.info("Evaluating ruleset deployment: " + ruleset);
         switch (ruleset.getLang()) {
             case JAVASCRIPT:
-                return registerRulesJavascript(ruleset, assetsFacade, usersFacade);
+                return registerRulesJavascript(ruleset, assetsFacade, usersFacade, consolesFacade);
             case GROOVY:
-                return registerRulesGroovy(ruleset, assetsFacade, usersFacade);
+                return registerRulesGroovy(ruleset, assetsFacade, usersFacade, consolesFacade);
         }
         return false;
     }
 
-    public boolean registerRulesJavascript(Ruleset ruleset, Assets assetsFacade, Users usersFacade) {
+    public boolean registerRulesJavascript(Ruleset ruleset, Assets assetsFacade, Users usersFacade, ConsolesFacade consolesFacade) {
         // TODO https://github.com/pfisterer/scripting-sandbox/blob/master/src/main/java/de/farberg/scripting/sandbox/ScriptingSandbox.java
         ScriptEngine scriptEngine = scriptEngineManager.getEngineByName("nashorn");
         ScriptContext newContext = new SimpleScriptContext();
@@ -179,6 +180,7 @@ public class RulesetDeployment {
 
         engineScope.put("assets", assetsFacade);
         engineScope.put("users", usersFacade);
+        engineScope.put("consoles", consolesFacade);
 
         String script = ruleset.getRules();
 
@@ -312,7 +314,7 @@ public class RulesetDeployment {
         }
     }
 
-    public boolean registerRulesGroovy(Ruleset ruleset, Assets assetsFacade, Users usersFacade) {
+    public boolean registerRulesGroovy(Ruleset ruleset, Assets assetsFacade, Users usersFacade, ConsolesFacade consolesFacade) {
         try {
             // TODO Implement sandbox
             // new DenyAll().register();
@@ -323,6 +325,7 @@ public class RulesetDeployment {
             binding.setVariable("rules", rulesBuilder);
             binding.setVariable("assets", assetsFacade);
             binding.setVariable("users", usersFacade);
+            binding.setVariable("consoles", consolesFacade);
             script.setBinding(binding);
             script.run();
             for (Rule rule : rulesBuilder.build()) {

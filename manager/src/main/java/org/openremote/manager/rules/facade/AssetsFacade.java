@@ -32,13 +32,77 @@ import org.openremote.model.value.Values;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
-import static org.openremote.model.asset.AssetQuery.PathPredicate;
-import static org.openremote.model.asset.AssetQuery.TenantPredicate;
-
 /**
  * Restricts rule RHS access to the scope of the engine (a rule in asset scope can not use assets in global scope).
  */
 public class AssetsFacade<T extends Ruleset> extends Assets {
+
+    public class AssetsRestrictedQueryFacade extends Assets.RestrictedQuery {
+
+        public AssetsRestrictedQueryFacade() {
+            if (TenantRuleset.class.isAssignableFrom(rulesEngineId.getScope())) {
+                tenant = new TenantPredicate(
+                    rulesEngineId.getRealmId().orElseThrow(() -> new IllegalArgumentException("Realm ID missing: " + rulesEngineId))
+                );
+            }
+            if (AssetRuleset.class.isAssignableFrom(rulesEngineId.getScope())) {
+                Asset restrictedAsset = assetStorageService.find(
+                    rulesEngineId.getAssetId().orElseThrow(() -> new IllegalStateException("Asset ID missing: " + rulesEngineId)),
+                    true
+                                                                );
+                if (restrictedAsset == null) {
+                    throw new IllegalStateException("Asset is no longer available: " + rulesEngineId);
+                }
+                path = new PathPredicate(restrictedAsset.getPath());
+            }
+        }
+
+        @Override
+        public Assets.RestrictedQuery select(Select select) {
+            throw new IllegalArgumentException("Overriding query projection is not allowed in this rules scope");
+        }
+
+        @Override
+        public Assets.RestrictedQuery id(String id) {
+            throw new IllegalArgumentException("Overriding query restriction is not allowed in this rules scope");
+        }
+
+        @Override
+        public Assets.RestrictedQuery tenant(TenantPredicate tenantPredicate) {
+            if (GlobalRuleset.class.isAssignableFrom(rulesEngineId.getScope()))
+                return super.tenant(tenantPredicate);
+            throw new IllegalArgumentException("Overriding query restriction is not allowed in this rules scope");
+        }
+
+        @Override
+        public Assets.RestrictedQuery userId(String userId) {
+            throw new IllegalArgumentException("Overriding query restriction is not allowed in this rules scope");
+        }
+
+        @Override
+        public Assets.RestrictedQuery orderBy(OrderBy orderBy) {
+            throw new IllegalArgumentException("Overriding query result order is not allowed in this rules scope");
+        }
+
+        @Override
+        public String getResult() {
+            Asset asset = assetStorageService.find(this);
+            return asset != null ? asset.getId() : null;
+        }
+
+        @Override
+        public Stream<String> stream() {
+            if (this.select == null)
+                this.select = new Select();
+            Include oldValue = this.select.include;
+            this.select.include = Include.ONLY_ID_AND_NAME;
+            try {
+                return assetStorageService.findAll(this).stream().map(Asset::getId);
+            } finally {
+                this.select.include = oldValue;
+            }
+        }
+    }
 
     protected final RulesEngineId<T> rulesEngineId;
     protected final AssetStorageService assetStorageService;
@@ -52,71 +116,7 @@ public class AssetsFacade<T extends Ruleset> extends Assets {
 
     @Override
     public Assets.RestrictedQuery query() {
-        Assets.RestrictedQuery query = new Assets.RestrictedQuery() {
-
-            @Override
-            public Assets.RestrictedQuery select(Select select) {
-                throw new IllegalArgumentException("Overriding query projection is not allowed in this rules scope");
-            }
-
-            @Override
-            public Assets.RestrictedQuery id(String id) {
-                throw new IllegalArgumentException("Overriding query restriction is not allowed in this rules scope");
-            }
-
-            @Override
-            public Assets.RestrictedQuery tenant(TenantPredicate tenantPredicate) {
-                if (GlobalRuleset.class.isAssignableFrom(rulesEngineId.getScope()))
-                    return super.tenant(tenantPredicate);
-                throw new IllegalArgumentException("Overriding query restriction is not allowed in this rules scope");
-            }
-
-            @Override
-            public Assets.RestrictedQuery userId(String userId) {
-                throw new IllegalArgumentException("Overriding query restriction is not allowed in this rules scope");
-            }
-
-            @Override
-            public Assets.RestrictedQuery orderBy(OrderBy orderBy) {
-                throw new IllegalArgumentException("Overriding query result order is not allowed in this rules scope");
-            }
-
-            @Override
-            public String getResult() {
-                Asset asset = assetStorageService.find(this);
-                return asset != null ? asset.getId() : null;
-            }
-
-            @Override
-            public Stream<String> stream() {
-                if (this.select == null)
-                    this.select = new Select();
-                Include oldValue = this.select.include;
-                this.select.include = Include.ONLY_ID_AND_NAME;
-                try {
-                    return assetStorageService.findAll(this).stream().map(Asset::getId);
-                } finally {
-                    this.select.include = oldValue;
-                }
-            }
-        };
-
-        if (TenantRuleset.class.isAssignableFrom(rulesEngineId.getScope())) {
-            query.tenant = new TenantPredicate(
-                rulesEngineId.getRealmId().orElseThrow(() -> new IllegalArgumentException("Realm ID missing: " + rulesEngineId))
-            );
-        }
-        if (AssetRuleset.class.isAssignableFrom(rulesEngineId.getScope())) {
-            Asset restrictedAsset = assetStorageService.find(
-                rulesEngineId.getAssetId().orElseThrow(() -> new IllegalStateException("Asset ID missing: " + rulesEngineId)),
-                true
-            );
-            if (restrictedAsset == null) {
-                throw new IllegalStateException("Asset is no longer available: " + rulesEngineId);
-            }
-            query.path = new PathPredicate(restrictedAsset.getPath());
-        }
-        return query;
+        return new AssetsRestrictedQueryFacade();
     }
 
     @Override

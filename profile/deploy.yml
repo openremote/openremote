@@ -164,6 +164,7 @@ services:
       # Console applications can register for push notifications through FCM.
       # NOTIFICATION_FIREBASE_URL: https://fcm.googleapis.com/fcm/send
       # NOTIFICATION_FIREBASE_API_KEY = '...'
+      # FIREBASE_CONFIG_FILE = '/deployment/fcm.json'
 
       # Custom location of the static console applications, each subdirectory must
       # have the name of a realm to which the console app belongs.

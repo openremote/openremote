@@ -27,6 +27,7 @@ import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.concurrent.ManagerExecutorService;
 import org.openremote.manager.notification.NotificationService;
 import org.openremote.manager.rules.facade.AssetsFacade;
+import org.openremote.manager.rules.facade.ConsolesFacade;
 import org.openremote.manager.rules.facade.UsersFacade;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.model.asset.Asset;
@@ -83,6 +84,7 @@ public class RulesEngine<T extends Ruleset> {
     final protected RulesEngineId<T> id;
     final protected Assets assetsFacade;
     final protected Users usersFacade;
+    final protected ConsolesFacade consolesFacade;
     final protected BiConsumer<RulesEngine, List<AssetStateLocationPredicates>> assetLocationPredicatesConsumer;
 
     final protected Map<Long, RulesetDeployment> deployments = new LinkedHashMap<>();
@@ -113,8 +115,10 @@ public class RulesEngine<T extends Ruleset> {
         this.executorService = executorService;
         this.assetStorageService = assetStorageService;
         this.id = id;
-        this.assetsFacade = new AssetsFacade<>(id, assetStorageService, assetProcessingService::sendAttributeEvent);
+        AssetsFacade<T> assetsFacade = new AssetsFacade<>(id, assetStorageService, assetProcessingService::sendAttributeEvent);
+        this.assetsFacade = assetsFacade;
         this.usersFacade = new UsersFacade<>(id, assetStorageService, notificationService, identityService);
+        this.consolesFacade = new ConsolesFacade<>(assetsFacade, notificationService, identityService);
         this.assetLocationPredicatesConsumer = assetLocationPredicatesConsumer;
 
         this.facts = new RulesFacts(assetsFacade, this, RULES_LOG);
@@ -205,7 +209,7 @@ public class RulesEngine<T extends Ruleset> {
 
         deployment = new RulesetDeployment(ruleset.getId(), ruleset.getName(), ruleset.getVersion());
 
-        boolean compilationSuccessful = deployment.registerRules(ruleset, assetsFacade, usersFacade);
+        boolean compilationSuccessful = deployment.registerRules(ruleset, assetsFacade, usersFacade, consolesFacade);
 
         if (!compilationSuccessful) {
             // If any other ruleset is DEPLOYED in this scope, demote to READY

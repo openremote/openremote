@@ -34,6 +34,7 @@ import java.util.Objects;
 /**
  * Encapsulate asset query restriction, projection, and ordering of results.
  */
+// TODO: Add AssetQuery support for arbitrary attribute property path amd value (e.g. attributes.consoleProviders.geofence.version == "ORConsole")
 @SuppressWarnings("unchecked")
 public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> {
 

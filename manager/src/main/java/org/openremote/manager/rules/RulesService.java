@@ -87,8 +87,8 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
 
     public static final String RULE_EVENT_EXPIRES = "RULE_EVENT_EXPIRES";
     public static final String RULE_EVENT_EXPIRES_DEFAULT = "1h";
+    public static final int GEOFENCE_INIT_DEBOUNCE_MILLIS = 2000;
     private static final Logger LOG = Logger.getLogger(RulesService.class.getName());
-    public static int GEOFENCE_PROCESSING_DEBOUNCE_MILLIS = 10000;
     protected static List<GeofenceAssetAdapter> geofenceAssetAdapters;
 
     static {
@@ -115,13 +115,13 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
     protected BiConsumer<RulesEngine, List<RulesEngine.AssetStateLocationPredicates>> locationPredicateRulesConsumer;
     protected Map<RulesEngine, List<RulesEngine.AssetStateLocationPredicates>> engineAssetLocationPredicateMap = new HashMap<>();
     protected Set<String> assetsWithModifiedLocationPredicates = new HashSet<>();
-    protected ScheduledFuture scheduledGeofenceProcessor;
     protected boolean firstGeofenceProcessorRun = true;
     // Keep global list of asset states that have been pushed to any engines
     // The objects are already in memory inside the rule engines but keeping them
     // here means we can quickly insert facts into newly started engines
     protected Set<AssetState> assetStates = new HashSet<>();
     protected String configEventExpires;
+    protected ScheduledFuture geofenceInitScheduledFuture;
 
     @Override
     public void init(Container container) throws Exception {
@@ -832,7 +832,16 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
         withLock(getClass().getSimpleName() + "::processModifiedGeofences", () -> {
             LOG.finest("Processing geofence modifications: modified asset geofence count=" + assetsWithModifiedLocationPredicates.size());
             boolean isFirstRun = firstGeofenceProcessorRun;
-            firstGeofenceProcessorRun = false;
+
+            if (isFirstRun) {
+                if (geofenceInitScheduledFuture == null || geofenceInitScheduledFuture.cancel(false)) {
+                    geofenceInitScheduledFuture = executorService.schedule(() -> {
+                                                                               firstGeofenceProcessorRun = false;
+                                                                               geofenceInitScheduledFuture = null;
+                                                                           },
+                                                                           GEOFENCE_INIT_DEBOUNCE_MILLIS);
+                }
+            }
 
             try {
                 // Find all location predicates associated with modified assets and pass through to the geofence adapters
@@ -875,7 +884,6 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
             } finally {
                 // Clear modified assets ready for next batch
                 assetsWithModifiedLocationPredicates.clear();
-                scheduledGeofenceProcessor = null;
             }
         });
     }

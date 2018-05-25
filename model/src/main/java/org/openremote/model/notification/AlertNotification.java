@@ -122,14 +122,15 @@ public class AlertNotification {
     }
 
     public void addAction(AlertAction action) {
-        this.actions.set(this.actions.length(), action.getObjectValue());
+        this.actions.add(action.getObjectValue());
     }
 
     public void addLinkAction(String title, String url) {
         AlertAction action = new AlertAction();
         action.setActionType(ActionType.LINK);
         action.setTitle(title);
-        // TODO: this is currently on notification, should be on action, but must update console to support that
+        action.setAppUrl(url);
+        // TODO: Remove below once consoles updated to use action appUrl
         setAppUrl(url);
         addAction(action);
     }

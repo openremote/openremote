@@ -77,12 +77,12 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
     public void start(Container container) throws Exception {
 
         // Find all console assets that use this adapter
-        // TODO: Add AssetQuery support for arbitrary property path amd value (e.g. geofence.version == "ORConsole")
         consoleIdRealmMap = assetStorageService.findAll(
             new AssetQuery()
                 .select(new BaseAssetQuery.Select(BaseAssetQuery.Include.ALL_EXCEPT_PATH,
                                                   false,
                                                   AttributeType.CONSOLE_PROVIDERS.getName()))
+                .type(CONSOLE)
                 .attributeValue(AttributeType.CONSOLE_PROVIDERS.getName(),
                                 new BaseAssetQuery.ObjectValueKeyPredicate("geofence")))
             .stream()

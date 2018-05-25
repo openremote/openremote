@@ -19,34 +19,47 @@
  */
 package org.openremote.manager.notification;
 
+import com.google.firebase.messaging.Notification;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.timer.TimerService;
 import org.openremote.container.web.WebService;
+import org.openremote.manager.asset.AssetStorageService;
+import org.openremote.model.asset.Asset;
+import org.openremote.model.asset.AssetQuery;
+import org.openremote.model.asset.BaseAssetQuery;
+import org.openremote.model.attribute.AttributeType;
+import org.openremote.model.console.ConsoleConfiguration;
+import org.openremote.model.console.ConsoleProvider;
+import org.openremote.model.notification.AlertAction;
 import org.openremote.model.notification.DeviceNotificationToken;
 import org.openremote.model.notification.AlertNotification;
 import org.openremote.model.notification.DeliveryStatus;
 import org.openremote.model.user.UserQuery;
+import org.openremote.model.util.TextUtil;
+import org.openremote.model.value.ObjectValue;
+import org.openremote.model.value.Values;
 
 import javax.persistence.EntityManager;
 import javax.persistence.Query;
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Consumer;
+import java.util.logging.Logger;
 
 public class NotificationService implements ContainerService {
 
+    private static final Logger LOG = Logger.getLogger(NotificationService.class.getName());
     protected TimerService timerService;
     protected PersistenceService persistenceService;
     protected FCMDeliveryService fcmDeliveryService;
+    protected AssetStorageService assetStorageService;
 
     @Override
     public void init(Container container) throws Exception {
         this.timerService = container.getService(TimerService.class);
         this.persistenceService = container.getService(PersistenceService.class);
-
+        this.assetStorageService = container.getService(AssetStorageService.class);
         this.fcmDeliveryService = new FCMDeliveryService(container);
 
         container.getService(WebService.class).getApiSingletons().add(
@@ -93,6 +106,70 @@ public class NotificationService implements ContainerService {
         return persistenceService.doReturningTransaction(entityManager -> entityManager.createQuery(
             "SELECT dnt FROM DeviceNotificationToken dnt WHERE dnt.id.userId =:userId order by dnt.updatedOn desc", DeviceNotificationToken.class
         ).setParameter("userId", userId).getResultList());
+    }
+
+    //TODO: Unify the notification service to support push, email, SMS, etc.
+    public void notifyConsole(String consoleId, AlertNotification alertNotification) {
+        AssetQuery consoleQuery = new AssetQuery()
+            .select(new BaseAssetQuery.Select(BaseAssetQuery.Include.ALL_EXCEPT_PATH,
+                                              false,
+                                              AttributeType.CONSOLE_PROVIDERS.getName()))
+            .attributeValue(AttributeType.CONSOLE_PROVIDERS.getName(),
+                            new BaseAssetQuery.ObjectValueKeyPredicate("push"))
+            .id(consoleId);
+
+
+        Asset console = assetStorageService.find(consoleQuery);
+        if (console == null) {
+            LOG.warning("Console cannot be found or doesn't support push notifications");
+            return;
+        }
+
+        ConsoleProvider consolePushProvider = ConsoleConfiguration.getConsoleProvider(console, "push")
+            .orElseThrow(() -> new IllegalStateException("Console push provider is not valid"));
+
+        String pushProviderVersion = consolePushProvider.getVersion();
+
+        if ("fcm".equals(pushProviderVersion)) {
+            if (consolePushProvider.getData() == null || !consolePushProvider.getData().getString("token")
+                    .map(token -> TextUtil.isNullOrEmpty(token) ? null : token).isPresent()) {
+                LOG.warning("Console 'fcm' push provider doesn't contain an FCM token");
+                return;
+            }
+
+            String token = consolePushProvider.getData().getString("token").orElse(null);
+
+            Notification notification = new Notification(alertNotification.getTitle(), alertNotification.getMessage());
+            Map<String, String> data = new HashMap<>();
+
+            if (alertNotification.getActions() != null && !alertNotification.getActions().isEmpty()) {
+                data.put("actions", alertNotification.getActions().toJson());
+//                alertNotification.getActions().stream()
+//                    .map(value -> Values.getObject(value).orElse(null))
+//                    .filter(objectValue -> !Objects.isNull(objectValue))
+//                    .forEach(actionObj -> {
+//                        String type = actionObj.getString("type").orElse(null);
+//                        String title = actionObj.getString("title").orElse(null);
+//                        String appUrl = actionObj.getString("appUrl").orElse(null);
+//                        String assetId = actionObj.getString("assetId").orElse(null);
+//                        String rawJson = actionObj.getString("rawJson").orElse(null);
+//                        String attributeName = actionObj.getString("attributeName").orElse(null);
+//                    });
+            }
+
+            // Push alert directly inside the FCM message
+            fcmDeliveryService.sendMessage(
+                FCMTargetType.DEVICE,
+                token,
+                FCMMessagePriority.HIGH,
+                notification,
+                data,
+                new Date(new Date().getTime()+ 300000), // 5 min TTL
+                null,
+                null);
+        } else {
+            LOG.warning("Unsupported push provider version: " + pushProviderVersion);
+        }
     }
 
     public void storeAndNotify(String userId, AlertNotification notification) {

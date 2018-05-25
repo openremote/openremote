@@ -24,8 +24,6 @@ import static org.openremote.manager.setup.AbstractKeycloakSetup.SETUP_ADMIN_PAS
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID
 import static org.openremote.model.Constants.MASTER_REALM
 import static org.openremote.model.Constants.MASTER_REALM_ADMIN_USER
-import static org.openremote.manager.notification.FCMDeliveryService.NOTIFICATION_FIREBASE_API_KEY
-import static org.openremote.manager.notification.FCMDeliveryService.NOTIFICATION_FIREBASE_URL
 
 class NotificationServiceTest extends Specification implements ManagerContainerTrait {
 
@@ -43,7 +41,7 @@ class NotificationServiceTest extends Specification implements ManagerContainerT
         and: "a mock FCM delivery service"
         def mockFCMDeliveryService = Spy(FCMDeliveryService, constructorArgs: [container]) {
             // Always "deliver" to FCM
-            sendFCMMessage(_ as FCMBaseMessage) >> {
+            sendMessage(_ as FCMBaseMessage) >> {
                 return true
             }
         }

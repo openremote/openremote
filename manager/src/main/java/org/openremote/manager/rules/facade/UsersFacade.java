@@ -41,6 +41,62 @@ public class UsersFacade<T extends Ruleset> extends Users {
     protected final NotificationService notificationService;
     protected final ManagerIdentityService identityService;
 
+    public class UsersResctrictedQueryFacade extends Users.RestrictedQuery {
+
+        public UsersResctrictedQueryFacade() {
+            if (TenantRuleset.class.isAssignableFrom(rulesEngineId.getScope())) {
+                tenantPredicate = new UserQuery.TenantPredicate(
+                    rulesEngineId.getRealmId().orElseThrow(() -> new IllegalArgumentException("Realm ID missing: " + rulesEngineId))
+                );
+            }
+            if (AssetRuleset.class.isAssignableFrom(rulesEngineId.getScope())) {
+                String assetId = rulesEngineId.getAssetId().orElseThrow(() -> new IllegalStateException("Asset ID missing: " + rulesEngineId));
+                Asset restrictedAsset = assetStorageService.find(assetId, true);
+                if (restrictedAsset == null) {
+                    // An asset was deleted in the database, but its ruleset is still deployed. This
+                    // can happen while the PersistenceEvent of the deletion is not processed and the
+                    // rules engine fires. This exception marks the ruleset deployment as execution
+                    // error status, and as soon as the PersistenceEvent is processed, the ruleset
+                    // deployment is removed and the problem resolved.
+                    throw new IllegalStateException("Asset is no longer available: " + rulesEngineId);
+                }
+                assetPredicate = new UserQuery.AssetPredicate(assetId);
+            }
+        }
+
+        @Override
+        public Users.RestrictedQuery tenant(UserQuery.TenantPredicate tenantPredicate) {
+            if (GlobalRuleset.class.isAssignableFrom(rulesEngineId.getScope()))
+                return super.tenant(tenantPredicate);
+            throw new IllegalArgumentException("Overriding query restriction is not allowed in this rules scope");
+        }
+
+        @Override
+        public Users.RestrictedQuery asset(UserQuery.AssetPredicate assetPredicate) {
+            if (GlobalRuleset.class.isAssignableFrom(rulesEngineId.getScope()))
+                return super.asset(assetPredicate);
+            if (TenantRuleset.class.isAssignableFrom(rulesEngineId.getScope())) {
+                return super.asset(assetPredicate);
+                // TODO: should only be allowed if asset belongs to tenant
+            }
+            if (AssetRuleset.class.isAssignableFrom(rulesEngineId.getScope())) {
+                return super.asset(assetPredicate);
+                // TODO: should only be allowed if restricted asset is descendant of scope's asset
+            }
+            throw new IllegalArgumentException("Overriding query restriction is not allowed in this rules scope");
+        }
+
+        @Override
+        public List<String> getResults() {
+            return notificationService.findAllUsersWithToken(this);
+        }
+
+        @Override
+        public void applyResults(Consumer<List<String>> usersIdListConsumer) {
+            usersIdListConsumer.accept(getResults());
+        }
+    }
+
     public UsersFacade(RulesEngineId<T> rulesEngineId, AssetStorageService assetStorageService, NotificationService notificationService, ManagerIdentityService identityService) {
         this.rulesEngineId = rulesEngineId;
         this.assetStorageService = assetStorageService;
@@ -50,59 +106,7 @@ public class UsersFacade<T extends Ruleset> extends Users {
 
     @Override
     public Users.RestrictedQuery query() {
-        Users.RestrictedQuery query = new Users.RestrictedQuery() {
-            @Override
-            public Users.RestrictedQuery tenant(UserQuery.TenantPredicate tenantPredicate) {
-                if (GlobalRuleset.class.isAssignableFrom(rulesEngineId.getScope()))
-                    return super.tenant(tenantPredicate);
-                throw new IllegalArgumentException("Overriding query restriction is not allowed in this rules scope");
-            }
-
-            @Override
-            public Users.RestrictedQuery asset(UserQuery.AssetPredicate assetPredicate) {
-                if (GlobalRuleset.class.isAssignableFrom(rulesEngineId.getScope()))
-                    return super.asset(assetPredicate);
-                if (TenantRuleset.class.isAssignableFrom(rulesEngineId.getScope())) {
-                    return super.asset(assetPredicate);
-                    // TODO: should only be allowed if asset belongs to tenant
-                }
-                if (AssetRuleset.class.isAssignableFrom(rulesEngineId.getScope())) {
-                    return super.asset(assetPredicate);
-                    // TODO: should only be allowed if restricted asset is descendant of scope's asset
-                }
-                throw new IllegalArgumentException("Overriding query restriction is not allowed in this rules scope");
-            }
-
-            @Override
-            public List<String> getResults() {
-                return notificationService.findAllUsersWithToken(this);
-            }
-
-            @Override
-            public void applyResults(Consumer<List<String>> usersIdListConsumer) {
-                usersIdListConsumer.accept(getResults());
-            }
-        };
-
-        if (TenantRuleset.class.isAssignableFrom(rulesEngineId.getScope())) {
-            query.tenantPredicate = new UserQuery.TenantPredicate(
-                rulesEngineId.getRealmId().orElseThrow(() -> new IllegalArgumentException("Realm ID missing: " + rulesEngineId))
-            );
-        }
-        if (AssetRuleset.class.isAssignableFrom(rulesEngineId.getScope())) {
-            String assetId = rulesEngineId.getAssetId().orElseThrow(() -> new IllegalStateException("Asset ID missing: " + rulesEngineId));
-            Asset restrictedAsset = assetStorageService.find(assetId, true);
-            if (restrictedAsset == null) {
-                // An asset was deleted in the database, but its ruleset is still deployed. This
-                // can happen while the PersistenceEvent of the deletion is not processed and the
-                // rules engine fires. This exception marks the ruleset deployment as execution
-                // error status, and as soon as the PersistenceEvent is processed, the ruleset
-                // deployment is removed and the problem resolved.
-                throw new IllegalStateException("Asset is no longer available: " + rulesEngineId);
-            }
-            query.assetPredicate = new UserQuery.AssetPredicate(assetId);
-        }
-        return query;
+        return new UsersResctrictedQueryFacade();
     }
 
     @Override

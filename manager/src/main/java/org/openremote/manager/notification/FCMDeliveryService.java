@@ -19,9 +19,10 @@
  */
 package org.openremote.manager.notification;
 
-import org.jboss.resteasy.client.jaxrs.ResteasyClient;
-import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
-import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
+import com.google.auth.oauth2.GoogleCredentials;
+import com.google.firebase.FirebaseApp;
+import com.google.firebase.FirebaseOptions;
+import com.google.firebase.messaging.*;
 import org.openremote.container.Container;
 import org.openremote.model.notification.DeviceNotificationToken;
 import org.openremote.model.notification.AlertNotification;
@@ -29,11 +30,12 @@ import org.openremote.model.notification.DeliveryStatus;
 import org.openremote.model.util.TextUtil;
 
 import javax.persistence.EntityManager;
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.client.Invocation;
-import javax.ws.rs.core.Response;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.Date;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -43,48 +45,38 @@ import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
 public class FCMDeliveryService {
 
     private static final Logger LOG = Logger.getLogger(FCMDeliveryService.class.getName());
+    public static final String FIREBASE_CONFIG_FILE = "FIREBASE_CONFIG_FILE";
 
-    public static final String NOTIFICATION_FIREBASE_API_KEY = "NOTIFICATION_FIREBASE_API_KEY";
-    public static final String NOTIFICATION_FIREBASE_URL = "NOTIFICATION_FIREBASE_URL";
-    public static final String NOTIFICATION_FIREBASE_URL_DEFAULT = "https://fcm.googleapis.com/fcm/send";
-
-    final protected String fcmKey;
-    final protected ResteasyWebTarget firebaseTarget;
-    final protected boolean valid;
+    protected boolean valid;
 
     public FCMDeliveryService(Container container) {
         this(
-            container.getConfig().get(NOTIFICATION_FIREBASE_API_KEY),
-            container.getConfig().getOrDefault(NOTIFICATION_FIREBASE_URL, NOTIFICATION_FIREBASE_URL_DEFAULT)
+            container.getConfig().get(FIREBASE_CONFIG_FILE)
         );
     }
 
-    public FCMDeliveryService(String fcmKey, String firebaseUrl) {
-        boolean ok = true;
+    public FCMDeliveryService(String firebaseConfigFilePath) {
 
-        if (TextUtil.isNullOrEmpty(fcmKey)) {
-            LOG.info(NOTIFICATION_FIREBASE_API_KEY + " not defined, can not send notifications");
-            ok = false;
-        }
-        if (TextUtil.isNullOrEmpty(firebaseUrl)) {
-            LOG.info(NOTIFICATION_FIREBASE_URL + " not defined, can not send notifications");
-            ok = false;
-        }
-        if (!ok) {
-            this.valid = false;
-            this.fcmKey = null;
-            this.firebaseTarget = null;
+        if (TextUtil.isNullOrEmpty(firebaseConfigFilePath)) {
+            LOG.info(FIREBASE_CONFIG_FILE + " not defined, can not send FCM notifications");
             return;
         }
 
-        this.valid = true;
-        this.fcmKey = fcmKey;
+        if (!Files.isReadable(Paths.get(firebaseConfigFilePath))) {
+            LOG.info(FIREBASE_CONFIG_FILE + " invalid path or file not readable");
+            return;
+        }
 
-        ResteasyClient client = new ResteasyClientBuilder()
-            .socketTimeout(30, TimeUnit.SECONDS)
-            .establishConnectionTimeout(10, TimeUnit.SECONDS)
-            .build();
-        firebaseTarget = client.target(firebaseUrl);
+        try (InputStream is = Files.newInputStream(Paths.get(firebaseConfigFilePath))) {
+            FirebaseOptions options = new FirebaseOptions.Builder()
+                .setCredentials(GoogleCredentials.fromStream(is))
+                .build();
+
+            FirebaseApp.initializeApp(options);
+            valid = true;
+        } catch (Exception ex) {
+            LOG.severe("Exception occurred whilst initialising FCM");
+        }
     }
 
     public Consumer<EntityManager> deliverPendingToFCM(String userId, List<DeviceNotificationToken> deviceTokens) {
@@ -122,16 +114,9 @@ public class FCMDeliveryService {
 
         boolean success = false;
         for (DeviceNotificationToken deviceToken : deviceTokens) {
-                FCMBaseMessage message;
-                if ("ANDROID".equals(deviceToken.getDeviceType())) {
-                    message = new FCMBaseMessage(deviceToken.getToken());
-                } else {
-                    message = new FCMMessage(new FCMNotification("_"), true, true, "high", deviceToken.getToken());
-                }
-
                 LOG.fine("Sending FCM notification pickup message to: " + deviceToken);
                 // Changed to behave like javadoc says
-                success = sendFCMMessage(message) || success;
+                success = sendMessage(FCMTargetType.DEVICE, deviceToken.getToken(), FCMMessagePriority.HIGH, null, null, null, null, ApnsConfig.builder().putHeader("mutable-content", "1")) || success;
         }
         if (success) {
             LOG.fine("Successfully delivered FCM pickup message for at least one device of: " + userId);
@@ -141,37 +126,96 @@ public class FCMDeliveryService {
         return success;
     }
 
-    public boolean sendFCMMessage(FCMBaseMessage message) {
+
+    public boolean sendMessage(FCMTargetType targetType, String target, FCMMessagePriority priority, Notification notification, Map<String, String> data, Date expiration, AndroidConfig.Builder androidConfigBuilder, ApnsConfig.Builder apnsConfigBuilder) {
         if (!isValid()) {
             LOG.warning("FCM invalid configuration so ignoring");
             return false;
         }
 
         boolean success = false;
-        Response response = null;
+
+        if (TextUtil.isNullOrEmpty(target)) {
+            LOG.info("Invalid FCM message, the target is required and either notification and/or data must be set");
+            return false;
+        }
 
         try {
-            Invocation.Builder builder = firebaseTarget.request().header("Authorization", "key=" + fcmKey);
-            response = builder.post(Entity.entity(message, "application/json"));
+            Message.Builder builder = Message.builder();
 
-            if (response.getStatus() != 200) {
-                LOG.warning("Send error: status=[" + response.getStatus() + "], statusInformation=[" + response.getStatusInfo() + "]");
-            } else {
-                LOG.fine("Send success: status=[" + response.getStatus() + "], statusInformation=[" + response.getStatusInfo() + "]");
-                success = true;
+            switch (targetType) {
+                case DEVICE:
+                    builder.setToken(target);
+                    break;
+                case TOPIC:
+                    builder.setTopic(target);
+                    break;
+                case CONDITION:
+                    builder.setCondition(target);
+                    break;
             }
-        } catch (Exception e) {
-            LOG.log(Level.WARNING, "Error sending FCM notification pickup message: " + getRootCause(e), e);
-        } finally {
-            if (response != null) {
-                response.close();
+
+            // TODO: Add web push support
+            if (priority == FCMMessagePriority.HIGH || notification == null || expiration != null) {
+                androidConfigBuilder = androidConfigBuilder == null ? AndroidConfig.builder() : androidConfigBuilder;
+                apnsConfigBuilder = apnsConfigBuilder == null ? ApnsConfig.builder() : apnsConfigBuilder;
+
+                androidConfigBuilder.setPriority(priority == FCMMessagePriority.HIGH ? AndroidConfig.Priority.HIGH : AndroidConfig.Priority.NORMAL);
+                apnsConfigBuilder.putHeader("apns-priority", notification != null ? "10" : "5"); // Don't use 5 for data only
+
+                if (notification == null) {
+                    apnsConfigBuilder.putCustomData("content-available", "1");
+                }
+
+                if (expiration != null) {
+                    long expirationMillis = expiration.getTime();
+                    long nowMillis = new Date().getTime();
+
+                    if (expirationMillis > nowMillis) {
+                        int seconds = Math.round(((float)expirationMillis)/1000);
+                        apnsConfigBuilder.putHeader("apns-expiration", Integer.toString(seconds));
+                        androidConfigBuilder.setTtl(expirationMillis);
+                    }
+                }
+
+                builder.setAndroidConfig(androidConfigBuilder.build());
+                builder.setApnsConfig(apnsConfigBuilder.build());
+            }
+
+            if (notification != null) {
+                builder.setNotification(notification);
+            }
+            if (data != null) {
+                builder.putAllData(data);
+            }
+
+            String response = FirebaseMessaging.getInstance().send(builder.build());
+            success = true;
+        } catch (FirebaseMessagingException e) {
+            LOG.log(Level.WARNING, "FCM send failed: " + e.getErrorCode(), e);
+
+            // TODO: Implement backoff and blacklisting
+            switch (e.getErrorCode()) {
+                // Errors we cannot recover from - stop FCM to avoid blacklisting our app
+                case "messaging/invalid-argument":
+                case "messaging/authentication-error":
+                    LOG.severe("FCM critical error so marking FCM as invalid no more messages will be sent");
+                    setValid(false);
+                    break;
+                case "messaging/server-unavailable":
+                case "messaging/internal-error":
+                    break;
             }
         }
 
         return success;
     }
 
-    public boolean isValid() {
+    public synchronized boolean isValid() {
         return valid;
+    }
+
+    protected synchronized void setValid(boolean valid) {
+        this.valid = valid;
     }
 }

@@ -24,8 +24,6 @@ import spock.util.concurrent.PollingConditions
 
 import java.util.concurrent.TimeUnit
 
-import static org.openremote.manager.notification.FCMDeliveryService.NOTIFICATION_FIREBASE_API_KEY
-import static org.openremote.manager.notification.FCMDeliveryService.NOTIFICATION_FIREBASE_URL
 import static org.openremote.manager.setup.builtin.ManagerDemoSetup.DEMO_RULE_STATES_APARTMENT_1
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID
 
@@ -51,7 +49,7 @@ class ResidenceNotifyAlarmTriggerTest extends Specification implements ManagerCo
         and: "a mock FCM delivery service"
         def mockFCMDeliveryService = Spy(FCMDeliveryService, constructorArgs: [container]) {
             // Always "deliver" to FCM
-            sendFCMMessage(_ as FCMBaseMessage) >> {
+            sendMessage(_ as FCMBaseMessage) >> {
                 return true
             }
         }

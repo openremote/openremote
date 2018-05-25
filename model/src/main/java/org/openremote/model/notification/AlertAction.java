@@ -34,9 +34,10 @@ public class AlertAction extends AbstractTypeHolder {
         super(Values.createObject());
     }
 
-    public AlertAction(String title, ActionType type) {
+    public AlertAction(String title, ActionType type, String appUrl) {
         setTitle(title);
         setActionType(type);
+        setAppUrl(appUrl);
     }
 
     // TODO This should use AttributeState, do this when Android Console project has dependency on Model
@@ -89,6 +90,14 @@ public class AlertAction extends AbstractTypeHolder {
             objectValue.put("assetId", Values.create(assetId));
         } else if (objectValue.hasKey("assetId")) {
             objectValue.remove("assetId");
+        }
+    }
+
+    public void setAppUrl(String appUrl) {
+        if (appUrl != null) {
+            objectValue.put("appUrl", Values.create(appUrl));
+        } else {
+            objectValue.remove("appUrl");
         }
     }
 }
