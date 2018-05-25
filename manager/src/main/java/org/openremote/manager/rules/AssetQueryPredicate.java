@@ -219,7 +219,7 @@ public class AssetQueryPredicate implements Predicate<AssetState> {
                 RadialLocationPredicate radialLocationPredicate = (RadialLocationPredicate) predicate;
                 GeodeticCalculator calculator = new GeodeticCalculator();
                 calculator.setStartingGeographicPoint(radialLocationPredicate.lng, radialLocationPredicate.lat);
-                calculator.setDestinationGeographicPoint(coordinate.x, coordinate.y);
+                calculator.setDestinationGeographicPoint(coordinate.y, coordinate.x);
                 return calculator.getOrthodromicDistance() < radialLocationPredicate.radius;
             } else if (predicate instanceof RectangularLocationPredicate) {
                 // Again this is a euclidean plane so doesn't work perfectly for WGS lat/lng - the bigger the rectangle to less accurate it is)
