@@ -334,7 +334,7 @@
 
                                 // Enable providers that don't require permissions, already have permissions or autoEnable is true
                                 // Don't enable providers marked as disabled
-                                if (msgJson.success && !this.registration.providers[name].disabled && (this.autoEnable || !msgJson.requiresPermission || msgJson.hasPermission)) {
+                                if (msgJson.success && !this.registration.providers[providerName].disabled && (this.autoEnable || !msgJson.requiresPermission || msgJson.hasPermission)) {
 
                                     this._pendingProviderEnables.push(providerName);
 
@@ -344,16 +344,16 @@
                                             if (!this.registration.id) {
                                                 // Console hasn't yet been registered so do that first then enable the geofence provider
                                                 this.register(() => {
-                                                    this.enableProvider(name, {consoleId: this.registration.id});
+                                                    this.enableProvider(providerName, {consoleId: this.registration.id});
                                                 }, () => {
                                                     console.debug("Failed to register console so cannot get console ID to enable goefence provider");
                                                 })
                                             } else {
-                                                this.enableProvider(name, {consoleId: this.registration.id});
+                                                this.enableProvider(providerName, {consoleId: this.registration.id});
                                             }
                                             break;
                                         default:
-                                            this.enableProvider(name);
+                                            this.enableProvider(providerName);
                                             break;
                                     }
                                 }
