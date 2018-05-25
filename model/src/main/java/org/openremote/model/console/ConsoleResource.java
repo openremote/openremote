@@ -47,7 +47,7 @@ public interface ConsoleResource {
      */
     @POST
     @Path("register")
-    @SuccessStatusCode(204)
+    @SuccessStatusCode(200)
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
     @SuppressWarnings("unusable-by-js")

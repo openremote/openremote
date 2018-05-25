@@ -84,9 +84,9 @@ public class ConsoleResourceImpl extends ManagerWebResource implements ConsoleRe
                 consoleRegistration.getVersion(),
                 consoleRegistration.getPlatform(),
                 consoleRegistration.getProviders());
-            if (!isAuthenticated() || isSuperUser()) {
-                consoleAsset.setAccessPublicRead(true);
-            }
+//            if (!isAuthenticated() || isSuperUser()) {
+//                consoleAsset.setAccessPublicRead(true);
+//            }
             consoleAsset.setRealmId(getRequestTenant().getId());
             consoleAsset.setParentId(getConsoleParentAssetId(getRequestRealm()));
             consoleAsset.setId(consoleRegistration.getId());
@@ -116,11 +116,11 @@ public class ConsoleResourceImpl extends ManagerWebResource implements ConsoleRe
 
             if (TextUtil.isNullOrEmpty(id)) {
                 Asset consoleParent = getConsoleParentAsset(assetStorageService, getRequestTenant());
-                realmConsoleParentMap.put(realm, consoleParent.getId());
-                return id;
-            } else {
-                return id;
+                id = consoleParent.getId();
+                realmConsoleParentMap.put(realm, id);
             }
+
+            return id;
         });
     }
 

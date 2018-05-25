@@ -107,6 +107,12 @@ public class MainActivity extends Activity {
         }
     }
 
+    protected String getClientUrl() {
+        String platform = "Android " + Build.VERSION.RELEASE;
+        String url = getString(R.string.OR_BASE_SERVER) + getString(R.string.OR_CONSOLE_URL) + "?consolePlatform=" + platform;
+        return url;
+    }
+
     @Override
     public void onActivityReenter(int resultCode, Intent data) {
         super.onActivityReenter(resultCode, data);
@@ -132,7 +138,7 @@ public class MainActivity extends Activity {
             webView.restoreState(savedInstanceState);
         } else {
             initializeWebView();
-            String url = getString(R.string.OR_BASE_SERVER) + getString(R.string.OR_CONSOLE_URL);
+            String url = getClientUrl();
             if (getIntent().hasExtra("url")) {
                 url = url + getIntent().getStringExtra("url");
             }
@@ -146,7 +152,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onNewIntent(Intent intent) {
         if (intent.hasExtra("url")) {
-            String url = getString(R.string.OR_BASE_SERVER) + getString(R.string.OR_CONSOLE_URL) + intent.getStringExtra("url");
+            String url = getClientUrl() + getIntent().getStringExtra("url");
             LOG.fine("Loading web view: " + url);
             webView.loadUrl(url);
         }
@@ -192,10 +198,11 @@ public class MainActivity extends Activity {
     public void reloadWebView(View view) {
         errorViewHolder.hide();
         String url = webView.getUrl();
-        if ("about:blank".equals(url))
-            url = getString(R.string.OR_BASE_SERVER) + getString(R.string.OR_CONSOLE_URL);
-        LOG.fine("Reloading web view: " + url);
-        webView.loadUrl(url);
+        if ("about:blank".equals(url)) {
+            url = getClientUrl();
+            LOG.fine("Reloading web view: " + url);
+            webView.loadUrl(url);
+        }
     }
 
     public void exitOnClick(View view) {
