@@ -19,6 +19,8 @@
  */
 package org.openremote.manager.notification;
 
+import com.google.firebase.messaging.AndroidConfig;
+import com.google.firebase.messaging.ApnsConfig;
 import com.google.firebase.messaging.Notification;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
@@ -106,6 +108,14 @@ public class NotificationService implements ContainerService {
         return persistenceService.doReturningTransaction(entityManager -> entityManager.createQuery(
             "SELECT dnt FROM DeviceNotificationToken dnt WHERE dnt.id.userId =:userId order by dnt.updatedOn desc", DeviceNotificationToken.class
         ).setParameter("userId", userId).getResultList());
+    }
+
+    public boolean isFcmEnabled() {
+        return fcmDeliveryService.isValid();
+    }
+
+    public boolean sendFcmMessage(FCMTargetType targetType, String target, FCMMessagePriority priority, Notification notification, Map<String, String> data, Date expiration, AndroidConfig.Builder androidConfigBuilder, ApnsConfig.Builder apnsConfigBuilder) {
+        return fcmDeliveryService.sendMessage(targetType, target, priority, notification, data, expiration, androidConfigBuilder, apnsConfigBuilder);
     }
 
     //TODO: Unify the notification service to support push, email, SMS, etc.
