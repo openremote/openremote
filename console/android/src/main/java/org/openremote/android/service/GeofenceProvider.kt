@@ -44,8 +44,8 @@ class GeofenceProvider(val activity: Activity) {
         PendingIntent.getService(activity, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT)
     }
 
-    var baseURL: String = ""
-    var consoleId: String = ""
+    var baseURL: String? = null
+    var consoleId: String? = null
 
 
     fun initialize(): Map<String, Any> {
@@ -90,6 +90,16 @@ class GeofenceProvider(val activity: Activity) {
                 "hasPermission" to true,
                 "success" to true
         )
+    }
+
+    fun disable() {
+        sharedPreferences.edit()
+                .remove(baseUrlKey)
+                .remove(consoleIdKey)
+                .apply()
+        baseURL = null
+        consoleId = null
+        clearAllRegions()
     }
 
     fun checkPermission(): Boolean {

@@ -3,10 +3,7 @@ package org.openremote.android;
 import android.Manifest;
 import android.app.Activity;
 import android.app.DownloadManager;
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
+import android.content.*;
 import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
@@ -16,6 +13,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
+import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
@@ -38,6 +36,7 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.json.JSONException;
@@ -45,6 +44,7 @@ import org.json.JSONObject;
 import org.openremote.android.service.GeofenceProvider;
 import org.openremote.android.service.TokenService;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
 
@@ -58,7 +58,7 @@ public class MainActivity extends Activity {
     protected WebView webView;
     protected ErrorViewHolder errorViewHolder;
     protected Context context;
-
+    protected SharedPreferences sharedPreferences;
     protected GeofenceProvider geofenceProvider;
 
     BroadcastReceiver onDownloadCompleteReciever = new BroadcastReceiver() {
@@ -117,6 +117,7 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
 
         context = this;
+        sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
 
         // Enable remote debugging of WebView from Chrome Debugger tools
         if (isRemoteDebuggingEnabled()) {
@@ -412,49 +413,90 @@ public class MainActivity extends Activity {
                     if (action != null) {
                         String provider = data.getString("provider");
                         if (provider.equalsIgnoreCase("geofence")) {
-                            if (action.equalsIgnoreCase("PROVIDER_INIT")) {
-                                geofenceProvider = new GeofenceProvider(activity);
-                                if (!geofenceProvider.checkPermission()) {
-                                    geofenceProvider.registerPermissions();
-                                } else {
-                                    try {
-                                        Map<String, Object> initData = geofenceProvider.initialize();
-                                        final String jsonString = new ObjectMapper().writeValueAsString(initData);
-                                        activity.runOnUiThread(new Runnable() {
-                                            @Override
-                                            public void run() {
-                                                webView.evaluateJavascript(String.format("openremote.INSTANCE.console.handleProviderResponse('%s')", jsonString), null);
-                                            }
-                                        });
-                                    } catch (Exception e) {
-                                        e.printStackTrace();
-                                    }
-                                }
-                            } else if (action.equalsIgnoreCase("PROVIDER_ENABLE")) {
-                                JSONObject innerData = data.getJSONObject("data");
-                                if (innerData != null) {
-                                    String consoleId = innerData.getString("consoleId");
-                                    if (consoleId != null) {
-                                        try {
-                                            Map<String, Object> enableData = geofenceProvider.enable(String.format("%s/%s", getString(R.string.OR_BASE_SERVER), getString(R.string.OR_REALM)), consoleId);
-                                            final String jsonString = new ObjectMapper().writeValueAsString(enableData);
-
-                                            activity.runOnUiThread(new Runnable() {
-                                                @Override
-                                                public void run() {
-                                                    webView.evaluateJavascript(String.format("openremote.INSTANCE.console.handleProviderResponse('%s')", jsonString), null);
-                                                }
-                                            });
-                                        } catch (Exception e) {
-                                            e.printStackTrace();
-                                        }
-                                    }
-                                }
-                            }
+                            handleGeofenceProviderMessage(action, data.has("data") ? data.getJSONObject("data") : null);
+                        } else if (provider.equalsIgnoreCase("push")) {
+                            handlePushProviderMessage(action, data.has("data") ? data.getJSONObject("data") : null);
                         }
                     }
                     break;
                 default:
+            }
+        }
+
+        protected void handleGeofenceProviderMessage(String action, JSONObject data) throws JSONException {
+            if (action.equalsIgnoreCase("PROVIDER_INIT")) {
+                geofenceProvider = new GeofenceProvider(activity);
+                if (!geofenceProvider.checkPermission()) {
+                    geofenceProvider.registerPermissions();
+                } else {
+                    Map<String, Object> initData = geofenceProvider.initialize();
+                    notifyClient(initData);
+                }
+            } else if (action.equalsIgnoreCase("PROVIDER_ENABLE")) {
+                if (data != null) {
+                    String consoleId = data.getString("consoleId");
+                    if (consoleId != null) {
+                        Map<String, Object> enableData = geofenceProvider.enable(String.format("%s/%s",
+                                                                                               getString(R.string.OR_BASE_SERVER),
+                                                                                               getString(R.string.OR_REALM)),
+                                                                                 consoleId);
+                        notifyClient(enableData);
+                    }
+                }
+            } else if (action.equalsIgnoreCase("PROVIDER_DISABLE")) {
+                geofenceProvider.disable();
+                Map<String, Object> response = new HashMap<>();
+                response.put("action", "PROVIDER_DISABLE");
+                response.put("provider", "geofence");
+                notifyClient(response);
+            } else if (action.equalsIgnoreCase("GEOFENCE_REFRESH")) {
+                geofenceProvider.refreshGeofences();
+            }
+        }
+
+        protected void handlePushProviderMessage(String action, JSONObject data) throws JSONException {
+            if (action.equalsIgnoreCase("PROVIDER_INIT")) {
+                // Push permission is covered by the INTERNET permission and is not a runtime permission
+                Map<String, Object> response = new HashMap<>();
+                response.put("action", "PROVIDER_INIT");
+                response.put("provider", "push");
+                response.put("version", "fcm");
+                response.put("requiresPermission", false);
+                response.put("success", true);
+                notifyClient(response);
+            } else if (action.equalsIgnoreCase("PROVIDER_ENABLE")) {
+                // TODO: Implement topic support
+                String fcmToken =  sharedPreferences.getString(getString(R.string.SHARED_PREF_FCM_TOKEN), null);
+                Map<String, Object> response = new HashMap<>();
+                response.put("action", "PROVIDER_ENABLE");
+                response.put("provider", "push");
+                response.put("hasPermission", true);
+                response.put("success", true);
+                Map<String, Object> responseData = new HashMap<>();
+                responseData.put("token", fcmToken);
+                response.put("data", responseData);
+                notifyClient(response);
+            } else if (action.equalsIgnoreCase("PROVIDER_DISABLE")) {
+                // Cannot disable push notifications
+                Map<String, Object> response = new HashMap<>();
+                response.put("action", "PROVIDER_DISABLE");
+                response.put("provider", "push");
+                notifyClient(response);
+            }
+        }
+
+        protected void notifyClient(Map<String, Object> data) {
+            try {
+                final String jsonString = new ObjectMapper().writeValueAsString(data);
+
+                activity.runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        webView.evaluateJavascript(String.format("openremote.INSTANCE.console.handleProviderResponse('%s')", jsonString), null);
+                    }
+                });
+            } catch (JsonProcessingException e) {
+                e.printStackTrace();
             }
         }
 
@@ -467,7 +509,6 @@ public class MainActivity extends Activity {
                     return "{}";
             }
         }
-
     }
 
     protected void onConnectivityChanged(boolean connectivity) {
