@@ -85,6 +85,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
     public String apartment3LivingroomId;
     public String masterRealmId;
     public String customerARealmId;
+    public String consolesId;
     public String consoleId;
 
     public ManagerDemoSetup(Container container, boolean importDemoScenes) {
@@ -634,6 +635,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
 
 
         Asset consoleParent = ConsoleResourceImpl.getConsoleParentAsset(assetStorageService, keycloakDemoSetup.customerATenant);
+        consolesId = consoleParent.getId();
 
         Asset console = ConsoleConfiguration.initConsoleConfiguration(
             new Asset("Demo Console", CONSOLE, consoleParent),

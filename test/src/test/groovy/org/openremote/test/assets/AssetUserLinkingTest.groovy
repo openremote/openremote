@@ -1,6 +1,7 @@
 package org.openremote.test.assets
 
 import org.openremote.container.timer.TimerService
+import org.openremote.manager.asset.console.ConsoleResourceImpl
 import org.openremote.manager.security.ManagerIdentityService
 import org.openremote.manager.setup.SetupService
 import org.openremote.manager.setup.builtin.KeycloakDemoSetup
@@ -51,7 +52,7 @@ class AssetUserLinkingTest extends Specification implements ManagerContainerTrai
         def userAssets = assetResource.getUserAssetLinks(null, keycloakDemoSetup.customerATenant.id, null, null)
 
         then: "result should match"
-        userAssets.length == 5
+        userAssets.length == 6
         userAssets.any {
             it.id.realmId == keycloakDemoSetup.customerATenant.id &&
                     it.id.userId == keycloakDemoSetup.testuser3Id &&
@@ -90,6 +91,14 @@ class AssetUserLinkingTest extends Specification implements ManagerContainerTrai
                     it.id.assetId == managerDemoSetup.apartment2Id &&
                     it.assetName == "Apartment 2" &&
                     it.parentAssetName == "Smart Home" &&
+                    it.userFullName == "testuser3 (Testuserfirst Testuserlast)"
+        }
+        userAssets.any {
+            it.id.realmId == keycloakDemoSetup.customerATenant.id &&
+                    it.id.userId == keycloakDemoSetup.testuser3Id &&
+                    it.id.assetId == managerDemoSetup.consoleId &&
+                    it.assetName == "Demo Console" &&
+                    it.parentAssetName == ConsoleResourceImpl.CONSOLE_PARENT_ASSET_NAME &&
                     it.userFullName == "testuser3 (Testuserfirst Testuserlast)"
         }
 

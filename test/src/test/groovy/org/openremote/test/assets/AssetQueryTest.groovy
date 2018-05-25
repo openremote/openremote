@@ -95,7 +95,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         )
 
         then: "only the users assets should be retrieved"
-        assets.size() == 5
+        assets.size() == 6
         assets.get(0).id == managerDemoSetup.apartment1Id
         assets.get(1).id == managerDemoSetup.apartment1LivingroomId
         assets.get(1).getAttributesList().size() == 8
@@ -107,6 +107,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets.get(2).id == managerDemoSetup.apartment1KitchenId
         assets.get(3).id == managerDemoSetup.apartment1HallwayId
         assets.get(4).id == managerDemoSetup.apartment2Id
+        assets.get(5).id == managerDemoSetup.consoleId
 
         when: "a user filtering query is executed that returns only IDs, names and attribute names and limits to protected attributes and meta"
         assets = assetStorageService.findAll(
@@ -116,7 +117,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         )
 
         then: "only the users assets should be retrieved"
-        assets.size() == 5
+        assets.size() == 6
         assets.get(0).id == managerDemoSetup.apartment1Id
         assets.get(1).id == managerDemoSetup.apartment1LivingroomId
         assets.get(1).getAttributesList().size() == 5
@@ -128,6 +129,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets.get(2).id == managerDemoSetup.apartment1KitchenId
         assets.get(3).id == managerDemoSetup.apartment1HallwayId
         assets.get(4).id == managerDemoSetup.apartment2Id
+        assets.get(5).id == managerDemoSetup.consoleId
 
         when: "a query is executed that returns a protected attribute without any other meta items"
         assets = assetStorageService.findAll(
@@ -782,20 +784,18 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
                 .orderBy(new OrderBy(NAME))
         )
 
-        then: "all 6 realm assets should be returned"
-        assets.size() == 6
+        then: "all 5 realm assets should be returned"
+        assets.size() == 5
         assets[0].id == managerDemoSetup.agentId
         assets[0].name == "Demo Agent"
-        assets[1].id == managerDemoSetup.consoleId
-        assets[1].name == "Demo Android Console"
-        assets[2].id == managerDemoSetup.thingId
-        assets[2].name == "Demo Thing"
-        assets[3].id == managerDemoSetup.groundFloorId
-        assets[3].name == "Ground Floor"
-        assets[4].id == managerDemoSetup.lobbyId
-        assets[4].name == "Lobby"
-        assets[5].id == managerDemoSetup.smartOfficeId
-        assets[5].name == "Smart Office"
+        assets[1].id == managerDemoSetup.thingId
+        assets[1].name == "Demo Thing"
+        assets[2].id == managerDemoSetup.groundFloorId
+        assets[2].name == "Ground Floor"
+        assets[3].id == managerDemoSetup.lobbyId
+        assets[3].name == "Lobby"
+        assets[4].id == managerDemoSetup.smartOfficeId
+        assets[4].name == "Smart Office"
 
         when: "a calendar event filtering query is executed for future event on a correct day but wrong time"
         assets = assetStorageService.findAll(
