@@ -7,6 +7,11 @@ import android.util.Log
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.android.gms.location.Geofence
 import com.google.android.gms.location.GeofencingEvent
+import org.openremote.android.R
+import org.openremote.android.service.TokenService.getUnsafeOkHttpClient
+import retrofit2.Retrofit
+import retrofit2.converter.jackson.JacksonConverterFactory
+import retrofit2.converter.scalars.ScalarsConverterFactory
 import java.io.DataOutputStream
 import java.net.HttpURLConnection
 import java.net.URL
@@ -14,7 +19,10 @@ import kotlin.text.Charsets.UTF_8
 
 class GeofenceTransitionsIntentService : IntentService("or-geofence") {
 
+
+
     override fun onHandleIntent(intent: Intent?) {
+
         val geofencingEvent = GeofencingEvent.fromIntent(intent)
         if (geofencingEvent.hasError()) {
             Log.e(TAG, "Error handling geofence event")
@@ -26,6 +34,12 @@ class GeofenceTransitionsIntentService : IntentService("or-geofence") {
         val geofence = geofencingEvent.triggeringGeofences.first()
         val postUrl = GeofenceProvider.geoPostUrls[geofence.requestId]
 
+        val url = URL("$baseUrl$postUrl")
+        val connection = url.openConnection() as HttpURLConnection
+        connection.setRequestProperty("Content-Type", "application/json")
+        connection.requestMethod = "POST"
+        connection.connectTimeout = 10000
+
         if (geofenceTransition == Geofence.GEOFENCE_TRANSITION_ENTER) {
 
             val postJson = {
@@ -35,49 +49,16 @@ class GeofenceTransitionsIntentService : IntentService("or-geofence") {
                 }
             }
 
-            val url = URL("$baseUrl$postUrl")
-            val connection = url.openConnection() as HttpURLConnection
-            connection.requestMethod = "POST"
-            connection.connectTimeout = 100000
             connection.doOutput = true
-
-            val postData: ByteArray = ObjectMapper().writeValueAsString(postJson).toByteArray(UTF_8)
-
-            connection.setRequestProperty("charset", "utf-8")
-            connection.setRequestProperty("Content-lenght", postData.size.toString())
-            connection.setRequestProperty("Content-Type", "application/json")
-
-            try {
-                val outputStream = DataOutputStream(connection.outputStream)
-                outputStream.write(postData)
-                outputStream.flush()
-            } catch (exception: Exception) {
-                print(exception)
-            }
+            connection.setChunkedStreamingMode(0)
+            connection.outputStream
+            ObjectMapper().writeValue(connection.outputStream, postJson)
         }
 
-        if (geofenceTransition == Geofence.GEOFENCE_TRANSITION_EXIT) {
-            val postJson = hashMapOf<String, Any>()
-
-            val url = URL("$baseUrl$postUrl")
-            val connection = url.openConnection() as HttpURLConnection
-            connection.requestMethod = "POST"
-            connection.connectTimeout = 100000
-            connection.doOutput = true
-
-            val postData: ByteArray = ObjectMapper().writeValueAsString(postJson).toByteArray(UTF_8)
-
-            connection.setRequestProperty("charset", "utf-8")
-            connection.setRequestProperty("Content-lenght", postData.size.toString())
-            connection.setRequestProperty("Content-Type", "application/json")
-
-            try {
-                val outputStream = DataOutputStream(connection.outputStream)
-                outputStream.write(postData)
-                outputStream.flush()
-            } catch (exception: Exception) {
-                print(exception)
-            }
+        try {
+            connection.outputStream.flush()
+        } catch (exception: Exception) {
+            print(exception)
         }
     }
 }

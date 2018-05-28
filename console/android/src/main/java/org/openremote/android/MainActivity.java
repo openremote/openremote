@@ -39,6 +39,7 @@ import android.widget.Toast;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import com.google.firebase.iid.FirebaseInstanceId;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.openremote.android.service.GeofenceProvider;
@@ -138,10 +139,24 @@ public class MainActivity extends Activity {
             webView.restoreState(savedInstanceState);
         } else {
             initializeWebView();
-            String url = getClientUrl();
-            if (getIntent().hasExtra("url")) {
-                url = url + getIntent().getStringExtra("url");
+            if (!getIntent().hasExtra("url")) {
+                String url = getClientUrl();
+                LOG.fine("Loading web view: " + url);
+                webView.loadUrl(url);
             }
+        }
+
+        if (getIntent().hasExtra("url")) {
+            String url = getClientUrl();
+            String intentUrl = getIntent().getStringExtra("url");
+            if (intentUrl != null) {
+                if (intentUrl.startsWith("http") || intentUrl.startsWith("https")) {
+                    url = intentUrl;
+                } else {
+                    url = url + intentUrl;
+                }
+            }
+
             LOG.fine("Loading web view: " + url);
             webView.loadUrl(url);
         }
@@ -473,7 +488,7 @@ public class MainActivity extends Activity {
                 notifyClient(response);
             } else if (action.equalsIgnoreCase("PROVIDER_ENABLE")) {
                 // TODO: Implement topic support
-                String fcmToken =  sharedPreferences.getString(getString(R.string.SHARED_PREF_FCM_TOKEN), null);
+                String fcmToken =  FirebaseInstanceId.getInstance().getToken();
                 Map<String, Object> response = new HashMap<>();
                 response.put("action", "PROVIDER_ENABLE");
                 response.put("provider", "push");

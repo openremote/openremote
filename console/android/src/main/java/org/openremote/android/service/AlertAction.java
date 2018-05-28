@@ -1,6 +1,5 @@
 package org.openremote.android.service;
 
-
 import java.io.Serializable;
 
 public class AlertAction implements Serializable {
@@ -8,6 +7,7 @@ public class AlertAction implements Serializable {
     private String title;
     private String assetId;
     private String attributeName;
+    private String appUrl;
     private String rawJson;
 
     public String getAssetId() {
@@ -51,6 +51,14 @@ public class AlertAction implements Serializable {
 
     public void setTitle(String title) {
         this.title = title;
+    }
+
+    public String getAppUrl() {
+        return appUrl;
+    }
+
+    public void setAppUrl(String appUrl) {
+        this.appUrl = appUrl;
     }
 
     @Override

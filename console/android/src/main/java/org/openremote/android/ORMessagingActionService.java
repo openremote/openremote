@@ -30,15 +30,35 @@ public class ORMessagingActionService extends IntentService {
         Intent it = new Intent(Intent.ACTION_CLOSE_SYSTEM_DIALOGS);
         this.sendBroadcast(it);
 
-        AlertNotification notification = (AlertNotification) intent.getSerializableExtra("notification");
-        tokenService.deleteAlert(notification.getId());
+        if (intent.hasExtra("notification")) {
+            AlertNotification notification = (AlertNotification) intent.getSerializableExtra("notification");
+            tokenService.deleteAlert(notification.getId());
+            NotificationManager manager = (NotificationManager) getSystemService(Service.NOTIFICATION_SERVICE);
+            manager.cancel(notification.getId().hashCode());
+        } else if (intent.hasExtra("notificationId")) {
+            int id = intent.getIntExtra("notificationId", 0);
+            if (id != 0) {
+                NotificationManager manager = (NotificationManager) getSystemService(Service.NOTIFICATION_SERVICE);
+                manager.cancel(id);
+            }
+        }
 
-        NotificationManager manager = (NotificationManager) getSystemService(Service.NOTIFICATION_SERVICE);
-        manager.cancel(notification.getId().hashCode());
         AlertAction alertAction =  (AlertAction) intent.getSerializableExtra("action");
 
-        if(alertAction != null && AlertNotification.ActionType.ACTUATOR.equals(alertAction.getType())) {
-            tokenService.executeAction(alertAction);
+        if(alertAction != null) {
+            if (AlertNotification.ActionType.ACTUATOR.equals(alertAction.getType())) {
+                tokenService.executeAction(alertAction);
+            } else if (alertAction.getAppUrl() != null) {
+                // TODO: decide how to handle absolute URLs (i.e. open in the normal browser or inside the console?)
+                // For now replicated behaviour of iOS for important demo
+                Intent activityIntent = new Intent(this, MainActivity.class);
+                activityIntent.setAction(Intent.ACTION_MAIN);
+                activityIntent.addCategory(Intent.CATEGORY_LAUNCHER);
+                activityIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK |
+                                            Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                activityIntent.putExtra("url", alertAction.getAppUrl());
+                startActivity(activityIntent);
+            }
         } else if (intent.hasExtra("url")) {
             Intent activityIntent = new Intent(this, MainActivity.class);
             activityIntent.setAction(Intent.ACTION_MAIN);

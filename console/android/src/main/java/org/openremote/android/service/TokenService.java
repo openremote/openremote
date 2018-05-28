@@ -39,7 +39,7 @@ public class TokenService {
     private final String deviceIdKey;
     private final String realm;
     private final OAuth2Service oauth2Service;
-    private final NotificationService notificationService;
+    private final RestApiResource restApiResource;
 
     public TokenService(Context context) {
         Retrofit.Builder builder = new Retrofit.Builder()
@@ -52,7 +52,7 @@ public class TokenService {
         Retrofit retrofit = builder.build();
 
         oauth2Service = retrofit.create(OAuth2Service.class);
-        notificationService = retrofit.create(NotificationService.class);
+        restApiResource = retrofit.create(RestApiResource.class);
         sharedPref = PreferenceManager.getDefaultSharedPreferences(context);
         refreshTokenKey = context.getString(R.string.SHARED_PREF_REFRESH_TOKEN);
         fcmTokenKey = context.getString(R.string.SHARED_PREF_FCM_TOKEN);
@@ -140,7 +140,7 @@ public class TokenService {
         withAccessToken(new TokenCallback() {
             @Override
             public void onToken(String accessToken) {
-                Call call = notificationService.updateToken(realm, accessToken, fcmToken, id, "ANDROID");
+                Call call = restApiResource.updateToken(realm, accessToken, fcmToken, id, "ANDROID");
 
                     call.enqueue(new Callback() {
                         @Override
@@ -181,7 +181,7 @@ public class TokenService {
         withAccessToken(new TokenCallback() {
             @Override
             public void onToken(String accessToken) {
-                notificationService.getAlertNotification(realm, accessToken).enqueue(callback);
+                restApiResource.getAlertNotification(realm, accessToken).enqueue(callback);
             }
 
             @Override
@@ -202,7 +202,7 @@ public class TokenService {
         withAccessToken(new TokenCallback() {
             @Override
             public void onToken(String accessToken) throws IOException {
-                notificationService.deleteNotification(realm, accessToken,id).enqueue(new Callback<Void>() {
+                restApiResource.deleteNotification(realm, accessToken, id).enqueue(new Callback<Void>() {
                     @Override
                     public void onResponse(Call<Void> call, Response<Void> response) {
                         if (response.code() != 204) {
@@ -232,7 +232,7 @@ public class TokenService {
         withAccessToken(new TokenCallback() {
             @Override
             public void onToken(String accessToken) throws IOException {
-                notificationService.updateAssetAction(realm, accessToken,alertAction.getAssetId(),alertAction.getAttributeName(),alertAction.getRawJson()).enqueue(new Callback<Void>() {
+                restApiResource.updateAssetAction(realm, accessToken, alertAction.getAssetId(), alertAction.getAttributeName(), alertAction.getRawJson()).enqueue(new Callback<Void>() {
                     @Override
                     public void onResponse(Call<Void> call, Response<Void> response) {
                         if (response.code() != 204) {
@@ -260,7 +260,7 @@ public class TokenService {
     }
 
 
-    private static OkHttpClient getUnsafeOkHttpClient() {
+    static OkHttpClient getUnsafeOkHttpClient() {
         try {
             // Create a trust manager that does not validate certificate chains
             final TrustManager[] trustAllCerts = new TrustManager[] {
