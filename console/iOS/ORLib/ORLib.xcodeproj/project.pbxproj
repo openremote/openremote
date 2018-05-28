@@ -7,8 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		4C31CE9F20AD80860073FA97 /* GeofenceProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C31CE9E20AD80860073FA97 /* GeofenceProvider.swift */; };
 		4C4C2FB81FD8044A0071CBDA /* ORNotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C4C2FB71FD8044A0071CBDA /* ORNotificationService.swift */; };
+		4C77278520BC13E800322CBC /* PushNotificationProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C77278320BC13E800322CBC /* PushNotificationProvider.swift */; };
+		4C77278620BC13E800322CBC /* GeofenceProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C77278420BC13E800322CBC /* GeofenceProvider.swift */; };
 		4C82D73F1FC58ED2009DE853 /* ORLib.h in Headers */ = {isa = PBXBuildFile; fileRef = 4C82D73D1FC58ED2009DE853 /* ORLib.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		4C82D74A1FC58F4E009DE853 /* ORViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C82D7451FC58F4E009DE853 /* ORViewController.swift */; };
 		4C82D74B1FC58F4E009DE853 /* ORAppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C82D7461FC58F4E009DE853 /* ORAppDelegate.swift */; };
@@ -22,8 +23,9 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		4C31CE9E20AD80860073FA97 /* GeofenceProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeofenceProvider.swift; sourceTree = "<group>"; };
 		4C4C2FB71FD8044A0071CBDA /* ORNotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ORNotificationService.swift; sourceTree = "<group>"; };
+		4C77278320BC13E800322CBC /* PushNotificationProvider.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PushNotificationProvider.swift; sourceTree = "<group>"; };
+		4C77278420BC13E800322CBC /* GeofenceProvider.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = GeofenceProvider.swift; sourceTree = "<group>"; };
 		4C82D73A1FC58ED2009DE853 /* ORLib.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = ORLib.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		4C82D73D1FC58ED2009DE853 /* ORLib.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ORLib.h; sourceTree = "<group>"; };
 		4C82D73E1FC58ED2009DE853 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -52,6 +54,15 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		4C77278220BC13BA00322CBC /* ConsoleProviders */ = {
+			isa = PBXGroup;
+			children = (
+				4C77278420BC13E800322CBC /* GeofenceProvider.swift */,
+				4C77278320BC13E800322CBC /* PushNotificationProvider.swift */,
+			);
+			path = ConsoleProviders;
+			sourceTree = "<group>";
+		};
 		4C82D7301FC58ED2009DE853 = {
 			isa = PBXGroup;
 			children = (
@@ -73,6 +84,7 @@
 		4C82D73C1FC58ED2009DE853 /* ORLib */ = {
 			isa = PBXGroup;
 			children = (
+				4C77278220BC13BA00322CBC /* ConsoleProviders */,
 				4C82D7531FC590FB009DE853 /* ErrorManager.swift */,
 				4C82D7541FC590FB009DE853 /* TokenManager.swift */,
 				4CBC0D461FD6DDA1000BE8B1 /* Reachability.swift */,
@@ -84,7 +96,6 @@
 				4C82D73D1FC58ED2009DE853 /* ORLib.h */,
 				4C82D73E1FC58ED2009DE853 /* Info.plist */,
 				4C4C2FB71FD8044A0071CBDA /* ORNotificationService.swift */,
-				4C31CE9E20AD80860073FA97 /* GeofenceProvider.swift */,
 			);
 			path = ORLib;
 			sourceTree = "<group>";
@@ -146,7 +157,7 @@
 		4C82D7311FC58ED2009DE853 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 0910;
+				LastUpgradeCheck = 0930;
 				ORGANIZATIONNAME = "Open Remote Inc.";
 				TargetAttributes = {
 					4C82D7391FC58ED2009DE853 = {
@@ -224,7 +235,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				4C31CE9F20AD80860073FA97 /* GeofenceProvider.swift in Sources */,
+				4C77278620BC13E800322CBC /* GeofenceProvider.swift in Sources */,
+				4C77278520BC13E800322CBC /* PushNotificationProvider.swift in Sources */,
 				4C4C2FB81FD8044A0071CBDA /* ORNotificationService.swift in Sources */,
 				4C82D7581FC590FB009DE853 /* ErrorManager.swift in Sources */,
 				4C82D74E1FC58F4E009DE853 /* ORLoginViewController.swift in Sources */,
@@ -254,6 +266,7 @@
 				CLANG_WARN_BOOL_CONVERSION = YES;
 				CLANG_WARN_COMMA = YES;
 				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
 				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
 				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
 				CLANG_WARN_EMPTY_BODY = YES;
@@ -261,6 +274,7 @@
 				CLANG_WARN_INFINITE_RECURSION = YES;
 				CLANG_WARN_INT_CONVERSION = YES;
 				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
 				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
 				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
@@ -314,6 +328,7 @@
 				CLANG_WARN_BOOL_CONVERSION = YES;
 				CLANG_WARN_COMMA = YES;
 				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
 				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
 				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
 				CLANG_WARN_EMPTY_BODY = YES;
@@ -321,6 +336,7 @@
 				CLANG_WARN_INFINITE_RECURSION = YES;
 				CLANG_WARN_INT_CONVERSION = YES;
 				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
 				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
 				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;

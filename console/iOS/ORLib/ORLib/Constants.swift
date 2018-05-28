@@ -27,10 +27,29 @@ public enum AccesTokenResult<String>
 }
 
 public enum DefaultsKey {
-    static let token = "token"
-    static let refreshToken = "refreshToken"
-    static let idToken = "idToken"
-    static let deviceId = "deviceToken"
+    public static let token = "token"
+    public static let refreshToken = "refreshToken"
+    public static let idToken = "idToken"
+    public static let deviceId = "deviceToken"
+    public static let actionKey = "action"
+    public static let providerKey = "provider"
+    public static let versionKey = "version"
+    public static let requiresPermissionKey = "requiresPermission"
+    public static let hasPermissionKey = "hasPermission"
+    public static let successKey = "success"
+    public static let dataKey = "data"
+}
+
+public enum Actions {
+    public static let providerInit = "PROVIDER_INIT"
+    public static let providerEnable = "PROVIDER_ENABLE"
+    public static let providerDisable = "PROVIDER_DISABLE"
+    public static let geofenceRefresh = "GEOFENCE_REFRESH"
+}
+
+public enum Providers {
+    public static let push = "push"
+    public static let geofence = "geofence"
 }
 
 public enum NotificationsNames {
@@ -46,6 +65,12 @@ public enum Notifications {
 }
 
 public enum ActionType {
-    static let ACTION_DEEP_LINK = "LINK"
-    static let ACTION_ACTUATOR = "ACTUATOR"
+    public static let actions = "actions"
+    public static let aps = "aps"
+    public static let alert = "alert"
+    public static let title = "title"
+    public static let type = "type"
+    public static let appUrl = "appUrl"
+    public static let ACTION_DEEP_LINK = "LINK"
+    public static let ACTION_ACTUATOR = "ACTUATOR"
 }
