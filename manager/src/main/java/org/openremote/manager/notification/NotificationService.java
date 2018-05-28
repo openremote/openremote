@@ -114,8 +114,8 @@ public class NotificationService implements ContainerService {
         return fcmDeliveryService.isValid();
     }
 
-    public boolean sendFcmMessage(FCMTargetType targetType, String target, FCMMessagePriority priority, Notification notification, Map<String, String> data, Date expiration, AndroidConfig.Builder androidConfigBuilder, ApnsConfig.Builder apnsConfigBuilder) {
-        return fcmDeliveryService.sendMessage(targetType, target, priority, notification, data, expiration, androidConfigBuilder, apnsConfigBuilder);
+    public boolean sendFcmMessage(FCMTargetType targetType, String target, FCMNotification notification, Map<String, String> data, FCMMessagePriority priority, Integer expiration) {
+        return fcmDeliveryService.sendMessage(targetType, target, notification, data, priority, expiration);
     }
 
     //TODO: Unify the notification service to support push, email, SMS, etc.
@@ -149,7 +149,7 @@ public class NotificationService implements ContainerService {
 
             String token = consolePushProvider.getData().getString("token").orElse(null);
 
-            Notification notification = new Notification(alertNotification.getTitle(), alertNotification.getMessage());
+            FCMNotification notification = new FCMNotification(alertNotification.getTitle(), alertNotification.getMessage());
             Map<String, String> data = new HashMap<>();
 
             if (alertNotification.getActions() != null && !alertNotification.getActions().isEmpty()) {
@@ -171,12 +171,11 @@ public class NotificationService implements ContainerService {
             fcmDeliveryService.sendMessage(
                 FCMTargetType.DEVICE,
                 token,
-                FCMMessagePriority.HIGH,
                 notification,
                 data,
-                new Date(new Date().getTime()+ 300000), // 5 min TTL
-                null,
-                null);
+                FCMMessagePriority.HIGH,
+                0 // 0 TTL gives best performance and this is assuming notifications are time critical
+                );
         } else {
             LOG.warning("Unsupported push provider version: " + pushProviderVersion);
         }

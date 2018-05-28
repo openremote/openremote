@@ -23,13 +23,18 @@ import com.google.auth.oauth2.GoogleCredentials;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
 import com.google.firebase.messaging.*;
+import org.json.JSONObject;
 import org.openremote.container.Container;
+import org.openremote.model.notification.AlertAction;
 import org.openremote.model.notification.DeviceNotificationToken;
 import org.openremote.model.notification.AlertNotification;
 import org.openremote.model.notification.DeliveryStatus;
 import org.openremote.model.util.TextUtil;
+import org.openremote.model.value.ObjectValue;
+import org.openremote.model.value.Values;
 
 import javax.persistence.EntityManager;
+import javax.validation.constraints.NotNull;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -116,7 +121,7 @@ public class FCMDeliveryService {
         for (DeviceNotificationToken deviceToken : deviceTokens) {
                 LOG.fine("Sending FCM notification pickup message to: " + deviceToken);
                 // Changed to behave like javadoc says
-                success = sendMessage(FCMTargetType.DEVICE, deviceToken.getToken(), FCMMessagePriority.HIGH, null, null, null, null, ApnsConfig.builder().putHeader("mutable-content", "1")) || success;
+                success = sendMessage(FCMTargetType.DEVICE, deviceToken.getToken(), null, null, FCMMessagePriority.HIGH, null) || success;
         }
         if (success) {
             LOG.fine("Successfully delivered FCM pickup message for at least one device of: " + userId);
@@ -126,8 +131,86 @@ public class FCMDeliveryService {
         return success;
     }
 
+    public boolean sendMessage(FCMTargetType targetType, String target, FCMNotification notification, Map<String, String> data, FCMMessagePriority priority, Integer timeToLiveSeconds) {
+        if (!isValid()) {
+            LOG.warning("FCM invalid configuration so ignoring");
+            return false;
+        }
 
-    public boolean sendMessage(FCMTargetType targetType, String target, FCMMessagePriority priority, Notification notification, Map<String, String> data, Date expiration, AndroidConfig.Builder androidConfigBuilder, ApnsConfig.Builder apnsConfigBuilder) {
+        if (TextUtil.isNullOrEmpty(target)) {
+            LOG.info("Invalid FCM message, the target is required and either notification and/or data must be set");
+            return false;
+        }
+
+        Message.Builder builder = Message.builder();
+
+        switch (targetType) {
+            case DEVICE:
+                builder.setToken(target);
+                break;
+            case TOPIC:
+                builder.setTopic(target);
+                break;
+            case CONDITION:
+                builder.setCondition(target);
+                break;
+        }
+
+        AndroidConfig.Builder androidConfigBuilder = AndroidConfig.builder();
+        ApnsConfig.Builder apnsConfigBuilder = ApnsConfig.builder();
+        Aps.Builder apsBuilder = Aps.builder();
+        WebpushConfig.Builder webpushConfigBuilder = WebpushConfig.builder();
+
+        if (notification != null) {
+            // Don't set basic notification on Android if there is data so even if app is in background we can show a custom notification
+            // with actions that use the actions from the data
+            if (data != null) {
+                androidConfigBuilder.putData("or-title", notification.getTitle());
+                androidConfigBuilder.putData("or-body", notification.getBody());
+            }
+
+            // Use alert dictionary for apns
+            // https://developer.apple.com/library/content/documentation/NetworkingInternet/Conceptual/RemoteNotificationsPG/PayloadKeyReference.html
+            JSONObject alertDictionary = new JSONObject();
+            alertDictionary.put("title", notification.getTitle());
+            alertDictionary.put("body", notification.getBody());
+            apsBuilder.putCustomData("alert", alertDictionary);
+
+            webpushConfigBuilder.setNotification(new WebpushNotification(notification.getTitle(), notification.getBody()));
+        }
+
+        if (data != null) {
+            builder.putAllData(data);
+        }
+
+        androidConfigBuilder.setPriority(priority == FCMMessagePriority.HIGH ? AndroidConfig.Priority.HIGH : AndroidConfig.Priority.NORMAL);
+        apnsConfigBuilder.putHeader("apns-priority", notification != null ? "10" : "5"); // Don't use 10 for data only
+
+        // set the following APNS flag to allow console to customise the notification before delivery and to ensure delivery
+        apsBuilder.setMutableContent(true);
+        // TODO: Tidy up APNS config
+        apsBuilder.setContentAvailable(true);
+
+        if (timeToLiveSeconds != null) {
+            timeToLiveSeconds = Math.max(timeToLiveSeconds, 0);
+            long timeToLiveMillis = timeToLiveSeconds*1000;
+            Date expirationDate = new Date(new Date().getTime() + timeToLiveMillis);
+            long epochSeconds = Math.round(((float)expirationDate.getTime())/1000);
+
+            apnsConfigBuilder.putHeader("apns-expiration", Long.toString(epochSeconds));
+            androidConfigBuilder.setTtl(timeToLiveMillis);
+            webpushConfigBuilder.putHeader("TTL", Integer.toString(timeToLiveSeconds));
+        }
+
+        apnsConfigBuilder.setAps(apsBuilder.build());
+        builder.setAndroidConfig(androidConfigBuilder.build());
+        builder.setApnsConfig(apnsConfigBuilder.build());
+        builder.setWebpushConfig(webpushConfigBuilder.build());
+
+        return sendMessage(builder.build());
+    }
+
+    public boolean sendMessage(Message message) {
         if (!isValid()) {
             LOG.warning("FCM invalid configuration so ignoring");
             return false;
@@ -135,61 +218,8 @@ public class FCMDeliveryService {
 
         boolean success = false;
 
-        if (TextUtil.isNullOrEmpty(target)) {
-            LOG.info("Invalid FCM message, the target is required and either notification and/or data must be set");
-            return false;
-        }
-
         try {
-            Message.Builder builder = Message.builder();
-
-            switch (targetType) {
-                case DEVICE:
-                    builder.setToken(target);
-                    break;
-                case TOPIC:
-                    builder.setTopic(target);
-                    break;
-                case CONDITION:
-                    builder.setCondition(target);
-                    break;
-            }
-
-            // TODO: Add web push support
-            if (priority == FCMMessagePriority.HIGH || notification == null || expiration != null) {
-                androidConfigBuilder = androidConfigBuilder == null ? AndroidConfig.builder() : androidConfigBuilder;
-                apnsConfigBuilder = apnsConfigBuilder == null ? ApnsConfig.builder() : apnsConfigBuilder;
-
-                androidConfigBuilder.setPriority(priority == FCMMessagePriority.HIGH ? AndroidConfig.Priority.HIGH : AndroidConfig.Priority.NORMAL);
-                apnsConfigBuilder.putHeader("apns-priority", notification != null ? "10" : "5"); // Don't use 5 for data only
-
-                if (notification == null) {
-                    apnsConfigBuilder.putCustomData("content-available", "1");
-                }
-
-                if (expiration != null) {
-                    long expirationMillis = expiration.getTime();
-                    long nowMillis = new Date().getTime();
-
-                    if (expirationMillis > nowMillis) {
-                        int seconds = Math.round(((float)expirationMillis)/1000);
-                        apnsConfigBuilder.putHeader("apns-expiration", Integer.toString(seconds));
-                        androidConfigBuilder.setTtl(expirationMillis);
-                    }
-                }
-
-                builder.setAndroidConfig(androidConfigBuilder.build());
-                builder.setApnsConfig(apnsConfigBuilder.build());
-            }
-
-            if (notification != null) {
-                builder.setNotification(notification);
-            }
-            if (data != null) {
-                builder.putAllData(data);
-            }
-
-            String response = FirebaseMessaging.getInstance().send(builder.build());
+            String response = FirebaseMessaging.getInstance().send(message);
             success = true;
         } catch (FirebaseMessagingException e) {
             LOG.log(Level.WARNING, "FCM send failed: " + e.getErrorCode(), e);
@@ -197,13 +227,13 @@ public class FCMDeliveryService {
             // TODO: Implement backoff and blacklisting
             switch (e.getErrorCode()) {
                 // Errors we cannot recover from - stop FCM to avoid blacklisting our app
-                case "messaging/invalid-argument":
-                case "messaging/authentication-error":
+                case "invalid-argument":
+                case "authentication-error":
                     LOG.severe("FCM critical error so marking FCM as invalid no more messages will be sent");
                     setValid(false);
                     break;
-                case "messaging/server-unavailable":
-                case "messaging/internal-error":
+                case "server-unavailable":
+                case "internal-error":
                     break;
             }
         }
