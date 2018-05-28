@@ -39,15 +39,16 @@ class GeofenceTransitionsIntentService : IntentService("or-geofence") {
         connection.setRequestProperty("Content-Type", "application/json")
         connection.requestMethod = "POST"
         connection.connectTimeout = 10000
+        connection.doInput = false
 
         if (geofenceTransition == Geofence.GEOFENCE_TRANSITION_ENTER) {
 
-            val postJson = {
-                "objectValue" to {
-                    "type" to "Point"
+            val postJson = hashMapOf(
+                "objectValue" to hashMapOf(
+                    "type" to "Point",
                     "coordinates" to arrayOf(geofencingEvent.triggeringLocation.longitude, geofencingEvent.triggeringLocation.latitude)
-                }
-            }
+                )
+            )
 
             connection.doOutput = true
             connection.setChunkedStreamingMode(0)
@@ -57,8 +58,11 @@ class GeofenceTransitionsIntentService : IntentService("or-geofence") {
 
         try {
             connection.outputStream.flush()
+            val responseCode = connection.responseCode
         } catch (exception: Exception) {
             print(exception)
+        } finally {
+            connection.outputStream.close()
         }
     }
 }
