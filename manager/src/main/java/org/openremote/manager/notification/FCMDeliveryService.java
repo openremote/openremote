@@ -23,18 +23,13 @@ import com.google.auth.oauth2.GoogleCredentials;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
 import com.google.firebase.messaging.*;
-import org.json.JSONObject;
 import org.openremote.container.Container;
-import org.openremote.model.notification.AlertAction;
-import org.openremote.model.notification.DeviceNotificationToken;
 import org.openremote.model.notification.AlertNotification;
 import org.openremote.model.notification.DeliveryStatus;
+import org.openremote.model.notification.DeviceNotificationToken;
 import org.openremote.model.util.TextUtil;
-import org.openremote.model.value.ObjectValue;
-import org.openremote.model.value.Values;
 
 import javax.persistence.EntityManager;
-import javax.validation.constraints.NotNull;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -44,8 +39,6 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
 
 public class FCMDeliveryService {
 
@@ -119,9 +112,9 @@ public class FCMDeliveryService {
 
         boolean success = false;
         for (DeviceNotificationToken deviceToken : deviceTokens) {
-                LOG.fine("Sending FCM notification pickup message to: " + deviceToken);
-                // Changed to behave like javadoc says
-                success = sendMessage(FCMTargetType.DEVICE, deviceToken.getToken(), null, null, FCMMessagePriority.HIGH, null) || success;
+            LOG.fine("Sending FCM notification pickup message to: " + deviceToken);
+            // Changed to behave like javadoc says
+            success = sendMessage(FCMTargetType.DEVICE, deviceToken.getToken(), null, null, FCMMessagePriority.HIGH, null) || success;
         }
         if (success) {
             LOG.fine("Successfully delivered FCM pickup message for at least one device of: " + userId);
@@ -171,10 +164,7 @@ public class FCMDeliveryService {
 
             // Use alert dictionary for apns
             // https://developer.apple.com/library/content/documentation/NetworkingInternet/Conceptual/RemoteNotificationsPG/PayloadKeyReference.html
-            JSONObject alertDictionary = new JSONObject();
-            alertDictionary.put("title", notification.getTitle());
-            alertDictionary.put("body", notification.getBody());
-            apsBuilder.putCustomData("alert", alertDictionary);
+            apsBuilder.setAlert(ApsAlert.builder().setTitle(notification.getTitle()).setBody(notification.getBody()).build());
 
             webpushConfigBuilder.setNotification(new WebpushNotification(notification.getTitle(), notification.getBody()));
         }
@@ -193,9 +183,9 @@ public class FCMDeliveryService {
 
         if (timeToLiveSeconds != null) {
             timeToLiveSeconds = Math.max(timeToLiveSeconds, 0);
-            long timeToLiveMillis = timeToLiveSeconds*1000;
+            long timeToLiveMillis = timeToLiveSeconds * 1000;
             Date expirationDate = new Date(new Date().getTime() + timeToLiveMillis);
-            long epochSeconds = Math.round(((float)expirationDate.getTime())/1000);
+            long epochSeconds = Math.round(((float) expirationDate.getTime()) / 1000);
 
             apnsConfigBuilder.putHeader("apns-expiration", Long.toString(epochSeconds));
             androidConfigBuilder.setTtl(timeToLiveMillis);
