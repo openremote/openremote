@@ -3,7 +3,11 @@ package org.openremote.android;
 import android.Manifest;
 import android.app.Activity;
 import android.app.DownloadManager;
-import android.content.*;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
@@ -38,8 +42,8 @@ import android.widget.Toast;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import com.google.firebase.iid.FirebaseInstanceId;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.openremote.android.service.GeofenceProvider;
@@ -145,10 +149,20 @@ public class MainActivity extends Activity {
                 webView.loadUrl(url);
             }
         }
+        openIntentUrl(getIntent());
 
-        if (getIntent().hasExtra("url")) {
+        errorViewHolder = new ErrorViewHolder(findViewById(R.id.errorView));
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        openIntentUrl(intent);
+    }
+
+    protected void openIntentUrl(Intent intent) {
+        if (intent.hasExtra("url")) {
             String url = getClientUrl();
-            String intentUrl = getIntent().getStringExtra("url");
+            String intentUrl = intent.getStringExtra("url");
             if (intentUrl != null) {
                 if (intentUrl.startsWith("http") || intentUrl.startsWith("https")) {
                     url = intentUrl;
@@ -157,17 +171,6 @@ public class MainActivity extends Activity {
                 }
             }
 
-            LOG.fine("Loading web view: " + url);
-            webView.loadUrl(url);
-        }
-
-        errorViewHolder = new ErrorViewHolder(findViewById(R.id.errorView));
-    }
-
-    @Override
-    protected void onNewIntent(Intent intent) {
-        if (intent.hasExtra("url")) {
-            String url = getClientUrl() + getIntent().getStringExtra("url");
             LOG.fine("Loading web view: " + url);
             webView.loadUrl(url);
         }
@@ -459,9 +462,9 @@ public class MainActivity extends Activity {
                     String consoleId = data.getString("consoleId");
                     if (consoleId != null) {
                         Map<String, Object> enableData = geofenceProvider.enable(String.format("%s/%s",
-                                                                                               getString(R.string.OR_BASE_SERVER),
-                                                                                               getString(R.string.OR_REALM)),
-                                                                                 consoleId);
+                                getString(R.string.OR_BASE_SERVER),
+                                getString(R.string.OR_REALM)),
+                                consoleId);
                         notifyClient(enableData);
                     }
                 }
@@ -488,7 +491,7 @@ public class MainActivity extends Activity {
                 notifyClient(response);
             } else if (action.equalsIgnoreCase("PROVIDER_ENABLE")) {
                 // TODO: Implement topic support
-                String fcmToken =  FirebaseInstanceId.getInstance().getToken();
+                String fcmToken = FirebaseInstanceId.getInstance().getToken();
                 Map<String, Object> response = new HashMap<>();
                 response.put("action", "PROVIDER_ENABLE");
                 response.put("provider", "push");

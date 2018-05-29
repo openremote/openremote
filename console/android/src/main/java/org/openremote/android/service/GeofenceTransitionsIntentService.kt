@@ -1,24 +1,13 @@
 package org.openremote.android.service
 
 import android.app.IntentService
-import android.content.ContentValues.TAG
 import android.content.Intent
-import android.util.Log
-import android.util.Log.e
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.android.gms.location.Geofence
 import com.google.android.gms.location.GeofencingEvent
-import org.openremote.android.ORFirebaseMessagingService
-import org.openremote.android.R
-import org.openremote.android.service.TokenService.getUnsafeOkHttpClient
-import retrofit2.Retrofit
-import retrofit2.converter.jackson.JacksonConverterFactory
-import retrofit2.converter.scalars.ScalarsConverterFactory
-import java.io.DataOutputStream
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.logging.Logger
-import kotlin.text.Charsets.UTF_8
 
 class GeofenceTransitionsIntentService : IntentService("or-geofence") {
 
@@ -50,10 +39,10 @@ class GeofenceTransitionsIntentService : IntentService("or-geofence") {
         if (geofenceTransition == Geofence.GEOFENCE_TRANSITION_ENTER) {
 
             val postJson = hashMapOf(
-                "objectValue" to hashMapOf(
-                    "type" to "Point",
-                    "coordinates" to arrayOf(geofencingEvent.triggeringLocation.longitude, geofencingEvent.triggeringLocation.latitude)
-                )
+                    "objectValue" to hashMapOf(
+                            "type" to "Point",
+                            "coordinates" to arrayOf(geofencingEvent.triggeringLocation.longitude, geofencingEvent.triggeringLocation.latitude)
+                    )
             )
 
             connection.doOutput = true
