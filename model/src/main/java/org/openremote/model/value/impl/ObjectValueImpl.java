@@ -208,7 +208,7 @@ public class ObjectValueImpl extends ValueImpl implements ObjectValue {
         Set<String> thisKeys = this.map.keySet().stream()
             .filter(key -> ignoreKeyPredicate == null || !ignoreKeyPredicate.test(key))
             .collect(Collectors.toSet());
-        Set<String> thatKeys = this.map.keySet().stream()
+        Set<String> thatKeys = thatImpl.map.keySet().stream()
             .filter(key -> ignoreKeyPredicate == null || !ignoreKeyPredicate.test(key))
             .collect(Collectors.toSet());
 
