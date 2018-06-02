@@ -16,6 +16,7 @@ import org.openremote.model.asset.CalendarEventConfiguration
 import org.openremote.model.attribute.AttributeType
 import org.openremote.model.calendar.CalendarEvent
 import org.openremote.model.calendar.RecurrenceRule
+import org.openremote.model.geo.GeoJSONPoint
 import org.openremote.model.value.Values
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Shared
@@ -399,7 +400,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         )
 
         then: "result should match"
-        assets.size() == 5
+        assets.size() == 6
         assets.get(0).id == managerDemoSetup.apartment1Id
         assets.get(1).id == managerDemoSetup.apartment1LivingroomId
         assets.get(1).getAttributesList().size() == 5
@@ -410,6 +411,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets.get(2).id == managerDemoSetup.apartment1KitchenId
         assets.get(3).id == managerDemoSetup.apartment1HallwayId
         assets.get(4).id == managerDemoSetup.apartment2Id
+        assets.get(5).id == managerDemoSetup.consoleId
 
         when: "a query is executed"
         assets = assetStorageService.findAll(
@@ -674,7 +676,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
 
         when: "one of the assets in the region is moved"
         def lobby = assetStorageService.find(managerDemoSetup.lobbyId, true)
-        lobby.replaceAttribute(createWithDescriptor(AttributeType.LOCATION, Values.createObject().put("latitude", 51.44593d).put("longitude", 5.46108d)))
+        lobby.setCoordinates(new GeoJSONPoint(5.46108d, 51.44593d))
         lobby = assetStorageService.merge(lobby)
 
         then: "the system should settle down"
@@ -807,7 +809,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         )
 
         then: "the calendar event asset should not be included"
-        assets.size() == 5
+        assets.size() == 4
         !assets.any {it.name == "Lobby"}
 
         when: "a calendar event filtering query is executed for a future event on a wrong day but correct time"
@@ -820,7 +822,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         )
 
         then: "the calendar event asset should not be included"
-        assets.size() == 5
+        assets.size() == 4
         !assets.any {it.name == "Lobby"}
 
         when: "a calendar event filtering query is executed inside a valid future event date and time"
@@ -832,20 +834,18 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
                 .orderBy(new OrderBy(NAME))
         )
 
-        then: "all 6 realm assets should be returned"
-        assets.size() == 6
+        then: "all 5 realm assets should be returned"
+        assets.size() == 5
         assets[0].id == managerDemoSetup.agentId
         assets[0].name == "Demo Agent"
-        assets[1].id == managerDemoSetup.consoleId
-        assets[1].name == "Demo Android Console"
-        assets[2].id == managerDemoSetup.thingId
-        assets[2].name == "Demo Thing"
-        assets[3].id == managerDemoSetup.groundFloorId
-        assets[3].name == "Ground Floor"
-        assets[4].id == managerDemoSetup.lobbyId
-        assets[4].name == "Lobby"
-        assets[5].id == managerDemoSetup.smartOfficeId
-        assets[5].name == "Smart Office"
+        assets[1].id == managerDemoSetup.thingId
+        assets[1].name == "Demo Thing"
+        assets[2].id == managerDemoSetup.groundFloorId
+        assets[2].name == "Ground Floor"
+        assets[3].id == managerDemoSetup.lobbyId
+        assets[3].name == "Lobby"
+        assets[4].id == managerDemoSetup.smartOfficeId
+        assets[4].name == "Smart Office"
 
         when: "a calendar event filtering query is executed for some time after the last occurrence"
         assets = assetStorageService.findAll(
@@ -857,7 +857,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         )
 
         then: "the calendar event asset should not be included"
-        assets.size() == 5
+        assets.size() == 4
         !assets.any {it.name == "Lobby"}
     }
 }

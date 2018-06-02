@@ -33,6 +33,7 @@ import org.openremote.model.attribute.AttributeRef
 import org.openremote.model.attribute.MetaItem
 import org.openremote.model.event.shared.EventSubscription
 import org.openremote.model.event.shared.SharedEvent
+import org.openremote.model.geo.GeoJSONPoint
 import org.openremote.model.value.Values
 import org.openremote.test.ClientEventService
 import org.openremote.test.GwtClientTrait
@@ -136,8 +137,7 @@ class ClientEventTest extends Specification implements ManagerContainerTrait, Gw
 
         and: "an assets location is changed"
         def asset = assetStorageService.find(managerDemoSetup.thingId, true)
-        double[] coordinates = [120.1d, 50.43d]
-        asset.setCoordinates(coordinates)
+        asset.setCoordinates(new GeoJSONPoint(120.1d, 50.43d))
         asset = assetStorageService.merge(asset)
 
         then: "the location event should have been received"
@@ -145,8 +145,8 @@ class ClientEventTest extends Specification implements ManagerContainerTrait, Gw
             assert collectedSharedEvents.size() == 1
             assert collectedSharedEvents[0] instanceof LocationEvent
             assert (collectedSharedEvents[0] as LocationEvent).assetId == managerDemoSetup.thingId
-            assert (collectedSharedEvents[0] as LocationEvent).coordinates[0] == 120.1d
-            assert (collectedSharedEvents[0] as LocationEvent).coordinates[1] == 50.43d
+            assert (collectedSharedEvents[0] as LocationEvent).coordinates.x == 120.1d
+            assert (collectedSharedEvents[0] as LocationEvent).coordinates.y == 50.43d
         }
 
         when: "the assets location is set to null"
@@ -162,8 +162,7 @@ class ClientEventTest extends Specification implements ManagerContainerTrait, Gw
         }
 
         when: "the location is changed"
-        coordinates = [-10.11d, -50.233d]
-        asset.setCoordinates(coordinates)
+        asset.setCoordinates(new GeoJSONPoint(-10.11d, -50.233d))
         asset = assetStorageService.merge(asset)
 
         then: "the location event should have been received"
@@ -171,13 +170,12 @@ class ClientEventTest extends Specification implements ManagerContainerTrait, Gw
             assert collectedSharedEvents.size() == 3
             assert collectedSharedEvents[2] instanceof LocationEvent
             assert (collectedSharedEvents[2] as LocationEvent).assetId == managerDemoSetup.thingId
-            assert (collectedSharedEvents[2] as LocationEvent).coordinates[0] == -10.11d
-            assert (collectedSharedEvents[2] as LocationEvent).coordinates[1] == -50.233d
+            assert (collectedSharedEvents[2] as LocationEvent).coordinates.x == -10.11d
+            assert (collectedSharedEvents[2] as LocationEvent).coordinates.y == -50.233d
         }
 
         when: "the location is set with the same value"
-        coordinates = [-10.11d, -50.233d]
-        asset.setCoordinates(coordinates)
+        asset.setCoordinates(new GeoJSONPoint(-10.11d, -50.233d))
         asset = assetStorageService.merge(asset)
 
         then: "no location event should have been received"

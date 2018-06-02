@@ -29,6 +29,7 @@ import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeDescriptor;
 import org.openremote.model.geo.GeoJSON;
 import org.openremote.model.geo.GeoJSONFeature;
+import org.openremote.model.geo.GeoJSONFeatureCollection;
 import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.util.ObservableList;
 import org.openremote.model.util.TextUtil;
@@ -38,8 +39,6 @@ import org.openremote.model.value.Values;
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
@@ -632,82 +631,42 @@ public class Asset implements IdentifiableEntity {
 //    FUNCTIONAL METHODS BELOW
 //    ---------------------------------------------------
 
-    //TODO return GeoJSONPoint and remove getPoint
     /**
-     * Complies to the GeoJSON specification RFC 7946, which means the first element in the array is longitude
-     * and the second element is the latitude
+     * Complies to the GeoJSON specification RFC 7946
      */
-    public double[] getCoordinates() {
+    public GeoJSONPoint getCoordinates() {
         return getAttributesStream()
             .filter(attribute -> attribute.getNameOrThrow().equals(LOCATION.getName()))
             .findFirst()
-            .flatMap(AbstractValueHolder::getValueAsObject)
-            .map(obj -> {
-                Optional<Double> lat = obj.getNumber("latitude");
-                Optional<Double> lng = obj.getNumber("longitude");
-                if (lat.isPresent() && lng.isPresent()) {
-                    return new double[]{lng.get(), lat.get()};
-                }
-
-                return null;
-            })
+            .flatMap(AbstractValueHolder::getValue)
+            .flatMap(GeoJSONPoint::fromValue)
             .orElse(null);
     }
 
-    public GeoJSONPoint getPoint() {
-        if (!hasGeoFeature()) {
-            return null;
-        }
-        return new GeoJSONPoint(getCoordinates());
-    }
-
     /**
-     * Complies to the GeoJSON specification RFC 7946, which means the first element in {link #coordinates} should be longitude
-     * and the second element should be latitude
+     * Complies to the GeoJSON specification RFC 7946
      */
-    public void setCoordinates(double[] coordinates) {
-        if (coordinates == null) {
-            removeAttribute(LOCATION.getName());
-        } else {
-            AssetAttribute locationAttribute = getAttributesStream()
-                .filter(attribute -> attribute.getNameOrThrow().equals(LOCATION.getName()))
-                .findFirst().orElse(new AssetAttribute(LOCATION.getName(), LOCATION.getType()));
+    public void setCoordinates(GeoJSONPoint coordinates) {
+        AssetAttribute locationAttribute = getAttributesStream()
+            .filter(attribute -> attribute.getNameOrThrow().equals(LOCATION.getName()))
+            .findFirst().orElse(new AssetAttribute(LOCATION.getName(), LOCATION.getValueType()));
 
-            ObjectValue objectValue = locationAttribute.getValueAsObject().orElse(Values.createObject());
-            objectValue
-                .put("latitude", coordinates[1])
-                .put("longitude", coordinates[0]);
-            locationAttribute.setValue(objectValue);
-
-            replaceAttribute(locationAttribute);
-        }
-    }
-
-    /**
-     * -     * This assumes {@link #getCoordinates} array index 0 is Lng and index 1 is Lat,
-     * -     * which is true for PostGIS backend. Because Lat/Lng is the 'right way', we flip
-     * -     * it here for display. Rounding to 5 decimal places gives us precision of about 1 meter.
-     * -
-     */
-    public String getCoordinatesLabel() {
-        return
-            new BigDecimal(getCoordinates()[1]).setScale(5, RoundingMode.HALF_UP) + " " +
-                new BigDecimal(getCoordinates()[0]).setScale(5, RoundingMode.HALF_UP) + " Lat|Lng";
+        locationAttribute.setValue(coordinates == null ? null : coordinates.toValue());
+        replaceAttribute(locationAttribute);
     }
 
     public boolean hasGeoFeature() {
-        double[] coordinates = getCoordinates();
-        return coordinates != null && coordinates.length == 2;
+        return getCoordinates() != null;
     }
 
     public GeoJSON getGeoFeature(int maxNameLength) {
         if (!hasGeoFeature())
-            return GeoJSON.EMPTY_FEATURE_COLLECTION;
-        return new GeoJSON("FeatureCollection").setFeatures(
-            new GeoJSONFeature("Feature")
+            return GeoJSONFeatureCollection.EMPTY;
+
+        return new GeoJSONFeatureCollection(
+            new GeoJSONFeature(getCoordinates())
                 .setProperty("id", getId())
                 .setProperty("title", TextUtil.ellipsize(getName(), maxNameLength))
-                .setGeometry(getPoint())
         );
     }
 

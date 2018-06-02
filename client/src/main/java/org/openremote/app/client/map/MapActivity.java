@@ -42,6 +42,8 @@ import org.openremote.model.map.MapResource;
 import org.openremote.model.value.Values;
 
 import javax.inject.Inject;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -189,7 +191,7 @@ public class MapActivity extends AssetBrowsingActivity<MapPlace> implements MapV
         if (asset.hasGeoFeature()) {
             GeoJSON geoFeature = asset.getGeoFeature(30);
             view.showDroppedPin(geoFeature);
-            view.flyTo(asset.getPoint());
+            view.flyTo(asset.getCoordinates());
         }
     }
 
@@ -206,14 +208,24 @@ public class MapActivity extends AssetBrowsingActivity<MapPlace> implements MapV
             .sorted(Comparator.comparing(MapInfoItem::getLabel))
             .collect(Collectors.toList());
         if (asset.hasGeoFeature()) {
+
+
             infoItems.add(0, new MapInfoItem(
                 "map-marker",
                 environment.getMessages().location(),
                 null,
-                Values.create(asset.getCoordinatesLabel())
+                Values.create(getCoordinatesLabel())
             ));
         }
         view.showInfoItems(infoItems);
     }
 
+    /**
+     * Flip longitude and latitude here for display. Rounding to 5 decimal places gives us precision of about 1 meter.
+     */
+    protected String getCoordinatesLabel() {
+        return
+            new BigDecimal(asset.getCoordinates().getY()).setScale(5, RoundingMode.HALF_UP) + " " +
+                new BigDecimal(asset.getCoordinates().getX()).setScale(5, RoundingMode.HALF_UP) + " Lat|Lng";
+    }
 }

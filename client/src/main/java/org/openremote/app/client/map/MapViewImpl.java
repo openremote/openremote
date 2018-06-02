@@ -34,6 +34,7 @@ import org.openremote.app.client.widget.FlexSplitPanel;
 import org.openremote.app.client.widget.Hyperlink;
 import org.openremote.app.client.widget.MapWidget;
 import org.openremote.model.geo.GeoJSON;
+import org.openremote.model.geo.GeoJSONFeatureCollection;
 import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.value.ObjectValue;
 
@@ -90,7 +91,7 @@ public class MapViewImpl extends Composite implements MapView {
         viewAssetLink.setVisible(false);
         viewAssetLink.setTargetHistoryToken("");
 */
-        showDroppedPin(GeoJSON.EMPTY_FEATURE_COLLECTION);
+        showDroppedPin(GeoJSONFeatureCollection.EMPTY);
 
         mapInfoPanel.close();
 

@@ -191,7 +191,7 @@ public class AssetEditActivity
 
     @Override
     public void onMapClicked(double lng, double lat) {
-        selectedCoordinates = new GeoJSONPoint(new double[]{lng, lat});
+        selectedCoordinates = new GeoJSONPoint(lng, lat);
         view.hideMapPopup();
         view.showMapPopup(lng, lat, environment.getMessages().selectedLocation());
         view.setLocation(selectedCoordinates);
@@ -463,7 +463,7 @@ public class AssetEditActivity
         if (selectedCoordinates != null) {
             view.flyTo(selectedCoordinates);
         } else if (asset.getCoordinates() != null) {
-            view.flyTo(asset.getPoint());
+            view.flyTo(asset.getCoordinates());
         }
     }
 
@@ -662,7 +662,7 @@ public class AssetEditActivity
             asset.setType(view.getType());
         }
         if (selectedCoordinates != null) {
-            asset.setCoordinates(new double[]{selectedCoordinates.getLongitude(), selectedCoordinates.getLatitude()});
+            asset.setCoordinates(selectedCoordinates);
         }
     }
 

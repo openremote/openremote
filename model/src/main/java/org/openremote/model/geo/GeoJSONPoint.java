@@ -19,34 +19,93 @@
  */
 package org.openremote.model.geo;
 
-import org.openremote.model.AbstractTypeHolder;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.openremote.model.value.ArrayValue;
+import org.openremote.model.value.ObjectValue;
+import org.openremote.model.value.Value;
 import org.openremote.model.value.Values;
 
-public class GeoJSONPoint extends AbstractTypeHolder {
+import java.util.Optional;
 
-    public GeoJSONPoint() {
-        super("Point");
+public class GeoJSONPoint extends GeoJSONGeometry {
+
+    public static final String TYPE = "Point";
+    protected Position coordinates;
+
+    @JsonCreator
+    public GeoJSONPoint(@JsonProperty("coordinates") Position coordinates) {
+        super(TYPE);
+        this.coordinates = coordinates;
     }
 
-    public GeoJSONPoint(double[] coordinates) {
-        this();
-        ArrayValue array = Values.createArray();
-        for (int i = 0; i < coordinates.length; i++) {
-            array.set(i, coordinates[i]);
+    public GeoJSONPoint(double x, double y) {
+        this(new Position(x, y));
+    }
+
+    public GeoJSONPoint(double x, double y, double z) {
+        this(new Position(x, y, z));
+    }
+
+    public Position getCoordinates() {
+        return coordinates;
+    }
+
+    public double getX() {
+        return coordinates.getX();
+    }
+
+    public double getY() {
+        return coordinates.getY();
+    }
+
+    public Double getZ() {
+        return coordinates.getZ();
+    }
+
+    public boolean hasZ() {
+        return coordinates.hasZ();
+    }
+
+    @Override
+    public ObjectValue toValue() {
+        ObjectValue objectValue = Values.createObject();
+        objectValue.put("type", type);
+        ArrayValue coords = Values.createArray();
+        coords.add(Values.create(getX()));
+        coords.add(Values.create(getY()));
+        if (hasZ()) {
+            coords.add(Values.create(getZ()));
         }
-        objectValue.put("coordinates", array);
+        objectValue.put("coordinates", coords);
+        return objectValue;
     }
 
-    public boolean hasCoordinates() {
-        return objectValue.getArray("coordinates").isPresent();
-    }
+    public static Optional<GeoJSONPoint> fromValue(Value value) {
+        return Values.getObject(value)
+            .map(obj -> {
+                String type = obj.getString("type").orElse(null);
+                if (!TYPE.equalsIgnoreCase(type)) {
+                    return null;
+                }
 
-    public double getLatitude() {
-        return objectValue.getArray("coordinates").map(coordinates -> coordinates.getNumber(1).orElse(0d)).orElse(0d);
-    }
+                ArrayValue coords = obj.getArray("coordinates").orElse(null);
+                if (coords == null || coords.length() < 2 || coords.length() > 3) {
+                    return null;
+                }
 
-    public double getLongitude() {
-        return objectValue.getArray("coordinates").map(coordinates -> coordinates.getNumber(0).orElse(0d)).orElse(0d);
+                Double x = coords.getNumber(0).orElse(null);
+                Double y = coords.getNumber(1).orElse(null);
+                Double z = coords.length() == 3 ? coords.getNumber(3).orElse(null) : null;
+
+                if (x == null || y == null) {
+                    return null;
+                }
+                if (z == null) {
+                    return new GeoJSONPoint(new Position(x, y));
+                } else {
+                    return new GeoJSONPoint(new Position(x, y, z));
+                }
+            });
     }
 }

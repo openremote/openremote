@@ -208,6 +208,18 @@ public enum AssetMeta implements MetaItemDescriptor {
         Values.create(true),
         true),
 
+    /**
+     * Marks the attribute as writable by unauthenticated public clients.
+     */
+    ACCESS_PUBLIC_WRITE(
+        ASSET_META_NAMESPACE + ":accessPublicWrite",
+        ACCESS_PRIVATE,
+        ValueType.BOOLEAN,
+        null,
+        null,
+        Values.create(true),
+        true),
+
 //    /**
 //     * RT: This wasn't used anywhere and not really sure when it would be useful so removing for now.
 //     */

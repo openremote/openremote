@@ -24,6 +24,7 @@ import com.google.gwt.user.client.ui.FlowPanel;
 import elemental2.dom.DomGlobal;
 import org.openremote.app.client.interop.mapbox.*;
 import org.openremote.model.geo.GeoJSON;
+import org.openremote.model.geo.GeoJSONFeatureCollection;
 import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.value.ArrayValue;
 import org.openremote.model.value.ObjectValue;
@@ -227,18 +228,18 @@ public class MapWidget extends FlowPanel {
         if (mapboxMap.getSource(featureSourceId) == null)
             throw new IllegalArgumentException("Map has no such feature source: " + featureSourceId);
         LOG.fine("Showing feature on source '" + featureSourceId + "': " + geoFeature);
-        mapboxMap.getSource(featureSourceId).setData(geoFeature.getObjectValue().asAny());
+        mapboxMap.getSource(featureSourceId).setData(geoFeature.toValue().asAny());
     }
 
     public void flyTo(GeoJSONPoint point) {
         if (!isMapReady())
             throw new IllegalStateException("Map not ready");
-        if (point == null || !point.hasCoordinates())
+        if (point == null)
             return;
         ObjectValue options = Values.createObject();
         ArrayValue center = Values.createArray();
-        center.set(0, point.getLongitude());
-        center.set(1, point.getLatitude());
+        center.set(0, point.getX());
+        center.set(1, point.getY());
         options.put("center", center);
         mapboxMap.flyTo(options.asAny());
     }
@@ -265,7 +266,7 @@ public class MapWidget extends FlowPanel {
     protected ObjectValue prepareSourceOptions(String featureSourceId) {
         ObjectValue sourceOptions = Values.createObject();
         // Initialize with empty collection
-        ObjectValue initialData = GeoJSON.EMPTY_FEATURE_COLLECTION.getObjectValue();
+        ObjectValue initialData = GeoJSONFeatureCollection.EMPTY.toValue();
         LOG.fine("Preparing initial data on feature source: " + featureSourceId);
         sourceOptions.put("type", create("geojson"));
         sourceOptions.put("data", initialData);

@@ -37,10 +37,7 @@ import org.openremote.manager.rules.RulesService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.model.Constants;
 import org.openremote.model.ValidationFailure;
-import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.asset.AssetResource;
-import org.openremote.model.asset.AssetType;
+import org.openremote.model.asset.*;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeEvent.Source;
 import org.openremote.model.attribute.AttributeExecuteStatus;
@@ -49,6 +46,7 @@ import org.openremote.model.value.Value;
 import org.openremote.model.value.Values;
 
 import javax.persistence.EntityManager;
+import javax.ws.rs.WebApplicationException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -56,6 +54,8 @@ import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import static javax.ws.rs.core.Response.Status.FORBIDDEN;
+import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 import static org.openremote.container.concurrent.GlobalLock.withLock;
 import static org.openremote.manager.asset.AssetProcessingException.Reason.*;
 import static org.openremote.manager.event.ClientEventService.CLIENT_EVENT_TOPIC;
@@ -273,6 +273,63 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                     if (oldAttribute == null)
                         throw new AssetProcessingException(ATTRIBUTE_NOT_FOUND);
 
+                    switch (source) {
+                        case CLIENT:
+
+                            AuthContext authContext = exchange.getIn().getHeader(Constants.AUTH_CONTEXT, AuthContext.class);
+                            if (authContext == null) {
+                                // Check attribute has public write flag
+                                if (!oldAttribute.getMetaItem(AssetMeta.ACCESS_PUBLIC_WRITE).isPresent()) {
+                                    throw new AssetProcessingException(NO_AUTH_CONTEXT);
+                                }
+                                // Check read-only
+                                if (oldAttribute.isReadOnly()) {
+                                    throw new AssetProcessingException(INSUFFICIENT_ACCESS);
+                                }
+                            } else {
+                                // Check realm, must be accessible
+                                if (!identityService.getIdentityProvider().isTenantActiveAndAccessible(authContext,
+                                                                                                       asset)) {
+                                    throw new AssetProcessingException(INSUFFICIENT_ACCESS);
+                                }
+
+                                // Check read-only
+                                if (oldAttribute.isReadOnly() && !authContext.isSuperUser()) {
+                                    throw new AssetProcessingException(INSUFFICIENT_ACCESS);
+                                }
+
+                                // Regular user must have write assets role
+                                if (!authContext.hasResourceRoleOrIsSuperUser(ClientRole.WRITE_ASSETS.getValue(),
+                                                                              Constants.KEYCLOAK_CLIENT_ID)) {
+                                    throw new AssetProcessingException(INSUFFICIENT_ACCESS);
+                                }
+
+                                // Check restricted user
+                                if (identityService.getIdentityProvider().isRestrictedUser(authContext.getUserId())) {
+                                    // Must be asset linked to user
+                                    if (!assetStorageService.isUserAsset(authContext.getUserId(),
+                                                                         event.getEntityId())) {
+                                        throw new AssetProcessingException(INSUFFICIENT_ACCESS);
+                                    }
+                                    // Must be writable by restricted client
+                                    if (!oldAttribute.isAccessRestrictedWrite()) {
+                                        throw new AssetProcessingException(INSUFFICIENT_ACCESS);
+                                    }
+                                }
+                            }
+                            break;
+
+                        case SENSOR:
+                            Optional<AssetAttribute> protocolConfiguration =
+                                getAgentLink(oldAttribute).flatMap(agentService::getProtocolConfiguration);
+
+                            // Sensor event must be for an attribute linked to a protocol configuration
+                            if (!protocolConfiguration.isPresent()) {
+                                throw new AssetProcessingException(INVALID_AGENT_LINK);
+                            }
+                            break;
+                    }
+
                     // Agent attributes can't be updated with events
                     if (asset.getWellKnownType() == AssetType.AGENT) {
                         throw new AssetProcessingException(ILLEGAL_AGENT_UPDATE);
@@ -291,8 +348,8 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
 
                     //Check if attribute is well known and the value is valid
                     AssetModel.getAttributeDescriptor(oldAttribute.name).ifPresent(wellKnownAttribute -> {
-                        //Check if the value is valid
-                        wellKnownAttribute.getType()
+                        // Check if the value is valid
+                        wellKnownAttribute.getValueType()
                             .isValidValue(event.getValue().orElseThrow(() -> new AssetProcessingException(INVALID_VALUE_FOR_WELL_KNOWN_ATTRIBUTE)))
                             .ifPresent(validationFailure -> {
                                 throw new AssetProcessingException(
@@ -300,52 +357,6 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                                 );
                             });
                     });
-
-                    switch (source) {
-                        case CLIENT:
-                            AuthContext authContext = exchange.getIn().getHeader(Constants.AUTH_CONTEXT, AuthContext.class);
-                            if (authContext == null) {
-                                throw new AssetProcessingException(NO_AUTH_CONTEXT);
-                            }
-
-                            // Check realm, must be accessible
-                            if (!identityService.getIdentityProvider().isTenantActiveAndAccessible(authContext, asset)) {
-                                throw new AssetProcessingException(INSUFFICIENT_ACCESS);
-                            }
-
-                            // Check read-only
-                            if (oldAttribute.isReadOnly() && !authContext.isSuperUser()) {
-                                throw new AssetProcessingException(INSUFFICIENT_ACCESS);
-                            }
-
-                            // Regular user must have write assets role
-                            if (!authContext.hasResourceRoleOrIsSuperUser(ClientRole.WRITE_ASSETS.getValue(), Constants.KEYCLOAK_CLIENT_ID)) {
-                                throw new AssetProcessingException(INSUFFICIENT_ACCESS);
-                            }
-
-                            // Check restricted user
-                            if (identityService.getIdentityProvider().isRestrictedUser(authContext.getUserId())) {
-                                // Must be asset linked to user
-                                if (!assetStorageService.isUserAsset(authContext.getUserId(), event.getEntityId())) {
-                                    throw new AssetProcessingException(INSUFFICIENT_ACCESS);
-                                }
-                                // Must be writable by restricted client
-                                if (!oldAttribute.isAccessRestrictedWrite()) {
-                                    throw new AssetProcessingException(INSUFFICIENT_ACCESS);
-                                }
-                            }
-                            break;
-
-                        case SENSOR:
-                            Optional<AssetAttribute> protocolConfiguration =
-                                getAgentLink(oldAttribute).flatMap(agentService::getProtocolConfiguration);
-
-                            // Sensor event must be for an attribute linked to a protocol configuration
-                            if (!protocolConfiguration.isPresent()) {
-                                throw new AssetProcessingException(INVALID_AGENT_LINK);
-                            }
-                            break;
-                    }
 
                     // Either use the timestamp of the event or set event time to processing time
                     long processingTime = timerService.getCurrentTimeMillis();

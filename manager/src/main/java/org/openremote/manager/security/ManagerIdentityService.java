@@ -20,10 +20,12 @@
 package org.openremote.manager.security;
 
 import org.openremote.container.Container;
+import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.IdentityService;
 import org.openremote.container.timer.TimerService;
 import org.openremote.container.web.WebService;
 
+import javax.persistence.EntityManager;
 import java.util.Locale;
 import java.util.logging.Logger;
 
@@ -32,10 +34,12 @@ public class ManagerIdentityService extends IdentityService {
     private static final Logger LOG = Logger.getLogger(ManagerIdentityService.class.getName());
 
     protected ManagerIdentityProvider identityProvider;
+    protected PersistenceService persistenceService;
 
     @Override
     public void init(Container container) throws Exception {
         super.init(container);
+        persistenceService = container.getService(PersistenceService.class);
 
         container.getService(WebService.class).getApiSingletons().add(
             new TenantResourceImpl(container.getService(TimerService.class), this)
@@ -68,6 +72,31 @@ public class ManagerIdentityService extends IdentityService {
         }
         return identityProvider;
     }
+
+    public UserConfiguration getUserConfiguration(String userId) {
+        return persistenceService.doReturningTransaction(entityManager -> getUserConfiguration(entityManager, userId));
+    }
+
+    protected UserConfiguration getUserConfiguration(EntityManager em, String userId) {
+        UserConfiguration userConfiguration = em.find(UserConfiguration.class, userId);
+        if (userConfiguration == null) {
+            userConfiguration = new UserConfiguration(userId);
+            userConfiguration = mergeUserConfiguration(em, userConfiguration);
+        }
+        return userConfiguration;
+    }
+
+    public UserConfiguration mergeUserConfiguration(UserConfiguration userConfiguration) {
+        return persistenceService.doReturningTransaction(entityManager -> mergeUserConfiguration(entityManager, userConfiguration));
+    }
+
+    protected UserConfiguration mergeUserConfiguration(EntityManager em, UserConfiguration userConfiguration) {
+        if (userConfiguration.getUserId() == null || userConfiguration.getUserId().length() == 0) {
+            throw new IllegalArgumentException("User ID must be set on: " + userConfiguration);
+        }
+        return em.merge(userConfiguration);
+    }
+
 
     @Override
     public String toString() {

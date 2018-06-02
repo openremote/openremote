@@ -66,10 +66,9 @@ public final class ConsoleConfiguration {
         setConsolProviders(asset, providerMap);
 
         asset.replaceAttribute(
-            new AssetAttribute(AttributeType.LOCATION.getName(),
-                               AttributeType.LOCATION.getType())
+            new AssetAttribute(AttributeType.LOCATION)
                 .setMeta(new MetaItem(RULE_STATE))
-                      );
+                              );
 
         return asset;
     }

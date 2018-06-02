@@ -19,6 +19,7 @@
  */
 package org.openremote.test.protocol
 
+import org.apache.commons.lang3.SystemUtils
 import org.openremote.model.asset.Asset
 import tuwien.auto.calimero.server.knxnetip.DefaultServiceContainer
 
@@ -55,7 +56,8 @@ class KNXProtocolTest extends Specification implements ManagerContainerTrait {
         def conditions = new PollingConditions(timeout: 10, initialDelay: 1, delay: 1)
 
         and: "the KNX emulation server is started"
-        def configUri = getClass().getResource("/org/openremote/test/protocol/knx/knx-server-config.xml").toURI().toString()
+        def configFile = SystemUtils.IS_OS_MAC ? "/org/openremote/test/protocol/knx/knx-server-config-mac.xml" : "/org/openremote/test/protocol/knx/knx-server-config.xml"
+        def configUri = getClass().getResource(configFile).toURI().toString()
         def knxEmulationServer = new Launcher(configUri)
         def sc = knxEmulationServer.xml.svcContainers.remove(0)
         def sc2 = new DefaultServiceContainer(
@@ -157,8 +159,11 @@ class KNXProtocolTest extends Specification implements ManagerContainerTrait {
         }
         
         cleanup: "the server should be stopped"
+        if (knxEmulationServer != null) {
+            knxEmulationServer.quit()
+        }
         stopContainer(container)
-        knxEmulationServer.quit()
+
 
     }
 }

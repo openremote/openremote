@@ -20,9 +20,11 @@
 package org.openremote.model.asset;
 
 import jsinterop.annotations.JsType;
+import org.openremote.model.attribute.AttributeType;
 import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.http.SuccessStatusCode;
+import org.openremote.model.value.ValueType;
 
 import javax.annotation.security.RolesAllowed;
 import javax.validation.Valid;
@@ -176,6 +178,10 @@ public interface AssetResource {
      * asset in a realm different than its authenticated realm, or if the user is restricted and the asset to update is
      * not in the set of linked assets of the restricted user.
      * <p>
+     * If the asset or attribute doesn't exist then a 404 status is returned.
+     * <p>
+     * If an attribute is marked as {@link AssetMeta#ACCESS_PUBLIC_WRITE} then the attribute can be written publicly
+     * <p>
      * This operation is ultimately asynchronous, any call will return before the actual attribute value is changed in
      * any storage or downstream processors. Thus any constraint violation or processing error will not be returned from
      * this method, query the system later to determine the actual state and outcome of the write operation. The version
@@ -186,7 +192,6 @@ public interface AssetResource {
     @Path("{assetId}/attribute/{attributeName}")
     @Consumes(APPLICATION_JSON)
     @SuccessStatusCode(204)
-    @RolesAllowed({"write:assets"})
     @SuppressWarnings("unusable-by-js")
     void writeAttributeValue(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId, @PathParam("attributeName") String attributeName, String rawJson);
 
@@ -262,27 +267,4 @@ public interface AssetResource {
     @SuccessStatusCode(200)
     @SuppressWarnings("unusable-by-js")
     Asset[] getPublicAssets(@BeanParam RequestParams requestParams, @QueryParam("q") String q);
-
-    /**
-     * Updates the attribute "location" of the asset
-     */
-    @POST
-    @Path("{assetId}/updateLocation")
-    @Consumes(APPLICATION_JSON)
-    @SuccessStatusCode(204)
-    @RolesAllowed({"write:assets"})
-    @SuppressWarnings("unusable-by-js")
-    void updateLocation(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId, GeoJSONPoint location);
-
-    /**
-     * Updated the attribute "location" of the public asset
-     * <p>
-     * Allows un-authenticated 'public' users to update public assets for a realm.
-     */
-    @POST
-    @Path("public/{assetId}/updateLocation")
-    @Consumes(APPLICATION_JSON)
-    @SuccessStatusCode(204)
-    @SuppressWarnings("unusable-by-js")
-    void updatePublicAssetLocation(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId, GeoJSONPoint location);
 }

@@ -1,0 +1,81 @@
+/*
+ * Copyright 2017, OpenRemote Inc.
+ *
+ * See the CONTRIBUTORS.txt file in the distribution for a
+ * full listing of individual contributors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.openremote.model.geo;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import org.openremote.model.value.ArrayValue;
+import org.openremote.model.value.ObjectValue;
+import org.openremote.model.value.Value;
+import org.openremote.model.value.Values;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+
+public class GeoJSONFeatureCollection extends GeoJSON {
+
+    public static final String TYPE = "FeatureCollection";
+    public static final GeoJSONFeatureCollection EMPTY = new GeoJSONFeatureCollection((List<GeoJSONFeature>)null);
+
+    protected List<GeoJSONFeature> features;
+
+    @JsonCreator
+    public GeoJSONFeatureCollection(@JsonProperty("features") GeoJSONFeature... features) {
+        this(Arrays.asList(features));
+    }
+
+    public GeoJSONFeatureCollection(List<GeoJSONFeature> features) {
+        super(TYPE);
+        this.features = features != null ? features : new ArrayList<>(0);
+    }
+
+    public GeoJSONFeature[] getFeatures() {
+        return features.toArray(new GeoJSONFeature[features.size()]);
+    }
+
+    @Override
+    public ObjectValue toValue() {
+        ObjectValue objectValue = Values.createObject();
+        objectValue.put("type", type);
+        ArrayValue feats = Values.createArray();
+        features.forEach(f -> feats.add(f.toValue()));
+        objectValue.put("features", feats);
+        return objectValue;
+    }
+
+    public static Optional<GeoJSONFeatureCollection> fromValue(Value value) {
+        return Values.getObject(value)
+            .map(obj -> {
+                String type = obj.getString("type").orElse(null);
+                if (!TYPE.equalsIgnoreCase(type)) {
+                    return null;
+                }
+
+                ArrayList<GeoJSONFeature> features = new ArrayList<>();
+                obj.getArray("features").ifPresent(feats ->
+                                                       feats.stream().forEach(v ->
+                                                                                  GeoJSONFeature.fromValue(v)
+                                                                                      .ifPresent(features::add)));
+                return new GeoJSONFeatureCollection(features);
+            });
+    }
+}

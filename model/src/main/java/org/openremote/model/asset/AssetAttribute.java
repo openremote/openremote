@@ -57,6 +57,11 @@ public class AssetAttribute extends Attribute {
         super(name, type);
     }
 
+    public AssetAttribute(AttributeDescriptor attributeDescriptor) {
+        super(attributeDescriptor.getName(), attributeDescriptor.getValueType(), attributeDescriptor.getDefaultValue());
+        addMeta(attributeDescriptor.getDefaultMetaItems());
+    }
+
     public AssetAttribute(String name, AttributeValueType type, Value value, long timestamp) {
         super(name, type, value, timestamp);
     }
@@ -496,7 +501,7 @@ public class AssetAttribute extends Attribute {
     }
 
     public static AssetAttribute createWithDescriptor(AttributeDescriptor descriptor, Value value) {
-        return new AssetAttribute(descriptor.getName(), descriptor.getType(), Optional.ofNullable(value).orElse(descriptor.getDefaultValue()))
+        return new AssetAttribute(descriptor.getName(), descriptor.getValueType(), Optional.ofNullable(value).orElse(descriptor.getDefaultValue()))
             .setMeta(descriptor.getDefaultMetaItems());
     }
 }

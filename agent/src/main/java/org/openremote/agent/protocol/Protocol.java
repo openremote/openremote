@@ -78,11 +78,6 @@ import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
  * a linked attributes' value by sending  an {@link AttributeEvent} messages on the
  * {@link #SENSOR_QUEUE}, including the source protocol name in header {@link #SENSOR_QUEUE_SOURCE_PROTOCOL}.
  * <p>
- * As well as an {@link AssetMeta#AGENT_LINK} meta item; if an attribute also has an {@link AssetMeta#LOCATION_LINK}
- * meta item then the protocol should push location data into the {@link Asset} location property (if the protocol and
- * device support it and the attribute is correctly configured to receive location data and the value must be of type
- * {@link ArrayValue} and contain two {@link NumberValue}s representing longitude and latitude in that order.
- * <p>
  * If the user writes a new value into the linked attribute, the protocol translates this value
  * change into a device (or service) action. Write operations on attributes linked to a protocol
  * configuration can be consumed by the protocol on the {@link #ACTUATOR_TOPIC} where the message

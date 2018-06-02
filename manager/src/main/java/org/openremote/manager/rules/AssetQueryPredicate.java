@@ -24,6 +24,7 @@ import com.vividsolutions.jts.geom.Envelope;
 import org.geotools.referencing.GeodeticCalculator;
 import org.openremote.model.asset.BaseAssetQuery;
 import org.openremote.model.asset.BaseAssetQuery.*;
+import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.rules.AssetState;
 import org.openremote.model.value.ObjectValue;
 
@@ -91,9 +92,10 @@ public class AssetQueryPredicate implements Predicate<AssetState> {
         }
 
         if (query.location != null) {
-            ObjectValue objectValue = assetState.getValueAsObject().orElse(null);
-            if (objectValue != null) {
-                Coordinate coordinate = new Coordinate(objectValue.getNumber("latitude").orElse(0d), objectValue.getNumber("longitude").orElse(0d));
+            GeoJSONPoint coords = assetState.getValue().flatMap(GeoJSONPoint::fromValue).orElse(null);
+
+            if (coords != null) {
+                Coordinate coordinate = new Coordinate(coords.getY(), coords.getX());
                 return asPredicate(query.location).test(coordinate);
             }
             return false;

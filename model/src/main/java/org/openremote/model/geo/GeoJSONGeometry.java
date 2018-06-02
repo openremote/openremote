@@ -17,17 +17,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.model.attribute;
+package org.openremote.model.geo;
 
-import org.openremote.model.value.Value;
+public abstract class GeoJSONGeometry extends GeoJSON {
 
-public interface AttributeDescriptor {
-
-    String getName();
-
-    AttributeValueType getValueType();
-
-    MetaItem[] getDefaultMetaItems();
-
-    Value getDefaultValue();
+    protected GeoJSONGeometry(String type) {
+        super(type);
+    }
 }

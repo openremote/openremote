@@ -337,14 +337,14 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
         asset.getAttributesStream().forEach(assetAttribute -> {
             AssetModel.getAttributeDescriptor(assetAttribute.name).ifPresent(wellKnownAttribute -> {
                 //Check if the type matches
-                if (!wellKnownAttribute.getType().equals(assetAttribute.getTypeOrThrow())) {
+                if (!wellKnownAttribute.getValueType().equals(assetAttribute.getTypeOrThrow())) {
                     throw new IllegalStateException(
                         String.format("Well known attribute isn't of the correct type. Attribute name: %s. Expected type: %s",
-                            assetAttribute.name, wellKnownAttribute.getType().name()));
+                            assetAttribute.name, wellKnownAttribute.getValueType().name()));
                 }
 
                 //Check if the value is valid
-                wellKnownAttribute.getType()
+                wellKnownAttribute.getValueType()
                     .isValidValue(assetAttribute.getValue().orElseThrow(() -> new IllegalStateException("Value is empty for " + assetAttribute.name)))
                     .ifPresent(validationFailure -> {
                         throw new IllegalStateException(
@@ -598,52 +598,5 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
         request.setAttribute(HttpHeaders.CONTENT_ENCODING, "gzip");
 
         return result;
-    }
-
-    @Override
-    public void updateLocation(RequestParams requestParams, String assetId, GeoJSONPoint location) {
-        try {
-            Asset asset = get(requestParams, assetId);
-            updateAssetLocation(asset, location);
-        } catch (IllegalStateException ex) {
-            throw new WebApplicationException(ex, BAD_REQUEST);
-        }
-    }
-
-    @Override
-    public void updatePublicAssetLocation(RequestParams requestParams, String assetId, GeoJSONPoint location) {
-        try {
-            Asset asset = assetStorageService.find(assetId, true);
-
-            if (asset == null) {
-                throw new WebApplicationException(NOT_FOUND);
-            }
-
-            //TODO do we need a PUBLIC_WRITE metaitem?
-            if (!asset.isAccessPublicRead()) {
-                throw new WebApplicationException(FORBIDDEN);
-            }
-
-            updateAssetLocation(asset, location);
-        } catch (IllegalStateException ex) {
-            throw new WebApplicationException(ex, BAD_REQUEST);
-        }
-    }
-
-    protected void updateAssetLocation(Asset asset, GeoJSONPoint location) {
-            Value locationValue = Optional.ofNullable(location)
-                .map(loc -> {
-                    ObjectValue objValue = Values.createObject();
-                    objValue.put("latitude", loc.getLatitude());
-                    objValue.put("longitude", loc.getLongitude());
-                    return objValue;
-                })
-                .orElse(null);
-
-        AssetAttribute locationAttribute = asset.getAttribute(AttributeType.LOCATION)
-            .orElse(AssetAttribute.createWithDescriptor(AttributeType.LOCATION));
-        locationAttribute.setValue(locationValue);
-        asset.replaceAttribute(locationAttribute);
-        assetStorageService.merge(asset);
     }
 }

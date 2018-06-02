@@ -19,34 +19,28 @@
  */
 package org.openremote.model.geo;
 
-import org.openremote.model.AbstractTypeHolder;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import org.openremote.model.value.ArrayValue;
+import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Values;
 
-public class GeoJSON extends AbstractTypeHolder {
+@JsonSubTypes({
+    @JsonSubTypes.Type(value = GeoJSONFeatureCollection.class, name = GeoJSONFeatureCollection.TYPE),
+    @JsonSubTypes.Type(value = GeoJSONFeature.class, name = GeoJSONFeature.TYPE)
+})
+@JsonTypeInfo(
+    use = JsonTypeInfo.Id.NAME,
+    include = JsonTypeInfo.As.PROPERTY,
+    property = "type"
+)
+public abstract class GeoJSON {
 
-    public static final GeoJSON EMPTY_FEATURE_COLLECTION = new GeoJSON("FeatureCollection").setEmptyFeatures();
+    protected String type;
 
-    public GeoJSON(String type) {
-        super(type);
+    protected GeoJSON(String type) {
+        this.type = type;
     }
 
-    public GeoJSON setFeatures(GeoJSONFeature... features) {
-        if (features != null) {
-            for (int i = 0; i < features.length; i++) {
-                GeoJSONFeature feature = features[i];
-                ArrayValue array = Values.createArray();
-                array.set(i, feature.getObjectValue());
-                objectValue.put("features", array);
-            }
-        } else {
-            return setEmptyFeatures();
-        }
-        return this;
-    }
-
-    public GeoJSON setEmptyFeatures() {
-        objectValue.put("features", Values.createArray());
-        return this;
-    }
+    public abstract ObjectValue toValue();
 }

@@ -22,6 +22,7 @@ package org.openremote.model.asset;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.openremote.model.event.shared.SharedEvent;
+import org.openremote.model.geo.GeoJSONPoint;
 
 import java.util.Arrays;
 
@@ -31,18 +32,15 @@ import java.util.Arrays;
 public class LocationEvent extends SharedEvent {
 
     protected String assetId;
-    protected double[] coordinates;
+    protected GeoJSONPoint coordinates;
 
     @JsonCreator
     public LocationEvent(
         @JsonProperty("assetId") String assetId,
-        @JsonProperty("coordinates") double[] coordinates,
+        @JsonProperty("coordinates") GeoJSONPoint coordinates,
         @JsonProperty("timestamp") long timestamp
     ) {
         super(timestamp);
-        if (coordinates != null && coordinates.length != 2) {
-            throw new IllegalArgumentException("Coordinates must contain exactly two values (longitude and latitude)");
-        }
         this.assetId = assetId;
         this.coordinates = coordinates;
     }
@@ -51,7 +49,7 @@ public class LocationEvent extends SharedEvent {
         return assetId;
     }
 
-    public double[] getCoordinates() {
+    public GeoJSONPoint getCoordinates() {
         return coordinates;
     }
 
@@ -60,7 +58,7 @@ public class LocationEvent extends SharedEvent {
         return getClass().getSimpleName() + "{" +
             "timestamp=" + timestamp +
             ", assetId=" + assetId +
-            ", coordinates=" + Arrays.toString(coordinates) +
+            ", coordinates=" + (coordinates == null ? "null" : coordinates.toValue()) +
             "}";
     }
 }

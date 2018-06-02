@@ -23,6 +23,7 @@ import org.openremote.agent.protocol.simulator.SimulatorProtocol;
 import org.openremote.container.Container;
 import org.openremote.manager.asset.console.ConsoleResourceImpl;
 import org.openremote.manager.rules.geofence.ORConsoleGeofenceAssetAdapter;
+import org.openremote.manager.security.UserConfiguration;
 import org.openremote.manager.setup.AbstractManagerSetup;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
@@ -31,6 +32,7 @@ import org.openremote.model.asset.UserAsset;
 import org.openremote.model.attribute.*;
 import org.openremote.model.console.ConsoleConfiguration;
 import org.openremote.model.console.ConsoleProvider;
+import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.security.Tenant;
 import org.openremote.model.simulator.element.ColorSimulatorElement;
 import org.openremote.model.simulator.element.NumberSimulatorElement;
@@ -56,9 +58,9 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
     public static final int DEMO_RULE_STATES_APARTMENT_1 = 37;
     public static final int DEMO_RULE_STATES_APARTMENT_2 = 11;
     public static final int DEMO_RULE_STATES_APARTMENT_3 = 0;
-    public static final int DEMO_RULE_STATES_SMART_OFFICE = 2;
+    public static final int DEMO_RULE_STATES_SMART_OFFICE = 1;
     public static final int DEMO_RULE_STATES_SMART_HOME = DEMO_RULE_STATES_APARTMENT_1 + DEMO_RULE_STATES_APARTMENT_2 + DEMO_RULE_STATES_APARTMENT_3;
-    public static final int DEMO_RULE_STATES_CUSTOMER_A = DEMO_RULE_STATES_SMART_HOME;
+    public static final int DEMO_RULE_STATES_CUSTOMER_A = DEMO_RULE_STATES_SMART_HOME + 1; // 1 is for console location attribute
     public static final int DEMO_RULE_STATES_GLOBAL = DEMO_RULE_STATES_CUSTOMER_A + DEMO_RULE_STATES_SMART_OFFICE;
     public static final int DEMO_RULE_STATES_APARTMENT_1_WITH_SCENES = DEMO_RULE_STATES_APARTMENT_1 + 28;
     public static final int DEMO_RULE_STATES_SMART_HOME_WITH_SCENES = DEMO_RULE_STATES_APARTMENT_1_WITH_SCENES + DEMO_RULE_STATES_APARTMENT_2 + DEMO_RULE_STATES_APARTMENT_3;
@@ -104,8 +106,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
 
         // ################################ Demo assets for 'master' realm ###################################
 
-        ObjectValue locationValue = Values.createObject().put("latitude", 51.44541688237109).put("longitude",
-                                                                                                 5.460315214821094);
+        ObjectValue locationValue = new GeoJSONPoint(5.460315214821094, 51.44541688237109).toValue();
 
         Asset smartOffice = new Asset();
         smartOffice.setRealmId(masterTenant.getId());
@@ -367,7 +368,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
 
         // ################################ Demo assets for 'customerA' realm ###################################
 
-        ObjectValue locationValueA = Values.createObject().put("latitude", 51.438000).put("longitude", 5.470945);
+        ObjectValue locationValueA = new GeoJSONPoint(5.470945, 51.438000).toValue();
 
         Asset smartHome = new Asset();
         smartHome.setRealmId(customerATenant.getId());
@@ -677,5 +678,11 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.customerATenant.getId(),
                                                          keycloakDemoSetup.testuser3Id,
                                                          consoleId));
+
+        // ################################ Make users restricted ###################################
+
+        UserConfiguration testuser3Config = identityService.getUserConfiguration(keycloakDemoSetup.testuser3Id);
+        testuser3Config.setRestricted(true);
+        testuser3Config = identityService.mergeUserConfiguration(testuser3Config);
     }
 }

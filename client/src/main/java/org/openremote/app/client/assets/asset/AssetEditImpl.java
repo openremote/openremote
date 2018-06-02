@@ -44,6 +44,7 @@ import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetType;
 import org.openremote.model.asset.AssetTypeDescriptor;
 import org.openremote.model.geo.GeoJSON;
+import org.openremote.model.geo.GeoJSONFeatureCollection;
 import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.util.Pair;
 import org.openremote.model.value.ObjectValue;
@@ -256,7 +257,7 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
         typeInput.setReadOnly(false);
         typeInput.setVisible(false);
         customTypeInfoLabel.setVisible(false);
-        showDroppedPin(GeoJSON.EMPTY_FEATURE_COLLECTION);
+        showDroppedPin(GeoJSONFeatureCollection.EMPTY);
         hideMapPopup();
         setDisabled(false);
         attributeViewContainer.clear();

@@ -1,5 +1,6 @@
 package org.openremote.test.user
 
+import com.google.firebase.messaging.Message
 import org.openremote.container.timer.TimerService
 import org.openremote.manager.notification.FCMBaseMessage
 import org.openremote.manager.notification.FCMDeliveryService
@@ -31,17 +32,18 @@ class NotificationServiceTest extends Specification implements ManagerContainerT
 
         given: "the server container is started"
         def serverPort = findEphemeralPort()
-        def container = startContainer(defaultConfig(serverPort) << [
-            (NOTIFICATION_FIREBASE_API_KEY): "test",
-            (NOTIFICATION_FIREBASE_URL): "test"
-        ], defaultServices())
+        def container = startContainer(defaultConfig(serverPort), defaultServices())
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
 
         and: "a mock FCM delivery service"
         def mockFCMDeliveryService = Spy(FCMDeliveryService, constructorArgs: [container]) {
+            // Assume valid
+            isValid() >> {
+                return true
+            }
             // Always "deliver" to FCM
-            sendMessage(_ as FCMBaseMessage) >> {
+            sendMessage(_ as Message) >> {
                 return true
             }
         }

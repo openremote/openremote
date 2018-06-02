@@ -22,6 +22,7 @@ package org.openremote.model.attribute;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.ValueHolder;
 import org.openremote.model.asset.AssetMeta;
+import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueType;
 import org.openremote.model.value.Values;
@@ -228,10 +229,13 @@ public enum AttributeValueType {
                               new MetaItem(FORMAT, Values.create("%0.1f deg"))
     ),
 
-    LOCATION("map-marker", ValueType.OBJECT, value -> Values.getObject(value)
-        .filter(object -> !object.hasKey("latitude") || !object.hasKey("longitude"))
-        .map(object -> new ValidationFailure(ValueHolder.ValueFailureReason.VALUE_INVALID))
-    );
+    LOCATION("map-marker", ValueType.OBJECT, value -> {
+        if (value != null && !GeoJSONPoint.fromValue(value).isPresent()) {
+            return Optional.of(new ValidationFailure(ValueHolder.ValueFailureReason.VALUE_INVALID));
+        }
+
+        return Optional.empty();
+    });
 
     public static final String DEFAULT_ICON = "circle-thin";
 

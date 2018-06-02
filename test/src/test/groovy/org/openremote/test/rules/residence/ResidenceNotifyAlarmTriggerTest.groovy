@@ -1,8 +1,8 @@
 package org.openremote.test.rules.residence
 
+import com.google.firebase.messaging.Message
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
-import org.openremote.manager.notification.FCMBaseMessage
 import org.openremote.manager.notification.FCMDeliveryService
 import org.openremote.manager.notification.NotificationService
 import org.openremote.manager.rules.RulesEngine
@@ -34,10 +34,7 @@ class ResidenceNotifyAlarmTriggerTest extends Specification implements ManagerCo
         given: "the container environment is started"
         def conditions = new PollingConditions(timeout: 15, delay: 1)
         def serverPort = findEphemeralPort()
-        def container = startContainerWithPseudoClock(defaultConfig(serverPort) << [
-            (NOTIFICATION_FIREBASE_API_KEY): "test",
-            (NOTIFICATION_FIREBASE_URL): "test"
-        ], defaultServices())
+        def container = startContainerWithPseudoClock(defaultConfig(serverPort), defaultServices())
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def rulesService = container.getService(RulesService.class)
@@ -48,8 +45,12 @@ class ResidenceNotifyAlarmTriggerTest extends Specification implements ManagerCo
 
         and: "a mock FCM delivery service"
         def mockFCMDeliveryService = Spy(FCMDeliveryService, constructorArgs: [container]) {
+            // Assume valid
+            isValid() >> {
+                return true
+            }
             // Always "deliver" to FCM
-            sendMessage(_ as FCMBaseMessage) >> {
+            sendMessage(_ as Message) >> {
                 return true
             }
         }
@@ -127,8 +128,7 @@ class ResidenceNotifyAlarmTriggerTest extends Specification implements ManagerCo
             assert alerts[0].title == "Apartment Alarm"
             assert alerts[0].message.startsWith("Aanwezigheid in Living Room")
             assert alerts[0].actions.length() == 2
-            assert alerts[0].actions.getObject(0).orElse(null) == new AlertAction("Details", ActionType.LINK).objectValue
-            assert alerts[0].appUrl == "#security"
+            assert alerts[0].actions.getObject(0).orElse(null) == new AlertAction("Details", ActionType.LINK, "#security").objectValue
             assert alerts[0].actions.getObject(1).orElse(null) == new AlertAction("Alarm uit", ActionType.ACTUATOR, managerDemoSetup.apartment1Id, "alarmEnabled", Values.create(false).toJson()).objectValue
         }
 

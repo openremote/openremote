@@ -53,7 +53,7 @@ public class FormOutputLocation extends Composite {
     }
 
     public boolean setCoordinates(String noLocationText, GeoJSONPoint point) {
-        if (point != null && point.hasCoordinates()) {
+        if (point != null) {
             this.coordinates = point;
             toggleButton.setVisible(true);
             update();
@@ -68,11 +68,11 @@ public class FormOutputLocation extends Composite {
         // TODO: This assumes 0 is Lng and 1 is Lat, which is true for PostGIS backend
         // Rounding to 5 decimals gives us precision of about 1 meter, should be enough
         if (reversed) {
-            coordinatesLabel.setText(round(coordinates.getLongitude(), 5) + " " + round(coordinates.getLatitude(), 5));
+            coordinatesLabel.setText(round(coordinates.getX(), 5) + " " + round(coordinates.getY(), 5));
             toggleButton.getUpFace().setText("Lng | Lat");
             toggleButton.getDownFace().setText("Lng | Lat");
         } else {
-            coordinatesLabel.setText(round(coordinates.getLatitude(), 5) + " " + round(coordinates.getLongitude(), 5));
+            coordinatesLabel.setText(round(coordinates.getY(), 5) + " " + round(coordinates.getX(), 5));
             toggleButton.getUpFace().setText("Lat | Lng");
             toggleButton.getDownFace().setText("Lat | Lng");
         }

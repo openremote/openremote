@@ -62,7 +62,7 @@ public enum AttributeType implements AttributeDescriptor {
     }
 
     @Override
-    public AttributeValueType getType() {
+    public AttributeValueType getValueType() {
         return attributeValueType;
     }
 

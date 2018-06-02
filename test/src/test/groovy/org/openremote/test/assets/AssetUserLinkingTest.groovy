@@ -106,7 +106,7 @@ class AssetUserLinkingTest extends Specification implements ManagerContainerTrai
         userAssets = assetResource.getUserAssetLinks(null, keycloakDemoSetup.customerATenant.id, keycloakDemoSetup.testuser3Id, null)
 
         then: "result should match"
-        userAssets.length == 5
+        userAssets.length == 6
 
         when: "the realm and user don't match"
         assetResource.getUserAssetLinks(null, keycloakDemoSetup.customerBTenant.id, keycloakDemoSetup.testuser3Id, null)
@@ -164,7 +164,6 @@ class AssetUserLinkingTest extends Specification implements ManagerContainerTrai
         userAssets = assetResource.getUserAssetLinks(null, keycloakDemoSetup.customerATenant.id, keycloakDemoSetup.testuser2Id, null)
 
         then: "result should match"
-        identityService.getIdentityProvider().isRestrictedUser(keycloakDemoSetup.testuser2Id)
         userAssets.length == 1
         userAssets.any {
             it.id.realmId == keycloakDemoSetup.customerATenant.id &&
@@ -181,7 +180,6 @@ class AssetUserLinkingTest extends Specification implements ManagerContainerTrai
         userAssets = assetResource.getUserAssetLinks(null, keycloakDemoSetup.customerATenant.id, keycloakDemoSetup.testuser2Id, null)
 
         then: "result should match"
-        !identityService.getIdentityProvider().isRestrictedUser(keycloakDemoSetup.testuser2Id)
         userAssets.length == 0
 
         cleanup: "the server should be stopped"

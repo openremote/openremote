@@ -451,9 +451,11 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         )
 
         then: "result should match"
-        assets.length == 1
+        assets.length == 2
         assets[0].id == managerDemoSetup.smartHomeId
         assets[0].realmId == keycloakDemoSetup.customerATenant.id
+        assets[1].id == managerDemoSetup.consolesId
+        assets[1].realmId == keycloakDemoSetup.customerATenant.id
 
         when: "the root assets of the given realm are retrieved"
         assets = assetResource.queryAssets(null,
@@ -600,8 +602,8 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         apartment2.name == "Apartment 2"
 
         Asset console = assets[5]
-        console.id == managerDemoSetup.consolesId
-        console.name == "Consoles"
+        console.id == managerDemoSetup.consoleId
+        console.name == "Demo Console"
 
         when: "the root assets of a foreign realm are retrieved"
         assets = assetResource.queryAssets(null,

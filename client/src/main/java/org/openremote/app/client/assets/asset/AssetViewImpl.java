@@ -44,6 +44,7 @@ import org.openremote.model.Constants;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetType;
 import org.openremote.model.geo.GeoJSON;
+import org.openremote.model.geo.GeoJSONFeatureCollection;
 import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.value.ObjectValue;
 
@@ -227,7 +228,7 @@ public class AssetViewImpl extends Composite implements AssetView {
         locationGroup.setVisible(false);
         locationOutput.setCoordinates(null, null);
         mapWidget.setVisible(false);
-        showDroppedPin(GeoJSON.EMPTY_FEATURE_COLLECTION);
+        showDroppedPin(GeoJSONFeatureCollection.EMPTY);
 
         accessPublicReadGroup.setVisible(false);
         accessPublicReadCheckBox.setValue(false);
