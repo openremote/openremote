@@ -19,13 +19,15 @@
  */
 package org.openremote.model.attribute;
 
+import org.openremote.model.asset.AssetMeta;
 import org.openremote.model.value.Value;
+import org.openremote.model.value.Values;
 
 import java.util.Optional;
 
 public enum AttributeType implements AttributeDescriptor {
 
-    LOCATION("location", AttributeValueType.GEO_JSON_POINT),
+    LOCATION("location", AttributeValueType.GEO_JSON_POINT, new MetaItem(AssetMeta.LABEL, Values.create("Location"))),
 
     CONSOLE_NAME("consoleName", AttributeValueType.STRING),
 
