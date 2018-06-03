@@ -162,7 +162,9 @@ public class AttributeLinkEditor extends FlowPanel {
             @Override
             protected MetaItemEditor createMetaItemEditor(MetaItem item, boolean isNewItem) {
                 MetaItemEditor itemEditor = super.createMetaItemEditor(item, isNewItem);
-                itemEditor.getNameList().setVisible(false);
+                if (itemEditor.getNameList() != null) {
+                    itemEditor.getNameList().setVisible(false);
+                }
                 return itemEditor;
             }
 

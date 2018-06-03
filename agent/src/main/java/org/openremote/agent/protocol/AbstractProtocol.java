@@ -113,11 +113,27 @@ public abstract class AbstractProtocol implements Protocol {
     protected final Map<AttributeRef, LinkedProtocolInfo> linkedProtocolConfigurations = new HashMap<>();
     protected final Map<AttributeRef, List<MessageFilter>> linkedAttributeFilters = new HashMap<>();
     protected final List<AttributeRef> locationLinkedAttributes = new ArrayList<>();
+    protected static final List<MetaItemDescriptor> attributeMetaItemDescriptors;
     protected MessageBrokerContext messageBrokerContext;
     protected ProducerTemplate producerTemplate;
     protected TimerService timerService;
     protected ProtocolExecutorService executorService;
     protected ProtocolAssetService assetService;
+
+    static {
+        attributeMetaItemDescriptors = Arrays.asList(
+            new MetaItemDescriptorImpl(
+                "PROTOCOL_FILTERS",
+                META_PROTOCOL_FILTERS,
+                ValueType.ARRAY,
+                false,
+                null,
+                null,
+                1,
+                null,
+                false)
+        );
+    }
 
     @Override
     public void init(Container container) throws Exception {
@@ -326,12 +342,28 @@ public abstract class AbstractProtocol implements Protocol {
                     LOG.fine("Applying message filters to sensor value...");
 
                     for (MessageFilter filter : filters) {
-                        if (filter.getMessageType() != value.getType().getModelType()) {
-                            LOG.fine("Message filter type '" + filter.getMessageType().getName()
-                                + "' is not compatible with actual message type '" + value.getType().getModelType().getName()
-                                + "': " + filter.getClass().getName());
-                            value = null;
-                        } else {
+                        boolean filterOk = filter.getMessageType() == value.getType().getModelType();
+
+                        if (!filterOk) {
+                            // Try and convert the value
+                            ValueType filterValueType = ValueType.fromModelType(filter.getMessageType());
+                            if (filterValueType == null) {
+                                LOG.fine("Message filter type unknown: " + filter.getMessageType().getName());
+                                value = null;
+                            } else {
+                                Optional<Value> val = Values.convert(value, filterValueType);
+                                if (!val.isPresent()) {
+                                    LOG.fine("Message filter type '" + filter.getMessageType().getName()
+                                                 + "' is not compatible with actual message type '" + value.getType().getModelType().getName()
+                                                 + "': " + filter.getClass().getName());
+                                } else {
+                                    filterOk = true;
+                                }
+                                value = val.orElse(null);
+                            }
+                        }
+
+                        if (filterOk) {
                             try {
                                 LOG.finest("Applying message filter: " + filter.getClass().getName());
                                 value = filter.process(value);
@@ -506,12 +538,20 @@ public abstract class AbstractProtocol implements Protocol {
             '}';
     }
 
+    /**
+     * Get list of {@link MetaItemDescriptor}s that describe the {@link MetaItem}s a {@link ProtocolConfiguration} for this
+     * protocol supports
+     */
     protected List<MetaItemDescriptor> getProtocolConfigurationMetaItemDescriptors() {
         return Collections.emptyList();
     }
 
+    /**
+     * Get list of {@link MetaItemDescriptor}s that describe the {@link MetaItem}s an {@link Attribute} linked to this
+     * protocol supports
+     */
     protected List<MetaItemDescriptor> getLinkedAttributeMetaItemDescriptors() {
-        return Collections.emptyList();
+        return attributeMetaItemDescriptors;
     }
 
     /**

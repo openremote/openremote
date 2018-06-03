@@ -18,12 +18,10 @@ import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.MetaItem;
+import org.openremote.model.attribute.MetaItemDescriptor;
 import org.openremote.model.value.Values;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.logging.Logger;
 
 import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
@@ -82,6 +80,16 @@ public class UpnpProtocol extends AbstractProtocol {
     @Override
     public String getVersion() {
         return VERSION;
+    }
+
+    @Override
+    protected List<MetaItemDescriptor> getProtocolConfigurationMetaItemDescriptors() {
+        return Collections.emptyList();
+    }
+
+    @Override
+    protected List<MetaItemDescriptor> getLinkedAttributeMetaItemDescriptors() {
+        return super.getLinkedAttributeMetaItemDescriptors();
     }
 
     @Override

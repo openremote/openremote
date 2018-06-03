@@ -50,6 +50,7 @@ public class MetaEditor extends AbstractAttributeViewExtension {
         protected MetaEditor parentEditor;
         protected MetaItem item;
         protected FormField field;
+        protected FormLabel nameLabel;
         protected FormListBox nameList;
         protected FormListBox typeList;
         protected FormInputText nameInput;
@@ -72,27 +73,18 @@ public class MetaEditor extends AbstractAttributeViewExtension {
             }
 
             nameList = new FormListBox();
+            nameLabel = new FormLabel("TEST");
             field.add(nameList);
+            field.add(nameLabel);
 
-            final int[] currentIndex = {0};
-            final int[] selectedIndex = {0};
-            final MetaItemDescriptor[] currentMetaItemDescriptor = {null};
+            if (newItem) {
+                nameLabel.setVisible(false);
+            } else {
+                nameList.setVisible(false);
+            }
 
-            nameList.addItem(environment.getMessages().customItem(), "");
-
-            Arrays.stream(metaItemDescriptors)
-                .forEach(metaItemDescriptor -> {
-                    String name = getMetaItemDisplayName(environment, metaItemDescriptor.name());
-                    nameList.addItem(name, metaItemDescriptor.getUrn());
-
-                    if (item.getName().map(n -> n.equals(metaItemDescriptor.getUrn())).orElse(false)) {
-                        currentMetaItemDescriptor[0] = metaItemDescriptor;
-                        selectedIndex[0] = currentIndex[0] + 1;
-                    }
-                    currentIndex[0]++;
-                });
-
-            nameList.setSelectedIndex(selectedIndex[0]);
+            updateNameList();
+            nameList.selectItem(item.getName().orElse(""));
             nameList.addChangeHandler(event -> onNameChanged(true));
 
             nameInput = new FormInputText();
@@ -143,6 +135,18 @@ public class MetaEditor extends AbstractAttributeViewExtension {
             this.setFormGroupActions(formGroupActions);
             nameInput.setValue(item.getName().orElse(null));
             onNameChanged(false);
+        }
+
+        protected void updateNameList() {
+            nameList.clear();
+
+            nameList.addItem(environment.getMessages().customItem(), "");
+
+            Arrays.stream(metaItemDescriptors)
+                .forEach(metaItemDescriptor -> {
+                    String name = getMetaItemDisplayName(environment, metaItemDescriptor.name());
+                    nameList.addItem(name, metaItemDescriptor.getUrn());
+                });
         }
 
         public FormListBox getNameList() {
@@ -200,6 +204,7 @@ public class MetaEditor extends AbstractAttributeViewExtension {
                 }
             }
 
+            nameLabel.setText(currentMetaItemDescriptor.map(metaItemDescriptor -> getMetaItemDisplayName(environment, metaItemDescriptor.name())).orElse(urn));
             nameInput.setVisible(!currentMetaItemDescriptor.isPresent());
             typeList.setVisible(!currentMetaItemDescriptor.isPresent());
             typeList.selectItem(typeListValue);
@@ -263,13 +268,25 @@ public class MetaEditor extends AbstractAttributeViewExtension {
     protected MetaItemDescriptor[] metaItemDescriptors;
     protected boolean isProtocolConfiguration;
     protected AttributeValidationResult lastValidationResult;
+    protected Supplier<List<ProtocolDescriptor>> protocolDescriptorSupplier;
 
     public MetaEditor(Environment environment, AttributeView.Style style, String existingItemsHeader, String newItemsHeader, AttributeView parentView, AssetAttribute attribute, Supplier<List<ProtocolDescriptor>> protocolDescriptorSupplier) {
         super(environment, style, parentView, attribute, existingItemsHeader);
         setLabelVisible(false);
         this.attribute = attribute;
         this.style = style;
+        this.protocolDescriptorSupplier = protocolDescriptorSupplier;
         isProtocolConfiguration = attribute.hasMetaItem(AssetMeta.PROTOCOL_CONFIGURATION);
+
+        refreshMetaItemDescriptors();
+
+        itemEditorSectionLabel = new FormSectionLabel(newItemsHeader);
+        add(itemListPanel);
+        add(itemEditorSectionLabel);
+        add(itemEditorPanel);
+    }
+
+    protected void refreshMetaItemDescriptors() {
         List<MetaItemDescriptor> metaItemDescriptors = new ArrayList<>();
 
         if (isProtocolConfiguration) {
@@ -303,18 +320,24 @@ public class MetaEditor extends AbstractAttributeViewExtension {
 
         this.metaItemDescriptors = metaItemDescriptors.stream()
             .filter(metaItemDescriptor -> {
-                // Always add protocol configuration using protocol from attribute drop down
+                // Always auto add protocol configuration using protocol from attribute drop down (don't allow manual add)
+                // Agent link shouldn't be allowed on protocol configurations
                 return metaItemDescriptor != AssetMeta.PROTOCOL_CONFIGURATION &&
-                    // Agent link shouldn't be allowed on protocol configurations
                     (!isProtocolConfiguration || metaItemDescriptor != AssetMeta.AGENT_LINK);
             })
-            .sorted(Comparator.comparing(MetaItemDescriptor::name))
+            .sorted(Comparator.comparing(metaItemDescriptor -> getMetaItemDisplayName(environment, metaItemDescriptor.name())))
             .toArray(MetaItemDescriptor[]::new);
 
-        itemEditorSectionLabel = new FormSectionLabel(newItemsHeader);
-        add(itemListPanel);
-        add(itemEditorSectionLabel);
-        add(itemEditorPanel);
+        // Refresh the new item meta item editor
+        itemEditorPanel.forEach(w -> {
+            if (w instanceof MetaItemEditor) {
+                MetaItemEditor editor = (MetaItemEditor)w;
+                if (editor.isNewItem()) {
+                    // Agent link status could have changed so update the name list
+                    editor.updateNameList();
+                }
+            }
+        });
     }
 
     @Override
@@ -380,8 +403,9 @@ public class MetaEditor extends AbstractAttributeViewExtension {
             // TODO Should use meta item descriptors from server
             Value initialValue = Arrays.stream(AssetMeta.values())
                 .filter(assetMeta -> assetMeta.getUrn().equals(itemEditor.nameList.getSelectedValue()))
+                .findFirst()
                 .map(MetaItemDescriptor::getInitialValue)
-                .findFirst().orElse(null);
+                .orElse(null);
 
             ValueType valueType = EnumUtil.enumFromString(ValueType.class, itemEditor.typeList.getSelectedValue()).orElse(null);
             if (valueType == ValueType.BOOLEAN && initialValue == null) {
@@ -442,6 +466,8 @@ public class MetaEditor extends AbstractAttributeViewExtension {
 
             attribute.getMeta().add(item);
 
+            refreshMetaItemDescriptors();
+
             // Notify the presenter that the attribute has changed
             notifyAttributeModified();
         }
@@ -451,6 +477,8 @@ public class MetaEditor extends AbstractAttributeViewExtension {
         itemListPanel.add(metaItemEditor);
 
         setLabelVisible(itemListPanel.getWidgetCount() > 0);
+
+        // Update meta item descriptors if agent link status has changed
 
         // Check if we have a validation failure for this editor
         if (lastValidationResult != null && lastValidationResult.getMetaFailures() != null) {
@@ -473,6 +501,8 @@ public class MetaEditor extends AbstractAttributeViewExtension {
         setLabelVisible(itemListPanel.getWidgetCount() > 0);
 
         attribute.getMeta().remove(index);
+
+        refreshMetaItemDescriptors();
 
         // Notify the presenter that the attribute has changed
         notifyAttributeModified();

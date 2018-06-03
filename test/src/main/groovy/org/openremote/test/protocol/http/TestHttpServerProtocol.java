@@ -22,9 +22,11 @@ package org.openremote.test.protocol.http;
 import org.openremote.agent.protocol.http.AbstractHttpServerProtocol;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.attribute.MetaItemDescriptor;
 
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 public class TestHttpServerProtocol extends AbstractHttpServerProtocol {
@@ -35,6 +37,16 @@ public class TestHttpServerProtocol extends AbstractHttpServerProtocol {
     @Override
     protected Set<Object> getApiSingletons(AssetAttribute protocolConfiguration) {
         return new HashSet<>(Collections.singletonList(resource1));
+    }
+
+    @Override
+    protected List<MetaItemDescriptor> getProtocolConfigurationMetaItemDescriptors() {
+        return Collections.emptyList();
+    }
+
+    @Override
+    protected List<MetaItemDescriptor> getLinkedAttributeMetaItemDescriptors() {
+        return super.getLinkedAttributeMetaItemDescriptors();
     }
 
     @Override

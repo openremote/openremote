@@ -43,7 +43,8 @@ import java.util.Optional;
 @JsonTypeInfo(use=JsonTypeInfo.Id.NAME, include=JsonTypeInfo.As.PROPERTY, property = "type")
 @JsonSubTypes({
     @JsonSubTypes.Type(name = RegexFilter.NAME, value = RegexFilter.class),
-    @JsonSubTypes.Type(name = SubStringFilter.NAME, value = SubStringFilter.class)
+    @JsonSubTypes.Type(name = SubStringFilter.NAME, value = SubStringFilter.class),
+    @JsonSubTypes.Type(name = JsonFilter.NAME, value = JsonFilter.class)
 })
 public abstract class MessageFilter<T extends Value> {
 

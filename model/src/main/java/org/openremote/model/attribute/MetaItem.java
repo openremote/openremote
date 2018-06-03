@@ -113,12 +113,12 @@ public class MetaItem extends AbstractValueHolder {
                     .orElseGet(
                         () -> {
                             if (!getValue().isPresent()) {
-                                failures.add(new ValidationFailure(META_ITEM_VALUE_IS_REQUIRED, descriptor.getValueType().name())
+                                failures.add(new ValidationFailure(META_ITEM_VALUE_IS_REQUIRED, descriptor.getValueType() != null ? descriptor.getValueType().name() : null)
                                 );
                             }
 
-                            if (getValue().map(Value::getType).map(type -> descriptor.getValueType() != type).orElse(true)) {
-                                failures.add(new ValidationFailure(META_ITEM_VALUE_MISMATCH, descriptor.getValueType().name()));
+                            if (getValue().map(Value::getType).map(type -> descriptor.getValueType() != null && descriptor.getValueType() != type).orElse(true)) {
+                                failures.add(new ValidationFailure(META_ITEM_VALUE_MISMATCH, descriptor.getValueType() != null ? descriptor.getValueType().name() : null));
                                 return true;
                             }
 
@@ -126,7 +126,7 @@ public class MetaItem extends AbstractValueHolder {
                                 String valueStr = getValue().get().toString();
 
                                 if (isNullOrEmpty(valueStr)) {
-                                    failures.add(new ValidationFailure(MetaItemFailureReason.META_ITEM_VALUE_IS_REQUIRED, descriptor.getValueType().name()));
+                                    failures.add(new ValidationFailure(MetaItemFailureReason.META_ITEM_VALUE_IS_REQUIRED, descriptor.getValueType() != null ? descriptor.getValueType().name() : null));
                                     return true;
                                 }
 
