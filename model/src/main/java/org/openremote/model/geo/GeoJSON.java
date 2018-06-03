@@ -19,6 +19,7 @@
  */
 package org.openremote.model.geo;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import org.openremote.model.value.ArrayValue;
@@ -36,6 +37,7 @@ import org.openremote.model.value.Values;
 )
 public abstract class GeoJSON {
 
+    @JsonProperty
     protected String type;
 
     protected GeoJSON(String type) {

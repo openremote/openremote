@@ -39,6 +39,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static org.openremote.model.asset.AssetMeta.ACCESS_PUBLIC_WRITE;
 import static org.openremote.model.asset.AssetMeta.RULE_STATE;
 
 public final class ConsoleConfiguration {
@@ -67,8 +68,11 @@ public final class ConsoleConfiguration {
 
         asset.replaceAttribute(
             new AssetAttribute(AttributeType.LOCATION)
-                .setMeta(new MetaItem(RULE_STATE))
-                              );
+                .setMeta(
+                    new MetaItem(RULE_STATE),
+                    new MetaItem(ACCESS_PUBLIC_WRITE)
+                )
+        );
 
         return asset;
     }

@@ -21,17 +21,20 @@ package org.openremote.container.json;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.Version;
 import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import org.openremote.model.geo.Position;
 import org.openremote.model.value.*;
 
 import java.io.IOException;
 
-public class ModelValueModule extends SimpleModule {
+public class ModelModule extends SimpleModule {
 
     private static class ValueJsonDeserializer<T extends Value> extends StdDeserializer<T> {
 
@@ -64,17 +67,39 @@ public class ModelValueModule extends SimpleModule {
         }
     }
 
+    public static class PositionSerializer extends JsonSerializer<Position> {
+
+        @Override
+        public void serialize(Position value, JsonGenerator gen, SerializerProvider serializers) throws IOException, JsonProcessingException {
+            gen.writeArray(value.getValues(), 0, value.getValues().length);
+        }
+    }
+
+    public static class PositionDeserializer extends JsonDeserializer<Position> {
+
+        @Override
+        public Position deserialize(JsonParser p, DeserializationContext ctxt) throws IOException, JsonProcessingException {
+            double[] values = p.getCodec().readValue(p, double[].class);
+            return new Position(values[0], values[1]);
+        }
+    }
+
+
     @SuppressWarnings("unchecked")
-    public ModelValueModule() {
+    public ModelModule() {
         super("ModelValueModule", new Version(1, 0, 0, "latest", null, null));
-        ValueJsonSerializer serializer = new ValueJsonSerializer();
-        ValueJsonDeserializer deserializer = new ValueJsonDeserializer();
-        this.addSerializer(Value.class, serializer);
-        this.addDeserializer(Value.class, deserializer);
-        this.addDeserializer(ObjectValue.class, deserializer);
-        this.addDeserializer(ArrayValue.class, deserializer);
-        this.addDeserializer(StringValue.class, deserializer);
-        this.addDeserializer(NumberValue.class, deserializer);
-        this.addDeserializer(BooleanValue.class, deserializer);
+        ValueJsonSerializer valueSerializer = new ValueJsonSerializer();
+        ValueJsonDeserializer valueDeserializer = new ValueJsonDeserializer();
+        this.addSerializer(Value.class, valueSerializer);
+        this.addDeserializer(Value.class, valueDeserializer);
+        this.addDeserializer(ObjectValue.class, valueDeserializer);
+        this.addDeserializer(ArrayValue.class, valueDeserializer);
+        this.addDeserializer(StringValue.class, valueDeserializer);
+        this.addDeserializer(NumberValue.class, valueDeserializer);
+        this.addDeserializer(BooleanValue.class, valueDeserializer);
+        PositionSerializer positionSerializer = new PositionSerializer();
+        PositionDeserializer positionDeserializer = new PositionDeserializer();
+        this.addSerializer(Position.class, positionSerializer);
+        this.addDeserializer(Position.class, positionDeserializer);
     }
 }

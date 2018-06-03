@@ -56,7 +56,6 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
  * <li>{@link #get}</li>
  * <li>{@link #update}</li>
  * <li>{@link #writeAttributeValue}</li>
- * <li>{@link #updateLocation}</li>
  * </ul>
  */
 @Path("asset")

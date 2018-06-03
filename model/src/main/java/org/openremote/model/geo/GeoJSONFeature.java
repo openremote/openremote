@@ -21,6 +21,7 @@ package org.openremote.model.geo;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonTypeName;
 import org.openremote.model.AbstractTypeHolder;
 import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Value;
@@ -30,12 +31,16 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
+import static org.openremote.model.geo.GeoJSONFeature.TYPE;
 import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 
+@JsonTypeName(TYPE)
 public class GeoJSONFeature extends GeoJSON {
 
     public static final String TYPE = "Feature";
+    @JsonProperty
     protected GeoJSONGeometry geometry;
+    @JsonProperty
     protected Map<String, String> properties;
 
     @JsonCreator

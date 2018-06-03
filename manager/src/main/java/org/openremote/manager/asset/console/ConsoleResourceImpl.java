@@ -84,13 +84,12 @@ public class ConsoleResourceImpl extends ManagerWebResource implements ConsoleRe
                 consoleRegistration.getVersion(),
                 consoleRegistration.getPlatform(),
                 consoleRegistration.getProviders());
-//            if (!isAuthenticated() || isSuperUser()) {
-//                consoleAsset.setAccessPublicRead(true);
-//            }
+            if (!isAuthenticated()) {
+                consoleAsset.setAccessPublicRead(true);
+            }
             consoleAsset.setRealmId(getRequestTenant().getId());
             consoleAsset.setParentId(getConsoleParentAssetId(getRequestRealm()));
             consoleAsset.setId(consoleRegistration.getId());
-            consoleAsset.setAccessPublicRead(true);
         }
 
         ConsoleConfiguration.setConsoleName(consoleAsset, consoleRegistration.getName());

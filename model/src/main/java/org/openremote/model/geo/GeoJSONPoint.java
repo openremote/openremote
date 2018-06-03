@@ -21,6 +21,7 @@ package org.openremote.model.geo;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonTypeName;
 import org.openremote.model.value.ArrayValue;
 import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Value;
@@ -28,9 +29,13 @@ import org.openremote.model.value.Values;
 
 import java.util.Optional;
 
+import static org.openremote.model.geo.GeoJSONPoint.TYPE;
+
+@JsonTypeName(TYPE)
 public class GeoJSONPoint extends GeoJSONGeometry {
 
     public static final String TYPE = "Point";
+    @JsonProperty
     protected Position coordinates;
 
     @JsonCreator

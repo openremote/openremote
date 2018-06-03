@@ -57,7 +57,7 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
 
     private static final Logger LOG = Logger.getLogger(ORConsoleGeofenceAssetAdapter.class.getName());
     public static final String NAME = "ORConsole";
-    public static final String LOCATION_POST_URL_FORMAT_TEMPLATE = "/asset/public/%1$s/updateLocation";
+    public static final String LOCATION_URL_FORMAT_TEMPLATE = "/asset/%1$s/location";
     protected Map<String, RulesEngine.AssetStateLocationPredicates> assetLocationPredicatesMap = new HashMap<>();
     protected NotificationService notificationService;
     protected AssetStorageService assetStorageService;
@@ -187,7 +187,7 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
     protected GeofenceDefinition locationPredicateToGeofenceDefinition(String assetId, BaseAssetQuery.LocationPredicate locationPredicate) {
         BaseAssetQuery.RadialLocationPredicate radialLocationPredicate = (BaseAssetQuery.RadialLocationPredicate) locationPredicate;
         String id = assetId + "_" + Integer.toString(radialLocationPredicate.hashCode());
-        String postUrl = String.format(LOCATION_POST_URL_FORMAT_TEMPLATE,
+        String postUrl = String.format(LOCATION_URL_FORMAT_TEMPLATE,
                                        assetId);
         return new GeofenceDefinition(id,
                                       radialLocationPredicate.getLat(),

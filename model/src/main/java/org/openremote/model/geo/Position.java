@@ -19,40 +19,7 @@
  */
 package org.openremote.model.geo;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-
-import java.io.IOException;
-
-@JsonFormat
-@JsonSerialize(using = Position.PositionSerializer.class)
-@JsonDeserialize(using = Position.PositionDeserializer.class)
 public class Position {
-
-    public static class PositionSerializer extends JsonSerializer<Position> {
-
-        @Override
-        public void serialize(Position value, JsonGenerator gen, SerializerProvider serializers) throws IOException, JsonProcessingException {
-            gen.writeArray(value.values, 0, value.values.length);
-        }
-    }
-
-    public static class PositionDeserializer extends JsonDeserializer<Position> {
-
-        @Override
-        public Position deserialize(JsonParser p, DeserializationContext ctxt) throws IOException, JsonProcessingException {
-            double[] values = p.getCodec().readValue(p, double[].class);
-            return new Position(values[0], values[1]);
-        }
-    }
 
     protected double[] values;
 
@@ -74,6 +41,10 @@ public class Position {
 
     public Double getZ() {
         return values.length == 3 ? values[2] : null;
+    }
+
+    public double[] getValues() {
+        return values;
     }
 
     public boolean hasZ() {
