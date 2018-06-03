@@ -237,11 +237,11 @@ class ValueTokenizer {
                 default:
                     if (lenient && (Character.isDigit((char) c) || Character.isLetterOrDigit((char) c))) {
                         StringBuilder keyBuffer = new StringBuilder();
-                        keyBuffer.append((char)c);
+                        keyBuffer.append((char) c);
                         while (true) {
                             c = next();
                             if (Character.isDigit((char) c) || Character.isLetterOrDigit((char) c)) {
-                                keyBuffer.append((char)c);
+                                keyBuffer.append((char) c);
                             } else {
                                 back(c);
                                 break;

@@ -24,6 +24,8 @@ import org.openremote.agent.protocol.AbstractProtocol;
 import org.openremote.agent.protocol.Protocol;
 import org.openremote.container.Container;
 import org.openremote.model.AbstractValueHolder;
+import org.openremote.model.ValidationFailure;
+import org.openremote.model.ValueHolder;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetMeta;
 import org.openremote.model.asset.agent.ConnectionStatus;
@@ -42,10 +44,7 @@ import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -55,6 +54,7 @@ import java.util.logging.Logger;
 
 import static org.openremote.container.concurrent.GlobalLock.withLock;
 import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
+import static org.openremote.model.util.TextUtil.*;
 
 /**
  * This is a HTTP client protocol for communicating with HTTP servers; it uses the {@link WebTargetBuilder} factory to
@@ -380,6 +380,234 @@ public class HttpClientProtocol extends AbstractProtocol {
      */
     public static final String META_QUERY_PARAMETERS = PROTOCOL_NAME + ":queryParameters";
 
+    protected static final List<MetaItemDescriptorImpl> PROTOCOL_META_ITEM_DESCRIPTORS = Arrays.asList(
+        new MetaItemDescriptorImpl(
+            "PROTOCOL_HTTP_CLIENT_BASE_URI",
+            META_PROTOCOL_BASE_URI,
+            ValueType.STRING,
+            true,
+            REGEXP_PATTERN_BASIC_HTTP_URL,
+            MetaItemDescriptor.PatternFailure.HTTP_URL.name(),
+            1,
+            null,
+            false),
+        new MetaItemDescriptorImpl(
+            "PROTOCOL_HTTP_CLIENT_USERNAME",
+            META_PROTOCOL_USERNAME,
+            ValueType.STRING,
+            false,
+            REGEXP_PATTERN_STRING_NON_EMPTY_NO_WHITESPACE,
+            MetaItemDescriptor.PatternFailure.STRING_EMPTY_OR_CONTAINS_WHITESPACE.name(),
+            1,
+            null,
+            false),
+        new MetaItemDescriptorImpl(
+            "PROTOCOL_HTTP_CLIENT_PASSWORD",
+            META_PROTOCOL_PASSWORD,
+            ValueType.STRING,
+            false,
+            REGEXP_PATTERN_STRING_NON_EMPTY_NO_WHITESPACE,
+            MetaItemDescriptor.PatternFailure.STRING_EMPTY_OR_CONTAINS_WHITESPACE.name(),
+            1,
+            null,
+            false),
+        new MetaItemDescriptorImpl(
+            "PROTOCOL_HTTP_CLIENT_OAUTH",
+            META_PROTOCOL_OAUTH_GRANT,
+            ValueType.OBJECT,
+            false,
+            null,
+            null,
+            1,
+            null,
+            false),
+        new MetaItemDescriptorImpl(
+            "PROTOCOL_HTTP_CLIENT_PING_PATH",
+            META_PROTOCOL_PING_PATH,
+            ValueType.STRING,
+            false,
+            REGEXP_PATTERN_STRING_NON_EMPTY,
+            MetaItemDescriptor.PatternFailure.STRING_EMPTY.name(),
+            1,
+            null,
+            false),
+        new MetaItemDescriptorImpl(
+            "PROTOCOL_HTTP_CLIENT_PING_METHOD",
+            META_PROTOCOL_PING_METHOD,
+            ValueType.STRING,
+            false,
+            REGEXP_PATTERN_STRING_NON_EMPTY,
+            MetaItemDescriptor.PatternFailure.STRING_EMPTY.name(),
+            1,
+            null,
+            false),
+        new MetaItemDescriptorImpl(
+            "PROTOCOL_HTTP_CLIENT_PING_BODY",
+            META_PROTOCOL_PING_BODY,
+            null,
+            false,
+            null,
+            null,
+            1,
+            null,
+            false),
+        new MetaItemDescriptorImpl(
+            "PROTOCOL_HTTP_CLIENT_PING_CONTENT_TYPE",
+            META_PROTOCOL_PING_CONTENT_TYPE,
+            ValueType.STRING,
+            false,
+            REGEXP_PATTERN_STRING_NON_EMPTY,
+            MetaItemDescriptor.PatternFailure.STRING_EMPTY.name(),
+            1,
+            null,
+            false),
+        new MetaItemDescriptorImpl(
+            "PROTOCOL_HTTP_CLIENT_PING_SECONDS",
+            META_PROTOCOL_PING_SECONDS,
+            ValueType.NUMBER,
+            false,
+            REGEXP_PATTERN_INTEGER_POSITIVE_NON_ZERO,
+            MetaItemDescriptor.PatternFailure.INTEGER_POSITIVE_NON_ZERO.name(),
+            1,
+            null,
+            false),
+        new MetaItemDescriptorImpl(
+            "PROTOCOL_HTTP_CLIENT_PING_QUERY_PARAMETERS",
+            META_PROTOCOL_PING_QUERY_PARAMETERS,
+            ValueType.OBJECT,
+            false,
+            null,
+            null,
+            1,
+            null,
+            false),
+        new MetaItemDescriptorImpl(
+            "PROTOCOL_HTTP_CLIENT_FOLLOW_REDIRECTS",
+            META_PROTOCOL_FOLLOW_REDIRECTS,
+            ValueType.BOOLEAN,
+            false,
+            null,
+            null,
+            1,
+            null,
+            false),
+        new MetaItemDescriptorImpl(
+            "PROTOCOL_HTTP_CLIENT_QUERY_PARAMETERS",
+            META_QUERY_PARAMETERS,
+            ValueType.OBJECT,
+            false,
+            null,
+            null,
+            1,
+            null,
+            false),
+        new MetaItemDescriptorImpl(
+            "PROTOCOL_HTTP_CLIENT_HEADERS",
+            META_QUERY_PARAMETERS,
+            ValueType.OBJECT,
+            false,
+            null,
+            null,
+            1,
+            null,
+            false),
+        new MetaItemDescriptorImpl(
+            "PROTOCOL_HTTP_CLIENT_FAILURE_CODES",
+            META_FAILURE_CODES,
+            ValueType.ARRAY,
+            false,
+            null,
+            null,
+            1,
+            null,
+            false)
+                                                                                                      );
+
+
+    public static final List<MetaItemDescriptor> ATTRIBUTE_META_ITEM_DESCRIPTORS = Arrays.asList(
+        new MetaItemDescriptorImpl(
+            "PROTOCOL_HTTP_CLIENT_PATH",
+            META_ATTRIBUTE_PATH,
+            ValueType.STRING,
+            false,
+            REGEXP_PATTERN_STRING_NON_EMPTY,
+            MetaItemDescriptor.PatternFailure.STRING_EMPTY.name(),
+            1,
+            null,
+            false),
+        new MetaItemDescriptorImpl(
+            "PROTOCOL_HTTP_CLIENT_METHOD",
+            META_ATTRIBUTE_METHOD,
+            ValueType.STRING,
+            false,
+            REGEXP_PATTERN_STRING_NON_EMPTY,
+            MetaItemDescriptor.PatternFailure.STRING_EMPTY.name(),
+            1,
+            null,
+            false),
+        new MetaItemDescriptorImpl(
+            "PROTOCOL_HTTP_CLIENT_BODY",
+            META_ATTRIBUTE_BODY,
+            null,
+            false,
+            null,
+            null,
+            1,
+            null,
+            false),
+        new MetaItemDescriptorImpl(
+            "PROTOCOL_HTTP_CLIENT_CONTENT_TYPE",
+            META_ATTRIBUTE_CONTENT_TYPE,
+            ValueType.STRING,
+            false,
+            REGEXP_PATTERN_STRING_NON_EMPTY,
+            MetaItemDescriptor.PatternFailure.STRING_EMPTY.name(),
+            1,
+            null,
+            false),
+        new MetaItemDescriptorImpl(
+            "PROTOCOL_HTTP_CLIENT_POLLING_SECONDS",
+            META_ATTRIBUTE_POLLING_SECONDS,
+            ValueType.NUMBER,
+            false,
+            REGEXP_PATTERN_INTEGER_POSITIVE_NON_ZERO,
+            MetaItemDescriptor.PatternFailure.INTEGER_POSITIVE_NON_ZERO.name(),
+            1,
+            null,
+            false),
+        new MetaItemDescriptorImpl(
+            "PROTOCOL_HTTP_CLIENT_QUERY_PARAMETERS",
+            META_QUERY_PARAMETERS,
+            ValueType.OBJECT,
+            false,
+            null,
+            null,
+            1,
+            null,
+            false),
+        new MetaItemDescriptorImpl(
+            "PROTOCOL_HTTP_CLIENT_HEADERS",
+            META_QUERY_PARAMETERS,
+            ValueType.OBJECT,
+            false,
+            null,
+            null,
+            1,
+            null,
+            false),
+        new MetaItemDescriptorImpl(
+            "PROTOCOL_HTTP_CLIENT_FAILURE_CODES",
+            META_FAILURE_CODES,
+            ValueType.ARRAY,
+            false,
+            null,
+            null,
+            1,
+            null,
+            false)
+    );
+
+
     private static final Logger LOG = Logger.getLogger(HttpClientProtocol.class.getName());
     public static final String PROTOCOL_DISPLAY_NAME = "Http Client";
     public static final String PROTOCOL_VERSION = "1.0";
@@ -424,20 +652,7 @@ public class HttpClientProtocol extends AbstractProtocol {
         /* We're going to fail hard and fast if optional meta items are incorrectly configured */
 
         Optional<OAuthGrant> oAuthGrant = getOAuthGrant(protocolConfiguration);
-
-        Optional<StringValue> username = Values.getMetaItemValueOrThrow(
-            protocolConfiguration,
-            META_PROTOCOL_USERNAME,
-            StringValue.class,
-            false,
-            true);
-
-        Optional<StringValue> password = Values.getMetaItemValueOrThrow(
-            protocolConfiguration,
-            META_PROTOCOL_PASSWORD,
-            StringValue.class,
-            false,
-            true);
+        Optional<Pair<StringValue, StringValue>> usernameAndPassword = getUsernameAndPassword(protocolConfiguration);
 
         boolean followRedirects = Values.getMetaItemValueOrThrow(
             protocolConfiguration,
@@ -482,20 +697,17 @@ public class HttpClientProtocol extends AbstractProtocol {
             .map(StringValue::getString)
             .orElse(null);
 
-        if ((username.isPresent() && !password.isPresent()) || (!username.isPresent() && password.isPresent())) {
-            throw new IllegalArgumentException("Both username and password must be set for basic authentication");
-        }
+
 
         WebTargetBuilder webTargetBuilder = new WebTargetBuilder(baseUri);
         if (oAuthGrant.isPresent()) {
             LOG.info("Adding OAuth");
             webTargetBuilder.setOAuthAuthentication(oAuthGrant.get());
         } else {
-            //noinspection ConstantConditions
-            username.ifPresent(stringValue -> {
+            usernameAndPassword.ifPresent(userPass -> {
                 LOG.info("Adding Basic Authentication");
-                webTargetBuilder.setBasicAuthentication(stringValue.getString(),
-                    password.get().getString());
+                webTargetBuilder.setBasicAuthentication(userPass.key.getString(),
+                    userPass.value.getString());
             });
         }
         headers.ifPresent(webTargetBuilder::setInjectHeaders);
@@ -535,19 +747,7 @@ public class HttpClientProtocol extends AbstractProtocol {
             .flatMap(objectValue -> getMultivaluedMap(objectValue, false))
             .orElse(null);
 
-        Integer pingPollingSeconds = Values.getMetaItemValueOrThrow(
-            protocolConfiguration,
-            META_PROTOCOL_PING_SECONDS,
-            NumberValue.class,
-            false,
-            true)
-            .map(polling ->
-                Values.getIntegerCoerced(polling)
-                    .map(seconds -> seconds < 1 ? null : seconds)
-                    .orElseThrow(() ->
-                        new IllegalArgumentException("Ping polling seconds meta item must be an integer >= 1")
-                    ))
-            .orElse(DEFAULT_PING_SECONDS);
+        Integer pingPollingSeconds = getPingSeconds(protocolConfiguration);
 
         String contentType = Values.getMetaItemValueOrThrow(
             protocolConfiguration,
@@ -758,6 +958,43 @@ public class HttpClientProtocol extends AbstractProtocol {
         return PROTOCOL_VERSION;
     }
 
+    @Override
+    protected List<MetaItemDescriptor> getProtocolConfigurationMetaItemDescriptors() {
+        return new ArrayList<>(PROTOCOL_META_ITEM_DESCRIPTORS);
+    }
+
+    @Override
+    protected List<MetaItemDescriptor> getLinkedAttributeMetaItemDescriptors() {
+        List<MetaItemDescriptor> descriptors = new ArrayList<>(super.getLinkedAttributeMetaItemDescriptors());
+        descriptors.addAll(ATTRIBUTE_META_ITEM_DESCRIPTORS);
+        return descriptors;
+    }
+
+    @Override
+    public AssetAttribute getProtocolConfigurationTemplate() {
+        return super.getProtocolConfigurationTemplate()
+            .addMeta(
+                new MetaItem(META_PROTOCOL_BASE_URI, null)
+                    );
+    }
+
+    @Override
+    public AttributeValidationResult validateProtocolConfiguration(AssetAttribute protocolConfiguration) {
+        AttributeValidationResult result = super.validateProtocolConfiguration(protocolConfiguration);
+        if (result.isValid()) {
+            try {
+                getOAuthGrant(protocolConfiguration);
+                getUsernameAndPassword(protocolConfiguration);
+                getPingSeconds(protocolConfiguration);
+            } catch (IllegalArgumentException e) {
+                result.addAttributeFailure(
+                    new ValidationFailure(ValueHolder.ValueFailureReason.VALUE_MISMATCH, PROTOCOL_NAME)
+                                          );
+            }
+        }
+        return result;
+    }
+
     public static Optional<OAuthGrant> getOAuthGrant(AssetAttribute attribute) throws IllegalArgumentException {
         return !attribute.hasMetaItem(META_PROTOCOL_OAUTH_GRANT)
             ? Optional.empty()
@@ -773,6 +1010,46 @@ public class HttpClientProtocol extends AbstractProtocol {
             })
             .orElseThrow(() -> new IllegalArgumentException("OAuth grant meta item must be an ObjectValue")));
     }
+
+    public static Optional<Pair<StringValue, StringValue>> getUsernameAndPassword(AssetAttribute attribute) throws IllegalArgumentException {
+        Optional<StringValue> username = Values.getMetaItemValueOrThrow(
+            attribute,
+            META_PROTOCOL_USERNAME,
+            StringValue.class,
+            false,
+            true);
+
+        Optional<StringValue> password = Values.getMetaItemValueOrThrow(
+            attribute,
+            META_PROTOCOL_PASSWORD,
+            StringValue.class,
+            false,
+            true);
+
+        if ((username.isPresent() && !password.isPresent()) || (!username.isPresent() && password.isPresent())) {
+            throw new IllegalArgumentException("Both username and password must be set for basic authentication");
+        }
+
+        return username.map(stringValue -> new Pair<>(stringValue, password.get()));
+    }
+
+    public static Integer getPingSeconds(AssetAttribute attribute) throws IllegalArgumentException {
+        return Values.getMetaItemValueOrThrow(
+            attribute,
+            META_PROTOCOL_PING_SECONDS,
+            NumberValue.class,
+            false,
+            true)
+            .map(polling ->
+                     Values.getIntegerCoerced(polling)
+                         .map(seconds -> seconds < 1 ? null : seconds)
+                         .orElseThrow(() ->
+                                          new IllegalArgumentException("Ping polling seconds meta item must be an integer >= 1")
+                                     ))
+            .orElse(DEFAULT_PING_SECONDS);
+    }
+
+
 
     public static Optional<MultivaluedMap<String, String>> getMultivaluedMap(ObjectValue objectValue, boolean throwOnError) throws ClassCastException, IllegalArgumentException {
         if (objectValue == null) {

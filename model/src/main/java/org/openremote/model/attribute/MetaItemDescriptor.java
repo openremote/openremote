@@ -102,7 +102,10 @@ public interface MetaItemDescriptor extends HasUniqueResourceName {
         DOUBLE_POSITIVE_NON_ZERO,
         DOUBLE_NEGATIVE_NON_ZERO,
         CRON_EXPRESSION,
-        DAYS_HOURS_MINS_SECONDS
+        DAYS_HOURS_MINS_SECONDS,
+        STRING_EMPTY,
+        STRING_EMPTY_OR_CONTAINS_WHITESPACE,
+        HTTP_URL
     }
 
     String name();

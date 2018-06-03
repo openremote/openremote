@@ -143,7 +143,9 @@ public class TimerProtocol extends AbstractProtocol {
 
     @Override
     protected List<MetaItemDescriptor> getLinkedAttributeMetaItemDescriptors() {
-        return ATTRIBUTE_META_ITEM_DESCRIPTORS;
+        List<MetaItemDescriptor> descriptors = new ArrayList<>(super.getLinkedAttributeMetaItemDescriptors());
+        descriptors.addAll(ATTRIBUTE_META_ITEM_DESCRIPTORS);
+        return descriptors;
     }
 
     @Override

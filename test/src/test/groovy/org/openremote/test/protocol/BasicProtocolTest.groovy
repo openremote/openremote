@@ -79,6 +79,16 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait, 
             }
 
             @Override
+            protected List<MetaItemDescriptor> getProtocolConfigurationMetaItemDescriptors() {
+                return null
+            }
+
+            @Override
+            protected List<MetaItemDescriptor> getLinkedAttributeMetaItemDescriptors() {
+                return null
+            }
+
+            @Override
             protected void doLinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
                 protocolMethodCalls.add("LINK_PROTOCOL")
                 protocolLinkedConfigurations.add(protocolConfiguration)

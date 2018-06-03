@@ -230,6 +230,13 @@ public class Values {
                         case BOOLEAN:
                             outputValue = (T) Values.create(Boolean.parseBoolean(value.toString()));
                             break;
+                        case ARRAY:
+                        case OBJECT:
+                            try {
+                                outputValue = (T) Values.parse(value.toString()).orElse(null);
+                            } catch (ValueException e) {
+                                return Optional.empty();
+                            }
                     }
                     break;
                 case NUMBER:
