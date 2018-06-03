@@ -25,7 +25,7 @@ import java.util.Optional;
 
 public enum AttributeType implements AttributeDescriptor {
 
-    LOCATION("location", AttributeValueType.LOCATION),
+    LOCATION("location", AttributeValueType.GEO_JSON_POINT),
 
     CONSOLE_NAME("consoleName", AttributeValueType.STRING),
 

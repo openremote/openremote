@@ -229,7 +229,7 @@ public enum AttributeValueType {
                               new MetaItem(FORMAT, Values.create("%0.1f deg"))
     ),
 
-    LOCATION("map-marker", ValueType.OBJECT, value -> {
+    GEO_JSON_POINT("map-marker", ValueType.OBJECT, value -> {
         if (value != null && !GeoJSONPoint.fromValue(value).isPresent()) {
             return Optional.of(new ValidationFailure(ValueHolder.ValueFailureReason.VALUE_INVALID));
         }
