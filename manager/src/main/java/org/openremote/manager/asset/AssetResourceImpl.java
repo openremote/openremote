@@ -370,7 +370,10 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                 // Process asynchronously but block for a little while waiting for the result
                 Map<String, Object> headers = new HashMap<>();
                 headers.put(AttributeEvent.HEADER_SOURCE, CLIENT);
-                headers.put(Constants.AUTH_CONTEXT, getAuthContext());
+                //TODO needed for anonymous?
+                if(isAuthenticated()) {
+                    headers.put(Constants.AUTH_CONTEXT, getAuthContext());
+                }
                 Object result = messageBrokerService.getProducerTemplate().requestBodyAndHeaders(
                     AssetProcessingService.ASSET_QUEUE, event, headers
                 );

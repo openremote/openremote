@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		4C4C2FB81FD8044A0071CBDA /* ORNotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C4C2FB71FD8044A0071CBDA /* ORNotificationService.swift */; };
+		4C56E5E520C583FB004483C7 /* ORAssetResource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C56E5E420C583FB004483C7 /* ORAssetResource.swift */; };
 		4C77278520BC13E800322CBC /* PushNotificationProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C77278320BC13E800322CBC /* PushNotificationProvider.swift */; };
 		4C77278620BC13E800322CBC /* GeofenceProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C77278420BC13E800322CBC /* GeofenceProvider.swift */; };
 		4C82D73F1FC58ED2009DE853 /* ORLib.h in Headers */ = {isa = PBXBuildFile; fileRef = 4C82D73D1FC58ED2009DE853 /* ORLib.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -24,6 +25,7 @@
 
 /* Begin PBXFileReference section */
 		4C4C2FB71FD8044A0071CBDA /* ORNotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ORNotificationService.swift; sourceTree = "<group>"; };
+		4C56E5E420C583FB004483C7 /* ORAssetResource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ORAssetResource.swift; sourceTree = "<group>"; };
 		4C77278320BC13E800322CBC /* PushNotificationProvider.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PushNotificationProvider.swift; sourceTree = "<group>"; };
 		4C77278420BC13E800322CBC /* GeofenceProvider.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = GeofenceProvider.swift; sourceTree = "<group>"; };
 		4C82D73A1FC58ED2009DE853 /* ORLib.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = ORLib.framework; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -96,6 +98,7 @@
 				4C82D73D1FC58ED2009DE853 /* ORLib.h */,
 				4C82D73E1FC58ED2009DE853 /* Info.plist */,
 				4C4C2FB71FD8044A0071CBDA /* ORNotificationService.swift */,
+				4C56E5E420C583FB004483C7 /* ORAssetResource.swift */,
 			);
 			path = ORLib;
 			sourceTree = "<group>";
@@ -236,6 +239,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				4C77278620BC13E800322CBC /* GeofenceProvider.swift in Sources */,
+				4C56E5E520C583FB004483C7 /* ORAssetResource.swift in Sources */,
 				4C77278520BC13E800322CBC /* PushNotificationProvider.swift in Sources */,
 				4C4C2FB81FD8044A0071CBDA /* ORNotificationService.swift in Sources */,
 				4C82D7581FC590FB009DE853 /* ErrorManager.swift in Sources */,
@@ -371,7 +375,6 @@
 		};
 		4C82D7431FC58ED2009DE853 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = C641D9E59892499E90E68616 /* Pods-ORLib.debug.xcconfig */;
 			buildSettings = {
 				CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES = NO;
 				CLANG_ENABLE_MODULES = YES;
@@ -414,7 +417,6 @@
 		};
 		4C82D7441FC58ED2009DE853 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 572EED7F064AF79DDABE9FC8 /* Pods-ORLib.release.xcconfig */;
 			buildSettings = {
 				CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES = NO;
 				CLANG_ENABLE_MODULES = YES;

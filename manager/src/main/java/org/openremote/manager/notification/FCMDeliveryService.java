@@ -164,7 +164,8 @@ public class FCMDeliveryService {
 
             // Use alert dictionary for apns
             // https://developer.apple.com/library/content/documentation/NetworkingInternet/Conceptual/RemoteNotificationsPG/PayloadKeyReference.html
-            apsBuilder.setAlert(ApsAlert.builder().setTitle(notification.getTitle()).setBody(notification.getBody()).build());
+            apsBuilder.setAlert(ApsAlert.builder().setTitle(notification.getTitle()).setBody(notification.getBody()).build())
+                .setSound("default");
 
             webpushConfigBuilder.setNotification(new WebpushNotification(notification.getTitle(), notification.getBody()));
         }
@@ -178,8 +179,6 @@ public class FCMDeliveryService {
 
         // set the following APNS flag to allow console to customise the notification before delivery and to ensure delivery
         apsBuilder.setMutableContent(true);
-        // TODO: Tidy up APNS config
-        apsBuilder.setContentAvailable(true);
 
         if (timeToLiveSeconds != null) {
             timeToLiveSeconds = Math.max(timeToLiveSeconds, 0);

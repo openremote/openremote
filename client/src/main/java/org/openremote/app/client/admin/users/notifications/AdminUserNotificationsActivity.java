@@ -183,11 +183,13 @@ public class AdminUserNotificationsActivity
         AlertNotification alertNotification = new AlertNotification(
             "Hello User",
             "This is a test message.",
+            // TODO: Remove below once consoles updated to use action appUrl
             "/#"
         );
         AlertAction alertAction = new AlertAction();
         alertAction.setTitle(environment.getMessages().notificationOpenApplicationDetails());
         alertAction.setActionType(ActionType.LINK);
+        alertAction.setAppUrl("/#");
         alertNotification.addAction(alertAction);
         return alertNotification;
     }

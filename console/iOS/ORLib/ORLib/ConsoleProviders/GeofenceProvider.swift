@@ -108,7 +108,7 @@ public class GeofenceProvider: NSObject, URLSessionDelegate {
         fetchGeofences()
     }
 
-    public func fetchGeofences(callback: (([GeofenceDefinition]) -> ())? = nil)  {
+    func fetchGeofences(callback: (([GeofenceDefinition]) -> ())? = nil)  {
         if let tkurlRequest = URL(string: "\(baseURL)/\(geofenceFetchEndpoint)\(consoleId)") {
             let tkRequest = NSMutableURLRequest(url: tkurlRequest)
             tkRequest.httpMethod = "GET"
@@ -141,31 +141,21 @@ public class GeofenceProvider: NSObject, URLSessionDelegate {
         }
     }
 
-    private func sendGeofenceRequest(url: URL, data:[String: Any]?) {
+    private func sendGeofenceRequest(url: URL, data:[String: Any]) {
         let request = NSMutableURLRequest(url: url)
         request.addValue("application/json", forHTTPHeaderField:"Content-Type");
         request.httpMethod = "POST"
 
-        if (data != nil) {
-            if let postBody = try? JSONSerialization.data(withJSONObject: data!, options: []) {
-                request.httpBody = postBody
+        let refreshToken = TokenManager.sharedInstance.refreshToken
+
+
+        if let postBody = try? JSONSerialization.data(withJSONObject: data, options: []) {
+            if refreshToken != nil {
+                ORAssetResoure.sharedInstance.updateAssetAttribute(assetId: consoleId, attributeName: "location", rawJson: postBody)
+            } else {
+                ORAssetResoure.sharedInstance.updatePublicAssetAttibute(assetId: consoleId, attributeName: "location", rawJson: postBody)
             }
         }
-
-        let sessionConfiguration = URLSessionConfiguration.default
-        let session = URLSession(configuration: sessionConfiguration, delegate: self, delegateQueue: nil)
-        let req = session.dataTask(with: request as URLRequest, completionHandler: { (data, response, error) in
-            if (data != nil){
-
-            } else {
-                NSLog("error %@", (error! as NSError).localizedDescription)
-                let error = NSError(domain: "", code: 0, userInfo:  [
-                    NSLocalizedDescriptionKey :  NSLocalizedString("NoDataReceived", value: "Did not receive any data", comment: "")
-                    ])
-                print(error)
-            }
-        })
-        req.resume()
     }
 
     public class GeofenceDefinition: NSObject, Decodable {
@@ -187,11 +177,9 @@ extension GeofenceProvider: CLLocationManagerDelegate {
         guard let tkurlRequest = URL(string: "\(baseURL)\(postString)") else { return }
 
         let postData = [
-            "objectValue" : [
-                "type": "Point",
-                "coordinates": [manager.location?.coordinate.longitude, manager.location?.coordinate.latitude]
-            ]
-        ]
+            "type": "Point",
+            "coordinates": [manager.location?.coordinate.longitude, manager.location?.coordinate.latitude]
+            ] as [String : Any]
 
         sendGeofenceRequest(url: tkurlRequest, data: postData)
     }
@@ -204,7 +192,12 @@ extension GeofenceProvider: CLLocationManagerDelegate {
         }
         guard let tkurlRequest = URL(string: "\(baseURL)\(postString)") else { return }
 
-        sendGeofenceRequest(url: tkurlRequest, data: nil)
+        let postData = [
+            "type": "Point",
+            "coordinates": [0, 0]
+            ] as [String : Any]
+
+        sendGeofenceRequest(url: tkurlRequest, data: postData)
     }
 
     public func locationManager(_ manager: CLLocationManager, didChangeAuthorization status: CLAuthorizationStatus) {
