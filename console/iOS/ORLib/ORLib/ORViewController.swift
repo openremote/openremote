@@ -28,6 +28,9 @@ open class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMess
     public var myWebView : WKWebView?
     public var defaults : UserDefaults?
     public var webCfg : WKWebViewConfiguration?
+
+    var geofenceProvider: GeofenceProvider?
+    var pushProvider: PushNotificationProvider?
     
     open override func viewDidLoad() {
         super.viewDidLoad()
@@ -39,18 +42,78 @@ open class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMess
         self.configureAccess()
     }
     
-    open func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+    open override func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
         let jsonDictionnary = message.body as? [String : Any]
-        let type = jsonDictionnary?["type"] as! String
-        switch (type) {
-        case "token":
-            let tokenJsonDictionnary = jsonDictionnary?["data"] as? [String : String]
-            TokenManager.sharedInstance.storeTokens(tokenJsonDictionnary: tokenJsonDictionnary)
-            
-        default:
-            print("Unknown message type: \(type )")
+        if let type = jsonDictionnary?["type"] as? String {
+            switch (type) {
+            case "token":
+                let tokenJsonDictionnary = jsonDictionnary?[DefaultsKey.dataKey] as? [String : String]
+                TokenManager.sharedInstance.storeTokens(tokenJsonDictionnary: tokenJsonDictionnary)
+            case "provider":
+                if let postMessageDict = jsonDictionnary?[DefaultsKey.dataKey] as? [String: Any] {
+                    if let action = postMessageDict[DefaultsKey.actionKey] as? String {
+                        if let provider = postMessageDict[DefaultsKey.providerKey] as? String {
+                            if provider == Providers.push {
+                                if action == Actions.providerInit {
+                                    pushProvider = PushNotificationProvider()
+                                    let initalizeData = pushProvider!.initialize()
+                                    sendData(data: initalizeData)
+                                } else if action == Actions.providerEnable {
+                                    if let enableData = pushProvider?.enable() {
+                                        sendData(data: enableData)
+                                    }
+                                } else if action == Actions.providerDisable {
+                                    if let disableData = pushProvider?.disbale() {
+                                        sendData(data: disableData)
+                                    }
+                                }
+                            }
+                            if provider == Providers.geofence {
+                                if action == Actions.providerInit {
+                                    geofenceProvider = GeofenceProvider()
+                                    geofenceProvider!.initialize { initalizeData in
+                                        self.sendData(data: initalizeData)
+                                    }
+                                } else if action == Actions.providerEnable {
+                                    if let data = postMessageDict[DefaultsKey.dataKey] as? [String: String] {
+                                        if let consoleId = data["consoleId"] {
+                                            if let enableData = geofenceProvider?.enable(baseUrl: "\(ORServer.baseUrl)\(ORServer.realm)", consoleId: consoleId) {
+                                                sendData(data: enableData)
+
+                                                DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(5)) {
+                                                    self.geofenceProvider?.fetchGeofences()
+                                                }
+                                            }
+                                        }
+                                    }
+                                } else if action == Actions.geofenceRefresh {
+                                    geofenceProvider?.refreshGeofences()
+                                } else if action == Actions.providerDisable {
+                                    if let disableData = geofenceProvider?.disbale() {
+                                        sendData(data: disableData)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            default:
+                print("Unknown message type: \(type )")
+            }
         }
-        
+    }
+
+    open func sendData(data: [String: Any]) {
+        if let theJSONData = try? JSONSerialization.data(
+            withJSONObject: data,
+            options: []) {
+            let theJSONText = String(data: theJSONData,
+                                     encoding: .utf8)
+            let returnMessage = "openremote.INSTANCE.console.handleProviderResponse('\(theJSONText ?? "null")')"
+            myWebView?.evaluateJavaScript("\(returnMessage)", completionHandler: { (any, error) in
+                print("JSON string = \(theJSONText!)")
+            })
+        }
     }
     
     open func webView(_ webView: WKWebView, runJavaScriptAlertPanelWithMessage message: String, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping () -> Void) {

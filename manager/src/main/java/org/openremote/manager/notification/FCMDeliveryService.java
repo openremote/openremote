@@ -172,6 +172,9 @@ public class FCMDeliveryService {
 
         if (data != null) {
             builder.putAllData(data);
+            if (notification == null) {
+                apsBuilder.setContentAvailable(true);
+            }
         }
 
         androidConfigBuilder.setPriority(priority == FCMMessagePriority.HIGH ? AndroidConfig.Priority.HIGH : AndroidConfig.Priority.NORMAL);

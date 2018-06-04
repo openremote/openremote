@@ -109,33 +109,12 @@ open class ORAppDelegate: UIResponder, UIApplicationDelegate, URLSessionDelegate
 
     open func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable : Any], fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
 
-        if let actionsString = userInfo["actions"] as? String {
-            if let actionsData = actionsString.data(using: .utf8){
-                if let actions = try? JSONSerialization.jsonObject(with: actionsData, options: []) as? [[String: String]], actions != nil {
-                    if let aps = userInfo["aps"] as? [String: Any] {
-                        if let alert = aps["alert"] as? [String: String] {
-                            let title = alert["title"]
-                            let message = alert["body"]
-
-                            let alertController = UIAlertController(title: title, message: message, preferredStyle: .alert)
-
-                            for i in (0..<actions!.count) {
-                                let actionTitle = actions![i]["title"]
-                                let actionType = actions![i]["type"]
-
-                                switch actionType {
-                                case ActionType.ACTION_DEEP_LINK :
-                                    alertController.addAction(UIAlertAction(title: actionTitle, style: .default, handler: { alertAction in
-                                        if let urlToOpen = actions![i]["appUrl"] {
-                                            guard let urlRequest = URL(string: urlToOpen) else { return }
-                                            (self.window?.rootViewController as! ORViewcontroller).loadURL(url: urlRequest)
-                                        }
-                                    }))
-
-                                default : break
-                                }
-                            }
-                            self.window?.rootViewController?.present(alertController, animated: true, completion: nil)
+        if let actionsString = userInfo[DefaultsKey.dataKey] as? String {
+            if let actionData = actionsString.data(using: .utf8){
+                if let actionDict = try? JSONSerialization.jsonObject(with: actionData, options: []) as? [[String: String]], actions != nil {
+                    if let action = actionDict[DefaultsKey.actionKey] as? String {
+                        if action == Actions.geofenceRefresh {
+                            (self.window?.rootViewController as! ORViewcontroller).geofenceProvider?.refreshGeofences()
                         }
                     }
                 }

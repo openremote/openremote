@@ -197,8 +197,9 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
     }
 
     protected void notifyAssetGeofencesChanged(String assetId) {
-        // TODO: implement geofence push notification
-//        notificationService.findDeviceToken(assetId);
+        Map<String, String> data = new HashMap<>();
+        data.put("action", "GEOFENCE_REFRESH");
+        notificationService.notifyConsoleSilently(assetId, data);
     }
 
     protected void processConsoleAssetChange(Asset asset, PersistenceEvent persistenceEvent) {

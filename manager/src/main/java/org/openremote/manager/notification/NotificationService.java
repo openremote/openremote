@@ -19,9 +19,6 @@
  */
 package org.openremote.manager.notification;
 
-import com.google.firebase.messaging.AndroidConfig;
-import com.google.firebase.messaging.ApnsConfig;
-import com.google.firebase.messaging.Notification;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.persistence.PersistenceService;
@@ -34,14 +31,11 @@ import org.openremote.model.asset.BaseAssetQuery;
 import org.openremote.model.attribute.AttributeType;
 import org.openremote.model.console.ConsoleConfiguration;
 import org.openremote.model.console.ConsoleProvider;
-import org.openremote.model.notification.AlertAction;
-import org.openremote.model.notification.DeviceNotificationToken;
 import org.openremote.model.notification.AlertNotification;
 import org.openremote.model.notification.DeliveryStatus;
+import org.openremote.model.notification.DeviceNotificationToken;
 import org.openremote.model.user.UserQuery;
 import org.openremote.model.util.TextUtil;
-import org.openremote.model.value.ObjectValue;
-import org.openremote.model.value.Values;
 
 import javax.persistence.EntityManager;
 import javax.persistence.Query;
@@ -120,12 +114,20 @@ public class NotificationService implements ContainerService {
 
     //TODO: Unify the notification service to support push, email, SMS, etc.
     public void notifyConsole(String consoleId, AlertNotification alertNotification) {
+        notifyConsole(consoleId, alertNotification, null);
+    }
+
+    public void notifyConsoleSilently(String consoleId, Map<String, String> data) {
+        notifyConsole(consoleId, null, data);
+    }
+
+    public void notifyConsole(String consoleId, AlertNotification alertNotification, Map<String, String> data) {
         AssetQuery consoleQuery = new AssetQuery()
             .select(new BaseAssetQuery.Select(BaseAssetQuery.Include.ALL_EXCEPT_PATH,
-                                              false,
-                                              AttributeType.CONSOLE_PROVIDERS.getName()))
+                false,
+                AttributeType.CONSOLE_PROVIDERS.getName()))
             .attributeValue(AttributeType.CONSOLE_PROVIDERS.getName(),
-                            new BaseAssetQuery.ObjectValueKeyPredicate("push"))
+                new BaseAssetQuery.ObjectValueKeyPredicate("push"))
             .id(consoleId);
 
 
@@ -142,29 +144,23 @@ public class NotificationService implements ContainerService {
 
         if ("fcm".equals(pushProviderVersion)) {
             if (consolePushProvider.getData() == null || !consolePushProvider.getData().getString("token")
-                    .map(token -> TextUtil.isNullOrEmpty(token) ? null : token).isPresent()) {
+                .map(token -> TextUtil.isNullOrEmpty(token) ? null : token).isPresent()) {
                 LOG.warning("Console 'fcm' push provider doesn't contain an FCM token");
                 return;
             }
 
             String token = consolePushProvider.getData().getString("token").orElse(null);
 
-            FCMNotification notification = new FCMNotification(alertNotification.getTitle(), alertNotification.getMessage());
-            Map<String, String> data = new HashMap<>();
+            FCMNotification notification = null;
+            if (alertNotification != null) {
+                notification = new FCMNotification(alertNotification.getTitle(), alertNotification.getMessage());
+                if (data == null) {
+                    data = new HashMap<>();
+                }
 
-            if (alertNotification.getActions() != null && !alertNotification.getActions().isEmpty()) {
-                data.put("actions", alertNotification.getActions().toJson());
-//                alertNotification.getActions().stream()
-//                    .map(value -> Values.getObject(value).orElse(null))
-//                    .filter(objectValue -> !Objects.isNull(objectValue))
-//                    .forEach(actionObj -> {
-//                        String type = actionObj.getString("type").orElse(null);
-//                        String title = actionObj.getString("title").orElse(null);
-//                        String appUrl = actionObj.getString("appUrl").orElse(null);
-//                        String assetId = actionObj.getString("assetId").orElse(null);
-//                        String rawJson = actionObj.getString("rawJson").orElse(null);
-//                        String attributeName = actionObj.getString("attributeName").orElse(null);
-//                    });
+                if (alertNotification.getActions() != null && !alertNotification.getActions().isEmpty()) {
+                    data.put("actions", alertNotification.getActions().toJson());
+                }
             }
 
             // Push alert directly inside the FCM message
@@ -175,7 +171,7 @@ public class NotificationService implements ContainerService {
                 data,
                 FCMMessagePriority.HIGH,
                 0 // 0 TTL gives best performance and this is assuming notifications are time critical
-                );
+            );
         } else {
             LOG.warning("Unsupported push provider version: " + pushProviderVersion);
         }
