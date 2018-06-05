@@ -184,72 +184,39 @@ extension ORAppDelegate : UNUserNotificationCenterDelegate {
     }
 
     open func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
-        var assetId : String = ""
-        var attributeName : String = ""
-        var rawJson : String = ""
-        UIApplication.shared.isNetworkActivityIndicatorVisible = true
-        switch response.actionIdentifier {
-        case ActionType.ACTION_DEEP_LINK :
-            if let urlToOpen = response.notification.request.content.userInfo["appUrl"] { // until now we are considering anchor name (without the #)
-                guard let urlRequest = URL(string:String(format: "%@://%@/%@%@", ORServer.scheme, ORServer.hostURL, ORServer.navigationPath, urlToOpen as! String)) else { return }
-                (self.window?.rootViewController as! ORLoginViewController).loadUrl(url:urlRequest)
-                NSLog("Action asked : %@", response.actionIdentifier)
-            }
-        case ActionType.ACTION_ACTUATOR :
-            NSLog("Action asked : %@", response.actionIdentifier)
-
-            if let actions = response.notification.request.content.userInfo["actions"] {
-                assetId = (actions as! Dictionary<String,String>)["assetId"]!
-                attributeName = (actions as! Dictionary<String,String>)["attributeName"]!
-                rawJson = (actions as! Dictionary<String,String>)["rawJson"]!
-            }
-
-            (self.window?.rootViewController as! ORLoginViewController).updateAssetAttribute(assetId : assetId, attributeName : attributeName, rawJson : rawJson)
-        default : break
-        }
-        if let alertId = response.notification.request.content.userInfo["alertId"] {
-            TokenManager.sharedInstance.getAccessToken { (accessTokenResult) in
-                switch accessTokenResult {
-                case .Failure(let error) :
-                    UIApplication.shared.isNetworkActivityIndicatorVisible = false
-                    ErrorManager.showError(error: error!)
-                case .Success(let accessToken) :
-                    guard let urlRequest = URL(string: String(format:"%@%i", ORServer.deleteNotifiedAlertResource, alertId as! Int)) else { return }
-                    let request = NSMutableURLRequest(url: urlRequest)
-                    request.addValue("application/x-www-form-urlencoded", forHTTPHeaderField:"Content-Type");
-                    request.httpMethod = "DELETE"
-                    let postString = String(format:"token=%@&device_id=%@", TokenManager.sharedInstance.deviceId!, (UIDevice.current.identifierForVendor?.uuidString)!)
-                    request.httpBody = postString.data(using: .utf8)
-                    request.addValue(String(format:"Bearer %@", accessToken!), forHTTPHeaderField: "Authorization")
-                    let sessionConfiguration = URLSessionConfiguration.default
-                    let session = URLSession(configuration: sessionConfiguration, delegate: self, delegateQueue: nil)
-                    let reqDataTask = session.dataTask(with: request as URLRequest, completionHandler: { (data, response, error) in
-                        DispatchQueue.main.async {
-                            UIApplication.shared.isNetworkActivityIndicatorVisible = false
-                            if (error != nil) {
-                                NSLog("error %@", (error! as NSError).localizedDescription)
-                                let error = NSError(domain: "", code: 0, userInfo:  [
-                                    NSLocalizedDescriptionKey :  NSLocalizedString("ErrorCallingAPI", value: "Could not get data", comment: "")
-                                    ])
-                                ErrorManager.showError(error: error)
-                            } else {
-                                if let httpStatus = response as? HTTPURLResponse , httpStatus.statusCode != 204 {
-                                    let error = NSError(domain: "", code: 0, userInfo:  [
-                                        NSLocalizedDescriptionKey :  NSLocalizedString("ErrorSendingDeviceId", value: "Could not delete server alert", comment: "")
-                                        ])
-                                    ErrorManager.showError(error: error)
-                                } else {
-                                    NSLog("Deleted notification alert %i",alertId as! Int)
-                                }
-                            }
-                        }
-                    })
-                    reqDataTask.resume()
+            var assetId : String = ""
+            var attributeName : String = ""
+            var rawJson : String = ""
+            UIApplication.shared.isNetworkActivityIndicatorVisible = true
+            switch response.actionIdentifier {
+            case UNNotificationDefaultActionIdentifier,
+                 ActionType.ACTION_DEEP_LINK :
+                if let urlToOpen = response.notification.request.content.userInfo["appUrl"] as? String {
+                    if urlToOpen.hasPrefix("http") || urlToOpen.hasPrefix("https") {
+                        guard let urlRequest = URL(string:urlToOpen) else { return }
+                        (self.window?.rootViewController as! ORViewcontroller).loadURL(url:urlRequest)
+                    } else {
+                        guard let urlRequest = URL(string:String(format: "%@://%@/%@%@", ORServer.scheme, ORServer.hostURL, ORServer.navigationPath, urlToOpen)) else { return }
+                        (self.window?.rootViewController as! ORViewcontroller).loadURL(url:urlRequest)
+                    }
+                    NSLog("Action asked : %@", response.actionIdentifier)
                 }
+            case ActionType.ACTION_ACTUATOR :
+                NSLog("Action asked : %@", response.actionIdentifier)
+
+                if let actions = response.notification.request.content.userInfo["actions"] {
+                    assetId = (actions as! Dictionary<String,String>)["assetId"]!
+                    attributeName = (actions as! Dictionary<String,String>)["attributeName"]!
+                    rawJson = (actions as! Dictionary<String,String>)["rawJson"]!
+                }
+
+                if let jsonData = rawJson.data(using: .utf8) {
+                    ORAssetResoure.sharedInstance.updateAssetAttribute(assetId : assetId, attributeName : attributeName, rawJson : jsonData)
+                }
+            default : break
             }
+            completionHandler()
         }
-        completionHandler()
-    }
 }
 
 extension ORAppDelegate : MessagingDelegate {
