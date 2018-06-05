@@ -22,7 +22,4 @@ public interface RestApiResource {
     @PUT("/{realm}/asset/{assetId}/attribute/{attributeName}")
     @Headers("Content-Type:application/json")
     Call<Void> updateAssetAction(@Path("realm") String realm, @Header("Authorization") String accessToken,@Path("assetId") String assetId,@Path("attributeName") String attributeName,@Body String rawJson);
-
-    @POST("{realm}/asset/public/{assetId}/updateLocation")
-    Call<Void> updatePublicAssetLocation(@Path("realm") String realm, String assetId, @Body JSONObject json);
 }

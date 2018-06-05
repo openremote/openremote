@@ -10,11 +10,9 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.support.v4.app.ActivityCompat
 import android.support.v4.content.ContextCompat
+import android.util.Log
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.google.android.gms.location.Geofence
-import com.google.android.gms.location.GeofencingClient
-import com.google.android.gms.location.GeofencingRequest
-import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.*
 import org.openremote.android.R
 import java.io.*
 import java.net.URL
@@ -38,17 +36,20 @@ class GeofenceProvider(val activity: Activity) {
     lateinit var geofencingClient: GeofencingClient
     private val geofencePendingIntent: PendingIntent by lazy {
         val intent = Intent(activity, GeofenceTransitionsIntentService::class.java)
-        intent.putExtra(baseUrlKey, baseURL)
+        intent.putExtra(consoleIdKey, consoleId)
         // We use FLAG_UPDATE_CURRENT so that we get the same pending intent back when calling
         // addGeofences() and removeGeofences().
         PendingIntent.getService(activity, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT)
     }
+    private lateinit var fusedLocationProviderClient: FusedLocationProviderClient
+    private lateinit var locationCallback: LocationCallback
 
     var baseURL: String? = null
     var consoleId: String? = null
 
 
     fun initialize(): Map<String, Any> {
+        fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(activity)
         geofencingClient = LocationServices.getGeofencingClient(activity)
 
         var inputStream: ObjectInputStream? = null
@@ -72,6 +73,7 @@ class GeofenceProvider(val activity: Activity) {
         )
     }
 
+    @SuppressLint("MissingPermission")
     fun enable(baseUrl: String, consoleId: String): Map<String, Any> {
         baseURL = baseUrl
         this.consoleId = consoleId
@@ -81,6 +83,23 @@ class GeofenceProvider(val activity: Activity) {
                 .putString(consoleIdKey, this.consoleId)
                 .apply()
 
+        //Force location updates
+        val locationRequest = LocationRequest().apply {
+            interval = 60000//1min
+            fastestInterval = 10000//10sec
+            priority = LocationRequest.PRIORITY_HIGH_ACCURACY
+        }
+
+        locationCallback = object : LocationCallback() {
+            override fun onLocationResult(locationResult: LocationResult?) {
+                locationResult ?: return
+                Log.i("GeofenceProvider", "Location received: $locationResult")
+            }
+        }
+
+        fusedLocationProviderClient.requestLocationUpdates(locationRequest,
+                locationCallback,
+                null)
 
         fetchGeofences()
 
@@ -99,6 +118,7 @@ class GeofenceProvider(val activity: Activity) {
                 .apply()
         baseURL = null
         consoleId = null
+        fusedLocationProviderClient.removeLocationUpdates(locationCallback)
         clearAllRegions()
     }
 
@@ -152,7 +172,9 @@ class GeofenceProvider(val activity: Activity) {
     }
 
     fun refreshGeofences() {
-        fetchGeofences()
+        Thread({
+            fetchGeofences()
+        }).start()
     }
 
     protected fun fetchGeofences() {

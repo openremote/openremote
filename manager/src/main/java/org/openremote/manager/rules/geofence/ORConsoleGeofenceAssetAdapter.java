@@ -57,6 +57,7 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
 
     private static final Logger LOG = Logger.getLogger(ORConsoleGeofenceAssetAdapter.class.getName());
     public static final String NAME = "ORConsole";
+    //TODO not needed anymore? We use writeAttributeValue now
     public static final String LOCATION_URL_FORMAT_TEMPLATE = "/asset/%1$s/location";
     protected Map<String, RulesEngine.AssetStateLocationPredicates> assetLocationPredicatesMap = new HashMap<>();
     protected NotificationService notificationService;

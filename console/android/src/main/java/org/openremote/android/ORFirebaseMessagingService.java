@@ -9,8 +9,10 @@ import android.content.Intent;
 import android.media.RingtoneManager;
 import android.net.Uri;
 import android.support.v4.app.NotificationCompat;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.firebase.messaging.RemoteMessage;
+
 import org.openremote.android.service.AlertAction;
 import org.openremote.android.service.AlertNotification;
 import org.openremote.android.service.TokenService;
@@ -65,23 +67,29 @@ public class ORFirebaseMessagingService extends com.google.firebase.messaging.Fi
         if (remoteMessage.getNotification() != null) {
             LOG.fine("Message contains notification body: " + remoteMessage.getNotification().getBody());
         } else if (remoteMessage.getData() != null && !remoteMessage.getData().isEmpty()) {
-            // Check if message contains a data payload with or-title or-body and actions
+            if (remoteMessage.getData().containsKey("action")) {
+                String action = remoteMessage.getData().get("action");
+                Intent broadCastIntent = new Intent(MainActivity.ACTION_BROADCAST);
+                broadCastIntent.putExtra("action", action);
+                sendBroadcast(broadCastIntent);
+            } else {
+                // Check if message contains a data payload with or-title or-body and actions
 
-            LOG.fine("Message data payload: " + remoteMessage.getData());
-            String title = remoteMessage.getData().get("or-title");
-            String body = remoteMessage.getData().get("or-body");
-            String actionsJson = remoteMessage.getData().get("actions");
-            AlertAction[] actions = null;
+                LOG.fine("Message data payload: " + remoteMessage.getData());
+                String title = remoteMessage.getData().get("or-title");
+                String body = remoteMessage.getData().get("or-body");
+                String actionsJson = remoteMessage.getData().get("actions");
+                AlertAction[] actions = null;
 
-            if (actionsJson != null && actionsJson.length() > 0) {
-                try {
-                    actions = new ObjectMapper().readValue(actionsJson, AlertAction[].class);
-                } catch (Exception e) {
-                    LOG.log(Level.SEVERE, "Failed to de-serialise alert actions", e);
+                if (actionsJson != null && actionsJson.length() > 0) {
+                    try {
+                        actions = new ObjectMapper().readValue(actionsJson, AlertAction[].class);
+                    } catch (Exception e) {
+                        LOG.log(Level.SEVERE, "Failed to de-serialise alert actions", e);
+                    }
                 }
+                handleNotification(title, body, actions);
             }
-
-            handleNotification(title, body, actions);
         }
 
 //        tokenService.getAlerts(new Callback<List<AlertNotification>>() {
@@ -124,13 +132,13 @@ public class ORFirebaseMessagingService extends com.google.firebase.messaging.Fi
         int id = title.hashCode() + body.hashCode();
 
         NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this)
-            .setContentTitle(title)
-            .setStyle(new NotificationCompat.BigTextStyle().bigText(body))
-            .setContentText(body)
-            .setSmallIcon(R.drawable.notification_icon)
-            .setWhen(0)
-            .setPriority(Notification.PRIORITY_MAX)
-            .setSound(defaultSoundUri);
+                .setContentTitle(title)
+                .setStyle(new NotificationCompat.BigTextStyle().bigText(body))
+                .setContentText(body)
+                .setSmallIcon(R.drawable.notification_icon)
+                .setWhen(0)
+                .setPriority(Notification.PRIORITY_MAX)
+                .setSound(defaultSoundUri);
 
         for (AlertAction alertAction : actions) {
             Intent actionIntent = new Intent(this, ORMessagingActionService.class);
@@ -139,18 +147,18 @@ public class ORFirebaseMessagingService extends com.google.firebase.messaging.Fi
             actionIntent.putExtra("action", alertAction);
             actionIntent.setAction(Long.toString(System.currentTimeMillis()));
             PendingIntent actionPendingIntent = PendingIntent.getService(this,
-                                                                         0,
-                                                                         actionIntent,
-                                                                         PendingIntent.FLAG_ONE_SHOT);
+                    0,
+                    actionIntent,
+                    PendingIntent.FLAG_ONE_SHOT);
             notificationBuilder = notificationBuilder.addAction(new NotificationCompat.Action(R.drawable.empty,
-                                                                                              alertAction.getTitle(),
-                                                                                              actionPendingIntent));
+                    alertAction.getTitle(),
+                    actionPendingIntent));
         }
 
         LOG.fine("Showing notification (" + actions.length + " actions): " + body);
 
         NotificationManager notificationManager =
-            (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+                (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         notificationManager.notify(id, notificationBuilder.build());
     }
 
@@ -161,21 +169,21 @@ public class ORFirebaseMessagingService extends com.google.firebase.messaging.Fi
         intent.putExtra("notification", alertNotification);
 
         PendingIntent pendingIntent = PendingIntent.getService(this,
-                                                               notificationId,
-                                                               intent,
-                                                               PendingIntent.FLAG_ONE_SHOT);
+                notificationId,
+                intent,
+                PendingIntent.FLAG_ONE_SHOT);
 
         Uri defaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
 
         NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this)
-            .setContentTitle(alertNotification.getTitle())
-            .setStyle(new NotificationCompat.BigTextStyle().bigText(alertNotification.getMessage()))
-            .setContentText(alertNotification.getMessage())
-            .setDeleteIntent(pendingIntent)
-            .setSmallIcon(R.drawable.notification_icon)
-            .setWhen(0)
-            .setPriority(Notification.PRIORITY_MAX)
-            .setSound(defaultSoundUri);
+                .setContentTitle(alertNotification.getTitle())
+                .setStyle(new NotificationCompat.BigTextStyle().bigText(alertNotification.getMessage()))
+                .setContentText(alertNotification.getMessage())
+                .setDeleteIntent(pendingIntent)
+                .setSmallIcon(R.drawable.notification_icon)
+                .setWhen(0)
+                .setPriority(Notification.PRIORITY_MAX)
+                .setSound(defaultSoundUri);
 
         for (AlertAction alertAction : alertNotification.getActions()) {
             Intent actionIntent = new Intent(this, ORMessagingActionService.class);
@@ -185,18 +193,18 @@ public class ORFirebaseMessagingService extends com.google.firebase.messaging.Fi
             actionIntent.putExtra("notification", alertNotification);
             actionIntent.setAction(Long.toString(System.currentTimeMillis()));
             PendingIntent actionPendingIntent = PendingIntent.getService(this,
-                                                                         notificationId,
-                                                                         actionIntent,
-                                                                         PendingIntent.FLAG_ONE_SHOT);
+                    notificationId,
+                    actionIntent,
+                    PendingIntent.FLAG_ONE_SHOT);
             notificationBuilder = notificationBuilder.addAction(new NotificationCompat.Action(R.drawable.empty,
-                                                                                              alertAction.getTitle(),
-                                                                                              actionPendingIntent));
+                    alertAction.getTitle(),
+                    actionPendingIntent));
         }
 
         LOG.fine("Showing notification (" + alertNotification.getActions().size() + " actions): " + alertNotification.getMessage());
 
         NotificationManager notificationManager =
-            (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+                (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         notificationManager.notify(notificationId, notificationBuilder.build());
     }
 }

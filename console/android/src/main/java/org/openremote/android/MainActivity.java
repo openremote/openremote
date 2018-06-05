@@ -59,6 +59,8 @@ public class MainActivity extends Activity {
 
     private final int WRITE_PERMISSION_REQUEST = 999;
 
+    public static final String ACTION_BROADCAST = "ACTION_BROADCAST";
+
     protected final ConnectivityChangeReceiver connectivityChangeReceiver = new ConnectivityChangeReceiver();
     protected WebView webView;
     protected ErrorViewHolder errorViewHolder;
@@ -66,11 +68,25 @@ public class MainActivity extends Activity {
     protected SharedPreferences sharedPreferences;
     protected GeofenceProvider geofenceProvider;
 
-    BroadcastReceiver onDownloadCompleteReciever = new BroadcastReceiver() {
+    protected BroadcastReceiver onDownloadCompleteReciever = new BroadcastReceiver() {
         public void onReceive(Context ctxt, Intent intent) {
             String action = intent.getAction();
             if (DownloadManager.ACTION_DOWNLOAD_COMPLETE.equals(action)) {
                 Toast.makeText(getApplicationContext(), R.string.download_completed, Toast.LENGTH_LONG).show();
+            }
+        }
+    };
+
+    protected  BroadcastReceiver actionReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (intent.hasExtra("action")) {
+                String action = intent.getStringExtra("action");
+                switch (action) {
+                    case "GEOFENCE_REFRESH":
+                        geofenceProvider.refreshGeofences();
+                        break;
+                }
             }
         }
     };
@@ -181,6 +197,7 @@ public class MainActivity extends Activity {
         super.onResume();
         registerReceiver(connectivityChangeReceiver, new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION));
         registerReceiver(onDownloadCompleteReciever, new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE));
+        registerReceiver(actionReceiver, new IntentFilter(ACTION_BROADCAST));
     }
 
     @Override
@@ -188,6 +205,7 @@ public class MainActivity extends Activity {
         super.onPause();
         unregisterReceiver(connectivityChangeReceiver);
         unregisterReceiver(onDownloadCompleteReciever);
+        unregisterReceiver(actionReceiver);
     }
 
     @Override
