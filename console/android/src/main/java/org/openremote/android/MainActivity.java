@@ -77,7 +77,7 @@ public class MainActivity extends Activity {
         }
     };
 
-    protected  BroadcastReceiver actionReceiver = new BroadcastReceiver() {
+    protected BroadcastReceiver actionReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             if (intent.hasExtra("action")) {
@@ -168,6 +168,8 @@ public class MainActivity extends Activity {
         openIntentUrl(getIntent());
 
         errorViewHolder = new ErrorViewHolder(findViewById(R.id.errorView));
+
+        registerReceiver(actionReceiver, new IntentFilter(ACTION_BROADCAST));
     }
 
     @Override
@@ -197,7 +199,6 @@ public class MainActivity extends Activity {
         super.onResume();
         registerReceiver(connectivityChangeReceiver, new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION));
         registerReceiver(onDownloadCompleteReciever, new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE));
-        registerReceiver(actionReceiver, new IntentFilter(ACTION_BROADCAST));
     }
 
     @Override
@@ -205,7 +206,13 @@ public class MainActivity extends Activity {
         super.onPause();
         unregisterReceiver(connectivityChangeReceiver);
         unregisterReceiver(onDownloadCompleteReciever);
+    }
+
+    @Override
+    protected void onDestroy() {
         unregisterReceiver(actionReceiver);
+
+        super.onDestroy();
     }
 
     @Override
