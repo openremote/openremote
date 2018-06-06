@@ -138,7 +138,7 @@ public class ValueUtil {
         @Override
         public boolean visitKey(String key, ValueContext ctx) {
             if ("".equals(key)) {
-                return true;
+                return false;
             }
             // skip properties injected by GWT runtime on JSOs
             if (skipKeys.contains(key)) {
