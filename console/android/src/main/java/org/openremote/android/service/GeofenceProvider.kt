@@ -13,12 +13,10 @@ import android.os.IBinder
 import android.support.annotation.RequiresApi
 import android.support.v4.app.ActivityCompat
 import android.support.v4.app.NotificationCompat
-import android.support.v4.app.NotificationCompat.PRIORITY_MIN
 import android.support.v4.content.ContextCompat
 import android.util.Log
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.android.gms.location.*
-import org.openremote.android.BuildConfig
 import org.openremote.android.R
 import java.io.*
 import java.net.URL
@@ -41,11 +39,11 @@ class GeofenceProvider(val activity: Activity) {
 
     lateinit var geofencingClient: GeofencingClient
     private val geofencePendingIntent: PendingIntent by lazy {
-        val intent = Intent(activity, GeofenceTransitionsIntentService::class.java)
+        val intent = Intent("org.openremote.android.geofence.ACTION_RECEIVE")
         intent.putExtra(consoleIdKey, consoleId)
         // We use FLAG_UPDATE_CURRENT so that we get the same pending intent back when calling
         // addGeofences() and removeGeofences().
-        PendingIntent.getService(activity, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT)
+        PendingIntent.getBroadcast(activity, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT)
     }
 
     var baseURL: String? = null
@@ -159,7 +157,15 @@ class GeofenceProvider(val activity: Activity) {
     }
 
     fun clearAllRegions() {
-        geofencingClient.removeGeofences(geofencePendingIntent)
+        geofencingClient.removeGeofences(geoPostUrls.keys.toList()).run {
+            addOnSuccessListener {
+                Log.i("GeofenceProvider", "Geofences removed")
+            }
+
+            addOnFailureListener { exception ->
+                Log.e("GeofenceProvider", exception.message, exception)
+            }
+        }
         geoPostUrls = hashMapOf()
     }
 
@@ -213,16 +219,24 @@ class GeofenceProvider(val activity: Activity) {
 
         @SuppressLint("MissingPermission")
         override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                val channelId = createNotificationChannel()
-                val notificationBuilder = NotificationCompat.Builder(this, channelId)
-                val notification = notificationBuilder.setOngoing(true)
-                        .setSmallIcon(R.drawable.ic_launcher)
-                        .setPriority(PRIORITY_MIN)
-                        .setCategory(Notification.CATEGORY_SERVICE)
-                        .build()
-                startForeground(101, notification)
+
+            val notificationBuilder = when {
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.O -> {
+                    val channelId = createNotificationChannel()
+                    NotificationCompat.Builder(this, channelId)
+                }
+                else -> {
+                    NotificationCompat.Builder(this)
+                }
             }
+
+            val notification = notificationBuilder.setOngoing(true)
+                    .setSmallIcon(R.drawable.ic_launcher)
+                    .setCategory(Notification.CATEGORY_SERVICE)
+                    .setContentTitle("Tracking location")
+                    .build()
+
+            notification.flags = notification.flags or Notification.FLAG_ONGOING_EVENT or Notification.FLAG_FOREGROUND_SERVICE or Notification.FLAG_NO_CLEAR
 
             //Force location updates
             val locationRequest = LocationRequest().apply {
@@ -235,7 +249,9 @@ class GeofenceProvider(val activity: Activity) {
                     locationCallback,
                     null)
 
-            return super.onStartCommand(intent, flags, startId)
+            startForeground(101, notification)
+
+            return START_REDELIVER_INTENT
         }
 
         override fun onDestroy() {
