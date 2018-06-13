@@ -350,7 +350,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                     AssetModel.getAttributeDescriptor(oldAttribute.name).ifPresent(wellKnownAttribute -> {
                         // Check if the value is valid
                         wellKnownAttribute.getValueType()
-                            .isValidValue(event.getValue().orElseThrow(() -> new AssetProcessingException(INVALID_VALUE_FOR_WELL_KNOWN_ATTRIBUTE)))
+                            .isValidValue(event.getValue().orElse(null))
                             .ifPresent(validationFailure -> {
                                 throw new AssetProcessingException(
                                     INVALID_VALUE_FOR_WELL_KNOWN_ATTRIBUTE

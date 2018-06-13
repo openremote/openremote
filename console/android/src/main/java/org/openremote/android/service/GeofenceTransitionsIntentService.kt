@@ -7,10 +7,8 @@ import android.util.Log
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.android.gms.location.Geofence
 import com.google.android.gms.location.GeofencingEvent
-import org.openremote.android.R
-import retrofit2.Retrofit
-import retrofit2.converter.jackson.JacksonConverterFactory
-import retrofit2.converter.scalars.ScalarsConverterFactory
+import java.net.HttpURLConnection
+import java.net.URL
 import java.util.logging.Logger
 
 class GeofenceTransitionsIntentService : BroadcastReceiver() {
@@ -27,39 +25,48 @@ class GeofenceTransitionsIntentService : BroadcastReceiver() {
 
         LOG.fine("Geofence '" + geofencingEvent.geofenceTransition + "' occurred")
 
-        val consoleId = intent!!.getStringExtra(GeofenceProvider.consoleIdKey)
+        val baseUrl = intent!!.getStringExtra(GeofenceProvider.baseUrlKey)
         val geofenceTransition = geofencingEvent.geofenceTransition
+        val geofence = geofencingEvent.triggeringGeofences.first()
+        GeofenceProvider.geoPostUrls[geofence.requestId]?.let { data ->
 
-        val postJson = when (geofenceTransition) {
-            Geofence.GEOFENCE_TRANSITION_ENTER -> {
-                hashMapOf(
-                        "type" to "Point",
-                        "coordinates" to arrayOf(geofencingEvent.triggeringLocation.longitude, geofencingEvent.triggeringLocation.latitude)
-                )
+            val url = URL("$baseUrl${data[1]}")
+            val connection = url.openConnection() as HttpURLConnection
+            connection.setRequestProperty("Content-Type", "application/json")
+            connection.requestMethod = data[0]
+            connection.connectTimeout = 10000
+            connection.doInput = false
+
+            val postJson = when (geofenceTransition) {
+                Geofence.GEOFENCE_TRANSITION_ENTER -> {
+                    hashMapOf(
+                            "type" to "Point",
+                            "coordinates" to arrayOf(geofencingEvent.triggeringLocation.longitude, geofencingEvent.triggeringLocation.latitude)
+                    )
+                }
+                else -> {
+                    null
+                }
             }
-            else -> {
-                hashMapOf(
-                        "type" to "Point",
-                        "coordinates" to arrayOf(0, 0)
-                )
-            }
+
+            Thread({
+                try {
+                    connection.doOutput = true
+                    connection.setChunkedStreamingMode(0)
+                    connection.outputStream
+                    ObjectMapper().writeValue(connection.outputStream, postJson)
+
+                    connection.outputStream.flush()
+                    val responseCode = connection.responseCode
+                    Log.i("Geofence", "Location posted to server: response=" + responseCode)
+
+                } catch (exception: Exception) {
+                    Log.e("Geofence", exception.message, exception)
+                    print(exception)
+                } finally {
+                    connection.disconnect()
+                }
+            }).start()
         }
-
-        Thread({
-            try {
-                val restApiResource = Retrofit.Builder()
-                        .baseUrl(context?.getString(R.string.OR_BASE_SERVER))
-                        .addConverterFactory(ScalarsConverterFactory.create())
-                        .addConverterFactory(JacksonConverterFactory.create())
-                        .build().create(RestApiResource::class.java);
-
-                val response = restApiResource
-                        .updateAssetAction(context?.getString(R.string.OR_REALM), null, consoleId, "location", ObjectMapper().writeValueAsString(postJson))
-                        .execute()
-                Log.i("Geofence", "Location posted to server: response=" + response.code());
-            } catch (exception: Exception) {
-                Log.e("Geofence", exception.message, exception)
-            }
-        }).start()
     }
 }

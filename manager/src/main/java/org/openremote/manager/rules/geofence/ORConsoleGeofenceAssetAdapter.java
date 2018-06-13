@@ -57,8 +57,8 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
 
     private static final Logger LOG = Logger.getLogger(ORConsoleGeofenceAssetAdapter.class.getName());
     public static final String NAME = "ORConsole";
-    //TODO not needed anymore? We use writeAttributeValue now
-    public static final String LOCATION_URL_FORMAT_TEMPLATE = "/asset/%1$s/location";
+    public static final String HTTP_METHOD = "PUT";
+    public static final String LOCATION_URL_FORMAT_TEMPLATE = "/asset/%1$s/attribute/location";
     protected Map<String, RulesEngine.AssetStateLocationPredicates> assetLocationPredicatesMap = new HashMap<>();
     protected NotificationService notificationService;
     protected AssetStorageService assetStorageService;
@@ -188,13 +188,14 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
     protected GeofenceDefinition locationPredicateToGeofenceDefinition(String assetId, BaseAssetQuery.LocationPredicate locationPredicate) {
         BaseAssetQuery.RadialLocationPredicate radialLocationPredicate = (BaseAssetQuery.RadialLocationPredicate) locationPredicate;
         String id = assetId + "_" + Integer.toString(radialLocationPredicate.hashCode());
-        String postUrl = String.format(LOCATION_URL_FORMAT_TEMPLATE,
+        String url = String.format(LOCATION_URL_FORMAT_TEMPLATE,
                                        assetId);
         return new GeofenceDefinition(id,
                                       radialLocationPredicate.getLat(),
                                       radialLocationPredicate.getLng(),
                                       radialLocationPredicate.getRadius(),
-                                      postUrl);
+                                      HTTP_METHOD,
+                                      url);
     }
 
     protected void notifyAssetGeofencesChanged(String assetId) {

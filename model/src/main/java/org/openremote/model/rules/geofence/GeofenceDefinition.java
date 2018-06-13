@@ -25,14 +25,16 @@ public class GeofenceDefinition {
     protected double lat;
     protected double lng;
     protected int radius;
-    protected String postUrl;
+    protected String httpMethod;
+    protected String url;
 
-    public GeofenceDefinition(String id, double lat, double lng, int radius, String postUrl) {
+    public GeofenceDefinition(String id, double lat, double lng, int radius, String httpMethod, String url) {
         this.id = id;
         this.lat = lat;
         this.lng = lng;
         this.radius = radius;
-        this.postUrl = postUrl;
+        this.httpMethod = httpMethod;
+        this.url = url;
     }
 
     public String getId() {
@@ -51,7 +53,11 @@ public class GeofenceDefinition {
         return radius;
     }
 
-    public String getPostUrl() {
-        return postUrl;
+    public String getHttpMethod() {
+        return httpMethod;
+    }
+
+    public String getUrl() {
+        return url;
     }
 }

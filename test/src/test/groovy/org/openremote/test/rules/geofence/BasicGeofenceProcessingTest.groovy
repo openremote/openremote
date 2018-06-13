@@ -71,7 +71,7 @@ class BasicGeofenceProcessingTest extends Specification implements ManagerContai
             assert geofences[0].lat == 50
             assert geofences[0].lng == 100
             assert geofences[0].id == managerDemoSetup.consoleId + "_-174661203"
-            assert geofences[0].postUrl == "/master/asset/public/${managerDemoSetup.consoleId}/updateLocation"
+            assert geofences[0].url == "/master/asset/public/${managerDemoSetup.consoleId}/updateLocation"
         }
 
         when: "another console asset is added with its location attribute marked as RULE_STATE and it has a CONSOLE_PROVIDER_GEOFENCE attribute"
@@ -109,7 +109,7 @@ class BasicGeofenceProcessingTest extends Specification implements ManagerContai
             assert geofences[0].lat == 50
             assert geofences[0].lng == 100
             assert geofences[0].id == console2Id + "_-174661203"
-            assert geofences[0].postUrl == "/master/asset/public/${console2Id}/updateLocation"
+            assert geofences[0].url == "/master/asset/public/${console2Id}/updateLocation"
         }
 
         when: "a new ruleset is deployed with multiple location predicate rules (including a duplicate and a rectangular predicate) on the lobby asset"
@@ -143,14 +143,14 @@ class BasicGeofenceProcessingTest extends Specification implements ManagerContai
             assert console1Geofences[0].lat == 50
             assert console1Geofences[0].lng == 100
             assert console1Geofences[0].id == managerDemoSetup.consoleId + "_-174661203"
-            assert console1Geofences[0].postUrl == "/master/asset/public/${managerDemoSetup.consoleId}/updateLocation"
+            assert console1Geofences[0].url == "/master/asset/public/${managerDemoSetup.consoleId}/updateLocation"
 
             def console2Geofence1 = console2Geofences.find {
                 it.radius == 100 &&
                     it.lat == 50 &&
                     it.lng == 100 &&
                     it.id == console2Id + "_-174661203" &&
-                    it.postUrl == "/master/asset/public/${console2Id}/updateLocation"
+                    it.url == "/master/asset/public/${console2Id}/updateLocation"
             }
             assert console2Geofence1 != null
 
@@ -159,7 +159,7 @@ class BasicGeofenceProcessingTest extends Specification implements ManagerContai
                     it.lat == 0 &&
                     it.lng == -60 &&
                     it.id == console2Id + "_-1397479941" &&
-                    it.postUrl == "/master/asset/public/${console2Id}/updateLocation"
+                    it.url == "/master/asset/public/${console2Id}/updateLocation"
             }
             assert console2Geofence2 != null
         }
@@ -179,7 +179,7 @@ class BasicGeofenceProcessingTest extends Specification implements ManagerContai
                     it.lat == 50 &&
                     it.lng == 100 &&
                     it.id == console2Id + "_-174661203" &&
-                    it.postUrl == "/master/asset/public/${console2Id}/updateLocation"
+                    it.url == "/master/asset/public/${console2Id}/updateLocation"
             }
             assert console2Geofence1 != null
 
@@ -188,7 +188,7 @@ class BasicGeofenceProcessingTest extends Specification implements ManagerContai
                     it.lat == 0 &&
                     it.lng == -60 &&
                     it.id == console2Id + "_-1397479941" &&
-                    it.postUrl == "/master/asset/public/${console2Id}/updateLocation"
+                    it.url == "/master/asset/public/${console2Id}/updateLocation"
             }
             assert console2Geofence2 != null
         }

@@ -28,7 +28,7 @@ class GeofenceProvider(val activity: Activity) {
         val baseUrlKey = "baseUrl"
         val consoleIdKey = "consoleId"
         val geoPostUrlsKey = "geoPostUrls"
-        var geoPostUrls = hashMapOf<String, String>()
+        var geoPostUrls = hashMapOf<String, List<String>>()
         var locationReponseCode = 101
     }
 
@@ -40,7 +40,7 @@ class GeofenceProvider(val activity: Activity) {
     lateinit var geofencingClient: GeofencingClient
     private val geofencePendingIntent: PendingIntent by lazy {
         val intent = Intent("org.openremote.android.geofence.ACTION_RECEIVE")
-        intent.putExtra(consoleIdKey, consoleId)
+        intent.putExtra(baseUrlKey, baseURL)
         // We use FLAG_UPDATE_CURRENT so that we get the same pending intent back when calling
         // addGeofences() and removeGeofences().
         PendingIntent.getBroadcast(activity, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT)
@@ -57,7 +57,7 @@ class GeofenceProvider(val activity: Activity) {
         try {
             val file = File(activity.getDir("data", MODE_PRIVATE), geoPostUrlsKey)
             inputStream = ObjectInputStream(FileInputStream(file))
-            geoPostUrls = inputStream.readObject() as? HashMap<String, String> ?: hashMapOf()
+            geoPostUrls = inputStream.readObject() as? HashMap<String, List<String>> ?: hashMapOf()
         } catch (e: Exception) {
             geoPostUrls = hashMapOf()
         } finally {
@@ -139,7 +139,7 @@ class GeofenceProvider(val activity: Activity) {
         geofencingClient.addGeofences(geofencingRequest, geofencePendingIntent).run {
             addOnSuccessListener {
                 Log.i("GeofenceProvider", "Geofence added: lat${geofenceDefinition.lat}/lng${geofenceDefinition.lng}/rad${geofenceDefinition.radius}")
-                geoPostUrls.put(geofenceDefinition.id, geofenceDefinition.postUrl)
+                geoPostUrls.put(geofenceDefinition.id, listOf(geofenceDefinition.httpMethod, geofenceDefinition.url))
             }
 
             addOnFailureListener { exception ->
@@ -157,13 +157,15 @@ class GeofenceProvider(val activity: Activity) {
     }
 
     fun clearAllRegions() {
-        geofencingClient.removeGeofences(geoPostUrls.keys.toList()).run {
-            addOnSuccessListener {
-                Log.i("GeofenceProvider", "Geofences removed")
-            }
+        if(geoPostUrls.keys.any()) {
+            geofencingClient.removeGeofences(geoPostUrls.keys.toList()).run {
+                addOnSuccessListener {
+                    Log.i("GeofenceProvider", "Geofences removed")
+                }
 
-            addOnFailureListener { exception ->
-                Log.e("GeofenceProvider", exception.message, exception)
+                addOnFailureListener { exception ->
+                    Log.e("GeofenceProvider", exception.message, exception)
+                }
             }
         }
         geoPostUrls = hashMapOf()
@@ -182,7 +184,7 @@ class GeofenceProvider(val activity: Activity) {
         Log.i("fetchGeofences", "${geofences.size} geofences")
         geofences.forEach {
             addGeofence(it)
-            geoPostUrls[it.id] = it.postUrl
+            geoPostUrls[it.id] = listOf(it.httpMethod, it.url)
         }
         val file = File(activity.getDir("data", MODE_PRIVATE), geoPostUrlsKey)
         val outputStream = ObjectOutputStream(FileOutputStream(file))
@@ -196,7 +198,8 @@ class GeofenceProvider(val activity: Activity) {
         var lat: Double = 0.0
         var lng: Double = 0.0
         var radius: Float = 0.0F
-        var postUrl: String = ""
+        var httpMethod: String = ""
+        var url: String = ""
     }
 
     class LocationService : Service() {
@@ -231,7 +234,7 @@ class GeofenceProvider(val activity: Activity) {
             }
 
             val notification = notificationBuilder.setOngoing(true)
-                    .setSmallIcon(R.drawable.ic_launcher)
+                    .setSmallIcon(R.drawable.ic_notification)
                     .setCategory(Notification.CATEGORY_SERVICE)
                     .setContentTitle("Tracking location")
                     .build()

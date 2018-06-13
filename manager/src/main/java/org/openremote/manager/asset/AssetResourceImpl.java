@@ -27,11 +27,12 @@ import org.openremote.model.Constants;
 import org.openremote.model.asset.*;
 import org.openremote.model.asset.BaseAssetQuery.Select;
 import org.openremote.model.attribute.*;
-import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.security.Tenant;
 import org.openremote.model.util.TextUtil;
-import org.openremote.model.value.*;
+import org.openremote.model.value.Value;
+import org.openremote.model.value.ValueException;
+import org.openremote.model.value.Values;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.HttpHeaders;
@@ -371,7 +372,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                 Map<String, Object> headers = new HashMap<>();
                 headers.put(AttributeEvent.HEADER_SOURCE, CLIENT);
                 //TODO needed for anonymous?
-                if(isAuthenticated()) {
+                if (isAuthenticated()) {
                     headers.put(Constants.AUTH_CONTEXT, getAuthContext());
                 }
                 Object result = messageBrokerService.getProducerTemplate().requestBodyAndHeaders(
