@@ -165,7 +165,7 @@ public final class ConsoleConfiguration {
     public static Asset setConsoleName(Asset asset, String name) {
         Objects.requireNonNull(asset);
         TextUtil.requireNonNullAndNonEmpty(name);
-        asset.replaceAttribute(AssetAttribute.createWithDescriptor(AttributeType.CONSOLE_NAME,
+        asset.replaceAttribute(new AssetAttribute(AttributeType.CONSOLE_NAME,
                                Values.create(name)));
         return asset;
     }
@@ -177,7 +177,7 @@ public final class ConsoleConfiguration {
     public static Asset setConsoleVersion(Asset asset, String version) {
         Objects.requireNonNull(asset);
         TextUtil.requireNonNullAndNonEmpty(version);
-        asset.replaceAttribute(AssetAttribute.createWithDescriptor(AttributeType.CONSOLE_VERSION,
+        asset.replaceAttribute(new AssetAttribute(AttributeType.CONSOLE_VERSION,
                                                                    Values.create(version)));
         return asset;
     }
@@ -189,7 +189,7 @@ public final class ConsoleConfiguration {
     public static Asset setConsolePlatform(Asset asset, String platform) {
         Objects.requireNonNull(asset);
         TextUtil.requireNonNullAndNonEmpty(platform);
-        asset.replaceAttribute(AssetAttribute.createWithDescriptor(AttributeType.CONSOLE_PLATFORM,
+        asset.replaceAttribute(new AssetAttribute(AttributeType.CONSOLE_PLATFORM,
                                                                    Values.create(platform)));
         return asset;
     }
@@ -213,7 +213,7 @@ public final class ConsoleConfiguration {
             return asset;
         }
 
-        asset.replaceAttribute(AssetAttribute.createWithDescriptor(AttributeType.CONSOLE_PROVIDERS,
+        asset.replaceAttribute(new AssetAttribute(AttributeType.CONSOLE_PROVIDERS,
                                                                    ConsoleProvider.toValue(consoleProviderMap)));
         return asset;
     }
@@ -222,7 +222,7 @@ public final class ConsoleConfiguration {
         Objects.requireNonNull(asset);
         TextUtil.requireNonNullAndNonEmpty(name);
         AssetAttribute providerAttribute = asset.getAttribute(AttributeType.CONSOLE_PROVIDERS).orElseGet(() -> {
-            AssetAttribute attr = AssetAttribute.createWithDescriptor(AttributeType.CONSOLE_PROVIDERS, Values.createObject());
+            AssetAttribute attr = new AssetAttribute(AttributeType.CONSOLE_PROVIDERS, Values.createObject());
             asset.addAttributes(attr);
             return attr;
         });

@@ -38,7 +38,6 @@ import org.openremote.model.rules.*;
 import java.util.*;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.function.BiConsumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -85,7 +84,7 @@ public class RulesEngine<T extends Ruleset> {
     final protected Assets assetsFacade;
     final protected Users usersFacade;
     final protected ConsolesFacade consolesFacade;
-    final protected BiConsumer<RulesEngine, List<AssetStateLocationPredicates>> assetLocationPredicatesConsumer;
+    final protected AssetLocationPredicateConsumer assetLocationPredicatesConsumer;
 
     final protected Map<Long, RulesetDeployment> deployments = new LinkedHashMap<>();
     final protected RulesFacts facts;
@@ -109,8 +108,7 @@ public class RulesEngine<T extends Ruleset> {
                        AssetProcessingService assetProcessingService,
                        NotificationService notificationService,
                        RulesEngineId<T> id,
-                       // Change to a class
-                       BiConsumer<RulesEngine, List<AssetStateLocationPredicates>> assetLocationPredicatesConsumer) {
+                       AssetLocationPredicateConsumer assetLocationPredicatesConsumer) {
         this.timerService = timerService;
         this.executorService = executorService;
         this.assetStorageService = assetStorageService;

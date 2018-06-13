@@ -62,6 +62,16 @@ public class AssetAttribute extends Attribute {
         addMeta(attributeDescriptor.getDefaultMetaItems());
     }
 
+    public AssetAttribute(AttributeDescriptor attributeDescriptor, Value value) {
+        super(attributeDescriptor.getName(), attributeDescriptor.getValueType());
+        if (value != null) {
+            if (value.getType() != attributeDescriptor.getValueType().getValueType()) {
+                throw new IllegalArgumentException("Provided value type is not compatible with this attribute type");
+            }
+        }
+        addMeta(attributeDescriptor.getDefaultMetaItems());
+    }
+
     public AssetAttribute(String name, AttributeValueType type, Value value, long timestamp) {
         super(name, type, value, timestamp);
     }
@@ -494,14 +504,5 @@ public class AssetAttribute extends Attribute {
                 objectValue.put(attribute.getName().get(), attribute.getObjectValue());
         }
         return Optional.of(objectValue);
-    }
-
-    public static AssetAttribute createWithDescriptor(AttributeDescriptor descriptor) {
-        return createWithDescriptor(descriptor, null);
-    }
-
-    public static AssetAttribute createWithDescriptor(AttributeDescriptor descriptor, Value value) {
-        return new AssetAttribute(descriptor.getName(), descriptor.getValueType(), Optional.ofNullable(value).orElse(descriptor.getDefaultValue()))
-            .setMeta(descriptor.getDefaultMetaItems());
     }
 }
