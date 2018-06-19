@@ -60,11 +60,7 @@
         <receiver
             android:name=".service.GeofenceTransitionsIntentService"
             android:enabled="true"
-            android:exported="false">
-            <intent-filter>
-                <action android:name="org.openremote.android.geofence.ACTION_RECEIVE"/>
-            </intent-filter>
-        </receiver>
+            android:exported="true"/>
         <service
             android:name=".service.GeofenceProvider$LocationService"
             android:exported="false"/>

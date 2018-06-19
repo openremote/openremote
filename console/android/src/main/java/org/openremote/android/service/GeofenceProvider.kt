@@ -17,6 +17,7 @@ import android.support.v4.content.ContextCompat
 import android.util.Log
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.android.gms.location.*
+import org.openremote.android.BuildConfig
 import org.openremote.android.R
 import java.io.*
 import java.net.URL
@@ -39,7 +40,7 @@ class GeofenceProvider(val activity: Activity) {
 
     lateinit var geofencingClient: GeofencingClient
     private val geofencePendingIntent: PendingIntent by lazy {
-        val intent = Intent("org.openremote.android.geofence.ACTION_RECEIVE")
+        val intent = Intent(activity, GeofenceTransitionsIntentService::class.java)
         intent.putExtra(baseUrlKey, baseURL)
         // We use FLAG_UPDATE_CURRENT so that we get the same pending intent back when calling
         // addGeofences() and removeGeofences().
@@ -157,7 +158,7 @@ class GeofenceProvider(val activity: Activity) {
     }
 
     fun clearAllRegions() {
-        if(geoPostUrls.keys.any()) {
+        if (geoPostUrls.keys.any()) {
             geofencingClient.removeGeofences(geoPostUrls.keys.toList()).run {
                 addOnSuccessListener {
                     Log.i("GeofenceProvider", "Geofences removed")
@@ -269,13 +270,13 @@ class GeofenceProvider(val activity: Activity) {
 
         @RequiresApi(Build.VERSION_CODES.O)
         private fun createNotificationChannel(): String {
-            val channelId = "OR_EIND"
+            val channelId = "${BuildConfig.APPLICATION_ID}.OREindhovenLocationService"
             val channelName = "OR Eindhoven Location Service"
             val channel = NotificationChannel(channelId,
-                    channelName, NotificationManager.IMPORTANCE_HIGH)
+                    channelName, NotificationManager.IMPORTANCE_LOW)
             channel.lightColor = Color.BLUE
-            channel.importance = NotificationManager.IMPORTANCE_NONE
             channel.lockscreenVisibility = Notification.VISIBILITY_PRIVATE
+            channel.setShowBadge(false)
             val service = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager?
             service!!.createNotificationChannel(channel)
             return channelId
