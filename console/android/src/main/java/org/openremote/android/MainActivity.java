@@ -67,6 +67,7 @@ public class MainActivity extends Activity {
     protected Context context;
     protected SharedPreferences sharedPreferences;
     protected GeofenceProvider geofenceProvider;
+    protected String consoleId;
 
     protected BroadcastReceiver onDownloadCompleteReciever = new BroadcastReceiver() {
         public void onReceive(Context ctxt, Intent intent) {
@@ -400,8 +401,11 @@ public class MainActivity extends Activity {
         } else if (requestCode == GeofenceProvider.Companion.getLocationReponseCode()) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 try {
-                    Map<String, Object> initData = geofenceProvider.initialize();
-                    final String jsonString = new ObjectMapper().writeValueAsString(initData);
+                    Map<String, Object> enableData = geofenceProvider.enable(String.format("%s/%s",
+                            getString(R.string.OR_BASE_SERVER),
+                            getString(R.string.OR_REALM)),
+                            consoleId);
+                    final String jsonString = new ObjectMapper().writeValueAsString(enableData);
                     this.runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
@@ -476,16 +480,13 @@ public class MainActivity extends Activity {
         protected void handleGeofenceProviderMessage(String action, JSONObject data) throws JSONException {
             if (action.equalsIgnoreCase("PROVIDER_INIT")) {
                 geofenceProvider = new GeofenceProvider(activity);
-                if (!geofenceProvider.checkPermission()) {
-                    geofenceProvider.registerPermissions();
-                } else {
-                    Map<String, Object> initData = geofenceProvider.initialize();
-                    notifyClient(initData);
-                }
+                Map<String, Object> initData = geofenceProvider.initialize();
+                notifyClient(initData);
             } else if (action.equalsIgnoreCase("PROVIDER_ENABLE")) {
                 if (data != null) {
                     String consoleId = data.getString("consoleId");
                     if (consoleId != null) {
+                        ((MainActivity) activity).consoleId = consoleId;
                         Map<String, Object> enableData = geofenceProvider.enable(String.format("%s/%s",
                                 getString(R.string.OR_BASE_SERVER),
                                 getString(R.string.OR_REALM)),

@@ -217,17 +217,17 @@ public class FCMDeliveryService {
             LOG.log(Level.WARNING, "FCM send failed: " + e.getErrorCode(), e);
 
             // TODO: Implement backoff and blacklisting
-            switch (e.getErrorCode()) {
-                // Errors we cannot recover from - stop FCM to avoid blacklisting our app
-                case "invalid-argument":
-                case "authentication-error":
-                    LOG.severe("FCM critical error so marking FCM as invalid no more messages will be sent");
-                    setValid(false);
-                    break;
-                case "server-unavailable":
-                case "internal-error":
-                    break;
-            }
+//            switch (e.getErrorCode()) {
+//                // Errors we cannot recover from - stop FCM to avoid blacklisting our app
+//                case "invalid-argument":
+//                case "authentication-error":
+//                    LOG.severe("FCM critical error so marking FCM as invalid no more messages will be sent");
+//                    setValid(false);
+//                    break;
+//                case "server-unavailable":
+//                case "internal-error":
+//                    break;
+//            }
         }
 
         return success;

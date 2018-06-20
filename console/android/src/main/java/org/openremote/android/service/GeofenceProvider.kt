@@ -31,6 +31,7 @@ class GeofenceProvider(val activity: Activity) {
         val geoPostUrlsKey = "geoPostUrls"
         var geoPostUrls = hashMapOf<String, List<String>>()
         var locationReponseCode = 101
+        lateinit var consoleId: String
     }
 
     val version = "ORConsole"
@@ -50,10 +51,7 @@ class GeofenceProvider(val activity: Activity) {
     var baseURL: String? = null
     var consoleId: String? = null
 
-
     fun initialize(): Map<String, Any> {
-        geofencingClient = LocationServices.getGeofencingClient(activity)
-
         var inputStream: ObjectInputStream? = null
         try {
             val file = File(activity.getDir("data", MODE_PRIVATE), geoPostUrlsKey)
@@ -70,7 +68,7 @@ class GeofenceProvider(val activity: Activity) {
                 "provider" to "geofence",
                 "version" to version,
                 "requiresPermission" to true,
-                "hasPermission" to true,
+                "hasPermission" to checkPermission(),
                 "success" to true
         )
     }
@@ -85,18 +83,24 @@ class GeofenceProvider(val activity: Activity) {
                 .putString(consoleIdKey, this.consoleId)
                 .apply()
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            activity.startForegroundService(Intent(activity, LocationService::class.java))
+        if(!checkPermission()) {
+            registerPermissions()
         } else {
-            activity.startService(Intent(activity, LocationService::class.java))
-        }
+            geofencingClient = LocationServices.getGeofencingClient(activity)
 
-        fetchGeofences()
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                activity.startForegroundService(Intent(activity, LocationService::class.java))
+            } else {
+                activity.startService(Intent(activity, LocationService::class.java))
+            }
+
+            fetchGeofences()
+        }
 
         return hashMapOf(
                 "action" to "PROVIDER_ENABLE",
                 "provider" to "geofence",
-                "hasPermission" to true,
+                "hasPermission" to checkPermission(),
                 "success" to true
         )
     }
