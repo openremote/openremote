@@ -69,6 +69,7 @@ public class AssetAttribute extends Attribute {
                 throw new IllegalArgumentException("Provided value type is not compatible with this attribute type");
             }
         }
+        setValue(value);
         addMeta(attributeDescriptor.getDefaultMetaItems());
     }
 
