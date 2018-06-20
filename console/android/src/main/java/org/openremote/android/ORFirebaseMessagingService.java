@@ -1,6 +1,7 @@
 package org.openremote.android;
 
 import android.app.Notification;
+import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
@@ -8,6 +9,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.media.RingtoneManager;
 import android.net.Uri;
+import android.os.Build;
+import android.support.annotation.RequiresApi;
 import android.support.v4.app.NotificationCompat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -24,6 +27,8 @@ public class ORFirebaseMessagingService extends com.google.firebase.messaging.Fi
 
     private static final Logger LOG = Logger.getLogger(ORFirebaseMessagingService.class.getName());
 
+    private final String NOTICATION_CHANNEL_ID = BuildConfig.APPLICATION_ID + ".OREindhovenMessage";
+
     private TokenService tokenService;
 
     public class MyBroadcastReceiver extends BroadcastReceiver {
@@ -39,6 +44,9 @@ public class ORFirebaseMessagingService extends com.google.firebase.messaging.Fi
     public void onCreate() {
         super.onCreate();
         tokenService = new TokenService(getApplicationContext());
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            createNotificationChannel();
+        }
     }
 
     /**
@@ -125,13 +133,23 @@ public class ORFirebaseMessagingService extends com.google.firebase.messaging.Fi
     // [END receive_message]
 
 
+    @RequiresApi(Build.VERSION_CODES.O)
+    private void createNotificationChannel() {
+        String channelName = "OR Eindhoven Message Service";
+        NotificationChannel channel = new NotificationChannel(NOTICATION_CHANNEL_ID,
+                channelName, NotificationManager.IMPORTANCE_HIGH);
+        channel.setShowBadge(false);
+        NotificationManager service = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        service.createNotificationChannel(channel);
+    }
+
     private void handleNotification(String title, String body, AlertAction[] actions) {
         Uri defaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
 
         // TODO: ID to come from backend
         int id = title.hashCode() + body.hashCode();
 
-        NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this)
+        NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this, NOTICATION_CHANNEL_ID)
                 .setContentTitle(title)
                 .setStyle(new NotificationCompat.BigTextStyle().bigText(body))
                 .setContentText(body)
