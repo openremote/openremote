@@ -57,13 +57,20 @@
             </intent-filter>
         </service>
 
+        <receiver android:name=".service.GeofenceBootCompleteReceiver">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED"/>
+            </intent-filter>
+        </receiver>
+
         <receiver
             android:name=".service.GeofenceTransitionsIntentService"
             android:enabled="true"
             android:exported="true"/>
-        <service
-            android:name=".service.GeofenceProvider$LocationService"
-            android:exported="false"/>
+
+        <!--<service                -->
+            <!--android:name=".service.GeofenceProvider$LocationService"-->
+            <!--android:exported="false"/>-->
 
 
     </application>

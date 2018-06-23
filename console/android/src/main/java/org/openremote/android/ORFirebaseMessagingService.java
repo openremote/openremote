@@ -18,6 +18,7 @@ import com.google.firebase.messaging.RemoteMessage;
 
 import org.openremote.android.service.AlertAction;
 import org.openremote.android.service.AlertNotification;
+import org.openremote.android.service.GeofenceProvider;
 import org.openremote.android.service.TokenService;
 
 import java.util.logging.Level;
@@ -77,12 +78,20 @@ public class ORFirebaseMessagingService extends com.google.firebase.messaging.Fi
         } else if (remoteMessage.getData() != null && !remoteMessage.getData().isEmpty()) {
             if (remoteMessage.getData().containsKey("action")) {
                 String action = remoteMessage.getData().get("action");
-                Intent broadCastIntent = new Intent(MainActivity.ACTION_BROADCAST);
-                broadCastIntent.putExtra("action", action);
-                sendBroadcast(broadCastIntent);
+
+                switch (action) {
+                    case "GEOFENCE_REFRESH":
+                        GeofenceProvider geofenceProvider = new GeofenceProvider(getApplicationContext());
+                        geofenceProvider.refreshGeofences();
+                        break;
+                    default:
+                        Intent broadCastIntent = new Intent(MainActivity.ACTION_BROADCAST);
+                        broadCastIntent.putExtra("action", action);
+                        sendBroadcast(broadCastIntent);
+                        break;
+                }
             } else {
                 // Check if message contains a data payload with or-title or-body and actions
-
                 LOG.fine("Message data payload: " + remoteMessage.getData());
                 String title = remoteMessage.getData().get("or-title");
                 String body = remoteMessage.getData().get("or-body");

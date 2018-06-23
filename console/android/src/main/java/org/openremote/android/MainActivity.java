@@ -8,6 +8,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
@@ -44,6 +45,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.firebase.iid.FirebaseInstanceId;
 
+import org.jetbrains.annotations.NotNull;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.openremote.android.service.GeofenceProvider;
@@ -74,20 +76,6 @@ public class MainActivity extends Activity {
             String action = intent.getAction();
             if (DownloadManager.ACTION_DOWNLOAD_COMPLETE.equals(action)) {
                 Toast.makeText(getApplicationContext(), R.string.download_completed, Toast.LENGTH_LONG).show();
-            }
-        }
-    };
-
-    protected BroadcastReceiver actionReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            if (intent.hasExtra("action")) {
-                String action = intent.getStringExtra("action");
-                switch (action) {
-                    case "GEOFENCE_REFRESH":
-                        geofenceProvider.refreshGeofences();
-                        break;
-                }
             }
         }
     };
@@ -148,9 +136,11 @@ public class MainActivity extends Activity {
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
 
         // Enable remote debugging of WebView from Chrome Debugger tools
-        if (isRemoteDebuggingEnabled()) {
-            LOG.info("Enabling remote debugging");
-            WebView.setWebContentsDebuggingEnabled(true);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+            if (0 != (getApplicationInfo().flags & ApplicationInfo.FLAG_DEBUGGABLE)) {
+                LOG.info("Enabling remote debugging");
+                WebView.setWebContentsDebuggingEnabled(true);
+            }
         }
 
         setContentView(R.layout.activity_web);
@@ -169,8 +159,6 @@ public class MainActivity extends Activity {
         openIntentUrl(getIntent());
 
         errorViewHolder = new ErrorViewHolder(findViewById(R.id.errorView));
-
-        registerReceiver(actionReceiver, new IntentFilter(ACTION_BROADCAST));
     }
 
     @Override
@@ -211,8 +199,6 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onDestroy() {
-        unregisterReceiver(actionReceiver);
-
         super.onDestroy();
     }
 
@@ -261,7 +247,7 @@ public class MainActivity extends Activity {
 
         webView.addJavascriptInterface(webAppInterface, "MobileInterface");
         WebSettings webSettings = webView.getSettings();
-        webSettings.setJavaScriptEnabled(true);
+        webSettings.setMixedContentMode(WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE);
         webSettings.setCacheMode(WebSettings.LOAD_DEFAULT);
         webSettings.setDomStorageEnabled(true);
         webSettings.setDatabaseEnabled(true);
@@ -323,12 +309,11 @@ public class MainActivity extends Activity {
 
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
 
-                    // Remote debugging sessions from Chrome trigger "ERR_CACHE_MISS" that don't hurt, but we should not redirect the view
-                    if (isRemoteDebuggingEnabled() && error.getErrorCode() == ERROR_UNKNOWN) {
+                    // Remote debugging session from Chrome wants to load about:blank and then fails with "ERROR_UNSUPPORTED_SCHEME", ignore
+                    if ("net::ERR_CACHE_MISS".contentEquals(error.getDescription())) {
                         return;
                     }
 
-                    // Remote debugging session from Chrome wants to load about:blank and then fails with "ERROR_UNSUPPORTED_SCHEME", ignore
                     if (request.getUrl().toString().equals("about:blank") && error.getErrorCode() == ERROR_UNSUPPORTED_SCHEME) {
                         return;
                     }
@@ -400,21 +385,30 @@ public class MainActivity extends Activity {
             }
         } else if (requestCode == GeofenceProvider.Companion.getLocationReponseCode()) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                try {
-                    Map<String, Object> enableData = geofenceProvider.enable(String.format("%s/%s",
-                            getString(R.string.OR_BASE_SERVER),
-                            getString(R.string.OR_REALM)),
-                            consoleId);
-                    final String jsonString = new ObjectMapper().writeValueAsString(enableData);
-                    this.runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            webView.evaluateJavascript(String.format("openremote.INSTANCE.console.handleProviderResponse('%s')", jsonString), null);
-                        }
-                    });
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
+
+                geofenceProvider.enable(MainActivity.this,
+                                        String.format("%s/%s",
+                                                      getString(R.string.OR_BASE_SERVER),
+                                                      getString(R.string.OR_REALM)),
+                                        consoleId,
+                                        new GeofenceProvider.EnableCallback() {
+                                            @Override
+                                            public void accept(@NotNull Map<String, ?> responseData) {
+                                                try {
+                                                    final String jsonString = new ObjectMapper().writeValueAsString(responseData);
+                                                    MainActivity.this.runOnUiThread(new Runnable() {
+                                                        @Override
+                                                        public void run() {
+                                                            webView.evaluateJavascript(String.format(
+                                                                "openremote.INSTANCE.console.handleProviderResponse('%s')",
+                                                                jsonString), null);
+                                                        }
+                                                    });
+                                                } catch (Exception e) {
+                                                    e.printStackTrace();
+                                                }
+                                            }
+                                        });
             }
         } else {
             super.onRequestPermissionsResult(requestCode, permissions, grantResults);
@@ -478,8 +472,11 @@ public class MainActivity extends Activity {
         }
 
         protected void handleGeofenceProviderMessage(String action, JSONObject data) throws JSONException {
-            if (action.equalsIgnoreCase("PROVIDER_INIT")) {
+            if (geofenceProvider == null) {
                 geofenceProvider = new GeofenceProvider(activity);
+            }
+
+            if (action.equalsIgnoreCase("PROVIDER_INIT")) {
                 Map<String, Object> initData = geofenceProvider.initialize();
                 notifyClient(initData);
             } else if (action.equalsIgnoreCase("PROVIDER_ENABLE")) {
@@ -487,11 +484,16 @@ public class MainActivity extends Activity {
                     String consoleId = data.getString("consoleId");
                     if (consoleId != null) {
                         ((MainActivity) activity).consoleId = consoleId;
-                        Map<String, Object> enableData = geofenceProvider.enable(String.format("%s/%s",
-                                getString(R.string.OR_BASE_SERVER),
-                                getString(R.string.OR_REALM)),
-                                consoleId);
-                        notifyClient(enableData);
+                        geofenceProvider.enable(MainActivity.this, String.format("%s/%s",
+                                                                                 getString(R.string.OR_BASE_SERVER),
+                                                                                 getString(R.string.OR_REALM)),
+                                                consoleId, new GeofenceProvider.EnableCallback() {
+                                @Override
+                                public void accept(@NotNull Map<String, ?> responseData) {
+                                    //noinspection unchecked
+                                    notifyClient((Map<String, Object>) responseData);
+                                }
+                            });
                     }
                 }
             } else if (action.equalsIgnoreCase("PROVIDER_DISABLE")) {
@@ -582,10 +584,6 @@ public class MainActivity extends Activity {
             NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
             onConnectivityChanged(activeNetwork != null && activeNetwork.isConnectedOrConnecting());
         }
-    }
-
-    protected boolean isRemoteDebuggingEnabled() {
-        return Boolean.valueOf(getString(R.string.ENABLE_REMOTE_DEBUGGING));
     }
 }
 
