@@ -100,12 +100,11 @@ public class ConsoleResourceImpl extends ManagerWebResource implements ConsoleRe
         consoleAsset = assetStorageService.merge(consoleAsset);
         consoleRegistration.setId(consoleAsset.getId());
 
-        // If authenticated and not super user link the console to this user
-        // TODO: Re-enable linking of consoles to users - currently any client that uses or-app will register and hence
-        // create a console but the below logic can suddenly make them a restricted user which may not be desirable
-//        if (isAuthenticated() && !isSuperUser()) {
-//            assetStorageService.storeUserAsset(new UserAsset(getAuthenticatedTenant().getId(), getUserId(), consoleAsset.getId()));
-//        }
+        // If authenticated link the console to this user
+        if (isAuthenticated()) {
+            assetStorageService.storeUserAsset(new UserAsset(getAuthenticatedTenant().getId(), getUserId(), consoleAsset.getId()));
+        }
+
         return consoleRegistration;
     }
 

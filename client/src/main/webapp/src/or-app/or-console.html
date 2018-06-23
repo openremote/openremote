@@ -327,16 +327,28 @@
                             this.registration.providers[name].disabled = true;
                         }
 
+                        if (!this.registration.providers[name].disabled) {
+                            this._pendingProviderEnables.push(name);
+                        }
+
+
                         // Check if all providers have been initialised
                         if (this._pendingProviderInits.length === 0) {
 
-                            for (let providerName of this.providers) {
+                            // Notify consoles that console initialisation is done
+                            window.dispatchEvent(new CustomEvent("ConsoleInit"));
 
-                                // Enable providers that don't require permissions, already have permissions or autoEnable is true
-                                // Don't enable providers marked as disabled
-                                if (msgJson.success && !this.registration.providers[providerName].disabled && (this.autoEnable || !msgJson.requiresPermission || msgJson.hasPermission)) {
+                            // If all providers are disabled then go straight to registration
+                            if (this._pendingProviderEnables.length === 0) {
+                                this.register(()=> {}, () => {}, true);
+                            }
 
-                                    this._pendingProviderEnables.push(providerName);
+                            // Enable providers when autoEnable is true
+                            // Don't enable providers marked as disabled
+                            if (this.autoEnable) {
+                                for (let providerName of this._pendingProviderEnables) {
+
+                                    console.debug("Auto enabling provider: " + providerName);
 
                                     // Some providers require special handling for enabling
                                     switch (providerName) {

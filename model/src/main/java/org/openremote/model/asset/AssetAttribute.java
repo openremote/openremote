@@ -58,18 +58,21 @@ public class AssetAttribute extends Attribute {
     }
 
     public AssetAttribute(AttributeDescriptor attributeDescriptor) {
-        super(attributeDescriptor.getName(), attributeDescriptor.getValueType(), attributeDescriptor.getDefaultValue());
-        addMeta(attributeDescriptor.getDefaultMetaItems());
+        this(attributeDescriptor.getName(), attributeDescriptor.getValueType(), attributeDescriptor.getDefaultValue());
     }
 
     public AssetAttribute(AttributeDescriptor attributeDescriptor, Value value) {
-        super(attributeDescriptor.getName(), attributeDescriptor.getValueType());
+        this(attributeDescriptor, value, 0);
+    }
+
+    public AssetAttribute(AttributeDescriptor attributeDescriptor, Value value, long timestamp) {
+        super(attributeDescriptor.getName(), attributeDescriptor.getValueType(), value);
         if (value != null) {
             if (value.getType() != attributeDescriptor.getValueType().getValueType()) {
                 throw new IllegalArgumentException("Provided value type is not compatible with this attribute type");
             }
         }
-        setValue(value);
+        setValue(value, timestamp);
         addMeta(attributeDescriptor.getDefaultMetaItems());
     }
 
