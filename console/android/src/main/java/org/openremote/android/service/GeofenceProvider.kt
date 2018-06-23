@@ -119,7 +119,6 @@ class GeofenceProvider(val context: Context) : ActivityCompat.OnRequestPermissio
         val geofencesKey = "geofences"
         var locationReponseCode = 101
         var JSON = ObjectMapper()
-        lateinit var consoleId: String
 
         fun getGeofences(context: Context): Array<GeofenceDefinition> {
             val sharedPreferences = context.getSharedPreferences(context.getString(R.string.app_name), Context.MODE_PRIVATE)
@@ -185,6 +184,11 @@ class GeofenceProvider(val context: Context) : ActivityCompat.OnRequestPermissio
             val sharedPreferences = context.getSharedPreferences(context.getString(R.string.app_name), Context.MODE_PRIVATE)
             return sharedPreferences.getString(baseUrlKey, null)
         }
+
+        private fun getConsoleId(context: Context): String? {
+            val sharedPreferences = context.getSharedPreferences(context.getString(R.string.app_name), Context.MODE_PRIVATE)
+            return sharedPreferences.getString(consoleIdKey, null)
+        }
     }
 
     val version = "ORConsole"
@@ -194,15 +198,6 @@ class GeofenceProvider(val context: Context) : ActivityCompat.OnRequestPermissio
         LocationServices.getGeofencingClient(context)
     }
 
-    val geoPostUrls: Map<String, List<String>> by lazy {
-
-        hashMapOf(
-                "a" to arrayListOf("")
-        )
-    }
-
-    var baseURL: String? = null
-    var consoleId: String? = null
     var enableCallback: EnableCallback? = null
 
     fun initialize(): Map<String, Any> {
@@ -220,12 +215,9 @@ class GeofenceProvider(val context: Context) : ActivityCompat.OnRequestPermissio
     fun enable(activity: Activity, baseUrl: String, consoleId: String, callback: EnableCallback) {
         val sharedPreferences = context.getSharedPreferences(context.getString(R.string.app_name), Context.MODE_PRIVATE)
 
-        baseURL = baseUrl
-        this.consoleId = consoleId
-
         sharedPreferences.edit()
-                .putString(baseUrlKey, baseURL)
-                .putString(consoleIdKey, this.consoleId)
+                .putString(baseUrlKey, baseUrl)
+                .putString(consoleIdKey, consoleId)
                 .apply()
 
         if(ContextCompat.checkSelfPermission(context, ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
@@ -248,8 +240,6 @@ class GeofenceProvider(val context: Context) : ActivityCompat.OnRequestPermissio
                 .remove(geofencesKey)
                 .apply()
 
-        baseURL = null
-        consoleId = null
         //context.stopService(Intent(context, LocationService::class.java))
     }
 
@@ -293,15 +283,14 @@ class GeofenceProvider(val context: Context) : ActivityCompat.OnRequestPermissio
 
     private fun fetchGeofences() {
         val sharedPreferences = context.getSharedPreferences(context.getString(R.string.app_name), Context.MODE_PRIVATE)
-        val geofencesJson = URL("$baseURL/$geofenceFetchEndpoint$consoleId").readText()
+        val geofencesJson = URL("${getBaseUrl(context)}/$geofenceFetchEndpoint${getConsoleId(context)}").readText()
         val geofences = JSON.readValue(geofencesJson, Array<GeofenceDefinition>::class.java)
-        val baseUrl = baseURL.orEmpty()
         removeGeofences(getGeofences(context))
 
         Log.i("GeofenceProvider", "fetchGeofences: count=${geofences.size}")
 
         geofences.forEach {
-            addGeofence(geofencingClient, getGeofencePendingIntent(context, baseUrl), it)
+            addGeofence(geofencingClient, getGeofencePendingIntent(context, getBaseUrl(context).orEmpty()), it)
         }
 
         sharedPreferences.edit()
