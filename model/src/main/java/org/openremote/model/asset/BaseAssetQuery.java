@@ -205,6 +205,16 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> {
         }
     }
 
+    public static class ValueEmptyPredicate implements ValuePredicate<Value> {
+
+        @Override
+        public ObjectValue toModelValue() {
+            ObjectValue objectValue = Values.createObject();
+            objectValue.put("predicateType", "ValueEmptyPredicate");
+            return objectValue;
+        }
+    }
+
     public static class ValueNotEmptyPredicate implements ValuePredicate<Value> {
 
         @Override

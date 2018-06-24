@@ -26,7 +26,6 @@ import org.openremote.model.asset.BaseAssetQuery;
 import org.openremote.model.asset.BaseAssetQuery.*;
 import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.rules.AssetState;
-import org.openremote.model.value.ObjectValue;
 
 import java.util.Arrays;
 import java.util.Locale;
@@ -245,7 +244,9 @@ public class AssetQueryPredicate implements Predicate<AssetState> {
             if (predicate.value == null)
                 return true;
 
-            if (predicate.value instanceof BaseAssetQuery.ValueNotEmptyPredicate) {
+            if (predicate.value instanceof BaseAssetQuery.ValueEmptyPredicate) {
+                return !assetState.getValue().isPresent();
+            } else if (predicate.value instanceof BaseAssetQuery.ValueNotEmptyPredicate) {
                 return assetState.getValue().isPresent();
 
             } else if (predicate.value instanceof BaseAssetQuery.StringPredicate) {
