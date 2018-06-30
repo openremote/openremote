@@ -167,22 +167,24 @@ public class ORFirebaseMessagingService extends com.google.firebase.messaging.Fi
                 .setPriority(Notification.PRIORITY_MAX)
                 .setSound(defaultSoundUri);
 
-        for (AlertAction alertAction : actions) {
-            Intent actionIntent = new Intent(this, ORMessagingActionService.class);
+        if (actions != null && actions.length > 0) {
+            for (AlertAction alertAction : actions) {
+                Intent actionIntent = new Intent(this, ORMessagingActionService.class);
 
-            actionIntent.putExtra("notificationId", id);
-            actionIntent.putExtra("action", alertAction);
-            actionIntent.setAction(Long.toString(System.currentTimeMillis()));
-            PendingIntent actionPendingIntent = PendingIntent.getService(this,
-                    0,
-                    actionIntent,
-                    PendingIntent.FLAG_ONE_SHOT);
-            notificationBuilder = notificationBuilder.addAction(new NotificationCompat.Action(R.drawable.empty,
-                    alertAction.getTitle(),
-                    actionPendingIntent));
+                actionIntent.putExtra("notificationId", id);
+                actionIntent.putExtra("action", alertAction);
+                actionIntent.setAction(Long.toString(System.currentTimeMillis()));
+                PendingIntent actionPendingIntent = PendingIntent.getService(this,
+                                                                             0,
+                                                                             actionIntent,
+                                                                             PendingIntent.FLAG_ONE_SHOT);
+                notificationBuilder = notificationBuilder.addAction(new NotificationCompat.Action(R.drawable.empty,
+                                                                                                  alertAction.getTitle(),
+                                                                                                  actionPendingIntent));
+            }
         }
 
-        LOG.fine("Showing notification (" + actions.length + " actions): " + body);
+        LOG.fine("Showing notification (" + (actions != null ? actions.length + " actions): " : "") + body);
 
         NotificationManager notificationManager =
                 (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);

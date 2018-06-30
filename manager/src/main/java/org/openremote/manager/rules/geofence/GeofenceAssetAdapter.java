@@ -66,7 +66,7 @@ public interface GeofenceAssetAdapter {
      * hence adapters should be more concerned with delta changes (but this is really up to the adapter).
      * <p>
      * If an adapter handles the location predicates for a particular asset then the adapter should remove that item
-     * from the list to prevent other adapters from also handling it. If an {@link RulesEngine.AssetStateLocationPredicates#getLocationPredicates()}
+     * from the list to prevent other adapters from also handling it. If an {@link RulesEngine.AssetStateLocationPredicates#getLocationPredicates}
      * is empty then it means there are no longer any location predicates associated with that asset
      */
     void processLocationPredicates(List<RulesEngine.AssetStateLocationPredicates> modifiedAssetLocationPredicates,

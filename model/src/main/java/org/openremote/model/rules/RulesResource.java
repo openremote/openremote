@@ -238,5 +238,5 @@ public interface RulesResource {
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
     @SuppressWarnings("unusable-by-js")
-    GeofenceDefinition[] getAssetGeofences(@PathParam("assetId") String assetId);
+    GeofenceDefinition[] getAssetGeofences(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId);
 }

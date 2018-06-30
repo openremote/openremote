@@ -1,6 +1,7 @@
 package org.openremote.test.rules
 
 import org.openremote.manager.rules.RulesBuilder
+import org.openremote.manager.setup.builtin.ManagerDemoSetup
 import org.openremote.model.asset.AssetQuery
 import org.openremote.model.asset.BaseAssetQuery
 
@@ -11,7 +12,7 @@ rules.add()
         .when(
         { facts ->
             facts.matchFirstAssetState(new AssetQuery().location(new BaseAssetQuery.RadialLocationPredicate(50, 0, -60))).isPresent() &&
-                !facts.matchFirst("RadialLocation").isPresent()
+                !facts.matchFirst("RadialLocation2").isPresent()
         })
         .then(
         { facts ->
@@ -22,12 +23,12 @@ rules.add()
     .name("Duplicate radial location predicate")
     .when(
     { facts ->
-        facts.matchFirstAssetState(new AssetQuery().location(new BaseAssetQuery.RadialLocationPredicate(100, 50, 100))).isPresent() &&
-            !facts.matchFirst("Location").isPresent()
+        facts.matchFirstAssetState(new AssetQuery().location(new BaseAssetQuery.RadialLocationPredicate(100, ManagerDemoSetup.SMART_HOME_LOCATION.y, ManagerDemoSetup.SMART_HOME_LOCATION.x))).isPresent() &&
+            !facts.matchFirst("DuplicateLocation").isPresent()
     })
     .then(
     { facts ->
-        facts.put("Location", "fired")
+        facts.put("DuplicateLocation", "fired")
     })
 
 rules.add()

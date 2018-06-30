@@ -297,7 +297,7 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
     }
 
     @Override
-    public GeofenceDefinition[] getAssetGeofences(String assetId) {
+    public GeofenceDefinition[] getAssetGeofences(@BeanParam RequestParams requestParams, String assetId) {
         Asset asset;
 
         asset = assetStorageService.find(
@@ -308,21 +308,17 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
         if (asset == null)
             return new GeofenceDefinition[0];
 
-        // If asset is linked to users then only those users can get the geofences for it
-        List<UserAsset> userAssetLinks = assetStorageService.findUserAssets(asset.getRealmId(), null, assetId);
-
         // If not linked to users check if asset is marked as public read
-        // TODO: Change for public write when implemented
-        if (userAssetLinks.isEmpty() && !asset.isAccessPublicRead()) {
-            throw new WebApplicationException(Response.Status.FORBIDDEN);
-        }
+        if (!asset.isAccessPublicRead()) {
 
-        if (isAuthenticated()) {
-            // Check asset is linked to authenticated user or super user is logged in
-            if (!isSuperUser() || userAssetLinks.stream().noneMatch(userAssetLink -> userAssetLink.getId().getUserId().equals(getUserId()))) {
-                throw new WebApplicationException(Response.Status.FORBIDDEN);
+            // If asset is linked to users then only those users can get the geofences for it
+            List<UserAsset> userAssetLinks = assetStorageService.findUserAssets(asset.getRealmId(), null, assetId);
+
+            if (!userAssetLinks.isEmpty()) {
+                if (!isAuthenticated() || userAssetLinks.stream().noneMatch(userAssetLink -> userAssetLink.getId().getUserId().equals(getUserId()))) {
+                    throw new WebApplicationException(Response.Status.FORBIDDEN);
+                }
             }
-
         }
 
         return rulesService.getAssetGeofences(assetId);

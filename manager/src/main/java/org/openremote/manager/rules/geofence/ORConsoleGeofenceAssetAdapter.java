@@ -25,6 +25,7 @@ import org.openremote.container.ContainerService;
 import org.openremote.container.message.MessageBrokerSetupService;
 import org.openremote.container.persistence.PersistenceEvent;
 import org.openremote.manager.asset.AssetStorageService;
+import org.openremote.manager.concurrent.ManagerExecutorService;
 import org.openremote.manager.notification.NotificationService;
 import org.openremote.manager.rules.RulesEngine;
 import org.openremote.manager.security.ManagerIdentityService;
@@ -38,6 +39,8 @@ import org.openremote.model.rules.geofence.GeofenceDefinition;
 import org.openremote.model.util.TextUtil;
 
 import java.util.*;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
@@ -59,18 +62,22 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
     public static final String NAME = "ORConsole";
     public static final String HTTP_METHOD = "PUT";
     public static final String LOCATION_URL_FORMAT_TEMPLATE = "/asset/%1$s/attribute/location";
+    public static int NOTIFY_ASSETS_DEBOUNCE_MILLIS = 60000;
     protected Map<String, RulesEngine.AssetStateLocationPredicates> assetLocationPredicatesMap = new HashMap<>();
     protected NotificationService notificationService;
     protected AssetStorageService assetStorageService;
     protected ManagerIdentityService identityService;
+    protected ManagerExecutorService executorService;
     protected Map<String, String> consoleIdRealmMap;
-
+    protected ScheduledFuture notifyAssetsScheduledFuture;
+    protected Set<String> notifyAssets;
 
     @Override
     public void init(Container container) throws Exception {
         this.assetStorageService = container.getService(AssetStorageService.class);
         this.notificationService = container.getService(NotificationService.class);
         this.identityService = container.getService(ManagerIdentityService.class);
+        this.executorService = container.getService(ManagerExecutorService.class);
         container.getService(MessageBrokerSetupService.class).getContext().addRoutes(this);
     }
 
@@ -125,40 +132,61 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
     @Override
     public void processLocationPredicates(List<RulesEngine.AssetStateLocationPredicates> modifiedAssetLocationPredicates, boolean initialising) {
 
-        Set<String> notifyAssets = new HashSet<>(modifiedAssetLocationPredicates.size());
+        withLock(getClass().getSimpleName() + "::processLocationPredicates", () -> {
 
-        modifiedAssetLocationPredicates.removeIf(assetStateLocationPredicates -> {
-            boolean remove = consoleIdRealmMap.containsKey(assetStateLocationPredicates.getAssetId());
+            AtomicBoolean notifierDebounce = new AtomicBoolean(false);
 
-            if (remove) {
-                assetStateLocationPredicates
-                    .getLocationPredicates()
-                    .removeIf(locationPredicate ->
-                                  !(locationPredicate instanceof BaseAssetQuery.RadialLocationPredicate));
+            if (notifyAssets == null) {
+                notifyAssets = new HashSet<>(modifiedAssetLocationPredicates.size());
+            }
 
-                if (!initialising) {
+            // Remove all entries that relate to consoles that are compatible with this adapter
+            modifiedAssetLocationPredicates.removeIf(assetStateLocationPredicates -> {
+                boolean remove = consoleIdRealmMap.containsKey(assetStateLocationPredicates.getAssetId());
 
-                    RulesEngine.AssetStateLocationPredicates existingPredicates = assetLocationPredicatesMap.get(
-                        assetStateLocationPredicates.getAssetId());
-                    if ((existingPredicates == null || existingPredicates.getLocationPredicates().isEmpty()) && !assetStateLocationPredicates.getLocationPredicates().isEmpty()) {
-                        // We're not comparing before and after state as RulesService has done that although it could be
-                        // that rectangular location predicates have changed but this will do for now
-                        notifyAssets.add(assetStateLocationPredicates.getAssetId());
+                if (remove) {
+                    // Keep only radial location predicates (only these are supported on iOS and Android)
+                    assetStateLocationPredicates
+                        .getLocationPredicates()
+                        .removeIf(locationPredicate ->
+                                      !(locationPredicate instanceof BaseAssetQuery.RadialLocationPredicate));
+
+                    // If not initialising compare existing with new predicates and notify affected assets
+                    if (!initialising) {
+
+                        RulesEngine.AssetStateLocationPredicates existingPredicates = assetLocationPredicatesMap.get(
+                            assetStateLocationPredicates.getAssetId());
+                        if (existingPredicates == null || !existingPredicates.getLocationPredicates().equals(assetStateLocationPredicates.getLocationPredicates())) {
+                            // We're not comparing before and after state as RulesService has done that although it could be
+                            // that rectangular location predicates have changed but this will do for now
+                            notifyAssets.add(assetStateLocationPredicates.getAssetId());
+                            notifierDebounce.set(true);
+                        }
+                    }
+
+                    if (assetStateLocationPredicates.getLocationPredicates().isEmpty()) {
+                        assetLocationPredicatesMap.remove(assetStateLocationPredicates.getAssetId());
+                    } else {
+                        assetLocationPredicatesMap.put(assetStateLocationPredicates.getAssetId(),
+                                                       assetStateLocationPredicates);
                     }
                 }
 
-                if (assetStateLocationPredicates.getLocationPredicates().isEmpty()) {
-                    assetLocationPredicatesMap.remove(assetStateLocationPredicates.getAssetId());
-                } else {
-                    assetLocationPredicatesMap.put(assetStateLocationPredicates.getAssetId(),
-                                                   assetStateLocationPredicates);
+                return remove;
+            });
+
+            if (notifierDebounce.get()) {
+                if (notifyAssetsScheduledFuture == null || notifyAssetsScheduledFuture.cancel(false)) {
+                    notifyAssetsScheduledFuture = executorService.schedule(() ->
+                                                                               withLock(getClass().getSimpleName() + "::notifyAssets",
+                                                                                        () -> {
+                                                                                            notifyAssets.forEach(this::notifyAssetGeofencesChanged);
+                                                                                            notifyAssetsScheduledFuture = null;
+                                                                                        }),
+                                                                           NOTIFY_ASSETS_DEBOUNCE_MILLIS);
                 }
             }
-
-            return remove;
         });
-
-        notifyAssets.forEach(this::notifyAssetGeofencesChanged);
     }
 
     @Override

@@ -60,12 +60,14 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
     public static final int DEMO_RULE_STATES_APARTMENT_3 = 0;
     public static final int DEMO_RULE_STATES_SMART_OFFICE = 1;
     public static final int DEMO_RULE_STATES_SMART_HOME = DEMO_RULE_STATES_APARTMENT_1 + DEMO_RULE_STATES_APARTMENT_2 + DEMO_RULE_STATES_APARTMENT_3;
-    public static final int DEMO_RULE_STATES_CUSTOMER_A = DEMO_RULE_STATES_SMART_HOME + 1; // 1 is for console location attribute
+    public static final int DEMO_RULE_STATES_CUSTOMER_A = DEMO_RULE_STATES_SMART_HOME;
     public static final int DEMO_RULE_STATES_GLOBAL = DEMO_RULE_STATES_CUSTOMER_A + DEMO_RULE_STATES_SMART_OFFICE;
     public static final int DEMO_RULE_STATES_APARTMENT_1_WITH_SCENES = DEMO_RULE_STATES_APARTMENT_1 + 28;
     public static final int DEMO_RULE_STATES_SMART_HOME_WITH_SCENES = DEMO_RULE_STATES_APARTMENT_1_WITH_SCENES + DEMO_RULE_STATES_APARTMENT_2 + DEMO_RULE_STATES_APARTMENT_3;
     public static final int DEMO_RULE_STATES_CUSTOMER_A_WITH_SCENES = DEMO_RULE_STATES_SMART_HOME_WITH_SCENES;
     public static final int DEMO_RULE_STATES_GLOBAL_WITH_SCENES = DEMO_RULE_STATES_CUSTOMER_A_WITH_SCENES;
+    public static GeoJSONPoint SMART_OFFICE_LOCATION = new GeoJSONPoint(5.460315214821094, 51.44541688237109);
+    public static GeoJSONPoint SMART_HOME_LOCATION = new GeoJSONPoint(5.470945, 51.438000);
     public final String agentProtocolConfigName = "simulator123";
     public final String thingLightToggleAttributeName = "light1Toggle";
     final protected boolean importDemoScenes;
@@ -87,8 +89,6 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
     public String apartment3LivingroomId;
     public String masterRealmId;
     public String customerARealmId;
-    public String consolesId;
-    public String consoleId;
 
     public ManagerDemoSetup(Container container, boolean importDemoScenes) {
         super(container);
@@ -106,7 +106,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
 
         // ################################ Demo assets for 'master' realm ###################################
 
-        ObjectValue locationValue = new GeoJSONPoint(5.460315214821094, 51.44541688237109).toValue();
+        ObjectValue locationValue = SMART_OFFICE_LOCATION.toValue();
 
         Asset smartOffice = new Asset();
         smartOffice.setRealmId(masterTenant.getId());
@@ -368,7 +368,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
 
         // ################################ Demo assets for 'customerA' realm ###################################
 
-        ObjectValue locationValueA = new GeoJSONPoint(5.470945, 51.438000).toValue();
+        ObjectValue locationValueA = SMART_HOME_LOCATION.toValue();
 
         Asset smartHome = new Asset();
         smartHome.setRealmId(customerATenant.getId());
@@ -634,29 +634,6 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         apartment3Livingroom = assetStorageService.merge(apartment3Livingroom);
         apartment3LivingroomId = apartment3Livingroom.getId();
 
-
-        Asset consoleParent = ConsoleResourceImpl.getConsoleParentAsset(assetStorageService, keycloakDemoSetup.customerATenant);
-        consolesId = consoleParent.getId();
-
-        Asset console = ConsoleConfiguration.initConsoleConfiguration(
-            new Asset("Demo Console", CONSOLE, consoleParent),
-            "Demo Console",
-            "1.0",
-            "Android 7.1.2",
-            new HashMap<String, ConsoleProvider>() {
-                {
-                    put("geofence", new ConsoleProvider(
-                        ORConsoleGeofenceAssetAdapter.NAME,
-                        true,
-                        true,
-                        false,
-                        null
-                    ));
-                }
-            });
-        console = assetStorageService.merge(console);
-        consoleId = console.getId();
-
         // ################################ Link demo users and assets ###################################
 
         assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.customerATenant.getId(),
@@ -674,10 +651,6 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.customerATenant.getId(),
                                                          keycloakDemoSetup.testuser3Id,
                                                          apartment2Id));
-
-        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.customerATenant.getId(),
-                                                         keycloakDemoSetup.testuser3Id,
-                                                         consoleId));
 
         // ################################ Make users restricted ###################################
 

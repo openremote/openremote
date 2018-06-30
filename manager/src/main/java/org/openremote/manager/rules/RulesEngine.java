@@ -84,7 +84,7 @@ public class RulesEngine<T extends Ruleset> {
     final protected Assets assetsFacade;
     final protected Users usersFacade;
     final protected ConsolesFacade consolesFacade;
-    final protected AssetLocationPredicateConsumer assetLocationPredicatesConsumer;
+    final protected AssetLocationPredicateProcessor assetLocationPredicatesConsumer;
 
     final protected Map<Long, RulesetDeployment> deployments = new LinkedHashMap<>();
     final protected RulesFacts facts;
@@ -108,7 +108,7 @@ public class RulesEngine<T extends Ruleset> {
                        AssetProcessingService assetProcessingService,
                        NotificationService notificationService,
                        RulesEngineId<T> id,
-                       AssetLocationPredicateConsumer assetLocationPredicatesConsumer) {
+                       AssetLocationPredicateProcessor assetLocationPredicatesConsumer) {
         this.timerService = timerService;
         this.executorService = executorService;
         this.assetStorageService = assetStorageService;

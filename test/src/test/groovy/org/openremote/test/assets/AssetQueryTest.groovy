@@ -96,7 +96,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         )
 
         then: "only the users assets should be retrieved"
-        assets.size() == 6
+        assets.size() == 5
         assets.get(0).id == managerDemoSetup.apartment1Id
         assets.get(1).id == managerDemoSetup.apartment1LivingroomId
         assets.get(1).getAttributesList().size() == 9
@@ -108,7 +108,6 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets.get(2).id == managerDemoSetup.apartment1KitchenId
         assets.get(3).id == managerDemoSetup.apartment1HallwayId
         assets.get(4).id == managerDemoSetup.apartment2Id
-        assets.get(5).id == managerDemoSetup.consoleId
 
         when: "a user filtering query is executed that returns only IDs, names and attribute names and limits to protected attributes and meta"
         assets = assetStorageService.findAll(
@@ -118,7 +117,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         )
 
         then: "only the users assets should be retrieved"
-        assets.size() == 6
+        assets.size() == 5
         assets.get(0).id == managerDemoSetup.apartment1Id
         assets.get(1).id == managerDemoSetup.apartment1LivingroomId
         assets.get(1).getAttributesList().size() == 5
@@ -130,7 +129,6 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets.get(2).id == managerDemoSetup.apartment1KitchenId
         assets.get(3).id == managerDemoSetup.apartment1HallwayId
         assets.get(4).id == managerDemoSetup.apartment2Id
-        assets.get(5).id == managerDemoSetup.consoleId
 
         when: "a query is executed that returns a protected attribute without any other meta items"
         assets = assetStorageService.findAll(
@@ -400,7 +398,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         )
 
         then: "result should match"
-        assets.size() == 6
+        assets.size() == 5
         assets.get(0).id == managerDemoSetup.apartment1Id
         assets.get(1).id == managerDemoSetup.apartment1LivingroomId
         assets.get(1).getAttributesList().size() == 5
@@ -411,7 +409,6 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets.get(2).id == managerDemoSetup.apartment1KitchenId
         assets.get(3).id == managerDemoSetup.apartment1HallwayId
         assets.get(4).id == managerDemoSetup.apartment2Id
-        assets.get(5).id == managerDemoSetup.consoleId
 
         when: "a query is executed"
         assets = assetStorageService.findAll(

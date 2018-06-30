@@ -66,8 +66,7 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
         conditions.eventually {
             assert rulesService.globalEngine != null
             assert rulesService.globalEngine.isRunning()
-            assert rulesService.globalEngine.deployments.size() == 3
-            assert rulesService.globalEngine.deployments.values().any({ it.name == "Location predicate demo rules" && it.status == DEPLOYED})
+            assert rulesService.globalEngine.deployments.size() == 2
             assert rulesService.globalEngine.deployments.values().any({ it.name == "Some global demo rules" && it.status == DEPLOYED})
             assert rulesService.globalEngine.deployments.values().any({ it.name == "Some more global rules" && it.status == DEPLOYED})
         }
@@ -164,11 +163,10 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
 
         then: "the global rules engine should not run and the rule engine status should indicate the issue"
         conditions.eventually {
-            assert rulesService.globalEngine.deployments.size() == 4
+            assert rulesService.globalEngine.deployments.size() == 3
             assert rulesService.globalEngine.running == false
             assert rulesService.globalEngine.isError()
             assert rulesService.globalEngine.error instanceof RuntimeException
-            assert rulesService.globalEngine.deployments.values().any({ it.name == "Location predicate demo rules" && it.status == READY})
             assert rulesService.globalEngine.deployments.values().any({ it.name == "Some global demo rules" && it.status == READY})
             assert rulesService.globalEngine.deployments.values().any({ it.name == "Some more global rules" && it.status == READY})
             assert rulesService.globalEngine.deployments.values().any({ it.name == "Some broken global rules" && it.status == COMPILATION_ERROR})
@@ -179,10 +177,9 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
 
         then: "the global rules engine should restart"
         conditions.eventually {
-            assert rulesService.globalEngine.deployments.size() == 3
+            assert rulesService.globalEngine.deployments.size() == 2
             assert rulesService.globalEngine.running == true
             assert rulesService.globalEngine.isError() == false
-            assert rulesService.globalEngine.deployments.values().any({ it.name == "Location predicate demo rules" && it.status == DEPLOYED})
             assert rulesService.globalEngine.deployments.values().any({ it.name == "Some global demo rules" && it.status == DEPLOYED })
             assert rulesService.globalEngine.deployments.values().any({ it.name == "Some more global rules" && it.status == DEPLOYED })
         }

@@ -101,7 +101,7 @@ public class GeoJSONPoint extends GeoJSONGeometry {
 
                 Double x = coords.getNumber(0).orElse(null);
                 Double y = coords.getNumber(1).orElse(null);
-                Double z = coords.length() == 3 ? coords.getNumber(3).orElse(null) : null;
+                Double z = coords.getNumber(2).orElse(null);
 
                 if (x == null || y == null) {
                     return null;

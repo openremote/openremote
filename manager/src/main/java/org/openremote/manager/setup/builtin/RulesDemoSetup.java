@@ -97,7 +97,7 @@ public class RulesDemoSetup extends AbstractManagerSetup {
             apartmentActionsRulesetId = rulesetStorageService.merge(ruleset).getId();
         }
 
-        try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/ConsoleLocationPredicate.groovy")) {
+        try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/DemoConsoleLocation.groovy")) {
             String rules = IOUtils.toString(inputStream, Charset.forName("utf-8"));
             Ruleset ruleset = new TenantRuleset(
                 "Demo Console Location", keycloakDemoSetup.customerATenant.getId(), rules, Ruleset.Lang.GROOVY

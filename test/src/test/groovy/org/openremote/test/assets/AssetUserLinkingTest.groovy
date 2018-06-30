@@ -1,7 +1,6 @@
 package org.openremote.test.assets
 
 import org.openremote.container.timer.TimerService
-import org.openremote.manager.asset.console.ConsoleResourceImpl
 import org.openremote.manager.security.ManagerIdentityService
 import org.openremote.manager.setup.SetupService
 import org.openremote.manager.setup.builtin.KeycloakDemoSetup
@@ -52,7 +51,7 @@ class AssetUserLinkingTest extends Specification implements ManagerContainerTrai
         def userAssets = assetResource.getUserAssetLinks(null, keycloakDemoSetup.customerATenant.id, null, null)
 
         then: "result should match"
-        userAssets.length == 6
+        userAssets.length == 5
         userAssets.any {
             it.id.realmId == keycloakDemoSetup.customerATenant.id &&
                     it.id.userId == keycloakDemoSetup.testuser3Id &&
@@ -93,20 +92,12 @@ class AssetUserLinkingTest extends Specification implements ManagerContainerTrai
                     it.parentAssetName == "Smart Home" &&
                     it.userFullName == "testuser3 (Testuserfirst Testuserlast)"
         }
-        userAssets.any {
-            it.id.realmId == keycloakDemoSetup.customerATenant.id &&
-                    it.id.userId == keycloakDemoSetup.testuser3Id &&
-                    it.id.assetId == managerDemoSetup.consoleId &&
-                    it.assetName == "Demo Console" &&
-                    it.parentAssetName == ConsoleResourceImpl.CONSOLE_PARENT_ASSET_NAME &&
-                    it.userFullName == "testuser3 (Testuserfirst Testuserlast)"
-        }
 
         when: "all user assets are retrieved of a realm and user"
         userAssets = assetResource.getUserAssetLinks(null, keycloakDemoSetup.customerATenant.id, keycloakDemoSetup.testuser3Id, null)
 
         then: "result should match"
-        userAssets.length == 6
+        userAssets.length == 5
 
         when: "the realm and user don't match"
         assetResource.getUserAssetLinks(null, keycloakDemoSetup.customerBTenant.id, keycloakDemoSetup.testuser3Id, null)

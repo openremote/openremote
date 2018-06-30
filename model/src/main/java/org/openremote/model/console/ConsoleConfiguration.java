@@ -24,8 +24,10 @@ import org.openremote.model.ValidationFailure;
 import org.openremote.model.ValueHolder;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
+import org.openremote.model.asset.AssetMeta;
 import org.openremote.model.asset.AssetType;
 import org.openremote.model.attribute.AttributeType;
+import org.openremote.model.attribute.Meta;
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.util.Pair;
 import org.openremote.model.util.TextUtil;
@@ -40,6 +42,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static org.openremote.model.asset.AssetMeta.ACCESS_PUBLIC_WRITE;
+import static org.openremote.model.asset.AssetMeta.ACCESS_RESTRICTED_WRITE;
 import static org.openremote.model.asset.AssetMeta.RULE_STATE;
 
 public final class ConsoleConfiguration {
@@ -53,7 +56,7 @@ public final class ConsoleConfiguration {
 
     private ConsoleConfiguration() {}
 
-    public static Asset initConsoleConfiguration(Asset asset, String name, String version, String platform, Map<String, ConsoleProvider> providerMap) {
+    public static Asset initConsoleConfiguration(Asset asset, String name, String version, String platform, Map<String, ConsoleProvider> providerMap, boolean allowPublicLocationWrite, boolean allowRestrictedLocationWrite) {
         if (!isConsole(asset)) {
             throw new IllegalArgumentException("Asset must be of type console");
         }
@@ -66,12 +69,16 @@ public final class ConsoleConfiguration {
         setConsolePlatform(asset, platform);
         setConsolProviders(asset, providerMap);
 
+        Meta locationMeta = new Meta(new MetaItem(RULE_STATE));
+        if (allowPublicLocationWrite) {
+            locationMeta.add(new MetaItem(ACCESS_PUBLIC_WRITE));
+        }
+        if (allowRestrictedLocationWrite) {
+            locationMeta.add(new MetaItem(ACCESS_RESTRICTED_WRITE));
+        }
         asset.replaceAttribute(
             new AssetAttribute(AttributeType.LOCATION)
-                .setMeta(
-                    new MetaItem(RULE_STATE),
-                    new MetaItem(ACCESS_PUBLIC_WRITE)
-                )
+                .setMeta(locationMeta)
         );
 
         return asset;

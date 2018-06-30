@@ -99,9 +99,8 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         )
 
         then: "result should match"
-        assets.length == 2
+        assets.length == 1
         assets[0].id == managerDemoSetup.smartHomeId
-        assets[1].id == managerDemoSetup.consolesId
 
         when: "the child assets of an asset in a foreign realm are retrieved"
         assets = assetResource.queryAssets(null,
@@ -427,12 +426,11 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         def assets = assetResource.getCurrentUserAssets(null)
 
         then: "result should match"
-        assets.length == 2
+        assets.length == 1
         assets[0].id == managerDemoSetup.smartHomeId
         // Assets should not be completely loaded
         assets[0].path == null
         assets[0].attributesList.size() == 0
-        assets[1].id == managerDemoSetup.consolesId
 
         when: "the root assets of a foreign realm are retrieved"
         assets = assetResource.queryAssets(null,
@@ -451,11 +449,9 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         )
 
         then: "result should match"
-        assets.length == 2
+        assets.length == 1
         assets[0].id == managerDemoSetup.smartHomeId
         assets[0].realmId == keycloakDemoSetup.customerATenant.id
-        assets[1].id == managerDemoSetup.consolesId
-        assets[1].realmId == keycloakDemoSetup.customerATenant.id
 
         when: "the root assets of the given realm are retrieved"
         assets = assetResource.queryAssets(null,
@@ -574,7 +570,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         def assets = assetResource.getCurrentUserAssets(null)
 
         then: "result should match"
-        assets.length == 6
+        assets.length == 5
         Asset apartment1 = assets[0]
         apartment1.id == managerDemoSetup.apartment1Id
         apartment1.name == "Apartment 1"
@@ -600,10 +596,6 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         Asset apartment2 = assets[4]
         apartment2.id == managerDemoSetup.apartment2Id
         apartment2.name == "Apartment 2"
-
-        Asset console = assets[5]
-        console.id == managerDemoSetup.consoleId
-        console.name == "Demo Console"
 
         when: "the root assets of a foreign realm are retrieved"
         assets = assetResource.queryAssets(null,

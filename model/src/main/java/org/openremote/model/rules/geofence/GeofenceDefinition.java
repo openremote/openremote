@@ -19,6 +19,9 @@
  */
 package org.openremote.model.rules.geofence;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class GeofenceDefinition {
 
     protected String id;
@@ -28,7 +31,8 @@ public class GeofenceDefinition {
     protected String httpMethod;
     protected String url;
 
-    public GeofenceDefinition(String id, double lat, double lng, int radius, String httpMethod, String url) {
+    @JsonCreator
+    public GeofenceDefinition(@JsonProperty("id") String id, @JsonProperty("lat") double lat, @JsonProperty("lng") double lng, @JsonProperty("radius") int radius, @JsonProperty("httpMethod") String httpMethod, @JsonProperty("url") String url) {
         this.id = id;
         this.lat = lat;
         this.lng = lng;

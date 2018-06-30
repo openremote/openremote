@@ -19,7 +19,6 @@
  */
 package org.openremote.manager.asset.console;
 
-import org.openremote.container.security.IdentityService;
 import org.openremote.container.timer.TimerService;
 import org.openremote.container.util.UniqueIdentifierGenerator;
 import org.openremote.manager.asset.AssetStorageService;
@@ -37,12 +36,15 @@ import org.openremote.model.security.Tenant;
 import org.openremote.model.util.TextUtil;
 
 import javax.ws.rs.BadRequestException;
+import javax.ws.rs.ForbiddenException;
+import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static javax.ws.rs.core.Response.Status.FORBIDDEN;
 import static org.openremote.container.concurrent.GlobalLock.withLockReturning;
 
 public class ConsoleResourceImpl extends ManagerWebResource implements ConsoleResource {
@@ -69,12 +71,6 @@ public class ConsoleResourceImpl extends ManagerWebResource implements ConsoleRe
         // If console registration has an id and asset exists then ensure asset type is console
         if (!TextUtil.isNullOrEmpty(consoleRegistration.getId())) {
             consoleAsset = assetStorageService.find(consoleRegistration.getId(), true);
-            // If asset doesn't exist then no harm in registering console using the supplied ID
-            if (consoleAsset != null) {
-                if (consoleAsset.getWellKnownType() != AssetType.CONSOLE) {
-                    throw new BadRequestException(Response.status(Response.Status.BAD_REQUEST).entity(new ValidationFailure[] {new ValidationFailure(Asset.AssetTypeFailureReason.ASSET_TYPE_MISMATCH)}).build());
-                }
-            }
         }
 
         if (consoleAsset == null) {
@@ -83,14 +79,40 @@ public class ConsoleResourceImpl extends ManagerWebResource implements ConsoleRe
                 consoleRegistration.getName(),
                 consoleRegistration.getVersion(),
                 consoleRegistration.getPlatform(),
-                consoleRegistration.getProviders());
+                consoleRegistration.getProviders(),
+                !isAuthenticated(),
+                true);
+
             if (!isAuthenticated()) {
                 consoleAsset.setAccessPublicRead(true);
             }
+
             consoleAsset.setRealmId(getRequestTenant().getId());
             consoleAsset.setParentId(getConsoleParentAssetId(getRequestRealm()));
             consoleAsset.setId(consoleRegistration.getId());
         } else {
+            // Check existing asset is a console
+            if (consoleAsset.getWellKnownType() != AssetType.CONSOLE) {
+                throw new BadRequestException(Response.status(Response.Status.BAD_REQUEST).entity(new ValidationFailure[] {new ValidationFailure(Asset.AssetTypeFailureReason.ASSET_TYPE_MISMATCH)}).build());
+            }
+
+            // Check authenticated user is already linked to this console; if anonymous request then check console isn't linked to any users
+            if (isAuthenticated()) {
+                List<UserAsset> consoleUserAssets = assetStorageService.findUserAssets(getAuthenticatedTenant().getId(),
+                                                                                       null,
+                                                                                       consoleRegistration.getId());
+                if (consoleUserAssets.isEmpty()) {
+                    throw new WebApplicationException(FORBIDDEN);
+                }
+            } else {
+                List<UserAsset> consoleUserAssets = assetStorageService.findUserAssets(getRequestTenant().getId(),
+                                                                                null,
+                                                                                consoleRegistration.getId());
+                if (!consoleUserAssets.isEmpty()) {
+                    throw new WebApplicationException(FORBIDDEN);
+                }
+            }
+
             ConsoleConfiguration.setConsoleName(consoleAsset, consoleRegistration.getName());
             ConsoleConfiguration.setConsolePlatform(consoleAsset, consoleRegistration.getPlatform());
             ConsoleConfiguration.setConsoleVersion(consoleAsset, consoleRegistration.getVersion());
