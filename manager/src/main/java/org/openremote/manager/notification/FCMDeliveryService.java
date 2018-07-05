@@ -44,6 +44,8 @@ public class FCMDeliveryService {
 
     private static final Logger LOG = Logger.getLogger(FCMDeliveryService.class.getName());
     public static final String FIREBASE_CONFIG_FILE = "FIREBASE_CONFIG_FILE";
+    public static final int CONNECT_TIMEOUT_MILLIS = 3000;
+    public static final int READ_TIMEOUT_MILLIS = 3000;
 
     protected boolean valid;
 
@@ -68,6 +70,8 @@ public class FCMDeliveryService {
         try (InputStream is = Files.newInputStream(Paths.get(firebaseConfigFilePath))) {
             FirebaseOptions options = new FirebaseOptions.Builder()
                 .setCredentials(GoogleCredentials.fromStream(is))
+                .setConnectTimeout(CONNECT_TIMEOUT_MILLIS)
+                .setReadTimeout(READ_TIMEOUT_MILLIS)
                 .build();
 
             FirebaseApp.initializeApp(options);
