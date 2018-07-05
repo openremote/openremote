@@ -242,7 +242,7 @@ function list {
     OUTPUT+="${subject}@${altnames}@${enddate_str}@${remaining_days}\n"
   done < <(find ${LE_CERT_ROOT} -name cert.pem -print0)
 
-  echo -e $OUTPUT | column -t -s '@'
+  echo -e $OUTPUT | awk -vOFS='\t' 'NF > 0 { $1 = $1 } 1'
 }
 
 function print_pin {
@@ -367,10 +367,8 @@ function cron_auto_renewal {
     log_info "Scheduling cron job with execution time ${CRON_TIME}"
     echo "${CRON_TIME} root /entrypoint.sh auto-renew >> /var/log/cron.log 2>&1" > /etc/cron.d/letsencrypt
 
-    # Start crond if not running
-    if ! [ -f /var/run/crond.pid ]; then
-        service cron start
-    fi
+    # Start crond
+    service cron start
 }
 
 log_info "DOMAINNAME: ${DOMAINNAME}"
