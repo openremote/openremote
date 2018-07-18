@@ -20,6 +20,9 @@
 package org.openremote.agent.protocol.http;
 
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
+import org.jboss.resteasy.core.Headers;
+import org.jboss.resteasy.specimpl.BuiltResponse;
+import org.jboss.resteasy.specimpl.ResponseBuilderImpl;
 import org.openremote.agent.protocol.AbstractProtocol;
 import org.openremote.agent.protocol.Protocol;
 import org.openremote.container.Container;
@@ -44,6 +47,8 @@ import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Type;
 import java.util.*;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledFuture;
@@ -147,8 +152,8 @@ public class HttpClientProtocol extends AbstractProtocol {
     protected static class HttpClientRequest {
 
         protected String path;
-        protected String method;
-        protected MultivaluedMap<String, String> headers;
+        public String method;
+        public MultivaluedMap<String, String> headers;
         protected MultivaluedMap<String, String> queryParameters;
         protected List<Integer> failureCodes;
         protected String body;
@@ -158,6 +163,7 @@ public class HttpClientProtocol extends AbstractProtocol {
         protected boolean dynamicQueryParameters;
         protected boolean dynamicBody;
         protected boolean updateConnectionStatus;
+        protected boolean pagingEnabled;
 
         protected HttpClientRequest(WebTarget client,
                                     String path,
@@ -166,6 +172,7 @@ public class HttpClientProtocol extends AbstractProtocol {
                                     MultivaluedMap<String, String> queryParameters,
                                     List<Integer> failureCodes,
                                     boolean updateConnectionStatus,
+                                    boolean pagingEnabled,
                                     Value bodyValue,
                                     String contentType) {
             this.client = client;
@@ -175,6 +182,7 @@ public class HttpClientProtocol extends AbstractProtocol {
             this.queryParameters = queryParameters;
             this.failureCodes = failureCodes;
             this.updateConnectionStatus = updateConnectionStatus;
+            this.pagingEnabled = pagingEnabled;
             this.contentType = contentType;
             dynamicQueryParameters = queryParameters != null
                 && queryParameters
@@ -256,7 +264,7 @@ public class HttpClientProtocol extends AbstractProtocol {
             return invocation;
         }
 
-        protected Response invoke(String dynamicRequestValue) {
+        public Response invoke(String dynamicRequestValue) {
             Invocation.Builder requestBuilder = getRequestBuilder(dynamicRequestValue);
             Invocation invocation = buildInvocation(requestBuilder, dynamicRequestValue);
             return invocation.invoke();
@@ -271,6 +279,49 @@ public class HttpClientProtocol extends AbstractProtocol {
         @Override
         public String toString() {
             return client.getUri() + path != null ? "/" + path : "";
+        }
+    }
+
+    /**
+     * Used to
+     */
+    protected static class PagingResponse extends BuiltResponse {
+
+        private PagingResponse(int status, Headers<Object> metadata, Object entity, Annotation[] entityAnnotations)
+        {
+            super(status, metadata, entity, entityAnnotations);
+        }
+
+        public static ResponseBuilder fromResponse(Response response) {
+            ResponseBuilder b = new PagingResponseBuilder().status(response.getStatus());
+
+            for (String headerName : response.getHeaders().keySet()) {
+                List<Object> headerValues = response.getHeaders().get(headerName);
+                for (Object headerValue : headerValues) {
+                    b.header(headerName, headerValue);
+                }
+            }
+            return b;
+        }
+
+        @Override
+        public <T> T readEntity(Class<T> type) {
+            return (T) entity;
+        }
+
+        @Override
+        public <T> T readEntity(Class<T> type, Type genericType, Annotation[] anns) {
+            return (T) entity;
+        }
+    }
+
+    protected static class PagingResponseBuilder extends ResponseBuilderImpl {
+        @Override
+        public Response build()
+        {
+            if (status == -1 && entity == null) status = 204;
+            else if (status == -1) status = 200;
+            return new PagingResponse(status, metadata, entity, entityAnnotations);
         }
     }
 
@@ -309,6 +360,10 @@ public class HttpClientProtocol extends AbstractProtocol {
      * Used to indicate the type of data sent in the ping body; (see {@link #META_ATTRIBUTE_CONTENT_TYPE} for details)
      */
     public static final String META_PROTOCOL_PING_CONTENT_TYPE = PROTOCOL_NAME + ":pingContentType";
+    /**
+     * Headers for connection status ping (see {@link #META_HEADERS} for details)
+     */
+    public static final String META_PROTOCOL_PING_HEADERS = PROTOCOL_NAME + ":pingHeaders";
     /**
      * Query parameters for connection status ping (see {@link #META_QUERY_PARAMETERS} for details)
      */
@@ -370,6 +425,11 @@ public class HttpClientProtocol extends AbstractProtocol {
      * a value of null for the header value on the linked attribute.
      */
     public static final String META_HEADERS = PROTOCOL_NAME + ":headers";
+
+    /**
+     * Boolean indicating if paging should occur acoarding to the Link Header specification: https://developer.github.com/v3/guides/traversing-with-pagination/
+     */
+    public static final String META_PAGING_ENABLED = PROTOCOL_NAME + ":pagingEnabled";
 
     /**
      * Query parameters for the request; values specified on a {@link ProtocolConfiguration} will be appended to all
@@ -482,6 +542,16 @@ public class HttpClientProtocol extends AbstractProtocol {
             null,
             false),
         new MetaItemDescriptorImpl(
+            "PROTOCOL_HTTP_CLIENT_PING_HEADERS",
+            META_PROTOCOL_PING_HEADERS,
+            ValueType.OBJECT,
+            false,
+            null,
+            null,
+            1,
+            null,
+            false),
+        new MetaItemDescriptorImpl(
             "PROTOCOL_HTTP_CLIENT_FOLLOW_REDIRECTS",
             META_PROTOCOL_FOLLOW_REDIRECTS,
             ValueType.BOOLEAN,
@@ -520,8 +590,18 @@ public class HttpClientProtocol extends AbstractProtocol {
             null,
             1,
             null,
+            false),
+        new MetaItemDescriptorImpl(
+            "PROTOCOL_HTTP_CLIENT_PAGING_ENABLED",
+            META_PAGING_ENABLED,
+            ValueType.BOOLEAN,
+            false,
+            null,
+            null,
+            1,
+            null,
             false)
-                                                                                                      );
+    );
 
 
     public static final List<MetaItemDescriptor> ATTRIBUTE_META_ITEM_DESCRIPTORS = Arrays.asList(
@@ -604,6 +684,16 @@ public class HttpClientProtocol extends AbstractProtocol {
             null,
             1,
             null,
+            false),
+        new MetaItemDescriptorImpl(
+            "PROTOCOL_HTTP_CLIENT_PAGING_ENABLED",
+            META_PAGING_ENABLED,
+            ValueType.BOOLEAN,
+            false,
+            null,
+            null,
+            1,
+            null,
             false)
     );
 
@@ -611,7 +701,8 @@ public class HttpClientProtocol extends AbstractProtocol {
     private static final Logger LOG = Logger.getLogger(HttpClientProtocol.class.getName());
     public static final String PROTOCOL_DISPLAY_NAME = "Http Client";
     public static final String PROTOCOL_VERSION = "1.0";
-    protected static final String DYNAMIC_VALUE_PLACEHOLDER = "{$value}";
+    protected static final String HEADER_LINK = "Link";
+    public static final String DYNAMIC_VALUE_PLACEHOLDER = "{$value}";
     protected static final String DYNAMIC_VALUE_PLACEHOLDER_REGEXP = "\"?\\{\\$value}\"?";
     private static TimeUnit POLLING_TIME_UNIT = TimeUnit.SECONDS; // Only here to allow override in tests
     public static final int DEFAULT_PING_SECONDS = 60;
@@ -698,7 +789,6 @@ public class HttpClientProtocol extends AbstractProtocol {
             .orElse(null);
 
 
-
         WebTargetBuilder webTargetBuilder = new WebTargetBuilder(baseUri);
         if (oAuthGrant.isPresent()) {
             LOG.info("Adding OAuth");
@@ -738,6 +828,15 @@ public class HttpClientProtocol extends AbstractProtocol {
             .flatMap(AbstractValueHolder::getValue)
             .orElse(null);
 
+        MultivaluedMap<String, String> pingHeaders = Values.getMetaItemValueOrThrow(
+            protocolConfiguration,
+            META_PROTOCOL_PING_HEADERS,
+            ObjectValue.class,
+            false,
+            true)
+            .flatMap(objectValue -> getMultivaluedMap(objectValue, true))
+            .orElse(null);
+
         MultivaluedMap<String, String> pingQueryParams = Values.getMetaItemValueOrThrow(
             protocolConfiguration,
             META_PROTOCOL_PING_QUERY_PARAMETERS,
@@ -762,10 +861,11 @@ public class HttpClientProtocol extends AbstractProtocol {
             client,
             pingPath,
             pingMethod,
-            null,
+            pingHeaders,
             pingQueryParams,
             null,
             true,
+            false,
             pingBody,
             contentType);
 
@@ -789,10 +889,14 @@ public class HttpClientProtocol extends AbstractProtocol {
 
     @Override
     protected void doLinkAttribute(AssetAttribute attribute, AssetAttribute protocolConfiguration) {
+        addRequest(attribute, protocolConfiguration);
+    }
+
+    protected void addRequest(AssetAttribute attribute, AssetAttribute protocolConfiguration) {
         AttributeRef protocolConfigurationRef = protocolConfiguration.getReferenceOrThrow();
         Pair<ResteasyWebTarget, List<Integer>> clientAndFailureCodes;
         clientAndFailureCodes = clientMap.get(protocolConfigurationRef);
-        WebTarget client = clientAndFailureCodes != null ? clientAndFailureCodes.key : null;
+        ResteasyWebTarget client = clientAndFailureCodes != null ? clientAndFailureCodes.key : null;
 
         if (client == null) {
             LOG.warning("Attempt to link attribute to non existent protocol configuration: "
@@ -885,6 +989,13 @@ public class HttpClientProtocol extends AbstractProtocol {
                         new IllegalArgumentException("Polling seconds meta item must be an integer >= 1")
                     ));
 
+        Boolean pagingEnabled = Values.getMetaItemValueOrThrow(
+            attribute,
+            META_PAGING_ENABLED,
+            BooleanValue.class,
+            false,
+            true).map(BooleanValue::getBoolean).orElse(false);
+
 
         final AttributeRef attributeRef = attribute.getReferenceOrThrow();
 
@@ -898,6 +1009,7 @@ public class HttpClientProtocol extends AbstractProtocol {
             queryParams,
             failureCodes,
             updateConnectionStatus,
+            pagingEnabled,
             body,
             contentType);
 
@@ -975,7 +1087,7 @@ public class HttpClientProtocol extends AbstractProtocol {
         return super.getProtocolConfigurationTemplate()
             .addMeta(
                 new MetaItem(META_PROTOCOL_BASE_URI, null)
-                    );
+            );
     }
 
     @Override
@@ -989,7 +1101,7 @@ public class HttpClientProtocol extends AbstractProtocol {
             } catch (IllegalArgumentException e) {
                 result.addAttributeFailure(
                     new ValidationFailure(ValueHolder.ValueFailureReason.VALUE_MISMATCH, PROTOCOL_NAME)
-                                          );
+                );
             }
         }
         return result;
@@ -1041,14 +1153,13 @@ public class HttpClientProtocol extends AbstractProtocol {
             false,
             true)
             .map(polling ->
-                     Values.getIntegerCoerced(polling)
-                         .map(seconds -> seconds < 1 ? null : seconds)
-                         .orElseThrow(() ->
-                                          new IllegalArgumentException("Ping polling seconds meta item must be an integer >= 1")
-                                     ))
+                Values.getIntegerCoerced(polling)
+                    .map(seconds -> seconds < 1 ? null : seconds)
+                    .orElseThrow(() ->
+                        new IllegalArgumentException("Ping polling seconds meta item must be an integer >= 1")
+                    ))
             .orElse(DEFAULT_PING_SECONDS);
     }
-
 
 
     public static Optional<MultivaluedMap<String, String>> getMultivaluedMap(ObjectValue objectValue, boolean throwOnError) throws ClassCastException, IllegalArgumentException {
@@ -1089,7 +1200,7 @@ public class HttpClientProtocol extends AbstractProtocol {
         return multivaluedMap.isEmpty() ? Optional.empty() : Optional.of(multivaluedMap);
     }
 
-    protected HttpClientRequest buildClientRequest(WebTarget client, String path, String method, MultivaluedMap<String, String> headers, MultivaluedMap<String, String> queryParams, List<Integer> failureCodes, boolean updateConnectionStatus, Value body, String contentType) {
+    protected HttpClientRequest buildClientRequest(WebTarget client, String path, String method, MultivaluedMap<String, String> headers, MultivaluedMap<String, String> queryParams, List<Integer> failureCodes, boolean updateConnectionStatus, boolean pagingEnabled, Value body, String contentType) {
         return new HttpClientRequest(
             client,
             path,
@@ -1098,6 +1209,7 @@ public class HttpClientProtocol extends AbstractProtocol {
             queryParams,
             failureCodes,
             updateConnectionStatus,
+            pagingEnabled,
             body,
             contentType);
     }
@@ -1124,11 +1236,31 @@ public class HttpClientProtocol extends AbstractProtocol {
 
         try {
             response = clientRequest.invoke(null);
+            if (clientRequest.pagingEnabled) {
+                Response originalResponse = response;
+                List<Object> entities = new ArrayList<>();
+                entities.add(response.readEntity(Object.class));
+                while ((response = executePagingRequest(clientRequest, response)) != null) {
+                    entities.add(response.readEntity(Object.class));
+                }
+                response = PagingResponse.fromResponse(originalResponse).entity(entities).build();
+            }
         } catch (Exception e) {
             LOG.log(Level.SEVERE, "Exception thrown whilst doing polling request", e);
         }
 
         responseConsumer.accept(response);
+    }
+
+    protected Response executePagingRequest(HttpClientRequest clientRequest, Response response) {
+        Optional<String> linkHeader = Optional.ofNullable(response.getHeaderString(HEADER_LINK));
+        if (linkHeader.isPresent()) {
+            Optional<String> nextUrl = getLinkHeaderValue(linkHeader.get(), "next");
+            if (nextUrl.isPresent()) {
+                return clientRequest.client.register(new PaginationFilter(nextUrl.get())).request().build(clientRequest.method).invoke();
+            }
+        }
+        return null;
     }
 
     protected void executeAttributeWriteRequest(HttpClientRequest clientRequest,
@@ -1258,5 +1390,16 @@ public class HttpClientProtocol extends AbstractProtocol {
             protocolInfo.getProtocolConfiguration(),
             protocolConfig -> protocolConfig.setDisabled(true)
         );
+    }
+
+    protected Optional<String> getLinkHeaderValue(String linkHeader, String rel) {
+        Optional<String> nextUrl = Optional.empty();
+        String[] parts = linkHeader.split(",");
+        Optional<String> relPart = Arrays.stream(parts).filter(p -> p.endsWith("rel=\"" + rel + "\"")).findFirst();
+        if (relPart.isPresent()) {
+            parts = relPart.get().split(";");
+            nextUrl = Optional.of(parts[0].replace("<", "").replace(">", "").trim());
+        }
+        return nextUrl;
     }
 }
