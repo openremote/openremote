@@ -154,7 +154,7 @@ public class HttpClientProtocol extends AbstractProtocol {
         protected String path;
         public String method;
         public MultivaluedMap<String, String> headers;
-        protected MultivaluedMap<String, String> queryParameters;
+        public MultivaluedMap<String, String> queryParameters;
         protected List<Integer> failureCodes;
         protected String body;
         protected String contentType;
