@@ -147,6 +147,12 @@ public class ObjectValueImpl extends ValueImpl implements ObjectValue {
     }
 
     @Override
+    public ObjectValue putAll(Map<String, Value> map) {
+        map.forEach(this::put);
+        return this;
+    }
+
+    @Override
     public ObjectValue remove(String key) {
         map.remove(key);
         return this;

@@ -427,7 +427,7 @@ public class HttpClientProtocol extends AbstractProtocol {
     public static final String META_HEADERS = PROTOCOL_NAME + ":headers";
 
     /**
-     * Boolean indicating if paging should occur acoarding to the Link Header specification: https://developer.github.com/v3/guides/traversing-with-pagination/
+     * Boolean indicating if paging should occur according to the Link Header specification: https://developer.github.com/v3/guides/traversing-with-pagination/
      */
     public static final String META_PAGING_ENABLED = PROTOCOL_NAME + ":pagingEnabled";
 
