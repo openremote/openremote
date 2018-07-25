@@ -287,8 +287,7 @@ public class HttpClientProtocol extends AbstractProtocol {
      */
     protected static class PagingResponse extends BuiltResponse {
 
-        private PagingResponse(int status, Headers<Object> metadata, Object entity, Annotation[] entityAnnotations)
-        {
+        private PagingResponse(int status, Headers<Object> metadata, Object entity, Annotation[] entityAnnotations) {
             super(status, metadata, entity, entityAnnotations);
         }
 
@@ -317,8 +316,7 @@ public class HttpClientProtocol extends AbstractProtocol {
 
     protected static class PagingResponseBuilder extends ResponseBuilderImpl {
         @Override
-        public Response build()
-        {
+        public Response build() {
             if (status == -1 && entity == null) status = 204;
             else if (status == -1) status = 200;
             return new PagingResponse(status, metadata, entity, entityAnnotations);
@@ -889,21 +887,6 @@ public class HttpClientProtocol extends AbstractProtocol {
 
     @Override
     protected void doLinkAttribute(AssetAttribute attribute, AssetAttribute protocolConfiguration) {
-        addRequest(attribute, protocolConfiguration);
-    }
-
-    protected void addRequest(AssetAttribute attribute, AssetAttribute protocolConfiguration) {
-        AttributeRef protocolConfigurationRef = protocolConfiguration.getReferenceOrThrow();
-        Pair<ResteasyWebTarget, List<Integer>> clientAndFailureCodes;
-        clientAndFailureCodes = clientMap.get(protocolConfigurationRef);
-        ResteasyWebTarget client = clientAndFailureCodes != null ? clientAndFailureCodes.key : null;
-
-        if (client == null) {
-            LOG.warning("Attempt to link attribute to non existent protocol configuration: "
-                + attribute.getReferenceOrThrow());
-            return;
-        }
-
         String method = Values.getMetaItemValueOrThrow(
             attribute,
             META_ATTRIBUTE_METHOD,
@@ -944,19 +927,8 @@ public class HttpClientProtocol extends AbstractProtocol {
                     NumberValue.class,
                     true,
                     false,
-                    number -> Values.getIntegerCoerced(number).orElse(null)))
-            .map(fCodes -> {
-                if (clientAndFailureCodes.value != null) {
-                    fCodes.addAll(clientAndFailureCodes.value);
-                }
-                return fCodes;
-            })
-            .orElseGet(() -> {
-                if (clientAndFailureCodes.value != null) {
-                    return clientAndFailureCodes.value;
-                }
-                return null;
-            });
+                    number -> Values.getIntegerCoerced(number).orElse(null))
+            ).orElse(null);
 
         MultivaluedMap<String, String> headers = Values.getMetaItemValueOrThrow(
             attribute,
@@ -994,10 +966,59 @@ public class HttpClientProtocol extends AbstractProtocol {
             META_PAGING_ENABLED,
             BooleanValue.class,
             false,
-            true).map(BooleanValue::getBoolean).orElse(false);
-
+            true)
+            .map(BooleanValue::getBoolean)
+            .orElse(false);
 
         final AttributeRef attributeRef = attribute.getReferenceOrThrow();
+
+        addHttpClientRequest(protocolConfiguration,
+            attributeRef,
+            path,
+            method,
+            headers,
+            queryParams,
+            failureCodes,
+            pagingEnabled,
+            body,
+            contentType,
+            pollingSeconds.orElse(null));
+    }
+
+    protected void addHttpClientRequest(AssetAttribute protocolConfiguration,
+                                        AttributeRef attributeRef,
+                                        String path,
+                                        String method,
+                                        MultivaluedMap<String, String> headers,
+                                        MultivaluedMap<String, String> queryParams,
+                                        List<Integer> failureCodes,
+                                        boolean pagingEnabled,
+                                        Value body,
+                                        String contentType,
+                                        Integer pollingSeconds) {
+
+        AttributeRef protocolConfigurationRef = protocolConfiguration.getReferenceOrThrow();
+        Pair<ResteasyWebTarget, List<Integer>> clientAndFailureCodes = clientMap.get(protocolConfigurationRef);
+        ResteasyWebTarget client = clientAndFailureCodes != null ? clientAndFailureCodes.key : null;
+
+
+        if (client == null) {
+            LOG.warning("No client found for protocol configuration: " + protocolConfiguration.getReferenceOrThrow());
+            return;
+        }
+
+        failureCodes = Optional.ofNullable(failureCodes)
+            .map(codes -> {
+                if (clientAndFailureCodes.value != null) {
+                    codes.addAll(clientAndFailureCodes.value);
+                }
+                return codes;
+            }).orElseGet(() -> {
+                if (clientAndFailureCodes.value != null) {
+                    return clientAndFailureCodes.value;
+                }
+                return null;
+            });
 
         boolean updateConnectionStatus = !pollingMap.containsKey(protocolConfigurationRef);
 
@@ -1013,16 +1034,17 @@ public class HttpClientProtocol extends AbstractProtocol {
             body,
             contentType);
 
-        LOG.fine("Creating HTTP request for linked attribute '" + clientRequest + "': " + attributeRef);
+        LOG.fine("Creating HTTP request for attributeRef '" + clientRequest + "': " + attributeRef);
 
         requestMap.put(attributeRef, clientRequest);
 
-        pollingSeconds.ifPresent(seconds ->
+        Optional.ofNullable(pollingSeconds).ifPresent(seconds -> {
             pollingMap.put(attributeRef, schedulePollingRequest(
                 attributeRef,
                 protocolConfigurationRef,
                 clientRequest,
-                seconds)));
+                seconds));
+        });
     }
 
     @Override
