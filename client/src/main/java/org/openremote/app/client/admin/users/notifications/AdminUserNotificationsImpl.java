@@ -32,7 +32,9 @@ import org.openremote.app.client.Environment;
 import org.openremote.app.client.admin.users.AdminUsersNavigation;
 import org.openremote.app.client.app.dialog.Confirmation;
 import org.openremote.model.Constants;
-import org.openremote.model.notification.AlertNotification;
+import org.openremote.model.notification.Notification;
+import org.openremote.model.notification.PushNotificationMessage;
+import org.openremote.model.notification.SentNotification;
 
 import javax.inject.Inject;
 
@@ -111,9 +113,9 @@ public class AdminUserNotificationsImpl extends FormViewImpl implements AdminUse
     }
 
     @Override
-    public void setNotifications(AlertNotification[] notifications) {
+    public void setNotifications(SentNotification[] notifications) {
         clearNotifications(notifications.length == 0);
-        for (AlertNotification notification : notifications) {
+        for (SentNotification notification : notifications) {
             notificationsContainer.add(new NotificationItem(notification));
         }
     }
@@ -145,9 +147,9 @@ public class AdminUserNotificationsImpl extends FormViewImpl implements AdminUse
 
     protected class NotificationItem extends FlowPanel {
 
-        private final AlertNotification notification;
+        private final SentNotification notification;
 
-        public NotificationItem(AlertNotification notification) {
+        public NotificationItem(SentNotification notification) {
             this.notification = notification;
             setStyleName("flex-none layout vertical or-FormListItem");
 
@@ -157,7 +159,7 @@ public class AdminUserNotificationsImpl extends FormViewImpl implements AdminUse
             FormLabel statusLabel = new FormLabel(managerMessages.deliveryStatus());
             statusGroup.setFormLabel(statusLabel);
             statusGroup.setFormField(statusField);
-            FormOutputText statusTxt = new FormOutputText(notification.getDeliveryStatus().toString());
+            FormOutputText statusTxt = new FormOutputText("");
             statusField.add(statusTxt);
 
             FormGroup createdOnGroup = new FormGroup();
@@ -168,7 +170,7 @@ public class AdminUserNotificationsImpl extends FormViewImpl implements AdminUse
             createdOnGroup.setFormLabel(createdOnLabel);
             createdOnGroup.setFormField(createdOnField);
             FormOutputText createdOnTxt = new FormOutputText(
-                DateTimeFormat.getFormat(Constants.DEFAULT_DATETIME_FORMAT).format(notification.getCreatedOn())
+                DateTimeFormat.getFormat(Constants.DEFAULT_DATETIME_FORMAT).format(notification.getSentOn())
             );
             createdOnTxt.addStyleName("flex");
             createdOnField.add(createdOnTxt);
@@ -194,7 +196,7 @@ public class AdminUserNotificationsImpl extends FormViewImpl implements AdminUse
             FormLabel titleLabel = new FormLabel(managerMessages.title());
             titleGroup.setFormLabel(titleLabel);
             titleGroup.setFormField(titleField);
-            FormOutputText titleTxt = new FormOutputText(notification.getTitle());
+            FormOutputText titleTxt = new FormOutputText(/*notification.getTitle()*/);
             titleField.add(titleTxt);
             add(titleGroup);
 
@@ -208,11 +210,11 @@ public class AdminUserNotificationsImpl extends FormViewImpl implements AdminUse
             messageTxt.setHeight("3em");
             messageTxt.setResizable(false);
             messageTxt.setBorder(true);
-            messageTxt.setText(notification.getMessage());
+            messageTxt.setText(""/*notification.getBody()*/);
             messageField.add(messageTxt);
             add(messageGroup);
 
-            for (int i = 0; i < notification.getActions().length(); i++) {
+/*            for (int i = 0; i < notification.getActions().length(); i++) {
                 notification.getActions().get(i).ifPresent(action -> {
                     FormGroup actionGroup = new FormGroup();
                     FormField actionField = new FormField();
@@ -228,19 +230,19 @@ public class AdminUserNotificationsImpl extends FormViewImpl implements AdminUse
                     actionField.add(actionTxt);
                     add(actionGroup);
                 });
-            }
+            }*/
 
             FormGroup appUrlGroup = new FormGroup();
             FormField appUrlField = new FormField();
             FormLabel appUrlLabel = new FormLabel(managerMessages.notificationAppUrl());
             appUrlGroup.setFormLabel(appUrlLabel);
             appUrlGroup.setFormField(appUrlField);
-            FormOutputText appUrlTxt = new FormOutputText(notification.getAppUrl());
+            FormOutputText appUrlTxt = new FormOutputText(/*notification.getAppUrl()*/);
             appUrlField.add(appUrlTxt);
             add(appUrlGroup);
         }
 
-        public AlertNotification getNotification() {
+        public SentNotification getNotification() {
             return notification;
         }
     }

@@ -22,18 +22,20 @@ package org.openremote.manager.rules;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Envelope;
 import org.geotools.referencing.GeodeticCalculator;
-import org.openremote.model.asset.BaseAssetQuery;
-import org.openremote.model.asset.BaseAssetQuery.*;
+import org.openremote.model.query.BaseAssetQuery;
+import org.openremote.model.query.BaseAssetQuery.*;
 import org.openremote.model.attribute.AttributeType;
 import org.openremote.model.geo.GeoJSONPoint;
+import org.openremote.model.query.filter.PathPredicate;
+import org.openremote.model.query.filter.*;
 import org.openremote.model.rules.AssetState;
 
 import java.util.Arrays;
 import java.util.Locale;
 import java.util.function.Predicate;
 
-import static org.openremote.model.asset.BaseAssetQuery.Operator.LESS_EQUALS;
-import static org.openremote.model.asset.BaseAssetQuery.Operator.LESS_THAN;
+import static org.openremote.model.query.BaseAssetQuery.Operator.LESS_EQUALS;
+import static org.openremote.model.query.BaseAssetQuery.Operator.LESS_THAN;
 
 /**
  * Test an {@link AssetState} with a {@link BaseAssetQuery}.
@@ -49,7 +51,7 @@ public class AssetQueryPredicate implements Predicate<AssetState> {
     @Override
     public boolean test(AssetState assetState) {
 
-        if (query.id != null && !query.id.equals(assetState.getId()))
+        if (query.ids != null && !query.ids.contains(assetState.getId()))
             return false;
 
         if (query.name != null && !asPredicate(query.name).test(assetState.getName()))
@@ -72,7 +74,7 @@ public class AssetQueryPredicate implements Predicate<AssetState> {
             return false;
 
         if (query.attribute != null) {
-            for (BaseAssetQuery.AttributePredicate p : query.attribute) {
+            for (AttributePredicate p : query.attribute) {
                 if (!asPredicate(p).test(assetState))
                     return false;
             }
@@ -245,22 +247,22 @@ public class AssetQueryPredicate implements Predicate<AssetState> {
             if (predicate.value == null)
                 return true;
 
-            if (predicate.value instanceof BaseAssetQuery.ValueEmptyPredicate) {
+            if (predicate.value instanceof ValueEmptyPredicate) {
                 return !assetState.getValue().isPresent();
-            } else if (predicate.value instanceof BaseAssetQuery.ValueNotEmptyPredicate) {
+            } else if (predicate.value instanceof ValueNotEmptyPredicate) {
                 return assetState.getValue().isPresent();
 
-            } else if (predicate.value instanceof BaseAssetQuery.StringPredicate) {
+            } else if (predicate.value instanceof StringPredicate) {
 
                 StringPredicate p = (StringPredicate) predicate.value;
                 return asPredicate(p).test(assetState.getValueAsString().orElse(null));
 
-            } else if (predicate.value instanceof BaseAssetQuery.BooleanPredicate) {
+            } else if (predicate.value instanceof BooleanPredicate) {
 
                 BooleanPredicate p = (BooleanPredicate) predicate.value;
                 return asPredicate(p).test(assetState.getValueAsBoolean().orElse(null));
 
-            } else if (predicate.value instanceof BaseAssetQuery.NumberPredicate) {
+            } else if (predicate.value instanceof NumberPredicate) {
 
                 NumberPredicate p = (NumberPredicate) predicate.value;
                 return asPredicate(p).test(assetState.getValueAsNumber().orElse(null));

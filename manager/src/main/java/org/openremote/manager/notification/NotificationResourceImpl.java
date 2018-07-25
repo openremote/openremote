@@ -19,117 +19,194 @@
  */
 package org.openremote.manager.notification;
 
+import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.web.WebResource;
-import org.openremote.model.notification.DeviceNotificationToken;
-import org.openremote.model.notification.NotificationResource;
+import org.openremote.manager.asset.AssetStorageService;
+import org.openremote.manager.security.ManagerIdentityService;
+import org.openremote.model.Constants;
+import org.openremote.model.asset.Asset;
+import org.openremote.model.query.BaseAssetQuery;
 import org.openremote.model.http.RequestParams;
-import org.openremote.model.notification.AlertNotification;
-import org.openremote.model.notification.DeliveryStatus;
+import org.openremote.model.notification.Notification;
+import org.openremote.model.notification.NotificationResource;
+import org.openremote.model.notification.SentNotification;
+import org.openremote.model.value.Value;
 
 import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.Response;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Logger;
 
-import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
-import static javax.ws.rs.core.Response.Status.FORBIDDEN;
+import static javax.ws.rs.core.Response.Status.*;
+import static org.openremote.model.notification.Notification.Source.CLIENT;
 
 public class NotificationResourceImpl extends WebResource implements NotificationResource {
 
     private static final Logger LOG = Logger.getLogger(NotificationResourceImpl.class.getName());
 
     final protected NotificationService notificationService;
+    final protected MessageBrokerService messageBrokerService;
+    final protected AssetStorageService assetStorageService;
+    final protected ManagerIdentityService managerIdentityService;
 
-    public NotificationResourceImpl(NotificationService notificationService) {
+    public NotificationResourceImpl(NotificationService notificationService,
+                                    MessageBrokerService messageBrokerService,
+                                    AssetStorageService assetStorageService,
+                                    ManagerIdentityService managerIdentityService) {
         this.notificationService = notificationService;
+        this.messageBrokerService = messageBrokerService;
+        this.assetStorageService = assetStorageService;
+        this.managerIdentityService = managerIdentityService;
     }
 
     @Override
-    public void storeDeviceToken(RequestParams requestParams, String deviceId, String token, String deviceType) {
-        if (token == null || token.length() == 0 || deviceId == null || deviceId.length() == 0) {
-            throw new WebApplicationException("Missing token or device identifier", BAD_REQUEST);
+    public SentNotification[] getNotifications(RequestParams requestParams, List<String> types, Long timestamp, List<String> tenantIds, List<String> userIds, List<String> assetIds) {
+        try {
+            return notificationService.getNotifications(types, timestamp, tenantIds, userIds, assetIds).toArray(new SentNotification[0]);
+        } catch (IllegalArgumentException e) {
+            throw new WebApplicationException("Invalid criteria set", NOT_ACCEPTABLE);
         }
-        notificationService.storeDeviceToken(deviceId, getUserId(), token, deviceType);
     }
 
     @Override
-    public List<DeviceNotificationToken> getDeviceTokens(RequestParams requestParams, String userId) {
-        if (!isSuperUser()) {
-            LOG.fine("Forbidden access for user '" + getUsername() + "', can't get device tokens for user: " + userId);
-            throw new WebApplicationException(Response.Status.FORBIDDEN);
+    public void removeNotifications(RequestParams requestParams, List<String> types, Long timestamp, List<String> tenantIds, List<String> userIds, List<String> assetIds) {
+        try {
+            notificationService.removeNotifications(types, timestamp, tenantIds, userIds, assetIds);
+        } catch (IllegalArgumentException e) {
+            throw new WebApplicationException("Invalid criteria set", NOT_ACCEPTABLE);
         }
-        return notificationService.findAllTokenForUser(userId);
     }
 
     @Override
-    public void deleteDeviceToken(RequestParams requestParams, String userId, String deviceId) {
-        if (!isSuperUser()) {
-            LOG.fine("Forbidden access for user '" + getUsername() + "', can't delete device token  for user: " + userId);
-            throw new WebApplicationException(Response.Status.FORBIDDEN);
+    public void removeNotification(RequestParams requestParams, Long notificationId) {
+        if (notificationId == null) {
+            throw new WebApplicationException("Missing notification ID", BAD_REQUEST);
         }
-        notificationService.deleteDeviceToken(deviceId, userId);
+
+        notificationService.removeNotification(notificationId);
     }
 
     @Override
-    public void storeNotificationForCurrentUser(RequestParams requestParams, AlertNotification alertNotification) {
-        if (alertNotification == null) {
-            throw new WebApplicationException("Missing alertNotification", BAD_REQUEST);
+    public void sendNotification(RequestParams requestParams, Notification notification) {
+
+        Map<String, Object> headers = new HashMap<>();
+        headers.put(Notification.HEADER_SOURCE, CLIENT);
+
+        if (isAuthenticated()) {
+            headers.put(Constants.AUTH_CONTEXT, getAuthContext());
         }
-        notificationService.storeAndNotify(getUserId(), alertNotification);
+
+        Object result = messageBrokerService.getProducerTemplate().requestBodyAndHeaders(
+            NotificationService.NOTIFICATION_QUEUE, notification, headers);
+
+        if (result instanceof NotificationProcessingException) {
+            NotificationProcessingException processingException = (NotificationProcessingException) result;
+            switch (processingException.getReason()) {
+
+                case INSUFFICIENT_ACCESS:
+                    throw new WebApplicationException(processingException.getMessage(), FORBIDDEN);
+                case MISSING_SOURCE:
+                case MISSING_NOTIFICATION:
+                case MISSING_MESSAGE:
+                case MISSING_TARGETS:
+                    throw new WebApplicationException(processingException.getMessage(), BAD_REQUEST);
+                case UNSUPPORTED_MESSAGE_TYPE:
+                    throw new IllegalStateException(processingException);
+            }
+        }
     }
 
     @Override
-    public void storeNotificationForUser(RequestParams requestParams, String userId, AlertNotification alertNotification) {
-        if (!isSuperUser()) {
-            LOG.fine("Forbidden access for user '" + getUsername() + "', can't store notification for user: " + userId);
-            throw new WebApplicationException(Response.Status.FORBIDDEN);
+    public void notificationDelivered(RequestParams requestParams, String targetId, Long notificationId) {
+        if (notificationId == null) {
+            throw new WebApplicationException("Missing notification ID", BAD_REQUEST);
         }
-        if (alertNotification == null) {
-            throw new WebApplicationException("Missing AlertNotification entity", BAD_REQUEST);
-        }
-        notificationService.storeAndNotify(userId, alertNotification);
+
+        SentNotification sentNotification = notificationService.getSentNotification(notificationId);
+        verifyAccess(sentNotification, targetId);
+        notificationService.setNotificationDelivered(notificationId);
     }
 
     @Override
-    public AlertNotification[] getNotificationsOfUser(RequestParams requestParams, String userId) {
-        if (!isSuperUser()) {
-            LOG.fine("Forbidden access for user '" + getUsername() + "', can't get notifications of user: " + userId);
-            throw new WebApplicationException(Response.Status.FORBIDDEN);
+    public void notificationAcknowledged(RequestParams requestParams, String targetId, Long notificationId, Value acknowledgement) {
+        if (notificationId == null) {
+            throw new WebApplicationException("Missing notification ID", BAD_REQUEST);
         }
-        return notificationService.getNotificationsOfUser(userId).toArray(new AlertNotification[0]);
+
+        SentNotification sentNotification = notificationService.getSentNotification(notificationId);
+        verifyAccess(sentNotification, targetId);
+        notificationService.setNotificationAcknowleged(notificationId, acknowledgement.toString());
     }
 
-    @Override
-    public void removeNotificationsOfUser(RequestParams requestParams, String userId) {
-        if (!isSuperUser()) {
-            LOG.fine("Forbidden access for user '" + getUsername() + "', can't remove notifications of user: " + userId);
-            throw new WebApplicationException(Response.Status.FORBIDDEN);
+    protected void verifyAccess(SentNotification sentNotification, String targetId) {
+        if (sentNotification == null) {
+            LOG.fine("DENIED: Notification not found");
+            throw new WebApplicationException(NOT_FOUND);
         }
-        notificationService.removeNotificationsOfUser(userId);
-    }
 
-    @Override
-    public void removeNotification(RequestParams requestParams, String userId, Long id) {
-        if (!isSuperUser()) {
-            LOG.fine("Forbidden access for user '" + getUsername() + "', can't remove notification of user: " + userId);
-            throw new WebApplicationException(Response.Status.FORBIDDEN);
+        if (sentNotification.getTargetId() == null || !sentNotification.getTargetId().equals(targetId)) {
+            LOG.fine("DENIED: Notification target ID doesn't match supplied target ID");
+            throw new WebApplicationException(NOT_FOUND);
         }
-        notificationService.removeNotification(userId, id);
-    }
 
-    @Override
-    public List<AlertNotification> getQueuedNotificationsOfCurrentUser(RequestParams requestParams) {
-        return notificationService.getNotificationsOfUser(getUserId(), DeliveryStatus.QUEUED);
-    }
+        if (isSuperUser()) {
+            LOG.finest("ALLOWED: Request from super user so allowing");
+            return;
+        }
 
-    @Override
-    public void ackNotificationOfCurrentUser(RequestParams requestParams, Long id) {
-        if (id == null) {
-            throw new WebApplicationException("Missing alert id", BAD_REQUEST);
+        // Anonymous requests can only be actioned against public assets
+        if (!isAuthenticated()) {
+            if (sentNotification.getTarget() != Notification.TargetType.ASSET) {
+                LOG.fine("DENIED: Anonymous request to update a notification not sent to a public asset");
+                throw new WebApplicationException("Anonymous request can only update public assets", FORBIDDEN);
+            }
+
+            // Check asset is public read amd not linked to any users
+            Asset asset = assetStorageService.find(sentNotification.getTargetId(), false, BaseAssetQuery.Access.PUBLIC_READ);
+            if (asset == null) {
+                LOG.fine("DENIED: Anonymous request to update a notification sent to an asset that doesn't exist or isn't public");
+                throw new WebApplicationException("Anonymous request can only update public assets not linked to a user", FORBIDDEN);
+            }
+            if (assetStorageService.isUserAsset(asset.getId())) {
+                LOG.fine("DENIED: Anonymous request to update a notification sent to an asset that is linked to one or more users");
+                throw new WebApplicationException("Anonymous request can only update public assets not linked to a user", FORBIDDEN);
+            }
+        } else {
+            // Regular users can only update notifications sent to them or assets in their realm
+            // Restricted users can only update notifications sent to them or assets linked to them
+            boolean isRestrictedUser = managerIdentityService.getIdentityProvider().isRestrictedUser(getUserId());
+            switch (sentNotification.getTarget()) {
+
+                case TENANT:
+                    // What does it mean when a notification has been sent to a tenant - who can acknowledge them?
+                    if (isRestrictedUser) {
+                        LOG.fine("DENIED: Restricted user request to update a notification sent to a tenant");
+                        throw new WebApplicationException("Restricted users cannot update a tenant notification", FORBIDDEN);
+                    }
+                    break;
+                case USER:
+                    if (!sentNotification.getTargetId().equals(getUserId())) {
+                        LOG.fine("DENIED: User request to update a notification sent to a different user");
+                        throw new WebApplicationException("Regular and restricted users can only update user notifications sent to themselves", FORBIDDEN);
+                    }
+                    break;
+                case ASSET:
+                    Asset asset = assetStorageService.find(sentNotification.getTargetId(), false);
+                    if (asset == null) {
+                        LOG.fine("DENIED: User request to update a notification sent to an asset that doesn't exist");
+                        throw new WebApplicationException("Asset not found", NOT_FOUND);
+                    }
+                    if (!asset.getRealmId().equals(managerIdentityService.getIdentityProvider().getTenantForRealm(getAuthenticatedRealm()).getId())) {
+                        LOG.fine("DENIED: User request to update a notification sent to an asset that is in another realm");
+                        throw new WebApplicationException("Asset not in users realm", FORBIDDEN);
+                    }
+                    if (isRestrictedUser && !assetStorageService.isUserAsset(getUserId(), asset.getId())) {
+                        LOG.fine("DENIED: Restricted user request to update a notification sent to an asset that isn't linked to themselves");
+                        throw new WebApplicationException("Asset not linked to restricted user", FORBIDDEN);
+                    }
+                    break;
+            }
         }
-        if (!isSuperUser() && !notificationService.isQueuedNotificationForUser(id, getUserId())) {
-            throw new WebApplicationException(FORBIDDEN);
-        }
-        notificationService.setAcknowledged(id);
     }
 }

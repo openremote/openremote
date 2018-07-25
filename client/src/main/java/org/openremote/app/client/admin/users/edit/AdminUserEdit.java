@@ -21,9 +21,6 @@ package org.openremote.app.client.admin.users.edit;
 
 import org.openremote.app.client.admin.AdminContent;
 import org.openremote.app.client.admin.users.AbstractAdminUsersPlace;
-import org.openremote.model.notification.DeviceNotificationToken;
-
-import java.util.List;
 
 public interface AdminUserEdit extends AdminContent {
 
@@ -32,10 +29,6 @@ public interface AdminUserEdit extends AdminContent {
         AbstractAdminUsersPlace getPlace();
 
         void onRoleAssigned(String id, boolean assigned);
-
-        void onDeviceRegistrationDelete(DeviceNotificationToken.Id id);
-
-        void onDeviceRegistrationsRefresh();
 
         void create();
 
@@ -99,10 +92,6 @@ public interface AdminUserEdit extends AdminContent {
     void addRole(String id, String label, boolean composite, boolean assigned);
 
     void toggleRoleAssigned(String id, boolean assigned);
-
-    void setDeviceRegistrations(List<DeviceNotificationToken> deviceNotificationTokens);
-
-    void removeDeviceRegistration(DeviceNotificationToken.Id id);
 
     void enableCreate(boolean enable);
 

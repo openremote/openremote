@@ -6,11 +6,13 @@ import org.openremote.manager.setup.builtin.ManagerDemoSetup
 import org.openremote.model.asset.AssetResource
 import org.openremote.model.asset.Asset
 import org.openremote.model.asset.AssetAttribute
-import org.openremote.model.asset.AssetQuery
+import org.openremote.model.query.AssetQuery
 import org.openremote.model.asset.AssetType
 import org.openremote.model.attribute.AttributeValueType
 import org.openremote.model.attribute.Meta
 import org.openremote.model.attribute.MetaItem
+import org.openremote.model.query.filter.ParentPredicate
+import org.openremote.model.query.filter.TenantPredicate
 import org.openremote.model.value.Values
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
@@ -22,8 +24,6 @@ import static org.openremote.container.util.MapAccess.getString
 import static org.openremote.manager.setup.AbstractKeycloakSetup.SETUP_ADMIN_PASSWORD
 import static org.openremote.manager.setup.AbstractKeycloakSetup.SETUP_ADMIN_PASSWORD_DEFAULT
 import static org.openremote.model.Constants.*
-import static org.openremote.model.asset.BaseAssetQuery.ParentPredicate
-import static org.openremote.model.asset.BaseAssetQuery.TenantPredicate
 import static org.openremote.model.asset.AssetMeta.*
 import static org.openremote.model.attribute.AttributeValueType.BOOLEAN
 import static org.openremote.model.attribute.AttributeValueType.NUMBER

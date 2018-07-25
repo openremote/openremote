@@ -2,8 +2,8 @@ package demo.rules
 
 import org.openremote.manager.rules.RulesBuilder
 import org.openremote.manager.rules.RulesFacts
-import org.openremote.model.asset.AssetQuery
-import org.openremote.model.asset.BaseAssetQuery.Operator
+import org.openremote.model.query.AssetQuery
+import org.openremote.model.query.BaseAssetQuery.Operator
 import org.openremote.model.rules.AssetState
 
 import java.util.logging.Logger
@@ -11,7 +11,7 @@ import java.util.stream.Stream
 
 import static org.openremote.model.asset.AssetType.RESIDENCE
 import static org.openremote.model.asset.AssetType.ROOM
-import static org.openremote.model.asset.BaseAssetQuery.Operator.*
+import static org.openremote.model.query.BaseAssetQuery.Operator.*
 
 Logger LOG = binding.LOG
 RulesBuilder rules = binding.rules

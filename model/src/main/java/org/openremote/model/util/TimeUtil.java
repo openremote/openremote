@@ -18,6 +18,8 @@ package org.openremote.model.util;
 
 import javaemul.internal.annotations.GwtIncompatible;
 
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -30,7 +32,7 @@ import java.util.regex.Pattern;
 public class TimeUtil {
 
     // Simple syntax
-    public static final Pattern SIMPLE = Pattern.compile("([+-])?((\\d+)[Dd])?\\s*((\\d+)[Hh])?\\s*((\\d+)[Mm])?\\s*((\\d+)[Ss])?\\s*((\\d+)([Mm][Ss])?)?");
+    public static final Pattern SIMPLE = Pattern.compile("([+-])?((\\d+)[Dd])?\\s*((\\d+)[Hh])?\\s*((\\d+)[Mm]$)?\\s*((\\d+)[Ss])?\\s*((\\d+)([Mm][Ss]$))?\\s*((\\d+)[Ww])?\\s*((\\d+)[Mm][Nn])?\\s*((\\d+)[Yy])?");
 
     private static final int SIM_SGN = 1;
     private static final int SIM_DAY = 3;
@@ -38,11 +40,15 @@ public class TimeUtil {
     private static final int SIM_MIN = 7;
     private static final int SIM_SEC = 9;
     private static final int SIM_MS = 11;
+    private static final int SIM_WK = 14;
+    private static final int SIM_MON = 16;
+    private static final int SIM_YR = 18;
 
     private static final long SEC_MS = 1000;
     private static final long MIN_MS = 60 * SEC_MS;
     private static final long HOU_MS = 60 * MIN_MS;
     private static final long DAY_MS = 24 * HOU_MS;
+    private static final long WK_MS = 7 * DAY_MS;
 
     /**
      * Parses the given time String and returns the corresponding time in milliseconds
@@ -57,12 +63,21 @@ public class TimeUtil {
             if (trimmed.length() > 0) {
                 Matcher mat = SIMPLE.matcher(trimmed);
                 if (mat.matches()) {
+                    int years = (mat.group(SIM_YR) != null) ? Integer.parseInt(mat.group(SIM_YR)) : 0;
+                    int months = (mat.group(SIM_MON) != null) ? Integer.parseInt(mat.group(SIM_MON)) : 0;
+                    int weeks = (mat.group(SIM_WK) != null) ? Integer.parseInt(mat.group(SIM_WK)) : 0;
                     int days = (mat.group(SIM_DAY) != null) ? Integer.parseInt(mat.group(SIM_DAY)) : 0;
                     int hours = (mat.group(SIM_HOU) != null) ? Integer.parseInt(mat.group(SIM_HOU)) : 0;
                     int min = (mat.group(SIM_MIN) != null) ? Integer.parseInt(mat.group(SIM_MIN)) : 0;
                     int sec = (mat.group(SIM_SEC) != null) ? Integer.parseInt(mat.group(SIM_SEC)) : 0;
                     int ms = (mat.group(SIM_MS) != null) ? Integer.parseInt(mat.group(SIM_MS)) : 0;
-                    long r = days * DAY_MS + hours * HOU_MS + min * MIN_MS + sec * SEC_MS + ms;
+                    long r = weeks * WK_MS + days * DAY_MS + hours * HOU_MS + min * MIN_MS + sec * SEC_MS + ms;
+                    if (years != 0 || months != 0) {
+                        LocalDateTime dateTime = LocalDateTime.now();
+                        LocalDateTime dateTime2 = dateTime.plusMonths(months);
+                        dateTime2 = dateTime2.plusYears(years);
+                        r += (dateTime2.toEpochSecond(ZoneOffset.UTC) - dateTime.toEpochSecond(ZoneOffset.UTC)) * 1000;
+                    }
                     if (mat.group(SIM_SGN) != null && mat.group(SIM_SGN).equals("-")) {
                         r = -r;
                     }

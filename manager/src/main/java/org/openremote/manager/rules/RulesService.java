@@ -36,6 +36,10 @@ import org.openremote.manager.rules.geofence.GeofenceAssetAdapter;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.model.asset.*;
 import org.openremote.model.attribute.AttributeEvent.Source;
+import org.openremote.model.query.AssetQuery;
+import org.openremote.model.query.filter.AttributeMetaPredicate;
+import org.openremote.model.query.filter.BooleanPredicate;
+import org.openremote.model.query.filter.LocationPredicate;
 import org.openremote.model.rules.*;
 import org.openremote.model.rules.geofence.GeofenceDefinition;
 import org.openremote.model.security.Tenant;
@@ -735,9 +739,9 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
             new AssetQuery()
                 .select(new AssetQuery.Select(AssetQuery.Include.ALL))
                 .attributeMeta(
-                    new AssetQuery.AttributeMetaPredicate(
+                    new AttributeMetaPredicate(
                         AssetMeta.RULE_STATE,
-                        new AssetQuery.BooleanPredicate(true))
+                        new BooleanPredicate(true))
                               ));
 
         return assets.stream()
@@ -748,8 +752,8 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
 
     /**
      * Called when an engine's rules change identifying assets with location attributes marked with {@link
-     * AssetMeta#RULE_STATE} that also have {@link BaseAssetQuery.LocationPredicate} in the rules. The job here is to
-     * identify the asset's (via {@link AssetState}) that have modified {@link BaseAssetQuery.LocationPredicate}s and to
+     * AssetMeta#RULE_STATE} that also have {@link LocationPredicate} in the rules. The job here is to
+     * identify the asset's (via {@link AssetState}) that have modified {@link LocationPredicate}s and to
      * notify the {@link GeofenceAssetAdapter}s.
      */
     protected void onEngineLocationRulesChanged(RulesEngine rulesEngine, List<RulesEngine.AssetStateLocationPredicates> newEngineAssetStateLocationPredicates) {

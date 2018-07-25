@@ -28,15 +28,14 @@ import org.openremote.app.client.mvp.AcceptsView;
 import org.openremote.app.client.mvp.AppActivity;
 import org.openremote.model.event.bus.EventBus;
 import org.openremote.model.event.bus.EventRegistration;
-import org.openremote.model.notification.ActionType;
-import org.openremote.model.notification.AlertAction;
-import org.openremote.model.notification.AlertNotification;
+import org.openremote.model.notification.Notification;
 import org.openremote.model.notification.NotificationResource;
 import org.openremote.model.security.User;
 import org.openremote.model.security.UserResource;
 
 import javax.inject.Inject;
 import java.util.Collection;
+import java.util.Collections;
 
 public class AdminUserNotificationsActivity
     extends AbstractAdminActivity<AdminUserNotificationsPlace, AdminUserNotifications>
@@ -49,14 +48,14 @@ public class AdminUserNotificationsActivity
     final protected RoleArrayMapper roleArrayMapper;
     final protected AdminUserNotificationEditor notificationEditor;
     final protected NotificationResource notificationResource;
-    final protected AlertNotificationMapper alertNotificationMapper;
-    final protected AlertNotificationArrayMapper alertNotificationArrayMapper;
+    final protected NotificationMapper notificationMapper;
+    final protected SentNotificationArrayMapper alertNotificationArrayMapper;
 
     protected AdminUserEditPlace place;
     protected String realm;
     protected String userId;
     protected User user;
-    protected AlertNotification alertNotification;
+    protected Notification alertNotification;
 
     @Inject
     public AdminUserNotificationsActivity(Environment environment,
@@ -69,8 +68,8 @@ public class AdminUserNotificationsActivity
                                           RoleArrayMapper roleArrayMapper,
                                           AdminUserNotificationEditor notificationEditor,
                                           NotificationResource notificationResource,
-                                          AlertNotificationMapper alertNotificationMapper,
-                                          AlertNotificationArrayMapper alertNotificationArrayMapper) {
+                                          NotificationMapper notificationMapper,
+                                          SentNotificationArrayMapper alertNotificationArrayMapper) {
         super(adminView, adminNavigationPresenter, view);
         this.environment = environment;
         this.userResource = userResource;
@@ -79,7 +78,7 @@ public class AdminUserNotificationsActivity
         this.roleArrayMapper = roleArrayMapper;
         this.notificationEditor = notificationEditor;
         this.notificationResource = notificationResource;
-        this.alertNotificationMapper = alertNotificationMapper;
+        this.notificationMapper = notificationMapper;
         this.alertNotificationArrayMapper = alertNotificationArrayMapper;
     }
 
@@ -122,14 +121,13 @@ public class AdminUserNotificationsActivity
         if (this.alertNotification == null)
             this.alertNotification = createDefaultNotification();
 
-        // TODO Constraint violation handler and @Valid AlertNotification on resource method?
-        notificationEditor.setAlertNotification(this.alertNotification);
+        notificationEditor.setNotification(this.alertNotification);
         notificationEditor.setOnSend(updatedNotification -> {
             adminContent.setFormBusy(true);
             this.alertNotification = updatedNotification;
             environment.getApp().getRequests().sendWith(
-                alertNotificationMapper,
-                requestParams -> notificationResource.storeNotificationForUser(requestParams, userId, this.alertNotification),
+                notificationMapper,
+                requestParams -> notificationResource.sendNotification(requestParams, this.alertNotification),
                 204,
                 () -> {
                     environment.getEventBus().dispatch(new ShowSuccessEvent(
@@ -152,7 +150,12 @@ public class AdminUserNotificationsActivity
     public void onNotificationsDelete() {
         adminContent.setFormBusy(true);
         environment.getApp().getRequests().send(
-            requestParams -> notificationResource.removeNotificationsOfUser(requestParams, userId),
+            requestParams -> notificationResource.removeNotifications(requestParams,
+                                                                      null,
+                                                                      null,
+                                                                      null,
+                                                                      Collections.singletonList(userId),
+                                                                      null),
             204,
             () -> {
                 environment.getEventBus().dispatch(new ShowSuccessEvent(
@@ -167,7 +170,7 @@ public class AdminUserNotificationsActivity
     public void onNotificationDelete(Long id) {
         adminContent.setFormBusy(true);
         environment.getApp().getRequests().send(
-            requestParams -> notificationResource.removeNotification(requestParams, userId, id),
+            requestParams -> notificationResource.removeNotification(requestParams, id),
             204,
             () -> {
                 adminContent.setFormBusy(false);
@@ -179,19 +182,16 @@ public class AdminUserNotificationsActivity
         );
     }
 
-    protected AlertNotification createDefaultNotification() {
-        AlertNotification alertNotification = new AlertNotification(
-            "Hello User",
-            "This is a test message.",
-            // TODO: Remove below once consoles updated to use action appUrl
-            "/#"
-        );
-        AlertAction alertAction = new AlertAction();
-        alertAction.setTitle(environment.getMessages().notificationOpenApplicationDetails());
-        alertAction.setActionType(ActionType.LINK);
-        alertAction.setAppUrl("/#");
-        alertNotification.addAction(alertAction);
-        return alertNotification;
+    protected Notification createDefaultNotification() {
+        Notification notification = new Notification(null, null, null);
+        return notification;
+//
+//        PushNotificationAction alertAction = new PushNotificationAction();
+//        alertAction.setTitle(environment.getMessages().notificationOpenApplicationDetails());
+//        alertAction.setActionType(ActionType.LINK);
+//        alertAction.setAppUrl("/#");
+//        notification.addAction(alertAction);
+//        return notification;
     }
 
     protected void loadUser() {
@@ -204,9 +204,7 @@ public class AdminUserNotificationsActivity
                 this.user = user;
                 this.realm = user.getRealm();
                 adminContent.setUsername(user.getFullName());
-                loadNotifications(() -> {
-                    adminContent.setFormBusy(false);
-                });
+                loadNotifications(() -> adminContent.setFormBusy(false));
             }
         );
     }
@@ -214,7 +212,12 @@ public class AdminUserNotificationsActivity
     protected void loadNotifications(Runnable onComplete) {
         environment.getApp().getRequests().sendAndReturn(
             alertNotificationArrayMapper,
-            requestParams -> notificationResource.getNotificationsOfUser(requestParams, userId),
+            requestParams -> notificationResource.getNotifications(requestParams,
+                                                                   null,
+                                                                   null,
+                                                                   null,
+                                                                   Collections.singletonList(userId),
+                                                                   null),
             200,
             notifications -> {
                 adminContent.setNotifications(notifications);

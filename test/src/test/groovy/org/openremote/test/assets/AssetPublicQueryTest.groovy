@@ -10,15 +10,16 @@ import org.openremote.manager.setup.builtin.ManagerDemoSetup
 import org.openremote.model.asset.Asset
 import org.openremote.model.asset.AssetResource
 import org.openremote.model.asset.AssetAttribute
-import org.openremote.model.asset.AssetQuery
+import org.openremote.model.query.AssetQuery
 import org.openremote.model.attribute.MetaItem
+import org.openremote.model.query.filter.TenantPredicate
 import org.openremote.model.value.Values
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Shared
 import spock.lang.Specification
 
 import static org.openremote.model.Constants.MASTER_REALM
-import static org.openremote.model.asset.BaseAssetQuery.*
+import static org.openremote.model.query.BaseAssetQuery.*
 import static org.openremote.model.asset.AssetMeta.ACCESS_PUBLIC_READ
 import static org.openremote.model.asset.AssetMeta.LABEL
 import static org.openremote.model.asset.AssetType.THING

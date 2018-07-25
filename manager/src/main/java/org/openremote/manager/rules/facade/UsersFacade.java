@@ -23,13 +23,16 @@ import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.notification.NotificationService;
 import org.openremote.manager.rules.RulesEngineId;
 import org.openremote.manager.security.ManagerIdentityService;
-import org.openremote.model.asset.Asset;
-import org.openremote.model.notification.AlertNotification;
+import org.openremote.model.query.filter.PathPredicate;
+import org.openremote.model.query.filter.TenantPredicate;
+import org.openremote.model.query.filter.UserAssetPredicate;
 import org.openremote.model.rules.*;
-import org.openremote.model.user.UserQuery;
+import org.openremote.model.security.User;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
-import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 /**
  * Restricts rule RHS access to the scope of the engine (a rule in asset scope can not access users in global scope).
@@ -43,57 +46,56 @@ public class UsersFacade<T extends Ruleset> extends Users {
 
     public class UsersResctrictedQueryFacade extends Users.RestrictedQuery {
 
-        public UsersResctrictedQueryFacade() {
-            if (TenantRuleset.class.isAssignableFrom(rulesEngineId.getScope())) {
-                tenantPredicate = new UserQuery.TenantPredicate(
-                    rulesEngineId.getRealmId().orElseThrow(() -> new IllegalArgumentException("Realm ID missing: " + rulesEngineId))
-                );
-            }
-            if (AssetRuleset.class.isAssignableFrom(rulesEngineId.getScope())) {
-                String assetId = rulesEngineId.getAssetId().orElseThrow(() -> new IllegalStateException("Asset ID missing: " + rulesEngineId));
-                Asset restrictedAsset = assetStorageService.find(assetId, true);
-                if (restrictedAsset == null) {
-                    // An asset was deleted in the database, but its ruleset is still deployed. This
-                    // can happen while the PersistenceEvent of the deletion is not processed and the
-                    // rules engine fires. This exception marks the ruleset deployment as execution
-                    // error status, and as soon as the PersistenceEvent is processed, the ruleset
-                    // deployment is removed and the problem resolved.
-                    throw new IllegalStateException("Asset is no longer available: " + rulesEngineId);
-                }
-                assetPredicate = new UserQuery.AssetPredicate(assetId);
-            }
-        }
-
         @Override
-        public Users.RestrictedQuery tenant(UserQuery.TenantPredicate tenantPredicate) {
+        public Users.RestrictedQuery tenant(TenantPredicate tenantPredicate) {
             if (GlobalRuleset.class.isAssignableFrom(rulesEngineId.getScope()))
                 return super.tenant(tenantPredicate);
             throw new IllegalArgumentException("Overriding query restriction is not allowed in this rules scope");
         }
 
         @Override
-        public Users.RestrictedQuery asset(UserQuery.AssetPredicate assetPredicate) {
-            if (GlobalRuleset.class.isAssignableFrom(rulesEngineId.getScope()))
-                return super.asset(assetPredicate);
-            if (TenantRuleset.class.isAssignableFrom(rulesEngineId.getScope())) {
-                return super.asset(assetPredicate);
-                // TODO: should only be allowed if asset belongs to tenant
-            }
-            if (AssetRuleset.class.isAssignableFrom(rulesEngineId.getScope())) {
-                return super.asset(assetPredicate);
-                // TODO: should only be allowed if restricted asset is descendant of scope's asset
-            }
-            throw new IllegalArgumentException("Overriding query restriction is not allowed in this rules scope");
-        }
-
-        @Override
         public List<String> getResults() {
-            return notificationService.findAllUsersWithToken(this);
-        }
+            // Do security checks to ensure correct scoping
+            // No restriction for global rulesets
+            if (TenantRuleset.class.isAssignableFrom(rulesEngineId.getScope())) {
+                if (tenantPredicate != null) {
+                    throw new IllegalArgumentException("Overriding query restriction is not allowed in this rules scope");
+                }
 
-        @Override
-        public void applyResults(Consumer<List<String>> usersIdListConsumer) {
-            usersIdListConsumer.accept(getResults());
+                // Restrict tenant
+                tenantPredicate = new TenantPredicate(
+                    rulesEngineId.getRealmId().orElseThrow(() -> new IllegalArgumentException("Realm ID missing: " + rulesEngineId))
+                );
+            } else if (AssetRuleset.class.isAssignableFrom(rulesEngineId.getScope())) {
+                if (tenantPredicate != null) {
+                    throw new IllegalArgumentException("Overriding query restriction is not allowed in this rules scope");
+                }
+                String assetId = rulesEngineId.getAssetId().orElseThrow(() -> new IllegalArgumentException("Asset ID missing: " + rulesEngineId));
+
+                // Asset must be this engines asset or a child
+                if (assetPredicate != null) {
+                    if (assetId.equals(assetPredicate.id)) {
+                        pathPredicate = null;
+                    } else {
+                        pathPredicate = new PathPredicate(new String[]{rulesEngineId.getAssetId().orElseThrow(
+                            IllegalArgumentException::new)});
+                    }
+                } else if (pathPredicate != null) {
+                    // Path must contain this engines asset ID
+                    List<String> path = new ArrayList<>(Arrays.asList(pathPredicate.path));
+                    if (!path.contains(assetId)) {
+                        path.add(assetId);
+                        pathPredicate.path = path.toArray(new String[pathPredicate.path.length + 1]);
+                    }
+                } else {
+                    // Force scope to this asset
+                    assetPredicate = new UserAssetPredicate(assetId);
+                }
+            }
+
+            return Arrays.stream(identityService.getIdentityProvider().getUsers(this))
+                .map(User::getId)
+                .collect(Collectors.toList());
         }
     }
 
@@ -108,28 +110,4 @@ public class UsersFacade<T extends Ruleset> extends Users {
     public Users.RestrictedQuery query() {
         return new UsersResctrictedQueryFacade();
     }
-
-    @Override
-    public void storeAndNotify(String userId, AlertNotification alert) {
-        if (TenantRuleset.class.isAssignableFrom(rulesEngineId.getScope())) {
-            boolean userIsInTenant = identityService.getIdentityProvider().isUserInTenant(
-                userId,
-                rulesEngineId.getRealmId().orElseThrow(() -> new IllegalArgumentException("Realm ID missing: " + rulesEngineId))
-            );
-            if (!userIsInTenant) {
-                throw new IllegalArgumentException("User not in tenant " + rulesEngineId + ": " + userId);
-            }
-        }
-        if (AssetRuleset.class.isAssignableFrom(rulesEngineId.getScope())) {
-            boolean userIsLinkedToAsset = assetStorageService.isUserAsset(
-                userId,
-                rulesEngineId.getAssetId().orElseThrow(() -> new IllegalStateException("Asset ID missing: " + rulesEngineId))
-            );
-            if (!userIsLinkedToAsset) {
-                throw new IllegalArgumentException("User not linked to asset " + rulesEngineId + ": " + userId);
-            }
-        }
-        notificationService.storeAndNotify(userId, alert);
-    }
-
 }

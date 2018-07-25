@@ -26,11 +26,13 @@ import org.openremote.app.client.assets.AssetArrayMapper;
 import org.openremote.app.client.assets.AssetMapper;
 import org.openremote.app.client.assets.AssetQueryMapper;
 import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.AssetQuery;
+import org.openremote.model.query.AssetQuery;
 import org.openremote.model.asset.AssetResource;
 import org.openremote.model.asset.AssetTreeModifiedEvent;
 import org.openremote.model.event.shared.TenantFilter;
 import org.openremote.model.interop.Consumer;
+import org.openremote.model.query.filter.ParentPredicate;
+import org.openremote.model.query.filter.TenantPredicate;
 import org.openremote.model.security.Tenant;
 import org.openremote.model.security.TenantResource;
 
@@ -247,8 +249,8 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
                     assetResource.queryAssets(
                         requestParams,
                         new AssetQuery()
-                            .tenant(new AssetQuery.TenantPredicate(parent.getId()))
-                            .parent(new AssetQuery.ParentPredicate(true))
+                            .tenant(new TenantPredicate(parent.getId()))
+                            .parent(new ParentPredicate(true))
                     );
                 } else if (parent instanceof RootTreeNode) {
                     assetResource.getCurrentUserAssets(requestParams);

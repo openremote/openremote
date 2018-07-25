@@ -2,10 +2,15 @@ package demo.rules
 
 import groovy.transform.ToString
 import org.openremote.manager.rules.RulesBuilder
-import org.openremote.model.asset.AssetQuery
-import org.openremote.model.notification.AlertNotification
+import org.openremote.model.attribute.AttributeRef
+import org.openremote.model.notification.Notification
+import org.openremote.model.notification.PushNotificationAction
+import org.openremote.model.notification.PushNotificationButton
+import org.openremote.model.query.AssetQuery
+import org.openremote.model.notification.PushNotificationMessage
+import org.openremote.model.query.filter.UserAssetPredicate
+import org.openremote.model.rules.Notifications
 import org.openremote.model.rules.Users
-import org.openremote.model.user.UserQuery
 import org.openremote.model.value.Values
 
 import java.util.logging.Logger
@@ -16,6 +21,7 @@ import static org.openremote.model.asset.AssetType.ROOM
 Logger LOG = binding.LOG
 RulesBuilder rules = binding.rules
 Users users = binding.users
+Notifications notifications = binding.notifications
 
 @ToString(includeNames = true)
 class AlarmTrigger {
@@ -142,23 +148,28 @@ rules.add()
         { facts ->
             AlarmTrigger alarmTrigger = facts.bound("alarmTrigger")
 
-            AlertNotification alert = new AlertNotification(
-                    title: "Apartment Alarm",
-                    message: "Aanwezigheid in " + alarmTrigger.roomName + " (" + facts.clock.time + ")."
-            )
-            alert.addLinkAction("Details", "#security")
-            alert.addActuatorAction("Alarm uit", alarmTrigger.residenceId, "alarmEnabled", Values.create(false).toJson())
-
-            // This only includes users which have a device notification token (registered console device)!
+            // Get users linked to this residence
             List<String> userIds = users
                     .query()
-                    .asset(new UserQuery.AssetPredicate(alarmTrigger.residenceId))
+                    .asset(new UserAssetPredicate(alarmTrigger.residenceId))
                     .getResults()
 
             LOG.info("Alerting users of " + alarmTrigger + ": " + userIds)
-            userIds.forEach({ userId ->
-                users.storeAndNotify(userId, alert)
-            })
+
+            Notification notification = new Notification(
+                "ApartmentAlarm",
+                new PushNotificationMessage()
+                    .setTitle("Apartment Alarm")
+                    .setBody("Aanwezigheid in " + alarmTrigger.roomName + " (" + facts.clock.time + ").")
+                    .setButtons([
+                        new PushNotificationButton("Details", new PushNotificationAction("#security")),
+                        new PushNotificationButton("Alarm uit", PushNotificationAction.writeAttributeValueAction(new AttributeRef(alarmTrigger.residenceId, "alarmEnabled"), Values.create(false)))
+                    ]),
+                new Notification.Targets(Notification.TargetType.USER, userIds)
+            )
+
+            // Send the notification to all matched users
+            notifications.send(notification)
 
             AlertSilence alertSilence = new AlertSilence(
                     residenceName: alarmTrigger.residenceName,

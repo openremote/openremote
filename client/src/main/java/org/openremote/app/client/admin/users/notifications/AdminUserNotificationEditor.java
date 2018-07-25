@@ -20,15 +20,15 @@
 package org.openremote.app.client.admin.users.notifications;
 
 import org.openremote.model.interop.Consumer;
-import org.openremote.model.notification.AlertNotification;
+import org.openremote.model.notification.Notification;
 
 public interface AdminUserNotificationEditor {
 
     void reset();
 
-    void setAlertNotification(AlertNotification notification);
+    void setNotification(Notification notification);
 
-    void setOnSend(Consumer<AlertNotification> onSend);
+    void setOnSend(Consumer<Notification> onSend);
 
     void setOnClose(Runnable onClose);
 

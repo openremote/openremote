@@ -46,7 +46,6 @@ import org.openremote.model.value.Value;
 import org.openremote.model.value.Values;
 
 import javax.persistence.EntityManager;
-import javax.ws.rs.WebApplicationException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -54,8 +53,6 @@ import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static javax.ws.rs.core.Response.Status.FORBIDDEN;
-import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 import static org.openremote.container.concurrent.GlobalLock.withLock;
 import static org.openremote.manager.asset.AssetProcessingException.Reason.*;
 import static org.openremote.manager.event.ClientEventService.CLIENT_EVENT_TOPIC;

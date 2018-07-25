@@ -21,7 +21,8 @@ package org.openremote.app.client.admin.users.notifications;
 
 import org.openremote.app.client.admin.AdminContent;
 import org.openremote.app.client.admin.users.AbstractAdminUsersPlace;
-import org.openremote.model.notification.AlertNotification;
+import org.openremote.model.notification.PushNotificationMessage;
+import org.openremote.model.notification.SentNotification;
 
 public interface AdminUserNotifications extends AdminContent {
 
@@ -43,7 +44,7 @@ public interface AdminUserNotifications extends AdminContent {
 
     void setUsername(String username);
 
-    void setNotifications(AlertNotification[] notifications);
+    void setNotifications(SentNotification[] notifications);
 
     void removeNotification(Long id);
 

@@ -22,10 +22,10 @@ package org.openremote.model.notification;
 import jsinterop.annotations.JsType;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.http.SuccessStatusCode;
+import org.openremote.model.value.Value;
 
 import javax.annotation.security.RolesAllowed;
 import javax.ws.rs.*;
-import javax.ws.rs.core.MediaType;
 import java.util.List;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
@@ -35,112 +35,95 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 public interface NotificationResource {
 
     /**
-     * Store a device token for the authenticated user.
-     */
-    @PUT
-    @Path("token")
-    @SuccessStatusCode(204)
-    @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
-    @RolesAllowed({"write:user"})
-    @SuppressWarnings("unusable-by-js")
-    void storeDeviceToken(@BeanParam RequestParams requestParams,
-                          @FormParam("device_id") String deviceId,
-                          @FormParam("token") String token,
-                          @FormParam("device_type") String deviceType);
-
-    /**
+     * Gets all sent notifications that have been sent to the specified targets; optionally limiting the scope of the
+     * request by {@link AbstractNotificationMessage} type and/or sent datetime. If type(s) or timestamp are not set
+     * then it is assumed no type or time constraint is required.
+     * <p>
      * Only the superuser can call this operation.
      */
     @GET
-    @Path("token/{userId}")
-    @Produces(APPLICATION_JSON)
-    @RolesAllowed({"read:admin"})
-    @SuppressWarnings("unusable-by-js")
-    List<DeviceNotificationToken> getDeviceTokens(@BeanParam RequestParams requestParams,
-                                                  @PathParam("userId") String userId);
-
-    /**
-     * Only the superuser can call this operation.
-     */
-    @DELETE
-    @Path("token/{userId}/device/{deviceId}")
-    @Produces(APPLICATION_JSON)
-    @RolesAllowed({"write:admin"})
-    @SuppressWarnings("unusable-by-js")
-    void deleteDeviceToken(@BeanParam RequestParams requestParams,
-                           @PathParam("userId") String userId,
-                           @PathParam("deviceId") String deviceId);
-
-    @POST
-    @Path("alert")
-    @SuccessStatusCode(204)
-    @Consumes(APPLICATION_JSON)
-    @RolesAllowed({"write:user"})
-    @SuppressWarnings("unusable-by-js")
-    void storeNotificationForCurrentUser(@BeanParam RequestParams requestParams,
-                                         AlertNotification alertNotification);
-
-    /**
-     * Only the superuser can call this operation.
-     */
-    @POST
-    @Path("alert/user/{userId}")
-    @SuccessStatusCode(204)
-    @Consumes(APPLICATION_JSON)
-    @RolesAllowed({"write:admin"})
-    @SuppressWarnings("unusable-by-js")
-    void storeNotificationForUser(@BeanParam RequestParams requestParams,
-                                  @PathParam("userId") String userId,
-                                  AlertNotification alertNotification);
-
-    /**
-     * Only the superuser can call this operation.
-     */
-    @GET
-    @Path("alert/user/{userId}")
     @SuccessStatusCode(200)
     @Produces(APPLICATION_JSON)
     @RolesAllowed({"read:admin"})
     @SuppressWarnings("unusable-by-js")
-    AlertNotification[] getNotificationsOfUser(@BeanParam RequestParams requestParams,
-                                               @PathParam("userId") String userId);
+    SentNotification[] getNotifications(@BeanParam RequestParams requestParams,
+                                        @QueryParam("types") List<String> types,
+                                        @QueryParam("before") Long timestamp,
+                                        @QueryParam("tenantId") List<String> tenantIds,
+                                        @QueryParam("userId") List<String> userIds,
+                                        @QueryParam("assetId") List<String> assetIds);
 
     /**
+     * Removes all sent notifications that have been sent to the specified targets; optionally limiting the scope of the
+     * request by {@link AbstractNotificationMessage} type and/or sent datetime. If type(s) or timestamp are not set
+     * then it is assumed no type or time constraint is required.
+     * <p>
      * Only the superuser can call this operation.
      */
     @DELETE
-    @Path("alert/user/{userId}")
     @SuccessStatusCode(204)
     @RolesAllowed({"write:admin"})
     @SuppressWarnings("unusable-by-js")
-    void removeNotificationsOfUser(@BeanParam RequestParams requestParams,
-                                   @PathParam("userId") String userId);
+    void removeNotifications(@BeanParam RequestParams requestParams,
+                             @QueryParam("types") List<String> types,
+                             @QueryParam("before") Long timestamp,
+                             @QueryParam("tenantId") List<String> tenantIds,
+                             @QueryParam("userId") List<String> userIds,
+                             @QueryParam("assetId") List<String> assetIds);
 
     /**
+     * Remove a specific sent notification by ID.
+     * <p>
      * Only the superuser can call this operation.
      */
     @DELETE
-    @Path("alert/user/{userId}/{alertId}")
+    @Path("{notificationId}")
     @SuccessStatusCode(204)
     @RolesAllowed({"write:admin"})
     @SuppressWarnings("unusable-by-js")
     void removeNotification(@BeanParam RequestParams requestParams,
-                            @PathParam("userId") String userId,
-                            @PathParam("alertId") Long id);
+                            @PathParam("notificationId") Long notificationId);
 
-    // TODO Fails silently on native apps when called with expired offline token?
-    @GET
+    /**
+     * Send a notification to one or more targets; the authorisation of the requesting user will determine whether or
+     * not the targets can be contacted; if one or more targets are not accessible due to permissions then the entire
+     * request will fail with a 403 response.
+     */
+    @POST
     @Path("alert")
-    @Produces(APPLICATION_JSON)
-    @RolesAllowed({"write:user"})
-    @SuppressWarnings("unusable-by-js")
-    List<AlertNotification> getQueuedNotificationsOfCurrentUser(@BeanParam RequestParams requestParams);
-
-    @DELETE
-    @Path("alert/{alertId}")
     @SuccessStatusCode(204)
+    @Consumes(APPLICATION_JSON)
     @RolesAllowed({"write:user"})
     @SuppressWarnings("unusable-by-js")
-    void ackNotificationOfCurrentUser(@BeanParam RequestParams requestParams,
-                                      @PathParam("alertId") Long id);
+    void sendNotification(@BeanParam RequestParams requestParams,
+                          Notification notification);
+
+    /**
+     * Allows a target to mark a notification as delivered.
+     * <p>
+     * The requesting user must have permission to acknowledge the specified notification otherwise a 403 response
+     * is returned.
+     */
+    @PUT
+    @Path("{notificationId}/delivered")
+    @SuccessStatusCode(204)
+    @SuppressWarnings("unusable-by-js")
+    void notificationDelivered(@BeanParam RequestParams requestParams,
+                               @QueryParam("targetId") String targetId,
+                               @PathParam("notificationId") Long notificationId);
+
+    /**
+     * Allows a target to acknowledge a notification with an optional acknowledgement value.
+     * <p>
+     * The requesting user must have permission to acknowledge the specified notification otherwise a 403 response
+     * is returned.
+     */
+    @PUT
+    @Path("{notificationId}/acknowledged")
+    @SuccessStatusCode(204)
+    @SuppressWarnings("unusable-by-js")
+    void notificationAcknowledged(@BeanParam RequestParams requestParams,
+                                  @QueryParam("targetId") String targetId,
+                                  @PathParam("notificationId") Long notificationId,
+                                  Value acknowledgement);
 }

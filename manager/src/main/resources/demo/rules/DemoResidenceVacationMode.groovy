@@ -2,15 +2,15 @@ package demo.rules
 
 import groovy.transform.ToString
 import org.openremote.manager.rules.RulesBuilder
-import org.openremote.model.asset.AssetQuery
+import org.openremote.model.query.AssetQuery
 import org.openremote.model.rules.AssetState
 import org.openremote.model.rules.Assets
 
 import java.util.logging.Logger
 
 import static org.openremote.model.asset.AssetType.RESIDENCE
-import static org.openremote.model.asset.BaseAssetQuery.Operator.GREATER_THAN
-import static org.openremote.model.asset.BaseAssetQuery.Operator.LESS_EQUALS
+import static org.openremote.model.query.BaseAssetQuery.Operator.GREATER_THAN
+import static org.openremote.model.query.BaseAssetQuery.Operator.LESS_EQUALS
 import static org.openremote.model.attribute.AttributeExecuteStatus.REQUEST_START
 
 Logger LOG = binding.LOG

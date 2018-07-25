@@ -168,7 +168,6 @@ class AdminUsersActivityTest extends Specification implements ManagerContainerTr
         def userMapper = new ClientObjectMapper(container.JSON, User.class) as UserMapper
         def credentialMapper = new ClientObjectMapper(container.JSON, Credential.class) as CredentialMapper
         def roleArrayMapper = new ClientObjectMapper(container.JSON, Role[].class) as RoleArrayMapper
-        def deviceTokenMapper = new ClientObjectMapper(container.JSON, List.class) as DeviceNotificationTokenMapper
         AdminUserEditActivity adminUserActivity
 
         and: "An activity management configuration"
@@ -200,7 +199,7 @@ class AdminUsersActivityTest extends Specification implements ManagerContainerTr
                 },
                 {
                     adminUserActivity = new AdminUserEditActivity(
-                            environment, adminView, adminNavigationPresenter, adminUserView, userResource, userMapper, credentialMapper, roleArrayMapper, notificationResource, deviceTokenMapper
+                            environment, adminView, adminNavigationPresenter, adminUserView, userResource, userMapper, credentialMapper, roleArrayMapper, notificationResource
                     )
                     return adminUserActivity
                 },

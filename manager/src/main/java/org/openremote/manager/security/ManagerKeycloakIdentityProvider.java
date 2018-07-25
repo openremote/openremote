@@ -39,14 +39,20 @@ import org.openremote.model.Constants;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetTreeModifiedEvent;
 import org.openremote.model.event.shared.TenantFilter;
+import org.openremote.model.query.UserQuery;
 import org.openremote.model.security.*;
+import org.openremote.model.util.TextUtil;
 
+import javax.persistence.Query;
+import javax.persistence.TypedQuery;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
+import java.sql.PreparedStatement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
+import java.util.stream.IntStream;
 
 import static org.openremote.container.util.JsonUtil.convert;
 import static org.openremote.model.Constants.*;
@@ -99,6 +105,84 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             users.add(convertUser(realm, userRepresentation));
         }
         return users.toArray(new User[users.size()]);
+    }
+
+    @Override
+    public User[] getUsers(List<String> userIds) {
+        return persistenceService.doReturningTransaction(em -> {
+            List<User> result =
+                em.createQuery("select u from User u where u.id IN :userIds", User.class)
+                    .setParameter("userIds", userIds)
+                    .getResultList();
+
+            return result.toArray(new User[result.size()]);
+        });
+    }
+
+    @Override
+    public User[] getUsers(UserQuery userQuery) {
+
+        LOG.fine("Building: " + userQuery);
+        StringBuilder sb = new StringBuilder();
+        List<Object> parameters = new ArrayList<>();
+        sb.append(buildSelectString(userQuery));
+        sb.append(buildFromString(userQuery));
+        sb.append(buildWhereString(userQuery, parameters));
+
+        return persistenceService.doReturningTransaction(entityManager -> {
+            TypedQuery<User> query = entityManager.createQuery(sb.toString(), User.class);
+            IntStream.range(0, parameters.size()).forEach(i -> query.setParameter(i+1, parameters.get(i)));
+            List<User> users = query.getResultList();
+            return users.toArray(new User[users.size()]);
+        });
+    }
+
+
+    protected String buildSelectString(UserQuery query) {
+        return "SELECT DISTINCT(u)";
+    }
+
+    protected String buildFromString(UserQuery query) {
+        StringBuilder sb = new StringBuilder();
+
+        sb.append(" FROM User u");
+
+        if (query.assetPredicate != null || query.pathPredicate != null) {
+            sb.append(" join UserAsset ua on ua.id.userId = u.id");
+        }
+
+        if (query.tenantPredicate != null && TextUtil.isNullOrEmpty(query.tenantPredicate.realm)) {
+            sb.append(" join PUBLIC.REALM R on R.ID = u.realmId");
+        }
+
+        return sb.toString();
+    }
+
+    protected String buildWhereString(UserQuery query, List<Object> parameters) {
+        StringBuilder sb = new StringBuilder();
+
+        sb.append(" WHERE 1=1");
+
+        if (query.tenantPredicate != null) {
+            if (!TextUtil.isNullOrEmpty(query.tenantPredicate.realmId)) {
+                sb.append(" AND u.realmId = ?").append(parameters.size() + 1);
+                parameters.add(query.tenantPredicate.realmId);
+            } else if (!TextUtil.isNullOrEmpty(query.tenantPredicate.realm)) {
+                sb.append(" AND r.name = ?").append(parameters.size() + 1);
+                parameters.add(query.tenantPredicate.realm);
+            }
+
+        }
+        if (query.assetPredicate != null) {
+            sb.append(" AND ua.id.assetId = ?").append(parameters.size() + 1);
+            parameters.add(query.assetPredicate.id);
+        }
+        if (query.pathPredicate != null) {
+            sb.append(" AND ?").append(parameters.size() + 1).append(" <@ get_asset_tree_path(ua.asset_id)");
+            parameters.add(query.pathPredicate.path);
+        }
+
+        return sb.toString();
     }
 
     @Override

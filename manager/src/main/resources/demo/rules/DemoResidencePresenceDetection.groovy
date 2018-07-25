@@ -10,7 +10,7 @@ assets have presence set.
 package demo.rules
 
 import org.openremote.manager.rules.RulesBuilder
-import org.openremote.model.asset.AssetQuery
+import org.openremote.model.query.AssetQuery
 import org.openremote.model.rules.AssetState
 import org.openremote.model.util.Pair
 
@@ -18,8 +18,8 @@ import java.util.logging.Logger
 
 import static org.openremote.model.asset.AssetType.RESIDENCE
 import static org.openremote.model.asset.AssetType.ROOM
-import static org.openremote.model.asset.BaseAssetQuery.Operator.GREATER_THAN
-import static org.openremote.model.asset.BaseAssetQuery.Operator.LESS_THAN
+import static org.openremote.model.query.BaseAssetQuery.Operator.GREATER_THAN
+import static org.openremote.model.query.BaseAssetQuery.Operator.LESS_THAN
 
 Logger LOG = binding.LOG
 RulesBuilder rules = binding.rules

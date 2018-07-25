@@ -19,7 +19,7 @@
  */
 package org.openremote.model.rules;
 
-import org.openremote.model.asset.BaseAssetQuery;
+import org.openremote.model.query.BaseAssetQuery;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeExecuteStatus;
 import org.openremote.model.value.Value;

@@ -27,8 +27,10 @@ import org.openremote.manager.persistence.ManagerPersistenceService;
 import org.openremote.model.Constants;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.event.shared.TenantFilter;
+import org.openremote.model.query.UserQuery;
 import org.openremote.model.security.*;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
@@ -47,6 +49,16 @@ public class ManagerBasicIdentityProvider extends BasicIdentityProvider implemen
 
     @Override
     public User[] getUsers(ClientRequestInfo clientRequestInfo, String realm) {
+        return new User[0];
+    }
+
+    @Override
+    public User[] getUsers(List<String> userIds) {
+        return new User[0];
+    }
+
+    @Override
+    public User[] getUsers(UserQuery userQuery) {
         return new User[0];
     }
 

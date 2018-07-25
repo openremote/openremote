@@ -41,6 +41,8 @@ import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeEvent.Source;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.event.shared.TenantFilter;
+import org.openremote.model.query.AssetQuery;
+import org.openremote.model.query.filter.AttributeRefPredicate;
 import org.openremote.model.security.ClientRole;
 import org.openremote.model.util.Pair;
 import org.openremote.model.value.ObjectValue;
@@ -463,7 +465,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
                 new AssetQuery()
                     .select(new AssetQuery.Select(AssetQuery.Include.ALL))
                     .attributeMeta(
-                        new AssetQuery.AttributeRefPredicate(
+                        new AttributeRefPredicate(
                             AssetMeta.AGENT_LINK,
                             protocolAttributeRef.getEntityId(),
                             protocolAttributeRef.getAttributeName()
@@ -493,7 +495,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
                 new AssetQuery()
                     .select(new AssetQuery.Select(AssetQuery.Include.ALL))
                     .attributeMeta(
-                        new AssetQuery.AttributeRefPredicate(
+                        new AttributeRefPredicate(
                             AssetMeta.AGENT_LINK,
                             protocolAttributeRef.getEntityId(),
                             protocolAttributeRef.getAttributeName()

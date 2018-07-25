@@ -31,7 +31,6 @@ import org.openremote.model.event.bus.EventRegistration;
 import org.openremote.model.http.ConstraintViolation;
 import org.openremote.model.interop.Consumer;
 import org.openremote.model.interop.Runnable;
-import org.openremote.model.notification.DeviceNotificationToken;
 import org.openremote.model.notification.NotificationResource;
 import org.openremote.model.security.Credential;
 import org.openremote.model.security.Role;
@@ -54,7 +53,6 @@ public class AdminUserEditActivity
     final protected CredentialMapper credentialMapper;
     final protected RoleArrayMapper roleArrayMapper;
     final protected NotificationResource notificationResource;
-    final protected DeviceNotificationTokenMapper deviceNotificationTokenMapper;
     final protected Consumer<ConstraintViolation[]> validationErrorHandler;
 
     protected AdminUserEditPlace place;
@@ -72,8 +70,7 @@ public class AdminUserEditActivity
                                  UserMapper userMapper,
                                  CredentialMapper credentialMapper,
                                  RoleArrayMapper roleArrayMapper,
-                                 NotificationResource notificationResource,
-                                 DeviceNotificationTokenMapper deviceNotificationTokenMapper) {
+                                 NotificationResource notificationResource) {
         super(adminView, adminNavigationPresenter, view);
         this.environment = environment;
         this.userResource = userResource;
@@ -81,7 +78,6 @@ public class AdminUserEditActivity
         this.credentialMapper = credentialMapper;
         this.roleArrayMapper = roleArrayMapper;
         this.notificationResource = notificationResource;
-        this.deviceNotificationTokenMapper = deviceNotificationTokenMapper;
         this.validationErrorHandler = violations -> {
             for (ConstraintViolation violation : violations) {
                 if (violation.getConstraintType() == ConstraintViolation.Type.CONFLICT) {
@@ -269,25 +265,6 @@ public class AdminUserEditActivity
     }
 
     @Override
-    public void onDeviceRegistrationDelete(DeviceNotificationToken.Id id) {
-        environment.getApp().getRequests().send(
-            requestParams -> notificationResource.deleteDeviceToken(requestParams, id.getUserId(), id.getDeviceId()),
-            204,
-            () -> {
-                adminContent.removeDeviceRegistration(id);
-                environment.getEventBus().dispatch(new ShowSuccessEvent(
-                    environment.getMessages().registeredDeviceDeleted(id.getDeviceId())
-                ));
-            }
-        );
-    }
-
-    @Override
-    public void onDeviceRegistrationsRefresh() {
-        loadDeviceRegistrations(() -> {});
-    }
-
-    @Override
     public void delete() {
         adminContent.showConfirmation(
             environment.getMessages().confirmation(),
@@ -320,14 +297,14 @@ public class AdminUserEditActivity
             user -> {
                 this.user = user;
                 this.realm = user.getRealm();
-                loadRoles(() -> loadDeviceRegistrations(() -> {
+                loadRoles(() -> {
                     writeToView();
                     adminContent.setFormBusy(false);
                     adminContent.enableCreate(false);
                     adminContent.enableUpdate(true);
                     adminContent.enableDelete(true);
                     adminContent.enableResetPassword(true);
-                }));
+                });
             }
         );
     }
@@ -343,18 +320,6 @@ public class AdminUserEditActivity
                 roleList.sort((o1, o2) -> o1.getName().compareToIgnoreCase(o2.getName()));
                 this.roles = roleList.toArray(new Role[roleList.size()]);
                 adminContent.enableRoles(true);
-                onComplete.run();
-            }
-        );
-    }
-
-    protected void loadDeviceRegistrations(Runnable onComplete) {
-        environment.getApp().getRequests().sendAndReturn(
-            deviceNotificationTokenMapper,
-            requestParams -> notificationResource.getDeviceTokens(requestParams, userId),
-            200,
-            deviceNotificationTokens -> {
-                adminContent.setDeviceRegistrations(deviceNotificationTokens);
                 onComplete.run();
             }
         );

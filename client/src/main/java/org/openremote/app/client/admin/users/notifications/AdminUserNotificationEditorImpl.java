@@ -26,7 +26,9 @@ import org.openremote.app.client.widget.*;
 import org.openremote.app.client.app.dialog.Dialog;
 import org.openremote.app.client.i18n.ManagerMessages;
 import org.openremote.model.interop.Consumer;
-import org.openremote.model.notification.AlertNotification;
+import org.openremote.model.notification.Notification;
+import org.openremote.model.notification.PushNotificationMessage;
+import org.openremote.model.notification.SentNotification;
 
 import javax.inject.Inject;
 
@@ -43,9 +45,9 @@ public class AdminUserNotificationEditorImpl implements AdminUserNotificationEdi
     final protected FormTextArea notificationMessageInput = new FormTextArea();
     final protected FormInputText notificationAppUrlInput = new FormInputText();
 
-    AlertNotification alertNotification;
+    Notification alertNotification;
 
-    Consumer<AlertNotification> onSend;
+    Consumer<Notification> onSend;
     Runnable onClose;
 
     @Inject
@@ -70,7 +72,7 @@ public class AdminUserNotificationEditorImpl implements AdminUserNotificationEdi
         sendButton.addStyleName(widgetStyle.PushButton());
         sendButton.addStyleName(widgetStyle.FormButtonPrimary());
         sendButton.addClickHandler(event -> {
-            AlertNotification notification = buildAlertNotification();
+            Notification notification = buildNotification();
             if (notification != null) {
                 if (onSend != null)
                     onSend.accept(notification);
@@ -139,16 +141,16 @@ public class AdminUserNotificationEditorImpl implements AdminUserNotificationEdi
     }
 
     @Override
-    public void setAlertNotification(AlertNotification notification) {
+    public void setNotification(Notification notification) {
         this.alertNotification = notification;
         errorPanel.clear();
         errorPanel.setVisible(false);
-        notificationTitleInput.setText(notification.getTitle());
-        notificationMessageInput.setText(notification.getMessage());
-        notificationAppUrlInput.setText(notification.getAppUrl());
+//        notificationTitleInput.setText(notification.getTitle());
+//        notificationMessageInput.setText(notification.getBody());
+//        notificationAppUrlInput.setText(notification.getAppUrl());
     }
 
-    public void setOnSend(Consumer<AlertNotification> onSend) {
+    public void setOnSend(Consumer<Notification> onSend) {
         this.onSend = onSend;
     }
 
@@ -160,7 +162,7 @@ public class AdminUserNotificationEditorImpl implements AdminUserNotificationEdi
         dialog.open();
     }
 
-    protected AlertNotification buildAlertNotification() {
+    protected Notification buildNotification() {
         errorPanel.clear();
         String notificationTitle = notificationTitleInput.getText();
         String notificationMessage = notificationMessageInput.getText();
@@ -175,9 +177,10 @@ public class AdminUserNotificationEditorImpl implements AdminUserNotificationEdi
             return null;
         }
         errorPanel.setVisible(false);
-        alertNotification.setTitle(notificationTitle);
-        alertNotification.setMessage(notificationMessage);
-        alertNotification.setAppUrl(notificationAppUrl);
-        return alertNotification;
+//        alertNotification.setTitle(notificationTitle);
+//        alertNotification.setBody(notificationMessage);
+//        alertNotification.setAppUrl(notificationAppUrl);
+//        return alertNotification;
+        return null;
     }
 }

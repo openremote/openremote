@@ -48,6 +48,10 @@ import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.http.ConstraintViolation;
 import org.openremote.model.interop.Consumer;
 import org.openremote.model.map.MapResource;
+import org.openremote.model.query.AssetQuery;
+import org.openremote.model.query.filter.AttributeMetaPredicate;
+import org.openremote.model.query.filter.BooleanPredicate;
+import org.openremote.model.query.filter.TenantPredicate;
 import org.openremote.model.util.EnumUtil;
 import org.openremote.model.util.Pair;
 import org.openremote.model.value.Value;
@@ -59,7 +63,6 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static org.openremote.model.asset.AssetAttribute.attributesFromJson;
-import static org.openremote.model.asset.AssetQuery.*;
 import static org.openremote.model.attribute.Attribute.ATTRIBUTE_NAME_VALIDATOR;
 import static org.openremote.model.attribute.Attribute.isAttributeNameEqualTo;
 import static org.openremote.model.attribute.MetaItem.isMetaNameEqualTo;
@@ -375,7 +378,7 @@ public class AssetEditActivity
             // Limit to assets that have the same realm as the asset being edited (if it has been assigned a realm
             // otherwise the query will be automatically restricted to the logged in users realm)
             if (!isNullOrEmpty(asset.getRealmId())) {
-                query.tenant(new AssetQuery.TenantPredicate(asset.getRealmId()));
+                query.tenant(new TenantPredicate(asset.getRealmId()));
             }
         }
 

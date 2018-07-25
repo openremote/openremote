@@ -24,6 +24,7 @@ import org.openremote.manager.setup.builtin.ManagerDemoSetup
 import org.openremote.model.asset.*
 import org.openremote.model.event.shared.SharedEvent
 import org.openremote.model.event.shared.TenantFilter
+import org.openremote.model.query.AssetQuery
 import org.openremote.model.security.Tenant
 import org.openremote.model.security.TenantResource
 import org.openremote.test.*

@@ -21,14 +21,14 @@ package org.openremote.manager.rules.geofence;
 
 import org.openremote.manager.rules.RulesEngine;
 import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.BaseAssetQuery;
+import org.openremote.model.query.filter.LocationPredicate;
 import org.openremote.model.rules.geofence.GeofenceDefinition;
 
 import java.util.List;
 
 /**
- * Defines an adapter that can take a collection of {@link BaseAssetQuery.LocationPredicate} that apply to a given
- * {@link Asset} and can convert the {@link BaseAssetQuery.LocationPredicate}s into Geofences that can be implemented by
+ * Defines an adapter that can take a collection of {@link LocationPredicate} that apply to a given
+ * {@link Asset} and can convert the {@link LocationPredicate}s into Geofences that can be implemented by
  * the asset(s) itself.
  * <p>
  * The adapter is notified when the {@link Asset}s {@link RulesEngine.AssetStateLocationPredicates} change; if the
@@ -61,7 +61,7 @@ public interface GeofenceAssetAdapter {
 
     /**
      * The initialising flag is used to indicate that the system is just initialising and the adapter is being made
-     * aware of existing {@link BaseAssetQuery.LocationPredicate}s; generally adapters should use this to initialise
+     * aware of existing {@link LocationPredicate}s; generally adapters should use this to initialise
      * their own state rather than 'pushing' geofences to the asset(s) it can be assumed that they were previously sent,
      * hence adapters should be more concerned with delta changes (but this is really up to the adapter).
      * <p>

@@ -24,7 +24,10 @@ import org.openremote.container.security.IdentityProvider;
 import org.openremote.container.web.ClientRequestInfo;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.event.shared.TenantFilter;
+import org.openremote.model.query.UserQuery;
 import org.openremote.model.security.*;
+
+import java.util.List;
 
 /**
  * SPI for implementations used by {@link ManagerIdentityService}, provides CRUD of
@@ -33,6 +36,10 @@ import org.openremote.model.security.*;
 public interface ManagerIdentityProvider extends IdentityProvider {
 
     User[] getUsers(ClientRequestInfo clientRequestInfo, String realm);
+
+    User[] getUsers(List<String> userIds);
+
+    User[] getUsers(UserQuery userQuery);
 
     User getUser(ClientRequestInfo clientRequestInfo, String realm, String userId);
 

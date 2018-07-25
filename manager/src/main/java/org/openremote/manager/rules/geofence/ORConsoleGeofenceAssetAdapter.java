@@ -30,13 +30,21 @@ import org.openremote.manager.notification.NotificationService;
 import org.openremote.manager.rules.RulesEngine;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.AssetQuery;
-import org.openremote.model.asset.BaseAssetQuery;
+import org.openremote.model.attribute.AttributeRef;
+import org.openremote.model.query.AssetQuery;
+import org.openremote.model.query.BaseAssetQuery;
 import org.openremote.model.attribute.AttributeType;
 import org.openremote.model.console.ConsoleConfiguration;
 import org.openremote.model.console.ConsoleProvider;
+import org.openremote.model.notification.Notification;
+import org.openremote.model.notification.PushNotificationMessage;
+import org.openremote.model.query.filter.LocationPredicate;
+import org.openremote.model.query.filter.ObjectValueKeyPredicate;
+import org.openremote.model.query.filter.RadialLocationPredicate;
 import org.openremote.model.rules.geofence.GeofenceDefinition;
 import org.openremote.model.util.TextUtil;
+import org.openremote.model.value.ObjectValue;
+import org.openremote.model.value.Values;
 
 import java.util.*;
 import java.util.concurrent.ScheduledFuture;
@@ -46,6 +54,8 @@ import java.util.stream.Collectors;
 
 import static org.openremote.container.concurrent.GlobalLock.withLock;
 import static org.openremote.container.persistence.PersistenceEvent.*;
+import static org.openremote.model.asset.AssetResource.Util.WRITE_ATTRIBUTE_HTTP_METHOD;
+import static org.openremote.model.asset.AssetResource.Util.getWriteAttributeUrl;
 import static org.openremote.model.asset.AssetType.CONSOLE;
 
 /**
@@ -60,8 +70,6 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
 
     private static final Logger LOG = Logger.getLogger(ORConsoleGeofenceAssetAdapter.class.getName());
     public static final String NAME = "ORConsole";
-    public static final String HTTP_METHOD = "PUT";
-    public static final String LOCATION_URL_FORMAT_TEMPLATE = "/asset/%1$s/attribute/location";
     public static int NOTIFY_ASSETS_DEBOUNCE_MILLIS = 60000;
     protected Map<String, RulesEngine.AssetStateLocationPredicates> assetLocationPredicatesMap = new HashMap<>();
     protected NotificationService notificationService;
@@ -92,7 +100,7 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
                                                   AttributeType.CONSOLE_PROVIDERS.getName()))
                 .type(CONSOLE)
                 .attributeValue(AttributeType.CONSOLE_PROVIDERS.getName(),
-                                new BaseAssetQuery.ObjectValueKeyPredicate("geofence")))
+                                new ObjectValueKeyPredicate("geofence")))
             .stream()
             .filter(ORConsoleGeofenceAssetAdapter::isLinkedToORConsoleGeofenceAdapter)
             .collect(Collectors.toMap(Asset::getId, Asset::getTenantRealm));
@@ -149,7 +157,7 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
                     assetStateLocationPredicates
                         .getLocationPredicates()
                         .removeIf(locationPredicate ->
-                                      !(locationPredicate instanceof BaseAssetQuery.RadialLocationPredicate));
+                                      !(locationPredicate instanceof RadialLocationPredicate));
 
                     // If not initialising compare existing with new predicates and notify affected assets
                     if (!initialising) {
@@ -213,23 +221,29 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
             .toArray(GeofenceDefinition[]::new);
     }
 
-    protected GeofenceDefinition locationPredicateToGeofenceDefinition(String assetId, BaseAssetQuery.LocationPredicate locationPredicate) {
-        BaseAssetQuery.RadialLocationPredicate radialLocationPredicate = (BaseAssetQuery.RadialLocationPredicate) locationPredicate;
+    protected GeofenceDefinition locationPredicateToGeofenceDefinition(String assetId, LocationPredicate locationPredicate) {
+        RadialLocationPredicate radialLocationPredicate = (RadialLocationPredicate) locationPredicate;
         String id = assetId + "_" + Integer.toString(radialLocationPredicate.hashCode());
-        String url = String.format(LOCATION_URL_FORMAT_TEMPLATE,
-                                       assetId);
+        String url = getWriteAttributeUrl(new AttributeRef(assetId, AttributeType.LOCATION.getName()));
         return new GeofenceDefinition(id,
                                       radialLocationPredicate.getLat(),
                                       radialLocationPredicate.getLng(),
                                       radialLocationPredicate.getRadius(),
-                                      HTTP_METHOD,
+                                      WRITE_ATTRIBUTE_HTTP_METHOD,
                                       url);
     }
 
+    /**
+     * Send a silent push notification to the console to get it to refresh its geofences
+     */
     protected void notifyAssetGeofencesChanged(String assetId) {
-        Map<String, String> data = new HashMap<>();
+        ObjectValue data = Values.createObject();
         data.put("action", "GEOFENCE_REFRESH");
-        notificationService.notifyConsoleSilently(assetId, data);
+        notificationService.sendNotification(
+            new Notification(
+                "GeofenceRefresh",
+                new PushNotificationMessage().setData(data),
+                new Notification.Targets(Notification.TargetType.ASSET, Collections.singletonList(assetId))));
     }
 
     protected void processConsoleAssetChange(Asset asset, PersistenceEvent persistenceEvent) {

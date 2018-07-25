@@ -9,7 +9,7 @@ import org.openremote.manager.setup.SetupService
 import org.openremote.manager.setup.builtin.ManagerDemoSetup
 import org.openremote.model.asset.Asset
 import org.openremote.model.asset.AssetAttribute
-import org.openremote.model.asset.AssetQuery
+import org.openremote.model.query.AssetQuery
 import org.openremote.model.asset.AssetType
 import org.openremote.model.asset.agent.AgentLink
 import org.openremote.model.attribute.AttributeEvent

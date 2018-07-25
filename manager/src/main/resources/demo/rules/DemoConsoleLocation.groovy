@@ -1,20 +1,23 @@
 package demo.rules
 
 import org.openremote.manager.rules.RulesBuilder
-import org.openremote.manager.rules.facade.ConsolesFacade
+import org.openremote.manager.rules.facade.NotificationsFacade
 import org.openremote.manager.setup.builtin.ManagerDemoSetup
-import org.openremote.model.asset.AssetQuery
+import org.openremote.model.notification.Notification
+import org.openremote.model.query.AssetQuery
 import org.openremote.model.asset.AssetType
-import org.openremote.model.asset.BaseAssetQuery
 import org.openremote.model.attribute.AttributeType
-import org.openremote.model.notification.AlertNotification
+import org.openremote.model.notification.PushNotificationMessage
+import org.openremote.model.query.filter.RadialLocationPredicate
+import org.openremote.model.query.filter.ValueEmptyPredicate
 import org.openremote.model.rules.Assets
+import org.openremote.model.rules.Notifications
 
 import java.util.logging.Logger
 
 Logger LOG = binding.LOG
 RulesBuilder rules = binding.rules
-ConsolesFacade consolesFacade = binding.consoles
+Notifications notifications = binding.notifications
 Assets assets = binding.assets
 
 rules.add()
@@ -25,7 +28,7 @@ rules.add()
             def consoleIds = facts.matchAssetState(new AssetQuery()
                                                      .type(AssetType.CONSOLE)
                                                      .location(
-                new BaseAssetQuery.RadialLocationPredicate(100, ManagerDemoSetup.SMART_HOME_LOCATION.y, ManagerDemoSetup.SMART_HOME_LOCATION.x)))
+                new RadialLocationPredicate(100, ManagerDemoSetup.SMART_HOME_LOCATION.y, ManagerDemoSetup.SMART_HOME_LOCATION.x)))
                                 .filter({!facts.getOptional("welcomeHome" + "_${it.id}").isPresent()})
                                 .map({it.id})
                                 .collect()
@@ -41,15 +44,15 @@ rules.add()
         facts ->
 
             List<String> consoleIds = facts.bound("consoleIds")
+            Notification notification = new Notification(
+                "Welcome Home",
+                new PushNotificationMessage("Welcome Home", "No new events to report", null, null, null),
+                new Notification.Targets(Notification.TargetType.ASSET, consoleIds))
 
-            AlertNotification alert = new AlertNotification(
-                title: "Welcome Home",
-                message: "No new events to report"
-            )
+            notifications.send(notification)
 
             consoleIds.forEach({
                 LOG.info("Welcome Home triggered: $it")
-                consolesFacade.notify(it, alert)
                 facts.put("welcomeHome" + "_${it}", it)
             })
     })
@@ -61,7 +64,7 @@ rules.add()
 
             def consoleIds = facts.matchAssetState(new AssetQuery()
                                                      .type(AssetType.CONSOLE)
-                                                     .attributeValue(AttributeType.LOCATION.name, new BaseAssetQuery.ValueEmptyPredicate()))
+                                                     .attributeValue(AttributeType.LOCATION.name, new ValueEmptyPredicate()))
                                 .filter({facts.getOptional("welcomeHome" + "_${it.id}").isPresent()})
                                 .map({it.id})
                                 .collect()

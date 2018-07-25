@@ -124,9 +124,6 @@
 
             </g:HTMLPanel>
 
-            <g:FlowPanel ui:field="registeredDevicesContainer"
-                         styleName="flex layout vertical {widgetStyle.MainContent} {widgetStyle.FormList}"/>
-
             <g:FlowPanel styleName="flex-none layout vertical {widgetStyle.MainContent}">
                 <w:FormGroup>
                     <w:field>
@@ -137,9 +134,6 @@
                                                visible="false" icon="save"/>
                             <w:FormButton ui:field="deleteButton" danger="true" text="{managerMessages.deleteUser}"
                                                visible="false" icon="trash"/>
-                            <w:FormButton ui:field="refreshDeviceRegistrations"
-                                               text="{managerMessages.refreshDeviceRegistrations}"
-                                               icon="refresh"/>
                         </w:FormField>
                     </w:field>
                 </w:FormGroup>

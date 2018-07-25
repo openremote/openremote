@@ -22,23 +22,19 @@ package org.openremote.app.client.admin.users.edit;
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.dom.client.Style;
 import com.google.gwt.event.dom.client.ClickEvent;
-import com.google.gwt.i18n.client.DateTimeFormat;
 import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
 import com.google.gwt.uibinder.client.UiHandler;
 import com.google.gwt.user.client.ui.*;
 import com.google.inject.Provider;
-import org.openremote.app.client.widget.*;
-import org.openremote.app.client.widget.PushButton;
 import org.openremote.app.client.Environment;
 import org.openremote.app.client.admin.users.AdminUsersNavigation;
 import org.openremote.app.client.app.dialog.Confirmation;
-import org.openremote.model.notification.DeviceNotificationToken;
-import org.openremote.model.Constants;
+import org.openremote.app.client.widget.*;
+import org.openremote.app.client.widget.PushButton;
 
 import javax.inject.Inject;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 
 public class AdminUserEditImpl extends FormViewImpl implements AdminUserEdit {
@@ -319,28 +315,6 @@ public class AdminUserEditImpl extends FormViewImpl implements AdminUserEdit {
     }
 
     @Override
-    public void setDeviceRegistrations(List<DeviceNotificationToken> deviceNotificationTokens) {
-        clearRegisteredDevices(deviceNotificationTokens.size() == 0);
-        for (DeviceNotificationToken deviceNotificationToken : deviceNotificationTokens) {
-            registeredDevicesContainer.add(new DeviceRegistrationItem(deviceNotificationToken));
-        }
-    }
-
-    @Override
-    public void removeDeviceRegistration(DeviceNotificationToken.Id id) {
-        for (int i = 0; i < registeredDevicesContainer.getWidgetCount(); i++) {
-            if (registeredDevicesContainer.getWidget(i) instanceof DeviceRegistrationItem) {
-                DeviceRegistrationItem item = (DeviceRegistrationItem) registeredDevicesContainer.getWidget(i);
-                if (item.getDeviceNotificationToken().getId().equals(id))
-                    registeredDevicesContainer.remove(i);
-            }
-        }
-        if (registeredDevicesContainer.getWidgetCount() == 0) {
-            clearRegisteredDevices(true);
-        }
-    }
-
-    @Override
     public void enableCreate(boolean enable) {
         createButton.setVisible(enable);
     }
@@ -373,96 +347,12 @@ public class AdminUserEditImpl extends FormViewImpl implements AdminUserEdit {
             presenter.delete();
     }
 
-    @UiHandler("refreshDeviceRegistrations")
-    void refreshDeviceRegistrationsClicked(ClickEvent e) {
-        if (presenter != null)
-            presenter.onDeviceRegistrationsRefresh();
-    }
-
     protected void clearRegisteredDevices(boolean addEmptyMessage) {
        registeredDevicesContainer.clear();
         if (addEmptyMessage) {
             Label emptyLabel = new Label(managerMessages.noRegisteredDevices());
             emptyLabel.addStyleName(widgetStyle.FormListEmptyMessage());
             registeredDevicesContainer.add(emptyLabel);
-        }
-    }
-
-    protected class DeviceRegistrationItem extends FlowPanel {
-
-        private final DeviceNotificationToken deviceNotificationToken;
-
-        public DeviceRegistrationItem(DeviceNotificationToken deviceNotificationToken) {
-            this.deviceNotificationToken = deviceNotificationToken;
-            setStyleName("flex-none layout vertical or-FormListItem");
-
-            FormGroup deviceIdGroup = new FormGroup();
-            deviceIdGroup.setFormGroupActions(new FormGroupActions());
-            FormField deviceIdField = new FormField();
-            FormLabel deviceIdLabel = new FormLabel(managerMessages.registeredDeviceId());
-            deviceIdLabel.addStyleName("larger");
-            deviceIdGroup.setFormLabel(deviceIdLabel);
-            deviceIdGroup.setFormField(deviceIdField);
-            FormInputText deviceIdTxt = new FormInputText(deviceNotificationToken.getId().getDeviceId());
-            deviceIdTxt.setReadOnly(true);
-            deviceIdField.add(deviceIdTxt);
-            add(deviceIdGroup);
-
-            FormButton deleteButton = new FormButton();
-            deleteButton.setDanger(true);
-            deleteButton.setIcon("trash-o");
-            deleteButton.setText(managerMessages.deleteRegistration());
-            deleteButton.addClickHandler(event -> {
-                if (presenter != null)
-                    presenter.onDeviceRegistrationDelete(deviceNotificationToken.getId());
-            });
-            deviceIdGroup.getFormGroupActions().add(deleteButton);
-
-            FlowPanel typeLoginPanel = new FlowPanel();
-            typeLoginPanel.setStyleName("layout horizontal wrap");
-            add(typeLoginPanel);
-
-            FormGroup deviceTypeGroup = new FormGroup();
-            FormField deviceTypeField = new FormField();
-            FormLabel deviceTypeLabel = new FormLabel(managerMessages.registeredDeviceType());
-            deviceTypeLabel.addStyleName("larger");
-            deviceTypeGroup.setFormLabel(deviceTypeLabel);
-            deviceTypeGroup.setFormField(deviceTypeField);
-            FormOutputText deviceTypeOutput = new FormOutputText(
-                deviceNotificationToken.getDeviceType() != null ? deviceNotificationToken.getDeviceType() : "-"
-            );
-            deviceTypeField.add(deviceTypeOutput);
-            typeLoginPanel.add(deviceTypeGroup);
-
-            // TODO The label says "first login" because we still don't capture last login on service/from consoles
-            FormGroup lastLoginGroup = new FormGroup();
-            FormField lastLoginField = new FormField();
-            FormLabel lastLoginLabel = new FormLabel(managerMessages.registeredDeviceLastLogin());
-            lastLoginLabel.addStyleName("larger");
-            lastLoginGroup.setFormLabel(lastLoginLabel);
-            lastLoginGroup.setFormField(lastLoginField);
-            FormOutputText lastLoginOutput = new FormOutputText(
-                DateTimeFormat.getFormat(Constants.DEFAULT_DATETIME_FORMAT).format(deviceNotificationToken.getUpdatedOn())
-            );
-            lastLoginField.add(lastLoginOutput);
-            typeLoginPanel.add(lastLoginGroup);
-
-            FormGroup notificationTokenGroup = new FormGroup();
-            notificationTokenGroup.setFormGroupActions(new FormGroupActions());
-            FormField notificationTokenField = new FormField();
-            FormLabel notificationTokenLabel = new FormLabel(managerMessages.registeredDeviceNotificationToken());
-            notificationTokenLabel.addStyleName("larger");
-            notificationTokenGroup.setFormLabel(notificationTokenLabel);
-            notificationTokenGroup.setFormField(notificationTokenField);
-            FormInputText notificationTokenTxt = new FormInputText(deviceNotificationToken.getToken());
-            notificationTokenTxt.setReadOnly(true);
-            notificationTokenTxt.addStyleName("flex");
-            notificationTokenField.add(notificationTokenTxt);
-            add(notificationTokenGroup);
-        }
-
-        public DeviceNotificationToken getDeviceNotificationToken() {
-            return deviceNotificationToken;
         }
     }
 }

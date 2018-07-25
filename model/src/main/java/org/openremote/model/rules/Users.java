@@ -19,11 +19,10 @@
  */
 package org.openremote.model.rules;
 
-import org.openremote.model.notification.AlertNotification;
-import org.openremote.model.user.UserQuery;
+import org.openremote.model.query.UserQuery;
 
 import java.util.List;
-import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 /**
  * Facade for writing rules RHS actions, supporting {@link UserQuery} within the scope
@@ -34,12 +33,8 @@ public abstract class Users {
     public abstract class RestrictedQuery extends UserQuery<RestrictedQuery> {
 
         abstract public List<String> getResults();
-
-        abstract public void applyResults(Consumer<List<String>> assetIdListConsumer);
     }
 
     abstract public RestrictedQuery query();
-
-    abstract public void storeAndNotify(String userId, AlertNotification alert);
 
 }

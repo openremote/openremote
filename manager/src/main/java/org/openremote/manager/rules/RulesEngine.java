@@ -27,12 +27,12 @@ import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.concurrent.ManagerExecutorService;
 import org.openremote.manager.notification.NotificationService;
 import org.openremote.manager.rules.facade.AssetsFacade;
-import org.openremote.manager.rules.facade.ConsolesFacade;
+import org.openremote.manager.rules.facade.NotificationsFacade;
 import org.openremote.manager.rules.facade.UsersFacade;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetMeta;
-import org.openremote.model.asset.BaseAssetQuery;
+import org.openremote.model.query.filter.LocationPredicate;
 import org.openremote.model.rules.*;
 
 import java.util.*;
@@ -47,14 +47,14 @@ import static org.openremote.manager.rules.RulesetDeployment.Status.*;
 public class RulesEngine<T extends Ruleset> {
 
     /**
-     * Identifies a set of {@link BaseAssetQuery.LocationPredicate}s associated with a particular {@link Asset}
+     * Identifies a set of {@link LocationPredicate}s associated with a particular {@link Asset}
      */
     public static final class AssetStateLocationPredicates {
 
         protected final String assetId;
-        protected final Set<BaseAssetQuery.LocationPredicate> locationPredicates;
+        protected final Set<LocationPredicate> locationPredicates;
 
-        public AssetStateLocationPredicates(String assetId, Set<BaseAssetQuery.LocationPredicate> locationPredicates) {
+        public AssetStateLocationPredicates(String assetId, Set<LocationPredicate> locationPredicates) {
             this.assetId = assetId;
             this.locationPredicates = locationPredicates;
         }
@@ -63,7 +63,7 @@ public class RulesEngine<T extends Ruleset> {
             return assetId;
         }
 
-        public Set<BaseAssetQuery.LocationPredicate> getLocationPredicates() {
+        public Set<LocationPredicate> getLocationPredicates() {
             return locationPredicates;
         }
     }
@@ -83,7 +83,7 @@ public class RulesEngine<T extends Ruleset> {
     final protected RulesEngineId<T> id;
     final protected Assets assetsFacade;
     final protected Users usersFacade;
-    final protected ConsolesFacade consolesFacade;
+    final protected NotificationsFacade notificationFacade;
     final protected AssetLocationPredicateProcessor assetLocationPredicatesConsumer;
 
     final protected Map<Long, RulesetDeployment> deployments = new LinkedHashMap<>();
@@ -116,7 +116,7 @@ public class RulesEngine<T extends Ruleset> {
         AssetsFacade<T> assetsFacade = new AssetsFacade<>(id, assetStorageService, assetProcessingService::sendAttributeEvent);
         this.assetsFacade = assetsFacade;
         this.usersFacade = new UsersFacade<>(id, assetStorageService, notificationService, identityService);
-        this.consolesFacade = new ConsolesFacade<>(assetsFacade, notificationService, identityService);
+        this.notificationFacade = new NotificationsFacade<>(id, notificationService);
         this.assetLocationPredicatesConsumer = assetLocationPredicatesConsumer;
 
         this.facts = new RulesFacts(assetsFacade, this, RULES_LOG);
@@ -207,7 +207,7 @@ public class RulesEngine<T extends Ruleset> {
 
         deployment = new RulesetDeployment(ruleset.getId(), ruleset.getName(), ruleset.getVersion());
 
-        boolean compilationSuccessful = deployment.registerRules(ruleset, assetsFacade, usersFacade, consolesFacade);
+        boolean compilationSuccessful = deployment.registerRules(ruleset, assetsFacade, usersFacade, notificationFacade);
 
         if (!compilationSuccessful) {
             // If any other ruleset is DEPLOYED in this scope, demote to READY

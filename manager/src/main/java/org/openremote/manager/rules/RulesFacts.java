@@ -22,10 +22,10 @@ package org.openremote.manager.rules;
 import org.jeasy.rules.api.Facts;
 import org.jeasy.rules.api.Rule;
 import org.jeasy.rules.api.RuleListener;
-import org.openremote.model.asset.AssetQuery;
-import org.openremote.model.asset.BaseAssetQuery;
+import org.openremote.model.query.AssetQuery;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeExecuteStatus;
+import org.openremote.model.query.filter.LocationPredicate;
 import org.openremote.model.rules.AssetState;
 import org.openremote.model.rules.Assets;
 import org.openremote.model.rules.TemporaryFact;
@@ -66,7 +66,7 @@ public class RulesFacts extends Facts implements RuleListener {
 
     protected int triggerCount;
     protected boolean trackLocationRules;
-    protected Map<String, Set<BaseAssetQuery.LocationPredicate>> assetStateLocationPredicateMap = null;
+    protected Map<String, Set<LocationPredicate>> assetStateLocationPredicateMap = null;
 
     public RulesFacts(Assets assetsFacade, Object loggingContext, Logger logger) {
         this.assetsFacade = assetsFacade;
@@ -87,7 +87,7 @@ public class RulesFacts extends Facts implements RuleListener {
     protected List<RulesEngine.AssetStateLocationPredicates> stopTrackingLocationRules() {
         LOG.finer("Tracking location predicate rules: stopping");
         trackLocationRules = false;
-        Map<String, Set<BaseAssetQuery.LocationPredicate>> assetStateLocationPredicateMap = this.assetStateLocationPredicateMap;
+        Map<String, Set<LocationPredicate>> assetStateLocationPredicateMap = this.assetStateLocationPredicateMap;
         this.assetStateLocationPredicateMap = null;
         return assetStateLocationPredicateMap.entrySet().stream()
             .map(assetStateSetEntry ->
@@ -450,7 +450,7 @@ public class RulesFacts extends Facts implements RuleListener {
 
         // If the query is by asset ID, look up a smaller stream on asset ID index
         Collection<AssetState> assetStatesForId;
-        if (assetQuery.id != null && ((assetStatesForId = assetIdIndex.get(assetQuery.id)) != null)) {
+        if (assetQuery.ids != null && ((assetStatesForId = assetIdIndex.get(assetQuery.ids)) != null)) {
             return assetStatesForId.stream().parallel().filter(p);
         }
 

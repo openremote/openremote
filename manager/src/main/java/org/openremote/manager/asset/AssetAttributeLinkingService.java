@@ -25,7 +25,7 @@ import org.openremote.manager.asset.AssetProcessingException.Reason;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetMeta;
-import org.openremote.model.asset.AssetQuery;
+import org.openremote.model.query.AssetQuery;
 import org.openremote.model.attribute.*;
 import org.openremote.model.attribute.AttributeEvent.Source;
 import org.openremote.model.util.Pair;
@@ -37,8 +37,8 @@ import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.logging.Logger;
 
-import static org.openremote.model.asset.AssetQuery.Include;
-import static org.openremote.model.asset.AssetQuery.Select;
+import static org.openremote.model.query.AssetQuery.Include;
+import static org.openremote.model.query.AssetQuery.Select;
 import static org.openremote.model.attribute.AttributeEvent.Source.ATTRIBUTE_LINKING_SERVICE;
 import static org.openremote.model.attribute.MetaItem.isMetaNameEqualTo;
 

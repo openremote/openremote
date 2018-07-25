@@ -1,22 +1,24 @@
 package org.openremote.test.rules.residence
 
-import com.google.firebase.messaging.Message
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
-import org.openremote.manager.notification.FCMDeliveryService
 import org.openremote.manager.notification.NotificationService
+import org.openremote.manager.notification.PushNotificationHandler
 import org.openremote.manager.rules.RulesEngine
 import org.openremote.manager.rules.RulesService
 import org.openremote.manager.rules.RulesetStorageService
+import org.openremote.manager.rules.geofence.ORConsoleGeofenceAssetAdapter
 import org.openremote.manager.setup.SetupService
-import org.openremote.manager.setup.builtin.KeycloakDemoSetup
 import org.openremote.manager.setup.builtin.ManagerDemoSetup
 import org.openremote.model.attribute.AttributeEvent
-import org.openremote.model.notification.ActionType
-import org.openremote.model.notification.AlertAction
-import org.openremote.model.notification.NotificationResource
+import org.openremote.model.attribute.AttributeRef
+import org.openremote.model.console.ConsoleProvider
+import org.openremote.model.console.ConsoleRegistration
+import org.openremote.model.console.ConsoleResource
+import org.openremote.model.notification.*
 import org.openremote.model.rules.AssetRuleset
 import org.openremote.model.rules.Ruleset
+import org.openremote.model.value.ObjectValue
 import org.openremote.model.value.Values
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
@@ -26,36 +28,46 @@ import java.util.concurrent.TimeUnit
 
 import static org.openremote.manager.setup.builtin.ManagerDemoSetup.DEMO_RULE_STATES_APARTMENT_1
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID
+import static org.openremote.model.asset.AssetResource.Util.WRITE_ATTRIBUTE_HTTP_METHOD
+import static org.openremote.model.asset.AssetResource.Util.getWriteAttributeUrl
+import static org.openremote.model.value.Values.parse
 
 class ResidenceNotifyAlarmTriggerTest extends Specification implements ManagerContainerTrait {
 
     def "Trigger notification when presence is detected and alarm enabled"() {
 
-        given: "the container environment is started"
-        def conditions = new PollingConditions(timeout: 15, delay: 1)
+        def notificationIds = []
+        def targetTypes = []
+        def targetIds = []
+        def messages = []
+
+        given: "a mock push notification handler"
+        PushNotificationHandler mockPushNotificationHandler = Spy(PushNotificationHandler) {
+            isValid() >> true
+
+            // Assume sent to FCM
+            sendMessage(*_) >> {
+                    id, targetType, targetId, message ->
+                        notificationIds << id
+                        targetTypes << targetType
+                        targetIds << targetId
+                        messages << message
+                        return NotificationSendResult.success()
+            }
+        }
+
+        and: "the container environment is started with the mock handler"
+        def conditions = new PollingConditions(timeout: 20, delay: 1)
         def serverPort = findEphemeralPort()
-        def container = startContainerWithPseudoClock(defaultConfig(serverPort), defaultServices())
-        def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
+        def services = defaultServices()
+        ((NotificationService)services.find {it instanceof NotificationService}).notificationHandlerMap.put("push", mockPushNotificationHandler)
+        def container = startContainerWithPseudoClock(defaultConfig(serverPort), services)
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def rulesService = container.getService(RulesService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
         def assetStorageService = container.getService(AssetStorageService.class)
         def rulesetStorageService = container.getService(RulesetStorageService.class)
         RulesEngine apartment1Engine
-
-        and: "a mock FCM delivery service"
-        def mockFCMDeliveryService = Spy(FCMDeliveryService, constructorArgs: [container]) {
-            // Assume valid
-            isValid() >> {
-                return true
-            }
-            // Always "deliver" to FCM
-            sendMessage(_ as Message) >> {
-                return true
-            }
-        }
-        def notificationService = container.getService(NotificationService)
-        notificationService.fcmDeliveryService = mockFCMDeliveryService
 
         and: "some rules"
         Ruleset ruleset = new AssetRuleset(
@@ -90,14 +102,36 @@ class ResidenceNotifyAlarmTriggerTest extends Specification implements ManagerCo
                 "testuser3"
         ).token
 
-        and: "the notification resource"
-        def notificationResource = getClientTarget(serverUri(serverPort), realm, accessToken).proxy(NotificationResource.class)
+        and: "the notification and console resources"
+        def authenticatedConsoleResource = getClientTarget(serverUri(serverPort), realm, accessToken).proxy(ConsoleResource.class)
 
-        when: "the notification tokens of some devices are stored"
-        notificationResource.storeDeviceToken(null, "device123", "token123", "ANDROID")
+        when: "a console is registered by the test user"
+        def consoleRegistration = new ConsoleRegistration(null,
+                                                          "Test Console",
+                                                          "1.0",
+                                                          "Android 7.0",
+                                                          new HashMap<String, ConsoleProvider>() {
+                                                              {
+                                                                  put("geofence", new ConsoleProvider(
+                                                                      ORConsoleGeofenceAssetAdapter.NAME,
+                                                                      true,
+                                                                      false,
+                                                                      false,
+                                                                      null
+                                                                  ))
+                                                                  put("push", new ConsoleProvider(
+                                                                      "fcm",
+                                                                      true,
+                                                                      true,
+                                                                      false,
+                                                                      (ObjectValue)parse("{token: \"23123213ad2313b0897efd\"}").orElse(null)
+                                                                  ))
+                                                              }
+                                                          })
+        def returnedConsoleRegistration = authenticatedConsoleResource.register(null, consoleRegistration)
 
-        then: "the tokens should be in the database"
-        notificationService.findDeviceToken("device123", keycloakDemoSetup.testuser3Id).get().token == "token123"
+        then: "the console should be registered"
+        assert returnedConsoleRegistration.id != null
 
         when: "the alarm is enabled"
         assetProcessingService.sendAttributeEvent(new AttributeEvent(
@@ -123,13 +157,25 @@ class ResidenceNotifyAlarmTriggerTest extends Specification implements ManagerCo
 
         and: "the user should be notified"
         conditions.eventually {
-            def alerts = notificationResource.getQueuedNotificationsOfCurrentUser(null)
-            assert alerts.size() == 1
-            assert alerts[0].title == "Apartment Alarm"
-            assert alerts[0].message.startsWith("Aanwezigheid in Living Room")
-            assert alerts[0].actions.length() == 2
-            assert alerts[0].actions.getObject(0).orElse(null) == new AlertAction("Details", ActionType.LINK, "#security").objectValue
-            assert alerts[0].actions.getObject(1).orElse(null) == new AlertAction("Alarm uit", ActionType.ACTUATOR, managerDemoSetup.apartment1Id, "alarmEnabled", Values.create(false).toJson()).objectValue
+            assert notificationIds.size() == 1
+            assert targetTypes[0] == Notification.TargetType.ASSET
+            assert targetIds[0] == returnedConsoleRegistration.id
+            def pushMessage = (PushNotificationMessage) messages[0]
+            assert pushMessage.title == "Apartment Alarm"
+            assert pushMessage.body.startsWith("Aanwezigheid in Living Room")
+            assert pushMessage.buttons.size() == 2
+            assert pushMessage.buttons[0].title == "Details"
+            assert pushMessage.buttons[0].action.url == "#security"
+            assert pushMessage.buttons[0].action.httpMethod == null
+            assert pushMessage.buttons[0].action.data == null
+            assert !pushMessage.buttons[0].action.openInBrowser
+            assert !pushMessage.buttons[0].action.silent
+            assert pushMessage.buttons[1].title == "Alarm uit"
+            assert pushMessage.buttons[1].action.url == getWriteAttributeUrl(new AttributeRef(managerDemoSetup.apartment1Id, "alarmEnabled"))
+            assert pushMessage.buttons[1].action.httpMethod == WRITE_ATTRIBUTE_HTTP_METHOD
+            assert !Values.getBoolean(pushMessage.buttons[1].action.data).orElse(true)
+            assert !pushMessage.buttons[1].action.openInBrowser
+            assert pushMessage.buttons[1].action.silent
         }
 
         when: "time moves on and other events happen that trigger evaluation in the rule engine"
@@ -138,24 +184,22 @@ class ResidenceNotifyAlarmTriggerTest extends Specification implements ManagerCo
                 managerDemoSetup.apartment1LivingroomId, "co2Level", Values.create(444), getClockTimeOf(container)
         ))
 
-        then: "we have still only one notification pending"
+        then: "still only one notification should have been sent"
         conditions.eventually {
             def asset = assetStorageService.find(managerDemoSetup.apartment1LivingroomId, true)
             assert asset.getAttribute("co2Level").get().valueAsInteger.orElse(null) == 444
-            def alerts = notificationResource.getQueuedNotificationsOfCurrentUser(null)
-            assert alerts.size() == 1
+            assert notificationIds.size() == 1
         }
 
-        when: "time moves on"
+        when: "time moves on more than the alarm silence duration"
         advancePseudoClock(30, TimeUnit.MINUTES, container)
 
-        then: "we notify again and now have two notifications pending"
+        then: "another notification should be sent"
         conditions.eventually {
-            def alerts = notificationResource.getQueuedNotificationsOfCurrentUser(null)
-            assert alerts.size() == 2
+            assert notificationIds.size() == 2
         }
 
-        when: "the presence os no longer in Living room of apartment 1"
+        when: "the presence is no longer triggered in Living room of apartment 1"
         advancePseudoClock(5, TimeUnit.SECONDS, container)
         assetProcessingService.sendAttributeEvent(new AttributeEvent(
                 managerDemoSetup.apartment1LivingroomId, "presenceDetected", Values.create(false), getClockTimeOf(container)
@@ -170,10 +214,9 @@ class ResidenceNotifyAlarmTriggerTest extends Specification implements ManagerCo
         when: "time moves on"
         advancePseudoClock(40, TimeUnit.MINUTES, container)
 
-        then: "we have still only two notifications pending"
+        then: "still only two notifications should have been sent"
         conditions.eventually {
-            def alerts = notificationResource.getQueuedNotificationsOfCurrentUser(null)
-            assert alerts.size() == 2
+            assert notificationIds.size() == 2
         }
 
         cleanup: "the server should be stopped"

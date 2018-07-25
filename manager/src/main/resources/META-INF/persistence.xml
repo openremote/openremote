@@ -12,8 +12,7 @@
 
         <class>org.openremote.model.asset.Asset</class>
         <class>org.openremote.model.notification.DeviceNotificationToken</class>
-        <class>org.openremote.model.notification.AlertNotification</class>
-        <class>org.openremote.model.notification.AlertAction</class>
+        <class>org.openremote.model.notification.SentNotification</class>
         <class>org.openremote.manager.security.UserConfiguration</class>
         <class>org.openremote.model.datapoint.AssetDatapoint</class>
         <class>org.openremote.model.asset.UserAsset</class>

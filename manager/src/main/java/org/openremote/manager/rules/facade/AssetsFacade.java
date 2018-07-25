@@ -22,13 +22,16 @@ package org.openremote.manager.rules.facade;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.rules.RulesEngineId;
 import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.BaseAssetQuery;
+import org.openremote.model.query.BaseAssetQuery;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeExecuteStatus;
+import org.openremote.model.query.filter.PathPredicate;
+import org.openremote.model.query.filter.TenantPredicate;
 import org.openremote.model.rules.*;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.Values;
 
+import java.util.Collections;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
@@ -86,12 +89,15 @@ public class AssetsFacade<T extends Ruleset> extends Assets {
 
         @Override
         public String getResult() {
+            // TODO: 'Security' checks must be done here as AssetQuery fields can easily be set by a rule
             Asset asset = assetStorageService.find(this);
             return asset != null ? asset.getId() : null;
         }
 
         @Override
         public Stream<String> stream() {
+            // TODO: 'Security' checks must be done here as AssetQuery fields can easily be set by a rule
+
             if (this.select == null)
                 this.select = new Select();
             Include oldValue = this.select.include;
@@ -127,7 +133,7 @@ public class AssetsFacade<T extends Ruleset> extends Assets {
 
             // Check if the asset ID of the event can be found with the default query of this facade
             BaseAssetQuery<RestrictedQuery> checkQuery = query();
-            checkQuery.id = event.getEntityId(); // Set directly on field, as modifying query restrictions is not allowed
+            checkQuery.ids = Collections.singletonList(event.getEntityId()); // Set directly on field, as modifying query restrictions is not allowed
             if (assetStorageService.find(checkQuery) == null) {
                 throw new IllegalArgumentException(
                     "Access to asset not allowed for this rule engine scope: " + event

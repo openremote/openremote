@@ -20,11 +20,10 @@
 package org.openremote.model.asset;
 
 import jsinterop.annotations.JsType;
-import org.openremote.model.attribute.AttributeType;
-import org.openremote.model.geo.GeoJSONPoint;
+import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.http.SuccessStatusCode;
-import org.openremote.model.value.ValueType;
+import org.openremote.model.query.AssetQuery;
 
 import javax.annotation.security.RolesAllowed;
 import javax.validation.Valid;
@@ -61,6 +60,14 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 @Path("asset")
 @JsType(isNative = true)
 public interface AssetResource {
+
+    class Util {
+        public static final String WRITE_ATTRIBUTE_HTTP_METHOD = "PUT";
+
+        public static String getWriteAttributeUrl(AttributeRef attributeRef) {
+            return "/asset/" + attributeRef.getEntityId() + "/attribute/" + attributeRef.getAttributeName();
+        }
+    }
 
     // TODO This returns the same as #queryAssets, can it be removed?
 

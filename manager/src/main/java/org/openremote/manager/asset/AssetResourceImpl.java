@@ -25,9 +25,12 @@ import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebResource;
 import org.openremote.model.Constants;
 import org.openremote.model.asset.*;
-import org.openremote.model.asset.BaseAssetQuery.Select;
+import org.openremote.model.query.AssetQuery;
+import org.openremote.model.query.BaseAssetQuery.Select;
 import org.openremote.model.attribute.*;
 import org.openremote.model.http.RequestParams;
+import org.openremote.model.query.filter.ParentPredicate;
+import org.openremote.model.query.filter.TenantPredicate;
 import org.openremote.model.security.Tenant;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.value.Value;
@@ -42,7 +45,7 @@ import java.util.logging.Logger;
 
 import static javax.ws.rs.core.Response.Status.*;
 import static org.openremote.container.Container.JSON;
-import static org.openremote.model.asset.AssetQuery.*;
+import static org.openremote.model.query.AssetQuery.*;
 import static org.openremote.model.attribute.AttributeEvent.Source.CLIENT;
 import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 
@@ -371,7 +374,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                 // Process asynchronously but block for a little while waiting for the result
                 Map<String, Object> headers = new HashMap<>();
                 headers.put(AttributeEvent.HEADER_SOURCE, CLIENT);
-                //TODO needed for anonymous?
+
                 if (isAuthenticated()) {
                     headers.put(Constants.AUTH_CONTEXT, getAuthContext());
                 }

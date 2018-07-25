@@ -10,14 +10,23 @@ import org.openremote.manager.setup.builtin.KeycloakDemoSetup
 import org.openremote.manager.setup.builtin.ManagerDemoSetup
 import org.openremote.model.asset.Asset
 import org.openremote.model.asset.AssetMeta
-import org.openremote.model.asset.AssetQuery
+import org.openremote.model.query.AssetQuery
 import org.openremote.model.asset.AssetType
 import org.openremote.model.asset.CalendarEventConfiguration
-import org.openremote.model.attribute.AttributeType
 import org.openremote.model.calendar.CalendarEvent
 import org.openremote.model.calendar.RecurrenceRule
 import org.openremote.model.geo.GeoJSONPoint
-import org.openremote.model.value.Values
+import org.openremote.model.query.filter.PathPredicate
+import org.openremote.model.query.filter.AttributeMetaPredicate
+import org.openremote.model.query.filter.AttributePredicate
+import org.openremote.model.query.filter.AttributeRefPredicate
+import org.openremote.model.query.filter.BooleanPredicate
+import org.openremote.model.query.filter.NumberPredicate
+import org.openremote.model.query.filter.ParentPredicate
+import org.openremote.model.query.filter.RadialLocationPredicate
+import org.openremote.model.query.filter.RectangularLocationPredicate
+import org.openremote.model.query.filter.StringPredicate
+import org.openremote.model.query.filter.TenantPredicate
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Shared
 import spock.lang.Specification
@@ -26,12 +35,11 @@ import spock.util.concurrent.PollingConditions
 import javax.persistence.EntityManager
 import java.util.function.Function
 
-import static org.openremote.model.asset.AssetAttribute.createWithDescriptor
-import static org.openremote.model.asset.BaseAssetQuery.*
-import static org.openremote.model.asset.BaseAssetQuery.Access.PRIVATE_READ
-import static org.openremote.model.asset.BaseAssetQuery.Access.RESTRICTED_READ
-import static org.openremote.model.asset.BaseAssetQuery.OrderBy.Property.CREATED_ON
-import static org.openremote.model.asset.BaseAssetQuery.OrderBy.Property.NAME
+import static org.openremote.model.query.BaseAssetQuery.*
+import static org.openremote.model.query.BaseAssetQuery.Access.PRIVATE_READ
+import static org.openremote.model.query.BaseAssetQuery.Access.RESTRICTED_READ
+import static org.openremote.model.query.BaseAssetQuery.OrderBy.Property.CREATED_ON
+import static org.openremote.model.query.BaseAssetQuery.OrderBy.Property.NAME
 import static org.openremote.model.asset.AssetType.THING
 
 class AssetQueryTest extends Specification implements ManagerContainerTrait {
@@ -698,7 +706,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets = assetStorageService.findAll(
             new AssetQuery()
                 .select(new Select(Include.ONLY_ID_AND_NAME))
-                .location(new RectangularLocationPredicate(51.44540d,  5.46031d, 51.44594d, 5.46110d))
+                .location(new RectangularLocationPredicate(51.44540d, 5.46031d, 51.44594d, 5.46110d))
                 .tenant(new TenantPredicate(keycloakDemoSetup.masterTenant.id))
                 .orderBy(new OrderBy(NAME))
         )

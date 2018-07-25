@@ -24,7 +24,7 @@ import com.github.nmorel.gwtjackson.client.annotation.JsonMixIns;
 import org.openremote.app.client.interop.jackson.DefaultJsonMixin;
 import org.openremote.app.client.rest.EntityReader;
 import org.openremote.app.client.rest.EntityWriter;
-import org.openremote.model.asset.AssetQuery;
+import org.openremote.model.query.AssetQuery;
 
 @JsonMixIns({@JsonMixIns.JsonMixIn(target = AssetQuery.class, mixIn = DefaultJsonMixin.class)})
 public interface AssetQueryMapper
