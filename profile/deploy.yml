@@ -68,8 +68,8 @@ services:
       - "443:443"
 
     # Resource limits
-    mem_limit: 50m
-    memswap_limit: 50m
+    mem_limit: 100m
+    memswap_limit: 100m
 
     # Configure logging of the container
     logging:
