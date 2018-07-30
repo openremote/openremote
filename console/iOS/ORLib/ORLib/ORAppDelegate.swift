@@ -33,25 +33,27 @@ open class ORAppDelegate: UIResponder, UIApplicationDelegate, URLSessionDelegate
     public let internetReachability = Reachability()
 
     open func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplicationLaunchOptionsKey: Any]?) -> Bool {
-        UNUserNotificationCenter.current().delegate = self
-        let authOptions: UNAuthorizationOptions = [.alert, .badge, .sound]
-        UNUserNotificationCenter.current().requestAuthorization(
-            options: authOptions,
-            completionHandler: {_, _ in })
+        // if the app was launched because of geofencing
+        if launchOptions?[UIApplicationLaunchOptionsKey.location] != nil {
+            // create new GeofenceProvider which creates a CLLocationManager that will receive the location update
+            _ = GeofenceProvider()
+        } else {
+            UNUserNotificationCenter.current().delegate = self
 
-        FirebaseApp.configure()
-        Messaging.messaging().delegate = self
+            FirebaseApp.configure()
+            Messaging.messaging().delegate = self
 
-        application.registerForRemoteNotifications()
-        NotificationCenter.default.addObserver(self,
-                                               selector: #selector(self.reachabilityChanged(note:)),
-                                               name: NSNotification.Name.reachabilityChanged,
-                                               object: internetReachability)
-        do {
-            try internetReachability?.startNotifier()
-            self.updateReachabilityStatus(reachability: internetReachability!)
-        } catch {
-            print("Unable to start notifier")
+            application.registerForRemoteNotifications()
+            NotificationCenter.default.addObserver(self,
+                                                   selector: #selector(self.reachabilityChanged(note:)),
+                                                   name: NSNotification.Name.reachabilityChanged,
+                                                   object: internetReachability)
+            do {
+                try internetReachability?.startNotifier()
+                self.updateReachabilityStatus(reachability: internetReachability!)
+            } catch {
+                print("Unable to start notifier")
+            }
         }
         return true
     }
@@ -108,16 +110,9 @@ open class ORAppDelegate: UIResponder, UIApplicationDelegate, URLSessionDelegate
     }
 
     open func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable : Any], fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
-
-        if let actionsString = userInfo[DefaultsKey.dataKey] as? String {
-            if let actionData = actionsString.data(using: .utf8){
-                if let actionDict = try? JSONSerialization.jsonObject(with: actionData, options: []) as? [[String: String]], actions != nil {
-                    if let action = actionDict[DefaultsKey.actionKey] as? String {
-                        if action == Actions.geofenceRefresh {
-                            (self.window?.rootViewController as! ORViewcontroller).geofenceProvider?.refreshGeofences()
-                        }
-                    }
-                }
+        if let action = userInfo[DefaultsKey.actionKey] as? String {
+            if action == Actions.geofenceRefresh {
+                (self.window?.rootViewController as! ORViewcontroller).geofenceProvider?.refreshGeofences()
             }
         }
         completionHandler(UIBackgroundFetchResult.newData)
@@ -178,45 +173,45 @@ open class ORAppDelegate: UIResponder, UIApplicationDelegate, URLSessionDelegate
 }
 
 extension ORAppDelegate : UNUserNotificationCenterDelegate {
-
+    
     open func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
         completionHandler([.alert, .sound])
     }
 
     open func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
-            var assetId : String = ""
-            var attributeName : String = ""
-            var rawJson : String = ""
-            UIApplication.shared.isNetworkActivityIndicatorVisible = true
-            switch response.actionIdentifier {
-            case UNNotificationDefaultActionIdentifier,
-                 ActionType.ACTION_DEEP_LINK :
-                if let urlToOpen = response.notification.request.content.userInfo["appUrl"] as? String {
-                    if urlToOpen.hasPrefix("http") || urlToOpen.hasPrefix("https") {
-                        guard let urlRequest = URL(string:urlToOpen) else { return }
-                        (self.window?.rootViewController as! ORViewcontroller).loadURL(url:urlRequest)
-                    } else {
-                        guard let urlRequest = URL(string:String(format: "%@://%@/%@%@", ORServer.scheme, ORServer.hostURL, ORServer.navigationPath, urlToOpen)) else { return }
-                        (self.window?.rootViewController as! ORViewcontroller).loadURL(url:urlRequest)
-                    }
-                    NSLog("Action asked : %@", response.actionIdentifier)
+        var assetId : String = ""
+        var attributeName : String = ""
+        var rawJson : String = ""
+        UIApplication.shared.isNetworkActivityIndicatorVisible = true
+        switch response.actionIdentifier {
+        case UNNotificationDefaultActionIdentifier,
+             ActionType.ACTION_DEEP_LINK :
+            if let urlToOpen = response.notification.request.content.userInfo["appUrl"] as? String {
+                if urlToOpen.hasPrefix("http") || urlToOpen.hasPrefix("https") {
+                    guard let urlRequest = URL(string:urlToOpen) else { return }
+                    (self.window?.rootViewController as! ORViewcontroller).loadURL(url:urlRequest)
+                } else {
+                    guard let urlRequest = URL(string:String(format: "%@://%@/%@%@", ORServer.scheme, ORServer.hostURL, ORServer.navigationPath, urlToOpen)) else { return }
+                    (self.window?.rootViewController as! ORViewcontroller).loadURL(url:urlRequest)
                 }
-            case ActionType.ACTION_ACTUATOR :
                 NSLog("Action asked : %@", response.actionIdentifier)
-
-                if let actions = response.notification.request.content.userInfo["actions"] {
-                    assetId = (actions as! Dictionary<String,String>)["assetId"]!
-                    attributeName = (actions as! Dictionary<String,String>)["attributeName"]!
-                    rawJson = (actions as! Dictionary<String,String>)["rawJson"]!
-                }
-
-                if let jsonData = rawJson.data(using: .utf8) {
-                    ORAssetResoure.sharedInstance.updateAssetAttribute(assetId : assetId, attributeName : attributeName, rawJson : jsonData)
-                }
-            default : break
             }
-            completionHandler()
+        case ActionType.ACTION_ACTUATOR :
+            NSLog("Action asked : %@", response.actionIdentifier)
+
+            if let actions = response.notification.request.content.userInfo["actions"] {
+                assetId = (actions as! Dictionary<String,String>)["assetId"]!
+                attributeName = (actions as! Dictionary<String,String>)["attributeName"]!
+                rawJson = (actions as! Dictionary<String,String>)["rawJson"]!
+            }
+
+            if let jsonData = rawJson.data(using: .utf8) {
+                ORAssetResoure.sharedInstance.updateAssetAttribute(assetId : assetId, attributeName : attributeName, rawJson : jsonData)
+            }
+        default : break
         }
+        completionHandler()
+    }
 }
 
 extension ORAppDelegate : MessagingDelegate {

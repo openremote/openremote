@@ -11,7 +11,7 @@ Pod::Spec.new do |s|
   s.requires_arc = true
   s.version = '1.1.0'
   s.authors = 'OpenRemote'
-  s.homepage = "http://www.openremote.com/community/"
+  s.homepage = "http://www.openremote.io"
   s.source = { :git => 'https://github.com/openremote/openremote.git', :tag => 'cocoapod' + s.version.to_s }
   s.dependency 'Firebase/Core', '4.6.0'
   s.dependency 'Firebase/Messaging', '4.6.0'

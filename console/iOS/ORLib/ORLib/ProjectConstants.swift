@@ -26,6 +26,7 @@ public enum ORServer {
     public static var initialPath = "console/\(ORServer.realm)/"
     public static var navigationPath = "console/\(ORServer.realm)/"
     public static var realm = "openremote"
+    public static var baseUrl = "\(ORServer.scheme)://\(ORServer.hostURL)/"
     public static var apiTestResource = String(format:"\(ORServer.scheme)://%@/%@/notification/alert",ORServer.hostURL,ORServer.realm)
 
     public static var registerDeviceResource = String(format:"\(ORServer.scheme)://%@/%@/notification/token",ORServer.hostURL,ORServer.realm)
