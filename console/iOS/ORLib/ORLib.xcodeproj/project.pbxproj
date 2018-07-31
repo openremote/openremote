@@ -138,12 +138,10 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 4C82D7421FC58ED2009DE853 /* Build configuration list for PBXNativeTarget "ORLib" */;
 			buildPhases = (
-				96B4118FFE24AACE46B60F45 /* [CP] Check Pods Manifest.lock */,
 				4C82D7351FC58ED2009DE853 /* Sources */,
 				4C82D7361FC58ED2009DE853 /* Frameworks */,
 				4C82D7371FC58ED2009DE853 /* Headers */,
 				4C82D7381FC58ED2009DE853 /* Resources */,
-				C4FE859AEC10E3D92C80C6BB /* [CP] Copy Pods Resources */,
 			);
 			buildRules = (
 			);
@@ -196,42 +194,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
-
-/* Begin PBXShellScriptBuildPhase section */
-		96B4118FFE24AACE46B60F45 /* [CP] Check Pods Manifest.lock */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
-				"${PODS_ROOT}/Manifest.lock",
-			);
-			name = "[CP] Check Pods Manifest.lock";
-			outputPaths = (
-				"$(DERIVED_FILE_DIR)/Pods-ORLib-checkManifestLockResult.txt",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
-			showEnvVarsInLog = 0;
-		};
-		C4FE859AEC10E3D92C80C6BB /* [CP] Copy Pods Resources */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-			);
-			name = "[CP] Copy Pods Resources";
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-ORLib/Pods-ORLib-resources.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
-/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		4C82D7351FC58ED2009DE853 /* Sources */ = {
