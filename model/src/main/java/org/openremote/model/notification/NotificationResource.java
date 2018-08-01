@@ -120,6 +120,7 @@ public interface NotificationResource {
      */
     @PUT
     @Path("{notificationId}/acknowledged")
+    @Consumes(APPLICATION_JSON)
     @SuccessStatusCode(204)
     @SuppressWarnings("unusable-by-js")
     void notificationAcknowledged(@BeanParam RequestParams requestParams,

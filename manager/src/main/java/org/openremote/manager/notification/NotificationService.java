@@ -311,9 +311,9 @@ public class NotificationService extends RouteBuilder implements ContainerServic
 
     public void setNotificationDelivered(long id, long timestamp) {
         persistenceService.doTransaction(entityManager -> {
-            Query query = entityManager.createQuery("UPDATE Notification SET deliveryOn=:timestamp WHERE id =:id");
+            Query query = entityManager.createQuery("UPDATE SentNotification SET deliveredOn=:timestamp WHERE id =:id");
             query.setParameter("id", id);
-            query.setParameter("timestamp", timestamp);
+            query.setParameter("timestamp", new Date(timestamp));
             query.executeUpdate();
         });
     }
@@ -324,9 +324,9 @@ public class NotificationService extends RouteBuilder implements ContainerServic
 
     public void setNotificationAcknowleged(long id, String acknowledgement, long timestamp) {
         persistenceService.doTransaction(entityManager -> {
-            Query query = entityManager.createQuery("UPDATE Notification SET acknowledgedOn=:timestamp, acknowledgement=:acknowledgement WHERE id =:id");
+            Query query = entityManager.createQuery("UPDATE SentNotification SET acknowledgedOn=:timestamp, acknowledgement=:acknowledgement WHERE id =:id");
             query.setParameter("id", id);
-            query.setParameter("timestamp", timestamp);
+            query.setParameter("timestamp", new Date(timestamp));
             query.setParameter("acknowledgement", acknowledgement);
             query.executeUpdate();
         });
@@ -338,22 +338,21 @@ public class NotificationService extends RouteBuilder implements ContainerServic
 
     public List<SentNotification> getNotifications(List<String> types, Long timestamp, List<String> tenantIds, List<String> userIds, List<String> assetIds) throws IllegalArgumentException {
         StringBuilder builder = new StringBuilder();
-        builder.append("select Notification n where 1=1");
+        builder.append("select n from SentNotification n where 1=1");
         List<Object> parameters = new ArrayList<>();
         processCriteria(builder, parameters, types, timestamp, tenantIds, userIds, assetIds);
 
         return persistenceService.doReturningTransaction(entityManager -> {
             TypedQuery<SentNotification> query = entityManager.createQuery(builder.toString(), SentNotification.class);
-            // Parameters should be 1 based but bug in hibernate means 0 based
             IntStream.range(0, parameters.size())
-                .forEach(i -> query.setParameter(i, parameters.get(i)));
+                .forEach(i -> query.setParameter(i+1, parameters.get(i)));
             return query.getResultList();
         });
     }
 
     public void removeNotification(Long id) {
         persistenceService.doTransaction(entityManager -> entityManager
-            .createQuery("delete Notification n where n.id = :id")
+            .createQuery("delete SentNotification n where n.id = :id")
             .setParameter("id", id)
             .executeUpdate()
         );
@@ -362,7 +361,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
     public void removeNotifications(List<String> types, Long timestamp, List<String> tenantIds, List<String> userIds, List<String> assetIds) throws IllegalArgumentException {
 
         StringBuilder builder = new StringBuilder();
-        builder.append("delete Notification n where 1=1");
+        builder.append("delete SentNotification n where 1=1");
         List<Object> parameters = new ArrayList<>();
         processCriteria(builder, parameters, types, timestamp, tenantIds, userIds, assetIds);
 
@@ -370,7 +369,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
             Query query = entityManager.createQuery(builder.toString());
             // Parameters should be 1 based but bug in hibernate means 0 based
             IntStream.range(0, parameters.size())
-                .forEach(i -> query.setParameter(i, parameters.get(i)));
+                .forEach(i -> query.setParameter(i+1, parameters.get(i)));
             query.executeUpdate();
         });
     }
@@ -413,7 +412,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
         if (hasTenants) {
             builder.append(" AND n.target = ?")
                 .append(parameters.size() + 1)
-                .append(" AND n.target_id IN ?")
+                .append(" AND n.targetId IN ?")
                 .append(parameters.size() + 2);
             parameters.add(Notification.TargetType.TENANT);
             parameters.add(tenantIds);
@@ -422,7 +421,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
         if (hasUsers) {
             builder.append(" AND n.target = ?")
                 .append(parameters.size() + 1)
-                .append(" AND n.target_id IN ?")
+                .append(" AND n.targetId IN ?")
                 .append(parameters.size() + 2);
 
             parameters.add(Notification.TargetType.USER);
@@ -432,7 +431,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
         if (hasAssets) {
             builder.append(" AND n.target = ?")
                 .append(parameters.size() + 1)
-                .append("AND n.target_id ANY ?")
+                .append(" AND n.targetId IN ?")
                 .append(parameters.size() + 2);
 
             parameters.add(Notification.TargetType.ASSET);
@@ -440,7 +439,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
         }
 
         if (timestamp != null) {
-            builder.append(" n.sent_on <= ?")
+            builder.append(" n.sentOn <= ?")
                 .append(parameters.size() + 1);
 
             parameters.add(timestamp);
@@ -541,7 +540,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
 
     protected boolean okToSendNotification(Notification.Source source, String sourceId, Notification.TargetType target, String targetId, String name, long timestamp) {
         return persistenceService.doReturningTransaction(entityManager -> entityManager.createQuery(
-            "SELECT COUNT(n) FROM NOTIFICATION n WHERE n.source =:source AND n.source_id =:sourceId AND n.target =:target AND n.target_id =:targetId AND n.name =:name AND n.sent_on >=:timestamp", Long.class)
+            "SELECT COUNT(n) FROM SentNotification n WHERE n.source =:source AND n.sourceId =:sourceId AND n.target =:target AND n.targetId =:targetId AND n.name =:name AND n.sentOn >=:timestamp", Long.class)
             .setParameter("source", source)
             .setParameter("sourceId", sourceId)
             .setParameter("target", target)
@@ -582,11 +581,5 @@ public class NotificationService extends RouteBuilder implements ContainerServic
             // Make the exception available if MEP is InOut
             exchange.getOut().setBody(exception);
         };
-    }
-
-    protected List<String> findAllUsersWithToken() {
-        return persistenceService.doReturningTransaction(entityManager ->
-            entityManager.createQuery("SELECT DISTINCT dnt.id.userId FROM DeviceNotificationToken dnt", String.class).getResultList()
-        );
     }
 }

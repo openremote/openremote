@@ -19,6 +19,8 @@
  */
 package org.openremote.model.notification;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.value.ObjectValue;
@@ -41,7 +43,12 @@ public class PushNotificationAction {
         this.url = url;
     }
 
-    public PushNotificationAction(String url, Value data, boolean silent, boolean openInBrowser, String httpMethod) {
+    @JsonCreator
+    public PushNotificationAction(@JsonProperty("url") String url,
+                                  @JsonProperty("data") Value data,
+                                  @JsonProperty("silent") boolean silent,
+                                  @JsonProperty("openInBrowser") boolean openInBrowser,
+                                  @JsonProperty("httpMethod") String httpMethod) {
         this.url = url;
         this.data = data;
         this.silent = silent;
