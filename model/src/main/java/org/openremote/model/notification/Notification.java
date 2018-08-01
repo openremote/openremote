@@ -45,12 +45,12 @@ public class Notification {
         protected TargetType type;
         protected String[] ids;
 
-        @JsonCreator
-        public Targets(@JsonProperty("type") TargetType type, @JsonProperty("ids") List<String> ids) {
+        public Targets(TargetType type, List<String> ids) {
             this(type, ids.toArray(new String[ids.size()]));
         }
 
-        public Targets(@JsonProperty("type") TargetType type, String...ids) {
+        @JsonCreator
+        public Targets(@JsonProperty("type") TargetType type, @JsonProperty("ids")String...ids) {
             this.type = type;
             this.ids = ids;
         }
