@@ -14,12 +14,20 @@ import org.openremote.model.notification.Notification
 import org.openremote.model.notification.NotificationResource
 import org.openremote.model.notification.NotificationSendResult
 import org.openremote.model.notification.PushNotificationMessage
+import org.openremote.model.notification.RepeatFrequency
 import org.openremote.model.value.ObjectValue
 import org.openremote.model.value.Values
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 
 import javax.ws.rs.WebApplicationException
+import java.time.Instant
+import java.time.LocalDateTime
+import java.time.Period
+import java.time.ZoneId
+import java.time.ZonedDateTime
+import java.time.temporal.ChronoUnit
+import java.util.concurrent.TimeUnit
 
 import static org.openremote.container.util.MapAccess.getString
 import static org.openremote.manager.setup.AbstractKeycloakSetup.SETUP_ADMIN_PASSWORD
@@ -174,6 +182,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
         when: "the admin user sends a notification to a user in a different realm"
         notification.targets = new Notification.Targets(Notification.TargetType.USER, keycloakDemoSetup.testuser2Id)
+        advancePseudoClock(1, TimeUnit.HOURS, container)
         adminNotificationResource.sendNotification(null, notification)
 
         then: "the notification should have been sent"
@@ -208,6 +217,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
                                                         testuser3Console1.id,
                                                         testuser3Console2.id,
                                                         anonymousConsole.id)
+        advancePseudoClock(1, TimeUnit.HOURS, container)
         adminNotificationResource.sendNotification(null, notification)
 
         then: "the notification should have been sent"
@@ -221,6 +231,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         ex.response.status == 403
 
         when: "a regular user sends a push notification to the console assets in the same realm"
+        advancePseudoClock(1, TimeUnit.HOURS, container)
         testuser2NotificationResource.sendNotification(null, notification)
 
         then: "the notification should have been sent"
@@ -249,6 +260,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         notificationIds.size() == 13
 
         when: "a restricted user sends a push notification to some consoles linked to them"
+        advancePseudoClock(1, TimeUnit.HOURS, container)
         notification.targets = new Notification.Targets(Notification.TargetType.ASSET,
                                                         testuser3Console1.id,
                                                         testuser3Console2.id)
@@ -256,8 +268,6 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
         then: "the notifications should have been sent"
         notificationIds.size() == 15
-
-
 
         // -----------------------------------------------
         //    Check notification resource
@@ -321,6 +331,115 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         then: "the notification should have been updated"
         assert notifications.size() == 15
         assert notifications.count {n -> n.targetId == anonymousConsole.id && n.deliveredOn != null} == 1
+
+        when: "a regular user tries to remove notifications"
+        testuser1NotificationResource.removeNotifications(null, [PushNotificationMessage.TYPE], null, [MASTER_REALM], null, null)
+
+        then: "access should be forbidden"
+        ex = thrown()
+        ex.response.status == 403
+
+        when: "a restricted user tries to remove notifications"
+        testuser3NotificationResource.removeNotifications(null, [PushNotificationMessage.TYPE], null, [realm], null, null)
+
+        then: "access should be forbidden"
+        ex = thrown()
+        ex.response.status == 403
+
+        when: "the admin user removes notifications by timestamp and the notifications are retrieved again"
+        notifications = notifications.sort {n -> n.sentOn}
+        adminNotificationResource.removeNotifications(null, [PushNotificationMessage.TYPE], notifications[0].sentOn.getTime(), null, null, null)
+        notifications = adminNotificationResource.getNotifications(null, null, null, null, null, [testuser2Console.id, testuser3Console1.id, testuser3Console2.id, anonymousConsole.id])
+
+        then: "notifications sent before or at that time should have been removed"
+        assert notifications.size() == 11
+
+        when: "the admin user removes notifications sent to specific console assets without other constraints and the notifications are retrieved again"
+        adminNotificationResource.removeNotifications(null, null, null, null, null, [testuser3Console1.id, testuser3Console2.id])
+        notifications = adminNotificationResource.getNotifications(null, null, null, null, null, [testuser2Console.id, testuser3Console1.id, testuser3Console2.id, anonymousConsole.id])
+
+        then: "all notifications sent to those consoles should have been removed"
+        assert notifications.size() == 5
+        assert notifications.count {n -> n.targetId == testuser3Console1.id || n.targetId == testuser3Console2.id} == 0
+
+        when: "the admin user removes notifications by type and the notifications are retrieved again"
+        adminNotificationResource.removeNotifications(null, [PushNotificationMessage.TYPE], null, null, null, null)
+        notifications = adminNotificationResource.getNotifications(null, null, null, null, null, [testuser2Console.id, testuser3Console1.id, testuser3Console2.id, anonymousConsole.id])
+
+        then: "one notification should have been removed"
+        assert notifications.size() == 0
+
+        when: "the admin user removes notifications without sufficient constraints"
+        adminNotificationResource.removeNotifications(null, null, null, null, null, null)
+
+        then: "request should not be allowed"
+        ex = thrown()
+        ex.response.status == 400
+
+        // -----------------------------------------------
+        //    Check notification repeat frequency
+        // -----------------------------------------------
+
+        when: "a repeat frequency is set and a notification is sent"
+        // Move clock to beginning of next hour
+        def advancement = Instant.ofEpochMilli(getClockTimeOf(container)).atZone(ZoneId.systemDefault())
+                                       .truncatedTo(ChronoUnit.HOURS)
+                                       .plusMinutes(59)
+
+        advancePseudoClock(ChronoUnit.MILLIS.between(Instant.ofEpochMilli(getClockTimeOf(container)).atZone(ZoneId.systemDefault()), advancement), TimeUnit.MILLISECONDS, container)
+        notification.setRepeatFrequency(RepeatFrequency.HOURLY)
+        testuser3NotificationResource.sendNotification(null, notification)
+        notifications = adminNotificationResource.getNotifications(null, null, null, null, null, [testuser2Console.id, testuser3Console1.id, testuser3Console2.id, anonymousConsole.id])
+
+        then: "the notifications should have been sent"
+        assert notifications.size() == 2
+
+        when: "a repeat frequency is set and a notification with the same name and scope as a previous notification is sent within the repeat window"
+        testuser3NotificationResource.sendNotification(null, notification)
+        notifications = adminNotificationResource.getNotifications(null, null, null, null, null, [testuser2Console.id, testuser3Console1.id, testuser3Console2.id, anonymousConsole.id])
+
+        then: "no new notifications should have been sent"
+        assert notifications.size() == 2
+
+        when: "a repeat frequency is set and a notification with the same name but different scope is sent within the repeat window"
+        adminNotificationResource.sendNotification(null, notification)
+        notifications = adminNotificationResource.getNotifications(null, null, null, null, null, [testuser2Console.id, testuser3Console1.id, testuser3Console2.id, anonymousConsole.id])
+
+        then: "new notifications should have been sent"
+        assert notifications.size() == 4
+
+        when: "time advances less than the repeat frequency and the notification is sent again"
+        advancePseudoClock(30, TimeUnit.SECONDS, container)
+        adminNotificationResource.sendNotification(null, notification)
+        notifications = adminNotificationResource.getNotifications(null, null, null, null, null, [testuser2Console.id, testuser3Console1.id, testuser3Console2.id, anonymousConsole.id])
+
+        then: "no new notifications should have been sent"
+        assert notifications.size() == 4
+
+        when: "time advances more than the repeat frequency and the notification is sent again"
+        advancePseudoClock(2, TimeUnit.MINUTES, container)
+        adminNotificationResource.sendNotification(null, notification)
+        notifications = adminNotificationResource.getNotifications(null, null, null, null, null, [testuser2Console.id, testuser3Console1.id, testuser3Console2.id, anonymousConsole.id])
+
+        then: "new notifications should have been sent"
+        assert notifications.size() == 6
+
+        when: "a repeat interval is used and a notification with the same name and scope is sent within the repeat window"
+        notification.setRepeatInterval("1mn")
+        advancePseudoClock(10, TimeUnit.DAYS, container)
+        adminNotificationResource.sendNotification(null, notification)
+        notifications = adminNotificationResource.getNotifications(null, null, null, null, null, [testuser2Console.id, testuser3Console1.id, testuser3Console2.id, anonymousConsole.id])
+
+        then: "no new notifications should have been sent"
+        assert notifications.size() == 6
+
+        when: "time advances more than the repeat interval and the notification is sent again"
+        advancePseudoClock(30, TimeUnit.DAYS, container)
+        adminNotificationResource.sendNotification(null, notification)
+        notifications = adminNotificationResource.getNotifications(null, null, null, null, null, [testuser2Console.id, testuser3Console1.id, testuser3Console2.id, anonymousConsole.id])
+
+        then: "new notifications should have been sent"
+        assert notifications.size() == 8
 
         cleanup: "the server should be stopped"
         stopContainer(container)

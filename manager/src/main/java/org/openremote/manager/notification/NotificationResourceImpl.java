@@ -65,7 +65,7 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
         try {
             return notificationService.getNotifications(types, timestamp, tenantIds, userIds, assetIds).toArray(new SentNotification[0]);
         } catch (IllegalArgumentException e) {
-            throw new WebApplicationException("Invalid criteria set", NOT_ACCEPTABLE);
+            throw new WebApplicationException("Invalid criteria set", BAD_REQUEST);
         }
     }
 
@@ -74,7 +74,7 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
         try {
             notificationService.removeNotifications(types, timestamp, tenantIds, userIds, assetIds);
         } catch (IllegalArgumentException e) {
-            throw new WebApplicationException("Invalid criteria set", NOT_ACCEPTABLE);
+            throw new WebApplicationException("Invalid criteria set", BAD_REQUEST);
         }
     }
 

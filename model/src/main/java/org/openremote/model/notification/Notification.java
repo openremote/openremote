@@ -124,7 +124,12 @@ public class Notification {
         return repeatFrequency;
     }
 
+    /**
+     * This applies a fixed time window to a notification i.e. {@link RepeatFrequency#HOURLY} would mean that a
+     * notification sent at 10:59 can then be resent at 11:00.
+     */
     public Notification setRepeatFrequency(RepeatFrequency repeatFrequency) {
+        this.repeatInterval = null;
         this.repeatFrequency = repeatFrequency;
         return this;
     }
@@ -133,7 +138,12 @@ public class Notification {
         return repeatInterval;
     }
 
+    /**
+     * This applies a sliding time window to a notification i.e. a value of 1h would mean has it been at least 1hr
+     * since the notification was last sent.
+     */
     public Notification setRepeatInterval(String repeatInterval) {
+        this.repeatFrequency = null;
         this.repeatInterval = repeatInterval;
         return this;
     }

@@ -72,7 +72,6 @@ public class SentNotification {
 
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "SENT_ON", updatable = false, nullable = false, columnDefinition = "TIMESTAMP WITH TIME ZONE")
-    @org.hibernate.annotations.CreationTimestamp
     protected Date sentOn;
 
     @Temporal(TemporalType.TIMESTAMP)

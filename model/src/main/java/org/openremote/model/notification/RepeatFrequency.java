@@ -22,6 +22,7 @@ package org.openremote.model.notification;
 public enum RepeatFrequency {
     ALWAYS,
     ONCE,
+    HOURLY,
     DAILY,
     WEEKLY,
     MONTHLY,

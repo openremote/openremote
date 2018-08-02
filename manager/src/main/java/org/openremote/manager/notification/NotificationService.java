@@ -37,13 +37,16 @@ import org.openremote.model.Constants;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.notification.Notification;
 import org.openremote.model.notification.NotificationSendResult;
+import org.openremote.model.notification.RepeatFrequency;
 import org.openremote.model.notification.SentNotification;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.TimeUtil;
 
 import javax.persistence.Query;
 import javax.persistence.TypedQuery;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalField;
 import java.time.temporal.WeekFields;
 import java.util.*;
@@ -222,19 +225,16 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                 }
 
                 // Filter targets based on repeat frequency
-                Long timestamp = getRepeatAfterTimestamp(notification);
-
-                if (timestamp != null) {
+                if (!TextUtil.isNullOrEmpty(notification.getName()) && (!TextUtil.isNullOrEmpty(notification.getRepeatInterval()) || notification.getRepeatFrequency() != null)) {
                     mappedTargetsList.forEach(
                         targets ->
                             targets.setIds(
                                 Arrays.stream(targets.getIds()).filter(
-                                    targetId -> !okToSendNotification(source,
-                                                                      sourceId.get(),
-                                                                      targets.getType(),
-                                                                      targetId,
-                                                                      notification.getName(),
-                                                                      timestamp))
+                                    targetId -> okToSendNotification(source,
+                                                                     sourceId.get(),
+                                                                     targets.getType(),
+                                                                     targetId,
+                                                                     notification))
                                     .toArray(String[]::new)
                                           ));
                 }
@@ -257,7 +257,9 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                                         .setSource(source)
                                         .setSourceId(sourceId.get())
                                         .setTarget(targets.getType())
-                                        .setTargetId(targetId);
+                                        .setTargetId(targetId)
+                                        .setSentOn(Date.from(timerService.getNow().toInstant()));
+
                                     sentNotification = em.merge(sentNotification);
                                     long id = sentNotification.getId();
 
@@ -352,7 +354,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
 
     public void removeNotification(Long id) {
         persistenceService.doTransaction(entityManager -> entityManager
-            .createQuery("delete SentNotification n where n.id = :id")
+            .createQuery("delete SentNotification where id = :id")
             .setParameter("id", id)
             .executeUpdate()
         );
@@ -361,13 +363,12 @@ public class NotificationService extends RouteBuilder implements ContainerServic
     public void removeNotifications(List<String> types, Long timestamp, List<String> tenantIds, List<String> userIds, List<String> assetIds) throws IllegalArgumentException {
 
         StringBuilder builder = new StringBuilder();
-        builder.append("delete SentNotification n where 1=1");
+        builder.append("delete from SentNotification n where 1=1");
         List<Object> parameters = new ArrayList<>();
         processCriteria(builder, parameters, types, timestamp, tenantIds, userIds, assetIds);
 
         persistenceService.doTransaction(entityManager -> {
             Query query = entityManager.createQuery(builder.toString());
-            // Parameters should be 1 based but bug in hibernate means 0 based
             IntStream.range(0, parameters.size())
                 .forEach(i -> query.setParameter(i+1, parameters.get(i)));
             query.executeUpdate();
@@ -399,12 +400,8 @@ public class NotificationService extends RouteBuilder implements ContainerServic
             throw new IllegalArgumentException("No criteria specified");
         }
 
-        if (counter > 1) {
-            throw new IllegalArgumentException("Too many criteria specified");
-        }
-
         if (hasTypes) {
-            builder.append(" AND n.target IN ?")
+            builder.append(" AND n.type IN ?")
                 .append(parameters.size() + 1);
             parameters.add(types);
         }
@@ -439,48 +436,42 @@ public class NotificationService extends RouteBuilder implements ContainerServic
         }
 
         if (timestamp != null) {
-            builder.append(" n.sentOn <= ?")
+            builder.append(" AND n.sentOn <= ?")
                 .append(parameters.size() + 1);
 
-            parameters.add(timestamp);
+            parameters.add(new Date(timestamp));
         }
     }
 
-    protected Long getRepeatAfterTimestamp(Notification notification) {
-        Long timestamp = null;
+    protected ZonedDateTime getRepeatAfterTimestamp(Notification notification, ZonedDateTime lastSend) {
+        ZonedDateTime timestamp = null;
 
         if (TextUtil.isNullOrEmpty(notification.getName())) {
             return null;
         }
 
         if (notification.getRepeatFrequency() != null) {
-            ZonedDateTime dateTime = timerService.getNow()
-                .withMinute(0)
-                .withHour(0)
-                .withSecond(0);
 
             switch (notification.getRepeatFrequency()) {
 
-                case ALWAYS:
-                    break;
-                case ONCE:
-                    timestamp = 0L;
+                case HOURLY:
+                    timestamp = lastSend.truncatedTo(ChronoUnit.HOURS).plusHours(1);
                     break;
                 case DAILY:
-                    timestamp = dateTime.toInstant().toEpochMilli();
+                    timestamp = lastSend.truncatedTo(ChronoUnit.DAYS).plusDays(1);
                     break;
                 case WEEKLY:
-                    timestamp = dateTime.with(WEEK_FIELD_ISO, 1).toInstant().toEpochMilli();
+                    timestamp = lastSend.truncatedTo(ChronoUnit.WEEKS).plusWeeks(1);
                     break;
                 case MONTHLY:
-                    timestamp = dateTime.withDayOfMonth(1).toInstant().toEpochMilli();
+                    timestamp = lastSend.truncatedTo(ChronoUnit.MONTHS).plusMonths(1);
                     break;
                 case ANNUALLY:
-                    timestamp = dateTime.withDayOfYear(1).toInstant().toEpochMilli();
+                    timestamp = lastSend.truncatedTo(ChronoUnit.YEARS).plusYears(1);
                     break;
             }
         } else if (!TextUtil.isNullOrEmpty(notification.getRepeatInterval())) {
-            timestamp = timerService.getCurrentTimeMillis() - TimeUtil.parseTimeString(notification.getRepeatInterval());
+            timestamp = lastSend.plus(TimeUtil.parseTimeString(notification.getRepeatInterval()), ChronoUnit.MILLIS);
         }
 
         return timestamp;
@@ -538,16 +529,26 @@ public class NotificationService extends RouteBuilder implements ContainerServic
         }
     }
 
-    protected boolean okToSendNotification(Notification.Source source, String sourceId, Notification.TargetType target, String targetId, String name, long timestamp) {
-        return persistenceService.doReturningTransaction(entityManager -> entityManager.createQuery(
-            "SELECT COUNT(n) FROM SentNotification n WHERE n.source =:source AND n.sourceId =:sourceId AND n.target =:target AND n.targetId =:targetId AND n.name =:name AND n.sentOn >=:timestamp", Long.class)
+    protected boolean okToSendNotification(Notification.Source source, String sourceId, Notification.TargetType target, String targetId, Notification notification) {
+
+        if (notification.getRepeatFrequency() == RepeatFrequency.ALWAYS) {
+            return true;
+        }
+
+        Date lastSend = persistenceService.doReturningTransaction(entityManager -> entityManager.createQuery(
+            "SELECT n.sentOn FROM SentNotification n WHERE n.source =:source AND n.sourceId =:sourceId AND n.target =:target AND n.targetId =:targetId AND n.name =:name ORDER BY n.sentOn DESC", Date.class)
             .setParameter("source", source)
             .setParameter("sourceId", sourceId)
             .setParameter("target", target)
             .setParameter("targetId", targetId)
-            .setParameter("name", name)
-            .setParameter("timestamp", timestamp)
-            .getSingleResult() == 0L);
+            .setParameter("name", notification.getName())
+            .setMaxResults(1)
+            .getResultList()).stream().findFirst().orElse(null);
+
+        return lastSend == null ||
+            (notification.getRepeatFrequency() != RepeatFrequency.ONCE &&
+                timerService.getNow().plusSeconds(1).isAfter(getRepeatAfterTimestamp(notification, ZonedDateTime.ofInstant(lastSend.toInstant(),
+                                                                                                            ZoneId.systemDefault()))));
     }
 
     protected static Processor handleNotificationProcessingException(Logger logger) {
