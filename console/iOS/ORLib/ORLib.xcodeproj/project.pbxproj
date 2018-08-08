@@ -19,6 +19,9 @@
 		4C82D74E1FC58F4E009DE853 /* ORLoginViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C82D7491FC58F4E009DE853 /* ORLoginViewController.swift */; };
 		4C82D7581FC590FB009DE853 /* ErrorManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C82D7531FC590FB009DE853 /* ErrorManager.swift */; };
 		4C82D7591FC590FB009DE853 /* TokenManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C82D7541FC590FB009DE853 /* TokenManager.swift */; };
+		4C9FC2F2211B2F8100D8FD18 /* ORPushNotificationButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C9FC2EF211B2F8000D8FD18 /* ORPushNotificationButton.swift */; };
+		4C9FC2F3211B2F8100D8FD18 /* ORPushNotificationAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C9FC2F0211B2F8100D8FD18 /* ORPushNotificationAction.swift */; };
+		4C9FC2F4211B2F8100D8FD18 /* ORNotificationResource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C9FC2F1211B2F8100D8FD18 /* ORNotificationResource.swift */; };
 		4CBC0D471FD6DDA1000BE8B1 /* Reachability.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CBC0D461FD6DDA1000BE8B1 /* Reachability.swift */; };
 		7CCC2ED6D141AFD5DC9E5EC1 /* Pods_ORLib.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 978B95045017E64853668497 /* Pods_ORLib.framework */; };
 /* End PBXBuildFile section */
@@ -38,6 +41,9 @@
 		4C82D7491FC58F4E009DE853 /* ORLoginViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ORLoginViewController.swift; sourceTree = "<group>"; };
 		4C82D7531FC590FB009DE853 /* ErrorManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ErrorManager.swift; sourceTree = "<group>"; };
 		4C82D7541FC590FB009DE853 /* TokenManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TokenManager.swift; sourceTree = "<group>"; };
+		4C9FC2EF211B2F8000D8FD18 /* ORPushNotificationButton.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ORPushNotificationButton.swift; sourceTree = "<group>"; };
+		4C9FC2F0211B2F8100D8FD18 /* ORPushNotificationAction.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ORPushNotificationAction.swift; sourceTree = "<group>"; };
+		4C9FC2F1211B2F8100D8FD18 /* ORNotificationResource.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ORNotificationResource.swift; sourceTree = "<group>"; };
 		4CBC0D461FD6DDA1000BE8B1 /* Reachability.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Reachability.swift; sourceTree = "<group>"; };
 		572EED7F064AF79DDABE9FC8 /* Pods-ORLib.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ORLib.release.xcconfig"; path = "Pods/Target Support Files/Pods-ORLib/Pods-ORLib.release.xcconfig"; sourceTree = "<group>"; };
 		978B95045017E64853668497 /* Pods_ORLib.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_ORLib.framework; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -82,6 +88,9 @@
 				4C82D7541FC590FB009DE853 /* TokenManager.swift */,
 				4CBC0D461FD6DDA1000BE8B1 /* Reachability.swift */,
 				4C82D7461FC58F4E009DE853 /* ORAppDelegate.swift */,
+				4C9FC2F1211B2F8100D8FD18 /* ORNotificationResource.swift */,
+				4C9FC2F0211B2F8100D8FD18 /* ORPushNotificationAction.swift */,
+				4C9FC2EF211B2F8000D8FD18 /* ORPushNotificationButton.swift */,
 				4C82D7481FC58F4E009DE853 /* Constants.swift */,
 				4C82D7451FC58F4E009DE853 /* ORViewController.swift */,
 				4C82D7471FC58F4E009DE853 /* ProjectConstants.swift */,
@@ -201,9 +210,12 @@
 			buildActionMask = 2147483647;
 			files = (
 				4C77278620BC13E800322CBC /* GeofenceProvider.swift in Sources */,
+				4C9FC2F2211B2F8100D8FD18 /* ORPushNotificationButton.swift in Sources */,
 				4C56E5E520C583FB004483C7 /* ORAssetResoure.swift in Sources */,
 				4C77278520BC13E800322CBC /* PushNotificationProvider.swift in Sources */,
 				4C4C2FB81FD8044A0071CBDA /* ORNotificationService.swift in Sources */,
+				4C9FC2F4211B2F8100D8FD18 /* ORNotificationResource.swift in Sources */,
+				4C9FC2F3211B2F8100D8FD18 /* ORPushNotificationAction.swift in Sources */,
 				4C82D7581FC590FB009DE853 /* ErrorManager.swift in Sources */,
 				4C82D74E1FC58F4E009DE853 /* ORLoginViewController.swift in Sources */,
 				4C82D74C1FC58F4E009DE853 /* ProjectConstants.swift in Sources */,
