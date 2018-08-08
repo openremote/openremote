@@ -60,9 +60,13 @@ open class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMess
                                         self.sendData(data: initalizeData)
                                     })
                                 } else if action == Actions.providerEnable {
-                                    pushProvider?.enable(callback: { enableData in
-                                        self.sendData(data: enableData)
-                                    })
+                                    if let data = postMessageDict[DefaultsKey.dataKey] as? [String: String] {
+                                        if let consoleId = data[GeofenceProvider.consoleIdKey] {
+                                            pushProvider?.enable(consoleId: consoleId, callback: { enableData in
+                                                self.sendData(data: enableData)
+                                            })
+                                        }
+                                    }
                                 } else if action == Actions.providerDisable {
                                     if let disableData = pushProvider?.disbale() {
                                         sendData(data: disableData)
@@ -76,7 +80,7 @@ open class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMess
                                     sendData(data: initializeData)
                                 } else if action == Actions.providerEnable {
                                     if let data = postMessageDict[DefaultsKey.dataKey] as? [String: String] {
-                                        if let consoleId = data["consoleId"] {
+                                        if let consoleId = data[GeofenceProvider.consoleIdKey] {
                                             geofenceProvider?.enable(baseUrl: "\(ORServer.baseUrl)\(ORServer.realm)", consoleId: consoleId,  callback: { enableData in
                                                 self.sendData(data: enableData)
                                                 DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(5)) {
@@ -110,7 +114,7 @@ open class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMess
                                      encoding: .utf8)
             let returnMessage = "openremote.INSTANCE.console.handleProviderResponse('\(theJSONText ?? "null")')"
             DispatchQueue.main.async {
-               self.myWebView?.evaluateJavaScript("\(returnMessage)", completionHandler: { (any, error) in
+                self.myWebView?.evaluateJavaScript("\(returnMessage)", completionHandler: { (any, error) in
                     print("JSON string = \(theJSONText!)")
                 })
             }
@@ -161,7 +165,7 @@ open class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMess
         if let response = navigationResponse.response as? HTTPURLResponse {
             if response.statusCode != 200 && response.statusCode != 204 {
                 decisionHandler(.cancel)
-                NSLog("error http status : %@  message : %@", response.statusCode, response.description)
+
                 let error = NSError(domain: "", code: 0, userInfo:  [
                     NSLocalizedDescriptionKey :  NSLocalizedString("HTTPErrorReturned", value: "Connection Error", comment: "")
                     ])
@@ -171,6 +175,7 @@ open class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMess
                 self.dismiss(animated: true) {
                     ErrorManager.showError(error:error)
                 }
+                return
             }
         }
         decisionHandler(.allow)

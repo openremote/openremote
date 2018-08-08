@@ -9,9 +9,11 @@
 import UIKit
 import UserNotifications
 
-class PushNotificationProvider: NSObject {
+public class PushNotificationProvider: NSObject {
 
+    let userdefaults = UserDefaults.standard
     let version = "fcm"
+    public var consoleId: String = ""
     
     public override init() {
         super.init()
@@ -54,7 +56,10 @@ class PushNotificationProvider: NSObject {
         }
     }
     
-    public func enable(callback:@escaping ([String: Any]) ->(Void)) {
+    public func enable(consoleId: String, callback:@escaping ([String: Any]) ->(Void)) {
+        self.consoleId = consoleId
+        userdefaults.set(self.consoleId, forKey: GeofenceProvider.consoleIdKey)
+        userdefaults.synchronize()
         UNUserNotificationCenter.current().getNotificationSettings { (settings) in
 
             switch settings.authorizationStatus {

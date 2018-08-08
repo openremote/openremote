@@ -32,6 +32,7 @@ public enum DefaultsKey {
     public static let idToken = "idToken"
     public static let deviceId = "deviceToken"
     public static let actionKey = "action"
+    public static let buttonsKey = "buttons"
     public static let providerKey = "provider"
     public static let versionKey = "version"
     public static let requiresPermissionKey = "requiresPermission"
@@ -71,6 +72,10 @@ public enum ActionType {
     public static let title = "title"
     public static let type = "type"
     public static let appUrl = "appUrl"
+    public static let silent = "silent"
+    public static let httpMethod = "httpMethod"
+    public static let openInBrowser = "openInBrowser"
+    public static let notificationId = "notification-id"
     public static let ACTION_DEEP_LINK = "LINK"
     public static let ACTION_ACTUATOR = "ACTUATOR"
 }

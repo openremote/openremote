@@ -30,38 +30,64 @@ open class ORNotificationService: UNNotificationServiceExtension, URLSessionDele
         bestAttemptContent = (request.content.mutableCopy() as? UNMutableNotificationContent)
         print("NotifExtension Change content : %@ ", bestAttemptContent?.userInfo ?? "")
         if let bestAttemptContent = bestAttemptContent {
-            if let actionsString = bestAttemptContent.userInfo["actions"] as? String {
-                if let actionsData = actionsString.data(using: .utf8){
-                    if let actions = try? JSONSerialization.jsonObject(with: actionsData, options: []) as? [[String: String]], actions != nil {
+            print(bestAttemptContent.userInfo)
+            if let notificationIdString = bestAttemptContent.userInfo[ActionType.notificationId] as? String, let notificationId = Int64(notificationIdString) {
+                if let consoleId = UserDefaults.standard.string(forKey: GeofenceProvider.consoleIdKey) {
+                    ORNotificationResource.sharedInstance.notificationDelivered(notificationId: notificationId, targetId: consoleId)
+                }
+            }
+
+            //Actions
+            if let actionString = bestAttemptContent.userInfo[DefaultsKey.actionKey] as? String {
+                if let actionsData = actionString.data(using: .utf8){
+                    if let action = try? JSONDecoder().decode(ORPushNotificationAction.self, from: actionsData) {
                         let categoryName = "openremoteNotification"
                         bestAttemptContent.categoryIdentifier = categoryName
-                        var notificationActions = [UNNotificationAction]()
-                        for i in (0..<actions!.count) {
-                            let actionTitle = actions![i]["title"]!
-                            let actionType = actions![i]["type"]!
-                            switch actionType {
-                            case ActionType.ACTION_ACTUATOR :
-                                bestAttemptContent.userInfo["actions"] = actions![i]
-                                notificationActions.append(UNNotificationAction(identifier: actionType, title: actionTitle, options: UNNotificationActionOptions.destructive))
-                            case ActionType.ACTION_DEEP_LINK :
-                                if let appUrl = actions![i]["appUrl"] {
-                                    bestAttemptContent.userInfo["appUrl"] = appUrl
-                                    notificationActions.append(UNNotificationAction(identifier: actionType, title: actionTitle, options: UNNotificationActionOptions.foreground))
-                                } else {
-                                    notificationActions.append(UNNotificationAction(identifier: actionType, title: actionTitle, options: UNNotificationActionOptions.destructive))
-                                }
-                            default : break
-                            }
-                        }
-                        let category = UNNotificationCategory(identifier: categoryName, actions: notificationActions, intentIdentifiers: [], options: [])
+
+                        bestAttemptContent.userInfo[ActionType.appUrl] = action.url
+                        bestAttemptContent.userInfo[ActionType.silent] = action.silent
+                        bestAttemptContent.userInfo[ActionType.openInBrowser] = action.openInBrowser
+                        bestAttemptContent.userInfo[ActionType.httpMethod] = action.httpMethod ?? "GET"
+                        bestAttemptContent.userInfo[DefaultsKey.dataKey] = action.data ?? "null"
+
+                        let category = UNNotificationCategory(identifier: categoryName, actions: [], intentIdentifiers: [], options: [])
                         let categories : Set = [category]
                         UNUserNotificationCenter.current().setNotificationCategories(categories)
                     }
                 }
                 contentHandler(bestAttemptContent)
             }
+
+            //Buttons
+            if let buttonsString = bestAttemptContent.userInfo[DefaultsKey.buttonsKey] as? String {
+                if let buttonsData = buttonsString.data(using: .utf8) {
+                    if let buttons = try? JSONDecoder().decode([ORPushNotificationButton].self, from: buttonsData) {
+
+                        let categoryName = "openremoteNotification"
+                        bestAttemptContent.categoryIdentifier = categoryName
+                        var notificationActions = [UNNotificationAction]()
+
+                        for button in buttons {
+                            if let action = button.action {
+                                bestAttemptContent.userInfo[ActionType.appUrl] = action.url
+                                bestAttemptContent.userInfo[ActionType.silent] = action.silent
+                                bestAttemptContent.userInfo[ActionType.openInBrowser] = action.openInBrowser
+                                bestAttemptContent.userInfo[ActionType.httpMethod] = action.httpMethod ?? "GET"
+                                bestAttemptContent.userInfo[DefaultsKey.dataKey] = action.data ?? "null"
+                            }
+                            notificationActions.append(UNNotificationAction(identifier: "pushAction", title: button.title, options: UNNotificationActionOptions.foreground))
+                        }
+
+                        let category = UNNotificationCategory(identifier: categoryName, actions: notificationActions, intentIdentifiers: [], options: [])
+                        let categories : Set = [category]
+                        UNUserNotificationCenter.current().setNotificationCategories(categories)
+                    }
+                }
+            }
+            contentHandler(bestAttemptContent)
         }
     }
+
 
     open override func serviceExtensionTimeWillExpire() {
         // Called just before the extension will be terminated by the system.

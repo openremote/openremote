@@ -115,6 +115,11 @@ open class ORAppDelegate: UIResponder, UIApplicationDelegate, URLSessionDelegate
                 (self.window?.rootViewController as! ORViewcontroller).geofenceProvider?.refreshGeofences()
             }
         }
+        if let notificationIdString = userInfo[ActionType.notificationId] as? String, let notificationId = Int64(notificationIdString) {
+            if let consoleId = UserDefaults.standard.string(forKey: GeofenceProvider.consoleIdKey) {
+                ORNotificationResource.sharedInstance.notificationDelivered(notificationId: notificationId, targetId: consoleId)
+            }
+        }
         completionHandler(UIBackgroundFetchResult.newData)
     }
 
@@ -179,34 +184,43 @@ extension ORAppDelegate : UNUserNotificationCenterDelegate {
     }
 
     open func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
-        var assetId : String = ""
-        var attributeName : String = ""
-        var rawJson : String = ""
-        UIApplication.shared.isNetworkActivityIndicatorVisible = true
+
+        var notificationId : Int64? = nil
+        let consoleId = UserDefaults.standard.string(forKey: GeofenceProvider.consoleIdKey)
+
+        if let notificationIdString = response.notification.request.content.userInfo[ActionType.notificationId] as? String{
+            notificationId = Int64(notificationIdString)
+        }
+
         switch response.actionIdentifier {
         case UNNotificationDefaultActionIdentifier,
-             ActionType.ACTION_DEEP_LINK :
-            if let urlToOpen = response.notification.request.content.userInfo["appUrl"] as? String {
+             "pushAction" :
+            if let notiId = notificationId, let conId = consoleId {
+                ORNotificationResource.sharedInstance.notificationAcknowledged(notificationId: notiId, targetId: conId, acknowledgement: "acknowledged")
+            }
+
+            if let urlToOpen = response.notification.request.content.userInfo[ActionType.appUrl] as? String {
+                let urlRequest: URL?
                 if urlToOpen.hasPrefix("http") || urlToOpen.hasPrefix("https") {
-                    guard let urlRequest = URL(string:urlToOpen) else { return }
-                    (self.window?.rootViewController as! ORViewcontroller).loadURL(url:urlRequest)
+                    urlRequest = URL(string:urlToOpen)
                 } else {
-                    guard let urlRequest = URL(string:String(format: "%@://%@/%@%@", ORServer.scheme, ORServer.hostURL, ORServer.navigationPath, urlToOpen)) else { return }
-                    (self.window?.rootViewController as! ORViewcontroller).loadURL(url:urlRequest)
+                    urlRequest = URL(string:String(format: "%@://%@/%@%@", ORServer.scheme, ORServer.hostURL, ORServer.navigationPath, urlToOpen))
                 }
-                NSLog("Action asked : %@", response.actionIdentifier)
+                if let request = urlRequest{
+                    if let openInBrowser = response.notification.request.content.userInfo[ActionType.openInBrowser] as? Bool {
+                        if openInBrowser {
+                            UIApplication.shared.open(request)
+                        } else {
+                            (self.window?.rootViewController as! ORViewcontroller).loadURL(url:request)
+                        }
+                    } else {
+                        (self.window?.rootViewController as! ORViewcontroller).loadURL(url:request)
+                    }
+                }
             }
-        case ActionType.ACTION_ACTUATOR :
-            NSLog("Action asked : %@", response.actionIdentifier)
-
-            if let actions = response.notification.request.content.userInfo["actions"] {
-                assetId = (actions as! Dictionary<String,String>)["assetId"]!
-                attributeName = (actions as! Dictionary<String,String>)["attributeName"]!
-                rawJson = (actions as! Dictionary<String,String>)["rawJson"]!
-            }
-
-            if let jsonData = rawJson.data(using: .utf8) {
-                ORAssetResoure.sharedInstance.updateAssetAttribute(assetId : assetId, attributeName : attributeName, rawJson : jsonData)
+        case UNNotificationDismissActionIdentifier:
+            if let notiId = notificationId, let conId = consoleId {
+                ORNotificationResource.sharedInstance.notificationAcknowledged(notificationId: notiId, targetId: conId, acknowledgement: "dismissed")
             }
         default : break
         }
