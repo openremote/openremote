@@ -76,7 +76,7 @@ open class ORNotificationService: UNNotificationServiceExtension, URLSessionDele
                                 bestAttemptContent.userInfo[DefaultsKey.dataKey] = action.data ?? "null"
                                 notificationActions.append(UNNotificationAction(identifier: "openURLAction", title: button.title, options: UNNotificationActionOptions.foreground))
                             } else {
-                                notificationActions.append(UNNotificationAction(identifier: "declineAction", title: button.title, options: UNNotificationActionOptions.foreground))
+                                notificationActions.append(UNNotificationAction(identifier: "declineAction", title: button.title, options: UNNotificationActionOptions.destructive))
                             }
                         }
 
