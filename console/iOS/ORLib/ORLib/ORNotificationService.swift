@@ -74,8 +74,10 @@ open class ORNotificationService: UNNotificationServiceExtension, URLSessionDele
                                 bestAttemptContent.userInfo[ActionType.openInBrowser] = action.openInBrowser
                                 bestAttemptContent.userInfo[ActionType.httpMethod] = action.httpMethod ?? "GET"
                                 bestAttemptContent.userInfo[DefaultsKey.dataKey] = action.data ?? "null"
+                                notificationActions.append(UNNotificationAction(identifier: "openURLAction", title: button.title, options: UNNotificationActionOptions.foreground))
+                            } else {
+                                notificationActions.append(UNNotificationAction(identifier: "declineAction", title: button.title, options: UNNotificationActionOptions.foreground))
                             }
-                            notificationActions.append(UNNotificationAction(identifier: "pushAction", title: button.title, options: UNNotificationActionOptions.foreground))
                         }
 
                         let category = UNNotificationCategory(identifier: categoryName, actions: notificationActions, intentIdentifiers: [], options: [])

@@ -194,7 +194,7 @@ extension ORAppDelegate : UNUserNotificationCenterDelegate {
 
         switch response.actionIdentifier {
         case UNNotificationDefaultActionIdentifier,
-             "pushAction" :
+             "openURLAction" :
             if let notiId = notificationId, let conId = consoleId {
                 ORNotificationResource.sharedInstance.notificationAcknowledged(notificationId: notiId, targetId: conId, acknowledgement: "acknowledged")
             }
@@ -218,7 +218,8 @@ extension ORAppDelegate : UNUserNotificationCenterDelegate {
                     }
                 }
             }
-        case UNNotificationDismissActionIdentifier:
+        case UNNotificationDismissActionIdentifier,
+             "declineAction":
             if let notiId = notificationId, let conId = consoleId {
                 ORNotificationResource.sharedInstance.notificationAcknowledged(notificationId: notiId, targetId: conId, acknowledgement: "dismissed")
             }
