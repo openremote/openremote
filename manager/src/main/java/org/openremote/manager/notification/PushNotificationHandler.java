@@ -44,6 +44,7 @@ import org.openremote.model.query.filter.ObjectValueKeyPredicate;
 import org.openremote.model.query.filter.PathPredicate;
 import org.openremote.model.query.filter.TenantPredicate;
 import org.openremote.model.util.TextUtil;
+import org.openremote.model.value.StringValue;
 
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -58,7 +59,6 @@ import static org.openremote.container.persistence.PersistenceEvent.*;
 import static org.openremote.model.asset.AssetType.CONSOLE;
 import static org.openremote.model.notification.PushNotificationMessage.TargetType.DEVICE;
 import static org.openremote.model.notification.PushNotificationMessage.TargetType.TOPIC;
-import static org.openremote.model.query.BaseAssetQuery.Include.ALL_EXCEPT_PATH;
 import static org.openremote.model.query.BaseAssetQuery.Include.ONLY_ID_AND_NAME;
 import static org.openremote.model.query.BaseAssetQuery.Include.ONLY_ID_AND_NAME_AND_ATTRIBUTES;
 
@@ -117,11 +117,11 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
         consoleFCMTokenMap = assetStorageService.findAll(
             new AssetQuery()
                 .select(new BaseAssetQuery.Select(BaseAssetQuery.Include.ALL_EXCEPT_PATH,
-                                                  false,
-                                                  AttributeType.CONSOLE_PROVIDERS.getName()))
+                    false,
+                    AttributeType.CONSOLE_PROVIDERS.getName()))
                 .type(CONSOLE)
                 .attributeValue(AttributeType.CONSOLE_PROVIDERS.getName(),
-                                new ObjectValueKeyPredicate("push")))
+                    new ObjectValueKeyPredicate("push")))
             .stream()
             .filter(PushNotificationHandler::isLinkedToFcmProvider)
             .collect(Collectors.toMap(Asset::getId, asset -> getFcmToken(asset).orElse(null)));
@@ -164,7 +164,7 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
             return false;
         }
 
-        PushNotificationMessage pushMessage = (PushNotificationMessage)message;
+        PushNotificationMessage pushMessage = (PushNotificationMessage) message;
         if (TextUtil.isNullOrEmpty(pushMessage.getTitle()) && pushMessage.getData() == null) {
             LOG.warning("Invalid message: must either contain a title and/or data");
             return false;
@@ -177,7 +177,7 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
     public Notification.Targets mapTarget(Notification.TargetType targetType, String targetId, AbstractNotificationMessage message) {
 
         // Check if message is going to a topic if so then filter consoles subscribed to that topic
-        PushNotificationMessage pushMessage = (PushNotificationMessage)message;
+        PushNotificationMessage pushMessage = (PushNotificationMessage) message;
         BaseAssetQuery.Select select = null;
         boolean forTopic = pushMessage.getTargetType() == TOPIC;
         List<Asset> mappedConsoles = null;
@@ -198,8 +198,8 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
                         .tenant(new TenantPredicate(targetId))
                         .type(AssetType.CONSOLE)
                         .attributeValue(AttributeType.CONSOLE_PROVIDERS.getName(),
-                                        new ObjectValueKeyPredicate(PushNotificationMessage.TYPE))
-                                           );
+                            new ObjectValueKeyPredicate(PushNotificationMessage.TYPE))
+                );
 
                 if (forTopic) {
                     mappedConsoles.removeIf(c -> !isConsoleSubscribedToTopic(c, pushMessage.getTarget()));
@@ -211,7 +211,7 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
                 }
 
                 return new Notification.Targets(Notification.TargetType.ASSET,
-                                                mappedConsoles.stream().map(Asset::getId).collect(Collectors.toList()));
+                    mappedConsoles.stream().map(Asset::getId).collect(Collectors.toList()));
 
             case USER:
 
@@ -228,8 +228,8 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
                             .ids(ids)
                             .type(AssetType.CONSOLE)
                             .attributeValue(AttributeType.CONSOLE_PROVIDERS.getName(),
-                                            new ObjectValueKeyPredicate(PushNotificationMessage.TYPE))
-                                                                );
+                                new ObjectValueKeyPredicate(PushNotificationMessage.TYPE))
+                    );
 
                     if (forTopic) {
                         mappedConsoles.removeIf(c ->
@@ -242,7 +242,7 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
                 }
 
                 return new Notification.Targets(Notification.TargetType.ASSET,
-                                                mappedConsoles.stream().map(Asset::getId).collect(Collectors.toList()));
+                    mappedConsoles.stream().map(Asset::getId).collect(Collectors.toList()));
 
             case ASSET:
 
@@ -253,8 +253,8 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
                         .path(new PathPredicate(targetId))
                         .type(AssetType.CONSOLE)
                         .attributeValue(AttributeType.CONSOLE_PROVIDERS.getName(),
-                                        new ObjectValueKeyPredicate(PushNotificationMessage.TYPE))
-                                                                        );
+                            new ObjectValueKeyPredicate(PushNotificationMessage.TYPE))
+                );
 
                 if (forTopic) {
                     mappedConsoles.removeIf(c -> !isConsoleSubscribedToTopic(c, pushMessage.getTarget()));
@@ -266,7 +266,7 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
                 }
 
                 return new Notification.Targets(Notification.TargetType.ASSET,
-                                                mappedConsoles.stream().map(Asset::getId).collect(Collectors.toList()));
+                    mappedConsoles.stream().map(Asset::getId).collect(Collectors.toList()));
         }
 
         return null;
@@ -284,19 +284,20 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
             return NotificationSendResult.failure("FCM invalid configuration so ignoring");
         }
 
-        String fcmToken = consoleFCMTokenMap.get(targetId);
 
-        if (TextUtil.isNullOrEmpty(fcmToken)) {
-            LOG.warning("No FCM token found for console: " + targetId);
-            return NotificationSendResult.failure("FCM invalid configuration so ignoring");
-        }
-
-        PushNotificationMessage pushMessage = (PushNotificationMessage)message;
+        PushNotificationMessage pushMessage = (PushNotificationMessage) message;
         if (pushMessage.getTargetType() == DEVICE) {
-            pushMessage.setTarget(targetId);
+            String fcmToken = consoleFCMTokenMap.get(targetId);
+            if (TextUtil.isNullOrEmpty(fcmToken)) {
+                LOG.warning("No FCM token found for console: " + targetId);
+                return NotificationSendResult.failure("FCM invalid configuration so ignoring");
+            }
+            pushMessage.setTarget(fcmToken);
         } else if (pushMessage.getTargetType() == TOPIC && pushMessage == lastSentMessage) {
             LOG.info("Message is for topic and already sent so skipping send");
             return NotificationSendResult.success();
+        } else {
+            pushMessage.setTarget(targetId);
         }
 
         lastSentMessage = pushMessage;
@@ -395,14 +396,15 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
         if (pushMessage.getData() != null) {
             pushMessage.getData().stream().forEach(stringValuePair -> {
                 if (stringValuePair.value != null) {
-                    builder.putData(stringValuePair.key, stringValuePair.value.toJson());
+                    builder.putData(stringValuePair.key, stringValuePair.value.toString());
                 }
             });
 
             if (dataOnly) {
-                apsBuilder.setContentAvailable(true);
             }
         }
+        apsBuilder.setContentAvailable(true);
+
 
         // Store ID so console can mark notification as delivered and/or acknowledged
         builder.putData("notification-id", Long.toString(id));
