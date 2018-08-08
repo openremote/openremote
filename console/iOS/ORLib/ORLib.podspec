@@ -16,6 +16,6 @@ Pod::Spec.new do |s|
   s.source = { :git => 'https://github.com/openremote/openremote.git', :tag => 'cocoapod' + s.version.to_s }
   s.dependency 'Firebase/Core', '4.6.0'
   s.dependency 'Firebase/Messaging', '4.6.0'
-  s.source_files = 'console/iOS/ORLib/ORLib/*.{swift}', 'console/iOS/ORLib/ORLib/ConsoleProviders/*.{swift}'
+  s.source_files = 'console/iOS/ORLib/**/*.{swift}'
   s.license = { :type => "MIT", :file => "console/iOS/ORLib/LICENSE" }
 end
