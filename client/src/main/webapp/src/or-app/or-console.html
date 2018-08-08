@@ -353,6 +353,7 @@
                                     // Some providers require special handling for enabling
                                     switch (providerName) {
                                         case "geofence":
+                                        case "push":
                                             if (!this.registration.id) {
                                                 // Console hasn't yet been registered so do that first then enable the geofence provider
                                                 this.register(() => {
