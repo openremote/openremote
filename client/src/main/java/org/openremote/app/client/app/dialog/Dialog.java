@@ -19,17 +19,56 @@
  */
 package org.openremote.app.client.app.dialog;
 
+import com.google.gwt.core.client.GWT;
+import com.google.gwt.uibinder.client.UiBinder;
+import com.google.gwt.uibinder.client.UiField;
+import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.HasWidgets;
+import com.google.gwt.user.client.ui.Label;
+import org.openremote.app.client.i18n.ManagerMessages;
+import org.openremote.app.client.widget.AbstractAppPanel;
 import org.openremote.app.client.widget.AppPanel;
+import org.openremote.app.client.widget.PopupPanel;
 
-public interface Dialog extends AppPanel {
+import javax.inject.Inject;
 
-    void addStyleName(String name);
+public class Dialog extends AbstractAppPanel implements AppPanel {
 
-    void setHeaderLabel(String label);
+    interface UI extends UiBinder<PopupPanel, Dialog> {
+    }
 
-    HasWidgets getContentPanel();
+    @UiField
+    ManagerMessages managerMessages;
 
-    HasWidgets getFooterPanel();
+    @UiField
+    FlowPanel mainPanel;
 
+    @UiField
+    Label headerLabel;
+
+    @UiField
+    FlowPanel contentPanel;
+
+    @UiField
+    FlowPanel footerPanel;
+
+    public Dialog() {
+        super(GWT.create(UI.class));
+    }
+
+    public void addStyleName(String name) {
+        mainPanel.addStyleName(name);
+    }
+
+    public void setHeaderLabel(String label) {
+        headerLabel.setText(label);
+    }
+
+    public HasWidgets getContentPanel() {
+        return contentPanel;
+    }
+
+    public HasWidgets getFooterPanel() {
+        return footerPanel;
+    }
 }

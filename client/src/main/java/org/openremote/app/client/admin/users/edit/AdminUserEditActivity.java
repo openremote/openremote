@@ -30,12 +30,12 @@ import org.openremote.model.event.bus.EventBus;
 import org.openremote.model.event.bus.EventRegistration;
 import org.openremote.model.http.ConstraintViolation;
 import org.openremote.model.interop.Consumer;
-import org.openremote.model.interop.Runnable;
 import org.openremote.model.notification.NotificationResource;
 import org.openremote.model.security.Credential;
 import org.openremote.model.security.Role;
 import org.openremote.model.security.User;
 import org.openremote.model.security.UserResource;
+import org.openremote.model.interop.Runnable;
 
 import javax.inject.Inject;
 import java.util.ArrayList;

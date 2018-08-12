@@ -7,9 +7,9 @@ import jsinterop.annotations.JsType;
 import jsinterop.base.Any;
 import org.openremote.app.client.rest.Requests;
 import org.openremote.app.client.toast.Toasts;
-import org.openremote.model.interop.Consumer;
-import org.openremote.model.interop.Runnable;
+import java.util.function.Consumer;
 import org.openremote.model.security.Tenant;
+import org.openremote.model.interop.Runnable;
 
 /**
  * The singleton of {@code <or-app>}.

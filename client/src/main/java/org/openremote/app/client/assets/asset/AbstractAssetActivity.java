@@ -20,9 +20,7 @@
 package org.openremote.app.client.assets.asset;
 
 import com.google.gwt.user.client.ui.IsWidget;
-import com.google.inject.Provider;
 import org.openremote.app.client.Environment;
-import org.openremote.app.client.app.dialog.JsonEditor;
 import org.openremote.app.client.assets.AssetBrowsingActivity;
 import org.openremote.app.client.assets.attributes.AbstractAttributeViewExtension;
 import org.openremote.app.client.assets.attributes.AttributeView;
@@ -41,7 +39,7 @@ import org.openremote.app.client.interop.value.ObjectValueMapper;
 import org.openremote.app.client.mvp.AcceptsView;
 import org.openremote.app.client.mvp.AppActivity;
 import org.openremote.app.client.widget.FormButton;
-import org.openremote.app.client.widget.FormOutputText;
+import org.openremote.app.client.widget.ValueEditors;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.ValueHolder;
 import org.openremote.model.asset.Asset;
@@ -54,11 +52,11 @@ import org.openremote.model.event.bus.EventRegistration;
 import org.openremote.model.interop.Consumer;
 import org.openremote.model.map.MapResource;
 import org.openremote.model.security.Tenant;
-import org.openremote.model.value.*;
+import org.openremote.model.value.Value;
+import org.openremote.model.value.ValueType;
 
 import java.util.*;
 
-import static org.openremote.app.client.widget.ValueEditors.*;
 import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 
 public abstract class AbstractAssetActivity<V
@@ -66,7 +64,6 @@ public abstract class AbstractAssetActivity<V
     implements AssetBaseView.Presenter, AssetNavigation.Presenter {
 
     protected final List<AttributeView> attributeViews = new ArrayList<>();
-    protected final Provider<JsonEditor> jsonEditorProvider;
     protected final boolean editMode;
     protected final ObjectValueMapper objectValueMapper;
     protected final MapResource mapResource;
@@ -80,7 +77,6 @@ public abstract class AbstractAssetActivity<V
 
     public AbstractAssetActivity(Environment environment,
                                  AssetBrowser.Presenter assetBrowserPresenter,
-                                 Provider<JsonEditor> jsonEditorProvider,
                                  ObjectValueMapper objectValueMapper,
                                  MapResource mapResource,
                                  boolean editMode) {
@@ -88,7 +84,6 @@ public abstract class AbstractAssetActivity<V
         this.objectValueMapper = objectValueMapper;
         this.mapResource = mapResource;
         this.editMode = editMode;
-        this.jsonEditorProvider = jsonEditorProvider;
     }
 
     @Override
@@ -439,66 +434,16 @@ public abstract class AbstractAssetActivity<V
         boolean isReadOnly = isValueReadOnly(valueHolder);
         Optional<Long> timestamp = getTimestamp(valueHolder);
 
-        switch(valueType) {
-            case OBJECT:
-                ObjectValue currentValueObj = valueHolder.getValueAsObject().orElse(null);
-                String label = environment.getMessages().jsonObject();
-                String title = environment.getMessages().edit() + " " + environment.getMessages().jsonObject();
-                return createObjectEditor(
-                    currentValueObj,
-                    onValueModified::accept,
-                    timestamp,
-                    isReadOnly,
-                    label,
-                    title,
-                    jsonEditorProvider.get()
-                );
-            case ARRAY:
-                ArrayValue currentValueArray = valueHolder.getValueAsArray().orElse(null);
-                label = environment.getMessages().jsonArray();
-                title = environment.getMessages().edit() + " " + environment.getMessages().jsonArray();
-                return createArrayEditor(
-                    currentValueArray,
-                    onValueModified::accept,
-                    timestamp,
-                    isReadOnly,
-                    label,
-                    title,
-                    jsonEditorProvider.get()
-                );
-            case STRING:
-                StringValue currentValueStr = (StringValue)valueHolder.getValue().orElse(null);
-                return createStringEditor(
-                    currentValueStr,
-                    onValueModified::accept,
-                    timestamp,
-                    isReadOnly,
-                    style.stringEditor()
-                );
-            case NUMBER:
-                NumberValue currentValueNumber = (NumberValue)valueHolder.getValue().orElse(null);
-                return createNumberEditor(
-                    currentValueNumber,
-                    onValueModified::accept,
-                    timestamp,
-                    isReadOnly,
-                    style.numberEditor()
-                );
-            case BOOLEAN:
-                BooleanValue currentValueBool = (BooleanValue)valueHolder.getValue().orElse(null);
-                return createBooleanEditor(
-                    currentValueBool,
-                    onValueModified::accept,
-                    timestamp,
-                    isReadOnly,
-                    style.booleanEditor()
-                );
-            default:
-                return new FormOutputText(valueHolder instanceof MetaItem ?
-                    environment.getMessages().unsupportedMetaItemType(valueType.name()) :
-                    environment.getMessages().unsupportedValueType(valueType.name())
-                );
-        }
+        return ValueEditors.createValueEditor(
+            valueHolder.getValue().orElse(null),
+            valueType,
+            onValueModified,
+            timestamp,
+            isReadOnly,
+            getEditorStyleName(valueType, style),
+            environment.getWidgetStyle(),
+            environment.getMessages()
+        );
     }
 
     public void showValidationError(String attributeName, String metaItemName, ValidationFailure validationFailure) {
@@ -535,5 +480,19 @@ public abstract class AbstractAssetActivity<V
 
     public void showFailureMessage(String failureMessage) {
         environment.getEventBus().dispatch(new ShowFailureEvent(failureMessage, 5000));
+    }
+
+    protected String getEditorStyleName(ValueType valueType, AttributeView.Style style) {
+        switch (valueType) {
+
+            case STRING:
+                return style.stringEditor();
+            case NUMBER:
+                return style.numberEditor();
+            case BOOLEAN:
+                return style.booleanEditor();
+            default:
+                return null;
+        }
     }
 }

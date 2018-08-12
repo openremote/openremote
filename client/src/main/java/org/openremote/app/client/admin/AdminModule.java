@@ -35,7 +35,6 @@ import org.openremote.app.client.admin.users.AdminUsersImpl;
 import org.openremote.app.client.admin.users.edit.AdminUserEdit;
 import org.openremote.app.client.admin.users.edit.AdminUserEditActivity;
 import org.openremote.app.client.admin.users.edit.AdminUserEditImpl;
-import org.openremote.app.client.admin.users.notifications.*;
 import org.openremote.model.notification.NotificationResource;
 import org.openremote.model.security.UserResource;
 import org.openremote.model.syslog.SyslogResource;
@@ -62,10 +61,6 @@ public class AdminModule extends AbstractGinModule {
 
         bind(AdminUserEdit.class).to(AdminUserEditImpl.class).in(Singleton.class);
         bind(AdminUserEditActivity.class);
-
-        bind(AdminUserNotifications.class).to(AdminUserNotificationsImpl.class).in(Singleton.class);
-        bind(AdminUserNotificationsActivity.class);
-        bind(AdminUserNotificationEditor.class).to(AdminUserNotificationEditorImpl.class).in(Singleton.class);
     }
 
     @Provides
@@ -79,11 +74,4 @@ public class AdminModule extends AbstractGinModule {
     public native UserResource getUserResource()  /*-{
         return $wnd.openremote.REST.UserResource;
     }-*/;
-
-    @Provides
-    @Singleton
-    public native NotificationResource getNotificationResource()  /*-{
-        return $wnd.openremote.REST.NotificationResource;
-    }-*/;
-
 }

@@ -17,20 +17,17 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.app.client.admin.users.notifications;
+package org.openremote.app.client.notifications;
 
-import org.openremote.model.interop.Consumer;
+import com.github.nmorel.gwtjackson.client.ObjectMapper;
+import com.github.nmorel.gwtjackson.client.annotation.JsonMixIns;
+import org.openremote.app.client.interop.jackson.DefaultJsonMixin;
+import org.openremote.app.client.rest.EntityWriter;
 import org.openremote.model.notification.Notification;
+import org.openremote.model.notification.PushNotificationMessage;
 
-public interface AdminUserNotificationEditor {
-
-    void reset();
-
-    void setNotification(Notification notification);
-
-    void setOnSend(Consumer<Notification> onSend);
-
-    void setOnClose(Runnable onClose);
-
-    void show();
+@JsonMixIns({@JsonMixIns.JsonMixIn(target = Notification.class, mixIn = DefaultJsonMixin.class)})
+public interface NotificationMapper
+    extends ObjectMapper<Notification>,
+    EntityWriter<Notification> {
 }

@@ -55,7 +55,7 @@ public class MapTenantPlace extends MapPlace {
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
-            "realm='" + realmId + '\'' +
+            "realmId='" + realmId + '\'' +
             '}';
     }
 }

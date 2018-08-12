@@ -34,6 +34,7 @@ import org.openremote.app.client.assets.tenant.AssetsTenantPlace;
 import org.openremote.app.client.event.GoToPlaceEvent;
 import org.openremote.app.client.map.MapAssetPlace;
 import org.openremote.app.client.map.MapTenantPlace;
+import org.openremote.app.client.notifications.NotificationsPlace;
 import org.openremote.app.client.rules.asset.AssetRulesListPlace;
 import org.openremote.app.client.rules.global.GlobalRulesListPlace;
 import org.openremote.app.client.rules.tenant.TenantRulesListPlace;
@@ -131,6 +132,23 @@ public class HeaderPresenter implements HeaderView.Presenter {
     }
 
     @Override
+    public void navigateNotifications() {
+        if (assetBrowserSelection == null) {
+            placeController.goTo(new NotificationsPlace());
+            return;
+        }
+        if (assetBrowserSelection.getSelectedNode() instanceof TenantTreeNode) {
+            placeController.goTo(new NotificationsPlace(((TenantTreeNode) assetBrowserSelection.getSelectedNode()).getTenant().getRealm(), null));
+        } else if (assetBrowserSelection.getSelectedNode() instanceof AssetTreeNode) {
+            placeController.goTo(
+                new NotificationsPlace(((AssetTreeNode) assetBrowserSelection.getSelectedNode()).getAsset().getTenantRealm(),
+                assetBrowserSelection.getSelectedNode().getId()));
+        } else {
+            placeController.goTo(new NotificationsPlace());
+        }
+    }
+
+    @Override
     public void navigateApps() {
         placeController.goTo(new ConsoleAppsPlace(consoleAppSelection != null ? consoleAppSelection.getRealm() : null));
     }
@@ -138,7 +156,6 @@ public class HeaderPresenter implements HeaderView.Presenter {
     @Override
     public void navigateAdmin() {
         placeController.goTo(new AdminSyslogPlace());
-
     }
 
     @Override
@@ -159,6 +176,11 @@ public class HeaderPresenter implements HeaderView.Presenter {
     @Override
     public boolean isRulesEnabled() {
         return app.getSecurity().hasResourceRoleOrIsSuperUser("read:rules", Constants.KEYCLOAK_CLIENT_ID);
+    }
+
+    @Override
+    public boolean isNotificationsEnabled() {
+        return app.getSecurity().hasResourceRoleOrIsSuperUser("read:admin", Constants.KEYCLOAK_CLIENT_ID);
     }
 
     @Override

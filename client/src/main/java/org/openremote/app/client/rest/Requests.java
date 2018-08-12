@@ -20,8 +20,6 @@
 package org.openremote.app.client.rest;
 
 import com.google.gwt.core.client.GWT;
-import elemental.client.Browser;
-import elemental.html.Location;
 import elemental2.core.Global;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsType;

@@ -20,6 +20,7 @@
 package org.openremote.app.client.widget;
 
 import com.google.gwt.user.client.ui.IsWidget;
+import org.openremote.model.interop.Runnable;
 
 public interface FormView extends IsWidget {
 

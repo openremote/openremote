@@ -37,7 +37,8 @@ public interface NotificationResource {
     /**
      * Gets all sent notifications that have been sent to the specified targets; optionally limiting the scope of the
      * request by {@link AbstractNotificationMessage} type and/or sent datetime. If type(s) or timestamp are not set
-     * then it is assumed no type or time constraint is required.
+     * then it is assumed no type or time constraint is required. Can also provide a list of notification IDs to get
+     * specific notifications.
      * <p>
      * Only the superuser can call this operation.
      */
@@ -47,6 +48,7 @@ public interface NotificationResource {
     @RolesAllowed({"read:admin"})
     @SuppressWarnings("unusable-by-js")
     SentNotification[] getNotifications(@BeanParam RequestParams requestParams,
+                                        @QueryParam("ids") List<Long> ids,
                                         @QueryParam("types") List<String> types,
                                         @QueryParam("before") Long timestamp,
                                         @QueryParam("tenantId") List<String> tenantIds,
@@ -56,7 +58,8 @@ public interface NotificationResource {
     /**
      * Removes all sent notifications that have been sent to the specified targets; optionally limiting the scope of the
      * request by {@link AbstractNotificationMessage} type and/or sent datetime. If type(s) or timestamp are not set
-     * then it is assumed no type or time constraint is required.
+     * then it is assumed no type or time constraint is required. Can also provide a list of notification IDs to delete
+     * specific notifications.
      * <p>
      * Only the superuser can call this operation.
      */
@@ -65,11 +68,12 @@ public interface NotificationResource {
     @RolesAllowed({"write:admin"})
     @SuppressWarnings("unusable-by-js")
     void removeNotifications(@BeanParam RequestParams requestParams,
+                             @QueryParam("ids") List<Long> ids,
                              @QueryParam("types") List<String> types,
                              @QueryParam("before") Long timestamp,
-                             @QueryParam("tenantId") List<String> tenantIds,
-                             @QueryParam("userId") List<String> userIds,
-                             @QueryParam("assetId") List<String> assetIds);
+                             @QueryParam("tenantIds") List<String> tenantIds,
+                             @QueryParam("userIds") List<String> userIds,
+                             @QueryParam("assetIds") List<String> assetIds);
 
     /**
      * Remove a specific sent notification by ID.

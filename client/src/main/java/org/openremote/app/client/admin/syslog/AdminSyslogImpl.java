@@ -63,8 +63,8 @@ public class AdminSyslogImpl extends FormViewImpl implements AdminSyslog {
     int limit = SyslogConfig.DEFAULT_LIMIT;
 
     @Inject
-    public AdminSyslogImpl(Environment environment, Provider<Confirmation> confirmationDialogProvider) {
-        super(confirmationDialogProvider, environment.getWidgetStyle());
+    public AdminSyslogImpl(Environment environment) {
+        super(environment.getWidgetStyle());
 
         syslogFilter = new SyslogFilter(environment.getMessages(), environment.getWidgetStyle()) {
             @Override

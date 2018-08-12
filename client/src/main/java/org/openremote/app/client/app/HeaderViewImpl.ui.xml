@@ -29,6 +29,11 @@
                            icon="chain"
                            text="{managerMessages.rules}"/>
 
+        <w:PushButton ui:field="notificationsButton"
+                           addStyleNames="{widgetStyle.NavItem}"
+                           icon="chain"
+                           text="{managerMessages.notifications}"/>
+
         <w:PushButton ui:field="appsButton"
                            addStyleNames="{widgetStyle.NavItem}"
                            icon="connectdevelop"

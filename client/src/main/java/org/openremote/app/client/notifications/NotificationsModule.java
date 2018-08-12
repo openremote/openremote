@@ -17,35 +17,26 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.app.client.admin.users.notifications;
+package org.openremote.app.client.notifications;
 
-import org.openremote.app.client.admin.AdminContent;
-import org.openremote.app.client.admin.users.AbstractAdminUsersPlace;
-import org.openremote.model.notification.PushNotificationMessage;
-import org.openremote.model.notification.SentNotification;
+import com.google.gwt.inject.client.AbstractGinModule;
+import com.google.inject.Provides;
+import com.google.inject.Singleton;
+import org.openremote.model.notification.NotificationResource;
 
-public interface AdminUserNotifications extends AdminContent {
+public class NotificationsModule extends AbstractGinModule {
 
-    interface Presenter {
-
-        AbstractAdminUsersPlace getPlace();
-
-        void onRefresh();
-
-        void onSendNotification();
-
-        void onNotificationDelete(Long id);
-
-        void onNotificationsDelete();
-
+    @Override
+    protected void configure() {
+        bind(NotificationEditor.class).to(NotificationEditorImpl.class).in(Singleton.class);
+        bind(NotificationsView.class).to(NotificationsViewImpl.class).in(Singleton.class);
+        bind(NotificationsActivity.class);
     }
 
-    void setPresenter(Presenter presenter);
 
-    void setUsername(String username);
-
-    void setNotifications(SentNotification[] notifications);
-
-    void removeNotification(Long id);
-
+    @Provides
+    @Singleton
+    public native NotificationResource getNotificationResource()  /*-{
+        return $wnd.openremote.REST.NotificationResource;
+    }-*/;
 }

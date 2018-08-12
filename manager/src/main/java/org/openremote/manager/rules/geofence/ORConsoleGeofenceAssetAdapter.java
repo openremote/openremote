@@ -242,7 +242,7 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
         notificationService.sendNotification(
             new Notification(
                 "GeofenceRefresh",
-                new PushNotificationMessage().setData(data).setTargetType(PushNotificationMessage.TargetType.DEVICE),
+                new PushNotificationMessage().setData(data),
                 new Notification.Targets(Notification.TargetType.ASSET, Collections.singletonList(assetId))));
     }
 

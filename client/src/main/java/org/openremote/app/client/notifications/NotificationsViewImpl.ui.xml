@@ -1,0 +1,127 @@
+<ui:UiBinder xmlns:ui="urn:ui:com.google.gwt.uibinder"
+             xmlns:g="urn:import:com.google.gwt.user.client.ui"
+             xmlns:w="urn:import:org.openremote.app.client.widget">
+
+    <ui:with field="managerMessages" type="org.openremote.app.client.i18n.ManagerMessages"/>
+    <ui:with field="widgetStyle" type="org.openremote.app.client.style.WidgetStyle"/>
+
+    <ui:style>
+        .navItem {
+            margin: 0 1em;
+        }
+    </ui:style>
+
+    <w:FlexSplitPanel ui:field="splitPanel"
+                      handleStyle="{widgetStyle.SplitPanelHandle}"
+                      firstPanelWidth="300"
+                      firstPanelMinWidth="0"
+                      secondPanelMinWidth="400">
+
+        <w:first>
+            <g:HTMLPanel ui:field="sidebarContainer"
+                         styleName="flex layout vertical {widgetStyle.SidebarContent}"/>
+        </w:first>
+
+        <w:second>
+            <g:HTMLPanel styleName="flex layout vertical">
+
+                <div class="layout horizontal center end-justified {widgetStyle.SecondaryNav}">
+
+                    <w:FormButton ui:field="sendNotificationButton"
+                                  addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem}"
+                                  text="{managerMessages.sendNotification}"
+                                  icon="send"/>
+                </div>
+
+                <w:Form ui:field="form" addStyleNames="flex">
+
+                    <g:HTMLPanel ui:field="mainContent"
+                                 styleName="flex-none layout vertical {widgetStyle.MainContent}">
+
+                        <div class="layout vertical">
+
+                            <w:Headline icon="filter"
+                                             text="{managerMessages.filter}"/>
+
+                            <w:FormGroup ui:field="typeGroup">
+                                <w:label>
+                                    <w:FormLabel text="{managerMessages.type}"/>
+                                </w:label>
+                                <w:field>
+                                    <w:FormField>
+                                        <w:FormListBox ui:field="typesList" />
+                                    </w:FormField>
+                                </w:field>
+                            </w:FormGroup>
+
+                            <w:FormGroup ui:field="realmGroup">
+                                <w:label>
+                                    <w:FormLabel text="{managerMessages.realm}"/>
+                                </w:label>
+                                <w:field>
+                                    <w:FormField>
+                                        <w:FormListBox ui:field="realmsList" />
+                                    </w:FormField>
+                                </w:field>
+                            </w:FormGroup>
+
+                            <w:FormGroup ui:field="targetTypeGroup">
+                                <w:label>
+                                    <w:FormLabel text="{managerMessages.targetType}"/>
+                                </w:label>
+                                <w:field>
+                                    <w:FormField>
+                                        <w:FormListBox ui:field="targetTypesList" />
+                                    </w:FormField>
+                                </w:field>
+                            </w:FormGroup>
+
+                            <w:FormGroup ui:field="targetsGroup">
+                                <w:label>
+                                    <w:FormLabel text="{managerMessages.targets}"/>
+                                </w:label>
+                                <w:field>
+                                    <w:FormField>
+                                        <w:FormListBox ui:field="targetsList" />
+                                    </w:FormField>
+                                </w:field>
+                            </w:FormGroup>
+
+                            <w:FormGroup ui:field="sentInGroup">
+                                <w:label>
+                                    <w:FormLabel text="{managerMessages.sentIn}"/>
+                                </w:label>
+                                <w:field>
+                                    <w:FormField>
+                                        <w:FormListBox ui:field="sentInsList" />
+                                    </w:FormField>
+                                </w:field>
+                            </w:FormGroup>
+
+                            <w:FormGroup ui:field="submitButtonGroup">
+                                <w:field>
+                                    <w:FormField>
+                                        <w:FormButton ui:field="refreshNotificationsButton"
+                                                      text="{managerMessages.refresh}"
+                                                      icon="refresh"/>
+                                        <w:FormButton ui:field="deleteNotificationsButton"
+                                                      danger="true"
+                                                      text="{managerMessages.deleteNotifications}"
+                                                      icon="trash"/>
+                                    </w:FormField>
+                                </w:field>
+                            </w:FormGroup>
+
+                        </div>
+
+                    </g:HTMLPanel>
+
+                    <g:FlowPanel ui:field="notificationsContainer"
+                                 styleName="flex layout vertical {widgetStyle.MainContent} {widgetStyle.FormList}"/>
+
+                </w:Form>
+
+        </g:HTMLPanel>
+        </w:second>
+    </w:FlexSplitPanel>
+</ui:UiBinder>

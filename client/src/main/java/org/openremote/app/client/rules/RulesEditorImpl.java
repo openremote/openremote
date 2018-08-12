@@ -88,10 +88,9 @@ public class RulesEditorImpl extends FormViewImpl implements RulesEditor {
     protected Presenter presenter;
 
     @Inject
-    public RulesEditorImpl(Provider<Confirmation> confirmationDialogProvider,
-                           AssetBrowser assetBrowser,
+    public RulesEditorImpl(AssetBrowser assetBrowser,
                            Environment environment) {
-        super(confirmationDialogProvider, environment.getWidgetStyle());
+        super(environment.getWidgetStyle());
         this.assetBrowser = assetBrowser;
 
         RulesEditorImpl.UI ui = GWT.create(RulesEditorImpl.UI.class);

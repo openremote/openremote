@@ -44,7 +44,6 @@ import org.openremote.model.query.filter.ObjectValueKeyPredicate;
 import org.openremote.model.query.filter.PathPredicate;
 import org.openremote.model.query.filter.TenantPredicate;
 import org.openremote.model.util.TextUtil;
-import org.openremote.model.value.StringValue;
 
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -74,7 +73,6 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
     protected boolean valid;
     protected Map<String, String> consoleFCMTokenMap = new HashMap<>();
     protected List<String> fcmTokenBlacklist = new ArrayList<>();
-    protected AbstractNotificationMessage lastSentMessage; // Bit of a hack to track topic based messages
 
     public void init(Container container) throws Exception {
         this.assetStorageService = container.getService(AssetStorageService.class);
@@ -284,23 +282,36 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
             return NotificationSendResult.failure("FCM invalid configuration so ignoring");
         }
 
+        // Check this asset has an FCM token (i.e. it is registered for push notifications)
+        String fcmToken = consoleFCMTokenMap.get(targetId);
 
-        PushNotificationMessage pushMessage = (PushNotificationMessage) message;
-        if (pushMessage.getTargetType() == DEVICE) {
-            String fcmToken = consoleFCMTokenMap.get(targetId);
-            if (TextUtil.isNullOrEmpty(fcmToken)) {
-                LOG.warning("No FCM token found for console: " + targetId);
-                return NotificationSendResult.failure("FCM invalid configuration so ignoring");
-            }
-            pushMessage.setTarget(fcmToken);
-        } else if (pushMessage.getTargetType() == TOPIC && pushMessage == lastSentMessage) {
-            LOG.info("Message is for topic and already sent so skipping send");
-            return NotificationSendResult.success();
-        } else {
-            pushMessage.setTarget(targetId);
+        if (TextUtil.isNullOrEmpty(fcmToken)) {
+            LOG.warning("No FCM token found for console: " + targetId);
+            return NotificationSendResult.failure("FCM invalid configuration so ignoring");
         }
 
-        lastSentMessage = pushMessage;
+        PushNotificationMessage pushMessage = (PushNotificationMessage) message;
+
+        // Assume DEVICE target if not specified
+        if (pushMessage.getTargetType() == null) {
+            pushMessage.setTargetType(DEVICE);
+        }
+
+        switch (pushMessage.getTargetType()) {
+            case DEVICE:
+                // Always use fcm token from the console asset (so users cannot target other devices)
+                pushMessage.setTarget(fcmToken);
+                break;
+            case TOPIC:
+                // TODO: Decide how to handle FCM topic support (too much power for users to put anything in target)
+                LOG.warning("Messages sent to a topic are not supported");
+                return NotificationSendResult.failure("Messages sent to a topic are not supported");
+            case CONDITION:
+                // TODO: Decide how to handle conditions support (too much power for users to put anything in target)
+                LOG.warning("Messages sent to conditional targets are not supported");
+                return NotificationSendResult.failure("Messages sent to conditional targets are not supported");
+        }
+
         return sendMessage(buildFCMMessage(id, pushMessage));
     }
 
@@ -401,10 +412,9 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
             });
 
             if (dataOnly) {
+                apsBuilder.setContentAvailable(true);
             }
         }
-        apsBuilder.setContentAvailable(true);
-
 
         // Store ID so console can mark notification as delivered and/or acknowledged
         builder.putData("notification-id", Long.toString(id));

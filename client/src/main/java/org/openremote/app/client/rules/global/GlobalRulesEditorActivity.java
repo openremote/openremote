@@ -26,11 +26,11 @@ import org.openremote.app.client.assets.browser.AssetBrowser;
 import org.openremote.app.client.mvp.AcceptsView;
 import org.openremote.app.client.rules.AbstractRulesEditorActivity;
 import org.openremote.app.client.rules.RulesEditor;
+import org.openremote.model.interop.Consumer;
 import org.openremote.model.rules.RulesResource;
 import org.openremote.model.event.bus.EventBus;
 import org.openremote.model.event.bus.EventRegistration;
 import org.openremote.model.http.RequestParams;
-import org.openremote.model.interop.Consumer;
 import org.openremote.model.rules.GlobalRuleset;
 
 import javax.inject.Inject;

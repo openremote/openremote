@@ -115,9 +115,8 @@ public class AdminUserEditImpl extends FormViewImpl implements AdminUserEdit {
 
     @Inject
     public AdminUserEditImpl(Environment environment,
-                             Provider<Confirmation> confirmationDialogProvider,
                              AdminUsersNavigation adminUsersNavigation) {
-        super(confirmationDialogProvider, environment.getWidgetStyle());
+        super(environment.getWidgetStyle());
 
         this.adminUsersNavigation = adminUsersNavigation;
 

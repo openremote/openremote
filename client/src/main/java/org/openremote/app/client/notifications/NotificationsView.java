@@ -1,5 +1,5 @@
 /*
- * Copyright 2016, OpenRemote Inc.
+ * Copyright 2017, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -17,48 +17,35 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.app.client.app;
+package org.openremote.app.client.notifications;
 
-import com.google.gwt.place.shared.Place;
 import com.google.gwt.user.client.ui.IsWidget;
-import org.openremote.app.client.user.UserControls;
+import org.openremote.model.notification.SentNotification;
 
-public interface HeaderView extends IsWidget {
+public interface NotificationsView extends IsWidget {
 
     interface Presenter {
 
-        HeaderView getView();
+        void showNotificationEditor();
 
-        void navigateMap();
+        void deleteNotification(Long id);
 
-        void navigateAssets();
+        void deleteNotifications();
 
-        void navigateRules();
-
-        void navigateNotifications();
-
-        void navigateApps();
-
-        void navigateAdmin();
-
-        UserControls getUserControls();
-
-        boolean isMapEnabled();
-
-        boolean isAssetsEnabled();
-
-        boolean isRulesEnabled();
-
-        boolean isNotificationsEnabled();
-
-        boolean isAppsEnabled();
-
-        boolean isAdminEnabled();
+        void refreshNotifications();
     }
 
     void setPresenter(Presenter presenter);
 
-    void onPlaceChange(Place place);
+    void setBusy(boolean busy);
 
-    void setUsername(String username);
+    void setRefreshEnabled(boolean enabled);
+
+    void setNotifications(SentNotification[] notifications);
+
+    void setDeleteAllEnabled(boolean enabled);
+
+    void setFilterOptions(FilterOptions filterOptions);
+
+    void removeNotification(Long id);
 }

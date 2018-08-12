@@ -118,7 +118,8 @@ public class WidgetStyle {
     public String TopGradient = "or-TopGradient";
     public String HighlightBackground = "or-HighlightBackground";
     public String JsonEditor = "or-JsonEditor";
-    public String AdminNotificationEditor = "or-AdminNotificationEditor";
+    public String NotificationEditor = "or-NotificationEditor";
+    public String NotificationActionLabel = "or-NotificationActionLabel";
     public String BorderRed = "or-BorderRed";
     public String BorderGreen = "or-BorderGreen";
     public String BorderYellow = "or-BorderYellow";
@@ -590,8 +591,13 @@ public class WidgetStyle {
     }
 
     @JsIgnore
-    public String AdminNotificationEditor() {
-        return AdminNotificationEditor;
+    public String NotificationEditor() {
+        return NotificationEditor;
+    }
+
+    @JsIgnore
+    public String NotificationActionLabel() {
+        return NotificationActionLabel;
     }
 
     @JsIgnore

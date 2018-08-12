@@ -26,15 +26,16 @@ import org.openremote.app.client.assets.AssetArrayMapper;
 import org.openremote.app.client.assets.AssetMapper;
 import org.openremote.app.client.assets.AssetQueryMapper;
 import org.openremote.model.asset.Asset;
+import org.openremote.model.interop.Consumer;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.asset.AssetResource;
 import org.openremote.model.asset.AssetTreeModifiedEvent;
 import org.openremote.model.event.shared.TenantFilter;
-import org.openremote.model.interop.Consumer;
 import org.openremote.model.query.filter.ParentPredicate;
 import org.openremote.model.query.filter.TenantPredicate;
 import org.openremote.model.security.Tenant;
 import org.openremote.model.security.TenantResource;
+import org.openremote.model.util.TextUtil;
 
 import javax.inject.Inject;
 import java.util.ArrayList;
@@ -184,11 +185,24 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
     }
 
     @Override
+    public void selectRealm(String realm) {
+        selectTenant(realm, false);
+    }
+
+    @Override
     public void selectTenant(String realmId) {
-        BrowserTreeNode selectedTenantNode = null;
-        for (BrowserTreeNode tenantNode : tenantNodes) {
-            if (tenantNode.getId().equals(realmId))
-                selectedTenantNode = tenantNode;
+        selectTenant(realmId, true);
+    }
+
+    protected void selectTenant(String value, boolean compareId) {
+        TenantTreeNode selectedTenantNode = null;
+        if (!TextUtil.isNullOrEmpty(value)) {
+            for (TenantTreeNode tenantNode : tenantNodes) {
+                String matchValue = compareId ? tenantNode.getId() : tenantNode.getTenant().getRealm();
+
+                if (matchValue.equals(value))
+                    selectedTenantNode = tenantNode;
+            }
         }
         if (selectedTenantNode != null) {
             onNodeSelected(selectedTenantNode);

@@ -33,8 +33,6 @@ import org.openremote.app.client.admin.users.AdminUsersActivity;
 import org.openremote.app.client.admin.users.AdminUsersPlace;
 import org.openremote.app.client.admin.users.edit.AdminUserEditActivity;
 import org.openremote.app.client.admin.users.edit.AdminUserEditPlace;
-import org.openremote.app.client.admin.users.notifications.AdminUserNotificationsActivity;
-import org.openremote.app.client.admin.users.notifications.AdminUserNotificationsPlace;
 import org.openremote.app.client.apps.ConsoleAppsActivity;
 import org.openremote.app.client.apps.ConsoleAppsPlace;
 import org.openremote.app.client.assets.AssetsDashboardActivity;
@@ -51,6 +49,8 @@ import org.openremote.app.client.map.MapPlace;
 import org.openremote.app.client.mvp.AppActivity;
 import org.openremote.app.client.mvp.AppActivityMapper;
 import org.openremote.app.client.mvp.RoleRequiredException;
+import org.openremote.app.client.notifications.NotificationsActivity;
+import org.openremote.app.client.notifications.NotificationsPlace;
 import org.openremote.app.client.rules.asset.AssetRulesEditorActivity;
 import org.openremote.app.client.rules.asset.AssetRulesEditorPlace;
 import org.openremote.app.client.rules.asset.AssetRulesListActivity;
@@ -89,8 +89,8 @@ public class ManagerActivityMapper implements AppActivityMapper {
     protected final Provider<AdminTenantActivity> adminTenantActivityProvider;
     protected final Provider<AdminUsersActivity> adminUsersActivityProvider;
     protected final Provider<AdminUserEditActivity> adminUserActivityProvider;
-    protected final Provider<AdminUserNotificationsActivity> adminUserNotificationsActivityProvider;
     protected final Provider<UserAccountActivity> userProfileActivityProvider;
+    protected final Provider<NotificationsActivity> notificationActivityProvider;
 
     @Inject
     public ManagerActivityMapper(OpenRemoteApp app,
@@ -113,8 +113,8 @@ public class ManagerActivityMapper implements AppActivityMapper {
                                  Provider<AdminTenantActivity> adminTenantActivityProvider,
                                  Provider<AdminUsersActivity> adminUsersActivityProvider,
                                  Provider<AdminUserEditActivity> adminUserActivityProvider,
-                                 Provider<AdminUserNotificationsActivity> adminUserNotificationsActivityProvider,
-                                 Provider<UserAccountActivity> userProfileActivityProvider) {
+                                 Provider<UserAccountActivity> userProfileActivityProvider,
+                                 Provider<NotificationsActivity> notificationActivityProvider) {
         this.app = app;
         this.eventBus = eventBus;
         this.managerMessages = managerMessages;
@@ -135,8 +135,8 @@ public class ManagerActivityMapper implements AppActivityMapper {
         this.adminTenantActivityProvider = adminTenantActivityProvider;
         this.adminUsersActivityProvider = adminUsersActivityProvider;
         this.adminUserActivityProvider = adminUserActivityProvider;
-        this.adminUserNotificationsActivityProvider = adminUserNotificationsActivityProvider;
         this.userProfileActivityProvider = userProfileActivityProvider;
+        this.notificationActivityProvider = notificationActivityProvider;
     }
 
     public AppActivity getActivity(Place place) {
@@ -174,6 +174,9 @@ public class ManagerActivityMapper implements AppActivityMapper {
             if (place instanceof AssetRulesEditorPlace) {
                 return assetRulesEditorActivityProvider.get().init(app.getSecurity(), (AssetRulesEditorPlace) place);
             }
+            if (place instanceof NotificationsPlace) {
+                return notificationActivityProvider.get().init(app.getSecurity(), (NotificationsPlace) place);
+            }
             if (place instanceof ConsoleAppsPlace) {
                 return appsActivityProvider.get().init(app.getSecurity(), (ConsoleAppsPlace) place);
             }
@@ -191,9 +194,6 @@ public class ManagerActivityMapper implements AppActivityMapper {
             }
             if (place instanceof AdminUserEditPlace) {
                 return adminUserActivityProvider.get().init(app.getSecurity(), (AdminUserEditPlace) place);
-            }
-            if (place instanceof AdminUserNotificationsPlace) {
-                return adminUserNotificationsActivityProvider.get().init(app.getSecurity(), (AdminUserNotificationsPlace) place);
             }
             if (place instanceof UserAccountPlace) {
                 return userProfileActivityProvider.get().init(app.getSecurity(), (UserAccountPlace) place);

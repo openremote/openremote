@@ -71,8 +71,8 @@ public class AdminTenantImpl extends FormViewImpl implements AdminTenant {
     protected Presenter presenter;
 
     @Inject
-    public AdminTenantImpl(Environment environment, Provider<Confirmation> confirmationDialogProvider) {
-        super(confirmationDialogProvider, environment.getWidgetStyle());
+    public AdminTenantImpl(Environment environment) {
+        super(environment.getWidgetStyle());
         UI ui = GWT.create(UI.class);
         initWidget(ui.createAndBindUi(this));
     }

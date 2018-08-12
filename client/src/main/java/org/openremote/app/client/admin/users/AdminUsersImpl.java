@@ -61,11 +61,10 @@ public class AdminUsersImpl extends FormViewImpl implements AdminUsers {
     Presenter presenter;
 
     @Inject
-    public AdminUsersImpl(Provider<Confirmation> confirmationDialogProvider,
-                          WidgetStyle widgetStyle,
+    public AdminUsersImpl(WidgetStyle widgetStyle,
                           FormTableStyle formTableStyle,
                           AdminUsersNavigation adminUsersNavigation) {
-        super(confirmationDialogProvider, widgetStyle);
+        super(widgetStyle);
 
         this.adminUsersNavigation = adminUsersNavigation;
 

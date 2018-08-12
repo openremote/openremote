@@ -32,6 +32,7 @@ import org.openremote.app.client.assets.AssetsPlace;
 import org.openremote.app.client.admin.AdminPlace;
 import org.openremote.app.client.apps.ConsoleAppsPlace;
 import org.openremote.app.client.map.MapPlace;
+import org.openremote.app.client.notifications.NotificationsPlace;
 import org.openremote.app.client.rules.RulesPlace;
 import org.openremote.app.client.user.UserAccountPlace;
 import org.openremote.app.client.widget.PushButton;
@@ -54,6 +55,9 @@ public class HeaderViewImpl extends Composite implements HeaderView {
     PushButton rulesButton;
 
     @UiField
+    PushButton notificationsButton;
+
+    @UiField
     PushButton appsButton;
 
     @UiField
@@ -74,6 +78,7 @@ public class HeaderViewImpl extends Composite implements HeaderView {
         mapButton.setEnabled(presenter.isMapEnabled());
         assetsButton.setEnabled(presenter.isAssetsEnabled());
         rulesButton.setEnabled(presenter.isRulesEnabled());
+        notificationsButton.setEnabled(presenter.isNotificationsEnabled());
         appsButton.setEnabled(presenter.isAppsEnabled());
         adminButton.setEnabled(presenter.isAdminEnabled());
     }
@@ -83,6 +88,7 @@ public class HeaderViewImpl extends Composite implements HeaderView {
         mapButton.removeStyleName("active");
         assetsButton.removeStyleName("active");
         rulesButton.removeStyleName("active");
+        notificationsButton.removeStyleName("active");
         appsButton.removeStyleName("active");
         adminButton.removeStyleName("active");
         userButton.removeStyleName("active");
@@ -95,6 +101,9 @@ public class HeaderViewImpl extends Composite implements HeaderView {
         }
         if (place instanceof RulesPlace) {
             rulesButton.addStyleName("active");
+        }
+        if (place instanceof NotificationsPlace) {
+            notificationsButton.addStyleName("active");
         }
         if (place instanceof ConsoleAppsPlace) {
             appsButton.addStyleName("active");
@@ -133,6 +142,11 @@ public class HeaderViewImpl extends Composite implements HeaderView {
     @UiHandler("rulesButton")
     void rulesClicked(ClickEvent e) {
         presenter.navigateRules();
+    }
+
+    @UiHandler("notificationsButton")
+    void notificationsClicked(ClickEvent e) {
+        presenter.navigateNotifications();
     }
 
     @UiHandler("appsButton")

@@ -51,7 +51,7 @@ public abstract class AbstractAdminUsersPlace extends AdminPlace {
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
-            "realm='" + realm + '\'' +
+            "realmId='" + realm + '\'' +
             ", userId='" + userId + '\'' +
             "}";
     }

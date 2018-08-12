@@ -33,9 +33,9 @@ import org.openremote.model.event.bus.EventRegistration;
 import org.openremote.model.http.ConstraintViolation;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.interop.Consumer;
-import org.openremote.model.interop.Runnable;
 import org.openremote.model.rules.Ruleset;
 import org.openremote.model.rules.RulesResource;
+import org.openremote.model.interop.Runnable;
 
 import javax.inject.Inject;
 import java.util.Collection;

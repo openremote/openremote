@@ -20,9 +20,7 @@
 package org.openremote.app.client.assets.asset;
 
 import com.google.gwt.http.client.URL;
-import com.google.inject.Provider;
 import org.openremote.app.client.Environment;
-import org.openremote.app.client.app.dialog.JsonEditor;
 import org.openremote.app.client.assets.AgentStatusEventMapper;
 import org.openremote.app.client.assets.AssetMapper;
 import org.openremote.app.client.assets.attributes.AbstractAttributeViewExtension;
@@ -81,7 +79,6 @@ public class AssetViewActivity
     @Inject
     public AssetViewActivity(Environment environment,
                              AssetBrowser.Presenter assetBrowserPresenter,
-                             Provider<JsonEditor> jsonEditorProvider,
                              AssetView view,
                              AssetResource assetResource,
                              AssetMapper assetMapper,
@@ -91,7 +88,7 @@ public class AssetViewActivity
                              NumberDatapointArrayMapper numberDatapointArrayMapper,
                              MapResource mapResource,
                              ObjectValueMapper objectValueMapper) {
-        super(environment, assetBrowserPresenter, jsonEditorProvider, objectValueMapper, mapResource, false);
+        super(environment, assetBrowserPresenter, objectValueMapper, mapResource, false);
         this.agentStatusEventMapper = agentStatusEventMapper;
         this.presenter = this;
         this.view = view;

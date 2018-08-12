@@ -161,7 +161,6 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
 
     final AssetBrowser assetBrowser;
     final AssetNavigation assetNavigation;
-    final Provider<JsonEditor> jsonEditorProvider;
     final Environment environment;
     Presenter presenter;
     Asset asset;
@@ -170,11 +169,8 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
     @Inject
     public AssetEditImpl(AssetBrowser assetBrowser,
                          AssetNavigation assetNavigation,
-                         Provider<Confirmation> confirmationDialogProvider,
-                         Provider<JsonEditor> jsonEditorProvider,
                          Environment environment) {
-        super(confirmationDialogProvider, environment.getWidgetStyle());
-        this.jsonEditorProvider = jsonEditorProvider;
+        super(environment.getWidgetStyle());
         this.assetBrowser = assetBrowser;
         this.assetNavigation = assetNavigation;
         this.environment = environment;

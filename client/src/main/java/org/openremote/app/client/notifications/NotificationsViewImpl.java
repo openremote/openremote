@@ -17,37 +17,39 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.app.client.admin.users.notifications;
+package org.openremote.app.client.notifications;
 
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.i18n.client.DateTimeFormat;
 import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
+import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.HTMLPanel;
 import com.google.gwt.user.client.ui.Label;
 import com.google.inject.Provider;
-import org.openremote.app.client.widget.*;
 import org.openremote.app.client.Environment;
-import org.openremote.app.client.admin.users.AdminUsersNavigation;
 import org.openremote.app.client.app.dialog.Confirmation;
+import org.openremote.app.client.assets.browser.AssetBrowser;
+import org.openremote.app.client.i18n.ManagerMessages;
+import org.openremote.app.client.style.WidgetStyle;
+import org.openremote.app.client.widget.*;
 import org.openremote.model.Constants;
-import org.openremote.model.notification.Notification;
-import org.openremote.model.notification.PushNotificationMessage;
 import org.openremote.model.notification.SentNotification;
 
 import javax.inject.Inject;
+import java.util.Arrays;
 
-public class AdminUserNotificationsImpl extends FormViewImpl implements AdminUserNotifications {
+public class NotificationsViewImpl extends Composite implements NotificationsView {
 
-    interface UI extends UiBinder<HTMLPanel, AdminUserNotificationsImpl> {
+    interface UI extends UiBinder<FlexSplitPanel, NotificationsViewImpl> {
     }
 
-    @UiField(provided = true)
-    AdminUsersNavigation adminUsersNavigation;
+    @UiField
+    Form form;
 
     @UiField
-    FormOutputText usernameOutput;
+    HTMLPanel sidebarContainer;
 
     @UiField
     FormButton sendNotificationButton;
@@ -61,62 +63,163 @@ public class AdminUserNotificationsImpl extends FormViewImpl implements AdminUse
     @UiField
     FlowPanel notificationsContainer;
 
+    @UiField
+    ManagerMessages managerMessages;
+
+    @UiField
+    WidgetStyle widgetStyle;
+
+    @UiField
+    FormListBox typesList;
+
+    @UiField
+    FormListBox realmsList;
+
+    @UiField
+    FormListBox targetTypesList;
+
+    @UiField
+    FormListBox targetsList;
+
+    @UiField
+    FormListBox sentInsList;
+
+    protected FilterOptions filterOptions;
     protected Presenter presenter;
+    final AssetBrowser assetBrowser;
 
     @Inject
-    public AdminUserNotificationsImpl(Environment environment,
-                                      Provider<Confirmation> confirmationDialogProvider,
-                                      AdminUsersNavigation adminUsersNavigation) {
-        super(confirmationDialogProvider, environment.getWidgetStyle());
-
-        this.adminUsersNavigation = adminUsersNavigation;
+    public NotificationsViewImpl(AssetBrowser assetBrowser) {
+        this.assetBrowser = assetBrowser;
 
         UI ui = GWT.create(UI.class);
         initWidget(ui.createAndBindUi(this));
 
         sendNotificationButton.addClickHandler(event -> {
             if (presenter != null) {
-                presenter.onSendNotification();
+                presenter.showNotificationEditor();
             }
         });
 
         refreshNotificationsButton.addClickHandler(event -> {
             if (presenter != null) {
-                presenter.onRefresh();
+                presenter.refreshNotifications();
             }
         });
 
         deleteNotificationsButton.addClickHandler(event -> {
             if (presenter != null) {
-                presenter.onNotificationsDelete();
+                presenter.deleteNotifications();
             }
+        });
+
+        // Add change handlers
+        typesList.addChangeHandler(event -> {
+            if (filterOptions != null)
+                filterOptions.setSelectedNotificationType(typesList.getSelectedValue());
+        });
+
+        realmsList.addChangeHandler(event -> {
+            if (filterOptions != null)
+                filterOptions.setSelectedRealm(realmsList.getSelectedValue());
+        });
+
+        targetTypesList.addChangeHandler(event -> {
+            if (filterOptions != null)
+                filterOptions.setSelectedTargetType(targetTypesList.getSelectedValue());
+        });
+
+        targetsList.addChangeHandler(event -> {
+            if (filterOptions != null)
+                filterOptions.setSelectedTarget(targetsList.getSelectedValue());
         });
     }
 
     @Override
     public void setPresenter(Presenter presenter) {
         this.presenter = presenter;
-        if (presenter == null) {
-            deleteNotificationsButton.setEnabled(false);
-            adminUsersNavigation.setVisible(false);
-            adminUsersNavigation.reset();
-            usernameOutput.setText(null);
-        } else {
-            adminUsersNavigation.setActive(presenter.getPlace());
-            adminUsersNavigation.setVisible(true);
+
+        sidebarContainer.clear();
+
+        if (presenter != null) {
+            assetBrowser.asWidget().removeFromParent();
+            sidebarContainer.add(assetBrowser.asWidget());
         }
     }
 
     @Override
-    public void setUsername(String username) {
-        usernameOutput.setText(username);
+    public void setBusy(boolean busy) {
+        form.setBusy(busy);
     }
 
     @Override
-    public void setNotifications(SentNotification[] notifications) {
-        clearNotifications(notifications.length == 0);
-        for (SentNotification notification : notifications) {
-            notificationsContainer.add(new NotificationItem(notification));
+    public void setRefreshEnabled(boolean enabled) {
+        refreshNotificationsButton.setEnabled(enabled);
+    }
+
+    @Override
+    public void setDeleteAllEnabled(boolean enabled) {
+        deleteNotificationsButton.setEnabled(enabled);
+    }
+
+    @Override
+    public void setFilterOptions(FilterOptions filterOptions) {
+        if (this.filterOptions != null) {
+            this.filterOptions.setTargetsChangedCallback(null);
+            typesList.clear();
+            realmsList.clear();
+            targetTypesList.clear();
+            targetsList.clear();
+            sentInsList.clear();
+        }
+
+        this.filterOptions = filterOptions;
+
+        if (filterOptions == null) {
+            return;
+        }
+
+        filterOptions.setTargetsChangedCallback(this::onTargetsChanged);
+
+        // Type List
+        Arrays.stream(filterOptions.getNotificationTypes()).forEach(notificationType ->
+            typesList.addItem(managerMessages.notificationType(notificationType), notificationType));
+
+        if (typesList.getItemCount() > 1) {
+            typesList.insertItem("", 0);
+        }
+        typesList.selectItem(filterOptions.getSelectedNotificationType());
+
+        // Realm List
+        filterOptions.getRealms().forEach((name, value) ->
+            realmsList.addItem(value, name)
+        );
+        if (realmsList.getItemCount() > 1) {
+            realmsList.insertItem("", 0);
+        }
+        realmsList.selectItem(filterOptions.getSelectedRealm());
+
+        // Target Types
+        Arrays.stream(filterOptions.getTargetTypes()).forEach(targetType ->
+            targetTypesList.addItem(managerMessages.targetTypes(targetType), targetType));
+        if (targetTypesList.getItemCount() > 1) {
+            targetTypesList.insertItem("", 0);
+            targetTypesList.setSelectedIndex(0);
+        }
+        targetTypesList.selectItem(filterOptions.getSelectedTargetType() != null ? filterOptions.getSelectedTargetType().name() : null);
+
+        // Targets
+        onTargetsChanged();
+
+        // Sent In
+        Arrays.stream(FilterOptions.SentInLast.values()).forEach(sentInLast ->
+            sentInsList.addItem(managerMessages.sentInLast(sentInLast), sentInLast.name()));
+        if (sentInsList.getItemCount() > 1) {
+            sentInsList.insertItem("", 0);
+            sentInsList.setSelectedIndex(0);
+        }
+        if (filterOptions.getSelectedSentIn() != null) {
+            sentInsList.selectItem(filterOptions.getSelectedSentIn().name());
         }
     }
 
@@ -134,6 +237,13 @@ public class AdminUserNotificationsImpl extends FormViewImpl implements AdminUse
         }
     }
 
+    @Override
+    public void setNotifications(SentNotification[] notifications) {
+        clearNotifications(notifications.length == 0);
+        for (SentNotification notification : notifications) {
+            notificationsContainer.add(new NotificationItem(notification));
+        }
+    }
 
     protected void clearNotifications(boolean addEmptyMessage) {
         deleteNotificationsButton.setEnabled(!addEmptyMessage);
@@ -143,6 +253,23 @@ public class AdminUserNotificationsImpl extends FormViewImpl implements AdminUse
             emptyLabel.addStyleName(widgetStyle.FormListEmptyMessage());
             notificationsContainer.add(emptyLabel);
         }
+    }
+
+    protected void onTargetsChanged() {
+        targetsList.clear();
+
+        if (filterOptions.getTargets() == null) {
+            return;
+        }
+
+        filterOptions.getTargets().forEach((name, value) -> targetsList.addItem(value, name));
+
+        if (targetsList.getItemCount() > 1) {
+            targetsList.insertItem("", 0);
+            targetsList.setSelectedIndex(0);
+        }
+
+        targetsList.selectItem(filterOptions.getSelectedTarget());
     }
 
     protected class NotificationItem extends FlowPanel {
@@ -156,7 +283,7 @@ public class AdminUserNotificationsImpl extends FormViewImpl implements AdminUse
             FormGroup statusGroup = new FormGroup();
             statusGroup.setFormGroupActions(new FormGroupActions());
             FormField statusField = new FormField();
-            FormLabel statusLabel = new FormLabel(managerMessages.deliveryStatus());
+            FormLabel statusLabel = new FormLabel(managerMessages.status());
             statusGroup.setFormLabel(statusLabel);
             statusGroup.setFormField(statusField);
             FormOutputText statusTxt = new FormOutputText("");
@@ -181,7 +308,7 @@ public class AdminUserNotificationsImpl extends FormViewImpl implements AdminUse
             deleteButton.setText(managerMessages.deleteNotification());
             deleteButton.addClickHandler(event -> {
                 if (presenter != null)
-                    presenter.onNotificationDelete(notification.getId());
+                    presenter.deleteNotification(notification.getId());
             });
             statusGroup.getFormGroupActions().add(deleteButton);
 
@@ -234,7 +361,7 @@ public class AdminUserNotificationsImpl extends FormViewImpl implements AdminUse
 
             FormGroup appUrlGroup = new FormGroup();
             FormField appUrlField = new FormField();
-            FormLabel appUrlLabel = new FormLabel(managerMessages.notificationAppUrl());
+            FormLabel appUrlLabel = new FormLabel(managerMessages.notificationActionUrl());
             appUrlGroup.setFormLabel(appUrlLabel);
             appUrlGroup.setFormField(appUrlField);
             FormOutputText appUrlTxt = new FormOutputText(/*notification.getAppUrl()*/);

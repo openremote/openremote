@@ -22,7 +22,6 @@ package org.openremote.app.client.admin.users;
 import com.google.gwt.place.shared.PlaceHistoryMapper;
 import com.google.inject.Inject;
 import org.openremote.app.client.admin.users.edit.AdminUserEditPlace;
-import org.openremote.app.client.admin.users.notifications.AdminUserNotificationsPlace;
 import org.openremote.app.client.i18n.ManagerMessages;
 import org.openremote.app.client.widget.Hyperlink;
 import org.openremote.app.client.widget.SecondaryNavigation;
@@ -33,7 +32,6 @@ public class AdminUsersNavigation extends SecondaryNavigation {
 
     final Hyperlink allUsersLink;
     final Hyperlink editUserLink;
-    final Hyperlink notificationsLink;
     final Hyperlink createUserLink;
 
     @Inject
@@ -48,16 +46,12 @@ public class AdminUsersNavigation extends SecondaryNavigation {
 
         editUserLink = new Hyperlink("edit", managerMessages.editUser());
         add(editUserLink);
-
-        notificationsLink = new Hyperlink("send", managerMessages.manageNotifications());
-        add(notificationsLink);
     }
 
     public void reset() {
         reset(allUsersLink);
         reset(createUserLink);
         reset(editUserLink);
-        reset(notificationsLink);
     }
 
     public void setActive(AbstractAdminUsersPlace place) {
@@ -91,18 +85,7 @@ public class AdminUsersNavigation extends SecondaryNavigation {
             } else {
                 editUserLink.addStyleName("active");
                 editUserLink.setVisible(true);
-
-                notificationsLink.setTargetHistoryToken(
-                    placeHistoryMapper.getToken(new AdminUserNotificationsPlace(place))
-                );
-                notificationsLink.setVisible(true);
-
             }
-        } else if (place instanceof AdminUserNotificationsPlace) {
-            createUserLink.setVisible(true);
-            editUserLink.setVisible(true);
-            notificationsLink.addStyleName("active");
-            notificationsLink.setVisible(true);
         } else if (place instanceof AdminUsersPlace) {
             allUsersLink.setVisible(false);
         }

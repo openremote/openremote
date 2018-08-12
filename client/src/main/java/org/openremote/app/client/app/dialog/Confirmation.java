@@ -19,16 +19,72 @@
  */
 package org.openremote.app.client.app.dialog;
 
-public interface Confirmation {
+import com.google.gwt.user.client.ui.Label;
+import org.openremote.app.client.i18n.ManagerMessages;
+import org.openremote.app.client.style.WidgetStyle;
+import org.openremote.app.client.widget.PushButton;
+import org.openremote.model.interop.Runnable;
 
-    void setTitle(String title);
+public class Confirmation {
 
-    void setText(String text);
+    final protected Dialog dialog;
 
-    void setOnConfirm(Runnable onConfirm);
+    protected Runnable onConfirm;
+    protected Runnable onCancel;
 
-    void setOnCancel(Runnable onCancel);
+    public Confirmation(WidgetStyle widgetStyle,
+                        ManagerMessages managerMessages) {
+        this.dialog = new Dialog();
 
-    void show();
+        dialog.setModal(true);
+        dialog.setAutoHideOnHistoryEvents(true);
+        dialog.addStyleName(widgetStyle.ConfirmationDialog());
 
+        PushButton confirmButton = new PushButton();
+        confirmButton.setFocus(true);
+        confirmButton.setText(managerMessages.OK());
+        confirmButton.setIcon("check");
+        confirmButton.addStyleName(widgetStyle.FormControl());
+        confirmButton.addStyleName(widgetStyle.PushButton());
+        confirmButton.addStyleName(widgetStyle.FormButtonPrimary());
+        confirmButton.addClickHandler(event -> {
+            dialog.close();
+            if (onConfirm != null)
+                onConfirm.run();
+        });
+        dialog.getFooterPanel().add(confirmButton);
+
+        PushButton cancelButton = new PushButton();
+        cancelButton.setText(managerMessages.cancel());
+        cancelButton.setIcon("close");
+        cancelButton.addStyleName(widgetStyle.FormControl());
+        cancelButton.addStyleName(widgetStyle.PushButton());
+        cancelButton.addStyleName(widgetStyle.FormButton());
+        cancelButton.addClickHandler(event -> {
+            dialog.close();
+            if (onCancel != null)
+                onCancel.run();
+        });
+        dialog.getFooterPanel().add(cancelButton);
+    }
+
+    public void setTitle(String title) {
+        dialog.setHeaderLabel(title);
+    }
+
+    public void setText(String text) {
+        dialog.getContentPanel().add(new Label(text));
+    }
+
+    public void setOnConfirm(Runnable onConfirm) {
+        this.onConfirm = onConfirm;
+    }
+
+    public void setOnCancel(Runnable onCancel) {
+        this.onCancel = onCancel;
+    }
+
+    public void show() {
+        dialog.open();
+    }
 }

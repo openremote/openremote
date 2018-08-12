@@ -21,14 +21,12 @@ package org.openremote.app.client.widget;
 
 import com.google.gwt.uibinder.client.UiField;
 import com.google.gwt.user.client.ui.Composite;
-import com.google.inject.Provider;
 import org.openremote.app.client.app.dialog.Confirmation;
 import org.openremote.app.client.i18n.ManagerMessages;
 import org.openremote.app.client.style.WidgetStyle;
+import org.openremote.model.interop.Runnable;
 
 public class FormViewImpl extends Composite implements FormView {
-
-    protected final Provider<Confirmation> confirmationDialogProvider;
 
     @UiField
     public WidgetStyle widgetStyle;
@@ -42,9 +40,7 @@ public class FormViewImpl extends Composite implements FormView {
     public FormMessages formMessagesSuccess;
     public FormMessages formMessagesError;
 
-    public FormViewImpl(Provider<Confirmation> confirmationDialogProvider, WidgetStyle widgetStyle) {
-        this.confirmationDialogProvider = confirmationDialogProvider;
-
+    public FormViewImpl(WidgetStyle widgetStyle) {
         this.formMessagesSuccess = new FormMessages(widgetStyle, true);
         this.formMessagesError = new FormMessages(widgetStyle, false);
 
@@ -90,7 +86,7 @@ public class FormViewImpl extends Composite implements FormView {
 
     @Override
     public void showConfirmation(String title, String text, Runnable onConfirm, Runnable onCancel) {
-        Confirmation confirmation = confirmationDialogProvider.get();
+        Confirmation confirmation = new Confirmation(widgetStyle, managerMessages);
         confirmation.setTitle(title);
         confirmation.setText(text);
         confirmation.setOnConfirm(onConfirm);

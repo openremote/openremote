@@ -31,8 +31,5 @@ public class AppModule extends AbstractGinModule {
         bind(AppView.class).to(AppViewImpl.class).in(Singleton.class);
         bind(HeaderView.class).to(HeaderViewImpl.class).in(Singleton.class);
         bind(FooterView.class).to(FooterViewImpl.class).in(Singleton.class);
-        bind(Dialog.class).to(DialogImpl.class);
-        bind(Confirmation.class).to(ConfirmationImpl.class);
-        bind(JsonEditor.class).to(JsonEditorImpl.class);
     }
 }

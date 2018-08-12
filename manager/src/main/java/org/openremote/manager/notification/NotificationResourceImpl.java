@@ -61,18 +61,18 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
     }
 
     @Override
-    public SentNotification[] getNotifications(RequestParams requestParams, List<String> types, Long timestamp, List<String> tenantIds, List<String> userIds, List<String> assetIds) {
+    public SentNotification[] getNotifications(RequestParams requestParams, List<Long> ids, List<String> types, Long timestamp, List<String> tenantIds, List<String> userIds, List<String> assetIds) {
         try {
-            return notificationService.getNotifications(types, timestamp, tenantIds, userIds, assetIds).toArray(new SentNotification[0]);
+            return notificationService.getNotifications(ids, types, timestamp, tenantIds, userIds, assetIds).toArray(new SentNotification[0]);
         } catch (IllegalArgumentException e) {
             throw new WebApplicationException("Invalid criteria set", BAD_REQUEST);
         }
     }
 
     @Override
-    public void removeNotifications(RequestParams requestParams, List<String> types, Long timestamp, List<String> tenantIds, List<String> userIds, List<String> assetIds) {
+    public void removeNotifications(RequestParams requestParams, List<Long> ids, List<String> types, Long timestamp, List<String> tenantIds, List<String> userIds, List<String> assetIds) {
         try {
-            notificationService.removeNotifications(types, timestamp, tenantIds, userIds, assetIds);
+            notificationService.removeNotifications(ids, types, timestamp, tenantIds, userIds, assetIds);
         } catch (IllegalArgumentException e) {
             throw new WebApplicationException("Invalid criteria set", BAD_REQUEST);
         }

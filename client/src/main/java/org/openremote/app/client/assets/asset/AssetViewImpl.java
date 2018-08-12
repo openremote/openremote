@@ -152,7 +152,6 @@ public class AssetViewImpl extends Composite implements AssetView {
 
     final AssetBrowser assetBrowser;
     final AssetNavigation assetNavigation;
-    final Provider<JsonEditor> jsonEditorProvider;
     final Environment environment;
     final List<AttributeView> attributeViews = new ArrayList<>();
     protected Presenter presenter;
@@ -161,11 +160,9 @@ public class AssetViewImpl extends Composite implements AssetView {
     @Inject
     public AssetViewImpl(AssetBrowser assetBrowser,
                          AssetNavigation assetNavigation,
-                         Environment environment,
-                         Provider<JsonEditor> jsonEditorProvider) {
+                         Environment environment) {
         this.assetBrowser = assetBrowser;
         this.assetNavigation = assetNavigation;
-        this.jsonEditorProvider = jsonEditorProvider;
         this.environment = environment;
 
         UI ui = GWT.create(UI.class);

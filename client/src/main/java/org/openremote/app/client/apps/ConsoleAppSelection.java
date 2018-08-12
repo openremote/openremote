@@ -36,7 +36,7 @@ public class ConsoleAppSelection extends Event {
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
-            "realm='" + realm + '\'' +
+            "realmId='" + realm + '\'' +
             '}';
     }
 }

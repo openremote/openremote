@@ -22,6 +22,8 @@ package org.openremote.app.client.i18n;
 import com.google.gwt.i18n.client.LocalizableResource;
 import com.google.gwt.i18n.client.Messages;
 import jsinterop.annotations.JsType;
+import org.openremote.app.client.notifications.FilterOptions;
+import org.openremote.app.client.notifications.NotificationEditorImpl;
 
 @LocalizableResource.DefaultLocale
 @JsType
@@ -68,6 +70,8 @@ public interface ManagerMessages extends Messages {
     String OK();
 
     String cancel();
+
+    String close();
 
     String filter();
 
@@ -451,11 +455,15 @@ public interface ManagerMessages extends Messages {
 
     String message();
 
-    String notificationAppUrl();
+    String notificationActionUrl();
 
-    String enterTitleMessageAppurlForNotification();
+    String notificationSendFailure(String errorMsg);
 
-    String notificationSentToUser();
+    String notificationSentSuccessfully();
+
+    String notificationMessageMissing();
+
+    String notificationTargetMissing();
 
     String notificationOpenApplicationDetails();
 
@@ -483,8 +491,6 @@ public interface ManagerMessages extends Messages {
 
     String notifications();
 
-    String manageNotifications();
-
     String allUsers();
 
     String noNotifications();
@@ -493,7 +499,7 @@ public interface ManagerMessages extends Messages {
 
     String deleteNotification();
 
-    String deliveryStatus();
+    String status();
 
     String action();
 
@@ -516,4 +522,28 @@ public interface ManagerMessages extends Messages {
     String language();
 
     String confirmationRulesLangChange();
+
+    String targets();
+
+    String sentIn();
+
+    String targetType();
+
+    String notificationType(@Select String type);
+
+    String targetTypes(@Select String type);
+
+    String sentInLast(@Select FilterOptions.SentInLast sentInLast);
+
+    String body();
+
+    String data();
+
+    String notificationData();
+
+    String notificationActionType(@Select NotificationEditorImpl.ActionType type);
+
+    String none();
+
+    String notificationBuildError();
 }

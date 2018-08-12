@@ -73,9 +73,8 @@ public class AssetsTenantImpl extends FormViewImpl implements AssetsTenant {
 
     @Inject
     public AssetsTenantImpl(AssetBrowser assetBrowser,
-                            Provider<Confirmation> confirmationDialogProvider,
                             Environment environment) {
-        super(confirmationDialogProvider, environment.getWidgetStyle());
+        super(environment.getWidgetStyle());
         this.assetBrowser = assetBrowser;
 
         assetSelector = new AssetSelector(

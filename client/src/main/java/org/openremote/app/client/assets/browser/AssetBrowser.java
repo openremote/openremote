@@ -53,6 +53,8 @@ public interface AssetBrowser extends IsWidget {
 
         void selectTenant(String realmId);
 
+        void selectRealm(String realm);
+
         void clearSelection();
 
         BrowserTreeNode getSelectedNode();

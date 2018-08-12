@@ -20,9 +20,7 @@
 package org.openremote.app.client.assets.asset;
 
 import com.google.gwt.user.client.ui.IsWidget;
-import com.google.inject.Provider;
 import org.openremote.app.client.Environment;
-import org.openremote.app.client.app.dialog.JsonEditor;
 import org.openremote.app.client.assets.*;
 import org.openremote.app.client.assets.attributes.*;
 import org.openremote.app.client.assets.browser.AssetBrowser;
@@ -92,7 +90,6 @@ public class AssetEditActivity
     @Inject
     public AssetEditActivity(Environment environment,
                              AssetBrowser.Presenter assetBrowserPresenter,
-                             Provider<JsonEditor> jsonEditorProvider,
                              AssetEdit view,
                              AssetBrowser assetBrowser,
                              AssetResource assetResource,
@@ -107,7 +104,7 @@ public class AssetEditActivity
                              FileInfoMapper fileInfoMapper,
                              MapResource mapResource,
                              ObjectValueMapper objectValueMapper) {
-        super(environment, assetBrowserPresenter, jsonEditorProvider, objectValueMapper, mapResource, true);
+        super(environment, assetBrowserPresenter, objectValueMapper, mapResource, true);
         this.presenter = this;
         this.view = view;
         this.assetBrowser = assetBrowser;

@@ -19,21 +19,148 @@
  */
 package org.openremote.app.client.app.dialog;
 
+import com.google.gwt.user.client.ui.FlowPanel;
+import com.google.gwt.user.client.ui.InlineLabel;
+import org.openremote.app.client.i18n.ManagerMessages;
+import org.openremote.app.client.style.WidgetStyle;
+import org.openremote.app.client.widget.FormTextArea;
+import org.openremote.app.client.widget.IconLabel;
+import org.openremote.app.client.widget.PushButton;
 import org.openremote.model.interop.Consumer;
 import org.openremote.model.value.Value;
+import org.openremote.model.value.ValueException;
+import org.openremote.model.value.Values;
+import org.openremote.model.value.impl.ValueUtil;
+import org.openremote.model.interop.Runnable;
 
-public interface JsonEditor {
+public class JsonEditor {
 
-    void setTitle(String title);
+    final protected Dialog dialog;
+    final protected WidgetStyle widgetStyle;
+    final protected ManagerMessages managerMessages;
 
-    void setValue(Value value);
+    FormTextArea editor;
+    FlowPanel errorPanel = new FlowPanel();
+    Consumer<Value> onApply;
+    Runnable onReset;
+    Runnable onCancel;
 
-    void setOnApply(Consumer<Value> onApply);
+    public JsonEditor(String title,
+                      WidgetStyle widgetStyle,
+                      ManagerMessages managerMessages) {
+        this.dialog = new Dialog();
+        this.widgetStyle = widgetStyle;
+        this.managerMessages = managerMessages;
 
-    void setOnReset(Runnable onReset);
+        dialog.setModal(true);
+        dialog.setAutoHideOnHistoryEvents(true);
+        dialog.addStyleName(widgetStyle.JsonEditor());
+        dialog.setHeaderLabel(title);
 
-    void setOnCancel(Runnable onCancel);
+        PushButton okButton = new PushButton();
+        okButton.setFocus(true);
+        okButton.setText(managerMessages.OK());
+        okButton.setIcon("check");
+        okButton.addStyleName(widgetStyle.FormControl());
+        okButton.addStyleName(widgetStyle.PushButton());
+        okButton.addStyleName(widgetStyle.FormButtonPrimary());
+        okButton.addClickHandler(event -> {
+            Value value = parseValue();
+            if (value != null) {
+                if (onApply != null)
+                    onApply.accept(value);
+                dialog.close();
+            }
+        });
+        dialog.getFooterPanel().add(okButton);
 
-    void show();
+        PushButton resetButton = new PushButton();
+        resetButton.setText(managerMessages.reset());
+        resetButton.setIcon("refresh");
+        resetButton.addStyleName(widgetStyle.FormControl());
+        resetButton.addStyleName(widgetStyle.PushButton());
+        resetButton.addStyleName(widgetStyle.FormButton());
+        resetButton.addClickHandler(event -> {
+            if (onReset != null)
+                onReset.run();
+        });
+        dialog.getFooterPanel().add(resetButton);
 
+        PushButton cancelButton = new PushButton();
+        cancelButton.setText(managerMessages.cancel());
+        cancelButton.setIcon("close");
+        cancelButton.addStyleName(widgetStyle.FormControl());
+        cancelButton.addStyleName(widgetStyle.PushButton());
+        cancelButton.addStyleName(widgetStyle.FormButton());
+        cancelButton.addClickHandler(event -> {
+            if (errorPanel.isVisible() && onReset != null) {
+                onReset.run();
+            }
+            dialog.close();
+            if (onCancel != null)
+                onCancel.run();
+        });
+        dialog.getFooterPanel().add(cancelButton);
+
+        errorPanel.setStyleName("flex-none layout horizontal error");
+        errorPanel.addStyleName(widgetStyle.FormMessages());
+        errorPanel.setVisible(false);
+        dialog.getContentPanel().add(errorPanel);
+
+        editor = new FormTextArea();
+        editor.setHeight("30em");
+        editor.setResizable(false);
+        editor.setBorder(true);
+        editor.setReadOnly(onApply == null);
+        dialog.getContentPanel().add(editor);
+    }
+
+    public void setTitle(String title) {
+        dialog.setHeaderLabel(title);
+    }
+
+    public void setValue(Value value) {
+        errorPanel.clear();
+        errorPanel.setVisible(false);
+        editor.setText(value != null ? ValueUtil.stringify(value, 4) : null);
+    }
+
+    public void setOnApply(Consumer<Value> onApply) {
+        this.onApply = onApply;
+        editor.setReadOnly(onApply == null);
+    }
+
+    public void setOnReset(Runnable onReset) {
+        this.onReset = onReset;
+    }
+
+    public void setOnCancel(Runnable onCancel) {
+        this.onCancel = onCancel;
+    }
+
+    public void show() {
+        dialog.open();
+    }
+
+    protected Value parseValue() {
+        errorPanel.clear();
+        Value value = null;
+        String error = null;
+        try {
+            value = Values.parse(editor.getText()).orElse(null);
+            if (value == null)
+                error = managerMessages.emptyJsonData();
+        } catch (ValueException ex) {
+            error = ex.getMessage();
+        }
+        if (error != null) {
+            errorPanel.add(new IconLabel("warning"));
+            InlineLabel errorMessage = new InlineLabel(error);
+            errorPanel.add(errorMessage);
+            errorPanel.setVisible(true);
+            return null;
+        }
+        errorPanel.setVisible(false);
+        return value;
+    }
 }

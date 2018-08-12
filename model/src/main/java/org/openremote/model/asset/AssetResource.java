@@ -161,6 +161,17 @@ public interface AssetResource {
     Asset get(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId);
 
     /**
+     * Same as {@link #get} but only returns a partially loaded asset (no attributes or path)
+     */
+    @GET
+    @Path("partial/{assetId}")
+    @Produces(APPLICATION_JSON)
+    @SuccessStatusCode(200)
+    @RolesAllowed({"read:assets"})
+    @SuppressWarnings("unusable-by-js")
+    Asset getPartial(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId);
+
+    /**
      * Updates the asset. Regular users can only update assets in their authenticated realm, the superuser can update
      * assets in other (all) realms. A 403 status is returned if a regular user tries to update an asset in a realm
      * different than its authenticated realm, or if the original or target realm is not accessible. A 403 status is

@@ -184,7 +184,16 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
     }
 
     @Override
+    public Asset getPartial(RequestParams requestParams, String assetId) {
+        return get(requestParams, assetId, false);
+    }
+
+    @Override
     public Asset get(RequestParams requestParams, String assetId) {
+        return get(requestParams, assetId, true);
+    }
+
+    public Asset get(RequestParams requestParams, String assetId, boolean loadComplete) {
         try {
             Asset asset;
 
@@ -193,9 +202,9 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                 if (!assetStorageService.isUserAsset(getUserId(), assetId)) {
                     throw new WebApplicationException(FORBIDDEN);
                 }
-                asset = assetStorageService.find(assetId, true, Access.RESTRICTED_READ);
+                asset = assetStorageService.find(assetId, loadComplete, Access.RESTRICTED_READ);
             } else {
-                asset = assetStorageService.find(assetId, true);
+                asset = assetStorageService.find(assetId, loadComplete);
             }
 
             if (asset == null)

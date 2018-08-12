@@ -137,7 +137,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                     throw new NotificationProcessingException(MISSING_MESSAGE, "Notification message must be set");
                 }
 
-                if (notification.getTargets() == null || notification.getTargets().getType() == null || notification.getTargets().getIds() == null || notification.getTargets().getIds().length == 0) {
+                if (notification.getTargets() == null || notification.getTargets().getType() == null || notification.getTargets().getIds() == null || Arrays.stream(notification.getTargets().getIds()).anyMatch(TextUtil::isNullOrEmpty)) {
                     throw new NotificationProcessingException(MISSING_TARGETS, "Notification targets must be set");
                 }
 
@@ -338,11 +338,11 @@ public class NotificationService extends RouteBuilder implements ContainerServic
         return persistenceService.doReturningTransaction(em -> em.find(SentNotification.class, notificationId));
     }
 
-    public List<SentNotification> getNotifications(List<String> types, Long timestamp, List<String> tenantIds, List<String> userIds, List<String> assetIds) throws IllegalArgumentException {
+    public List<SentNotification> getNotifications(List<Long> ids, List<String> types, Long timestamp, List<String> tenantIds, List<String> userIds, List<String> assetIds) throws IllegalArgumentException {
         StringBuilder builder = new StringBuilder();
         builder.append("select n from SentNotification n where 1=1");
         List<Object> parameters = new ArrayList<>();
-        processCriteria(builder, parameters, types, timestamp, tenantIds, userIds, assetIds);
+        processCriteria(builder, parameters, ids, types, timestamp, tenantIds, userIds, assetIds);
 
         return persistenceService.doReturningTransaction(entityManager -> {
             TypedQuery<SentNotification> query = entityManager.createQuery(builder.toString(), SentNotification.class);
@@ -360,12 +360,12 @@ public class NotificationService extends RouteBuilder implements ContainerServic
         );
     }
 
-    public void removeNotifications(List<String> types, Long timestamp, List<String> tenantIds, List<String> userIds, List<String> assetIds) throws IllegalArgumentException {
+    public void removeNotifications(List<Long> ids, List<String> types, Long timestamp, List<String> tenantIds, List<String> userIds, List<String> assetIds) throws IllegalArgumentException {
 
         StringBuilder builder = new StringBuilder();
         builder.append("delete from SentNotification n where 1=1");
         List<Object> parameters = new ArrayList<>();
-        processCriteria(builder, parameters, types, timestamp, tenantIds, userIds, assetIds);
+        processCriteria(builder, parameters, ids, types, timestamp, tenantIds, userIds, assetIds);
 
         persistenceService.doTransaction(entityManager -> {
             Query query = entityManager.createQuery(builder.toString());
@@ -375,13 +375,17 @@ public class NotificationService extends RouteBuilder implements ContainerServic
         });
     }
 
-    protected void processCriteria(StringBuilder builder, List<Object> parameters, List<String> types, Long timestamp, List<String> tenantIds, List<String> userIds, List<String> assetIds) {
+    protected void processCriteria(StringBuilder builder, List<Object> parameters, List<Long> ids, List<String> types, Long timestamp, List<String> tenantIds, List<String> userIds, List<String> assetIds) {
+        boolean hasIds = ids != null && !ids.isEmpty();
         boolean hasTypes = types != null && !types.isEmpty();
         boolean hasTenants = tenantIds != null && !tenantIds.isEmpty();
         boolean hasUsers = userIds != null && !userIds.isEmpty();
         boolean hasAssets = assetIds != null && !assetIds.isEmpty();
         int counter = 0;
 
+        if (hasIds) {
+            counter++;
+        }
         if (hasTypes) {
             counter++;
         }
@@ -398,6 +402,13 @@ public class NotificationService extends RouteBuilder implements ContainerServic
         if (timestamp == null && counter == 0) {
             LOG.info("No filters set for remove notifications request so not allowed");
             throw new IllegalArgumentException("No criteria specified");
+        }
+
+        if (hasIds) {
+            builder.append(" AND n.id IN ?")
+                .append(parameters.size() + 1);
+            parameters.add(ids);
+            return;
         }
 
         if (hasTypes) {

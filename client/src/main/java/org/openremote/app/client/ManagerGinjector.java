@@ -28,6 +28,7 @@ import org.openremote.app.client.assets.AssetsModule;
 import org.openremote.app.client.apps.ConsoleAppsModule;
 import org.openremote.app.client.map.MapModule;
 import org.openremote.app.client.mvp.MVPModule;
+import org.openremote.app.client.notifications.NotificationsModule;
 import org.openremote.app.client.rules.RulesModule;
 import org.openremote.app.client.toast.ToastModule;
 import org.openremote.app.client.user.UserModule;
@@ -40,6 +41,7 @@ import org.openremote.app.client.user.UserModule;
     MapModule.class,
     AssetsModule.class,
     RulesModule.class,
+    NotificationsModule.class,
     ConsoleAppsModule.class,
     AdminModule.class,
     UserModule.class

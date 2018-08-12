@@ -26,9 +26,9 @@ import org.keycloak.representations.AccessToken;
 import org.openremote.app.client.AppSecurity;
 import org.openremote.model.Constants;
 import org.openremote.model.http.RequestParams;
-import org.openremote.model.interop.BiConsumer;
-import org.openremote.model.interop.Consumer;
 import org.openremote.model.interop.Runnable;
+
+import java.util.function.Consumer;
 
 /**
  * Does the same job as or-app-security.
