@@ -119,8 +119,7 @@ public class MainActivity extends Activity {
 
     protected String getClientUrl() {
         String platform = "Android " + Build.VERSION.RELEASE;
-        String url = getString(R.string.OR_BASE_SERVER) + getString(R.string.OR_CONSOLE_URL) + "?consolePlatform=" + platform;
-        return url;
+        return getString(R.string.OR_BASE_SERVER) + getString(R.string.OR_CONSOLE_URL) + "?consolePlatform=" + platform;
     }
 
     @Override
@@ -136,21 +135,19 @@ public class MainActivity extends Activity {
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
 
         // Enable remote debugging of WebView from Chrome Debugger tools
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-            if (0 != (getApplicationInfo().flags & ApplicationInfo.FLAG_DEBUGGABLE)) {
-                LOG.info("Enabling remote debugging");
-                WebView.setWebContentsDebuggingEnabled(true);
-            }
+        if (0 != (getApplicationInfo().flags & ApplicationInfo.FLAG_DEBUGGABLE)) {
+            LOG.info("Enabling remote debugging");
+            WebView.setWebContentsDebuggingEnabled(true);
         }
 
         setContentView(R.layout.activity_web);
 
-        webView = (WebView) findViewById(R.id.webview);
+        webView = findViewById(R.id.webview);
         if (savedInstanceState != null) {
             webView.restoreState(savedInstanceState);
         } else {
             initializeWebView();
-            if (!getIntent().hasExtra("url")) {
+            if (!getIntent().hasExtra("appUrl")) {
                 String url = getClientUrl();
                 LOG.fine("Loading web view: " + url);
                 webView.loadUrl(url);
@@ -167,9 +164,9 @@ public class MainActivity extends Activity {
     }
 
     protected void openIntentUrl(Intent intent) {
-        if (intent.hasExtra("url")) {
+        if (intent.hasExtra("appUrl")) {
             String url = getClientUrl();
-            String intentUrl = intent.getStringExtra("url");
+            String intentUrl = intent.getStringExtra("appUrl");
             if (intentUrl != null) {
                 if (intentUrl.startsWith("http") || intentUrl.startsWith("https")) {
                     url = intentUrl;
@@ -178,8 +175,14 @@ public class MainActivity extends Activity {
                 }
             }
 
-            LOG.fine("Loading web view: " + url);
-            webView.loadUrl(url);
+            boolean openInBrowser = intent.getBooleanExtra("openInBrowser", false);
+            if (openInBrowser) {
+                Intent browserUrl = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+                startActivity(browserUrl);
+            } else {
+                LOG.fine("Loading web view: " + url);
+                webView.loadUrl(url);
+            }
         }
     }
 
@@ -388,28 +391,28 @@ public class MainActivity extends Activity {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
 
                 geofenceProvider.enable(MainActivity.this,
-                                        String.format("%s/%s",
-                                                      getString(R.string.OR_BASE_SERVER),
-                                                      getString(R.string.OR_REALM)),
-                                        consoleId,
-                                        new GeofenceProvider.EnableCallback() {
-                                            @Override
-                                            public void accept(@NotNull Map<String, ?> responseData) {
-                                                try {
-                                                    final String jsonString = new ObjectMapper().writeValueAsString(responseData);
-                                                    MainActivity.this.runOnUiThread(new Runnable() {
-                                                        @Override
-                                                        public void run() {
-                                                            webView.evaluateJavascript(String.format(
-                                                                "openremote.INSTANCE.console.handleProviderResponse('%s')",
-                                                                jsonString), null);
-                                                        }
-                                                    });
-                                                } catch (Exception e) {
-                                                    e.printStackTrace();
-                                                }
-                                            }
-                                        });
+                        String.format("%s/%s",
+                                getString(R.string.OR_BASE_SERVER),
+                                getString(R.string.OR_REALM)),
+                        consoleId,
+                        new GeofenceProvider.EnableCallback() {
+                            @Override
+                            public void accept(@NotNull Map<String, ?> responseData) {
+                                try {
+                                    final String jsonString = new ObjectMapper().writeValueAsString(responseData);
+                                    MainActivity.this.runOnUiThread(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            webView.evaluateJavascript(String.format(
+                                                    "openremote.INSTANCE.console.handleProviderResponse('%s')",
+                                                    jsonString), null);
+                                        }
+                                    });
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                        });
             }
         } else {
             super.onRequestPermissionsResult(requestCode, permissions, grantResults);
@@ -486,15 +489,15 @@ public class MainActivity extends Activity {
                     if (consoleId != null) {
                         ((MainActivity) activity).consoleId = consoleId;
                         geofenceProvider.enable(MainActivity.this, String.format("%s/%s",
-                                                                                 getString(R.string.OR_BASE_SERVER),
-                                                                                 getString(R.string.OR_REALM)),
-                                                consoleId, new GeofenceProvider.EnableCallback() {
-                                @Override
-                                public void accept(@NotNull Map<String, ?> responseData) {
-                                    //noinspection unchecked
-                                    notifyClient((Map<String, Object>) responseData);
-                                }
-                            });
+                                getString(R.string.OR_BASE_SERVER),
+                                getString(R.string.OR_REALM)),
+                                consoleId, new GeofenceProvider.EnableCallback() {
+                                    @Override
+                                    public void accept(@NotNull Map<String, ?> responseData) {
+                                        //noinspection unchecked
+                                        notifyClient((Map<String, Object>) responseData);
+                                    }
+                                });
                     }
                 }
             } else if (action.equalsIgnoreCase("PROVIDER_DISABLE")) {
@@ -519,6 +522,13 @@ public class MainActivity extends Activity {
                 response.put("success", true);
                 notifyClient(response);
             } else if (action.equalsIgnoreCase("PROVIDER_ENABLE")) {
+                if (data != null) {
+                    String consoleId = data.getString("consoleId");
+                    if (consoleId != null) {
+                        sharedPreferences.edit().putString(GeofenceProvider.Companion.getConsoleIdKey(), consoleId).apply();
+                    }
+                }
+
                 // TODO: Implement topic support
                 String fcmToken = FirebaseInstanceId.getInstance().getToken();
                 Map<String, Object> response = new HashMap<>();

@@ -3,11 +3,11 @@ package org.openremote.android;
 import android.app.IntentService;
 import android.app.NotificationManager;
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
 import android.support.annotation.Nullable;
+import android.text.TextUtils;
 
-import org.openremote.android.service.AlertAction;
-import org.openremote.android.service.AlertNotification;
 import org.openremote.android.service.TokenService;
 
 public class ORMessagingActionService extends IntentService {
@@ -30,42 +30,31 @@ public class ORMessagingActionService extends IntentService {
         Intent it = new Intent(Intent.ACTION_CLOSE_SYSTEM_DIALOGS);
         this.sendBroadcast(it);
 
-        if (intent.hasExtra("notification")) {
-            AlertNotification notification = (AlertNotification) intent.getSerializableExtra("notification");
-            tokenService.deleteAlert(notification.getId());
-            NotificationManager manager = (NotificationManager) getSystemService(Service.NOTIFICATION_SERVICE);
-            manager.cancel(notification.getId().hashCode());
-        } else if (intent.hasExtra("notificationId")) {
-            int id = intent.getIntExtra("notificationId", 0);
-            if (id != 0) {
-                NotificationManager manager = (NotificationManager) getSystemService(Service.NOTIFICATION_SERVICE);
-                manager.cancel(id);
+        if (intent.hasExtra("notificationId")) {
+            String notificationId = intent.getStringExtra("notificationId");
+            String acknowledgement = intent.getStringExtra("acknowledgement");
+
+            String consoleId = getSharedPreferences(getApplicationContext().getString(R.string.app_name), Context.MODE_PRIVATE).getString("consoleId", "");
+            if (!TextUtils.isEmpty(consoleId)) {
+                tokenService.notificationAcknowledged(Long.parseLong(notificationId), consoleId, acknowledgement);
+
             }
+
+            NotificationManager manager = (NotificationManager) getSystemService(Service.NOTIFICATION_SERVICE);
+            manager.cancel(notificationId.hashCode());
         }
 
-        AlertAction alertAction =  (AlertAction) intent.getSerializableExtra("action");
-
-        if(alertAction != null) {
-            if (AlertNotification.ActionType.ACTUATOR.equals(alertAction.getType())) {
-                tokenService.executeAction(alertAction);
-            } else if (alertAction.getAppUrl() != null) {
-                // TODO: decide how to handle absolute URLs (i.e. open in the normal browser or inside the console?)
-                // For now replicated behaviour of iOS for important demo
-                Intent activityIntent = new Intent(this, MainActivity.class);
-                activityIntent.setAction(Intent.ACTION_MAIN);
-                activityIntent.addCategory(Intent.CATEGORY_LAUNCHER);
-                activityIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK |
-                                            Intent.FLAG_ACTIVITY_SINGLE_TOP);
-                activityIntent.putExtra("url", alertAction.getAppUrl());
-                startActivity(activityIntent);
-            }
-        } else if (intent.hasExtra("url")) {
+        if (intent.hasExtra("appUrl")) {
             Intent activityIntent = new Intent(this, MainActivity.class);
             activityIntent.setAction(Intent.ACTION_MAIN);
             activityIntent.addCategory(Intent.CATEGORY_LAUNCHER);
             activityIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK |
                     Intent.FLAG_ACTIVITY_SINGLE_TOP);
-            activityIntent.putExtra("url", intent.getStringExtra("url"));
+            activityIntent.putExtra("appUrl", intent.getStringExtra("appUrl"));
+            activityIntent.putExtra("silent", intent.getBooleanExtra("silent", false));
+            activityIntent.putExtra("httpMethod", intent.getStringExtra("httpMethod"));
+            activityIntent.putExtra("openInBrowser", intent.getBooleanExtra("openInBrowser", false));
+            activityIntent.putExtra("data", intent.getStringExtra("data"));
             startActivity(activityIntent);
         }
     }

@@ -22,4 +22,13 @@ public interface RestApiResource {
     @PUT("/{realm}/asset/{assetId}/attribute/{attributeName}")
     @Headers("Content-Type:application/json")
     Call<Void> updateAssetAction(@Path("realm") String realm, @Header("Authorization") String accessToken,@Path("assetId") String assetId,@Path("attributeName") String attributeName,@Body String rawJson);
+
+    @PUT("/{realm}/notification/{notificationId}/delivered")
+    @Headers("Content-Type:application/json")
+    Call<Void> notificationDelivered(@Path("realm") String realm, @Path("notificationId") Long notificationId, @Query("targetId") String targetId);
+
+    @PUT("/{realm}/notification/{notificationId}/acknowledged")
+    @Headers("Content-Type:application/json")
+    Call<Void> notificationAcknowledged(@Path("realm") String realm, @Path("notificationId") Long notificationId, @Query("targetId") String targetId, @Body String acknowledgement);
+
 }

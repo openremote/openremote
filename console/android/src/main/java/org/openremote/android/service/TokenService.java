@@ -46,7 +46,7 @@ public class TokenService {
                 .baseUrl(context.getString(R.string.OR_BASE_SERVER))
                 .addConverterFactory(ScalarsConverterFactory.create())
                 .addConverterFactory(JacksonConverterFactory.create());
-        if (Boolean.parseBoolean(context.getString(R.string.SSL_IGNORE)))  {
+        if (Boolean.parseBoolean(context.getString(R.string.SSL_IGNORE))) {
             builder.client(getUnsafeOkHttpClient());
         }
         Retrofit retrofit = builder.build();
@@ -59,7 +59,7 @@ public class TokenService {
         deviceIdKey = context.getString(R.string.SHARED_PREF_DEVICE_ID);
         realm = context.getString(R.string.OR_REALM);
         String refreshToken = sharedPref.getString(refreshTokenKey, null);
-        String fcmToken =  sharedPref.getString(fcmTokenKey, null);
+        String fcmToken = sharedPref.getString(fcmTokenKey, null);
         String deviceId = sharedPref.getString(deviceIdKey, null);
         if (refreshToken != null && fcmToken != null && deviceId != null) {
             LOG.fine("On create, have refresh token, sending FCM token");
@@ -75,7 +75,7 @@ public class TokenService {
         editor.putString(refreshTokenKey, refreshToken);
         editor.commit();
 
-        String fcmToken =  sharedPref.getString(fcmTokenKey, null);
+        String fcmToken = sharedPref.getString(fcmTokenKey, null);
         String deviceId = sharedPref.getString(deviceIdKey, null);
         if (fcmToken != null && deviceId != null) {
             LOG.fine("On save refresh token, sending FCM token");
@@ -142,30 +142,30 @@ public class TokenService {
             public void onToken(String accessToken) {
                 Call call = restApiResource.updateToken(realm, accessToken, fcmToken, id, "ANDROID");
 
-                    call.enqueue(new Callback() {
-                        @Override
-                        public void onResponse(Call call, Response response) {
-                            if (response.code() != 204) {
-                                LOG.severe("Sending FCM device token failed for device ID: " + id  +", response code: " + response.code());
-                            } else {
-                                LOG.fine("Sending FCM device token successful for device ID: " + id);
+                call.enqueue(new Callback() {
+                    @Override
+                    public void onResponse(Call call, Response response) {
+                        if (response.code() != 204) {
+                            LOG.severe("Sending FCM device token failed for device ID: " + id + ", response code: " + response.code());
+                        } else {
+                            LOG.fine("Sending FCM device token successful for device ID: " + id);
 
-                                // #40: Don't clean-up the FCM information from SharedPreferences, this means they are always sent
-                                // This ensures that if it gets cleaned from server, it is re-send again and notifications can be send
+                            // #40: Don't clean-up the FCM information from SharedPreferences, this means they are always sent
+                            // This ensures that if it gets cleaned from server, it is re-send again and notifications can be send
                                 /*
                                 SharedPreferences.Editor editor = sharedPref.edit();
                                 editor.remove(fcmTokenKey);
                                 editor.remove(deviceIdKey);
                                 editor.commit();
                                 */
-                            }
                         }
+                    }
 
-                        @Override
-                        public void onFailure(Call call, Throwable t) {
-                            LOG.log(Level.SEVERE, "Sending FCM device token failed for device ID: " + id, t);
-                        }
-                    });
+                    @Override
+                    public void onFailure(Call call, Throwable t) {
+                        LOG.log(Level.SEVERE, "Sending FCM device token failed for device ID: " + id, t);
+                    }
+                });
             }
 
             @Override
@@ -186,7 +186,7 @@ public class TokenService {
 
             @Override
             public void onFailure(Throwable t) {
-                callback.onFailure(null,t);
+                callback.onFailure(null, t);
             }
         });
     }
@@ -228,42 +228,69 @@ public class TokenService {
         });
     }
 
-    public void executeAction(final AlertAction alertAction) {
-        withAccessToken(new TokenCallback() {
-            @Override
-            public void onToken(String accessToken) throws IOException {
-                restApiResource.updateAssetAction(realm, accessToken, alertAction.getAssetId(), alertAction.getAttributeName(), alertAction.getRawJson()).enqueue(new Callback<Void>() {
-                    @Override
-                    public void onResponse(Call<Void> call, Response<Void> response) {
-                        if (response.code() != 204) {
-                            LOG.severe("Error executing asset write: " + alertAction + ", response code: " + response.code());
-                        } else {
-                            LOG.fine("Asset write executed successfully: " + alertAction);
-                        }
-                    }
+//    public void executeAction(final AlertAction alertAction) {
+//        withAccessToken(new TokenCallback() {
+//            @Override
+//            public void onToken(String accessToken) throws IOException {
+//                restApiResource.updateAssetAction(realm, accessToken, alertAction.getAssetId(), alertAction.getAttributeName(), alertAction.getRawJson()).enqueue(new Callback<Void>() {
+//                    @Override
+//                    public void onResponse(Call<Void> call, Response<Void> response) {
+//                        if (response.code() != 204) {
+//                            LOG.severe("Error executing asset write: " + alertAction + ", response code: " + response.code());
+//                        } else {
+//                            LOG.fine("Asset write executed successfully: " + alertAction);
+//                        }
+//                    }
+//
+//                    @Override
+//                    public void onFailure(Call<Void> call, Throwable t) {
+//                        LOG.log(Level.SEVERE, "Error executing asset write: " + alertAction, t);
+//                    }
+//                });
+//
+//            }
+//
+//            @Override
+//            public void onFailure(Throwable t) {
+//                // TODO We should tell the user to login again or it will never work
+//                LOG.log(Level.SEVERE, "Error executing asset write (no access token): " + alertAction, t);
+//            }
+//        });
+//
+//    }
 
-                    @Override
-                    public void onFailure(Call<Void> call, Throwable t) {
-                        LOG.log(Level.SEVERE, "Error executing asset write: " + alertAction, t);
-                    }
-                });
+    public void notificationDelivered(final Long notificationId, final String fcmToken) {
+        restApiResource.notificationDelivered(realm, notificationId, fcmToken).enqueue(new Callback<Void>() {
+            @Override
+            public void onResponse(Call<Void> call, Response<Void> response) {
 
             }
 
             @Override
-            public void onFailure(Throwable t) {
-                // TODO We should tell the user to login again or it will never work
-                LOG.log(Level.SEVERE, "Error executing asset write (no access token): " + alertAction, t);
+            public void onFailure(Call<Void> call, Throwable t) {
+
             }
         });
-
     }
 
+    public void notificationAcknowledged(final Long notificationId, final String fcmToken, final String acknowledgement) {
+        restApiResource.notificationAcknowledged(realm, notificationId, fcmToken, acknowledgement).enqueue(new Callback<Void>() {
+            @Override
+            public void onResponse(Call<Void> call, Response<Void> response) {
+
+            }
+
+            @Override
+            public void onFailure(Call<Void> call, Throwable t) {
+
+            }
+        });
+    }
 
     static OkHttpClient getUnsafeOkHttpClient() {
         try {
             // Create a trust manager that does not validate certificate chains
-            final TrustManager[] trustAllCerts = new TrustManager[] {
+            final TrustManager[] trustAllCerts = new TrustManager[]{
                     new X509TrustManager() {
                         @Override
                         public void checkClientTrusted(java.security.cert.X509Certificate[] chain, String authType) throws CertificateException {
