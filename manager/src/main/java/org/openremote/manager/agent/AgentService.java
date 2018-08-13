@@ -35,7 +35,10 @@ import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.asset.AssetUpdateProcessor;
 import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.security.ManagerIdentityService;
-import org.openremote.model.asset.*;
+import org.openremote.model.asset.Asset;
+import org.openremote.model.asset.AssetAttribute;
+import org.openremote.model.asset.AssetMeta;
+import org.openremote.model.asset.AssetType;
 import org.openremote.model.asset.agent.*;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeEvent.Source;
@@ -239,11 +242,11 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
                 List<AssetAttribute> updatedAttributes = updatedAsset.getAttributesList();
 
                 List<AssetAttribute> addedOrModifiedAttributes = getAddedOrModifiedAttributes(
-                    existingAttributes, updatedAttributes, options.getIgnoredAttributeNames(), options.getIgnoredAttributeKeys()
+                    existingAttributes, updatedAttributes, options.getAttributeNamesToEvaluate(), options.getIgnoredAttributeNames(), options.getIgnoredAttributeKeys()
                 ).collect(Collectors.toList());
 
                 List<AssetAttribute> removedAttributes = getAddedOrModifiedAttributes(
-                    updatedAttributes, existingAttributes, options.getIgnoredAttributeNames(), options.getIgnoredAttributeKeys()
+                    updatedAttributes, existingAttributes, options.getAttributeNamesToEvaluate(), options.getIgnoredAttributeNames(), options.getIgnoredAttributeKeys()
                 ).collect(Collectors.toList());
 
                 if (addedOrModifiedAttributes.isEmpty() && removedAttributes.isEmpty()) {

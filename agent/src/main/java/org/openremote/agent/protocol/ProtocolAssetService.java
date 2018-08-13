@@ -37,23 +37,29 @@ public interface ProtocolAssetService extends ContainerService {
     class MergeOptions {
 
         final protected String assignToUserName;
+        final protected Predicate<String> attributeNamesToEvaluate;
         final protected Predicate<String> ignoredAttributeNames;
         final protected Predicate<String> ignoredAttributeKeys;
 
         public MergeOptions(String assignToUserName) {
-            this(assignToUserName, null, null);
+            this(assignToUserName, null, null, null);
+        }
+
+        public MergeOptions(Predicate<String> attributeNamesToEvaluate) {
+            this(null, attributeNamesToEvaluate, null, null);
         }
 
         public MergeOptions(Predicate<String> ignoredAttributeNames, Predicate<String> ignoredAttributeKeys) {
-            this(null, ignoredAttributeNames, ignoredAttributeKeys);
+            this(null, null, ignoredAttributeNames, ignoredAttributeKeys);
         }
 
         public MergeOptions(String assignToUserName, Predicate<String> ignoredAttributeKeys) {
-            this(assignToUserName, null, ignoredAttributeKeys);
+            this(assignToUserName, null, null, ignoredAttributeKeys);
         }
 
-        public MergeOptions(String assignToUserName, Predicate<String> ignoredAttributeNames, Predicate<String> ignoredAttributeKeys) {
+        public MergeOptions(String assignToUserName, Predicate<String> attributeNamesToEvaluate, Predicate<String> ignoredAttributeNames, Predicate<String> ignoredAttributeKeys) {
             this.assignToUserName = assignToUserName;
+            this.attributeNamesToEvaluate = attributeNamesToEvaluate;
             this.ignoredAttributeNames = ignoredAttributeNames;
             this.ignoredAttributeKeys = ignoredAttributeKeys;
         }
@@ -69,6 +75,15 @@ public interface ProtocolAssetService extends ContainerService {
 
         /**
          * Compare existing and merged asset state before doing the actual storage merge. If only the
+         * attributes in this predicate have change, then perform the merge on storage. Ignores what {#link getIgnoredAttributeNames}
+         * has stored if attributeNamesToEvaluate is not null.
+         */
+        public Predicate<String> getAttributeNamesToEvaluate() {
+            return attributeNamesToEvaluate;
+        }
+
+        /**
+         * Compare existing and merged asset state before doing the actual storage merge. If only the
          * ignored attributes have changed, don't perform the merge on storage.
          */
         public Predicate<String> getIgnoredAttributeNames() {
@@ -77,7 +92,8 @@ public interface ProtocolAssetService extends ContainerService {
 
         /**
          * Compare existing and merged asset state before doing the actual storage merge. If only the
-         * ignored keys of any attributes have changed, don't perform the merge on storage.
+         * ignored keys of any attributes have changed, don't perform the merge on storage. If {#link getAttributeNamesToEvaluate}
+         * is not null, then ignoredAttributeKeys is ignored.
          */
         public Predicate<String> getIgnoredAttributeKeys() {
             return ignoredAttributeKeys;

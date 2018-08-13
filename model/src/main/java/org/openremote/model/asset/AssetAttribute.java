@@ -460,7 +460,7 @@ public class AssetAttribute extends Attribute {
     public static Stream<AssetAttribute> getAddedOrModifiedAttributes(List<AssetAttribute> oldAttributes,
                                                                       List<AssetAttribute> newAttributes,
                                                                       Predicate<String> ignoredAttributeKeys) {
-        return getAddedOrModifiedAttributes(oldAttributes, newAttributes, name -> false, ignoredAttributeKeys);
+        return getAddedOrModifiedAttributes(oldAttributes, newAttributes, name -> false, name -> false, ignoredAttributeKeys);
     }
 
     /**
@@ -468,14 +468,16 @@ public class AssetAttribute extends Attribute {
      */
     public static Stream<AssetAttribute> getAddedOrModifiedAttributes(List<AssetAttribute> oldAttributes,
                                                                       List<AssetAttribute> newAttributes,
+                                                                      Predicate<String> attributeNamesToEvaluate,
                                                                       Predicate<String> ignoredAttributeNames,
                                                                       Predicate<String> ignoredAttributeKeys) {
         return newAttributes.stream().filter(newAttribute -> oldAttributes.stream().noneMatch(
             oldAttribute -> newAttribute.getObjectValue().equalsIgnoreKeys(oldAttribute.getObjectValue(), ignoredAttributeKeys))
         ).filter(addedOrModifiedAttribute ->
             !addedOrModifiedAttribute.getName().isPresent() ||
-                ignoredAttributeNames == null ||
-                !ignoredAttributeNames.test(addedOrModifiedAttribute.getName().get())
+                (attributeNamesToEvaluate == null && ignoredAttributeNames == null) ||
+                (attributeNamesToEvaluate != null && attributeNamesToEvaluate.test(addedOrModifiedAttribute.getName().get())) ||
+                (ignoredAttributeNames != null && !ignoredAttributeNames.test(addedOrModifiedAttribute.getName().get()))
         );
     }
 
