@@ -26,8 +26,8 @@ RUN { \
 RUN ln -svT "/usr/lib/jvm/java-8-openjdk-$(dpkg --print-architecture)" /docker-java-home
 ENV JAVA_HOME /docker-java-home
 
-ENV JAVA_VERSION 8u171
-ENV JAVA_DEBIAN_VERSION 8u171-b11-1~deb9u1
+ENV JAVA_VERSION 8u181
+ENV JAVA_DEBIAN_VERSION 8u181-b13-1~deb9u1
 
 # see https://bugs.debian.org/775775
 # and https://github.com/docker-library/java/issues/19#issuecomment-70546872
