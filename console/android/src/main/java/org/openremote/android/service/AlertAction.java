@@ -3,69 +3,60 @@ package org.openremote.android.service;
 import java.io.Serializable;
 
 public class AlertAction implements Serializable {
-    private AlertNotification.ActionType type;
-    private String title;
-    private String assetId;
-    private String attributeName;
-    private String appUrl;
-    private String rawJson;
+    private String url;
+    private String httpMethod;
+    private String data;
+    private boolean silent;
+    private boolean openInBrowser;
 
-    public String getAssetId() {
-        return assetId;
+    public String getUrl() {
+        return url;
     }
 
-    public void setAssetId(String assetId) {
-        this.assetId = assetId;
+    public void setUrl(String url) {
+        this.url = url;
     }
 
-    public String getAttributeName() {
-        return attributeName;
+    public String getHttpMethod() {
+        return httpMethod;
     }
 
-    public void setAttributeName(String attributeName) {
-        this.attributeName = attributeName;
+    public void setHttpMethod(String httpMethod) {
+        this.httpMethod = httpMethod;
     }
 
-    public String getRawJson() {
-        return rawJson;
+    public String getData() {
+        return data;
     }
 
-    public void setRawJson(String rawJson) {
-        this.rawJson = rawJson;
+    public void setData(String data) {
+        this.data = data;
     }
 
-    public AlertAction() {
+    public boolean isSilent() {
+        return silent;
     }
 
-    public AlertNotification.ActionType getType() {
-        return type;
+    public void setSilent(boolean silent) {
+        this.silent = silent;
     }
 
-    public void setType(AlertNotification.ActionType type) {
-        this.type = type;
+    public boolean isOpenInBrowser() {
+        return openInBrowser;
     }
 
-    public String getTitle() {
-        return title;
-    }
-
-    public void setTitle(String title) {
-        this.title = title;
-    }
-
-    public String getAppUrl() {
-        return appUrl;
-    }
-
-    public void setAppUrl(String appUrl) {
-        this.appUrl = appUrl;
+    public void setOpenInBrowser(boolean openInBrowser) {
+        this.openInBrowser = openInBrowser;
     }
 
     @Override
     public String toString() {
         return "AlertAction{" +
-                "type=" + type +
-                ", title='" + title + '\'' +
+                "url=" + url +
+                ", httpMethod=" + httpMethod +
+                ", data=" + data +
+                ", silent=" + silent +
+                ", openInBrowser=" + openInBrowser +
                 '}';
     }
 }
