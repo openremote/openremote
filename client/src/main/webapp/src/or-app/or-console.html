@@ -108,7 +108,7 @@
                     registration: {
                         type: Object,
                         value: function() {
-                            let consoleStr = window.localStorage.getItem("OpenRemoteConsole");
+                            let consoleStr = window.localStorage.getItem("OpenRemoteConsole:" + this.realm);
                             return consoleStr ? JSON.parse(consoleStr) :  {};
                         }
                     },
@@ -287,7 +287,7 @@
                         this.registration.id = response.id;
                         console.debug("Console: registration successful");
                         console.debug("Console: updating locally stored registration");
-                        window.localStorage.setItem("OpenRemoteConsole", JSON.stringify(this.registration));
+                        window.localStorage.setItem("OpenRemoteConsole:" + this.realm, JSON.stringify(this.registration));
                         successFn();
                         if (raiseReadyEvent) {
                             window.dispatchEvent(new CustomEvent("ConsoleReady"));
