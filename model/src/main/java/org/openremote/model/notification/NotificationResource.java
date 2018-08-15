@@ -97,7 +97,6 @@ public interface NotificationResource {
     @Path("alert")
     @SuccessStatusCode(204)
     @Consumes(APPLICATION_JSON)
-    @RolesAllowed({"write:user"})
     @SuppressWarnings("unusable-by-js")
     void sendNotification(@BeanParam RequestParams requestParams,
                           Notification notification);
