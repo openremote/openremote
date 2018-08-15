@@ -107,10 +107,7 @@
                      */
                     registration: {
                         type: Object,
-                        value: function() {
-                            let consoleStr = window.localStorage.getItem("OpenRemoteConsole:" + this.realm);
-                            return consoleStr ? JSON.parse(consoleStr) :  {};
-                        }
+                        computed: 'computeRegistration(realm)'
                     },
 
                     /**
@@ -188,6 +185,11 @@
 
             computeEnabled(shellApple, shellAndroid) {
                 return shellApple || shellAndroid
+            }
+
+            computeRegistration(realm) {
+                let consoleStr = window.localStorage.getItem("OpenRemoteConsole:" + realm);
+                return consoleStr ? JSON.parse(consoleStr) :  {};
             }
 
             postNativeShellMessage(jsonMessage) {
