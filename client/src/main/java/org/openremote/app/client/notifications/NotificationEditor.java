@@ -29,6 +29,8 @@ public interface NotificationEditor {
 
     void setOnSend(Runnable onSend);
 
+    void setOnClose(Runnable onClose);
+
     void show();
 
     void setResult(NotificationSendResult result);

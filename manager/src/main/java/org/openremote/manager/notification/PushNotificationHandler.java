@@ -393,7 +393,9 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
             // with actions that use the actions from the data
             if (pushMessage.getData() != null || pushMessage.getAction() != null || pushMessage.getButtons() != null) {
                 androidConfigBuilder.putData("or-title", pushMessage.getTitle());
-                androidConfigBuilder.putData("or-body", pushMessage.getBody());
+                if (pushMessage.getBody() != null) {
+                    androidConfigBuilder.putData("or-body", pushMessage.getBody());
+                }
             }
 
             // Use alert dictionary for apns

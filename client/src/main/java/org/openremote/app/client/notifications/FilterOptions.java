@@ -23,6 +23,7 @@ import org.openremote.model.notification.Notification;
 import org.openremote.model.notification.PushNotificationMessage;
 import org.openremote.model.util.TextUtil;
 
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -47,6 +48,7 @@ public class FilterOptions {
     }
 
     final protected Map<String, String> realms;
+    final protected Map<String, String> realmIds;
     final protected BiConsumer<FilterOptions, Consumer<Map<String, String>>> targetsSupplier;
     protected Map<String, String> targets = new HashMap<>();
     protected String selectedNotificationType = NOTIFICATION_TYPES[0]; // Only one type at the moment so select it
@@ -57,8 +59,9 @@ public class FilterOptions {
     protected Runnable targetsChangedCallback;
     protected Runnable changedCallback;
 
-    public FilterOptions(Map<String, String> realms, BiConsumer<FilterOptions, Consumer<Map<String, String>>> targetsSupplier) {
+    public FilterOptions(Map<String, String> realms, Map<String, String> realmIds, BiConsumer<FilterOptions, Consumer<Map<String, String>>> targetsSupplier) {
         this.realms = realms;
+        this.realmIds = realmIds;
         this.targetsSupplier = targetsSupplier;
     }
 
@@ -72,6 +75,10 @@ public class FilterOptions {
 
     public Map<String, String> getRealms() {
         return realms;
+    }
+
+    public Map<String, String> getRealmIds() {
+        return realmIds;
     }
 
     public Map<String, String> getTargets() {
@@ -104,6 +111,10 @@ public class FilterOptions {
 
     public String getSelectedRealm() {
         return selectedRealm;
+    }
+
+    public String getSelectedRealmId() {
+        return selectedRealm == null ? null : realmIds.get(selectedRealm);
     }
 
     public void setSelectedRealm(String selectedRealm) {
@@ -159,6 +170,39 @@ public class FilterOptions {
 
     public void setChangedCallback(Runnable filterOptionsChangedCallback) {
         this.changedCallback = filterOptionsChangedCallback;
+    }
+
+    public Long getFromTimestamp() {
+        Long fromTimestamp = null;
+
+        if (getSelectedSentIn() != null) {
+            switch (getSelectedSentIn()) {
+
+                case DAY:
+                    fromTimestamp = new Date(new Date().getTime() - (24L * 60 * 60 * 1000)).getTime();
+                    break;
+                case WEEK:
+                    fromTimestamp = new Date(new Date().getTime() - (7L * 24 * 60 * 60 * 1000)).getTime();
+                    break;
+                case MONTH:
+                    fromTimestamp = new Date(new Date().getTime() - (31L * 24 * 60 * 60 * 1000)).getTime();
+                    break;
+            }
+        }
+
+        return fromTimestamp;
+    }
+
+    public String getTenantId() {
+        return getSelectedTargetType() == Notification.TargetType.TENANT ? getSelectedRealmId() : null;
+    }
+
+    public String getUserId() {
+        return getSelectedTargetType() == Notification.TargetType.USER ? getSelectedTarget() : null;
+    }
+
+    public String getAssetId() {
+        return getSelectedTargetType() == Notification.TargetType.ASSET ? getSelectedTarget() : null;
     }
 
     protected void refreshTargets() {

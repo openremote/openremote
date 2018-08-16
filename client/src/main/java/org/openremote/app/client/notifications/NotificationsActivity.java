@@ -76,7 +76,6 @@ public class NotificationsActivity extends AssetBrowsingActivity<NotificationsPl
     protected NotificationsPlace place;
     protected FilterOptions filterOptions;
     protected SendOptions sendOptions;
-    protected SentNotification[] sentNotifications;
 
     @Inject
     public NotificationsActivity(Environment environment,
@@ -147,7 +146,10 @@ public class NotificationsActivity extends AssetBrowsingActivity<NotificationsPl
             Map<String, String> realms = Arrays.stream(tenants)
                 .collect(Collectors.toMap(Tenant::getRealm, Tenant::getDisplayName));
 
-            filterOptions = new FilterOptions(realms, this::loadTargets);
+            Map<String, String> realmIds = Arrays.stream(tenants)
+                .collect(Collectors.toMap(Tenant::getRealm, Tenant::getId));
+
+            filterOptions = new FilterOptions(realms, realmIds, this::loadTargets);
 
             String selectedRealm = !TextUtil.isNullOrEmpty(place.getRealm()) && realms.containsKey(place.getRealm())
                 ? place.getRealm() : null;
@@ -170,7 +172,6 @@ public class NotificationsActivity extends AssetBrowsingActivity<NotificationsPl
     public void refreshNotifications() {
         view.setBusy(true);
         refreshNotifications(notifications -> {
-            sentNotifications = notifications;
             view.setNotifications(notifications);
             view.setDeleteAllEnabled(notifications.length > 0);
             view.setBusy(false);
@@ -193,8 +194,11 @@ public class NotificationsActivity extends AssetBrowsingActivity<NotificationsPl
             Map<String, String> realms = Arrays.stream(tenants)
                 .collect(Collectors.toMap(Tenant::getRealm, Tenant::getDisplayName));
 
+            Map<String, String> realmIds = Arrays.stream(tenants)
+                .collect(Collectors.toMap(Tenant::getRealm, Tenant::getId));
+
             if (sendOptions == null) {
-                sendOptions = new SendOptions(realms, this::loadTargets, this::createMessage);
+                sendOptions = new SendOptions(realms, realmIds, this::loadTargets, this::createMessage);
             }
 
             String selectedRealm = !TextUtil.isNullOrEmpty(place.getRealm()) && realms.containsKey(place.getRealm())
@@ -210,6 +214,7 @@ public class NotificationsActivity extends AssetBrowsingActivity<NotificationsPl
 
             notificationEditor.setSendOptions(sendOptions);
             notificationEditor.setOnSend(() -> sendNotification(notificationEditor::setResult));
+            notificationEditor.setOnClose(this::refreshNotifications);
             notificationEditor.show();
         });
     }
@@ -229,16 +234,20 @@ public class NotificationsActivity extends AssetBrowsingActivity<NotificationsPl
 
     @Override
     public void deleteNotifications() {
+        String tenantId = filterOptions.getTenantId();
+        String userId = filterOptions.getUserId();
+        String assetId = filterOptions.getAssetId();
+        Long fromTimestamp = filterOptions.getFromTimestamp();
+
         environment.getApp().getRequests().send(
             requestParams -> notificationResource.removeNotifications(requestParams,
-                Arrays.stream(sentNotifications)
-                    .map(SentNotification::getId)
-                    .collect(Collectors.toList()),
                 null,
+                filterOptions.getSelectedNotificationType(),
+                fromTimestamp,
                 null,
-                null,
-                null,
-                null),
+                tenantId,
+                userId,
+                assetId),
             204,
             () -> {
                 environment.getEventBus().dispatch(new ShowSuccessEvent(
@@ -412,41 +421,21 @@ public class NotificationsActivity extends AssetBrowsingActivity<NotificationsPl
             return;
         }
 
-        List<String> types = TextUtil.isNullOrEmpty(filterOptions.getSelectedNotificationType())
-            ? null : Collections.singletonList(filterOptions.getSelectedNotificationType());
+        String tenantId = filterOptions.getTenantId();
+        String userId = filterOptions.getUserId();
+        String assetId = filterOptions.getAssetId();
+        Long fromTimestamp = filterOptions.getFromTimestamp();
 
-        List<String> users = filterOptions.getSelectedTargetType() == Notification.TargetType.USER
-            ? Collections.singletonList(filterOptions.getSelectedTarget()) : null;
-
-        List<String> assets = filterOptions.getSelectedTargetType() == Notification.TargetType.ASSET
-            ? Collections.singletonList(filterOptions.getSelectedTarget()) : null;
-
-        Long timestamp = null;
-        if (filterOptions.getSelectedSentIn() != null) {
-            switch (filterOptions.getSelectedSentIn()) {
-
-                case DAY:
-                    timestamp = new Date(new Date().getTime() - (24L * 60 * 60 * 1000)).getTime();
-                    break;
-                case WEEK:
-                    timestamp = new Date(new Date().getTime() - (7L * 24 * 60 * 60 * 1000)).getTime();
-                    break;
-                case MONTH:
-                    timestamp = new Date(new Date().getTime() - (31L * 24 * 60 * 60 * 1000)).getTime();
-                    break;
-            }
-        }
-
-        Long finalTimestamp = timestamp;
         environment.getApp().getRequests().sendAndReturn(
             sentNotificationArrayMapper,
             requestParams -> notificationResource.getNotifications(requestParams,
                 null,
-                types,
-                finalTimestamp,
-                Collections.singletonList(filterOptions.getSelectedRealm()),
-                users,
-                assets),
+                filterOptions.getSelectedNotificationType(),
+                fromTimestamp,
+                null,
+                tenantId,
+                userId,
+                assetId),
             200,
             notificationConsumer::accept);
     }

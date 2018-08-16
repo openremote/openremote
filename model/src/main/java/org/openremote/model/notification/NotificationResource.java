@@ -48,12 +48,23 @@ public interface NotificationResource {
     @RolesAllowed({"read:admin"})
     @SuppressWarnings("unusable-by-js")
     SentNotification[] getNotifications(@BeanParam RequestParams requestParams,
-                                        @QueryParam("ids") List<Long> ids,
-                                        @QueryParam("types") List<String> types,
-                                        @QueryParam("before") Long timestamp,
-                                        @QueryParam("tenantId") List<String> tenantIds,
-                                        @QueryParam("userId") List<String> userIds,
-                                        @QueryParam("assetId") List<String> assetIds);
+                                        @QueryParam("id") Long id,
+                                        @QueryParam("type") String type,
+                                        @QueryParam("from") Long fromTimestamp,
+                                        @QueryParam("to") Long toTimestamp,
+                                        @QueryParam("tenantId") String tenantId,
+                                        @QueryParam("userId") String userId,
+                                        @QueryParam("assetId") String assetId);
+    // RT: Was using lists here but they don't work with JSAPI because GWT doesn't use JSArrays for lists - another
+    // reason to get away from GWT
+//    SentNotification[] getNotifications(@BeanParam RequestParams requestParams,
+//                                        @QueryParam("id") List<Long> ids,
+//                                        @QueryParam("type") List<String> types,
+//                                        @QueryParam("from") Long fromTimestamp,
+//                                        @QueryParam("to") Long toTimestamp,
+//                                        @QueryParam("tenantId") List<String> tenantIds,
+//                                        @QueryParam("userId") List<String> userIds,
+//                                        @QueryParam("assetId") List<String> assetIds);
 
     /**
      * Removes all sent notifications that have been sent to the specified targets; optionally limiting the scope of the
@@ -68,12 +79,23 @@ public interface NotificationResource {
     @RolesAllowed({"write:admin"})
     @SuppressWarnings("unusable-by-js")
     void removeNotifications(@BeanParam RequestParams requestParams,
-                             @QueryParam("ids") List<Long> ids,
-                             @QueryParam("types") List<String> types,
-                             @QueryParam("before") Long timestamp,
-                             @QueryParam("tenantIds") List<String> tenantIds,
-                             @QueryParam("userIds") List<String> userIds,
-                             @QueryParam("assetIds") List<String> assetIds);
+                             @QueryParam("id") Long id,
+                             @QueryParam("type") String type,
+                             @QueryParam("from") Long fromTimestamp,
+                             @QueryParam("to") Long toTimestamp,
+                             @QueryParam("tenantId") String tenantId,
+                             @QueryParam("userId") String userId,
+                             @QueryParam("assetId") String assetId);
+    // RT: Was using lists here but they don't work with JSAPI because GWT doesn't use JSArrays for lists - another
+    // reason to get away from GWT
+//    void removeNotifications(@BeanParam RequestParams requestParams,
+//                             @QueryParam("id") List<Long> ids,
+//                             @QueryParam("type") List<String> types,
+//                             @QueryParam("from") Long fromTimestamp,
+//                             @QueryParam("to") Long toTimestamp,
+//                             @QueryParam("tenantId") List<String> tenantIds,
+//                             @QueryParam("userId") List<String> userIds,
+//                             @QueryParam("assetId") List<String> assetIds);
 
     /**
      * Remove a specific sent notification by ID.

@@ -19,12 +19,13 @@
  */
 package org.openremote.app.client.notifications;
 
-import com.google.gwt.user.client.ui.*;
+import com.google.gwt.user.client.ui.FlowPanel;
+import com.google.gwt.user.client.ui.InlineLabel;
+import com.google.gwt.user.client.ui.IsWidget;
 import org.openremote.app.client.app.dialog.Dialog;
 import org.openremote.app.client.i18n.ManagerMessages;
 import org.openremote.app.client.style.WidgetStyle;
 import org.openremote.app.client.widget.*;
-import org.openremote.app.client.widget.PushButton;
 import org.openremote.model.interop.Consumer;
 import org.openremote.model.notification.*;
 import org.openremote.model.util.Pair;
@@ -39,7 +40,6 @@ import java.util.Locale;
 import java.util.Optional;
 
 import static org.openremote.app.client.widget.ValueEditors.createValueEditor;
-import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 
 public class NotificationEditorImpl implements NotificationEditor {
 
@@ -168,7 +168,7 @@ public class NotificationEditorImpl implements NotificationEditor {
                 sendOptions.setSelectedRealm(realmsList.getSelectedValue());
                 
                 if (sendOptions.getSelectedTargetType() == Notification.TargetType.TENANT) {
-                    sendOptions.setSelectedTarget(realmsList.getSelectedValue());
+                    sendOptions.setSelectedTarget(sendOptions.getSelectedRealmId());
                 }
             }
         });
@@ -177,7 +177,7 @@ public class NotificationEditorImpl implements NotificationEditor {
             if (sendOptions != null) {
                 sendOptions.setSelectedTargetType(targetTypesList.getSelectedValue());
                 if (sendOptions.getSelectedTargetType() == Notification.TargetType.TENANT) {
-                    sendOptions.setSelectedTarget(sendOptions.getSelectedRealm());
+                    sendOptions.setSelectedTarget(sendOptions.getSelectedRealmId());
                     targetsGroup.setVisible(false);
                 } else {
                     targetsList.selectItem("");
@@ -533,6 +533,7 @@ public class NotificationEditorImpl implements NotificationEditor {
         this.onSend = onSend;
     }
 
+    @Override
     public void setOnClose(Runnable onClose) {
         this.onClose = onClose;
     }

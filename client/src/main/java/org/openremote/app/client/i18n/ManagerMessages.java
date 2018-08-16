@@ -155,6 +155,16 @@ public interface ManagerMessages extends Messages {
 
     String createdOn();
 
+    String sentOn();
+
+    String deliveredOn();
+
+    String acknowledgedOn();
+
+    String acknowledgement();
+
+    String error();
+
     String selectedLocation();
 
     String assetCreated(String name);

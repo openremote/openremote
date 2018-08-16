@@ -27,9 +27,6 @@ import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.HTMLPanel;
 import com.google.gwt.user.client.ui.Label;
-import com.google.inject.Provider;
-import org.openremote.app.client.Environment;
-import org.openremote.app.client.app.dialog.Confirmation;
 import org.openremote.app.client.assets.browser.AssetBrowser;
 import org.openremote.app.client.i18n.ManagerMessages;
 import org.openremote.app.client.style.WidgetStyle;
@@ -280,27 +277,51 @@ public class NotificationsViewImpl extends Composite implements NotificationsVie
             this.notification = notification;
             setStyleName("flex-none layout vertical or-FormListItem");
 
-            FormGroup statusGroup = new FormGroup();
-            statusGroup.setFormGroupActions(new FormGroupActions());
-            FormField statusField = new FormField();
-            FormLabel statusLabel = new FormLabel(managerMessages.status());
-            statusGroup.setFormLabel(statusLabel);
-            statusGroup.setFormField(statusField);
-            FormOutputText statusTxt = new FormOutputText("");
-            statusField.add(statusTxt);
-
-            FormGroup createdOnGroup = new FormGroup();
-            createdOnGroup.addStyleName("flex");
-            createdOnGroup.setFormGroupActions(new FormGroupActions());
-            FormField createdOnField = new FormField();
-            FormLabel createdOnLabel = new FormLabel(managerMessages.createdOn());
-            createdOnGroup.setFormLabel(createdOnLabel);
-            createdOnGroup.setFormField(createdOnField);
-            FormOutputText createdOnTxt = new FormOutputText(
+            FormGroup sentOnGroup = new FormGroup();
+            sentOnGroup.addStyleName("flex");
+            sentOnGroup.setFormGroupActions(new FormGroupActions());
+            FormField sentOnField = new FormField();
+            FormLabel sentOnLabel = new FormLabel(managerMessages.sentOn());
+            sentOnGroup.setFormLabel(sentOnLabel);
+            sentOnGroup.setFormField(sentOnField);
+            FormOutputText sentOnTxt = new FormOutputText(
                 DateTimeFormat.getFormat(Constants.DEFAULT_DATETIME_FORMAT).format(notification.getSentOn())
             );
-            createdOnTxt.addStyleName("flex");
-            createdOnField.add(createdOnTxt);
+            sentOnTxt.addStyleName("flex");
+            sentOnField.add(sentOnTxt);
+            add(sentOnGroup);
+
+            FormGroup deliveredOnGroup = new FormGroup();
+            deliveredOnGroup.addStyleName("flex");
+            deliveredOnGroup.setFormGroupActions(new FormGroupActions());
+            FormField deliveredOnField = new FormField();
+            FormLabel deliveredOnLabel = new FormLabel(managerMessages.deliveredOn());
+            deliveredOnGroup.setFormLabel(deliveredOnLabel);
+            deliveredOnGroup.setFormField(deliveredOnField);
+            FormOutputText deliveredOnTxt = new FormOutputText(
+                notification.getDeliveredOn() != null
+                    ? DateTimeFormat.getFormat(Constants.DEFAULT_DATETIME_FORMAT).format(notification.getDeliveredOn())
+                    : ""
+            );
+            deliveredOnTxt.addStyleName("flex");
+            deliveredOnField.add(deliveredOnTxt);
+            add(deliveredOnGroup);
+
+            FormGroup acknowledgedOnGroup = new FormGroup();
+            acknowledgedOnGroup.addStyleName("flex");
+            acknowledgedOnGroup.setFormGroupActions(new FormGroupActions());
+            FormField acknowledgedOnField = new FormField();
+            FormLabel acknowledgedOnLabel = new FormLabel(managerMessages.acknowledgedOn());
+            acknowledgedOnGroup.setFormLabel(acknowledgedOnLabel);
+            acknowledgedOnGroup.setFormField(acknowledgedOnField);
+            FormOutputText acknowledgedOnTxt = new FormOutputText(
+                notification.getAcknowledgedOn() != null
+                    ? DateTimeFormat.getFormat(Constants.DEFAULT_DATETIME_FORMAT).format(notification.getAcknowledgedOn())
+                    : ""
+            );
+            acknowledgedOnTxt.addStyleName("flex");
+            acknowledgedOnField.add(acknowledgedOnTxt);
+            add(acknowledgedOnGroup);
 
             FormButton deleteButton = new FormButton();
             deleteButton.setDanger(true);
@@ -310,22 +331,16 @@ public class NotificationsViewImpl extends Composite implements NotificationsVie
                 if (presenter != null)
                     presenter.deleteNotification(notification.getId());
             });
-            statusGroup.getFormGroupActions().add(deleteButton);
+            sentOnGroup.getFormGroupActions().add(deleteButton);
 
-            FlowPanel createdStatusPanel = new FlowPanel();
-            createdStatusPanel.setStyleName("layout horizontal wrap");
-            createdStatusPanel.add(createdOnGroup);
-            createdStatusPanel.add(statusGroup);
-            add(createdStatusPanel);
-
-            FormGroup titleGroup = new FormGroup();
-            FormField titleField = new FormField();
-            FormLabel titleLabel = new FormLabel(managerMessages.title());
-            titleGroup.setFormLabel(titleLabel);
-            titleGroup.setFormField(titleField);
-            FormOutputText titleTxt = new FormOutputText(/*notification.getTitle()*/);
-            titleField.add(titleTxt);
-            add(titleGroup);
+            FormGroup typeGroup = new FormGroup();
+            FormField typeField = new FormField();
+            FormLabel typeLabel = new FormLabel(managerMessages.type());
+            typeGroup.setFormLabel(typeLabel);
+            typeGroup.setFormField(typeField);
+            FormOutputText typeTxt = new FormOutputText(notification.getType());
+            typeField.add(typeTxt);
+            add(typeGroup);
 
             FormGroup messageGroup = new FormGroup();
             FormField messageField = new FormField();
@@ -337,36 +352,27 @@ public class NotificationsViewImpl extends Composite implements NotificationsVie
             messageTxt.setHeight("3em");
             messageTxt.setResizable(false);
             messageTxt.setBorder(true);
-            messageTxt.setText(""/*notification.getBody()*/);
+            messageTxt.setText(notification.getMessage().toString());
             messageField.add(messageTxt);
             add(messageGroup);
 
-/*            for (int i = 0; i < notification.getActions().length(); i++) {
-                notification.getActions().get(i).ifPresent(action -> {
-                    FormGroup actionGroup = new FormGroup();
-                    FormField actionField = new FormField();
-                    FormLabel actionLabel = new FormLabel(managerMessages.action());
-                    actionGroup.setFormLabel(actionLabel);
-                    actionGroup.setFormField(actionField);
-                    FormTextArea actionTxt = new FormTextArea();
-                    actionTxt.setReadOnly(true);
-                    actionTxt.setResizable(false);
-                    actionTxt.setBorder(true);
-                    actionTxt.setHeight("3em");
-                    actionTxt.setText(action.toJson());
-                    actionField.add(actionTxt);
-                    add(actionGroup);
-                });
-            }*/
-
-            FormGroup appUrlGroup = new FormGroup();
-            FormField appUrlField = new FormField();
-            FormLabel appUrlLabel = new FormLabel(managerMessages.notificationActionUrl());
-            appUrlGroup.setFormLabel(appUrlLabel);
-            appUrlGroup.setFormField(appUrlField);
-            FormOutputText appUrlTxt = new FormOutputText(/*notification.getAppUrl()*/);
-            appUrlField.add(appUrlTxt);
-            add(appUrlGroup);
+            FormGroup acknowledgementGroup = new FormGroup();
+            FormField acknowledgementField = new FormField();
+            FormLabel acknowledgementLabel = new FormLabel(managerMessages.acknowledgement());
+            acknowledgementGroup.setFormLabel(acknowledgementLabel);
+            acknowledgementGroup.setFormField(acknowledgementField);
+            FormOutputText acknowledgementTxt = new FormOutputText(notification.getAcknowledgement());
+            acknowledgementField.add(acknowledgementTxt);
+            add(acknowledgementGroup);
+            
+            FormGroup errorGroup = new FormGroup();
+            FormField errorField = new FormField();
+            FormLabel errorLabel = new FormLabel(managerMessages.error());
+            errorGroup.setFormLabel(errorLabel);
+            errorGroup.setFormField(errorField);
+            FormOutputText errorTxt = new FormOutputText(notification.getError());
+            errorField.add(errorTxt);
+            add(errorGroup);
         }
 
         public SentNotification getNotification() {

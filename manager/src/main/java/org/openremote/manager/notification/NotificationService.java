@@ -338,11 +338,11 @@ public class NotificationService extends RouteBuilder implements ContainerServic
         return persistenceService.doReturningTransaction(em -> em.find(SentNotification.class, notificationId));
     }
 
-    public List<SentNotification> getNotifications(List<Long> ids, List<String> types, Long timestamp, List<String> tenantIds, List<String> userIds, List<String> assetIds) throws IllegalArgumentException {
+    public List<SentNotification> getNotifications(List<Long> ids, List<String> types, Long fromTimestamp, Long toTimestamp, List<String> tenantIds, List<String> userIds, List<String> assetIds) throws IllegalArgumentException {
         StringBuilder builder = new StringBuilder();
         builder.append("select n from SentNotification n where 1=1");
         List<Object> parameters = new ArrayList<>();
-        processCriteria(builder, parameters, ids, types, timestamp, tenantIds, userIds, assetIds);
+        processCriteria(builder, parameters, ids, types, fromTimestamp, toTimestamp, tenantIds, userIds, assetIds);
 
         return persistenceService.doReturningTransaction(entityManager -> {
             TypedQuery<SentNotification> query = entityManager.createQuery(builder.toString(), SentNotification.class);
@@ -360,12 +360,12 @@ public class NotificationService extends RouteBuilder implements ContainerServic
         );
     }
 
-    public void removeNotifications(List<Long> ids, List<String> types, Long timestamp, List<String> tenantIds, List<String> userIds, List<String> assetIds) throws IllegalArgumentException {
+    public void removeNotifications(List<Long> ids, List<String> types, Long fromTimestamp, Long toTimestamp, List<String> tenantIds, List<String> userIds, List<String> assetIds) throws IllegalArgumentException {
 
         StringBuilder builder = new StringBuilder();
         builder.append("delete from SentNotification n where 1=1");
         List<Object> parameters = new ArrayList<>();
-        processCriteria(builder, parameters, ids, types, timestamp, tenantIds, userIds, assetIds);
+        processCriteria(builder, parameters, ids, types, fromTimestamp, toTimestamp, tenantIds, userIds, assetIds);
 
         persistenceService.doTransaction(entityManager -> {
             Query query = entityManager.createQuery(builder.toString());
@@ -375,7 +375,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
         });
     }
 
-    protected void processCriteria(StringBuilder builder, List<Object> parameters, List<Long> ids, List<String> types, Long timestamp, List<String> tenantIds, List<String> userIds, List<String> assetIds) {
+    protected void processCriteria(StringBuilder builder, List<Object> parameters, List<Long> ids, List<String> types, Long fromTimestamp, Long toTimestamp, List<String> tenantIds, List<String> userIds, List<String> assetIds) {
         boolean hasIds = ids != null && !ids.isEmpty();
         boolean hasTypes = types != null && !types.isEmpty();
         boolean hasTenants = tenantIds != null && !tenantIds.isEmpty();
@@ -399,7 +399,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
             counter++;
         }
 
-        if (timestamp == null && counter == 0) {
+        if (fromTimestamp == null && toTimestamp == null && counter == 0) {
             LOG.info("No filters set for remove notifications request so not allowed");
             throw new IllegalArgumentException("No criteria specified");
         }
@@ -417,23 +417,18 @@ public class NotificationService extends RouteBuilder implements ContainerServic
             parameters.add(types);
         }
 
-        if (hasTenants) {
-            builder.append(" AND n.target = ?")
-                .append(parameters.size() + 1)
-                .append(" AND n.targetId IN ?")
-                .append(parameters.size() + 2);
-            parameters.add(Notification.TargetType.TENANT);
-            parameters.add(tenantIds);
+        if (fromTimestamp != null) {
+            builder.append(" AND n.sentOn <= ?")
+                .append(parameters.size() + 1);
+
+            parameters.add(new Date(fromTimestamp));
         }
 
-        if (hasUsers) {
-            builder.append(" AND n.target = ?")
-                .append(parameters.size() + 1)
-                .append(" AND n.targetId IN ?")
-                .append(parameters.size() + 2);
+        if (toTimestamp != null) {
+            builder.append(" AND n.sentOn <= ?")
+                .append(parameters.size() + 1);
 
-            parameters.add(Notification.TargetType.USER);
-            parameters.add(userIds);
+            parameters.add(new Date(toTimestamp));
         }
 
         if (hasAssets) {
@@ -444,13 +439,24 @@ public class NotificationService extends RouteBuilder implements ContainerServic
 
             parameters.add(Notification.TargetType.ASSET);
             parameters.add(assetIds);
-        }
 
-        if (timestamp != null) {
-            builder.append(" AND n.sentOn <= ?")
-                .append(parameters.size() + 1);
+        } else if (hasUsers) {
+            builder.append(" AND n.target = ?")
+                .append(parameters.size() + 1)
+                .append(" AND n.targetId IN ?")
+                .append(parameters.size() + 2);
 
-            parameters.add(new Date(timestamp));
+            parameters.add(Notification.TargetType.USER);
+            parameters.add(userIds);
+
+        } else if (hasTenants) {
+            builder.append(" AND n.target = ?")
+                .append(parameters.size() + 1)
+                .append(" AND n.targetId IN ?")
+                .append(parameters.size() + 2);
+
+            parameters.add(Notification.TargetType.TENANT);
+            parameters.add(tenantIds);
         }
     }
 

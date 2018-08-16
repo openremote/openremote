@@ -25,16 +25,16 @@ import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.model.Constants;
 import org.openremote.model.asset.Asset;
-import org.openremote.model.query.BaseAssetQuery;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.notification.Notification;
 import org.openremote.model.notification.NotificationResource;
 import org.openremote.model.notification.SentNotification;
+import org.openremote.model.query.BaseAssetQuery;
 import org.openremote.model.value.Value;
 
 import javax.ws.rs.WebApplicationException;
+import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
@@ -61,18 +61,33 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
     }
 
     @Override
-    public SentNotification[] getNotifications(RequestParams requestParams, List<Long> ids, List<String> types, Long timestamp, List<String> tenantIds, List<String> userIds, List<String> assetIds) {
+    public SentNotification[] getNotifications(RequestParams requestParams, Long id, String type, Long fromTimestamp, Long toTimestamp, String tenantId, String userId, String assetId) {
         try {
-            return notificationService.getNotifications(ids, types, timestamp, tenantIds, userIds, assetIds).toArray(new SentNotification[0]);
+            return notificationService.getNotifications(
+                id != null ? Collections.singletonList(id) : null,
+                type != null ? Collections.singletonList(type) : null,
+                fromTimestamp,
+                toTimestamp,
+                tenantId != null ? Collections.singletonList(tenantId) : null,
+                userId != null ? Collections.singletonList(userId) : null,
+                assetId != null ? Collections.singletonList(assetId) : null
+            ).toArray(new SentNotification[0]);
         } catch (IllegalArgumentException e) {
             throw new WebApplicationException("Invalid criteria set", BAD_REQUEST);
         }
     }
 
     @Override
-    public void removeNotifications(RequestParams requestParams, List<Long> ids, List<String> types, Long timestamp, List<String> tenantIds, List<String> userIds, List<String> assetIds) {
+    public void removeNotifications(RequestParams requestParams, Long id, String type, Long fromTimestamp, Long toTimestamp, String tenantId, String userId, String assetId) {
         try {
-            notificationService.removeNotifications(ids, types, timestamp, tenantIds, userIds, assetIds);
+            notificationService.removeNotifications(
+                id != null ? Collections.singletonList(id) : null,
+                type != null ? Collections.singletonList(type) : null,
+                fromTimestamp,
+                toTimestamp,
+                tenantId != null ? Collections.singletonList(tenantId) : null,
+                userId != null ? Collections.singletonList(userId) : null,
+                assetId != null ? Collections.singletonList(assetId) : null);
         } catch (IllegalArgumentException e) {
             throw new WebApplicationException("Invalid criteria set", BAD_REQUEST);
         }
