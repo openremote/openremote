@@ -51,6 +51,9 @@ public class ValueFactoryImpl implements ValueFactory {
 
     @Override
     public <T extends Value> Optional<T> parse(String jsonString) throws ValueException {
+        if (jsonString.isEmpty()) {
+            return Optional.empty();
+        }
         if (jsonString.startsWith("(") && jsonString.endsWith(")")) {
             // some clients send in (json) expecting an eval is required
             jsonString = jsonString.substring(1, jsonString.length() - 1);

@@ -20,6 +20,7 @@
 package org.openremote.container.json;
 
 import org.jboss.resteasy.plugins.providers.ProviderHelper;
+import org.openremote.model.util.TextUtil;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.Values;
 
@@ -46,7 +47,7 @@ public class ModelValueMessageBodyConverter implements MessageBodyReader<Value>,
     @Override
     public Value readFrom(Class<Value> type, Type genericType, Annotation[] annotations, MediaType mediaType, MultivaluedMap<String, String> httpHeaders, InputStream entityStream) throws IOException, WebApplicationException {
         String str = ProviderHelper.readString(entityStream, mediaType);
-        return Values.parse(str).orElseThrow(() -> new IOException("Empty JSON data"));
+        return TextUtil.isNullOrEmpty(str) ? null : Values.parse(str).orElseThrow(() -> new IOException("Empty JSON data"));
     }
 
     @Override

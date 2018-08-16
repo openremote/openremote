@@ -98,7 +98,9 @@ public class PushNotificationAction {
 
     public ObjectValue toValue() {
         ObjectValue val = Values.createObject();
-        val.put("url", url);
+        if (!TextUtil.isNullOrEmpty(url)) {
+            val.put("url", url);
+        }
         if (!TextUtil.isNullOrEmpty(httpMethod)) {
             val.put("httpMethod", httpMethod);
         }

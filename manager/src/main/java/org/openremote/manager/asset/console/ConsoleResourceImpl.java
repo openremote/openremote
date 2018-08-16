@@ -98,12 +98,16 @@ public class ConsoleResourceImpl extends ManagerWebResource implements ConsoleRe
 
             // Check authenticated user is already linked to this console; if anonymous request then check console isn't linked to any users
             if (isAuthenticated()) {
-                List<UserAsset> consoleUserAssets = assetStorageService.findUserAssets(getAuthenticatedTenant().getId(),
-                                                                                       null,
-                                                                                       consoleRegistration.getId());
-                if (consoleUserAssets.isEmpty()) {
-                    throw new WebApplicationException(FORBIDDEN);
-                }
+                // Make asset private
+                consoleAsset.setAccessPublicRead(false);
+
+                // RT: Disabled below to allow multiple users to share a console (to support a shared device)
+//                List<UserAsset> consoleUserAssets = assetStorageService.findUserAssets(getAuthenticatedTenant().getId(),
+//                                                                                       null,
+//                                                                                       consoleRegistration.getId());
+//                if (consoleUserAssets.isEmpty()) {
+//                    throw new WebApplicationException(FORBIDDEN);
+//                }
             } else {
                 List<UserAsset> consoleUserAssets = assetStorageService.findUserAssets(getRequestTenant().getId(),
                                                                                 null,

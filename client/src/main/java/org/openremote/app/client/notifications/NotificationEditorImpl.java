@@ -176,7 +176,13 @@ public class NotificationEditorImpl implements NotificationEditor {
         targetTypesList.addChangeHandler(event -> {
             if (sendOptions != null) {
                 sendOptions.setSelectedTargetType(targetTypesList.getSelectedValue());
-                targetsGroup.setVisible(sendOptions.getSelectedTargetType() != Notification.TargetType.TENANT);
+                if (sendOptions.getSelectedTargetType() == Notification.TargetType.TENANT) {
+                    sendOptions.setSelectedTarget(sendOptions.getSelectedRealm());
+                    targetsGroup.setVisible(false);
+                } else {
+                    targetsList.selectItem("");
+                    targetsGroup.setVisible(true);
+                }
             }
         });
 

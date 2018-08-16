@@ -136,7 +136,7 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
 
         SentNotification sentNotification = notificationService.getSentNotification(notificationId);
         verifyAccess(sentNotification, targetId);
-        notificationService.setNotificationAcknowleged(notificationId, acknowledgement.toString());
+        notificationService.setNotificationAcknowleged(notificationId, acknowledgement == null ? null : acknowledgement.toString());
     }
 
     protected void verifyAccess(SentNotification sentNotification, String targetId) {
