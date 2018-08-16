@@ -147,11 +147,6 @@ public class MainActivity extends Activity {
             webView.restoreState(savedInstanceState);
         } else {
             initializeWebView();
-            if (!getIntent().hasExtra("appUrl")) {
-                String url = getClientUrl();
-                LOG.fine("Loading web view: " + url);
-                webView.loadUrl(url);
-            }
         }
         openIntentUrl(getIntent());
 
@@ -164,7 +159,11 @@ public class MainActivity extends Activity {
     }
 
     protected void openIntentUrl(Intent intent) {
-        if (intent.hasExtra("appUrl")) {
+        if (!intent.hasExtra("appUrl")) {
+            String url = getClientUrl();
+            LOG.fine("Loading web view: " + url);
+            webView.loadUrl(url);
+        } else {
             String url = getClientUrl();
             String intentUrl = intent.getStringExtra("appUrl");
             if (intentUrl != null) {
@@ -175,14 +174,8 @@ public class MainActivity extends Activity {
                 }
             }
 
-            boolean openInBrowser = intent.getBooleanExtra("openInBrowser", false);
-            if (openInBrowser) {
-                Intent browserUrl = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
-                startActivity(browserUrl);
-            } else {
-                LOG.fine("Loading web view: " + url);
-                webView.loadUrl(url);
-            }
+            LOG.fine("Loading web view: " + url);
+            webView.loadUrl(url);
         }
     }
 

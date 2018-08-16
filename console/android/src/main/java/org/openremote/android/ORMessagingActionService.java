@@ -5,6 +5,7 @@ import android.app.NotificationManager;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.net.Uri;
 import android.support.annotation.Nullable;
 import android.text.TextUtils;
 
@@ -26,36 +27,49 @@ public class ORMessagingActionService extends IntentService {
 
     @Override
     protected void onHandleIntent(@Nullable Intent intent) {
-
         Intent it = new Intent(Intent.ACTION_CLOSE_SYSTEM_DIALOGS);
         this.sendBroadcast(it);
 
-        if (intent.hasExtra("notificationId")) {
-            String notificationId = intent.getStringExtra("notificationId");
-            String acknowledgement = intent.getStringExtra("acknowledgement");
+        Long notificationId = intent.getLongExtra("notificationId", 0L);
+        String acknowledgement = intent.getStringExtra("acknowledgement");
 
-            String consoleId = getSharedPreferences(getApplicationContext().getString(R.string.app_name), Context.MODE_PRIVATE).getString("consoleId", "");
-            if (!TextUtils.isEmpty(consoleId)) {
-                tokenService.notificationAcknowledged(Long.parseLong(notificationId), consoleId, acknowledgement);
-
-            }
-
-            NotificationManager manager = (NotificationManager) getSystemService(Service.NOTIFICATION_SERVICE);
+        NotificationManager manager = (NotificationManager) getSystemService(Service.NOTIFICATION_SERVICE);
+        if (manager != null) {
             manager.cancel(notificationId.hashCode());
         }
 
-        if (intent.hasExtra("appUrl")) {
-            Intent activityIntent = new Intent(this, MainActivity.class);
-            activityIntent.setAction(Intent.ACTION_MAIN);
-            activityIntent.addCategory(Intent.CATEGORY_LAUNCHER);
-            activityIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK |
-                    Intent.FLAG_ACTIVITY_SINGLE_TOP);
-            activityIntent.putExtra("appUrl", intent.getStringExtra("appUrl"));
-            activityIntent.putExtra("silent", intent.getBooleanExtra("silent", false));
-            activityIntent.putExtra("httpMethod", intent.getStringExtra("httpMethod"));
-            activityIntent.putExtra("openInBrowser", intent.getBooleanExtra("openInBrowser", false));
-            activityIntent.putExtra("data", intent.getStringExtra("data"));
-            startActivity(activityIntent);
+        String consoleId = getSharedPreferences(getApplicationContext().getString(R.string.app_name), Context.MODE_PRIVATE).getString("consoleId", "");
+        if (!TextUtils.isEmpty(consoleId)) {
+            tokenService.notificationAcknowledged(notificationId, consoleId, acknowledgement);
+        }
+
+        String appUrl = intent.getStringExtra("appUrl");
+
+        if (!TextUtils.isEmpty(appUrl)) {
+            boolean openInBrowser = intent.getBooleanExtra("openInBrowser", false);
+            boolean silent = intent.getBooleanExtra("silent", false);
+            String data = intent.getStringExtra("data");
+            String httpMethod = intent.getStringExtra("httpMethod");
+            httpMethod = TextUtils.isEmpty(httpMethod) ? "GET" : httpMethod;
+
+            if (openInBrowser) {
+                // Don't load the app just send straight to browser
+                Intent i = new Intent(Intent.ACTION_VIEW);
+                i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                i.setData(Uri.parse(appUrl));
+                startActivity(i);
+            } else if (silent) {
+                // Do silent HTTP request
+                tokenService.executeRequest(httpMethod, appUrl, data);
+            } else {
+                Intent activityIntent = new Intent(this, MainActivity.class);
+                activityIntent.setAction(Intent.ACTION_MAIN);
+                activityIntent.addCategory(Intent.CATEGORY_LAUNCHER);
+                activityIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK |
+                        Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                activityIntent.putExtra("appUrl", appUrl);
+                startActivity(activityIntent);
+            }
         }
     }
 }

@@ -1,11 +1,13 @@
 package org.openremote.android.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
+
 import java.io.Serializable;
 
 public class AlertAction implements Serializable {
     private String url;
     private String httpMethod;
-    private String data;
+    private JsonNode data;
     private boolean silent;
     private boolean openInBrowser;
 
@@ -25,12 +27,16 @@ public class AlertAction implements Serializable {
         this.httpMethod = httpMethod;
     }
 
-    public String getData() {
+    public JsonNode getData() {
         return data;
     }
 
-    public void setData(String data) {
+    public void setData(JsonNode data) {
         this.data = data;
+    }
+
+    public String getDataJson() {
+        return data == null ? null : data.toString();
     }
 
     public boolean isSilent() {
