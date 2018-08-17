@@ -278,7 +278,7 @@ public class HttpClientProtocol extends AbstractProtocol {
 
         @Override
         public String toString() {
-            return client.getUri() + path != null ? "/" + path : "";
+            return client.getUri() + (path != null ? "/" + path : "");
         }
     }
 
@@ -303,11 +303,13 @@ public class HttpClientProtocol extends AbstractProtocol {
             return b;
         }
 
+        @SuppressWarnings("unchecked")
         @Override
         public <T> T readEntity(Class<T> type) {
             return (T) entity;
         }
 
+        @SuppressWarnings("unchecked")
         @Override
         public <T> T readEntity(Class<T> type, Type genericType, Annotation[] anns) {
             return (T) entity;
@@ -1038,13 +1040,11 @@ public class HttpClientProtocol extends AbstractProtocol {
 
         requestMap.put(attributeRef, clientRequest);
 
-        Optional.ofNullable(pollingSeconds).ifPresent(seconds -> {
-            pollingMap.put(attributeRef, schedulePollingRequest(
-                attributeRef,
-                protocolConfigurationRef,
-                clientRequest,
-                seconds));
-        });
+        Optional.ofNullable(pollingSeconds).ifPresent(seconds -> pollingMap.put(attributeRef, schedulePollingRequest(
+            attributeRef,
+            protocolConfigurationRef,
+            clientRequest,
+            seconds)));
     }
 
     @Override
