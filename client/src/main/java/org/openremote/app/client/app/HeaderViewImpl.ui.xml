@@ -31,7 +31,7 @@
 
         <w:PushButton ui:field="notificationsButton"
                            addStyleNames="{widgetStyle.NavItem}"
-                           icon="chain"
+                           icon="send"
                            text="{managerMessages.notifications}"/>
 
         <w:PushButton ui:field="appsButton"

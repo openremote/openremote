@@ -418,7 +418,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
         }
 
         if (fromTimestamp != null) {
-            builder.append(" AND n.sentOn <= ?")
+            builder.append(" AND n.sentOn >= ?")
                 .append(parameters.size() + 1);
 
             parameters.add(new Date(fromTimestamp));

@@ -1,7 +1,6 @@
 package demo.rules
 
 import org.openremote.manager.rules.RulesBuilder
-import org.openremote.manager.rules.facade.NotificationsFacade
 import org.openremote.manager.setup.builtin.ManagerDemoSetup
 import org.openremote.model.notification.Notification
 import org.openremote.model.query.AssetQuery

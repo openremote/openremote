@@ -367,7 +367,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         ex.response.status == 403
 
         when: "the admin user removes notifications by timestamp and the notifications are retrieved again"
-        notifications = notifications.sort {n -> n.sentOn}
+        notifications = notifications.sort {n -> n.sentOn}.reverse(true)
         adminNotificationResource.removeNotifications(null, null, PushNotificationMessage.TYPE, notifications[0].sentOn.getTime(), null, null, null, null)
         notifications = []
             notifications.addAll(adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser2Console.id))
@@ -375,8 +375,8 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
             notifications.addAll(adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console2.id))
             notifications.addAll(adminNotificationResource.getNotifications(null, null, null, null, null, null, null, anonymousConsole.id))
 
-        then: "notifications sent before or at that time should have been removed"
-        assert notifications.size() == 11
+        then: "notifications sent after or at that time should have been removed"
+        assert notifications.size() == 13
 
         when: "the admin user removes notifications sent to specific console assets without other constraints and the notifications are retrieved again"
         adminNotificationResource.removeNotifications(null, null, null, null, null, null, null, testuser3Console1.id)
@@ -388,7 +388,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
             notifications.addAll(adminNotificationResource.getNotifications(null, null, null, null, null, null, null, anonymousConsole.id))
 
         then: "all notifications sent to those consoles should have been removed"
-        assert notifications.size() == 5
+        assert notifications.size() == 7
         assert notifications.count {n -> n.targetId == testuser3Console1.id || n.targetId == testuser3Console2.id} == 0
 
         when: "the admin user removes notifications by type and the notifications are retrieved again"
