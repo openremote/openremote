@@ -22,6 +22,7 @@ package org.openremote.manager.rules;
 import org.jeasy.rules.api.Facts;
 import org.jeasy.rules.api.Rule;
 import org.jeasy.rules.api.RuleListener;
+import org.openremote.model.attribute.AttributeType;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeExecuteStatus;
@@ -434,7 +435,7 @@ public class RulesFacts extends Facts implements RuleListener {
                 // attribute is exposed to rules - we don't support RULE_EVENT facts just RULE_STATE
                 if (assetStateLocationPredicateMap == null) {
                     // TODO: Use static reference to well known location attribute when it is implemented
-                    Collection<AssetState> locationAssetStates = getAssetStates().stream().filter(assetState -> assetState.getAttributeName().equalsIgnoreCase("location")).collect(Collectors.toSet());
+                    Collection<AssetState> locationAssetStates = getAssetStates().stream().filter(assetState -> assetState.getAttributeName().equalsIgnoreCase(AttributeType.LOCATION.getName())).collect(Collectors.toSet());
                     assetStateLocationPredicateMap = new HashMap<>(locationAssetStates.size());
                     locationAssetStates.forEach(assetState -> assetStateLocationPredicateMap.put(assetState.getId(), new HashSet<>()));
                 }

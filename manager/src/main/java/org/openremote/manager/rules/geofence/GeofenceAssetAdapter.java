@@ -60,17 +60,11 @@ public interface GeofenceAssetAdapter {
     String getName();
 
     /**
-     * The initialising flag is used to indicate that the system is just initialising and the adapter is being made
-     * aware of existing {@link LocationPredicate}s; generally adapters should use this to initialise
-     * their own state rather than 'pushing' geofences to the asset(s) it can be assumed that they were previously sent,
-     * hence adapters should be more concerned with delta changes (but this is really up to the adapter).
-     * <p>
      * If an adapter handles the location predicates for a particular asset then the adapter should remove that item
      * from the list to prevent other adapters from also handling it. If an {@link RulesEngine.AssetStateLocationPredicates#getLocationPredicates}
      * is empty then it means there are no longer any location predicates associated with that asset
      */
-    void processLocationPredicates(List<RulesEngine.AssetStateLocationPredicates> modifiedAssetLocationPredicates,
-                                   boolean initialising);
+    void processLocationPredicates(List<RulesEngine.AssetStateLocationPredicates> modifiedAssetLocationPredicates);
 
     /**
      * Called to return the active geofences for the specified {@link Asset}; if this adapter supports the requested

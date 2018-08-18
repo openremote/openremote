@@ -51,6 +51,7 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 import static org.openremote.container.concurrent.GlobalLock.withLock;
@@ -81,12 +82,12 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
         String firebaseConfigFilePath = container.getConfig().get(FIREBASE_CONFIG_FILE);
 
         if (TextUtil.isNullOrEmpty(firebaseConfigFilePath)) {
-            LOG.info(FIREBASE_CONFIG_FILE + " not defined, can not send FCM notifications");
+            LOG.warning(FIREBASE_CONFIG_FILE + " not defined, can not send FCM notifications");
             return;
         }
 
         if (!Files.isReadable(Paths.get(firebaseConfigFilePath))) {
-            LOG.info(FIREBASE_CONFIG_FILE + " invalid path or file not readable");
+            LOG.warning(FIREBASE_CONFIG_FILE + " invalid path or file not readable");
             return;
         }
 
@@ -108,11 +109,15 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
     public void start(Container container) throws Exception {
 
         if (!isValid()) {
+            LOG.warning("FCM configuration invalid so cannot start");
             return;
         }
 
+        // Not using Collectors.toMap is there is a quirk in there which means null values aren't supported!
+        consoleFCMTokenMap = new HashMap<>();
+
         // Find all console assets that use this adapter
-        consoleFCMTokenMap = assetStorageService.findAll(
+        assetStorageService.findAll(
             new AssetQuery()
                 .select(new BaseAssetQuery.Select(BaseAssetQuery.Include.ALL_EXCEPT_PATH,
                     false,
@@ -122,7 +127,7 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
                     new ObjectValueKeyPredicate("push")))
             .stream()
             .filter(PushNotificationHandler::isLinkedToFcmProvider)
-            .collect(Collectors.toMap(Asset::getId, asset -> getFcmToken(asset).orElse(null)));
+            .forEach(asset -> consoleFCMTokenMap.put(asset.getId(), getFcmToken(asset).orElse(null)));
     }
 
     @Override
@@ -152,10 +157,6 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
 
     @Override
     public boolean isMessageValid(AbstractNotificationMessage message) {
-        if (!isValid()) {
-            LOG.warning("Invalid message: FCM invalid configuration");
-            return false;
-        }
 
         if (!(message instanceof PushNotificationMessage)) {
             LOG.warning("Invalid message: '" + message.getClass().getSimpleName() + "' is not an instance of PushNotificationMessage");
@@ -176,9 +177,9 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
 
         // Check if message is going to a topic if so then filter consoles subscribed to that topic
         PushNotificationMessage pushMessage = (PushNotificationMessage) message;
-        BaseAssetQuery.Select select = null;
+        BaseAssetQuery.Select select;
         boolean forTopic = pushMessage.getTargetType() == TOPIC;
-        List<Asset> mappedConsoles = null;
+        List<Asset> mappedConsoles;
 
         if (forTopic) {
             select = new BaseAssetQuery.Select(ONLY_ID_AND_NAME_AND_ATTRIBUTES, false, AttributeType.CONSOLE_PROVIDERS.getName());
@@ -272,6 +273,8 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
 
     @Override
     public NotificationSendResult sendMessage(long id, Notification.TargetType targetType, String targetId, AbstractNotificationMessage message) {
+        LOG.info("Sending notification '" + id + "' to: " + targetId);
+
         if (targetType != Notification.TargetType.ASSET) {
             LOG.warning("Target type not supported: " + targetType);
             return NotificationSendResult.failure("Target type not supported: " + targetType);
@@ -287,7 +290,7 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
 
         if (TextUtil.isNullOrEmpty(fcmToken)) {
             LOG.warning("No FCM token found for console: " + targetId);
-            return NotificationSendResult.failure("FCM invalid configuration so ignoring");
+            return NotificationSendResult.failure("No FCM token found for console: " + targetId);
         }
 
         PushNotificationMessage pushMessage = (PushNotificationMessage) message;
@@ -352,11 +355,6 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
     }
 
     protected NotificationSendResult sendMessage(Message message) {
-        if (!isValid()) {
-            LOG.warning("FCM invalid configuration so ignoring");
-            return NotificationSendResult.failure("FCM invalid configuration so ignoring");
-        }
-
         try {
             FirebaseMessaging.getInstance().send(message);
             return NotificationSendResult.success();
@@ -459,7 +457,7 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
     }
 
     protected static boolean isLinkedToFcmProvider(Asset asset) {
-        return ConsoleConfiguration.getConsoleProvider(asset, "geofence")
+        return ConsoleConfiguration.getConsoleProvider(asset, "push")
             .map(ConsoleProvider::getVersion).map(FCM_PROVIDER_NAME::equals).orElse(false);
     }
 

@@ -31,17 +31,18 @@ import org.openremote.manager.rules.RulesEngine;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.attribute.AttributeRef;
-import org.openremote.model.query.AssetQuery;
-import org.openremote.model.query.BaseAssetQuery;
 import org.openremote.model.attribute.AttributeType;
 import org.openremote.model.console.ConsoleConfiguration;
 import org.openremote.model.console.ConsoleProvider;
 import org.openremote.model.notification.Notification;
 import org.openremote.model.notification.PushNotificationMessage;
+import org.openremote.model.query.AssetQuery;
+import org.openremote.model.query.BaseAssetQuery;
 import org.openremote.model.query.filter.LocationPredicate;
 import org.openremote.model.query.filter.ObjectValueKeyPredicate;
 import org.openremote.model.query.filter.RadialLocationPredicate;
 import org.openremote.model.rules.geofence.GeofenceDefinition;
+import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Values;
@@ -51,12 +52,14 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static org.openremote.container.concurrent.GlobalLock.withLock;
 import static org.openremote.container.persistence.PersistenceEvent.*;
 import static org.openremote.model.asset.AssetResource.Util.WRITE_ATTRIBUTE_HTTP_METHOD;
 import static org.openremote.model.asset.AssetResource.Util.getWriteAttributeUrl;
 import static org.openremote.model.asset.AssetType.CONSOLE;
+import static org.openremote.model.syslog.SyslogCategory.RULES;
 
 /**
  * This implementation is for handling geofences on console assets that support the OR Console Geofence Provider (i.e.
@@ -68,7 +71,7 @@ import static org.openremote.model.asset.AssetType.CONSOLE;
  */
 public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements GeofenceAssetAdapter, ContainerService {
 
-    private static final Logger LOG = Logger.getLogger(ORConsoleGeofenceAssetAdapter.class.getName());
+    private static final Logger LOG = SyslogCategory.getLogger(RULES, ORConsoleGeofenceAssetAdapter.class.getName());
     public static final String NAME = "ORConsole";
     public static int NOTIFY_ASSETS_DEBOUNCE_MILLIS = 60000;
     protected Map<String, RulesEngine.AssetStateLocationPredicates> assetLocationPredicatesMap = new HashMap<>();
@@ -93,17 +96,19 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
     public void start(Container container) throws Exception {
 
         // Find all console assets that use this adapter
-        consoleIdRealmMap = assetStorageService.findAll(
+        consoleIdRealmMap = new HashMap<>();
+
+        assetStorageService.findAll(
             new AssetQuery()
                 .select(new BaseAssetQuery.Select(BaseAssetQuery.Include.ALL_EXCEPT_PATH,
-                                                  false,
-                                                  AttributeType.CONSOLE_PROVIDERS.getName()))
+                    false,
+                    AttributeType.CONSOLE_PROVIDERS.getName()))
                 .type(CONSOLE)
                 .attributeValue(AttributeType.CONSOLE_PROVIDERS.getName(),
-                                new ObjectValueKeyPredicate("geofence")))
+                    new ObjectValueKeyPredicate("geofence")))
             .stream()
             .filter(ORConsoleGeofenceAssetAdapter::isLinkedToORConsoleGeofenceAdapter)
-            .collect(Collectors.toMap(Asset::getId, Asset::getTenantRealm));
+            .forEach(asset -> consoleIdRealmMap.put(asset.getId(), asset.getTenantRealm()));
     }
 
     @Override
@@ -138,7 +143,7 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
     }
 
     @Override
-    public void processLocationPredicates(List<RulesEngine.AssetStateLocationPredicates> modifiedAssetLocationPredicates, boolean initialising) {
+    public void processLocationPredicates(List<RulesEngine.AssetStateLocationPredicates> modifiedAssetLocationPredicates) {
 
         withLock(getClass().getSimpleName() + "::processLocationPredicates", () -> {
 
@@ -157,27 +162,37 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
                     assetStateLocationPredicates
                         .getLocationPredicates()
                         .removeIf(locationPredicate ->
-                                      !(locationPredicate instanceof RadialLocationPredicate));
+                            !(locationPredicate instanceof RadialLocationPredicate));
 
-                    // If not initialising compare existing with new predicates and notify affected assets
-                    if (!initialising) {
 
-                        RulesEngine.AssetStateLocationPredicates existingPredicates = assetLocationPredicatesMap.get(
-                            assetStateLocationPredicates.getAssetId());
-                        if (existingPredicates == null || !existingPredicates.getLocationPredicates().equals(assetStateLocationPredicates.getLocationPredicates())) {
-                            // We're not comparing before and after state as RulesService has done that although it could be
-                            // that rectangular location predicates have changed but this will do for now
-                            notifyAssets.add(assetStateLocationPredicates.getAssetId());
-                            notifierDebounce.set(true);
-                        }
+                    RulesEngine.AssetStateLocationPredicates existingPredicates = assetLocationPredicatesMap.get(
+                        assetStateLocationPredicates.getAssetId());
+                    if (existingPredicates == null || !existingPredicates.getLocationPredicates().equals(assetStateLocationPredicates.getLocationPredicates())) {
+                        // We're not comparing before and after state as RulesService has done that although it could be
+                        // that rectangular location predicates have changed but this will do for now
+                        notifyAssets.add(assetStateLocationPredicates.getAssetId());
+                        notifierDebounce.set(true);
                     }
 
                     if (assetStateLocationPredicates.getLocationPredicates().isEmpty()) {
-                        assetLocationPredicatesMap.remove(assetStateLocationPredicates.getAssetId());
+                        if (assetLocationPredicatesMap.remove(assetStateLocationPredicates.getAssetId()) != null) {
+                            LOG.info("Clearing location predicates for asset: " + assetStateLocationPredicates.getAssetId());
+                            notifyAssets.add(assetStateLocationPredicates.getAssetId());
+                            notifierDebounce.set(true);
+                        }
                     } else {
+                        LOG.info("Setting "
+                            + assetStateLocationPredicates.getLocationPredicates().size()
+                            + " location predicate(s) for asset: " + assetStateLocationPredicates.getAssetId());
+
                         assetLocationPredicatesMap.put(assetStateLocationPredicates.getAssetId(),
-                                                       assetStateLocationPredicates);
+                            assetStateLocationPredicates);
                     }
+                } else if (assetLocationPredicatesMap.remove(assetStateLocationPredicates.getAssetId()) != null) {
+                    // Used to be in this map so must have been deleted so ask console to delete its geofences also
+                    LOG.info("Clearing location predicates for asset: " + assetStateLocationPredicates.getAssetId());
+                    notifyAssets.add(assetStateLocationPredicates.getAssetId());
+                    notifierDebounce.set(true);
                 }
 
                 return remove;
@@ -186,12 +201,13 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
             if (notifierDebounce.get()) {
                 if (notifyAssetsScheduledFuture == null || notifyAssetsScheduledFuture.cancel(false)) {
                     notifyAssetsScheduledFuture = executorService.schedule(() ->
-                                                                               withLock(getClass().getSimpleName() + "::notifyAssets",
-                                                                                        () -> {
-                                                                                            notifyAssets.forEach(this::notifyAssetGeofencesChanged);
-                                                                                            notifyAssetsScheduledFuture = null;
-                                                                                        }),
-                                                                           NOTIFY_ASSETS_DEBOUNCE_MILLIS);
+                            withLock(getClass().getSimpleName() + "::notifyAssets",
+                                () -> {
+                                    notifyAssetGeofencesChanged(notifyAssets);
+                                    notifyAssets = null;
+                                    notifyAssetsScheduledFuture = null;
+                                }),
+                        NOTIFY_ASSETS_DEBOUNCE_MILLIS);
                 }
             }
         });
@@ -201,8 +217,10 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
     public GeofenceDefinition[] getAssetGeofences(String assetId) {
         String realm = consoleIdRealmMap.get(assetId);
 
+        LOG.info("Request for console geofences: " + assetId);
+
         if (realm == null) {
-            LOG.finest("Console ID not found in map so cannot retrieve geofences");
+            LOG.info("Console ID not found in map so cannot retrieve geofences");
             // Asset not supported by this adapter
             return null;
         }
@@ -211,14 +229,18 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
 
         if (assetStateLocationPredicates == null) {
             // No geofences exist for this asset
+            LOG.info("No geofences exist");
             return new GeofenceDefinition[0];
         }
 
-        return assetStateLocationPredicates.getLocationPredicates().stream()
+        GeofenceDefinition[] geofences = assetStateLocationPredicates.getLocationPredicates().stream()
             .map(locationPredicate ->
-                     locationPredicateToGeofenceDefinition(assetStateLocationPredicates.getAssetId(),
-                                                           locationPredicate))
+                locationPredicateToGeofenceDefinition(assetStateLocationPredicates.getAssetId(),
+                    locationPredicate))
             .toArray(GeofenceDefinition[]::new);
+
+        LOG.info("Retrieved " + geofences.length + " geofence(s)");
+        return geofences;
     }
 
     protected GeofenceDefinition locationPredicateToGeofenceDefinition(String assetId, LocationPredicate locationPredicate) {
@@ -226,24 +248,35 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
         String id = assetId + "_" + Integer.toString(radialLocationPredicate.hashCode());
         String url = getWriteAttributeUrl(new AttributeRef(assetId, AttributeType.LOCATION.getName()));
         return new GeofenceDefinition(id,
-                                      radialLocationPredicate.getLat(),
-                                      radialLocationPredicate.getLng(),
-                                      radialLocationPredicate.getRadius(),
-                                      WRITE_ATTRIBUTE_HTTP_METHOD,
-                                      url);
+            radialLocationPredicate.getLat(),
+            radialLocationPredicate.getLng(),
+            radialLocationPredicate.getRadius(),
+            WRITE_ATTRIBUTE_HTTP_METHOD,
+            url);
     }
 
     /**
      * Send a silent push notification to the console to get it to refresh its geofences
      */
-    protected void notifyAssetGeofencesChanged(String assetId) {
+    protected void notifyAssetGeofencesChanged(Set<String> assetIds) {
+        if (assetIds == null) {
+            return;
+        }
+
+        List<String> ids = new ArrayList<>(assetIds);
         ObjectValue data = Values.createObject();
         data.put("action", "GEOFENCE_REFRESH");
-        notificationService.sendNotification(
-            new Notification(
-                "GeofenceRefresh",
-                new PushNotificationMessage().setData(data),
-                new Notification.Targets(Notification.TargetType.ASSET, Collections.singletonList(assetId))));
+        Notification notification = new Notification("GeofenceRefresh", new PushNotificationMessage().setData(data), null);
+
+        // Break into batches of 10 sent every 10s to avoid consoles bombarding the backend
+        int rows = 1 + ids.size() / 10;
+        IntStream.range(0, rows)
+            .forEach(i -> {
+                List<String> subIds = ids.subList(10 * i, Math.min(10 + (10 * i), ids.size()));
+                notification.setTargets(new Notification.Targets(Notification.TargetType.ASSET, subIds));
+                LOG.info("Notifiying consoles that geofences have changed: " + subIds);
+                executorService.schedule(() -> notificationService.sendNotification(notification), i * 10000);
+            });
     }
 
     protected void processConsoleAssetChange(Asset asset, PersistenceEvent persistenceEvent) {

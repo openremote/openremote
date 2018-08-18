@@ -32,6 +32,7 @@ import org.openremote.manager.rules.facade.UsersFacade;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetMeta;
+import org.openremote.model.attribute.AttributeType;
 import org.openremote.model.query.filter.LocationPredicate;
 import org.openremote.model.rules.*;
 
@@ -412,7 +413,7 @@ public class RulesEngine<T extends Ruleset> {
 
     public void updateFact(AssetState assetState, boolean fireImmediately) {
         facts.putAssetState(assetState);
-        trackLocationPredicates = trackLocationPredicates || assetState.getAttributeName().equals("location");
+        trackLocationPredicates = trackLocationPredicates || assetState.getAttributeName().equals(AttributeType.LOCATION.getName());
         if (fireImmediately) {
             fire();
         }
@@ -420,13 +421,13 @@ public class RulesEngine<T extends Ruleset> {
 
     public void removeFact(AssetState assetState) {
         facts.removeAssetState(assetState);
-        trackLocationPredicates = trackLocationPredicates || assetState.getAttributeName().equals("location");
+        trackLocationPredicates = trackLocationPredicates || assetState.getAttributeName().equals(AttributeType.LOCATION.getName());
         fire();
     }
 
     public void insertFact(String expires, AssetState assetState) {
         facts.insertAssetEvent(expires, assetState);
-        trackLocationPredicates = trackLocationPredicates || assetState.getAttributeName().equals("location");
+        trackLocationPredicates = trackLocationPredicates || assetState.getAttributeName().equals(AttributeType.LOCATION.getName());
         fire();
     }
 
