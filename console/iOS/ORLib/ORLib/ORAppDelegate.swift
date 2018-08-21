@@ -185,48 +185,73 @@ extension ORAppDelegate : UNUserNotificationCenterDelegate {
 
     open func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
 
-        var notificationId : Int64? = nil
-        let consoleId = UserDefaults.standard.string(forKey: GeofenceProvider.consoleIdKey)
+            let userInfo = response.notification.request.content.userInfo
+            var notificationId : Int64? = nil
+            let consoleId = UserDefaults.standard.string(forKey: GeofenceProvider.consoleIdKey)
 
-        if let notificationIdString = response.notification.request.content.userInfo[ActionType.notificationId] as? String{
-            notificationId = Int64(notificationIdString)
-        }
-
-        switch response.actionIdentifier {
-        case UNNotificationDefaultActionIdentifier,
-             "openURLAction" :
-            if let notiId = notificationId, let conId = consoleId {
-                ORNotificationResource.sharedInstance.notificationAcknowledged(notificationId: notiId, targetId: conId, acknowledgement: "acknowledged")
+            if let notificationIdString = userInfo[ActionType.notificationId] as? String{
+                notificationId = Int64(notificationIdString)
             }
 
-            if let urlToOpen = response.notification.request.content.userInfo[ActionType.appUrl] as? String {
-                let urlRequest: URL?
-                if urlToOpen.hasPrefix("http") || urlToOpen.hasPrefix("https") {
-                    urlRequest = URL(string:urlToOpen)
-                } else {
-                    urlRequest = URL(string:String(format: "%@://%@/%@%@", ORServer.scheme, ORServer.hostURL, ORServer.navigationPath, urlToOpen))
+            switch response.actionIdentifier {
+            case UNNotificationDefaultActionIdentifier:
+                if let notiId = notificationId, let conId = consoleId {
+                    ORNotificationResource.sharedInstance.notificationAcknowledged(notificationId: notiId, targetId: conId, acknowledgement: "acknowledged")
                 }
-                if let request = urlRequest{
-                    if let openInBrowser = response.notification.request.content.userInfo[ActionType.openInBrowser] as? Bool {
-                        if openInBrowser {
-                            UIApplication.shared.open(request)
+
+                if let urlToOpen = userInfo[ActionType.appUrl] as? String {
+                    let urlRequest: URL?
+                    if urlToOpen.hasPrefix("http") || urlToOpen.hasPrefix("https") {
+                        urlRequest = URL(string:urlToOpen)
+                    } else {
+                        urlRequest = URL(string:String(format: "%@://%@/%@%@", ORServer.scheme, ORServer.hostURL, ORServer.navigationPath, urlToOpen))
+                    }
+                    if let request = urlRequest{
+                        if let openInBrowser = userInfo[ActionType.openInBrowser] as? Bool {
+                            if openInBrowser {
+                                UIApplication.shared.open(request)
+                            } else {
+                                (self.window?.rootViewController as! ORViewcontroller).loadURL(url:request)
+                            }
                         } else {
                             (self.window?.rootViewController as! ORViewcontroller).loadURL(url:request)
                         }
-                    } else {
-                        (self.window?.rootViewController as! ORViewcontroller).loadURL(url:request)
+                    }
+                }
+            case UNNotificationDismissActionIdentifier,
+                 "declineAction":
+                if let notiId = notificationId, let conId = consoleId {
+                    ORNotificationResource.sharedInstance.notificationAcknowledged(notificationId: notiId, targetId: conId, acknowledgement: "dismissed")
+                }
+            default :
+                if let buttonsString = userInfo[DefaultsKey.buttonsKey] as? String {
+                    if let buttonsData = buttonsString.data(using: .utf8) {
+                        if let buttons = try? JSONDecoder().decode([ORPushNotificationButton].self, from: buttonsData) {
+                            for button in buttons {
+                                if button.title == response.actionIdentifier {
+                                    if let action = button.action {
+                                        let urlRequest: URL?
+                                        if action.url.hasPrefix("http") || action.url.hasPrefix("https") {
+                                            urlRequest = URL(string:action.url)
+                                        } else {
+                                            urlRequest = URL(string:String(format: "%@://%@/%@%@", ORServer.scheme, ORServer.hostURL, ORServer.navigationPath, action.url))
+                                        }
+                                        if let request = urlRequest{
+                                            if action.openInBrowser{
+                                                UIApplication.shared.open(request)
+                                            } else {
+                                                (self.window?.rootViewController as! ORViewcontroller).loadURL(url:request)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
-        case UNNotificationDismissActionIdentifier,
-             "declineAction":
-            if let notiId = notificationId, let conId = consoleId {
-                ORNotificationResource.sharedInstance.notificationAcknowledged(notificationId: notiId, targetId: conId, acknowledgement: "dismissed")
-            }
-        default : break
+            completionHandler()
         }
-        completionHandler()
-    }
 }
 
 extension ORAppDelegate : MessagingDelegate {

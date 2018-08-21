@@ -55,7 +55,6 @@ open class ORNotificationService: UNNotificationServiceExtension, URLSessionDele
                         UNUserNotificationCenter.current().setNotificationCategories(categories)
                     }
                 }
-                contentHandler(bestAttemptContent)
             }
 
             //Buttons
@@ -68,13 +67,8 @@ open class ORNotificationService: UNNotificationServiceExtension, URLSessionDele
                         var notificationActions = [UNNotificationAction]()
 
                         for button in buttons {
-                            if let action = button.action {
-                                bestAttemptContent.userInfo[ActionType.appUrl] = action.url
-                                bestAttemptContent.userInfo[ActionType.silent] = action.silent
-                                bestAttemptContent.userInfo[ActionType.openInBrowser] = action.openInBrowser
-                                bestAttemptContent.userInfo[ActionType.httpMethod] = action.httpMethod ?? "GET"
-                                bestAttemptContent.userInfo[DefaultsKey.dataKey] = action.data ?? "null"
-                                notificationActions.append(UNNotificationAction(identifier: "openURLAction", title: button.title, options: UNNotificationActionOptions.foreground))
+                            if button.action != nil {
+                                notificationActions.append(UNNotificationAction(identifier: button.title, title: button.title, options: UNNotificationActionOptions.foreground))
                             } else {
                                 notificationActions.append(UNNotificationAction(identifier: "declineAction", title: button.title, options: UNNotificationActionOptions.destructive))
                             }
