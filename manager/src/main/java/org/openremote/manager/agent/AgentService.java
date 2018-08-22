@@ -35,18 +35,19 @@ import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.asset.AssetUpdateProcessor;
 import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.security.ManagerIdentityService;
-import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.asset.AssetMeta;
-import org.openremote.model.asset.AssetType;
+import org.openremote.model.asset.*;
 import org.openremote.model.asset.agent.*;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeEvent.Source;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.event.shared.TenantFilter;
 import org.openremote.model.query.AssetQuery;
+import org.openremote.model.query.UserQuery;
 import org.openremote.model.query.filter.AttributeRefPredicate;
+import org.openremote.model.query.filter.RolePredicate;
 import org.openremote.model.security.ClientRole;
+import org.openremote.model.security.User;
+import org.openremote.model.security.UserChangeEvent;
 import org.openremote.model.util.Pair;
 import org.openremote.model.value.ObjectValue;
 
@@ -73,6 +74,7 @@ import static org.openremote.model.asset.agent.AgentLink.getAgentLink;
 import static org.openremote.model.asset.agent.ConnectionStatus.*;
 import static org.openremote.model.attribute.AttributeEvent.HEADER_SOURCE;
 import static org.openremote.model.attribute.AttributeEvent.Source.SENSOR;
+import static org.openremote.model.security.UserChangeEvent.USER_TOPIC;
 import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 import static org.openremote.model.util.TextUtil.isValidURN;
 
@@ -185,6 +187,16 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
             .filter(body().isInstanceOf(AttributeEvent.class))
             .setHeader(HEADER_SOURCE, () -> SENSOR)
             .to(ASSET_QUEUE);
+
+        from(USER_TOPIC)
+            .routeId("UserChanges")
+            .filter(body().isInstanceOf(UserChangeEvent.class))
+            .process(exchange -> {
+                UserChangeEvent userChangeEvent = exchange.getIn().getBody(UserChangeEvent.class);
+                for (Protocol protocol : protocols.values()) {
+                    protocol.processUserChange(userChangeEvent);
+                }
+            });
     }
 
     /**
@@ -257,17 +269,42 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
         }
 
         LOG.fine("Merging (and overriding existing older version of) with protocol-provided: " + asset);
-        if (options != null && options.getAssignToUserName() != null) {
-            return assetStorageService.merge(updatedAsset, true, options.getAssignToUserName());
-        } else {
-            return assetStorageService.merge(updatedAsset, true);
-        }
+        return assetStorageService.merge(updatedAsset, true);
     }
 
     @Override
     public boolean deleteAsset(String assetId) {
         LOG.fine("Deleting protocol-provided: " + assetId);
         return assetStorageService.delete(assetId);
+    }
+
+    @Override
+    public UserAsset[] createUserAssets(String assetId, String[] roles) {
+        List<UserAsset> createdUserAssets = new ArrayList<>();
+        for (User user : identityService.getIdentityProvider().getUsers(new UserQuery().roles(new RolePredicate(roles)))) {
+            UserAsset userAsset = new UserAsset(user.getRealmId(), user.getId(), assetId);
+            assetStorageService.storeUserAsset(userAsset);
+            createdUserAssets.add(userAsset);
+        }
+        return createdUserAssets.toArray(new UserAsset[0]);
+    }
+
+    @Override
+    public UserAsset createUserAsset(String assetId, String userId) {
+        User user = identityService.getIdentityProvider().getUser(userId);
+        UserAsset userAsset = new UserAsset(user.getRealmId(), user.getId(), assetId);
+        assetStorageService.storeUserAsset(userAsset);
+        return userAsset;
+    }
+
+    @Override
+    public void deleteUserAssets(String userId) {
+        assetStorageService.deleteUserAssets(userId);
+    }
+
+    @Override
+    public void deleteUserAsset(String realmId, String userId, String assetId) {
+        assetStorageService.deleteUserAsset(realmId, userId, assetId);
     }
 
     @Override

@@ -1,4 +1,4 @@
-package org.openremote.test.assets
+    package org.openremote.test.assets
 
 import org.openremote.agent.protocol.AbstractProtocol
 import org.openremote.manager.asset.*

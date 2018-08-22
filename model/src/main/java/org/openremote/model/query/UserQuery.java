@@ -2,6 +2,7 @@ package org.openremote.model.query;
 
 
 import org.openremote.model.query.filter.PathPredicate;
+import org.openremote.model.query.filter.RolePredicate;
 import org.openremote.model.query.filter.TenantPredicate;
 import org.openremote.model.query.filter.UserAssetPredicate;
 
@@ -11,6 +12,7 @@ public class UserQuery<CHILD extends UserQuery<CHILD>> {
     public TenantPredicate tenantPredicate;
     public UserAssetPredicate assetPredicate;
     public PathPredicate pathPredicate;
+    public RolePredicate rolePredicate;
 
     public UserQuery() {
     }
@@ -30,6 +32,12 @@ public class UserQuery<CHILD extends UserQuery<CHILD>> {
     @SuppressWarnings("unchecked")
     public CHILD assetPath(PathPredicate pathPredicate) {
         this.pathPredicate = pathPredicate;
+        return (CHILD) this;
+    }
+
+    @SuppressWarnings("unchecked")
+    public CHILD roles(RolePredicate rolePredicate) {
+        this.rolePredicate = rolePredicate;
         return (CHILD) this;
     }
 }

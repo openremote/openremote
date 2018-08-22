@@ -28,6 +28,7 @@ import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.asset.agent.ProtocolConfiguration;
 import org.openremote.model.asset.agent.ProtocolDescriptor;
 import org.openremote.model.attribute.*;
+import org.openremote.model.security.UserChangeEvent;
 import org.openremote.model.value.ArrayValue;
 import org.openremote.model.value.NumberValue;
 import org.openremote.model.value.ObjectValue;
@@ -222,6 +223,12 @@ public interface Protocol extends ContainerService {
      * protocol configuration is well formed but not necessarily that it connects to a working system).
      */
     AttributeValidationResult validateProtocolConfiguration(AssetAttribute protocolConfiguration);
+
+    /**
+     * Processes an {@link UserChangeEvent} accordingly to the {@link org.openremote.model.security.UserEventType}
+     * Checks there's any known realm where the user belongs to and process if so.
+     */
+    void processUserChange(UserChangeEvent userChangeEvent);
 
     /**
      * Extract the {@link MessageFilter}s from the specified {@link Attribute}

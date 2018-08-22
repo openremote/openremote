@@ -43,19 +43,19 @@ import org.openremote.model.query.UserQuery;
 import org.openremote.model.security.*;
 import org.openremote.model.util.TextUtil;
 
-import javax.persistence.Query;
 import javax.persistence.TypedQuery;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
-import java.sql.PreparedStatement;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Logger;
 import java.util.stream.IntStream;
 
 import static org.openremote.container.util.JsonUtil.convert;
 import static org.openremote.model.Constants.*;
+import static org.openremote.model.security.UserChangeEvent.USER_TOPIC;
 
 public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider implements ManagerIdentityProvider {
 
@@ -131,7 +131,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
 
         return persistenceService.doReturningTransaction(entityManager -> {
             TypedQuery<User> query = entityManager.createQuery(sb.toString(), User.class);
-            IntStream.range(0, parameters.size()).forEach(i -> query.setParameter(i+1, parameters.get(i)));
+            IntStream.range(0, parameters.size()).forEach(i -> query.setParameter(i + 1, parameters.get(i)));
             List<User> users = query.getResultList();
             return users.toArray(new User[users.size()]);
         });
@@ -153,6 +153,11 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
 
         if (query.tenantPredicate != null && TextUtil.isNullOrEmpty(query.tenantPredicate.realm)) {
             sb.append(" join PUBLIC.REALM R on R.ID = u.realmId");
+        }
+
+        if (query.rolePredicate != null) {
+            sb.append(" join public.user_role_mapping UR on UR.user_id = u.id");
+            sb.append(" join public.keycloak_role KR on KR.id = UR.role_id");
         }
 
         return sb.toString();
@@ -181,6 +186,10 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             sb.append(" AND ?").append(parameters.size() + 1).append(" <@ get_asset_tree_path(ua.asset_id)");
             parameters.add(query.pathPredicate.path);
         }
+        if (query.rolePredicate != null) {
+            sb.append(" AND KR.name = ?").append(parameters.size() + 1);
+            parameters.add(query.rolePredicate.roles);
+        }
 
         return sb.toString();
     }
@@ -207,10 +216,25 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     }
 
     @Override
+    public User getUser(String userId) {
+        return persistenceService.doReturningTransaction(em ->
+            em.createQuery("select u from User u where u.id IN :userIds", User.class)
+                .setParameter("userIds", userId)
+                .getSingleResult());
+    }
+
+    @Override
     public void updateUser(ClientRequestInfo clientRequestInfo, String realm, String userId, User user) {
         getRealms(clientRequestInfo)
             .realm(realm).users().get(userId).update(
             convert(Container.JSON, UserRepresentation.class, user)
+        );
+
+        Role[] roles = getRoles(clientRequestInfo, realm, user.getId());
+
+        messageBrokerService.getProducerTemplate().sendBody(
+            USER_TOPIC,
+            new UserChangeEvent(user.getId(), Arrays.stream(roles).filter(Role::isAssigned).map(Role::getName).toArray(String[]::new), UserEventType.DELETED)
         );
     }
 
@@ -226,6 +250,13 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                     .entity(response.getEntity())
                     .build()
             );
+        } else {
+            Role[] roles = getRoles(clientRequestInfo, realm, user.getId());
+
+            messageBrokerService.getProducerTemplate().sendBody(
+                USER_TOPIC,
+                new UserChangeEvent(user.getId(), Arrays.stream(roles).filter(Role::isAssigned).map(Role::getName).toArray(String[]::new), UserEventType.DELETED)
+            );
         }
     }
 
@@ -238,6 +269,13 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                 Response.status(response.getStatus())
                     .entity(response.getEntity())
                     .build()
+            );
+        } else {
+            Role[] roles = getRoles(clientRequestInfo, realm, userId);
+
+            messageBrokerService.getProducerTemplate().sendBody(
+                USER_TOPIC,
+                new UserChangeEvent(userId, Arrays.stream(roles).filter(Role::isAssigned).map(Role::getName).toArray(String[]::new), UserEventType.DELETED)
             );
         }
     }

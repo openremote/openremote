@@ -37,6 +37,7 @@ import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.asset.agent.ProtocolConfiguration;
 import org.openremote.model.asset.agent.ProtocolDescriptor;
 import org.openremote.model.attribute.*;
+import org.openremote.model.security.UserChangeEvent;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueType;
 import org.openremote.model.value.Values;
@@ -111,6 +112,8 @@ public abstract class AbstractProtocol implements Protocol {
     protected final Map<AttributeRef, AssetAttribute> linkedAttributes = new HashMap<>();
     protected final Map<AttributeRef, LinkedProtocolInfo> linkedProtocolConfigurations = new HashMap<>();
     protected final Map<AttributeRef, List<MessageFilter>> linkedAttributeFilters = new HashMap<>();
+    protected final Map<String, Map<String, Long>> assetVersions = new HashMap<>();
+    protected final Map<String, String[]> assetRoleMapping = new HashMap<>();
     protected static final List<MetaItemDescriptor> attributeMetaItemDescriptors;
     protected MessageBrokerContext messageBrokerContext;
     protected ProducerTemplate producerTemplate;
@@ -247,6 +250,24 @@ public abstract class AbstractProtocol implements Protocol {
         );
     }
 
+    @Override
+    public void processUserChange(UserChangeEvent userChangeEvent) {
+        withLock(getProtocolName() + "::processUserChange", () -> {
+            switch (userChangeEvent.getUserEventType()) {
+                case CREATED:
+                    for (String role : userChangeEvent.getRoles()) {
+                        String[] assetTypes = assetRoleMapping.get(role);
+                        for (String assetType : assetTypes) {
+                            for (String assetId : assetVersions.get(assetType).keySet()) {
+                                assetService.createUserAsset(assetId, userChangeEvent.getUserId());
+                            }
+                        }
+                    }
+                    break;
+            }
+        });
+    }
+
     /**
      * Gets a linked attribute by its attribute ref
      */
@@ -346,8 +367,8 @@ public abstract class AbstractProtocol implements Protocol {
                                 Optional<Value> val = Values.convert(value, filterValueType);
                                 if (!val.isPresent()) {
                                     LOG.fine("Message filter type '" + filter.getMessageType().getName()
-                                                 + "' is not compatible with actual message type '" + value.getType().getModelType().getName()
-                                                 + "': " + filter.getClass().getName());
+                                        + "' is not compatible with actual message type '" + value.getType().getModelType().getName()
+                                        + "': " + filter.getClass().getName());
                                 } else {
                                     filterOk = true;
                                 }

@@ -22,6 +22,7 @@ package org.openremote.agent.protocol;
 import org.openremote.container.ContainerService;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
+import org.openremote.model.asset.UserAsset;
 import org.openremote.model.attribute.AttributeEvent;
 
 import java.util.function.Predicate;
@@ -36,41 +37,27 @@ public interface ProtocolAssetService extends ContainerService {
      */
     class MergeOptions {
 
-        final protected String assignToUserName;
         final protected Predicate<String> attributeNamesToEvaluate;
         final protected Predicate<String> ignoredAttributeNames;
         final protected Predicate<String> ignoredAttributeKeys;
 
-        public MergeOptions(String assignToUserName) {
-            this(assignToUserName, null, null, null);
-        }
 
         public MergeOptions(Predicate<String> attributeNamesToEvaluate) {
-            this(null, attributeNamesToEvaluate, null, null);
+            this(attributeNamesToEvaluate, null, null);
         }
 
         public MergeOptions(Predicate<String> ignoredAttributeNames, Predicate<String> ignoredAttributeKeys) {
-            this(null, null, ignoredAttributeNames, ignoredAttributeKeys);
+            this(null, ignoredAttributeNames, ignoredAttributeKeys);
         }
 
         public MergeOptions(String assignToUserName, Predicate<String> ignoredAttributeKeys) {
-            this(assignToUserName, null, null, ignoredAttributeKeys);
+            this(null, null, ignoredAttributeKeys);
         }
 
-        public MergeOptions(String assignToUserName, Predicate<String> attributeNamesToEvaluate, Predicate<String> ignoredAttributeNames, Predicate<String> ignoredAttributeKeys) {
-            this.assignToUserName = assignToUserName;
+        public MergeOptions(Predicate<String> attributeNamesToEvaluate, Predicate<String> ignoredAttributeNames, Predicate<String> ignoredAttributeKeys) {
             this.attributeNamesToEvaluate = attributeNamesToEvaluate;
             this.ignoredAttributeNames = ignoredAttributeNames;
             this.ignoredAttributeKeys = ignoredAttributeKeys;
-        }
-
-        /**
-         * Assigns the merged asset to the given user, can be <code>null</code> to not assign
-         * the asset to a user. The {@link #mergeAsset} call returns <code>null</code> if the
-         * user doesn't exist or the asset couldn't be assigned.
-         */
-        public String getAssignToUserName() {
-            return assignToUserName;
         }
 
         /**
@@ -134,5 +121,29 @@ public interface ProtocolAssetService extends ContainerService {
      * Protocols can send arbitrary attribute change events for regular processing.
      */
     void sendAttributeEvent(AttributeEvent attributeEvent);
+
+    /**
+     * Links an asset together with an user.
+     *
+     * @return The created {@link UserAsset}, null it failed
+     */
+    UserAsset createUserAsset(String assetId, String userId);
+
+    /**
+     * Links an asset together with users of a certain role.
+     *
+     * @return An array of the created {@link UserAsset}
+     */
+    UserAsset[] createUserAssets(String assetId, String[] roles);
+
+    /**
+     * Deletes the links between the user and assets.
+     */
+    void deleteUserAssets(String userId);
+
+    /**
+     * Deletes the link between the user and asset.
+     */
+    void deleteUserAsset(String realmId, String userId, String assetId);
 
 }
