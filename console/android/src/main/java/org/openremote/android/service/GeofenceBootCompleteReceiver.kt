@@ -25,6 +25,7 @@ import android.content.Context
 import android.content.Intent
 
 class GeofenceBootCompleteReceiver : BroadcastReceiver() {
+
     override fun onReceive(context: Context?, intent: Intent?) {
         if (context != null) {
             GeofenceProvider.startGeofences(context)

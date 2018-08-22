@@ -113,6 +113,8 @@ public class TokenService {
     }
 
     public void sendOrStoreFCMToken(String fcmToken, String deviceId) {
+        LOG.info("Storing FCM token: " + fcmToken);
+        LOG.info("Storing Device ID: " + deviceId);
         SharedPreferences.Editor editor = sharedPref.edit();
         editor.putString(fcmTokenKey, fcmToken);
         editor.putString(deviceIdKey, deviceId);
@@ -120,13 +122,14 @@ public class TokenService {
     }
 
     public void clearToken() {
+        LOG.info("Clearing auth refresh token");
         SharedPreferences.Editor editor = sharedPref.edit();
         editor.remove(refreshTokenKey);
         editor.commit();
     }
 
     // TODO: Support other content types
-    public void executeRequest(String httpMethod, String url, String body) {
+    public void executeRequest(final String httpMethod, String url, String body) {
 
         // If relative URL assume it is relative to base URL
         if (!url.toLowerCase(Locale.ROOT).startsWith("http")) {
@@ -169,6 +172,8 @@ public class TokenService {
                 default:
                     throw new IllegalArgumentException("Unsupported HTTP Method: " + httpMethod);
             }
+
+            LOG.info("Executing silent request: HTTP " + httpMethod + " " + url);
 
             if (useAuth) {
                 withAccessToken(new TokenCallback() {
@@ -223,20 +228,24 @@ public class TokenService {
 //    }
 
     public void notificationDelivered(final Long notificationId, final String fcmToken) {
+        LOG.info("Notification status update 'delivered': " + notificationId);
+
         restApiResource.notificationDelivered(realm, notificationId, fcmToken).enqueue(new Callback<Void>() {
             @Override
             public void onResponse(Call<Void> call, Response<Void> response) {
-
+                LOG.info("Notification status update success");
             }
 
             @Override
             public void onFailure(Call<Void> call, Throwable t) {
-
+                LOG.log(Level.SEVERE, "Notification status update failed", t);
             }
         });
     }
 
     public void notificationAcknowledged(final Long notificationId, final String fcmToken, String acknowledgement) {
+
+        LOG.info("Notification status update 'acknowledged' with value '" + acknowledgement + "': " + notificationId);
 
         if (TextUtils.isEmpty(acknowledgement)) {
             acknowledgement = "";
@@ -245,12 +254,12 @@ public class TokenService {
         restApiResource.notificationAcknowledged(realm, notificationId, fcmToken, acknowledgement).enqueue(new Callback<Void>() {
             @Override
             public void onResponse(Call<Void> call, Response<Void> response) {
-
+                LOG.info("Notification status update success");
             }
 
             @Override
             public void onFailure(Call<Void> call, Throwable t) {
-
+                LOG.log(Level.SEVERE, "Notification status update failed", t);
             }
         });
     }
