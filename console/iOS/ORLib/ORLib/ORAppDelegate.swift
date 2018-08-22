@@ -185,63 +185,80 @@ extension ORAppDelegate : UNUserNotificationCenterDelegate {
 
     open func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
 
-            let userInfo = response.notification.request.content.userInfo
-            var notificationId : Int64? = nil
-            let consoleId = UserDefaults.standard.string(forKey: GeofenceProvider.consoleIdKey)
+        let userInfo = response.notification.request.content.userInfo
+        var notificationId : Int64? = nil
+        let consoleId = UserDefaults.standard.string(forKey: GeofenceProvider.consoleIdKey)
 
-            if let notificationIdString = userInfo[ActionType.notificationId] as? String{
-                notificationId = Int64(notificationIdString)
+        if let notificationIdString = userInfo[ActionType.notificationId] as? String{
+            notificationId = Int64(notificationIdString)
+        }
+
+        switch response.actionIdentifier {
+        case UNNotificationDefaultActionIdentifier:
+            if let notiId = notificationId, let conId = consoleId {
+                ORNotificationResource.sharedInstance.notificationAcknowledged(notificationId: notiId, targetId: conId, acknowledgement: "CLOSED")
             }
 
-            switch response.actionIdentifier {
-            case UNNotificationDefaultActionIdentifier:
-                if let notiId = notificationId, let conId = consoleId {
-                    ORNotificationResource.sharedInstance.notificationAcknowledged(notificationId: notiId, targetId: conId, acknowledgement: "acknowledged")
+            if let urlToOpen = userInfo[ActionType.appUrl] as? String {
+                let urlRequest: URL?
+                if urlToOpen.hasPrefix("http") || urlToOpen.hasPrefix("https") {
+                    urlRequest = URL(string:urlToOpen)
+                } else {
+                    urlRequest = URL(string:String(format: "%@://%@/%@%@", ORServer.scheme, ORServer.hostURL, ORServer.navigationPath, urlToOpen))
                 }
-
-                if let urlToOpen = userInfo[ActionType.appUrl] as? String {
-                    let urlRequest: URL?
-                    if urlToOpen.hasPrefix("http") || urlToOpen.hasPrefix("https") {
-                        urlRequest = URL(string:urlToOpen)
-                    } else {
-                        urlRequest = URL(string:String(format: "%@://%@/%@%@", ORServer.scheme, ORServer.hostURL, ORServer.navigationPath, urlToOpen))
-                    }
-                    if let request = urlRequest{
-                        if let openInBrowser = userInfo[ActionType.openInBrowser] as? Bool {
-                            if openInBrowser {
-                                UIApplication.shared.open(request)
-                            } else {
-                                (self.window?.rootViewController as! ORViewcontroller).loadURL(url:request)
-                            }
+                if let request = urlRequest{
+                    if let openInBrowser = userInfo[ActionType.openInBrowser] as? Bool {
+                        if openInBrowser {
+                            UIApplication.shared.open(request)
                         } else {
                             (self.window?.rootViewController as! ORViewcontroller).loadURL(url:request)
                         }
+                    } else {
+                        (self.window?.rootViewController as! ORViewcontroller).loadURL(url:request)
                     }
                 }
-            case UNNotificationDismissActionIdentifier,
-                 "declineAction":
-                if let notiId = notificationId, let conId = consoleId {
-                    ORNotificationResource.sharedInstance.notificationAcknowledged(notificationId: notiId, targetId: conId, acknowledgement: "dismissed")
-                }
-            default :
-                if let buttonsString = userInfo[DefaultsKey.buttonsKey] as? String {
-                    if let buttonsData = buttonsString.data(using: .utf8) {
-                        if let buttons = try? JSONDecoder().decode([ORPushNotificationButton].self, from: buttonsData) {
-                            for button in buttons {
-                                if button.title == response.actionIdentifier {
-                                    if let action = button.action {
-                                        let urlRequest: URL?
-                                        if action.url.hasPrefix("http") || action.url.hasPrefix("https") {
-                                            urlRequest = URL(string:action.url)
-                                        } else {
-                                            urlRequest = URL(string:String(format: "%@://%@/%@%@", ORServer.scheme, ORServer.hostURL, ORServer.navigationPath, action.url))
-                                        }
-                                        if let request = urlRequest{
-                                            if action.openInBrowser{
-                                                UIApplication.shared.open(request)
-                                            } else {
-                                                (self.window?.rootViewController as! ORViewcontroller).loadURL(url:request)
+            }
+        case UNNotificationDismissActionIdentifier,
+             "declineAction":
+            if let notiId = notificationId, let conId = consoleId {
+                ORNotificationResource.sharedInstance.notificationAcknowledged(notificationId: notiId, targetId: conId, acknowledgement: "")
+            }
+        default :
+            if let notiId = notificationId, let conId = consoleId {
+                ORNotificationResource.sharedInstance.notificationAcknowledged(notificationId: notiId, targetId: conId, acknowledgement: response.actionIdentifier)
+            }
+            if let buttonsString = userInfo[DefaultsKey.buttonsKey] as? String {
+                if let buttonsData = buttonsString.data(using: .utf8) {
+                    if let buttons = try? JSONDecoder().decode([ORPushNotificationButton].self, from: buttonsData) {
+                        for button in buttons {
+                            if button.title == response.actionIdentifier {
+                                if let action = button.action {
+                                    let urlRequest: URL?
+                                    if action.url.hasPrefix("http") || action.url.hasPrefix("https") {
+                                        urlRequest = URL(string:action.url)
+                                    } else {
+                                        urlRequest = URL(string:String(format: "%@://%@/%@%@", ORServer.scheme, ORServer.hostURL, ORServer.navigationPath, action.url))
+                                    }
+                                    if let url = urlRequest {
+                                        if action.silent {
+                                            let request = NSMutableURLRequest(url: url)
+                                            request.httpMethod = action.httpMethod ?? "GET"
+                                            if let body = action.data {
+                                                request.httpBody = body.data(using: .utf8)
+                                                request.addValue("application/json", forHTTPHeaderField: "Content-Type")
                                             }
+                                            let session = URLSession(configuration: URLSessionConfiguration.default, delegate: nil, delegateQueue : nil)
+                                            let reqDataTask = session.dataTask(with: request as URLRequest, completionHandler:{ data, response, error in
+                                                if (error != nil) {
+                                                    NSLog("error %@", (error! as NSError).localizedDescription)
+                                                }
+                                            })
+                                            reqDataTask.resume()
+
+                                        } else if action.openInBrowser {
+                                            UIApplication.shared.open(url)
+                                        } else {
+                                            (self.window?.rootViewController as! ORViewcontroller).loadURL(url:url)
                                         }
                                     }
                                 }
@@ -250,8 +267,9 @@ extension ORAppDelegate : UNUserNotificationCenterDelegate {
                     }
                 }
             }
-            completionHandler()
         }
+        completionHandler()
+    }
 }
 
 extension ORAppDelegate : MessagingDelegate {
