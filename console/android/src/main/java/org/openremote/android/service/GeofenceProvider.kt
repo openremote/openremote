@@ -9,7 +9,6 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.support.v4.app.ActivityCompat
 import android.support.v4.content.ContextCompat
-import android.util.Log
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.android.gms.location.Geofence
 import com.google.android.gms.location.GeofencingClient
@@ -17,6 +16,8 @@ import com.google.android.gms.location.GeofencingRequest
 import com.google.android.gms.location.LocationServices
 import org.openremote.android.R
 import java.net.URL
+import java.util.logging.Level
+import java.util.logging.Logger
 
 class GeofenceProvider(val context: Context) : ActivityCompat.OnRequestPermissionsResultCallback {
 
@@ -119,25 +120,31 @@ class GeofenceProvider(val context: Context) : ActivityCompat.OnRequestPermissio
         val geofencesKey = "geofences"
         var locationReponseCode = 101
         var JSON = ObjectMapper()
+        val LOG = Logger.getLogger(GeofenceProvider::class.java.name)
 
         fun getGeofences(context: Context): Array<GeofenceDefinition> {
             val sharedPreferences = context.getSharedPreferences(context.getString(R.string.app_name), Context.MODE_PRIVATE)
             val existingGeofencesJson = sharedPreferences.getString(geofencesKey, null)
+            var geofences : Array<GeofenceDefinition> = arrayOf()
             if (existingGeofencesJson != null) {
-                return JSON.readValue(existingGeofencesJson, Array<GeofenceDefinition>::class.java)
-            } else {
-                return arrayOf()
+                geofences = JSON.readValue(existingGeofencesJson, Array<GeofenceDefinition>::class.java)
             }
+
+            LOG.info("Found geofences=${geofences.size}")
+            return geofences
         }
 
         fun startGeofences(context: Context) {
+
+            LOG.info("Starting geofences")
+
             val geofences = getGeofences(context)
             val baseUrl = getBaseUrl(context)
             if (geofences.isEmpty() || baseUrl == null) {
                 return
             }
 
-            Log.i("GeofenceProvider", "Starting geofences count=${geofences.size}")
+
             val intent = getGeofencePendingIntent(context, baseUrl)
             val geofencingClient = LocationServices.getGeofencingClient(context)
 
@@ -146,9 +153,11 @@ class GeofenceProvider(val context: Context) : ActivityCompat.OnRequestPermissio
             }
         }
 
-
         @SuppressLint("MissingPermission")
         private fun addGeofence(geofencingClient: GeofencingClient, geofencePendingIntent: PendingIntent, geofenceDefinition: GeofenceDefinition) {
+
+            LOG.info("Adding geofence: id=${geofenceDefinition.id} lat=${geofenceDefinition.lat} lng=${geofenceDefinition.lng}, radius=${geofenceDefinition.radius}")
+
             val geofence = Geofence.Builder()
                     .setRequestId(geofenceDefinition.id)
                     .setCircularRegion(geofenceDefinition.lat, geofenceDefinition.lng, geofenceDefinition.radius)
@@ -163,11 +172,11 @@ class GeofenceProvider(val context: Context) : ActivityCompat.OnRequestPermissio
 
             geofencingClient.addGeofences(geofencingRequest, geofencePendingIntent).run {
                 addOnSuccessListener {
-                    Log.i("GeofenceProvider", "Geofence added: lat${geofenceDefinition.lat}/lng${geofenceDefinition.lng}/rad${geofenceDefinition.radius}")
+                    LOG.info("Added geofence")
                 }
 
                 addOnFailureListener { exception ->
-                    Log.e("GeofenceProvider", "Failed to add geofence", exception)
+                    LOG.log(Level.SEVERE, "Add geofence failed", exception)
                 }
             }
         }
@@ -244,13 +253,18 @@ class GeofenceProvider(val context: Context) : ActivityCompat.OnRequestPermissio
     }
 
     fun refreshGeofences() {
-        Log.i("GeofenceProvider", "refreshGeofences")
+        LOG.info("Refresh geofences")
         onEnable(null)
     }
 
     private fun onEnable(callback: EnableCallback?) {
+
+        LOG.info("Enabling geofence provider")
+
         Thread {
             if (ContextCompat.checkSelfPermission(context, ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                LOG.info("Has permission so fetching geofences")
+
 //            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
 //                context.startForegroundService(Intent(context, LocationService::class.java))
 //            } else {
@@ -270,6 +284,7 @@ class GeofenceProvider(val context: Context) : ActivityCompat.OnRequestPermissio
     }
 
     private fun registerPermissions(activity: Activity) {
+        LOG.info("Requesting geofence permissions")
         val permissions = arrayOf(ACCESS_FINE_LOCATION)
         ActivityCompat.requestPermissions(activity, permissions, locationReponseCode)
     }
@@ -283,11 +298,15 @@ class GeofenceProvider(val context: Context) : ActivityCompat.OnRequestPermissio
 
     private fun fetchGeofences() {
         val sharedPreferences = context.getSharedPreferences(context.getString(R.string.app_name), Context.MODE_PRIVATE)
-        val geofencesJson = URL("${getBaseUrl(context)}/$geofenceFetchEndpoint${getConsoleId(context)}").readText()
-        val geofences = JSON.readValue(geofencesJson, Array<GeofenceDefinition>::class.java)
-        removeGeofences(getGeofences(context))
+        val url = "${getBaseUrl(context)}/$geofenceFetchEndpoint${getConsoleId(context)}"
+        LOG.info("Fetching geofences from server: ${url}")
 
-        Log.i("GeofenceProvider", "fetchGeofences: count=${geofences.size}")
+        val geofencesJson = URL(url).readText()
+        val geofences = JSON.readValue(geofencesJson, Array<GeofenceDefinition>::class.java)
+
+        LOG.info("Fetched geofences=${geofences.size}")
+
+        removeGeofences(getGeofences(context))
 
         geofences.forEach {
             addGeofence(geofencingClient, getGeofencePendingIntent(context, getBaseUrl(context).orEmpty()), it)
@@ -301,11 +320,11 @@ class GeofenceProvider(val context: Context) : ActivityCompat.OnRequestPermissio
     private fun removeGeofence(id: String) {
         geofencingClient.removeGeofences(listOf(id)).run {
             addOnSuccessListener {
-                Log.i("GeofenceProvider", "Geofence removed: $id")
+                LOG.info("Removed geofence: $id")
             }
 
             addOnFailureListener { exception ->
-                Log.e("GeofenceProvider", "Failed to remove geofence", exception)
+                LOG.log(Level.SEVERE, "Failed to remove geofence", exception)
             }
         }
     }
@@ -319,13 +338,15 @@ class GeofenceProvider(val context: Context) : ActivityCompat.OnRequestPermissio
             return
         }
 
+        LOG.info("Removing existing geofences: $ids")
+
         geofencingClient.removeGeofences(ids).run {
             addOnSuccessListener {
-                Log.i("GeofenceProvider", "Geofences removed")
+                LOG.info("Geofences removed")
             }
 
             addOnFailureListener { exception ->
-                Log.e("GeofenceProvider", exception.message, exception)
+                LOG.log(Level.SEVERE, "Geofences remove failed", exception)
             }
         }
     }
