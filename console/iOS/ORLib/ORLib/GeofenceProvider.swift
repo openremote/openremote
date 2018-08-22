@@ -13,6 +13,9 @@ public class GeofenceProvider: NSObject, URLSessionDelegate {
     let userdefaults = UserDefaults.standard
     var geoPostUrls = [String:[String]]()
     var enableCallback : (([String: Any]) -> (Void))?
+    var timer: Timer?
+    var insideRegion = false
+    var backgroundTask = UIBackgroundTaskInvalid
 
     public var baseURL: String = ""
     public var consoleId: String = ""
@@ -33,7 +36,7 @@ public class GeofenceProvider: NSObject, URLSessionDelegate {
             DefaultsKey.requiresPermissionKey: true,
             DefaultsKey.hasPermissionKey: checkPermission(),
             DefaultsKey.successKey: true
-            ]
+        ]
     }
 
     private func checkPermission() -> Bool {
@@ -103,9 +106,15 @@ public class GeofenceProvider: NSObject, URLSessionDelegate {
                     ])
             }
         }
+        resetTimer()
+        NotificationCenter.default.addObserver(forName: NSNotification.Name.UIApplicationDidEnterBackground, object: nil, queue:nil, using: { notification in
+            self.backgroundTask = UIApplication.shared.beginBackgroundTask { [weak self] in self?.endBackgroundTask()}
+            self.resetTimer()
+        })
     }
 
     public func disbale()-> [String: Any] {
+        timer?.invalidate()
         return [
             DefaultsKey.actionKey: "PROVIDER_DISABLE",
             DefaultsKey.providerKey: Providers.geofence
@@ -166,7 +175,7 @@ public class GeofenceProvider: NSObject, URLSessionDelegate {
         let session = URLSession(configuration: sessionConfiguration, delegate: self, delegateQueue: nil)
         let req = session.dataTask(with: request as URLRequest, completionHandler: { (data, response, error) in
             if (data != nil){
-
+                print("Response received: \(data!)")
             } else {
                 NSLog("error %@", (error! as NSError).localizedDescription)
                 let error = NSError(domain: "", code: 0, userInfo:  [
@@ -176,6 +185,7 @@ public class GeofenceProvider: NSObject, URLSessionDelegate {
             }
         })
         req.resume()
+        print("Sending request with body: \(data ?? [:])")
     }
 
     public class GeofenceDefinition: NSObject, Decodable {
@@ -186,10 +196,27 @@ public class GeofenceProvider: NSObject, URLSessionDelegate {
         public var httpMethod: String = ""
         public var url: String = ""
     }
+
+    func endBackgroundTask() {
+        UIApplication.shared.endBackgroundTask(self.backgroundTask)
+        self.backgroundTask = UIBackgroundTaskInvalid
+        resetTimer()
+    }
+
+    func resetTimer() {
+        self.timer?.invalidate()
+        self.timer = Timer.scheduledTimer(withTimeInterval: 30, repeats: true, block: { timer in
+            self.insideRegion = false
+            for region in self.locationManager.monitoredRegions {
+                self.locationManager.requestState(for: region)
+            }
+        })
+    }
 }
 
 extension GeofenceProvider: CLLocationManagerDelegate {
     public func locationManager(_ manager: CLLocationManager, didEnterRegion region: CLRegion) {
+        print("Entered geofence with id: \(region.identifier)")
         guard let circularRegion = region as? CLCircularRegion else {return}
 
         guard let urlData = geoPostUrls[circularRegion.identifier] else {
@@ -206,6 +233,7 @@ extension GeofenceProvider: CLLocationManagerDelegate {
     }
 
     public func locationManager(_ manager: CLLocationManager, didExitRegion region: CLRegion) {
+        print("Exited geofence with id: \(region.identifier)")
         guard let circularRegion = region as? CLCircularRegion else {return}
 
         guard let urlData = geoPostUrls[circularRegion.identifier] else {
@@ -224,6 +252,18 @@ extension GeofenceProvider: CLLocationManagerDelegate {
                 DefaultsKey.hasPermissionKey: checkPermission(),
                 DefaultsKey.successKey: true
                 ])
+        }
+    }
+
+    public func locationManager(_ manager: CLLocationManager, didDetermineState state: CLRegionState, for region: CLRegion) {
+        switch state {
+        case .inside:
+            insideRegion = true
+            manager.delegate?.locationManager?(manager, didEnterRegion: region)
+        default:
+            if !insideRegion {
+                manager.delegate?.locationManager?(manager, didExitRegion: region)
+            }
         }
     }
 }
