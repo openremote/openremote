@@ -130,6 +130,11 @@ public class NotificationsViewImpl extends Composite implements NotificationsVie
             if (filterOptions != null)
                 filterOptions.setSelectedTarget(targetsList.getSelectedValue());
         });
+
+        sentInsList.addChangeHandler(event -> {
+            if (filterOptions != null)
+                filterOptions.setSelectedSentIn(FilterOptions.SentInLast.valueOf(sentInsList.getSelectedValue()));
+        });
     }
 
     @Override

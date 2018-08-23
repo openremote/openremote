@@ -10,11 +10,7 @@ import org.openremote.model.attribute.AttributeRef
 import org.openremote.model.console.ConsoleProvider
 import org.openremote.model.console.ConsoleRegistration
 import org.openremote.model.console.ConsoleResource
-import org.openremote.model.notification.Notification
-import org.openremote.model.notification.NotificationResource
-import org.openremote.model.notification.NotificationSendResult
-import org.openremote.model.notification.PushNotificationMessage
-import org.openremote.model.notification.RepeatFrequency
+import org.openremote.model.notification.*
 import org.openremote.model.value.ObjectValue
 import org.openremote.model.value.Values
 import org.openremote.test.ManagerContainerTrait
@@ -22,10 +18,7 @@ import spock.lang.Specification
 
 import javax.ws.rs.WebApplicationException
 import java.time.Instant
-import java.time.LocalDateTime
-import java.time.Period
 import java.time.ZoneId
-import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
 import java.util.concurrent.TimeUnit
 
@@ -423,10 +416,8 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         notification.setRepeatFrequency(RepeatFrequency.HOURLY)
         testuser3NotificationResource.sendNotification(null, notification)
         notifications = []
-            notifications.addAll(adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser2Console.id))
-            notifications.addAll(adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console1.id))
-            notifications.addAll(adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console2.id))
-            notifications.addAll(adminNotificationResource.getNotifications(null, null, null, null, null, null, null, anonymousConsole.id))
+        notifications.addAll(adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console1.id))
+        notifications.addAll(adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console2.id))
 
         then: "the notifications should have been sent"
         assert notifications.size() == 2
@@ -434,10 +425,8 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         when: "a repeat frequency is set and a notification with the same name and scope as a previous notification is sent within the repeat window"
         testuser3NotificationResource.sendNotification(null, notification)
         notifications = []
-            notifications.addAll(adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser2Console.id))
-            notifications.addAll(adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console1.id))
-            notifications.addAll(adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console2.id))
-            notifications.addAll(adminNotificationResource.getNotifications(null, null, null, null, null, null, null, anonymousConsole.id))
+        notifications.addAll(adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console1.id))
+        notifications.addAll(adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console2.id))
 
         then: "no new notifications should have been sent"
         assert notifications.size() == 2
@@ -445,10 +434,8 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         when: "a repeat frequency is set and a notification with the same name but different scope is sent within the repeat window"
         adminNotificationResource.sendNotification(null, notification)
         notifications = []
-            notifications.addAll(adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser2Console.id))
-            notifications.addAll(adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console1.id))
-            notifications.addAll(adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console2.id))
-            notifications.addAll(adminNotificationResource.getNotifications(null, null, null, null, null, null, null, anonymousConsole.id))
+        notifications.addAll(adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console1.id))
+        notifications.addAll(adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console2.id))
 
         then: "new notifications should have been sent"
         assert notifications.size() == 4
@@ -457,10 +444,8 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         advancePseudoClock(30, TimeUnit.SECONDS, container)
         adminNotificationResource.sendNotification(null, notification)
         notifications = []
-            notifications.addAll(adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser2Console.id))
-            notifications.addAll(adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console1.id))
-            notifications.addAll(adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console2.id))
-            notifications.addAll(adminNotificationResource.getNotifications(null, null, null, null, null, null, null, anonymousConsole.id))
+        notifications.addAll(adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console1.id))
+        notifications.addAll(adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console2.id))
 
         then: "no new notifications should have been sent"
         assert notifications.size() == 4
@@ -469,10 +454,8 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         advancePseudoClock(2, TimeUnit.MINUTES, container)
         adminNotificationResource.sendNotification(null, notification)
         notifications = []
-            notifications.addAll(adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser2Console.id))
-            notifications.addAll(adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console1.id))
-            notifications.addAll(adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console2.id))
-            notifications.addAll(adminNotificationResource.getNotifications(null, null, null, null, null, null, null, anonymousConsole.id))
+        notifications.addAll(adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console1.id))
+        notifications.addAll(adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console2.id))
 
         then: "new notifications should have been sent"
         assert notifications.size() == 6
@@ -482,24 +465,36 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         advancePseudoClock(10, TimeUnit.DAYS, container)
         adminNotificationResource.sendNotification(null, notification)
         notifications = []
-            notifications.addAll(adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser2Console.id))
-            notifications.addAll(adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console1.id))
-            notifications.addAll(adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console2.id))
-            notifications.addAll(adminNotificationResource.getNotifications(null, null, null, null, null, null, null, anonymousConsole.id))
+        notifications.addAll(adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console1.id))
+        notifications.addAll(adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console2.id))
 
         then: "no new notifications should have been sent"
         assert notifications.size() == 6
 
         when: "time advances more than the repeat interval and the notification is sent again"
-        advancePseudoClock(30, TimeUnit.DAYS, container)
+        advancePseudoClock(25, TimeUnit.DAYS, container)
         adminNotificationResource.sendNotification(null, notification)
         notifications = []
-            notifications.addAll(adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser2Console.id))
-            notifications.addAll(adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console1.id))
-            notifications.addAll(adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console2.id))
-            notifications.addAll(adminNotificationResource.getNotifications(null, null, null, null, null, null, null, anonymousConsole.id))
+        notifications.addAll(adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console1.id))
+        notifications.addAll(adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console2.id))
 
         then: "new notifications should have been sent"
+        assert notifications.size() == 8
+
+        when: "notifications are retrieved only for the past day"
+        notifications = []
+        notifications.addAll(adminNotificationResource.getNotifications(null, null, null, getClockTimeOf(container)-(3600000*24), null, null, null, testuser3Console1.id))
+        notifications.addAll(adminNotificationResource.getNotifications(null, null, null, getClockTimeOf(container)-(3600000*24), null, null, null, testuser3Console2.id))
+
+        then: "only the relevant notifications should have been returned"
+        assert notifications.size() == 2
+
+        when: "notifications are retrieved for the past 40 days"
+        notifications = []
+        notifications.addAll(adminNotificationResource.getNotifications(null, null, null, getClockTimeOf(container)-(3600000L*24*40), null, null, null, testuser3Console1.id))
+        notifications.addAll(adminNotificationResource.getNotifications(null, null, null, getClockTimeOf(container)-(3600000L*24*40), null, null, null, testuser3Console2.id))
+
+        then: "only the relevant notifications should have been returned"
         assert notifications.size() == 8
 
         cleanup: "the server should be stopped"
