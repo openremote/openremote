@@ -56,7 +56,7 @@ class GeofenceTransitionsIntentService : BroadcastReceiver() {
                             LOG.info("Sending location 'lat=${geofenceDefinition.lat}/lng=${geofenceDefinition.lng}' to server: HTTP ${geofenceDefinition.httpMethod} $url")
                             hashMapOf(
                                     "type" to "Point",
-                                    "coordinates" to arrayOf(geofencingEvent.triggeringLocation.longitude, geofencingEvent.triggeringLocation.latitude)
+                                    "coordinates" to arrayOf(geofenceDefinition.lng, geofenceDefinition.lat)
                             )
                         }
                         else -> {
