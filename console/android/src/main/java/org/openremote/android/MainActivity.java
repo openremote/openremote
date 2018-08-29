@@ -59,7 +59,8 @@ public class MainActivity extends Activity {
 
     private static final Logger LOG = Logger.getLogger(MainActivity.class.getName());
 
-    private final int WRITE_PERMISSION_REQUEST = 999;
+    private final int WRITE_PERMISSION_FOR_DOWNLOAD = 999;
+    private final int WRITE_PERMISSION_FOR_LOGGING = 1000;
 
     public static final String ACTION_BROADCAST = "ACTION_BROADCAST";
 
@@ -130,6 +131,19 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        if (Boolean.parseBoolean(getApplicationContext().getString(R.string.DEBUG_LOGGING))) {
+            // Check write permission for logging purposes
+
+            String writePermission = Manifest.permission.WRITE_EXTERNAL_STORAGE;
+            if (ContextCompat.checkSelfPermission(getApplicationContext(), writePermission) != PackageManager.PERMISSION_GRANTED) {
+                // Write permission has not been granted yet, request it.
+                ActivityCompat.requestPermissions(this, new String[]{writePermission}, WRITE_PERMISSION_FOR_LOGGING);
+            } else {
+                // Assume logging has already been initialised by main application
+            }
+        }
+
 
         context = this;
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
@@ -345,8 +359,8 @@ public class MainActivity extends Activity {
 
                 String writePermission = Manifest.permission.WRITE_EXTERNAL_STORAGE;
                 if (ContextCompat.checkSelfPermission(context, writePermission) != PackageManager.PERMISSION_GRANTED) {
-                    // Location permission has not been granted yet, request it.
-                    ActivityCompat.requestPermissions((MainActivity) context, new String[]{writePermission}, WRITE_PERMISSION_REQUEST);
+                    // Write permission has not been granted yet, request it.
+                    ActivityCompat.requestPermissions((MainActivity) context, new String[]{writePermission}, WRITE_PERMISSION_FOR_DOWNLOAD);
                 } else {
                     DownloadManager.Request request = new
                             DownloadManager.Request(Uri.parse(url));
@@ -376,7 +390,12 @@ public class MainActivity extends Activity {
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        if (requestCode == WRITE_PERMISSION_REQUEST) {
+        if (requestCode == WRITE_PERMISSION_FOR_LOGGING) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                // Add File logging
+                MainApplication.addFileHandler(this);
+            }
+        } else if (requestCode == WRITE_PERMISSION_FOR_DOWNLOAD) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 Toast.makeText(getApplicationContext(), R.string.downloading_file, Toast.LENGTH_LONG).show();
             }

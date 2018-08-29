@@ -181,7 +181,7 @@ public class ORFirebaseMessagingService extends com.google.firebase.messaging.Fi
             }
         }
 
-        LOG.fine("Showing notification (" + (buttons != null ? buttons.length + " buttons): " : "") + body);
+        LOG.fine("Showing notification id=" + notificationId + ", title=" + title + ", body=" + body + ", action=" + action + ", buttons=" +(buttons != null ? buttons.length : 0));
 
         NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         if (notificationManager != null) {
