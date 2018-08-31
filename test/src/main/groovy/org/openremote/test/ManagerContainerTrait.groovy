@@ -26,6 +26,7 @@ import org.openremote.manager.rules.RulesetStorageService
 import org.openremote.manager.security.ManagerIdentityService
 import org.openremote.manager.setup.SetupService
 import org.openremote.manager.simulator.SimulatorService
+import org.openremote.manager.system.HealthStatusService
 import org.openremote.manager.web.ManagerWebService
 import spock.util.concurrent.PollingConditions
 
@@ -74,6 +75,7 @@ trait ManagerContainerTrait extends ContainerTrait {
                 new NotificationService(),
                 new ConsoleAppService(),
                 new ManagerWebService(),
+                new HealthStatusService(),
                 *additionalServices
 
         ] as Iterable<ContainerService>

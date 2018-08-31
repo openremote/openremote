@@ -67,11 +67,6 @@ public enum ConnectionStatus {
     WAITING,
 
     /**
-     * Connection is closed and cannot be re-used.
-     */
-    CLOSED,
-
-    /**
      * An authentication related error has occurred.
      */
     ERROR_AUTHENTICATION,

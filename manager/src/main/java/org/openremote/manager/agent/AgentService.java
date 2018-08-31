@@ -93,7 +93,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
     protected ClientEventService clientEventService;
     protected final Map<AttributeRef, Pair<AssetAttribute, ConnectionStatus>> protocolConfigurations = new HashMap<>();
     protected final Map<String, Protocol> protocols = new HashMap<>();
-    protected final List<AttributeRef> linkedAttributes = new ArrayList<>();
+    protected final Map<AttributeRef, List<AttributeRef>> linkedAttributes = new HashMap<>();
     protected LocalAgentConnector localAgentConnector;
     protected Map<String, Asset> agentMap;
 
@@ -572,8 +572,19 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
                 return;
             }
 
-            attributes.removeIf(attr -> linkedAttributes.contains(attr.getReferenceOrThrow()));
-            linkedAttributes.addAll(attributes.stream().map(AssetAttribute::getReferenceOrThrow).collect(Collectors.toList()));
+            attributes.removeIf(attr ->
+                linkedAttributes.values().stream()
+                    .anyMatch(linkedAttributes -> linkedAttributes.contains(attr.getReferenceOrThrow())));
+
+            linkedAttributes.compute(
+                protocolConfiguration.getReferenceOrThrow(),
+                (protocolRef, linkedAttrs) -> {
+                    if (linkedAttrs == null) {
+                        linkedAttrs = new ArrayList<>(attributes.size());
+                    }
+                    linkedAttrs.addAll(attributes.stream().map(AssetAttribute::getReferenceOrThrow).collect(Collectors.toList()));
+                    return linkedAttrs;
+                });
 
             try {
                 LOG.finest("Linking protocol attributes to: " + protocol.getProtocolName());
@@ -596,8 +607,13 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
                 return;
             }
 
-            attributes.removeIf(attr -> !linkedAttributes.contains(attr.getReferenceOrThrow()));
-            linkedAttributes.removeAll(attributes.stream().map(AssetAttribute::getReferenceOrThrow).collect(Collectors.toList()));
+            linkedAttributes.computeIfPresent(
+                protocolConfiguration.getReferenceOrThrow(),
+                (protocolRef, linkedAttrs) -> {
+                    linkedAttrs.removeAll(attributes.stream().map(AssetAttribute::getReferenceOrThrow).collect(Collectors.toList()));
+                    return linkedAttrs.isEmpty() ? null : linkedAttrs;
+                }
+            );
 
             try {
                 LOG.finest("Unlinking protocol attributes from: " + protocol.getProtocolName());

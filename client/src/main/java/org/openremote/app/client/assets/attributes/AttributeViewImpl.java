@@ -227,7 +227,6 @@ public class AttributeViewImpl extends FormGroup implements AttributeView {
         if (connectionStatus != null) {
             switch (connectionStatus) {
                 case DISABLED:
-                case CLOSED:
                     addStyleName(environment.getWidgetStyle().BorderDefault());
                     break;
                 case CONNECTED:

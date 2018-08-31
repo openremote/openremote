@@ -159,22 +159,24 @@ public class RulesEngine<T extends Ruleset> {
         return false;
     }
 
+    public int getExecutionErrorDeploymentCount() {
+        return (int)deployments.values().stream().filter(deployment -> deployment.getStatus() == EXECUTION_ERROR).count();
+    }
+
+    public int getCompilationErrorDeploymentCount() {
+        return (int)deployments.values().stream().filter(deployment -> deployment.getStatus() == COMPILATION_ERROR).count();
+    }
+
     public RuntimeException getError() {
-        List<RulesetDeployment> deploymentsWithCompilationError = new ArrayList<>();
-        List<RulesetDeployment> deploymentsWithExecutionError = new ArrayList<>();
-        for (RulesetDeployment deployment : deployments.values()) {
-            if (deployment.getStatus() == COMPILATION_ERROR) {
-                deploymentsWithCompilationError.add(deployment);
-            } else if (deployment.getStatus() == EXECUTION_ERROR) {
-                deploymentsWithExecutionError.add(deployment);
-            }
-        }
-        if (deploymentsWithCompilationError.size() > 0 || deploymentsWithExecutionError.size() > 0) {
+        long executionErrorCount = getExecutionErrorDeploymentCount();
+        long compilationErrorCount = getCompilationErrorDeploymentCount();
+
+        if (executionErrorCount > 0 || compilationErrorCount > 0) {
             return new RuntimeException(
                 "Ruleset deployments have errors, failed compilation: "
-                    + deploymentsWithCompilationError.size()
+                    + compilationErrorCount
                     + ", failed execution: "
-                    + deploymentsWithExecutionError.size() + " - on: " + this
+                    + executionErrorCount + " - on: " + this
             );
         }
         return null;
