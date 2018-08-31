@@ -201,7 +201,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                         break;
                 }
 
-                LOG.info("Sending notification from '" + source + ":" + sourceId.get() + "': " + notification);
+                LOG.info("Sending " + notification.getMessage().getType() + " notification '" + notification.getName() + "': '" + source + ":" + sourceId.get() + "' -> " + notification.getTargets());
 
                 // Check access permissions
                 checkAccess(notification.getTargets(), realmId, userId, isSuperUser, isRestrictedUser, assetId);
@@ -211,7 +211,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                     .map(targetId -> {
                         Notification.Targets mappedTargets = handler.mapTarget(notification.getTargets().getType(), targetId, notification.getMessage());
                         if (mappedTargets == null || mappedTargets.getIds() == null || mappedTargets.getIds().length == 0) {
-                            LOG.finest("Failed to map target using '" + handler.getClass().getSimpleName() + "' handler: "
+                            LOG.fine("Failed to map target using '" + handler.getClass().getSimpleName() + "' handler: "
                                            + notification.getTargets().getType() + ":" + targetId);
                         }
                         return mappedTargets;
@@ -270,15 +270,15 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                                                                                             notification.getMessage());
 
                                         if (result.isSuccess()) {
-                                            LOG.fine("Notification sent: " + targets.getType() + ":" + targetId);
+                                            LOG.info("Notification sent '" + id + "': " + targets.getType() + ":" + targetId);
                                         } else {
-                                            LOG.warning("Notification failed: " + targets.getType() + ":" + targetId + ", reason=" + result.getMessage());
+                                            LOG.warning("Notification failed '" + id + "': " + targets.getType() + ":" + targetId + ", reason=" + result.getMessage());
                                             sentNotification.setError(TextUtil.isNullOrEmpty(result.getMessage()) ? "Unknown error" : result.getMessage());
                                             em.merge(sentNotification);
                                         }
                                     } catch (Exception e) {
                                         LOG.log(Level.SEVERE,
-                                                "Notification handler threw and exception whilst sending notification",
+                                                "Notification handler threw an exception whilst sending notification '" + id + "'",
                                                 e);
                                         sentNotification.setError(TextUtil.isNullOrEmpty(e.getMessage()) ? "Unknown error" : e.getMessage());
                                         em.merge(sentNotification);

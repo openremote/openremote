@@ -380,6 +380,8 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                     new AttributeRef(assetId, attributeName), value, timerService.getCurrentTimeMillis()
                 );
 
+                LOG.info("Write attribute value request: " + event);
+
                 // Process asynchronously but block for a little while waiting for the result
                 Map<String, Object> headers = new HashMap<>();
                 headers.put(AttributeEvent.HEADER_SOURCE, CLIENT);

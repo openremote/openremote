@@ -217,8 +217,6 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
     public GeofenceDefinition[] getAssetGeofences(String assetId) {
         String realm = consoleIdRealmMap.get(assetId);
 
-        LOG.info("Request for console geofences: " + assetId);
-
         if (realm == null) {
             LOG.info("Console ID not found in map so cannot retrieve geofences");
             // Asset not supported by this adapter
@@ -229,7 +227,7 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
 
         if (assetStateLocationPredicates == null) {
             // No geofences exist for this asset
-            LOG.info("No geofences exist");
+            LOG.info("Request for console '" + assetId + "' geofences: 0 found");
             return new GeofenceDefinition[0];
         }
 
@@ -239,7 +237,7 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
                     locationPredicate))
             .toArray(GeofenceDefinition[]::new);
 
-        LOG.info("Retrieved " + geofences.length + " geofence(s)");
+        LOG.info("Request for console '" + assetId + "' geofences: " + geofences.length + " found");
         return geofences;
     }
 

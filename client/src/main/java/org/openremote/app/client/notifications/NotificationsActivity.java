@@ -414,10 +414,8 @@ public class NotificationsActivity extends AssetBrowsingActivity<NotificationsPl
 
     protected void refreshNotifications(Consumer<SentNotification[]> notificationConsumer) {
 
-        SentNotification[] notifications = new SentNotification[0];
-
         if (!canLoadNotifications()) {
-            notificationConsumer.accept(notifications);
+            notificationConsumer.accept(new SentNotification[0]);
             return;
         }
 
@@ -437,7 +435,12 @@ public class NotificationsActivity extends AssetBrowsingActivity<NotificationsPl
                 userId,
                 assetId),
             200,
-            notificationConsumer::accept);
+            notifications ->
+                notificationConsumer.accept(
+                    Arrays.stream(notifications)
+                        .sorted(Comparator.comparingLong((SentNotification n) -> n.getSentOn().getTime()).reversed())
+                        .toArray(SentNotification[]::new))
+            );
     }
 
     protected Notification buildNotification() {

@@ -273,7 +273,6 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
 
     @Override
     public NotificationSendResult sendMessage(long id, Notification.TargetType targetType, String targetId, AbstractNotificationMessage message) {
-        LOG.info("Sending notification '" + id + "' to: " + targetId);
 
         if (targetType != Notification.TargetType.ASSET) {
             LOG.warning("Target type not supported: " + targetType);
