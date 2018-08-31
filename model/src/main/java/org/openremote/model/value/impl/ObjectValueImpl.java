@@ -124,7 +124,7 @@ public class ObjectValueImpl extends ValueImpl implements ObjectValue {
         if (key == null) {
             throw new NullPointerException("Null keys are not allowed in JSON objects");
         }
-        map.put(key, factory.create(value));
+        map.put(key, value == null ? null : factory.create(value));
         return this;
     }
 
