@@ -19,6 +19,7 @@ import java.net.URL
 import java.util.*
 import java.util.logging.Level
 import java.util.logging.Logger
+import kotlin.concurrent.schedule
 
 class GeofenceProvider(val context: Context) : ActivityCompat.OnRequestPermissionsResultCallback {
 
@@ -300,7 +301,17 @@ class GeofenceProvider(val context: Context) : ActivityCompat.OnRequestPermissio
         LOG.info("Enabling geofence provider")
 
         Thread {
-            if (ContextCompat.checkSelfPermission(context, ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+
+            val hasPermission = ContextCompat.checkSelfPermission(context, ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+
+            callback?.accept(hashMapOf(
+                    "action" to "PROVIDER_ENABLE",
+                    "provider" to "geofence",
+                    "hasPermission" to hasPermission,
+                    "success" to true
+            ))
+
+            if (hasPermission) {
                 LOG.info("Has permission so fetching geofences")
 
 //            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -309,15 +320,15 @@ class GeofenceProvider(val context: Context) : ActivityCompat.OnRequestPermissio
 //                context.startService(Intent(context, LocationService::class.java))
 //            }
 
-                refreshGeofences()
+                if (getGeofences(context).isEmpty()) {
+                    // Could be first time getting geofences so wait a few seconds for backend to catch up
+                    Timer().schedule(10000) {
+                        refreshGeofences()
+                    }
+                } else {
+                    refreshGeofences()
+                }
             }
-
-            callback?.accept(hashMapOf(
-                    "action" to "PROVIDER_ENABLE",
-                    "provider" to "geofence",
-                    "hasPermission" to (ContextCompat.checkSelfPermission(context, ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED),
-                    "success" to true
-            ))
         }.start()
     }
 

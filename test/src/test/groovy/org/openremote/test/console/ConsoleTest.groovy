@@ -296,11 +296,23 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         and: "the console should not have been linked to any users"
         assert userAssets.isEmpty()
 
+        and: "each created consoles should have been sent notifications to refresh their geofences"
+        conditions.eventually {
+            assert notificationIds.size() == 3
+            assert messages.count { ((PushNotificationMessage)it).data.get("GEOFENCE_REFRESH") != null } == 3
+        }
+
         ////////////////////////////////////////////////////
         // LOCATION PREDICATE AND ALERT NOTIFICATION TESTS
         ////////////////////////////////////////////////////
 
-        when: "an authenticated user updates the location of a linked console"
+        when: "notifications are cleared"
+        notificationIds.clear()
+        targetIds.clear()
+        targetTypes.clear()
+        messages.clear()
+
+        and: "an authenticated user updates the location of a linked console"
         authenticatedAssetResource.writeAttributeValue(null, testUser3Console1.id, LOCATION.name, new GeoJSONPoint(0d, 0d, 0d).toValue().toJson())
 
         then: "the consoles location should have been updated"
