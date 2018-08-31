@@ -468,15 +468,30 @@ public class AssetAttribute extends Attribute {
      */
     public static Stream<AssetAttribute> getAddedOrModifiedAttributes(List<AssetAttribute> oldAttributes,
                                                                       List<AssetAttribute> newAttributes,
-                                                                      Predicate<String> attributeNamesToEvaluate,
+                                                                      Predicate<String> ignoredAttributeNames,
+                                                                      Predicate<String> ignoredAttributeKeys) {
+        return getAddedOrModifiedAttributes(
+            oldAttributes,
+            newAttributes,
+            null,
+            ignoredAttributeNames,
+            ignoredAttributeKeys);
+    }
+
+    /**
+     * @return All attributes that exist only in the new list or are different than any attribute in the old list.
+     */
+    public static Stream<AssetAttribute> getAddedOrModifiedAttributes(List<AssetAttribute> oldAttributes,
+                                                                      List<AssetAttribute> newAttributes,
+                                                                      Predicate<String> limitToAttributeNames,
                                                                       Predicate<String> ignoredAttributeNames,
                                                                       Predicate<String> ignoredAttributeKeys) {
         return newAttributes.stream().filter(newAttribute -> oldAttributes.stream().noneMatch(
             oldAttribute -> newAttribute.getObjectValue().equalsIgnoreKeys(oldAttribute.getObjectValue(), ignoredAttributeKeys))
         ).filter(addedOrModifiedAttribute ->
             !addedOrModifiedAttribute.getName().isPresent() ||
-                (attributeNamesToEvaluate == null && ignoredAttributeNames == null) ||
-                (attributeNamesToEvaluate != null && attributeNamesToEvaluate.test(addedOrModifiedAttribute.getName().get())) ||
+                (limitToAttributeNames == null && ignoredAttributeNames == null) ||
+                (limitToAttributeNames != null && limitToAttributeNames.test(addedOrModifiedAttribute.getName().get())) ||
                 (ignoredAttributeNames != null && !ignoredAttributeNames.test(addedOrModifiedAttribute.getName().get()))
         );
     }
