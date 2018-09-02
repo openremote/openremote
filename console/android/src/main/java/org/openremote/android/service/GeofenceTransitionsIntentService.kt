@@ -17,9 +17,10 @@ import kotlin.concurrent.schedule
 class GeofenceTransitionsIntentService : BroadcastReceiver() {
 
     private val LOG = Logger.getLogger(GeofenceTransitionsIntentService::class.java.name)
-    private var queuedLocations : MutableList<Pair<GeofenceProvider.GeofenceDefinition, String?>> = mutableListOf()
+    private var exitedLocation : Pair<GeofenceProvider.GeofenceDefinition, String?>? = null
+    private var enteredLocation : Pair<GeofenceProvider.GeofenceDefinition, String?>? = null
     private var locationTimer : Timer = Timer()
-    private var nullLocation : GeofenceProvider.GeofenceDefinition? = null
+    private var sendQueued = false
 
     override fun onReceive(context: Context?, intent: Intent?) {
 
@@ -75,16 +76,18 @@ class GeofenceTransitionsIntentService : BroadcastReceiver() {
         var scheduleSend = false
 
         if (locationJson == null) {
-            if (nullLocation == null) {
-                nullLocation = geofenceDefinition
-                scheduleSend = true
+            exitedLocation = Pair(geofenceDefinition, null)
+
+            // If exit is for same geofence as queued enter then remove enter to avoid incorrectly setting location
+            if (enteredLocation != null && enteredLocation!!.first.id == geofenceDefinition.id) {
+                enteredLocation = null
             }
         } else {
-            scheduleSend = queuedLocations.isEmpty()
-            queuedLocations.add(Pair(geofenceDefinition, locationJson))
+            enteredLocation = Pair(geofenceDefinition, locationJson)
         }
 
-        if (scheduleSend) {
+        if (!sendQueued) {
+            sendQueued = true
             LOG.info("Schedule send location")
             locationTimer.schedule(2000) {
                 doSendLocation()
@@ -96,55 +99,72 @@ class GeofenceTransitionsIntentService : BroadcastReceiver() {
     fun doSendLocation() {
 
         LOG.info("Do send location")
+        var success = false
 
-        if (nullLocation != null) {
-            sendLocation(nullLocation!!, null)
-            nullLocation = null
-        } else {
-            val geofenceAndLocation = queuedLocations.removeAt(0)
-            sendLocation(geofenceAndLocation.first, geofenceAndLocation.second)
+        if (exitedLocation != null) {
+            if (sendLocation(exitedLocation!!.first, exitedLocation!!.second)) {
+                exitedLocation = null
+                success = true
+            }
+        } else if (enteredLocation != null) {
+            if (sendLocation(enteredLocation!!.first, enteredLocation!!.second)) {
+                enteredLocation = null
+                success = true
+            }
         }
 
-        if (queuedLocations.isNotEmpty()) {
+        if (exitedLocation != null || enteredLocation != null) {
+
+            if (!success) {
+                LOG.info("Send failed so re-scheduling")
+            } else {
+                LOG.info("More locations to send so scheduling another run")
+            }
+
             // Schedule another send
-            locationTimer.schedule(3000) {
+            val delay = if (success) 3000L else 10000L
+            locationTimer.schedule(delay) {
                 doSendLocation()
             }
+        } else {
+            sendQueued = false
         }
     }
 
     @Synchronized
-    fun sendLocation(geofenceDefinition : GeofenceProvider.GeofenceDefinition, locationJson : String?) {
-        Thread {
-            val url = URL(geofenceDefinition.url)
-            val connection = url.openConnection() as HttpURLConnection
+    fun sendLocation(geofenceDefinition : GeofenceProvider.GeofenceDefinition, locationJson : String?): Boolean {
+        val url = URL(geofenceDefinition.url)
+        val connection = url.openConnection() as HttpURLConnection
+        var success = false
 
-            try {
-                connection.setRequestProperty("Content-Type", "application/json")
-                connection.requestMethod = geofenceDefinition.httpMethod
-                connection.connectTimeout = 10000
-                connection.doInput = false
-                connection.doOutput = true
-                connection.setChunkedStreamingMode(0)
+        try {
+            connection.setRequestProperty("Content-Type", "application/json")
+            connection.requestMethod = geofenceDefinition.httpMethod
+            connection.connectTimeout = 10000
+            connection.doInput = false
+            connection.doOutput = true
+            connection.setChunkedStreamingMode(0)
 
-                if (locationJson == null) {
-                    LOG.info("Sending location 'null' to server: HTTP ${geofenceDefinition.httpMethod} $url")
-                    connection.outputStream.write("null".toByteArray(Charsets.UTF_8))
-                } else {
-                    LOG.info("Sending location 'lat=${geofenceDefinition.lat}/lng=${geofenceDefinition.lng}' to server: HTTP ${geofenceDefinition.httpMethod} $url")
-                    connection.outputStream.write(locationJson.toByteArray(Charsets.UTF_8))
-                }
-
-                connection.outputStream.flush()
-                val responseCode = connection.responseCode
-                LOG.info("Send location success: response=$responseCode")
-
-            } catch (exception: Exception) {
-                LOG.log(Level.SEVERE, "Send location failed", exception)
-                print(exception)
-            } finally {
-                connection.disconnect()
+            if (locationJson == null) {
+                LOG.info("Sending location 'null' to server: HTTP ${geofenceDefinition.httpMethod} $url")
+                connection.outputStream.write("null".toByteArray(Charsets.UTF_8))
+            } else {
+                LOG.info("Sending location 'lat=${geofenceDefinition.lat}/lng=${geofenceDefinition.lng}' to server: HTTP ${geofenceDefinition.httpMethod} $url")
+                connection.outputStream.write(locationJson.toByteArray(Charsets.UTF_8))
             }
-        }.start()
+
+            connection.outputStream.flush()
+            val responseCode = connection.responseCode
+            success = responseCode == 204
+            LOG.info("Send location success: response=$responseCode")
+
+        } catch (exception: Exception) {
+            LOG.log(Level.SEVERE, "Send location failed", exception)
+            print(exception)
+        } finally {
+            connection.disconnect()
+        }
+
+        return success
     }
 }

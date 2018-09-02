@@ -20,6 +20,7 @@ import org.openremote.android.service.AlertButton;
 import org.openremote.android.service.GeofenceProvider;
 import org.openremote.android.service.TokenService;
 
+import java.util.Date;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -160,6 +161,8 @@ public class ORFirebaseMessagingService extends com.google.firebase.messaging.Fi
 
         NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this, NOTICATION_CHANNEL_ID)
                 .setContentTitle(title)
+                .setWhen(new Date().getTime())
+                .setShowWhen(true)
                 .setStyle(new NotificationCompat.BigTextStyle().bigText(body))
                 .setContentText(body)
                 .setSmallIcon(R.drawable.notification_icon)
