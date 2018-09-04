@@ -26,7 +26,7 @@ class GeofenceTransitionsIntentService : BroadcastReceiver() {
 
         val geofencingEvent = GeofencingEvent.fromIntent(intent)
 
-        LOG.info("Geofence event received: transition=${geofencingEvent.geofenceTransition}")
+        LOG.info("Geofence event received: transition=")
 
         if (geofencingEvent.hasError()) {
             LOG.warning("Geofence event error : ${geofencingEvent.errorCode}")
@@ -42,13 +42,15 @@ class GeofenceTransitionsIntentService : BroadcastReceiver() {
 
         val baseUrl = intent!!.getStringExtra(GeofenceProvider.baseUrlKey)
         val geofenceTransition = geofencingEvent.geofenceTransition
+        val trans = if (geofenceTransition == Geofence.GEOFENCE_TRANSITION_ENTER) "ENTER" else "EXIT"
 
         geofencingEvent.triggeringGeofences.forEach { geofence ->
             val geofenceDefinition = geofenceDefinitions.firstOrNull { it.id == geofence.requestId }
 
             if (geofenceDefinition != null) {
 
-                LOG.info("Triggered geofence: id=${geofenceDefinition.id}")
+                LOG.info("Triggered geofence '$trans': $geofenceDefinition")
+
                 geofenceDefinition.url = baseUrl + geofenceDefinition.url
 
                 val locationJson = when (geofenceTransition) {
@@ -67,13 +69,14 @@ class GeofenceTransitionsIntentService : BroadcastReceiver() {
                 // Android often triggers an exit on one fence at the same time as triggering an enter
                 // on another so we queue the sends to allow the server time to process the events
                 queueSendLocation(geofenceDefinition, locationJson)
+            } else {
+                LOG.info("Triggered geofence '$trans': unknown")
             }
         }
     }
 
     @Synchronized
     fun queueSendLocation(geofenceDefinition : GeofenceProvider.GeofenceDefinition, locationJson : String?) {
-        var scheduleSend = false
 
         if (locationJson == null) {
             exitedLocation = Pair(geofenceDefinition, null)
