@@ -37,18 +37,18 @@ public interface Database {
      */
     Map<String, Object> createProperties();
 
-    /**
-     * Modify persistence properties (e.g. set datasource) used to call <code>Persistence.createEntityManagerFactory(persistenceUnitName, persistenceUnitProperties)</code>
-     */
-    void open(Map<String, Object> properties, String connectionUrl, String username, String password, int connectionTimeoutSeconds, int minIdle, int maxPoolSize);
+        /**
+         * Modify persistence properties (e.g. set datasource) used to call <code>Persistence.createEntityManagerFactory(persistenceUnitName, persistenceUnitProperties)</code>
+         */
+        void open(Map<String, Object> properties, String connectionUrl, String username, String password, int connectionTimeoutSeconds, int minIdle, int maxPoolSize);
 
-    void close();
+        void close();
 
-    enum Product implements Database {
+        enum Product implements Database {
 
-        POSTGRES {
-            protected HikariConfig hikariConfig;
-            protected HikariDataSource hikariDataSource;
+            POSTGRES {
+                protected HikariConfig hikariConfig;
+                protected HikariDataSource hikariDataSource;
 
             @Override
             public Map<String, Object> createProperties() {
