@@ -30,6 +30,8 @@ import java.util.Date;
 @Table(name = "GLOBAL_RULESET")
 public class GlobalRuleset extends Ruleset {
 
+    public static final String TYPE = "global";
+
     public GlobalRuleset() {
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017, OpenRemote Inc.
+ * Copyright 2016, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -17,28 +17,19 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.model.event.shared;
+package org.openremote.app.client.rules;
 
-/**
- * An event that carries information about the realm it occurred in.
- */
-public abstract class TenantScopedEvent extends SharedEvent {
+import com.github.nmorel.gwtjackson.client.ObjectMapper;
+import com.github.nmorel.gwtjackson.client.annotation.JsonMixIns;
+import org.openremote.app.client.interop.jackson.DefaultJsonMixin;
+import org.openremote.app.client.rest.EntityReader;
+import org.openremote.app.client.rest.EntityWriter;
+import org.openremote.model.rules.RulesEngineInfo;
+import org.openremote.model.security.Tenant;
 
-    public String realmId;
-
-    public TenantScopedEvent(long timestamp, String realmId) {
-        super(timestamp);
-        this.realmId = realmId;
-    }
-
-    public TenantScopedEvent(String realmId) {
-        this.realmId = realmId;
-    }
-
-    protected TenantScopedEvent() {
-    }
-
-    public String getRealmId() {
-        return realmId;
-    }
+@JsonMixIns({@JsonMixIns.JsonMixIn(target = RulesEngineInfo.class, mixIn = DefaultJsonMixin.class)})
+public interface RulesEngineInfoMapper
+    extends ObjectMapper<RulesEngineInfo>,
+    EntityReader<RulesEngineInfo>,
+    EntityWriter<RulesEngineInfo> {
 }

@@ -10,7 +10,7 @@ import org.openremote.model.rules.GlobalRuleset
 import org.openremote.model.rules.Ruleset
 import org.openremote.model.rules.TenantRuleset
 
-import static org.openremote.manager.rules.RulesetDeployment.Status.DEPLOYED
+import static org.openremote.model.rules.RulesetStatus.DEPLOYED
 import static org.openremote.model.rules.Ruleset.Lang.GROOVY
 
 class BasicRulesImport {

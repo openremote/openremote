@@ -31,9 +31,11 @@ import org.openremote.manager.asset.AssetProcessingService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.asset.AssetUpdateProcessor;
 import org.openremote.manager.concurrent.ManagerExecutorService;
+import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.notification.NotificationService;
 import org.openremote.manager.rules.geofence.GeofenceAssetAdapter;
 import org.openremote.manager.security.ManagerIdentityService;
+import org.openremote.model.Constants;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetMeta;
@@ -44,6 +46,7 @@ import org.openremote.model.query.filter.BooleanPredicate;
 import org.openremote.model.query.filter.LocationPredicate;
 import org.openremote.model.rules.*;
 import org.openremote.model.rules.geofence.GeofenceDefinition;
+import org.openremote.model.security.ClientRole;
 import org.openremote.model.security.Tenant;
 import org.openremote.model.util.Pair;
 import org.openremote.model.value.ObjectValue;
@@ -114,6 +117,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
     protected AssetStorageService assetStorageService;
     protected NotificationService notificationService;
     protected AssetProcessingService assetProcessingService;
+    protected ClientEventService clientEventService;
     protected RulesEngine<GlobalRuleset> globalEngine;
     protected String[] activeTenantIds;
     protected BiConsumer<RulesEngine, List<RulesEngine.AssetStateLocationPredicates>> locationPredicateRulesConsumer;
@@ -135,6 +139,28 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
         notificationService = container.getService(NotificationService.class);
         assetStorageService = container.getService(AssetStorageService.class);
         assetProcessingService = container.getService(AssetProcessingService.class);
+        clientEventService = container.getService(ClientEventService.class);
+
+        clientEventService.addSubscriptionAuthorizer((auth, subscription) -> {
+
+            if (subscription.isEventType(RulesEngineStatusEvent.class) || subscription.isEventType(RulesetChangedEvent.class)) {
+
+                if (auth.isSuperUser()) {
+                    return true;
+                }
+
+                // Regular user must have role
+                if (!auth.hasResourceRole(ClientRole.READ_ASSETS.getValue(), Constants.KEYCLOAK_CLIENT_ID)) {
+                    return false;
+                }
+
+                boolean isRestrictedUser = identityService.getIdentityProvider().isRestrictedUser(auth.getUserId());
+
+                return !isRestrictedUser;
+            }
+
+            return false;
+        });
 
         // Init geofence adapters before registering this services camel routes; this allows adapters to know about
         // asset persistence changes before the rule engines are updated.
@@ -499,6 +525,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
                     assetStorageService,
                     assetProcessingService,
                     notificationService,
+                    clientEventService,
                     new RulesEngineId<>(),
                     this::onEngineLocationRulesChanged
                 );
@@ -536,6 +563,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
                         assetStorageService,
                         assetProcessingService,
                         notificationService,
+                        clientEventService,
                         new RulesEngineId<>(realmId),
                         this::onEngineLocationRulesChanged
                     );
@@ -603,6 +631,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
                         assetStorageService,
                         assetProcessingService,
                         notificationService,
+                        clientEventService,
                         new RulesEngineId<>(ruleset.getRealmId(), assetId),
                         this::onEngineLocationRulesChanged
                     );
@@ -876,6 +905,28 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
                 assetsWithModifiedLocationPredicates.clear();
             }
         });
+    }
+
+    protected Optional<RulesetDeployment> getRulesetDeployment(Long rulesetId) {
+        if (globalEngine != null) {
+            if (globalEngine.deployments.containsKey(rulesetId)) {
+                return Optional.of(globalEngine.deployments.get(rulesetId));
+            }
+        }
+
+        for (Map.Entry<String, RulesEngine<TenantRuleset>> realmIdAndEngine : tenantEngines.entrySet()) {
+            if (realmIdAndEngine.getValue().deployments.containsKey(rulesetId)) {
+                return Optional.of(realmIdAndEngine.getValue().deployments.get(rulesetId));
+            }
+        }
+
+        for (Map.Entry<String, RulesEngine<AssetRuleset>> realmIdAndEngine : assetEngines.entrySet()) {
+            if (realmIdAndEngine.getValue().deployments.containsKey(rulesetId)) {
+                return Optional.of(realmIdAndEngine.getValue().deployments.get(rulesetId));
+            }
+        }
+
+        return Optional.empty();
     }
 
     @Override

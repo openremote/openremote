@@ -32,6 +32,8 @@ import java.util.Date;
 @Table(name = "TENANT_RULESET")
 public class TenantRuleset extends Ruleset {
 
+    public static final String TYPE = "tenant";
+
     @Column(name = "REALM_ID", nullable = false)
     protected String realmId;
 

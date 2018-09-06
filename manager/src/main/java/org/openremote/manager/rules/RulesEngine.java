@@ -25,6 +25,7 @@ import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetProcessingService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.concurrent.ManagerExecutorService;
+import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.notification.NotificationService;
 import org.openremote.manager.rules.facade.AssetsFacade;
 import org.openremote.manager.rules.facade.NotificationsFacade;
@@ -43,7 +44,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static org.openremote.container.concurrent.GlobalLock.withLock;
-import static org.openremote.manager.rules.RulesetDeployment.Status.*;
+import static org.openremote.model.rules.RulesetStatus.*;
 
 public class RulesEngine<T extends Ruleset> {
 
@@ -80,6 +81,7 @@ public class RulesEngine<T extends Ruleset> {
     final protected TimerService timerService;
     final protected ManagerExecutorService executorService;
     final protected AssetStorageService assetStorageService;
+    final protected ClientEventService clientEventService;
 
     final protected RulesEngineId<T> id;
     final protected Assets assetsFacade;
@@ -108,11 +110,13 @@ public class RulesEngine<T extends Ruleset> {
                        AssetStorageService assetStorageService,
                        AssetProcessingService assetProcessingService,
                        NotificationService notificationService,
+                       ClientEventService clientEventService,
                        RulesEngineId<T> id,
                        AssetLocationPredicateProcessor assetLocationPredicatesConsumer) {
         this.timerService = timerService;
         this.executorService = executorService;
         this.assetStorageService = assetStorageService;
+        this.clientEventService = clientEventService;
         this.id = id;
         AssetsFacade<T> assetsFacade = new AssetsFacade<>(id, assetStorageService, assetProcessingService::sendAttributeEvent);
         this.assetsFacade = assetsFacade;
@@ -160,11 +164,11 @@ public class RulesEngine<T extends Ruleset> {
     }
 
     public int getExecutionErrorDeploymentCount() {
-        return (int)deployments.values().stream().filter(deployment -> deployment.getStatus() == EXECUTION_ERROR).count();
+        return (int) deployments.values().stream().filter(deployment -> deployment.getStatus() == EXECUTION_ERROR).count();
     }
 
     public int getCompilationErrorDeploymentCount() {
-        return (int)deployments.values().stream().filter(deployment -> deployment.getStatus() == COMPILATION_ERROR).count();
+        return (int) deployments.values().stream().filter(deployment -> deployment.getStatus() == COMPILATION_ERROR).count();
     }
 
     public RuntimeException getError() {
@@ -183,7 +187,7 @@ public class RulesEngine<T extends Ruleset> {
     }
 
     /**
-     * @return <code>true</code> if all rulesets are {@link RulesetDeployment.Status#DEPLOYED} and this engine can be
+     * @return <code>true</code> if all rulesets are {@link RulesetStatus#DEPLOYED} and this engine can be
      * started.
      */
     public boolean isDeployed() {
@@ -208,7 +212,7 @@ public class RulesEngine<T extends Ruleset> {
             updateDeploymentInfo();
         }
 
-        deployment = new RulesetDeployment(ruleset.getId(), ruleset.getName(), ruleset.getVersion());
+        deployment = new RulesetDeployment(ruleset);
 
         boolean compilationSuccessful = deployment.registerRules(ruleset, assetsFacade, usersFacade, notificationFacade);
 
@@ -217,6 +221,23 @@ public class RulesEngine<T extends Ruleset> {
             for (RulesetDeployment rd : deployments.values()) {
                 if (rd.getStatus() == DEPLOYED) {
                     rd.setStatus(READY);
+                    publishRulesetStatus(
+                        rd.getRuleset(),
+                        rd.getStatus(),
+                        rd.getErrorMessage()
+                    );
+                }
+            }
+        } else {
+            // If any other ruleset is READY in this scope, promote to DEPLOYED
+            for (RulesetDeployment rd : deployments.values()) {
+                if (rd.getStatus() == READY) {
+                    rd.setStatus(DEPLOYED);
+                    publishRulesetStatus(
+                        rd.getRuleset(),
+                        rd.getStatus(),
+                        rd.getErrorMessage()
+                    );
                 }
             }
         }
@@ -225,6 +246,12 @@ public class RulesEngine<T extends Ruleset> {
         deployment.setStatus(compilationSuccessful ? DEPLOYED : COMPILATION_ERROR);
         deployments.put(ruleset.getId(), deployment);
         updateDeploymentInfo();
+
+        publishRulesetStatus(
+            ruleset,
+            deployment.getStatus(),
+            deployment.getErrorMessage()
+        );
 
         start();
     }
@@ -243,6 +270,8 @@ public class RulesEngine<T extends Ruleset> {
         deployments.remove(ruleset.getId());
         updateDeploymentInfo();
 
+        publishRulesetStatus(ruleset, ruleset.isEnabled() ? REMOVED : DISABLED, null);
+
         // If there are no deployments with COMPILATION_ERROR, promote all which are READY to DEPLOYED
         boolean anyDeploymentsHaveCompilationError = deployments
             .values()
@@ -253,6 +282,11 @@ public class RulesEngine<T extends Ruleset> {
             deployments.values().forEach(rd -> {
                 if (rd.getStatus() == READY) {
                     rd.setStatus(DEPLOYED);
+                    publishRulesetStatus(
+                        rd.getRuleset(),
+                        rd.getStatus(),
+                        rd.getErrorMessage()
+                    );
                 }
             });
         }
@@ -261,6 +295,7 @@ public class RulesEngine<T extends Ruleset> {
             start();
             return false;
         } else {
+            publishRulesEngineStatus();
             return true;
         }
     }
@@ -283,6 +318,7 @@ public class RulesEngine<T extends Ruleset> {
         LOG.info("Starting: " + this);
         running = true;
         trackLocationPredicates = true;
+        publishRulesEngineStatus();
         fire();
 
         // Start a background stats printer if INFO level logging is enabled
@@ -325,7 +361,7 @@ public class RulesEngine<T extends Ruleset> {
 
                     }),
                     TemporaryFact.GUARANTEED_MIN_EXPIRATION_MILLIS
-                                                    );
+                );
             }
         });
     }
@@ -368,6 +404,7 @@ public class RulesEngine<T extends Ruleset> {
 
                 deployment.setStatus(EXECUTION_ERROR);
                 deployment.setError(ex);
+                publishRulesetStatus(deployment.getRuleset(), deployment.getStatus(), deployment.getErrorMessage());
 
                 // TODO We always stop on any error, good idea?
                 // TODO We only get here on LHS runtime errors, RHS runtime errors are in RuleFacts.onFailure()
@@ -411,6 +448,8 @@ public class RulesEngine<T extends Ruleset> {
         if (!systemShutdownInProgress && assetLocationPredicatesConsumer != null) {
             assetLocationPredicatesConsumer.accept(this, null);
         }
+
+        publishRulesEngineStatus();
     }
 
     public void updateFact(AssetState assetState, boolean fireImmediately) {
@@ -438,7 +477,7 @@ public class RulesEngine<T extends Ruleset> {
             deployments.values().stream()
                 .map(RulesetDeployment::toString)
                 .toArray(String[]::new)
-                                        );
+        );
     }
 
     protected void printSessionStats() {
@@ -450,11 +489,11 @@ public class RulesEngine<T extends Ruleset> {
             long temporaryFactsCount = facts.getTemporaryFacts().count();
             long total = assetStateFacts.size() + assetEventFacts.size() + namedFacts.size() + anonFacts.size();
             STATS_LOG.info("On " + this + ", in memory facts are Total: " + total
-                               + ", AssetState: " + assetStateFacts.size()
-                               + ", AssetEvent: " + assetEventFacts.size()
-                               + ", Named: " + namedFacts.size()
-                               + ", Anonymous: " + anonFacts.size()
-                               + ", Temporary: " + temporaryFactsCount);
+                + ", AssetState: " + assetStateFacts.size()
+                + ", AssetEvent: " + assetEventFacts.size()
+                + ", Named: " + namedFacts.size()
+                + ", Anonymous: " + anonFacts.size()
+                + ", Temporary: " + temporaryFactsCount);
 
             // Additional details if FINEST is enabled
             if (STATS_LOG.isLoggable(Level.FINEST)) {
@@ -471,6 +510,63 @@ public class RulesEngine<T extends Ruleset> {
         if (assetLocationPredicatesConsumer != null) {
             assetLocationPredicatesConsumer.accept(this, assetStateLocationPredicates);
         }
+    }
+
+    protected RulesEngineStatus getStatus() {
+        return getStatus(getCompilationErrorDeploymentCount(), getExecutionErrorDeploymentCount());
+    }
+
+    protected RulesEngineStatus getStatus(int compilationErrors, int executionErrors) {
+        if (isRunning()) {
+            return compilationErrors > 0 || executionErrors > 0 ? RulesEngineStatus.ERROR : RulesEngineStatus.RUNNING;
+        }
+
+        return compilationErrors > 0 || executionErrors > 0 ? RulesEngineStatus.ERROR : deployments.isEmpty() ? null : RulesEngineStatus.STOPPED;
+    }
+
+    protected void publishRulesEngineStatus() {
+        withLock(getClass().getSimpleName() + "::publishRulesEngineStatus", () -> {
+
+            String engineId = id == null ? null : id.getRealmId().orElse(id.getAssetId().orElse(null));
+            int compilationErrors = getCompilationErrorDeploymentCount();
+            int executionErrors = getExecutionErrorDeploymentCount();
+            RulesEngineInfo engineInfo = new RulesEngineInfo(
+                getStatus(compilationErrors, executionErrors),
+                compilationErrors,
+                executionErrors);
+
+            RulesEngineStatusEvent event = new RulesEngineStatusEvent(
+                timerService.getCurrentTimeMillis(),
+                engineId,
+                engineInfo
+            );
+
+            LOG.fine("Publishing rules engine status event: " + event);
+
+            // Notify clients
+            clientEventService.publishEvent(event);
+        });
+    }
+
+    protected void publishRulesetStatus(Ruleset ruleset, RulesetStatus status, String error) {
+        withLock(getClass().getSimpleName() + "::publishRulesetStatus", () -> {
+
+            String engineId = id == null ? null : id.getRealmId().orElse(id.getAssetId().orElse(null));
+
+            ruleset.setStatus(status);
+            ruleset.setError(error);
+
+            RulesetChangedEvent event = new RulesetChangedEvent(
+                timerService.getCurrentTimeMillis(),
+                engineId,
+                ruleset
+            );
+
+            LOG.fine("Publishing ruleset status event: " + event);
+
+            // Notify clients
+            clientEventService.publishEvent(event);
+        });
     }
 
     @Override

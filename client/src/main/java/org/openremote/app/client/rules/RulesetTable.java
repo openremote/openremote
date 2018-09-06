@@ -32,6 +32,7 @@ import org.openremote.app.client.widget.FormTable;
 import org.openremote.app.client.widget.IconCell;
 import org.openremote.model.Constants;
 import org.openremote.model.rules.Ruleset;
+import org.openremote.model.rules.RulesetStatus;
 
 public class RulesetTable<R extends Ruleset> extends FormTable<R> {
 
@@ -47,6 +48,8 @@ public class RulesetTable<R extends Ruleset> extends FormTable<R> {
         String createOnColumn();
 
         String lastModifiedColumn();
+
+        String statusColumn();
     }
 
     final protected Style style;
@@ -103,6 +106,18 @@ public class RulesetTable<R extends Ruleset> extends FormTable<R> {
         }
     };
 
+    final protected TextColumn<R> statusColumn = new TextColumn<R>() {
+        @Override
+        public String getValue(R ruleset) {
+            return !ruleset.isEnabled() ? RulesetStatus.DISABLED.name() : ruleset.getStatus() != null ? ruleset.getStatus().name() : "";
+        }
+
+        @Override
+        public String getCellStyleNames(Cell.Context context, R object) {
+            return "nowrap";
+        }
+    };
+
     public RulesetTable(ManagerMessages managerMessages,
                         Style style,
                         FormTableStyle formTableStyle) {
@@ -117,6 +132,10 @@ public class RulesetTable<R extends Ruleset> extends FormTable<R> {
         applyStyleCellText(nameColumn);
         addColumn(nameColumn, createHeader(managerMessages.rulesetName()));
         addColumnStyleName(i++, style.nameColumn());
+
+        addColumn(statusColumn, createHeader(managerMessages.status()));
+        addColumnStyleName(i++, style.statusColumn());
+        statusColumn.setHorizontalAlignment(HasHorizontalAlignment.ALIGN_LEFT);
 
         applyStyleCellText(createOnColumn);
         addColumn(createOnColumn, createHeader(managerMessages.createdOn()));

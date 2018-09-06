@@ -24,6 +24,7 @@ import com.google.gwt.i18n.client.Messages;
 import jsinterop.annotations.JsType;
 import org.openremote.app.client.notifications.FilterOptions;
 import org.openremote.app.client.notifications.NotificationEditorImpl;
+import org.openremote.model.rules.RulesEngineStatus;
 
 @LocalizableResource.DefaultLocale
 @JsType
@@ -556,4 +557,12 @@ public interface ManagerMessages extends Messages {
     String none();
 
     String notificationBuildError();
+
+    String engineStatusLabel();
+
+    String engineStatus(@Select RulesEngineStatus status);
+
+    String compilationErrorCount();
+
+    String executionErrorCount();
 }

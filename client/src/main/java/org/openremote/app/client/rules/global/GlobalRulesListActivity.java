@@ -25,13 +25,15 @@ import org.openremote.app.client.assets.browser.AssetBrowser;
 import org.openremote.app.client.assets.browser.AssetBrowserSelection;
 import org.openremote.app.client.mvp.AcceptsView;
 import org.openremote.app.client.mvp.AppActivity;
+import org.openremote.app.client.rules.RulesEngineInfoMapper;
 import org.openremote.app.client.rules.RulesModule;
 import org.openremote.model.event.bus.EventBus;
 import org.openremote.model.event.bus.EventRegistration;
-import org.openremote.model.rules.GlobalRuleset;
-import org.openremote.model.rules.RulesResource;
+import org.openremote.model.rules.*;
 
 import javax.inject.Inject;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 
 public class GlobalRulesListActivity
@@ -40,18 +42,21 @@ public class GlobalRulesListActivity
 
     final GlobalRulesList view;
     final GlobalRulesetArrayMapper globalRulesetArrayMapper;
-    final RulesResource rulesetResource;
+    final RulesResource rulesResource;
+    final RulesEngineInfoMapper rulesEngineInfoMapper;
 
     @Inject
     public GlobalRulesListActivity(Environment environment,
                                    AssetBrowser.Presenter assetBrowserPresenter,
                                    GlobalRulesList view,
                                    GlobalRulesetArrayMapper globalRulesetArrayMapper,
-                                   RulesResource rulesetResource) {
+                                   RulesEngineInfoMapper rulesEngineInfoMapper,
+                                   RulesResource rulesResource) {
         super(environment, assetBrowserPresenter);
         this.view = view;
         this.globalRulesetArrayMapper = globalRulesetArrayMapper;
-        this.rulesetResource = rulesetResource;
+        this.rulesEngineInfoMapper = rulesEngineInfoMapper;
+        this.rulesResource = rulesResource;
     }
 
     @Override
@@ -69,11 +74,20 @@ public class GlobalRulesListActivity
             RulesModule.createDefaultNavigationListener(environment)
         ));
 
+        subscribeStatusEvents(true, registrations);
+
         environment.getApp().getRequests().sendAndReturn(
             globalRulesetArrayMapper,
-            rulesetResource::getGlobalRulesets,
+            rulesResource::getGlobalRulesets,
             200,
-            view::setRulesets
+            results -> view.setRulesets(new ArrayList<>(Arrays.asList(results)))
+        );
+
+        environment.getApp().getRequests().sendAndReturn(
+            rulesEngineInfoMapper,
+            rulesResource::getGlobalEngineInfo,
+            new double[] {200, 204},
+            view::onEngineStatusChanged
         );
 
         view.setCreateRulesetHistoryToken(
@@ -85,6 +99,7 @@ public class GlobalRulesListActivity
 
     @Override
     public void onStop() {
+        subscribeStatusEvents(false, null);
         super.onStop();
         view.setPresenter(null);
     }
@@ -92,5 +107,33 @@ public class GlobalRulesListActivity
     @Override
     public void onRulesetSelected(GlobalRuleset ruleset) {
         environment.getPlaceController().goTo(new GlobalRulesEditorPlace(ruleset.getId()));
+    }
+
+    protected void subscribeStatusEvents(boolean subscribe, Collection<EventRegistration> registrations) {
+        if (subscribe) {
+            environment.getEventService().subscribe(RulesEngineStatusEvent.class);
+            environment.getEventService().subscribe(RulesetChangedEvent.class);
+
+            registrations.add(environment.getEventBus().register(
+                RulesEngineStatusEvent.class,
+                e -> {
+                    if (e.getEngineId() == null) {
+                        view.onEngineStatusChanged(e.getEngineInfo());
+                    }
+                }
+            ));
+
+            registrations.add(environment.getEventBus().register(
+                RulesetChangedEvent.class,
+                e -> {
+                    if (e.getEngineId() == null) {
+                        view.onRulesetStatusChanged((GlobalRuleset)e.getRuleset());
+                    }
+                }
+            ));
+        } else {
+            environment.getEventService().unsubscribe(RulesetChangedEvent.class);
+            environment.getEventService().unsubscribe(RulesEngineStatusEvent.class);
+        }
     }
 }

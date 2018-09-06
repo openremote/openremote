@@ -24,7 +24,7 @@ import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
-import static org.openremote.manager.rules.RulesetDeployment.Status.*
+import static org.openremote.model.rules.RulesetStatus.*
 import static org.openremote.manager.setup.builtin.ManagerDemoSetup.*
 import static org.openremote.test.rules.BasicRulesImport.assertRulesFired
 

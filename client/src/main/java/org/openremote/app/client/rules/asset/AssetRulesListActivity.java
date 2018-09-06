@@ -26,15 +26,20 @@ import org.openremote.app.client.assets.browser.AssetBrowser;
 import org.openremote.app.client.assets.browser.AssetBrowserSelection;
 import org.openremote.app.client.mvp.AcceptsView;
 import org.openremote.app.client.mvp.AppActivity;
+import org.openremote.app.client.rules.RulesEngineInfoMapper;
 import org.openremote.app.client.rules.RulesModule;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetResource;
 import org.openremote.model.event.bus.EventBus;
 import org.openremote.model.event.bus.EventRegistration;
 import org.openremote.model.rules.AssetRuleset;
+import org.openremote.model.rules.RulesEngineStatusEvent;
 import org.openremote.model.rules.RulesResource;
+import org.openremote.model.rules.RulesetChangedEvent;
 
 import javax.inject.Inject;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 
 public class AssetRulesListActivity
@@ -45,7 +50,8 @@ public class AssetRulesListActivity
     final AssetResource assetResource;
     final AssetMapper assetMapper;
     final AssetRulesetArrayMapper assetRulesetArrayMapper;
-    final RulesResource rulesetResource;
+    final RulesEngineInfoMapper rulesEngineInfoMapper;
+    final RulesResource rulesResource;
 
     String assetId;
     Asset asset;
@@ -57,13 +63,15 @@ public class AssetRulesListActivity
                                   AssetResource assetResource,
                                   AssetMapper assetMapper,
                                   AssetRulesetArrayMapper assetRulesetArrayMapper,
-                                  RulesResource rulesetResource) {
+                                  RulesEngineInfoMapper rulesEngineInfoMapper,
+                                  RulesResource rulesResource) {
         super(environment, assetBrowserPresenter);
         this.view = view;
         this.assetResource = assetResource;
         this.assetMapper = assetMapper;
         this.assetRulesetArrayMapper = assetRulesetArrayMapper;
-        this.rulesetResource = rulesetResource;
+        this.rulesEngineInfoMapper = rulesEngineInfoMapper;
+        this.rulesResource = rulesResource;
     }
 
     @Override
@@ -84,6 +92,8 @@ public class AssetRulesListActivity
 
         if (assetId != null) {
 
+            subscribeStatusEvents(true, registrations);
+
             assetBrowserPresenter.loadAsset(assetId, loadedAsset -> {
                 this.asset = loadedAsset;
                 if (asset != null) {
@@ -96,16 +106,24 @@ public class AssetRulesListActivity
             });
 
             environment.getApp().getRequests().sendAndReturn(
+                rulesEngineInfoMapper,
+                params -> rulesResource.getTenantEngineInfo(params, assetId),
+                new double[] {200, 204},
+                view::onEngineStatusChanged
+            );
+
+            environment.getApp().getRequests().sendAndReturn(
                 assetRulesetArrayMapper,
-                params -> rulesetResource.getAssetRulesets(params, assetId),
+                params -> rulesResource.getAssetRulesets(params, assetId),
                 200,
-                view::setRulesets
+                results -> view.setRulesets(new ArrayList<>(Arrays.asList(results)))
             );
         }
     }
 
     @Override
     public void onStop() {
+        subscribeStatusEvents(false, null);
         super.onStop();
         view.setPresenter(null);
     }
@@ -113,5 +131,33 @@ public class AssetRulesListActivity
     @Override
     public void onRulesetSelected(AssetRuleset ruleset) {
         environment.getPlaceController().goTo(new AssetRulesEditorPlace(assetId, ruleset.getId()));
+    }
+
+    protected void subscribeStatusEvents(boolean subscribe, Collection<EventRegistration> registrations) {
+        if (subscribe) {
+            environment.getEventService().subscribe(RulesEngineStatusEvent.class);
+            environment.getEventService().subscribe(RulesetChangedEvent.class);
+
+            registrations.add(environment.getEventBus().register(
+                RulesEngineStatusEvent.class,
+                e -> {
+                    if (assetId.equals(e.getEngineId())) {
+                        view.onEngineStatusChanged(e.getEngineInfo());
+                    }
+                }
+            ));
+
+            registrations.add(environment.getEventBus().register(
+                RulesetChangedEvent.class,
+                e -> {
+                    if (assetId.equals(e.getEngineId())) {
+                        view.onRulesetStatusChanged((AssetRuleset)e.getRuleset());
+                    }
+                }
+            ));
+        } else {
+            environment.getEventService().unsubscribe(RulesetChangedEvent.class);
+            environment.getEventService().unsubscribe(RulesEngineStatusEvent.class);
+        }
     }
 }

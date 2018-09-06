@@ -34,7 +34,7 @@ import spock.util.concurrent.PollingConditions
 
 import javax.ws.rs.WebApplicationException
 
-import static org.openremote.manager.rules.RulesetDeployment.Status.DEPLOYED
+import static org.openremote.model.rules.RulesetStatus.DEPLOYED
 import static org.openremote.manager.setup.builtin.ManagerDemoSetup.DEMO_RULE_STATES_CUSTOMER_A
 import static org.openremote.manager.setup.builtin.ManagerDemoSetup.SMART_HOME_LOCATION
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID

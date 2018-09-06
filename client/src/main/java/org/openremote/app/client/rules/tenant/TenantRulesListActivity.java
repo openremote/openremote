@@ -26,14 +26,19 @@ import org.openremote.app.client.assets.browser.AssetBrowser;
 import org.openremote.app.client.assets.browser.AssetBrowserSelection;
 import org.openremote.app.client.mvp.AcceptsView;
 import org.openremote.app.client.mvp.AppActivity;
+import org.openremote.app.client.rules.RulesEngineInfoMapper;
 import org.openremote.app.client.rules.RulesModule;
 import org.openremote.model.event.bus.EventBus;
 import org.openremote.model.event.bus.EventRegistration;
+import org.openremote.model.rules.RulesEngineStatusEvent;
 import org.openremote.model.rules.RulesResource;
+import org.openremote.model.rules.RulesetChangedEvent;
 import org.openremote.model.rules.TenantRuleset;
 import org.openremote.model.security.TenantResource;
 
 import javax.inject.Inject;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 
 public class TenantRulesListActivity
@@ -42,9 +47,10 @@ public class TenantRulesListActivity
 
     final TenantRulesList view;
     final TenantMapper tenantMapper;
+    final RulesEngineInfoMapper rulesEngineInfoMapper;
     final TenantResource tenantResource;
     final TenantRulesetArrayMapper tenantRulesetArrayMapper;
-    final RulesResource rulesetResource;
+    final RulesResource rulesResource;
 
     String realmId;
 
@@ -53,15 +59,17 @@ public class TenantRulesListActivity
                                    AssetBrowser.Presenter assetBrowserPresenter,
                                    TenantRulesList view,
                                    TenantMapper tenantMapper,
+                                   RulesEngineInfoMapper rulesEngineInfoMapper,
                                    TenantResource tenantResource,
                                    TenantRulesetArrayMapper tenantRulesetArrayMapper,
-                                   RulesResource rulesetResource) {
+                                   RulesResource rulesResource) {
         super(environment, assetBrowserPresenter);
         this.view = view;
         this.tenantMapper = tenantMapper;
+        this.rulesEngineInfoMapper = rulesEngineInfoMapper;
         this.tenantResource = tenantResource;
         this.tenantRulesetArrayMapper = tenantRulesetArrayMapper;
-        this.rulesetResource = rulesetResource;
+        this.rulesResource = rulesResource;
     }
 
     @Override
@@ -81,6 +89,9 @@ public class TenantRulesListActivity
         ));
 
         if (realmId != null) {
+
+            subscribeStatusEvents(true, registrations);
+
             assetBrowserPresenter.selectTenant(realmId);
 
             environment.getApp().getRequests().sendAndReturn(
@@ -96,16 +107,24 @@ public class TenantRulesListActivity
             );
 
             environment.getApp().getRequests().sendAndReturn(
+                rulesEngineInfoMapper,
+                params -> rulesResource.getTenantEngineInfo(params, realmId),
+                new double[] {200, 204},
+                view::onEngineStatusChanged
+            );
+
+            environment.getApp().getRequests().sendAndReturn(
                 tenantRulesetArrayMapper,
-                params -> rulesetResource.getTenantRulesets(params, realmId),
+                params -> rulesResource.getTenantRulesets(params, realmId),
                 200,
-                view::setRulesets
+                results -> view.setRulesets(new ArrayList<>(Arrays.asList(results)))
             );
         }
     }
 
     @Override
     public void onStop() {
+        subscribeStatusEvents(false, null);
         super.onStop();
         view.setPresenter(null);
     }
@@ -113,5 +132,33 @@ public class TenantRulesListActivity
     @Override
     public void onRulesetSelected(TenantRuleset ruleset) {
         environment.getPlaceController().goTo(new TenantRulesEditorPlace(realmId, ruleset.getId()));
+    }
+
+    protected void subscribeStatusEvents(boolean subscribe, Collection<EventRegistration> registrations) {
+        if (subscribe) {
+            environment.getEventService().subscribe(RulesEngineStatusEvent.class);
+            environment.getEventService().subscribe(RulesetChangedEvent.class);
+
+            registrations.add(environment.getEventBus().register(
+                RulesEngineStatusEvent.class,
+                e -> {
+                    if (realmId.equals(e.getEngineId())) {
+                        view.onEngineStatusChanged(e.getEngineInfo());
+                    }
+                }
+            ));
+
+            registrations.add(environment.getEventBus().register(
+                RulesetChangedEvent.class,
+                e -> {
+                    if (realmId.equals(e.getEngineId())) {
+                        view.onRulesetStatusChanged((TenantRuleset) e.getRuleset());
+                    }
+                }
+            ));
+        } else {
+            environment.getEventService().unsubscribe(RulesetChangedEvent.class);
+            environment.getEventService().unsubscribe(RulesEngineStatusEvent.class);
+        }
     }
 }

@@ -19,6 +19,10 @@
  */
 package org.openremote.model.rules;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
@@ -32,6 +36,16 @@ import static org.openremote.model.Constants.PERSISTENCE_SEQUENCE_ID_GENERATOR;
  * Rules can be defined in three scopes: global, for a realm, for an asset sub-tree.
  */
 @MappedSuperclass
+@JsonTypeInfo(
+    use = JsonTypeInfo.Id.NAME,
+    include = JsonTypeInfo.As.PROPERTY,
+    property = "type"
+)
+@JsonSubTypes({
+    @JsonSubTypes.Type(value = AssetRuleset.class, name = AssetRuleset.TYPE),
+    @JsonSubTypes.Type(value = TenantRuleset.class, name = TenantRuleset.TYPE),
+    @JsonSubTypes.Type(value = GlobalRuleset.class, name = GlobalRuleset.TYPE)
+})
 public abstract class Ruleset {
 
     public enum Lang {
@@ -148,7 +162,13 @@ public abstract class Ruleset {
     @Column(name = "RULES_LANG", nullable = false)
     protected Lang lang = Lang.GROOVY;
 
-    public Ruleset() {
+    @Transient
+    protected RulesetStatus status;
+
+    @Transient
+    protected String error;
+
+    protected Ruleset() {
     }
 
     public Ruleset(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, Lang lang) {
@@ -232,5 +252,21 @@ public abstract class Ruleset {
 
     public void setLang(Lang lang) {
         this.lang = lang;
+    }
+
+    public RulesetStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(RulesetStatus status) {
+        this.status = status;
+    }
+
+    public String getError() {
+        return error;
+    }
+
+    public void setError(String error) {
+        this.error = error;
     }
 }

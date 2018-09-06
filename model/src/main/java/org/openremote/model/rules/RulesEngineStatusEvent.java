@@ -17,28 +17,40 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.model.event.shared;
+package org.openremote.model.rules;
+
+import org.openremote.model.event.shared.SharedEvent;
 
 /**
- * An event that carries information about the realm it occurred in.
+ * Published by the server when a rules engine changes its {@link RulesEngineStatus}.
  */
-public abstract class TenantScopedEvent extends SharedEvent {
+public class RulesEngineStatusEvent extends SharedEvent {
 
-    public String realmId;
+    protected String engineId;
+    protected RulesEngineInfo engineInfo;
 
-    public TenantScopedEvent(long timestamp, String realmId) {
+    protected RulesEngineStatusEvent() {
+    }
+
+    public RulesEngineStatusEvent(long timestamp, String engineId, RulesEngineInfo engineInfo) {
         super(timestamp);
-        this.realmId = realmId;
+        this.engineId = engineId;
+        this.engineInfo = engineInfo;
     }
 
-    public TenantScopedEvent(String realmId) {
-        this.realmId = realmId;
+    public String getEngineId() {
+        return engineId;
     }
 
-    protected TenantScopedEvent() {
+    public RulesEngineInfo getEngineInfo() {
+        return engineInfo;
     }
 
-    public String getRealmId() {
-        return realmId;
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "{" +
+            "engineId='" + engineId + '\'' +
+            ", engineInfo=" + engineInfo +
+            '}';
     }
 }

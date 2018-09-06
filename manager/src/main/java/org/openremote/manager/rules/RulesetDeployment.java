@@ -34,6 +34,7 @@ import org.kohsuke.groovy.sandbox.SandboxTransformer;
 import org.openremote.manager.rules.facade.NotificationsFacade;
 import org.openremote.model.rules.Assets;
 import org.openremote.model.rules.Ruleset;
+import org.openremote.model.rules.RulesetStatus;
 import org.openremote.model.rules.Users;
 
 import javax.script.*;
@@ -44,28 +45,6 @@ import java.util.logging.Logger;
 public class RulesetDeployment {
 
     public static final int DEFAULT_RULE_PRIORITY = 1000;
-
-    public enum Status {
-        /**
-         * Ruleset compiled successfully but is not running, due to failure of other rulesets in same scope.
-         */
-        READY,
-
-        /**
-         * Ruleset has been compiled and can be executed.
-         */
-        DEPLOYED,
-
-        /**
-         * Ruleset did not compile successfully and can not be executed.
-         */
-        COMPILATION_ERROR,
-
-        /**
-         * Ruleset was executed but there was a runtime error.
-         */
-        EXECUTION_ERROR
-    }
 
     /**
      * An interface that looks like a JavaScript browser console, for simplified logging.
@@ -131,29 +110,29 @@ public class RulesetDeployment {
         );
     }
 
-    final protected long id;
-    final protected String name;
-    final protected long version;
+    final protected Ruleset ruleset;
     final protected Rules rules = new Rules();
-    protected Status status;
+    protected RulesetStatus status;
     protected Throwable error;
 
-    public RulesetDeployment(long id, String name, long version) {
-        this.id = id;
-        this.name = name;
-        this.version = version;
+    public RulesetDeployment(Ruleset ruleset) {
+        this.ruleset = ruleset;
     }
 
     public long getId() {
-        return id;
+        return ruleset.getId();
     }
 
     public String getName() {
-        return name;
+        return ruleset.getName();
     }
 
     public long getVersion() {
-        return version;
+        return ruleset.getVersion();
+    }
+
+    public Ruleset getRuleset() {
+        return ruleset;
     }
 
     public Rules getRules() {
@@ -343,16 +322,20 @@ public class RulesetDeployment {
         }
     }
 
-    public Status getStatus() {
+    public RulesetStatus getStatus() {
         return status;
     }
 
-    public void setStatus(Status status) {
+    public void setStatus(RulesetStatus status) {
         this.status = status;
     }
 
     public Throwable getError() {
         return error;
+    }
+
+    public String getErrorMessage() {
+        return getError() != null ? getError().getMessage() : null;
     }
 
     public void setError(Throwable error) {
@@ -362,9 +345,9 @@ public class RulesetDeployment {
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
-            "id=" + id +
-            ", name='" + name + '\'' +
-            ", version=" + version +
+            "id=" + getId() +
+            ", name='" + getName() + '\'' +
+            ", version=" + getVersion() +
             ", status=" + status +
             '}';
     }

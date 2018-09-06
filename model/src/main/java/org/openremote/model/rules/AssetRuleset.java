@@ -33,6 +33,8 @@ import java.util.Date;
 @Table(name = "ASSET_RULESET")
 public class AssetRuleset extends Ruleset {
 
+    public static final String TYPE = "asset";
+
     @Column(name = "ASSET_ID", length = 22, nullable = false, columnDefinition = "char(22)")
     protected String assetId;
 

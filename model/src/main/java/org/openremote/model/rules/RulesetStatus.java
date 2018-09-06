@@ -17,28 +17,36 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.model.event.shared;
+package org.openremote.model.rules;
 
-/**
- * An event that carries information about the realm it occurred in.
- */
-public abstract class TenantScopedEvent extends SharedEvent {
+public enum RulesetStatus {
+    /**
+     * Ruleset compiled successfully but is not running, due to failure of other rulesets in same scope.
+     */
+    READY,
 
-    public String realmId;
+    /**
+     * Ruleset has been compiled and can be executed.
+     */
+    DEPLOYED,
 
-    public TenantScopedEvent(long timestamp, String realmId) {
-        super(timestamp);
-        this.realmId = realmId;
-    }
+    /**
+     * Ruleset did not compile successfully and can not be executed.
+     */
+    COMPILATION_ERROR,
 
-    public TenantScopedEvent(String realmId) {
-        this.realmId = realmId;
-    }
+    /**
+     * Ruleset was executed but there was a runtime error.
+     */
+    EXECUTION_ERROR,
 
-    protected TenantScopedEvent() {
-    }
+    /**
+     * Ruleset has been disabled.
+     */
+    DISABLED,
 
-    public String getRealmId() {
-        return realmId;
-    }
+    /**
+     * Ruleset has been removed.
+     */
+    REMOVED
 }

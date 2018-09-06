@@ -5,7 +5,6 @@ import org.openremote.manager.notification.PushNotificationHandler
 import org.openremote.manager.rules.RulesEngine
 import org.openremote.manager.rules.RulesFacts
 import org.openremote.manager.rules.RulesService
-import org.openremote.manager.rules.RulesetDeployment
 import org.openremote.manager.rules.RulesetStorageService
 import org.openremote.manager.setup.SetupService
 import org.openremote.manager.setup.builtin.KeycloakDemoSetup
@@ -15,6 +14,7 @@ import org.openremote.model.notification.Notification
 import org.openremote.model.notification.NotificationSendResult
 import org.openremote.model.rules.AssetRuleset
 import org.openremote.model.rules.Ruleset
+import org.openremote.model.rules.RulesetStatus
 import org.openremote.model.rules.TenantRuleset
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
@@ -46,7 +46,7 @@ class RulesExecutionFailureTest extends Specification implements ManagerContaine
         conditions.eventually {
             apartment2Engine = rulesService.assetEngines.get(managerDemoSetup.apartment2Id)
             assert apartment2Engine != null
-            assert apartment2Engine.deployments[ruleset.id].status == RulesetDeployment.Status.EXECUTION_ERROR
+            assert apartment2Engine.deployments[ruleset.id].status == RulesetStatus.EXECUTION_ERROR
             assert apartment2Engine.deployments[ruleset.id].error instanceof IllegalArgumentException
             assert apartment2Engine.deployments[ruleset.id].error.message == "Error evaluating condition of rule 'The when condition is illegal, it's returning an Optional instead of a boolean': result is not boolean but Optional.empty"
             assert apartment2Engine.isError()
@@ -82,7 +82,7 @@ class RulesExecutionFailureTest extends Specification implements ManagerContaine
         conditions.eventually {
             apartment2Engine = rulesService.assetEngines.get(managerDemoSetup.apartment2Id)
             assert apartment2Engine != null
-            assert apartment2Engine.deployments[ruleset.id].status == RulesetDeployment.Status.EXECUTION_ERROR
+            assert apartment2Engine.deployments[ruleset.id].status == RulesetStatus.EXECUTION_ERROR
             assert apartment2Engine.deployments[ruleset.id].error instanceof RuntimeException
             assert apartment2Engine.deployments[ruleset.id].error.message == "Error evaluating condition of rule 'Condition always throws exception': Oops"
             assert apartment2Engine.isError()
@@ -118,7 +118,7 @@ class RulesExecutionFailureTest extends Specification implements ManagerContaine
         conditions.eventually {
             apartment2Engine = rulesService.assetEngines.get(managerDemoSetup.apartment2Id)
             assert apartment2Engine != null
-            assert apartment2Engine.deployments[ruleset.id].status == RulesetDeployment.Status.EXECUTION_ERROR
+            assert apartment2Engine.deployments[ruleset.id].status == RulesetStatus.EXECUTION_ERROR
             assert apartment2Engine.deployments[ruleset.id].error instanceof RuntimeException
             assert apartment2Engine.deployments[ruleset.id].error.message == "Error executing action of rule 'Action always throws exception': Oops"
             assert apartment2Engine.isError()
@@ -176,7 +176,7 @@ class RulesExecutionFailureTest extends Specification implements ManagerContaine
         conditions.eventually {
             def apartment2Engine = rulesService.assetEngines.get(managerDemoSetup.apartment2Id)
             assert apartment2Engine != null
-            assert apartment2Engine.deployments[ruleset.id].status == RulesetDeployment.Status.EXECUTION_ERROR
+            assert apartment2Engine.deployments[ruleset.id].status == RulesetStatus.EXECUTION_ERROR
             assert apartment2Engine.deployments[ruleset.id].error instanceof RuntimeException
             assert apartment2Engine.deployments[ruleset.id].error.message ==
                     "Error executing action of rule 'Notify master user out of scope': Overriding query restriction is not allowed in this rules scope"
@@ -198,7 +198,7 @@ class RulesExecutionFailureTest extends Specification implements ManagerContaine
         conditions.eventually {
             def customerAEngine = rulesService.tenantEngines.get(keycloakDemoSetup.customerATenant.id)
             assert customerAEngine != null
-            assert customerAEngine.deployments[ruleset.id].status == RulesetDeployment.Status.EXECUTION_ERROR
+            assert customerAEngine.deployments[ruleset.id].status == RulesetStatus.EXECUTION_ERROR
             assert customerAEngine.deployments[ruleset.id].error instanceof RuntimeException
             assert customerAEngine.deployments[ruleset.id].error.message ==
                 "Error executing action of rule 'Notify master user out of scope': Overriding query restriction is not allowed in this rules scope"
@@ -235,7 +235,7 @@ class RulesExecutionFailureTest extends Specification implements ManagerContaine
         conditions.eventually {
             apartment2Engine = rulesService.assetEngines.get(managerDemoSetup.apartment2Id)
             assert apartment2Engine != null
-            assert apartment2Engine.deployments[ruleset.id].status == RulesetDeployment.Status.EXECUTION_ERROR
+            assert apartment2Engine.deployments[ruleset.id].status == RulesetStatus.EXECUTION_ERROR
             assert apartment2Engine.deployments[ruleset.id].error instanceof IllegalStateException
             assert apartment2Engine.deployments[ruleset.id].error.message == "Possible rules loop detected, exceeded max trigger count of " + RulesFacts.MAX_RULES_TRIGGERED_PER_EXECUTION +  " for rule: Condition loops"
             assert apartment2Engine.isError()

@@ -35,6 +35,36 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 public interface RulesResource {
 
     /**
+     * Retrieve information about the global rules engine (if engine doesn't exist then will return null).
+     */
+    @GET
+    @Path("info/global")
+    @SuccessStatusCode(200)
+    @RolesAllowed({"read:rules"})
+    @SuppressWarnings("unusable-by-js")
+    RulesEngineInfo getGlobalEngineInfo(@BeanParam RequestParams requestParams);
+
+    /**
+     * Retrieve information about the specified tenant rules engine (if engine doesn't exist then will return null).
+     */
+    @GET
+    @Path("info/tenant/{realmId}")
+    @SuccessStatusCode(200)
+    @RolesAllowed({"read:rules"})
+    @SuppressWarnings("unusable-by-js")
+    RulesEngineInfo getTenantEngineInfo(@BeanParam RequestParams requestParams, @PathParam("realmId") String realmId);
+
+    /**
+     * Retrieve information about the specified asset rules engine (if engine doesn't exist then will return null).
+     */
+    @GET
+    @Path("info/asset/{assetId}")
+    @SuccessStatusCode(200)
+    @RolesAllowed({"read:rules"})
+    @SuppressWarnings("unusable-by-js")
+    RulesEngineInfo getAssetEngineInfo(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId);
+
+    /**
      * Retrieve global rules. Only the superuser can perform this operation, a 403 status is returned if a regular user
      * tries to access global rulesets.
      */

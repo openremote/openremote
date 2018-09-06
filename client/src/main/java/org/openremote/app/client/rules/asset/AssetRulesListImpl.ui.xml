@@ -27,6 +27,9 @@
 
         .enabledColumn {
         }
+
+        .statusColumn {
+        }
     </ui:style>
 
     <w:FlexSplitPanel handleStyle="{widgetStyle.SplitPanelHandle}"
@@ -64,6 +67,41 @@
                     <w:Headline ui:field="headline" icon="chain"
                                      text="{managerMessages.loadingDotdotdot}"
                                      sub="{managerMessages.manageAssetRulesets}"/>
+
+                    <w:Form ui:field="engineStatusForm" visible="true">
+                        <w:FormGroup ui:field="engineStatus">
+                            <w:label>
+                                <w:FormLabel text="{managerMessages.engineStatusLabel}"/>
+                            </w:label>
+                            <w:field>
+                                <w:FormField>
+                                    <w:FormOutputText ui:field="engineStatusOutput"/>
+                                </w:FormField>
+                            </w:field>
+                        </w:FormGroup>
+
+                        <w:FormGroup ui:field="compilationErrorCount">
+                            <w:label>
+                                <w:FormLabel text="{managerMessages.compilationErrorCount}"/>
+                            </w:label>
+                            <w:field>
+                                <w:FormField>
+                                    <w:FormOutputText ui:field="compilationErrorCountOutput"/>
+                                </w:FormField>
+                            </w:field>
+                        </w:FormGroup>
+
+                        <w:FormGroup ui:field="executionErrorCount">
+                            <w:label>
+                                <w:FormLabel text="{managerMessages.executionErrorCount}"/>
+                            </w:label>
+                            <w:field>
+                                <w:FormField>
+                                    <w:FormOutputText ui:field="executionErrorCountOutput"/>
+                                </w:FormField>
+                            </w:field>
+                        </w:FormGroup>
+                    </w:Form>
 
                     <g:Label ui:field="noRulesetsLabel"
                              addStyleNames="{widgetStyle.FormMessages} info"

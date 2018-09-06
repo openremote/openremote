@@ -28,10 +28,7 @@ import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.BaseAssetQuery;
 import org.openremote.model.asset.UserAsset;
 import org.openremote.model.http.RequestParams;
-import org.openremote.model.rules.AssetRuleset;
-import org.openremote.model.rules.GlobalRuleset;
-import org.openremote.model.rules.RulesResource;
-import org.openremote.model.rules.TenantRuleset;
+import org.openremote.model.rules.*;
 import org.openremote.model.rules.geofence.GeofenceDefinition;
 import org.openremote.model.security.Tenant;
 
@@ -66,12 +63,76 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
     /* ################################################################################################# */
 
     @Override
+    public RulesEngineInfo getGlobalEngineInfo(RequestParams requestParams) {
+        if (!isSuperUser()) {
+            throw new WebApplicationException(Response.Status.FORBIDDEN);
+        }
+
+        return getEngineInfo(rulesService.globalEngine);
+    }
+
+    @Override
+    public RulesEngineInfo getTenantEngineInfo(RequestParams requestParams, String realmId) {
+        if (!isRealmAccessibleByUser(realmId) || isRestrictedUser()) {
+            throw new WebApplicationException(Response.Status.FORBIDDEN);
+        }
+
+        RulesEngine<TenantRuleset> engine = rulesService.tenantEngines.get(realmId);
+        return getEngineInfo(engine);
+    }
+
+    @Override
+    public RulesEngineInfo getAssetEngineInfo(RequestParams requestParams, String assetId) {
+        Asset asset = assetStorageService.find(assetId, false);
+
+        if (asset == null)
+            return null;
+
+        if (!isRealmAccessibleByUser(asset.getTenantRealm())) {
+            throw new WebApplicationException(Response.Status.FORBIDDEN);
+        }
+
+        if (isRestrictedUser() && !assetStorageService.isUserAsset(getUserId(), assetId)) {
+            throw new WebApplicationException(Response.Status.FORBIDDEN);
+        }
+
+        RulesEngine<AssetRuleset> engine = rulesService.assetEngines.get(assetId);
+        return getEngineInfo(engine);
+    }
+
+    protected RulesEngineInfo getEngineInfo(RulesEngine engine) {
+        if (engine == null) {
+            return null;
+        }
+
+        int compilationErrorCount = engine.getCompilationErrorDeploymentCount();
+        int executionErrorCount = engine.getExecutionErrorDeploymentCount();
+
+        return new RulesEngineInfo(
+            engine.getStatus(compilationErrorCount, executionErrorCount),
+            compilationErrorCount,
+            executionErrorCount
+        );
+    }
+
+    @Override
     public GlobalRuleset[] getGlobalRulesets(@BeanParam RequestParams requestParams) {
         if (!isSuperUser()) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
         List<GlobalRuleset> result = rulesetStorageService.findGlobalRulesets();
-        return result.toArray(new GlobalRuleset[result.size()]);
+
+        // Try and retrieve transient status and error data
+        result.forEach(ruleset ->
+            rulesService
+                .getRulesetDeployment(ruleset.getId())
+                .ifPresent(rulesetDeployment -> {
+                    ruleset.setStatus(rulesetDeployment.getStatus());
+                    ruleset.setError(rulesetDeployment.getErrorMessage());
+                })
+        );
+
+        return result.toArray(new GlobalRuleset[0]);
     }
 
     @Override
@@ -80,7 +141,18 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
         List<TenantRuleset> result = rulesetStorageService.findTenantRulesets(realmId);
-        return result.toArray(new TenantRuleset[result.size()]);
+
+        // Try and retrieve transient status and error data
+        result.forEach(ruleset ->
+            rulesService
+                .getRulesetDeployment(ruleset.getId())
+                .ifPresent(rulesetDeployment -> {
+                    ruleset.setStatus(rulesetDeployment.getStatus());
+                    ruleset.setError(rulesetDeployment.getErrorMessage());
+                })
+        );
+
+        return result.toArray(new TenantRuleset[0]);
     }
 
     @Override
@@ -96,7 +168,17 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
         List<AssetRuleset> result = rulesetStorageService.findAssetRulesets(asset.getRealmId(), assetId);
-        return result.toArray(new AssetRuleset[result.size()]);
+
+        // Try and retrieve transient status and error data
+        result.forEach(ruleset ->
+            rulesService
+                .getRulesetDeployment(ruleset.getId())
+                .ifPresent(rulesetDeployment -> {
+                    ruleset.setStatus(rulesetDeployment.getStatus());
+                    ruleset.setError(rulesetDeployment.getErrorMessage());
+                })
+        );
+        return result.toArray(new AssetRuleset[0]);
     }
 
     /* ################################################################################################# */

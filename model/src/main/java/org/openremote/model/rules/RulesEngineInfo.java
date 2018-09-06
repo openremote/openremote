@@ -19,42 +19,38 @@
  */
 package org.openremote.model.rules;
 
-import org.openremote.model.asset.agent.ConnectionStatus;
-import org.openremote.model.event.shared.TenantScopedEvent;
+public class RulesEngineInfo {
+    protected RulesEngineStatus status;
+    protected int compilationErrorCount;
+    protected int executionErrorCount;
 
-/**
- * Published by the server when a a protocol configuration of an
- * agent changes its {@link ConnectionStatus}.
- *
- * TODO Unused
- */
-public class RulesetStatusEvent extends TenantScopedEvent {
-
-    protected Ruleset ruleset;
-    protected String error;
-
-    protected RulesetStatusEvent() {
+    protected RulesEngineInfo() {
     }
 
-    public RulesetStatusEvent(long timestamp, String realmId, Ruleset ruleset, String error) {
-        super(timestamp, realmId);
-        this.ruleset = ruleset;
-        this.error = error;
+    public RulesEngineInfo(RulesEngineStatus status, int compilationErrorCount, int executionErrorCount) {
+        this.status = status;
+        this.compilationErrorCount = compilationErrorCount;
+        this.executionErrorCount = executionErrorCount;
     }
 
-    public Ruleset getRuleset() {
-        return ruleset;
+    public RulesEngineStatus getStatus() {
+        return status;
     }
 
-    public String getError() {
-        return error;
+    public int getCompilationErrorCount() {
+        return compilationErrorCount;
+    }
+
+    public int getExecutionErrorCount() {
+        return executionErrorCount;
     }
 
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
-            "ruleset=" + ruleset +
-            ", error='" + error + '\'' +
+            "status=" + status +
+            ", compilationErrorCount=" + compilationErrorCount +
+            ", executionErrorCount=" + executionErrorCount +
             '}';
     }
 }

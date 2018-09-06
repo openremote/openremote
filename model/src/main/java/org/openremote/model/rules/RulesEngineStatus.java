@@ -17,28 +17,10 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.model.event.shared;
+package org.openremote.model.rules;
 
-/**
- * An event that carries information about the realm it occurred in.
- */
-public abstract class TenantScopedEvent extends SharedEvent {
-
-    public String realmId;
-
-    public TenantScopedEvent(long timestamp, String realmId) {
-        super(timestamp);
-        this.realmId = realmId;
-    }
-
-    public TenantScopedEvent(String realmId) {
-        this.realmId = realmId;
-    }
-
-    protected TenantScopedEvent() {
-    }
-
-    public String getRealmId() {
-        return realmId;
-    }
+public enum RulesEngineStatus {
+    STOPPED,
+    RUNNING,
+    ERROR
 }

@@ -92,6 +92,14 @@ public class Requests {
     @JsIgnore
     public <OUT> void sendAndReturn(EntityReader<OUT> entityReader,
                                     Consumer<RequestParams<Void, OUT>> onRequest,
+                                    double[] expectedStatusCodes,
+                                    Consumer<OUT> onResponse) {
+        execute(entityReader::read, null, onRequest, expectedStatusCodes, onResponse, null);
+    }
+
+    @JsIgnore
+    public <OUT> void sendAndReturn(EntityReader<OUT> entityReader,
+                                    Consumer<RequestParams<Void, OUT>> onRequest,
                                     int expectedStatusCode,
                                     Consumer<OUT> onResponse) {
         execute(entityReader::read, null, onRequest, new double[]{expectedStatusCode}, onResponse, null);

@@ -26,8 +26,6 @@ class GeofenceTransitionsIntentService : BroadcastReceiver() {
 
         val geofencingEvent = GeofencingEvent.fromIntent(intent)
 
-        LOG.info("Geofence event received: transition=")
-
         if (geofencingEvent.hasError()) {
             LOG.warning("Geofence event error : ${geofencingEvent.errorCode}")
             return
@@ -125,7 +123,7 @@ class GeofenceTransitionsIntentService : BroadcastReceiver() {
             }
 
             // Schedule another send
-            val delay = if (success) 3000L else 10000L
+            val delay = if (success) 5000L else 10000L
             locationTimer.schedule(delay) {
                 doSendLocation()
             }

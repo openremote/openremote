@@ -19,7 +19,9 @@
  */
 package org.openremote.app.client.rules;
 
-import org.openremote.model.rules.Ruleset;
+import org.openremote.model.rules.*;
+
+import java.util.List;
 
 public interface RulesList<P extends RulesList.Presenter<R>, R extends Ruleset> extends RulesView {
 
@@ -33,6 +35,9 @@ public interface RulesList<P extends RulesList.Presenter<R>, R extends Ruleset> 
 
     void setCreateRulesetHistoryToken(String token);
 
-    void setRulesets(R[] rulesets);
+    void setRulesets(List<R> rulesets);
 
+    void onEngineStatusChanged(RulesEngineInfo engineInfo);
+
+    void onRulesetStatusChanged(R ruleset);
 }
