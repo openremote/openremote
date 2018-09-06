@@ -22,6 +22,7 @@ import org.openremote.model.datapoint.NumberDatapoint;
 import org.postgresql.util.PGInterval;
 
 import javax.persistence.EntityManager;
+import javax.persistence.TypedQuery;
 import java.sql.*;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -78,15 +79,42 @@ public class AssetDatapointService implements ContainerService, AssetUpdateProce
     }
 
     public List<AssetDatapoint> getDatapoints(AttributeRef attributeRef) {
-        return persistenceService.doReturningTransaction(entityManager -> entityManager.createQuery(
-            "select dp from AssetDatapoint dp " +
-                "where dp.entityId = :assetId " +
-                "and dp.attributeName = :attributeName " +
-                "order by dp.timestamp desc",
-            AssetDatapoint.class)
-            .setParameter("assetId", attributeRef.getEntityId())
-            .setParameter("attributeName", attributeRef.getAttributeName())
-            .getResultList());
+        return persistenceService.doReturningTransaction(entityManager ->
+            entityManager.createQuery(
+                "select dp from AssetDatapoint dp " +
+                    "where dp.entityId = :assetId " +
+                    "and dp.attributeName = :attributeName " +
+                    "order by dp.timestamp desc",
+                AssetDatapoint.class)
+                .setParameter("assetId", attributeRef.getEntityId())
+                .setParameter("attributeName", attributeRef.getAttributeName())
+                .getResultList());
+    }
+
+
+    public long getDatapointsCount() {
+        return getDatapointsCount(null);
+    }
+
+    public long getDatapointsCount(AttributeRef attributeRef) {
+        return persistenceService.doReturningTransaction(entityManager -> {
+
+            String queryStr = attributeRef == null ?
+                "select count(dp) from AssetDatapoint dp" :
+                "select count(dp) from AssetDatapoint dp where dp.entityId = :assetId and dp.attributeName = :attributeName";
+
+            TypedQuery<Long> query = entityManager.createQuery(
+                queryStr,
+                Long.class);
+
+            if (attributeRef != null) {
+                query
+                    .setParameter("assetId", attributeRef.getEntityId())
+                    .setParameter("attributeName", attributeRef.getAttributeName());
+            }
+
+            return query.getSingleResult();
+        });
     }
 
     public NumberDatapoint[] aggregateDatapoints(AssetAttribute attribute,

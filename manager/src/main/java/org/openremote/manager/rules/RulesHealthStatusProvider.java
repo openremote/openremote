@@ -121,6 +121,7 @@ public class RulesHealthStatusProvider implements HealthStatusProvider, Containe
         int executionErrorDeployments = rulesEngine.getExecutionErrorDeploymentCount();
         int compilationErrorDeployments = rulesEngine.getExecutionErrorDeploymentCount();
         ObjectValue val = Values.createObject();
+        val.put("isRunning", rulesEngine.isRunning());
         val.put("isError", isError);
         val.put("totalDeployments", totalDeployments);
         val.put("executionErrorDeployments", executionErrorDeployments);
