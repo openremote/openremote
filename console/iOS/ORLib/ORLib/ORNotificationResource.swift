@@ -29,7 +29,7 @@ public class ORNotificationResource: NSObject, URLSessionDelegate {
                     let error = NSError(domain: "", code: 0, userInfo:  [
                         NSLocalizedDescriptionKey :  NSLocalizedString("ErrorCallingAPI", value: "Could not get data", comment: "")
                         ])
-                    ErrorManager.showError(error: error)
+                    print(error)
                 }
             }
         })
@@ -55,7 +55,7 @@ public class ORNotificationResource: NSObject, URLSessionDelegate {
                     let error = NSError(domain: "", code: 0, userInfo:  [
                         NSLocalizedDescriptionKey :  NSLocalizedString("ErrorCallingAPI", value: "Could not get data", comment: "")
                         ])
-                    ErrorManager.showError(error: error)
+                    print(error)
                 }
             }
         })

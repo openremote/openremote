@@ -180,6 +180,17 @@ open class ORAppDelegate: UIResponder, UIApplicationDelegate, URLSessionDelegate
 extension ORAppDelegate : UNUserNotificationCenterDelegate {
     
     open func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+        let userInfo = notification.request.content.userInfo
+        var notificationId : Int64? = nil
+        let consoleId = UserDefaults.standard.string(forKey: GeofenceProvider.consoleIdKey)
+
+        if let notificationIdString = userInfo[ActionType.notificationId] as? String{
+            notificationId = Int64(notificationIdString)
+        }
+        if let notiId = notificationId, let conId = consoleId {
+            ORNotificationResource.sharedInstance.notificationDelivered(notificationId: notiId, targetId: conId)
+        }
+
         completionHandler([.alert, .sound])
     }
 
@@ -207,12 +218,8 @@ extension ORAppDelegate : UNUserNotificationCenterDelegate {
                     urlRequest = URL(string:String(format: "%@://%@/%@%@", ORServer.scheme, ORServer.hostURL, ORServer.navigationPath, urlToOpen))
                 }
                 if let request = urlRequest{
-                    if let openInBrowser = userInfo[ActionType.openInBrowser] as? Bool {
-                        if openInBrowser {
-                            UIApplication.shared.open(request)
-                        } else {
-                            (self.window?.rootViewController as! ORViewcontroller).loadURL(url:request)
-                        }
+                    if let openInBrowser = userInfo[ActionType.openInBrowser] as? Bool, openInBrowser {
+                        UIApplication.shared.open(request)
                     } else {
                         (self.window?.rootViewController as! ORViewcontroller).loadURL(url:request)
                     }

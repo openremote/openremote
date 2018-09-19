@@ -15,10 +15,13 @@ public class GeofenceProvider: NSObject, URLSessionDelegate {
     var enableCallback : (([String: Any]) -> (Void))?
     var timer: Timer?
     var insideRegion = false
-    var backgroundTask = UIBackgroundTaskInvalid
 
     public var baseURL: String = ""
     public var consoleId: String = ""
+
+    private var enteredLocation: (String, [String : Any]?)? = nil
+    private var exitedLocation: (String, [String : Any]?)? = nil
+    private var sendQueued = false
 
     public override init() {
         super.init()
@@ -106,11 +109,6 @@ public class GeofenceProvider: NSObject, URLSessionDelegate {
                     ])
             }
         }
-        resetTimer()
-        NotificationCenter.default.addObserver(forName: NSNotification.Name.UIApplicationDidEnterBackground, object: nil, queue:nil, using: { notification in
-            self.backgroundTask = UIApplication.shared.beginBackgroundTask { [weak self] in self?.endBackgroundTask()}
-            self.resetTimer()
-        })
     }
 
     public func disbale()-> [String: Any] {
@@ -158,34 +156,104 @@ public class GeofenceProvider: NSObject, URLSessionDelegate {
         }
     }
 
-    private func sendGeofenceRequest(url: URL, httpMethod: String, data:[String: Any]?) {
-        let request = NSMutableURLRequest(url: url)
-        request.addValue("application/json", forHTTPHeaderField:"Content-Type");
-        request.httpMethod = httpMethod
-
-        if (data != nil) {
-            if let postBody = try? JSONSerialization.data(withJSONObject: data!, options: []) {
-                request.httpBody = postBody
-            }
-        } else {
-            request.httpBody = "null".data(using: .utf8)
-        }
-
-        let sessionConfiguration = URLSessionConfiguration.default
-        let session = URLSession(configuration: sessionConfiguration, delegate: self, delegateQueue: nil)
-        let req = session.dataTask(with: request as URLRequest, completionHandler: { (data, response, error) in
-            if (data != nil){
-                print("Response received: \(data!)")
+    private func queueSendLocation(geofenceId: String, data:[String: Any]?) {
+        synced(lock: self) {
+            if let locationData = data {
+                enteredLocation = (geofenceId, locationData)
             } else {
-                NSLog("error %@", (error! as NSError).localizedDescription)
-                let error = NSError(domain: "", code: 0, userInfo:  [
-                    NSLocalizedDescriptionKey :  NSLocalizedString("NoDataReceived", value: "Did not receive any data", comment: "")
-                    ])
-                print(error)
+                exitedLocation = (geofenceId, nil)
+
+                if enteredLocation?.0 == geofenceId {
+                    enteredLocation = nil
+                }
             }
-        })
-        req.resume()
-        print("Sending request with body: \(data ?? [:])")
+
+            if !sendQueued {
+                sendQueued = true
+                DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(2)) {
+                    self.doSendLocation()
+                }
+            }
+        }
+    }
+
+    private func doSendLocation() {
+        synced(lock: self) {
+            var success = false
+
+            if exitedLocation != nil {
+                if sendLocation(geofenceId: exitedLocation!.0, data: exitedLocation!.1) {
+                    exitedLocation = nil
+                    success = true
+                }
+            } else if enteredLocation != nil {
+                if sendLocation(geofenceId: enteredLocation!.0, data: enteredLocation!.1) {
+                    enteredLocation = nil
+                    success = true
+                }
+            }
+
+            if exitedLocation != nil || enteredLocation != nil {
+                // Schedule another send
+                let delay = success ? 5 : 10
+                DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(delay)) {
+                    self.doSendLocation()
+                }
+            } else {
+                sendQueued = false
+            }
+        }
+    }
+
+    private func sendLocation(geofenceId: String, data: [String : Any]?)-> Bool {
+        return synced(lock: self) {
+            var succes = false
+
+            guard let urlData = geoPostUrls[geofenceId] else {
+                return succes
+            }
+            guard let url = URL(string: "\(baseURL)\(urlData[1])") else { return succes}
+
+            let request = NSMutableURLRequest(url: url)
+            request.addValue("application/json", forHTTPHeaderField:"Content-Type");
+            request.httpMethod = urlData[0]
+
+            if (data != nil) {
+                if let postBody = try? JSONSerialization.data(withJSONObject: data!, options: []) {
+                    request.httpBody = postBody
+                }
+            } else {
+                request.httpBody = "null".data(using: .utf8)
+            }
+
+            let semaphore = DispatchSemaphore(value: 0)
+            let sessionConfiguration = URLSessionConfiguration.default
+            let session = URLSession(configuration: sessionConfiguration, delegate: self, delegateQueue: nil)
+            let req = session.dataTask(with: request as URLRequest, completionHandler: { (data, response, error) in
+                if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 204 {
+                    print("sendLocation succeded")
+                    succes = true
+                } else {
+                    print("sendLocation failed")
+                    if error != nil {
+                        print(error!)
+                    }
+                }
+                semaphore.signal()
+            })
+            req.resume()
+            semaphore.wait()
+            return succes
+        }
+    }
+
+    private func synced<T>(lock: Any, closure: () throws -> T) rethrows -> T {
+        objc_sync_enter(lock)
+        defer {
+            objc_sync_exit(lock)
+        }
+        
+        return try closure()
     }
 
     public class GeofenceDefinition: NSObject, Decodable {
@@ -196,22 +264,6 @@ public class GeofenceProvider: NSObject, URLSessionDelegate {
         public var httpMethod: String = ""
         public var url: String = ""
     }
-
-    func endBackgroundTask() {
-        UIApplication.shared.endBackgroundTask(self.backgroundTask)
-        self.backgroundTask = UIBackgroundTaskInvalid
-        resetTimer()
-    }
-
-    func resetTimer() {
-        self.timer?.invalidate()
-        self.timer = Timer.scheduledTimer(withTimeInterval: 30, repeats: true, block: { timer in
-            self.insideRegion = false
-            for region in self.locationManager.monitoredRegions {
-                self.locationManager.requestState(for: region)
-            }
-        })
-    }
 }
 
 extension GeofenceProvider: CLLocationManagerDelegate {
@@ -219,29 +271,19 @@ extension GeofenceProvider: CLLocationManagerDelegate {
         print("Entered geofence with id: \(region.identifier)")
         guard let circularRegion = region as? CLCircularRegion else {return}
 
-        guard let urlData = geoPostUrls[circularRegion.identifier] else {
-            return
-        }
-        guard let tkurlRequest = URL(string: "\(baseURL)\(urlData[1])") else { return }
-
         let postData = [
             "type": "Point",
-            "coordinates": [manager.location?.coordinate.longitude, manager.location?.coordinate.latitude]
+            "coordinates": [circularRegion.center.longitude, circularRegion.center.latitude]
             ] as [String : Any]
 
-        sendGeofenceRequest(url: tkurlRequest, httpMethod: urlData[0], data: postData)
+        queueSendLocation(geofenceId: circularRegion.identifier, data: postData)
     }
 
     public func locationManager(_ manager: CLLocationManager, didExitRegion region: CLRegion) {
         print("Exited geofence with id: \(region.identifier)")
         guard let circularRegion = region as? CLCircularRegion else {return}
 
-        guard let urlData = geoPostUrls[circularRegion.identifier] else {
-            return
-        }
-        guard let tkurlRequest = URL(string: "\(baseURL)\(urlData[1])") else { return }
-
-        sendGeofenceRequest(url: tkurlRequest, httpMethod: urlData[0], data: nil)
+        queueSendLocation(geofenceId: circularRegion.identifier, data: nil)
     }
 
     public func locationManager(_ manager: CLLocationManager, didChangeAuthorization status: CLAuthorizationStatus) {
@@ -252,18 +294,6 @@ extension GeofenceProvider: CLLocationManagerDelegate {
                 DefaultsKey.hasPermissionKey: checkPermission(),
                 DefaultsKey.successKey: true
                 ])
-        }
-    }
-
-    public func locationManager(_ manager: CLLocationManager, didDetermineState state: CLRegionState, for region: CLRegion) {
-        switch state {
-        case .inside:
-            insideRegion = true
-            manager.delegate?.locationManager?(manager, didEnterRegion: region)
-        default:
-            if !insideRegion {
-                manager.delegate?.locationManager?(manager, didExitRegion: region)
-            }
         }
     }
 }
