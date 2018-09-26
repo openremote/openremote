@@ -58,7 +58,6 @@ org.bouncycastle:bcpkix-jdk15on: BOUNCYCASTLE LICENSE
 org.bouncycastle:bcprov-jdk15on: BOUNCYCASTLE LICENSE
 org.codehaus.btm:btm: GNU LESSER GENERAL PUBLIC LICENSE, VERSION 3
 org.codehaus.groovy:*: APACHE LICENSE, VERSION 2.0
-org.fourthline.cling:cling-core: GNU LESSER GENERAL PUBLIC LICENSE, VERSION 2.1
 org.hibernate.common:hibernate-commons-annotations: GNU LESSER GENERAL PUBLIC LICENSE, VERSION 2.1
 org.hibernate.javax.persistence:hibernate-jpa-2.1-api: ECLIPSE DISTRIBUTION LICENSE, VERSION 1.0
 org.hibernate:hibernate-core: GNU LESSER GENERAL PUBLIC LICENSE, VERSION 2.1

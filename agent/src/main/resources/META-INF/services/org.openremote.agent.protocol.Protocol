@@ -2,7 +2,6 @@ org.openremote.agent.protocol.simulator.SimulatorProtocol
 org.openremote.agent.protocol.macro.MacroProtocol
 org.openremote.agent.protocol.timer.TimerProtocol
 org.openremote.agent.protocol.knx.KNXProtocol
-org.openremote.agent.protocol.upnp.UpnpProtocol
 org.openremote.agent.protocol.velbus.VelbusSocketProtocol
 org.openremote.agent.protocol.velbus.VelbusSerialProtocol
 org.openremote.agent.protocol.http.HttpClientProtocol

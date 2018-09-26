@@ -121,7 +121,6 @@ services:
       #
       # - KNX IP gateway
       # - Velbus IP gateway or serial bridge
-      # - UPnP (asset discovery only)
       #
       SETUP_IMPORT_DEMO_AGENT: 'true'
       SETUP_IMPORT_DEMO_AGENT_KNX: 'false'
@@ -129,7 +128,6 @@ services:
       # SETUP_IMPORT_DEMO_AGENT_KNX_LOCAL_IP: '10.0.0.12'
       SETUP_IMPORT_DEMO_AGENT_VELBUS: 'false'
       # SETUP_IMPORT_DEMO_AGENT_VELBUS_COM_PORT: 'COM3'
-      SETUP_IMPORT_DEMO_AGENT_UPNP: 'false'
       # TODO: Additional docker settings are necessary to use com ports and multicast from within containers
 
       # The public host name of this OpenRemote installation. This name is used in bearer tokens

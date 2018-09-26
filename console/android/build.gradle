@@ -22,9 +22,6 @@ repositories {
     maven {
         url "http://m2repo.openremote.com/content/groups/public/"
     }
-    maven {
-        url "http://4thline.org/m2"
-    }
 }
 
 apply plugin: "com.android.library"

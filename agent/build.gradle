@@ -24,8 +24,6 @@ dependencies {
         exclude group: "org.slf4j"
     }
 
-    compile "org.fourthline.cling:cling-core:$clingVersion"
-
     compile "net.sf.saxon:Saxon-HE:$saxonHEVersion"
 }
 

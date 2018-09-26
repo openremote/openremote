@@ -20,7 +20,6 @@
 package org.openremote.manager.setup.builtin;
 
 import org.openremote.agent.protocol.knx.KNXProtocol;
-import org.openremote.agent.protocol.upnp.UpnpProtocol;
 import org.openremote.agent.protocol.velbus.VelbusSerialProtocol;
 import org.openremote.container.Container;
 import org.openremote.manager.setup.AbstractManagerSetup;
@@ -49,8 +48,6 @@ public class ManagerDemoAgentSetup extends AbstractManagerSetup {
     public static final String SETUP_IMPORT_DEMO_AGENT_VELBUS = "SETUP_IMPORT_DEMO_AGENT_VELBUS";
     public static final String SETUP_IMPORT_DEMO_AGENT_VELBUS_COM_PORT = "SETUP_IMPORT_DEMO_AGENT_VELBUS_COM_PORT";
 
-    public static final String SETUP_IMPORT_DEMO_AGENT_UPNP = "SETUP_IMPORT_DEMO_AGENT_UPNP";
-
     public String masterRealmId;
 
     final protected boolean knx;
@@ -59,8 +56,6 @@ public class ManagerDemoAgentSetup extends AbstractManagerSetup {
 
     final protected boolean velbus;
     final protected String velbusComPort;
-
-    final protected boolean upnp;
 
     public ManagerDemoAgentSetup(Container container) {
         super(container);
@@ -71,8 +66,6 @@ public class ManagerDemoAgentSetup extends AbstractManagerSetup {
 
         this.velbus = getBoolean(container.getConfig(), SETUP_IMPORT_DEMO_AGENT_VELBUS, false);
         this.velbusComPort = getString(container.getConfig(), SETUP_IMPORT_DEMO_AGENT_VELBUS_COM_PORT, "COM3");
-
-        this.upnp = getBoolean(container.getConfig(), SETUP_IMPORT_DEMO_AGENT_UPNP, false);
     }
 
     @Override
@@ -109,19 +102,6 @@ public class ManagerDemoAgentSetup extends AbstractManagerSetup {
             );
             Asset velbusDevices = new Asset("VELBUS Devices", THING, agent, masterRealmId);
             velbusDevices = assetStorageService.merge(velbusDevices);
-        }
-
-        if (upnp) {
-            LOG.info("Enable UPnP demo protocol configuration");
-            Asset upnpDevices = new Asset("UPnP Devices", THING, agent, masterRealmId);
-            upnpDevices = assetStorageService.merge(upnpDevices);
-            agent.addAttributes(
-                initProtocolConfiguration(new AssetAttribute("upnpConfig"), UpnpProtocol.PROTOCOL_NAME)
-                .addMeta(
-                    // TODO Protocols should create these grouping assets automatically and import assets underneath for each protocol configuration
-                    new MetaItem(UpnpProtocol.GROUP_ASSET_ID, Values.create(upnpDevices.getId()))
-                )
-            );
         }
 
         agent = assetStorageService.merge(agent);
