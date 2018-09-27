@@ -73,8 +73,9 @@ function run_proxy {
     log_info "Monitoring config file $HAPROXY_CONFIG and certs in $LE_CERT_ROOT for changes..."
 
     # Wait if config or certificates were changed, block this execution
-    while inotifywait -q -r --exclude '\.git/' -e modify,create,delete,move,move_self $HAPROXY_CONFIG $LE_CERT_ROOT; do
+    while inotifywait -q -r -e modify,create,delete,move,move_self $HAPROXY_CONFIG "${LE_CERT_ROOT}/${DOMAINNAME}/haproxy.pem"; do
         log_info "Change detected..."
+        sleep 5
         restart
         log_info "Monitoring config file $HAPROXY_CONFIG and certs in $LE_CERT_ROOT for changes..."
     done
@@ -96,7 +97,7 @@ function restart {
         log_info "HAPROXY_CMD: ${HAPROXY_CMD}"
 
         if $HAPROXY_CHECK_CONFIG_CMD; then
-          $HAPROXY_CMD -sf $(cat $HAPROXY_PID_FILE)
+          $HAPROXY_CMD -st $(cat $HAPROXY_PID_FILE)
           log_info "HAProxy restarted, pid $(cat $HAPROXY_PID_FILE)."
         else
           log_info "HAProxy config invalid, not restarting..."
@@ -393,6 +394,8 @@ shift
 
 if [ "${CMD}" = "run"  ]; then
   run_proxy "${@}"
+elif [ "${CMD}" = "restart" ]; then
+  restart
 elif [ "${CMD}" = "check" ]; then
   check_proxy "${@}"
 elif [ "${CMD}" = "add" ]; then
