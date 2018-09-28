@@ -212,15 +212,15 @@ public enum AttributeValueType {
         new MetaItem(FORMAT, Values.create("%0.5f MJ"))),
 
     FLOW_LPM("tachometer", ValueType.NUMBER, value -> Optional.empty(),
-        new MetaItem(FORMAT, Values.create("%0.5f l/m"))
+        new MetaItem(FORMAT, Values.create("%0.5f L/m"))
     ),
 
     FLOW_CMPS("tachometer", ValueType.NUMBER, value -> Optional.empty(),
         new MetaItem(FORMAT, Values.create("%0.5f m³/s"))
     ),
 
-    FLOW_SCCM("tachometer", ValueType.NUMBER, value -> Optional.empty(),
-        new MetaItem(FORMAT, Values.create("%0.5f cm³/m"))
+    FLOW_CCMPS("tachometer", ValueType.NUMBER, value -> Optional.empty(),
+        new MetaItem(FORMAT, Values.create("%0.5f cm³/s"))
     ),
 
     FLOW_CFPS("tachometer", ValueType.NUMBER, value -> Optional.empty(),
@@ -235,7 +235,12 @@ public enum AttributeValueType {
         new MetaItem(FORMAT, Values.create("%0.1f deg"))
     ),
 
-    GEO_JSON_POINT("map-marker", ValueType.OBJECT, value -> Optional.empty());
+    GEO_JSON_POINT("map-marker", ValueType.OBJECT, value -> Optional.empty()),
+
+    EMAIL("at", ValueType.STRING, value -> Values.getString(value)
+            .filter(s -> !s.matches("(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|\"(?:[\\x01-\\x08\\x0b\\x0c\\x0e-\\x1f\\x21\\x23-\\x5b\\x5d-\\x7f]|\\\\[\\x01-\\x09\\x0b\\x0c\\x0e-\\x7f])*\")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\\[(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?|[a-z0-9-]*[a-z0-9]:(?:[\\x01-\\x08\\x0b\\x0c\\x0e-\\x1f\\x21-\\x5a\\x53-\\x7f]|\\\\[\\x01-\\x09\\x0b\\x0c\\x0e-\\x7f])+)\\])"))
+            .map(array -> new ValidationFailure(ValueHolder.ValueFailureReason.VALUE_INVALID_EMAIL_FORMAT))
+    );
 
     public static final String DEFAULT_ICON = "circle-thin";
 

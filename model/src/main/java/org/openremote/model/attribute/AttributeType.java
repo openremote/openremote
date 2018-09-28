@@ -35,7 +35,9 @@ public enum AttributeType implements AttributeDescriptor {
 
     CONSOLE_PLATFORM("consolePlatform", AttributeValueType.STRING),
 
-    CONSOLE_PROVIDERS("consoleProviders", AttributeValueType.OBJECT);
+    CONSOLE_PROVIDERS("consoleProviders", AttributeValueType.OBJECT),
+
+    EMAIL("email", AttributeValueType.EMAIL, new MetaItem(AssetMeta.LABEL, Values.create("Email")));
 
     final protected String name;
     final protected AttributeValueType attributeValueType;

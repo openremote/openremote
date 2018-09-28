@@ -44,6 +44,11 @@ public interface NotificationHandler extends ContainerService {
     String getTypeName();
 
     /**
+     * Indicates if this handler has a valid configuration and is usable.
+     */
+    boolean isValid();
+
+    /**
      * Allows the handler to validate the specified {@link AbstractNotificationMessage}.
      */
     boolean isMessageValid(AbstractNotificationMessage message);
@@ -56,7 +61,7 @@ public interface NotificationHandler extends ContainerService {
      * {@link Notification.TargetType#ASSET} where {@link AssetType} equals {@link AssetType#CONSOLE} then the handler
      * needs to find all console assets that belong to the specified tenant).
      */
-    Notification.Targets mapTarget(Notification.TargetType targetType, String targetId, AbstractNotificationMessage message);
+    Notification.Targets mapTarget(Notification.Source source, String sourceId, Notification.TargetType targetType, String targetId, AbstractNotificationMessage message);
 
     /**
      * Send the specified {@link AbstractNotificationMessage} to the target; the target supplied would be a target
@@ -67,5 +72,5 @@ public interface NotificationHandler extends ContainerService {
      * The ID can be used by the {@link NotificationHandler} to update the delivered and/or acknowledged status of the notification
      * by calling {@link NotificationService#setNotificationDelivered} or {@link NotificationService#setNotificationAcknowleged}
      */
-    NotificationSendResult sendMessage(long id, Notification.TargetType targetType, String targetId, AbstractNotificationMessage message);
+    NotificationSendResult sendMessage(long id, Notification.Source source, String sourceId, Notification.TargetType targetType, String targetId, AbstractNotificationMessage message);
 }

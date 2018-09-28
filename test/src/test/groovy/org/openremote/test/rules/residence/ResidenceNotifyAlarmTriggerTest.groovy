@@ -1,5 +1,6 @@
 package org.openremote.test.rules.residence
 
+import com.google.firebase.messaging.Message
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.notification.NotificationService
@@ -45,14 +46,18 @@ class ResidenceNotifyAlarmTriggerTest extends Specification implements ManagerCo
         PushNotificationHandler mockPushNotificationHandler = Spy(PushNotificationHandler) {
             isValid() >> true
 
+            sendMessage(_ as Long, _ as Notification.Source, _ as String, _ as Notification.TargetType, _ as String, _ as AbstractNotificationMessage) >> {
+                id, source, sourceId, targetType, targetId, message ->
+                    notificationIds << id
+                    targetTypes << targetType
+                    targetIds << targetId
+                    messages << message
+                    callRealMethod()
+            }
+
             // Assume sent to FCM
-            sendMessage(*_) >> {
-                    id, targetType, targetId, message ->
-                        notificationIds << id
-                        targetTypes << targetType
-                        targetIds << targetId
-                        messages << message
-                        return NotificationSendResult.success()
+            sendMessage(_ as Message) >> {
+                message -> return NotificationSendResult.success()
             }
         }
 

@@ -116,6 +116,7 @@ public class KeycloakDemoSetup extends AbstractKeycloakSetup {
         testuser2.setUsername("testuser2");
         testuser2.setFirstName("Testuserfirst");
         testuser2.setLastName("Testuserlast");
+        testuser2.setEmail("testuser2@openremote.local");
         testuser2.setEnabled(true);
         customerAUsersResource.create(testuser2);
         testuser2 = customerAUsersResource.search("testuser2", null, null, null, null, null).get(0);
@@ -136,6 +137,7 @@ public class KeycloakDemoSetup extends AbstractKeycloakSetup {
         testuser3.setUsername("testuser3");
         testuser3.setFirstName("Testuserfirst");
         testuser3.setLastName("Testuserlast");
+        testuser3.setEmail("testuser3@openremote.local");
         testuser3.setEnabled(true);
         customerAUsersResource.create(testuser3);
         testuser3 = customerAUsersResource.search("testuser3", null, null, null, null, null).get(0);

@@ -151,10 +151,6 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             sb.append(" join UserAsset ua on ua.id.userId = u.id");
         }
 
-        if (query.tenantPredicate != null && TextUtil.isNullOrEmpty(query.tenantPredicate.realm)) {
-            sb.append(" join PUBLIC.REALM R on R.ID = u.realmId");
-        }
-
         return sb.toString();
     }
 
@@ -168,7 +164,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                 sb.append(" AND u.realmId = ?").append(parameters.size() + 1);
                 parameters.add(query.tenantPredicate.realmId);
             } else if (!TextUtil.isNullOrEmpty(query.tenantPredicate.realm)) {
-                sb.append(" AND r.name = ?").append(parameters.size() + 1);
+                sb.append(" AND u.realm = ?").append(parameters.size() + 1);
                 parameters.add(query.tenantPredicate.realm);
             }
 

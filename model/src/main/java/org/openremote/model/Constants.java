@@ -42,4 +42,13 @@ public interface Constants {
     String DEFAULT_DATE_FORMAT ="dd. MMM yyyy";
     String DEFAULT_TIME_FORMAT ="HH:mm:ss";
 
+    String SETUP_EMAIL_USER = "SETUP_EMAIL_USER";
+    String SETUP_EMAIL_HOST = "SETUP_EMAIL_HOST";
+    String SETUP_EMAIL_PASSWORD = "SETUP_EMAIL_PASSWORD";
+    String SETUP_EMAIL_PORT = "SETUP_EMAIL_PORT";
+    int SETUP_EMAIL_PORT_DEFAULT = 25;
+    String SETUP_EMAIL_TLS = "SETUP_EMAIL_TLS";
+    boolean SETUP_EMAIL_TLS_DEFAULT = true;
+    String SETUP_EMAIL_FROM = "SETUP_EMAIL_FROM";
+    String SETUP_EMAIL_FROM_DEFAULT = "admin@openremote.io";
 }

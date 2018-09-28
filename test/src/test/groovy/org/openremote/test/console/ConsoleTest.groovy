@@ -1,5 +1,6 @@
 package org.openremote.test.console
 
+import com.google.firebase.messaging.Message
 import org.openremote.container.util.UniqueIdentifierGenerator
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.notification.NotificationService
@@ -19,6 +20,8 @@ import org.openremote.model.console.ConsoleProvider
 import org.openremote.model.console.ConsoleRegistration
 import org.openremote.model.console.ConsoleResource
 import org.openremote.model.geo.GeoJSONPoint
+import org.openremote.model.notification.AbstractNotificationMessage
+import org.openremote.model.notification.Notification
 import org.openremote.model.notification.NotificationSendResult
 import org.openremote.model.notification.PushNotificationMessage
 import org.openremote.model.query.filter.RadialLocationPredicate
@@ -57,14 +60,18 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         PushNotificationHandler mockPushNotificationHandler = Spy(PushNotificationHandler) {
             isValid() >> true
 
-            // Assume sent to FCM
-            sendMessage(*_) >> {
-                id, targetType, targetId, message ->
+            sendMessage(_ as Long, _ as Notification.Source, _, _ as Notification.TargetType, _ as String, _ as AbstractNotificationMessage) >> {
+                id, source, sourceId, targetType, targetId, message ->
                     notificationIds << id
                     targetTypes << targetType
                     targetIds << targetId
                     messages << message
-                    return NotificationSendResult.success()
+                    callRealMethod()
+            }
+
+            // Assume sent to FCM
+            sendMessage(_ as Message) >> {
+                message -> return NotificationSendResult.success()
             }
         }
 

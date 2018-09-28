@@ -1,5 +1,5 @@
 /*
- * Copyright 2017, OpenRemote Inc.
+ * Copyright 2018, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -51,7 +51,6 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 import static org.openremote.container.concurrent.GlobalLock.withLock;
@@ -113,7 +112,7 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
             return;
         }
 
-        // Not using Collectors.toMap is there is a quirk in there which means null values aren't supported!
+        // Not using Collectors.toMap as there is a quirk in there which means null values aren't supported!
         consoleFCMTokenMap = new HashMap<>();
 
         // Find all console assets that use this adapter
@@ -173,7 +172,7 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
     }
 
     @Override
-    public Notification.Targets mapTarget(Notification.TargetType targetType, String targetId, AbstractNotificationMessage message) {
+    public Notification.Targets mapTarget(Notification.Source source, String sourceId, Notification.TargetType targetType, String targetId, AbstractNotificationMessage message) {
 
         // Check if message is going to a topic if so then filter consoles subscribed to that topic
         PushNotificationMessage pushMessage = (PushNotificationMessage) message;
@@ -272,7 +271,7 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
     }
 
     @Override
-    public NotificationSendResult sendMessage(long id, Notification.TargetType targetType, String targetId, AbstractNotificationMessage message) {
+    public NotificationSendResult sendMessage(long id, Notification.Source source, String sourceId, Notification.TargetType targetType, String targetId, AbstractNotificationMessage message) {
 
         if (targetType != Notification.TargetType.ASSET) {
             LOG.warning("Target type not supported: " + targetType);
@@ -341,8 +340,19 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
 //        return result;
 //    }
 
+    @Override
     public boolean isValid() {
         return valid;
+    }
+
+    public NotificationSendResult sendMessage(Message message) {
+        try {
+            FirebaseMessaging.getInstance().send(message);
+            return NotificationSendResult.success();
+        } catch (FirebaseMessagingException e) {
+            handleFcmException(e);
+            return NotificationSendResult.failure("FCM send failed: " + e.getErrorCode());
+        }
     }
 
     protected boolean isConsoleSubscribedToTopic(Asset asset, String topic) {
@@ -351,16 +361,6 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
             .flatMap(objectValue -> objectValue.getArray("topics"))
             .map(arrayValue -> arrayValue.contains(topic))
             .orElse(false);
-    }
-
-    protected NotificationSendResult sendMessage(Message message) {
-        try {
-            FirebaseMessaging.getInstance().send(message);
-            return NotificationSendResult.success();
-        } catch (FirebaseMessagingException e) {
-            handleFcmException(e);
-            return NotificationSendResult.failure("FCM send failed: " + e.getErrorCode());
-        }
     }
 
     protected static Message buildFCMMessage(long id, PushNotificationMessage pushMessage) {

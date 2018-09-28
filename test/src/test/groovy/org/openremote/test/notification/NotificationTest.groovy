@@ -1,12 +1,17 @@
 package org.openremote.test.notification
 
+import com.google.firebase.messaging.Message
+import org.openremote.manager.asset.AssetStorageService
+import org.openremote.manager.notification.EmailNotificationHandler
 import org.openremote.manager.notification.NotificationService
 import org.openremote.manager.notification.PushNotificationHandler
 import org.openremote.manager.rules.geofence.ORConsoleGeofenceAssetAdapter
 import org.openremote.manager.setup.SetupService
 import org.openremote.manager.setup.builtin.KeycloakDemoSetup
 import org.openremote.manager.setup.builtin.ManagerDemoSetup
+import org.openremote.model.asset.AssetAttribute
 import org.openremote.model.attribute.AttributeRef
+import org.openremote.model.attribute.AttributeType
 import org.openremote.model.console.ConsoleProvider
 import org.openremote.model.console.ConsoleRegistration
 import org.openremote.model.console.ConsoleResource
@@ -14,7 +19,9 @@ import org.openremote.model.notification.*
 import org.openremote.model.value.ObjectValue
 import org.openremote.model.value.Values
 import org.openremote.test.ManagerContainerTrait
+import org.simplejavamail.email.Email
 import spock.lang.Specification
+import spock.util.concurrent.PollingConditions
 
 import javax.ws.rs.WebApplicationException
 import java.time.Instant
@@ -42,25 +49,28 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         PushNotificationHandler mockPushNotificationHandler = Spy(PushNotificationHandler) {
             isValid() >> true
 
-            // Assume sent to FCM
-            sendMessage(*_) >> {
-                id, targetType, targetId, message ->
+            sendMessage(_ as Long, _ as Notification.Source, _ as String, _ as Notification.TargetType, _ as String, _ as AbstractNotificationMessage) >> {
+                id, source, sourceId, targetType, targetId, message ->
                     notificationIds << id
                     notificationTargetTypes << targetType
                     notificationTargetIds << targetId
                     notificationMessages << message
-                    return NotificationSendResult.success()
+                    callRealMethod()
+            }
+
+            // Assume sent to FCM
+            sendMessage(_ as Message) >> {
+                message -> return NotificationSendResult.success()
             }
         }
 
         and: "the container environment is started with the mock handler"
         def serverPort = findEphemeralPort()
         def services = defaultServices()
-        ((NotificationService)services.find {it instanceof NotificationService}).notificationHandlerMap.put("push", mockPushNotificationHandler)
+        ((NotificationService)services.find {it instanceof NotificationService}).notificationHandlerMap.put(PushNotificationMessage.TYPE, mockPushNotificationHandler)
         def container = startContainerWithPseudoClock(defaultConfig(serverPort), services)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
-        def notificationService = container.getService(NotificationService.class)
 
         and: "an authenticated test user"
         def realm = keycloakDemoSetup.customerATenant.realm
@@ -496,6 +506,88 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
         then: "only the relevant notifications should have been returned"
         assert notifications.size() == 8
+
+        cleanup: "the server should be stopped"
+        stopContainer(container)
+    }
+
+    def "Check email notification functionality"() {
+
+        def notificationIds = []
+        def notificationTargetTypes = []
+        def notificationTargetIds = []
+        def notificationMessages = []
+        def toAddresses = []
+
+        given: "a mock email notification handler"
+        EmailNotificationHandler mockEmailNotificationHandler = Spy(EmailNotificationHandler) {
+            isValid() >> true
+
+            sendMessage(_ as Long, _ as Notification.Source, _, _ as Notification.TargetType, _ as String, _ as AbstractNotificationMessage) >> {
+                id, source, sourceId, targetType, targetId, message ->
+                    notificationIds << id
+                    notificationTargetTypes << targetType
+                    notificationTargetIds << targetId
+                    notificationMessages << message
+                    callRealMethod()
+            }
+
+            sendMessage(_ as Email) >> {
+                email ->
+                    toAddresses.addAll(((EmailNotificationMessage)notificationMessages.last()).getTo())
+                    return NotificationSendResult.success()
+            }
+        }
+
+        and: "the container environment is started with the mock handler"
+        def serverPort = findEphemeralPort()
+        def services = defaultServices()
+        ((NotificationService)services.find {it instanceof NotificationService}).notificationHandlerMap.put(EmailNotificationMessage.TYPE, mockEmailNotificationHandler)
+        def conditions = new PollingConditions(timeout: 10)
+        def container = startContainer(defaultConfig(serverPort), services)
+        def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
+        def notificationService = container.getService(NotificationService.class)
+        def assetStorageService = container.getService(AssetStorageService.class)
+
+        expect: "the container to be running"
+        container.isRunning()
+
+        when: "an email notification is sent to a tenant through same mechanism as rules"
+        def notification = new Notification(
+                "Test",
+                new EmailNotificationMessage().setSubject("Test").setText("Hello world!"),
+                new Notification.Targets(Notification.TargetType.TENANT, managerDemoSetup.customerARealmId))
+        notificationService.sendNotification(notification, Notification.Source.TENANT_RULESET, managerDemoSetup.customerARealmId)
+
+        then: "the email should have been sent to all tenant users"
+        conditions.eventually {
+            assert notificationMessages.size() == 2
+            assert toAddresses.size() == 2
+            assert ((EmailNotificationMessage) notificationMessages.get(0)).getText() == "Hello world!"
+            assert ((EmailNotificationMessage) notificationMessages.get(0)).getSubject() == "Test"
+            assert ((EmailNotificationMessage) notificationMessages.get(0)).getFrom().getAddress() == mockEmailNotificationHandler.defaultFrom
+            assert ((EmailNotificationMessage) notificationMessages.get(1)).getText() == "Hello world!"
+            assert ((EmailNotificationMessage) notificationMessages.get(1)).getSubject() == "Test"
+            assert ((EmailNotificationMessage) notificationMessages.get(1)).getFrom().getAddress() == mockEmailNotificationHandler.defaultFrom
+            assert toAddresses.any { ((EmailNotificationMessage.Recipient)it).getAddress() == "testuser2@openremote.local" }
+            assert toAddresses.any { ((EmailNotificationMessage.Recipient)it).getAddress() == "testuser3@openremote.local" }
+        }
+
+        when: "an email attribute is added to an asset"
+        def kitchen = assetStorageService.find(managerDemoSetup.apartment1KitchenId)
+        kitchen.addAttributes(new AssetAttribute(AttributeType.EMAIL, Values.create("kitchen@openremote.local")))
+        kitchen = assetStorageService.merge(kitchen)
+
+        and: "an email notification is sent to a parent asset"
+        notification.setTargets(new Notification.Targets(Notification.TargetType.ASSET, managerDemoSetup.apartment1Id))
+        notificationService.sendNotification(notification)
+
+        then: "the child asset with the email attribute should have been sent an email"
+        conditions.eventually {
+            assert notificationMessages.size() == 3
+            assert toAddresses.size() == 3
+            assert toAddresses.any { ((EmailNotificationMessage.Recipient)it).getAddress() == "kitchen@openremote.local" }
+        }
 
         cleanup: "the server should be stopped"
         stopContainer(container)

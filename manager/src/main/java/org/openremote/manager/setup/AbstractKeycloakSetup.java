@@ -28,7 +28,10 @@ import org.openremote.container.security.AuthForm;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.security.ManagerKeycloakIdentityProvider;
 import org.openremote.model.security.TenantEmailConfig;
+import org.openremote.model.util.TextUtil;
 
+import static org.openremote.container.security.IdentityService.IDENTITY_NETWORK_HOST;
+import static org.openremote.container.security.IdentityService.IDENTITY_NETWORK_HOST_DEFAULT;
 import static org.openremote.container.util.MapAccess.getBoolean;
 import static org.openremote.container.util.MapAccess.getInteger;
 import static org.openremote.model.Constants.*;
@@ -42,20 +45,8 @@ public abstract class AbstractKeycloakSetup implements Setup {
 
     public static final String SETUP_ADMIN_PASSWORD = "SETUP_ADMIN_PASSWORD";
     public static final String SETUP_ADMIN_PASSWORD_DEFAULT = "secret";
-    public static final String SETUP_KEYCLOAK_EMAIL_HOST = "SETUP_KEYCLOAK_EMAIL_HOST";
-    public static final String SETUP_KEYCLOAK_EMAIL_HOST_DEFAULT = "smtp-host.demo.tld";
-    public static final String SETUP_KEYCLOAK_EMAIL_USER = "SETUP_KEYCLOAK_EMAIL_USER";
-    public static final String SETUP_KEYCLOAK_EMAIL_USER_DEFAULT = "smtp-user";
-    public static final String SETUP_KEYCLOAK_EMAIL_PASSWORD = "SETUP_KEYCLOAK_EMAIL_PASSWORD";
-    public static final String SETUP_KEYCLOAK_EMAIL_PASSWORD_DEFAULT = "smtp-password";
-    public static final String SETUP_KEYCLOAK_EMAIL_PORT = "SETUP_KEYCLOAK_EMAIL_PORT";
-    public static final int SETUP_KEYCLOAK_EMAIL_PORT_DEFAULT = 25;
-    public static final String SETUP_KEYCLOAK_EMAIL_AUTH = "SETUP_KEYCLOAK_EMAIL_AUTH";
-    public static final boolean SETUP_KEYCLOAK_EMAIL_AUTH_DEFAULT = true;
-    public static final String SETUP_KEYCLOAK_EMAIL_TLS = "SETUP_KEYCLOAK_EMAIL_TLS";
-    public static final boolean SETUP_KEYCLOAK_EMAIL_TLS_DEFAULT = true;
-    public static final String SETUP_KEYCLOAK_EMAIL_FROM = "SETUP_KEYCLOAK_EMAIL_FROM";
-    public static final String SETUP_KEYCLOAK_EMAIL_FROM_DEFAULT = "noreply@demo.tld";
+    public static final String SETUP_EMAIL_FROM_KEYCLOAK = "SETUP_EMAIL_FROM_KEYCLOAK";
+    public static final String SETUP_EMAIL_FROM_KEYCLOAK_DEFAULT = "no-reply@";
 
     final protected Container container;
     final protected ManagerIdentityService identityService;
@@ -74,15 +65,20 @@ public abstract class AbstractKeycloakSetup implements Setup {
         this.setupService = container.getService(SetupService.class);
 
         // Configure SMTP
-        if (container.getConfig().containsKey(SETUP_KEYCLOAK_EMAIL_HOST)) {
+        String host = container.getConfig().getOrDefault(SETUP_EMAIL_HOST, null);
+
+        if (!TextUtil.isNullOrEmpty(host)) {
+            String user = container.getConfig().getOrDefault(SETUP_EMAIL_USER, null);
+            String password = container.getConfig().getOrDefault(SETUP_EMAIL_PASSWORD, null);
+
             emailConfig = new TenantEmailConfig();
-            emailConfig.setHost(container.getConfig().getOrDefault(SETUP_KEYCLOAK_EMAIL_HOST, SETUP_KEYCLOAK_EMAIL_HOST_DEFAULT));
-            emailConfig.setStarttls(getBoolean(container.getConfig(), SETUP_KEYCLOAK_EMAIL_TLS,SETUP_KEYCLOAK_EMAIL_TLS_DEFAULT));
-            emailConfig.setPort(getInteger(container.getConfig(), SETUP_KEYCLOAK_EMAIL_PORT, SETUP_KEYCLOAK_EMAIL_PORT_DEFAULT));
-            emailConfig.setAuth(getBoolean(container.getConfig(), SETUP_KEYCLOAK_EMAIL_AUTH, SETUP_KEYCLOAK_EMAIL_AUTH_DEFAULT));
-            emailConfig.setUser(container.getConfig().getOrDefault(SETUP_KEYCLOAK_EMAIL_USER, SETUP_KEYCLOAK_EMAIL_USER_DEFAULT));
-            emailConfig.setPassword(container.getConfig().getOrDefault(SETUP_KEYCLOAK_EMAIL_PASSWORD, SETUP_KEYCLOAK_EMAIL_PASSWORD_DEFAULT));
-            emailConfig.setFrom(container.getConfig().getOrDefault(SETUP_KEYCLOAK_EMAIL_FROM, SETUP_KEYCLOAK_EMAIL_FROM_DEFAULT));
+            emailConfig.setHost(host);
+            emailConfig.setStarttls(getBoolean(container.getConfig(), SETUP_EMAIL_TLS, SETUP_EMAIL_TLS_DEFAULT));
+            emailConfig.setPort(getInteger(container.getConfig(), SETUP_EMAIL_PORT, SETUP_EMAIL_PORT_DEFAULT));
+            emailConfig.setAuth(!TextUtil.isNullOrEmpty(user));
+            emailConfig.setUser(user);
+            emailConfig.setPassword(password);
+            emailConfig.setFrom(container.getConfig().getOrDefault(SETUP_EMAIL_FROM_KEYCLOAK, SETUP_EMAIL_FROM_KEYCLOAK_DEFAULT + container.getConfig().getOrDefault(IDENTITY_NETWORK_HOST, IDENTITY_NETWORK_HOST_DEFAULT)));
         } else {
             emailConfig = null;
         }

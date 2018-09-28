@@ -17,6 +17,7 @@ dependencies {
     compile "net.jafama:jafama:$jafamaVersion"
     compile "org.geotools:gt-main:$geotoolsVersion"
     compile "com.google.firebase:firebase-admin:$firebaseAdminVersion"
+    compile "org.simplejavamail:simple-java-mail:$simpleJavaMailVersion"
 }
 
 jar {
