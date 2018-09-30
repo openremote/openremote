@@ -28,6 +28,8 @@
             android:name="com.google.firebase.messaging.default_notification_color"
             android:resource="@color/light_green"/>
 
+        <meta-data android:name="google_analytics_adid_collection_enabled" android:value="false" />
+
         <activity
             android:name=".MainActivity"
             android:configChanges="orientation|screenSize"
