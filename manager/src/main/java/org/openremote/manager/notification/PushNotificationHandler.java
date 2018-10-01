@@ -398,7 +398,7 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
             // Use alert dictionary for apns
             // https://developer.apple.com/library/content/documentation/NetworkingInternet/Conceptual/RemoteNotificationsPG/PayloadKeyReference.html
             apsBuilder.setAlert(ApsAlert.builder().setTitle(pushMessage.getTitle()).setBody(pushMessage.getBody()).build())
-                .setSound("default");
+                .setSound("default").setCategory("openremoteNotification");
 
             webpushConfigBuilder.setNotification(new WebpushNotification(pushMessage.getTitle(), pushMessage.getBody()));
         }
