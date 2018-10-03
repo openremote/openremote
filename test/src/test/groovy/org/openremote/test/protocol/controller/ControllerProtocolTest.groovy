@@ -255,9 +255,9 @@ class ControllerProtocolTest extends Specification implements ManagerContainerTr
         and: "the asset is merged into the asset service"
         asset = assetStorageService.merge(asset)
 
-        and: "pollings should occurs"
-        while(mockServer.pollCount < 6) {
-
+        then: "multiple pollings should have occurred"
+        conditions.eventually {
+            assert mockServer.pollCount > 2
         }
 
         and: "value should be updated"

@@ -38,10 +38,9 @@ import org.openremote.model.AbstractValueHolder;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.attribute.*;
-import org.openremote.model.value.ObjectValue;
-import org.openremote.model.value.StringValue;
-import org.openremote.model.value.ValueType;
-import org.openremote.model.value.Values;
+import org.openremote.model.util.Pair;
+import org.openremote.model.util.TextUtil;
+import org.openremote.model.value.*;
 
 import javax.ws.rs.ProcessingException;
 import javax.ws.rs.core.MultivaluedMap;
@@ -401,7 +400,7 @@ public class ControllerProtocol extends AbstractProtocol {
      * Polling request should return three different responses :
      * <ul>
      * <li>OK (200) : new values are available for at least one of the sensor provided in queryParam</li>
-     * <li>TIMEOUET (408) : during the last 60 seconds following the start of the request, none of the sensors have new values</li>
+     * <li>TIMEOUT (408) : during the last 60 seconds following the start of the request, none of the sensors have new values</li>
      * <li>Others : error</li>
      * </ul>
      * <p>
@@ -419,18 +418,21 @@ public class ControllerProtocol extends AbstractProtocol {
             LOG.info("### New sensors status received");
             LOG.finer("### Polling request body response : " + responseBodyAsString);
 
-            JSONArray responseBody = (JSONArray) JSONParser.parseStrict(responseBodyAsString);
+            Optional<ArrayValue> arrayValue = Values.parse(responseBodyAsString).flatMap(Values::getArray);
+            Optional<List<ObjectValue>> statuses = Values.getArrayElements(arrayValue.orElse(null), ObjectValue.class, false, false);
 
-            for (int i = 0; i < responseBody.size(); i++) {
-                JSONObject status = (JSONObject) responseBody.get(i);
+            if (!statuses.isPresent()) {
+                LOG.warning("### Polling response is not a JSON array: " + responseBodyAsString);
+            } else {
+                statuses.get().forEach(status -> {
+                    String name = status.getString("name").orElse(null);
+                    String value = status.getString("value").orElse(null);
 
-                JSONString name = (JSONString) status.get("name");
-                JSONString value = (JSONString) status.get("value");
-
-                /**
-                 * For every sensors in the request body, find the linked attributeref and update value by calling {@link updateAttributeValue}
-                 */
-                this.controllersMap.get(pollingKey.getControllerAgentRef()).getSensorsListForDevice(pollingKey.getDeviceName()).stream().filter(entry -> entry.getValue().getSensorName().equals(name.stringValue())).forEach(e -> this.updateAttributeValue(e.getKey(), value.stringValue()));
+                    /**
+                     * For every sensors in the request body, find the linked attributeref and update value by calling {@link updateAttributeValue}
+                     */
+                    this.controllersMap.get(pollingKey.getControllerAgentRef()).getSensorsListForDevice(pollingKey.getDeviceName()).stream().filter(entry -> entry.getValue().getSensorName().equals(name)).forEach(e -> this.updateAttributeValue(e.getKey(), value));
+                });
             }
         } else if (response.getStatusInfo() == Response.Status.REQUEST_TIMEOUT) {
             LOG.info("### Timeout from polling no changes on Controller side given sensors [device=" + pollingKey.getDeviceName() + ", sensors=" + this
