@@ -19,9 +19,6 @@
  */
 package org.openremote.agent.protocol.controller;
 
-import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
-import static org.openremote.model.util.TextUtil.*;
-
 import com.google.gwt.json.client.JSONArray;
 import com.google.gwt.json.client.JSONObject;
 import com.google.gwt.json.client.JSONParser;
@@ -53,6 +50,11 @@ import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import static org.openremote.container.concurrent.GlobalLock.withLock;
+import static org.openremote.container.concurrent.GlobalLock.withLockReturning;
+import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
+import static org.openremote.model.util.TextUtil.*;
+
 /**
  * This is a Controller 2.5 protocol to communicate with a running Controller 2.5 instance and getting sensor's status and executing commands.
  * <p>
@@ -69,7 +71,7 @@ import java.util.logging.Logger;
  * {@link org.openremote.agent.protocol.controller.ControllerCommand}</li>
  * </ul>
  * <p>
- *
+ * <p>
  * Two cases are considered :
  * <ul>
  * <li>A sensor : if we want to link an attribute to a controller 2.5 sensor to get status we should create an Attribute with proper type
@@ -81,14 +83,9 @@ import java.util.logging.Logger;
  * {@link #META_ATTRIBUTE_COMMANDS_MAP}</li>
  * </ul>
  * <p>
- * <p>
- * Date : 24-Aug-18
- *
- * @author jerome.vervier
  */
+@SuppressWarnings("JavaDoc")
 public class ControllerProtocol extends AbstractProtocol {
-
-    private static final Logger LOG = Logger.getLogger(ControllerProtocol.class.getName());
 
     public static final String PROTOCOL_NAME = PROTOCOL_NAMESPACE + ":controllerClient";
 
@@ -97,10 +94,12 @@ public class ControllerProtocol extends AbstractProtocol {
      * Base URI for all requests to this server
      */
     public static final String META_PROTOCOL_BASE_URI = PROTOCOL_NAME + ":baseUri";
+    
     /**
      * Basic authentication username (string)
      */
     public static final String META_PROTOCOL_USERNAME = PROTOCOL_NAME + ":username";
+
     /**
      * Basic authentication password (string)
      */
@@ -124,6 +123,7 @@ public class ControllerProtocol extends AbstractProtocol {
      * (string)
      */
     public static final String META_ATTRIBUTE_DEVICE_NAME = PROTOCOL_NAME + ":deviceName";
+
     /**
      * Relative path to endpoint on the server; supports dynamic value insertion, see class javadoc for details
      * (string)
@@ -144,6 +144,7 @@ public class ControllerProtocol extends AbstractProtocol {
      * (string)
      */
     public static final String META_ATTRIBUTE_COMMANDS_MAP = PROTOCOL_NAME + ":commandsMap";
+    
     public static final int HEARTBEAT_DELAY_SECONDS = 5;
 
     protected static final List<MetaItemDescriptorImpl> PROTOCOL_META_ITEM_DESCRIPTORS = Arrays
@@ -171,11 +172,6 @@ public class ControllerProtocol extends AbstractProtocol {
     /*--------------- Protocol attributes ---------------*/
     public static final String PROTOCOL_DISPLAY_NAME = "Controller Client";
     public static final String PROTOCOL_VERSION = "1.0";
-
-    /**
-     * A unique ID to use for polling (see Controller 2.5 polling HTTP API)
-     */
-    public final String DEVICEBASE = "OR3ControllerProtocol";
 
     private Map<PollingKey, ScheduledFuture> pollingSensorList = new HashMap<>();
 
@@ -209,7 +205,7 @@ public class ControllerProtocol extends AbstractProtocol {
     @Override
     protected void doLinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
         String baseURL = protocolConfiguration.getMetaItem(META_PROTOCOL_BASE_URI).flatMap(AbstractValueHolder::getValueAsString)
-                .orElseThrow(() -> new IllegalArgumentException("Missing or invalid require meta item: " + META_PROTOCOL_BASE_URI));
+                .orElseThrow(() -> new IllegalArgumentException("Missing or invalid required meta item: " + META_PROTOCOL_BASE_URI));
 
         WebTargetBuilder webTargetBuilder = new WebTargetBuilder(baseURL);
 
@@ -222,7 +218,7 @@ public class ControllerProtocol extends AbstractProtocol {
 
         controllersTargetMap.put(protocolConfiguration.getReferenceOrThrow(), webTargetBuilder.build());
 
-        controllersMap.put(protocolConfiguration.getReferenceOrThrow(), new Controller(protocolConfiguration.getName().orElse("NO_NAME"),this.DEVICEBASE + "_" + protocolConfiguration.getName().orElse("NO_NAME") + "_" + protocolConfiguration.getAssetId().orElse("NO_ID")));
+        controllersMap.put(protocolConfiguration.getReferenceOrThrow(), new Controller(protocolConfiguration.getReferenceOrThrow()));
 
         this.updateStatus(protocolConfiguration.getReferenceOrThrow(), ConnectionStatus.DISCONNECTED);
 
@@ -237,8 +233,8 @@ public class ControllerProtocol extends AbstractProtocol {
         controllersTargetMap.remove(protocolConfiguration.getReferenceOrThrow());
         controllerHeartbeat.remove(protocolConfiguration.getReferenceOrThrow());
 
-        for(PollingKey key : this.pollingSensorList.keySet()) {
-            if(key.getControllerAgentRef().equals(protocolConfiguration.getReferenceOrThrow())) {
+        for (PollingKey key : this.pollingSensorList.keySet()) {
+            if (key.getControllerAgentRef().equals(protocolConfiguration.getReferenceOrThrow())) {
                 this.pollingSensorList.remove(key);
             }
         }
@@ -292,8 +288,7 @@ public class ControllerProtocol extends AbstractProtocol {
             if (commandName != null) {
                 controllersMap.get(protocolConfiguration.getReferenceOrThrow()).addCommand(attribute.getReferenceOrThrow(), new ControllerCommandBasic(commandDeviceName, commandName));
             } else {
-                assert commandsMap != null && commandsMap.size() > 0;
-
+                assert commandsMap.size() > 0;
                 controllersMap.get(protocolConfiguration.getReferenceOrThrow()).addCommand(attribute.getReferenceOrThrow(), new ControllerCommandMapped(commandDeviceName, computeCommandsMapFromMultiValue(commandsMap)));
             }
         }
@@ -323,12 +318,9 @@ public class ControllerProtocol extends AbstractProtocol {
         LOG.fine("### Process Linked Attribute Write");
 
         AttributeRef attributeRef = event.getAttributeRef();
-
         ControllerCommand controllerCommand = controllersMap.get(protocolConfiguration.getReferenceOrThrow()).getCommand(attributeRef);
-
         HttpClientProtocol.HttpClientRequest request = RequestBuilder.buildCommandRequest(controllerCommand, event, this.controllersTargetMap.get(protocolConfiguration.getReferenceOrThrow()));
-
-        executeAttributeWriteRequest(request, protocolConfiguration.getReferenceOrThrow(), response -> onAttributeWriteResponse(response));
+        executeAttributeWriteRequest(request, protocolConfiguration.getReferenceOrThrow(), this::onAttributeWriteResponse);
     }
 
     /**
@@ -351,26 +343,27 @@ public class ControllerProtocol extends AbstractProtocol {
      * Compute the polling request for a given deviceName and controller. Method check all registered sensor's (linked to the Protocol) and collect all sensor's name
      * to put them into polling request
      *
-     * @param pollingKey  Device name and controller agent reference on which we're polling
-     *
+     * @param pollingKey Device name and controller agent reference on which we're polling
      * @return {@link ScheduledFuture} task to keep a track on
      */
     private ScheduledFuture computePollingTask(PollingKey pollingKey) {
-        List<String> sensorNameList = this.controllersMap.get(pollingKey.getControllerAgentRef()).collectSensorNameLinkedToDeviceName(pollingKey.getDeviceName());
+        return withLockReturning(getProtocolName() + "::computePollingTask", () -> {
+            List<String> sensorNameList = this.controllersMap.get(pollingKey.getControllerAgentRef()).collectSensorNameLinkedToDeviceName(pollingKey.getDeviceName());
 
-        if(sensorNameList.isEmpty()) {
-            return null;
-        }
+            if (sensorNameList.isEmpty()) {
+                return null;
+            }
 
-        return executorService.schedule(() -> executePollingRequest(pollingKey, sensorNameList,
-                response -> onPollingResponse(pollingKey, sensorNameList, response)), 0);
+            return executorService.schedule(() -> executePollingRequest(pollingKey, sensorNameList,
+                    response -> onPollingResponse(pollingKey, sensorNameList, response)), 0);
+        });
     }
 
     /**
      * Polling Request execution if a Connection issue (exception) occurs, we check the nature {@link #checkIfConnectionRefused(Exception, AttributeRef)}
      *
-     * @param pollingKey device name and controller agent ref on which we'll polling
-     * @param sensorList list of sensors to catch status
+     * @param pollingKey       device name and controller agent ref on which we'll polling
+     * @param sensorList       list of sensors to catch status
      * @param responseConsumer Consumer for onResponse treatment
      */
     private void executePollingRequest(PollingKey pollingKey, List<String> sensorList, Consumer<Response> responseConsumer) {
@@ -407,9 +400,9 @@ public class ControllerProtocol extends AbstractProtocol {
      * In every case, we should start a new polling request directly. Only the 200 response induce an update of every linked attribute having a sensor
      * status updated.
      *
-     * @param pollingKey device name and controller agent ref on which polling has been execute
+     * @param pollingKey     device name and controller agent ref on which polling has been execute
      * @param sensorNameList sensors requested
-     * @param response Response received from request
+     * @param response       Response received from request
      */
     private void onPollingResponse(PollingKey pollingKey, List<String> sensorNameList, Response response) {
         if (response.getStatusInfo() == Response.Status.OK) {
@@ -441,7 +434,7 @@ public class ControllerProtocol extends AbstractProtocol {
             LOG.severe("### Status code received error : " + response.getStatus() + " --> " + response.getStatusInfo().getReasonPhrase());
         }
 
-        //No matter status code, we're continuing to pull
+        //No matter status code, we're continuing to poll
         this.schedulePollingTask(pollingKey);
     }
 
@@ -466,7 +459,7 @@ public class ControllerProtocol extends AbstractProtocol {
                 default:
                     this.updateLinkedAttribute(new AttributeState(attributeRef, Values.create(value)));
             }
-        } catch(NumberFormatException e) {
+        } catch (NumberFormatException e) {
             LOG.severe("### Error in parsing NUMBER value [" + value + "]");
             this.updateLinkedAttribute(new AttributeState(attributeRef, Values.create(0.0)));
         }
@@ -491,7 +484,7 @@ public class ControllerProtocol extends AbstractProtocol {
     private void onAttributeWriteResponse(Response response) {
         if (response != null) {
             LOG.fine("### Response from command (204 is a valid and success return) : " + response.getStatus());
-            if(response.getStatus() != 204) {
+            if (response.getStatus() != 204) {
                 LOG.severe("### Linked attribute Write request return with an error (different from 204) : " + response.getStatusInfo().getReasonPhrase());
             }
         } else {
@@ -500,13 +493,7 @@ public class ControllerProtocol extends AbstractProtocol {
     }
 
     private String formatSensors(List<String> sensorList) {
-        String sensors = "";
-
-        for (String sensor : sensorList) {
-            sensors += sensor + ",";
-        }
-
-        return sensors.substring(0, (sensors.length() - 1));
+        return String.join(",", sensorList);
     }
 
     /**
@@ -522,10 +509,8 @@ public class ControllerProtocol extends AbstractProtocol {
             HttpHostConnectException e2 = (HttpHostConnectException) e.getCause();
 
             if (e2.getCause() instanceof ConnectException) {
-                ConnectException e3 = (ConnectException) e2;
-
+                ConnectException e3 = (ConnectException) e2.getCause();
                 LOG.log(Level.SEVERE, "### Connection refused : " + e3.getMessage());
-
                 this.updateConnectionStatus(protocolRef, ConnectionStatus.DISCONNECTED);
 
                 //Starting a heartbeat Task until connection is OK
@@ -552,11 +537,11 @@ public class ControllerProtocol extends AbstractProtocol {
 
         if (status.equals(ConnectionStatus.CONNECTED) && previousStatus.equals(ConnectionStatus.DISCONNECTED)) {
             //Relaunch polling
-            if(this.pollingSensorList.isEmpty()) {
+            if (this.pollingSensorList.isEmpty()) {
                 LOG.info("### no polling to restart for " + protocolRef.getAttributeName() + "...");
             }
             for (PollingKey key : this.pollingSensorList.keySet()) {
-                if(key.getControllerAgentRef().equals(protocolRef)) {
+                if (key.getControllerAgentRef().equals(protocolRef)) {
                     this.schedulePollingTask(key);
                 }
             }
@@ -570,25 +555,27 @@ public class ControllerProtocol extends AbstractProtocol {
     }
 
     /**
-     * Hearbeat is used when connection with Controller 2.x is lost and is running until connection is back
+     * Heartbeat is used when connection with Controller 2.x is lost and is running until connection is back
      *
      * @param protocolRef
      * @param responseConsumer
      */
     private void executeHeartbeat(AttributeRef protocolRef, Consumer<Response> responseConsumer) {
-        LOG.info("### Heartbeat check on " + protocolRef.getAttributeName() + "...");
+        withLock(getProtocolName() + "::executeHeartbeat", () -> {
+            LOG.info("### Heartbeat check on " + protocolRef.getAttributeName() + "...");
 
-        HttpClientProtocol.HttpClientRequest checkRequest = RequestBuilder.buildCheckRequest(this.controllersTargetMap.get(protocolRef));
+            HttpClientProtocol.HttpClientRequest checkRequest = RequestBuilder.buildCheckRequest(this.controllersTargetMap.get(protocolRef));
 
-        Response response = null;
+            Response response = null;
 
-        try {
-            response = checkRequest.invoke(null);
-        } catch (ProcessingException e) {
-            LOG.log(Level.SEVERE, "### Check for " + this.controllersMap.get(protocolRef).getControllerConfigName() + " doesn't succeed", e);
-        }
+            try {
+                response = checkRequest.invoke(null);
+            } catch (ProcessingException e) {
+                LOG.log(Level.SEVERE, "### Check for " + this.controllersMap.get(protocolRef).getControllerConfigName() + " doesn't succeed", e);
+            }
 
-        responseConsumer.accept(response);
+            responseConsumer.accept(response);
+        });
     }
 
     private void onHeartbeatResponse(AttributeRef protocolRef, Response response) {
@@ -598,7 +585,7 @@ public class ControllerProtocol extends AbstractProtocol {
             this.updateConnectionStatus(protocolRef, ConnectionStatus.CONNECTED);
             //cancel has to be the last step
             LOG.info("### Stop Heartbeat task for " + protocolRef.getAttributeName());
-            this.controllerHeartbeat.get(protocolRef).cancel(true);
+            this.controllerHeartbeat.get(protocolRef).cancel(false);
         } else {
             if (response != null) {
                 LOG.severe("### Heartbeat check response is " + response.getStatus());
@@ -609,7 +596,7 @@ public class ControllerProtocol extends AbstractProtocol {
 
     /**
      * Scheduling of a polling request
-     *
+     * <p>
      * We check if there is sensor to poll for the given device name.
      *
      * @param key
@@ -617,7 +604,7 @@ public class ControllerProtocol extends AbstractProtocol {
     private void schedulePollingTask(PollingKey key) {
         ScheduledFuture scheduledFuture = computePollingTask(key);
 
-        if(scheduledFuture != null) {
+        if (scheduledFuture != null) {
             pollingSensorList.put(key, scheduledFuture);
         }
     }

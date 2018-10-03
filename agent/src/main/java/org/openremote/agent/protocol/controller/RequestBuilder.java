@@ -62,23 +62,22 @@ public class RequestBuilder {
 
     public static HttpClientProtocol.HttpClientRequest buildCommandRequest(ControllerCommand controllerCommand, AttributeEvent event, ResteasyWebTarget webTarget) {
         MultivaluedMap<String, String> queryParam = new MultivaluedHashMap<>();
-        Optional<ObjectValue> body = null;
+        Optional<ObjectValue> body = Optional.empty();
 
         //This part could be put in a Wrapper
         if(controllerCommand instanceof ControllerCommandBasic) {
             String commandName = ((ControllerCommandBasic) controllerCommand).getCommandName();
             queryParam.add("name", commandName);
 
-            if(event.getValue().isPresent()) {
-                body = Values.parse("{\"parameter\": \"" + event.getValue().orElse(null).toString() + "\"}");
-            }
+            body = event.getValue().map(v -> {
+                ObjectValue objectValue = Values.createObject();
+                objectValue.put("parameter", v);
+                return objectValue;
+            });
         } else {
             Map<String, String> actionCommandLink = ((ControllerCommandMapped) controllerCommand).getActionCommandLink();
-
-            String attributeValue = event.getValue().orElse(null).toString();
-
+            String attributeValue = event.getValue().map(Object::toString).orElse(null);
             String correspondingCommandName = actionCommandLink.get(attributeValue);
-
             queryParam.add("name", correspondingCommandName);
         }
 
@@ -91,7 +90,7 @@ public class RequestBuilder {
                 null,
                 false,
                 false,
-                body == null ? null : body.get(),
+                body.orElse(null),
                 MediaType.APPLICATION_JSON
         );
     }

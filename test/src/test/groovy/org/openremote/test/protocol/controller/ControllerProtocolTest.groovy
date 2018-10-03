@@ -51,16 +51,6 @@ import javax.ws.rs.core.MediaType
 import javax.ws.rs.core.Response
 import javax.ws.rs.core.UriInfo
 
-/**
- *
- * Java class description...
- *
- * Date : 13-Sep-18
- *
- * @author jerome.vervier
- *
- */
-
 class ControllerProtocolTest extends Specification implements ManagerContainerTrait {
     def CONTROLLERPROTOCOL_ATTRIBUTE_NAME = "testcontrollerConfig"
     def CONTROLLERPROTOCOL_ATTRIBUTE_NAME2 = "testcontrollerConfig2"
