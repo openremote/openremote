@@ -19,10 +19,6 @@
  */
 package org.openremote.agent.protocol.controller;
 
-import com.google.gwt.json.client.JSONArray;
-import com.google.gwt.json.client.JSONObject;
-import com.google.gwt.json.client.JSONParser;
-import com.google.gwt.json.client.JSONString;
 import org.apache.http.conn.HttpHostConnectException;
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
 import org.openremote.agent.protocol.AbstractProtocol;
@@ -35,8 +31,6 @@ import org.openremote.model.AbstractValueHolder;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.attribute.*;
-import org.openremote.model.util.Pair;
-import org.openremote.model.util.TextUtil;
 import org.openremote.model.value.*;
 
 import javax.ws.rs.ProcessingException;
@@ -86,6 +80,8 @@ import static org.openremote.model.util.TextUtil.*;
  */
 @SuppressWarnings("JavaDoc")
 public class ControllerProtocol extends AbstractProtocol {
+
+    private static final Logger LOG = Logger.getLogger(ControllerProtocol.class.getName());
 
     public static final String PROTOCOL_NAME = PROTOCOL_NAMESPACE + ":controllerClient";
 
@@ -144,7 +140,7 @@ public class ControllerProtocol extends AbstractProtocol {
      * (string)
      */
     public static final String META_ATTRIBUTE_COMMANDS_MAP = PROTOCOL_NAME + ":commandsMap";
-    
+
     public static final int HEARTBEAT_DELAY_SECONDS = 5;
 
     protected static final List<MetaItemDescriptorImpl> PROTOCOL_META_ITEM_DESCRIPTORS = Arrays
