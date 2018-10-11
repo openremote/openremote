@@ -38,7 +38,7 @@ public class ORMessagingActionService extends IntentService {
             manager.cancel(notificationId.hashCode());
         }
 
-        String consoleId = getSharedPreferences(getApplicationContext().getString(R.string.app_name), Context.MODE_PRIVATE).getString("consoleId", "");
+        String consoleId = getSharedPreferences(getApplicationContext().getString(R.string.OR_CONSOLE_NAME), Context.MODE_PRIVATE).getString("consoleId", "");
         if (!TextUtils.isEmpty(consoleId)) {
             tokenService.notificationAcknowledged(notificationId, consoleId, acknowledgement);
         }

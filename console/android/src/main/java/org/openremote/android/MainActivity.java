@@ -1,50 +1,34 @@
 package org.openremote.android;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
+import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.DownloadManager;
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
-import android.content.SharedPreferences;
+import android.content.*;
 import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
 import android.net.http.SslError;
-import android.os.Build;
-import android.os.Bundle;
-import android.os.Environment;
-import android.os.Handler;
+import android.os.*;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
+import android.text.TextUtils;
 import android.view.KeyEvent;
 import android.view.View;
-import android.webkit.ConsoleMessage;
-import android.webkit.CookieManager;
-import android.webkit.DownloadListener;
-import android.webkit.JavascriptInterface;
-import android.webkit.SslErrorHandler;
-import android.webkit.URLUtil;
-import android.webkit.WebChromeClient;
-import android.webkit.WebResourceError;
-import android.webkit.WebResourceRequest;
-import android.webkit.WebResourceResponse;
-import android.webkit.WebSettings;
-import android.webkit.WebView;
-import android.webkit.WebViewClient;
+import android.webkit.*;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.firebase.iid.FirebaseInstanceId;
-
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -53,25 +37,28 @@ import org.openremote.android.service.TokenService;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.logging.Logger;
 
 public class MainActivity extends Activity {
 
     private static final Logger LOG = Logger.getLogger(MainActivity.class.getName());
 
-    private final int WRITE_PERMISSION_FOR_DOWNLOAD = 999;
-    private final int WRITE_PERMISSION_FOR_LOGGING = 1000;
+    private static final int WRITE_PERMISSION_FOR_DOWNLOAD = 999;
+    private static final int WRITE_PERMISSION_FOR_LOGGING = 1000;
+    private static final int WEBVIEW_LOAD_TIMEOUT_DEFAULT = 5000;
 
     public static final String ACTION_BROADCAST = "ACTION_BROADCAST";
 
     protected final ConnectivityChangeReceiver connectivityChangeReceiver = new ConnectivityChangeReceiver();
     protected WebView webView;
+    protected int webViewTimeout = WEBVIEW_LOAD_TIMEOUT_DEFAULT;
+    protected boolean webViewLoaded;
     protected ErrorViewHolder errorViewHolder;
     protected Context context;
     protected SharedPreferences sharedPreferences;
     protected GeofenceProvider geofenceProvider;
     protected String consoleId;
-
     protected BroadcastReceiver onDownloadCompleteReciever = new BroadcastReceiver() {
         public void onReceive(Context ctxt, Intent intent) {
             String action = intent.getAction();
@@ -90,10 +77,10 @@ public class MainActivity extends Activity {
 
         public ErrorViewHolder(View errorView) {
             this.errorView = errorView;
-            btnReload = (Button) errorView.findViewById(R.id.reload);
-            btnExit = (Button) errorView.findViewById(R.id.exit);
-            tvErrorTitle = (TextView) errorView.findViewById(R.id.errorTitle);
-            tvErrorExplanation = (TextView) errorView.findViewById(R.id.errorExplanation);
+            btnReload = errorView.findViewById(R.id.reload);
+            btnExit = errorView.findViewById(R.id.exit);
+            tvErrorTitle = errorView.findViewById(R.id.errorTitle);
+            tvErrorExplanation = errorView.findViewById(R.id.errorExplanation);
         }
 
         public void show(int errorTitle, int errorDescription, boolean canReload, boolean canExit) {
@@ -120,7 +107,22 @@ public class MainActivity extends Activity {
 
     protected String getClientUrl() {
         String platform = "Android " + Build.VERSION.RELEASE;
-        return getString(R.string.OR_BASE_SERVER) + getString(R.string.OR_CONSOLE_URL) + "?consolePlatform=" + platform;
+        String name = getString(R.string.OR_CONSOLE_NAME);
+        String providers = getString(R.string.OR_CONSOLE_PROVIDERS);
+        String version = "N/A";
+
+        try {
+            PackageInfo pInfo = context.getPackageManager().getPackageInfo(getPackageName(), 0);
+            version = pInfo.versionName;
+        } catch (PackageManager.NameNotFoundException e) {
+            e.printStackTrace();
+        }
+
+        return getString(R.string.OR_BASE_SERVER) + getString(R.string.OR_CONSOLE_URL)
+                + "?consolePlatform=" + platform
+                + "&consoleName=" + name
+                + "&consoleVersion=" + version
+                + "&consoleProviders=" + providers;
     }
 
     @Override
@@ -128,6 +130,7 @@ public class MainActivity extends Activity {
         super.onActivityReenter(resultCode, data);
     }
 
+    @SuppressWarnings("StatementWithEmptyBody")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -144,6 +147,12 @@ public class MainActivity extends Activity {
             }
         }
 
+        try {
+            String timeoutStr = getString(R.string.OR_CONSOLE_LOAD_TIMEOUT);
+            webViewTimeout = Integer.parseInt(timeoutStr);
+        } catch(NumberFormatException nfe) {
+            System.out.println("Could not parse console load timeout value: " + nfe);
+        }
 
         context = this;
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
@@ -176,7 +185,7 @@ public class MainActivity extends Activity {
         if (!intent.hasExtra("appUrl")) {
             String url = getClientUrl();
             LOG.fine("Loading web view: " + url);
-            webView.loadUrl(url);
+            loadUrl(url);
         } else {
             String url = getClientUrl();
             String intentUrl = intent.getStringExtra("appUrl");
@@ -189,7 +198,7 @@ public class MainActivity extends Activity {
             }
 
             LOG.fine("Loading web view: " + url);
-            webView.loadUrl(url);
+            loadUrl(url);
         }
     }
 
@@ -241,7 +250,7 @@ public class MainActivity extends Activity {
         if ("about:blank".equals(url)) {
             url = getClientUrl();
             LOG.fine("Reloading web view: " + url);
-            webView.loadUrl(url);
+            loadUrl(url);
         }
     }
 
@@ -250,6 +259,7 @@ public class MainActivity extends Activity {
         System.exit(0);
     }
 
+    @SuppressLint("SetJavaScriptEnabled")
     protected void initializeWebView() {
         LOG.fine("Initializing web view");
 
@@ -271,15 +281,11 @@ public class MainActivity extends Activity {
         webView.setLongClickable(false);
 
         webView.setWebViewClient(new WebViewClient() {
+
+
+
             @Override
             public void onReceivedHttpError(WebView view, WebResourceRequest request, WebResourceResponse errorResponse) {
-                //TODO should we ignore images?
-                if (request.getUrl().getLastPathSegment() != null &&
-                        (request.getUrl().getLastPathSegment().endsWith("png")
-                                || request.getUrl().getLastPathSegment().endsWith("jpg")
-                                || request.getUrl().getLastPathSegment().endsWith("ico"))
-                        )
-                    return;
 
                 // When initialising Keycloak with an invalid offline refresh token (e.g. wrong nonce because
                 // server was reinstalled), we detect the failure and then don't show an error view. We clear the stored
@@ -292,8 +298,7 @@ public class MainActivity extends Activity {
                     return;
                 }
 
-                LOG.warning("Error requesting '" + request.getUrl() + "', response code: " + errorResponse.getStatusCode());
-                errorViewHolder.show(R.string.httpError, R.string.httpErrorExplain, true, true);
+                handleError(errorResponse.getStatusCode(), errorResponse.getReasonPhrase(), request.getUrl().toString(), request.isForMainFrame());
             }
 
             @Override
@@ -308,32 +313,82 @@ public class MainActivity extends Activity {
                 }
             }
 
+            @SuppressWarnings("deprecation")
+            @Override
+            public void onReceivedError(WebView view, int errorCode, String description, String failingUrl) {
+                handleError(errorCode, description, failingUrl, true);
+            }
+
+            @TargetApi(Build.VERSION_CODES.M)
             @Override
             public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
-                //TODO should we ignore images?
-                if (request.getUrl().getLastPathSegment() != null &&
-                        (request.getUrl().getLastPathSegment().endsWith("png")
-                                || request.getUrl().getLastPathSegment().endsWith("jpg")
-                                || request.getUrl().getLastPathSegment().endsWith("ico"))
-                        )
+
+                // Remote debugging session from Chrome wants to load about:blank and then fails with "ERROR_UNSUPPORTED_SCHEME", ignore
+                if ("net::ERR_CACHE_MISS".contentEquals(error.getDescription())) {
                     return;
-
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-
-                    // Remote debugging session from Chrome wants to load about:blank and then fails with "ERROR_UNSUPPORTED_SCHEME", ignore
-                    if ("net::ERR_CACHE_MISS".contentEquals(error.getDescription())) {
-                        return;
-                    }
-
-                    if (request.getUrl().toString().equals("about:blank") && error.getErrorCode() == ERROR_UNSUPPORTED_SCHEME) {
-                        return;
-                    }
-
-                    LOG.warning("Error requesting '" + request.getUrl() + "': " + error.getErrorCode());
                 }
-                errorViewHolder.show(R.string.fatalError, R.string.fatalErrorExplain, false, true);
+
+                if (request.getUrl().toString().equals("about:blank") && error.getErrorCode() == ERROR_UNSUPPORTED_SCHEME) {
+                    return;
+                }
+
+                handleError(
+                        error.getErrorCode(), error.getDescription().toString(),
+                        request.getUrl().toString(), request.isForMainFrame());
+            }
+
+            @Override
+            public void onPageStarted(WebView view, final String url, Bitmap favicon) {
+
+                Runnable run = new Runnable() {
+                    public void run() {
+                        if(!webViewLoaded) {
+                            handleError(ERROR_TIMEOUT, "Connection timed out", url, true);
+                        }
+                    }
+                };
+                Handler myHandler = new Handler(Looper.myLooper());
+                myHandler.postDelayed(run, 5000);
+            }
+
+            @Override
+            public void onPageFinished(WebView view, String url) {
+                webViewLoaded = true;
+            }
+
+            protected void handleError(int errorCode, String description, String failingUrl, boolean isForMainFrame) {
+
+                LOG.warning("Error requesting '" + failingUrl + "': " + errorCode + "(" + description + ")");
+
+                // This will be the URL loaded into the webview itself (false for images etc. of the main page)
+                if (isForMainFrame) {
+
+                    // Check page load error URL
+                    String errorUrl = getString(R.string.OR_CONSOLE_LOAD_ERROR_URL);
+                    if (!TextUtils.isEmpty(errorUrl) && !Objects.equals(failingUrl, errorUrl)) {
+                        LOG.info("Loading error URL: " + errorUrl);
+                        loadUrl(errorUrl);
+                        return;
+                    }
+                } else {
+
+                    if (Boolean.parseBoolean(getString(R.string.OR_CONSOLE_IGNORE_PAGE_ERRORS))) {
+                        return;
+                    }
+
+                    //TODO should we always ignore image errors?
+                    if (failingUrl != null && (failingUrl.endsWith("png")
+                            || failingUrl.endsWith("jpg")
+                            || failingUrl.endsWith("ico"))) {
+                        LOG.info("Ignoring error loading image resource");
+                        return;
+                    }
+                }
+
+                errorViewHolder.show(R.string.httpError, R.string.httpErrorExplain, true, true);
             }
         });
+
         webView.setWebChromeClient(new WebChromeClient() {
             @Override
             public boolean onConsoleMessage(ConsoleMessage consoleMessage) {
@@ -386,6 +441,11 @@ public class MainActivity extends Activity {
                 }
             }
         });
+    }
+
+    protected void loadUrl(String url) {
+        webViewLoaded = false;
+        webView.loadUrl(url);
     }
 
     @Override

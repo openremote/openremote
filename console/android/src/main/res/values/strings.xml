@@ -1,8 +1,12 @@
 <resources>
-    <string name="app_name">OpenRemote</string>
+    <string name="OR_CONSOLE_NAME">OpenRemote</string>
+    <string name="OR_CONSOLE_PROVIDERS">geofence push</string>
     <string name="WEBSITE_URL">http://www.openremote.com/</string>
     <string name="OR_BASE_SERVER">http://192.168.0.143:8080</string>
     <string name="OR_CONSOLE_URL">/console/REALM/index.html</string>
+    <string name="OR_CONSOLE_LOAD_ERROR_URL"></string>
+    <string name="OR_CONSOLE_LOAD_TIMEOUT">5000</string>
+    <string name="OR_CONSOLE_IGNORE_PAGE_ERRORS">false</string>
     <string name="SHARED_PREF_REFRESH_TOKEN">REFRESH_TOKEN</string>
     <string name="OR_REALM">REALM</string>
     <string name="SHARED_PREF_FCM_TOKEN">FCM_TOKEN_KEY</string>
