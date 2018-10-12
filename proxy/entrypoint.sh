@@ -73,7 +73,7 @@ function run_proxy {
     log_info "Monitoring config file $HAPROXY_CONFIG and certs in $LE_CERT_ROOT for changes..."
 
     # Wait if config or certificates were changed, block this execution
-    while inotifywait -q -r -e modify,create,delete,move,move_self $HAPROXY_CONFIG "${LE_CERT_ROOT}/${DOMAINNAME}/haproxy.pem"; do
+    while inotifywait -q -r --exclude '\.git/' -e modify,create,delete,move,move_self $HAPROXY_CONFIG $LE_CERT_ROOT; do
         log_info "Change detected..."
         sleep 5
         restart
