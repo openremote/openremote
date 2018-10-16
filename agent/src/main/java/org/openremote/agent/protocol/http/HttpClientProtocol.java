@@ -149,7 +149,7 @@ import static org.openremote.model.util.TextUtil.*;
  */
 public class HttpClientProtocol extends AbstractProtocol {
 
-    protected static class HttpClientRequest {
+    public static class HttpClientRequest {
 
         protected String path;
         public String method;
@@ -165,7 +165,7 @@ public class HttpClientProtocol extends AbstractProtocol {
         protected boolean updateConnectionStatus;
         protected boolean pagingEnabled;
 
-        protected HttpClientRequest(WebTarget client,
+        public HttpClientRequest(WebTarget client,
                                     String path,
                                     String method,
                                     MultivaluedMap<String, String> headers,
