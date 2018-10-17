@@ -132,6 +132,7 @@ plugins.withType(JavaPlugin).whenPluginAdded {
             }
         })
         options.compilerArgs += ["-Xlint:unchecked", "-Xlint:deprecation"]
+        options.encoding = 'UTF-8'
     }
 
     // JAR/ZIP base name is the fully qualified subproject name
