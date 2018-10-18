@@ -220,6 +220,10 @@ services:
       # unless you want to deploy a modified version of the Manager UI and JavaScript components.
       # MANAGER_DOCROOT: 'client/src/main/webapp'
 
+      # Configure the default max age for data points stored in the database (individual attributes can use a custom
+      # value by using the DATA_POINTS_MAX_AGE_DAYS AssetMeta item).
+      # DATA_POINTS_MAX_AGE_DAYS = 30
+
       # Custom JVM options (increase heap size if required)
       JAVA_OPTS: '-Xms400m -Xmx400m
                   -XX:CompressedClassSpaceSize=25m -XX:MaxMetaspaceSize=150m

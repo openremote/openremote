@@ -44,8 +44,7 @@ import org.openremote.model.util.TimeUtil;
 
 import javax.persistence.Query;
 import javax.persistence.TypedQuery;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
+import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalField;
 import java.time.temporal.WeekFields;
@@ -56,11 +55,10 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static java.time.temporal.ChronoUnit.*;
 import static org.openremote.manager.notification.NotificationProcessingException.Reason.*;
 import static org.openremote.model.notification.Notification.HEADER_SOURCE;
-import static org.openremote.model.notification.Notification.Source.ASSET_RULESET;
-import static org.openremote.model.notification.Notification.Source.CLIENT;
-import static org.openremote.model.notification.Notification.Source.INTERNAL;
+import static org.openremote.model.notification.Notification.Source.*;
 
 // TODO Implement notification purging - configurable MAX_AGE for notifications?
 public class NotificationService extends RouteBuilder implements ContainerService {
@@ -294,7 +292,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                                                         .setSourceId(sourceId.get())
                                                         .setTarget(targets.getType())
                                                         .setTargetId(targetId)
-                                                        .setSentOn(Date.from(timerService.getNow().toInstant()));
+                                                        .setSentOn(Date.from(timerService.getNow()));
 
                                                 sentNotification = em.merge(sentNotification);
                                                 long id = sentNotification.getId();
@@ -499,8 +497,8 @@ public class NotificationService extends RouteBuilder implements ContainerServic
         }
     }
 
-    protected ZonedDateTime getRepeatAfterTimestamp(Notification notification, ZonedDateTime lastSend) {
-        ZonedDateTime timestamp = null;
+    protected Instant getRepeatAfterTimestamp(Notification notification, Instant lastSend) {
+        Instant timestamp = null;
 
         if (TextUtil.isNullOrEmpty(notification.getName())) {
             return null;
@@ -511,19 +509,19 @@ public class NotificationService extends RouteBuilder implements ContainerServic
             switch (notification.getRepeatFrequency()) {
 
                 case HOURLY:
-                    timestamp = lastSend.truncatedTo(ChronoUnit.HOURS).plusHours(1);
+                    timestamp = lastSend.truncatedTo(HOURS).plus(1, HOURS);
                     break;
                 case DAILY:
-                    timestamp = lastSend.truncatedTo(ChronoUnit.DAYS).plusDays(1);
+                    timestamp = lastSend.truncatedTo(DAYS).plus(1, DAYS);
                     break;
                 case WEEKLY:
-                    timestamp = lastSend.truncatedTo(ChronoUnit.WEEKS).plusWeeks(1);
+                    timestamp = lastSend.truncatedTo(WEEKS).plus(1, WEEKS);
                     break;
                 case MONTHLY:
-                    timestamp = lastSend.truncatedTo(ChronoUnit.MONTHS).plusMonths(1);
+                    timestamp = lastSend.truncatedTo(MONTHS).plus(1, MONTHS);
                     break;
                 case ANNUALLY:
-                    timestamp = lastSend.truncatedTo(ChronoUnit.YEARS).plusYears(1);
+                    timestamp = lastSend.truncatedTo(YEARS).plus(1, YEARS);
                     break;
             }
         } else if (!TextUtil.isNullOrEmpty(notification.getRepeatInterval())) {
@@ -610,7 +608,6 @@ public class NotificationService extends RouteBuilder implements ContainerServic
 
         return lastSend == null ||
                 (notification.getRepeatFrequency() != RepeatFrequency.ONCE &&
-                        timerService.getNow().plusSeconds(1).isAfter(getRepeatAfterTimestamp(notification, ZonedDateTime.ofInstant(lastSend.toInstant(),
-                                ZoneId.systemDefault()))));
+                        timerService.getNow().plusSeconds(1).isAfter(getRepeatAfterTimestamp(notification, lastSend.toInstant())));
     }
 }

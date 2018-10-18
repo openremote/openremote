@@ -21,8 +21,6 @@ package org.openremote.manager.setup.builtin;
 
 import org.openremote.agent.protocol.simulator.SimulatorProtocol;
 import org.openremote.container.Container;
-import org.openremote.manager.asset.console.ConsoleResourceImpl;
-import org.openremote.manager.rules.geofence.ORConsoleGeofenceAssetAdapter;
 import org.openremote.manager.security.UserConfiguration;
 import org.openremote.manager.setup.AbstractManagerSetup;
 import org.openremote.model.asset.Asset;
@@ -30,8 +28,6 @@ import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetMeta;
 import org.openremote.model.asset.UserAsset;
 import org.openremote.model.attribute.*;
-import org.openremote.model.console.ConsoleConfiguration;
-import org.openremote.model.console.ConsoleProvider;
 import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.security.Tenant;
 import org.openremote.model.simulator.element.ColorSimulatorElement;
@@ -44,7 +40,6 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 
 import static org.openremote.model.asset.AssetMeta.*;
@@ -68,8 +63,8 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
     public static final int DEMO_RULE_STATES_GLOBAL_WITH_SCENES = DEMO_RULE_STATES_CUSTOMER_A_WITH_SCENES;
     public static GeoJSONPoint SMART_OFFICE_LOCATION = new GeoJSONPoint(5.460315214821094, 51.44541688237109);
     public static GeoJSONPoint SMART_HOME_LOCATION = new GeoJSONPoint(5.470945, 51.438000);
-    public final String agentProtocolConfigName = "simulator123";
-    public final String thingLightToggleAttributeName = "light1Toggle";
+    public static final String agentProtocolConfigName = "simulator123";
+    public static final String thingLightToggleAttributeName = "light1Toggle";
     final protected boolean importDemoScenes;
     public String smartOfficeId;
     public String groundFloorId;
@@ -187,6 +182,10 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                     new MetaItem(
                         STORE_DATA_POINTS,
                         Values.create(true)),
+                    new MetaItem(
+                        DATA_POINTS_MAX_AGE_DAYS,
+                        Values.create(7)
+                    ),
                     new MetaItem(
                         AGENT_LINK,
                         new AttributeRef(agent.getId(), agentProtocolConfigName).toArrayValue()),

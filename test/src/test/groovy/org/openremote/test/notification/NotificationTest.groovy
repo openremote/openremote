@@ -418,11 +418,11 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
         when: "a repeat frequency is set and a notification is sent"
         // Move clock to beginning of next hour
-        def advancement = Instant.ofEpochMilli(getClockTimeOf(container)).atZone(ZoneId.systemDefault())
+        def advancement = Instant.ofEpochMilli(getClockTimeOf(container))
                                        .truncatedTo(ChronoUnit.HOURS)
-                                       .plusMinutes(59)
+                                       .plus(59, ChronoUnit.MINUTES)
 
-        advancePseudoClock(ChronoUnit.MILLIS.between(Instant.ofEpochMilli(getClockTimeOf(container)).atZone(ZoneId.systemDefault()), advancement), TimeUnit.MILLISECONDS, container)
+        advancePseudoClock(ChronoUnit.MILLIS.between(Instant.ofEpochMilli(getClockTimeOf(container)), advancement), TimeUnit.MILLISECONDS, container)
         notification.setRepeatFrequency(RepeatFrequency.HOURLY)
         testuser3NotificationResource.sendNotification(null, notification)
         notifications = []

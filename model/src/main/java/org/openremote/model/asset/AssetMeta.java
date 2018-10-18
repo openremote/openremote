@@ -34,6 +34,7 @@ import static org.openremote.model.Constants.ASSET_META_NAMESPACE;
 import static org.openremote.model.attribute.MetaItem.MetaItemFailureReason.META_ITEM_VALUE_MISMATCH;
 import static org.openremote.model.attribute.MetaItemDescriptor.Access.ACCESS_PRIVATE;
 import static org.openremote.model.util.TextUtil.REGEXP_PATTERN_DOUBLE;
+import static org.openremote.model.util.TextUtil.REGEXP_PATTERN_INTEGER_POSITIVE_NON_ZERO;
 
 /**
  * Asset attribute meta item name is an arbitrary string. It should be URI. This enum contains the well-known URIs for
@@ -287,6 +288,20 @@ public enum AssetMeta implements MetaItemDescriptor {
         null,
         Values.create(true),
         true),
+
+    /**
+     * How long to store attribute values in time series database (data older than this will be automatically purged)
+     */
+    DATA_POINTS_MAX_AGE_DAYS(
+            ASSET_META_NAMESPACE + ":dataPointsMaxAgeDays",
+            new Access(true, false, true),
+            ValueType.NUMBER,
+            REGEXP_PATTERN_INTEGER_POSITIVE_NON_ZERO,
+            PatternFailure.INTEGER_POSITIVE_NON_ZERO.name(),
+            null,
+            false,
+            value -> value == null ? Optional.empty() : Values.getIntegerCoerced(value)
+                    .isPresent() ? Optional.empty() : Optional.of(new ValidationFailure(META_ITEM_VALUE_MISMATCH, "Integer"))),
 
     /**
      * Should attribute writes be processed by the rules engines as {@link AssetState} facts, with a lifecycle that
