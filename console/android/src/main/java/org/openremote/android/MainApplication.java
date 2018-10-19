@@ -18,17 +18,16 @@ public class MainApplication extends Application {
         super.onCreate();
 
         // Fix and configure JUL
+        AndroidLoggingHandler.reset(new AndroidLoggingHandler());
+
         if (BuildConfig.DEBUG) {
-            AndroidLoggingHandler.reset(new AndroidLoggingHandler());
+            java.util.logging.Logger.getLogger("org.openremote").setLevel(Level.FINEST);
+            java.util.logging.Logger.getLogger("io.openremote").setLevel(Level.FINEST);
 
-            if (Boolean.parseBoolean(getApplicationContext().getString(R.string.DEBUG_LOGGING))) {
-                java.util.logging.Logger.getLogger("org.openremote").setLevel(Level.FINEST);
-
-                // Get write permission
-                String writePermission = Manifest.permission.WRITE_EXTERNAL_STORAGE;
-                if (ContextCompat.checkSelfPermission(getApplicationContext(), writePermission) == PackageManager.PERMISSION_GRANTED) {
-                    addFileHandler(getApplicationContext());
-                }
+            // Get write permission
+            String writePermission = Manifest.permission.WRITE_EXTERNAL_STORAGE;
+            if (ContextCompat.checkSelfPermission(getApplicationContext(), writePermission) == PackageManager.PERMISSION_GRANTED) {
+                addFileHandler(getApplicationContext());
             }
         }
 

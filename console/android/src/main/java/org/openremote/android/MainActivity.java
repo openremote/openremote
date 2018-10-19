@@ -135,7 +135,7 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        if (Boolean.parseBoolean(getApplicationContext().getString(R.string.DEBUG_LOGGING))) {
+        if (BuildConfig.DEBUG) {
             // Check write permission for logging purposes
 
             String writePermission = Manifest.permission.WRITE_EXTERNAL_STORAGE;

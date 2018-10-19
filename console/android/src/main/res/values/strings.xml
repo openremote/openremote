@@ -17,7 +17,6 @@
     <string name="SHARED_PREF_OPENED_ALERT">OPENED_ALERT</string>
     <string name="AUTH_URL">/auth</string>
     <string name="SSL_IGNORE">false</string>
-    <string name="DEBUG_LOGGING">false</string>
     <string name="exit">exit</string>
     <string name="fatalError">Sorry, there is a problem.</string>
     <string name="fatalErrorExplain">The service is not available, please try again later.</string>
