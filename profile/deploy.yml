@@ -29,6 +29,9 @@ services:
       # Bearer tokens are only valid for minutes, and authentication fails if Keycloak drifts.
       TZ: Europe/Zurich
 
+      # File to which std out will be logged
+      LOGFILE: /var/log/proxy.log
+
       # The public host name of this OpenRemote installation. Set this to request/manage an SSL
       # certificate with the free https://letsencrypt.org/ provider. The default 'localhost' will
       # rely on a baked-in self-signed certificate. If you change this, adjust manager#IDENTITY_NETWORK_HOST.

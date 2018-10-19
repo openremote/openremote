@@ -218,11 +218,11 @@ function auto_renew {
       renew ${domains}
       if [ $? -ne 0 ]
       then
-        log_error "failed to renew certificate for ${subject}!"
+        log_error "failed to renew certificate for ${DOMAINNAME}!"
         exitcode=1
       else
         renewed_certs+=("$subject")
-        log_info "renewed certificate for ${subject}"
+        log_info "renewed certificate for ${DOMAINNAME}"
       fi
     else
       log_info "Certificate for ${DOMAINNAME} does not require renewal."
@@ -301,19 +301,18 @@ function remove {
 function log_error {
   if [ -n "${LOGFILE}" ]
   then
-    if [[ "$@" ]]; then echo "[ERROR][`date +'%Y-%m-%d %T'`] $@\n" >> ${LOGFILE};
+    if [[ "$@" ]]; then echo "[ERROR][`date +'%Y-%m-%d %T'`] $@" >> ${LOGFILE};
     else echo; fi
     >&2 echo "[ERROR][`date +'%Y-%m-%d %T'`] $@"
   else
     echo "[ERROR][`date +'%Y-%m-%d %T'`] $@"
   fi
-
 }
 
 function log_info {
   if [ -n "${LOGFILE}" ]
   then
-    if [[ "$@" ]]; then echo "[INFO][`date +'%Y-%m-%d %T'`] $@\n" >> ${LOGFILE};
+    if [[ "$@" ]]; then echo "[INFO][`date +'%Y-%m-%d %T'`] $@" >> ${LOGFILE};
     else echo; fi
     >&2 echo "[INFO][`date +'%Y-%m-%d %T'`] $@"
   else
@@ -366,7 +365,7 @@ function cron_auto_renewal {
     # If not defined, the default is daily
     CRON_TIME=${CRON_TIME:-@daily}
     log_info "Scheduling cron job with execution time ${CRON_TIME}"
-    echo "${CRON_TIME} root /entrypoint.sh auto-renew >> /var/log/cron.log 2>&1" > /etc/cron.d/letsencrypt
+    echo "${CRON_TIME} root /entrypoint.sh auto-renew >> ${LOGFILE} 2>&1" > /etc/cron.d/letsencrypt
 
     # Start crond
     service cron start
@@ -382,6 +381,7 @@ log_info "LE_CERT_ROOT: ${LE_CERT_ROOT}"
 log_info "LE_ARCHIVE_ROOT: ${LE_ARCHIVE_ROOT}"
 log_info "LE_RENEWAL_CONFIG_ROOT: ${LE_RENEWAL_CONFIG_ROOT}"
 log_info "LE_CMD: ${LE_CMD}"
+log_info "LOGFILE: ${LOGFILE}"
 
 if [ $# -eq 0 ]
 then
