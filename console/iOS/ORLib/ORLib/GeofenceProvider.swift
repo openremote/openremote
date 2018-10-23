@@ -10,11 +10,9 @@ public class GeofenceProvider: NSObject, URLSessionDelegate {
     let version = "ORConsole"
     let geofenceFetchEndpoint = "rules/geofences/"
     let locationManager = CLLocationManager()
-    let userdefaults = UserDefaults.standard
+    let userdefaults = UserDefaults(suiteName: ORAppGroup.entitlement)
     var geoPostUrls = [String:[String]]()
     var enableCallback : (([String: Any]) -> (Void))?
-    var timer: Timer?
-    var insideRegion = false
 
     public var baseURL: String = ""
     public var consoleId: String = ""
@@ -26,9 +24,12 @@ public class GeofenceProvider: NSObject, URLSessionDelegate {
     public override init() {
         super.init()
         locationManager.delegate = self
-        self.baseURL = userdefaults.string(forKey: GeofenceProvider.baseUrlKey) ?? ""
-        self.consoleId = userdefaults.string(forKey: GeofenceProvider.consoleIdKey) ?? ""
-        self.geoPostUrls = userdefaults.value(forKey: GeofenceProvider.geoPostUrlsKey) as? [String:[String]] ?? [String:[String]]()
+        locationManager.allowsBackgroundLocationUpdates = true
+        locationManager.pausesLocationUpdatesAutomatically = false
+        locationManager.desiredAccuracy = kCLLocationAccuracyHundredMeters
+        self.baseURL = userdefaults?.string(forKey: GeofenceProvider.baseUrlKey) ?? ""
+        self.consoleId = userdefaults?.string(forKey: GeofenceProvider.consoleIdKey) ?? ""
+        self.geoPostUrls = userdefaults?.value(forKey: GeofenceProvider.geoPostUrlsKey) as? [String:[String]] ?? [String:[String]]()
     }
 
     public func initialize() -> [String: Any] {
@@ -59,8 +60,8 @@ public class GeofenceProvider: NSObject, URLSessionDelegate {
         let region = CLCircularRegion(center: CLLocationCoordinate2DMake(geofence.lat, geofence.lng), radius: geofence.radius, identifier:geofence.id)
         locationManager.startMonitoring(for: region)
         geoPostUrls[geofence.id] = [geofence.httpMethod, geofence.url]
-        userdefaults.set(geoPostUrls, forKey: GeofenceProvider.geoPostUrlsKey)
-        userdefaults.synchronize()
+        userdefaults?.set(geoPostUrls, forKey: GeofenceProvider.geoPostUrlsKey)
+        userdefaults?.synchronize()
     }
 
     public func removeGeofence(id: String) {
@@ -68,8 +69,8 @@ public class GeofenceProvider: NSObject, URLSessionDelegate {
             guard let circularRegion = region as? CLCircularRegion, circularRegion.identifier == id else {continue}
             locationManager.stopMonitoring(for: circularRegion)
             geoPostUrls.removeValue(forKey: circularRegion.identifier)
-            userdefaults.set(geoPostUrls, forKey: GeofenceProvider.geoPostUrlsKey)
-            userdefaults.synchronize()
+            userdefaults?.set(geoPostUrls, forKey: GeofenceProvider.geoPostUrlsKey)
+            userdefaults?.synchronize()
             break
         }
     }
@@ -79,18 +80,19 @@ public class GeofenceProvider: NSObject, URLSessionDelegate {
             locationManager.stopMonitoring(for: region)
         }
         geoPostUrls = [String:[String]]()
-        userdefaults.set(geoPostUrls, forKey: GeofenceProvider.geoPostUrlsKey)
-        userdefaults.synchronize()
+        userdefaults?.set(geoPostUrls, forKey: GeofenceProvider.geoPostUrlsKey)
+        userdefaults?.synchronize()
     }
 
     public func enable(baseUrl: String, consoleId: String, callback:@escaping ([String: Any]) ->(Void)) {
         self.baseURL = baseUrl
         self.consoleId = consoleId
-        userdefaults.set(self.baseURL, forKey: GeofenceProvider.baseUrlKey)
-        userdefaults.set(self.consoleId, forKey: GeofenceProvider.consoleIdKey)
-        userdefaults.synchronize()
+        userdefaults?.set(self.baseURL, forKey: GeofenceProvider.baseUrlKey)
+        userdefaults?.set(self.consoleId, forKey: GeofenceProvider.consoleIdKey)
+        userdefaults?.synchronize()
         enableCallback = callback
         if checkPermission() {
+            self.locationManager.startMonitoringSignificantLocationChanges()
             enableCallback?([
                 DefaultsKey.actionKey: Actions.providerEnable,
                 DefaultsKey.providerKey: Providers.geofence,
@@ -111,8 +113,8 @@ public class GeofenceProvider: NSObject, URLSessionDelegate {
         }
     }
 
-    public func disbale()-> [String: Any] {
-        timer?.invalidate()
+    public func disable()-> [String: Any] {
+        locationManager.stopMonitoringSignificantLocationChanges()
         return [
             DefaultsKey.actionKey: "PROVIDER_DISABLE",
             DefaultsKey.providerKey: Providers.geofence
@@ -136,6 +138,7 @@ public class GeofenceProvider: NSObject, URLSessionDelegate {
                         return
                     }
                     self.clearAllRegions()
+                    NSLog("%@", "Geofences count: \(geofences.count)")
                     print("Geofences count: \(geofences.count)")
                     for geofence in geofences {
                         self.addGeofence(geofence: geofence)
@@ -146,7 +149,7 @@ public class GeofenceProvider: NSObject, URLSessionDelegate {
                     let error = NSError(domain: "", code: 0, userInfo:  [
                         NSLocalizedDescriptionKey :  NSLocalizedString("NoDataReceived", value: "Did not receive any data", comment: "")
                         ])
-                    print(error)
+                    NSLog("%@", error)
                     callback?([])
                 }
             })
@@ -170,7 +173,7 @@ public class GeofenceProvider: NSObject, URLSessionDelegate {
 
             if !sendQueued {
                 sendQueued = true
-                DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(2)) {
+                DispatchQueue.global().async {
                     self.doSendLocation()
                 }
             }
@@ -229,14 +232,14 @@ public class GeofenceProvider: NSObject, URLSessionDelegate {
             let semaphore = DispatchSemaphore(value: 0)
             let sessionConfiguration = URLSessionConfiguration.default
             let session = URLSession(configuration: sessionConfiguration, delegate: self, delegateQueue: nil)
-            let req = session.dataTask(with: request as URLRequest, completionHandler: { (data, response, error) in
+            let req = session.dataTask(with: request as URLRequest, completionHandler: { (responseData, response, error) in
                 if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 204 {
-                    print("sendLocation succeded")
+                    NSLog("%@", "sendLocation succeded with data: \(String(describing: data))")
                     succes = true
                 } else {
-                    print("sendLocation failed")
-                    if error != nil {
-                        print(error!)
+                    NSLog("%@", "sendLocation failed")
+                    if let err = error as NSError? {
+                        NSLog("%@", err)
                     }
                 }
                 semaphore.signal()
@@ -268,7 +271,8 @@ public class GeofenceProvider: NSObject, URLSessionDelegate {
 
 extension GeofenceProvider: CLLocationManagerDelegate {
     public func locationManager(_ manager: CLLocationManager, didEnterRegion region: CLRegion) {
-        print("Entered geofence with id: \(region.identifier)")
+        NSLog("%@", "Entered geofence with id: \(region.identifier)")
+
         guard let circularRegion = region as? CLCircularRegion else {return}
 
         let postData = [
@@ -280,7 +284,8 @@ extension GeofenceProvider: CLLocationManagerDelegate {
     }
 
     public func locationManager(_ manager: CLLocationManager, didExitRegion region: CLRegion) {
-        print("Exited geofence with id: \(region.identifier)")
+        NSLog("%@", "Exited geofence with id: \(region.identifier)")
+
         guard let circularRegion = region as? CLCircularRegion else {return}
 
         queueSendLocation(geofenceId: circularRegion.identifier, data: nil)
@@ -294,6 +299,8 @@ extension GeofenceProvider: CLLocationManagerDelegate {
                 DefaultsKey.hasPermissionKey: checkPermission(),
                 DefaultsKey.successKey: true
                 ])
+        } else if status == .authorizedAlways {
+            self.locationManager.startMonitoringSignificantLocationChanges()
         }
     }
 }

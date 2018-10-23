@@ -158,7 +158,6 @@
 				4C5C578B1FE17E0800C13164 /* Resources */,
 				4C5C57B11FE17E9A00C13164 /* Embed App Extensions */,
 				8F293E2545B0279AC2CAF14A /* [CP] Embed Pods Frameworks */,
-				E11427C21A17056B0546F7BD /* [CP] Copy Pods Resources */,
 			);
 			buildRules = (
 			);
@@ -178,7 +177,6 @@
 				4C5C57A21FE17E9A00C13164 /* Sources */,
 				4C5C57A31FE17E9A00C13164 /* Frameworks */,
 				4C5C57A41FE17E9A00C13164 /* Resources */,
-				D1A509DBCF475E9A94CDBCE8 /* [CP] Copy Pods Resources */,
 			);
 			buildRules = (
 			);
@@ -316,36 +314,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
-			showEnvVarsInLog = 0;
-		};
-		D1A509DBCF475E9A94CDBCE8 /* [CP] Copy Pods Resources */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-			);
-			name = "[CP] Copy Pods Resources";
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-NotificationService/Pods-NotificationService-resources.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
-		E11427C21A17056B0546F7BD /* [CP] Copy Pods Resources */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-			);
-			name = "[CP] Copy Pods Resources";
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-OpenRemoteApp/Pods-OpenRemoteApp-resources.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
 /* End PBXShellScriptBuildPhase section */
@@ -544,6 +512,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 70B8E16EFB2F872AC0397DE5 /* Pods-NotificationService.debug.xcconfig */;
 			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = NO;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = MD7Q2M7GWA;
 				INFOPLIST_FILE = NotificationService/Info.plist;
@@ -560,6 +529,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = FB93D125B872DE05BAEB4945 /* Pods-NotificationService.release.xcconfig */;
 			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = NO;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = MD7Q2M7GWA;
 				INFOPLIST_FILE = NotificationService/Info.plist;

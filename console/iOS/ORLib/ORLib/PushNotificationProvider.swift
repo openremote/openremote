@@ -11,7 +11,7 @@ import UserNotifications
 
 public class PushNotificationProvider: NSObject {
 
-    let userdefaults = UserDefaults.standard
+    let userdefaults = UserDefaults(suiteName: ORAppGroup.entitlement)
     let version = "fcm"
     public var consoleId: String = ""
     
@@ -23,7 +23,7 @@ public class PushNotificationProvider: NSObject {
         UNUserNotificationCenter.current().getNotificationSettings { (settings) in
             switch settings.authorizationStatus {
 
-            case .authorized:
+            case .authorized, .provisional:
                 callback( [
                     DefaultsKey.actionKey: Actions.providerInit,
                     DefaultsKey.providerKey: Providers.push,
@@ -58,12 +58,15 @@ public class PushNotificationProvider: NSObject {
     
     public func enable(consoleId: String, callback:@escaping ([String: Any]) ->(Void)) {
         self.consoleId = consoleId
-        userdefaults.set(self.consoleId, forKey: GeofenceProvider.consoleIdKey)
-        userdefaults.synchronize()
+        userdefaults?.set(self.consoleId, forKey: GeofenceProvider.consoleIdKey)
+        userdefaults?.synchronize()
         UNUserNotificationCenter.current().getNotificationSettings { (settings) in
 
             switch settings.authorizationStatus {
-            case .authorized:
+            case .authorized, .provisional:
+                DispatchQueue.main.async {
+                    UIApplication.shared.registerForRemoteNotifications()
+                }
                 callback([
                     DefaultsKey.actionKey: Actions.providerEnable,
                     DefaultsKey.providerKey: Providers.push,
@@ -82,10 +85,15 @@ public class PushNotificationProvider: NSObject {
                     ])
 
             case .notDetermined:
-                let authOptions: UNAuthorizationOptions = [.alert, .badge, .sound]
                 UNUserNotificationCenter.current().requestAuthorization(
-                    options: authOptions,
+                    options: [.alert, .badge, .sound],
                     completionHandler: {granted, _ in
+                        if granted {
+                            DispatchQueue.main.async {
+                                UIApplication.shared.registerForRemoteNotifications()
+                            }
+                        }
+
                         callback([
                             DefaultsKey.actionKey: Actions.providerEnable,
                             DefaultsKey.providerKey: Providers.push,

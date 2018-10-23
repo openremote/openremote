@@ -28,6 +28,7 @@ open class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMess
     public var myWebView : WKWebView?
     public var defaults : UserDefaults?
     public var webCfg : WKWebViewConfiguration?
+    public var isLoading = false
 
     var geofenceProvider: GeofenceProvider?
     var pushProvider: PushNotificationProvider?
@@ -83,7 +84,7 @@ open class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMess
                                         if let consoleId = data[GeofenceProvider.consoleIdKey] {
                                             geofenceProvider?.enable(baseUrl: "\(ORServer.baseUrl)\(ORServer.realm)", consoleId: consoleId,  callback: { enableData in
                                                 self.sendData(data: enableData)
-                                                DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(5)) {
+                                                DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(3)) {
                                                     self.geofenceProvider?.fetchGeofences()
                                                 }
                                             })
@@ -92,7 +93,7 @@ open class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMess
                                 } else if action == Actions.geofenceRefresh {
                                     geofenceProvider?.refreshGeofences()
                                 } else if action == Actions.providerDisable {
-                                    if let disableData = geofenceProvider?.disbale() {
+                                    if let disableData = geofenceProvider?.disable() {
                                         sendData(data: disableData)
                                     }
                                 }
@@ -159,6 +160,7 @@ open class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMess
                 decisionHandler(.allow)
             }
         }
+        isLoading = false
     }
     
     open func webView(_ webView: WKWebView, decidePolicyFor navigationResponse: WKNavigationResponse, decisionHandler: @escaping (WKNavigationResponsePolicy) -> Void) {
@@ -166,18 +168,12 @@ open class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMess
             if response.statusCode != 200 && response.statusCode != 204 {
                 decisionHandler(.cancel)
 
-                let error = NSError(domain: "", code: 0, userInfo:  [
-                    NSLocalizedDescriptionKey :  NSLocalizedString("HTTPErrorReturned", value: "Connection Error", comment: "")
-                    ])
-                if let vc = self.presentingViewController as? ORLoginViewController {
-                    vc.isInError = true
-                }
-                self.dismiss(animated: true) {
-                    ErrorManager.showError(error:error)
-                }
+                isLoading = false
+                handleError(errorCode: response.statusCode, description: "Error in request", failingUrl: response.url?.absoluteString ?? "", isForMainFrame: true)
                 return
             }
         }
+        isLoading = false
         decisionHandler(.allow)
     }
     
@@ -185,18 +181,25 @@ open class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMess
         guard let request = URL(string: String(format:"\(ORServer.scheme)://%@/%@", ORServer.hostURL, ORServer.initialPath)) else { return }
         UIApplication.shared.isNetworkActivityIndicatorVisible = true
         _ = self.myWebView?.load(URLRequest(url: request))
+        isLoading = true
     }
     
     open func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
         NSLog("error %@", error.localizedDescription)
         UIApplication.shared.isNetworkActivityIndicatorVisible = false
-        if let vc = self.presentingViewController as? ORLoginViewController {
-            vc.isInError = true
-        }
-        self.dismiss(animated: true) {
-            ErrorManager.showError(error: NSError(domain: "networkError", code: 0, userInfo:[
-                NSLocalizedDescriptionKey :  NSLocalizedString("FailedLoadingPage", value: "Could not load page in OR", comment: "")
-                ]))
+        if let err = error as? URLError {
+
+            let httpCode: Int
+            switch(err.code) {
+            case .cannotFindHost:
+                httpCode = 404
+            default:
+                httpCode = 500
+            }
+
+            handleError(errorCode: httpCode, description: err.localizedDescription, failingUrl: err.failureURLString ?? "", isForMainFrame: true)
+        } else {
+            handleError(errorCode: 0, description: error.localizedDescription, failingUrl: webView.url?.absoluteString ?? "", isForMainFrame: true)
         }
     }
     
@@ -247,6 +250,37 @@ open class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMess
     open func loadURL(url : URL) {
         UIApplication.shared.isNetworkActivityIndicatorVisible = true
         _ = self.myWebView?.load(URLRequest(url:url))
+        isLoading = true
+    }
+
+    internal func handleError(errorCode: Int, description: String, failingUrl: String, isForMainFrame: Bool) {
+        NSLog("%@", "Error requesting '\(failingUrl)': \(errorCode) (\(description))")
+
+        // This will be the URL loaded into the webview itself (false for images etc. of the main page)
+        if isForMainFrame {
+
+            // Check page load error URL
+            let errorUrl = ORServer.errorUrl
+            if let errorURL = URL(string: errorUrl), ORServer.errorUrl != failingUrl {
+                NSLog("%@", "Loading error URL: \(errorUrl)")
+                loadURL(url: errorURL)
+            }
+        } else {
+
+            if ORServer.ignorePageErrors {
+                return;
+            }
+
+            let error = NSError(domain: "", code: 0, userInfo:  [
+                NSLocalizedDescriptionKey :  NSLocalizedString("HTTPErrorReturned", value: "Connection Error", comment: "Error requesting '\(failingUrl)': \(errorCode) (\(description))")
+                ])
+            if let vc = self.presentingViewController as? ORLoginViewController {
+                vc.isInError = true
+            }
+            self.dismiss(animated: true) {
+                ErrorManager.showError(error:error)
+            }
+        }
     }
     
     open func updateAssetAttribute(assetId : String, attributeName : String, rawJson : String) {
@@ -255,7 +289,7 @@ open class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMess
             switch accessTokenResult {
             case .Failure(let error) :
                 UIApplication.shared.isNetworkActivityIndicatorVisible = false
-                ErrorManager.showError(error: error!)
+                self.handleError(errorCode: 0, description: error!.localizedDescription, failingUrl: "", isForMainFrame: false)
             case .Success(let accessToken) :
                 guard let urlRequest = URL(string: String(String(format: "\(ORServer.scheme)://%@/%@/asset/%@/attribute/%@", ORServer.hostURL, ORServer.realm, assetId, attributeName))) else { return }
                 let request = NSMutableURLRequest(url: urlRequest)
@@ -269,11 +303,7 @@ open class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMess
                     DispatchQueue.main.async {
                         UIApplication.shared.isNetworkActivityIndicatorVisible = false
                         if (error != nil) {
-                            NSLog("error %@", (error! as NSError).localizedDescription)
-                            let error = NSError(domain: "", code: 0, userInfo:  [
-                                NSLocalizedDescriptionKey :  NSLocalizedString("ErrorCallingAPI", value: "Could not get data", comment: "")
-                                ])
-                            ErrorManager.showError(error: error)
+                            self.handleError(errorCode: 0, description: error!.localizedDescription, failingUrl: "", isForMainFrame: false)
                         }
                     }
                 })

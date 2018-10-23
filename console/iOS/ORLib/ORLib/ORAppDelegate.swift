@@ -22,6 +22,7 @@ import UIKit
 import UserNotifications
 import FirebaseCore
 import FirebaseMessaging
+import CoreLocation
 
 @UIApplicationMain
 open class ORAppDelegate: UIResponder, UIApplicationDelegate, URLSessionDelegate {
@@ -32,18 +33,31 @@ open class ORAppDelegate: UIResponder, UIApplicationDelegate, URLSessionDelegate
     public var reachabilityAlertShown = false
     public let internetReachability = Reachability()
 
-    open func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplicationLaunchOptionsKey: Any]?) -> Bool {
-        // if the app was launched because of geofencing
-        if launchOptions?[UIApplicationLaunchOptionsKey.location] != nil {
-            // create new GeofenceProvider which creates a CLLocationManager that will receive the location update
-            _ = GeofenceProvider()
-        } else {
-            UNUserNotificationCenter.current().delegate = self
+    private var geofenceProvider : GeofenceProvider?
 
+    open func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplicationLaunchOptionsKey: Any]?) -> Bool {
+        UNUserNotificationCenter.current().delegate = self
+        // if the app was launched because of geofencing
+
+#if DEBUG
+        var paths = NSSearchPathForDirectoriesInDomains(.documentDirectory, .userDomainMask, true)
+        let documentsDirectory = paths[0]
+        let fileName = "\(Date()).log"
+        let logFilePath = (documentsDirectory as NSString).appendingPathComponent(fileName)
+        freopen(logFilePath.cString(using: String.Encoding.ascii)!, "a+", stderr)
+#endif
+
+        if launchOptions?[UIApplicationLaunchOptionsKey.location] != nil {
+            NSLog("%@", "App started from location update")
+            // create new GeofenceProvider which creates a CLLocationManager that will receive the location update
+            geofenceProvider = GeofenceProvider()
+            if CLLocationManager.authorizationStatus() == .authorizedAlways {
+                geofenceProvider?.locationManager.startMonitoringSignificantLocationChanges()
+            }
+        } else {
             FirebaseApp.configure()
             Messaging.messaging().delegate = self
 
-            application.registerForRemoteNotifications()
             NotificationCenter.default.addObserver(self,
                                                    selector: #selector(self.reachabilityChanged(note:)),
                                                    name: NSNotification.Name.reachabilityChanged,
@@ -52,7 +66,7 @@ open class ORAppDelegate: UIResponder, UIApplicationDelegate, URLSessionDelegate
                 try internetReachability?.startNotifier()
                 self.updateReachabilityStatus(reachability: internetReachability!)
             } catch {
-                print("Unable to start notifier")
+                NSLog("%@", "Unable to start notifier")
             }
         }
         return true
@@ -81,7 +95,7 @@ open class ORAppDelegate: UIResponder, UIApplicationDelegate, URLSessionDelegate
                 try self.internetReachability?.startNotifier()
                 self.updateReachabilityStatus(reachability: self.internetReachability!)
             } catch {
-                print("Unable to start notifier")
+                NSLog("%@", "Unable to start notifier")
             }
         }
     }
@@ -93,7 +107,7 @@ open class ORAppDelegate: UIResponder, UIApplicationDelegate, URLSessionDelegate
                 try self.internetReachability?.startNotifier()
                 self.updateReachabilityStatus(reachability: self.internetReachability!)
             } catch {
-                print("Unable to start notifier")
+                NSLog("%@", "Unable to start notifier")
             }
         }
     }
@@ -116,10 +130,11 @@ open class ORAppDelegate: UIResponder, UIApplicationDelegate, URLSessionDelegate
             }
         }
         if let notificationIdString = userInfo[ActionType.notificationId] as? String, let notificationId = Int64(notificationIdString) {
-            if let consoleId = UserDefaults.standard.string(forKey: GeofenceProvider.consoleIdKey) {
+            if let defaults = UserDefaults(suiteName: ORAppGroup.entitlement), let consoleId = defaults.string(forKey: GeofenceProvider.consoleIdKey) {
                 ORNotificationResource.sharedInstance.notificationDelivered(notificationId: notificationId, targetId: consoleId)
             }
         }
+
         completionHandler(UIBackgroundFetchResult.newData)
     }
 
@@ -182,13 +197,12 @@ extension ORAppDelegate : UNUserNotificationCenterDelegate {
     open func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
         let userInfo = notification.request.content.userInfo
         var notificationId : Int64? = nil
-        let consoleId = UserDefaults.standard.string(forKey: GeofenceProvider.consoleIdKey)
 
         if let notificationIdString = userInfo[ActionType.notificationId] as? String{
             notificationId = Int64(notificationIdString)
         }
-        if let notiId = notificationId, let conId = consoleId {
-            ORNotificationResource.sharedInstance.notificationDelivered(notificationId: notiId, targetId: conId)
+        if let notiId = notificationId, let defaults = UserDefaults(suiteName: ORAppGroup.entitlement), let consoleId = defaults.string(forKey: GeofenceProvider.consoleIdKey) {
+            ORNotificationResource.sharedInstance.notificationDelivered(notificationId: notiId, targetId: consoleId)
         }
 
         completionHandler([.alert, .sound])
@@ -198,16 +212,22 @@ extension ORAppDelegate : UNUserNotificationCenterDelegate {
 
         let userInfo = response.notification.request.content.userInfo
         var notificationId : Int64? = nil
-        let consoleId = UserDefaults.standard.string(forKey: GeofenceProvider.consoleIdKey)
+        var consoleId : String?
 
         if let notificationIdString = userInfo[ActionType.notificationId] as? String{
             notificationId = Int64(notificationIdString)
         }
 
+        if let defaults = UserDefaults(suiteName: ORAppGroup.entitlement) {
+            consoleId = defaults.string(forKey: GeofenceProvider.consoleIdKey);
+        }
+
+        NSLog("%@", "Action chosen: \(response.actionIdentifier)")
+
         switch response.actionIdentifier {
         case UNNotificationDefaultActionIdentifier:
             if let notiId = notificationId, let conId = consoleId {
-                ORNotificationResource.sharedInstance.notificationAcknowledged(notificationId: notiId, targetId: conId, acknowledgement: "CLOSED")
+                ORNotificationResource.sharedInstance.notificationDelivered(notificationId: notiId, targetId: conId)
             }
 
             if let urlToOpen = userInfo[ActionType.appUrl] as? String {
@@ -217,11 +237,13 @@ extension ORAppDelegate : UNUserNotificationCenterDelegate {
                 } else {
                     urlRequest = URL(string:String(format: "%@://%@/%@%@", ORServer.scheme, ORServer.hostURL, ORServer.navigationPath, urlToOpen))
                 }
-                if let request = urlRequest{
+                if let url = urlRequest{
                     if let openInBrowser = userInfo[ActionType.openInBrowser] as? Bool, openInBrowser {
-                        UIApplication.shared.open(request)
+                        NSLog("%@", "Open in browser: \(url)")
+                        UIApplication.shared.open(url)
                     } else {
-                        (self.window?.rootViewController as! ORViewcontroller).loadURL(url:request)
+                        NSLog("%@", "Open in app: \(url)")
+                        (self.window?.rootViewController as! ORViewcontroller).loadURL(url:url)
                     }
                 }
             }
@@ -261,14 +283,16 @@ extension ORAppDelegate : UNUserNotificationCenterDelegate {
                                                 }
                                             })
                                             reqDataTask.resume()
-
                                         } else if action.openInBrowser {
+                                            NSLog("%@", "Open in browser: \(url)")
                                             UIApplication.shared.open(url)
                                         } else {
+                                            NSLog("%@", "Open in app: \(url)")
                                             (self.window?.rootViewController as! ORViewcontroller).loadURL(url:url)
                                         }
                                     }
                                 }
+                                break
                             }
                         }
                     }

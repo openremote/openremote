@@ -28,6 +28,8 @@ public enum ORServer {
     public static var realm = "openremote"
     public static var baseUrl = "\(ORServer.scheme)://\(ORServer.hostURL)/"
     public static var apiTestResource = String(format:"\(ORServer.scheme)://%@/%@/notification/alert",ORServer.hostURL,ORServer.realm)
+    public static var errorUrl = ""
+    public static var ignorePageErrors = false
 
     public static var registerDeviceResource = String(format:"\(ORServer.scheme)://%@/%@/notification/token",ORServer.hostURL,ORServer.realm)
     public static var deleteNotifiedAlertResource = String(format:"\(ORServer.scheme)://%@/%@/notification/alert/",ORServer.hostURL,ORServer.realm)
