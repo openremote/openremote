@@ -166,15 +166,15 @@ public class HttpClientProtocol extends AbstractProtocol {
         protected boolean pagingEnabled;
 
         public HttpClientRequest(WebTarget client,
-                                    String path,
-                                    String method,
-                                    MultivaluedMap<String, String> headers,
-                                    MultivaluedMap<String, String> queryParameters,
-                                    List<Integer> failureCodes,
-                                    boolean updateConnectionStatus,
-                                    boolean pagingEnabled,
-                                    Value bodyValue,
-                                    String contentType) {
+                                 String path,
+                                 String method,
+                                 MultivaluedMap<String, String> headers,
+                                 MultivaluedMap<String, String> queryParameters,
+                                 List<Integer> failureCodes,
+                                 boolean updateConnectionStatus,
+                                 boolean pagingEnabled,
+                                 Value bodyValue,
+                                 String contentType) {
             this.client = client;
             this.path = path;
             this.method = method;
@@ -1254,24 +1254,29 @@ public class HttpClientProtocol extends AbstractProtocol {
     }
 
     protected void executePollingRequest(HttpClientRequest clientRequest, Consumer<Response> responseConsumer) {
-        Response response = null;
+        Response originalResponse = null;
+        List<Object> entities = null;
 
         try {
-            response = clientRequest.invoke(null);
+            originalResponse = clientRequest.invoke(null);
             if (clientRequest.pagingEnabled) {
-                Response originalResponse = response;
-                List<Object> entities = new ArrayList<>();
+                Response response = originalResponse;
+                entities = new ArrayList<>();
                 entities.add(response.readEntity(Object.class));
                 while ((response = executePagingRequest(clientRequest, response)) != null) {
                     entities.add(response.readEntity(Object.class));
                 }
-                response = PagingResponse.fromResponse(originalResponse).entity(entities).build();
+                originalResponse = PagingResponse.fromResponse(originalResponse).entity(entities).build();
             }
         } catch (Exception e) {
             LOG.log(Level.SEVERE, "Exception thrown whilst doing polling request", e);
+            //Try to recover as much as possible when an exception has occurred in a paging request
+            if (entities != null) {
+                originalResponse = PagingResponse.fromResponse(originalResponse).entity(entities).build();
+            }
         }
 
-        responseConsumer.accept(response);
+        responseConsumer.accept(originalResponse);
     }
 
     protected Response executePagingRequest(HttpClientRequest clientRequest, Response response) {
