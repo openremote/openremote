@@ -41,9 +41,9 @@ public interface ConsoleResource {
      * Behind the scenes the console registration is converted into an asset and the {@link ConsoleRegistration} data is
      * stored in the appropriate {@link Asset} {@link Attribute}s (see {@link ConsoleConfiguration} for more details).
      * <p>
-     * This is a public endpoint and allows the registration of anonymous consoles; if there is an authenticated user
-     * then the console asset will be linked to that user. If multiple users login on the same console then it will be
-     * associated with each user (i.e. a 1-many relationship).
+     * This is a public endpoint and allows the registration of consoles anonymously; if there is an authenticated user
+     * registering the console  then the console asset will be linked to that user. If multiple users login on the same
+     * console then it will be associated with each user (i.e. a 1-many relationship).
      */
     @POST
     @Path("register")
