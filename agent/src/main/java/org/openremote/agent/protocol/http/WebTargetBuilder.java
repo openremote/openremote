@@ -69,13 +69,24 @@ public class WebTargetBuilder {
         this(ResteasyUriBuilder.fromUri(uri));
     }
 
+    public WebTargetBuilder(String uri, long overrideSocketTimeout) {
+        this(ResteasyUriBuilder.fromUri(uri), overrideSocketTimeout);
+    }
+
     public WebTargetBuilder(URI uri) {
         this(ResteasyUriBuilder.fromUri(uri));
     }
 
     public WebTargetBuilder(UriBuilder uri) {
         if (client == null) {
-            initClient();
+            initClient(null);
+        }
+        this.uri = uri;
+    }
+
+    public WebTargetBuilder(UriBuilder uri, long overrideSocketTimeout) {
+        if (client == null) {
+            initClient(overrideSocketTimeout);
         }
         this.uri = uri;
     }
@@ -193,14 +204,14 @@ public class WebTargetBuilder {
         return target;
     }
 
-    protected static void initClient() {
+    protected static void initClient(Long overrideSocketTimeout) {
         if (client != null) {
             return;
         }
         ResteasyClientBuilder clientBuilder = new ResteasyClientBuilder()
             .connectionPoolSize(CONNECTION_POOL_SIZE)
             .connectionCheckoutTimeout(CONNECTION_CHECKOUT_TIMEOUT_MILLISECONDS, TimeUnit.MILLISECONDS)
-            .socketTimeout(CONNECTION_TIMEOUT_MILLISECONDS, TimeUnit.MILLISECONDS)
+            .socketTimeout(overrideSocketTimeout == null ? CONNECTION_TIMEOUT_MILLISECONDS : overrideSocketTimeout, TimeUnit.MILLISECONDS)
             .establishConnectionTimeout(CONNECTION_TIMEOUT_MILLISECONDS, TimeUnit.MILLISECONDS)
             .register(new JacksonConfig());
 

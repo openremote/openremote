@@ -114,6 +114,25 @@ public class RequestBuilder {
         );
     }
 
+    public static HttpClientProtocol.HttpClientRequest buildStatusRequest(String deviceName, List<String> sensorsName, ResteasyWebTarget webTarget) {
+        MultivaluedMap<String, String> queryParam = new MultivaluedHashMap<>();
+
+        queryParam.addAll("name", sensorsName);
+
+        return new HttpClientProtocol.HttpClientRequest(
+                webTarget,
+                "/rest/devices/" + deviceName + "/status",
+                "GET",
+                getDefaultHeaders(),
+                queryParam,
+                null,
+                false,
+                false,
+                null,
+                MediaType.APPLICATION_JSON
+        );
+    }
+
     public static HttpClientProtocol.HttpClientRequest buildCheckRequest(ResteasyWebTarget webTarget) {
         return new HttpClientProtocol.HttpClientRequest(
                 webTarget,
