@@ -36,8 +36,8 @@ import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
 import javax.ws.rs.WebApplicationException
+import java.util.stream.IntStream
 
-import static org.openremote.model.rules.RulesetStatus.DEPLOYED
 import static org.openremote.manager.setup.builtin.ManagerDemoSetup.DEMO_RULE_STATES_CUSTOMER_A
 import static org.openremote.manager.setup.builtin.ManagerDemoSetup.SMART_HOME_LOCATION
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID
@@ -45,6 +45,7 @@ import static org.openremote.model.asset.AssetMeta.RULE_STATE
 import static org.openremote.model.asset.AssetResource.Util.WRITE_ATTRIBUTE_HTTP_METHOD
 import static org.openremote.model.asset.AssetResource.Util.getWriteAttributeUrl
 import static org.openremote.model.attribute.AttributeType.LOCATION
+import static org.openremote.model.rules.RulesetStatus.DEPLOYED
 import static org.openremote.model.util.TextUtil.isNullOrEmpty
 import static org.openremote.model.value.Values.parse
 
@@ -79,23 +80,28 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         def conditions = new PollingConditions(timeout: 20, delay: 1)
         def serverPort = findEphemeralPort()
         ORConsoleGeofenceAssetAdapter.NOTIFY_ASSETS_DEBOUNCE_MILLIS = 100
+        ORConsoleGeofenceAssetAdapter.NOTIFY_ASSETS_BATCH_MILLIS = 200
         def services = defaultServices()
-        ((NotificationService)services.find {it instanceof NotificationService}).notificationHandlerMap.put("push", mockPushNotificationHandler)
+        ((NotificationService) services.find {
+            it instanceof NotificationService
+        }).notificationHandlerMap.put("push", mockPushNotificationHandler)
         def container = startContainer(defaultConfig(serverPort), services)
         def assetStorageService = container.getService(AssetStorageService.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def rulesService = container.getService(RulesService.class)
         def rulesetStorageService = container.getService(RulesetStorageService.class)
-        def geofenceAdapter = (ORConsoleGeofenceAssetAdapter) rulesService.geofenceAssetAdapters.find {it.name == "ORConsole" }
+        def geofenceAdapter = (ORConsoleGeofenceAssetAdapter) rulesService.geofenceAssetAdapters.find {
+            it.name == "ORConsole"
+        }
         Asset testUser3Console1, testUser3Console2, anonymousConsole1
 
         and: "the demo location predicate console rules are loaded"
         Ruleset ruleset = new TenantRuleset(
-            "Demo Customer A - Console Location",
-            keycloakDemoSetup.customerATenant.id,
-            getClass().getResource("/demo/rules/DemoConsoleLocation.groovy").text,
-            Ruleset.Lang.GROOVY
+                "Demo Customer A - Console Location",
+                keycloakDemoSetup.customerATenant.id,
+                getClass().getResource("/demo/rules/DemoConsoleLocation.groovy").text,
+                Ruleset.Lang.GROOVY
         )
         rulesetStorageService.merge(ruleset)
 
@@ -109,11 +115,11 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
 
         and: "an authenticated user"
         def accessToken = authenticate(
-            container,
-            keycloakDemoSetup.customerATenant.realm,
-            KEYCLOAK_CLIENT_ID,
-            "testuser3",
-            "testuser3"
+                container,
+                keycloakDemoSetup.customerATenant.realm,
+                KEYCLOAK_CLIENT_ID,
+                "testuser3",
+                "testuser3"
         ).token
 
         and: "authenticated and anonymous console, rules and asset resources"
@@ -126,27 +132,27 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
 
         when: "a console registers with an authenticated user"
         def consoleRegistration = new ConsoleRegistration(null,
-                                                          "Test Console",
-                                                          "1.0",
-                                                          "Android 7.0",
-                                                          new HashMap<String, ConsoleProvider>() {
-                                                              {
-                                                                  put("geofence", new ConsoleProvider(
-                                                                      ORConsoleGeofenceAssetAdapter.NAME,
-                                                                      true,
-                                                                      false,
-                                                                      false,
-                                                                      null
-                                                                  ))
-                                                                  put("push", new ConsoleProvider(
-                                                                      "fcm",
-                                                                      true,
-                                                                      true,
-                                                                      false,
-                                                                      (ObjectValue)parse("{token: \"23123213ad2313b0897efd\"}").orElse(null)
-                                                                  ))
-                                                              }
-                                                          })
+                "Test Console",
+                "1.0",
+                "Android 7.0",
+                new HashMap<String, ConsoleProvider>() {
+                    {
+                        put("geofence", new ConsoleProvider(
+                                ORConsoleGeofenceAssetAdapter.NAME,
+                                true,
+                                false,
+                                false,
+                                null
+                        ))
+                        put("push", new ConsoleProvider(
+                                "fcm",
+                                true,
+                                true,
+                                false,
+                                (ObjectValue) parse("{token: \"23123213ad2313b0897efd\"}").orElse(null)
+                        ))
+                    }
+                })
         def returnedConsoleRegistration = authenticatedConsoleResource.register(null, consoleRegistration)
         def consoleId = returnedConsoleRegistration.getId()
         def console = assetStorageService.find(consoleId, true)
@@ -169,7 +175,9 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         assert consolePushProvider.requiresPermission
         assert consolePushProvider.hasPermission
         assert !consolePushProvider.disabled
-        assert consolePushProvider.data.get("token").flatMap{Values.getString(it)}.orElse(null) == "23123213ad2313b0897efd"
+        assert consolePushProvider.data.get("token").flatMap {
+            Values.getString(it)
+        }.orElse(null) == "23123213ad2313b0897efd"
 
         and: "the console should have been linked to the authenticated user"
         def userAssets = assetStorageService.findUserAssets(keycloakDemoSetup.customerATenant.id, keycloakDemoSetup.testuser3Id, consoleId)
@@ -179,22 +187,22 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         when: "the console registration is updated"
         returnedConsoleRegistration.providers.get("geofence").hasPermission = true
         returnedConsoleRegistration.providers.put("test", new ConsoleProvider(
-            "Test 1.0",
-            false,
-            false,
-            true,
-            null
+                "Test 1.0",
+                false,
+                false,
+                true,
+                null
         ))
         returnedConsoleRegistration = authenticatedConsoleResource.register(null, returnedConsoleRegistration)
         console = assetStorageService.find(consoleId, true)
         testUser3Console1 = console
         consoleGeofenceProvider = ConsoleConfiguration.getConsoleProvider(console, "geofence").orElse(null)
         consolePushProvider = ConsoleConfiguration.getConsoleProvider(console, "push").orElse(null)
+        def consoleTestProvider = ConsoleConfiguration.getConsoleProvider(console, "test").orElse(null)
 
         then: "the returned console should contain the updated data and have the same id"
         assert returnedConsoleRegistration.getId() == consoleId
         assert console != null
-        def consoleTestProvider = ConsoleConfiguration.getConsoleProvider(console, "test").orElse(null)
         assert consoleGeofenceProvider != null
         assert consoleGeofenceProvider.version == ORConsoleGeofenceAssetAdapter.NAME
         assert consoleGeofenceProvider.requiresPermission
@@ -206,7 +214,9 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         assert consolePushProvider.requiresPermission
         assert consolePushProvider.hasPermission
         assert !consolePushProvider.disabled
-        assert consolePushProvider.data.get("token").flatMap{Values.getString(it)}.orElse(null) == "23123213ad2313b0897efd"
+        assert consolePushProvider.data.get("token").flatMap {
+            Values.getString(it)
+        }.orElse(null) == "23123213ad2313b0897efd"
         assert consoleTestProvider != null
         assert consoleTestProvider.version == "Test 1.0"
         assert !consoleTestProvider.requiresPermission
@@ -220,20 +230,36 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         console = assetStorageService.find(consoleId, true)
         consoleTestProvider = ConsoleConfiguration.getConsoleProvider(console, "test").orElse(null)
 
-        then: "the result should be a forbidden request"
-        WebApplicationException ex = thrown()
-        ex.response.status == 403
-
-        and: "the console should not have been updated"
+        then: "the returned console should contain the updated data and have the same id"
+        assert returnedConsoleRegistration.getId() == consoleId
+        assert console != null
+        assert consoleGeofenceProvider != null
+        assert consoleGeofenceProvider.version == ORConsoleGeofenceAssetAdapter.NAME
+        assert consoleGeofenceProvider.requiresPermission
+        assert consoleGeofenceProvider.hasPermission
+        assert !consoleGeofenceProvider.disabled
+        assert consoleGeofenceProvider.data == null
+        assert consolePushProvider != null
+        assert consolePushProvider.version == "fcm"
+        assert consolePushProvider.requiresPermission
+        assert consolePushProvider.hasPermission
+        assert !consolePushProvider.disabled
+        assert consolePushProvider.data.get("token").flatMap {
+            Values.getString(it)
+        }.orElse(null) == "23123213ad2313b0897efd"
         assert consoleTestProvider != null
-        assert consoleTestProvider.disabled
+        assert consoleTestProvider.version == "Test 1.0"
+        assert !consoleTestProvider.requiresPermission
+        assert !consoleTestProvider.hasPermission
+        assert !consoleTestProvider.disabled
+        assert consoleTestProvider.data == null
 
         when: "a console registers with the id of another existing asset"
         consoleRegistration.setId(managerDemoSetup.thingId)
         authenticatedConsoleResource.register(null, consoleRegistration)
 
         then: "the result should be bad request"
-        ex = thrown()
+        WebApplicationException ex = thrown()
         ex.response.status == 400
 
         when: "a console registers with an id that doesn't exist"
@@ -261,7 +287,9 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         assert consolePushProvider.requiresPermission
         assert consolePushProvider.hasPermission
         assert !consolePushProvider.disabled
-        assert consolePushProvider.data.get("token").flatMap{Values.getString(it)}.orElse(null) == "23123213ad2313b0897efd"
+        assert consolePushProvider.data.get("token").flatMap {
+            Values.getString(it)
+        }.orElse(null) == "23123213ad2313b0897efd"
 
         when: "an invalid console registration is registered"
         def invalidRegistration = new ConsoleRegistration(null, null, "1.0", null, null)
@@ -298,7 +326,9 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         assert consolePushProvider.requiresPermission
         assert consolePushProvider.hasPermission
         assert !consolePushProvider.disabled
-        assert consolePushProvider.data.get("token").flatMap{Values.getString(it)}.orElse(null) == "23123213ad2313b0897efd"
+        assert consolePushProvider.data.get("token").flatMap {
+            Values.getString(it)
+        }.orElse(null) == "23123213ad2313b0897efd"
 
         and: "the console should not have been linked to any users"
         assert userAssets.isEmpty()
@@ -306,7 +336,7 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         and: "each created consoles should have been sent notifications to refresh their geofences"
         conditions.eventually {
             assert notificationIds.size() == 3
-            assert messages.count { ((PushNotificationMessage)it).data.get("GEOFENCE_REFRESH") != null } == 3
+            assert messages.count { ((PushNotificationMessage) it).data.get("GEOFENCE_REFRESH") != null } == 3
         }
 
         ////////////////////////////////////////////////////
@@ -324,9 +354,11 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
 
         then: "the consoles location should have been updated"
         conditions.eventually {
-            def asset = assetStorageService.find(testUser3Console1.id, true)
-            assert asset != null
-            def assetLocation = asset.getAttribute(LOCATION.name).flatMap { it.value }.flatMap { GeoJSONPoint.fromValue(it) }.orElse(null)
+            testUser3Console1 = assetStorageService.find(testUser3Console1.id, true)
+            assert testUser3Console1 != null
+            def assetLocation = testUser3Console1.getAttribute(LOCATION.name).flatMap { it.value }.flatMap {
+                GeoJSONPoint.fromValue(it)
+            }.orElse(null)
             assert assetLocation != null
             assert assetLocation.x == 0d
             assert assetLocation.y == 0d
@@ -460,10 +492,10 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
 
         when: "a new ruleset is deployed on the console parent asset with multiple location predicate rules (including a duplicate and a rectangular predicate)"
         def newRuleset = new AssetRuleset(
-            "Console test location predicates",
-            testUser3Console1.parentId,
-            getClass().getResource("/org/openremote/test/rules/BasicLocationPredicates.groovy").text,
-            Ruleset.Lang.GROOVY
+                "Console test location predicates",
+                testUser3Console1.parentId,
+                getClass().getResource("/org/openremote/test/rules/BasicLocationPredicates.groovy").text,
+                Ruleset.Lang.GROOVY
         )
         newRuleset = rulesetStorageService.merge(newRuleset)
         RulesEngine consoleParentEngine = null
@@ -483,18 +515,22 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         then: "a push notification should have been sent to the two remaining consoles telling them to refresh their geofences"
         conditions.eventually {
             assert notificationIds.size() == 4
-            assert ((PushNotificationMessage)messages[2]).data.getString("action").orElse(null) == "GEOFENCE_REFRESH"
-            assert ((PushNotificationMessage)messages[3]).data.getString("action").orElse(null) == "GEOFENCE_REFRESH"
+            assert ((PushNotificationMessage) messages[2]).data.getString("action").orElse(null) == "GEOFENCE_REFRESH"
+            assert ((PushNotificationMessage) messages[3]).data.getString("action").orElse(null) == "GEOFENCE_REFRESH"
         }
 
         then: "the geofences of testUser3Console1 should contain the welcome home geofence and new radial geofence (but not the rectangular and duplicate predicates)"
         conditions.eventually {
             geofences = authenticatedRulesResource.getAssetGeofences(null, testUser3Console1.id)
             assert geofences.size() == 2
-            def geofence1 = geofences.find { it.id == testUser3Console1.id + "_" + Integer.toString(
-                expectedLocationPredicate.hashCode())}
-            def geofence2 = geofences.find { it.id == testUser3Console1.id + "_" + Integer.toString(
-                newLocationPredicate.hashCode())}
+            def geofence1 = geofences.find {
+                it.id == testUser3Console1.id + "_" + Integer.toString(
+                        expectedLocationPredicate.hashCode())
+            }
+            def geofence2 = geofences.find {
+                it.id == testUser3Console1.id + "_" + Integer.toString(
+                        newLocationPredicate.hashCode())
+            }
             assert geofence1 != null && geofence2 != null
             assert geofence1.lat == expectedLocationPredicate.lat
             assert geofence1.lng == expectedLocationPredicate.lng
@@ -516,18 +552,22 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         then: "a push notification should have been sent to the two remaining consoles telling them to refresh their geofences"
         conditions.eventually {
             assert notificationIds.size() == 6
-            assert ((PushNotificationMessage)messages[4]).data.getString("action").orElse(null) == "GEOFENCE_REFRESH"
-            assert ((PushNotificationMessage)messages[5]).data.getString("action").orElse(null) == "GEOFENCE_REFRESH"
+            assert ((PushNotificationMessage) messages[4]).data.getString("action").orElse(null) == "GEOFENCE_REFRESH"
+            assert ((PushNotificationMessage) messages[5]).data.getString("action").orElse(null) == "GEOFENCE_REFRESH"
         }
 
         then: "the geofences of testUser3Console1 should still contain two geofences but the location of the second should have been updated"
         conditions.eventually {
             geofences = authenticatedRulesResource.getAssetGeofences(null, testUser3Console1.id)
             assert geofences.size() == 2
-            def geofence1 = geofences.find { it.id == testUser3Console1.id + "_" + Integer.toString(
-                expectedLocationPredicate.hashCode())}
-            def geofence2 = geofences.find { it.id == testUser3Console1.id + "_" + Integer.toString(
-                newLocationPredicate.hashCode())}
+            def geofence1 = geofences.find {
+                it.id == testUser3Console1.id + "_" + Integer.toString(
+                        expectedLocationPredicate.hashCode())
+            }
+            def geofence2 = geofences.find {
+                it.id == testUser3Console1.id + "_" + Integer.toString(
+                        newLocationPredicate.hashCode())
+            }
             assert geofence1 != null && geofence2 != null
             assert geofence1.lat == expectedLocationPredicate.lat
             assert geofence1.lng == expectedLocationPredicate.lng
@@ -544,12 +584,16 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         when: "a location predicate ruleset is removed"
         rulesetStorageService.delete(AssetRuleset.class, newRuleset.id)
 
+        and: "previous notification messages are cleared"
+        notificationIds.clear()
+        messages.clear()
+
         then: "only the welcome home geofence should remain"
         conditions.eventually {
             geofences = authenticatedRulesResource.getAssetGeofences(null, testUser3Console1.id)
             assert geofences.size() == 1
             assert geofences[0].id == testUser3Console1.id + "_" + Integer.toString(
-                expectedLocationPredicate.hashCode())
+                    expectedLocationPredicate.hashCode())
             assert geofences[0].lat == expectedLocationPredicate.lat
             assert geofences[0].lng == expectedLocationPredicate.lng
             assert geofences[0].radius == expectedLocationPredicate.radius
@@ -557,8 +601,63 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
             assert geofences[0].url == getWriteAttributeUrl(new AttributeRef(testUser3Console1.id, LOCATION.getName()))
         }
 
+        and: "the consoles should have been notified to refresh their geofences"
+        conditions.eventually {
+            assert messages.stream()
+                    .filter({ it instanceof PushNotificationMessage })
+                    .filter({
+                ((PushNotificationMessage) it).data.getString("action").orElse(null) == "GEOFENCE_REFRESH"
+            })
+                    .count() == 2
+        }
+
+        when: "previous notification messages are cleared"
+        notificationIds.clear()
+        messages.clear()
+
+        and: "another 10 consoles are added to the system"
+        def id = testUser3Console1.id
+        def extraConsoles = IntStream.rangeClosed(3, 12).mapToObj({
+            testUser3Console1.id = null
+            testUser3Console1.name = "Test Console $it"
+            return assetStorageService.merge(testUser3Console1)
+        }).collect({ it })
+        testUser3Console1.id = id
+
+        then: "the extra consoles should have been added"
+        assert extraConsoles.size == 10
+
+        and: "a push notifications should have been sent to each new console to refresh their geofence rules"
+        conditions.eventually {
+            assert messages.stream()
+                    .filter({it instanceof PushNotificationMessage})
+                    .filter({((PushNotificationMessage)it).data.getString("action").orElse(null) == "GEOFENCE_REFRESH"})
+                    .count() == 10
+        }
+
+        when: "previous notification messages are cleared"
+        notificationIds.clear()
+        messages.clear()
+
+        and: "an existing ruleset containing a radial location predicate is updated"
+        newRuleset.rules = getClass().getResource("/org/openremote/test/rules/BasicLocationPredicates.groovy").text
+        newRuleset = rulesetStorageService.merge(newRuleset)
+
+        then: "a push notification should have been sent to all consoles telling them to refresh their geofences"
+        conditions.eventually {
+            assert messages.stream()
+                    .filter({ it instanceof PushNotificationMessage })
+                    .filter({
+                ((PushNotificationMessage) it).data.getString("action").orElse(null) == "GEOFENCE_REFRESH"
+            })
+                    .count() == 12
+        }
+
         when: "the RULE_STATE meta is removed from a console's location attribute"
-        testUser3Console1.getAttribute(LOCATION.getName()).get().getMeta().removeIf({it.name.orElse(null) == RULE_STATE.urn})
+        testUser3Console1 = assetStorageService.find(testUser3Console1.id, true)
+        testUser3Console1.getAttribute(LOCATION.getName()).get().getMeta().removeIf({
+            it.name.orElse(null) == RULE_STATE.urn
+        })
         testUser3Console1 = assetStorageService.merge(testUser3Console1)
 
         then: "no geofences should remain for this console"

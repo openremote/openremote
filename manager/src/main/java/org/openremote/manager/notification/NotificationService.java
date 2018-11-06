@@ -287,7 +287,6 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                                                 SentNotification sentNotification = new SentNotification()
                                                         .setName(notification.getName())
                                                         .setType(notification.getMessage().getType())
-                                                        .setMessage(notification.getMessage().toValue())
                                                         .setSource(source)
                                                         .setSourceId(sourceId.get())
                                                         .setTarget(targets.getType())
@@ -311,8 +310,10 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                                                     } else {
                                                         LOG.warning("Notification failed '" + id + "': " + targets.getType() + ":" + targetId + ", reason=" + result.getMessage());
                                                         sentNotification.setError(TextUtil.isNullOrEmpty(result.getMessage()) ? "Unknown error" : result.getMessage());
-                                                        em.merge(sentNotification);
                                                     }
+                                                    // Merge the sent notification again with the message included just in case the handler modified the message
+                                                    sentNotification.setMessage(notification.getMessage().toValue());
+                                                    em.merge(sentNotification);
                                                 } catch (Exception e) {
                                                     LOG.log(Level.SEVERE,
                                                             "Notification handler threw an exception whilst sending notification '" + id + "'",
