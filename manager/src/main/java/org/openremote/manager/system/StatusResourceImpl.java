@@ -20,18 +20,32 @@
 package org.openremote.manager.system;
 
 import org.openremote.model.system.HealthStatusProvider;
-import org.openremote.model.system.HealthStatusResource;
+import org.openremote.model.system.StatusResource;
 import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Values;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
+import java.util.Properties;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
-public class HealthStatusResourceImpl implements HealthStatusResource {
+public class StatusResourceImpl implements StatusResource {
 
+    private static final Logger LOG = Logger.getLogger(StatusResourceImpl.class.getName());
     protected List<HealthStatusProvider> healthStatusProviderList;
+    protected Properties versionProps = new Properties();
 
-    public HealthStatusResourceImpl(List<HealthStatusProvider> healthStatusProviderList) {
+    public StatusResourceImpl(List<HealthStatusProvider> healthStatusProviderList) {
         this.healthStatusProviderList = healthStatusProviderList;
+
+        try(InputStream resourceStream = StatusResourceImpl.class.getClassLoader().getResourceAsStream("system.properties")) {
+            versionProps.load(resourceStream);
+        } catch (IOException e) {
+            LOG.log(Level.SEVERE, "Failed to load manager version properties file: system.properties");
+            throw new IllegalStateException("Missing manager system.properties file");
+        }
     }
 
     @Override
@@ -46,6 +60,14 @@ public class HealthStatusResourceImpl implements HealthStatusResource {
             }
         );
 
+        return objectValue;
+    }
+
+    @Override
+    public ObjectValue getInfo() {
+        String version = versionProps.getProperty("version");
+        ObjectValue objectValue = Values.createObject();
+        objectValue.put("version", version);
         return objectValue;
     }
 }

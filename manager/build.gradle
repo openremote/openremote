@@ -20,6 +20,11 @@ dependencies {
     compile "org.simplejavamail:simple-java-mail:$simpleJavaMailVersion"
 }
 
+// Load version properties file and use same version as source code
+def props = new Properties()
+file("src/main/resources/system.properties").withInputStream { props.load(it) }
+version = props.get("version")
+
 jar {
     archivesBaseName = "openremote-${project.name}"
 }

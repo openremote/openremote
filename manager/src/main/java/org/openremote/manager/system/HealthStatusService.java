@@ -23,13 +23,14 @@ import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.web.WebService;
 import org.openremote.model.system.HealthStatusProvider;
+import org.openremote.model.system.StatusResource;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ServiceLoader;
 
 /**
- * This service is here to initialise the {@link org.openremote.model.system.HealthStatusResource}.
+ * This service is here to initialise the {@link StatusResource}.
  */
 public class HealthStatusService implements ContainerService {
 
@@ -47,7 +48,7 @@ public class HealthStatusService implements ContainerService {
         }
 
         container.getService(WebService.class).getApiSingletons().add(
-            new HealthStatusResourceImpl(healthStatusProviderList)
+            new StatusResourceImpl(healthStatusProviderList)
         );
     }
 

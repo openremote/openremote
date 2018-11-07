@@ -28,11 +28,18 @@ import javax.ws.rs.Produces;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
-@Path("health")
-public interface HealthStatusResource {
+@Path("")
+public interface StatusResource {
 
+    @Path("health")
     @GET
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
     ObjectValue getHealthStatus();
+
+    @Path("info")
+    @GET
+    @Produces(APPLICATION_JSON)
+    @SuccessStatusCode(200)
+    ObjectValue getInfo();
 }
