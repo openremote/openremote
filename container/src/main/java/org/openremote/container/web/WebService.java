@@ -29,6 +29,7 @@ import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.DeploymentManager;
 import io.undertow.servlet.api.ServletInfo;
 import io.undertow.util.HttpString;
+import org.jboss.resteasy.plugins.interceptors.CorsFilter;
 import org.jboss.resteasy.plugins.server.servlet.HttpServlet30Dispatcher;
 import org.jboss.resteasy.plugins.server.servlet.ResteasyContextParameters;
 import org.jboss.resteasy.spi.ResteasyDeployment;
@@ -338,7 +339,19 @@ public abstract class WebService implements ContainerService {
         resteasyDeployment.getProviders().add(new WebServiceExceptions.DefaultResteasyExceptionMapper(devMode));
         resteasyDeployment.getProviders().add(new WebServiceExceptions.ForbiddenResteasyExceptionMapper(devMode));
         resteasyDeployment.getProviders().add(new JacksonConfig());
-        resteasyDeployment.getProviders().add(new CORSFilter());
+
+        // Configure CORS - RT Replaced custom CORS filter with standard rest easy one due to:
+        // https://github.com/openremote/openremote/issues/32
+
+        //        resteasyDeployment.getProviders().add(new CORSFilter());
+        CorsFilter corsFilter = new CorsFilter();
+        corsFilter.getAllowedOrigins().add("*");
+        corsFilter.setAllowedHeaders("origin, content-type, accept, authorization");
+        corsFilter.setAllowCredentials(true);
+        corsFilter.setAllowedMethods("GET, POST, PUT, DELETE, OPTIONS, HEAD");
+        corsFilter.setCorsMaxAge(1209600);
+
+        resteasyDeployment.getProviders().add(corsFilter);
         resteasyDeployment.getProviders().add(new GZIPEncodingInterceptor(!container.isDevMode()));
         resteasyDeployment.getActualProviderClasses().add(ModelValueMessageBodyConverter.class);
         resteasyDeployment.getActualProviderClasses().add(AlreadyGzippedWriterInterceptor.class);
