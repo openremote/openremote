@@ -1,7 +1,7 @@
 {
-  "name": "@openremote/demo-core",
+  "name": "@openremote/app-customerA",
   "version": "1.0.0",
-  "description": "Demo",
+  "description": "Built in demo console application",
   "private": true,
   "scripts": {
     "clean": "npx shx rm -rf dist",

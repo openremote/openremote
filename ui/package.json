@@ -1,4 +1,8 @@
 {
   "private": true,
-  "workspaces": ["app/*", "component/*", "demo/*"]
+  "workspaces": [
+    "app/*",
+    "component/*",
+    "demo/*"
+  ]
 }

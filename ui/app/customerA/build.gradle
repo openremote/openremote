@@ -10,12 +10,20 @@ task serveProduction(type: NpmTask) {
 }
 
 task build(type: NpmTask) {
+    onlyIf {
+        // Only execute if we're not building from a custom project
+        return !isCustomProject()
+    }
     dependsOn npmInstall
     args = ['run-script', 'build']
 }
 
 task installDist(type: Copy) {
-    dependsOn build
+    onlyIf {
+        // Only execute if we're not building from a custom project
+        return !isCustomProject()
+    }
+    //dependsOn build
     from project.buildDir
     into "${project(':deployment').projectDir}/manager/consoles/${projectDir.name}"
 }

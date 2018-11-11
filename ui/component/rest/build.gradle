@@ -6,7 +6,7 @@ buildscript {
         mavenCentral()
         jcenter()
         maven {
-            url "${resolveProject("").projectDir}/lib"
+            url "${isCustomProject() ? project(":openremote").projectDir : rootProject.projectDir}/lib"
         }
     }
     dependencies {
@@ -17,7 +17,7 @@ buildscript {
 
 repositories {
     maven {
-        url "${resolveProject("").projectDir}/lib"
+        url "${isCustomProject() ? project(":openremote").projectDir : rootProject.projectDir}/lib"
     }
 }
 
