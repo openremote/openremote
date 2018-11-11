@@ -1,0 +1,12 @@
+{
+  "name": "@openremote/model",
+  "version": "1.0.0",
+  "description": "OpenRemote 3.x Model Types",
+  "main": "",
+  "types": "dist/model.d.ts",
+  "scripts": {},
+  "author": "OpenRemote",
+  "license": "AGPL-3.0-or-later",
+  "dependencies": {},
+  "devDependencies": {}
+}

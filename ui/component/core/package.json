@@ -1,0 +1,19 @@
+{
+  "name": "@openremote/core",
+  "version": "1.0.0",
+  "description": "OpenRemote 3.x Core",
+  "main": "dist/core.js",
+  "types": "src/core.ts",
+  "scripts": {
+    "clean": "npx shx rm -rf dist",
+    "build": "npx tsc",
+    "test": "npm run karma run"
+  },
+  "author": "OpenRemote",
+  "license": "AGPL-3.0-or-later",
+  "dependencies": {},
+  "devDependencies": {
+    "shx": "^0.3.2",
+    "typescript": "^3.1.6"
+  }
+}

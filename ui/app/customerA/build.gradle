@@ -1,0 +1,27 @@
+
+task serve(type: NpmTask) {
+    dependsOn npmInstall
+    args = ['run-script', 'serve']
+}
+
+task serveProduction(type: NpmTask) {
+    dependsOn npmInstall
+    args = ['run-script', 'serveProduction']
+}
+
+task build(type: NpmTask) {
+    dependsOn npmInstall
+    args = ['run-script', 'build']
+}
+
+task installDist(type: Copy) {
+    dependsOn build
+    from project.buildDir
+    into "${project(':deployment').projectDir}/manager/consoles/${projectDir.name}"
+}
+
+task clean() {
+    doLast {
+        delete "${project(':deployment').projectDir}/manager/consoles/${projectDir.name}"
+    }
+}

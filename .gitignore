@@ -21,6 +21,8 @@ out/
 .idea/
 
 bower_components/
+node_modules/
+yarn-error.log
 
 console/iOS/DerivedData
 console/iOS/Pods

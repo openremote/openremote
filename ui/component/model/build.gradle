@@ -1,0 +1,57 @@
+apply plugin: "groovy"
+apply plugin: 'cz.habarta.typescript-generator'
+
+buildscript {
+    repositories {
+        mavenCentral()
+        jcenter()
+    }
+    dependencies {
+        classpath 'cz.habarta.typescript-generator:typescript-generator-gradle-plugin:2.8.449'
+    }
+}
+
+dependencies {
+    compile resolveProject(":model")
+}
+
+generateTypeScript {
+    jsonLibrary = "jackson2"
+    classes = [
+            "org.openremote.model.http.RequestParams"
+    ]
+    classPatterns = [
+            "org.openremote.model.**"
+    ]
+    excludeClassPatterns = [
+            "org.openremote.model.http.*Constraint**",
+            "org.openremote.model.event.**",
+            "org.openremote.model.util.**",
+            "org.openremote.model.flow.**",
+            "org.openremote.model.interop.**",
+            "org.openremote.model.value.impl.**"
+    ]
+    customTypeNamingFunction = "function(name, simpleName) { if (name.indexOf(\"\$\") > 0) return name.substr(name.lastIndexOf(\".\")+1).replace(\"\$\",\"\"); }"
+    customTypeMappings = [
+            "org.openremote.model.value.ObjectValue:object",
+            "org.openremote.model.value.ArrayValue:Array<any>",
+            "org.openremote.model.value.NumberValue:number",
+            "org.openremote.model.value.StringValue:string",
+            "org.openremote.model.value.BooleanValue:boolean",
+            "org.openremote.model.value.Value:any"
+    ]
+    optionalProperties = "all" // TODO: cleanup model to be more explicit about optional params
+    mapEnum = cz.habarta.typescript.generator.EnumMapping.asEnum
+    outputFile = "dist/model.d.ts"
+    outputKind = "global"
+}
+
+//task clean {
+//    doLast {
+//        delete "build"
+//    }
+//}
+
+task installDist {
+    dependsOn generateTypeScript
+}
