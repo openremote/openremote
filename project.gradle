@@ -80,7 +80,7 @@ ext.nodeModuleLocal = {
 }
 
 task npmInstall(overwrite: true, type: NpmTask, dependsOn: 'npmSetup') {
-    inputs.file('package.json')
+    inputs.files('package.json')
     outputs.upToDateWhen { file('node_modules').exists() }
 
     npmCommand = ['install']
@@ -148,8 +148,12 @@ plugins.withType(JavaPlugin).whenPluginAdded {
 
 // Helper functions for project/task resolution when the main 
 // repo is checked out as a git submodule and therefore a subproject
+def isCustomProject() {
+    findProject(":openremote") != null
+}
+
 def resolvePath(String path) {
-    findProject(":openremote") != null ? ":openremote" + path : path
+    isCustomProject() ? ":openremote" + path : path
 }
 
 def resolveProject(String path) {
@@ -164,4 +168,5 @@ ext {
     resolvePath = this.&resolvePath
     resolveProject = this.&resolveProject
     resolveTask = this.&resolveTask
+    isCustomProject = this.&isCustomProject
 }
