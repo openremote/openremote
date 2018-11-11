@@ -483,7 +483,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         return persistenceService.doReturningTransaction(entityManager -> {
             try {
                 return entityManager.createQuery(
-                    "select count(a) from Asset a where :parentAssetId = any(get_asset_tree_path(a.ID)) AND a.id IN :assetIds",
+                    "select count(a) from Asset a where :parentAssetId = a.PATH AND a.id IN :assetIds",
                     Long.class)
                     .setParameter("parentAssetId", parentAssetId)
                     .setParameter("assetIds", assetIds)
@@ -937,7 +937,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 binders.add(st -> st.setString(pos, query.tenant.realm));
             }
 
-            if (query.userId != null) {
+            if (query.ids == null && query.userId != null) {
                 sb.append(" and ua.ASSET_ID = a.ID and ua.USER_ID = ?");
                 final int pos = binders.size() + 1;
                 binders.add(st -> st.setString(pos, query.userId));

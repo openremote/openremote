@@ -58,18 +58,12 @@ public class UsersFacade<T extends Ruleset> extends Users {
             // Do security checks to ensure correct scoping
             // No restriction for global rulesets
             if (TenantRuleset.class.isAssignableFrom(rulesEngineId.getScope())) {
-                if (tenantPredicate != null) {
-                    throw new IllegalArgumentException("Overriding query restriction is not allowed in this rules scope");
-                }
-
                 // Restrict tenant
                 tenantPredicate = new TenantPredicate(
                     rulesEngineId.getRealmId().orElseThrow(() -> new IllegalArgumentException("Realm ID missing: " + rulesEngineId))
                 );
             } else if (AssetRuleset.class.isAssignableFrom(rulesEngineId.getScope())) {
-                if (tenantPredicate != null) {
-                    throw new IllegalArgumentException("Overriding query restriction is not allowed in this rules scope");
-                }
+                tenantPredicate = null;
                 String assetId = rulesEngineId.getAssetId().orElseThrow(() -> new IllegalArgumentException("Asset ID missing: " + rulesEngineId));
 
                 // Asset must be this engines asset or a child

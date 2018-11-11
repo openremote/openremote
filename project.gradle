@@ -79,6 +79,13 @@ ext.nodeModuleLocal = {
         file("${projectDir}/node_modules/${dir}/bin/${mod}")
 }
 
+task npmInstall(overwrite: true, type: NpmTask, dependsOn: 'npmSetup') {
+    inputs.file('package.json')
+    outputs.upToDateWhen { file('node_modules').exists() }
+
+    npmCommand = ['install']
+}
+
 // Add bower tasks
 task bowerInstall(type: NpmTask) {
     dependsOn nodeSetup

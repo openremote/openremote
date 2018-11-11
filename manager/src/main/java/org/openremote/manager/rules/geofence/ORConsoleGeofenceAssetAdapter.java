@@ -74,6 +74,7 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
     private static final Logger LOG = SyslogCategory.getLogger(RULES, ORConsoleGeofenceAssetAdapter.class.getName());
     public static final String NAME = "ORConsole";
     public static int NOTIFY_ASSETS_DEBOUNCE_MILLIS = 60000;
+    public static int NOTIFY_ASSETS_BATCH_MILLIS = 10000;
     protected Map<String, RulesEngine.AssetStateLocationPredicates> assetLocationPredicatesMap = new HashMap<>();
     protected NotificationService notificationService;
     protected AssetStorageService assetStorageService;
@@ -264,16 +265,19 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
         List<String> ids = new ArrayList<>(assetIds);
         ObjectValue data = Values.createObject();
         data.put("action", "GEOFENCE_REFRESH");
-        Notification notification = new Notification("GeofenceRefresh", new PushNotificationMessage().setData(data), null);
 
         // Break into batches of 10 sent every 10s to avoid consoles bombarding the backend
-        int rows = 1 + ids.size() / 10;
+        int rows = Math.round((((float)ids.size()) / 10));
         IntStream.range(0, rows)
             .forEach(i -> {
-                List<String> subIds = ids.subList(10 * i, Math.min(10 + (10 * i), ids.size()));
+                final List<String> subIds = ids.subList(10 * i, Math.min(10 + (10 * i), ids.size()));
+                final Notification notification = new Notification("GeofenceRefresh", new PushNotificationMessage().setData(data), null);
                 notification.setTargets(new Notification.Targets(Notification.TargetType.ASSET, subIds));
-                LOG.info("Notifiying consoles that geofences have changed: " + subIds);
-                executorService.schedule(() -> notificationService.sendNotification(notification), i * 10000);
+
+                executorService.schedule(() -> {
+                    LOG.info("Notifiying consoles that geofences have changed: " + notification.getTargets());
+                    notificationService.sendNotification(notification);
+                }, i * NOTIFY_ASSETS_BATCH_MILLIS);
             });
     }
 
