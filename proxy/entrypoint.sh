@@ -17,16 +17,23 @@ LE_CMD="/usr/bin/certbot certonly --config-dir ${LE_WORK_DIR} -w ${LE_WEB_ROOT} 
 mkdir -p $LE_CERT_ROOT
 
 # Configure haproxy
-export CERT_FILE="/opt/selfsigned/localhost.pem"
-if [ -n "${DOMAINNAME}" ] && [ "${DOMAINNAME}" != "localhost" ]; then
-  export CERT_FILE="${LE_CERT_ROOT}/${DOMAINNAME}/haproxy.pem"
-fi
-if [ ! -f ${CERT_FILE} ]; then
-  INIT=true
-  HAPROXY_CONFIG="/etc/haproxy/haproxy-init.cfg"
+if [ -n $"LOCAL_CERT_FILE" ]; then
+    export CERT_FILE="${LOCAL_CERT_FILE}"
+    export LOCAL_CERT_DIR="$(dirname ${LOCAL_CERT_FILE})"
+    HAPROXY_CONFIG="/etc/haproxy/haproxy.cfg"
+    INIT=false
 else
-  HAPROXY_CONFIG="/etc/haproxy/haproxy.cfg"
-  INIT=false
+    export CERT_FILE="/opt/selfsigned/localhost.pem"
+    if [ -n "${DOMAINNAME}" ] && [ "${DOMAINNAME}" != "localhost" ]; then
+      export CERT_FILE="${LE_CERT_ROOT}/${DOMAINNAME}/haproxy.pem"
+    fi
+    if [ ! -f ${CERT_FILE} ]; then
+      INIT=true
+      HAPROXY_CONFIG="/etc/haproxy/haproxy-init.cfg"
+    else
+      HAPROXY_CONFIG="/etc/haproxy/haproxy.cfg"
+      INIT=false
+    fi
 fi
 HAPROXY_PID_FILE="/var/run/haproxy.pid"
 HAPROXY_CMD="haproxy -f ${HAPROXY_CONFIG} ${HAPROXY_USER_PARAMS} -D -p ${HAPROXY_PID_FILE}"
@@ -53,6 +60,30 @@ function check_proxy {
     $HAPROXY_CHECK_CONFIG_CMD
 }
 
+function start_with_certificate {
+    if [ -n "${LOCAL_CERT_FILE}" ]; then
+        log_info "Using the certificate LOCAL_CERT_FILE: ${LOCAL_CERT_FILE}"
+
+        check_proxy
+
+        $HAPROXY_CMD
+        if [[ $? != 0 ]] || test -t 0; then exit $?; fi
+        log_info "HAProxy started with $HAPROXY_CONFIG config, pid $(cat $HAPROXY_PID_FILE)."
+
+
+
+        # Wait if config or certificates were changed, block this execution
+        while inotifywait -q -r --exclude '\.git/' -e modify,create,delete,move,move_self $HAPROXY_CONFIG $LOCAL_CERT_DIR; do
+            log_info "Change detected..."
+            sleep 5
+            restart
+            log_info "Monitoring config file $HAPROXY_CONFIG and certs in $LOCAL_CERT_DIR for changes..."
+        done
+    else
+        log_error"No certificate found for $LOCAL_CERT_FILE"
+    fi
+}
+
 function run_proxy {
     # Start rsyslogd
     service rsyslog start
@@ -61,7 +92,7 @@ function run_proxy {
 
     $HAPROXY_CMD
     if [[ $? != 0 ]] || test -t 0; then exit $?; fi
-    log_info "HAProxy started with $HAPROXY_CONFIG config, pid $(cat $HAPROXY_PID_FILE)."
+    log_info "HAProxy started with $HAPROXY_CONFIG config, pid $(cat $HAPROXY_PID_FILE)."HAPROXY_CERT_FILE
 
     cron_auto_renewal_init
 
@@ -372,6 +403,7 @@ function cron_auto_renewal {
 }
 
 log_info "DOMAINNAME: ${DOMAINNAME}"
+log_info "LOCAL_CERT_FILE": ${LOCAL_CERT_FILE}
 log_info "HAPROXY_CERT_FILE: ${CERT_FILE}"
 log_info "HAPROXY_CONFIG: ${HAPROXY_CONFIG}"
 log_info "HAPROXY_CMD: ${HAPROXY_CMD}"
@@ -416,6 +448,8 @@ elif [ "${CMD}" = "print-pin" ]; then
   print_pin "${@}"
 elif [ "${CMD}" = "cron-auto-renewal-init" ]; then
   cron_auto_renewal_init
+elif [ "${CMD}" = "start-with-certificate" ]; then
+  start_with_certificate
 else
   die "Unknown command: ${CMD}"
 fi
