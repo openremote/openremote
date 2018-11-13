@@ -80,7 +80,7 @@ public class ConsoleResourceImpl extends ManagerWebResource implements ConsoleRe
                 consoleRegistration.getVersion(),
                 consoleRegistration.getPlatform(),
                 consoleRegistration.getProviders(),
-                !isAuthenticated(),
+                true,
                 true);
 
             consoleAsset.setRealmId(getRequestTenant().getId());
