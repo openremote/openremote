@@ -69,6 +69,8 @@ public final class ConsoleConfiguration {
         setConsolePlatform(asset, platform);
         setConsolProviders(asset, providerMap);
 
+        asset.setAccessPublicRead(true);
+
         Meta locationMeta = new Meta(new MetaItem(RULE_STATE));
         if (allowPublicLocationWrite) {
             locationMeta.add(new MetaItem(ACCESS_PUBLIC_WRITE));
