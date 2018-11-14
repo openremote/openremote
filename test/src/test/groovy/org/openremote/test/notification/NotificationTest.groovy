@@ -1,7 +1,9 @@
 package org.openremote.test.notification
 
 import com.google.firebase.messaging.Message
+import org.openremote.container.web.WebService
 import org.openremote.manager.asset.AssetStorageService
+import org.openremote.manager.asset.console.ConsoleResourceImpl
 import org.openremote.manager.notification.EmailNotificationHandler
 import org.openremote.manager.notification.NotificationService
 import org.openremote.manager.notification.PushNotificationHandler
@@ -71,6 +73,8 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         def container = startContainerWithPseudoClock(defaultConfig(serverPort), services)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
+        def notificationService = container.getService(NotificationService.class)
+        def consoleResource = (ConsoleResourceImpl)container.getService(WebService.class).getApiSingletons().find {it instanceof ConsoleResourceImpl}
 
         and: "an authenticated test user"
         def realm = keycloakDemoSetup.customerATenant.realm
@@ -240,6 +244,14 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         then: "the notification should have been sent"
         notificationIds.size() == 13
 
+        when: "a notification is sent using the same mechanism as an asset ruleset"
+        notificationService.sendNotification(notification, Notification.Source.ASSET_RULESET, consoleResource.getConsoleParentAssetId(realm))
+
+        then: "the notification should have been sent"
+        new PollingConditions(timeout: 10).eventually {
+            assert notificationIds.size() == 17
+        }
+
         when: "a restricted user sends a push notification to the console assets in the same realm"
         testuser3NotificationResource.sendNotification(null, notification)
 
@@ -260,7 +272,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         ex.response.status == 403
 
         and: "no new notifications should have been sent"
-        notificationIds.size() == 13
+        notificationIds.size() == 17
 
         when: "a restricted user sends a push notification to some consoles linked to them"
         advancePseudoClock(1, TimeUnit.HOURS, container)
@@ -270,7 +282,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         testuser3NotificationResource.sendNotification(null, notification)
 
         then: "the notifications should have been sent"
-        notificationIds.size() == 15
+        notificationIds.size() == 19
 
         // -----------------------------------------------
         //    Check notification resource
@@ -284,14 +296,14 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
             notifications.addAll(adminNotificationResource.getNotifications(null, null, null, null, null, null, null, anonymousConsole.id))
 
         then: "all notifications sent to these consoles should be returned"
-        assert notifications.size() == 15
+        assert notifications.size() == 19
         assert notifications.count {n ->
             n.message.getString("title").orElse(null) == "Test Action" &&
                 n.message.getString("body").orElse(null) == "Click to cancel" &&
                 n.message.getObject("action").isPresent() &&
                 n.deliveredOn == null &&
                 n.acknowledgedOn == null
-        } == 15
+        } == 19
 
         when: "the admin user marks a customer A console notification as delivered and requests the notifications for customer A consoles"
         adminNotificationResource.notificationDelivered(null, testuser2Console.id, notifications.find {n -> n.targetId == testuser2Console.id}.id)
@@ -302,7 +314,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
             notifications.addAll(adminNotificationResource.getNotifications(null, null, null, null, null, null, null, anonymousConsole.id))
 
         then: "the notification should have been updated"
-        assert notifications.size() == 15
+        assert notifications.size() == 19
         assert notifications.count {n -> n.deliveredOn != null} == 1
 
         when: "the admin user marks a customer A console notification as delivered and requests the notifications for customer A consoles"
@@ -314,7 +326,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
             notifications.addAll(adminNotificationResource.getNotifications(null, null, null, null, null, null, null, anonymousConsole.id))
 
         then: "the notification should have been updated"
-        assert notifications.size() == 15
+        assert notifications.size() == 19
         assert notifications.count {n -> n.deliveredOn != null && n.acknowledgedOn != null && n.acknowledgement == "dismissed"} == 1
 
         when: "a regular user marks a console notification from another realm as delivered"
@@ -333,7 +345,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
             notifications.addAll(adminNotificationResource.getNotifications(null, null, null, null, null, null, null, anonymousConsole.id))
 
         then: "the notification should have been updated"
-        assert notifications.size() == 15
+        assert notifications.size() == 19
         assert notifications.count {n -> n.targetId == testuser3Console1.id &&  n.deliveredOn != null} == 1
 
 // TODO: Update once console permissions model finalised
@@ -353,7 +365,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
             notifications.addAll(adminNotificationResource.getNotifications(null, null, null, null, null, null, null, anonymousConsole.id))
 
         then: "the notification should have been updated"
-        assert notifications.size() == 15
+        assert notifications.size() == 19
         assert notifications.count {n -> n.targetId == anonymousConsole.id && n.deliveredOn != null} == 1
 
         when: "a regular user tries to remove notifications"
@@ -380,7 +392,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
             notifications.addAll(adminNotificationResource.getNotifications(null, null, null, null, null, null, null, anonymousConsole.id))
 
         then: "notifications sent after or at that time should have been removed"
-        assert notifications.size() == 13
+        assert notifications.size() == 17
 
         when: "the admin user removes notifications sent to specific console assets without other constraints and the notifications are retrieved again"
         adminNotificationResource.removeNotifications(null, null, null, null, null, null, null, testuser3Console1.id)
@@ -392,7 +404,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
             notifications.addAll(adminNotificationResource.getNotifications(null, null, null, null, null, null, null, anonymousConsole.id))
 
         then: "all notifications sent to those consoles should have been removed"
-        assert notifications.size() == 7
+        assert notifications.size() == 9
         assert notifications.count {n -> n.targetId == testuser3Console1.id || n.targetId == testuser3Console2.id} == 0
 
         when: "the admin user removes notifications by type and the notifications are retrieved again"
@@ -403,7 +415,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
             notifications.addAll(adminNotificationResource.getNotifications(null, null, null, null, null, null, null, testuser3Console2.id))
             notifications.addAll(adminNotificationResource.getNotifications(null, null, null, null, null, null, null, anonymousConsole.id))
 
-        then: "one notification should have been removed"
+        then: "the notifications should have been removed"
         assert notifications.size() == 0
 
         when: "the admin user removes notifications without sufficient constraints"
