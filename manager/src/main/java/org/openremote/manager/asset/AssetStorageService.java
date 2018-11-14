@@ -68,6 +68,7 @@ import java.sql.*;
 import java.util.*;
 import java.util.Date;
 import java.util.function.Consumer;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
@@ -481,18 +482,20 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     }
 
     public boolean isDescendantAssets(String parentAssetId, List<String> assetIds) {
-        return persistenceService.doReturningTransaction(entityManager -> {
-            try {
-                return entityManager.createQuery(
-                    "select count(a) from Asset a where :parentAssetId = a.PATH AND a.id IN :assetIds",
-                    Long.class)
-                    .setParameter("parentAssetId", parentAssetId)
-                    .setParameter("assetIds", assetIds)
-                    .getSingleResult() == assetIds.size();
-            } catch (NoResultException ex) {
-                return false;
+        return persistenceService.doReturningTransaction(entityManager -> entityManager.unwrap(Session.class).doReturningWork(new AbstractReturningWork<Boolean>() {
+            @Override
+            public Boolean execute(Connection connection) throws SQLException {
+                try (PreparedStatement st = connection.prepareStatement("select count(*) from Asset a where ? = ANY(get_asset_tree_path(a.ID)) AND a.id = ANY(?)")) {
+                    st.setString(1, parentAssetId);
+                    st.setArray(2, st.getConnection().createArrayOf("text", assetIds.toArray()));
+                    ResultSet rs = st.executeQuery();
+                    return rs.next() && rs.getInt(1) == assetIds.size();
+                } catch (SQLException ex) {
+                    LOG.log(Level.SEVERE, "Failed to execute isDescendantAssets query", ex);
+                    return false;
+                }
             }
-        });
+        }));
     }
 
     public List<UserAsset> findUserAssets(String realmId, String userId, String assetId) {
