@@ -19,6 +19,7 @@
  */
 package org.openremote.model.query;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.openremote.model.asset.AssetType;
 import org.openremote.model.asset.CalendarEventConfiguration;
 import org.openremote.model.query.filter.*;
@@ -336,6 +337,7 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> {
         return (CHILD) this;
     }
 
+    @JsonProperty("id")
     public CHILD id(String id) {
         this.ids = Collections.singletonList(id);
         return (CHILD) this;
