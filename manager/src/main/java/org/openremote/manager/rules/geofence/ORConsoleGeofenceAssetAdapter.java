@@ -267,7 +267,7 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
         data.put("action", "GEOFENCE_REFRESH");
 
         // Break into batches of 10 sent every 10s to avoid consoles bombarding the backend
-        int rows = Math.round((((float)ids.size()) / 10));
+        int rows = (int)Math.ceil((((float)ids.size()) / 10));
         IntStream.range(0, rows)
             .forEach(i -> {
                 final List<String> subIds = ids.subList(10 * i, Math.min(10 + (10 * i), ids.size()));
