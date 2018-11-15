@@ -17,7 +17,7 @@ LE_CMD="/usr/bin/certbot certonly --config-dir ${LE_WORK_DIR} -w ${LE_WEB_ROOT} 
 mkdir -p $LE_CERT_ROOT
 
 # Configure haproxy
-if [ -n $"LOCAL_CERT_FILE" ]; then
+if [ -n "${LOCAL_CERT_FILE}" ]; then
     export CERT_FILE="${LOCAL_CERT_FILE}"
     export LOCAL_CERT_DIR="$(dirname ${LOCAL_CERT_FILE})"
     HAPROXY_CONFIG="/etc/haproxy/haproxy.cfg"
