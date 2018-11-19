@@ -25,10 +25,10 @@ import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebResource;
 import org.openremote.model.Constants;
 import org.openremote.model.asset.*;
-import org.openremote.model.query.AssetQuery;
-import org.openremote.model.query.BaseAssetQuery.Select;
 import org.openremote.model.attribute.*;
 import org.openremote.model.http.RequestParams;
+import org.openremote.model.query.AssetQuery;
+import org.openremote.model.query.BaseAssetQuery.Select;
 import org.openremote.model.query.filter.ParentPredicate;
 import org.openremote.model.query.filter.TenantPredicate;
 import org.openremote.model.security.Tenant;
@@ -45,8 +45,9 @@ import java.util.logging.Logger;
 
 import static javax.ws.rs.core.Response.Status.*;
 import static org.openremote.container.Container.JSON;
-import static org.openremote.model.query.AssetQuery.*;
 import static org.openremote.model.attribute.AttributeEvent.Source.CLIENT;
+import static org.openremote.model.query.AssetQuery.Access;
+import static org.openremote.model.query.AssetQuery.Include;
 import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 
 public class AssetResourceImpl extends ManagerWebResource implements AssetResource {
@@ -241,13 +242,13 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             boolean isRestrictedUser = isRestrictedUser();
 
             // The asset that will ultimately be stored (override/ignore some values for restricted users)
-            Asset resultAsset = storageAsset.map(
+            Asset resultAsset = Asset.map(
                 asset,
                 storageAsset,
                 isRestrictedUser ? storageAsset.getName() : null, // TODO We could allow restricted users to update names?
                 isRestrictedUser ? storageAsset.getRealmId() : null, // Restricted users can not change realm
                 isRestrictedUser ? storageAsset.getParentId() : null, // Restricted users can not change realm
-                storageAsset.getType(), // The type an never change
+                storageAsset.getType(), // The type can never change
                 isRestrictedUser ? storageAsset.isAccessPublicRead() : null, // Restricted user can not change access public flag
                 isRestrictedUser ? storageAsset.getAttributes() : null // Restricted users need manual attribute merging (see below)
             );
