@@ -5,26 +5,15 @@ buildscript {
     repositories {
         mavenCentral()
         jcenter()
-        maven {
-            url "${isCustomProject() ? project(":openremote").projectDir : rootProject.projectDir}/lib"
-        }
     }
     dependencies {
-        classpath 'cz.habarta.typescript-generator:typescript-generator-gradle-plugin:2.8.454-vyeeyowa'
-        //classpath 'cz.habarta.typescript-generator:typescript-generator-gradle-plugin:2.8.449'
-    }
-}
-
-repositories {
-    maven {
-        url "${isCustomProject() ? project(":openremote").projectDir : rootProject.projectDir}/lib"
+        classpath 'cz.habarta.typescript-generator:typescript-generator-gradle-plugin:2.9.456'
     }
 }
 
 dependencies {
     compile resolveProject(":model")
-    compile 'cz.habarta.typescript-generator:typescript-generator-core:2.8.454-vyeeyowa'
-//    compile 'cz.habarta.typescript-generator:typescript-generator-core:2.8.449'
+    compile 'cz.habarta.typescript-generator:typescript-generator-core:2.9.456'
 }
 
 generateTypeScript {

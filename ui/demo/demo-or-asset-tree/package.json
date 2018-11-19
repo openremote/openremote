@@ -10,7 +10,7 @@
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
-    "@openremote/core": "^1.0.0"
+    "@openremote/or-asset-tree": "^1.0.0"
   },
   "devDependencies": {
     "@babel/core": "^7.1.2",

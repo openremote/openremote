@@ -4,6 +4,7 @@
     "noImplicitAny": true,
     "module": "es6",
     "target": "es2015",
+    "declaration": true,
     "sourceMap": true,
     "moduleResolution": "node"
   }
