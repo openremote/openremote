@@ -702,11 +702,7 @@ public class Asset implements IdentifiableEntity {
                             String overrideType,
                             Boolean overrideAccessPublicRead,
                             ObjectValue overrideAttributes) {
-
-        if (asset.getVersion() < assetToMap.getVersion()) {
-            asset.setVersion(assetToMap.getVersion());
-        }
-
+        asset.setVersion(assetToMap.getVersion());
         asset.setName(overrideName != null ? overrideName : assetToMap.getName());
         if (overrideType != null) {
             asset.setType(overrideType);

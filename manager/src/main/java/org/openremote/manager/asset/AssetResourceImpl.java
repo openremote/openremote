@@ -37,6 +37,7 @@ import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueException;
 import org.openremote.model.value.Values;
 
+import javax.persistence.OptimisticLockException;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.HttpHeaders;
 import java.io.IOException;
@@ -344,6 +345,8 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
 
         } catch (IllegalStateException ex) {
             throw new WebApplicationException(ex, BAD_REQUEST);
+        } catch (OptimisticLockException opEx) {
+            throw new WebApplicationException("Refresh the asset from the server and try to update the changes again", opEx, CONFLICT);
         }
     }
 
