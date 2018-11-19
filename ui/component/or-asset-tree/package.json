@@ -1,0 +1,16 @@
+{
+  "name": "@openremote/or-asset-tree",
+  "version": "1.0.0",
+  "description": "Displays assets in a tree",
+  "main": "dist/or-asset-tree.js",
+  "types": "or-asset-tree.ts",
+  "dependencies": {
+    "@polymer/polymer": "^3.0.0",
+    "@openremote/rest": "^1.0.0"
+  },
+  "devDependencies": {
+    "@polymer/iron-demo-helpers": "^3.0.0-pre.19",
+    "@webcomponents/webcomponentsjs": "^2.0.0",
+    "wct-browser-legacy": "^1.0.0"
+  }
+}
