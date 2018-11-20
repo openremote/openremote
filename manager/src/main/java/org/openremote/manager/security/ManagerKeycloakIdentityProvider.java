@@ -43,12 +43,10 @@ import org.openremote.model.query.UserQuery;
 import org.openremote.model.security.*;
 import org.openremote.model.util.TextUtil;
 
-import javax.persistence.Query;
 import javax.persistence.TypedQuery;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
-import java.sql.PreparedStatement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
@@ -131,7 +129,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
 
         return persistenceService.doReturningTransaction(entityManager -> {
             TypedQuery<User> query = entityManager.createQuery(sb.toString(), User.class);
-            IntStream.range(0, parameters.size()).forEach(i -> query.setParameter(i+1, parameters.get(i)));
+            IntStream.range(0, parameters.size()).forEach(i -> query.setParameter(i + 1, parameters.get(i)));
             List<User> users = query.getResultList();
             return users.toArray(new User[users.size()]);
         });
@@ -528,6 +526,34 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
         clientEventService.publishEvent(
             new AssetTreeModifiedEvent(timerService.getCurrentTimeMillis(), tenant.getId(), null)
         );
+    }
+
+    public void addLDAPConfiguration(ClientRequestInfo clientRequestInfo, String realm, ComponentRepresentation componentRepresentation) {
+        RealmResource realmResource = getRealms(clientRequestInfo)
+            .realm(realm);
+        Response response = realmResource.components().add(componentRepresentation);
+
+        if (!response.getStatusInfo().equals(Response.Status.CREATED)) {
+            throw new WebApplicationException(
+                Response.status(response.getStatus())
+                    .entity(response.getEntity())
+                    .build()
+            );
+        } else {
+            componentRepresentation = realmResource.components()
+                .query(componentRepresentation.getParentId(),
+                    componentRepresentation.getProviderType(),
+                    componentRepresentation.getName()).get(0);
+            response = syncUsers(clientRequestInfo, componentRepresentation.getId(), realm, "triggerFullSync");
+
+            if (!response.getStatusInfo().equals(Response.Status.OK)) {
+                throw new WebApplicationException(
+                    Response.status(response.getStatus())
+                        .entity(response.getEntity())
+                        .build()
+                );
+            }
+        }
     }
 
     @Override

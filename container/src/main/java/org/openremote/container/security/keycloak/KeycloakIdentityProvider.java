@@ -45,6 +45,7 @@ import org.openremote.container.web.ProxyWebClientBuilder;
 import org.openremote.container.web.WebClient;
 import org.openremote.container.web.WebService;
 
+import javax.ws.rs.HttpMethod;
 import javax.ws.rs.NotFoundException;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.core.Response;
@@ -226,6 +227,25 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
 
     public RealmsResource getRealms(String accessToken) {
         return getRealms(null, accessToken);
+    }
+
+    //There is a bug in {@link org.keycloak.admin.client.resource.UserStorageProviderResource#syncUsers} which misses the componentId as parameter
+    protected Response syncUsers(ClientRequestInfo clientRequestInfo, String componentId, String realm, String action) {
+        return getTarget(httpClient,
+            keycloakServiceUri.build(),
+            clientRequestInfo.getAccessToken(),
+            clientRequestInfo.getRemoteAddress(),
+            clientRequestInfo.getRemoteAddress() != null ? externalServerUri.build() : null)
+            .path("admin")
+            .path("realms")
+            .path(realm)
+            .path("user-storage")
+            .path(componentId)
+            .path("sync")
+            .queryParam("action", action)
+            .request()
+            .build(HttpMethod.POST)
+            .invoke();
     }
 
     /**
