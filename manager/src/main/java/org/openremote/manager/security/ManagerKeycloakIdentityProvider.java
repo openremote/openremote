@@ -20,10 +20,7 @@
 package org.openremote.manager.security;
 
 import org.apache.camel.ExchangePattern;
-import org.keycloak.admin.client.resource.ClientResource;
-import org.keycloak.admin.client.resource.ClientsResource;
-import org.keycloak.admin.client.resource.RoleMappingResource;
-import org.keycloak.admin.client.resource.RolesResource;
+import org.keycloak.admin.client.resource.*;
 import org.keycloak.representations.idm.*;
 import org.openremote.container.Container;
 import org.openremote.container.message.MessageBrokerService;
