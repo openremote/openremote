@@ -46,12 +46,4 @@ generateTypeScript {
     ]
 }
 
-//task clean {
-//    doLast {
-//        delete "build"
-//    }
-//}
-
-task installDist {
-    dependsOn generateTypeScript
-}
+build.dependsOn generateTypeScript, npmBuild

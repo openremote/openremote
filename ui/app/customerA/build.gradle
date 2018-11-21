@@ -1,35 +1,15 @@
-
-task serve(type: NpmTask) {
-    dependsOn npmInstall
-    args = ['run-script', 'serve']
-}
-
-task serveProduction(type: NpmTask) {
-    dependsOn npmInstall
-    args = ['run-script', 'serveProduction']
-}
-
-task build(type: NpmTask) {
-    onlyIf {
-        // Only execute if we're not building from a custom project
-        return !isCustomProject()
-    }
-    dependsOn npmInstall
-    args = ['run-script', 'build']
+task build {
+    dependsOn npmBuild
 }
 
 task installDist(type: Copy) {
-    onlyIf {
-        // Only execute if we're not building from a custom project
-        return !isCustomProject()
-    }
-    //dependsOn build
+    dependsOn build
     from project.buildDir
-    into "${project(':deployment').projectDir}/manager/consoles/${projectDir.name}"
+    into "${project(':deployment').projectDir}/manager/app/${projectDir.name}"
 }
 
 task clean() {
     doLast {
-        delete "${project(':deployment').projectDir}/manager/consoles/${projectDir.name}"
+        delete "${project(':deployment').projectDir}/manager/app/${projectDir.name}"
     }
 }

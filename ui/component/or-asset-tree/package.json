@@ -2,8 +2,14 @@
   "name": "@openremote/or-asset-tree",
   "version": "1.0.0",
   "description": "Displays assets in a tree",
-  "main": "dist/or-asset-tree.js",
-  "types": "or-asset-tree.ts",
+  "main": "build/or-asset-tree.js",
+  "types": "src/or-asset-tree.ts",
+  "scripts": {
+    "build": "npx tsc",
+    "test": "echo \"No tests\" && exit 0"
+  },
+  "author": "OpenRemote",
+  "license": "AGPL-3.0-or-later",
   "dependencies": {
     "@polymer/polymer": "^3.0.0",
     "@openremote/rest": "^1.0.0"

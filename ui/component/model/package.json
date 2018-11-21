@@ -3,7 +3,10 @@
   "version": "1.0.0",
   "description": "OpenRemote 3.x Model Types",
   "types": "dist/model.d.ts",
-  "scripts": {},
+  "scripts": {
+    "build": "exit 0",
+    "test": "echo \"No tests\" && exit 0"
+  },
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
   "dependencies": {},

@@ -5,9 +5,8 @@
   "main": "dist/rest.js",
   "types": "src/rest.ts",
   "scripts": {
-    "clean": "npx shx rm -rf dist",
     "build": "npx tsc",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"No tests\" && exit 0"
   },
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
@@ -17,7 +16,6 @@
     "axios": "^0.18.0"
   },
   "devDependencies": {
-    "shx": "^0.3.2",
     "typescript": "^3.1.6"
   }
 }

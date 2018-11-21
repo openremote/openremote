@@ -46,12 +46,4 @@ generateTypeScript {
     outputKind = "global"
 }
 
-//task clean {
-//    doLast {
-//        delete "build"
-//    }
-//}
-
-task installDist {
-    dependsOn generateTypeScript
-}
+build.dependsOn generateTypeScript

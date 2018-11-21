@@ -1,0 +1,23 @@
+//buildscript {
+//
+//    def buildTasks = getTasksByName("build", true)
+//    def compBuildTasks = buildTasks.findAll {it.path.contains(":ui:component")}
+//    def appBuildTasks = buildTasks.findAll {it.path.contains(":ui:app")}
+//    appBuildTasks.each {a ->
+//        compBuildTasks.each {c ->
+//            a.dependsOn(c)
+//        }
+//    }
+//}
+
+task build {
+    dependsOn yarnInstall
+    // Build components before anything else
+    dependsOn getTasksByName("build", true).findAll {it.path.contains(":ui:component")}
+}
+
+task clean() {
+    doLast {
+        delete "${project(':deployment').projectDir}/manager/app"
+    }
+}

@@ -197,7 +197,7 @@ export class Manager {
         }
         switch (this._config.auth) {
             case Auth.BASIC:
-                if (options.credentials) {
+                if (options && options.credentials) {
                     this._config.credentials = Object.assign({}, options.credentials);
                 }
                 let username = this._config.credentials ? this._config.credentials.username : null;
@@ -219,7 +219,6 @@ export class Manager {
                 break;
             case Auth.NONE:
                 break;
-
         }
     }
 
