@@ -41,6 +41,7 @@ import org.openremote.container.web.WebService;
 import org.openremote.manager.asset.console.ConsoleResourceImpl;
 import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.security.ManagerIdentityService;
+import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.Constants;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.asset.*;
@@ -124,7 +125,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                                                              ClientRole.READ_ASSETS)
                                                     );
 
-        container.getService(WebService.class).getApiSingletons().add(
+        container.getService(ManagerWebService.class).getApiSingletons().add(
             new AssetResourceImpl(
                 container.getService(TimerService.class),
                 identityService,
@@ -133,7 +134,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             )
                                                                      );
 
-        container.getService(WebService.class).getApiSingletons().add(
+        container.getService(ManagerWebService.class).getApiSingletons().add(
             new ConsoleResourceImpl(container.getService(TimerService.class),
                                     identityService,
                                     this)

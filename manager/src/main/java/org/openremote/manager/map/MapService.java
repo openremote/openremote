@@ -21,7 +21,6 @@ package org.openremote.manager.map;
 
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
-import org.openremote.container.web.WebService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.value.ArrayValue;
@@ -41,6 +40,7 @@ import java.util.Map;
 import java.util.logging.Logger;
 
 import static org.openremote.container.util.MapAccess.getString;
+import static org.openremote.manager.web.ManagerWebService.API_PATH;
 
 public class MapService implements ContainerService {
 
@@ -73,7 +73,7 @@ public class MapService implements ContainerService {
             );
         }
 
-        container.getService(WebService.class).getApiSingletons().add(
+        container.getService(ManagerWebService.class).getApiSingletons().add(
             new MapResourceImpl(this, container.getService(ManagerIdentityService.class))
         );
     }
@@ -119,14 +119,14 @@ public class MapService implements ContainerService {
                 );
             String spriteUri =
                 baseUriBuilder.clone()
-                    .replacePath(ManagerWebService.MANAGER_PATH)
+                    .replacePath(ManagerWebService.STATIC_PATH)
                     .path(spritePath)
                     .build().toString();
             style.put("sprite", spriteUri);
         }
 
         String glyphsUri = baseUriBuilder.clone()
-            .replacePath(ManagerWebService.MANAGER_PATH)
+            .replacePath(ManagerWebService.STATIC_PATH)
             .path("/fonts/")
             .build().toString() + "{fontstack}/{range}.pbf";
         style.put("glyphs", glyphsUri);
@@ -140,7 +140,7 @@ public class MapService implements ContainerService {
         vectorTiles.put("type", "vector");
 
         ArrayValue tilesArray = Values.createArray();
-        String tileUrl = baseUriBuilder.clone().replacePath(realm).path("map/tile").build().toString() + "/{z}/{x}/{y}";
+        String tileUrl = baseUriBuilder.clone().replacePath(API_PATH).path(realm).path("map/tile").build().toString() + "/{z}/{x}/{y}";
         tilesArray.set(0, tileUrl);
         vectorTiles.put("tiles", tilesArray);
 

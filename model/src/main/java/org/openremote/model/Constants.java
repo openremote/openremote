@@ -51,4 +51,5 @@ public interface Constants {
     boolean SETUP_EMAIL_TLS_DEFAULT = true;
     String SETUP_EMAIL_FROM = "SETUP_EMAIL_FROM";
     String SETUP_EMAIL_FROM_DEFAULT = "admin@openremote.io";
+    String REQUEST_HEADER_REALM = "Auth-Realm";
 }

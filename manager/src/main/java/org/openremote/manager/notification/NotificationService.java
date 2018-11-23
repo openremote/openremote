@@ -33,6 +33,7 @@ import org.openremote.container.timer.TimerService;
 import org.openremote.container.web.WebService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.security.ManagerIdentityService;
+import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.Constants;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.notification.Notification;
@@ -130,7 +131,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
             handler.init(container);
         }
 
-        container.getService(WebService.class).getApiSingletons().add(
+        container.getService(ManagerWebService.class).getApiSingletons().add(
                 new NotificationResourceImpl(this,
                         container.getService(MessageBrokerService.class),
                         container.getService(AssetStorageService.class),

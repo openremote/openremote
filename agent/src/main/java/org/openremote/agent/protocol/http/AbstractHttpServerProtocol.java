@@ -57,7 +57,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
-import static org.openremote.container.web.WebService.JSAPI_PATH;
+import static org.openremote.container.web.WebService.pathStartsWithHandler;
 import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
 
 /**
@@ -115,7 +115,7 @@ public abstract class AbstractHttpServerProtocol extends AbstractProtocol {
      */
     public static final Pattern PATH_REGEX = Pattern.compile("^[\\w/_]+$", Pattern.CASE_INSENSITIVE);
 
-
+    public static final String JSAPI_PATH = "/jsapi";
     public static final String DEFAULT_ALLOWED_METHODS = "OPTIONS, GET, POST, DELETE, PUT, PATCH";
     public static final String DEFAULT_DEPLOYMENT_NAME_FORMAT = "HttpServer %1$s Deployment %2$d";
     private static final Logger LOG = Logger.getLogger(AbstractHttpServerProtocol.class.getName());
@@ -126,7 +126,7 @@ public abstract class AbstractHttpServerProtocol extends AbstractProtocol {
     protected static AlreadyGzippedWriterInterceptor alreadtGzippedWriterInterceptor;
     protected static ClientErrorExceptionHandler clientErrorExceptionHandler;
     protected static WebServiceExceptions.ServletUndertowExceptionHandler undertowExceptionHandler;
-    protected static final Map<AttributeRef, List<Pair<DeploymentInfo, HttpHandler>>> deployments = new HashMap<>();
+    protected static final Map<AttributeRef, List<Pair<DeploymentInfo, WebService.RequestHandler>>> deployments = new HashMap<>();
     protected int deploymentCounter = 0;
     protected Container container;
     protected boolean devMode;
@@ -382,23 +382,24 @@ public abstract class AbstractHttpServerProtocol extends AbstractProtocol {
 
         try {
             httpHandler = manager.start();
+            WebService.RequestHandler requestHandler = pathStartsWithHandler(deploymentInfo.getDeploymentName(), deploymentInfo.getContextPath(), httpHandler);
+            List<Pair<DeploymentInfo, WebService.RequestHandler>> deploymentList = deployments.getOrDefault(protocolConfiguration.getReferenceOrThrow(), new ArrayList<>());
 
-            List<Pair<DeploymentInfo, HttpHandler>> deploymentList = deployments.getOrDefault(protocolConfiguration.getReferenceOrThrow(), new ArrayList<>());
-            deploymentList.add(new Pair<>(deploymentInfo, httpHandler));
+            deploymentList.add(new Pair<>(deploymentInfo, requestHandler));
             deployments.put(protocolConfiguration.getReferenceOrThrow(), deploymentList);
 
             LOG.info("Registering HTTP Server Protocol request handler '"
                 + this.getClass().getSimpleName()
                 + "' for request path: "
                 + deploymentInfo.getContextPath());
-            webService.getRequestPathHandler().addPrefixPath(deploymentInfo.getContextPath(), httpHandler);
+            webService.getRequestHandlers().add(requestHandler);
         } catch (ServletException e) {
             LOG.severe("Failed to deploy deployment: " + deploymentInfo.getDeploymentName());
         }
     }
 
     protected void undeploy(AssetAttribute protocolConfiguration) {
-        for (Pair<DeploymentInfo, HttpHandler> deploymentInfoHttpHandlerPair : deployments.get(protocolConfiguration.getReferenceOrThrow())) {
+        for (Pair<DeploymentInfo, WebService.RequestHandler> deploymentInfoHttpHandlerPair : deployments.get(protocolConfiguration.getReferenceOrThrow())) {
             if (deploymentInfoHttpHandlerPair == null) {
                 LOG.info("Deployment doesn't exist for protocol configuration: " + protocolConfiguration);
                 return;
@@ -411,7 +412,7 @@ public abstract class AbstractHttpServerProtocol extends AbstractProtocol {
                     + this.getClass().getSimpleName()
                     + "' for request path: "
                     + deploymentInfo.getContextPath());
-                webService.getRequestPathHandler().removePrefixPath(deploymentInfo.getContextPath());
+                webService.getRequestHandlers().remove(deploymentInfoHttpHandlerPair.value);
                 DeploymentManager manager = Servlets.defaultContainer().getDeployment(deploymentInfo.getDeploymentName());
                 manager.stop();
                 manager.undeploy();

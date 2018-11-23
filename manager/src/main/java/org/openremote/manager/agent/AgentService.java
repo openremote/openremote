@@ -35,6 +35,7 @@ import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.asset.AssetUpdateProcessor;
 import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.security.ManagerIdentityService;
+import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetMeta;
@@ -115,7 +116,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
                     ? ((TenantFilter) subscription.getFilter())
                     : null, ClientRole.READ_ASSETS));
 
-        container.getService(WebService.class).getApiSingletons().add(
+        container.getService(ManagerWebService.class).getApiSingletons().add(
             new AgentResourceImpl(
                 container.getService(TimerService.class),
                 container.getService(ManagerIdentityService.class),

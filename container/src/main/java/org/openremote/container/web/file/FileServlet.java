@@ -29,7 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
-import static org.openremote.container.web.WebService.REQUEST_HEADER_REALM;
+import static org.openremote.model.Constants.REQUEST_HEADER_REALM;
 
 public class FileServlet extends AbstractFileServlet {
 

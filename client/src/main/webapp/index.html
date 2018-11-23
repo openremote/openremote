@@ -7,7 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
     <link rel="icon" type="image/png" href="/static/img/favicon.png"/>
 
-    <script src="/static/bower_components/webcomponentsjs/webcomponents-lite.js"></script>
+    <script src="/static/node_modules/@webcomponents/webcomponentsjs/webcomponents-lite.js"></script>
 
     <link rel="import" href="/static/src/or-app/or-app.html">
     <link rel="import" href="/static/src/manager/or-manager-console-apps/or-manager-console-apps-view.html">
@@ -22,7 +22,7 @@
                 app.load.css("/static/3rdparty/mapbox-gl-js/0.42.2/mapbox-gl.css"),
                 app.load.js("/static/3rdparty/mapbox-gl-js/0.42.2/mapbox-gl.js"),
 
-                app.load.js("/static/bower_components/chart.js/dist/Chart.js"),
+                app.load.js("/static/node_modules/chart.js/dist/Chart.js"),
 
                 app.load.js("/static/3rdparty/sprintf/1.0.3/sprintf.min.js")
             ]).then(() => {

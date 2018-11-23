@@ -2,26 +2,29 @@
   "name": "manager",
   "version": "3.0.0",
   "homepage": "http://openremote.com/",
-  "authors": [
-    "OpenRemote Inc. <support@openremote.io>"
-  ],
+  "author": "OpenRemote",
   "description": "OR Manager",
   "main": "index.html",
-  "license": "APGLv3",
+  "license": "AGPL-3.0-or-later",
   "ignore": [
     "**/.*",
-    "node_modules",
-    "bower_components",
     "test",
     "tests"
   ],
   "dependencies": {
-    "polymer": "Polymer/polymer#^2.5.0",
-    "iron-flex-layout": "^2.0.3",
-    "app-localize-behavior": "PolymerElements/app-localize-behavior#^2.0.1",
-    "app-route": "PolymerElements/app-route#^2.0.3",
-    "moment": "moment#^2.20.1",
-    "intl": "intl#^1.2.5",
+    "@polymer/polymer": "^2.6.1",
+    "@webcomponents/webcomponentsjs": "^1.1.0",
+    "@polymer/iron-flex-layout": "^1.3.1-pre.3",
+    "@polymer/app-localize-behavior": "^0.10.1-pre.3",
+    "@polymer/app-route": "^0.9.3-pre.3",
+    "@webcomponents/shadycss": "^1.1.1",
+    "font-awesome": "^4.7.0",
+    "moment": "^2.20.1",
+    "intl": "^1.2.5",
     "chart.js": "^2.7.0"
+  },
+  "resolutions": {
+    "@polymer/polymer": "^2.6.1",
+    "@polymer/promise-polyfill": "^1.0.1-pre.3"
   }
 }

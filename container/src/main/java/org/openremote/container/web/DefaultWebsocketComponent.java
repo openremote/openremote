@@ -51,6 +51,7 @@ import java.util.logging.Logger;
 
 import static javax.ws.rs.core.Response.Status.FORBIDDEN;
 import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
+import static org.openremote.container.web.WebService.pathStartsWithHandler;
 
 public class DefaultWebsocketComponent extends WebsocketComponent {
 
@@ -64,6 +65,7 @@ public class DefaultWebsocketComponent extends WebsocketComponent {
     final protected WebService webService;
     final protected String allowedOrigin;
     protected DeploymentInfo deploymentInfo;
+    protected WebService.RequestHandler websocketHttpHandler;
 
     public DefaultWebsocketComponent(IdentityService identityService, WebService webService, String allowedOrigin) {
         this.identityService = identityService;
@@ -137,8 +139,9 @@ public class DefaultWebsocketComponent extends WebsocketComponent {
         boolean directBuffers = Boolean.getBoolean("io.undertow.websockets.direct-buffers");
         webSocketDeploymentInfo.setBuffers(new DefaultByteBufferPool(directBuffers, 1024, 100, 12));
 
+        String deploymentName = "WebSocket Deployment";
         deploymentInfo = new DeploymentInfo()
-            .setDeploymentName("WebSocket Deployment")
+            .setDeploymentName(deploymentName)
             .setContextPath(MessageBrokerSetupService.WEBSOCKET_PATH)
             .addServletContextAttribute(WebSocketDeploymentInfo.ATTRIBUTE_NAME, webSocketDeploymentInfo)
             .setClassLoader(WebsocketComponent.class.getClassLoader());
@@ -152,8 +155,10 @@ public class DefaultWebsocketComponent extends WebsocketComponent {
         deploymentInfo.addSecurityConstraints(constraint);
 
         HttpHandler handler = webService.addServletDeployment(identityService, deploymentInfo, true);
+        websocketHttpHandler = pathStartsWithHandler(deploymentName, MessageBrokerSetupService.WEBSOCKET_PATH, handler);
 
-        webService.getPrefixRoutes().put(MessageBrokerSetupService.WEBSOCKET_PATH, handler);
+        // Give web socket handler higher priority than any other handlers already added
+        webService.getRequestHandlers().add(0, websocketHttpHandler);
     }
 
     @Override
@@ -162,7 +167,8 @@ public class DefaultWebsocketComponent extends WebsocketComponent {
             webService.removeServletDeployment(deploymentInfo);
             deploymentInfo = null;
         }
-        webService.getPrefixRoutes().remove(MessageBrokerSetupService.WEBSOCKET_PATH);
+        webService.getRequestHandlers().remove(websocketHttpHandler);
+        websocketHttpHandler = null;
     }
 
     /* TODO: Security - fix/use this! */

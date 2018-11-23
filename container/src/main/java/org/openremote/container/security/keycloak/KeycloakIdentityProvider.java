@@ -63,6 +63,8 @@ import static javax.ws.rs.core.Response.Status.Family.SUCCESSFUL;
 import static org.openremote.container.util.MapAccess.getInteger;
 import static org.openremote.container.util.MapAccess.getString;
 import static org.openremote.container.web.WebClient.getTarget;
+import static org.openremote.container.web.WebService.pathStartsWithHandler;
+import static org.openremote.model.Constants.REQUEST_HEADER_REALM;
 
 public abstract class KeycloakIdentityProvider implements IdentityProvider {
 
@@ -164,7 +166,7 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
 
         keycloakConfigResolver = request -> {
             // The realm we authenticate against must be available as a request header
-            String realm = request.getHeader(WebService.REQUEST_HEADER_REALM);
+            String realm = request.getHeader(REQUEST_HEADER_REALM);
             if (realm == null || realm.length() == 0) {
                 LOG.fine("No realm in request, no authentication will be attempted: " + request.getURI());
                 return notAuthenticatedKeycloakDeployment;
@@ -365,8 +367,12 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
     protected void enableAuthProxy(WebService webService) {
         if (authProxyHandler == null)
             throw new IllegalStateException("Initialize this service first");
+
         LOG.info("Enabling auth reverse proxy (passing requests through to Keycloak) on web context: /" + KeycloakResource.KEYCLOAK_CONTEXT_PATH);
-        webService.getPrefixRoutes().put("/" + KeycloakResource.KEYCLOAK_CONTEXT_PATH, authProxyHandler);
+        webService.getRequestHandlers().add(0, pathStartsWithHandler(
+                "Keycloak auth proxy",
+                "/" + KeycloakResource.KEYCLOAK_CONTEXT_PATH,
+                authProxyHandler));
     }
 
     protected ClientRepresentation createClientApplication(String realm, String clientId, String appName, boolean devMode) {

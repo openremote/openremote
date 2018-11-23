@@ -22,6 +22,7 @@ package org.openremote.manager.system;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.web.WebService;
+import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.system.HealthStatusProvider;
 import org.openremote.model.system.StatusResource;
 
@@ -47,7 +48,7 @@ public class HealthStatusService implements ContainerService {
             }
         }
 
-        container.getService(WebService.class).getApiSingletons().add(
+        container.getService(ManagerWebService.class).getApiSingletons().add(
             new StatusResourceImpl(healthStatusProviderList)
         );
     }

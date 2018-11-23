@@ -22,7 +22,6 @@ package org.openremote.manager.apps;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.timer.TimerService;
-import org.openremote.container.web.WebService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.apps.ConsoleApp;
@@ -50,7 +49,7 @@ public class ConsoleAppService implements ContainerService {
         this.managerWebService = container.getService(ManagerWebService.class);
         this.identityService = container.getService(ManagerIdentityService.class);
 
-        container.getService(WebService.class).getApiSingletons().add(
+        container.getService(ManagerWebService.class).getApiSingletons().add(
             new ConsoleAppResourceImpl(this)
         );
     }
@@ -65,11 +64,11 @@ public class ConsoleAppService implements ContainerService {
 
     public ConsoleApp[] getInstalled() throws Exception {
         List<ConsoleApp> result = new ArrayList<>();
-        Files.list(managerWebService.getConsolesDocRoot()).forEach(path -> {
-            String directoryName = path.getFileName().toString();
+        Files.list(managerWebService.getAppDocRoot()).filter(Files::isDirectory).forEach(dir -> {
+            String directoryName = dir.getFileName().toString();
             Tenant tenant = identityService.getIdentityProvider().getTenantForRealm(directoryName);
             if (tenant == null) {
-                LOG.fine("No tenant exists for installed console app: " + path.toAbsolutePath());
+                LOG.fine("No tenant exists for installed console app: " + dir.toAbsolutePath());
                 return;
             }
             if (tenant.isActive(timerService.getCurrentTimeMillis()) && tenant.getDisplayName() != null) {

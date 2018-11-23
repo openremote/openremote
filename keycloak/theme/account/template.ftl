@@ -16,7 +16,7 @@
 
     <link rel="icon" type="image/png" href="/static/img/favicon.png"/>
 
-    <script src="/static/bower_components/webcomponentsjs/webcomponents-lite.js"></script>
+    <script src="/static/node_modules/@webcomponents/webcomponentsjs/webcomponents-lite.js"></script>
 
     <link rel="import" href="/static/src/or-app/or-app.html">
 

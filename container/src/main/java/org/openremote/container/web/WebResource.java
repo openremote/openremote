@@ -33,6 +33,7 @@ import java.security.Principal;
 
 import static javax.ws.rs.core.Response.Status.FORBIDDEN;
 import static javax.ws.rs.core.Response.Status.INTERNAL_SERVER_ERROR;
+import static org.openremote.model.Constants.REQUEST_HEADER_REALM;
 
 public class WebResource implements AuthContext {
 
@@ -67,7 +68,7 @@ public class WebResource implements AuthContext {
     }
 
     public String getRequestRealm() {
-        return request.getHeader(WebService.REQUEST_HEADER_REALM);
+        return request.getHeader(REQUEST_HEADER_REALM);
     }
 
     public boolean isAuthenticated() {
