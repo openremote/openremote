@@ -4,6 +4,8 @@
 <dom-module id="or-app-security">
 
     <template>
+        <iron-query-params id="queryParams"></iron-query-params>
+
         <style include="or-style">
             :host {
                 /* Hide basic auth form by default */
@@ -184,14 +186,15 @@
                 super.ready();
 
                 if (this.login && !this.realm) {
-                    // TODO: Need a realm picker but for now hardcode to master
-                    // if (!window.location.pathname || window.location.pathname.length <= 1) {
-                    //     this.set("error", "No tenant realm configured and URL doesn't have any path elements");
-                    //     return;
-                    // }
-                    // let realm = window.location.pathname.split('/')[1];
-                    // console.log("No tenant realm configured, using first URL path segment: " + realm);
-                    this.set("realm", "master");
+                    // TODO: Need a realm picker but for now just use query param
+                    this.$.queryParams.paramsString = window.location.search.slice(1);
+                    let queryParams = this.$.queryParams.paramsObject;
+
+                    if (queryParams.realm) {
+                        this.set("realm", queryParams.realm);
+                    } else {
+                        this.set("realm", "master");
+                    }
                 }
             }
 
