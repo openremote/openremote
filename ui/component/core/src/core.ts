@@ -172,7 +172,7 @@ export class Manager {
         oReq.addEventListener("error", () => {
           reject(new Error("Failed to contact the manager"));
         });
-        oReq.open("GET", this._config.managerUrl + "/master/info");
+        oReq.open("GET", this._config.managerUrl + "/api/master/info");
         oReq.send();
       });
       this._managerVersion = json && json.version ? json.version : "";

@@ -10,7 +10,7 @@ export class RestApi {
 
   protected static getBaseUrl(): string {
     let baseUrl = openremote.config.managerUrl;
-    baseUrl += "/" + openremote.config.realm + "/";
+    baseUrl += "/api/" + openremote.config.realm + "/";
     return baseUrl;
   }
 
