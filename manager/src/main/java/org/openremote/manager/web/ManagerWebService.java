@@ -37,6 +37,7 @@ import org.openremote.container.web.jsapi.JSAPIServlet;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
@@ -128,14 +129,16 @@ public class ManagerWebService extends WebService {
         appDocRoot = Paths.get(getString(container.getConfig(), APP_DOCROOT, APP_DOCROOT_DEFAULT));
         uiDocRoot = Paths.get(getString(container.getConfig(), UI_DOCROOT, UI_DOCROOT_DEFAULT));
         HttpHandler uiFileHandler = createFileHandler(devMode, identityService, uiDocRoot, null);
-        HttpHandler appBaseFileHandler = createFileHandler(devMode, identityService, appDocRoot, null);
+        HttpHandler appBaseFileHandler = Files.isDirectory(appDocRoot) ? createFileHandler(devMode, identityService, appDocRoot, null) : null;
 
         // Default app file handler to use index.html
         HttpHandler appFileHandler = exchange -> {
             if (exchange.getRelativePath().isEmpty() || "/".equals(exchange.getRelativePath())) {
                 exchange.setRelativePath("/index.html");
             }
-            appBaseFileHandler.handleRequest(exchange);
+            if (appBaseFileHandler != null) {
+                appBaseFileHandler.handleRequest(exchange);
+            }
         };
 
         // TODO: Remove this once GWT client is replaced
