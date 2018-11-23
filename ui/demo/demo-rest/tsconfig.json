@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "outDir": "./dist/",
-    "noImplicitAny": true,
+    "strict": true,
     "module": "es6",
     "target": "es2015",
     "sourceMap": true,

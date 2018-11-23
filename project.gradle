@@ -63,6 +63,10 @@ task npmInstall(type: Exec){
     commandLine npmCommand("yarn"), "install"
     standardOutput = new ByteArrayOutputStream()
 }
+task npmClean(type: Exec){
+    commandLine npmCommand("npm"), "run-script", "clean"
+    standardOutput = new ByteArrayOutputStream()
+}
 task npmBuild(type: Exec){
     commandLine npmCommand("npm"), "run-script", "build"
     standardOutput = new ByteArrayOutputStream()

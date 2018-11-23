@@ -1,0 +1,11 @@
+{
+  "defaultSeverity": "error",
+  "extends": "tslint:recommended",
+  "rules": {
+    "interface-name" : [true, "never-prefix"],
+    "variable-name": [false],
+    "trailing-comma": [false],
+    "no-trailing-whitespace": [false],
+    "no-console": [false]
+  }
+}

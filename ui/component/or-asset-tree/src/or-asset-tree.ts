@@ -1,6 +1,5 @@
-import {html, PolymerElement} from '@polymer/polymer/polymer-element.js';
 import openremote, {Auth} from "@openremote/core";
-import rest from "@openremote/rest";
+import {html, PolymerElement} from "@polymer/polymer";
 
 /**
  * `or-asset-tree`
@@ -21,6 +20,7 @@ class OrAssetTree extends PolymerElement {
       <h2>Hello [[prop1]]!</h2>
     `;
   }
+
   static get properties() {
     return {
       prop1: {
@@ -31,12 +31,12 @@ class OrAssetTree extends PolymerElement {
   }
 }
 
-window.customElements.define('or-asset-tree', OrAssetTree);
+window.customElements.define("or-asset-tree", OrAssetTree);
 
 openremote.init({
-    managerUrl: "http://localhost:8080",
-    keycloakUrl: "http://localhost:8080/auth",
-    auth: Auth.KEYCLOAK,
-    autoLogin: true,
-    realm: "customerA"
+  auth: Auth.KEYCLOAK,
+  autoLogin: true,
+  keycloakUrl: "http://localhost:8080/auth",
+  managerUrl: "http://localhost:8080",
+  realm: "customerA"
 });
