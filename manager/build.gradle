@@ -35,13 +35,10 @@ distributions {
             from(project.projectDir) {
                 include("*Dockerfile")
             }
-            from(resolveTask(":client:installDist")) {
-                into "client"
-            }
             // Populate the /deployment directory in the Manager image
-            from(resolveProject(":deployment:manager").projectDir) {
+            from("${resolveProject(":deployment").projectDir}/manager") {
                 into "deployment"
-                exclude "**/build.gradle", "**/bower.json", "**/openremote.log*"
+                exclude "**/build.gradle", "**/package.json", "**/openremote.log*", "**/yarn.lock"
             }
         }
     }

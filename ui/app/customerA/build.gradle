@@ -1,15 +1,3 @@
-task build {
-    dependsOn npmBuild
-}
-
-task installDist(type: Copy) {
-    dependsOn build
-    from project.buildDir
-    into "${project(':deployment').projectDir}/manager/app/${projectDir.name}"
-}
-
-task clean() {
-    doLast {
-        delete "${project(':deployment').projectDir}/manager/app/${projectDir.name}"
-    }
+task installDist {
+    dependsOn yarnInstall
 }

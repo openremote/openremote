@@ -168,9 +168,8 @@ services:
       # NOTIFICATION_FIREBASE_API_KEY = '...'
       # FIREBASE_CONFIG_FILE = '/deployment/fcm.json'
 
-      # Custom location of the static console applications, each subdirectory must
-      # have the name of a realm to which the console app belongs.
-      # CONSOLES_DOCROOT: '/deployment/consoles'
+      # Custom location of the static applications.
+      # APP_DOCROOT: '/deployment/app'
 
       # Disable HTTP redirects when a console application requests libraries which
       # are delivered and used on the platform. This is necessary if your console application
@@ -218,10 +217,6 @@ services:
       # expires, the native console app can no longer contact the service in the background (e.g. when
       # processing push notifications) and will therefore fail silently until the user logs in again.
       # IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES: 20160
-
-      # Location of the static manager (UI and API) resources, you don't need to override this
-      # unless you want to deploy a modified version of the Manager UI and JavaScript components.
-      # MANAGER_DOCROOT: 'client/src/main/webapp'
 
       # Configure the default max age for data points stored in the database (individual attributes can use a custom
       # value by using the DATA_POINTS_MAX_AGE_DAYS AssetMeta item).

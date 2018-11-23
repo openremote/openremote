@@ -35,3 +35,4 @@ manager/.factorypath
 deployment/proxy/
 deployment/postgresql/
 deployment/manager/openremote.log*
+deployment/manager/app/

@@ -543,13 +543,13 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                     componentRepresentation.getName()).get(0);
             response = syncUsers(clientRequestInfo, componentRepresentation.getId(), realm, "triggerFullSync");
 
-            if (!response.getStatusInfo().equals(Response.Status.OK)) {
-                throw new WebApplicationException(
-                    Response.status(response.getStatus())
-                        .entity(response.getEntity())
-                        .build()
-                );
-            }
+//            if (!response.getStatusInfo().equals(Response.Status.OK)) {
+//                throw new WebApplicationException(
+//                    Response.status(response.getStatus())
+//                        .entity(response.getEntity())
+//                        .build()
+//                );
+//            }
         }
     }
 

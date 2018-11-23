@@ -1,30 +1,16 @@
 {
-  "name": "@openremote/app-customerA",
-  "version": "1.0.0",
-  "description": "Built in demo console application",
-  "private": true,
-  "scripts": {
-    "build": "echo \"No build\" && exit 0",
-    "test": "echo \"No tests\" && exit 0"
-  },
+  "name": "smarthome-example",
+  "version": "3.0.0",
+  "homepage": "http://openremote.com/",
+  "description": "OpenRemote SmartHome Example App",
+  "main": "index.html",
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
+  "ignore": [
+    "**/.*",
+    "test",
+    "tests"
+  ],
   "dependencies": {
-    "@openremote/core": "^1.0.0",
-    "lit-html": "^0.12.0"
-  },
-  "devDependencies": {
-    "@babel/core": "^7.1.2",
-    "@babel/preset-env": "^7.1.0",
-    "awesome-typescript-loader": "^5.2.1",
-    "babel-loader": "^8.0.4",
-    "copy-webpack-plugin": "^4.6.0",
-    "file-loader": "^2.0.0",
-    "html-webpack-plugin": "^3.2.0",
-    "raw-loader": "^0.5.1",
-    "typescript": "^3.1.6",
-    "webpack": "^4.24.0",
-    "webpack-cli": "^3.1.2",
-    "webpack-dev-server": "^3.1.10"
   }
 }
