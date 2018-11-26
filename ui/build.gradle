@@ -15,6 +15,10 @@ task build {
     dependsOn getTasksByName("build", true).findAll {it.path.contains(":ui:component")}
 }
 
+task installDist {
+    dependsOn build
+}
+
 task clean() {
     doLast {
         delete "${project(':deployment').projectDir}/manager/app"
