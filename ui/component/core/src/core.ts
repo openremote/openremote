@@ -81,7 +81,7 @@ export class Manager {
 
     if (!normalisedConfig.managerUrl || normalisedConfig.managerUrl === "") {
       // Assume manager is running on same host as this code
-      normalisedConfig.managerUrl = "/";
+      normalisedConfig.managerUrl = window.location.protocol + "//" + window.location.hostname + window.location.port;
     } else {
       // Normalise by stripping any trailing slashes
       normalisedConfig.managerUrl = normalisedConfig.managerUrl.replace(/\/+$/, "");

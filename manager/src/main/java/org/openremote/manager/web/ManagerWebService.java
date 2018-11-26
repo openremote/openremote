@@ -85,10 +85,10 @@ public class ManagerWebService extends WebService {
         String defaultApp = getString(container.getConfig(), APP_DEFAULT, APP_DEFAULT_DEFAULT);
 
         ResteasyDeployment resteasyDeployment = createResteasyDeployment(container, getApiClasses(), getApiSingletons(), true);
-        // TODO: Remove this once all apps updated to new structure
         // Serve REST API
         HttpHandler apiHandler = createApiHandler(identityService, resteasyDeployment);
         // Serve JavaScript API
+        // TODO: Remove this once all apps updated to new structure
         HttpHandler jsApiHandler = createJsApiHandler(identityService, resteasyDeployment);
 
         if (apiHandler != null) {
