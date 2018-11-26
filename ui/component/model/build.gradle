@@ -46,4 +46,10 @@ generateTypeScript {
     outputKind = "module"
 }
 
-build.dependsOn generateTypeScript
+clean {
+    doLast {
+        delete "dist"
+    }
+}
+
+build.dependsOn generateTypeScript, npmBuild

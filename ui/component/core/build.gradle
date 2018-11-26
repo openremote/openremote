@@ -1,3 +1,9 @@
+task clean() {
+    doLast {
+        delete "dist"
+    }
+}
+
 task build() {
     dependsOn npmBuild
 }
