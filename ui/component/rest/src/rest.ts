@@ -1,6 +1,6 @@
 import openremote, {Auth, OREvent} from "@openremote/core";
 import axios, {AxiosInstance} from "axios";
-import {ApiClient} from "../dist/restclient";
+import {ApiClient} from "../build/restclient";
 
 export class RestApi {
 

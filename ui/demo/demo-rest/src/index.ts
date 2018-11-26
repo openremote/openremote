@@ -1,10 +1,10 @@
 import {html, render} from "lit-html";
 import openremote, {Auth, Manager} from "@openremote/core";
 import rest from "@openremote/rest";
-import "@openremote/model";
+import {AssetQuery} from "@openremote/model";
 
-let loggedInTemplate = (openremote:Manager) => html `<span>Welcome ${openremote.username}</span> (<a href="${openremote.getLogoutUrl()}">logout</a>)`;
-let loggedOutTemplate = (openremote:Manager) => html `<span>Please <a href="${openremote.getLoginUrl()}">login</a>`;
+let loggedInTemplate = (openremote: Manager) => html`<span>Welcome ${openremote.username}</span> (<a href="${openremote.getLogoutUrl()}">logout</a>)`;
+let loggedOutTemplate = (openremote: Manager) => html`<span>Please <a href="${openremote.getLoginUrl()}">login</a>`;
 
 function renderUi() {
     if (openremote.authenticated) {
@@ -21,7 +21,7 @@ function renderUi() {
 }
 
 function queryAssets() {
-    let assetQuery  : AssetQuery = {};
+    let assetQuery: AssetQuery = {};
     rest.api.AssetResource.queryAssets(assetQuery).then(response => {
         console.log("Received: " + response.data.length + " Asset(s)");
         console.log(JSON.stringify(response.data, null, 2))

@@ -2,7 +2,7 @@
   "name": "@openremote/rest",
   "version": "1.0.0",
   "description": "OpenRemote 3.x REST API",
-  "main": "dist/rest.js",
+  "main": "dist/src/rest.js",
   "types": "src/rest.ts",
   "scripts": {
     "build": "npx tsc",

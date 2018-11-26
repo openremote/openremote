@@ -43,7 +43,7 @@ public class JaxRsClientOnlyProcessor implements cz.habarta.typescript.generator
                 if ("RequestParams".equals(simpleName)) {
                     simpleName = simpleName + "<any,any>";
                 }
-//                simpleName = "OR." + simpleName;
+                simpleName = "Model." + simpleName;
                 return new Result(new TsType.VerbatimType(simpleName));
             }
         }

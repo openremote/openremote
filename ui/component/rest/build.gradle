@@ -29,21 +29,28 @@ generateTypeScript {
             "org.openremote.model.value.BooleanValue:boolean",
             "org.openremote.model.value.Value:any"
     ]
-    outputFile = "dist/restclient.ts"
+    outputFile = "build/restclient.ts"
     outputFileType = "implementationFile"
     outputKind = "module"
     mapEnum = cz.habarta.typescript.generator.EnumMapping.asEnum
     jaxrsNamespacing = "perResource"
     customTypeProcessor = "JaxRsClientOnlyProcessor"
     importDeclarations = [
-            "import \"@openremote/model\""
+            "import * as Model from \"@openremote/model\""
     ]
+
     extensionClasses = [
             "AggregatedApiClient"
     ]
     extensions = [
             "cz.habarta.typescript.generator.ext.AxiosClientExtension"
     ]
+}
+
+clean {
+    doLast {
+        delete "dist"
+    }
 }
 
 build.dependsOn generateTypeScript, npmBuild
