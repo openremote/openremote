@@ -119,10 +119,10 @@ public class MainActivity extends Activity {
         }
 
         return getString(R.string.OR_BASE_SERVER) + getString(R.string.OR_CONSOLE_URL)
-                + "?consolePlatform=" + platform
-                + "&consoleName=" + name
-                + "&consoleVersion=" + version
-                + "&consoleProviders=" + providers;
+            + "?consolePlatform=" + platform
+            + "&consoleName=" + name
+            + "&consoleVersion=" + version
+            + "&consoleProviders=" + providers;
     }
 
     @Override
@@ -150,7 +150,7 @@ public class MainActivity extends Activity {
         try {
             String timeoutStr = getString(R.string.OR_CONSOLE_LOAD_TIMEOUT);
             webViewTimeout = Integer.parseInt(timeoutStr);
-        } catch(NumberFormatException nfe) {
+        } catch (NumberFormatException nfe) {
             System.out.println("Could not parse console load timeout value: " + nfe);
         }
 
@@ -283,7 +283,6 @@ public class MainActivity extends Activity {
         webView.setWebViewClient(new WebViewClient() {
 
 
-
             @Override
             public void onReceivedHttpError(WebView view, WebResourceRequest request, WebResourceResponse errorResponse) {
 
@@ -291,9 +290,9 @@ public class MainActivity extends Activity {
                 // server was reinstalled), we detect the failure and then don't show an error view. We clear the stored
                 // invalid token. The web app will then start a new login.
                 if (request.getUrl().getLastPathSegment() != null &&
-                        request.getUrl().getLastPathSegment().equals("token") &&
-                        request.getMethod().equals("POST") &&
-                        errorResponse.getStatusCode() == 400) {
+                    request.getUrl().getLastPathSegment().equals("token") &&
+                    request.getMethod().equals("POST") &&
+                    errorResponse.getStatusCode() == 400) {
                     webAppInterface.tokenService.clearToken();
                     return;
                 }
@@ -333,8 +332,8 @@ public class MainActivity extends Activity {
                 }
 
                 handleError(
-                        error.getErrorCode(), error.getDescription().toString(),
-                        request.getUrl().toString(), request.isForMainFrame());
+                    error.getErrorCode(), error.getDescription().toString(),
+                    request.getUrl().toString(), request.isForMainFrame());
             }
 
             @Override
@@ -342,7 +341,7 @@ public class MainActivity extends Activity {
 
                 Runnable run = new Runnable() {
                     public void run() {
-                        if(!webViewLoaded) {
+                        if (!webViewLoaded) {
                             handleError(ERROR_TIMEOUT, "Connection timed out", url, true);
                         }
                     }
@@ -378,8 +377,8 @@ public class MainActivity extends Activity {
 
                     //TODO should we always ignore image errors?
                     if (failingUrl != null && (failingUrl.endsWith("png")
-                            || failingUrl.endsWith("jpg")
-                            || failingUrl.endsWith("ico"))) {
+                        || failingUrl.endsWith("jpg")
+                        || failingUrl.endsWith("ico"))) {
                         LOG.info("Ignoring error loading image resource");
                         return;
                     }
@@ -418,7 +417,7 @@ public class MainActivity extends Activity {
                     ActivityCompat.requestPermissions((MainActivity) context, new String[]{writePermission}, WRITE_PERMISSION_FOR_DOWNLOAD);
                 } else {
                     DownloadManager.Request request = new
-                            DownloadManager.Request(Uri.parse(url));
+                        DownloadManager.Request(Uri.parse(url));
 
                     request.setMimeType(mimetype);
                     //------------------------COOKIE!!------------------------
@@ -463,28 +462,28 @@ public class MainActivity extends Activity {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
 
                 geofenceProvider.enable(MainActivity.this,
-                        String.format("%s/%s",
-                                getString(R.string.OR_BASE_SERVER),
-                                getString(R.string.OR_REALM)),
-                        consoleId,
-                        new GeofenceProvider.EnableCallback() {
-                            @Override
-                            public void accept(@NotNull Map<String, ?> responseData) {
-                                try {
-                                    final String jsonString = new ObjectMapper().writeValueAsString(responseData);
-                                    MainActivity.this.runOnUiThread(new Runnable() {
-                                        @Override
-                                        public void run() {
-                                            webView.evaluateJavascript(String.format(
-                                                    "openremote.INSTANCE.console.handleProviderResponse('%s')",
-                                                    jsonString), null);
-                                        }
-                                    });
-                                } catch (Exception e) {
-                                    e.printStackTrace();
-                                }
+                    String.format("%s/%s",
+                        getString(R.string.OR_BASE_SERVER),
+                        getString(R.string.OR_REALM)),
+                    consoleId,
+                    new GeofenceProvider.EnableCallback() {
+                        @Override
+                        public void accept(@NotNull Map<String, ?> responseData) {
+                            try {
+                                final String jsonString = new ObjectMapper().writeValueAsString(responseData);
+                                MainActivity.this.runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        webView.evaluateJavascript(String.format(
+                                            "openremote.INSTANCE.console.handleProviderResponse('%s')",
+                                            jsonString), null);
+                                    }
+                                });
+                            } catch (Exception e) {
+                                e.printStackTrace();
                             }
-                        });
+                        }
+                    });
             }
         } else {
             super.onRequestPermissionsResult(requestCode, permissions, grantResults);
@@ -561,15 +560,15 @@ public class MainActivity extends Activity {
                     if (consoleId != null) {
                         ((MainActivity) activity).consoleId = consoleId;
                         geofenceProvider.enable(MainActivity.this, String.format("%s/%s",
-                                getString(R.string.OR_BASE_SERVER),
-                                getString(R.string.OR_REALM)),
-                                consoleId, new GeofenceProvider.EnableCallback() {
-                                    @Override
-                                    public void accept(@NotNull Map<String, ?> responseData) {
-                                        //noinspection unchecked
-                                        notifyClient((Map<String, Object>) responseData);
-                                    }
-                                });
+                            getString(R.string.OR_BASE_SERVER),
+                            getString(R.string.OR_REALM)),
+                            consoleId, new GeofenceProvider.EnableCallback() {
+                                @Override
+                                public void accept(@NotNull Map<String, ?> responseData) {
+                                    //noinspection unchecked
+                                    notifyClient((Map<String, Object>) responseData);
+                                }
+                            });
                     }
                 }
             } else if (action.equalsIgnoreCase("PROVIDER_DISABLE")) {
@@ -662,7 +661,7 @@ public class MainActivity extends Activity {
         @Override
         public void onReceive(Context context, Intent intent) {
             ConnectivityManager cm
-                    = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+                = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
 
             NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
             onConnectivityChanged(activeNetwork != null && activeNetwork.isConnectedOrConnecting());
