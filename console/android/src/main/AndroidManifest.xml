@@ -30,16 +30,6 @@
 
         <meta-data android:name="google_analytics_adid_collection_enabled" android:value="false" />
 
-        <activity
-            android:name=".MainActivity"
-            android:configChanges="orientation|screenSize"
-            android:label="@string/OR_CONSOLE_NAME"
-            android:windowSoftInputMode="adjustResize">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN"/>
-                <category android:name="android.intent.category.LAUNCHER"/>
-            </intent-filter>
-        </activity>
 
         <service
             android:name="org.openremote.android.ORFirebaseMessagingService">

@@ -3,33 +3,26 @@ package org.openremote.android.service;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
-
 import android.text.TextUtils;
-import okhttp3.*;
-import okhttp3.internal.http.HttpMethod;
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
 import org.openremote.android.R;
-
-import java.io.IOException;
-import java.security.cert.CertificateException;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
-import javax.net.ssl.HostnameVerifier;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSession;
-import javax.net.ssl.SSLSocketFactory;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
-
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.jackson.JacksonConverterFactory;
 import retrofit2.converter.scalars.ScalarsConverterFactory;
+
+import javax.net.ssl.*;
+import java.io.IOException;
+import java.security.cert.CertificateException;
+import java.util.Locale;
+import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 
 public class TokenService {
@@ -50,9 +43,9 @@ public class TokenService {
         baseUrl = context.getString(R.string.OR_BASE_SERVER);
 
         Retrofit.Builder builder = new Retrofit.Builder()
-                .baseUrl(baseUrl)
-                .addConverterFactory(ScalarsConverterFactory.create())
-                .addConverterFactory(JacksonConverterFactory.create());
+            .baseUrl(baseUrl)
+            .addConverterFactory(ScalarsConverterFactory.create())
+            .addConverterFactory(JacksonConverterFactory.create());
 
         if (Boolean.parseBoolean(context.getString(R.string.SSL_IGNORE))) {
             okHttpClient = getUnsafeOkHttpClient();
@@ -145,8 +138,8 @@ public class TokenService {
         boolean useAuth = url.startsWith(baseUrl) && !TextUtils.isEmpty(refreshToken);
         final Request.Builder requestBuilder = new Request.Builder().url(url);
         RequestBody requestBody = !TextUtils.isEmpty(body)
-                ? RequestBody.create(MediaType.parse("application/json; charset=utf-8"), body)
-                : null;
+            ? RequestBody.create(MediaType.parse("application/json; charset=utf-8"), body)
+            : null;
 
         try {
             switch (httpMethod.toUpperCase(Locale.ROOT)) {
@@ -268,20 +261,20 @@ public class TokenService {
         try {
             // Create a trust manager that does not validate certificate chains
             final TrustManager[] trustAllCerts = new TrustManager[]{
-                    new X509TrustManager() {
-                        @Override
-                        public void checkClientTrusted(java.security.cert.X509Certificate[] chain, String authType) throws CertificateException {
-                        }
-
-                        @Override
-                        public void checkServerTrusted(java.security.cert.X509Certificate[] chain, String authType) throws CertificateException {
-                        }
-
-                        @Override
-                        public java.security.cert.X509Certificate[] getAcceptedIssuers() {
-                            return new java.security.cert.X509Certificate[]{};
-                        }
+                new X509TrustManager() {
+                    @Override
+                    public void checkClientTrusted(java.security.cert.X509Certificate[] chain, String authType) throws CertificateException {
                     }
+
+                    @Override
+                    public void checkServerTrusted(java.security.cert.X509Certificate[] chain, String authType) throws CertificateException {
+                    }
+
+                    @Override
+                    public java.security.cert.X509Certificate[] getAcceptedIssuers() {
+                        return new java.security.cert.X509Certificate[]{};
+                    }
+                }
             };
 
             // Install the all-trusting trust manager

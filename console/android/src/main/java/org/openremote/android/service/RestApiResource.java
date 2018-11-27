@@ -1,9 +1,6 @@
 package org.openremote.android.service;
 
 
-import java.util.List;
-
-import org.json.JSONObject;
 import retrofit2.Call;
 import retrofit2.http.*;
 

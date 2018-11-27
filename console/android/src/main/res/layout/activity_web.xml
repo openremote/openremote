@@ -15,6 +15,6 @@
         android:layout_alignParentEnd="true">
 
     </WebView>
-        <include layout="@layout/error_layout"></include>
+    <include layout="@layout/error_layout"></include>
     <include layout="@layout/error_layout"></include>
 </RelativeLayout>
