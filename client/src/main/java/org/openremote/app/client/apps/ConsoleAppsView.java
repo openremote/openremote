@@ -23,7 +23,6 @@ import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsType;
 import org.openremote.app.client.polymer.ViewComponent;
 import org.openremote.app.client.i18n.ManagerMessages;
-import org.openremote.model.apps.ConsoleApp;
 
 @JsType(isNative = true, namespace = JsPackage.GLOBAL, name = "openremote.manager.ConsoleAppsView")
 public abstract class ConsoleAppsView extends ViewComponent {
@@ -35,14 +34,14 @@ public abstract class ConsoleAppsView extends ViewComponent {
 
         ManagerMessages messages();
 
-        void onAppSelected(String realm);
+        void onAppSelected(String appName);
     }
 
     native void setPresenter(Presenter presenter);
 
-    native void setApps(ConsoleApp[] apps);
+    native void setApps(String[] apps);
 
-    native void openAppUrl(String realm, String appUrl);
+    native void openAppUrl(String appName);
 
     /* TODO Tricks
 

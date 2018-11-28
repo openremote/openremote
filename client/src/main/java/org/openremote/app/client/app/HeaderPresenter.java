@@ -150,7 +150,7 @@ public class HeaderPresenter implements HeaderView.Presenter {
 
     @Override
     public void navigateApps() {
-        placeController.goTo(new ConsoleAppsPlace(consoleAppSelection != null ? consoleAppSelection.getRealm() : null));
+        placeController.goTo(new ConsoleAppsPlace(consoleAppSelection != null ? consoleAppSelection.getAppName() : null));
     }
 
     @Override

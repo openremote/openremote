@@ -375,32 +375,9 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
                 authProxyHandler));
     }
 
-    protected ClientRepresentation createClientApplication(String realm, String clientId, String appName, boolean devMode) {
-        ClientRepresentation client = new ClientRepresentation();
-
-        client.setClientId(clientId);
-        client.setName(appName);
-        client.setPublicClient(true);
-
-        if (devMode) {
-            // We need direct access for integration tests
-            LOG.info("### Allowing direct access grants for client app '" + appName + "', this must NOT be used in production! ###");
-            client.setDirectAccessGrantsEnabled(true);
-
-            // Allow any web origin (this will add CORS headers to token requests etc.)
-            client.setWebOrigins(Collections.singletonList("*"));
-        }
-
-        List<String> redirectUris = new ArrayList<>();
-        addClientRedirectUris(realm, redirectUris);
-        client.setRedirectUris(redirectUris);
-
-        return client;
-    }
-
     /**
      * There must be _some_ valid redirect URIs for the application or authentication will not be possible.
      */
-    abstract protected void addClientRedirectUris(String realm, List<String> redirectUrls);
+    abstract protected void addClientRedirectUris(String client, List<String> redirectUrls);
 
 }

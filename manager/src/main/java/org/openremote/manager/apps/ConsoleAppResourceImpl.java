@@ -20,7 +20,6 @@
 package org.openremote.manager.apps;
 
 import org.openremote.container.web.WebResource;
-import org.openremote.model.apps.ConsoleApp;
 import org.openremote.model.apps.ConsoleAppResource;
 import org.openremote.model.http.RequestParams;
 
@@ -37,7 +36,7 @@ public class ConsoleAppResourceImpl extends WebResource implements ConsoleAppRes
     }
 
     @Override
-    public ConsoleApp[] getInstalledApps(@BeanParam RequestParams requestParams) {
+    public String[] getInstalledApps(@BeanParam RequestParams requestParams) {
         if (!isSuperUser()) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }

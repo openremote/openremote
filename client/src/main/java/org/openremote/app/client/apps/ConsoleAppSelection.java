@@ -23,20 +23,20 @@ import org.openremote.model.event.Event;
 
 public class ConsoleAppSelection extends Event {
 
-    final protected String realm;
+    final protected String appName;
 
-    public ConsoleAppSelection(String realm) {
-        this.realm = realm;
+    public ConsoleAppSelection(String appName) {
+        this.appName = appName;
     }
 
-    public String getRealm() {
-        return realm;
+    public String getAppName() {
+        return appName;
     }
 
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
-            "realmId='" + realm + '\'' +
+            "appName='" + appName + '\'' +
             '}';
     }
 }

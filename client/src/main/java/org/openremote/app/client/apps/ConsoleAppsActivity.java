@@ -23,7 +23,6 @@ import org.openremote.app.client.Environment;
 import org.openremote.app.client.i18n.ManagerMessages;
 import org.openremote.app.client.mvp.AcceptsView;
 import org.openremote.app.client.mvp.AppActivity;
-import org.openremote.model.apps.ConsoleApp;
 import org.openremote.model.apps.ConsoleAppResource;
 import org.openremote.model.event.bus.EventBus;
 import org.openremote.model.event.bus.EventRegistration;
@@ -38,17 +37,17 @@ public class ConsoleAppsActivity
     final ConsoleAppsView view;
     final Environment environment;
     final ConsoleAppResource consoleAppResource;
-    final ConsoleAppArrayMapper consoleAppArrayMapper;
+    final StringArrayMapper stringArrayMapper;
 
     @Inject
     public ConsoleAppsActivity(Environment environment,
                                ConsoleAppsView view,
                                ConsoleAppResource consoleAppResource,
-                               ConsoleAppArrayMapper consoleAppArrayMapper) {
+                               StringArrayMapper stringArrayMapper) {
         this.environment = environment;
         this.view = view;
         this.consoleAppResource = consoleAppResource;
-        this.consoleAppArrayMapper = consoleAppArrayMapper;
+        this.stringArrayMapper = stringArrayMapper;
     }
 
     @Override
@@ -62,16 +61,16 @@ public class ConsoleAppsActivity
         view.setPresenter(this);
 
         environment.getApp().getRequests().sendAndReturn(
-            consoleAppArrayMapper,
+            stringArrayMapper,
             consoleAppResource::getInstalledApps,
             200,
-            apps -> {
-                view.setApps(apps);
+            appNames -> {
+                view.setApps(appNames);
                 if (getPlace().getRealm() != null) {
-                    for (ConsoleApp app : apps) {
-                        if (app.getTenant().getRealm().equals(getPlace().getRealm())) {
-                            view.openAppUrl(app.getTenant().getRealm(), app.getUrl());
-                            environment.getEventBus().dispatch(new ConsoleAppSelection(app.getTenant().getRealm()));
+                    for (String appName : appNames) {
+                        if (appName.equals(getPlace().getRealm())) {
+                            view.openAppUrl("/" + appName);
+                            environment.getEventBus().dispatch(new ConsoleAppSelection(appName));
                             break;
                         }
                     }

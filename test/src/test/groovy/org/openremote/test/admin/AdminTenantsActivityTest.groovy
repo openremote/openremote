@@ -324,7 +324,7 @@ class AdminTenantsActivityTest extends Specification implements ManagerContainer
             assert resultEvents[0].place instanceof AdminTenantPlace
             assert resultEvents[1] instanceof GoToPlaceEvent
             assert resultEvents[1].place instanceof AdminTenantPlace
-            assert resultEvents[1].place.realm == "testrealm"
+            assert resultEvents[1].place.getAppName == "testrealm"
         }
 
         and: "The admin tenant form should be cleared"
