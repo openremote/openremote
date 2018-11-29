@@ -1,0 +1,90 @@
+html, body {
+    margin: 0;
+    padding: 0;
+    height: 100vh;
+}
+
+#outer-wrapper {
+    display: table;
+    width: 100%;
+    height: 100%;
+}
+
+#wrapper {
+    display: table-cell;
+    vertical-align: middle;
+}
+
+#header-wrapper {
+    display: inline-block;
+}
+
+#header-wrapper > div {
+    overflow: hidden;
+    display: inline-block;
+}
+
+#logo {
+    pointer-events: none;
+    margin-right: 0.3em;
+    float: left;
+}
+
+#logo svg {
+    width: 4em;
+    height: 4em;
+}
+
+#header {
+    font-weight: bold;
+    margin: 0;
+    white-space: nowrap;
+    display: inline-block;
+}
+
+#sub-header {
+    margin-top: 0.3em;
+    display: inline-block;
+}
+
+i.material-icons {
+    vertical-align: middle;
+    margin-right: 0.2em;
+}
+
+@font-face {
+    font-family: 'Material Icons';
+    font-style: normal;
+    font-weight: 400;
+    src: url(MaterialIcons-Regular.eot); /* For IE6-8 */
+    src: local('Material Icons'),
+    local('MaterialIcons-Regular'),
+    url(MaterialIcons-Regular.woff2) format('woff2'),
+    url(MaterialIcons-Regular.woff) format('woff'),
+    url(MaterialIcons-Regular.ttf) format('truetype');
+}
+
+.material-icons {
+    font-family: 'Material Icons';
+    font-weight: normal;
+    font-style: normal;
+    font-size: 24px;  /* Preferred icon size */
+    display: inline-block;
+    line-height: 1;
+    text-transform: none;
+    letter-spacing: normal;
+    word-wrap: normal;
+    white-space: nowrap;
+    direction: ltr;
+
+    /* Support for all WebKit browsers. */
+    -webkit-font-smoothing: antialiased;
+    /* Support for Safari and Chrome. */
+    text-rendering: optimizeLegibility;
+
+    /* Support for Firefox. */
+    -moz-osx-font-smoothing: grayscale;
+
+    /* Support for IE. */
+    font-feature-settings: 'liga';
+}

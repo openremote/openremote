@@ -1,84 +1,63 @@
 <#import "template.ftl" as layout>
 <@layout.mainLayout active='account'; section>
 
-<form action="${url.accountUrl}" class="flex layout vertical or-Form" method="post">
+    <h4>${msg("editAccountHtmlTitle")}</h4>
 
-    <div class="flex or-MainContent">
+    <div class="section">
+        <span class="subtitle"><span class="required">*</span> ${msg("requiredFields")}</span>
 
-        <div class="or-Headline">
-            <span class="or-Icon fa fa-user"></span>
-            <span class="or-HeadlineText">${msg("editAccountHtmlTitle")}</span>
-            <div class="or-HeadlineSub">* ${msg("requiredFields")}</div>
-        </div>
+        <form action="${url.accountUrl}" method="post">
 
-        <input type="hidden" id="stateChecker" name="stateChecker" value="${stateChecker?html}">
+            <input type="hidden" id="stateChecker" name="stateChecker" value="${stateChecker?html}">
 
-        <div class="layout horizontal center or-FormGroup ${messagesPerField.printIfExists('username','error')}">
-            <div class="or-FormLabel">
-                <label for="username">${msg("username")}</label>
-                <#if realm.editUsernameAllowed><span class="required">*</span></#if>
+            <#if !realm.registrationEmailAsUsername>
+                <div class="input-field s12 ${messagesPerField.printIfExists('username','has-error')}">
+                    <input type="text" class="validate" id="username" name="username" required
+                           <#if !realm.editUsernameAllowed>disabled="disabled"</#if> value="${(account.username!'')?html}"/>
+                    <label for="username">${msg("username")} <#if realm.editUsernameAllowed>
+                    <span class="required">*</span></#if></label>
+                </div>
+            </#if>
+
+            <div class="input-field s12">
+                <input type="text" class="validate ${messagesPerField.printIfExists('email','invalid')}" id="email"
+                       name="email" autofocus
+                       value="${(account.email!'')?html}" required/>
+                <label for="email">${msg("email")} <span class="required">*</span></label>
             </div>
 
-            <div class="or-FormField">
-                <input type="text" class="or-FormControl or-FormInputText" id="username" name="username"
-                       <#if !realm.editUsernameAllowed>disabled="disabled"</#if> value="${(account.username!'')?html}"/>
-            </div>
-        </div>
-
-        <div class="layout horizontal center or-FormGroup ${messagesPerField.printIfExists('email','error')}">
-            <div class="or-FormLabel">
-                <label for="email">${msg("email")}</label>
-                <span class="required">*</span>
+            <div class="input-field s12 ${messagesPerField.printIfExists('firstName','has-error')}">
+                <input type="text" class="validate ${messagesPerField.printIfExists('email','invalid')}" id="firstName"
+                       name="firstName"
+                       value="${(account.firstName!'')?html}" required/>
+                <label for="firstName">${msg("firstName")} <span class="required">*</span></label>
             </div>
 
-            <div class="or-FormField">
-                <input type="text" class="or-FormControl or-FormInputText" size="50" id="email" name="email" autofocus
-                       value="${(account.email!'')?html}"/>
-            </div>
-        </div>
-
-        <div class="layout horizontal center or-FormGroup ${messagesPerField.printIfExists('firstName','error')}">
-            <div class="or-FormLabel">
-                <label for="firstName">${msg("firstName")}</label> <span class="required">*</span>
+            <div class="input-field s12 ${messagesPerField.printIfExists('lastName','has-error')}">
+                <input type="text" class="validate ${messagesPerField.printIfExists('email','invalid')}" id="lastName"
+                       name="lastName"
+                       value="${(account.lastName!'')?html}" required/>
+                <label for="lastName">${msg("lastName")}<span class="required">*</span></label>
             </div>
 
-            <div class="or-FormField">
-                <input type="text" class="or-FormControl or-FormInputText" size="50" id="firstName" name="firstName"
-                       value="${(account.firstName!'')?html}"/>
-            </div>
-        </div>
-
-        <div class="layout horizontal center or-FormGroup ${messagesPerField.printIfExists('lastName','error')}">
-            <div class="or-FormLabel">
-                <label for="lastName">${msg("lastName")}</label> <span class="required">*</span>
-            </div>
-
-            <div class="or-FormField">
-                <input type="text" class="or-FormControl or-FormInputText" size="50" id="lastName" name="lastName"
-                       value="${(account.lastName!'')?html}"/>
-            </div>
-        </div>
-
-    </div>
-
-    <div class="flex-none or-MainContent">
-        <div class="layout horizontal or-FormGroup">
-            <div class="or-FormField">
-                <#if url.referrerURI??><a href="${url.referrerURI}">${msg("backToApplication")}/a></#if>
+            <div class="col s12 center-align">
                 <button type="submit"
-                        class="or-FormControl or-FormButtonPrimary or-PushButton"
-                        name="submitAction" value="Save">
-                    <span class="or-Icon fa fa-save"></span><span class="html-face">${msg("doSave")}</span>
+                        class="btn waves-effect waves-light green darken-1"
+                        name="submitAction" value="Save">${msg("doSave")}
+                    <i class="material-icons right">send</i>
                 </button>
                 <button type="submit"
-                        class="or-FormControl or-FormButton or-PushButton"
-                        name="submitAction" value="Cancel">
-                    <span class="or-Icon fa fa-close"></span><span class="html-face">${msg("doCancel")}</span>
+                        class="btn waves-effect waves-light green darken-1"
+                        name="submitAction" value="Cancel" formnovalidate>${msg("doCancel")}
+                    <i class="material-icons right">cancel</i>
                 </button>
             </div>
-        </div>
+
+            <#if url.referrerURI??>
+                <div class="col s12 center-align">
+                    <p><a href="${url.referrerURI}">${msg("backToApplication")}/a></p>
+                </div>
+            </#if>
+        </form>
     </div>
-
-</form>
-
 </@layout.mainLayout>

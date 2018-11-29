@@ -1,68 +1,46 @@
 <#import "template.ftl" as layout>
 <@layout.mainLayout active='password'; section>
 
-<form action="${url.passwordUrl}" class="flex layout vertical or-Form" method="post">
+<h4>${msg("changePasswordHtmlTitle")}</h4>
 
-    <div class="flex or-MainContent">
-
-        <div class="or-Headline">
-            <span class="or-Icon fa fa-key"></span>
-            <span class="or-HeadlineText">${msg("changePasswordHtmlTitle")}</span>
-        </div>
+<div class="section">
+    <form action="${url.passwordUrl}" method="post">
 
         <input type="text" readonly value="this is not a login form" style="display: none;">
         <input type="password" readonly value="this is not a login form" style="display: none;">
+        <input type="hidden" id="stateChecker" name="stateChecker" value="${stateChecker?html}">
 
+        <div class="row">
         <#if password.passwordSet>
-            <div class="layout horizontal center or-FormGroup">
-                <div class="or-FormLabel">
-                    <label for="password">${msg("password")}</label>
-                </div>
-
-                <div class="or-FormField">
-                    <input type="password" class="or-FormControl or-FormInputText" id="password" name="password"
-                           autofocus autocomplete="off">
-                </div>
+            <div class="input-field s12">
+                <input type="password" class="validate" id="password" name="password"
+                       autofocus autocomplete="off" required>
+                <label for="password">${msg("password")} <span class="required">*</span></label>
             </div>
         </#if>
 
-        <input type="hidden" id="stateChecker" name="stateChecker" value="${stateChecker?html}">
-
-        <div class="layout horizontal center or-FormGroup">
-            <div class="or-FormLabel">
-                <label for="password-new">${msg("passwordNew")}</label>
+            <div class="input-field s12">
+                <input type="password" class="validate" id="password-new" name="password-new"
+                       autocomplete="off" required>
+                <label for="password-new">${msg("passwordNew")} <span class="required">*</span></label>
             </div>
 
-            <div class="or-FormField">
-                <input type="password" class="or-FormControl or-FormInputText" id="password-new" name="password-new"
-                       autocomplete="off">
+            <div class="input-field s12">
+                <input type="password" class="validate" id="password-confirm"
+                       name="password-confirm" autocomplete="off" required>
+                <label for="password-confirm" class="two-lines">${msg("passwordConfirm")} <span
+                        class="required">*</span></label>
             </div>
+
         </div>
 
-        <div class="layout horizontal center or-FormGroup">
-            <div class="or-FormLabel">
-                <label for="password-confirm" class="two-lines">${msg("passwordConfirm")}</label>
-            </div>
-
-            <div class="or-FormField">
-                <input type="password" class="or-FormControl or-FormInputText" id="password-confirm"
-                       name="password-confirm" autocomplete="off">
-            </div>
+        <div class="col s12 center-align">
+            <button class="btn waves-effect waves-light green darken-1" type="submit" name="login"
+                    value="Save">${msg("doSave")}
+                <i class="material-icons right">send</i>
+            </button>
         </div>
 
-    </div>
-
-    <div class="flex-none or-MainContent">
-        <div class="layout horizontal or-FormGroup">
-            <div class="or-FormField">
-                <button type="submit" class="or-FormControl or-FormButtonPrimary or-PushButton"
-                        name="submitAction" value="Save">
-                    <span class="or-Icon fa fa-save"></span><span class="html-face">${msg("doSave")}</span>
-                </button>
-            </div>
-        </div>
-    </div>
-
-</form>
-
+    </form>
+</div>
 </@layout.mainLayout>

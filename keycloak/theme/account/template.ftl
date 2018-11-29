@@ -14,58 +14,62 @@
         </#list>
     </#if>
 
-    <link rel="icon" type="image/png" href="/static/img/favicon.png"/>
+    <link rel="icon" type="image/png" href="${url.resourcesPath}/img/favicon.png"/>
+    <link type=text/css rel="stylesheet" href="${url.resourcesPath}/css/materialize.min.css" media="screen,projection"/>
+    <link rel="stylesheet" href="${url.resourcesPath}/css/styles.css"/>
 
-    <script src="/static/node_modules/@webcomponents/webcomponentsjs/webcomponents-lite.js"></script>
-
-    <link rel="import" href="/static/src/or-app/or-app.html">
-
-    <style type="text/css">
-        or-app > * {
-            visibility: hidden;
-        }
-
-        html, body {
-            margin: 0;
-            height: 100vh;
-        }
-
-        *:focus {
-            outline: 0;
-        }
-    </style>
-
+    <script type="text/javascript">
+        document.addEventListener('DOMContentLoaded', function () {
+            var elems = document.querySelectorAll('.sidenav');
+            M.Sidenav.init(elems);
+        });
+    </script>
 </head>
 
-<body class="layout horizontal">
+<body>
 
-<or-app>
+<header>
+    <ul id="menu" class="sidenav sidenav-fixed">
+        <li class="<#if active=='account'>active</#if>"><a href="${url.accountUrl}">${msg("account")}</a></li>
+                <#if features.passwordUpdateSupported>
+                    <li class="<#if active=='password'>active</#if>"><a href="${url.passwordUrl}">${msg("password")}</a>
+                    </li></#if>
+        <li class="<#if active=='totp'>active</#if>"><a href="${url.totpUrl}">${msg("authenticator")}</a></li>
+        <#if features.identityFederation>
+            <li class="<#if active=='social'>active</#if>"><a href="${url.socialUrl}">${msg("federatedIdentity")}</a></li>
+        </#if>
+        <li class="<#if active=='sessions'>active</#if>"><a href="${url.sessionsUrl}">${msg("sessions")}</a></li>
+        <li class="<#if active=='applications'>active</#if>"><a
+                href="${url.applicationsUrl}">${msg("applications")}</a></li>
+                <#if features.log>
+                    <li class="<#if active=='log'>active</#if>"><a href="${url.logUrl}">${msg("log")}</a></li></#if>
+    </ul>
+    <a href="#" data-target="menu" class="top-nav sidenav-trigger full hide-on-large-only green-text darken-3"><i class="material-icons">menu</i></a>
+</header>
 
-    <div class="flex layout horizontal or-Viewport">
-        <div class="layout vertical or-SecondaryNav">
-            <div class="or-SecondaryNavItem <#if active=='account'>active</#if>"><div class="fa fa-user" style="width: 1em; margin-right:0.4em;"></div><a href="${url.accountUrl}">${msg("account")}</a></div>
-        <#if features.passwordUpdateSupported><div class="or-SecondaryNavItem <#if active=='password'>active</#if>"><div class="fa fa-key" style="width: 1em; margin-right:0.4em;"></div><a href="${url.passwordUrl}">${msg("password")}</a></div></#if>
-        </div>
-
-        <div class="flex layout vertical">
-
-            <div class="layout horizontal center end-justified or-SecondaryNav">
-            </div>
-
+<main>
+    <div class="container">
         <#if message?has_content>
-            <div style="max-width: 30em;" class="layout horizontal or-FormMessages ${message.type}">
-                <#if message.type=='success' ><div class="or-Icon fa fa-check"></div></#if>
-                <#if message.type=='error' ><div class="or-Icon fa fa-warning"></div></#if>
-                ${message.summary}
+            <div class="section">
+                <div class="col s12">
+                    <div class="card-panel">
+                        <#if message.type=='success' ><i class="material-icons green-text">check_circle</i><span
+                                class="green-text">${message.summary}</span></#if>
+                        <#if message.type=='error' ><i class="material-icons red-text">error</i><span
+                                class="red-text">${message.summary}</span></#if>
+                    </div>
+                </div>
             </div>
         </#if>
 
-        <#nested "content">
+        <div class="col s12">
+            <#nested "content">
         </div>
+
     </div>
+</main>
 
-</or-app>
-
+<script type="text/javascript" src="${url.resourcesPath}/js/materialize.min.js"></script>
 </body>
 </html>
 </#macro>

@@ -1,96 +1,86 @@
 <#import "template.ftl" as layout>
 <@layout.registrationLayout displayInfo=social.displayInfo; section>
     <#if section = "title">
-    ${msg("loginTitle",(realm.displayName!''))}
+        ${msg("loginTitle",(realm.displayName!''))}
     <#elseif section = "header">
-    ${msg("loginTitleHtml",(realm.displayNameHtml!''))}
+        ${msg("loginTitleHtml",(realm.displayNameHtml!''))}
     <#elseif section = "form">
         <#if realm.password>
-        <form class="layout vertical or-Form" action="${url.loginAction}" method="post">
-            <div class="layout horizontal center or-FormGroup">
-                <div class="or-FormLabel">
-                    <label for="username"><#if !realm.registrationEmailAsUsername>${msg("usernameOrEmail")}<#else>${msg("email")}</#if></label>
-                </div>
+        <form action="${url.loginAction}" method="post">
 
-                <div class="or-FormField">
+            <div class="row">
+                <div class="input-field col s12">
                     <#if usernameEditDisabled??>
                         <input id="username"
                                autofocus
                                autocomplete="off"
                                autocapitalize="off"
-                               class="or-FormControl or-FormInputText"
                                name="username" value="${(login.username!'')?html}" type="text" disabled/>
                     <#else>
                         <input id="username"
                                autofocus
                                autocomplete="off"
                                autocapitalize="off"
-                               class="or-FormControl or-FormInputText"
+                               required
+                               class="validate"
                                name="username" value="${(login.username!'')?html}" type="text" autofocus/>
                     </#if>
+                    <label for="username"><#if !realm.registrationEmailAsUsername>${msg("usernameOrEmail")}<#else>${msg("email")}</#if></label>
                 </div>
-            </div>
 
-            <div class="layout horizontal center or-FormGroup">
-                <div class="or-FormLabel">
+                <div class="input-field col s12">
+                    <input id="password" name="password" type="password" autocomplete="off"/>
                     <label for="password">${msg("password")}</label>
                 </div>
 
-                <div class="or-FormField">
-                    <input id="password" class="or-FormControl or-FormInputText"
-                           name="password" type="password" autocomplete="off"/>
-                </div>
-            </div>
-
-            <div class="layout horizontal center-center or-FormGroup">
-                <div>
-                    <#if realm.rememberMe && !usernameEditDisabled??>
-                        <div class="checkbox">
+                <#if realm.rememberMe && !usernameEditDisabled??>
+                    <div class="input-field col s12">
+                        <div>
                             <label>
                                 <#if login.rememberMe??>
                                     <input id="rememberMe" name="rememberMe" type="checkbox" tabindex="3"
-                                           checked> ${msg("rememberMe")}
+                                           checked/><span>${msg("rememberMe")}</span>
                                 <#else>
                                     <input id="rememberMe" name="rememberMe" type="checkbox"
-                                           tabindex="3"> ${msg("rememberMe")}
+                                           tabindex="3"/><span>${msg("rememberMe")}</span>
                                 </#if>
                             </label>
                         </div>
-                    </#if>
-                    <div>
-                        <#if realm.resetPasswordAllowed>
-                            <span class="or-Hyperlink"><a href="${url.loginResetCredentialsUrl}">${msg("doForgotPassword")}</a></span>
-                        </#if>
                     </div>
-                </div>
-
-                <div class="or-FormField layout horizontal center-center">
-                    <button class="or-FormControl or-FormButtonPrimary or-PushButton"
-                           name="login"
-                           type="submit">
-                        <span class="or-Icon fa fa-sign-in"></span>
-                        <span class="html-face">${msg("doLogIn")}</span>
-                    </button>
-                </div>
+                </#if>
             </div>
+
+            <div class="col s12 center-align">
+                <button class="btn waves-effect waves-light green darken-1" type="submit" name="login">${msg("doLogIn")}
+                    <i class="material-icons right">send</i>
+                </button>
+            </div>
+
+            <#if realm.resetPasswordAllowed>
+                <div class="col s12 center-align">
+                    <p><a href="${url.loginResetCredentialsUrl}">${msg("doForgotPassword")}</a></p>
+                </div>
+            </#if>
         </form>
         </#if>
-    <#elseif section = "info" >
-        <#if realm.password && realm.registrationAllowed && !usernameEditDisabled??>
-        <div id="kc-registration">
-            <span>${msg("noAccount")} <a href="${url.registrationUrl}">${msg("doRegister")}</a></span>
-        </div>
-        </#if>
+        <#elseif section = "info" >
 
-        <#if realm.password && social.providers??>
-        <div id="kc-social-providers">
-            <ul>
-                <#list social.providers as p>
-                    <li><a href="${p.loginUrl}" id="zocial-${p.alias}" class="zocial ${p.providerId}"> <span
-                            class="text">${p.alias}</span></a></li>
-                </#list>
-            </ul>
-        </div>
+            <#if realm.password && realm.registrationAllowed && !usernameEditDisabled??>
+                <div id="kc-registration">
+                    <span>${msg("noAccount")} <a href="${url.registrationUrl}">${msg("doRegister")}</a></span>
+                </div>
+            </#if>
+
+
+            <#if realm.password && social.providers??>
+                <div id="kc-social-providers">
+                    <ul>
+                        <#list social.providers as p>
+                            <li><a href="${p.loginUrl}" id="zocial-${p.alias}" class="zocial ${p.providerId}"> <span
+                                    class="text">${p.alias}</span></a></li>
+                        </#list>
+                    </ul>
+                </div>
+            </#if>
         </#if>
-    </#if>
 </@layout.registrationLayout>

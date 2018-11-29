@@ -170,6 +170,8 @@ services:
 
       # Custom location of the static applications.
       # APP_DOCROOT: '/deployment/app'
+      # Custom default app name to load when '/' is requested
+      # APP_DEFAULT: 'manager`
 
       # Disable HTTP redirects when a console application requests libraries which
       # are delivered and used on the platform. This is necessary if your console application
