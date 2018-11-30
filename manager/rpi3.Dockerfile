@@ -24,12 +24,11 @@ ENV JAVA_OPTS -Xmx500m
 
 RUN [ "cross-build-end" ]
 
-ENV MANAGER_DOCROOT webapp
-ENV APP_DOCROOT /deployment/app
-ENV UI_DOCROOT /deployment/ui
-ENV LOGGING_CONFIG_FILE /deployment/logging.properties
-ENV MAP_TILES_PATH /deployment/map/mapdata.mbtiles
-ENV MAP_SETTINGS_PATH /deployment/map/mapsettings.json
+ENV APP_DOCROOT /deployment/manager/app
+ENV UI_DOCROOT /deployment/manager/ui
+ENV LOGGING_CONFIG_FILE /deployment/manager/logging.properties
+ENV MAP_TILES_PATH /deployment/manager/map/mapdata.mbtiles
+ENV MAP_SETTINGS_PATH /deployment/manager/map/mapsettings.json
 
 EXPOSE 8080
 

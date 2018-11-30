@@ -38,7 +38,7 @@ services:
     volumes:
       # Use local deployment data in host-mapped directory for easy development. The
       # ../deployment directory is the one which will be baked into the managers image.
-      - ${DEPLOYMENT_DIRECTORY:-../deployment}/manager:/deployment
+      - ${DEPLOYMENT_DIRECTORY:-../deployment}:/deployment
     environment:
       # Always wipe and enable dev optimizations
       DEV_MODE: 'true'
@@ -57,7 +57,7 @@ services:
     ports:
       - "127.0.0.1:8081:8080"
     volumes:
-      - ../keycloak/theme:/opt/jboss/keycloak/themes/openremote
+      - ../ui/keycloak/themes/openremote:/opt/jboss/keycloak/themes/openremote
     depends_on:
       postgresql:
         condition: service_healthy

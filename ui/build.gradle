@@ -18,9 +18,3 @@ task build {
 task installDist {
     dependsOn build
 }
-
-task clean() {
-    doLast {
-        delete "${project(':deployment').projectDir}/manager/app"
-    }
-}

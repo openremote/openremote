@@ -2,5 +2,6 @@ apply plugin: 'idea'
 idea {
     module {
         excludeDirs += file("manager/app")
+        excludeDirs += file("keycloak")
     }
 }

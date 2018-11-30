@@ -159,13 +159,12 @@ task gwtSuperDev(dependsOn: classes, type: JavaExec) {
 
 installDist {
     dependsOn resolveTask(":client:src:main:webapp:installDist")
-
-    into "${project(':deployment').projectDir}/manager/app/manager"
+    into "${resolveProject(':deployment').projectDir}/manager/app/manager"
 }
 
 clean {
     doLast {
-        delete "${project(':deployment').projectDir}/manager/app/manager"
+        delete "${resolveProject(':deployment').projectDir}/manager/app/manager"
     }
 }
 

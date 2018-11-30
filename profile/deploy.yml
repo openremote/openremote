@@ -166,10 +166,10 @@ services:
       # Console applications can register for push notifications through FCM.
       # NOTIFICATION_FIREBASE_URL: https://fcm.googleapis.com/fcm/send
       # NOTIFICATION_FIREBASE_API_KEY = '...'
-      # FIREBASE_CONFIG_FILE = '/deployment/fcm.json'
+      # FIREBASE_CONFIG_FILE = '/deployment/manager/fcm.json'
 
       # Custom location of the static applications.
-      # APP_DOCROOT: '/deployment/app'
+      # APP_DOCROOT: '/deployment/manager/app'
       # Custom default app name to load when '/' is requested
       # APP_DEFAULT: 'manager`
 
@@ -180,14 +180,14 @@ services:
       # CONSOLE_USE_STATIC_BOWER_COMPONENTS = 'false'
 
       # Provide a path to the map tiles database file (see https://openmaptiles.com/).
-      # MAP_TILES_PATH: '/deployment/map/mapdata.mbtiles'
+      # MAP_TILES_PATH: '/deployment/manager/map/mapdata.mbtiles'
 
       # Override the map settings such as center location and zoom when opening the
       # manager's map, as well as other style details and colours.
-      # MAP_SETTINGS_PATH: '/deployment/map/mapsettings.json'
+      # MAP_SETTINGS_PATH: '/deployment/manager/map/mapsettings.json'
 
       # Override logging.properties with a file of your choice.
-      # LOGGING_CONFIG_FILE: '/deployment/logging.properties'
+      # LOGGING_CONFIG_FILE: '/deployment/manager/logging.properties'
 
       # The number of threads and therefore background tasks that can be executed at the same
       # time. Used by scheduled, usually short-lived and non-blocking tasks, such as protocols
