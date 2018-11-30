@@ -1,3 +1,17 @@
-task installDist {
+task build {
     dependsOn yarnInstall
+}
+
+task installDist(type: Copy) {
+    dependsOn build
+    from(buildDir) {
+        exclude "gwt", "build.gradle", "package.json", "yarn.lock", ".bowerrc"
+    }
+    into "${resolveProject(':deployment').projectDir}/manager/app/${projectDir.name}"
+}
+
+task clean() {
+    doLast {
+        delete "${resolveProject(':deployment').projectDir}/manager/app/${projectDir.name}"
+    }
 }
