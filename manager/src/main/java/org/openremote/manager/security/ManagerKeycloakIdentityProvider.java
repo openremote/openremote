@@ -81,7 +81,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
 
     @Override
     protected void addClientRedirectUris(String client, List<String> redirectUrls) {
-        if (false) {
+        if (devMode) {
             // Allow any redirect URIs in dev mode
             redirectUrls.add("*");
         } else {
