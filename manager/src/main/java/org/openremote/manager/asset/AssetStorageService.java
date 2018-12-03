@@ -117,13 +117,13 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         clientEventService = container.getService(ClientEventService.class);
 
         clientEventService.addSubscriptionAuthorizer((auth, subscription) ->
-                                                         (subscription.isEventType(AssetTreeModifiedEvent.class) || subscription.isEventType(
-                                                             LocationEvent.class))
-                                                             && identityService.getIdentityProvider().canSubscribeWith(
-                                                             auth,
-                                                             subscription.getFilter() instanceof TenantFilter ? ((TenantFilter) subscription.getFilter()) : null,
-                                                             ClientRole.READ_ASSETS)
-                                                    );
+            (subscription.isEventType(AssetTreeModifiedEvent.class) || subscription.isEventType(
+                LocationEvent.class))
+                && identityService.getIdentityProvider().canSubscribeWith(
+                auth,
+                subscription.getFilter() instanceof TenantFilter ? ((TenantFilter) subscription.getFilter()) : null,
+                ClientRole.READ_ASSETS)
+        );
 
         container.getService(WebService.class).getApiSingletons().add(
             new AssetResourceImpl(
@@ -132,13 +132,13 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 this,
                 container.getService(MessageBrokerService.class)
             )
-                                                                     );
+        );
 
         container.getService(WebService.class).getApiSingletons().add(
             new ConsoleResourceImpl(container.getService(TimerService.class),
-                                    identityService,
-                                    this)
-                                                                     );
+                identityService,
+                this)
+        );
 
         container.getService(MessageBrokerSetupService.class).getContext().addRoutes(this);
     }
@@ -192,7 +192,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                     event.getAssetId(),
                     true,
                     identityService.getIdentityProvider().isRestrictedUser(authContext.getUserId()) ? RESTRICTED_READ : PRIVATE_READ
-                                  );
+                );
                 if (asset != null) {
                     replyWithAttributeEvents(sessionKey, asset, event.getAttributeNames());
                 }
@@ -224,7 +224,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
     /**
      * @param loadComplete If the whole asset data (including path and attributes) should be loaded.
-     * @param access The required access permissions of the asset data.
+     * @param access       The required access permissions of the asset data.
      */
     public Asset find(String assetId, boolean loadComplete, Access access) {
         if (assetId == null)
@@ -259,7 +259,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         // TODO: Do this in a loop in reasonably sized batches
         return persistenceService.doReturningTransaction(em -> {
             List<Object[]> result = em.createQuery("select a.id, a.name from Asset a where a.id in :ids",
-                                                   Object[].class)
+                Object[].class)
                 .setParameter("ids", Arrays.asList(ids))
                 .getResultList();
             List<String> names = new ArrayList<>();
@@ -285,7 +285,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
     /**
      * @param overrideVersion If <code>true</code>, the merge will override the data in the database, independent of
-     * version.
+     *                        version.
      * @return The current stored asset state.
      * @throws IllegalArgumentException if the realm or parent is illegal, or other asset constraint is violated.
      */
@@ -304,8 +304,8 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
     /**
      * @param overrideVersion If <code>true</code>, the merge will override the data in the database, independent of
-     * version.
-     * @param userName the user which this asset needs to be assigned to.
+     *                        version.
+     * @param userName        the user which this asset needs to be assigned to.
      * @return The current stored asset state.
      * @throws IllegalArgumentException if the realm or parent is illegal, or other asset constraint is violated.
      */
@@ -399,8 +399,8 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             Asset asset = em.find(Asset.class, assetId);
             if (asset != null) {
                 List<Asset> children = findAll(em, new AssetQuery()
-                                                   .parent(new ParentPredicate(asset.getId()))
-                                              );
+                    .parent(new ParentPredicate(asset.getId()))
+                );
                 if (children.size() > 0)
                     return false;
                 LOG.fine("Removing: " + asset);
@@ -572,8 +572,8 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             em,
             new AssetQuery().select(
                 new Select(loadComplete ? ALL : ALL_EXCEPT_PATH_AND_ATTRIBUTES, access)
-                                   ).id(assetId)
-                   );
+            ).id(assetId)
+        );
     }
 
     protected List<Asset> findAll(EntityManager em, BaseAssetQuery query) {
@@ -787,7 +787,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         }
 
         if (level == 1) {
-            if (query.parent != null && !query.parent.noParent) {
+            if (query.parent != null && !query.parent.noParent && (query.parent.id != null || query.parent.type != null)) {
                 sb.append("cross join ASSET P ");
             } else {
                 sb.append("left outer join ASSET P on A.PARENT_ID = P.ID ");
@@ -845,32 +845,20 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         if (level == 1 && query.ids != null && !query.ids.isEmpty()) {
             sb.append(" and A.ID IN (?");
             final int pos = binders.size() + 1;
-            binders.add(st ->  st.setString(pos, (String)query.ids.get(0)));
+            binders.add(st -> st.setString(pos, (String) query.ids.get(0)));
 
-            for (int i=1; i<query.ids.size(); i++) {
+            for (int i = 1; i < query.ids.size(); i++) {
                 sb.append(",?");
                 final int pos2 = binders.size() + 1;
                 final int index = i;
-                binders.add(st ->  st.setString(pos2, (String)query.ids.get(index)));
+                binders.add(st -> st.setString(pos2, (String) query.ids.get(index)));
             }
             sb.append(")");
         }
 
         if (level == 1 && query.name != null) {
             sb.append(query.name.caseSensitive ? " and A.NAME " : " and upper(A.NAME)");
-            switch (query.name.match) {
-                case EXACT:
-                    sb.append(" = ? ");
-                    break;
-                case NOT_EXACT:
-                    sb.append(" <> ? ");
-                    break;
-                case BEGIN:
-                case END:
-                case CONTAINS:
-                    sb.append(" like ? ");
-                    break;
-            }
+            sb.append(buildMatchFilter(query.name.match));
             final int pos = binders.size() + 1;
             binders.add(st -> st.setString(pos, query.name.prepareValue()));
         }
@@ -952,19 +940,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
             if (query.type != null) {
                 sb.append(query.type.caseSensitive ? " and A.ASSET_TYPE" : " and upper(A.ASSET_TYPE)");
-                switch (query.type.match) {
-                    case EXACT:
-                        sb.append(" = ? ");
-                        break;
-                    case NOT_EXACT:
-                        sb.append(" <> ? ");
-                        break;
-                    case BEGIN:
-                    case END:
-                    case CONTAINS:
-                        sb.append(" like ? ");
-                        break;
-                }
+                sb.append(buildMatchFilter(query.type.match));
                 final int pos = binders.size() + 1;
                 binders.add(st -> st.setString(pos, query.type.prepareValue()));
             }
@@ -1007,9 +983,9 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
         if (attributeMetaPredicate.itemNamePredicate != null) {
             attributeMetaBuilder.append(attributeMetaPredicate.itemNamePredicate.caseSensitive
-                                            ? " and AM.VALUE #>> '{name}'"
-                                            : " and upper(AM.VALUE #>> '{name}')"
-                                       );
+                ? " and AM.VALUE #>> '{name}'"
+                : " and upper(AM.VALUE #>> '{name}')"
+            );
             switch (attributeMetaPredicate.itemNamePredicate.match) {
                 case EXACT:
                     attributeMetaBuilder.append(" = ? ");
@@ -1030,22 +1006,11 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             if (attributeMetaPredicate.itemValuePredicate instanceof StringPredicate) {
                 StringPredicate stringPredicate = (StringPredicate) attributeMetaPredicate.itemValuePredicate;
                 attributeMetaBuilder.append(stringPredicate.caseSensitive
-                                                ? " and AM.VALUE #>> '{value}'"
-                                                : " and upper(AM.VALUE #>> '{value}')"
-                                           );
-                switch (stringPredicate.match) {
-                    case EXACT:
-                        attributeMetaBuilder.append(" = ? ");
-                        break;
-                    case NOT_EXACT:
-                        attributeMetaBuilder.append(" <> ? ");
-                        break;
-                    case BEGIN:
-                    case END:
-                    case CONTAINS:
-                        attributeMetaBuilder.append(" like ? ");
-                        break;
-                }
+                    ? " and AM.VALUE #>> '{value}'"
+                    : " and upper(AM.VALUE #>> '{value}')"
+                );
+                attributeMetaBuilder.append(buildMatchFilter(stringPredicate.match));
+
                 final int pos = binders.size() + 1;
                 binders.add(st -> st.setString(pos, stringPredicate.prepareValue()));
             } else if (attributeMetaPredicate.itemValuePredicate instanceof BooleanPredicate) {
@@ -1058,22 +1023,10 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 for (int i = 0; i < stringArrayPredicate.predicates.length; i++) {
                     StringPredicate stringPredicate = stringArrayPredicate.predicates[i];
                     attributeMetaBuilder.append(stringPredicate.caseSensitive
-                                                    ? " and AM.VALUE #> '{value}' ->> " + i
-                                                    : " and upper(AM.VALUE #> '{value}' ->> " + i + ")"
-                                               );
-                    switch (stringPredicate.match) {
-                        case EXACT:
-                            attributeMetaBuilder.append(" = ? ");
-                            break;
-                        case NOT_EXACT:
-                            attributeMetaBuilder.append(" <> ? ");
-                            break;
-                        case BEGIN:
-                        case END:
-                        case CONTAINS:
-                            attributeMetaBuilder.append(" like ? ");
-                            break;
-                    }
+                        ? " and AM.VALUE #> '{value}' ->> " + i
+                        : " and upper(AM.VALUE #> '{value}' ->> " + i + ")"
+                    );
+                    attributeMetaBuilder.append(buildMatchFilter(stringPredicate.match));
                     final int pos = binders.size() + 1;
                     binders.add(st -> st.setString(pos, stringPredicate.prepareValue()));
                 }
@@ -1088,23 +1041,10 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
         if (attributePredicate.name != null) {
             attributeBuilder.append(attributePredicate.name.caseSensitive
-                                        ? " and AX.key"
-                                        : " and upper(AX.key)"
-                                   );
-
-            switch (attributePredicate.name.match) {
-                case EXACT:
-                    attributeBuilder.append(" = ? ");
-                    break;
-                case NOT_EXACT:
-                    attributeBuilder.append(" <> ? ");
-                    break;
-                case BEGIN:
-                case END:
-                case CONTAINS:
-                    attributeBuilder.append(" like ? ");
-                    break;
-            }
+                ? " and AX.key"
+                : " and upper(AX.key)"
+            );
+            attributeBuilder.append(buildMatchFilter(attributePredicate.name.match));
 
             final int pos = binders.size() + 1;
             binders.add(st -> st.setString(pos, attributePredicate.name.prepareValue()));
@@ -1113,22 +1053,10 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             if (attributePredicate.value instanceof StringPredicate) {
                 StringPredicate stringPredicate = (StringPredicate) attributePredicate.value;
                 attributeBuilder.append(stringPredicate.caseSensitive
-                                            ? " and AX.VALUE #>> '{value}'"
-                                            : " and upper(AX.VALUE #>> '{value}')"
-                                       );
-                switch (stringPredicate.match) {
-                    case EXACT:
-                        attributeBuilder.append(" = ? ");
-                        break;
-                    case NOT_EXACT:
-                        attributeBuilder.append(" <> ? ");
-                        break;
-                    case BEGIN:
-                    case END:
-                    case CONTAINS:
-                        attributeBuilder.append(" like ? ");
-                        break;
-                }
+                    ? " and AX.VALUE #>> '{value}'"
+                    : " and upper(AX.VALUE #>> '{value}')"
+                );
+                attributeBuilder.append(buildMatchFilter(stringPredicate.match));
                 final int pos = binders.size() + 1;
                 binders.add(st -> st.setString(pos, stringPredicate.prepareValue()));
             } else if (attributePredicate.value instanceof BooleanPredicate) {
@@ -1141,22 +1069,10 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 for (int i = 0; i < stringArrayPredicate.predicates.length; i++) {
                     StringPredicate stringPredicate = stringArrayPredicate.predicates[i];
                     attributeBuilder.append(stringPredicate.caseSensitive
-                                                ? " and AX.VALUE #> '{value}' ->> " + i
-                                                : " and upper(AX.VALUE #> '{value}' ->> " + i + ")"
-                                           );
-                    switch (stringPredicate.match) {
-                        case EXACT:
-                            attributeBuilder.append(" = ? ");
-                            break;
-                        case NOT_EXACT:
-                            attributeBuilder.append(" <> ? ");
-                            break;
-                        case BEGIN:
-                        case END:
-                        case CONTAINS:
-                            attributeBuilder.append(" like ? ");
-                            break;
-                    }
+                        ? " and AX.VALUE #> '{value}' ->> " + i
+                        : " and upper(AX.VALUE #> '{value}' ->> " + i + ")"
+                    );
+                    attributeBuilder.append(buildMatchFilter(stringPredicate.match));
                     final int pos = binders.size() + 1;
                     binders.add(st -> st.setString(pos, stringPredicate.prepareValue()));
                 }
@@ -1259,6 +1175,21 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         return attributeBuilder.toString();
     }
 
+    protected String buildMatchFilter(Match match) {
+        switch (match) {
+            case EXACT:
+                return " = ? ";
+            case NOT_EXACT:
+                return " <> ? ";
+            case BEGIN:
+            case END:
+            case CONTAINS:
+                return " like ? ";
+            default:
+                return " = ? ";
+        }
+    }
+
     protected Asset mapResultTuple(BaseAssetQuery query, ResultSet rs) throws SQLException {
         switch (query.select.include) {
             case ONLY_ID_AND_NAME:
@@ -1306,14 +1237,14 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 if (!AssetAttribute.ATTRIBUTE_NAME_VALIDATOR.test(attributeName)) {
                     LOG.fine(
                         "Invalid attribute name (must match '" + AssetAttribute.ATTRIBUTE_NAME_PATTERN + "'): " + attributeName
-                            );
+                    );
                     return false;
                 }
 
                 Array attributeValuePath = connection.createArrayOf(
                     "text",
                     new String[]{attributeName, "value"}
-                                                                   );
+                );
                 statement.setArray(1, attributeValuePath);
 
                 PGobject pgJsonValue = new PGobject();
@@ -1326,7 +1257,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 Array attributeValueTimestampPath = connection.createArrayOf(
                     "text",
                     new String[]{attributeName, "valueTimestamp"}
-                                                                            );
+                );
                 statement.setArray(3, attributeValueTimestampPath);
                 PGobject pgJsonValueTimestamp = new PGobject();
                 pgJsonValueTimestamp.setType("jsonb");
@@ -1339,9 +1270,9 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
                 int updatedRows = statement.executeUpdate();
                 LOG.fine("Stored asset '" + assetId
-                             + "' attribute '" + attributeName
-                             + "' (affected rows: " + updatedRows + ") value: "
-                             + (value != null ? value.toJson() : "null"));
+                    + "' attribute '" + attributeName
+                    + "' (affected rows: " + updatedRows + ") value: "
+                    + (value != null ? value.toJson() : "null"));
                 return updatedRows == 1;
             }
         });
@@ -1353,20 +1284,20 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             case INSERT:
                 clientEventService.publishEvent(
                     new AssetTreeModifiedEvent(timerService.getCurrentTimeMillis(), asset.getRealmId(), asset.getId())
-                                               );
+                );
                 if (asset.getParentId() != null) {
                     // Child asset created
                     clientEventService.publishEvent(
                         new AssetTreeModifiedEvent(timerService.getCurrentTimeMillis(),
-                                                   asset.getRealmId(),
-                                                   asset.getParentId(),
-                                                   true)
-                                                   );
+                            asset.getRealmId(),
+                            asset.getParentId(),
+                            true)
+                    );
                 } else {
                     // Child asset created (root asset)
                     clientEventService.publishEvent(
                         new AssetTreeModifiedEvent(timerService.getCurrentTimeMillis(), asset.getRealmId(), true)
-                                                   );
+                    );
                 }
                 break;
             case UPDATE:
@@ -1377,9 +1308,9 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 if (!Objects.equals(previousName, currentName)) {
                     clientEventService.publishEvent(
                         new AssetTreeModifiedEvent(timerService.getCurrentTimeMillis(),
-                                                   asset.getRealmId(),
-                                                   asset.getId())
-                                                   );
+                            asset.getRealmId(),
+                            asset.getId())
+                    );
                     break;
                 }
 
@@ -1389,9 +1320,9 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 if (!Objects.equals(previousParentId, currentParentId)) {
                     clientEventService.publishEvent(
                         new AssetTreeModifiedEvent(timerService.getCurrentTimeMillis(),
-                                                   asset.getRealmId(),
-                                                   asset.getId())
-                                                   );
+                            asset.getRealmId(),
+                            asset.getId())
+                    );
                     break;
                 }
 
@@ -1401,15 +1332,15 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 if (!Objects.equals(previousRealmId, currentRealmId)) {
                     clientEventService.publishEvent(
                         new AssetTreeModifiedEvent(timerService.getCurrentTimeMillis(),
-                                                   asset.getRealmId(),
-                                                   asset.getId())
-                                                   );
+                            asset.getRealmId(),
+                            asset.getId())
+                    );
                     break;
                 }
 
                 // Did the location change?
                 Stream<AssetAttribute> oldAttributes = attributesFromJson(persistenceEvent.getPreviousState("attributes"),
-                                                                          asset.getId());
+                    asset.getId());
                 Stream<AssetAttribute> currentAttributes = attributesFromJson(persistenceEvent.getCurrentState(
                     "attributes"), asset.getId());
 
@@ -1423,16 +1354,16 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                         currentLocation.get())) {
                         clientEventService.publishEvent(
                             new LocationEvent(asset.getId(),
-                                              asset.getCoordinates(),
-                                              timerService.getCurrentTimeMillis())
-                                                       );
+                                asset.getCoordinates(),
+                                timerService.getCurrentTimeMillis())
+                        );
                     }
                 }
                 break;
             case DELETE:
                 clientEventService.publishEvent(
                     new AssetTreeModifiedEvent(timerService.getCurrentTimeMillis(), asset.getRealmId(), asset.getId())
-                                               );
+                );
                 break;
         }
     }
@@ -1451,7 +1382,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     protected static boolean calendarEventPredicateMatches(CalendarEventActivePredicate eventActivePredicate, Asset asset) {
         return CalendarEventConfiguration.getCalendarEvent(asset)
             .map(calendarEvent -> calendarEventActiveOn(calendarEvent,
-                                                        new Date(1000L * eventActivePredicate.timestampSeconds)))
+                new Date(1000L * eventActivePredicate.timestampSeconds)))
             .orElse(true);
     }
 
@@ -1467,7 +1398,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             recurrence = new Recur(recurrenceRule.getFrequency().name(), recurrenceRule.getCount());
         } else if (recurrenceRule.getUntil() != null) {
             recurrence = new Recur(recurrenceRule.getFrequency().name(),
-                                   new net.fortuna.ical4j.model.Date(recurrenceRule.getUntil()));
+                new net.fortuna.ical4j.model.Date(recurrenceRule.getUntil()));
         } else {
             recurrence = new Recur(recurrenceRule.getFrequency().name(), null);
         }
@@ -1478,7 +1409,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
         RRule rRule = new RRule(recurrence);
         VEvent vEvent = new VEvent(new DateTime(calendarEvent.getStart()),
-                                   new DateTime(calendarEvent.getEnd()), "");
+            new DateTime(calendarEvent.getEnd()), "");
         vEvent.getProperties().add(rRule);
         Period period = new Period(new DateTime(when), new Dur(0, 0, 1, 0));
         PeriodRule periodRule = new PeriodRule(period);
