@@ -20,7 +20,6 @@
 package org.openremote.model.query.filter;
 
 import org.openremote.model.asset.AssetType;
-import org.openremote.model.query.BaseAssetQuery;
 
 public class ParentPredicate {
 
