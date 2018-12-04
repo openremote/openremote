@@ -561,7 +561,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
         );
     }
 
-    public void addLDAPConfiguration(ClientRequestInfo clientRequestInfo, String realm, ComponentRepresentation componentRepresentation) {
+    public String addLDAPConfiguration(ClientRequestInfo clientRequestInfo, String realm, ComponentRepresentation componentRepresentation) {
         RealmResource realmResource = getRealms(clientRequestInfo)
             .realm(realm);
         Response response = realmResource.components().add(componentRepresentation);
@@ -587,6 +587,28 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
                 );
             }
         }
+        return componentRepresentation.getId();
+    }
+
+    public String addLDAPMapper(ClientRequestInfo clientRequestInfo, String realm, ComponentRepresentation componentRepresentation) {
+        RealmResource realmResource = getRealms(clientRequestInfo)
+            .realm(realm);
+        Response response = realmResource.components().add(componentRepresentation);
+
+        if (!response.getStatusInfo().equals(Response.Status.CREATED)) {
+            throw new WebApplicationException(
+                Response.status(response.getStatus())
+                    .entity(response.getEntity())
+                    .build()
+            );
+        } else {
+            componentRepresentation = realmResource.components()
+                .query(componentRepresentation.getParentId(),
+                    componentRepresentation.getProviderType(),
+                    componentRepresentation.getName()).get(0);
+            realmResource.userStorage().syncMapperData(componentRepresentation.getParentId(), componentRepresentation.getId(), "fedToKeycloak");
+        }
+        return componentRepresentation.getId();
     }
 
     @Override

@@ -25,14 +25,18 @@ import org.keycloak.representations.idm.ComponentRepresentation;
 public class LDAPComponentBuilder {
 
     private String name;
-    private String providerId;
-    private String realmId;
-    private String providerType;
+    private ProviderId providerId;
+    private String parentId;
+    private ProviderType providerType;
     private MultivaluedHashMap<String, String> ldapConfig;
 
     public LDAPComponentBuilder() {
-        providerType = "org.keycloak.storage.UserStorageProvider";
         ldapConfig = new MultivaluedHashMap<>();
+    }
+
+    public LDAPComponentBuilder setProviderType(ProviderType providerType) {
+        this.providerType = providerType;
+        return this;
     }
 
     public LDAPComponentBuilder setName(String name) {
@@ -40,13 +44,13 @@ public class LDAPComponentBuilder {
         return this;
     }
 
-    public LDAPComponentBuilder setProviderId(String providerId) {
+    public LDAPComponentBuilder setProviderId(ProviderId providerId) {
         this.providerId = providerId;
         return this;
     }
 
-    public LDAPComponentBuilder setRealmId(String realmId) {
-        this.realmId = realmId;
+    public LDAPComponentBuilder setParentId(String parentId) {
+        this.parentId = parentId;
         return this;
     }
 
@@ -172,20 +176,104 @@ public class LDAPComponentBuilder {
         return this;
     }
 
+    public LDAPComponentBuilder setClientId(String clientId) {
+        ldapConfig.add("client.id", clientId);
+        return this;
+    }
+
+    public LDAPComponentBuilder setMemberShipAttributeType(MemberShipAttributeType memberShipAttributeType) {
+        ldapConfig.add("membership.attribute.type", memberShipAttributeType.toString());
+        return this;
+    }
+
+    public LDAPComponentBuilder setMemberShipLDAPAttribute(String ldapAttribute) {
+        ldapConfig.add("membership.ldap.attribute", ldapAttribute);
+        return this;
+    }
+
+    public LDAPComponentBuilder setMemberShipUserLDAPAttribute(String userLDAPAttribute) {
+        ldapConfig.add("membership.user.ldap.attribute", userLDAPAttribute);
+        return this;
+    }
+
+    public LDAPComponentBuilder setRoleNameLDAPAttribute(String nameLDAPAttribute) {
+        ldapConfig.add("role.name.ldap.attribute", nameLDAPAttribute);
+        return this;
+    }
+
+    public LDAPComponentBuilder setRoleObjectClasses(String roleObjectClasses) {
+        ldapConfig.add("role.object.classes", roleObjectClasses);
+        return this;
+    }
+
+    public LDAPComponentBuilder setRolesDn(String rolesDn) {
+        ldapConfig.add("roles.dn", rolesDn);
+        return this;
+    }
+
+    public LDAPComponentBuilder setUseRealmsRoleMapping(boolean useRealmsRoleMapping) {
+        ldapConfig.add("use.realm.roles.mapping", String.valueOf(useRealmsRoleMapping));
+        return this;
+    }
+
+    public LDAPComponentBuilder setMapperMode(MapperMode mapperMode) {
+        ldapConfig.add("mode", mapperMode.toString());
+        return this;
+    }
+
+    public LDAPComponentBuilder setUserRolesRetrieveStrategy(UserRolesRetrieveStrategy userRolesRetrieveStrategy) {
+        ldapConfig.add("user.roles.retrieve.strategy", userRolesRetrieveStrategy.toString());
+        return this;
+    }
+
+    public LDAPComponentBuilder setRolesLDAPFilter(String filter){
+        ldapConfig.add("roles.ldap.filter", filter);
+        return this;
+    }
+
+    public LDAPComponentBuilder setGroupNameLDAPAttribute(String groupNameLDAPAttribute) {
+        ldapConfig.add("group.name.ldap.attribute", groupNameLDAPAttribute);
+        return this;
+    }
+
+    public LDAPComponentBuilder setGroupObjectClasses(String groupObjectClasses) {
+        ldapConfig.add("group.object.classes", groupObjectClasses);
+        return this;
+    }
+
+    public LDAPComponentBuilder setGroupsDn(String groupsDn) {
+        ldapConfig.add("groups.dn", groupsDn);
+        return this;
+    }
+
+    public LDAPComponentBuilder setPreserveGroupInheritance(boolean preserveGroupInheritance) {
+        ldapConfig.add("preserve.group.inheritance", String.valueOf(preserveGroupInheritance));
+        return this;
+    }
+
+    public LDAPComponentBuilder setDropNonExistingGroupsDuringSync(boolean dropNonExistingGroupsDuringSync) {
+        ldapConfig.add("drop.non.existing.groups.during.sync", String.valueOf(dropNonExistingGroupsDuringSync));
+        return this;
+    }
+
+
+    public LDAPComponentBuilder setGroupsLDAPFilter(String filter){
+        ldapConfig.add("groups.ldap.filter", filter);
+        return this;
+    }
+
     public ComponentRepresentation build() {
         ComponentRepresentation componentRepresentation = new ComponentRepresentation();
         componentRepresentation.setName(name);
-        componentRepresentation.setParentId(realmId);
-        componentRepresentation.setProviderType(providerType);
-        componentRepresentation.setProviderId(providerId);
+        componentRepresentation.setParentId(parentId);
+        componentRepresentation.setProviderType(providerType.toString());
+        componentRepresentation.setProviderId(providerId.toString());
         componentRepresentation.setConfig(ldapConfig);
 
         return componentRepresentation;
     }
 
     public class LDAPConstants {
-        public static final String LDAP_PROVIDER = "ldap";
-
         public static final String VENDOR = "vendor";
 
         public static final String USERNAME_LDAP_ATTRIBUTE = "usernameLDAPAttribute";
@@ -194,7 +282,6 @@ public class LDAPComponentBuilder {
         public static final String USER_OBJECT_CLASSES = "userObjectClasses";
 
         public static final String UID = "uid";
-
 
         public static final String CONNECTION_URL = "connectionUrl";
         public static final String USERS_DN = "usersDn";
@@ -276,5 +363,58 @@ public class LDAPComponentBuilder {
         public String toString() {
             return value;
         }
+    }
+
+    public enum ProviderId {
+        LDAP_PROVIDER("ldap"),
+        LDAP_ROLE_PROVIDER("role-ldap-mapper"),
+        LDAP_GROUP_PROVIDER("group-ldap-mapper");
+
+        private String value;
+
+        ProviderId(String value) {
+            this.value = value;
+        }
+
+        @Override
+        public String toString() {
+            return value;
+        }
+    }
+
+    public enum ProviderType {
+        USER_STORAGE_PROVIDER_TYPE("org.keycloak.storage.UserStorageProvider"),
+        LDAP_STORAGE_MAPPER_TYPE("org.keycloak.storage.ldap.mappers.LDAPStorageMapper");
+
+        private String value;
+
+        ProviderType(String value) {
+            this.value = value;
+        }
+
+        @Override
+        public String toString() {
+            return value;
+        }
+    }
+
+    public enum MapperMode {
+        LDAP_ONLY,
+        IMPORT,
+        READ_ONLY
+    }
+
+    public enum UserRolesRetrieveStrategy {
+        LOAD_ROLES_BY_MEMBER_ATTRIBUTE,
+        GET_ROLES_FROM_USER_MEMBEROF_ATTRIBUTE,
+        LOAD_ROLES_BY_MEMBER_ATTRIBUTE_RECURSIVELY,
+        LOAD_GROUPS_BY_MEMBER_ATTRIBUTE,
+        GET_GROUPS_FROM_USER_MEMBEROF_ATTRIBUTE,
+        LOAD_GROUPS_BY_MEMBER_ATTRIBUTE_RECURSIVELY,
+    }
+
+    public enum MemberShipAttributeType {
+        UID,
+        DN
     }
 }
