@@ -51,13 +51,11 @@
     <div class="container">
         <#if message?has_content>
             <div class="section">
-                <div class="col s12">
-                    <div class="card-panel">
-                        <#if message.type=='success' ><i class="material-icons green-text">check_circle</i><span
-                                class="green-text">${message.summary}</span></#if>
-                        <#if message.type=='error' ><i class="material-icons red-text">error</i><span
-                                class="red-text">${message.summary}</span></#if>
-                    </div>
+                <div class="card-panel">
+                    <#if message.type=='success' ><i class="material-icons green-text">check_circle</i><span
+                            class="green-text">${message.summary}</span></#if>
+                    <#if message.type=='error' ><i class="material-icons red-text">error</i><span
+                            class="red-text">${message.summary}</span></#if>
                 </div>
             </div>
         </#if>
