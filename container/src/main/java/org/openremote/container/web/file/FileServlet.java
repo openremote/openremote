@@ -118,7 +118,7 @@ public class FileServlet extends AbstractFileServlet {
 
         // Handle index.html and redirect /directory to /directory/
         if (file.isDirectory()) {
-            if (!request.getPathInfo().endsWith("/")) {
+            if (request.getPathInfo() == null || !request.getPathInfo().endsWith("/")) {
                 throw new RedirectException(request.getRequestURI() + "/");
             }
             file = new File(actualBase, relativePath + "/index.html");
