@@ -60,6 +60,8 @@ public class ManagerWebService extends WebService {
     public static final String UI_DOCROOT_DEFAULT = "deployment/manager/ui";
     public static final String APP_DOCROOT = "APP_DOCROOT";
     public static final String APP_DOCROOT_DEFAULT = "deployment/manager/app";
+    public static final String SHARED_DOCROOT = "SHARED_DOCROOT";
+    public static final String SHARED_DOCROOT_DEFAULT = "deployment/manager/shared";
     public static final String CONSOLE_USE_STATIC_BOWER_COMPONENTS = "CONSOLE_USE_STATIC_BOWER_COMPONENTS";
     public static final boolean CONSOLE_USE_STATIC_BOWER_COMPONENTS_DEFAULT = true;
     public static final String APP_DEFAULT = "APP_DEFAULT";
@@ -67,6 +69,7 @@ public class ManagerWebService extends WebService {
     public static final String API_PATH = "/api";
     public static final String JSAPI_PATH = "/jsapi";
     public static final String STATIC_PATH = "/static";
+    public static final String SHARED_PATH = "/shared";
     public static final String CONSOLE_PATH = "/console";
     public static final String UI_PATH = "/ui";
     public static final String APP_PATH = "/app";
@@ -75,6 +78,7 @@ public class ManagerWebService extends WebService {
 
     protected Path appDocRoot;
     protected Path uiDocRoot;
+    protected Path sharedDocRoot;
     protected Collection<Class<?>> apiClasses = new HashSet<>();
     protected Collection<Object> apiSingletons = new HashSet<>();
 
@@ -128,7 +132,9 @@ public class ManagerWebService extends WebService {
         // Serve deployment files unsecured (explicitly map deployment folders to request paths)
         appDocRoot = Paths.get(getString(container.getConfig(), APP_DOCROOT, APP_DOCROOT_DEFAULT));
         uiDocRoot = Paths.get(getString(container.getConfig(), UI_DOCROOT, UI_DOCROOT_DEFAULT));
+        sharedDocRoot = Paths.get(getString(container.getConfig(), SHARED_DOCROOT, SHARED_DOCROOT_DEFAULT));
         HttpHandler uiFileHandler = createFileHandler(devMode, identityService, uiDocRoot, null);
+        HttpHandler sharedFileHandler = createFileHandler(devMode, identityService, sharedDocRoot, null);
         HttpHandler appBaseFileHandler = Files.isDirectory(appDocRoot) ? createFileHandler(devMode, identityService, appDocRoot, null) : null;
 
         // Default app file handler to use index.html
@@ -184,6 +190,7 @@ public class ManagerWebService extends WebService {
                 .addPrefixPath(APP_PATH, appFileHandler)
                 // TODO: Remove this path prefix at some point
                 .addPrefixPath(CONSOLE_PATH, appFileHandler)
+                .addPrefixPath(SHARED_PATH, sharedFileHandler)
                 .addPrefixPath(UI_PATH, uiFileHandler);
 
         // TODO: Remove this once all apps updated to new structure

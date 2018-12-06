@@ -111,7 +111,7 @@ public class MapViewImpl extends Composite implements MapView {
 
     @Override
     public void initialiseMap(ObjectValue mapOptions) {
-        mapWidget.initialise(mapOptions, () -> {
+        mapWidget.initialise(mapOptions, presenter.getSecurity(), () -> {
             mapWidget.addNavigationControl();
 
             mapInfoPanel.setTarget(mapWidget);

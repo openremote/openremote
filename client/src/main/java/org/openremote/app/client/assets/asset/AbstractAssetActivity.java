@@ -20,6 +20,7 @@
 package org.openremote.app.client.assets.asset;
 
 import com.google.gwt.user.client.ui.IsWidget;
+import org.openremote.app.client.AppSecurity;
 import org.openremote.app.client.Environment;
 import org.openremote.app.client.assets.AssetBrowsingActivity;
 import org.openremote.app.client.assets.attributes.AbstractAttributeViewExtension;
@@ -164,6 +165,11 @@ public abstract class AbstractAssetActivity<V
         } else {
             start();
         }
+    }
+
+    @Override
+    public AppSecurity getSecurity() {
+        return environment.getApp().getSecurity();
     }
 
     @Override

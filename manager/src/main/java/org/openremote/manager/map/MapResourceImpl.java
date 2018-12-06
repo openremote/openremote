@@ -21,8 +21,8 @@ package org.openremote.manager.map;
 
 import org.openremote.container.web.WebResource;
 import org.openremote.manager.security.ManagerIdentityService;
-import org.openremote.model.map.MapResource;
 import org.openremote.model.http.RequestParams;
+import org.openremote.model.map.MapResource;
 import org.openremote.model.value.ObjectValue;
 
 import javax.ws.rs.WebApplicationException;
@@ -41,8 +41,16 @@ public class MapResourceImpl extends WebResource implements MapResource {
     @Override
     public ObjectValue getSettings(RequestParams requestParams) {
         return mapService.getMapSettings(
-            getAuthenticatedRealm(),
-            identityService.getExternalServerUri().clone()
+                getAuthenticatedRealm(),
+                identityService.getExternalServerUri().clone()
+        );
+    }
+
+    @Override
+    public ObjectValue getSettingsJs(RequestParams requestParams) {
+        return mapService.getMapSettingsJs(
+                getAuthenticatedRealm(),
+                identityService.getExternalServerUri().clone()
         );
     }
 
@@ -54,5 +62,10 @@ public class MapResourceImpl extends WebResource implements MapResource {
         } else {
             throw new WebApplicationException(Response.Status.NOT_FOUND);
         }
+    }
+
+    @Override
+    public ObjectValue getSource(RequestParams requestParams) {
+        return mapService.getMapSource(getAuthenticatedRealm(), identityService.getExternalServerUri().clone());
     }
 }

@@ -20,6 +20,7 @@
 package org.openremote.app.client.map;
 
 import com.google.gwt.user.client.ui.IsWidget;
+import org.openremote.app.client.AppSecurity;
 import org.openremote.model.geo.GeoJSON;
 import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.value.ObjectValue;
@@ -30,6 +31,8 @@ public interface MapView extends IsWidget {
 
     interface Presenter {
         void onMapReady();
+
+        AppSecurity getSecurity();
     }
 
     void setPresenter(Presenter presenter);

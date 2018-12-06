@@ -3,5 +3,6 @@ idea {
     module {
         excludeDirs += file("manager/app")
         excludeDirs += file("keycloak")
+        excludeDirs += file("manager/extensions")
     }
 }

@@ -19,12 +19,12 @@
             let app = e.detail.app;
 
             Promise.all([
-                app.load.css("/static/3rdparty/mapbox-gl-js/0.42.2/mapbox-gl.css"),
-                app.load.js("/static/3rdparty/mapbox-gl-js/0.42.2/mapbox-gl.js"),
+                app.load.css("/shared/map/mapbox-gl-js/0.42.2/mapbox-gl.css"),
+                app.load.js("/shared/map/mapbox-gl-js/0.42.2/mapbox-gl.js"),
 
                 app.load.js("/static/node_modules/chart.js/dist/Chart.js"),
 
-                app.load.js("/static/3rdparty/sprintf/1.0.3/sprintf.min.js")
+                app.load.js("/shared/sprintf/1.0.3/sprintf.min.js")
             ]).then(() => {
                 dispatchEvent(new CustomEvent("StartManager"));
             }).catch(e => {

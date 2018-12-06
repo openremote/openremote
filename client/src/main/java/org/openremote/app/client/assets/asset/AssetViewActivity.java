@@ -20,6 +20,7 @@
 package org.openremote.app.client.assets.asset;
 
 import com.google.gwt.http.client.URL;
+import org.openremote.app.client.AppSecurity;
 import org.openremote.app.client.Environment;
 import org.openremote.app.client.assets.AgentStatusEventMapper;
 import org.openremote.app.client.assets.AssetMapper;

@@ -170,6 +170,7 @@ services:
 
       # Custom location of the static applications.
       # APP_DOCROOT: '/deployment/manager/app'
+      # SHARED_DOCROOT: '/deployment/manager/shared'
       # Custom default app name to load when '/' is requested
       # APP_DEFAULT: 'manager`
 
@@ -179,12 +180,19 @@ services:
       # which are by default served as static resources from the manager service.
       # CONSOLE_USE_STATIC_BOWER_COMPONENTS = 'false'
 
+      # Map related settings.
       # Provide a path to the map tiles database file (see https://openmaptiles.com/).
-      # MAP_TILES_PATH: '/deployment/manager/map/mapdata.mbtiles'
-
+      # MAP_TILES_PATH: '/deployment/map/mapdata.mbtiles'
+      #
       # Override the map settings such as center location and zoom when opening the
       # manager's map, as well as other style details and colours.
-      # MAP_SETTINGS_PATH: '/deployment/manager/map/mapsettings.json'
+      # MAP_SETTINGS_PATH: '/deployment/map/mapsettings.json'
+      #
+      # Set the tileserver host name and port; the manager will reverse proxy to this server
+      # to provider raster map tiles to frontend apps
+      # MAP_TILESERVER_HOST: null
+      # MAP_TILESERVER_PORT: 8082
+      # MAP_TILESERVER_REQUEST_TIMEOUT: 10000
 
       # Override logging.properties with a file of your choice.
       # LOGGING_CONFIG_FILE: '/deployment/manager/logging.properties'
@@ -321,3 +329,8 @@ services:
     logging:
         options:
             max-size: 10m
+
+  # Map tile server for serving raster tiles using mbtiles
+  map:
+    build: '../map'
+    image: openremote/tileserver-gl
