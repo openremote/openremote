@@ -1,0 +1,18 @@
+#
+# Profile for doing development work on raster map components.
+#
+# https://localhost:8082
+version: '2.2'
+
+services:
+
+  map:
+    extends:
+      file: deploy.yml
+      service: map
+    ports:
+      - "127.0.0.1:8082:80"
+    volumes:
+      - ../deployment/manager/shared:/shared
+      - ../deployment/map:/data
+    command: ["-c", "/server/config.json"]

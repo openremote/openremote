@@ -1,0 +1,16 @@
+{
+  "options": {
+    "frontPage": true,
+    "paths": {
+      "root": "/shared",
+      "fonts": "/server/fonts",
+      "styles": "/data",
+      "mbtiles": "/data"
+    }
+  },
+  "styles": {
+    "standard": {
+      "style": "mapsettings.json"
+    }
+  }
+}
