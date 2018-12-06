@@ -37,7 +37,6 @@ import static org.openremote.container.security.IdentityService.IDENTITY_NETWORK
 import static org.openremote.container.timer.TimerService.Clock.PSEUDO
 import static org.openremote.container.timer.TimerService.TIMER_CLOCK_TYPE
 import static org.openremote.container.web.WebService.WEBSERVER_LISTEN_PORT
-import static org.openremote.manager.web.ManagerWebService.APP_DOCROOT
 import static org.openremote.manager.setup.SetupTasks.*
 
 trait ManagerContainerTrait extends ContainerTrait {
@@ -48,8 +47,7 @@ trait ManagerContainerTrait extends ContainerTrait {
                 (IDENTITY_NETWORK_HOST)          : KeycloakIdentityProvider.KEYCLOAK_HOST_DEFAULT,
                 (IDENTITY_NETWORK_WEBSERVER_PORT): Integer.toString(KeycloakIdentityProvider.KEYCLOAK_PORT_DEFAULT),
                 (SETUP_IMPORT_DEMO_SCENES)       : "false",
-                (SETUP_IMPORT_DEMO_RULES)        : "false",
-                (APP_DOCROOT)                    : "../deployment/manager/app/"
+                (SETUP_IMPORT_DEMO_RULES)        : "false"
         ]
     }
 

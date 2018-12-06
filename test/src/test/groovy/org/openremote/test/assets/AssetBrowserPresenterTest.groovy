@@ -76,7 +76,7 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
         connect(createWebsocketClient(), clientEventService.endpoint, serverUri(serverPort), WEBSOCKET_EVENTS, realm, accessToken.call())
 
         and: "the server resources to call from client"
-        def clientTarget = getClientTarget(serverUri(serverPort), realm)
+        def clientTarget = getClientApiTarget(serverUri(serverPort), realm)
         def assetResource = Stub(AssetResource) {
             _(*_) >> { callResourceProxy(container.JSON, clientTarget, getDelegate()) }
         }
@@ -274,7 +274,7 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
         connect(createWebsocketClient(), clientEventService.endpoint, serverUri(serverPort), WEBSOCKET_EVENTS, realm, accessToken.call())
 
         and: "the server resources to call from client"
-        def clientTarget = getClientTarget(serverUri(serverPort), realm)
+        def clientTarget = getClientApiTarget(serverUri(serverPort), realm)
         def assetResource = Stub(AssetResource) {
             _(*_) >> { callResourceProxy(container.JSON, clientTarget, getDelegate()) }
         }
@@ -452,7 +452,7 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
         connect(createWebsocketClient(), clientEventService.endpoint, serverUri(serverPort), WEBSOCKET_EVENTS, realm, accessToken.call())
 
         and: "the server resources to call from client"
-        def clientTarget = getClientTarget(serverUri(serverPort), realm)
+        def clientTarget = getClientApiTarget(serverUri(serverPort), realm)
         def assetResource = Stub(AssetResource) {
             _(*_) >> { callResourceProxy(container.JSON, clientTarget, getDelegate()) }
         }

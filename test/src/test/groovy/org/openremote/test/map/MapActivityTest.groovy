@@ -35,7 +35,7 @@ class MapActivityTest { /* extends Specification implements ContainerTrait, GwtC
         def requestService = new RequestServiceImpl(securityService, constraintViolationReader)
 
         and: "a test client target"
-        def clientTarget = getClientTarget(serverUri(serverPort), realm);
+        def clientTarget = getClientApiTarget(serverUri(serverPort), realm);
 
         and: "The map view, resource, and activity"
         def mapView = Mock(MapView) {

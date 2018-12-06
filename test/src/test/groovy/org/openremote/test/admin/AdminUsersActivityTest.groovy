@@ -81,7 +81,7 @@ class AdminUsersActivityTest extends Specification implements ManagerContainerTr
         )
 
         and: "the server resources to call from client"
-        def clientTarget = getClientTarget(serverUri(serverPort), realm)
+        def clientTarget = getClientApiTarget(serverUri(serverPort), realm)
         def tenantResource = Stub(TenantResource) {
             _(*_) >> { callResourceProxy(container.JSON, clientTarget, getDelegate()) }
         }
@@ -247,7 +247,7 @@ class AdminUsersActivityTest extends Specification implements ManagerContainerTr
         resultEvents[0].place instanceof AdminUsersPlace
         resultEvents[1] instanceof GoToPlaceEvent
         resultEvents[1].place instanceof AdminUsersPlace
-        resultEvents[1].place.getAppName == MASTER_REALM
+        resultEvents[1].place.realm == MASTER_REALM
 
         and: "The view should have received the tenants, selected realm, and users"
         conditions.eventually {
@@ -274,7 +274,7 @@ class AdminUsersActivityTest extends Specification implements ManagerContainerTr
             assert resultEvents[0].place instanceof AdminUserEditPlace
             assert resultEvents[1] instanceof GoToPlaceEvent
             assert resultEvents[1].place instanceof AdminUserEditPlace
-            assert resultEvents[1].place.getAppName == MASTER_REALM
+            assert resultEvents[1].place.realm == MASTER_REALM
         }
 
         and: "The admin navigation view should have the right place set"
@@ -405,7 +405,7 @@ class AdminUsersActivityTest extends Specification implements ManagerContainerTr
             assert resultEvents[1].place instanceof AdminUsersPlace
             assert resultEvents[2] instanceof GoToPlaceEvent
             assert resultEvents[2].place instanceof AdminUsersPlace
-            assert resultEvents[2].place.getAppName == MASTER_REALM
+            assert resultEvents[2].place.realm == MASTER_REALM
         }
 
         and: "The view should have received the users"
@@ -433,7 +433,7 @@ class AdminUsersActivityTest extends Specification implements ManagerContainerTr
             assert resultEvents[0].place instanceof AbstractAdminUsersPlace
             assert resultEvents[1] instanceof GoToPlaceEvent
             assert resultEvents[1].place instanceof AbstractAdminUsersPlace
-            assert resultEvents[1].place.getAppName == MASTER_REALM
+            assert resultEvents[1].place.realm == MASTER_REALM
             assert resultEvents[1].place.userId == selectedUser.id
         }
 
@@ -653,7 +653,7 @@ class AdminUsersActivityTest extends Specification implements ManagerContainerTr
             assert resultEvents[1].place instanceof AdminUsersPlace
             assert resultEvents[2] instanceof GoToPlaceEvent
             assert resultEvents[2].place instanceof AdminUsersPlace
-            assert resultEvents[2].place.getAppName == MASTER_REALM
+            assert resultEvents[2].place.realm == MASTER_REALM
         }
 
         and: "The view should have received the tenants and users"

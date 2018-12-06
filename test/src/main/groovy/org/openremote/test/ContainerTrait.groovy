@@ -34,7 +34,8 @@ import org.openremote.container.security.AuthForm
 import org.openremote.container.security.IdentityService
 import org.openremote.container.security.keycloak.KeycloakIdentityProvider
 import org.openremote.container.web.WebClient
-import org.openremote.container.web.WebService
+import org.openremote.manager.web.ManagerWebService
+import org.openremote.model.Constants
 
 import javax.websocket.ClientEndpointConfig
 import javax.websocket.Endpoint
@@ -78,28 +79,28 @@ trait ContainerTrait {
         }
     }
 
-    static ResteasyWebTarget getClientTarget(UriBuilder serverUri) {
-        WebClient.getTarget(createClient().build(), serverUri.clone().build(), null, null, null)
+    static ResteasyWebTarget getClientTarget(UriBuilder serverUri, String accessToken) {
+        WebClient.getTarget(createClient().build(), serverUri.build(), accessToken, null, null)
     }
 
-    static ResteasyWebTarget getClientTarget(UriBuilder serverUri, String realm) {
-        WebClient.getTarget(createClient().build(), serverUri.clone().replacePath(realm).build(), null, null, null)
+    static ResteasyWebTarget getClientApiTarget(UriBuilder serverUri, String realm) {
+        WebClient.getTarget(createClient().build(), serverUri.clone().replacePath(ManagerWebService.API_PATH).path(realm).build(), null, null, null)
     }
 
-    static ResteasyWebTarget getClientTarget(UriBuilder serverUri, String realm, String accessToken) {
-        WebClient.getTarget(createClient().build(), serverUri.clone().replacePath(realm).build(), accessToken, null, null)
+    static ResteasyWebTarget getClientApiTarget(UriBuilder serverUri, String realm, String accessToken) {
+        WebClient.getTarget(createClient().build(), serverUri.clone().replacePath(ManagerWebService.API_PATH).path(realm).build(), accessToken, null, null)
     }
 
-    static ResteasyWebTarget getClientTarget(UriBuilder serverUri, String realm, String path, String accessToken) {
-        WebClient.getTarget(createClient().build(), serverUri.clone().replacePath(realm).path(path).build(), accessToken, null, null)
+    static ResteasyWebTarget getClientApiTarget(UriBuilder serverUri, String realm, String path, String accessToken) {
+        WebClient.getTarget(createClient().build(), serverUri.clone().replacePath(ManagerWebService.API_PATH).path(realm).path(path).build(), accessToken, null, null)
     }
 
-    static ResteasyWebTarget getClientTarget(ResteasyClient client, UriBuilder serverUri, String realm, String accessToken) {
-        WebClient.getTarget(client, serverUri.clone().replacePath(realm).build(), accessToken, null, null)
+    static ResteasyWebTarget getClientApiTarget(ResteasyClient client, UriBuilder serverUri, String realm, String accessToken) {
+        WebClient.getTarget(client, serverUri.clone().replacePath(ManagerWebService.API_PATH).path(realm).build(), accessToken, null, null)
     }
 
-    static ResteasyWebTarget getClientTarget(ResteasyClient client, UriBuilder serverUri, String realm, String path, String accessToken) {
-        WebClient.getTarget(client, serverUri.clone().replacePath(realm).path(path).build(), accessToken, null, null)
+    static ResteasyWebTarget getClientApiTarget(ResteasyClient client, UriBuilder serverUri, String realm, String path, String accessToken) {
+        WebClient.getTarget(client, serverUri.clone().replacePath(ManagerWebService.API_PATH).path(realm).path(path).build(), accessToken, null, null)
     }
 
     static int findEphemeralPort() {
@@ -131,7 +132,7 @@ trait ContainerTrait {
                 .scheme("ws")
                 .replacePath(MessageBrokerSetupService.WEBSOCKET_PATH)
                 .path(endpointPath)
-                .queryParam(WebService.REQUEST_HEADER_REALM, realm)
+                .queryParam(Constants.REQUEST_HEADER_REALM, realm)
                 .queryParam("Authorization", "Bearer " + accessToken)
     }
 

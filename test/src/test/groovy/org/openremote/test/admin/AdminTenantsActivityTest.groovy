@@ -74,7 +74,7 @@ class AdminTenantsActivityTest extends Specification implements ManagerContainer
         )
 
         and: "the server resources to call from client"
-        def clientTarget = getClientTarget(serverUri(serverPort), realm)
+        def clientTarget = getClientApiTarget(serverUri(serverPort), realm)
         def tenantResource = Stub(TenantResource) {
             _(*_) >> { callResourceProxy(container.JSON, clientTarget, getDelegate()) }
         }
@@ -324,7 +324,7 @@ class AdminTenantsActivityTest extends Specification implements ManagerContainer
             assert resultEvents[0].place instanceof AdminTenantPlace
             assert resultEvents[1] instanceof GoToPlaceEvent
             assert resultEvents[1].place instanceof AdminTenantPlace
-            assert resultEvents[1].place.getAppName == "testrealm"
+            assert resultEvents[1].place.realm == "testrealm"
         }
 
         and: "The admin tenant form should be cleared"

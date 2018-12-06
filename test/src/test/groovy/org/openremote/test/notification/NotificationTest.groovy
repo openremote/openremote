@@ -116,16 +116,16 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
                                                                            Values.create(false)),null, null), null)
 
         and: "the notification resource"
-        def testuser1NotificationResource = getClientTarget(serverUri(serverPort), MASTER_REALM, testuser1AccessToken).proxy(NotificationResource.class)
-        def testuser2NotificationResource = getClientTarget(serverUri(serverPort), realm, testuser2AccessToken).proxy(NotificationResource.class)
-        def testuser3NotificationResource = getClientTarget(serverUri(serverPort), realm, testuser3AccessToken).proxy(NotificationResource.class)
-        def adminNotificationResource = getClientTarget(serverUri(serverPort), MASTER_REALM, adminAccessToken).proxy(NotificationResource.class)
-        def anonymousNotificationResource = getClientTarget(serverUri(serverPort), keycloakDemoSetup.customerATenant.realm).proxy(NotificationResource.class)
-        def testuser1ConsoleResource = getClientTarget(serverUri(serverPort), MASTER_REALM, testuser1AccessToken).proxy(ConsoleResource.class)
-        def testuser2ConsoleResource = getClientTarget(serverUri(serverPort), realm, testuser2AccessToken).proxy(ConsoleResource.class)
-        def testuser3ConsoleResource = getClientTarget(serverUri(serverPort), realm, testuser3AccessToken).proxy(ConsoleResource.class)
-        def adminConsoleResource = getClientTarget(serverUri(serverPort), MASTER_REALM, adminAccessToken).proxy(ConsoleResource.class)
-        def anonymousConsoleResource = getClientTarget(serverUri(serverPort), realm).proxy(ConsoleResource.class)
+        def testuser1NotificationResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, testuser1AccessToken).proxy(NotificationResource.class)
+        def testuser2NotificationResource = getClientApiTarget(serverUri(serverPort), realm, testuser2AccessToken).proxy(NotificationResource.class)
+        def testuser3NotificationResource = getClientApiTarget(serverUri(serverPort), realm, testuser3AccessToken).proxy(NotificationResource.class)
+        def adminNotificationResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, adminAccessToken).proxy(NotificationResource.class)
+        def anonymousNotificationResource = getClientApiTarget(serverUri(serverPort), keycloakDemoSetup.customerATenant.realm).proxy(NotificationResource.class)
+        def testuser1ConsoleResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, testuser1AccessToken).proxy(ConsoleResource.class)
+        def testuser2ConsoleResource = getClientApiTarget(serverUri(serverPort), realm, testuser2AccessToken).proxy(ConsoleResource.class)
+        def testuser3ConsoleResource = getClientApiTarget(serverUri(serverPort), realm, testuser3AccessToken).proxy(ConsoleResource.class)
+        def adminConsoleResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, adminAccessToken).proxy(ConsoleResource.class)
+        def anonymousConsoleResource = getClientApiTarget(serverUri(serverPort), realm).proxy(ConsoleResource.class)
 
         when: "various consoles are registered"
         def consoleRegistration = new ConsoleRegistration(null,

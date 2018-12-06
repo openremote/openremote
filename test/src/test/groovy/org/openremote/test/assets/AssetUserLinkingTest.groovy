@@ -38,7 +38,7 @@ class AssetUserLinkingTest extends Specification implements ManagerContainerTrai
         ).token
 
         and: "the asset resource"
-        def assetResource = getClientTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AssetResource.class)
+        def assetResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AssetResource.class)
 
         /* ############################################## READ ####################################### */
 

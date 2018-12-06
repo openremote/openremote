@@ -108,7 +108,7 @@ class ResidenceNotifyAlarmTriggerTest extends Specification implements ManagerCo
         ).token
 
         and: "the notification and console resources"
-        def authenticatedConsoleResource = getClientTarget(serverUri(serverPort), realm, accessToken).proxy(ConsoleResource.class)
+        def authenticatedConsoleResource = getClientApiTarget(serverUri(serverPort), realm, accessToken).proxy(ConsoleResource.class)
 
         when: "a console is registered by the test user"
         def consoleRegistration = new ConsoleRegistration(null,

@@ -27,7 +27,7 @@ class MapResourceTest extends Specification implements ManagerContainerTrait {
         ).token
 
         and: "a test client target"
-        def clientTarget = getClientTarget(serverUri(serverPort), realm, accessToken)
+        def clientTarget = getClientApiTarget(serverUri(serverPort), realm, accessToken)
 
         and: "the map resource"
         def mapResource = clientTarget.proxy(MapResource.class)

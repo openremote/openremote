@@ -291,15 +291,15 @@ class HttpServerProtocolTest extends Specification implements ManagerContainerTr
 
         and: "the test resource (to be deployed by the protocol)"
         def authenticatedTestResource = getClientTarget(
-            serverUri(serverPort),
-            MASTER_REALM,
-            AbstractHttpServerProtocol.DEFAULT_DEPLOYMENT_PATH_PREFIX + "/test",
+            serverUri(serverPort)
+                    .path(AbstractHttpServerProtocol.DEFAULT_DEPLOYMENT_PATH_PREFIX)
+                    .path("test"),
             accessToken).proxy(TestResource.class)
         def testResource = getClientTarget(
-            serverUri(serverPort),
-            MASTER_REALM,
-            AbstractHttpServerProtocol.DEFAULT_DEPLOYMENT_PATH_PREFIX + "/test",
-            null).proxy(TestResource.class)
+                serverUri(serverPort)
+                        .path(AbstractHttpServerProtocol.DEFAULT_DEPLOYMENT_PATH_PREFIX)
+                        .path("test"),
+                null).proxy(TestResource.class)
 
         when: "an agent with a test HTTP server protocol configuration is created"
         def agent = new Asset()
@@ -375,7 +375,7 @@ class HttpServerProtocolTest extends Specification implements ManagerContainerTr
         agent = assetStorageService.merge(agent)
 
         and: "an un-authenticated test resource proxy is created for the new deployment"
-        def testResource2 = getClientTarget(
+        def testResource2 = getClientApiTarget(
             serverUri(serverPort),
             MASTER_REALM,
             AbstractHttpServerProtocol.DEFAULT_DEPLOYMENT_PATH_PREFIX + "/test2",
