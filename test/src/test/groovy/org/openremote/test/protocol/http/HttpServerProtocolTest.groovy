@@ -34,6 +34,7 @@ import org.openremote.model.geo.GeoJSONPoint
 import org.openremote.model.value.ObjectValue
 import org.openremote.model.value.Values
 import org.openremote.test.ManagerContainerTrait
+import spock.lang.Ignore
 import spock.lang.Shared
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
@@ -266,6 +267,7 @@ class HttpServerProtocolTest extends Specification implements ManagerContainerTr
         mockServer.putRequestWithHeadersCalled = false
     }
 
+    @Ignore
     def "Check HTTP server protocol configuration and JAX-RS deployment"() {
 
         given: "expected conditions"

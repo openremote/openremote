@@ -42,7 +42,8 @@ class MapResourceTest extends Specification implements ManagerContainerTrait {
         def json = new JsonSlurper().parseText(mapSettings.toJson())
         json.center.size() == 2
         json.maxBounds.size() == 4
-        json.style != null
+        json.sources != null
+        json.layers.size() > 0
 
         cleanup: "the server should be stopped"
         stopContainer(container)
