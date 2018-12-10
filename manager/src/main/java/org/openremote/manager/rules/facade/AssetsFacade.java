@@ -22,9 +22,9 @@ package org.openremote.manager.rules.facade;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.rules.RulesEngineId;
 import org.openremote.model.asset.Asset;
-import org.openremote.model.query.BaseAssetQuery;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeExecuteStatus;
+import org.openremote.model.query.BaseAssetQuery;
 import org.openremote.model.query.filter.PathPredicate;
 import org.openremote.model.query.filter.TenantPredicate;
 import org.openremote.model.rules.*;
@@ -33,12 +33,16 @@ import org.openremote.model.value.Values;
 
 import java.util.Collections;
 import java.util.function.Consumer;
+import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 /**
  * Restricts rule RHS access to the scope of the engine (a rule in asset scope can not use assets in global scope).
  */
 public class AssetsFacade<T extends Ruleset> extends Assets {
+
+    private static final Logger LOG = Logger.getLogger(AssetsFacade.class.getName());
+
 
     public class AssetsRestrictedQueryFacade extends Assets.RestrictedQuery {
 
@@ -130,14 +134,12 @@ public class AssetsFacade<T extends Ruleset> extends Assets {
         if (events == null)
             return this;
         for (AttributeEvent event : events) {
-
             // Check if the asset ID of the event can be found with the default query of this facade
             BaseAssetQuery<RestrictedQuery> checkQuery = query();
             checkQuery.ids = Collections.singletonList(event.getEntityId()); // Set directly on field, as modifying query restrictions is not allowed
             if (assetStorageService.find(checkQuery) == null) {
-                throw new IllegalArgumentException(
-                    "Access to asset not allowed for this rule engine scope: " + event
-                );
+                LOG.warning("Access to asset not allowed for this rule engine scope " + rulesEngineId + " for event: " + event);
+                continue;
             }
             eventConsumer.accept(event);
         }
