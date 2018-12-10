@@ -25,10 +25,10 @@ import io.undertow.servlet.Servlets;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.DeploymentManager;
 import io.undertow.servlet.api.ServletInfo;
+import io.undertow.util.HttpString;
 import org.jboss.resteasy.plugins.interceptors.CorsFilter;
 import org.jboss.resteasy.plugins.interceptors.RoleBasedSecurityFeature;
 import org.jboss.resteasy.plugins.server.servlet.HttpServlet30Dispatcher;
-import org.jboss.resteasy.plugins.server.servlet.ResteasyContextParameters;
 import org.jboss.resteasy.spi.ResteasyDeployment;
 import org.openremote.agent.protocol.AbstractProtocol;
 import org.openremote.container.Container;
@@ -36,14 +36,13 @@ import org.openremote.container.json.JacksonConfig;
 import org.openremote.container.json.ModelValueMessageBodyConverter;
 import org.openremote.container.security.IdentityService;
 import org.openremote.container.web.*;
-import org.openremote.container.web.jsapi.JSAPIServlet;
 import org.openremote.model.AbstractValueHolder;
 import org.openremote.model.ValueHolder;
+import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.agent.ProtocolConfiguration;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.MetaItem;
-import org.openremote.model.util.Pair;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.value.ArrayValue;
 import org.openremote.model.value.StringValue;
@@ -59,6 +58,7 @@ import java.util.regex.Pattern;
 
 import static org.openremote.container.web.WebService.pathStartsWithHandler;
 import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
+import static org.openremote.model.Constants.REQUEST_HEADER_REALM;
 
 /**
  * This is an abstract protocol for creating JAX-RS deployments; a concrete implementation should be created for each
@@ -71,24 +71,34 @@ import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
  * <li>{@link #META_PROTOCOL_ALLOWED_ORIGINS}</li>
  * <li>{@link #META_PROTOCOL_ALLOWED_METHODS}</li>
  * </ul>
- * The path used for the deployment is determined by {@link #getDeploymentPath}
+ * The path used for the deployment is determined by {@link #getDeploymentPath}. The realm that the {@link ProtocolConfiguration}s
+ * {@link org.openremote.model.asset.Asset} belongs to will be used implicitly for all incoming requests to any deployments
+ * that this protocol creates and therefore only users of that realm will be able to make calls to the deployment when
+ * {@value META_PROTOCOL_ROLE_BASED_SECURITY_ENABLED} is true.
  */
 public abstract class AbstractHttpServerProtocol extends AbstractProtocol {
 
-    public static final String PROTOCOL_NAME = PROTOCOL_NAMESPACE + ":httpServer";
+    public static class DeploymentInstance {
+        protected DeploymentInfo deploymentInfo;
+        protected WebService.RequestHandler requestHandler;
 
+        public DeploymentInstance(DeploymentInfo deploymentInfo, WebService.RequestHandler requestHandler) {
+            this.deploymentInfo = deploymentInfo;
+            this.requestHandler = requestHandler;
+        }
+    }
+
+    public static final String PROTOCOL_NAME = PROTOCOL_NAMESPACE + ":httpServer";
     /**
      * This is the default path prefix for all deployments. Should not be overridden unless you know what you are doing
      * and there is a good reason to override.
      */
     public static final String DEFAULT_DEPLOYMENT_PATH_PREFIX = "/rest";
-
     /**
      * Sets the instance part of the path used for this deployment see {@link #getDeploymentPath}. Note the final full
      * path to a deployment must match the {@link #PATH_REGEX} filter.
      */
     public static final String META_PROTOCOL_DEPLOYMENT_PATH = PROTOCOL_NAME + ":deploymentPath";
-
     /**
      * Sets the allowed origins for CORS (incoming requests should include an origin header for CORS support). Note if
      * the container is started in development mode (i.e. {@link Container#DEV_MODE}=true) then all origins are allowed
@@ -96,28 +106,24 @@ public abstract class AbstractHttpServerProtocol extends AbstractProtocol {
      * containing the allowed origins.
      */
     public static final String META_PROTOCOL_ALLOWED_ORIGINS = PROTOCOL_NAME + ":allowedOrigins";
-
     /**
      * Sets the allowed methods for CORS (incoming requests should include an origin header for CORS support). Should be
      * a comma separated string of allowed {@link HttpMethod}s (e.g. "OPTIONS, GET, POST") (default:
      * {@value #DEFAULT_ALLOWED_METHODS}).
      */
     public static final String META_PROTOCOL_ALLOWED_METHODS = PROTOCOL_NAME + ":allowedMethods";
-
     /**
      * Flag to enable role based security using the {@link RoleBasedSecurityFeature}; also requires that the
      * {@link Container} is started with an {@link IdentityService}.
      */
     public static final String META_PROTOCOL_ROLE_BASED_SECURITY_ENABLED = PROTOCOL_NAME + ":roleBasedSecurity";
-
     /**
      * The regex used to validate the deployment path.
      */
     public static final Pattern PATH_REGEX = Pattern.compile("^[\\w/_]+$", Pattern.CASE_INSENSITIVE);
-
-    public static final String JSAPI_PATH = "/jsapi";
     public static final String DEFAULT_ALLOWED_METHODS = "OPTIONS, GET, POST, DELETE, PUT, PATCH";
     public static final String DEFAULT_DEPLOYMENT_NAME_FORMAT = "HttpServer %1$s Deployment %2$d";
+    protected static final Map<AttributeRef, DeploymentInstance> deployments = new HashMap<>();
     private static final Logger LOG = Logger.getLogger(AbstractHttpServerProtocol.class.getName());
     protected static WebServiceExceptions.DefaultResteasyExceptionMapper defaultResteasyExceptionMapper;
     protected static WebServiceExceptions.ForbiddenResteasyExceptionMapper forbiddenResteasyExceptionMapper;
@@ -126,7 +132,6 @@ public abstract class AbstractHttpServerProtocol extends AbstractProtocol {
     protected static AlreadyGzippedWriterInterceptor alreadtGzippedWriterInterceptor;
     protected static ClientErrorExceptionHandler clientErrorExceptionHandler;
     protected static WebServiceExceptions.ServletUndertowExceptionHandler undertowExceptionHandler;
-    protected static final Map<AttributeRef, List<Pair<DeploymentInfo, WebService.RequestHandler>>> deployments = new HashMap<>();
     protected int deploymentCounter = 0;
     protected Container container;
     protected boolean devMode;
@@ -140,10 +145,11 @@ public abstract class AbstractHttpServerProtocol extends AbstractProtocol {
         this.devMode = container.isDevMode();
 
         identityService = container.hasService(IdentityService.class)
-            ? container.getService(IdentityService.class)
-            : null;
+                ? container.getService(IdentityService.class)
+                : null;
 
         webService = container.getService(WebService.class);
+
 
         if (defaultResteasyExceptionMapper == null) {
             defaultResteasyExceptionMapper = new WebServiceExceptions.DefaultResteasyExceptionMapper(devMode);
@@ -161,10 +167,8 @@ public abstract class AbstractHttpServerProtocol extends AbstractProtocol {
         Application application = createApplication(protocolConfiguration);
         ResteasyDeployment deployment = createDeployment(application, protocolConfiguration);
         DeploymentInfo deploymentInfo = createDeploymentInfo(deployment, protocolConfiguration);
-        DeploymentInfo jsDeploymentInfo = createJSDeploymentInfo(deployment, protocolConfiguration);
         configureDeploymentInfo(deploymentInfo);
         deploy(deploymentInfo, protocolConfiguration);
-        deploy(jsDeploymentInfo, protocolConfiguration);
     }
 
     @Override
@@ -189,32 +193,32 @@ public abstract class AbstractHttpServerProtocol extends AbstractProtocol {
             allowedOrigins = Collections.singletonList("*");
         } else {
             Optional<MetaItem> allowedOriginsMeta = protocolConfiguration
-                .getMetaItem(META_PROTOCOL_ALLOWED_ORIGINS);
+                    .getMetaItem(META_PROTOCOL_ALLOWED_ORIGINS);
 
             allowedOrigins = allowedOriginsMeta
-                .flatMap(AbstractValueHolder::getValueAsString)
-                .map(Collections::singletonList)
-                .orElseGet(() ->
-                    allowedOriginsMeta.flatMap(AbstractValueHolder::getValueAsArray)
-                        .flatMap(arrayValue ->
-                            Values.getArrayElements(
-                                arrayValue,
-                                StringValue.class,
-                                true,
-                                false,
-                                StringValue::getString))
-                        .orElse(null));
+                    .flatMap(AbstractValueHolder::getValueAsString)
+                    .map(Collections::singletonList)
+                    .orElseGet(() ->
+                            allowedOriginsMeta.flatMap(AbstractValueHolder::getValueAsArray)
+                                    .flatMap(arrayValue ->
+                                            Values.getArrayElements(
+                                                    arrayValue,
+                                                    StringValue.class,
+                                                    true,
+                                                    false,
+                                                    StringValue::getString))
+                                    .orElse(null));
         }
 
         if (allowedOrigins != null) {
             String allowedMethods = protocolConfiguration
-                .getMetaItem(META_PROTOCOL_ALLOWED_METHODS)
-                .flatMap(AbstractValueHolder::getValueAsString)
-                .orElse(DEFAULT_ALLOWED_METHODS);
+                    .getMetaItem(META_PROTOCOL_ALLOWED_METHODS)
+                    .flatMap(AbstractValueHolder::getValueAsString)
+                    .orElse(DEFAULT_ALLOWED_METHODS);
 
             if (TextUtil.isNullOrEmpty(allowedMethods)) {
                 throw new IllegalArgumentException("Allowed methods meta item must be a non empty string: "
-                    + META_PROTOCOL_ALLOWED_METHODS);
+                        + META_PROTOCOL_ALLOWED_METHODS);
             }
 
             CorsFilter corsFilter = new CorsFilter();
@@ -231,8 +235,8 @@ public abstract class AbstractHttpServerProtocol extends AbstractProtocol {
         String deploymentName = getDeploymentName(protocolConfiguration);
 
         boolean enableSecurity = protocolConfiguration.getMetaItem(META_PROTOCOL_ROLE_BASED_SECURITY_ENABLED)
-            .flatMap(AbstractValueHolder::getValueAsBoolean)
-            .orElse(false);
+                .flatMap(AbstractValueHolder::getValueAsBoolean)
+                .orElse(false);
 
         if (enableSecurity) {
             if (identityService == null) {
@@ -243,58 +247,16 @@ public abstract class AbstractHttpServerProtocol extends AbstractProtocol {
         resteasyDeployment.setSecurityEnabled(enableSecurity);
 
         ServletInfo resteasyServlet = Servlets.servlet("ResteasyServlet", HttpServlet30Dispatcher.class)
-            .setAsyncSupported(true)
-            .setLoadOnStartup(1)
-            .addMapping("/*");
+                .setAsyncSupported(true)
+                .setLoadOnStartup(1)
+                .addMapping("/*");
 
         DeploymentInfo deploymentInfo = new DeploymentInfo()
-            .setDeploymentName(deploymentName)
-            .setContextPath(deploymentPath)
-            .addServletContextAttribute(ResteasyDeployment.class.getName(), resteasyDeployment)
-            .addServlet(resteasyServlet)
-            .setClassLoader(Container.class.getClassLoader());
-
-        if (enableSecurity) {
-            identityService.secureDeployment(deploymentInfo);
-        }
-
-        return deploymentInfo;
-    }
-
-    protected DeploymentInfo createJSDeploymentInfo(ResteasyDeployment resteasyDeployment, AssetAttribute protocolConfiguration) {
-        String deploymentPath = getDeploymentPath(protocolConfiguration);
-        String deploymentName = getDeploymentName(protocolConfiguration);
-
-        boolean enableSecurity = protocolConfiguration.getMetaItem(META_PROTOCOL_ROLE_BASED_SECURITY_ENABLED)
-            .flatMap(AbstractValueHolder::getValueAsBoolean)
-            .orElse(false);
-
-        if (enableSecurity) {
-            if (identityService == null) {
-                throw new RuntimeException("Role based security can only be enabled when an identity service is available");
-            }
-        }
-
-        resteasyDeployment.setSecurityEnabled(enableSecurity);
-
-        ServletInfo jsApiServlet = Servlets.servlet("ResteasyJSServlet", JSAPIServlet.class)
-            .setAsyncSupported(true)
-            .setLoadOnStartup(1)
-            .addMapping("/*");
-
-        DeploymentInfo deploymentInfo = new DeploymentInfo()
-            .setDeploymentName(deploymentName + " JS")
-            .setContextPath(deploymentPath + JSAPI_PATH)
-            .addServletContextAttribute(ResteasyDeployment.class.getName(), resteasyDeployment)
-            .addServlet(jsApiServlet)
-            .setClassLoader(Container.class.getClassLoader());
-
-        deploymentInfo.addServletContextAttribute(
-            ResteasyContextParameters.RESTEASY_DEPLOYMENTS,
-            new HashMap<String, ResteasyDeployment>() {{
-                put("", resteasyDeployment);
-            }}
-        );
+                .setDeploymentName(deploymentName)
+                .setContextPath(deploymentPath)
+                .addServletContextAttribute(ResteasyDeployment.class.getName(), resteasyDeployment)
+                .addServlet(resteasyServlet)
+                .setClassLoader(Container.class.getClassLoader());
 
         if (enableSecurity) {
             identityService.secureDeployment(deploymentInfo);
@@ -331,17 +293,17 @@ public abstract class AbstractHttpServerProtocol extends AbstractProtocol {
      */
     protected String getDeploymentPath(AssetAttribute protocolConfiguration) throws IllegalArgumentException {
         String path = protocolConfiguration.getMetaItem(META_PROTOCOL_DEPLOYMENT_PATH)
-            .flatMap(ValueHolder::getValueAsString)
-            .map(String::toLowerCase)
-            .orElseThrow(() ->
-                new IllegalArgumentException(
-                    "Required deployment path meta item is missing or invalid: " + META_PROTOCOL_DEPLOYMENT_PATH));
+                .flatMap(ValueHolder::getValueAsString)
+                .map(String::toLowerCase)
+                .orElseThrow(() ->
+                        new IllegalArgumentException(
+                                "Required deployment path meta item is missing or invalid: " + META_PROTOCOL_DEPLOYMENT_PATH));
 
         String deploymentPath = getDeploymentPathPrefix() + "/" + path;
 
         if (!PATH_REGEX.matcher(deploymentPath).find()) {
             throw new IllegalArgumentException(
-                "Required deployment path meta item is missing or invalid: " + META_PROTOCOL_DEPLOYMENT_PATH);
+                    "Required deployment path meta item is missing or invalid: " + META_PROTOCOL_DEPLOYMENT_PATH);
         }
 
         return deploymentPath;
@@ -352,12 +314,12 @@ public abstract class AbstractHttpServerProtocol extends AbstractProtocol {
      */
     protected List<Object> getStandardProviders(AssetAttribute protocolConfiguration) {
         return Lists.newArrayList(
-            defaultResteasyExceptionMapper,
-            forbiddenResteasyExceptionMapper,
-            jacksonConfig,
-            modelValueMessageBodyConverter,
-            alreadtGzippedWriterInterceptor,
-            clientErrorExceptionHandler
+                defaultResteasyExceptionMapper,
+                forbiddenResteasyExceptionMapper,
+                jacksonConfig,
+                modelValueMessageBodyConverter,
+                alreadtGzippedWriterInterceptor,
+                clientErrorExceptionHandler
         );
     }
 
@@ -380,50 +342,62 @@ public abstract class AbstractHttpServerProtocol extends AbstractProtocol {
         manager.deploy();
         HttpHandler httpHandler;
 
+        // Get realm from owning agent asset
+        Asset agent = assetService.getAgent(protocolConfiguration);
+        String agentRealm = agent.getTenantRealm();
+
+        if (TextUtil.isNullOrEmpty(agentRealm)) {
+            throw new IllegalStateException("Cannot determine the realm that this protocol configuration belongs to");
+        }
+
         try {
             httpHandler = manager.start();
-            WebService.RequestHandler requestHandler = pathStartsWithHandler(deploymentInfo.getDeploymentName(), deploymentInfo.getContextPath(), httpHandler);
-            List<Pair<DeploymentInfo, WebService.RequestHandler>> deploymentList = deployments.getOrDefault(protocolConfiguration.getReferenceOrThrow(), new ArrayList<>());
 
-            deploymentList.add(new Pair<>(deploymentInfo, requestHandler));
-            deployments.put(protocolConfiguration.getReferenceOrThrow(), deploymentList);
+            // Wrap the handler to inject the realm
+            HttpHandler handlerWrapper = exchange -> {
+                exchange.getRequestHeaders().put(HttpString.tryFromString(REQUEST_HEADER_REALM), agentRealm);
+                httpHandler.handleRequest(exchange);
+            };
+            WebService.RequestHandler requestHandler = pathStartsWithHandler(deploymentInfo.getDeploymentName(), deploymentInfo.getContextPath(), handlerWrapper);
+            DeploymentInstance deploymentInstance = new DeploymentInstance(deploymentInfo, requestHandler);
+            deployments.put(protocolConfiguration.getReferenceOrThrow(), deploymentInstance);
 
             LOG.info("Registering HTTP Server Protocol request handler '"
-                + this.getClass().getSimpleName()
-                + "' for request path: "
-                + deploymentInfo.getContextPath());
-            webService.getRequestHandlers().add(requestHandler);
+                    + this.getClass().getSimpleName()
+                    + "' for request path: "
+                    + deploymentInfo.getContextPath());
+            // Add the handler before the greedy deployment handler
+            webService.getRequestHandlers().add(0, requestHandler);
         } catch (ServletException e) {
             LOG.severe("Failed to deploy deployment: " + deploymentInfo.getDeploymentName());
         }
     }
 
     protected void undeploy(AssetAttribute protocolConfiguration) {
-        for (Pair<DeploymentInfo, WebService.RequestHandler> deploymentInfoHttpHandlerPair : deployments.get(protocolConfiguration.getReferenceOrThrow())) {
-            if (deploymentInfoHttpHandlerPair == null) {
-                LOG.info("Deployment doesn't exist for protocol configuration: " + protocolConfiguration);
-                return;
-            }
 
-            DeploymentInfo deploymentInfo = deploymentInfoHttpHandlerPair.key;
+        DeploymentInstance instance = deployments.get(protocolConfiguration.getReferenceOrThrow());
 
-            try {
-                LOG.info("Un-registering HTTP Server Protocol request handler '"
+        if (instance == null) {
+            LOG.info("Deployment doesn't exist for protocol configuration: " + protocolConfiguration);
+            return;
+        }
+        try {
+            LOG.info("Un-registering HTTP Server Protocol request handler '"
                     + this.getClass().getSimpleName()
                     + "' for request path: "
-                    + deploymentInfo.getContextPath());
-                webService.getRequestHandlers().remove(deploymentInfoHttpHandlerPair.value);
-                DeploymentManager manager = Servlets.defaultContainer().getDeployment(deploymentInfo.getDeploymentName());
-                manager.stop();
-                manager.undeploy();
-                Servlets.defaultContainer().removeDeployment(deploymentInfo);
-                deployments.remove(protocolConfiguration.getReferenceOrThrow());
-            } catch (Exception ex) {
-                LOG.log(Level.WARNING,
+                    + instance.deploymentInfo.getContextPath());
+            webService.getRequestHandlers().remove(instance.requestHandler);
+            DeploymentManager manager = Servlets.defaultContainer().getDeployment(instance.deploymentInfo.getDeploymentName());
+            manager.stop();
+            manager.undeploy();
+            Servlets.defaultContainer().removeDeployment(instance.deploymentInfo);
+            deployments.remove(protocolConfiguration.getReferenceOrThrow());
+        } catch (Exception ex) {
+            LOG.log(Level.WARNING,
                     "An exception occurred whilst un-deploying protocolConfiguration: " + protocolConfiguration.getReferenceOrThrow(),
                     ex);
-                throw new RuntimeException(ex);
-            }
+            throw new RuntimeException(ex);
         }
+
     }
 }

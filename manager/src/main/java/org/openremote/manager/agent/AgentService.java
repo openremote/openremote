@@ -276,6 +276,11 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
         assetProcessingService.sendAttributeEvent(attributeEvent);
     }
 
+    @Override
+    public Asset getAgent(AssetAttribute protocolConfiguration) {
+        return getAgents().getOrDefault(protocolConfiguration.getReferenceOrThrow().getEntityId(), null);
+    }
+
     /**
      * Looks for new, modified and obsolete protocol configurations and links / unlinks any associated attributes
      */
@@ -724,8 +729,9 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
     }
 
     protected void addReplaceAgent(Asset agent) {
-        withLock(getClass().getSimpleName() + "::addReplaceAgent", () -> getAgents().put(agent.getId(), agent)
-        );
+        // Fully load agent asset
+        final Asset loadedAgent = assetStorageService.find(agent.getId(), true);
+        withLock(getClass().getSimpleName() + "::addReplaceAgent", () -> getAgents().put(loadedAgent.getId(), loadedAgent));
     }
 
     protected void removeAgent(Asset agent) {

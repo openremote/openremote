@@ -135,4 +135,9 @@ public interface ProtocolAssetService extends ContainerService {
      */
     void sendAttributeEvent(AttributeEvent attributeEvent);
 
+    /**
+     * Gets the Agent {@link Asset} that the specified {@link org.openremote.model.asset.agent.ProtocolConfiguration}
+     * belongs to.
+     */
+    Asset getAgent(AssetAttribute protocolConfiguration);
 }

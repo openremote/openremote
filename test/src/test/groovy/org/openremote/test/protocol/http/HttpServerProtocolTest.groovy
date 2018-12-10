@@ -34,14 +34,13 @@ import org.openremote.model.geo.GeoJSONPoint
 import org.openremote.model.value.ObjectValue
 import org.openremote.model.value.Values
 import org.openremote.test.ManagerContainerTrait
-import spock.lang.Ignore
 import spock.lang.Shared
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
 import javax.ws.rs.ForbiddenException
+import javax.ws.rs.ProcessingException
 import javax.ws.rs.HttpMethod
-import javax.ws.rs.NotFoundException
 import javax.ws.rs.client.ClientRequestContext
 import javax.ws.rs.client.ClientRequestFilter
 import javax.ws.rs.core.*
@@ -267,7 +266,6 @@ class HttpServerProtocolTest extends Specification implements ManagerContainerTr
         mockServer.putRequestWithHeadersCalled = false
     }
 
-    @Ignore
     def "Check HTTP server protocol configuration and JAX-RS deployment"() {
 
         given: "expected conditions"
@@ -428,8 +426,8 @@ class HttpServerProtocolTest extends Specification implements ManagerContainerTr
         when: "an attempt is made to use the removed endpoint"
         authenticatedTestResource.postAsset(testAsset)
 
-        then: "a not found exception should be thrown"
-        thrown NotFoundException
+        then: "an exception should be thrown"
+        thrown Exception
 
         cleanup: "the server should be stopped"
         stopContainer(container)
