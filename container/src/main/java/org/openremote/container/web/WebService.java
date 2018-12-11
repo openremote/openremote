@@ -26,15 +26,18 @@ import io.undertow.server.handlers.RequestDumpingHandler;
 import io.undertow.servlet.Servlets;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.DeploymentManager;
-import org.jboss.resteasy.plugins.interceptors.CorsFilter;
+import io.undertow.servlet.api.FilterInfo;
+import io.undertow.servlet.util.ImmediateInstanceHandle;
 import org.jboss.resteasy.spi.ResteasyDeployment;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.json.JacksonConfig;
 import org.openremote.container.json.ModelValueMessageBodyConverter;
+import org.openremote.container.security.CORSFilter;
 import org.openremote.container.security.IdentityService;
 import org.xnio.Options;
 
+import javax.servlet.DispatcherType;
 import javax.ws.rs.core.UriBuilder;
 import java.net.Inet4Address;
 import java.net.URI;
@@ -90,9 +93,9 @@ public abstract class WebService implements ContainerService {
     protected String host;
     protected int port;
     protected Undertow undertow;
-
     protected List<RequestHandler> httpHandlers = new ArrayList<>();
     protected URI containerHostUri;
+    protected FilterInfo corsFilter;
 
     protected static String getLocalIpAddress() throws Exception {
         return Inet4Address.getLocalHost().getHostAddress();
@@ -111,12 +114,13 @@ public abstract class WebService implements ContainerService {
                 ? getLocalIpAddress()
                 : host;
 
+        corsFilter = createCorsFilter();
+
         containerHostUri =
                 UriBuilder.fromPath("/")
                         .scheme("http")
                         .host(containerHost)
                         .port(port).build();
-
 
         undertow = build(
                 container,
@@ -166,6 +170,13 @@ public abstract class WebService implements ContainerService {
 
             // This will catch anything not handled by Resteasy/Servlets, such as IOExceptions "at the wrong time"
             deploymentInfo.setExceptionHandler(new WebServiceExceptions.ServletUndertowExceptionHandler(devMode));
+
+
+            if (corsFilter != null) {
+                deploymentInfo.addFilter(corsFilter);
+                deploymentInfo.addFilterUrlMapping(corsFilter.getName(), "*", DispatcherType.REQUEST);
+                deploymentInfo.addFilterUrlMapping(corsFilter.getName(), "*", DispatcherType.FORWARD);
+            }
 
             DeploymentManager manager = Servlets.defaultContainer().addDeployment(deploymentInfo);
             manager.deploy();
@@ -249,18 +260,6 @@ public abstract class WebService implements ContainerService {
         resteasyDeployment.getProviders().add(new WebServiceExceptions.ForbiddenResteasyExceptionMapper(devMode));
         resteasyDeployment.getProviders().add(new JacksonConfig());
 
-        // Configure CORS - RT Replaced custom CORS filter with standard rest easy one due to:
-        // https://github.com/openremote/openremote/issues/32
-
-        //        resteasyDeployment.getProviders().add(new CORSFilter());
-        CorsFilter corsFilter = new CorsFilter();
-        corsFilter.getAllowedOrigins().add("*");
-        corsFilter.setAllowedHeaders("origin, content-type, accept, authorization");
-        corsFilter.setAllowCredentials(true);
-        corsFilter.setAllowedMethods("GET, POST, PUT, DELETE, OPTIONS, HEAD");
-        corsFilter.setCorsMaxAge(1209600);
-
-        resteasyDeployment.getProviders().add(corsFilter);
         resteasyDeployment.getProviders().add(new GZIPEncodingInterceptor(!container.isDevMode()));
         resteasyDeployment.getActualProviderClasses().add(ModelValueMessageBodyConverter.class);
         resteasyDeployment.getActualProviderClasses().add(AlreadyGzippedWriterInterceptor.class);
@@ -269,5 +268,20 @@ public abstract class WebService implements ContainerService {
         resteasyDeployment.setSecurityEnabled(secure);
 
         return resteasyDeployment;
+    }
+
+    protected FilterInfo createCorsFilter() {
+        if (!devMode) {
+            return null;
+        }
+
+        CORSFilter corsFilter = new CORSFilter();
+        corsFilter.getAllowedOrigins().add("*");
+        corsFilter.setAllowedHeaders("origin, content-type, accept, authorization");
+        corsFilter.setAllowCredentials(true);
+        corsFilter.setAllowedMethods("GET, POST, PUT, DELETE, OPTIONS, HEAD");
+        corsFilter.setCorsMaxAge(1209600);
+
+        return Servlets.filter("CORS Filter", CORSFilter.class, () -> new ImmediateInstanceHandle<>(corsFilter));
     }
 }

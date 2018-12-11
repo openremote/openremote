@@ -265,6 +265,13 @@ public class MapService implements ContainerService {
             mapSettings.put("glyphs", glyphsUri);
         });
 
+        if (!mapSettings.hasKey("maxZoom")) {
+            mapSettings.put("maxZoom", metadata.maxZoom);
+        }
+        if (!mapSettings.hasKey("minZoom")) {
+            mapSettings.put("minZoom", metadata.minZoom);
+        }
+
         return mapSettings;
     }
 
@@ -295,8 +302,6 @@ public class MapService implements ContainerService {
                     mapSource.put("center", centerArray);
                 }));
 
-        mapSource.getArray("maxBounds").ifPresent(maxBounds -> mapSettingsJs.put("bounds", maxBounds.deepCopy()));
-
         ArrayValue tilesArray = Values.createArray();
         String tileUrl = baseUriBuilder.clone().replacePath(API_PATH).path(realm).path("map/tile").build().toString() + "/{z}/{x}/{y}";
         tilesArray.set(0, tileUrl);
@@ -321,8 +326,11 @@ public class MapService implements ContainerService {
         }
 
         mapSettingsJs.put("attribution", metadata.attribution);
-        mapSettingsJs.put("maxzoom", metadata.maxZoom);
-        mapSettingsJs.put("minzoom", metadata.minZoom);
+        mapSettingsJs.put("maxzoom", mapConfig.getNumber("maxZoom").map(Double::intValue).orElse(metadata.maxZoom));
+        mapSettingsJs.put("minzoom", mapConfig.getNumber("minZoom").map(Double::intValue).orElse(metadata.minZoom));
+        if (mapConfig.hasKey("zoom")) {
+            mapSettingsJs.put("zoom", mapConfig.getNumber("zoom").orElse(0d));
+        }
         mapSettingsJs.put("format", "png");
         mapSettingsJs.put("type", "baselayer");
 

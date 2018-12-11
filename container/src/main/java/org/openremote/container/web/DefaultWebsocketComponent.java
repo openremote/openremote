@@ -170,19 +170,4 @@ public class DefaultWebsocketComponent extends WebsocketComponent {
         webService.getRequestHandlers().remove(websocketHttpHandler);
         websocketHttpHandler = null;
     }
-
-    /* TODO: Security - fix/use this! */
-    protected void addCORSFilter() {
-        if (allowedOrigin == null)
-            return;
-        WebsocketCORSFilter websocketCORSFilter = new WebsocketCORSFilter();
-        FilterInfo filterInfo = new FilterInfo(
-            "WebSocket CORS Filter",
-            WebsocketCORSFilter.class,
-            () -> new ImmediateInstanceHandle<Filter>(websocketCORSFilter)
-        ).addInitParam(WebsocketCORSFilter.ALLOWED_ORIGIN, allowedOrigin);
-        deploymentInfo.addFilter(filterInfo);
-        deploymentInfo.addFilterUrlMapping(filterInfo.getName(), "/*", DispatcherType.REQUEST);
-    }
-
 }
