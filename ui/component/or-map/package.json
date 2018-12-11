@@ -1,0 +1,30 @@
+{
+  "name": "@openremote/or-map",
+  "version": "1.0.0",
+  "description": "Displays s vector or raster mapx",
+  "main": "build/or-map.js",
+  "types": "src/or-map.ts",
+  "scripts": {
+    "build": "npx tsc",
+    "test": "echo \"No tests\" && exit 0"
+  },
+  "author": "OpenRemote",
+  "license": "AGPL-3.0-or-later",
+  "dependencies": {
+    "@openremote/rest": "^1.0.0",
+    "@polymer/polymer": "^3.0.0",
+    "@types/mapbox-gl": "^0.51.1",
+    "mapbox-gl": "^0.52.0-beta.1",
+    "mapbox.js": "^3.1.1"
+  },
+  "devDependencies": {
+    "@polymer/decorators": "^3.0.0",
+    "@polymer/iron-demo-helpers": "^3.0.0-pre.19",
+    "@webcomponents/webcomponentsjs": "^2.0.0",
+    "css-loader": "^2.0.0",
+    "style-loader": "^0.23.1",
+    "tslint": "^5.11.0",
+    "typescript": "^3.1.6",
+    "wct-browser-legacy": "^1.0.0"
+  }
+}
