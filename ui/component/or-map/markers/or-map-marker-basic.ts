@@ -4,12 +4,8 @@ import {OrMapMarker} from "./or-map-marker";
 
 
 /**
- * `or-map-marker`
- * Displays marker on OpenRemote Map
- *
- * @customElement
- * @polymer
- * @demo demo/index.html
+ * `or-map-marker-basic`
+ * Basic map marker
  */
 
 @customElement('or-map-marker-basic')

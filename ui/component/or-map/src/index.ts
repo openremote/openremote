@@ -2,10 +2,9 @@ import openremote, {EventCallback, OREvent} from "@openremote/core";
 import {html, PolymerElement} from "@polymer/polymer";
 import { FlattenedNodesObserver } from '@polymer/polymer/lib/utils/flattened-nodes-observer.js';
 import {customElement, property} from '@polymer/decorators';
-import rest from "@openremote/rest";
 import {OrMapMarker} from "../markers/or-map-marker";
-import {Map, MapboxOptions, Style as MapboxStyle} from "mapbox-gl";
-import L from "mapbox.js";
+
+import {MapWidget} from "./mapwidget";
 
 export enum Type {
     VECTOR = "VECTOR",
@@ -20,9 +19,7 @@ export enum Type {
 @customElement('or-map')
 export class OrMap extends PolymerElement {
     protected _initCallback?: EventCallback;
-    protected _map?: any;
-    protected static _mapboxGlStyle?: any;
-    protected static _mapboxJsStyle?: any;
+    protected _map?: MapWidget;
     protected _loaded: boolean = false;
     protected _observer?: FlattenedNodesObserver;
 
@@ -56,21 +53,26 @@ export class OrMap extends PolymerElement {
 
     _processNewMarkers(nodes : Element[]) {
         nodes.forEach((node) => {
-            // node tagName should include marker to pass this check
+            if (!this._map) {
+                return;
+            }
+
             if(node instanceof OrMapMarker) {
-                const marker = <OrMapMarker>node;
-                if (marker.html) {
-                    // @ts-ignore
-                    let leafletMarket = L.divIcon({className: 'map-marker', html: marker.html.innerHTML});
-                    // @ts-ignore
-                    L.marker([marker.latitude, marker.longitude], {icon: leafletMarket}).addTo(this._map);
-                }
+                this._map.addMarker(node);
             }
         });
     }
 
     _processRemovedMarkers(nodes : Element[]) {
+        nodes.forEach((node) => {
+            if (!this._map) {
+                return;
+            }
 
+            if(node instanceof OrMapMarker) {
+                this._map.removeMarker(node);
+            }
+        });
     }
 
     disconnectedCallback() {
@@ -94,7 +96,7 @@ export class OrMap extends PolymerElement {
         }
     }
 
-    async loadMap() {
+    loadMap() {
 
         if (this._loaded) {
             return;
@@ -102,82 +104,17 @@ export class OrMap extends PolymerElement {
 
         if (this.shadowRoot) {
             const mapElement: HTMLElement = this.shadowRoot.getElementById('map')!;
-            if (this.type === Type.RASTER) {
 
-                if (!OrMap._mapboxJsStyle) {
-                    // @ts-ignore
-                    OrMap._mapboxJsStyle = await import("mapbox.js/theme/style.css");
-                }
-
-                // Add style to shadow root
-                var style = document.createElement('style');
-                style.id = "mapboxJsStyle";
-                style.textContent = OrMap._mapboxJsStyle.default.toString();
-                this.shadowRoot.appendChild(style);
-
-                const settingsResponse = await rest.api.MapResource.getSettingsJs();
-                const settings = <any> settingsResponse.data;
-                const options: L.mapbox.MapOptions = {
-                    zoom: <number>settings.zoom+1, // JS zoom is out by one compared to GL
-                    minZoom: settings.minZoom || 0,
-                    maxZoom: settings.maxZoom || 22,
-                    boxZoom: settings.boxZoom || false,
-                };
-                if (settings.bounds) {
-                    let b = settings.bounds;
-                    options.maxBounds = [
-                        [b[1], b[0]],
-                        [b[3], b[2]],
-                    ];
-                }
-
-                const m: L.mapbox.map = new L.mapbox.map(mapElement, settings, options);
-                this._map = m;
-
-            } else {
-                if (!OrMap._mapboxGlStyle) {
-                    // @ts-ignore
-                    OrMap._mapboxGlStyle = await import("mapbox-gl/dist/mapbox-gl.css");
-                }
-
-                // Add style to shadow root
-                var style = document.createElement('style');
-                style.id = "mapboxGlStyle";
-                style.textContent = OrMap._mapboxGlStyle.default.toString();
-                this.shadowRoot.appendChild(style);
-
-                const map: typeof import("mapbox-gl") = await import("mapbox-gl");
-                const settingsResponse = await rest.api.MapResource.getSettings();
-                const settings = <any> settingsResponse.data;
-
-                const options: MapboxOptions = {
-                    container: mapElement,
-                    style: <MapboxStyle> settings,
-                    attributionControl: true,
-                    minZoom: settings.minZoom || 0,
-                    maxZoom: settings.maxZoom || 0,
-                    maxBounds: settings.maxBounds || null,
-                    boxZoom: settings.boxZoom || false,
-                    transformRequest: (url, resourceType) => {
-                        return {
-                            url: url,
-                            headers: {'Authorization': openremote.getAuthorizationHeader()}
-                        }
-                    }
-                };
-
-                this._map = new map.Map(options);
-            }
-
-            // Get markers from slot
-            let slotElement = this.shadowRoot.getElementById('markers-slot');
-            this._observer = new FlattenedNodesObserver(slotElement!, (info) => {
-                this._processNewMarkers(info.addedNodes);
-                this._processRemovedMarkers(info.removedNodes);
+            this._map = new MapWidget(this.type, this.shadowRoot, mapElement);
+            this._map.load().then(() => {
+                // Get markers from slot
+                let slotElement = this.shadowRoot!.getElementById('markers-slot');
+                this._observer = new FlattenedNodesObserver(slotElement!, (info) => {
+                    this._processNewMarkers(info.addedNodes);
+                    this._processRemovedMarkers(info.removedNodes);
+                });
             });
         }
-
-
 
         this._loaded = true;
     }

@@ -1,12 +1,7 @@
 import {html, PolymerElement} from "@polymer/polymer";
 
 /**
- * `or-map-marker`
- * Displays marker on OpenRemote Map
- *
- * @customElement
- * @polymer
- * @demo demo/index.html
+ * Base class for all map markers
  */
 export abstract class OrMapMarker extends PolymerElement {
     protected _lat: number = 0;
