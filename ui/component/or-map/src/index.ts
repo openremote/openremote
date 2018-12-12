@@ -5,7 +5,7 @@ import {customElement, property} from '@polymer/decorators';
 import rest from "@openremote/rest";
 import {OrMapMarker} from "@openremote/or-map-marker";
 import {Map, MapboxOptions, Style as MapboxStyle} from "mapbox-gl";
-import {L} from "mapbox.js";
+import L from "mapbox.js";
 
 export enum Type {
     VECTOR = "VECTOR",
@@ -20,7 +20,7 @@ export enum Type {
 @customElement('or-map')
 export class OrMap extends PolymerElement {
     protected _initCallback?: EventCallback;
-    protected _map?: Map;
+    protected _map?: any;
     protected static _mapboxGlStyle?: any;
     protected static _mapboxJsStyle?: any;
     protected _loaded: boolean = false;
@@ -54,24 +54,28 @@ export class OrMap extends PolymerElement {
         super();
     }
 
-    _processNewMarkers(nodes) {
-        nodes.forEach(function (node) {
+    _processNewMarkers(nodes : Element[]) {
+        nodes.forEach((node) => {
             // node tagName should include marker to pass this check
             if(node instanceof OrMapMarker) {
                 const marker = <OrMapMarker>node;
-                let leafletMarket =  L.divIcon({className: 'map-marker', html: marker.html.innerHTML});
-                L.marker([marker.latitude, marker.longitude], {icon:leafletMarket}).addTo(this._map);
+                if (marker.html) {
+                    // @ts-ignore
+                    let leafletMarket = L.divIcon({className: 'map-marker', html: marker.html.innerHTML});
+                    // @ts-ignore
+                    L.marker([marker.latitude, marker.longitude], {icon: leafletMarket}).addTo(this._map);
+                }
             }
-        }.bind(this));
+        });
     }
 
-    _processRemovedMarkers(nodes) {
+    _processRemovedMarkers(nodes : Element[]) {
 
     }
 
     disconnectedCallback() {
         super.disconnectedCallback();
-        this._observer.disconnect();
+        this._observer!.disconnect();
     }
 
     ready() {
@@ -167,7 +171,7 @@ export class OrMap extends PolymerElement {
 
             // Get markers from slot
             let slotElement = this.shadowRoot.getElementById('markers-slot');
-            this._observer = new FlattenedNodesObserver(slotElement, (info) => {
+            this._observer = new FlattenedNodesObserver(slotElement!, (info) => {
                 this._processNewMarkers(info.addedNodes);
                 this._processRemovedMarkers(info.removedNodes);
             });

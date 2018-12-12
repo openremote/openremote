@@ -2,5 +2,9 @@
   "extends": "../../tsconfig",
   "compilerOptions": {
     "outDir": "./dist/"
-  }
+  },
+  "include": [
+    "./src",
+    "../../component/or-map/@types"
+  ]
 }

@@ -1,5 +1,7 @@
-declare module 'mapbox.js' {
+declare module "mapbox.js" {
     import {LngLatBoundsLike, LngLatLike} from "mapbox-gl";
+
+    export default L;
 
     export namespace L {
         export namespace mapbox {
