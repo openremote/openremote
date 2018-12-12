@@ -1,7 +1,9 @@
 import openremote, {EventCallback, OREvent} from "@openremote/core";
 import {html, PolymerElement} from "@polymer/polymer";
+import { FlattenedNodesObserver } from '@polymer/polymer/lib/utils/flattened-nodes-observer.js';
 import {customElement, property} from '@polymer/decorators';
 import rest from "@openremote/rest";
+import {OrMapMarker} from "@openremote/or-map-marker";
 import {Map, MapboxOptions, Style as MapboxStyle} from "mapbox-gl";
 import L from "mapbox.js";
 
@@ -21,6 +23,7 @@ export class OrMap extends PolymerElement {
     protected _map?: Map;
     protected static _mapboxGlStyle?: any;
     protected static _mapboxJsStyle?: any;
+    protected _observer?: FlattenedNodesObserver;
     protected _loaded: boolean;
 
     static get template() {
@@ -35,8 +38,12 @@ export class OrMap extends PolymerElement {
             width: 100%;
             height: 100%;
         }
+        slot {
+            display: none;
+        }
       </style>
       <div id="map"></div>
+      <slot id="markers-slot"></slot>
     `;
     }
 
@@ -45,6 +52,26 @@ export class OrMap extends PolymerElement {
 
     constructor() {
         super();
+    }
+
+    _processNewMarkers(nodes) {
+        nodes.forEach(function (node) {
+            // node tagName should include marker to pass this check
+            if(node instanceof OrMapMarker) {
+                const marker = <OrMapMarker>node;
+                let leafletMarket =  L.divIcon({className: 'map-marker', html: marker.html.innerHTML});
+                L.marker([marker.latitude, marker.longitude], {icon:leafletMarket}).addTo(this._map);
+            }
+        }.bind(this));
+    }
+
+    _processRemovedMarkers(nodes) {
+
+    }
+
+    disconnectedCallback() {
+        super.disconnectedCallback();
+        this._observer.disconnect();
     }
 
     ready() {
@@ -102,6 +129,7 @@ export class OrMap extends PolymerElement {
                 }
 
                 const m: L.mapbox.map = new L.mapbox.map(mapElement, settings, options);
+                this._map = m;
 
             } else {
                 if (!OrMap._mapboxGlStyle) {
@@ -137,7 +165,16 @@ export class OrMap extends PolymerElement {
 
                 this._map = new map.Map(options);
             }
+
+            // Get markers from slot
+            let slotElement = this.shadowRoot.getElementById('markers-slot');
+            this._observer = new FlattenedNodesObserver(slotElement, (info) => {
+                this._processNewMarkers(info.addedNodes);
+                this._processRemovedMarkers(info.removedNodes);
+            });
         }
+
+
 
         this._loaded = true;
     }
