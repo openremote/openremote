@@ -3,7 +3,7 @@ import {html, PolymerElement} from "@polymer/polymer";
 import { FlattenedNodesObserver } from '@polymer/polymer/lib/utils/flattened-nodes-observer.js';
 import {customElement, property} from '@polymer/decorators';
 import rest from "@openremote/rest";
-import {OrMapMarker} from "@openremote/or-map-marker";
+import {OrMapMarker} from "../markers/or-map-marker";
 import {Map, MapboxOptions, Style as MapboxStyle} from "mapbox-gl";
 import L from "mapbox.js";
 
