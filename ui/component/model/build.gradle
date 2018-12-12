@@ -42,7 +42,7 @@ generateTypeScript {
     ]
     optionalProperties = "all" // TODO: cleanup model to be more explicit about optional params
     mapEnum = cz.habarta.typescript.generator.EnumMapping.asEnum
-    outputFile = "build/model.d.ts"
+    outputFile = "dist/index.d.ts"
     outputKind = "module"
 }
 

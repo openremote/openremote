@@ -1,4 +1,4 @@
-# or-core
+# @openremote/core
 
 > ${DESCRIPTION}
 

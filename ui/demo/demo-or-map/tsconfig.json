@@ -1,19 +1,6 @@
 {
+  "extends": "../../tsconfig",
   "compilerOptions": {
-    "outDir": "./dist/",
-    "target": "es5",
-    "module": "esNext",
-    "moduleResolution": "node",
-    "lib": [
-      "dom",
-      "es2015",
-      "es2017",
-      "es5",
-      "es2015.promise",
-      "es2016.array.include"
-    ],
-    "strict": false,
-    "experimentalDecorators": true,
-    "allowSyntheticDefaultImports": true
+    "outDir": "./dist/"
   }
 }

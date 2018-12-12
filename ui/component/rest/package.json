@@ -2,8 +2,8 @@
   "name": "@openremote/rest",
   "version": "1.0.0",
   "description": "OpenRemote 3.x REST API",
-  "main": "dist/src/rest.js",
-  "types": "src/rest.ts",
+  "main": "dist/src/index.js",
+  "types": "src/index.ts",
   "scripts": {
     "build": "npx tsc",
     "test": "echo \"No tests\" && exit 0"
@@ -16,7 +16,11 @@
     "axios": "^0.18.0"
   },
   "devDependencies": {
-    "typescript": "^3.1.6",
-    "tslint": "^5.11.0"
-  }
+    "@types/es6-promise": "^3.3.0",
+    "tslint": "^5.11.0",
+    "typescript": "^3.1.6"
+  },
+  "files": [
+    "dist"
+  ]
 }

@@ -1,10 +1,6 @@
 {
+  "extends": "../../tsconfig",
   "compilerOptions": {
-    "outDir": "./dist/",
-    "strict": true,
-    "module": "es6",
-    "target": "es2015",
-    "sourceMap": true,
-    "moduleResolution": "node"
+    "outDir": "./dist/"
   }
 }

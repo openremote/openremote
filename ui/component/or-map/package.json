@@ -2,8 +2,8 @@
   "name": "@openremote/or-map",
   "version": "1.0.0",
   "description": "Displays s vector or raster mapx",
-  "main": "build/or-map.js",
-  "types": "src/or-map.ts",
+  "main": "dist/index.js",
+  "types": "src/index.ts",
   "scripts": {
     "build": "npx tsc",
     "test": "echo \"No tests\" && exit 0"

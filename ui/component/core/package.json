@@ -2,8 +2,8 @@
   "name": "@openremote/core",
   "version": "1.0.0",
   "description": "OpenRemote 3.x Core",
-  "main": "dist/core.js",
-  "types": "src/core.ts",
+  "main": "dist/index.js",
+  "types": "src/index.ts",
   "scripts": {
     "build": "npx tsc",
     "test": "echo \"No tests\" && exit 0"

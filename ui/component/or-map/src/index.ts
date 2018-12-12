@@ -5,7 +5,7 @@ import {customElement, property} from '@polymer/decorators';
 import rest from "@openremote/rest";
 import {OrMapMarker} from "@openremote/or-map-marker";
 import {Map, MapboxOptions, Style as MapboxStyle} from "mapbox-gl";
-import L from "mapbox.js";
+import {L} from "mapbox.js";
 
 export enum Type {
     VECTOR = "VECTOR",
@@ -23,8 +23,8 @@ export class OrMap extends PolymerElement {
     protected _map?: Map;
     protected static _mapboxGlStyle?: any;
     protected static _mapboxJsStyle?: any;
+    protected _loaded: boolean = false;
     protected _observer?: FlattenedNodesObserver;
-    protected _loaded: boolean;
 
     static get template() {
         return html`
@@ -97,7 +97,7 @@ export class OrMap extends PolymerElement {
         }
 
         if (this.shadowRoot) {
-            const mapElement: HTMLElement | null = this.shadowRoot.getElementById('map');
+            const mapElement: HTMLElement = this.shadowRoot.getElementById('map')!;
             if (this.type === Type.RASTER) {
 
                 if (!OrMap._mapboxJsStyle) {
@@ -111,11 +111,10 @@ export class OrMap extends PolymerElement {
                 style.textContent = OrMap._mapboxJsStyle.default.toString();
                 this.shadowRoot.appendChild(style);
 
-                const map: typeof import("mapbox.js") = await import("mapbox.js");
                 const settingsResponse = await rest.api.MapResource.getSettingsJs();
                 const settings = <any> settingsResponse.data;
-                const options: L.mapbox.MapOptionsJs = {
-                    zoom: settings.zoom+1, // JS zoom is out by one compared to GL
+                const options: L.mapbox.MapOptions = {
+                    zoom: <number>settings.zoom+1, // JS zoom is out by one compared to GL
                     minZoom: settings.minZoom || 0,
                     maxZoom: settings.maxZoom || 22,
                     boxZoom: settings.boxZoom || false,
