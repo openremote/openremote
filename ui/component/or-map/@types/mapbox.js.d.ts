@@ -1,17 +1,18 @@
 declare module "mapbox.js" {
-    import {LngLatBoundsLike, LngLatLike} from "mapbox-gl";
-    import {DivIconOptions} from "mapbox.js";
 
     export default L;
 
     type Point2d = [number, number];
     type Point3d = [number, number, number];
 
+    type LatLngLike = Point2d | Point3d | LatLng;
+    type LatLngBoundsLike = [LatLngLike, LatLngLike] | LatLngBounds;
+
     export interface MapOptions {
         zoom: number,
         boxZoom?: boolean;
-        center?: LngLatLike;
-        maxBounds?: LngLatBoundsLike;
+        center?: LatLngLike;
+        maxBounds?: LatLngBoundsLike;
         maxZoom?: number;
         minZoom?: number;
     }
@@ -36,12 +37,46 @@ declare module "mapbox.js" {
     }
 
     export interface MarkerOptions {
-        icon?: L.Icon;
+        icon?: Icon;
         keyboard?: boolean;
         title?: string;
         alt?: string;
         zIndexOffset?: number;
         opacity?: number;
+    }
+
+    export class LatLng {
+        private constructor();
+
+        lat: number;
+        lng: number;
+        alt?: number;
+    }
+
+    export class LatLngBounds {
+        private constructor();
+        getSouthEast(): LatLng;
+        getNorthWest(): LatLng;
+        getNorthEast(): LatLng;
+        getSouthWest(): LatLng;
+        getCenter(): LatLng;
+    }
+
+    export class Icon {
+
+    }
+
+    export class DivIcon extends Icon {
+
+    }
+
+    export class Marker extends Layer {
+        setLatLng(latLng: LatLngLike): this;
+    }
+
+    class Layer {
+        addTo(addTo: L.mapbox.map): this;
+        removeFrom(removeFrom: L.mapbox.map): this;
     }
 
     export namespace L {
@@ -57,31 +92,12 @@ declare module "mapbox.js" {
 
         function latLng(lat: number, lng: number, alt?: number): LatLng;
 
-        function latLng(pos: Point2d | Point3d | LatLng): LatLng;
+        function latLng(pos: LatLngLike): LatLng;
 
-        function marker(pos: Point2d | Point3d | LatLng, options: MarkerOptions): Marker;
+        function latLngBounds(corner1: LatLngLike, corner2: LatLngLike): LatLngBounds;
 
-        export class LatLng {
-            lat: number;
-            lng: number;
-            alt?: number;
-        }
+        function latLngBounds(bounds: LatLngBoundsLike): LatLngBounds;
 
-        export class Icon {
-
-        }
-
-        export class DivIcon extends Icon {
-
-        }
-
-        export class Marker extends Layer {
-
-        }
-
-        class Layer {
-            addTo(addTo: L.mapbox.map): this;
-            removeFrom(removeFrom: L.mapbox.map): this;
-        }
+        function marker(pos: LatLngLike, options: MarkerOptions): Marker;
     }
 }

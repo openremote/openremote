@@ -25,7 +25,7 @@ generateTypeScript {
     ]
     excludeClassPatterns = [
             "org.openremote.model.http.*Constraint**",
-            "org.openremote.model.event.**",
+            "org.openremote.model.event.shared.*Filter**",
             "org.openremote.model.util.**",
             "org.openremote.model.flow.**",
             "org.openremote.model.interop.**",

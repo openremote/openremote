@@ -38,6 +38,13 @@ export class OrMap extends PolymerElement {
         slot {
             display: none;
         }
+        .marker {
+            background-image: url('http://pngimg.com/uploads/smiley/smiley_PNG36233.png');
+            position: absolute;
+            width: 32px;
+            height: 32px;
+            background-size: 32px;
+        }
       </style>
       <div id="map"></div>
       <slot id="markers-slot"></slot>
@@ -58,7 +65,7 @@ export class OrMap extends PolymerElement {
             }
 
             if(node instanceof OrMapMarker) {
-                this._map.addMarker(node);
+                node.map = this._map;
             }
         });
     }
@@ -69,8 +76,9 @@ export class OrMap extends PolymerElement {
                 return;
             }
 
+
             if(node instanceof OrMapMarker) {
-                this._map.removeMarker(node);
+                node.map = undefined;
             }
         });
     }

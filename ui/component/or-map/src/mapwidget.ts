@@ -1,4 +1,4 @@
-import L, {MapOptions} from "mapbox.js";
+import L, {MapOptions, Marker} from "mapbox.js";
 import {Type} from "./index";
 import rest from "@openremote/rest";
 import openremote from "@openremote/core";
@@ -14,7 +14,7 @@ export class MapWidget {
     protected _styleParent: Node;
     protected _mapContainer: HTMLElement;
     protected _loaded: boolean = false;
-    protected _markersJs?: Map<OrMapMarker, L.Marker>;
+    protected _markersJs?: Map<OrMapMarker, Marker>;
     protected _markersGl?: Map<OrMapMarker, MarkerGL>;
 
     constructor(type: Type, styleParent: Node, mapContainer: HTMLElement) {
@@ -24,7 +24,7 @@ export class MapWidget {
 
         switch(type) {
             case Type.RASTER:
-                this._markersJs = new Map<OrMapMarker, L.Marker>();
+                this._markersJs = new Map<OrMapMarker, Marker>();
                 break;
             case Type.VECTOR:
                 this._markersGl = new Map<OrMapMarker, MarkerGL>();
@@ -107,11 +107,11 @@ export class MapWidget {
     }
 
     addMarker(marker: OrMapMarker) {
-        if (marker.html) {
+        if (marker._ele) {
             switch (this._type) {
                 case Type.RASTER:
-                    let icon = L.divIcon({className: 'map-marker', html: marker.html.innerHTML});
-                    let m: L.Marker = L.marker([marker.latitude, marker.longitude], {icon: icon});
+                    let icon = L.divIcon({className: 'map-marker', html: marker._ele.outerHTML});
+                    let m: Marker = L.marker([marker.lat, marker.lng], {icon: icon});
                     m.addTo(this._mapJs!);
                     this._markersJs!.set(marker, m);
                     break;
@@ -121,7 +121,6 @@ export class MapWidget {
                         .setLngLat([marker.latitude, marker.longitude])
                         .addTo(this._mapGl);
                     break;
-
             }
         }
     }
@@ -129,7 +128,7 @@ export class MapWidget {
     removeMarker(marker: OrMapMarker) {
         switch (this._type) {
             case Type.RASTER:
-                let m: L.Marker | undefined = this._markersJs!.get(marker);
+                let m: Marker | undefined = this._markersJs!.get(marker);
                 if (m) {
                     this._markersJs!.delete(marker);
                     m.removeFrom(this._mapJs!);
@@ -137,7 +136,19 @@ export class MapWidget {
                 break;
             case Type.VECTOR:
                 break;
+        }
+    }
 
+    updateMarkerPosition(marker: OrMapMarker) {
+        switch (this._type) {
+            case Type.RASTER:
+                let m: Marker | undefined = this._markersJs!.get(marker);
+                if (m) {
+                    m.setLatLng([marker.lat, marker.lng]);
+                }
+                break;
+            case Type.VECTOR:
+                break;
         }
     }
 }

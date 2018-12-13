@@ -3,7 +3,7 @@ import axios, {AxiosInstance} from "axios";
 import {ApiClient} from "../build/restclient";
 import {Promise} from "es6-promise";
 
-export class RestApi {
+class RestApi {
 
     get api() {
         return this._client;
