@@ -116,7 +116,10 @@ export class MapWidget {
                     this._markersJs!.set(marker, m);
                     break;
                 case Type.VECTOR:
-
+                    console.log(marker,marker.latitude, marker.longitude, this._mapGl);
+                    new MarkerGL(marker.html)
+                        .setLngLat([marker.latitude, marker.longitude])
+                        .addTo(this._mapGl);
                     break;
 
             }
