@@ -16,27 +16,31 @@ export class OrMapMarkerAsset extends OrMapMarker {
     @property({type: String, observer: "_assetChanged"})
     asset?: string;
 
+    @property({type: Object})
+    _ele!: HTMLElement;
+
     constructor() {
         super();
     }
 
     _createMarkerElement(): HTMLElement {
-        return document.createElement("div");
+        let className = ("or-map-marker " + this.className).trim();
+        let ele = document.createElement("div");
+        ele.className = className;
+        return ele;
     }
 
     refreshMarker() {
         this.getAsset().then((asset) => {
-            const attrs: Array<AssetAttribute> = <Array<AssetAttribute>>asset.attributes;
-            const attr: AssetAttribute | undefined = attrs.find(attr => {
-                return attr.name === "location"
-            });
+            const attrs = <any>asset.attributes;
+            const attr: AssetAttribute | undefined = attrs.location;
 
             if (!attr) {
                 this.visible = false;
                 return;
             }
 
-            const location: GeoJSONPoint | null = attr.valueAsObject as GeoJSONPoint;
+            const location: GeoJSONPoint | null = attr.value as GeoJSONPoint;
 
             if (!location) {
                 this.visible = false;
@@ -44,8 +48,9 @@ export class OrMapMarkerAsset extends OrMapMarker {
             }
 
             this._createAssetMarker();
-            this.lat = location.y || 0;
-            this.lng = location.x || 0;
+            // Model d.ts is clearly not perfect need to sort out Jackson annotations
+            this.lat = (<any>location.coordinates)[1] || 0;
+            this.lng = (<any>location.coordinates)[0] || 0;
             this.visible = true;
         }).catch(() => {
             this.visible = false;

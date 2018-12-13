@@ -19,7 +19,7 @@ export class OrMapMarker extends PolymerElement {
     @property({type: Boolean})
     visible: boolean = true;
 
-    @property({type: Object})
+    @property({type: Object, computed: "_createMarkerElement()"})
     _ele!: HTMLElement;
 
     @property({type: Object})
