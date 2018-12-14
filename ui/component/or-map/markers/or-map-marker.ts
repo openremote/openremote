@@ -94,6 +94,10 @@ export class OrMapMarker extends PolymerElement {
         }
     }
 
+    //TODO make this optional?
+    _onClick(e) {
+    }
+
     _createMarkerElement(): HTMLElement {
         let children = this._slot.assignedNodes({flatten:true});
         let len = children.length;

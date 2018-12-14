@@ -46,7 +46,6 @@ export class OrMapMarkerAsset extends OrMapMarker {
                 this.visible = false;
                 return;
             }
-
             this._createAssetMarker();
             // Model d.ts is clearly not perfect need to sort out Jackson annotations
             this.lat = (<any>location.coordinates)[1] || 0;
@@ -75,8 +74,11 @@ export class OrMapMarkerAsset extends OrMapMarker {
     }
 
     private _createAssetMarker() {
-        this._ele = document.createElement("div");
-        this._ele.className = "marker";
+        // Create basic element of _ele is undefined
+        if(typeof this._ele === 'undefined') {
+            this._ele = document.createElement("div");
+            this._ele.className = "marker";
+        }
     }
 }
 

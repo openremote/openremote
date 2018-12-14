@@ -72,6 +72,7 @@ declare module "mapbox.js" {
 
     export class Marker extends Layer {
         setLatLng(latLng: LatLngLike): this;
+        on(event: any, func: any): this;
     }
 
     class Layer {

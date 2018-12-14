@@ -112,7 +112,15 @@ export class MapWidget {
                 case Type.RASTER:
                     let icon = L.divIcon({className: 'map-marker', html: marker._ele.outerHTML});
                     let m: Marker = L.marker([marker.lat, marker.lng], {icon: icon});
+
+
+
                     m.addTo(this._mapJs!);
+
+                    if(marker._onClick) {
+                        m.on('click', marker._onClick);
+                    }
+
                     this._markersJs!.set(marker, m);
                     break;
                 case Type.VECTOR:
