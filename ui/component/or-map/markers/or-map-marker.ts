@@ -95,7 +95,7 @@ export class OrMapMarker extends PolymerElement {
     }
 
     //TODO make this optional?
-    _onClick(e) {
+    _onClick(e:any) {
     }
 
     _createMarkerElement(): HTMLElement {
