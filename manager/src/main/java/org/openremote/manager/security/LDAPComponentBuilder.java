@@ -161,10 +161,33 @@ public class LDAPComponentBuilder {
         return this;
     }
 
-    public LDAPComponentBuilder setKerberosAuthentication(boolean allowKerberosAuthentication) {
+    /**********Kerberos************/
+    public LDAPComponentBuilder setAllowKerberosAuthentication(boolean allowKerberosAuthentication) {
         ldapConfig.add("allowKerberosAuthentication", String.valueOf(allowKerberosAuthentication));
         return this;
     }
+
+    public LDAPComponentBuilder setKerberosServerPrincipal(String kerberosServerPrincipal) {
+        ldapConfig.add("serverPrincipal", kerberosServerPrincipal);
+        return this;
+    }
+
+    public LDAPComponentBuilder setUseKerberosForPasswordAuthentication(boolean useKerberosForPasswordAuthentication) {
+        ldapConfig.add("useKerberosForPasswordAuthentication", String.valueOf(useKerberosForPasswordAuthentication));
+        return this;
+    }
+
+    public LDAPComponentBuilder setKerberosKeyTabPath(String kerberosKeyTabPath) {
+        ldapConfig.add("keyTab", kerberosKeyTabPath);
+        return this;
+    }
+
+    public LDAPComponentBuilder setKerberosRealm(String kerberosRealm) {
+        ldapConfig.add("kerberosRealm", kerberosRealm);
+        return this;
+    }
+
+    /********Kerberos End ************/
 
     public LDAPComponentBuilder setDebug(boolean debug) {
         ldapConfig.add("debug", String.valueOf(debug));
