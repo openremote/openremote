@@ -62,6 +62,7 @@ ENV JAVA_OPTS -Xmx1g
 
 ENV APP_DOCROOT /deployment/manager/app
 ENV UI_DOCROOT /deployment/manager/ui
+ENV SHARED_DOCROOT /deployment/manager/shared
 ENV LOGGING_CONFIG_FILE /deployment/manager/logging.properties
 ENV MAP_TILES_PATH /deployment/manager/map/mapdata.mbtiles
 ENV MAP_SETTINGS_PATH /deployment/manager/map/mapsettings.json
