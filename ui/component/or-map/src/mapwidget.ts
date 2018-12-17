@@ -113,8 +113,6 @@ export class MapWidget {
                     let icon = L.divIcon({className: 'map-marker', html: marker._ele.outerHTML});
                     let m: Marker = L.marker([marker.lat, marker.lng], {icon: icon});
 
-
-
                     m.addTo(this._mapJs!);
 
                     if(marker._onClick) {
@@ -124,7 +122,6 @@ export class MapWidget {
                     this._markersJs!.set(marker, m);
                     break;
                 case Type.VECTOR:
-                    console.log(marker,marker.lat, marker.lng, this._mapGl);
                     new MarkerGL(marker._ele)
                         .setLngLat([marker.lat, marker.lng])
                         .addTo(this._mapGl!);
