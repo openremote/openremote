@@ -21,6 +21,8 @@ package org.openremote.manager.map;
 
 import io.undertow.server.HttpHandler;
 import io.undertow.server.handlers.ResponseCodeHandler;
+import io.undertow.server.handlers.cache.CacheHandler;
+import io.undertow.server.handlers.cache.DirectBufferCache;
 import io.undertow.server.handlers.proxy.ProxyHandler;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
@@ -184,6 +186,8 @@ public class MapService implements ContainerService {
                 exchange.setRelativePath(TILESERVER_TILE_PATH + path);
                 proxyHandler.handleRequest(exchange);
             };
+
+            CacheHandler cacheHandler = new CacheHandler(new DirectBufferCache())
 
             webService.getRequestHandlers().add(0, pathStartsWithHandler("Raster Map Tile Proxy", RASTER_MAP_TILE_PATH, proxyWrapper));
         }
