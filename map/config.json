@@ -2,9 +2,9 @@
   "options": {
     "frontPage": true,
     "paths": {
-      "root": "/shared",
+      "root": "/deployment/manager/shared",
       "fonts": "/server/fonts",
-      "styles": "/data",
+      "styles": "/deployment/map",
       "mbtiles": "/data"
     }
   },

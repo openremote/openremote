@@ -13,6 +13,5 @@ services:
     ports:
       - "127.0.0.1:8082:80"
     volumes:
-      - ../deployment/manager/shared:/shared
+      - ../deployment:/deployment
       - ../deployment/map:/data
-    command: ["-c", "/server/config.json"]
