@@ -13,5 +13,5 @@ services:
     ports:
       - "127.0.0.1:8082:80"
     volumes:
-      - ../deployment:/deployment
-      - ../deployment/map:/data
+      - ${DEPLOYMENT_DIRECTORY:-../deployment}:/deployment
+      - ${DEPLOYMENT_DIRECTORY:-../deployment}/map:/data
