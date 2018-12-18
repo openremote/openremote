@@ -21,8 +21,6 @@ package org.openremote.manager.map;
 
 import io.undertow.server.HttpHandler;
 import io.undertow.server.handlers.ResponseCodeHandler;
-import io.undertow.server.handlers.cache.CacheHandler;
-import io.undertow.server.handlers.cache.DirectBufferCache;
 import io.undertow.server.handlers.proxy.ProxyHandler;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
@@ -113,7 +111,7 @@ public class MapService implements ContainerService {
         return metadata;
     }
 
-    protected static ObjectValue getMapConfig(Path mapSettingsPath) {
+    protected static ObjectValue loadMapSettingsJson(Path mapSettingsPath) {
         ObjectValue mapSettings = Values.createObject();
 
         try {
@@ -187,8 +185,6 @@ public class MapService implements ContainerService {
                 proxyHandler.handleRequest(exchange);
             };
 
-            CacheHandler cacheHandler = new CacheHandler(new DirectBufferCache())
-
             webService.getRequestHandlers().add(0, pathStartsWithHandler("Raster Map Tile Proxy", RASTER_MAP_TILE_PATH, proxyWrapper));
         }
     }
@@ -201,7 +197,7 @@ public class MapService implements ContainerService {
 
         metadata = getMetadata(connection);
         if (metadata.isValid()) {
-            mapConfig = getMapConfig(mapSettingsPath);
+            mapConfig = loadMapSettingsJson(mapSettingsPath);
             if (!mapConfig.hasKeys()) {
                 LOG.warning("Map config could not be loaded from '" + mapSettingsPath.toAbsolutePath() + "', map functionality will not work");
                 return;
