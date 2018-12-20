@@ -1,6 +1,6 @@
 import {html, PolymerElement} from "@polymer/polymer";
 import {property, query, observe, customElement} from "@polymer/decorators";
-import {MapWidget} from "../src/mapwidget";
+import {MapWidget} from "../mapwidget";
 
 /**
  * Base class for all map markers
@@ -19,7 +19,7 @@ export class OrMapMarker extends PolymerElement {
     @property({type: Boolean})
     visible: boolean = true;
 
-    @property({type: Object, computed: "_createMarkerElement()"})
+    @property({type: Object})
     _ele!: HTMLElement;
 
     @property({type: Object})
@@ -44,7 +44,6 @@ export class OrMapMarker extends PolymerElement {
                 display: none;
             }
           </style>
-          <div id="map"></div>
           <slot></slot>
         `;
     }
@@ -52,6 +51,7 @@ export class OrMapMarker extends PolymerElement {
     connectedCallback() {
         super.connectedCallback();
         this._attached = true;
+        this._ele = this._createMarkerElement();
     }
 
     disconnectedCallback() {

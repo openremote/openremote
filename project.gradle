@@ -61,33 +61,31 @@ ext.npmCommand = {
 task npmInstall(type: Exec){
     // Use yarn
     commandLine npmCommand("yarn"), "install"
-    standardOutput = new ByteArrayOutputStream()
 }
 task npmClean(type: Exec){
     commandLine npmCommand("npm"), "run-script", "clean"
-    standardOutput = new ByteArrayOutputStream()
 }
 task npmBuild(type: Exec){
     commandLine npmCommand("npm"), "run-script", "build"
-    standardOutput = new ByteArrayOutputStream()
 }
 task npmTest(type: Exec){
     commandLine npmCommand("npm"), "run-script", "test"
-    standardOutput = new ByteArrayOutputStream()
 }
 task npmServe(type: Exec){
     commandLine npmCommand("npm"), "run-script", "serve"
-    standardOutput = new ByteArrayOutputStream()
 }
 task npmServeProduction(type: Exec){
     commandLine npmCommand("npm"), "run-script", "serveProduction"
-    standardOutput = new ByteArrayOutputStream()
 }
 
 // Add yarn tasks
 task yarnInstall(type: Exec){
     commandLine npmCommand("yarn"), "install"
-    standardOutput = new ByteArrayOutputStream()
+}
+
+// Add typescript tasks
+task tscWatch(type: Exec) {
+    commandLine npmCommand("npx"), "tsc", "-b", "--watch"
 }
 
 // Configure Java build

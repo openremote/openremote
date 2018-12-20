@@ -3,7 +3,7 @@ import {Type} from "./index";
 import rest from "@openremote/rest";
 import openremote from "@openremote/core";
 import {Map as MapGL, MapboxOptions, Style as MapboxStyle, Marker as MarkerGL} from "mapbox-gl";
-import {OrMapMarker} from "../markers/or-map-marker";
+import {OrMapMarker} from "./markers/or-map-marker";
 
 export class MapWidget {
     protected _mapJs?: L.mapbox.map;
@@ -77,7 +77,7 @@ export class MapWidget {
             }
 
             // Add style to shadow root
-            var style = document.createElement('style');
+            const style = document.createElement('style');
             style.id = "mapboxGlStyle";
             style.textContent = MapWidget._mapboxGlStyle.default.toString();
             this._styleParent.appendChild(style);
@@ -123,7 +123,7 @@ export class MapWidget {
                     break;
                 case Type.VECTOR:
                     new MarkerGL(marker._ele)
-                        .setLngLat([marker.lat, marker.lng])
+                        .setLngLat([marker.lng, marker.lat])
                         .addTo(this._mapGl!);
                     break;
             }

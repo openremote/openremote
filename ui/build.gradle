@@ -18,3 +18,7 @@ task build {
 task installDist {
     dependsOn build
 }
+
+task modelWatch {
+    dependsOn resolveTask(":ui:component:model:build"), resolveTask(":ui:component:rest:build")
+}

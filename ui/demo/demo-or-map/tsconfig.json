@@ -1,11 +1,10 @@
 {
   "extends": "../../tsconfig",
-  "compilerOptions": {
-    "outDir": "./dist/",
-    "declaration": false
-  },
   "include": [
     "./src",
     "../../component/or-map/@types"
+  ],
+  "references": [
+    { "path": "../../component/or-map" }
   ]
 }

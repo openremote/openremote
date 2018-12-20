@@ -6,6 +6,7 @@
   "scripts": {
     "clean": "npx shx rm -rf dist",
     "build": "npx webpack",
+    "serve": "npx webpack-dev-server",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "OpenRemote",
