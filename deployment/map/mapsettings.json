@@ -1,9 +1,21 @@
 {
-  "center": [5.4774, 51.4370],
-  "maxBounds": [5.343, 51.378, 5.591, 51.509],
-  "zoom": 13,
-  "maxZoom": 19,
-  "boxZoom": false,
+  "options": {
+    "default": {
+      "center": [5.4774, 51.4370],
+      "bounds": [5.343, 51.378, 5.591, 51.509],
+      "zoom": 13,
+      "maxZoom": 19,
+      "boxZoom": false
+    },
+    "customerA": {
+      "center": [5.4774, 51.4370],
+      "bounds": [5.343, 51.378, 5.591, 51.509],
+      "zoom": 13,
+      "minZoom": 14,
+      "maxZoom": 19,
+      "boxZoom": false
+    }
+  },
   "version": 8,
   "sources": {
     "vector_tiles": {

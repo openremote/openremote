@@ -63,9 +63,4 @@ public class MapResourceImpl extends WebResource implements MapResource {
             throw new WebApplicationException(Response.Status.NOT_FOUND);
         }
     }
-
-    @Override
-    public ObjectValue getSource(RequestParams requestParams) {
-        return mapService.getMapSource(getAuthenticatedRealm(), identityService.getExternalServerUri().clone());
-    }
 }

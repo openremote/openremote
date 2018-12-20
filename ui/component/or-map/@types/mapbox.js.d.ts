@@ -9,7 +9,7 @@ declare module "mapbox.js" {
     type LatLngBoundsLike = [LatLngLike, LatLngLike] | LatLngBounds;
 
     export interface MapOptions {
-        zoom: number,
+        zoom?: number,
         boxZoom?: boolean;
         center?: LatLngLike;
         maxBounds?: LatLngBoundsLike;
@@ -84,6 +84,9 @@ declare module "mapbox.js" {
         namespace mapbox {
             export class map {
                 constructor(element: string | Element, tilejson: object, options?: MapOptions);
+                getBoundsZoom(bounds: LatLngBoundsLike, inside?: boolean): number;
+                setMaxZoom(zoom: number): this;
+                setMinZoom(zoom: number): this;
             }
         }
 

@@ -60,15 +60,4 @@ public interface MapResource {
     @Path("tile/{zoom}/{column}/{row}")
     @SuppressWarnings("unusable-by-js")
     byte[] getTile(@PathParam("zoom")int zoom, @PathParam("column")int column, @PathParam("row")int row);
-
-    /**
-     * Gets the vector tile sources data used by Mapbox GL
-     */
-    @GET
-    @Path("source")
-    @Produces(MediaType.APPLICATION_JSON)
-    @SuccessStatusCode(200)
-    @RolesAllowed({"read:map"})
-    @SuppressWarnings("unusable-by-js")
-    ObjectValue getSource(@BeanParam RequestParams requestParams);
 }

@@ -298,6 +298,13 @@ export class Manager {
         return undefined;
     }
 
+    public getRealm(): string | undefined {
+        if (this._config) {
+            return this._config.realm;
+        }
+        return undefined;
+    }
+
     // TODO: Native shell support
     protected isNative(): boolean {
         // return this.console && this.console.enabled;
@@ -305,7 +312,7 @@ export class Manager {
     }
 
     protected onAuthenticated() {
-        console.log("Authentication successful");
+
     }
 
     // NOTE: The below works with Keycloak 2.x JS API - They made breaking changes in newer versions

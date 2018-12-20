@@ -51,24 +51,45 @@ export class MapWidget {
             style.id = "mapboxJsStyle";
             style.textContent = MapWidget._mapboxJsStyle.default.toString();
             this._styleParent.appendChild(style);
-
             const settingsResponse = await rest.api.MapResource.getSettingsJs();
             const settings = <any> settingsResponse.data;
-            const options: MapOptions = {
-                zoom: <number>settings.zoom + 1, // JS zoom is out by one compared to GL
-                minZoom: settings.minZoom || 0,
-                maxZoom: settings.maxZoom || 22,
-                boxZoom: settings.boxZoom || false,
-            };
-            if (settings.bounds) {
-                let b = settings.bounds;
-                options.maxBounds = [
-                    [b[1], b[0]],
-                    [b[3], b[2]],
-                ];
+
+            // Load options for current realm or fallback to default if exist
+            let settingOptions : any = settings.options ? settings.options[openremote.getRealm() || "default"] ? settings.options[openremote.getRealm() || "default"] : settings.options.default : null;
+            let options: MapOptions | undefined;
+            if (settingOptions) {
+                options = {};
+
+                // JS zoom is out by one compared to GL
+                options.zoom = settingOptions.zoom ? settingOptions.zoom + 1 : undefined;
+                options.maxZoom = settingOptions.maxZoom;
+                options.minZoom = settingOptions.minZoom;
+                options.boxZoom = settingOptions.boxZoom;
+
+                // JS uses lat then lng unlike GL
+                if (settingOptions.bounds) {
+                    let b = settingOptions.bounds;
+                    options.maxBounds = [
+                        [b[1], b[0]],
+                        [b[3], b[2]],
+                    ];
+                }
+                if (settingOptions.center) {
+                    let c = settingOptions.center;
+                    options.center = [
+                        c[1], c[0]
+                    ];
+                }
             }
 
             this._mapJs = new L.mapbox.map(this._mapContainer, settings, options);
+
+            if (options && options.maxBounds) {
+                const minZoom = this._mapJs.getBoundsZoom(options.maxBounds, true);
+                if (!options.minZoom || options.minZoom < minZoom) {
+                    this._mapJs.setMinZoom(minZoom);
+                }
+            }
 
         } else {
             if (!MapWidget._mapboxGlStyle) {
@@ -86,14 +107,12 @@ export class MapWidget {
             const settingsResponse = await rest.api.MapResource.getSettings();
             const settings = <any> settingsResponse.data;
 
-            const options: MapboxOptions = {
+            // Load options for current realm or fallback to default if exist
+            let settingOptions : any = settings.options ? settings.options[openremote.getRealm() || "default"] ? settings.options[openremote.getRealm() || "default"] : settings.options.default : null;
+            let options: MapboxOptions = {
                 container: this._mapContainer,
                 style: <MapboxStyle> settings,
                 attributionControl: true,
-                minZoom: settings.minZoom || 0,
-                maxZoom: settings.maxZoom || 0,
-                maxBounds: settings.maxBounds || null,
-                boxZoom: settings.boxZoom || false,
                 transformRequest: (url, resourceType) => {
                     return {
                         url: url,
@@ -101,6 +120,15 @@ export class MapWidget {
                     }
                 }
             };
+
+            if (settingOptions) {
+                options.minZoom = settingOptions.minZoom;
+                options.maxZoom = settingOptions.maxZoom;
+                options.maxBounds = settingOptions.bounds;
+                options.boxZoom = settingOptions.boxZoom;
+                options.zoom = settingOptions.zoom;
+                options.center = settingOptions.center;
+            }
 
             this._mapGl = new map.Map(options);
         }

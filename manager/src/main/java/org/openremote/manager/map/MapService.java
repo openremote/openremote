@@ -98,8 +98,11 @@ public class MapService implements ContainerService {
             ArrayValue vectorLayer = Values.<ObjectValue>parse(resultMap.get("json")).flatMap(json -> json.getArray("vector_layers")).orElse(null);
             int maxZoom = Integer.valueOf(resultMap.get("maxzoom"));
             int minZoom = Integer.valueOf(resultMap.get("minzoom"));
+            ArrayValue center = Values.parse(resultMap.get("center")).flatMap(Values::getArray).orElse(null);
+            ArrayValue bounds = Values.parse(resultMap.get("bounds")).flatMap(Values::getArray).orElse(null);
+
             if (!TextUtil.isNullOrEmpty(attribution) && vectorLayer != null && !vectorLayer.isEmpty() && maxZoom > 0) {
-                metadata = new Metadata(attribution, vectorLayer, maxZoom, minZoom);
+                metadata = new Metadata(attribution, vectorLayer, bounds, center, maxZoom, minZoom);
             }
         } catch (Exception ex) {
             metadata = new Metadata();
@@ -206,6 +209,33 @@ public class MapService implements ContainerService {
             LOG.warning("Map meta data could not be loaded, map functionality will not work");
             return;
         }
+
+        ObjectValue options = mapConfig.getObject("options").orElse(Values.createObject());
+        ObjectValue defaultOptions = options.getObject("default").orElse(Values.createObject());
+        options.put("default", defaultOptions);
+        mapConfig.put("options", options);
+
+        if (!defaultOptions.hasKey("maxZoom")) {
+            defaultOptions.put("maxZoom", metadata.maxZoom);
+        }
+        if (!defaultOptions.hasKey("minZoom")) {
+            defaultOptions.put("minZoom", metadata.minZoom);
+        }
+
+        if (metadata.getCenter() != null) {
+            if (!defaultOptions.hasKey("center")) {
+                ArrayValue center = metadata.getCenter().deepCopy();
+                center.remove(2);
+                defaultOptions.put("center", center);
+            }
+            if (!defaultOptions.hasKey("zoom")) {
+                defaultOptions.put("zoom", metadata.getCenter().getNumber(2).orElse(13d));
+            }
+        }
+
+        if (!defaultOptions.hasKey("bounds") && metadata.getBounds() != null) {
+            defaultOptions.put("bounds", metadata.getBounds());
+        }
     }
 
     @Override
@@ -236,15 +266,36 @@ public class MapService implements ContainerService {
         // Set vector_tiles URL to MapResource getSource endpoint
         mapSettings.getObject("sources")
                 .flatMap(s -> s.getObject("vector_tiles"))
-                .ifPresent(vectorTilesObj ->
-                        vectorTilesObj.put(
-                                "url",
-                                baseUriBuilder.clone()
-                                        .replacePath(API_PATH)
-                                        .path(realm)
-                                        .path("map/source")
-                                        .build()
-                                        .toString()));
+                .ifPresent(vectorTilesObj -> {
+
+                    vectorTilesObj.remove("url");
+
+                    vectorTilesObj.put("attribution", metadata.attribution);
+                    vectorTilesObj.put("maxzoom", metadata.maxZoom);
+                    vectorTilesObj.put("minzoom", metadata.minZoom);
+                    vectorTilesObj.put("vector_layers", metadata.vectorLayers);
+
+                    mapConfig.getArray("center").ifPresent(center ->
+                            mapConfig.getNumber("zoom").ifPresent(zoom -> {
+                                ArrayValue centerArray = center.deepCopy();
+                                centerArray.add(Values.create(zoom));
+                                vectorTilesObj.put("center", centerArray);
+                            }));
+
+                    ArrayValue tilesArray = Values.createArray();
+                    String tileUrl = baseUriBuilder.clone().replacePath(API_PATH).path(realm).path("map/tile").build().toString() + "/{z}/{x}/{y}";
+                    tilesArray.set(0, tileUrl);
+                    vectorTilesObj.put("tiles", tilesArray);
+
+//                    vectorTilesObj.put(
+//                            "url",
+//                            baseUriBuilder.clone()
+//                                    .replacePath(API_PATH)
+//                                    .path(realm)
+//                                    .path("map/source")
+//                                    .build()
+//                                    .toString());
+                });
 
         // Set sprite URL to shared folder
         mapSettings.getString("sprite").ifPresent(sprite -> {
@@ -265,49 +316,7 @@ public class MapService implements ContainerService {
             mapSettings.put("glyphs", glyphsUri);
         });
 
-        if (!mapSettings.hasKey("maxZoom")) {
-            mapSettings.put("maxZoom", metadata.maxZoom);
-        }
-        if (!mapSettings.hasKey("minZoom")) {
-            mapSettings.put("minZoom", metadata.minZoom);
-        }
-
         return mapSettings;
-    }
-
-    /**
-     * Dynamically build Mapbox GL sources using metadata from mbtiles DB
-     */
-    public ObjectValue getMapSource(String realm, UriBuilder baseUriBuilder) {
-
-        if (mapSource != null) {
-            return mapSource;
-        }
-
-        mapSource = Values.createObject();
-
-        if (!metadata.isValid() || !mapConfig.hasKeys()) {
-            return mapSource;
-        }
-
-        mapSource.put("attribution", metadata.attribution);
-        mapSource.put("maxzoom", metadata.maxZoom);
-        mapSource.put("minzoom", metadata.minZoom);
-        mapSource.put("vector_layers", metadata.vectorLayers);
-
-        mapConfig.getArray("center").ifPresent(center ->
-                mapConfig.getNumber("zoom").ifPresent(zoom -> {
-                    ArrayValue centerArray = center.deepCopy();
-                    centerArray.add(Values.create(zoom));
-                    mapSource.put("center", centerArray);
-                }));
-
-        ArrayValue tilesArray = Values.createArray();
-        String tileUrl = baseUriBuilder.clone().replacePath(API_PATH).path(realm).path("map/tile").build().toString() + "/{z}/{x}/{y}";
-        tilesArray.set(0, tileUrl);
-        mapSource.put("tiles", tilesArray);
-
-        return mapSource;
     }
 
     /**
@@ -325,27 +334,15 @@ public class MapService implements ContainerService {
             return mapSettingsJs;
         }
 
-        mapSettingsJs.put("attribution", metadata.attribution);
-        mapSettingsJs.put("maxzoom", mapConfig.getNumber("maxZoom").map(Double::intValue).orElse(metadata.maxZoom));
-        mapSettingsJs.put("minzoom", mapConfig.getNumber("minZoom").map(Double::intValue).orElse(metadata.minZoom));
-        if (mapConfig.hasKey("zoom")) {
-            mapSettingsJs.put("zoom", mapConfig.getNumber("zoom").orElse(0d));
-        }
-        mapSettingsJs.put("format", "png");
-        mapSettingsJs.put("type", "baselayer");
-
-        mapConfig.getArray("center").ifPresent(center ->
-            mapConfig.getNumber("zoom").ifPresent(zoom -> {
-                    ArrayValue centerArray = center.deepCopy();
-                    centerArray.add(Values.create(zoom));
-                    mapSettingsJs.put("center", centerArray);
-                }));
-
-        mapConfig.getArray("maxBounds").ifPresent(maxBounds -> mapSettingsJs.put("bounds", maxBounds.deepCopy()));
-
         ArrayValue tilesArray = Values.createArray();
         String tileUrl = baseUriBuilder.clone().replacePath(RASTER_MAP_TILE_PATH).build().toString() + "/{z}/{x}/{y}.png";
         tilesArray.set(0, tileUrl);
+
+        mapSettingsJs.put("options", mapConfig.getObject("options").orElse(null));
+
+        mapSettingsJs.put("attribution", metadata.attribution);
+        mapSettingsJs.put("format", "png");
+        mapSettingsJs.put("type", "baselayer");
         mapSettingsJs.put("tiles", tilesArray);
 
         return mapSettingsJs;
@@ -394,11 +391,15 @@ public class MapService implements ContainerService {
         protected ArrayValue vectorLayers;
         protected int maxZoom;
         protected int minZoom;
+        protected ArrayValue bounds;
+        protected ArrayValue center;
         protected boolean valid;
 
-        public Metadata(String attribution, ArrayValue vectorLayers, int maxZoom, int minZoom) {
+        public Metadata(String attribution, ArrayValue vectorLayers, ArrayValue bounds, ArrayValue center, int maxZoom, int minZoom) {
             this.attribution = attribution;
             this.vectorLayers = vectorLayers;
+            this.bounds = bounds;
+            this.center = center;
             this.maxZoom = maxZoom;
             this.minZoom = minZoom;
             valid = true;
@@ -413,6 +414,14 @@ public class MapService implements ContainerService {
 
         public ArrayValue getVectorLayers() {
             return vectorLayers;
+        }
+
+        public ArrayValue getBounds() {
+            return bounds;
+        }
+
+        public ArrayValue getCenter() {
+            return center;
         }
 
         public int getMaxZoom() {
