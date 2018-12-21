@@ -6,6 +6,16 @@
 
     <title>Demo</title>
 
+    <!--
+    Feature detect Custom Elements support. If the browser DOES support Custom
+    Elements then we need to load the custom-elements-es5-adapter because
+    our project code has been transpiled from ES2015 to ES5 and native Custom
+    Elements expect elements will be registered as classes.
+    -->
+    <script>if (!window.customElements) { document.write('<!--'); }</script>
+    <script src="./modules/@webcomponents/webcomponentsjs/custom-elements-es5-adapter.js"></script>
+    <!--! DO NOT REMOVE THIS COMMENT, WE NEED ITS CLOSING MARKER -->
+
     <custom-style>
         <style is="custom-style" include="demo-pages-shared-styles">
         </style>
@@ -24,22 +34,6 @@
             </or-map>
         </template>
     </demo-snippet>
-</div>
-
-<!--
-Feature detect Custom Elements support. If the browser DOES support Custom
-Elements then we need to load the custom-elements-es5-adapter because
-our project code has been transpiled from ES2015 to ES5 and native Custom
-Elements expect elements will be registered as classes.
--->
-<div id="ce-es5-shim">
-    <script type="text/javascript">
-        if (!window.customElements) {
-            var ceShimContainer = document.querySelector('#ce-es5-shim');
-            ceShimContainer.parentElement.removeChild(ceShimContainer);
-        }
-    </script>
-    <script type="text/javascript" src="modules/@webcomponents/webcomponentsjs/custom-elements-es5-adapter.js"></script>
 </div>
 
 <!--

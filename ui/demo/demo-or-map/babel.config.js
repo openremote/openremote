@@ -7,7 +7,7 @@ module.exports = api => {
                 "@babel/preset-env",
                 {
                     modules: false,
-                    exclude: ['transform-async-to-generator', 'transform-regenerator'],
+                    exclude: ['transform-async-to-generator'],
                     targets: [
                         "last 2 versions",
                         "IE 11"
@@ -16,14 +16,21 @@ module.exports = api => {
             ]
         ],
         plugins: [
-            "@babel/plugin-transform-regenerator",
-            "@babel/external-helpers",
+            [
+                "@babel/transform-runtime",
+                {
+                    "corejs": false,
+                    "helpers": true,
+                    "regenerator": true,
+                    "useESModules": false
+                }
+            ],
             "@babel/syntax-dynamic-import",
             "@babel/syntax-object-rest-spread",
             [
-                "@babel/plugin-transform-runtime",
+                'module:fast-async',
                 {
-                    "regenerator": true
+                    spec: true
                 }
             ]
         ]

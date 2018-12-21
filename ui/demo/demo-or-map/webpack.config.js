@@ -1,6 +1,5 @@
 var CopyWebpackPlugin = require("copy-webpack-plugin");
 var HtmlWebpackPlugin = require("html-webpack-plugin");
-var path = require("path");
 
 module.exports = {
     mode: 'development',
@@ -25,7 +24,7 @@ module.exports = {
         }),
         new CopyWebpackPlugin([
             {
-                from: "../../node_modules/@webcomponents/webcomponentsjs",
+                from: require.resolve("@webcomponents/webcomponentsjs"),
                 to: "modules/@webcomponents/webcomponentsjs",
                 ignore: "!*.js"
             }
@@ -44,7 +43,7 @@ module.exports = {
             {
                 test: /\.js$/,
                 include: function(modulePath) {
-                    return /@webcomponents[\/|\\]shadycss|lit-html|@polymer/.test(modulePath) || !/node_modules/.test(modulePath);
+                    return /(@webcomponents[\/|\\]shadycss|lit-css|styled-lit-element|lit-html|@polymer|@lit|pwa-helpers)/.test(modulePath) || !/node_modules/.test(modulePath);
                 },
                 use: [
                     {
