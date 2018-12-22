@@ -1,3 +1,4 @@
+var path = require("path");
 var CopyWebpackPlugin = require("copy-webpack-plugin");
 var HtmlWebpackPlugin = require("html-webpack-plugin");
 
@@ -24,7 +25,7 @@ module.exports = {
         }),
         new CopyWebpackPlugin([
             {
-                from: require.resolve("@webcomponents/webcomponentsjs"),
+                from: path.dirname(require.resolve("@webcomponents/webcomponentsjs")),
                 to: "modules/@webcomponents/webcomponentsjs",
                 ignore: "!*.js"
             }
