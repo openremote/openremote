@@ -4,7 +4,7 @@
   "description": "Component Demo",
   "scripts": {
     "clean": "npx shx rm -rf dist",
-    "build": "npx webpack",
+    "build": "npx tsc -b && npx cross-env NODE_ENV=production webpack",
     "serve": "npx webpack-dev-server",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
