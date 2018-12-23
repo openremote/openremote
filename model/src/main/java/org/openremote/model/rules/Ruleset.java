@@ -19,12 +19,14 @@
  */
 package org.openremote.model.rules;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
+
 import java.util.Date;
 import java.util.Optional;
 
@@ -98,7 +100,31 @@ public abstract class Ruleset {
                 "            facts.updateAssetState(\n" +
                 "                    facts.bound(\"assetId\") as String, \"someAttribute\", \"bar\"\n" +
                 "            )\n" +
-                "        })");
+                "        })"),
+        JSON(".json",
+            "locations: [],\n" +
+                    "rules: [\n" +
+                    "  {\n" +
+                    "    name: \"Test Rule\",\n" +
+                    "    when: {\n" +
+                    "        operator: \"AND\",\n" +
+                    "        predicates: [\n" +
+                    "          {\n" +
+                    "            query: {\n" +
+                    "\n" +
+                    "            }\n" +
+                    "          }\n" +
+                    "        ],\n" +
+                    "        conditions: []\n" +
+                    "    },\n" +
+                    "    then: {\n" +
+                    "            notifications: [],\n" +
+                    "            attributeEvents: []\n" +
+                    "    },\n" +
+                    "    reset: null // Only trigger once ever\n" +
+                    "  }\n" +
+                    "]"
+                );
 
         final String fileExtension;
         final String emptyRulesExample;

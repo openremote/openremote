@@ -31,6 +31,7 @@ import org.jeasy.rules.api.Rules;
 import org.jeasy.rules.core.RuleBuilder;
 import org.kohsuke.groovy.sandbox.GroovyValueFilter;
 import org.kohsuke.groovy.sandbox.SandboxTransformer;
+import org.openremote.container.Container;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.rules.facade.NotificationsFacade;
@@ -38,8 +39,10 @@ import org.openremote.model.rules.Assets;
 import org.openremote.model.rules.Ruleset;
 import org.openremote.model.rules.RulesetStatus;
 import org.openremote.model.rules.Users;
+import org.openremote.model.rules.json.JsonRulesetDefinition;
 
 import javax.script.*;
+import java.io.IOException;
 import java.util.Collection;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -152,8 +155,24 @@ public class RulesetDeployment {
                 return registerRulesJavascript(ruleset, assetsFacade, usersFacade, notificationFacade);
             case GROOVY:
                 return registerRulesGroovy(ruleset, assetsFacade, usersFacade, notificationFacade);
+            case JSON:
+                return registerRulesJson(ruleset);
         }
         return false;
+    }
+
+    private boolean registerRulesJson(Ruleset ruleset) {
+        try {
+            JsonRulesetDefinition simpleRulesetDefinition = Container.JSON.readValue(ruleset.getRules(), JsonRulesetDefinition.class);
+
+            JsonRulesBuilder simpleRulesBuilder = new JsonRulesBuilder(timerService, assetStorageService);
+            return true;
+
+        } catch (IOException e) {
+            RulesEngine.LOG.log(Level.SEVERE, "Error evaluating ruleset: " + ruleset, e);
+            setError(e);
+            return false;
+        }
     }
 
     public boolean registerRulesJavascript(Ruleset ruleset, Assets assetsFacade, Users usersFacade, NotificationsFacade consolesFacade) {

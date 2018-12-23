@@ -1,0 +1,49 @@
+{
+  "rules": [
+    {
+      "name": "Test Rule",
+      "when": {
+        "asset": {
+          "type": {
+            "predicateType": "string",
+            "match": "EXACT",
+            "value": "urn:openremote:asset:console"
+          },
+          "attributes": {
+            "predicates": [
+              {
+                "name": {
+                  "predicateType": "string",
+                  "match": "EXACT",
+                  "value": "location"
+                },
+                "value": {
+                  "predicateType": "radial",
+                  "radius": 50,
+                  "lat": 51.438000,
+                  "lng": 5.470945,
+                  "negated": true
+                }
+              }
+            ]
+          }
+        }
+      },
+      "then": [
+        {
+          "action": "notification",
+          "target": {
+            "useAssetsFromWhen": true
+          },
+          "notification": {
+            "name": "test",
+            "message": {
+              "type": "push",
+              "title": "Test title"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
