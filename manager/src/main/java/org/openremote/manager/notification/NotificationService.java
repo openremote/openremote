@@ -526,7 +526,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                     break;
             }
         } else if (!TextUtil.isNullOrEmpty(notification.getRepeatInterval())) {
-            timestamp = lastSend.plus(TimeUtil.parseTimeString(notification.getRepeatInterval()), ChronoUnit.MILLIS);
+            timestamp = lastSend.plus(TimeUtil.parseTimeDuration(notification.getRepeatInterval()), ChronoUnit.MILLIS);
         }
 
         return timestamp;

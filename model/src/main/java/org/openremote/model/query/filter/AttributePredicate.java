@@ -19,7 +19,6 @@
  */
 package org.openremote.model.query.filter;
 
-import org.openremote.model.query.BaseAssetQuery;
 import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Values;
 

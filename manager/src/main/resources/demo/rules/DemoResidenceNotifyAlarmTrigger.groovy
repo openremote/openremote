@@ -157,15 +157,15 @@ rules.add()
             LOG.info("Alerting users of " + alarmTrigger + ": " + userIds)
 
             Notification notification = new Notification(
-                "ApartmentAlarm",
-                new PushNotificationMessage()
-                    .setTitle("Apartment Alarm")
-                    .setBody("Aanwezigheid in " + alarmTrigger.roomName + " (" + facts.clock.time + ").")
-                    .setButtons([
-                        new PushNotificationButton("Details", new PushNotificationAction("#security")),
-                        new PushNotificationButton("Alarm uit", PushNotificationAction.writeAttributeValueAction(new AttributeRef(alarmTrigger.residenceId, "alarmEnabled"), Values.create(false)))
+                    "ApartmentAlarm",
+                    new PushNotificationMessage()
+                            .setTitle("Apartment Alarm")
+                            .setBody("Aanwezigheid in " + alarmTrigger.roomName + " (" + facts.clock.time + ").")
+                            .setButtons([
+                            new PushNotificationButton("Details", new PushNotificationAction("#security")),
+                            new PushNotificationButton("Alarm uit", PushNotificationAction.writeAttributeValueAction(new AttributeRef(alarmTrigger.residenceId, "alarmEnabled"), Values.create(false)))
                     ]),
-                new Notification.Targets(Notification.TargetType.USER, userIds)
+                    new Notification.Targets(Notification.TargetType.USER, userIds), null, null
             )
 
             // Send the notification to all matched users

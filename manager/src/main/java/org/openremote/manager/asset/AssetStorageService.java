@@ -40,6 +40,7 @@ import org.openremote.container.timer.TimerService;
 import org.openremote.container.web.WebService;
 import org.openremote.manager.asset.console.ConsoleResourceImpl;
 import org.openremote.manager.event.ClientEventService;
+import org.openremote.manager.rules.AssetQueryPredicate;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.model.Constants;
 import org.openremote.model.ValidationFailure;
@@ -54,7 +55,9 @@ import org.openremote.model.query.BaseAssetQuery;
 import org.openremote.model.query.filter.*;
 import org.openremote.model.security.ClientRole;
 import org.openremote.model.security.User;
+import org.openremote.model.util.Pair;
 import org.openremote.model.util.TextUtil;
+import org.openremote.model.util.TimeUtil;
 import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.Values;
@@ -64,8 +67,13 @@ import javax.persistence.EntityManager;
 import javax.persistence.NoResultException;
 import javax.persistence.TypedQuery;
 import java.sql.*;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalUnit;
 import java.util.*;
 import java.util.Date;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -411,7 +419,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     }
 
     public boolean isUserAsset(String assetId) {
-        return isUserAsset(null, assetId);
+        return isUserAsset((String)null, assetId);
     }
 
     public boolean isUserAsset(String userId, String assetId) {
@@ -430,6 +438,21 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 }
 
                 return query.getSingleResult() > 0;
+            } catch (NoResultException ex) {
+                return false;
+            }
+        });
+    }
+
+    public boolean isUserAsset(List<String> userIds, String assetId) {
+        return persistenceService.doReturningTransaction(entityManager -> {
+            try {
+                return entityManager.createQuery(
+                        "select count(ua) from UserAsset ua where ua.id.userId in :userIds and ua.id.assetId = :assetId",
+                        Long.class)
+                        .setParameter("userIds", userIds)
+                        .setParameter("assetId", assetId)
+                        .getSingleResult() > 0;
             } catch (NoResultException ex) {
                 return false;
             }
@@ -642,6 +665,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         }
 
         sb.append(buildOrderByString(query));
+        sb.append(buildLimitString(query));
         return new PreparedAssetQuery(sb.toString(), binders);
     }
 
@@ -828,6 +852,13 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         }
 
         return sb.toString();
+    }
+
+    protected String buildLimitString(BaseAssetQuery query) {
+        if (query.limit > 0) {
+            return " LIMIT " + query.limit;
+        }
+        return "";
     }
 
     protected String buildWhereClause(BaseAssetQuery query, int level, List<ParameterBinder> binders) {
@@ -1082,36 +1113,34 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 final int keyFormatPos = binders.size() + 1;
                 binders.add(st -> st.setString(keyFormatPos, dateTimePredicate.dateFormat));
 
+                Pair<Long, Long> fromAndTo = AssetQueryPredicate.asFromAndTo(timerService.getCurrentTimeMillis(), dateTimePredicate);
+
                 final int pos = binders.size() + 1;
-                binders.add(st -> st.setString(pos, dateTimePredicate.value));
-                final int formatPos = binders.size() + 1;
-                binders.add(st -> st.setString(formatPos, dateTimePredicate.dateFormat));
+                binders.add(st -> st.setDate(pos, new java.sql.Date(fromAndTo.key)));
 
                 switch (dateTimePredicate.operator) {
                     case EQUALS:
-                        attributeBuilder.append(" = to_timestamp(?, ?)");
+                        attributeBuilder.append(" = ?");
                         break;
                     case NOT_EQUALS:
-                        attributeBuilder.append(" <> to_timestamp(?, ?)");
+                        attributeBuilder.append(" <> ?");
                         break;
                     case GREATER_THAN:
-                        attributeBuilder.append(" > to_timestamp(?, ?)");
+                        attributeBuilder.append(" > ?");
                         break;
                     case GREATER_EQUALS:
-                        attributeBuilder.append(" >= to_timestamp(?, ?)");
+                        attributeBuilder.append(" >= ?");
                         break;
                     case LESS_THAN:
-                        attributeBuilder.append(" < to_timestamp(?, ?)");
+                        attributeBuilder.append(" < ?");
                         break;
                     case LESS_EQUALS:
-                        attributeBuilder.append(" <= to_timestamp(?, ?)");
+                        attributeBuilder.append(" <= ?");
                         break;
                     case BETWEEN:
-                        attributeBuilder.append(" BETWEEN to_timestamp(?, ?) AND to_timestamp(?, ?)");
                         final int pos2 = binders.size() + 1;
-                        binders.add(st -> st.setString(pos2, dateTimePredicate.rangeValue));
-                        final int formatPos2 = binders.size() + 1;
-                        binders.add(st -> st.setString(formatPos2, dateTimePredicate.dateFormat));
+                        binders.add(st -> st.setDate(pos2, new java.sql.Date(fromAndTo.value)));
+                        attributeBuilder.append(" BETWEEN ? AND ?");
                         break;
                 }
             } else if (attributePredicate.value instanceof NumberPredicate) {

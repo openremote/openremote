@@ -88,10 +88,12 @@ public class Notification {
     protected Targets targets;
 
     @JsonCreator
-    public Notification(@JsonProperty("name") String name, @JsonProperty("message") AbstractNotificationMessage message, @JsonProperty("targets") Targets targets) {
+    public Notification(@JsonProperty("name") String name, @JsonProperty("message") AbstractNotificationMessage message, @JsonProperty("targets") Targets targets, @JsonProperty("repeatFrequency") RepeatFrequency repeatFrequency, @JsonProperty("repeatInterval") String repeatInterval) {
         this.name = name;
         this.message = message;
         this.targets = targets;
+        this.repeatFrequency = repeatFrequency;
+        this.repeatInterval = repeatInterval;
     }
 
     public String getName() {

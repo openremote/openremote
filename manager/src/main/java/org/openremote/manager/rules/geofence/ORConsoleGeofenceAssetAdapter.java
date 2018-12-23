@@ -51,7 +51,6 @@ import java.util.*;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static org.openremote.container.concurrent.GlobalLock.withLock;
@@ -271,7 +270,7 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
         IntStream.range(0, rows)
             .forEach(i -> {
                 final List<String> subIds = ids.subList(10 * i, Math.min(10 + (10 * i), ids.size()));
-                final Notification notification = new Notification("GeofenceRefresh", new PushNotificationMessage().setData(data), null);
+                final Notification notification = new Notification("GeofenceRefresh", new PushNotificationMessage().setData(data), null, null, null);
                 notification.setTargets(new Notification.Targets(Notification.TargetType.ASSET, subIds));
 
                 executorService.schedule(() -> {

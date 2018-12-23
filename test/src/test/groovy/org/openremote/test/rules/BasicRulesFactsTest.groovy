@@ -3,6 +3,7 @@ package org.openremote.test.rules
 import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
 import org.openremote.container.Container
+import org.openremote.container.timer.TimerService
 import org.openremote.manager.rules.RulesClock
 import org.openremote.manager.rules.RulesEngine
 import org.openremote.manager.rules.RulesFacts
@@ -49,7 +50,9 @@ class BasicRulesFactsTest extends Specification {
     def setup() {
         given: "some rule facts"
         assetsFacade = Mock(Assets)
-        rulesFacts = new RulesFacts(assetsFacade, this, RulesEngine.RULES_LOG)
+        def timerService = new TimerService()
+        timerService.clock = TimerService.Clock.PSEUDO
+        rulesFacts = new RulesFacts(timerService, assetsFacade, this, RulesEngine.RULES_LOG)
 
         and: "a rules clock"
         def rulesClock = new RulesClock(0)

@@ -22,6 +22,7 @@ package org.openremote.manager.rules;
 import org.jeasy.rules.api.Facts;
 import org.jeasy.rules.api.Rule;
 import org.jeasy.rules.api.RuleListener;
+import org.openremote.container.timer.TimerService;
 import org.openremote.model.attribute.AttributeType;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.attribute.AttributeEvent;
@@ -56,6 +57,7 @@ public class RulesFacts extends Facts implements RuleListener {
     public static final String EXECUTION_VARS = "INTERNAL_EXECUTION_VAR";
     public static final String ANONYMOUS_FACTS = "ANONYMOUS_FACTS";
 
+    final protected TimerService timerService;
     final protected Assets assetsFacade;
     final protected Object loggingContext;
     final protected Logger LOG;
@@ -69,7 +71,8 @@ public class RulesFacts extends Facts implements RuleListener {
     protected boolean trackLocationRules;
     protected Map<String, Set<LocationPredicate>> assetStateLocationPredicateMap = null;
 
-    public RulesFacts(Assets assetsFacade, Object loggingContext, Logger logger) {
+    public RulesFacts(TimerService timerService, Assets assetsFacade, Object loggingContext, Logger logger) {
+        this.timerService = timerService;
         this.assetsFacade = assetsFacade;
         this.loggingContext = loggingContext;
         this.LOG = logger;
@@ -243,7 +246,7 @@ public class RulesFacts extends Facts implements RuleListener {
     }
 
     public RulesFacts insertAssetEvent(String expires, AssetState assetState) {
-        return insertAssetEvent(TimeUtil.parseTimeString(expires), assetState);
+        return insertAssetEvent(TimeUtil.parseTimeDuration(expires), assetState);
     }
 
     public RulesFacts insertAssetEvent(long expiresMilliSeconds, AssetState assetState) {
@@ -256,7 +259,7 @@ public class RulesFacts extends Facts implements RuleListener {
     }
 
     public RulesFacts putTemporary(String expires, Object value) {
-        return putTemporary(TimeUtil.parseTimeString(expires), value);
+        return putTemporary(TimeUtil.parseTimeDuration(expires), value);
     }
 
     public RulesFacts putTemporary(Duration expires, Object value) {
@@ -273,7 +276,7 @@ public class RulesFacts extends Facts implements RuleListener {
     }
 
     public RulesFacts putTemporary(String name, String expires, Object value) {
-        return putTemporary(name, TimeUtil.parseTimeString(expires), value);
+        return putTemporary(name, TimeUtil.parseTimeDuration(expires), value);
     }
 
     public RulesFacts putTemporary(String name, double expires, Object value) {
@@ -444,7 +447,7 @@ public class RulesFacts extends Facts implements RuleListener {
             }
         }
 
-        Predicate<AssetState> p = new AssetQueryPredicate(assetQuery);
+        Predicate<AssetState> p = new AssetQueryPredicate(timerService, assetQuery);
 
         // Match against all asset states by default
         Stream<AssetState> assetStates = getAssetStates().stream();
@@ -473,7 +476,7 @@ public class RulesFacts extends Facts implements RuleListener {
     }
 
     public Stream<TemporaryFact<AssetState>> matchAssetEvent(AssetQuery assetQuery) {
-        Predicate<AssetState> p = new AssetQueryPredicate(assetQuery);
+        Predicate<AssetState> p = new AssetQueryPredicate(timerService, assetQuery);
         return getAssetEvents().stream().parallel()
             .filter(fact -> matchFact(fact, AssetState.class, p).isPresent());
     }

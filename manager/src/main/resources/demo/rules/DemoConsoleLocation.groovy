@@ -44,9 +44,9 @@ rules.add()
 
             List<String> consoleIds = facts.bound("consoleIds")
             Notification notification = new Notification(
-                "Welcome Home",
-                new PushNotificationMessage("Welcome Home", "No new events to report", null, null, null),
-                new Notification.Targets(Notification.TargetType.ASSET, consoleIds))
+                    "Welcome Home",
+                    new PushNotificationMessage("Welcome Home", "No new events to report", null, null, null),
+                    new Notification.Targets(Notification.TargetType.ASSET, consoleIds), null, null)
 
             notifications.send(notification)
 

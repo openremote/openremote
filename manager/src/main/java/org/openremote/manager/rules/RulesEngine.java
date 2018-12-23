@@ -124,7 +124,7 @@ public class RulesEngine<T extends Ruleset> {
         this.notificationFacade = new NotificationsFacade<>(id, notificationService);
         this.assetLocationPredicatesConsumer = assetLocationPredicatesConsumer;
 
-        this.facts = new RulesFacts(assetsFacade, this, RULES_LOG);
+        this.facts = new RulesFacts(timerService, assetsFacade, this, RULES_LOG);
         engine = new InferenceRulesEngine(
             // Skip any other rules after the first failed rule (exception thrown in condition or action)
             new RulesEngineParameters(false, true, false, RulesEngineParameters.DEFAULT_RULE_PRIORITY_THRESHOLD)
@@ -212,7 +212,7 @@ public class RulesEngine<T extends Ruleset> {
             updateDeploymentInfo();
         }
 
-        deployment = new RulesetDeployment(ruleset);
+        deployment = new RulesetDeployment(ruleset, timerService, assetStorageService);
 
         boolean compilationSuccessful = deployment.registerRules(ruleset, assetsFacade, usersFacade, notificationFacade);
 

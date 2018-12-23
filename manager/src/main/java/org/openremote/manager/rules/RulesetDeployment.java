@@ -31,6 +31,8 @@ import org.jeasy.rules.api.Rules;
 import org.jeasy.rules.core.RuleBuilder;
 import org.kohsuke.groovy.sandbox.GroovyValueFilter;
 import org.kohsuke.groovy.sandbox.SandboxTransformer;
+import org.openremote.container.timer.TimerService;
+import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.rules.facade.NotificationsFacade;
 import org.openremote.model.rules.Assets;
 import org.openremote.model.rules.Ruleset;
@@ -112,11 +114,15 @@ public class RulesetDeployment {
 
     final protected Ruleset ruleset;
     final protected Rules rules = new Rules();
+    final protected AssetStorageService assetStorageService;
+    final protected TimerService timerService;
     protected RulesetStatus status;
     protected Throwable error;
 
-    public RulesetDeployment(Ruleset ruleset) {
+    public RulesetDeployment(Ruleset ruleset, TimerService timerService, AssetStorageService assetStorageService) {
         this.ruleset = ruleset;
+        this.timerService = timerService;
+        this.assetStorageService = assetStorageService;
     }
 
     public long getId() {
