@@ -24,18 +24,19 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import org.openremote.model.value.ObjectValue;
 
 @JsonSubTypes({
-    @JsonSubTypes.Type(value = StringPredicate.class, name = "string"),
-    @JsonSubTypes.Type(value = BooleanPredicate.class, name = "boolean"),
-    @JsonSubTypes.Type(value = StringArrayPredicate.class, name = "string-array"),
-    @JsonSubTypes.Type(value = DateTimePredicate.class, name = "datetime"),
-    @JsonSubTypes.Type(value = NumberPredicate.class, name = "number")
+    @JsonSubTypes.Type(value = StringPredicate.class, name = StringPredicate.name),
+    @JsonSubTypes.Type(value = BooleanPredicate.class, name = BooleanPredicate.name),
+    @JsonSubTypes.Type(value = StringArrayPredicate.class, name = StringArrayPredicate.name),
+    @JsonSubTypes.Type(value = DateTimePredicate.class, name = DateTimePredicate.name),
+    @JsonSubTypes.Type(value = NumberPredicate.class, name = NumberPredicate.name),
+    @JsonSubTypes.Type(value = RadialGeofencePredicate.class, name = RadialGeofencePredicate.name),
+    @JsonSubTypes.Type(value = RectangularGeofencePredicate.class, name = RectangularGeofencePredicate.name)
 })
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.NAME,
-    include = JsonTypeInfo.As.PROPERTY,
     property = "predicateType"
 )
-public interface ValuePredicate<T> {
+public interface ValuePredicate {
 
     ObjectValue toModelValue();
 }

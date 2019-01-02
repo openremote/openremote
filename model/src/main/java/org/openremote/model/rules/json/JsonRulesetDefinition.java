@@ -20,5 +20,5 @@
 package org.openremote.model.rules.json;
 
 public class JsonRulesetDefinition {
-    protected Rule[] rules;
+    public Rule[] rules;
 }

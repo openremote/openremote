@@ -25,8 +25,9 @@ import org.openremote.model.value.Values;
 
 import java.util.Arrays;
 
-public class StringArrayPredicate implements ValuePredicate<String[]> {
+public class StringArrayPredicate implements ValuePredicate {
 
+    public static final String name = "string-array";
     public StringPredicate[] predicates = new StringPredicate[0];
 
     public StringArrayPredicate() {
@@ -56,7 +57,7 @@ public class StringArrayPredicate implements ValuePredicate<String[]> {
     @Override
     public ObjectValue toModelValue() {
         ObjectValue objectValue = Values.createObject();
-        objectValue.put("predicateType", "StringArrayPredicate");
+        objectValue.put("predicateType", name);
         ArrayValue valuesArray = Values.createArray();
         for (StringPredicate stringPredicate : predicates) {
             valuesArray.add(stringPredicate.toModelValue());

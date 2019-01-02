@@ -20,10 +20,9 @@
 package org.openremote.model.query.filter;
 
 import org.openremote.model.value.ObjectValue;
-import org.openremote.model.value.Value;
 import org.openremote.model.value.Values;
 
-public class ValueEmptyPredicate implements ValuePredicate<Value> {
+public class ValueEmptyPredicate implements ValuePredicate {
 
     @Override
     public ObjectValue toModelValue() {

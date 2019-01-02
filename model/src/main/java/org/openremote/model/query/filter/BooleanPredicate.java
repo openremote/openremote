@@ -22,8 +22,9 @@ package org.openremote.model.query.filter;
 import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Values;
 
-public class BooleanPredicate implements ValuePredicate<Boolean> {
+public class BooleanPredicate implements ValuePredicate {
 
+    public static final String name = "boolean";
     public boolean value;
 
     public BooleanPredicate() {
@@ -56,7 +57,7 @@ public class BooleanPredicate implements ValuePredicate<Boolean> {
     @Override
     public ObjectValue toModelValue() {
         ObjectValue objectValue = Values.createObject();
-        objectValue.put("predicateType", "BooleanPredicate");
+        objectValue.put("predicateType", name);
         objectValue.put("value", Values.create(value));
         return objectValue;
     }

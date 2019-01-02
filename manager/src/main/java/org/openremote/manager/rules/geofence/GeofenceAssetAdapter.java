@@ -21,14 +21,14 @@ package org.openremote.manager.rules.geofence;
 
 import org.openremote.manager.rules.RulesEngine;
 import org.openremote.model.asset.Asset;
-import org.openremote.model.query.filter.LocationPredicate;
+import org.openremote.model.query.filter.LocationAttributePredicate;
 import org.openremote.model.rules.geofence.GeofenceDefinition;
 
 import java.util.List;
 
 /**
- * Defines an adapter that can take a collection of {@link LocationPredicate} that apply to a given
- * {@link Asset} and can convert the {@link LocationPredicate}s into Geofences that can be implemented by
+ * Defines an adapter that can take a collection of {@link LocationAttributePredicate} that apply to a given
+ * {@link Asset} and can convert the {@link LocationAttributePredicate}s into Geofences that can be implemented by
  * the asset(s) itself.
  * <p>
  * The adapter is notified when the {@link Asset}s {@link RulesEngine.AssetStateLocationPredicates} change; if the

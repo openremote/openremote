@@ -43,6 +43,7 @@ import org.openremote.model.rules.json.JsonRulesetDefinition;
 
 import javax.script.*;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -163,9 +164,17 @@ public class RulesetDeployment {
 
     private boolean registerRulesJson(Ruleset ruleset) {
         try {
-            JsonRulesetDefinition simpleRulesetDefinition = Container.JSON.readValue(ruleset.getRules(), JsonRulesetDefinition.class);
+            JsonRulesetDefinition jsonRulesetDefinition = Container.JSON.readValue(ruleset.getRules(), JsonRulesetDefinition.class);
+            JsonRulesBuilder jsonRulesBuilder = new JsonRulesBuilder(timerService, assetStorageService);
 
-            JsonRulesBuilder simpleRulesBuilder = new JsonRulesBuilder(timerService, assetStorageService);
+            Arrays.stream(jsonRulesetDefinition.rules).forEach(jsonRulesBuilder::add);
+
+            for (Rule rule : jsonRulesBuilder.build()) {
+                RulesEngine.LOG.info("Registering simple rule: " + rule.getName());
+                rules.register(rule);
+            }
+            RulesEngine.LOG.info("Evaluated ruleset deployment: " + ruleset);
+
             return true;
 
         } catch (IOException e) {

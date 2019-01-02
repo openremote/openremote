@@ -40,6 +40,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
@@ -105,16 +106,6 @@ public class AssetQueryPredicate implements Predicate<AssetState> {
 
         if (query.orderBy != null) {
             throw new UnsupportedOperationException("Sorting with 'orderBy' not supported in rules matching");
-        }
-
-        if (query.location != null) {
-            GeoJSONPoint coords = AttributeType.LOCATION.getName().equals(assetState.getAttributeName()) ? assetState.getValue().flatMap(GeoJSONPoint::fromValue).orElse(null) : null;
-
-            if (coords != null) {
-                Coordinate coordinate = new Coordinate(coords.getY(), coords.getX());
-                return asPredicate(query.location).test(coordinate);
-            }
-            return false;
         }
 
         return true;
@@ -257,18 +248,22 @@ public class AssetQueryPredicate implements Predicate<AssetState> {
                 && (predicate.realmId == null || predicate.realmId.equals(assetState.getRealmId()));
     }
 
-    public static Predicate<Coordinate> asPredicate(LocationPredicate predicate) {
+    public static Predicate<Coordinate> asPredicate(GeofencePredicate predicate) {
         return coordinate -> {
-            if (predicate instanceof RadialLocationPredicate) {
+            if (coordinate == null) {
+                return false;
+            }
+
+            if (predicate instanceof RadialGeofencePredicate) {
                 //TODO geotools version to gradle properties
-                RadialLocationPredicate radialLocationPredicate = (RadialLocationPredicate) predicate;
+                RadialGeofencePredicate radialLocationPredicate = (RadialGeofencePredicate) predicate;
                 GeodeticCalculator calculator = new GeodeticCalculator();
                 calculator.setStartingGeographicPoint(radialLocationPredicate.lng, radialLocationPredicate.lat);
                 calculator.setDestinationGeographicPoint(coordinate.y, coordinate.x);
                 return calculator.getOrthodromicDistance() < radialLocationPredicate.radius;
-            } else if (predicate instanceof RectangularLocationPredicate) {
+            } else if (predicate instanceof RectangularGeofencePredicate) {
                 // Again this is a euclidean plane so doesn't work perfectly for WGS lat/lng - the bigger the rectangle to less accurate it is)
-                RectangularLocationPredicate rectangularLocationPredicate = (RectangularLocationPredicate) predicate;
+                RectangularGeofencePredicate rectangularLocationPredicate = (RectangularGeofencePredicate) predicate;
                 Envelope envelope = new Envelope(rectangularLocationPredicate.latMin,
                     rectangularLocationPredicate.lngMin,
                     rectangularLocationPredicate.latMax,
@@ -320,7 +315,13 @@ public class AssetQueryPredicate implements Predicate<AssetState> {
 
                 DateTimePredicate p = (DateTimePredicate) predicate;
                 return asPredicate(currentMillisProducer, p).test(Values.getNumber(value).map(Double::longValue).orElse(null));
+            } else if (predicate instanceof GeofencePredicate) {
 
+                GeofencePredicate p = (GeofencePredicate) predicate;
+                return asPredicate(p).test(Optional.ofNullable(value)
+                        .flatMap(GeoJSONPoint::fromValue)
+                        .map(point -> new Coordinate(point.getY(), point.getX()))
+                        .orElse(null));
             } else {
                 // TODO Implement more
                 throw new UnsupportedOperationException(

@@ -23,8 +23,9 @@ import org.openremote.model.query.BaseAssetQuery;
 import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Values;
 
-public class NumberPredicate implements ValuePredicate<Double> {
+public class NumberPredicate implements ValuePredicate {
 
+    public static final String name = "number";
     public double value;
     public double rangeValue; // Used as upper bound when Operator.BETWEEN
     public BaseAssetQuery.Operator operator = BaseAssetQuery.Operator.EQUALS;
@@ -90,7 +91,7 @@ public class NumberPredicate implements ValuePredicate<Double> {
 
     public ObjectValue toModelValue() {
         ObjectValue objectValue = Values.createObject();
-        objectValue.put("predicateType", "StringPredicate");
+        objectValue.put("predicateType", name);
         objectValue.put("value", Values.create(value));
         objectValue.put("rangeValue", Values.create(rangeValue));
         objectValue.put("operator", Values.create(operator.toString()));

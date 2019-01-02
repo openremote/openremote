@@ -246,7 +246,6 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> {
     public AttributePredicate[] attribute;
     public AttributeMetaPredicate[] attributeMeta;
     public CalendarEventActivePredicate calendarEventActive;
-    public LocationPredicate location;
     // Ordering
     public OrderBy orderBy;
     public int limit;
@@ -473,11 +472,6 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> {
      */
     public CHILD calendarEventActive(long timestampSeconds) {
         calendarEventActive = new CalendarEventActivePredicate(timestampSeconds);
-        return (CHILD) this;
-    }
-
-    public CHILD location(LocationPredicate locationPredicate) {
-        this.location = locationPredicate;
         return (CHILD) this;
     }
 

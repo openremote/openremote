@@ -19,21 +19,15 @@
  */
 package org.openremote.model.query.filter;
 
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
+public abstract class GeofencePredicate implements ValuePredicate {
 
-@JsonSubTypes({
-    @JsonSubTypes.Type(value = RadialLocationPredicate.class, name = RadialLocationPredicate.name),
-    @JsonSubTypes.Type(value = RectangularLocationPredicate.class, name = RectangularLocationPredicate.name)
-})
-@JsonTypeInfo(
-    use = JsonTypeInfo.Id.NAME,
-    include = JsonTypeInfo.As.PROPERTY,
-    property = "predicateType"
-)
-
-public abstract class LocationPredicate {
+    public boolean negated;
 
     // TODO: switch return type to location object
     public abstract double[] getCentrePoint();
+
+    public GeofencePredicate negate() {
+        negated = true;
+        return this;
+    }
 }

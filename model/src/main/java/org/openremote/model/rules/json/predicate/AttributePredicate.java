@@ -28,10 +28,8 @@ import org.openremote.model.query.filter.ValuePredicate;
  * There is an implicit AND condition between each value
  */
 // TODO: Introduce value converter functionality and merge with existing AttributePredicate
-public class AttributePredicate {
-    public StringPredicate name;
+public class AttributePredicate extends org.openremote.model.query.filter.AttributePredicate {
     public AttributeMetaPredicate[] meta;
-    public ValuePredicate value;
     public ValuePredicate lastValue;
     public DateTimePredicate valueTimestamp;
 }

@@ -25,8 +25,9 @@ import org.openremote.model.value.Values;
 
 import java.util.Locale;
 
-public class StringPredicate implements ValuePredicate<String> {
+public class StringPredicate implements ValuePredicate {
 
+    public static final String name = "string";
     public BaseAssetQuery.Match match = BaseAssetQuery.Match.EXACT;
     public boolean caseSensitive = true;
     public String value;
@@ -87,7 +88,7 @@ public class StringPredicate implements ValuePredicate<String> {
 
     public ObjectValue toModelValue() {
         ObjectValue objectValue = Values.createObject();
-        objectValue.put("predicateType", "StringPredicate");
+        objectValue.put("predicateType", name);
         objectValue.put("match", Values.create(match.toString()));
         objectValue.put("caseSensitive", Values.create(caseSensitive));
         objectValue.put("value", Values.create(value));

@@ -37,8 +37,8 @@
           },
           "notification": {
             "name": "test",
+            "type": "push",
             "message": {
-              "type": "push",
               "title": "Test title"
             }
           }

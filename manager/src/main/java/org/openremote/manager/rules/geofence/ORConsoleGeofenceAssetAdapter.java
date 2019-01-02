@@ -38,9 +38,9 @@ import org.openremote.model.notification.Notification;
 import org.openremote.model.notification.PushNotificationMessage;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.BaseAssetQuery;
-import org.openremote.model.query.filter.LocationPredicate;
+import org.openremote.model.query.filter.GeofencePredicate;
 import org.openremote.model.query.filter.ObjectValueKeyPredicate;
-import org.openremote.model.query.filter.RadialLocationPredicate;
+import org.openremote.model.query.filter.RadialGeofencePredicate;
 import org.openremote.model.rules.geofence.GeofenceDefinition;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TextUtil;
@@ -162,7 +162,7 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
                     assetStateLocationPredicates
                         .getLocationPredicates()
                         .removeIf(locationPredicate ->
-                            !(locationPredicate instanceof RadialLocationPredicate));
+                            !(locationPredicate instanceof RadialGeofencePredicate));
 
 
                     RulesEngine.AssetStateLocationPredicates existingPredicates = assetLocationPredicatesMap.get(
@@ -241,8 +241,8 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
         return geofences;
     }
 
-    protected GeofenceDefinition locationPredicateToGeofenceDefinition(String assetId, LocationPredicate locationPredicate) {
-        RadialLocationPredicate radialLocationPredicate = (RadialLocationPredicate) locationPredicate;
+    protected GeofenceDefinition locationPredicateToGeofenceDefinition(String assetId, GeofencePredicate geofencePredicate) {
+        RadialGeofencePredicate radialLocationPredicate = (RadialGeofencePredicate) geofencePredicate;
         String id = assetId + "_" + Integer.toString(radialLocationPredicate.hashCode());
         String url = getWriteAttributeUrl(new AttributeRef(assetId, AttributeType.LOCATION.getName()));
         return new GeofenceDefinition(id,

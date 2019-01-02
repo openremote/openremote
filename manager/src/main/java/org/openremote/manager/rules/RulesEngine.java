@@ -34,7 +34,8 @@ import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetMeta;
 import org.openremote.model.attribute.AttributeType;
-import org.openremote.model.query.filter.LocationPredicate;
+import org.openremote.model.query.filter.GeofencePredicate;
+import org.openremote.model.query.filter.LocationAttributePredicate;
 import org.openremote.model.rules.*;
 
 import java.util.*;
@@ -49,14 +50,14 @@ import static org.openremote.model.rules.RulesetStatus.*;
 public class RulesEngine<T extends Ruleset> {
 
     /**
-     * Identifies a set of {@link LocationPredicate}s associated with a particular {@link Asset}
+     * Identifies a set of {@link LocationAttributePredicate}s associated with a particular {@link Asset}
      */
     public static final class AssetStateLocationPredicates {
 
         protected final String assetId;
-        protected final Set<LocationPredicate> locationPredicates;
+        protected final Set<GeofencePredicate> locationPredicates;
 
-        public AssetStateLocationPredicates(String assetId, Set<LocationPredicate> locationPredicates) {
+        public AssetStateLocationPredicates(String assetId, Set<GeofencePredicate> locationPredicates) {
             this.assetId = assetId;
             this.locationPredicates = locationPredicates;
         }
@@ -65,7 +66,7 @@ public class RulesEngine<T extends Ruleset> {
             return assetId;
         }
 
-        public Set<LocationPredicate> getLocationPredicates() {
+        public Set<GeofencePredicate> getLocationPredicates() {
             return locationPredicates;
         }
     }

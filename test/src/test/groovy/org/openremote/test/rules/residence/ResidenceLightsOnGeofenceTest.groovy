@@ -1,6 +1,6 @@
 package org.openremote.test.rules.residence
 
-import org.junit.Ignore
+
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.rules.RulesEngine
@@ -27,7 +27,6 @@ import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID
 import static org.openremote.model.attribute.AttributeType.LOCATION
 import static org.openremote.model.value.Values.parse
 
-@Ignore
 class ResidenceLightsOnGeofenceTest extends Specification implements ManagerContainerTrait {
 
     def "Turn all lights off when console exits the residence geofence"() {
@@ -49,7 +48,7 @@ class ResidenceLightsOnGeofenceTest extends Specification implements ManagerCont
                 "Demo Apartment - All Lights Off",
                 keycloakDemoSetup.customerATenant.id,
                 getClass().getResource("/org/openremote/test/rules/BasicLocationPredicates.json").text,
-                Ruleset.Lang.SIMPLE
+                Ruleset.Lang.JSON
         )
         rulesetStorageService.merge(ruleset)
 
