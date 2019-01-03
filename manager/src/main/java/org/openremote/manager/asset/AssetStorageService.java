@@ -806,7 +806,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         }
 
         if (level == 1) {
-            if (query.parent != null && !query.parent.noParent && (query.parent.id != null || query.parent.type != null)) {
+            if (query.parent != null && !query.parent.noParent && (query.parent.id != null || query.parent.type != null || query.parent.name != null)) {
                 sb.append("cross join ASSET P ");
             } else {
                 sb.append("left outer join ASSET P on A.PARENT_ID = P.ID ");
@@ -890,19 +890,27 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         }
 
         if (query.parent != null) {
-            // Can only restrict recursive query parent by asset type
             if (level == 1 && query.parent.id != null) {
                 sb.append(" and p.ID = a.PARENT_ID");
                 sb.append(" and A.PARENT_ID = ?");
                 final int pos = binders.size() + 1;
                 binders.add(st -> st.setString(pos, query.parent.id));
-            } else if (query.parent.type != null) {
-                sb.append(" and p.ID = a.PARENT_ID");
-                sb.append(" and P.ASSET_TYPE = ?");
-                final int pos = binders.size() + 1;
-                binders.add(st -> st.setString(pos, query.parent.type));
             } else if (level == 1 && query.parent.noParent) {
                 sb.append(" and A.PARENT_ID is null");
+            } else if (query.parent.type != null || query.parent.name != null) {
+
+                sb.append(" and p.ID = a.PARENT_ID");
+
+                if (query.parent.type != null) {
+                    sb.append(" and P.ASSET_TYPE = ?");
+                    final int pos = binders.size() + 1;
+                    binders.add(st -> st.setString(pos, query.parent.type));
+                }
+                if (query.parent.name != null) {
+                    sb.append(" and P.NAME = ?");
+                    final int pos = binders.size() + 1;
+                    binders.add(st -> st.setString(pos, query.parent.name));
+                }
             }
         }
 

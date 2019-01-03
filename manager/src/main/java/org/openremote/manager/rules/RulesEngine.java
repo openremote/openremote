@@ -208,14 +208,15 @@ public class RulesEngine<T extends Ruleset> {
 
         // Check if ruleset is already deployed (maybe an older version)
         if (deployment != null) {
+            deployment.stop();
             LOG.info("Removing ruleset deployment: " + ruleset);
             deployments.remove(ruleset.getId());
             updateDeploymentInfo();
         }
 
-        deployment = new RulesetDeployment(ruleset, timerService, assetStorageService);
+        deployment = new RulesetDeployment(ruleset, timerService, assetStorageService, executorService, assetsFacade, usersFacade, notificationFacade);
 
-        boolean compilationSuccessful = deployment.registerRules(ruleset, assetsFacade, usersFacade, notificationFacade);
+        boolean compilationSuccessful = deployment.start();
 
         if (!compilationSuccessful) {
             // If any other ruleset is DEPLOYED in this scope, demote to READY
@@ -268,7 +269,8 @@ public class RulesEngine<T extends Ruleset> {
 
         stop();
 
-        deployments.remove(ruleset.getId());
+        RulesetDeployment deployment = deployments.remove(ruleset.getId());
+        deployment.stop();
         updateDeploymentInfo();
 
         publishRulesetStatus(ruleset, ruleset.isEnabled() ? REMOVED : DISABLED, null);

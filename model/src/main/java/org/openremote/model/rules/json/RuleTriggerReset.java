@@ -19,8 +19,6 @@
  */
 package org.openremote.model.rules.json;
 
-import org.openremote.model.query.filter.StringPredicate;
-
 /**
  * This defines when an {@link org.openremote.model.rules.AssetState} becomes eligible for triggering the rule again once
  * if has triggered a rule.
@@ -43,11 +41,11 @@ public class RuleTriggerReset {
      * When the timestamp of the {@link org.openremote.model.rules.AssetState} changes in comparison to the timestamp
      * at the time the rule fired.
      */
-    public StringPredicate attributeTimestampChange;
+    public boolean attributeTimestampChange;
 
     /**
      * When the value of the {@link org.openremote.model.rules.AssetState} changes in comparison to the value at the
      * time the rule fired.
      */
-    public StringPredicate attributeValueChange;
+    public boolean attributeValueChange;
 }

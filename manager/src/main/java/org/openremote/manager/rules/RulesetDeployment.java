@@ -34,6 +34,7 @@ import org.kohsuke.groovy.sandbox.SandboxTransformer;
 import org.openremote.container.Container;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
+import org.openremote.manager.concurrent.ManagerExecutorService;
 import org.openremote.manager.rules.facade.NotificationsFacade;
 import org.openremote.model.rules.Assets;
 import org.openremote.model.rules.Ruleset;
@@ -43,14 +44,18 @@ import org.openremote.model.rules.json.JsonRulesetDefinition;
 
 import javax.script.*;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
+import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledFuture;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class RulesetDeployment {
+import static org.openremote.container.concurrent.GlobalLock.withLock;
 
-    public static final int DEFAULT_RULE_PRIORITY = 1000;
+public class RulesetDeployment {
 
     /**
      * An interface that looks like a JavaScript browser console, for simplified logging.
@@ -87,7 +92,7 @@ public class RulesetDeployment {
             throw new SecurityException("Not allowed: " + receiver);
         }
     }
-
+    public static final int DEFAULT_RULE_PRIORITY = 1000;
     // Share one JS script engine manager, it's thread-safe
     static final protected ScriptEngineManager scriptEngineManager;
 
@@ -112,7 +117,7 @@ public class RulesetDeployment {
         then check your class loader setup.
          */
         groovyShell = new GroovyShell(
-            new CompilerConfiguration().addCompilationCustomizers(new SandboxTransformer())
+                new CompilerConfiguration().addCompilationCustomizers(new SandboxTransformer())
         );
     }
 
@@ -120,13 +125,22 @@ public class RulesetDeployment {
     final protected Rules rules = new Rules();
     final protected AssetStorageService assetStorageService;
     final protected TimerService timerService;
+    final protected ManagerExecutorService executorService;
+    final protected Assets assetsFacade;
+    final protected Users usersFacade;
+    final protected NotificationsFacade notificationFacade;
+    final protected List<ScheduledFuture> scheduledRuleActions = new ArrayList<>();
     protected RulesetStatus status;
     protected Throwable error;
 
-    public RulesetDeployment(Ruleset ruleset, TimerService timerService, AssetStorageService assetStorageService) {
+    public RulesetDeployment(Ruleset ruleset, TimerService timerService, AssetStorageService assetStorageService, ManagerExecutorService executorService, Assets assetsFacade, Users usersFacade, NotificationsFacade notificationFacade) {
         this.ruleset = ruleset;
         this.timerService = timerService;
         this.assetStorageService = assetStorageService;
+        this.executorService = executorService;
+        this.assetsFacade = assetsFacade;
+        this.usersFacade = usersFacade;
+        this.notificationFacade = notificationFacade;
     }
 
     public long getId() {
@@ -149,28 +163,51 @@ public class RulesetDeployment {
         return rules;
     }
 
-    public boolean registerRules(Ruleset ruleset, Assets assetsFacade, Users usersFacade, NotificationsFacade notificationFacade) {
+    public boolean start() {
         RulesEngine.LOG.info("Evaluating ruleset deployment: " + ruleset);
         switch (ruleset.getLang()) {
             case JAVASCRIPT:
-                return registerRulesJavascript(ruleset, assetsFacade, usersFacade, notificationFacade);
+                return startRulesJavascript(ruleset, assetsFacade, usersFacade, notificationFacade);
             case GROOVY:
-                return registerRulesGroovy(ruleset, assetsFacade, usersFacade, notificationFacade);
+                return startRulesGroovy(ruleset, assetsFacade, usersFacade, notificationFacade);
             case JSON:
-                return registerRulesJson(ruleset);
+                return startRulesJson(ruleset, assetsFacade, usersFacade, notificationFacade);
         }
         return false;
     }
 
-    private boolean registerRulesJson(Ruleset ruleset) {
+    /**
+     * Called when this deployment is stopped, could be the ruleset is being updated, removed or an error has occurred
+     * during execution
+     */
+    public void stop() {
+        withLock(toString() + "::stopRulesetDeployment", () ->
+                scheduledRuleActions.removeIf(scheduledFuture -> {
+                    scheduledFuture.cancel(true);
+                    return true;
+                }));
+    }
+
+    protected void scheduleRuleAction(Runnable action, long delayMillis) {
+        withLock(toString() + "::scheduleRuleAction", () -> {
+            ScheduledFuture future = executorService.schedule(() ->
+                    withLock(toString() + "::scheduledRuleActionFire", () -> {
+                        scheduledRuleActions.removeIf(Future::isDone);
+                        action.run();
+                    }), delayMillis);
+            scheduledRuleActions.add(future);
+        });
+    }
+
+    protected boolean startRulesJson(Ruleset ruleset, Assets assetsFacade, Users usersFacade, NotificationsFacade notificationFacade) {
         try {
             JsonRulesetDefinition jsonRulesetDefinition = Container.JSON.readValue(ruleset.getRules(), JsonRulesetDefinition.class);
-            JsonRulesBuilder jsonRulesBuilder = new JsonRulesBuilder(timerService, assetStorageService);
+            JsonRulesBuilder jsonRulesBuilder = new JsonRulesBuilder(timerService, assetStorageService, executorService, assetsFacade, usersFacade, notificationFacade, this::scheduleRuleAction);
 
             Arrays.stream(jsonRulesetDefinition.rules).forEach(jsonRulesBuilder::add);
 
             for (Rule rule : jsonRulesBuilder.build()) {
-                RulesEngine.LOG.info("Registering simple rule: " + rule.getName());
+                RulesEngine.LOG.info("Registering JSON rule: " + rule.getName());
                 rules.register(rule);
             }
             RulesEngine.LOG.info("Evaluated ruleset deployment: " + ruleset);
@@ -184,7 +221,7 @@ public class RulesetDeployment {
         }
     }
 
-    public boolean registerRulesJavascript(Ruleset ruleset, Assets assetsFacade, Users usersFacade, NotificationsFacade consolesFacade) {
+    protected boolean startRulesJavascript(Ruleset ruleset, Assets assetsFacade, Users usersFacade, NotificationsFacade consolesFacade) {
         // TODO https://github.com/pfisterer/scripting-sandbox/blob/master/src/main/java/de/farberg/scripting/sandbox/ScriptingSandbox.java
         ScriptEngine scriptEngine = scriptEngineManager.getEngineByName("nashorn");
         ScriptContext newContext = new SimpleScriptContext();
@@ -199,54 +236,54 @@ public class RulesetDeployment {
 
         // Default header/imports for all rules scripts
         script = "load(\"nashorn:mozilla_compat.js\");\n" + // This provides importPackage
-            "\n" +
-            "importPackage(\n" +
-            "    \"java.util.stream\",\n" +
-            "    \"org.openremote.model.asset\",\n" +
-            "    \"org.openremote.model.attribute\",\n" +
-            "    \"org.openremote.model.value\",\n" +
-            "    \"org.openremote.model.rules\",\n" +
-            "    \"org.openremote.model.query\"\n" +
-            ");\n" +
-            "var Match = Java.type(\"org.openremote.model.query.BaseAssetQuery$Match\");\n" +
-            "var Operator = Java.type(\"org.openremote.model.query.BaseAssetQuery$Operator\");\n" +
-            "var NumberType = Java.type(\"org.openremote.model.query.BaseAssetQuery$NumberType\");\n" +
-            "var StringPredicate = Java.type(\"org.openremote.model.query.filter.StringPredicate\");\n" +
-            "var BooleanPredicate = Java.type(\"org.openremote.model.query.filter.BooleanPredicate\");\n" +
-            "var StringArrayPredicate = Java.type(\"org.openremote.model.query.filter.StringArrayPredicate\");\n" +
-            "var DateTimePredicate = Java.type(\"org.openremote.model.query.filter.DateTimePredicate\");\n" +
-            "var NumberPredicate = Java.type(\"org.openremote.model.query.filter.NumberPredicate\");\n" +
-            "var ParentPredicate = Java.type(\"org.openremote.model.query.filter.ParentPredicate\");\n" +
-            "var PathPredicate = Java.type(\"org.openremote.model.query.filter.PathPredicate\");\n" +
-            "var TenantPredicate = Java.type(\"org.openremote.model.query.filter.TenantPredicate\");\n" +
-            "var AttributePredicate = Java.type(\"org.openremote.model.query.filter.AttributePredicate\");\n" +
-            "var AttributeExecuteStatus = Java.type(\"org.openremote.model.attribute.AttributeExecuteStatus\");\n" +
-            "var EXACT = Match.EXACT;\n" +
-            "var BEGIN = Match.BEGIN;\n" +
-            "var END = Match.END;\n" +
-            "var CONTAINS = Match.CONTAINS;\n" +
-            "var EQUALS = Operator.EQUALS;\n" +
-            "var GREATER_THAN = Operator.GREATER_THAN;\n" +
-            "var GREATER_EQUALS = Operator.GREATER_EQUALS;\n" +
-            "var LESS_THAN = Operator.LESS_THAN;\n" +
-            "var LESS_EQUALS = Operator.LESS_EQUALS;\n" +
-            "var BETWEEN = Operator.BETWEEN;\n" +
-            "var REQUEST_START = AttributeExecuteStatus.REQUEST_START;\n" +
-            "var REQUEST_REPEATING = AttributeExecuteStatus.REQUEST_REPEATING;\n" +
-            "var REQUEST_CANCEL = AttributeExecuteStatus.REQUEST_CANCEL;\n" +
-            "var READY = AttributeExecuteStatus.READY;\n" +
-            "var COMPLETED = AttributeExecuteStatus.COMPLETED;\n" +
-            "var RUNNING = AttributeExecuteStatus.RUNNING;\n" +
-            "var CANCELLED = AttributeExecuteStatus.CANCELLED;\n" +
-            "var ERROR = AttributeExecuteStatus.ERROR;\n" +
-            "var DISABLED = AttributeExecuteStatus.DISABLED;\n" +
-            "\n"
-            + script;
+                "\n" +
+                "importPackage(\n" +
+                "    \"java.util.stream\",\n" +
+                "    \"org.openremote.model.asset\",\n" +
+                "    \"org.openremote.model.attribute\",\n" +
+                "    \"org.openremote.model.value\",\n" +
+                "    \"org.openremote.model.rules\",\n" +
+                "    \"org.openremote.model.query\"\n" +
+                ");\n" +
+                "var Match = Java.type(\"org.openremote.model.query.BaseAssetQuery$Match\");\n" +
+                "var Operator = Java.type(\"org.openremote.model.query.BaseAssetQuery$Operator\");\n" +
+                "var NumberType = Java.type(\"org.openremote.model.query.BaseAssetQuery$NumberType\");\n" +
+                "var StringPredicate = Java.type(\"org.openremote.model.query.filter.StringPredicate\");\n" +
+                "var BooleanPredicate = Java.type(\"org.openremote.model.query.filter.BooleanPredicate\");\n" +
+                "var StringArrayPredicate = Java.type(\"org.openremote.model.query.filter.StringArrayPredicate\");\n" +
+                "var DateTimePredicate = Java.type(\"org.openremote.model.query.filter.DateTimePredicate\");\n" +
+                "var NumberPredicate = Java.type(\"org.openremote.model.query.filter.NumberPredicate\");\n" +
+                "var ParentPredicate = Java.type(\"org.openremote.model.query.filter.ParentPredicate\");\n" +
+                "var PathPredicate = Java.type(\"org.openremote.model.query.filter.PathPredicate\");\n" +
+                "var TenantPredicate = Java.type(\"org.openremote.model.query.filter.TenantPredicate\");\n" +
+                "var AttributePredicate = Java.type(\"org.openremote.model.query.filter.AttributePredicate\");\n" +
+                "var AttributeExecuteStatus = Java.type(\"org.openremote.model.attribute.AttributeExecuteStatus\");\n" +
+                "var EXACT = Match.EXACT;\n" +
+                "var BEGIN = Match.BEGIN;\n" +
+                "var END = Match.END;\n" +
+                "var CONTAINS = Match.CONTAINS;\n" +
+                "var EQUALS = Operator.EQUALS;\n" +
+                "var GREATER_THAN = Operator.GREATER_THAN;\n" +
+                "var GREATER_EQUALS = Operator.GREATER_EQUALS;\n" +
+                "var LESS_THAN = Operator.LESS_THAN;\n" +
+                "var LESS_EQUALS = Operator.LESS_EQUALS;\n" +
+                "var BETWEEN = Operator.BETWEEN;\n" +
+                "var REQUEST_START = AttributeExecuteStatus.REQUEST_START;\n" +
+                "var REQUEST_REPEATING = AttributeExecuteStatus.REQUEST_REPEATING;\n" +
+                "var REQUEST_CANCEL = AttributeExecuteStatus.REQUEST_CANCEL;\n" +
+                "var READY = AttributeExecuteStatus.READY;\n" +
+                "var COMPLETED = AttributeExecuteStatus.COMPLETED;\n" +
+                "var RUNNING = AttributeExecuteStatus.RUNNING;\n" +
+                "var CANCELLED = AttributeExecuteStatus.CANCELLED;\n" +
+                "var ERROR = AttributeExecuteStatus.ERROR;\n" +
+                "var DISABLED = AttributeExecuteStatus.DISABLED;\n" +
+                "\n"
+                + script;
 
         try {
             scriptEngine.eval(script, engineScope);
 
-            registerRulesJavascript((ScriptObjectMirror) engineScope.get("rules"));
+            startRulesJavascript((ScriptObjectMirror) engineScope.get("rules"));
 
             RulesEngine.LOG.info("Evaluated ruleset deployment: " + ruleset);
             return true;
@@ -262,7 +299,7 @@ public class RulesetDeployment {
     /**
      * Marshal the JavaScript rules array into {@link Rule} instances.
      */
-    protected void registerRulesJavascript(ScriptObjectMirror scriptRules) {
+    protected void startRulesJavascript(ScriptObjectMirror scriptRules) {
         if (scriptRules == null || !scriptRules.isArray()) {
             throw new IllegalArgumentException("No 'rules' array defined in ruleset");
         }
@@ -323,12 +360,12 @@ public class RulesetDeployment {
             RulesEngine.LOG.info("Registering rule: " + name);
 
             rules.register(
-                new RuleBuilder().name(name).description(description).priority(priority).when(when).then(then).build()
+                    new RuleBuilder().name(name).description(description).priority(priority).when(when).then(then).build()
             );
         }
     }
 
-    public boolean registerRulesGroovy(Ruleset ruleset, Assets assetsFacade, Users usersFacade, NotificationsFacade notificationFacade) {
+    protected boolean startRulesGroovy(Ruleset ruleset, Assets assetsFacade, Users usersFacade, NotificationsFacade notificationFacade) {
         try {
             // TODO Implement sandbox
             // new DenyAll().register();
@@ -368,21 +405,21 @@ public class RulesetDeployment {
         return error;
     }
 
-    public String getErrorMessage() {
-        return getError() != null ? getError().getMessage() : null;
-    }
-
     public void setError(Throwable error) {
         this.error = error;
+    }
+
+    public String getErrorMessage() {
+        return getError() != null ? getError().getMessage() : null;
     }
 
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
-            "id=" + getId() +
-            ", name='" + getName() + '\'' +
-            ", version=" + getVersion() +
-            ", status=" + status +
-            '}';
+                "id=" + getId() +
+                ", name='" + getName() + '\'' +
+                ", version=" + getVersion() +
+                ", status=" + status +
+                '}';
     }
 }

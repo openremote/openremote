@@ -43,7 +43,7 @@ import org.openremote.model.rules.json.predicate.AssetPredicate;
  * <p>
  * {@link #reset}* - Optional logic used to reset the rule, this is applied to each
  * {@link org.openremote.model.rules.AssetState} that was returned by the {@link #when}. If no reset is specified then
- * it is assumed that the rule is fire once per matched {@link org.openremote.model.rules.AssetState}.
+ * it is assumed that the rule is fire once only per matched {@link org.openremote.model.rules.AssetState}.
  * <b>NOTE: Rule trigger history is not persisted so on system restart this information is lost and a rule will be
  * able to fire again.</b>
  * <p>

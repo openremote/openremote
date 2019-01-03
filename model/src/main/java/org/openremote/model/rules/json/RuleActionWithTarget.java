@@ -22,13 +22,24 @@ package org.openremote.model.rules.json;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.UserQuery;
 
+/**
+ * Indicates that the action should be scoped to the specified {@link Target}.
+ */
 public abstract class RuleActionWithTarget implements RuleAction {
 
+    /**
+     * Only one of the options should be set the precedence is:
+     * <ol>
+     * <li>{@link #useAssetsFromWhen}</li>
+     * <li>{@link #assets}</li>
+     * <li>{@link #users}</li>
+     * </ol>
+     */
     public static class Target {
-        protected boolean useAssetsFromWhen;
-        protected AssetQuery assets;
-        protected UserQuery users;
+        public boolean useAssetsFromWhen;
+        public AssetQuery assets;
+        public UserQuery users;
     }
 
-    protected Target target;
+    public Target target;
 }

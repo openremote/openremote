@@ -235,6 +235,7 @@ public class AssetQueryPredicate implements Predicate<AssetState> {
         return assetState ->
             (predicate.id == null || predicate.id.equals(assetState.getParentId()))
                 && (predicate.type == null || predicate.type.equals(assetState.getParentTypeString()))
+                && (predicate.name == null || predicate.name.equals(assetState.getParentName()))
                 && (!predicate.noParent || assetState.getParentId() == null);
     }
 
@@ -260,7 +261,10 @@ public class AssetQueryPredicate implements Predicate<AssetState> {
                 GeodeticCalculator calculator = new GeodeticCalculator();
                 calculator.setStartingGeographicPoint(radialLocationPredicate.lng, radialLocationPredicate.lat);
                 calculator.setDestinationGeographicPoint(coordinate.y, coordinate.x);
-                return calculator.getOrthodromicDistance() < radialLocationPredicate.radius;
+                if (predicate.negated) {
+                    return calculator.getOrthodromicDistance() > radialLocationPredicate.radius;
+                }
+                return calculator.getOrthodromicDistance() <= radialLocationPredicate.radius;
             } else if (predicate instanceof RectangularGeofencePredicate) {
                 // Again this is a euclidean plane so doesn't work perfectly for WGS lat/lng - the bigger the rectangle to less accurate it is)
                 RectangularGeofencePredicate rectangularLocationPredicate = (RectangularGeofencePredicate) predicate;
@@ -268,6 +272,9 @@ public class AssetQueryPredicate implements Predicate<AssetState> {
                     rectangularLocationPredicate.lngMin,
                     rectangularLocationPredicate.latMax,
                     rectangularLocationPredicate.lngMax);
+                if (predicate.negated) {
+                    return !envelope.contains(coordinate);
+                }
                 return envelope.contains(coordinate);
             } else {
                 throw new UnsupportedOperationException("Location predicate '" + predicate.getClass().getSimpleName() + "' not supported in rules matching");

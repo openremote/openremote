@@ -20,5 +20,5 @@
 package org.openremote.model.rules.json;
 
 public class RuleActionWait implements RuleAction {
-    protected long millis;
+    public long millis;
 }

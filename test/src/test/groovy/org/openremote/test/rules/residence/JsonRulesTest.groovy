@@ -1,8 +1,12 @@
 package org.openremote.test.rules.residence
 
-
+import com.google.firebase.messaging.Message
+import org.openremote.container.timer.TimerService
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
+import org.openremote.manager.notification.NotificationService
+import org.openremote.manager.notification.PushNotificationHandler
+import org.openremote.manager.rules.JsonRulesBuilder
 import org.openremote.manager.rules.RulesEngine
 import org.openremote.manager.rules.RulesService
 import org.openremote.manager.rules.RulesetStorageService
@@ -15,6 +19,10 @@ import org.openremote.model.console.ConsoleProvider
 import org.openremote.model.console.ConsoleRegistration
 import org.openremote.model.console.ConsoleResource
 import org.openremote.model.geo.GeoJSONPoint
+import org.openremote.model.notification.AbstractNotificationMessage
+import org.openremote.model.notification.Notification
+import org.openremote.model.notification.NotificationSendResult
+import org.openremote.model.notification.PushNotificationMessage
 import org.openremote.model.rules.Ruleset
 import org.openremote.model.rules.TenantRuleset
 import org.openremote.model.value.ObjectValue
@@ -22,24 +30,47 @@ import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
+import static java.util.concurrent.TimeUnit.MINUTES
 import static org.openremote.manager.setup.builtin.ManagerDemoSetup.DEMO_RULE_STATES_CUSTOMER_A
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID
 import static org.openremote.model.attribute.AttributeType.LOCATION
 import static org.openremote.model.value.Values.parse
 
-class ResidenceLightsOnGeofenceTest extends Specification implements ManagerContainerTrait {
+class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
     def "Turn all lights off when console exits the residence geofence"() {
 
-        given: "the container environment is started"
+        def notificationMessages = []
+        def targetIds = []
+
+        given: "a mock push notification handler"
+        PushNotificationHandler mockPushNotificationHandler = Spy(PushNotificationHandler) {
+            isValid() >> true
+
+            sendMessage(_ as Long, _ as Notification.Source, _ as String, _ as Notification.TargetType, _ as String, _ as AbstractNotificationMessage) >> {
+                id, source, sourceId, targetType, targetId, message ->
+                    notificationMessages << message
+                    targetIds << targetId
+                    callRealMethod()
+            }
+
+            // Assume sent to FCM
+            sendMessage(_ as Message) >> {
+                message -> return NotificationSendResult.success()
+            }
+        }
+
+        and: "the container environment is started with the mock handler"
         def conditions = new PollingConditions(timeout: 10, delay: 1)
         def serverPort = findEphemeralPort()
-        def container = startContainerWithPseudoClock(defaultConfig(serverPort), defaultServices())
+        def services = defaultServices()
+        ((NotificationService)services.find {it instanceof NotificationService}).notificationHandlerMap.put(PushNotificationMessage.TYPE, mockPushNotificationHandler)
+        def container = startContainerWithPseudoClock(defaultConfig(serverPort), services)
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
         def rulesService = container.getService(RulesService.class)
         def rulesetStorageService = container.getService(RulesetStorageService.class)
-        def assetProcessingService = container.getService(AssetProcessingService.class)
+        def timerService = container.getService(TimerService.class)
         def assetStorageService = container.getService(AssetStorageService.class)
         RulesEngine customerAEngine
 
@@ -47,7 +78,7 @@ class ResidenceLightsOnGeofenceTest extends Specification implements ManagerCont
         Ruleset ruleset = new TenantRuleset(
                 "Demo Apartment - All Lights Off",
                 keycloakDemoSetup.customerATenant.id,
-                getClass().getResource("/org/openremote/test/rules/BasicLocationPredicates.json").text,
+                getClass().getResource("/org/openremote/test/rules/BasicJsonRules.json").text,
                 Ruleset.Lang.JSON
         )
         rulesetStorageService.merge(ruleset)
@@ -132,42 +163,68 @@ class ResidenceLightsOnGeofenceTest extends Specification implements ManagerCont
             } != null
         }
 
-        when: "the console moves more than 50m away from the apartment"
+        when: "the console device moves outside the home geofence (as defined in the rule)"
         authenticatedAssetResource.writeAttributeValue(null, consoleRegistration.id, LOCATION.name, new GeoJSONPoint(0d,0d).toValue().toJson())
 
-        then: ""
+        then: "the apartment lights should be switched off"
+        conditions.eventually {
+            def livingroomAsset = assetStorageService.find(managerDemoSetup.apartment2LivingroomId, true)
+            assert !livingroomAsset.getAttribute("lightSwitch").get().valueAsBoolean.get()
+            def bathRoomAsset = assetStorageService.find(managerDemoSetup.apartment2BathroomId, true)
+            assert !bathRoomAsset.getAttribute("lightSwitch").get().valueAsBoolean.get()
+        }
 
-//        when: "the ALL LIGHTS OFF push-button is pressed for an apartment"
-//        def lightsOffEvent = new AttributeEvent(
-//                managerDemoSetup.apartment2Id, "allLightsOffSwitch", Values.create(true), getClockTimeOf(container)
-//        )
-//        assetProcessingService.sendAttributeEvent(lightsOffEvent)
-//
-//        then: "the room lights in the apartment should be off"
-//        conditions.eventually {
-//            assert apartment2Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_2
-//            assert apartment2Engine.assetEvents.size() == 1
-//            def livingroomAsset = assetStorageService.find(managerDemoSetup.apartment2LivingroomId, true)
-//            assert !livingroomAsset.getAttribute("lightSwitch").get().valueAsBoolean.get()
-//            def bathRoomAsset = assetStorageService.find(managerDemoSetup.apartment2BathroomId, true)
-//            assert !bathRoomAsset.getAttribute("lightSwitch").get().valueAsBoolean.get()
-//        }
-//
-//        when: "time advanced by 15 seconds"
-//        advancePseudoClock(15, SECONDS, container)
-//
-//        and: "we turn the light on again in a room"
-//        assetProcessingService.sendAttributeEvent(
-//            new AttributeEvent(managerDemoSetup.apartment2LivingroomId, "lightSwitch", Values.create(true))
-//        )
-//
-//        then: "the light should still be on after a few seconds (the all lights off event expires after 3 seconds)"
-//        new PollingConditions(initialDelay: 3).eventually {
-//            assert apartment2Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_2
-//            assert apartment2Engine.assetEvents.size() == 0
-//            def livingroomAsset = assetStorageService.find(managerDemoSetup.apartment2LivingroomId, true)
-//            assert livingroomAsset.getAttribute("lightSwitch").get().valueAsBoolean.get()
-//        }
+        and: "a notification should have been sent to the console"
+        conditions.eventually {
+            assert notificationMessages.size() == 1
+            assert targetIds[0] == consoleRegistration.id
+        }
+
+        and: "the rule reset fact should have been created"
+        conditions.eventually {
+            assert customerAEngine.facts.getOptional("Test Rule_" + consoleRegistration.id + "_location").isPresent()
+        }
+
+        and: "after a few seconds the rule should not have fired again"
+        new PollingConditions(initialDelay: 3).eventually {
+            assert notificationMessages.size() == 1
+        }
+
+        when: "the console device moves back inside the home geofence (as defined in the rule)"
+        authenticatedAssetResource.writeAttributeValue(null, consoleRegistration.id, LOCATION.name, ManagerDemoSetup.SMART_HOME_LOCATION.toValue().toJson())
+
+        then: "the rule reset fact should be removed"
+        conditions.eventually {
+            assert !customerAEngine.facts.getOptional("Test Rule_" + consoleRegistration.id + "_location").isPresent()
+        }
+
+        when: "the console device moves outside the home geofence again (as defined in the rule)"
+        authenticatedAssetResource.writeAttributeValue(null, consoleRegistration.id, LOCATION.name, new GeoJSONPoint(0d,0d).toValue().toJson())
+
+        then: "another notification should have been sent to the console"
+        conditions.eventually {
+            assert notificationMessages.size() == 2
+            assert targetIds[1] == consoleRegistration.id
+        }
+
+        when: "the console sends a location update with the same location but a newer timestamp"
+        advancePseudoClock(35, MINUTES, container)
+        authenticatedAssetResource.writeAttributeValue(null, consoleRegistration.id, LOCATION.name, new GeoJSONPoint(0d,0d).toValue().toJson())
+
+        then: "another notification should have been sent to the console (because the reset condition includes reset on attributeTimestampChange)"
+        conditions.eventually {
+            assert notificationMessages.size() == 3
+            assert targetIds[2] == consoleRegistration.id
+        }
+
+        when: "the console sends a location update with a new location but still outside the geofence"
+        authenticatedAssetResource.writeAttributeValue(null, consoleRegistration.id, LOCATION.name, new GeoJSONPoint(10d,10d).toValue().toJson())
+
+        then: "another notification should have been sent to the console (because the reset condition includes reset on attributeValueChange)"
+        conditions.eventually {
+            assert notificationMessages.size() == 4
+            assert targetIds[3] == consoleRegistration.id
+        }
 
         cleanup: "stop the container"
         stopContainer(container)

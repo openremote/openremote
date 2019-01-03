@@ -25,6 +25,7 @@ public class ParentPredicate {
 
     public String id;
     public String type;
+    public String name;
     public boolean noParent;
 
     public ParentPredicate() {
@@ -50,6 +51,11 @@ public class ParentPredicate {
 
     public ParentPredicate type(AssetType type) {
         return type(type.getValue());
+    }
+
+    public ParentPredicate name(String name) {
+        this.name = name;
+        return this;
     }
 
     public ParentPredicate noParent(boolean noParent) {
