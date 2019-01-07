@@ -51,11 +51,11 @@ public class TimeUtil {
     private static final long WK_MS = 7 * DAY_MS;
 
     /**
-     * Parses the given time String and returns the corresponding time in milliseconds
+     * Parses the given time duration String and returns the corresponding number of milliseconds.
      *
      * @throws NullPointerException if time is null
      */
-    public static long parseTimeString(String time) {
+    public static long parseTimeDuration(String time) {
         time = time.trim();
         if (time.length() > 0) {
             String trimmed = time.trim();
@@ -82,10 +82,10 @@ public class TimeUtil {
                         r = -r;
                     }
                     result = r;
-                } else if ("*".equals(trimmed) || "+*".equals(trimmed)) {
+                } else if (isTimeDurationPositiveInfinity(trimmed)) {
                     // positive infinity
                     result = Long.MAX_VALUE;
-                } else if ("-*".equals(trimmed)) {
+                } else if (isTimeDurationNegativeInfinity(trimmed)) {
                     // negative infinity
                     result = Long.MIN_VALUE;
                 } else {
@@ -95,5 +95,23 @@ public class TimeUtil {
             return result;
         }
         throw new RuntimeException("Empty parameters not allowed in: [" + time + "]");
+    }
+
+    public static boolean isTimeDuration(String time) {
+        time = time != null ? time.trim() : null;
+        return time != null && time.length() > 0
+                && (SIMPLE.matcher(time).matches()
+                    || isTimeDurationPositiveInfinity(time)
+                    || isTimeDurationNegativeInfinity(time));
+    }
+
+    public static boolean isTimeDurationPositiveInfinity(String time) {
+        time = time != null ? time.trim() : null;
+        return "*".equals(time) || "+*".equals(time);
+    }
+
+    public static boolean isTimeDurationNegativeInfinity(String time) {
+        time = time != null ? time.trim() : null;
+        return "-*".equals(time);
     }
 }

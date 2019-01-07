@@ -34,7 +34,8 @@ import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetMeta;
 import org.openremote.model.attribute.AttributeType;
-import org.openremote.model.query.filter.LocationPredicate;
+import org.openremote.model.query.filter.GeofencePredicate;
+import org.openremote.model.query.filter.LocationAttributePredicate;
 import org.openremote.model.rules.*;
 
 import java.util.*;
@@ -49,14 +50,14 @@ import static org.openremote.model.rules.RulesetStatus.*;
 public class RulesEngine<T extends Ruleset> {
 
     /**
-     * Identifies a set of {@link LocationPredicate}s associated with a particular {@link Asset}
+     * Identifies a set of {@link LocationAttributePredicate}s associated with a particular {@link Asset}
      */
     public static final class AssetStateLocationPredicates {
 
         protected final String assetId;
-        protected final Set<LocationPredicate> locationPredicates;
+        protected final Set<GeofencePredicate> locationPredicates;
 
-        public AssetStateLocationPredicates(String assetId, Set<LocationPredicate> locationPredicates) {
+        public AssetStateLocationPredicates(String assetId, Set<GeofencePredicate> locationPredicates) {
             this.assetId = assetId;
             this.locationPredicates = locationPredicates;
         }
@@ -65,7 +66,7 @@ public class RulesEngine<T extends Ruleset> {
             return assetId;
         }
 
-        public Set<LocationPredicate> getLocationPredicates() {
+        public Set<GeofencePredicate> getLocationPredicates() {
             return locationPredicates;
         }
     }
@@ -124,7 +125,7 @@ public class RulesEngine<T extends Ruleset> {
         this.notificationFacade = new NotificationsFacade<>(id, notificationService);
         this.assetLocationPredicatesConsumer = assetLocationPredicatesConsumer;
 
-        this.facts = new RulesFacts(assetsFacade, this, RULES_LOG);
+        this.facts = new RulesFacts(timerService, assetStorageService, assetsFacade, this, RULES_LOG);
         engine = new InferenceRulesEngine(
             // Skip any other rules after the first failed rule (exception thrown in condition or action)
             new RulesEngineParameters(false, true, false, RulesEngineParameters.DEFAULT_RULE_PRIORITY_THRESHOLD)
@@ -207,14 +208,15 @@ public class RulesEngine<T extends Ruleset> {
 
         // Check if ruleset is already deployed (maybe an older version)
         if (deployment != null) {
+            deployment.stop();
             LOG.info("Removing ruleset deployment: " + ruleset);
             deployments.remove(ruleset.getId());
             updateDeploymentInfo();
         }
 
-        deployment = new RulesetDeployment(ruleset);
+        deployment = new RulesetDeployment(ruleset, timerService, assetStorageService, executorService, assetsFacade, usersFacade, notificationFacade);
 
-        boolean compilationSuccessful = deployment.registerRules(ruleset, assetsFacade, usersFacade, notificationFacade);
+        boolean compilationSuccessful = deployment.start();
 
         if (!compilationSuccessful) {
             // If any other ruleset is DEPLOYED in this scope, demote to READY
@@ -267,7 +269,8 @@ public class RulesEngine<T extends Ruleset> {
 
         stop();
 
-        deployments.remove(ruleset.getId());
+        RulesetDeployment deployment = deployments.remove(ruleset.getId());
+        deployment.stop();
         updateDeploymentInfo();
 
         publishRulesetStatus(ruleset, ruleset.isEnabled() ? REMOVED : DISABLED, null);

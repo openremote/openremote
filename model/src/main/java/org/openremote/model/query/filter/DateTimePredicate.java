@@ -23,12 +23,13 @@ import org.openremote.model.query.BaseAssetQuery;
 import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Values;
 
-public class DateTimePredicate implements ValuePredicate<Long> {
+public class DateTimePredicate implements ValuePredicate {
 
-    public String value;
-    public String rangeValue; // Used as upper bound when Operator.BETWEEN
+    public static final String name = "datetime";
+    public String value; // Sliding window value e.g. 1h or fixed date time
+    public String rangeValue; // Sliding window value e.g. 1h or fixed date time (used as upper bound when Operator.BETWEEN)
     public BaseAssetQuery.Operator operator = BaseAssetQuery.Operator.EQUALS;
-    public String dateFormat = "YYYY-MM-DD HH24:MI:SS";//postgres dateformat
+    public String dateFormat = "yyyy-MM-dd HH:mm:ss"; // SimpleDateFormat
 
     public DateTimePredicate() {
     }
@@ -85,7 +86,7 @@ public class DateTimePredicate implements ValuePredicate<Long> {
 
     public ObjectValue toModelValue() {
         ObjectValue objectValue = Values.createObject();
-        objectValue.put("predicateType", "StringPredicate");
+        objectValue.put("predicateType", name);
         objectValue.put("dateFormat", Values.create(dateFormat));
         objectValue.put("value", Values.create(value));
         objectValue.put("rangeValue", Values.create(rangeValue));
@@ -96,10 +97,10 @@ public class DateTimePredicate implements ValuePredicate<Long> {
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
-            "value='" + value + '\'' +
-            ", rangeValue='" + rangeValue + '\'' +
-            ", operator =" + operator +
-            ", dateFormat='" + dateFormat + '\'' +
-            '}';
+                "value='" + value + '\'' +
+                ", rangeValue='" + rangeValue + '\'' +
+                ", operator =" + operator +
+                ", dateFormat='" + dateFormat + '\'' +
+                '}';
     }
 }

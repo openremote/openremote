@@ -1,5 +1,5 @@
 /*
- * Copyright 2017, OpenRemote Inc.
+ * Copyright 2018, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -19,15 +19,17 @@
  */
 package org.openremote.model.query.filter;
 
-import org.openremote.model.value.ObjectValue;
-import org.openremote.model.value.Values;
+import org.openremote.model.query.filter.AttributeMetaPredicate;
+import org.openremote.model.query.filter.DateTimePredicate;
+import org.openremote.model.query.filter.StringPredicate;
+import org.openremote.model.query.filter.ValuePredicate;
 
-public class ValueNotEmptyPredicate implements ValuePredicate {
-
-    @Override
-    public ObjectValue toModelValue() {
-        ObjectValue objectValue = Values.createObject();
-        objectValue.put("predicateType", "ValueNotEmptyPredicate");
-        return objectValue;
-    }
+/**
+ * There is an implicit AND condition between each value
+ */
+// TODO: Introduce value converter functionality and merge with existing AttributePredicate
+public class NewAttributePredicate extends org.openremote.model.query.filter.AttributePredicate {
+    public AttributeMetaPredicate[] meta;
+    public ValuePredicate lastValue;
+    public DateTimePredicate valueTimestamp;
 }

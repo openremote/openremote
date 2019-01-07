@@ -51,6 +51,7 @@ class AssetPublicQueryTest extends Specification implements ManagerContainerTrai
         persistenceService = container.getService(PersistenceService.class)
         assetResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM).proxy(AssetResource.class)
         returnedAssets = new ArrayList<>()
+        returnedAssets = new ArrayList<>()
 
         for (int i = 0; i < 10; i++) {
             Asset somePublicAsset = new Asset("Some Public Asset", THING)

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017, OpenRemote Inc.
+ * Copyright 2018, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -17,26 +17,20 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.model.query.filter;
+package org.openremote.model.rules.json;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import org.openremote.model.value.ObjectValue;
 
 @JsonSubTypes({
-    @JsonSubTypes.Type(value = StringPredicate.class, name = StringPredicate.name),
-    @JsonSubTypes.Type(value = BooleanPredicate.class, name = BooleanPredicate.name),
-    @JsonSubTypes.Type(value = StringArrayPredicate.class, name = StringArrayPredicate.name),
-    @JsonSubTypes.Type(value = DateTimePredicate.class, name = DateTimePredicate.name),
-    @JsonSubTypes.Type(value = NumberPredicate.class, name = NumberPredicate.name),
-    @JsonSubTypes.Type(value = RadialGeofencePredicate.class, name = RadialGeofencePredicate.name),
-    @JsonSubTypes.Type(value = RectangularGeofencePredicate.class, name = RectangularGeofencePredicate.name)
+        @JsonSubTypes.Type(value = RuleActionWait.class, name = "wait"),
+        @JsonSubTypes.Type(value = RuleActionWriteAttribute.class, name = "write-attribute"),
+        @JsonSubTypes.Type(value = RuleActionNotification.class, name = "notification")
 })
 @JsonTypeInfo(
-    use = JsonTypeInfo.Id.NAME,
-    property = "predicateType"
+        use = JsonTypeInfo.Id.NAME,
+        property = "action"
 )
-public interface ValuePredicate {
+public interface RuleAction {
 
-    ObjectValue toModelValue();
 }

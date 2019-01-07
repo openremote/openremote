@@ -444,6 +444,6 @@ public class NotificationsActivity extends AssetBrowsingActivity<NotificationsPl
     }
 
     protected Notification buildNotification() {
-        return new Notification("Manager Message", sendOptions.getMessage(), new Notification.Targets(sendOptions.selectedTargetType, sendOptions.selectedTarget));
+        return new Notification("Manager Message", sendOptions.getMessage(), new Notification.Targets(sendOptions.selectedTargetType, sendOptions.selectedTarget), null, null);
     }
 }

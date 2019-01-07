@@ -1,5 +1,5 @@
 /*
- * Copyright 2017, OpenRemote Inc.
+ * Copyright 2018, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -17,17 +17,29 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.model.query.filter;
+package org.openremote.model.rules.json;
 
-import org.openremote.model.value.ObjectValue;
-import org.openremote.model.value.Values;
+import org.openremote.model.query.AssetQuery;
+import org.openremote.model.query.UserQuery;
 
-public class ValueNotEmptyPredicate implements ValuePredicate {
+/**
+ * Indicates that the action should be scoped to the specified {@link Target}.
+ */
+public abstract class RuleActionWithTarget implements RuleAction {
 
-    @Override
-    public ObjectValue toModelValue() {
-        ObjectValue objectValue = Values.createObject();
-        objectValue.put("predicateType", "ValueNotEmptyPredicate");
-        return objectValue;
+    /**
+     * Only one of the options should be set the precedence is:
+     * <ol>
+     * <li>{@link #useAssetsFromWhen}</li>
+     * <li>{@link #assets}</li>
+     * <li>{@link #users}</li>
+     * </ol>
+     */
+    public static class Target {
+        public boolean useAssetsFromWhen;
+        public AssetQuery assets;
+        public UserQuery users;
     }
+
+    public Target target;
 }

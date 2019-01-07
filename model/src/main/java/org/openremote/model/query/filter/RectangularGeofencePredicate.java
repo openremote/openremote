@@ -21,20 +21,21 @@ package org.openremote.model.query.filter;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.openremote.model.value.ObjectValue;
+import org.openremote.model.value.Values;
 
 import java.util.Objects;
 
-public class RectangularLocationPredicate extends LocationPredicate {
+public class RectangularGeofencePredicate extends GeofencePredicate {
 
     public static final String name = "rect";
-    public boolean negated;
     public double latMin;
     public double lngMin;
     public double latMax;
     public double lngMax;
 
     @JsonCreator
-    public RectangularLocationPredicate(@JsonProperty("latMin") double latMin,
+    public RectangularGeofencePredicate(@JsonProperty("latMin") double latMin,
                                         @JsonProperty("lngMin") double lngMin,
                                         @JsonProperty("latMax") double latMax,
                                         @JsonProperty("lngMax") double lngMax,
@@ -46,14 +47,15 @@ public class RectangularLocationPredicate extends LocationPredicate {
         this.negated = negated;
     }
 
-    public RectangularLocationPredicate(@JsonProperty("latMin") double latMin,
+    public RectangularGeofencePredicate(@JsonProperty("latMin") double latMin,
                                         @JsonProperty("lngMin") double lngMin,
                                         @JsonProperty("latMax") double latMax,
                                         @JsonProperty("lngMax") double lngMax) {
         this(latMin, lngMin, latMax, lngMax, false);
     }
 
-    public RectangularLocationPredicate negate() {
+    @Override
+    public RectangularGeofencePredicate negate() {
         negated = true;
         return this;
     }
@@ -78,7 +80,7 @@ public class RectangularLocationPredicate extends LocationPredicate {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        RectangularLocationPredicate that = (RectangularLocationPredicate) o;
+        RectangularGeofencePredicate that = (RectangularGeofencePredicate) o;
         return negated == that.negated &&
             Double.compare(that.latMin, latMin) == 0 &&
             Double.compare(that.lngMin, lngMin) == 0 &&
@@ -96,5 +98,17 @@ public class RectangularLocationPredicate extends LocationPredicate {
         double x = (lngMin + lngMax) / 2;
         double y = (latMin + latMax) / 2;
         return new double[]{x, y};
+    }
+
+    @Override
+    public ObjectValue toModelValue() {
+        ObjectValue objectValue = Values.createObject();
+        objectValue.put("predicateType", name);
+        objectValue.put("latMin", latMin);
+        objectValue.put("lngMin", lngMin);
+        objectValue.put("latMax", latMax);
+        objectValue.put("lngMax", lngMax);
+        objectValue.put("negated", negated);
+        return objectValue;
     }
 }

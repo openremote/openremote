@@ -40,6 +40,7 @@ import org.openremote.container.timer.TimerService;
 import org.openremote.container.web.WebService;
 import org.openremote.manager.asset.console.ConsoleResourceImpl;
 import org.openremote.manager.event.ClientEventService;
+import org.openremote.manager.rules.AssetQueryPredicate;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.Constants;
@@ -55,6 +56,7 @@ import org.openremote.model.query.BaseAssetQuery;
 import org.openremote.model.query.filter.*;
 import org.openremote.model.security.ClientRole;
 import org.openremote.model.security.User;
+import org.openremote.model.util.Pair;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Value;
@@ -412,7 +414,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     }
 
     public boolean isUserAsset(String assetId) {
-        return isUserAsset(null, assetId);
+        return isUserAsset((String)null, assetId);
     }
 
     public boolean isUserAsset(String userId, String assetId) {
@@ -431,6 +433,21 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 }
 
                 return query.getSingleResult() > 0;
+            } catch (NoResultException ex) {
+                return false;
+            }
+        });
+    }
+
+    public boolean isUserAsset(List<String> userIds, String assetId) {
+        return persistenceService.doReturningTransaction(entityManager -> {
+            try {
+                return entityManager.createQuery(
+                        "select count(ua) from UserAsset ua where ua.id.userId in :userIds and ua.id.assetId = :assetId",
+                        Long.class)
+                        .setParameter("userIds", userIds)
+                        .setParameter("assetId", assetId)
+                        .getSingleResult() > 0;
             } catch (NoResultException ex) {
                 return false;
             }
@@ -643,6 +660,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         }
 
         sb.append(buildOrderByString(query));
+        sb.append(buildLimitString(query));
         return new PreparedAssetQuery(sb.toString(), binders);
     }
 
@@ -788,7 +806,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         }
 
         if (level == 1) {
-            if (query.parent != null && !query.parent.noParent && (query.parent.id != null || query.parent.type != null)) {
+            if (query.parent != null && !query.parent.noParent && (query.parent.id != null || query.parent.type != null || query.parent.name != null)) {
                 sb.append("cross join ASSET P ");
             } else {
                 sb.append("left outer join ASSET P on A.PARENT_ID = P.ID ");
@@ -831,6 +849,13 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         return sb.toString();
     }
 
+    protected String buildLimitString(BaseAssetQuery query) {
+        if (query.limit > 0) {
+            return " LIMIT " + query.limit;
+        }
+        return "";
+    }
+
     protected String buildWhereClause(BaseAssetQuery query, int level, List<ParameterBinder> binders) {
         // level = 1 is main query
         // level = 2 is union
@@ -864,51 +889,28 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             binders.add(st -> st.setString(pos, query.name.prepareValue()));
         }
 
-        if (level == 1 && query.location != null) {
-            if (query.location instanceof RadialLocationPredicate) {
-                RadialLocationPredicate location = (RadialLocationPredicate) query.location;
-                sb.append(" and ST_Distance_Sphere(ST_MakePoint(");
-                sb.append("(A.attributes #>> '{location,value,coordinates,0}')::numeric");
-                sb.append(", (A.attributes #>> '{location,value,coordinates,1}')::numeric");
-                sb.append("), ST_MakePoint(");
-                sb.append(location.lng);
-                sb.append(",");
-                sb.append(location.lat);
-                sb.append(location.negated ? ")) > " : ")) <= ");
-                sb.append(location.radius);
-            } else if (query.location instanceof RectangularLocationPredicate) {
-                RectangularLocationPredicate location = (RectangularLocationPredicate) query.location;
-                sb.append(location.negated ? " and NOT" : " and");
-                sb.append(" ST_Within(ST_MakePoint(");
-                sb.append("(A.attributes #>> '{location,value,coordinates,0}')::numeric");
-                sb.append(", (A.attributes #>> '{location,value,coordinates,1}')::numeric");
-                sb.append(")");
-                sb.append(", ST_MakeEnvelope(");
-                sb.append(location.lngMin);
-                sb.append(",");
-                sb.append(location.latMin);
-                sb.append(",");
-                sb.append(location.lngMax);
-                sb.append(",");
-                sb.append(location.latMax);
-                sb.append("))");
-            }
-        }
-
         if (query.parent != null) {
-            // Can only restrict recursive query parent by asset type
             if (level == 1 && query.parent.id != null) {
                 sb.append(" and p.ID = a.PARENT_ID");
                 sb.append(" and A.PARENT_ID = ?");
                 final int pos = binders.size() + 1;
                 binders.add(st -> st.setString(pos, query.parent.id));
-            } else if (query.parent.type != null) {
-                sb.append(" and p.ID = a.PARENT_ID");
-                sb.append(" and P.ASSET_TYPE = ?");
-                final int pos = binders.size() + 1;
-                binders.add(st -> st.setString(pos, query.parent.type));
             } else if (level == 1 && query.parent.noParent) {
                 sb.append(" and A.PARENT_ID is null");
+            } else if (query.parent.type != null || query.parent.name != null) {
+
+                sb.append(" and p.ID = a.PARENT_ID");
+
+                if (query.parent.type != null) {
+                    sb.append(" and P.ASSET_TYPE = ?");
+                    final int pos = binders.size() + 1;
+                    binders.add(st -> st.setString(pos, query.parent.type));
+                }
+                if (query.parent.name != null) {
+                    sb.append(" and P.NAME = ?");
+                    final int pos = binders.size() + 1;
+                    binders.add(st -> st.setString(pos, query.parent.name));
+                }
             }
         }
 
@@ -1083,36 +1085,34 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 final int keyFormatPos = binders.size() + 1;
                 binders.add(st -> st.setString(keyFormatPos, dateTimePredicate.dateFormat));
 
+                Pair<Long, Long> fromAndTo = AssetQueryPredicate.asFromAndTo(timerService.getCurrentTimeMillis(), dateTimePredicate);
+
                 final int pos = binders.size() + 1;
-                binders.add(st -> st.setString(pos, dateTimePredicate.value));
-                final int formatPos = binders.size() + 1;
-                binders.add(st -> st.setString(formatPos, dateTimePredicate.dateFormat));
+                binders.add(st -> st.setDate(pos, new java.sql.Date(fromAndTo.key)));
 
                 switch (dateTimePredicate.operator) {
                     case EQUALS:
-                        attributeBuilder.append(" = to_timestamp(?, ?)");
+                        attributeBuilder.append(" = ?");
                         break;
                     case NOT_EQUALS:
-                        attributeBuilder.append(" <> to_timestamp(?, ?)");
+                        attributeBuilder.append(" <> ?");
                         break;
                     case GREATER_THAN:
-                        attributeBuilder.append(" > to_timestamp(?, ?)");
+                        attributeBuilder.append(" > ?");
                         break;
                     case GREATER_EQUALS:
-                        attributeBuilder.append(" >= to_timestamp(?, ?)");
+                        attributeBuilder.append(" >= ?");
                         break;
                     case LESS_THAN:
-                        attributeBuilder.append(" < to_timestamp(?, ?)");
+                        attributeBuilder.append(" < ?");
                         break;
                     case LESS_EQUALS:
-                        attributeBuilder.append(" <= to_timestamp(?, ?)");
+                        attributeBuilder.append(" <= ?");
                         break;
                     case BETWEEN:
-                        attributeBuilder.append(" BETWEEN to_timestamp(?, ?) AND to_timestamp(?, ?)");
                         final int pos2 = binders.size() + 1;
-                        binders.add(st -> st.setString(pos2, dateTimePredicate.rangeValue));
-                        final int formatPos2 = binders.size() + 1;
-                        binders.add(st -> st.setString(formatPos2, dateTimePredicate.dateFormat));
+                        binders.add(st -> st.setDate(pos2, new java.sql.Date(fromAndTo.value)));
+                        attributeBuilder.append(" BETWEEN ? AND ?");
                         break;
                 }
             } else if (attributePredicate.value instanceof NumberPredicate) {
@@ -1150,7 +1150,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                         binders.add(st -> st.setDouble(pos, numberPredicate.value));
                         if (numberPredicate.operator == Operator.BETWEEN) {
                             final int pos2 = binders.size() + 1;
-                            binders.add(st -> st.setDouble(pos, numberPredicate.rangeValue));
+                            binders.add(st -> st.setDouble(pos2, numberPredicate.rangeValue));
                         }
                         break;
                     case INTEGER:
@@ -1170,6 +1170,35 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 }
                 final int pos = binders.size() + 1;
                 binders.add(st -> st.setString(pos, keyPredicate.key));
+            } else if (attributePredicate.value instanceof GeofencePredicate) {
+                if (attributePredicate.value instanceof RadialGeofencePredicate) {
+                    RadialGeofencePredicate location = (RadialGeofencePredicate) attributePredicate.value;
+                    attributeBuilder.append(" and ST_Distance_Sphere(ST_MakePoint(");
+                    attributeBuilder.append("(AX.VALUE #>> '{value,coordinates,0}')::numeric");
+                    attributeBuilder.append(", (AX.VALUE #>> '{value,coordinates,1}')::numeric");
+                    attributeBuilder.append("), ST_MakePoint(");
+                    attributeBuilder.append(location.lng);
+                    attributeBuilder.append(",");
+                    attributeBuilder.append(location.lat);
+                    attributeBuilder.append(location.negated ? ")) > " : ")) <= ");
+                    attributeBuilder.append(location.radius);
+                } else if (attributePredicate.value instanceof RectangularGeofencePredicate) {
+                    RectangularGeofencePredicate location = (RectangularGeofencePredicate) attributePredicate.value;
+                    attributeBuilder.append(location.negated ? " and NOT" : " and");
+                    attributeBuilder.append(" ST_Within(ST_MakePoint(");
+                    attributeBuilder.append("(AX.VALUE #>> '{value,coordinates,0}')::numeric");
+                    attributeBuilder.append(", (AX.VALUE #>> '{value,coordinates,1}')::numeric");
+                    attributeBuilder.append(")");
+                    attributeBuilder.append(", ST_MakeEnvelope(");
+                    attributeBuilder.append(location.lngMin);
+                    attributeBuilder.append(",");
+                    attributeBuilder.append(location.latMin);
+                    attributeBuilder.append(",");
+                    attributeBuilder.append(location.lngMax);
+                    attributeBuilder.append(",");
+                    attributeBuilder.append(location.latMax);
+                    attributeBuilder.append("))");
+                }
             }
         }
 

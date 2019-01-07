@@ -24,7 +24,7 @@ import org.openremote.model.notification.AbstractNotificationMessage
 import org.openremote.model.notification.Notification
 import org.openremote.model.notification.NotificationSendResult
 import org.openremote.model.notification.PushNotificationMessage
-import org.openremote.model.query.filter.RadialLocationPredicate
+import org.openremote.model.query.filter.RadialGeofencePredicate
 import org.openremote.model.rules.AssetRuleset
 import org.openremote.model.rules.RulesResource
 import org.openremote.model.rules.Ruleset
@@ -425,7 +425,7 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
 
         when: "the geofences of a user linked console are requested by the authenticated user"
         def geofences = authenticatedRulesResource.getAssetGeofences(null, testUser3Console1.id)
-        def expectedLocationPredicate = new RadialLocationPredicate(100, SMART_HOME_LOCATION.y, SMART_HOME_LOCATION.x)
+        def expectedLocationPredicate = new RadialGeofencePredicate(100, SMART_HOME_LOCATION.y, SMART_HOME_LOCATION.x)
 
         then: "the welcome home geofence should be retrieved"
         assert expectedLocationPredicate.centrePoint.size() == 2
@@ -500,7 +500,7 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         )
         newRuleset = rulesetStorageService.merge(newRuleset)
         RulesEngine consoleParentEngine = null
-        def newLocationPredicate = new RadialLocationPredicate(50, 0, -60)
+        def newLocationPredicate = new RadialGeofencePredicate(50, 0, -60)
 
         then: "the new rule engine should be created and be running"
         conditions.eventually {
@@ -548,7 +548,7 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         when: "an existing ruleset containing a radial location predicate is updated"
         newRuleset.rules = getClass().getResource("/org/openremote/test/rules/BasicLocationPredicates2.groovy").text
         newRuleset = rulesetStorageService.merge(newRuleset)
-        newLocationPredicate = new RadialLocationPredicate(150, 10, 40)
+        newLocationPredicate = new RadialGeofencePredicate(150, 10, 40)
 
         then: "a push notification should have been sent to the two remaining consoles telling them to refresh their geofences"
         conditions.eventually {

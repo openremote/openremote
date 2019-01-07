@@ -232,6 +232,7 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> {
                 '}';
         }
     }
+
     // Projection
     public Select select;
     // Restriction predicates
@@ -245,12 +246,14 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> {
     public AttributePredicate[] attribute;
     public AttributeMetaPredicate[] attributeMeta;
     public CalendarEventActivePredicate calendarEventActive;
-    public LocationPredicate location;
     // Ordering
     public OrderBy orderBy;
+    public int limit;
+
     protected BaseAssetQuery() {
     }
 
+    // TODO: Remove this
     public static final ArrayValue queriesAsValue(BaseAssetQuery... queries) {
         ArrayValue arrayValue = Values.createArray();
 
@@ -274,6 +277,7 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> {
         return arrayValue;
     }
 
+    // TODO: Remove this
     public static final AssetQuery objectValueAsQuery(ObjectValue objectValue) {
         AssetQuery assetQuery = new AssetQuery();
 
@@ -468,11 +472,6 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> {
      */
     public CHILD calendarEventActive(long timestampSeconds) {
         calendarEventActive = new CalendarEventActivePredicate(timestampSeconds);
-        return (CHILD) this;
-    }
-
-    public CHILD location(LocationPredicate locationPredicate) {
-        this.location = locationPredicate;
         return (CHILD) this;
     }
 

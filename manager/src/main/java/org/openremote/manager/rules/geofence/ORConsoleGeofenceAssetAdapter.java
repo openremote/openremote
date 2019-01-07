@@ -38,9 +38,9 @@ import org.openremote.model.notification.Notification;
 import org.openremote.model.notification.PushNotificationMessage;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.BaseAssetQuery;
-import org.openremote.model.query.filter.LocationPredicate;
+import org.openremote.model.query.filter.GeofencePredicate;
 import org.openremote.model.query.filter.ObjectValueKeyPredicate;
-import org.openremote.model.query.filter.RadialLocationPredicate;
+import org.openremote.model.query.filter.RadialGeofencePredicate;
 import org.openremote.model.rules.geofence.GeofenceDefinition;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TextUtil;
@@ -51,7 +51,6 @@ import java.util.*;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static org.openremote.container.concurrent.GlobalLock.withLock;
@@ -163,7 +162,7 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
                     assetStateLocationPredicates
                         .getLocationPredicates()
                         .removeIf(locationPredicate ->
-                            !(locationPredicate instanceof RadialLocationPredicate));
+                            !(locationPredicate instanceof RadialGeofencePredicate));
 
 
                     RulesEngine.AssetStateLocationPredicates existingPredicates = assetLocationPredicatesMap.get(
@@ -242,8 +241,8 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
         return geofences;
     }
 
-    protected GeofenceDefinition locationPredicateToGeofenceDefinition(String assetId, LocationPredicate locationPredicate) {
-        RadialLocationPredicate radialLocationPredicate = (RadialLocationPredicate) locationPredicate;
+    protected GeofenceDefinition locationPredicateToGeofenceDefinition(String assetId, GeofencePredicate geofencePredicate) {
+        RadialGeofencePredicate radialLocationPredicate = (RadialGeofencePredicate) geofencePredicate;
         String id = assetId + "_" + Integer.toString(radialLocationPredicate.hashCode());
         String url = getWriteAttributeUrl(new AttributeRef(assetId, AttributeType.LOCATION.getName()));
         return new GeofenceDefinition(id,
@@ -271,7 +270,7 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
         IntStream.range(0, rows)
             .forEach(i -> {
                 final List<String> subIds = ids.subList(10 * i, Math.min(10 + (10 * i), ids.size()));
-                final Notification notification = new Notification("GeofenceRefresh", new PushNotificationMessage().setData(data), null);
+                final Notification notification = new Notification("GeofenceRefresh", new PushNotificationMessage().setData(data), null, null, null);
                 notification.setTargets(new Notification.Targets(Notification.TargetType.ASSET, subIds));
 
                 executorService.schedule(() -> {

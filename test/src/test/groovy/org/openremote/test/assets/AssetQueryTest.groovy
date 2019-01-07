@@ -16,6 +16,7 @@ import org.openremote.model.asset.CalendarEventConfiguration
 import org.openremote.model.calendar.CalendarEvent
 import org.openremote.model.calendar.RecurrenceRule
 import org.openremote.model.geo.GeoJSONPoint
+import org.openremote.model.query.filter.LocationAttributePredicate
 import org.openremote.model.query.filter.PathPredicate
 import org.openremote.model.query.filter.AttributeMetaPredicate
 import org.openremote.model.query.filter.AttributePredicate
@@ -23,8 +24,8 @@ import org.openremote.model.query.filter.AttributeRefPredicate
 import org.openremote.model.query.filter.BooleanPredicate
 import org.openremote.model.query.filter.NumberPredicate
 import org.openremote.model.query.filter.ParentPredicate
-import org.openremote.model.query.filter.RadialLocationPredicate
-import org.openremote.model.query.filter.RectangularLocationPredicate
+import org.openremote.model.query.filter.RadialGeofencePredicate
+import org.openremote.model.query.filter.RectangularGeofencePredicate
 import org.openremote.model.query.filter.StringPredicate
 import org.openremote.model.query.filter.TenantPredicate
 import org.openremote.test.ManagerContainerTrait
@@ -661,7 +662,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         def assets = assetStorageService.findAll(
             new AssetQuery()
                 .select(new Select(Include.ONLY_ID_AND_NAME))
-                .location(new RadialLocationPredicate(10, 51.44541688237109d, 5.460315214821094d))
+                .attributes(new LocationAttributePredicate(new RadialGeofencePredicate(10, 51.44541688237109d, 5.460315214821094d)))
                 .tenant(new TenantPredicate(keycloakDemoSetup.masterTenant.id))
                 .orderBy(new OrderBy(NAME))
         )
@@ -693,7 +694,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets = assetStorageService.findAll(
             new AssetQuery()
                 .select(new Select(Include.ONLY_ID_AND_NAME))
-                .location(new RadialLocationPredicate(10, 51.44541688237109d, 5.460315214821094d))
+                .attributes(new LocationAttributePredicate(new RadialGeofencePredicate(10, 51.44541688237109d, 5.460315214821094d)))
                 .tenant(new TenantPredicate(keycloakDemoSetup.masterTenant.id))
                 .orderBy(new OrderBy(NAME))
         )
@@ -706,7 +707,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets = assetStorageService.findAll(
             new AssetQuery()
                 .select(new Select(Include.ONLY_ID_AND_NAME))
-                .location(new RectangularLocationPredicate(51.44540d, 5.46031d, 51.44594d, 5.46110d))
+                .attributes(new LocationAttributePredicate(new RectangularGeofencePredicate(51.44540d, 5.46031d, 51.44594d, 5.46110d)))
                 .tenant(new TenantPredicate(keycloakDemoSetup.masterTenant.id))
                 .orderBy(new OrderBy(NAME))
         )
@@ -728,7 +729,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets = assetStorageService.findAll(
             new AssetQuery()
                 .select(new Select(Include.ONLY_ID_AND_NAME))
-                .location(new RectangularLocationPredicate(51.44542d,  5.46032d, 51.44590d, 5.46100d))
+                .attributes(new LocationAttributePredicate(new RectangularGeofencePredicate(51.44542d,  5.46032d, 51.44590d, 5.46100d)))
                 .tenant(new TenantPredicate(keycloakDemoSetup.masterTenant.id))
                 .orderBy(new OrderBy(NAME))
         )
@@ -740,7 +741,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets = assetStorageService.findAll(
             new AssetQuery()
                 .select(new Select(Include.ONLY_ID_AND_NAME))
-                .location(new RectangularLocationPredicate(51.44542d,  5.46032d, 51.44590d, 5.46100d).negate())
+                .attributes(new LocationAttributePredicate(new RectangularGeofencePredicate(51.44542d,  5.46032d, 51.44590d, 5.46100d).negate()))
                 .tenant(new TenantPredicate(keycloakDemoSetup.masterTenant.id))
                 .orderBy(new OrderBy(NAME))
         )

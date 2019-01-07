@@ -61,7 +61,7 @@ public class RulesClock {
     }
 
     public <T extends TemporaryFact> Predicate<T> last(String timeWindow) {
-        double timeWindowStart = getTimestamp() - TimeUtil.parseTimeString(timeWindow);
+        double timeWindowStart = getTimestamp() - TimeUtil.parseTimeDuration(timeWindow);
         return fact -> timeWindowStart <= fact.getTimestamp();
     }
 

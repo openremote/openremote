@@ -128,6 +128,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
         sb.append(buildSelectString(userQuery));
         sb.append(buildFromString(userQuery));
         sb.append(buildWhereString(userQuery, parameters));
+        sb.append(buildLimit(userQuery));
 
         return persistenceService.doReturningTransaction(entityManager -> {
             TypedQuery<User> query = entityManager.createQuery(sb.toString(), User.class);
@@ -136,7 +137,6 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
             return users.toArray(new User[users.size()]);
         });
     }
-
 
     protected String buildSelectString(UserQuery query) {
         return "SELECT DISTINCT(u)";
@@ -179,6 +179,13 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
         }
 
         return sb.toString();
+    }
+
+    protected String buildLimit(UserQuery userQuery) {
+        if (userQuery.limit > 0) {
+            return " LIMIT " + userQuery.limit;
+        }
+        return "";
     }
 
     @Override

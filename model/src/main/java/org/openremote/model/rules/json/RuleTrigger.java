@@ -1,5 +1,5 @@
 /*
- * Copyright 2017, OpenRemote Inc.
+ * Copyright 2018, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -17,17 +17,20 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.model.query.filter;
+package org.openremote.model.rules.json;
 
-import org.openremote.model.value.ObjectValue;
-import org.openremote.model.value.Values;
+import org.openremote.model.query.NewAssetQuery;
 
-public class ValueNotEmptyPredicate implements ValuePredicate {
+/**
+ * There are two types of trigger supported and only one should be specified if both are specified then {@link #asset}
+ * trigger will be used.
+ * <ul>
+ * <li>{@link #asset} see {@link NewAssetQuery}</li>
+ * <li>{@link #timer} Allows timer expressions to be specified and thus creating a time based rule (e.g. "1h")</li>
+ * </ul>
+ */
+public class RuleTrigger {
 
-    @Override
-    public ObjectValue toModelValue() {
-        ObjectValue objectValue = Values.createObject();
-        objectValue.put("predicateType", "ValueNotEmptyPredicate");
-        return objectValue;
-    }
+    public NewAssetQuery asset;
+    public String timer;
 }

@@ -27,7 +27,6 @@ import spock.util.concurrent.PollingConditions
 
 import javax.ws.rs.WebApplicationException
 import java.time.Instant
-import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 import java.util.concurrent.TimeUnit
 
@@ -110,14 +109,14 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         ).token
 
         def notification = new Notification("TestAction",
-                                           new PushNotificationMessage("Test Action",
-                                                                       "Click to cancel",
-                                                                       writeAttributeValueAction(
-                                                                           new AttributeRef(
-                                                                               managerDemoSetup.apartment1LivingroomId,
-                                                                               "alarmEnabled"
-                                                                           ),
-                                                                           Values.create(false)),null, null), null)
+                new PushNotificationMessage("Test Action",
+                        "Click to cancel",
+                        writeAttributeValueAction(
+                                new AttributeRef(
+                                        managerDemoSetup.apartment1LivingroomId,
+                                        "alarmEnabled"
+                                ),
+                                Values.create(false)), null, null), null, null, null)
 
         and: "the notification resource"
         def testuser1NotificationResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, testuser1AccessToken).proxy(NotificationResource.class)
@@ -569,7 +568,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         def notification = new Notification(
                 "Test",
                 new EmailNotificationMessage().setSubject("Test").setText("Hello world!"),
-                new Notification.Targets(Notification.TargetType.TENANT, managerDemoSetup.customerARealmId))
+                new Notification.Targets(Notification.TargetType.TENANT, managerDemoSetup.customerARealmId), null, null)
         notificationService.sendNotification(notification, Notification.Source.TENANT_RULESET, managerDemoSetup.customerARealmId)
 
         then: "the email should have been sent to all tenant users"

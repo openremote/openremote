@@ -23,9 +23,10 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import org.openremote.model.value.ObjectValue;
 
-@JsonSubTypes(
-    @JsonSubTypes.Type(value = PushNotificationMessage.class, name = PushNotificationMessage.TYPE)
-)
+@JsonSubTypes({
+        @JsonSubTypes.Type(value = PushNotificationMessage.class, name = PushNotificationMessage.TYPE),
+        @JsonSubTypes.Type(value = EmailNotificationMessage.class, name = EmailNotificationMessage.TYPE)
+})
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.NAME,
     property = "type"

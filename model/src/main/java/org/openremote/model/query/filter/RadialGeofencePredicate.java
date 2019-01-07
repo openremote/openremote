@@ -21,19 +21,20 @@ package org.openremote.model.query.filter;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.openremote.model.value.ObjectValue;
+import org.openremote.model.value.Values;
 
 import java.util.Objects;
 
-public class RadialLocationPredicate extends LocationPredicate {
+public class RadialGeofencePredicate extends GeofencePredicate {
 
     public static final String name = "radial";
-    public boolean negated;
     public int radius;
     public double lat;
     public double lng;
 
     @JsonCreator
-    public RadialLocationPredicate(@JsonProperty("radius") int radius,
+    public RadialGeofencePredicate(@JsonProperty("radius") int radius,
                                    @JsonProperty("lat") double lat,
                                    @JsonProperty("lng") double lng,
                                    @JsonProperty("negated") boolean negated) {
@@ -43,13 +44,14 @@ public class RadialLocationPredicate extends LocationPredicate {
         this.negated = negated;
     }
 
-    public RadialLocationPredicate(@JsonProperty("radius") int radius,
+    public RadialGeofencePredicate(@JsonProperty("radius") int radius,
                                    @JsonProperty("lat") double lat,
                                    @JsonProperty("lng") double lng) {
         this(radius, lat, lng, false);
     }
 
-    public RadialLocationPredicate negate() {
+    @Override
+    public RadialGeofencePredicate negate() {
         negated = true;
         return this;
     }
@@ -70,7 +72,7 @@ public class RadialLocationPredicate extends LocationPredicate {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        RadialLocationPredicate that = (RadialLocationPredicate) o;
+        RadialGeofencePredicate that = (RadialGeofencePredicate) o;
         return negated == that.negated &&
             radius == that.radius &&
             Double.compare(that.lat, lat) == 0 &&
@@ -85,5 +87,16 @@ public class RadialLocationPredicate extends LocationPredicate {
     @Override
     public double[] getCentrePoint() {
         return new double[]{lng, lat};
+    }
+
+    @Override
+    public ObjectValue toModelValue() {
+        ObjectValue objectValue = Values.createObject();
+        objectValue.put("predicateType", name);
+        objectValue.put("radius", radius);
+        objectValue.put("lat", lat);
+        objectValue.put("lng", lng);
+        objectValue.put("negated", negated);
+        return objectValue;
     }
 }

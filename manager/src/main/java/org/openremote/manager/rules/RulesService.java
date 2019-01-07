@@ -43,7 +43,7 @@ import org.openremote.model.attribute.AttributeEvent.Source;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.filter.AttributeMetaPredicate;
 import org.openremote.model.query.filter.BooleanPredicate;
-import org.openremote.model.query.filter.LocationPredicate;
+import org.openremote.model.query.filter.LocationAttributePredicate;
 import org.openremote.model.rules.*;
 import org.openremote.model.rules.geofence.GeofenceDefinition;
 import org.openremote.model.security.ClientRole;
@@ -120,7 +120,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
     protected ClientEventService clientEventService;
     protected RulesEngine<GlobalRuleset> globalEngine;
     protected String[] activeTenantIds;
-    protected BiConsumer<RulesEngine, List<RulesEngine.AssetStateLocationPredicates>> locationPredicateRulesConsumer;
+    protected AssetLocationPredicateProcessor locationPredicateRulesConsumer;
     protected Map<RulesEngine, List<RulesEngine.AssetStateLocationPredicates>> engineAssetLocationPredicateMap = new HashMap<>();
     protected Set<String> assetsWithModifiedLocationPredicates = new HashSet<>();
     // Keep global list of asset states that have been pushed to any engines
@@ -527,7 +527,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
                     notificationService,
                     clientEventService,
                     new RulesEngineId<>(),
-                    this::onEngineLocationRulesChanged
+                    locationPredicateRulesConsumer
                 );
             }
 
@@ -565,7 +565,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
                         notificationService,
                         clientEventService,
                         new RulesEngineId<>(realmId),
-                        this::onEngineLocationRulesChanged
+                        locationPredicateRulesConsumer
                     );
                 });
 
@@ -633,7 +633,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
                         notificationService,
                         clientEventService,
                         new RulesEngineId<>(ruleset.getRealmId(), assetId),
-                        this::onEngineLocationRulesChanged
+                        locationPredicateRulesConsumer
                     );
                 });
 
@@ -778,8 +778,8 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
 
     /**
      * Called when an engine's rules change identifying assets with location attributes marked with {@link
-     * AssetMeta#RULE_STATE} that also have {@link LocationPredicate} in the rules. The job here is to
-     * identify the asset's (via {@link AssetState}) that have modified {@link LocationPredicate}s and to
+     * AssetMeta#RULE_STATE} that also have {@link LocationAttributePredicate} in the rules. The job here is to
+     * identify the asset's (via {@link AssetState}) that have modified {@link LocationAttributePredicate}s and to
      * notify the {@link GeofenceAssetAdapter}s.
      */
     protected void onEngineLocationRulesChanged(RulesEngine rulesEngine, List<RulesEngine.AssetStateLocationPredicates> newEngineAssetStateLocationPredicates) {

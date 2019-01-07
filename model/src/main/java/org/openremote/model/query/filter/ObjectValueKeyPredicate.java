@@ -22,7 +22,7 @@ package org.openremote.model.query.filter;
 import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Values;
 
-public class ObjectValueKeyPredicate implements ValuePredicate<String> {
+public class ObjectValueKeyPredicate implements ValuePredicate {
 
     public boolean negated;
     public String key;

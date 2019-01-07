@@ -19,15 +19,15 @@
  */
 package org.openremote.model.query.filter;
 
-import org.openremote.model.value.ObjectValue;
-import org.openremote.model.value.Values;
+public abstract class GeofencePredicate implements ValuePredicate {
 
-public class ValueNotEmptyPredicate implements ValuePredicate {
+    public boolean negated;
 
-    @Override
-    public ObjectValue toModelValue() {
-        ObjectValue objectValue = Values.createObject();
-        objectValue.put("predicateType", "ValueNotEmptyPredicate");
-        return objectValue;
+    // TODO: switch return type to location object
+    public abstract double[] getCentrePoint();
+
+    public GeofencePredicate negate() {
+        negated = true;
+        return this;
     }
 }

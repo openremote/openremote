@@ -27,6 +27,7 @@ import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetType;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeValueType;
+import org.openremote.model.attribute.Meta;
 import org.openremote.model.value.ArrayValue;
 import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Value;
@@ -89,6 +90,8 @@ public class AssetState implements Comparable<AssetState> {
 
     final protected String tenantRealm;
 
+    final protected Meta meta;
+
     public AssetState(AssetState that) {
         this.attributeName = that.attributeName;
         this.attributeValueType = that.attributeValueType;
@@ -110,6 +113,7 @@ public class AssetState implements Comparable<AssetState> {
         this.parentType = that.parentType;
         this.realmId = that.realmId;
         this.tenantRealm = that.tenantRealm;
+        this.meta = that.meta;
     }
 
     public AssetState(Asset asset, AssetAttribute attribute, AttributeEvent.Source source) {
@@ -133,6 +137,7 @@ public class AssetState implements Comparable<AssetState> {
         this.parentType = asset.getParentWellKnownType();
         this.realmId = asset.getRealmId();
         this.tenantRealm = asset.getTenantRealm();
+        this.meta = attribute.getMeta();
     }
 
     public String getAttributeName() {
@@ -213,6 +218,10 @@ public class AssetState implements Comparable<AssetState> {
 
     public String getTenantRealm() {
         return tenantRealm;
+    }
+
+    public Meta getMeta() {
+        return meta;
     }
 
     public boolean isValueChanged() {

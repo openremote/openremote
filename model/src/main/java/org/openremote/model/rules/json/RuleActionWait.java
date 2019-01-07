@@ -1,5 +1,5 @@
 /*
- * Copyright 2017, OpenRemote Inc.
+ * Copyright 2018, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -17,23 +17,8 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.model.query.filter;
+package org.openremote.model.rules.json;
 
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-
-@JsonSubTypes({
-    @JsonSubTypes.Type(value = RadialLocationPredicate.class, name = RadialLocationPredicate.name),
-    @JsonSubTypes.Type(value = RectangularLocationPredicate.class, name = RectangularLocationPredicate.name)
-})
-@JsonTypeInfo(
-    use = JsonTypeInfo.Id.NAME,
-    include = JsonTypeInfo.As.PROPERTY,
-    property = "predicateType"
-)
-
-public abstract class LocationPredicate {
-
-    // TODO: switch return type to location object
-    public abstract double[] getCentrePoint();
+public class RuleActionWait implements RuleAction {
+    public long millis;
 }

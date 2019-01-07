@@ -11,6 +11,7 @@ public class UserQuery<CHILD extends UserQuery<CHILD>> {
     public TenantPredicate tenantPredicate;
     public UserAssetPredicate assetPredicate;
     public PathPredicate pathPredicate;
+    public int limit;
 
     public UserQuery() {
     }
@@ -30,6 +31,12 @@ public class UserQuery<CHILD extends UserQuery<CHILD>> {
     @SuppressWarnings("unchecked")
     public CHILD assetPath(PathPredicate pathPredicate) {
         this.pathPredicate = pathPredicate;
+        return (CHILD) this;
+    }
+
+    @SuppressWarnings("unchecked")
+    public CHILD limit(int limit) {
+        this.limit = limit;
         return (CHILD) this;
     }
 }
