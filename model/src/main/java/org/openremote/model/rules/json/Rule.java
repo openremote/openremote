@@ -19,16 +19,16 @@
  */
 package org.openremote.model.rules.json;
 
-import org.openremote.model.rules.json.predicate.AssetPredicate;
+import org.openremote.model.query.NewAssetQuery;
 
 /**
  * A declarative rule definition (a.k.a. JSON rules); consists of:
  * <p>
  * <h2>LHS</li>
  * <p>
- * {@link #when}* - This can be either a {@link RuleTrigger#timer} for time based rules or an {@link AssetPredicate}
+ * {@link #when}* - This can be either a {@link RuleTrigger#timer} for time based rules or an {@link NewAssetQuery}
  * which will be used to filter {@link org.openremote.model.rules.AssetState}s currently available in the rule engine
- * that this rule is loaded into. The {@link AssetPredicate} will evaluate to true when one or more
+ * that this rule is loaded into. The {@link NewAssetQuery} will evaluate to true when one or more
  * {@link org.openremote.model.rules.AssetState}s are returned by applying the filter. The returned
  * {@link org.openremote.model.rules.AssetState}s are then used as context for the RHS and also the
  * {@link RuleTriggerReset} (if specified).
@@ -55,7 +55,7 @@ public class Rule {
     public String description;
     public int priority = Integer.MAX_VALUE-1;
     public RuleTrigger when;
-    public RuleCondition<AssetPredicate> and;
+    public RuleCondition<NewAssetQuery> and;
     public RuleAction[] then;
     public RuleTriggerReset reset;
 }

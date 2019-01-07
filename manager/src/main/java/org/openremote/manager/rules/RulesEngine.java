@@ -125,7 +125,7 @@ public class RulesEngine<T extends Ruleset> {
         this.notificationFacade = new NotificationsFacade<>(id, notificationService);
         this.assetLocationPredicatesConsumer = assetLocationPredicatesConsumer;
 
-        this.facts = new RulesFacts(timerService, assetsFacade, this, RULES_LOG);
+        this.facts = new RulesFacts(timerService, assetStorageService, assetsFacade, this, RULES_LOG);
         engine = new InferenceRulesEngine(
             // Skip any other rules after the first failed rule (exception thrown in condition or action)
             new RulesEngineParameters(false, true, false, RulesEngineParameters.DEFAULT_RULE_PRIORITY_THRESHOLD)

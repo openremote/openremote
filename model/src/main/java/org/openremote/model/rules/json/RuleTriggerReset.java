@@ -19,6 +19,8 @@
  */
 package org.openremote.model.rules.json;
 
+import org.openremote.model.query.NewAssetQuery;
+
 /**
  * This defines when an {@link org.openremote.model.rules.AssetState} becomes eligible for triggering the rule again once
  * if has triggered a rule.
@@ -33,7 +35,7 @@ public class RuleTriggerReset {
     public String timer;
 
     /**
-     * When the {@link Rule#when} {@link org.openremote.model.rules.json.predicate.AssetPredicate} evaluates to true.
+     * When the {@link Rule#when} {@link NewAssetQuery} evaluates to true.
      */
     public boolean triggerNoLongerMatches;
 

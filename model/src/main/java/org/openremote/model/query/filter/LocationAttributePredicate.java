@@ -23,7 +23,7 @@ import org.openremote.model.attribute.AttributeType;
 import org.openremote.model.query.BaseAssetQuery;
 
 import java.util.List;
-import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static org.openremote.model.attribute.AttributeType.LOCATION;
 
@@ -33,13 +33,13 @@ public class LocationAttributePredicate extends AttributePredicate {
         super(new StringPredicate(AttributeType.LOCATION.getName()), geofencePredicate);
     }
 
-    public static Optional<GeofencePredicate> getLocationPredicate(List<AttributePredicate> attributePredicates) {
+    public static List<GeofencePredicate> getLocationPredicates(List<AttributePredicate> attributePredicates) {
         return attributePredicates.stream()
                 .filter(attributePredicate -> attributePredicate.name != null
                         && attributePredicate.name.match == BaseAssetQuery.Match.EXACT
                         && LOCATION.getName().equals(attributePredicate.name.value)
                         && attributePredicate.value instanceof GeofencePredicate)
-                .findFirst()
-                .map(attributePredicate -> (GeofencePredicate) attributePredicate.value);
+                .map(attributePredicate -> (GeofencePredicate) attributePredicate.value)
+                .collect(Collectors.toList());
     }
 }

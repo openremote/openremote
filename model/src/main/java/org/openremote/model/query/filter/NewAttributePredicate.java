@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.model.rules.json.predicate;
+package org.openremote.model.query.filter;
 
 import org.openremote.model.query.filter.AttributeMetaPredicate;
 import org.openremote.model.query.filter.DateTimePredicate;
@@ -28,7 +28,7 @@ import org.openremote.model.query.filter.ValuePredicate;
  * There is an implicit AND condition between each value
  */
 // TODO: Introduce value converter functionality and merge with existing AttributePredicate
-public class AttributePredicate extends org.openremote.model.query.filter.AttributePredicate {
+public class NewAttributePredicate extends org.openremote.model.query.filter.AttributePredicate {
     public AttributeMetaPredicate[] meta;
     public ValuePredicate lastValue;
     public DateTimePredicate valueTimestamp;

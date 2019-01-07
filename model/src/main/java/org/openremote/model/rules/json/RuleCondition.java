@@ -19,7 +19,20 @@
  */
 package org.openremote.model.rules.json;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 public class RuleCondition<T> {
+
+    public RuleCondition() {
+    }
+
+    public RuleCondition(RuleOperator operator, T[] predicates, RuleCondition<T>[] conditions) {
+        this.operator = operator;
+        this.predicates = predicates;
+        this.conditions = conditions;
+    }
 
     /**
      * If not specified then {@link RuleOperator#AND} is assumed.
@@ -35,4 +48,15 @@ public class RuleCondition<T> {
      * Nested conditions allow for more complex logic with a mix of operators
      */
     public RuleCondition<T>[] conditions;
+
+    public static <T> List<T> flatten(List<RuleCondition<T>> conditions) {
+        List<T> flattened = new ArrayList<>();
+        for (RuleCondition<T> ruleCondition : conditions) {
+            flattened.addAll(Arrays.asList(ruleCondition.predicates));
+            if (ruleCondition.conditions != null) {
+                flattened.addAll(flatten(Arrays.asList(ruleCondition.conditions)));
+            }
+        }
+        return flattened;
+    }
 }

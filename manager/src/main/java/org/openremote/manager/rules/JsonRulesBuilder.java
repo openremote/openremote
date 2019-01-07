@@ -25,21 +25,25 @@ import org.openremote.manager.concurrent.ManagerExecutorService;
 import org.openremote.manager.rules.facade.NotificationsFacade;
 import org.openremote.model.attribute.Meta;
 import org.openremote.model.notification.Notification;
-import org.openremote.model.query.AssetQuery;
+import org.openremote.model.query.BaseAssetQuery;
+import org.openremote.model.query.NewAssetQuery;
 import org.openremote.model.query.UserQuery;
 import org.openremote.model.query.filter.AttributeMetaPredicate;
+import org.openremote.model.query.filter.NewAttributePredicate;
 import org.openremote.model.rules.AssetState;
 import org.openremote.model.rules.Assets;
 import org.openremote.model.rules.Users;
 import org.openremote.model.rules.json.*;
-import org.openremote.model.rules.json.predicate.AssetPredicate;
-import org.openremote.model.rules.json.predicate.AttributePredicate;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.value.Value;
 
 import java.util.*;
-import java.util.function.*;
+import java.util.function.BiConsumer;
+import java.util.function.BiPredicate;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class JsonRulesBuilder extends RulesBuilder {
 
@@ -84,233 +88,6 @@ public class JsonRulesBuilder extends RulesBuilder {
         this.scheduledActionConsumer = scheduledActionConsumer;
     }
 
-    protected static Predicate<RulesFacts> asPredicate(TimerService timerService, AssetStorageService assetStorageService, RuleCondition<AssetPredicate> condition) {
-
-        if ((condition.predicates == null || condition.predicates.length == 0)
-                && (condition.conditions == null || condition.conditions.length == 0)) {
-            return facts -> true;
-        }
-
-        RuleOperator operator = condition.operator == null ? RuleOperator.AND : condition.operator;
-
-        List<Predicate<RulesFacts>> assetPredicates = new ArrayList<>();
-
-        if (condition.predicates != null && condition.predicates.length > 0) {
-            assetPredicates.addAll(
-                    Arrays.stream(condition.predicates)
-                            .map(p -> {
-                                Predicate<AssetState> assetStatePredicate = asPredicate(timerService, assetStorageService, p);
-                                return (Predicate<RulesFacts>) facts -> {
-                                    List<AssetState> assetStates = new ArrayList<>(facts.getAssetStates());
-                                    assetStates.removeIf(as -> assetStatePredicate.negate().test(as));
-                                    return !assetStates.isEmpty();
-                                };
-                            }).collect(Collectors.toList())
-            );
-        }
-
-        if (condition.conditions != null && condition.conditions.length > 0) {
-            assetPredicates.addAll(
-                    Arrays.stream(condition.conditions)
-                            .map(c -> asPredicate(timerService, assetStorageService, c)).collect(Collectors.toList())
-            );
-        }
-
-        return asPredicate(assetPredicates, operator);
-    }
-
-    protected static Predicate<AssetState> asPredicate(Supplier<Long> currentMillisProducer, RuleCondition<AttributePredicate> condition) {
-        if ((condition.predicates == null || condition.predicates.length == 0)
-                && (condition.conditions == null || condition.conditions.length == 0)) {
-            return as -> true;
-        }
-
-        RuleOperator operator = condition.operator == null ? RuleOperator.AND : condition.operator;
-
-        List<Predicate<AssetState>> assetStatePredicates = new ArrayList<>();
-
-        if (condition.predicates != null && condition.predicates.length > 0) {
-            assetStatePredicates.addAll(
-                    Arrays.stream(condition.predicates)
-                            .map(p -> asPredicate(currentMillisProducer, p)).collect(Collectors.toList())
-            );
-        }
-
-        if (condition.conditions != null && condition.conditions.length > 0) {
-            assetStatePredicates.addAll(
-                    Arrays.stream(condition.conditions)
-                            .map(c -> asPredicate(currentMillisProducer, c)).collect(Collectors.toList())
-            );
-        }
-
-        return asPredicate(assetStatePredicates, operator);
-    }
-
-    public static Predicate<AssetState> asPredicate(TimerService timerService, AssetStorageService assetStorageService, AssetPredicate pred) {
-
-        return assetState -> {
-            if (pred.ids != null && pred.ids.length > 0) {
-                if (Arrays.stream(pred.ids).noneMatch(id -> assetState.getId().equals(id))) {
-                    return false;
-                }
-            }
-
-            if (pred.names != null && pred.names.length > 0) {
-                if (Arrays.stream(pred.names)
-                        .map(AssetQueryPredicate::asPredicate)
-                        .noneMatch(np -> np.test(assetState.getName()))) {
-                    return false;
-                }
-            }
-
-            if (pred.parents != null && pred.parents.length > 0) {
-                if (Arrays.stream(pred.parents)
-                        .map(AssetQueryPredicate::asPredicate)
-                        .noneMatch(np -> np.test(assetState))) {
-                    return false;
-                }
-            }
-
-            if (pred.types != null && pred.types.length > 0) {
-                if (Arrays.stream(pred.types)
-                        .map(AssetQueryPredicate::asPredicate)
-                        .noneMatch(np -> np.test(assetState.getTypeString()))) {
-                    return false;
-                }
-            }
-
-            if (pred.paths != null && pred.paths.length > 0) {
-                if (Arrays.stream(pred.paths)
-                        .map(AssetQueryPredicate::asPredicate)
-                        .noneMatch(np -> np.test(assetState.getPath()))) {
-                    return false;
-                }
-            }
-
-            if (pred.tenant != null) {
-                if (!AssetQueryPredicate.asPredicate(pred.tenant).test(assetState)) {
-                    return false;
-                }
-            }
-
-            if (pred.attributes != null) {
-                if (!asPredicate(timerService::getCurrentTimeMillis, pred.attributes).test(assetState)) {
-                    return false;
-                }
-            }
-
-            // Apply user ID predicate last as it is the most expensive
-            if (pred.userIds != null && pred.userIds.length > 0) {
-                if (!assetStorageService.isUserAsset(Arrays.asList(pred.userIds), assetState.getId())) {
-                    return false;
-                }
-            }
-
-            return true;
-        };
-    }
-
-    public static Predicate<AssetState> asPredicate(Supplier<Long> currentMillsProducer, AttributePredicate pred) {
-
-        Predicate<String> namePredicate = pred.name != null
-                ? AssetQueryPredicate.asPredicate(pred.name) : str -> true;
-
-        Predicate<Meta> metaPredicate = meta -> {
-
-            if (pred.meta == null || pred.meta.length == 0) {
-                return true;
-            }
-
-            for (AttributeMetaPredicate p : pred.meta) {
-                if (!AssetQueryPredicate.asPredicate(currentMillsProducer, p).test(meta)) {
-                    return false;
-                }
-            }
-            return true;
-        };
-
-        Predicate<Value> valuePredicate = value -> {
-            if (pred.value == null) {
-                return true;
-            }
-            return AssetQueryPredicate.asPredicate(currentMillsProducer, pred.value).test(value);
-        };
-
-        Predicate<Value> oldValuePredicate = value -> {
-            if (pred.lastValue == null) {
-                return true;
-            }
-            return AssetQueryPredicate.asPredicate(currentMillsProducer, pred.lastValue).test(value);
-        };
-
-        return assetState -> namePredicate.test(assetState.getAttributeName())
-                && metaPredicate.test(assetState.getMeta())
-                && valuePredicate.test(assetState.getValue().orElse(null))
-                && oldValuePredicate.test(assetState.getOldValue().orElse(null));
-    }
-
-    public static Comparator<AssetState> asComparator(AssetPredicate.MatchOrder matchOrder) {
-
-        Function<AssetState, String> keyExtractor = AssetState::getName;
-        boolean reverse = false;
-
-        switch (matchOrder) {
-            case NAME_REVERSED:
-                reverse = true;
-            case NAME:
-                keyExtractor = AssetState::getName;
-                break;
-            case ATTRIBUTE_REVERSE:
-                reverse = true;
-            case ATTRIBUTE:
-                keyExtractor = AssetState::getAttributeName;
-                break;
-            case NAME_AND_ATTRIBUTE_REVERSED:
-                reverse = true;
-            case NAME_AND_ATTRIBUTE:
-                keyExtractor = as -> as.getName() + as.getAttributeName();
-                break;
-            case ATTRIBUTE_AND_NAME_REVERSED:
-                reverse = true;
-            case ATTRIBUTE_AND_NAME:
-                keyExtractor = as -> as.getAttributeName() + as.getName();
-                break;
-        }
-
-        Comparator<AssetState> comparator = Comparator.comparing(keyExtractor);
-
-        if (reverse) {
-            comparator = comparator.reversed();
-        }
-
-        return comparator;
-    }
-
-    protected static <T> Predicate<T> asPredicate(List<Predicate<T>> predicates, RuleOperator operator) {
-        return in -> {
-            boolean matched = false;
-
-            for (Predicate<T> p : predicates) {
-
-                if (p.test(in)) {
-                    matched = true;
-
-                    if (operator == RuleOperator.OR) {
-                        break;
-                    }
-                } else {
-                    matched = false;
-
-                    if (operator == RuleOperator.AND) {
-                        break;
-                    }
-                }
-            }
-
-            return matched;
-        };
-    }
-
     protected static String buildResetFactName(Rule rule, AssetState assetState) {
         return rule.name + "_" + assetState.getId() + "_" + assetState.getAttributeName();
     }
@@ -324,7 +101,7 @@ public class JsonRulesBuilder extends RulesBuilder {
                 .getResults();
     }
 
-    protected static List<String> getAssetIds(Assets assets, AssetQuery assetQuery) {
+    protected static List<String> getAssetIds(Assets assets, org.openremote.model.query.AssetQuery assetQuery) {
         return assets.query()
                 .ids(assetQuery.ids)
                 .name(assetQuery.name)
@@ -339,10 +116,7 @@ public class JsonRulesBuilder extends RulesBuilder {
 
     public JsonRulesBuilder add(Rule rule) {
 
-        final Predicate<AssetState> assetStatePredicate = rule.when != null && rule.when.asset != null
-                ? asPredicate(timerService, assetStorageService, rule.when.asset) : null;
-
-        Condition condition = buildLhsCondition(rule, assetStatePredicate);
+        Condition condition = buildLhsCondition(rule);
         Action action = buildAction(rule);
 
         if (condition == null || action == null) {
@@ -367,7 +141,7 @@ public class JsonRulesBuilder extends RulesBuilder {
                 })
                 .then(action);
 
-        Condition resetCondition = buildResetCondition(rule, assetStatePredicate);
+        Condition resetCondition = buildResetCondition(rule);
         Action resetAction = buildResetAction();
 
         if (resetCondition != null && resetAction != null) {
@@ -393,7 +167,7 @@ public class JsonRulesBuilder extends RulesBuilder {
         return this;
     }
 
-    protected Condition buildLhsCondition(Rule rule, Predicate<AssetState> assetStatePredicate) {
+    protected Condition buildLhsCondition(Rule rule) {
         if (rule.when == null || (rule.when.asset == null && rule.when.timer == null)) {
             return facts -> false;
         }
@@ -402,42 +176,35 @@ public class JsonRulesBuilder extends RulesBuilder {
         Predicate<RulesFacts> andPredicate = facts -> true;
 
         if (rule.when.asset != null) {
-
+            // Pull out order and limit so they can be applied after filtering already triggered asset states
+            BaseAssetQuery.OrderBy orderBy = rule.when.asset.orderBy;
+            int limit = rule.when.asset.limit;
+            rule.when.asset.orderBy = null;
+            rule.when.asset.limit = 0;
 
             whenPredicate = facts -> {
 
-                List<AssetState> assetStates = new ArrayList<>(facts.getAssetStates());
-
-                assetStates.removeIf(as -> assetStatePredicate.negate().test(as));
-
-                if (assetStates.isEmpty()) {
-                    return false;
-                }
+                Stream<AssetState> assetStates = facts.matchAssetState(rule.when.asset);
 
                 // Apply reset predicate (to prevent re-running a rule on an asset state before the reset has triggered)
-                assetStates.removeIf(as -> {
+                assetStates = assetStates.filter(as -> {
                     String factName = buildResetFactName(rule, as);
-                    return facts.getOptional(factName).isPresent();
+                    return !facts.getOptional(factName).isPresent();
                 });
-                if (assetStates.isEmpty()) {
-                    return false;
+
+                if (orderBy != null) {
+                    assetStates = assetStates.sorted(RulesFacts.asComparator(rule.when.asset.orderBy));
                 }
 
-                if (rule.when.asset.matchOrder != null) {
-                    assetStates.sort(asComparator(rule.when.asset.matchOrder));
+                if (limit > 0) {
+                    assetStates = assetStates.limit(limit);
                 }
 
-                if (rule.when.asset.matchLimit > 0) {
-                    int limit = Math.min(assetStates.size(), rule.when.asset.matchLimit);
-                    assetStates = assetStates.subList(0, limit);
-                }
+                List<AssetState> assetStateList = assetStates.collect(Collectors.toList());
 
-                // Push matched asset states into RHS
-                facts.bind("assetStates", assetStates);
-
-                if (!assetStates.isEmpty()) {
+                if (!assetStateList.isEmpty()) {
                     // Push matched asset states into RHS
-                    facts.bind("assetStates", assetStates);
+                    facts.bind("assetStates", assetStateList);
                     return true;
                 }
 
@@ -448,9 +215,8 @@ public class JsonRulesBuilder extends RulesBuilder {
         }
 
         if (rule.and != null) {
-            andPredicate = asPredicate(timerService, assetStorageService, rule.and);
+            andPredicate = AssetQueryPredicate.asPredicate(timerService, assetStorageService, rule.and);
         }
-
 
         Predicate<RulesFacts> finalWhenPredicate = whenPredicate;
         Predicate<RulesFacts> finalAndPredicate = andPredicate;
@@ -550,7 +316,7 @@ public class JsonRulesBuilder extends RulesBuilder {
                             List<String> finalIds = ids;
                             action = () ->
                                     finalIds.forEach(id ->
-                                        assetsFacade.dispatch(id, attributeAction.attributeName, attributeAction.value));
+                                            assetsFacade.dispatch(id, attributeAction.attributeName, attributeAction.value));
                         }
                     }
                 } else if (ruleAction instanceof RuleActionWait) {
@@ -572,12 +338,11 @@ public class JsonRulesBuilder extends RulesBuilder {
         };
     }
 
-    protected Condition buildResetCondition(Rule rule, Predicate<AssetState> assetStatePredicate) {
+    protected Condition buildResetCondition(Rule rule) {
 
         // Timer only reset is handled in rule action with temporary fact other resets require rule.when.asset to be set
         // so that we have
-        if (rule.reset == null || assetStatePredicate == null
-                || (!rule.reset.triggerNoLongerMatches && !rule.reset.attributeTimestampChange
+        if (rule.reset == null || (!rule.reset.triggerNoLongerMatches && !rule.reset.attributeTimestampChange
                 && !rule.reset.attributeValueChange)) {
 
             return null;
@@ -589,8 +354,8 @@ public class JsonRulesBuilder extends RulesBuilder {
         BiPredicate<AssetState, RuleFiredInfo> attributeTimestampPredicate = (assetState, ruleFiredInfo) -> false;
         BiPredicate<AssetState, RuleFiredInfo> attributeValuePredicate = (assetState, ruleFiredInfo) -> false;
 
-        if (reset.triggerNoLongerMatches) {
-            noLongerMatchesPredicate = assetState -> assetStatePredicate.negate().test(assetState);
+        if (reset.triggerNoLongerMatches && rule.when != null && rule.when.asset != null) {
+            noLongerMatchesPredicate = new AssetQueryPredicate(timerService, assetStorageService, rule.when.asset).negate();
         }
 
         if (reset.attributeTimestampChange) {

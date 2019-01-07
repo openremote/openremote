@@ -83,7 +83,6 @@ import static org.openremote.model.query.BaseAssetQuery.Access.PRIVATE_READ;
 import static org.openremote.model.query.BaseAssetQuery.Access.RESTRICTED_READ;
 import static org.openremote.model.query.BaseAssetQuery.Include.ALL;
 import static org.openremote.model.query.BaseAssetQuery.Include.ALL_EXCEPT_PATH_AND_ATTRIBUTES;
-import static org.openremote.model.query.filter.LocationAttributePredicate.getLocationPredicate;
 import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 
 public class AssetStorageService extends RouteBuilder implements ContainerService {

@@ -19,18 +19,18 @@
  */
 package org.openremote.model.rules.json;
 
-import org.openremote.model.rules.json.predicate.AssetPredicate;
+import org.openremote.model.query.NewAssetQuery;
 
 /**
  * There are two types of trigger supported and only one should be specified if both are specified then {@link #asset}
  * trigger will be used.
  * <ul>
- * <li>{@link #asset} see {@link AssetPredicate}</li>
+ * <li>{@link #asset} see {@link NewAssetQuery}</li>
  * <li>{@link #timer} Allows timer expressions to be specified and thus creating a time based rule (e.g. "1h")</li>
  * </ul>
  */
 public class RuleTrigger {
 
-    public AssetPredicate asset;
+    public NewAssetQuery asset;
     public String timer;
 }

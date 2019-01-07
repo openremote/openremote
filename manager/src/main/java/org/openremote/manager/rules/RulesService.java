@@ -120,7 +120,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
     protected ClientEventService clientEventService;
     protected RulesEngine<GlobalRuleset> globalEngine;
     protected String[] activeTenantIds;
-    protected BiConsumer<RulesEngine, List<RulesEngine.AssetStateLocationPredicates>> locationPredicateRulesConsumer;
+    protected AssetLocationPredicateProcessor locationPredicateRulesConsumer;
     protected Map<RulesEngine, List<RulesEngine.AssetStateLocationPredicates>> engineAssetLocationPredicateMap = new HashMap<>();
     protected Set<String> assetsWithModifiedLocationPredicates = new HashSet<>();
     // Keep global list of asset states that have been pushed to any engines
@@ -527,7 +527,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
                     notificationService,
                     clientEventService,
                     new RulesEngineId<>(),
-                    this::onEngineLocationRulesChanged
+                    locationPredicateRulesConsumer
                 );
             }
 
@@ -565,7 +565,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
                         notificationService,
                         clientEventService,
                         new RulesEngineId<>(realmId),
-                        this::onEngineLocationRulesChanged
+                        locationPredicateRulesConsumer
                     );
                 });
 
@@ -633,7 +633,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
                         notificationService,
                         clientEventService,
                         new RulesEngineId<>(ruleset.getRealmId(), assetId),
-                        this::onEngineLocationRulesChanged
+                        locationPredicateRulesConsumer
                     );
                 });
 
