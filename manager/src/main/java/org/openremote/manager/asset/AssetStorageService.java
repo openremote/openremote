@@ -67,6 +67,7 @@ import javax.persistence.EntityManager;
 import javax.persistence.NoResultException;
 import javax.persistence.TypedQuery;
 import java.sql.*;
+import java.time.Instant;
 import java.util.*;
 import java.util.Date;
 import java.util.function.Consumer;
@@ -1081,14 +1082,12 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 }
             } else if (attributePredicate.value instanceof DateTimePredicate) {
                 DateTimePredicate dateTimePredicate = (DateTimePredicate) attributePredicate.value;
-                attributeBuilder.append(" and to_timestamp(AX.VALUE #>> '{value}', ?)");
-                final int keyFormatPos = binders.size() + 1;
-                binders.add(st -> st.setString(keyFormatPos, dateTimePredicate.dateFormat));
+                attributeBuilder.append(" and (AX.Value #>> '{value}')::timestamp");
 
                 Pair<Long, Long> fromAndTo = AssetQueryPredicate.asFromAndTo(timerService.getCurrentTimeMillis(), dateTimePredicate);
 
                 final int pos = binders.size() + 1;
-                binders.add(st -> st.setDate(pos, new java.sql.Date(fromAndTo.key)));
+                binders.add(st -> st.setObject(pos, new java.sql.Timestamp(fromAndTo.key).toLocalDateTime()));
 
                 switch (dateTimePredicate.operator) {
                     case EQUALS:
@@ -1111,7 +1110,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                         break;
                     case BETWEEN:
                         final int pos2 = binders.size() + 1;
-                        binders.add(st -> st.setDate(pos2, new java.sql.Date(fromAndTo.value)));
+                        binders.add(st -> st.setObject(pos2, new java.sql.Timestamp(fromAndTo.value).toLocalDateTime()));
                         attributeBuilder.append(" BETWEEN ? AND ?");
                         break;
                 }
