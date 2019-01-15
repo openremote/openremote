@@ -40,86 +40,6 @@ class GeofenceProvider(val context: Context) : ActivityCompat.OnRequestPermissio
         }
     }
 
-//    class LocationService : Service() {
-//
-//        private lateinit var fusedLocationProviderClient: FusedLocationProviderClient
-//        private lateinit var locationCallback: LocationCallback
-//
-//        override fun onCreate() {
-//            super.onCreate()
-//
-//            fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(applicationContext)
-//
-//            locationCallback = object : LocationCallback() {
-//                override fun onLocationResult(locationResult: LocationResult?) {
-//                    locationResult ?: return
-//                    Log.i("GeofenceProvider", "Location received: lat${locationResult.lastLocation.latitude}/lng${locationResult.lastLocation.longitude}")
-//                }
-//            }
-//        }
-//
-//        @SuppressLint("MissingPermission", "NewApi")
-//        override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-//
-//            val notificationBuilder = when {
-//                Build.VERSION.SDK_INT >= Build.VERSION_CODES.O -> {
-//                    val channelId = createNotificationChannel()
-//                    NotificationCompat.Builder(this, channelId)
-//                }
-//                else -> {
-//                    NotificationCompat.Builder(this)
-//                }
-//            }
-//
-//            val notification = notificationBuilder.setOngoing(true)
-//                    .setSmallIcon(R.drawable.ic_notification)
-//                    .setCategory(Notification.CATEGORY_SERVICE)
-//                    .setContentTitle("Tracking location")
-//                    .build()
-//
-//            notification.flags = notification.flags or Notification.FLAG_ONGOING_EVENT or Notification.FLAG_FOREGROUND_SERVICE or Notification.FLAG_NO_CLEAR
-//
-//            //Force location updates
-//            val locationRequest = LocationRequest().apply {
-//                interval = 60000//1min
-//                fastestInterval = 10000//10sec
-//                priority = LocationRequest.PRIORITY_HIGH_ACCURACY
-//            }
-//
-//            fusedLocationProviderClient.requestLocationUpdates(locationRequest,
-//                    locationCallback,
-//                    null)
-//
-//            startForeground(101, notification)
-//
-//            return START_REDELIVER_INTENT
-//        }
-//
-//        override fun onDestroy() {
-//            fusedLocationProviderClient.removeLocationUpdates(locationCallback)
-//
-//            super.onDestroy()
-//        }
-//
-//        override fun onBind(intent: Intent?): IBinder? {
-//            return null
-//        }
-//
-//        @RequiresApi(Build.VERSION_CODES.O)
-//        private fun createNotificationChannel(): String {
-//            val channelId = "${BuildConfig.APPLICATION_ID}.OREindhovenLocationService"
-//            val channelName = "OR Eindhoven Location Service"
-//            val channel = NotificationChannel(channelId,
-//                    channelName, NotificationManager.IMPORTANCE_LOW)
-//            channel.lightColor = Color.BLUE
-//            channel.lockscreenVisibility = Notification.VISIBILITY_PRIVATE
-//            channel.setShowBadge(false)
-//            val service = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager?
-//            service!!.createNotificationChannel(channel)
-//            return channelId
-//        }
-//    }
-
     companion object {
         val baseUrlKey = "baseUrl"
         val consoleIdKey = "consoleId"
@@ -313,12 +233,6 @@ class GeofenceProvider(val context: Context) : ActivityCompat.OnRequestPermissio
 
             if (hasPermission) {
                 LOG.info("Has permission so fetching geofences")
-
-//            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-//                context.startForegroundService(Intent(context, LocationService::class.java))
-//            } else {
-//                context.startService(Intent(context, LocationService::class.java))
-//            }
 
                 if (getGeofences(context).isEmpty()) {
                     // Could be first time getting geofences so wait a few seconds for backend to catch up

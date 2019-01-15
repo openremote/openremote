@@ -459,32 +459,7 @@ public class MainActivity extends Activity {
                 Toast.makeText(getApplicationContext(), R.string.downloading_file, Toast.LENGTH_LONG).show();
             }
         } else if (requestCode == GeofenceProvider.Companion.getLocationReponseCode()) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-
-                geofenceProvider.enable(MainActivity.this,
-                    String.format("%s/%s",
-                        getString(R.string.OR_BASE_SERVER),
-                        getString(R.string.OR_REALM)),
-                    consoleId,
-                    new GeofenceProvider.EnableCallback() {
-                        @Override
-                        public void accept(@NotNull Map<String, ?> responseData) {
-                            try {
-                                final String jsonString = new ObjectMapper().writeValueAsString(responseData);
-                                MainActivity.this.runOnUiThread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        webView.evaluateJavascript(String.format(
-                                            "openremote.INSTANCE.console.handleProviderResponse('%s')",
-                                            jsonString), null);
-                                    }
-                                });
-                            } catch (Exception e) {
-                                e.printStackTrace();
-                            }
-                        }
-                    });
-            }
+            geofenceProvider.onRequestPermissionsResult(requestCode, permissions, grantResults);
         } else {
             super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         }
