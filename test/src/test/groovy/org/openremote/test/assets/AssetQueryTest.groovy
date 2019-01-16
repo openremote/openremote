@@ -23,6 +23,7 @@ import javax.persistence.EntityManager
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
+import java.time.ZoneOffset
 import java.util.function.Function
 
 import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME
@@ -867,8 +868,8 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         )
         lobby = assetStorageService.merge(lobby)
 
-        def rangeStart = LocalDateTime.ofInstant(Instant.ofEpochMilli(1517151600000), ZoneId.systemDefault()).minusHours(2) // 28/01/2018 @ 1:00pm (UTC)
-        def rangeEnd = LocalDateTime.ofInstant(Instant.ofEpochMilli(1517151600000), ZoneId.systemDefault()).plusHours(3) // 28/01/2018 @ 6:00pm (UTC)
+        def rangeStart = LocalDateTime.ofInstant(Instant.ofEpochMilli(1517151600000), ZoneOffset.UTC).minusHours(2) // 28/01/2018 @ 1:00pm (UTC)
+        def rangeEnd = LocalDateTime.ofInstant(Instant.ofEpochMilli(1517151600000), ZoneOffset.UTC).plusHours(3) // 28/01/2018 @ 6:00pm (UTC)
 
         def assets = assetStorageService.findAll(
                 new AssetQuery()
@@ -916,7 +917,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets[0].id == lobby.id
 
         when: "the lobby has an opening date and the date is equal to the filtering date"
-        rangeStart = LocalDateTime.ofInstant(Instant.ofEpochMilli(1517151600000), ZoneId.systemDefault()).minusHours(1) // 28/01/2018 @ 2:00pm (UTC)
+        rangeStart = LocalDateTime.ofInstant(Instant.ofEpochMilli(1517151600000), ZoneOffset.UTC) // 28/01/2018 @ 2:00pm (UTC)
 
         assets = assetStorageService.findAll(
                 new AssetQuery()
