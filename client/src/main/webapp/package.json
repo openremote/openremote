@@ -1,0 +1,30 @@
+{
+  "name": "manager",
+  "version": "3.0.0",
+  "homepage": "http://openremote.com/",
+  "author": "OpenRemote",
+  "description": "OR Manager",
+  "main": "index.html",
+  "license": "AGPL-3.0-or-later",
+  "ignore": [
+    "**/.*",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "@polymer/polymer": "^2.6.1",
+    "@webcomponents/webcomponentsjs": "^1.1.0",
+    "@polymer/iron-flex-layout": "^1.3.1-pre.3",
+    "@polymer/app-localize-behavior": "^0.10.1-pre.3",
+    "@polymer/app-route": "^0.9.3-pre.3",
+    "@webcomponents/shadycss": "^1.1.1",
+    "font-awesome": "^4.7.0",
+    "moment": "^2.20.1",
+    "intl": "^1.2.5",
+    "chart.js": "^2.7.0"
+  },
+  "resolutions": {
+    "@polymer/polymer": "^2.6.1",
+    "@polymer/promise-polyfill": "^1.0.1-pre.3"
+  }
+}

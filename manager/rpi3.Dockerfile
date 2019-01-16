@@ -24,10 +24,9 @@ ENV JAVA_OPTS -Xmx500m
 
 RUN [ "cross-build-end" ]
 
-ENV MANAGER_DOCROOT webapp
-ENV CONSOLES_DOCROOT /deployment/consoles
-ENV UI_DOCROOT /deployment/ui
-ENV LOGGING_CONFIG_FILE /deployment/logging.properties
+ENV APP_DOCROOT /deployment/manager/app
+ENV UI_DOCROOT /deployment/manager/ui
+ENV LOGGING_CONFIG_FILE /deployment/manager/logging.properties
 ENV MAP_TILES_PATH /deployment/map/mapdata.mbtiles
 ENV MAP_SETTINGS_PATH /deployment/map/mapsettings.json
 

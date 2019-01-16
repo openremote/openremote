@@ -1254,22 +1254,27 @@ public class HttpClientProtocol extends AbstractProtocol {
     }
 
     protected void executePollingRequest(HttpClientRequest clientRequest, Consumer<Response> responseConsumer) {
-        Response originalResponse = null;
+        Response originalResponse = null, lastResponse = null;
         List<Object> entities = null;
 
         try {
             originalResponse = clientRequest.invoke(null);
             if (clientRequest.pagingEnabled) {
-                Response response = originalResponse;
+                lastResponse = originalResponse;
                 entities = new ArrayList<>();
-                entities.add(response.readEntity(Object.class));
-                while ((response = executePagingRequest(clientRequest, response)) != null) {
-                    entities.add(response.readEntity(Object.class));
+                entities.add(lastResponse.readEntity(Object.class));
+                while ((lastResponse = executePagingRequest(clientRequest, lastResponse)) != null) {
+                    entities.add(lastResponse.readEntity(Object.class));
                 }
                 originalResponse = PagingResponse.fromResponse(originalResponse).entity(entities).build();
             }
         } catch (Exception e) {
-            LOG.log(Level.SEVERE, "Exception thrown whilst doing polling request", e);
+            String responseBody = lastResponse != null ? lastResponse.readEntity(String.class) : originalResponse != null ? originalResponse.readEntity(String.class) : null;
+            if (TextUtil.isNullOrEmpty(responseBody)) {
+                LOG.log(Level.SEVERE, "Exception thrown whilst doing polling request", e);
+            } else {
+                LOG.log(Level.SEVERE, String.format("Exception thrown whilst doing polling request: %s", responseBody), e);
+            }
             //Try to recover as much as possible when an exception has occurred in a paging request
             if (entities != null) {
                 originalResponse = PagingResponse.fromResponse(originalResponse).entity(entities).build();

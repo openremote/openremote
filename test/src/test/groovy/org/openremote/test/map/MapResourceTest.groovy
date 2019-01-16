@@ -27,7 +27,7 @@ class MapResourceTest extends Specification implements ManagerContainerTrait {
         ).token
 
         and: "a test client target"
-        def clientTarget = getClientTarget(serverUri(serverPort), realm, accessToken)
+        def clientTarget = getClientApiTarget(serverUri(serverPort), realm, accessToken)
 
         and: "the map resource"
         def mapResource = clientTarget.proxy(MapResource.class)
@@ -40,9 +40,12 @@ class MapResourceTest extends Specification implements ManagerContainerTrait {
 
         and: "JSON content is valid"
         def json = new JsonSlurper().parseText(mapSettings.toJson())
-        json.center.size() == 2
-        json.maxBounds.size() == 4
-        json.style != null
+        json.options != null
+        json.options.default != null
+        json.options.default.center.size() == 2
+        json.options.default.bounds.size() == 4
+        json.sources != null
+        json.layers.size() > 0
 
         cleanup: "the server should be stopped"
         stopContainer(container)

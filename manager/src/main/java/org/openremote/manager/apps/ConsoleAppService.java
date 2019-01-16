@@ -22,18 +22,11 @@ package org.openremote.manager.apps;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.timer.TimerService;
-import org.openremote.container.web.WebService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebService;
-import org.openremote.model.apps.ConsoleApp;
-import org.openremote.model.security.Tenant;
 
 import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.logging.Logger;
-
-import static org.openremote.model.Constants.MASTER_REALM;
 
 public class ConsoleAppService implements ContainerService {
 
@@ -50,7 +43,7 @@ public class ConsoleAppService implements ContainerService {
         this.managerWebService = container.getService(ManagerWebService.class);
         this.identityService = container.getService(ManagerIdentityService.class);
 
-        container.getService(WebService.class).getApiSingletons().add(
+        container.getService(ManagerWebService.class).getApiSingletons().add(
             new ConsoleAppResourceImpl(this)
         );
     }
@@ -63,34 +56,11 @@ public class ConsoleAppService implements ContainerService {
     public void stop(Container container) throws Exception {
     }
 
-    public ConsoleApp[] getInstalled() throws Exception {
-        List<ConsoleApp> result = new ArrayList<>();
-        Files.list(managerWebService.getConsolesDocRoot()).forEach(path -> {
-            String directoryName = path.getFileName().toString();
-            Tenant tenant = identityService.getIdentityProvider().getTenantForRealm(directoryName);
-            if (tenant == null) {
-                LOG.fine("No tenant exists for installed console app: " + path.toAbsolutePath());
-                return;
-            }
-            if (tenant.isActive(timerService.getCurrentTimeMillis()) && tenant.getDisplayName() != null) {
-                String appUrl = managerWebService.getConsoleUrl(
-                    identityService.getExternalServerUri(),
-                    directoryName
-                );
-                ConsoleApp consoleApp = new ConsoleApp(tenant, appUrl);
-                result.add(consoleApp);
-            }
-        });
-
-        result.sort((o1, o2) -> {
-            if (o1.getTenant().getRealm().equals(MASTER_REALM))
-                return -1;
-            if (o2.getTenant().getRealm().equals(MASTER_REALM))
-                return 1;
-            return o1.getTenant().getDisplayName().compareTo(o2.getTenant().getDisplayName());
-        });
-
-        return result.toArray(new ConsoleApp[result.size()]);
+    public String[] getInstalled() throws Exception {
+        return Files.list(managerWebService.getAppDocRoot())
+            .filter(Files::isDirectory)
+            .map(dir -> dir.getFileName().toString())
+            .toArray(String[]::new);
     }
 
     @Override

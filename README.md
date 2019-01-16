@@ -45,7 +45,7 @@ To keep your data, don't delete the Docker volumes `openremote_manger-data` and 
 
 ### Building images from source
 
-If you want to build the images instead of downloading them, execute:
+If you want to build the images instead of downloading them, execute (ensure you have required dev dependencies installed as described in the [developer guide](https://github.com/openremote/openremote/wiki)):
 
 ```
 ./gradlew clean installDist

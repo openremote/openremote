@@ -138,7 +138,6 @@ public abstract class AbstractFileServlet extends HttpServlet {
 	}
 
 	private void doRequest(HttpServletRequest request, HttpServletResponse response, boolean head) throws IOException {
-        response.reset();
         Resource resource;
 
         try {

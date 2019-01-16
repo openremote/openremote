@@ -181,7 +181,7 @@ class VelbusProtocolTest extends Specification implements ManagerContainerTrait 
         ).token
 
         and: "the agent resource"
-        def agentResource = getClientTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AgentResource.class)
+        def agentResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AgentResource.class)
 
         when: "the container is running"
         container.isRunning()

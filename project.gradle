@@ -9,10 +9,6 @@ buildscript {
             url "https://plugins.gradle.org/m2/"
         }
     }
-
-    dependencies {
-        classpath "com.moowork.gradle:gradle-node-plugin:1.2.0"
-    }
 }
 
 // Default repositories for dependency resolution
@@ -41,12 +37,13 @@ idea {
         outputDir file('build/classes/main')
         testOutputDir file('build/classes/test')
         excludeDirs += file(".node")
+        excludeDirs += file("node_modules")
     }
 }
 if (project.convention.findPlugin(JavaPluginConvention)) {
     // Change the output directory for the main and test source sets back to the old path
-    sourceSets.main.output.classesDirs = new File(buildDir, "classes/main")
-    sourceSets.test.output.classesDirs = new File(buildDir, "classes/test")
+    sourceSets.main.java.outputDir = new File(buildDir, "classes/main")
+    sourceSets.test.java.outputDir = new File(buildDir, "classes/test")
 }
 
 // Configure versions in gradle.properties (putting a gradle.properties file
@@ -54,76 +51,42 @@ if (project.convention.findPlugin(JavaPluginConvention)) {
 // subproject, not for its children!)
 version = hasProperty("openremoteVersion") ? openremoteVersion : projectVersion
 
-// Add NodeJS plugin configuration and tasks
-apply plugin: com.moowork.gradle.node.NodePlugin
-node {
-    download = true
-    version = "8.9.0"
-    workDir = file("${rootDir}/.node")
-}
-ext.nodeDir = {
-    def osName = com.moowork.gradle.node.util.PlatformHelper.INSTANCE.getOsName()
-    def osArch = com.moowork.gradle.node.util.PlatformHelper.INSTANCE.getOsArch()
-    def version = node.version
-    node.workDir.absolutePath + File.separator + "node-v${version}-${osName}-${osArch}"
-}
-ext.nodeModuleDir = {
-    isFamily(FAMILY_WINDOWS) ? "${nodeDir()}/node_modules" : "${nodeDir()}/lib/node_modules"
-}
-ext.nodeModuleGlobal = {
-    dir, mod ->
-        file("${nodeModuleDir()}/${dir}/bin/${mod}")
-}
-ext.nodeModuleLocal = {
-    dir, mod ->
-        file("${projectDir}/node_modules/${dir}/bin/${mod}")
+// Add UI tasks
+ext.npmCommand = {
+    cmd ->
+        isFamily(FAMILY_WINDOWS) ? "${cmd}.cmd" : cmd
 }
 
-task npmInstall(overwrite: true, type: NpmTask, dependsOn: 'npmSetup') {
-    inputs.file('package.json')
-    outputs.upToDateWhen { file('node_modules').exists() }
-
-    npmCommand = ['install']
+// Add npm tasks
+task npmInstall(type: Exec){
+    // Use yarn
+    commandLine npmCommand("yarn"), "install"
+}
+task npmClean(type: Exec){
+    commandLine npmCommand("npm"), "run-script", "clean"
+}
+task npmBuild(type: Exec){
+    commandLine npmCommand("npm"), "run-script", "build"
+}
+task npmTest(type: Exec){
+    commandLine npmCommand("npm"), "run-script", "test"
+}
+task npmServe(type: Exec){
+    commandLine npmCommand("npm"), "run-script", "serve"
+}
+task npmServeProduction(type: Exec){
+    commandLine npmCommand("npm"), "run-script", "serveProduction"
 }
 
-// Add bower tasks
-task bowerInstall(type: NpmTask) {
-    dependsOn nodeSetup
-    args = ['install', '-g', 'bower']
-    outputs.upToDateWhen {
-        nodeModuleGlobal('bower', 'bower').exists()
-    }
-}
-task bowerUpdate(type: NodeTask) {
-    dependsOn bowerInstall
-    script = nodeModuleGlobal('bower', 'bower')
-    args = ['update']
-    inputs.file("${project.projectDir}/bower.json")
-    outputs.dir("${project.projectDir}/bower_components")
-}
-task bowerPrune(type: NodeTask) {
-    dependsOn bowerInstall
-    script = nodeModuleGlobal('bower', 'bower')
-    args = ['prune']
-    inputs.file("${project.projectDir}/bower.json")
-    outputs.dir("${project.projectDir}/bower_components")
+// Add yarn tasks
+task yarnInstall(type: Exec){
+    commandLine npmCommand("yarn"), "install"
 }
 
-// TODO Test this... Add polymer tasks, we really only want to compile ES6 to ES5, maybe some minification!
-/*
-task polymerInstall(type: NpmTask) {
-    dependsOn nodeSetup
-    args = ['install', '-g', 'polymer-cli']
-    outputs.upToDateWhen {
-        nodeModuleGlobal('polymer-cli', 'polymer-cli').exists()
-    }
+// Add typescript tasks
+task tscWatch(type: Exec) {
+    commandLine npmCommand("npx"), "tsc", "-b", "--watch"
 }
-task polymerServe(type: NodeTask) {
-    dependsOn polymerInstall
-    script = nodeModuleGlobal('polymer-cli', 'polymer-cli')
-    args = ['serve']
-}
-*/
 
 // Configure Java build
 plugins.withType(JavaPlugin).whenPluginAdded {
@@ -148,8 +111,12 @@ plugins.withType(JavaPlugin).whenPluginAdded {
 
 // Helper functions for project/task resolution when the main 
 // repo is checked out as a git submodule and therefore a subproject
+def isCustomProject() {
+    findProject(":openremote") != null
+}
+
 def resolvePath(String path) {
-    findProject(":openremote") != null ? ":openremote" + path : path
+    isCustomProject() ? ":openremote" + path : path
 }
 
 def resolveProject(String path) {
@@ -164,4 +131,5 @@ ext {
     resolvePath = this.&resolvePath
     resolveProject = this.&resolveProject
     resolveTask = this.&resolveTask
+    isCustomProject = this.&isCustomProject
 }

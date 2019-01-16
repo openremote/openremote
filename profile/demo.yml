@@ -35,14 +35,14 @@
 # Database schemas will be upgraded to new versions of the services automatically, you do
 # not have to wipe all data to install a new version of OpenRemote.
 #
-# Your extension JAR files should be in the manager's ../deployment/extensions/ directory.
+# Your extension JAR files should be in the manager's ../deployment/manager/extensions/ directory.
 #
 version: '2.2'
 
 # If you enable volume mappings in services, you need this. Otherwise, remove the volumes
 volumes:
   #proxy-data:
-  #manager-data:
+  #deployment-data:
   postgresql-data:
 
 services:
@@ -81,18 +81,18 @@ services:
       # override it with either a (different) host-mapped directory or a named data volume.
 
       # Use local deployment data in host-mapped directory for easy development.
-      # - ${DEPLOYMENT_DIRECTORY:-../deployment}/manager:/deployment
+      # - ${DEPLOYMENT_DIRECTORY:-../deployment}:/deployment
 
       # Use a named volume. When the volume is empty on startup, the files in the manager
       # image's /deployment directory will be copied into the empty volume, thus
       # giving you a default configuration to modify. Access the volume with:
       #
-      # docker run --rm -it -v openremote_manager-data:/deployment debian:stretch /bin/bash
+      # docker run --rm -it -v openremote_deployment-data:/deployment debian:stretch /bin/bash
       # > ls -la /deployment
       #
       # To use a volume, enable this:
       #
-      # - manager-data:/deployment
+      # - deployment-data:/deployment
 
     environment:
       # This switch can wipe all your Manager and Keycloak data, this is the factory reset!
@@ -108,6 +108,8 @@ services:
     depends_on:
       postgresql:
         condition: service_healthy
+    volumes:
+      - ../ui/keycloak/themes/openremote:/opt/jboss/keycloak/themes/openremote
     environment:
       # CHANGE THIS PASSWORD BEFORE STARTING THE STACK! THIS IS ONLY FOR DEMO!
       SETUP_ADMIN_PASSWORD: secret

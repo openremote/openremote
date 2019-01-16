@@ -37,7 +37,7 @@ public class LogUtil {
     /**
      * If system property <code>java.util.logging.config.file</code> has not been set, try to load the
      * logging configuration specified in environment variable <code>LOGGING_CONFIG_FILE</code> as a file.
-     * If this wasn't set, try to find the file <code>/deployment/logging.properties</code>.
+     * If this wasn't set, try to find the file <code>/deployment/manager/logging.properties</code>.
      * If this also wasn't found, load the given default logging configuration from the classpath.
      * <p>
      * This method should be called in a <code>static { ... }</code> block in the "first" class of your
@@ -59,10 +59,10 @@ public class LogUtil {
                     throw new ExceptionInInitializerError(ex);
                 }
             } else {
-                // Try to find /deployment/logging.properties
-                if (Files.isReadable(Paths.get("/deployment/logging.properties"))) {
-                    try (InputStream is = Files.newInputStream(Paths.get("/deployment/logging.properties"))) {
-                        System.out.println("Using logging configuration: /deployment/logging.properties");
+                // Try to find /deployment/manager/logging.properties
+                if (Files.isReadable(Paths.get("/deployment/manager/logging.properties"))) {
+                    try (InputStream is = Files.newInputStream(Paths.get("/deployment/manager/logging.properties"))) {
+                        System.out.println("Using logging configuration: /deployment/manager/logging.properties");
                         LogManager.getLogManager().readConfiguration(is);
                     } catch (Exception ex) {
                         throw new ExceptionInInitializerError(ex);

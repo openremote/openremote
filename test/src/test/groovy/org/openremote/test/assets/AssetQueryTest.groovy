@@ -4,44 +4,35 @@ import org.openremote.container.Container
 import org.openremote.container.persistence.PersistenceService
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
-
 import org.openremote.manager.setup.SetupService
 import org.openremote.manager.setup.builtin.KeycloakDemoSetup
 import org.openremote.manager.setup.builtin.ManagerDemoSetup
-import org.openremote.model.asset.Asset
-import org.openremote.model.asset.AssetMeta
-import org.openremote.model.query.AssetQuery
-import org.openremote.model.asset.AssetType
-import org.openremote.model.asset.CalendarEventConfiguration
+import org.openremote.model.asset.*
 import org.openremote.model.calendar.CalendarEvent
 import org.openremote.model.calendar.RecurrenceRule
 import org.openremote.model.geo.GeoJSONPoint
-import org.openremote.model.query.filter.LocationAttributePredicate
-import org.openremote.model.query.filter.PathPredicate
-import org.openremote.model.query.filter.AttributeMetaPredicate
-import org.openremote.model.query.filter.AttributePredicate
-import org.openremote.model.query.filter.AttributeRefPredicate
-import org.openremote.model.query.filter.BooleanPredicate
-import org.openremote.model.query.filter.NumberPredicate
-import org.openremote.model.query.filter.ParentPredicate
-import org.openremote.model.query.filter.RadialGeofencePredicate
-import org.openremote.model.query.filter.RectangularGeofencePredicate
-import org.openremote.model.query.filter.StringPredicate
-import org.openremote.model.query.filter.TenantPredicate
+import org.openremote.model.query.AssetQuery
+import org.openremote.model.query.filter.*
+import org.openremote.model.value.Values
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Shared
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
 import javax.persistence.EntityManager
+import java.time.Instant
+import java.time.LocalDateTime
+import java.time.ZoneId
 import java.util.function.Function
 
+import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME
+import static org.openremote.model.asset.AssetType.THING
+import static org.openremote.model.attribute.AttributeValueType.DATETIME
 import static org.openremote.model.query.BaseAssetQuery.*
 import static org.openremote.model.query.BaseAssetQuery.Access.PRIVATE_READ
 import static org.openremote.model.query.BaseAssetQuery.Access.RESTRICTED_READ
 import static org.openremote.model.query.BaseAssetQuery.OrderBy.Property.CREATED_ON
 import static org.openremote.model.query.BaseAssetQuery.OrderBy.Property.NAME
-import static org.openremote.model.asset.AssetType.THING
 
 class AssetQueryTest extends Specification implements ManagerContainerTrait {
 
@@ -865,5 +856,80 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         then: "the calendar event asset should not be included"
         assets.size() == 4
         !assets.any {it.name == "Lobby"}
+    }
+
+    def "DateTime queries"() {
+        when: "the lobby has an opening date and the date falls is between the filtering date"
+        def lobby = assetStorageService.find(managerDemoSetup.lobbyId, true)
+
+        lobby.addAttributes(
+                new AssetAttribute("openingDate", DATETIME, Values.create("2018-01-28T15:00:00"))
+        )
+        lobby = assetStorageService.merge(lobby)
+
+        def rangeStart = LocalDateTime.ofInstant(Instant.ofEpochMilli(1517151600000), ZoneId.systemDefault()).minusHours(2) // 28/01/2018 @ 1:00pm (UTC)
+        def rangeEnd = LocalDateTime.ofInstant(Instant.ofEpochMilli(1517151600000), ZoneId.systemDefault()).plusHours(3) // 28/01/2018 @ 6:00pm (UTC)
+
+        def assets = assetStorageService.findAll(
+                new AssetQuery()
+                        .tenant(new TenantPredicate(keycloakDemoSetup.masterTenant.id))
+                        .attributeValue(
+                            "openingDate",
+                            new DateTimePredicate(rangeStart.format(ISO_LOCAL_DATE_TIME), rangeEnd.format(ISO_LOCAL_DATE_TIME))
+                                .operator(Operator.BETWEEN)
+                                .dateFormat("yyyy-MM-dd'T'HH:mm:ss"))
+        )
+
+
+        then: "the lobby asset should be retrieved"
+        assets.size() == 1
+        assets[0].id == lobby.id
+
+        when: "the lobby has an opening date and the date is after the filtering date"
+        assets = assetStorageService.findAll(
+                new AssetQuery()
+                        .tenant(new TenantPredicate(keycloakDemoSetup.masterTenant.id))
+                        .attributeValue(
+                            "openingDate",
+                            new DateTimePredicate(Operator.GREATER_THAN, rangeStart.format(ISO_LOCAL_DATE_TIME))
+                                .dateFormat("yyyy-MM-dd'T'HH:mm:ss"))
+        )
+
+
+        then: "the lobby asset should be retrieved"
+        assets.size() == 1
+        assets[0].id == lobby.id
+
+        when: "the lobby has an opening date and the date is before the filtering date"
+        assets = assetStorageService.findAll(
+                new AssetQuery()
+                        .tenant(new TenantPredicate(keycloakDemoSetup.masterTenant.id))
+                        .attributeValue(
+                        "openingDate",
+                        new DateTimePredicate(Operator.LESS_THAN, rangeEnd.format(ISO_LOCAL_DATE_TIME))
+                                .dateFormat("yyyy-MM-dd'T'HH:mm:ss"))
+        )
+
+
+        then: "the lobby asset should be retrieved"
+        assets.size() == 1
+        assets[0].id == lobby.id
+
+        when: "the lobby has an opening date and the date is equal to the filtering date"
+        rangeStart = LocalDateTime.ofInstant(Instant.ofEpochMilli(1517151600000), ZoneId.systemDefault()).minusHours(1) // 28/01/2018 @ 2:00pm (UTC)
+
+        assets = assetStorageService.findAll(
+                new AssetQuery()
+                        .tenant(new TenantPredicate(keycloakDemoSetup.masterTenant.id))
+                        .attributeValue(
+                        "openingDate",
+                        new DateTimePredicate(Operator.EQUALS, rangeStart.format(ISO_LOCAL_DATE_TIME))
+                                .dateFormat("yyyy-MM-dd'T'HH:mm:ss"))
+        )
+
+
+        then: "the lobby asset should be retrieved"
+        assets.size() == 1
+        assets[0].id == lobby.id
     }
 }

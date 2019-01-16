@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig",
+  "include": [
+    "./src",
+    "../../component/or-map/@types"
+  ],
+  "references": [
+    { "path": "../../component/or-map" }
+  ]
+}

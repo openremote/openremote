@@ -19,6 +19,7 @@
  */
 package org.openremote.app.client.map;
 
+import org.openremote.app.client.AppSecurity;
 import org.openremote.app.client.Environment;
 import org.openremote.app.client.assets.AssetBrowsingActivity;
 import org.openremote.app.client.assets.AssetMapper;
@@ -185,6 +186,11 @@ public class MapActivity extends AssetBrowsingActivity<MapPlace> implements MapV
         } else if (realmId != null) {
             // TODO: Tenant map not implemented
         }
+    }
+
+    @Override
+    public AppSecurity getSecurity() {
+        return environment.getApp().getSecurity();
     }
 
     protected void showAssetOnMap() {

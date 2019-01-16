@@ -123,12 +123,12 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         ).token
 
         and: "authenticated and anonymous console, rules and asset resources"
-        def authenticatedConsoleResource = getClientTarget(serverUri(serverPort), keycloakDemoSetup.customerATenant.realm, accessToken).proxy(ConsoleResource.class)
-        def authenticatedRulesResource = getClientTarget(serverUri(serverPort), keycloakDemoSetup.customerATenant.realm, accessToken).proxy(RulesResource.class)
-        def authenticatedAssetResource = getClientTarget(serverUri(serverPort), keycloakDemoSetup.customerATenant.realm, accessToken).proxy(AssetResource.class)
-        def anonymousConsoleResource = getClientTarget(serverUri(serverPort), keycloakDemoSetup.customerATenant.realm).proxy(ConsoleResource.class)
-        def anonymousRulesResource = getClientTarget(serverUri(serverPort), keycloakDemoSetup.customerATenant.realm).proxy(RulesResource.class)
-        def anonymousAssetResource = getClientTarget(serverUri(serverPort), keycloakDemoSetup.customerATenant.realm).proxy(AssetResource.class)
+        def authenticatedConsoleResource = getClientApiTarget(serverUri(serverPort), keycloakDemoSetup.customerATenant.realm, accessToken).proxy(ConsoleResource.class)
+        def authenticatedRulesResource = getClientApiTarget(serverUri(serverPort), keycloakDemoSetup.customerATenant.realm, accessToken).proxy(RulesResource.class)
+        def authenticatedAssetResource = getClientApiTarget(serverUri(serverPort), keycloakDemoSetup.customerATenant.realm, accessToken).proxy(AssetResource.class)
+        def anonymousConsoleResource = getClientApiTarget(serverUri(serverPort), keycloakDemoSetup.customerATenant.realm).proxy(ConsoleResource.class)
+        def anonymousRulesResource = getClientApiTarget(serverUri(serverPort), keycloakDemoSetup.customerATenant.realm).proxy(RulesResource.class)
+        def anonymousAssetResource = getClientApiTarget(serverUri(serverPort), keycloakDemoSetup.customerATenant.realm).proxy(AssetResource.class)
 
         when: "a console registers with an authenticated user"
         def consoleRegistration = new ConsoleRegistration(null,

@@ -19,6 +19,8 @@
  */
 package org.openremote.app.client.assets.asset;
 
+import org.openremote.app.client.AppSecurity;
+
 public interface AssetView extends AssetBaseView<AssetView.Presenter> {
 
     interface Presenter extends AssetBaseView.Presenter {

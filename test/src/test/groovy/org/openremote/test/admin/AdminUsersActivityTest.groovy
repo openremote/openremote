@@ -81,7 +81,7 @@ class AdminUsersActivityTest extends Specification implements ManagerContainerTr
         )
 
         and: "the server resources to call from client"
-        def clientTarget = getClientTarget(serverUri(serverPort), realm)
+        def clientTarget = getClientApiTarget(serverUri(serverPort), realm)
         def tenantResource = Stub(TenantResource) {
             _(*_) >> { callResourceProxy(container.JSON, clientTarget, getDelegate()) }
         }

@@ -306,7 +306,7 @@ public class AssetViewImpl extends Composite implements AssetView {
 
     @Override
     public void initialiseMap(ObjectValue mapOptions) {
-        mapWidget.initialise(mapOptions, () -> {
+        mapWidget.initialise(mapOptions, presenter.getSecurity(), () -> {
             mapWidget.addNavigationControl();
             if (presenter != null)
                 presenter.onMapReady();

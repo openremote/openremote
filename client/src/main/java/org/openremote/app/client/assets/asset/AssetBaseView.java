@@ -20,6 +20,7 @@
 package org.openremote.app.client.assets.asset;
 
 import com.google.gwt.user.client.ui.IsWidget;
+import org.openremote.app.client.AppSecurity;
 import org.openremote.app.client.assets.attributes.AttributeView;
 import org.openremote.app.client.assets.browser.BrowserTreeNode;
 import org.openremote.app.client.assets.navigation.AssetNavigation;
@@ -36,6 +37,8 @@ public interface AssetBaseView<P extends AssetBaseView.Presenter> extends IsWidg
     interface Presenter {
 
         void onMapReady();
+
+        AppSecurity getSecurity();
 
         void start();
 

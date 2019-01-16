@@ -32,6 +32,9 @@ import javax.ws.rs.core.MediaType;
 @JsType(isNative = true)
 public interface MapResource {
 
+    /**
+     * Returns style used to initialise Mapbox GL
+     */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @SuccessStatusCode(200)
@@ -39,6 +42,19 @@ public interface MapResource {
     @SuppressWarnings("unusable-by-js")
     ObjectValue getSettings(@BeanParam RequestParams requestParams);
 
+    /**
+     * Returns tileJSON object used to initialise Mapbox JS
+     */
+    @GET
+    @Path("js")
+    @Produces(MediaType.APPLICATION_JSON)
+    @SuccessStatusCode(200)
+    @SuppressWarnings("unusable-by-js")
+    ObjectValue getSettingsJs(@BeanParam RequestParams requestParams);
+
+    /**
+     * Gets vector tile data for Mapbox GL
+     */
     @GET
     @Produces("application/vnd.mapbox-vector-tile")
     @Path("tile/{zoom}/{column}/{row}")

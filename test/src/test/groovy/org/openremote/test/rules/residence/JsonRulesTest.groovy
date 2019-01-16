@@ -2,11 +2,9 @@ package org.openremote.test.rules.residence
 
 import com.google.firebase.messaging.Message
 import org.openremote.container.timer.TimerService
-import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.notification.NotificationService
 import org.openremote.manager.notification.PushNotificationHandler
-import org.openremote.manager.rules.JsonRulesBuilder
 import org.openremote.manager.rules.RulesEngine
 import org.openremote.manager.rules.RulesService
 import org.openremote.manager.rules.RulesetStorageService
@@ -109,8 +107,8 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         ).token
 
         and: "a console is registered by that user"
-        def authenticatedConsoleResource = getClientTarget(serverUri(serverPort), keycloakDemoSetup.customerATenant.realm, accessToken).proxy(ConsoleResource.class)
-        def authenticatedAssetResource = getClientTarget(serverUri(serverPort), keycloakDemoSetup.customerATenant.realm, accessToken).proxy(AssetResource.class)
+        def authenticatedConsoleResource = getClientApiTarget(serverUri(serverPort), keycloakDemoSetup.customerATenant.realm, accessToken).proxy(ConsoleResource.class)
+        def authenticatedAssetResource = getClientApiTarget(serverUri(serverPort), keycloakDemoSetup.customerATenant.realm, accessToken).proxy(AssetResource.class)
         def consoleRegistration = new ConsoleRegistration(null,
                 "Test Console",
                 "1.0",

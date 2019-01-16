@@ -1,0 +1,22 @@
+{
+  "compileOnSave": false,
+  "compilerOptions": {
+    "target": "es6",
+    "module": "esNext",
+    "moduleResolution": "node",
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "es6",
+      "scripthost",
+      "es2016.array.include"
+    ],
+    "noEmitOnError": true,
+    "strict": true,
+    "declaration": true,
+    "sourceMap": true,
+    "experimentalDecorators": true,
+    "allowSyntheticDefaultImports": true,
+    "composite": true
+  }
+}

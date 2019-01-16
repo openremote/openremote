@@ -1,0 +1,16 @@
+{
+  "options": {
+    "frontPage": true,
+    "paths": {
+      "root": "/deployment/manager/shared",
+      "fonts": "/server/fonts",
+      "styles": "/deployment/map",
+      "mbtiles": "/data"
+    }
+  },
+  "styles": {
+    "standard": {
+      "style": "mapsettings.json"
+    }
+  }
+}

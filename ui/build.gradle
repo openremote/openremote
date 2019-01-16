@@ -1,0 +1,24 @@
+apply plugin: 'idea'
+idea {
+    module {
+        excludeDirs += file("node_modules")
+    }
+}
+
+task build {
+    dependsOn yarnInstall
+    // Add dependency to openremote ui build
+    if (isCustomProject() && parent == rootProject) {
+        dependsOn resolveTask(":ui:build")
+    }
+    // Build components before anything else
+    dependsOn getTasksByName("build", true).findAll {it.path.contains(":ui:component")}
+}
+
+task installDist {
+    dependsOn build
+}
+
+task modelWatch {
+    dependsOn resolveTask(":ui:component:model:build"), resolveTask(":ui:component:rest:build")
+}

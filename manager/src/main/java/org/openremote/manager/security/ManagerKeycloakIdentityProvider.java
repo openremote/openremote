@@ -20,10 +20,7 @@
 package org.openremote.manager.security;
 
 import org.apache.camel.ExchangePattern;
-import org.keycloak.admin.client.resource.ClientResource;
-import org.keycloak.admin.client.resource.ClientsResource;
-import org.keycloak.admin.client.resource.RoleMappingResource;
-import org.keycloak.admin.client.resource.RolesResource;
+import org.keycloak.admin.client.resource.*;
 import org.keycloak.representations.idm.*;
 import org.openremote.container.Container;
 import org.openremote.container.message.MessageBrokerService;
@@ -34,6 +31,7 @@ import org.openremote.container.security.keycloak.KeycloakIdentityProvider;
 import org.openremote.container.timer.TimerService;
 import org.openremote.container.web.ClientRequestInfo;
 import org.openremote.container.web.WebService;
+import org.openremote.manager.apps.ConsoleAppService;
 import org.openremote.manager.event.ClientEventService;
 import org.openremote.model.Constants;
 import org.openremote.model.asset.Asset;
@@ -43,14 +41,14 @@ import org.openremote.model.query.UserQuery;
 import org.openremote.model.security.*;
 import org.openremote.model.util.TextUtil;
 
-import javax.persistence.Query;
 import javax.persistence.TypedQuery;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
-import java.sql.PreparedStatement;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.IntStream;
 
@@ -66,6 +64,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     final protected TimerService timerService;
     final protected MessageBrokerService messageBrokerService;
     final protected ClientEventService clientEventService;
+    final protected ConsoleAppService consoleAppService;
 
     public ManagerKeycloakIdentityProvider(UriBuilder externalServerUri, Container container) {
         super(KEYCLOAK_CLIENT_ID, externalServerUri, container);
@@ -75,22 +74,23 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
         this.persistenceService = container.getService(PersistenceService.class);
         this.messageBrokerService = container.getService(MessageBrokerService.class);
         this.clientEventService = container.getService(ClientEventService.class);
+        this.consoleAppService = container.getService(ConsoleAppService.class);
 
         enableAuthProxy(container.getService(WebService.class));
     }
 
     @Override
-    protected void addClientRedirectUris(String realm, List<String> redirectUrls) {
+    protected void addClientRedirectUris(String client, List<String> redirectUrls) {
         if (devMode) {
             // Allow any redirect URIs in dev mode
             redirectUrls.add("*");
         } else {
             // Callback URL used by Manager web client authentication, any relative path to "ourselves" is fine
-            String managerCallbackUrl = UriBuilder.fromUri("/").path(realm).path("*").build().toString();
-            redirectUrls.add(managerCallbackUrl);
+            String realmManagerCallbackUrl = UriBuilder.fromUri("/").path(client).path("*").build().toString();
+            redirectUrls.add(realmManagerCallbackUrl);
 
             // Callback URL used by Console web client authentication, any relative path to "ourselves" is fine
-            String consoleCallbackUrl = UriBuilder.fromUri("/console/").path(realm).path("*").build().toString();
+            String consoleCallbackUrl = UriBuilder.fromUri("/console/").path(client).path("*").build().toString();
             redirectUrls.add(consoleCallbackUrl);
         }
     }
@@ -132,7 +132,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
 
         return persistenceService.doReturningTransaction(entityManager -> {
             TypedQuery<User> query = entityManager.createQuery(sb.toString(), User.class);
-            IntStream.range(0, parameters.size()).forEach(i -> query.setParameter(i+1, parameters.get(i)));
+            IntStream.range(0, parameters.size()).forEach(i -> query.setParameter(i + 1, parameters.get(i)));
             List<User> users = query.getResultList();
             return users.toArray(new User[users.size()]);
         });
@@ -497,6 +497,37 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
         addDefaultRoles(clientResource.roles());
     }
 
+    protected ClientRepresentation createClientApplication(String realm, String clientId, String appName, boolean devMode) {
+        ClientRepresentation client = new ClientRepresentation();
+
+        client.setClientId(clientId);
+        client.setName(appName);
+        client.setPublicClient(true);
+
+        if (devMode) {
+            // We need direct access for integration tests
+            LOG.info("### Allowing direct access grants for client app '" + appName + "', this must NOT be used in production! ###");
+            client.setDirectAccessGrantsEnabled(true);
+
+            // Allow any web origin (this will add CORS headers to token requests etc.)
+            client.setWebOrigins(Collections.singletonList("*"));
+        }
+
+        List<String> redirectUris = new ArrayList<>();
+        try {
+            for (String consoleName : consoleAppService.getInstalled()) {
+                addClientRedirectUris(consoleName, redirectUris);
+            }
+        } catch (Exception exception) {
+            LOG.log(Level.WARNING, exception.getMessage(), exception);
+            addClientRedirectUris(realm, redirectUris);
+        }
+
+        client.setRedirectUris(redirectUris);
+
+        return client;
+    }
+
     protected void addDefaultRoles(RolesResource rolesResource) {
 
         for (ClientRole clientRole : ClientRole.values()) {
@@ -535,6 +566,56 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
         clientEventService.publishEvent(
             new AssetTreeModifiedEvent(timerService.getCurrentTimeMillis(), tenant.getId(), null)
         );
+    }
+
+    public String addLDAPConfiguration(ClientRequestInfo clientRequestInfo, String realm, ComponentRepresentation componentRepresentation) {
+        RealmResource realmResource = getRealms(clientRequestInfo)
+            .realm(realm);
+        Response response = realmResource.components().add(componentRepresentation);
+
+        if (!response.getStatusInfo().equals(Response.Status.CREATED)) {
+            throw new WebApplicationException(
+                Response.status(response.getStatus())
+                    .entity(response.getEntity())
+                    .build()
+            );
+        } else {
+            componentRepresentation = realmResource.components()
+                .query(componentRepresentation.getParentId(),
+                    componentRepresentation.getProviderType(),
+                    componentRepresentation.getName()).get(0);
+            response = syncUsers(clientRequestInfo, componentRepresentation.getId(), realm, "triggerFullSync");
+
+            if (!response.getStatusInfo().equals(Response.Status.OK)) {
+                throw new WebApplicationException(
+                    Response.status(response.getStatus())
+                        .entity(response.getEntity())
+                        .build()
+                );
+            }
+        }
+        return componentRepresentation.getId();
+    }
+
+    public String addLDAPMapper(ClientRequestInfo clientRequestInfo, String realm, ComponentRepresentation componentRepresentation) {
+        RealmResource realmResource = getRealms(clientRequestInfo)
+            .realm(realm);
+        Response response = realmResource.components().add(componentRepresentation);
+
+        if (!response.getStatusInfo().equals(Response.Status.CREATED)) {
+            throw new WebApplicationException(
+                Response.status(response.getStatus())
+                    .entity(response.getEntity())
+                    .build()
+            );
+        } else {
+            componentRepresentation = realmResource.components()
+                .query(componentRepresentation.getParentId(),
+                    componentRepresentation.getProviderType(),
+                    componentRepresentation.getName()).get(0);
+            realmResource.userStorage().syncMapperData(componentRepresentation.getParentId(), componentRepresentation.getId(), "fedToKeycloak");
+        }
+        return componentRepresentation.getId();
     }
 
     @Override

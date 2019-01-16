@@ -12,6 +12,7 @@ import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.asset.AssetUpdateProcessor;
 import org.openremote.manager.concurrent.ManagerExecutorService;
 import org.openremote.manager.security.ManagerIdentityService;
+import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetMeta;
@@ -71,7 +72,7 @@ public class AssetDatapointService implements ContainerService, AssetUpdateProce
         timerService = container.getService(TimerService.class);
         managerExecutorService = container.getService(ManagerExecutorService.class);
 
-        container.getService(WebService.class).getApiSingletons().add(
+        container.getService(ManagerWebService.class).getApiSingletons().add(
                 new AssetDatapointResourceImpl(
                         container.getService(TimerService.class),
                         container.getService(ManagerIdentityService.class),

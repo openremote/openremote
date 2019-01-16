@@ -1,0 +1,26 @@
+{
+  "name": "@openremote/rest",
+  "version": "1.0.0",
+  "description": "OpenRemote 3.x REST API",
+  "main": "dist/index.js",
+  "types": "src/index.ts",
+  "scripts": {
+    "build": "npx tsc",
+    "test": "echo \"No tests\" && exit 0"
+  },
+  "author": "OpenRemote",
+  "license": "AGPL-3.0-or-later",
+  "dependencies": {
+    "@openremote/core": "^1.0.0",
+    "@openremote/model": "^1.0.0",
+    "axios": "^0.18.0"
+  },
+  "devDependencies": {
+    "@types/es6-promise": "^3.3.0",
+    "tslint": "^5.11.0",
+    "typescript": "^3.1.6"
+  },
+  "files": [
+    "dist"
+  ]
+}

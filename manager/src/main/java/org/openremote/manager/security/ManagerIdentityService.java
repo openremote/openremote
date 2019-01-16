@@ -24,6 +24,7 @@ import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.IdentityService;
 import org.openremote.container.timer.TimerService;
 import org.openremote.container.web.WebService;
+import org.openremote.manager.web.ManagerWebService;
 
 import javax.persistence.EntityManager;
 import java.util.Locale;
@@ -41,10 +42,10 @@ public class ManagerIdentityService extends IdentityService {
         super.init(container);
         persistenceService = container.getService(PersistenceService.class);
 
-        container.getService(WebService.class).getApiSingletons().add(
+        container.getService(ManagerWebService.class).getApiSingletons().add(
             new TenantResourceImpl(container.getService(TimerService.class), this)
         );
-        container.getService(WebService.class).getApiSingletons().add(
+        container.getService(ManagerWebService.class).getApiSingletons().add(
             new UserResourceImpl(container.getService(TimerService.class), this)
         );
 

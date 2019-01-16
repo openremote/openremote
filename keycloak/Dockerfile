@@ -125,5 +125,3 @@ EXPOSE 8080
 
 ENTRYPOINT ["/opt/jboss/docker-entrypoint.sh"]
 CMD ["-b", "0.0.0.0"]
-
-ADD theme /opt/jboss/keycloak/themes/openremote

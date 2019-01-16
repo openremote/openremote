@@ -159,19 +159,25 @@ task gwtSuperDev(dependsOn: classes, type: JavaExec) {
 
 installDist {
     dependsOn resolveTask(":client:src:main:webapp:installDist")
+    into "${resolveProject(':deployment').projectDir}/manager/app/manager"
+}
+
+clean {
+    doLast {
+        delete "${resolveProject(':deployment').projectDir}/manager/app/manager"
+    }
 }
 
 distributions {
     main {
         contents {
             from("src/main/webapp") {
-                into "webapp"
-                exclude "gwt", "build.gradle", "bower.json"
+                exclude "gwt", "build.gradle", "package.json", "yarn.lock"
             }
             /* You can comment out this block to skip GWT compilation for fast testing the build
             */
             from(compileGwt.outputs) {
-                into "webapp/gwt"
+                into "gwt"
                 exclude "WEB-INF"
             }
         }

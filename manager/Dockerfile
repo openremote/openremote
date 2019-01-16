@@ -60,10 +60,10 @@ RUN /var/lib/dpkg/info/ca-certificates-java.postinst configure
 
 ENV JAVA_OPTS -Xmx1g
 
-ENV MANAGER_DOCROOT webapp
-ENV CONSOLES_DOCROOT /deployment/consoles
-ENV UI_DOCROOT /deployment/ui
-ENV LOGGING_CONFIG_FILE /deployment/logging.properties
+ENV APP_DOCROOT /deployment/manager/app
+ENV UI_DOCROOT /deployment/manager/ui
+ENV SHARED_DOCROOT /deployment/manager/shared
+ENV LOGGING_CONFIG_FILE /deployment/manager/logging.properties
 ENV MAP_TILES_PATH /deployment/map/mapdata.mbtiles
 ENV MAP_SETTINGS_PATH /deployment/map/mapsettings.json
 
@@ -77,6 +77,5 @@ ADD deployment /deployment
 RUN mkdir -p /deployment/extensions
 
 ADD lib /opt/app/lib
-ADD client /opt/app
 
-ENTRYPOINT java $JAVA_OPTS -cp /opt/app/lib/*:/deployment/extensions/* org.openremote.manager.Main
+ENTRYPOINT java $JAVA_OPTS -cp /opt/app/lib/*:/deployment/manager/extensions/* org.openremote.manager.Main

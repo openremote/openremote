@@ -1,0 +1,18 @@
+{
+  "name": "@openremote/core",
+  "version": "1.0.0",
+  "description": "OpenRemote 3.x Core",
+  "main": "dist/index.js",
+  "types": "src/index.ts",
+  "scripts": {
+    "build": "npx tsc",
+    "test": "echo \"No tests\" && exit 0"
+  },
+  "author": "OpenRemote",
+  "license": "AGPL-3.0-or-later",
+  "dependencies": {},
+  "devDependencies": {
+    "tslint": "^5.11.0",
+    "typescript": "^3.1.6"
+  }
+}

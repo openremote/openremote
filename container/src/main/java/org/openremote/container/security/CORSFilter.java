@@ -1,25 +1,151 @@
 package org.openremote.container.security;
 
+import io.undertow.util.StatusCodes;
+import org.jboss.resteasy.spi.CorsHeaders;
+import org.openremote.container.web.file.HttpFilter;
+import org.openremote.model.util.TextUtil;
+
+import javax.servlet.FilterChain;
+import javax.servlet.FilterConfig;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpServletResponseWrapper;
+import javax.servlet.http.HttpSession;
+import javax.ws.rs.HttpMethod;
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.logging.Logger;
 
-import javax.ws.rs.container.ContainerRequestContext;
-import javax.ws.rs.container.ContainerResponseContext;
-import javax.ws.rs.container.ContainerResponseFilter;
-import javax.ws.rs.ext.Provider;
-
-// TODO: use built-in resteasy CORS Filter, correctly configure origin
-@Provider
-public class CORSFilter implements ContainerResponseFilter {
+public class CORSFilter extends HttpFilter {
     private static final Logger LOG = Logger.getLogger(CORSFilter.class.getName());
+    protected boolean allowCredentials = true;
+    protected String allowedMethods;
+    protected String allowedHeaders;
+    protected String exposedHeaders;
+    protected int corsMaxAge = -1;
+    protected Set<String> allowedOrigins = new HashSet<String>();
+
+    public boolean isAllowCredentials() {
+        return allowCredentials;
+    }
+
+    public void setAllowCredentials(boolean allowCredentials) {
+        this.allowCredentials = allowCredentials;
+    }
+
+    public String getAllowedMethods() {
+        return allowedMethods;
+    }
+
+    public void setAllowedMethods(String allowedMethods) {
+        this.allowedMethods = allowedMethods;
+    }
+
+    public String getAllowedHeaders() {
+        return allowedHeaders;
+    }
+
+    public void setAllowedHeaders(String allowedHeaders) {
+        this.allowedHeaders = allowedHeaders;
+    }
+
+    public String getExposedHeaders() {
+        return exposedHeaders;
+    }
+
+    public void setExposedHeaders(String exposedHeaders) {
+        this.exposedHeaders = exposedHeaders;
+    }
+
+    public int getCorsMaxAge() {
+        return corsMaxAge;
+    }
+
+    public void setCorsMaxAge(int corsMaxAge) {
+        this.corsMaxAge = corsMaxAge;
+    }
+
+    public Set<String> getAllowedOrigins() {
+        return allowedOrigins;
+    }
+
+    public void setAllowedOrigins(Set<String> allowedOrigins) {
+        this.allowedOrigins = allowedOrigins;
+    }
+
     @Override
-    public void filter(final ContainerRequestContext requestContext,
-                       final ContainerResponseContext cres) throws IOException {
-        cres.getHeaders().add("Access-Control-Allow-Origin", "*");
-        cres.getHeaders().add("Access-Control-Allow-Headers", "origin, content-type, accept, authorization");
-        cres.getHeaders().add("Access-Control-Allow-Credentials", "true");
-        cres.getHeaders().add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, HEAD");
-        cres.getHeaders().add("Access-Control-Max-Age", "1209600");
+    public void init(FilterConfig filterConfig) throws ServletException {
+
+    }
+
+    @Override
+    public void doFilter(HttpServletRequest request, HttpServletResponse response, HttpSession session, FilterChain chain) throws ServletException, IOException {
+        String origin = request.getHeader(CorsHeaders.ORIGIN);
+        boolean isOptions = request.getMethod().equals(HttpMethod.OPTIONS);
+
+        if (origin == null) {
+            chain.doFilter(request, response);
+            return;
+        }
+
+        if (!originOk(origin)) {
+            response.sendError(StatusCodes.FORBIDDEN, "Origin not allowed");
+            return;
+        }
+
+        if (isOptions) {
+            response.setStatus(StatusCodes.OK);
+            response.setHeader(CorsHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, origin);
+            if (allowCredentials) {
+                response.setHeader(CorsHeaders.ACCESS_CONTROL_ALLOW_CREDENTIALS, "true");
+            }
+
+            String requestMethods = request.getHeader(CorsHeaders.ACCESS_CONTROL_REQUEST_METHOD);
+            if (!TextUtil.isNullOrEmpty(requestMethods)) {
+                if (allowedMethods != null)
+                {
+                    requestMethods = this.allowedMethods;
+                }
+                response.setHeader(CorsHeaders.ACCESS_CONTROL_ALLOW_METHODS, requestMethods);
+            }
+
+            String requestHeaders = request.getHeader(CorsHeaders.ACCESS_CONTROL_REQUEST_HEADERS);
+            if (!TextUtil.isNullOrEmpty(requestHeaders)) {
+                if (allowedHeaders != null)
+                {
+                    requestHeaders = this.allowedHeaders;
+                }
+                response.setHeader(CorsHeaders.ACCESS_CONTROL_ALLOW_HEADERS, requestHeaders);
+            }
+
+            if (corsMaxAge > -1)
+            {
+                response.setHeader(CorsHeaders.ACCESS_CONTROL_MAX_AGE, Integer.toString(corsMaxAge));
+            }
+        } else {
+            response.setHeader(CorsHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, origin);
+
+            if (allowCredentials) {
+                response.setHeader(CorsHeaders.ACCESS_CONTROL_ALLOW_CREDENTIALS, "true");
+            }
+
+            if (exposedHeaders != null) {
+                response.setHeader(CorsHeaders.ACCESS_CONTROL_EXPOSE_HEADERS, exposedHeaders);
+            }
+
+            chain.doFilter(request, response);
+        }
+    }
+
+    @Override
+    public void destroy() {
+
+    }
+
+    protected boolean originOk(String origin) {
+        return allowedOrigins.contains("*") || allowedOrigins.contains(origin);
     }
 
 }

@@ -335,7 +335,7 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
 
     @Override
     public void initialiseMap(ObjectValue mapOptions) {
-        mapWidget.initialise(mapOptions, () -> {
+        mapWidget.initialise(mapOptions, presenter.getSecurity(), () -> {
             mapWidget.addNavigationControl();
             mapWidget.setClickListener((lng, lat) -> {
                 presenter.onMapClicked(lng, lat);

@@ -21,6 +21,8 @@ out/
 .idea/
 
 bower_components/
+node_modules/
+yarn-error.log
 
 console/iOS/DerivedData
 console/iOS/Pods
@@ -33,3 +35,5 @@ manager/.factorypath
 deployment/proxy/
 deployment/postgresql/
 deployment/manager/openremote.log*
+deployment/manager/app/
+deployment/keycloak

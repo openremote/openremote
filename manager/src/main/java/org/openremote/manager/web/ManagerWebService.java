@@ -20,135 +20,303 @@
 package org.openremote.manager.web;
 
 import io.undertow.server.HttpHandler;
+import io.undertow.server.handlers.PathHandler;
+import io.undertow.server.handlers.RedirectHandler;
+import io.undertow.servlet.Servlets;
 import io.undertow.servlet.api.DeploymentInfo;
-import io.undertow.util.Headers;
-import io.undertow.util.StatusCodes;
+import io.undertow.servlet.api.ServletInfo;
+import io.undertow.util.HttpString;
+import org.jboss.resteasy.plugins.server.servlet.HttpServlet30Dispatcher;
+import org.jboss.resteasy.plugins.server.servlet.ResteasyContextParameters;
+import org.jboss.resteasy.spi.ResteasyDeployment;
 import org.openremote.container.Container;
 import org.openremote.container.security.IdentityService;
 import org.openremote.container.web.WebService;
-import org.openremote.model.Constants;
+import org.openremote.container.web.jsapi.JSAPIServlet;
 
+import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.UriBuilder;
+import java.net.URI;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.logging.Logger;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static io.undertow.util.RedirectBuilder.redirect;
+import static javax.ws.rs.core.Response.Status.NOT_FOUND;
+import static javax.ws.rs.core.UriBuilder.fromUri;
 import static org.openremote.container.util.MapAccess.getBoolean;
 import static org.openremote.container.util.MapAccess.getString;
+import static org.openremote.model.Constants.REQUEST_HEADER_REALM;
 
 public class ManagerWebService extends WebService {
 
-    public static final String MANAGER_DOCROOT = "MANAGER_DOCROOT";
-    public static final String MANAGER_DOCROOT_DEFAULT = "client/src/main/webapp";
-    public static final String CONSOLES_DOCROOT = "CONSOLES_DOCROOT";
-    public static final String CONSOLES_DOCROOT_DEFAULT = "deployment/manager/consoles";
     public static final String UI_DOCROOT = "UI_DOCROOT";
     public static final String UI_DOCROOT_DEFAULT = "deployment/manager/ui";
+    public static final String APP_DOCROOT = "APP_DOCROOT";
+    public static final String APP_DOCROOT_DEFAULT = "deployment/manager/app";
+    public static final String SHARED_DOCROOT = "SHARED_DOCROOT";
+    public static final String SHARED_DOCROOT_DEFAULT = "deployment/manager/shared";
     public static final String CONSOLE_USE_STATIC_BOWER_COMPONENTS = "CONSOLE_USE_STATIC_BOWER_COMPONENTS";
     public static final boolean CONSOLE_USE_STATIC_BOWER_COMPONENTS_DEFAULT = true;
-
-    public static final String MANAGER_PATH = "/static";
+    public static final String APP_DEFAULT = "APP_DEFAULT";
+    public static final String APP_DEFAULT_DEFAULT = "manager";
+    public static final String API_PATH = "/api";
+    public static final String JSAPI_PATH = "/jsapi";
+    public static final String STATIC_PATH = "/static";
+    public static final String SHARED_PATH = "/shared";
     public static final String CONSOLE_PATH = "/console";
     public static final String UI_PATH = "/ui";
-    public static final Pattern MANAGER_PATTERN = Pattern.compile(Pattern.quote(MANAGER_PATH) + "(/.*)?");
-    public static final Pattern CONSOLE_PATTERN = Pattern.compile(Pattern.quote(CONSOLE_PATH) + "(/.*)?");
-    public static final Pattern UI_PATTERN = Pattern.compile(Pattern.quote(UI_PATH) + "(/.*)?");
+    public static final String APP_PATH = "/app";
+    private static final Logger LOG = Logger.getLogger(ManagerWebService.class.getName());
+    protected static final Pattern PATTERN_REALM_SUB = Pattern.compile("/([a-zA-Z0-9\\-_]+)/(.*)");
 
-    protected Path managerDocRoot;
-    protected Path consolesDocRoot;
+    protected Path appDocRoot;
     protected Path uiDocRoot;
-    protected HttpHandler managerFileHandler;
+    protected Path sharedDocRoot;
+    protected Collection<Class<?>> apiClasses = new HashSet<>();
+    protected Collection<Object> apiSingletons = new HashSet<>();
 
     @Override
     public void init(Container container) throws Exception {
+        super.init(container);
+
         boolean devMode = container.isDevMode();
         IdentityService identityService = container.getService(IdentityService.class);
+        String defaultApp = getString(container.getConfig(), APP_DEFAULT, APP_DEFAULT_DEFAULT);
 
-        // Serve the Manager client files unsecured
-        managerDocRoot = Paths.get(getString(container.getConfig(), MANAGER_DOCROOT, MANAGER_DOCROOT_DEFAULT));
-        managerFileHandler = addDeployment(devMode, identityService, managerDocRoot, MANAGER_PATH);
-        addRoute(managerFileHandler, MANAGER_PATH, MANAGER_PATTERN);
+        ResteasyDeployment resteasyDeployment = createResteasyDeployment(container, getApiClasses(), getApiSingletons(), true);
+        // Serve REST API
+        HttpHandler apiHandler = createApiHandler(identityService, resteasyDeployment);
+        // Serve JavaScript API
+        // TODO: Remove this once all apps updated to new structure
+        HttpHandler jsApiHandler = createJsApiHandler(identityService, resteasyDeployment);
 
-        // Serve the Console client files unsecured
-        consolesDocRoot = Paths.get(getString(container.getConfig(), CONSOLES_DOCROOT, CONSOLES_DOCROOT_DEFAULT));
-        HttpHandler consoleHandler = addDeployment(devMode, identityService, consolesDocRoot, CONSOLE_PATH);
+        if (apiHandler != null) {
 
-        final boolean useStaticBowerComponents =
-            getBoolean(container.getConfig(), CONSOLE_USE_STATIC_BOWER_COMPONENTS, CONSOLE_USE_STATIC_BOWER_COMPONENTS_DEFAULT);
-        // Special case for Console client files: When certain files are requested, serve them from the /static/*
-        // resources already deployed in Manager. In other words: Console apps then can not have their own Polymer etc.
-        // resources but use same libraries as the platform.
-        String[] consoleStaticResources = {
-            "/bower_components/polymer/polymer.html",
-            "/bower_components/polymer/polymer-element.html",
-            "/bower_components/iron-flex-layout/iron-flex-layout.html",
-            "/bower_components/iron-flex-layout/iron-flex-layout-classes.html",
-            "/bower_components/chart.js/dist/Chart.js",
-            // TODO Add all the other stuff but Intl is many files, no idea how we deal with this... good approach?
-        };
-        addRoute(exchange -> {
-                if (useStaticBowerComponents) {
-                    for (String consoleStaticResource : consoleStaticResources) {
-                        if (exchange.getRequestPath().endsWith(consoleStaticResource)) {
-                            exchange.setStatusCode(StatusCodes.FOUND);
-                            exchange.getResponseHeaders().put(Headers.LOCATION, "/static" + consoleStaticResource);
-                            exchange.endExchange();
-                            return;
-                        }
-                    }
+            // Authenticating requests requires a realm, either we receive this in a header or
+            // we extract it (e.g. from request path segment) and set it as a header before
+            // processing the request
+            HttpHandler baseApiHandler = apiHandler;
+
+            apiHandler = exchange -> {
+
+                String path = exchange.getRelativePath().substring(API_PATH.length());
+                Matcher realmSubMatcher = PATTERN_REALM_SUB.matcher(path);
+
+                if (!realmSubMatcher.matches()) {
+                    exchange.setStatusCode(NOT_FOUND.getStatusCode());
+                    throw new WebApplicationException(NOT_FOUND);
                 }
-                consoleHandler.handleRequest(exchange);
-            }, CONSOLE_PATH, CONSOLE_PATTERN
-        );
 
-        // Serve the UI deployment files unsecured
+                // Extract realm from path and push it into REQUEST_HEADER_REALM header
+                String realm = realmSubMatcher.group(1);
+
+                // Move the realm from path segment to header
+                exchange.getRequestHeaders().put(HttpString.tryFromString(REQUEST_HEADER_REALM), realm);
+
+                URI url = fromUri(exchange.getRequestURL())
+                        .replacePath(realmSubMatcher.group(2))
+                        .build();
+                exchange.setRequestURI(url.toString(), true);
+                exchange.setRequestPath(url.getPath());
+                exchange.setRelativePath(url.getPath());
+
+                baseApiHandler.handleRequest(exchange);
+            };
+        }
+
+        // Serve deployment files unsecured (explicitly map deployment folders to request paths)
+        appDocRoot = Paths.get(getString(container.getConfig(), APP_DOCROOT, APP_DOCROOT_DEFAULT));
         uiDocRoot = Paths.get(getString(container.getConfig(), UI_DOCROOT, UI_DOCROOT_DEFAULT));
-        addRoute(addDeployment(devMode, identityService, uiDocRoot, UI_PATH), UI_PATH, UI_PATTERN);
+        sharedDocRoot = Paths.get(getString(container.getConfig(), SHARED_DOCROOT, SHARED_DOCROOT_DEFAULT));
+        HttpHandler uiFileHandler = createFileHandler(devMode, identityService, uiDocRoot, null);
+        HttpHandler sharedFileHandler = createFileHandler(devMode, identityService, sharedDocRoot, null);
+        HttpHandler appBaseFileHandler = Files.isDirectory(appDocRoot) ? createFileHandler(devMode, identityService, appDocRoot, null) : null;
 
-        super.init(container);
+        // Default app file handler to use index.html
+        HttpHandler appFileHandler = exchange -> {
+            if (exchange.getRelativePath().isEmpty() || "/".equals(exchange.getRelativePath())) {
+                exchange.setRelativePath("/index.html");
+            }
+            if (appBaseFileHandler != null) {
+                appBaseFileHandler.handleRequest(exchange);
+            }
+        };
+
+        // TODO: Remove this once GWT client is replaced
+        // Add a file handler for GWT source files in dev mode
+        if (container.isDevMode()) {
+            final HttpHandler baseGwtFileHandler = createFileHandler(devMode, identityService, Paths.get("client/src/main/webapp"), null);
+            final HttpHandler gwtFileHandler = exchange -> {
+                if (exchange.getRelativePath().isEmpty() || "/".equals(exchange.getRelativePath())) {
+                    exchange.setRelativePath("/index.html");
+                }
+                baseGwtFileHandler.handleRequest(exchange);
+            };
+            HttpHandler standardHandler = appFileHandler;
+
+            appFileHandler = exchange -> {
+                String path = exchange.getRelativePath();
+                if (path.startsWith("/manager")) {
+                    exchange.setRelativePath(path.substring(8));
+                    gwtFileHandler.handleRequest(exchange);
+                } else if (path.startsWith("/app/manager")) {
+                    exchange.setRelativePath(path.substring(12));
+                    gwtFileHandler.handleRequest(exchange);
+                } else {
+                    standardHandler.handleRequest(exchange);
+                }
+            };
+        }
+        HttpHandler finalAppFileHandler = appFileHandler;
+
+        // Serve deployment files
+        PathHandler deploymentHandler = new PathHandler(appFileHandler)
+                // TODO: Update this static file http handler to use shared folder in deployment
+                .addPrefixPath(STATIC_PATH, exchange -> {
+                    // TODO: Remove this horrible hack for crappy polymer 2.x NPM package relative import issue
+                    if (exchange.getRelativePath().startsWith("/node_modules/@polymer/shadycss")) {
+                        exchange.setRelativePath("/node_modules/@webcomponents/shadycss" + exchange.getRequestPath().substring(38));
+                        exchange.setRequestPath(STATIC_PATH + exchange.getRelativePath());
+                    }
+
+                    exchange.setRelativePath("/manager" + exchange.getRelativePath());
+                    finalAppFileHandler.handleRequest(exchange);
+                })
+                .addPrefixPath(APP_PATH, appFileHandler)
+                // TODO: Remove this path prefix at some point
+                .addPrefixPath(CONSOLE_PATH, appFileHandler)
+                .addPrefixPath(SHARED_PATH, sharedFileHandler)
+                .addPrefixPath(UI_PATH, uiFileHandler);
+
+        // TODO: Remove this once all apps updated to new structure
+        final boolean useStaticBowerComponents =
+                getBoolean(container.getConfig(), CONSOLE_USE_STATIC_BOWER_COMPONENTS, CONSOLE_USE_STATIC_BOWER_COMPONENTS_DEFAULT);
+        if (useStaticBowerComponents) {
+            deploymentHandler.addPrefixPath("/bower_components", exchange -> {
+                exchange.setRequestPath("/manager/bower_components" + exchange.getRequestPath());
+                finalAppFileHandler.handleRequest(exchange);
+            });
+        }
+
+
+        // Add all route handlers required by the manager in priority order
+
+        // Redirect / to default app
+        getRequestHandlers().add(
+                new RequestHandler(
+                        "Default app redirect",
+                        exchange -> exchange.getRequestPath().equals("/"),
+                        exchange -> {
+                            LOG.fine("Handling root request, redirecting client to default app");
+                            new RedirectHandler(redirect(exchange, "/" + defaultApp)).handleRequest(exchange);
+                        }));
+
+        if (jsApiHandler != null) {
+            getRequestHandlers().add(pathStartsWithHandler("REST JS API Handler", JSAPI_PATH, jsApiHandler));
+        }
+
+        if (apiHandler != null) {
+            getRequestHandlers().add(pathStartsWithHandler("REST API Handler", API_PATH, apiHandler));
+        }
+
+        // This will try and handle any request that makes it to this handler
+        getRequestHandlers().add(
+                new RequestHandler(
+                        "Deployment files",
+                        exchange -> true,
+                        deploymentHandler
+                )
+        );
     }
 
-    @Override
-    public String getDefaultRealm() {
-        return Constants.MASTER_REALM;
+    /**
+     * Add resource/provider/etc. classes to enable REST API
+     */
+    public Collection<Class<?>> getApiClasses() {
+        return apiClasses;
     }
 
-    @Override
-    protected HttpHandler getRealmIndexHandler() {
-        return managerFileHandler;
+    /**
+     * Add resource/provider/etc. singletons to enable REST API.
+     */
+    public Collection<Object> getApiSingletons() {
+        return apiSingletons;
     }
 
-    public Path getManagerDocRoot() {
-        return managerDocRoot;
-    }
-
-    public Path getConsolesDocRoot() {
-        return consolesDocRoot;
-    }
-
-    public Path getUiDocRoot() {
-        return uiDocRoot;
+    public Path getAppDocRoot() {
+        return appDocRoot;
     }
 
     public String getConsoleUrl(UriBuilder baseUri, String realm) {
         return baseUri.path(CONSOLE_PATH).path(realm).build().toString();
     }
 
-    protected HttpHandler addDeployment(boolean devMode, IdentityService identityService, Path filePath, String hostOnPath) {
-        DeploymentInfo deploymentInfo = ManagerFileServlet.createDeploymentInfo(devMode, hostOnPath, filePath, new String[0]);
+    protected HttpHandler createApiHandler(IdentityService identityService, ResteasyDeployment resteasyDeployment) {
+        if (resteasyDeployment == null)
+            return null;
+
+        ServletInfo restServlet = Servlets.servlet("RESTEasy Servlet", HttpServlet30Dispatcher.class)
+                .setAsyncSupported(true)
+                .setLoadOnStartup(1)
+                .addMapping("/*");
+
+        DeploymentInfo deploymentInfo = new DeploymentInfo()
+                .setDeploymentName("RESTEasy Deployment")
+                .setContextPath(API_PATH)
+                .addServletContextAttribute(ResteasyDeployment.class.getName(), resteasyDeployment)
+                .addServlet(restServlet)
+                .setClassLoader(Container.class.getClassLoader());
+
+        if (identityService != null) {
+            resteasyDeployment.setSecurityEnabled(true);
+        } else {
+            throw new RuntimeException("No identity service deployed, can't enable API security");
+        }
+
+        return addServletDeployment(identityService, deploymentInfo, resteasyDeployment.isSecurityEnabled());
+    }
+
+    protected HttpHandler createJsApiHandler(IdentityService identityService, ResteasyDeployment resteasyDeployment) {
+        if (resteasyDeployment == null)
+            return null;
+
+        ServletInfo jsApiServlet = Servlets.servlet("RESTEasy JS Servlet", JSAPIServlet.class)
+                .setAsyncSupported(true)
+                .setLoadOnStartup(1)
+                .addMapping("/*");
+
+        DeploymentInfo deploymentInfo = new DeploymentInfo()
+                .setDeploymentName("RESTEasy JS Deployment")
+                .setContextPath(JSAPI_PATH)
+                .addServlet(jsApiServlet)
+                .setClassLoader(Container.class.getClassLoader());
+
+        deploymentInfo.addServletContextAttribute(
+                ResteasyContextParameters.RESTEASY_DEPLOYMENTS,
+                new HashMap<String, ResteasyDeployment>() {{
+                    put("", resteasyDeployment);
+                }}
+        );
         return addServletDeployment(identityService, deploymentInfo, false);
     }
 
-    protected void addRoute(HttpHandler httpHandler, String hostOnPath, Pattern requestPattern) {
-        getPrefixRoutes().put(hostOnPath, ManagerFileServlet.wrapHandler(httpHandler, requestPattern));
+    public HttpHandler createFileHandler(boolean devMode, IdentityService identityService, Path filePath, String[] requiredRoles) {
+        requiredRoles = requiredRoles == null ? new String[0] : requiredRoles;
+        DeploymentInfo deploymentInfo = ManagerFileServlet.createDeploymentInfo(devMode, "", filePath, requiredRoles);
+        return addServletDeployment(identityService, deploymentInfo, requiredRoles.length != 0);
     }
 
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
-            "managerDocRoot=" + managerDocRoot +
-            ", consolesDocRoot=" + consolesDocRoot +
-            ", uiDocRoot=" + uiDocRoot +
-            '}';
+                "appDocRoot=" + appDocRoot +
+                '}';
     }
 }

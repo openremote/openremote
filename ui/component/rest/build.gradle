@@ -1,0 +1,57 @@
+apply plugin: "groovy"
+apply plugin: 'cz.habarta.typescript-generator'
+
+buildscript {
+    repositories {
+        mavenCentral()
+        jcenter()
+    }
+    dependencies {
+        classpath 'cz.habarta.typescript-generator:typescript-generator-gradle-plugin:2.10.466'
+    }
+}
+
+dependencies {
+    compile resolveProject(":model")
+    compile 'cz.habarta.typescript-generator:typescript-generator-core:2.9.456'
+}
+
+generateTypeScript {
+    jsonLibrary = "jackson2"
+    classPatterns = [
+            "org.openremote.model.**Resource"
+    ]
+    customTypeMappings = [
+            "org.openremote.model.value.ObjectValue:object",
+            "org.openremote.model.value.ArrayValue:Array<any>",
+            "org.openremote.model.value.NumberValue:number",
+            "org.openremote.model.value.StringValue:string",
+            "org.openremote.model.value.BooleanValue:boolean",
+            "org.openremote.model.value.Value:any"
+    ]
+    outputFile = "src/restclient.ts"
+    outputFileType = "implementationFile"
+    outputKind = "module"
+    mapEnum = cz.habarta.typescript.generator.EnumMapping.asEnum
+    jaxrsNamespacing = "perResource"
+    customTypeProcessor = "JaxRsClientOnlyProcessor"
+    importDeclarations = [
+            "import * as Model from \"@openremote/model\""
+    ]
+
+    extensionClasses = [
+            "AggregatedApiClient"
+    ]
+    extensions = [
+            "cz.habarta.typescript.generator.ext.AxiosClientExtension"
+    ]
+}
+
+clean {
+    doLast {
+        def dir = new File("${projectDir}/dist")
+        dir.deleteDir()
+    }
+}
+
+build.dependsOn generateTypeScript, npmBuild

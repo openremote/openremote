@@ -2,7 +2,7 @@
 <link rel="import" href="or-style.html">
 
 <!-- App services/dependencies -->
-<link rel="import" href="../../bower_components/iron-location/iron-query-params.html">
+<link rel="import" href="../../node_modules/@polymer/iron-location/iron-query-params.html">
 <link rel="import" href="or-busy-indicator.html">
 <link rel="import" href="or-error-view.html">
 <link rel="import" href="or-console.html">
@@ -437,7 +437,7 @@
                     }
                 );
 
-                requests.configure(this.hostConfiguration.protocol + "//" + this.hostConfiguration.host + "/" + this.tenantRealm);
+                requests.configure(this.hostConfiguration.protocol + "//" + this.hostConfiguration.host + "/api/" + this.tenantRealm);
 
                 this.set("requests", requests);
                 this.$.console.set("reguests", requests);

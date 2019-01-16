@@ -35,7 +35,6 @@ import org.keycloak.adapters.KeycloakDeploymentBuilder;
 import org.keycloak.admin.client.resource.RealmsResource;
 import org.keycloak.common.enums.SslRequired;
 import org.keycloak.representations.adapters.config.AdapterConfig;
-import org.keycloak.representations.idm.ClientRepresentation;
 import org.keycloak.representations.idm.PublishedRealmRepresentation;
 import org.keycloak.representations.idm.RealmRepresentation;
 import org.openremote.container.Container;
@@ -45,12 +44,11 @@ import org.openremote.container.web.ProxyWebClientBuilder;
 import org.openremote.container.web.WebClient;
 import org.openremote.container.web.WebService;
 
+import javax.ws.rs.HttpMethod;
 import javax.ws.rs.NotFoundException;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
@@ -62,6 +60,8 @@ import static javax.ws.rs.core.Response.Status.Family.SUCCESSFUL;
 import static org.openremote.container.util.MapAccess.getInteger;
 import static org.openremote.container.util.MapAccess.getString;
 import static org.openremote.container.web.WebClient.getTarget;
+import static org.openremote.container.web.WebService.pathStartsWithHandler;
+import static org.openremote.model.Constants.REQUEST_HEADER_REALM;
 
 public abstract class KeycloakIdentityProvider implements IdentityProvider {
 
@@ -163,7 +163,7 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
 
         keycloakConfigResolver = request -> {
             // The realm we authenticate against must be available as a request header
-            String realm = request.getHeader(WebService.REQUEST_HEADER_REALM);
+            String realm = request.getHeader(REQUEST_HEADER_REALM);
             if (realm == null || realm.length() == 0) {
                 LOG.fine("No realm in request, no authentication will be attempted: " + request.getURI());
                 return notAuthenticatedKeycloakDeployment;
@@ -226,6 +226,25 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
 
     public RealmsResource getRealms(String accessToken) {
         return getRealms(null, accessToken);
+    }
+
+    //There is a bug in {@link org.keycloak.admin.client.resource.UserStorageProviderResource#syncUsers} which misses the componentId as parameter
+    protected Response syncUsers(ClientRequestInfo clientRequestInfo, String componentId, String realm, String action) {
+        return getTarget(httpClient,
+            keycloakServiceUri.build(),
+            clientRequestInfo.getAccessToken(),
+            clientRequestInfo.getRemoteAddress(),
+            clientRequestInfo.getRemoteAddress() != null ? externalServerUri.build() : null)
+            .path("admin")
+            .path("realms")
+            .path(realm)
+            .path("user-storage")
+            .path(componentId)
+            .path("sync")
+            .queryParam("action", action)
+            .request()
+            .build(HttpMethod.POST)
+            .invoke();
     }
 
     /**
@@ -345,36 +364,17 @@ public abstract class KeycloakIdentityProvider implements IdentityProvider {
     protected void enableAuthProxy(WebService webService) {
         if (authProxyHandler == null)
             throw new IllegalStateException("Initialize this service first");
+
         LOG.info("Enabling auth reverse proxy (passing requests through to Keycloak) on web context: /" + KeycloakResource.KEYCLOAK_CONTEXT_PATH);
-        webService.getPrefixRoutes().put("/" + KeycloakResource.KEYCLOAK_CONTEXT_PATH, authProxyHandler);
-    }
-
-    protected ClientRepresentation createClientApplication(String realm, String clientId, String appName, boolean devMode) {
-        ClientRepresentation client = new ClientRepresentation();
-
-        client.setClientId(clientId);
-        client.setName(appName);
-        client.setPublicClient(true);
-
-        if (devMode) {
-            // We need direct access for integration tests
-            LOG.info("### Allowing direct access grants for client app '" + appName + "', this must NOT be used in production! ###");
-            client.setDirectAccessGrantsEnabled(true);
-
-            // Allow any web origin (this will add CORS headers to token requests etc.)
-            client.setWebOrigins(Collections.singletonList("*"));
-        }
-
-        List<String> redirectUris = new ArrayList<>();
-        addClientRedirectUris(realm, redirectUris);
-        client.setRedirectUris(redirectUris);
-
-        return client;
+        webService.getRequestHandlers().add(0, pathStartsWithHandler(
+                "Keycloak auth proxy",
+                "/" + KeycloakResource.KEYCLOAK_CONTEXT_PATH,
+                authProxyHandler));
     }
 
     /**
      * There must be _some_ valid redirect URIs for the application or authentication will not be possible.
      */
-    abstract protected void addClientRedirectUris(String realm, List<String> redirectUrls);
+    abstract protected void addClientRedirectUris(String client, List<String> redirectUrls);
 
 }

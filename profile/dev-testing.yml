@@ -22,7 +22,7 @@ services:
       dockerfile: dev.Dockerfile
     image: openremote/keycloak_dev:latest
     volumes:
-      - ../keycloak/theme:/opt/jboss/keycloak/themes/openremote
+      - ../ui/keycloak/themes/openremote:/opt/jboss/keycloak/themes/openremote
     depends_on:
       postgresql:
         condition: service_healthy

@@ -49,7 +49,8 @@ class AssetPublicQueryTest extends Specification implements ManagerContainerTrai
         keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
         assetStorageService = container.getService(AssetStorageService.class)
         persistenceService = container.getService(PersistenceService.class)
-        assetResource = getClientTarget(serverUri(serverPort), MASTER_REALM).proxy(AssetResource.class)
+        assetResource = getClientApiTarget(serverUri(serverPort), MASTER_REALM).proxy(AssetResource.class)
+        returnedAssets = new ArrayList<>()
         returnedAssets = new ArrayList<>()
 
         for (int i = 0; i < 10; i++) {

@@ -26,9 +26,9 @@
                  class$="layout vertical [[widgetStyle.SecondaryNav]] nav">
 
                 <template is="dom-repeat" id="appsList" items="[[apps]]">
-                    <div class$="navItem [[widgetStyle.SecondaryNavItem]] [[widgetStyle.Hyperlink]] [[item.active]]">
+                    <div class$="navItem [[widgetStyle.SecondaryNavItem]] [[widgetStyle.Hyperlink]] [[isActive(item)]]">
                         <div class$="[[icon('connectdevelop')]]"></div>
-                        <a on-click="onAppSelected">[[item.tenant.displayName]]</a>
+                        <a on-click="onAppSelected">[[item]]</a>
                     </div>
                 </template>
 
@@ -76,6 +76,13 @@
                     haveApps: {
                         type: Boolean,
                         computed: "computeHaveApps(apps)"
+                    },
+                    activeApp: {
+                        type: String
+                    },
+                    isActiveApp: {
+                        type: String,
+                        computed: "isActive(app)"
                     }
                 }
             }
@@ -107,23 +114,19 @@
             }
 
             onAppSelected(e) {
-                this.presenter.onAppSelected(e.model.item.tenant.realm);
+                this.activeApp = e.model.item;
+                this.presenter.onAppSelected(e.model.item);
             }
 
-            openAppUrl(realm, appUrl) {
-                // Select the open app in the list
-                if (this.$.appsList.items) {
-                    for (let item of this.$.appsList.items) {
-                        if (item.tenant.realm === realm) {
-                            item.active = "active";
-                        }
-                    }
-                }
-
+            openAppUrl(appName) {
                 // Show the app in an iframe
                 this.$.placeholder.style.display = "none";
-                this.$.appFrame.src = appUrl;
+                this.$.appFrame.src = appName;
                 this.$.appFrame.style.display = "inherit";
+            }
+
+            isActive(app) {
+                return app === this.activeApp ? "active" : ""
             }
         }
 

@@ -1,0 +1,10 @@
+task installDist(type: Copy) {
+    from "themes"
+    into "${resolveProject(':deployment').projectDir}/${projectDir.name}/themes"
+}
+
+task clean() {
+    doLast {
+        delete "${resolveProject(':deployment').projectDir}/${projectDir.name}"
+    }
+}

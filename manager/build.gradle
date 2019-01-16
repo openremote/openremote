@@ -20,6 +20,11 @@ dependencies {
     compile "org.simplejavamail:simple-java-mail:$simpleJavaMailVersion"
 }
 
+// Load version properties file and use same version as source code
+def props = new Properties()
+file("src/main/resources/system.properties").withInputStream { props.load(it) }
+version = props.get("version")
+
 jar {
     archivesBaseName = "openremote-${project.name}"
 }
@@ -30,13 +35,10 @@ distributions {
             from(project.projectDir) {
                 include("*Dockerfile")
             }
-            from(resolveTask(":client:installDist")) {
-                into "client"
-            }
             // Populate the /deployment directory in the Manager image
-            from(resolveProject(":deployment:manager").projectDir) {
+            from("${resolveProject(":deployment").projectDir}/manager") {
                 into "deployment"
-                exclude "**/build.gradle", "**/bower.json", "**/openremote.log*"
+                exclude "**/build.gradle", "**/package.json", "**/openremote.log*", "**/yarn.lock"
             }
         }
     }

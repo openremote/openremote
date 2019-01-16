@@ -1,0 +1,9 @@
+buildDir = "dist"
+
+task build {
+    dependsOn npmBuild
+}
+
+task clean() {
+    dependsOn npmClean
+}

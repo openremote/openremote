@@ -166,11 +166,13 @@ services:
       # Console applications can register for push notifications through FCM.
       # NOTIFICATION_FIREBASE_URL: https://fcm.googleapis.com/fcm/send
       # NOTIFICATION_FIREBASE_API_KEY = '...'
-      # FIREBASE_CONFIG_FILE = '/deployment/fcm.json'
+      # FIREBASE_CONFIG_FILE = '/deployment/manager/fcm.json'
 
-      # Custom location of the static console applications, each subdirectory must
-      # have the name of a realm to which the console app belongs.
-      # CONSOLES_DOCROOT: '/deployment/consoles'
+      # Custom location of the static applications.
+      # APP_DOCROOT: '/deployment/manager/app'
+      # SHARED_DOCROOT: '/deployment/manager/shared'
+      # Custom default app name to load when '/' is requested
+      # APP_DEFAULT: 'manager`
 
       # Disable HTTP redirects when a console application requests libraries which
       # are delivered and used on the platform. This is necessary if your console application
@@ -178,15 +180,22 @@ services:
       # which are by default served as static resources from the manager service.
       # CONSOLE_USE_STATIC_BOWER_COMPONENTS = 'false'
 
+      # Map related settings.
       # Provide a path to the map tiles database file (see https://openmaptiles.com/).
       # MAP_TILES_PATH: '/deployment/map/mapdata.mbtiles'
-
+      #
       # Override the map settings such as center location and zoom when opening the
       # manager's map, as well as other style details and colours.
       # MAP_SETTINGS_PATH: '/deployment/map/mapsettings.json'
+      #
+      # Set the tileserver host name and port; the manager will reverse proxy to this server
+      # to provider raster map tiles to frontend apps
+      # MAP_TILESERVER_HOST: null
+      # MAP_TILESERVER_PORT: 8082
+      # MAP_TILESERVER_REQUEST_TIMEOUT: 10000
 
       # Override logging.properties with a file of your choice.
-      # LOGGING_CONFIG_FILE: '/deployment/logging.properties'
+      # LOGGING_CONFIG_FILE: '/deployment/manager/logging.properties'
 
       # The number of threads and therefore background tasks that can be executed at the same
       # time. Used by scheduled, usually short-lived and non-blocking tasks, such as protocols
@@ -218,10 +227,6 @@ services:
       # expires, the native console app can no longer contact the service in the background (e.g. when
       # processing push notifications) and will therefore fail silently until the user logs in again.
       # IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES: 20160
-
-      # Location of the static manager (UI and API) resources, you don't need to override this
-      # unless you want to deploy a modified version of the Manager UI and JavaScript components.
-      # MANAGER_DOCROOT: 'client/src/main/webapp'
 
       # Configure the default max age for data points stored in the database (individual attributes can use a custom
       # value by using the DATA_POINTS_MAX_AGE_DAYS AssetMeta item).
@@ -324,3 +329,8 @@ services:
     logging:
         options:
             max-size: 10m
+
+  # Map tile server for serving raster tiles using mbtiles
+  map:
+    build: '../map'
+    image: openremote/tileserver-gl

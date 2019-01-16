@@ -1,0 +1,16 @@
+{
+  "name": "smarthome-example",
+  "version": "3.0.0",
+  "homepage": "http://openremote.com/",
+  "description": "OpenRemote SmartHome Example App",
+  "main": "index.html",
+  "author": "OpenRemote",
+  "license": "AGPL-3.0-or-later",
+  "ignore": [
+    "**/.*",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+  }
+}

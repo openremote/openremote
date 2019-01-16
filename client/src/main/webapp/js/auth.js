@@ -40,9 +40,9 @@ window.startKeycloakAuthentication = function (realm, successCallback, failureCa
 
 window.startBasicAuthentication = function (realm, successCallback, failureCallback, errorCallback) {
     Promise.all([
-        load.js("/static/bower_components/webcomponentsjs/webcomponents-lite.min.js"),
-        load.import("/static/bower_components/iron-flex-layout/iron-flex-layout-classes.html"),
-        load.css("/static/bower_components/font-awesome/css/font-awesome.css"),
+        load.js("/static/node_modules/webcomponentsjs/webcomponents-lite.min.js"),
+        load.import("/static/node_modules/@polymer/iron-flex-layout/iron-flex-layout-classes.html"),
+        load.css("/static/node_modules/font-awesome/css/font-awesome.css"),
 
         load.import("/static/css/style.html"),
         load.import("/static/css/theme.html")

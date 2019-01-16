@@ -19,9 +19,13 @@
  */
 package org.openremote.app.client.widget;
 
+import com.google.gwt.core.client.JavaScriptObject;
 import com.google.gwt.dom.client.Document;
 import com.google.gwt.user.client.ui.FlowPanel;
 import elemental2.dom.DomGlobal;
+import jsinterop.base.Any;
+import org.openremote.app.client.AppSecurity;
+import org.openremote.app.client.OpenRemoteApp;
 import org.openremote.app.client.interop.mapbox.*;
 import org.openremote.model.geo.GeoJSON;
 import org.openremote.model.geo.GeoJSONFeatureCollection;
@@ -151,8 +155,8 @@ public class MapWidget extends FlowPanel {
         return mapboxMap != null;
     }
 
-    public void initialise(ObjectValue mapOptions, Runnable onReady) {
-        if (mapOptions == null) {
+    public void initialise(ObjectValue mapSettings, AppSecurity security, Runnable onReady) {
+        if (mapSettings == null) {
             return;
         }
         LOG.fine("Initializing Mapbox map");
@@ -160,9 +164,22 @@ public class MapWidget extends FlowPanel {
             throw new IllegalStateException("Already initialized");
         }
 
+        ObjectValue mapOptions = Values.createObject();
+        mapOptions.put("style", mapSettings.deepCopy());
+        mapOptions.put("minZoom", mapSettings.getNumber("minZoom").orElse(0d));
+        mapOptions.put("maxZoom", mapSettings.getNumber("maxZoom").orElse(22d));
+        if (mapSettings.getArray("maxBounds").isPresent()) {
+            mapOptions.put("maxBounds", mapSettings.getArray("maxBounds").get());
+        }
+        if (mapSettings.getBoolean("boxZoom").isPresent()) {
+            mapOptions.put("boxZoom", mapSettings.getBoolean("boxZoom").get());
+        }
         mapOptions.put("container", hostElementId);
         mapOptions.put("attributionControl", true);
-        mapboxMap = new MapboxMap(mapOptions.asAny());
+        Any mapOptionsAny = mapOptions.asAny();
+        addAuthorization(mapOptionsAny, security);
+
+        mapboxMap = new MapboxMap(mapOptionsAny);
 
         mapboxMap.on(EventType.LOAD, eventData -> {
             initFeatureLayers();
@@ -272,4 +289,13 @@ public class MapWidget extends FlowPanel {
         sourceOptions.put("data", initialData);
         return sourceOptions;
     }
+
+    public static native void addAuthorization(Any mapOptions, AppSecurity security) /*-{
+        mapOptions.transformRequest = function(url, resourceType) {
+            return {
+                url: url,
+                headers: { 'Authorization': 'Bearer ' + security.keycloak.token }
+            }
+        }
+    }-*/;
 }

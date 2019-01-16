@@ -29,7 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
-import static org.openremote.container.web.WebService.REQUEST_HEADER_REALM;
+import static org.openremote.model.Constants.REQUEST_HEADER_REALM;
 
 public class FileServlet extends AbstractFileServlet {
 
@@ -118,7 +118,7 @@ public class FileServlet extends AbstractFileServlet {
 
         // Handle index.html and redirect /directory to /directory/
         if (file.isDirectory()) {
-            if (!request.getPathInfo().endsWith("/")) {
+            if (request.getPathInfo() == null || !request.getPathInfo().endsWith("/")) {
                 throw new RedirectException(request.getRequestURI() + "/");
             }
             file = new File(actualBase, relativePath + "/index.html");

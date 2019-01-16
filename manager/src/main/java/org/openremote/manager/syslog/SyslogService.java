@@ -25,6 +25,7 @@ import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.web.WebService;
 import org.openremote.manager.concurrent.ManagerExecutorService;
 import org.openremote.manager.event.ClientEventService;
+import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.syslog.SyslogConfig;
 import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.syslog.SyslogEvent;
@@ -76,8 +77,8 @@ public class SyslogService extends Handler implements ContainerService {
             });
         }
 
-        if (container.hasService(WebService.class)) {
-            container.getService(WebService.class).getApiSingletons().add(
+        if (container.hasService(ManagerWebService.class)) {
+            container.getService(ManagerWebService.class).getApiSingletons().add(
                 new SyslogResourceImpl(this)
             );
         }

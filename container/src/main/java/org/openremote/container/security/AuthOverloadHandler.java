@@ -26,12 +26,12 @@ import io.undertow.util.HttpString;
 import java.util.Deque;
 
 import static javax.ws.rs.core.HttpHeaders.AUTHORIZATION;
-import static org.openremote.container.web.WebService.REQUEST_HEADER_REALM;
+import static org.openremote.model.Constants.REQUEST_HEADER_REALM;
 
 /**
  * If a client can't set Authorization header (e.g. Javascript websocket API), use a request
  * parameter. This handler grabs the parameter and sets it as a regular header. This handler
- * will also grab {@link org.openremote.container.web.WebService#REQUEST_HEADER_REALM} as
+ * will also grab {@link org.openremote.model.Constants#REQUEST_HEADER_REALM} as
  * a request parameter and set it as a regular header.
  */
 public class AuthOverloadHandler implements HttpHandler {
