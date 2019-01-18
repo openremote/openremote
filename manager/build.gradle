@@ -36,7 +36,7 @@ distributions {
                 include("*Dockerfile")
             }
             // Populate the /deployment directory in the Manager image
-            from("${resolveProject(":deployment").projectDir}/manager") {
+            from("${resolveProject(":deployment").projectDir}") {
                 into "deployment"
                 exclude "**/build.gradle", "**/package.json", "**/openremote.log*", "**/yarn.lock"
             }
