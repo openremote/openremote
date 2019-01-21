@@ -21,7 +21,6 @@ package org.openremote.manager.system;
 
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
-import org.openremote.container.web.WebService;
 import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.system.HealthStatusProvider;
 import org.openremote.model.system.StatusResource;
@@ -54,7 +53,7 @@ public class HealthStatusService implements ContainerService {
         }
 
         container.getService(ManagerWebService.class).getApiSingletons().add(
-            new StatusResourceImpl(healthStatusProviderList)
+                new StatusResourceImpl(healthStatusProviderList)
         );
     }
 
@@ -64,7 +63,8 @@ public class HealthStatusService implements ContainerService {
             if (healthStatusProvider instanceof ContainerService) {
                 ((ContainerService) healthStatusProvider).start(container);
             }
-        }    }
+        }
+    }
 
     @Override
     public void stop(Container container) throws Exception {
