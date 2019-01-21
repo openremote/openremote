@@ -66,6 +66,11 @@ public class AssetDatapointService implements ContainerService, AssetUpdateProce
     protected ScheduledFuture dataPointsPurgeScheduledFuture;
 
     @Override
+    public int getPriority() {
+        return ContainerService.DEFAULT_PRIORITY;
+    }
+
+    @Override
     public void init(Container container) throws Exception {
         persistenceService = container.getService(PersistenceService.class);
         assetStorageService = container.getService(AssetStorageService.class);

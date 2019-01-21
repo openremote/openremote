@@ -30,6 +30,7 @@ import org.jboss.resteasy.plugins.server.servlet.HttpServlet30Dispatcher;
 import org.jboss.resteasy.plugins.server.servlet.ResteasyContextParameters;
 import org.jboss.resteasy.spi.ResteasyDeployment;
 import org.openremote.container.Container;
+import org.openremote.container.ContainerService;
 import org.openremote.container.security.IdentityService;
 import org.openremote.container.web.WebService;
 import org.openremote.container.web.jsapi.JSAPIServlet;
@@ -82,6 +83,13 @@ public class ManagerWebService extends WebService {
     protected Collection<Class<?>> apiClasses = new HashSet<>();
     protected Collection<Object> apiSingletons = new HashSet<>();
 
+    /**
+     * Start web service after other services.
+     */
+    @Override
+    public int getPriority() {
+        return Integer.MAX_VALUE - 1;
+    }
     @Override
     public void init(Container container) throws Exception {
         super.init(container);

@@ -59,6 +59,11 @@ public class SyslogService extends Handler implements ContainerService {
     protected ScheduledFuture deleteOldFuture;
 
     @Override
+    public int getPriority() {
+        return ContainerService.DEFAULT_PRIORITY;
+    }
+
+    @Override
     public void init(Container container) throws Exception {
         executorService = container.getService(ManagerExecutorService.class);
 

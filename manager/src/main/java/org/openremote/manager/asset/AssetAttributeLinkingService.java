@@ -91,6 +91,11 @@ public class AssetAttributeLinkingService implements ContainerService, AssetUpda
     protected AssetStorageService assetStorageService;
 
     @Override
+    public int getPriority() {
+        return ContainerService.DEFAULT_PRIORITY;
+    }
+
+    @Override
     public void init(Container container) throws Exception {
         assetProcessingService = container.getService(AssetProcessingService.class);
         assetStorageService = container.getService(AssetStorageService.class);

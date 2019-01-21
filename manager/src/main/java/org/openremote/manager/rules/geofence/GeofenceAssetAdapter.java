@@ -19,6 +19,7 @@
  */
 package org.openremote.manager.rules.geofence;
 
+import org.openremote.container.ContainerService;
 import org.openremote.manager.rules.RulesEngine;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.query.filter.LocationAttributePredicate;
@@ -47,12 +48,7 @@ import java.util.List;
  * geofence)</li>
  * </ul>
  */
-public interface GeofenceAssetAdapter {
-
-    /**
-     * Adapters with a higher priority are called first
-     */
-    int getPriority();
+public interface GeofenceAssetAdapter extends ContainerService {
 
     /**
      * Get the name of this adapter

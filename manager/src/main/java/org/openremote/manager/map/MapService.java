@@ -140,6 +140,11 @@ public class MapService implements ContainerService {
     }
 
     @Override
+    public int getPriority() {
+        return ContainerService.DEFAULT_PRIORITY;
+    }
+
+    @Override
     public void init(Container container) throws Exception {
 
         mapTilesPath = Paths.get(getString(container.getConfig(), MAP_TILES_PATH, MAP_TILES_PATH_DEFAULT));

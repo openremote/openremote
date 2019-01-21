@@ -22,6 +22,7 @@ package org.openremote.manager.rules.geofence;
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
+import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.message.MessageBrokerSetupService;
 import org.openremote.container.persistence.PersistenceEvent;
 import org.openremote.manager.asset.AssetStorageService;
@@ -68,7 +69,7 @@ import static org.openremote.model.syslog.SyslogCategory.RULES;
  * notification is sent to affected consoles/assets. Consoles can also manually request their geofences (e.g. on
  * startup)
  */
-public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements GeofenceAssetAdapter, ContainerService {
+public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements GeofenceAssetAdapter {
 
     private static final Logger LOG = SyslogCategory.getLogger(RULES, ORConsoleGeofenceAssetAdapter.class.getName());
     public static final String NAME = "ORConsole";
@@ -82,6 +83,11 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
     protected Map<String, String> consoleIdRealmMap;
     protected ScheduledFuture notifyAssetsScheduledFuture;
     protected Set<String> notifyAssets;
+
+    @Override
+    public int getPriority() {
+        return MessageBrokerSetupService.PRIORITY + 10;
+    }
 
     @Override
     public void init(Container container) throws Exception {
@@ -130,11 +136,6 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
                     processConsoleAssetChange(console, persistenceEvent);
                 }
             });
-    }
-
-    @Override
-    public int getPriority() {
-        return 0;
     }
 
     @Override

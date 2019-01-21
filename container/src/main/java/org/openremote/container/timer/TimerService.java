@@ -87,6 +87,11 @@ public class TimerService implements ContainerService {
     protected Clock clock;
 
     @Override
+    public int getPriority() {
+        return ContainerService.DEFAULT_PRIORITY;
+    }
+
+    @Override
     public void init(Container container) throws Exception {
         this.clock = Clock.valueOf(
             getString(container.getConfig(), TIMER_CLOCK_TYPE, TIMER_CLOCK_TYPE_DEFAULT)

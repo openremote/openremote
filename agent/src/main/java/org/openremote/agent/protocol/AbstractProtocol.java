@@ -23,6 +23,7 @@ import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.agent.protocol.filter.MessageFilter;
 import org.openremote.container.Container;
+import org.openremote.container.ContainerService;
 import org.openremote.container.concurrent.GlobalLock;
 import org.openremote.container.message.MessageBrokerContext;
 import org.openremote.container.message.MessageBrokerService;
@@ -107,7 +108,7 @@ public abstract class AbstractProtocol implements Protocol {
     }
 
     private static final Logger LOG = Logger.getLogger(AbstractProtocol.class.getName());
-
+    public static final int PRIORITY = ContainerService.DEFAULT_PRIORITY - 100;
     protected final Map<AttributeRef, AssetAttribute> linkedAttributes = new HashMap<>();
     protected final Map<AttributeRef, LinkedProtocolInfo> linkedProtocolConfigurations = new HashMap<>();
     protected final Map<AttributeRef, List<MessageFilter>> linkedAttributeFilters = new HashMap<>();
@@ -131,6 +132,11 @@ public abstract class AbstractProtocol implements Protocol {
                 null,
                 false)
         );
+    }
+
+    @Override
+    public int getPriority() {
+        return PRIORITY;
     }
 
     @Override
@@ -310,7 +316,7 @@ public abstract class AbstractProtocol implements Protocol {
 
     /**
      * Update the value of a linked attribute. Call this to publish new sensor values. This will apply any
-     * {@link MessageFilter}s that have been set for the {@link Attribute} against the {@link AttributeState#value}
+     * {@link MessageFilter}s that have been set for the {@link Attribute} against the {@link AttributeState#getValue}
      * before sending on the sensor queue.
      */
     @SuppressWarnings("unchecked")

@@ -96,17 +96,8 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
     public static final String RULE_EVENT_EXPIRES = "RULE_EVENT_EXPIRES";
     public static final String RULE_EVENT_EXPIRES_DEFAULT = "1h";
     private static final Logger LOG = Logger.getLogger(RulesService.class.getName());
-    protected static List<GeofenceAssetAdapter> geofenceAssetAdapters;
 
-    static {
-        geofenceAssetAdapters = new ArrayList<>();
-        ServiceLoader.load(GeofenceAssetAdapter.class).forEach(geofenceAssetAdapter -> {
-            LOG.fine("Adding GeofenceAssetAdapter: " + geofenceAssetAdapter.getClass().getName());
-            geofenceAssetAdapters.add(geofenceAssetAdapter);
-        });
-        geofenceAssetAdapters.sort(Comparator.comparingInt(GeofenceAssetAdapter::getPriority).reversed());
-    }
-
+    protected List<GeofenceAssetAdapter> geofenceAssetAdapters = new ArrayList<>();
     protected final Map<String, RulesEngine<TenantRuleset>> tenantEngines = new HashMap<>();
     protected final Map<String, RulesEngine<AssetRuleset>> assetEngines = new HashMap<>();
     protected TimerService timerService;
@@ -128,6 +119,11 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
     // here means we can quickly insert facts into newly started engines
     protected Set<AssetState> assetStates = new HashSet<>();
     protected String configEventExpires;
+
+    @Override
+    public int getPriority() {
+        return ContainerService.DEFAULT_PRIORITY;
+    }
 
     @Override
     public void init(Container container) throws Exception {
@@ -162,14 +158,13 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
             return false;
         });
 
-        // Init geofence adapters before registering this services camel routes; this allows adapters to know about
-        // asset persistence changes before the rule engines are updated.
-        for (GeofenceAssetAdapter geofenceAssetAdapter : geofenceAssetAdapters) {
-            if (geofenceAssetAdapter instanceof ContainerService) {
-                ((ContainerService) geofenceAssetAdapter).init(container);
-            }
-        }
+        ServiceLoader.load(GeofenceAssetAdapter.class).forEach(geofenceAssetAdapter -> {
+            LOG.fine("Adding GeofenceAssetAdapter: " + geofenceAssetAdapter.getClass().getName());
+            geofenceAssetAdapters.add(geofenceAssetAdapter);
+        });
 
+        geofenceAssetAdapters.addAll(container.getServices(GeofenceAssetAdapter.class));
+        geofenceAssetAdapters.sort(Comparator.comparingInt(GeofenceAssetAdapter::getPriority));
         container.getService(MessageBrokerSetupService.class).getContext().addRoutes(this);
         configEventExpires = getString(container.getConfig(), RULE_EVENT_EXPIRES, RULE_EVENT_EXPIRES_DEFAULT);
     }

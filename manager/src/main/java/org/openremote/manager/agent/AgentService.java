@@ -28,7 +28,6 @@ import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.message.MessageBrokerSetupService;
 import org.openremote.container.persistence.PersistenceEvent;
 import org.openremote.container.timer.TimerService;
-import org.openremote.container.web.WebService;
 import org.openremote.manager.asset.AssetProcessingException;
 import org.openremote.manager.asset.AssetProcessingService;
 import org.openremote.manager.asset.AssetStorageService;
@@ -85,7 +84,6 @@ import static org.openremote.model.util.TextUtil.isValidURN;
 public class AgentService extends RouteBuilder implements ContainerService, AssetUpdateProcessor, ProtocolAssetService {
 
     private static final Logger LOG = Logger.getLogger(AgentService.class.getName());
-
     protected TimerService timerService;
     protected ManagerIdentityService identityService;
     protected AssetProcessingService assetProcessingService;
@@ -98,6 +96,14 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
     protected LocalAgentConnector localAgentConnector;
     protected Map<String, Asset> agentMap;
 
+    /**
+     * It's important that {@link Protocol}s have a lower priority than this service so they are fully initialized
+     * before this service is started.
+     */
+    @Override
+    public int getPriority() {
+        return ContainerService.DEFAULT_PRIORITY;
+    }
 
     @Override
     public void init(Container container) throws Exception {

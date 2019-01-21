@@ -38,6 +38,11 @@ public class HealthStatusService implements ContainerService {
     protected List<HealthStatusProvider> healthStatusProviderList = new ArrayList<>();
 
     @Override
+    public int getPriority() {
+        return ContainerService.DEFAULT_PRIORITY;
+    }
+
+    @Override
     public void init(Container container) throws Exception {
 
         ServiceLoader.load(HealthStatusProvider.class).forEach(healthStatusProviderList::add);

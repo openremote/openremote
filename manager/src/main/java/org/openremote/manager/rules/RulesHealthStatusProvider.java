@@ -21,19 +21,24 @@ package org.openremote.manager.rules;
 
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
+import org.openremote.container.ContainerHealthStatusProvider;
 import org.openremote.model.rules.AssetRuleset;
 import org.openremote.model.rules.TenantRuleset;
-import org.openremote.model.system.HealthStatusProvider;
 import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.Values;
 
-public class RulesHealthStatusProvider implements HealthStatusProvider, ContainerService {
+public class RulesHealthStatusProvider implements ContainerHealthStatusProvider {
 
     public static final String NAME = "rules";
     public static final String VERSION = "1.0";
 
     protected RulesService rulesService;
+
+    @Override
+    public int getPriority() {
+        return ContainerService.DEFAULT_PRIORITY;
+    }
 
     @Override
     public void init(Container container) throws Exception {

@@ -52,6 +52,11 @@ public class SimulatorService extends RouteBuilder implements ContainerService {
     protected SimulatorProtocol simulatorProtocol;
 
     @Override
+    public int getPriority() {
+        return ContainerService.DEFAULT_PRIORITY;
+    }
+
+    @Override
     public void init(Container container) throws Exception {
         managerIdentityService = container.getService(ManagerIdentityService.class);
         assetStorageService = container.getService(AssetStorageService.class);

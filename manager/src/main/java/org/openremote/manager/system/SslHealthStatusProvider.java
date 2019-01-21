@@ -20,8 +20,8 @@
 package org.openremote.manager.system;
 
 import org.openremote.container.Container;
+import org.openremote.container.ContainerHealthStatusProvider;
 import org.openremote.container.ContainerService;
-import org.openremote.model.system.HealthStatusProvider;
 import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.Values;
@@ -31,8 +31,6 @@ import java.io.IOException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.time.Instant;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
 import java.util.Date;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -42,7 +40,7 @@ import static org.openremote.container.security.IdentityService.*;
 import static org.openremote.container.util.MapAccess.getBoolean;
 import static org.openremote.container.util.MapAccess.getInteger;
 
-public class SslHealthStatusProvider implements HealthStatusProvider, ContainerService, X509TrustManager {
+public class SslHealthStatusProvider implements ContainerHealthStatusProvider, X509TrustManager {
 
     public static final String NAME = "ssl";
     public static final String VERSION = "1.0";
@@ -51,6 +49,11 @@ public class SslHealthStatusProvider implements HealthStatusProvider, ContainerS
     protected String hostname;
     protected int port;
     protected SSLContext sslContext;
+
+    @Override
+    public int getPriority() {
+        return ContainerService.DEFAULT_PRIORITY;
+    }
 
     @Override
     public void init(Container container) throws Exception {

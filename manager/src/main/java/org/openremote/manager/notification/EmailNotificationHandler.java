@@ -20,6 +20,7 @@
 package org.openremote.manager.notification;
 
 import org.openremote.container.Container;
+import org.openremote.container.ContainerService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.model.AbstractValueHolder;
@@ -74,6 +75,11 @@ public class EmailNotificationHandler implements NotificationHandler {
             return size() > 1000;
         }
     };
+
+    @Override
+    public int getPriority() {
+        return ContainerService.DEFAULT_PRIORITY;
+    }
 
     @Override
     public void init(Container container) throws Exception {

@@ -2,36 +2,18 @@ package org.openremote.test
 
 import com.google.common.collect.Lists
 import org.apache.camel.spi.BrowsableEndpoint
-import org.openremote.agent.protocol.Protocol
 import org.openremote.container.Container
 import org.openremote.container.ContainerService
-import org.openremote.container.message.MessageBrokerService
 import org.openremote.container.message.MessageBrokerSetupService
 import org.openremote.container.security.keycloak.KeycloakIdentityProvider
 import org.openremote.container.timer.TimerService
-import org.openremote.manager.agent.AgentService
-import org.openremote.manager.apps.ConsoleAppService
-import org.openremote.manager.asset.AssetAttributeLinkingService
 import org.openremote.manager.asset.AssetProcessingService
-import org.openremote.manager.asset.AssetStorageService
-import org.openremote.manager.concurrent.ManagerExecutorService
-import org.openremote.manager.datapoint.AssetDatapointService
-import org.openremote.manager.event.ClientEventService
-import org.openremote.manager.i18n.I18NService
-import org.openremote.manager.map.MapService
-import org.openremote.manager.notification.NotificationService
-import org.openremote.manager.persistence.ManagerPersistenceService
-import org.openremote.manager.rules.RulesService
-import org.openremote.manager.rules.RulesetStorageService
-import org.openremote.manager.security.ManagerIdentityService
-import org.openremote.manager.setup.SetupService
-import org.openremote.manager.simulator.SimulatorService
-import org.openremote.manager.system.HealthStatusService
-import org.openremote.manager.web.ManagerWebService
 import spock.util.concurrent.PollingConditions
 
 import java.util.concurrent.TimeUnit
+import java.util.stream.Collectors
 
+import static java.util.stream.StreamSupport.stream
 import static org.openremote.container.security.IdentityService.IDENTITY_NETWORK_HOST
 import static org.openremote.container.security.IdentityService.IDENTITY_NETWORK_WEBSERVER_PORT
 import static org.openremote.container.timer.TimerService.Clock.PSEUDO
@@ -53,32 +35,38 @@ trait ManagerContainerTrait extends ContainerTrait {
 
     static Iterable<ContainerService> defaultServices(Iterable<ContainerService> additionalServices) {
         [
-                new TimerService(),
-                new ManagerExecutorService(),
-                new I18NService(),
-                new ManagerPersistenceService(),
-                new MessageBrokerSetupService(),
-                new ManagerIdentityService(),
-                new SetupService(),
-                new ClientEventService(),
-                new RulesetStorageService(),
-                new RulesService(),
-                new AssetStorageService(),
-                new AssetDatapointService(),
-                new AssetAttributeLinkingService(),
-                new AssetProcessingService(),
-                new MessageBrokerService(),
-                *Lists.newArrayList(ServiceLoader.load(Protocol.class)),
-                new AgentService(),
-                new SimulatorService(),
-                new MapService(),
-                new NotificationService(),
-                new ConsoleAppService(),
-                new ManagerWebService(),
-                new HealthStatusService(),
+                *stream(ServiceLoader.load(ContainerService.class).spliterator(), false)
+                        .sorted(Comparator.comparingInt({it.getPriority()}))
+                        .collect(Collectors.toList()),
                 *additionalServices
-
         ] as Iterable<ContainerService>
+//        [
+//                new TimerService(),
+//                new ManagerExecutorService(),
+//                new I18NService(),
+//                new ManagerPersistenceService(),
+//                new MessageBrokerSetupService(),
+//                new ManagerIdentityService(),
+//                new SetupService(),
+//                new ClientEventService(),
+//                new RulesetStorageService(),
+//                new RulesService(),
+//                new AssetStorageService(),
+//                new AssetDatapointService(),
+//                new AssetAttributeLinkingService(),
+//                new AssetProcessingService(),
+//                new MessageBrokerService(),
+//                *Lists.newArrayList(ServiceLoader.load(Protocol.class)),
+//                new AgentService(),
+//                new SimulatorService(),
+//                new MapService(),
+//                new NotificationService(),
+//                new ConsoleAppService(),
+//                new ManagerWebService(),
+//                new HealthStatusService(),
+//                *additionalServices
+//
+//        ] as Iterable<ContainerService>
     }
 
     static Iterable<ContainerService> defaultServices(ContainerService... additionalServices) {

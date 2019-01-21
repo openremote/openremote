@@ -20,7 +20,9 @@
 package org.openremote.container;
 
 /**
- * The {@link Container} is a registry of services, the order of services in a container is important.
+ * The {@link Container} is a registry of services, the order of services in a container is important and is determined
+ * by the {@link #getPriority} value; when starting the {@link Container} using the auto service discovery mechanism.
+ * If the container is started with an explicit list of services then the insertion order is used.
  * <p>
  * Service startup lifecycle:
  * </p>
@@ -37,19 +39,28 @@ package org.openremote.container;
  */
 public interface ContainerService {
 
+    int DEFAULT_PRIORITY = Integer.MAX_VALUE - 100;
+
     /**
-     * All services are initialized in the order they have been added to container.
+     * Gets the priority of this service which is used to determine initialization order when services are auto
+     * discovered; services with a lower priority are initialized and started first.
+     */
+    int getPriority();
+
+    /**
+     * All services are initialized in the order they have been added to the container (if container started with
+     * explicit list of services) otherwise they are initialized in order of {@link #getPriority}.
      */
     void init(Container container) throws Exception;
 
     /**
-     * After initialization, services are started in the order they have been added to container.
+     * After initialization, services are started in the order they have been added to the container (if container
+     * started with explicit list of services) otherwise they are started in order of {@link #getPriority}.
      */
     void start(Container container) throws Exception;
 
     /**
-     * When the container is shutting down, it stops all services in the reverse order they have been added to container.
+     * When the container is shutting down, it stops all services in the reverse order they were started.
      */
     void stop(Container container) throws Exception;
-
 }

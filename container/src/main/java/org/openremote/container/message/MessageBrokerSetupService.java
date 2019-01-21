@@ -43,11 +43,16 @@ import static org.openremote.container.util.MapAccess.getString;
 public class MessageBrokerSetupService implements ContainerService {
 
     public static final String WEBSOCKET_PATH = "/websocket";
-
     public static final String MESSAGE_SESSION_ALLOWED_ORIGIN = "MESSAGE_SESSION_ALLOWED_ORIGIN";
     public static final String MESSAGE_SESSION_ALLOWED_ORIGIN_DEFAULT = null;
+    public static final int PRIORITY = DEFAULT_PRIORITY - 100;
 
     protected MessageBrokerContext context;
+
+    @Override
+    public int getPriority() {
+        return PRIORITY;
+    }
 
     @Override
     public void init(Container container) throws Exception {

@@ -1,5 +1,6 @@
 package org.openremote.test.rules.residence
 
+import com.google.common.collect.Lists
 import com.google.firebase.messaging.Message
 import org.openremote.container.timer.TimerService
 import org.openremote.manager.asset.AssetStorageService
@@ -61,8 +62,9 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         and: "the container environment is started with the mock handler"
         def conditions = new PollingConditions(timeout: 10, delay: 1)
         def serverPort = findEphemeralPort()
-        def services = defaultServices()
-        ((NotificationService)services.find {it instanceof NotificationService}).notificationHandlerMap.put(PushNotificationMessage.TYPE, mockPushNotificationHandler)
+        def services = Lists.newArrayList(defaultServices())
+        services.removeIf {it instanceof PushNotificationHandler}
+        services.add(mockPushNotificationHandler)
         def container = startContainerWithPseudoClock(defaultConfig(serverPort), services)
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)

@@ -109,8 +109,12 @@ public class ClientEventService implements ContainerService {
     protected MessageBrokerService messageBrokerService;
     protected ManagerIdentityService identityService;
     protected EventSubscriptions eventSubscriptions;
-
     protected boolean stopped;
+
+    @Override
+    public int getPriority() {
+        return ContainerService.DEFAULT_PRIORITY;
+    }
 
     @Override
     public void init(Container container) throws Exception {

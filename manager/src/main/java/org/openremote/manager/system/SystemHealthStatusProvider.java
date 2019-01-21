@@ -19,7 +19,9 @@
  */
 package org.openremote.manager.system;
 
-import org.openremote.model.system.HealthStatusProvider;
+import org.openremote.container.Container;
+import org.openremote.container.ContainerHealthStatusProvider;
+import org.openremote.container.ContainerService;
 import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.Values;
@@ -27,10 +29,30 @@ import org.openremote.model.value.Values;
 import java.io.File;
 import java.lang.management.ManagementFactory;
 
-public class SystemHealthStatusProvider implements HealthStatusProvider {
+public class SystemHealthStatusProvider implements ContainerHealthStatusProvider {
 
     public static final String NAME = "system";
     public static final String VERSION = "1.0";
+
+    @Override
+    public int getPriority() {
+        return ContainerService.DEFAULT_PRIORITY;
+    }
+
+    @Override
+    public void init(Container container) throws Exception {
+
+    }
+
+    @Override
+    public void start(Container container) throws Exception {
+
+    }
+
+    @Override
+    public void stop(Container container) throws Exception {
+
+    }
 
     @Override
     public String getHealthStatusName() {

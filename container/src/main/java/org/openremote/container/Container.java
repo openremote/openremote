@@ -32,7 +32,9 @@ import org.openremote.container.util.LogUtil;
 import java.util.*;
 import java.util.logging.Handler;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
+import static java.util.stream.StreamSupport.stream;
 import static org.openremote.container.util.MapAccess.getBoolean;
 
 /**
@@ -75,6 +77,16 @@ public class Container {
 
     protected Thread waitingThread;
     protected final Map<Class<? extends ContainerService>, ContainerService> services = new LinkedHashMap<>();
+
+    /**
+     * Discover {@link ContainerService}s using {@link ServiceLoader}; services are then ordered by
+     * {@link ContainerService#getPriority}.
+     */
+    public Container() {
+        this(stream(ServiceLoader.load(ContainerService.class).spliterator(), false)
+                .sorted(Comparator.comparingInt(ContainerService::getPriority))
+                .collect(Collectors.toList()));
+    }
 
     public Container(ContainerService... services) {
         this(Arrays.asList(services));

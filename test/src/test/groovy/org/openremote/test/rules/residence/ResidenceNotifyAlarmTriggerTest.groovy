@@ -1,5 +1,6 @@
 package org.openremote.test.rules.residence
 
+import com.google.common.collect.Lists
 import com.google.firebase.messaging.Message
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
@@ -64,8 +65,9 @@ class ResidenceNotifyAlarmTriggerTest extends Specification implements ManagerCo
         and: "the container environment is started with the mock handler"
         def conditions = new PollingConditions(timeout: 20, delay: 1)
         def serverPort = findEphemeralPort()
-        def services = defaultServices()
-        ((NotificationService)services.find {it instanceof NotificationService}).notificationHandlerMap.put("push", mockPushNotificationHandler)
+        def services = Lists.newArrayList(defaultServices())
+        services.removeIf {it instanceof PushNotificationHandler}
+        services.add(mockPushNotificationHandler)
         def container = startContainerWithPseudoClock(defaultConfig(serverPort), services)
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def rulesService = container.getService(RulesService.class)

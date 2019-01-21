@@ -114,6 +114,11 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     protected ClientEventService clientEventService;
 
     @Override
+    public int getPriority() {
+        return ContainerService.DEFAULT_PRIORITY;
+    }
+
+    @Override
     public void init(Container container) throws Exception {
         timerService = container.getService(TimerService.class);
         persistenceService = container.getService(PersistenceService.class);

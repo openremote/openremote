@@ -65,24 +65,13 @@ import static org.openremote.model.notification.Notification.Source.*;
 public class NotificationService extends RouteBuilder implements ContainerService {
 
     public static final String NOTIFICATION_QUEUE = "seda://NotificationQueue?waitForTaskToComplete=IfReplyExpected&timeout=10000&purgeWhenStopping=true&discardIfNoConsumers=false&size=25000";
-    protected static final TemporalField WEEK_FIELD_ISO = WeekFields.of(Locale.FRANCE).dayOfWeek(); // Always use ISO for consistency
     private static final Logger LOG = Logger.getLogger(NotificationService.class.getName());
     protected TimerService timerService;
     protected PersistenceService persistenceService;
     protected AssetStorageService assetStorageService;
     protected ManagerIdentityService identityService;
     protected MessageBrokerService messageBrokerService;
-    protected Map<String, NotificationHandler> notificationHandlerMap;
-
-    public NotificationService() {
-        // Create notification handlers here to facilitate testing
-        notificationHandlerMap = new HashMap<>();
-        NotificationHandler pushHandler = new PushNotificationHandler();
-        NotificationHandler emailHandler = new EmailNotificationHandler();
-        notificationHandlerMap.put(pushHandler.getTypeName(), pushHandler);
-        notificationHandlerMap.put(emailHandler.getTypeName(), emailHandler);
-
-    }
+    protected Map<String, NotificationHandler> notificationHandlerMap = new HashMap<>();
 
     protected static Processor handleNotificationProcessingException(Logger logger) {
         return exchange -> {
@@ -118,6 +107,11 @@ public class NotificationService extends RouteBuilder implements ContainerServic
     }
 
     @Override
+    public int getPriority() {
+        return ContainerService.DEFAULT_PRIORITY;
+    }
+
+    @Override
     public void init(Container container) throws Exception {
         this.timerService = container.getService(TimerService.class);
         this.persistenceService = container.getService(PersistenceService.class);
@@ -126,10 +120,8 @@ public class NotificationService extends RouteBuilder implements ContainerServic
         this.messageBrokerService = container.getService(MessageBrokerService.class);
         container.getService(MessageBrokerSetupService.class).getContext().addRoutes(this);
 
-        // Init notification handlers
-        for (NotificationHandler handler : notificationHandlerMap.values()) {
-            handler.init(container);
-        }
+        container.getServices(NotificationHandler.class).forEach(notificationHandler ->
+                notificationHandlerMap.put(notificationHandler.getTypeName(), notificationHandler));
 
         container.getService(ManagerWebService.class).getApiSingletons().add(
                 new NotificationResourceImpl(this,
@@ -141,16 +133,12 @@ public class NotificationService extends RouteBuilder implements ContainerServic
 
     @Override
     public void start(Container container) throws Exception {
-        for (NotificationHandler handler : notificationHandlerMap.values()) {
-            handler.start(container);
-        }
+
     }
 
     @Override
     public void stop(Container container) throws Exception {
-        for (NotificationHandler handler : notificationHandlerMap.values()) {
-            handler.stop(container);
-        }
+
     }
 
     @Override

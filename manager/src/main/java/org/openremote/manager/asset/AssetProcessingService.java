@@ -140,6 +140,11 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
     final protected List<AssetUpdateProcessor> processors = new ArrayList<>();
 
     @Override
+    public int getPriority() {
+        return ContainerService.DEFAULT_PRIORITY;
+    }
+
+    @Override
     public void init(Container container) throws Exception {
         timerService = container.getService(TimerService.class);
         identityService = container.getService(ManagerIdentityService.class);

@@ -32,6 +32,11 @@ public class MessageBrokerService implements ContainerService {
     protected ProducerTemplate producerTemplate;
 
     @Override
+    public int getPriority() {
+        return ContainerService.DEFAULT_PRIORITY;
+    }
+
+    @Override
     public void init(Container container) throws Exception {
         MessageBrokerSetupService messageBrokerSetupService = container.getService(MessageBrokerSetupService.class);
         producerTemplate = messageBrokerSetupService.getContext().createProducerTemplate();

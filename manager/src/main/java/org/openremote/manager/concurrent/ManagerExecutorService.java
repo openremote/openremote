@@ -21,6 +21,7 @@ package org.openremote.manager.concurrent;
 
 import org.openremote.agent.protocol.ProtocolExecutorService;
 import org.openremote.container.Container;
+import org.openremote.container.ContainerService;
 import org.openremote.container.concurrent.ContainerScheduledExecutor;
 
 import java.util.Collection;
@@ -40,6 +41,11 @@ public class ManagerExecutorService implements ProtocolExecutorService {
     public static final int SCHEDULED_TASKS_THREADS_MAX_DEFAULT = Math.max(Runtime.getRuntime().availableProcessors(), 2);
 
     protected ScheduledExecutorService scheduledTasksExecutor;
+
+    @Override
+    public int getPriority() {
+        return ContainerService.DEFAULT_PRIORITY;
+    }
 
     @Override
     public void init(Container container) throws Exception {

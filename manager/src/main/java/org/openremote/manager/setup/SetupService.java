@@ -50,6 +50,11 @@ public class SetupService implements ContainerService {
     public SetupTasks setupTasks;
 
     @Override
+    public int getPriority() {
+        return ContainerService.DEFAULT_PRIORITY;
+    }
+
+    @Override
     public void init(Container container) throws Exception {
 
         if (!SetupTasks.isSetupWipeCleanInstall(container)) {

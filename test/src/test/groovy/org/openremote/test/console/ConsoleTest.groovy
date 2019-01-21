@@ -1,5 +1,6 @@
 package org.openremote.test.console
 
+import com.google.common.collect.Lists
 import com.google.firebase.messaging.Message
 import org.openremote.container.util.UniqueIdentifierGenerator
 import org.openremote.manager.asset.AssetStorageService
@@ -81,10 +82,9 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         def serverPort = findEphemeralPort()
         ORConsoleGeofenceAssetAdapter.NOTIFY_ASSETS_DEBOUNCE_MILLIS = 100
         ORConsoleGeofenceAssetAdapter.NOTIFY_ASSETS_BATCH_MILLIS = 200
-        def services = defaultServices()
-        ((NotificationService) services.find {
-            it instanceof NotificationService
-        }).notificationHandlerMap.put("push", mockPushNotificationHandler)
+        def services = Lists.newArrayList(defaultServices())
+        services.removeIf {it instanceof PushNotificationHandler}
+        services.add(mockPushNotificationHandler)
         def container = startContainer(defaultConfig(serverPort), services)
         def assetStorageService = container.getService(AssetStorageService.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)

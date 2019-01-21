@@ -21,11 +21,11 @@ package org.openremote.manager.agent;
 
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
+import org.openremote.container.ContainerHealthStatusProvider;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.asset.agent.ProtocolConfiguration;
 import org.openremote.model.attribute.AttributeRef;
-import org.openremote.model.system.HealthStatusProvider;
 import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.Values;
@@ -34,11 +34,16 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class AgentHealthStatusProvider implements HealthStatusProvider, ContainerService {
+public class AgentHealthStatusProvider implements ContainerHealthStatusProvider {
 
     public static final String NAME = "agents";
     public static final String VERSION = "1.0";
     protected AgentService agentService;
+
+    @Override
+    public int getPriority() {
+        return ContainerService.DEFAULT_PRIORITY;
+    }
 
     @Override
     public void init(Container container) throws Exception {

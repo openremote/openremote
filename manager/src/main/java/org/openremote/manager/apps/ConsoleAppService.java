@@ -37,6 +37,11 @@ public class ConsoleAppService implements ContainerService {
     protected ManagerIdentityService identityService;
 
     @Override
+    public int getPriority() {
+        return ContainerService.DEFAULT_PRIORITY;
+    }
+
+    @Override
     public void init(Container container) throws Exception {
 
         this.timerService = container.getService(TimerService.class);

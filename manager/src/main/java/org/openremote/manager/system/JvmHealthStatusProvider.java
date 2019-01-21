@@ -19,7 +19,9 @@
  */
 package org.openremote.manager.system;
 
-import org.openremote.model.system.HealthStatusProvider;
+import org.openremote.container.Container;
+import org.openremote.container.ContainerHealthStatusProvider;
+import org.openremote.container.ContainerService;
 import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.Values;
@@ -29,10 +31,30 @@ import java.lang.management.MemoryMXBean;
 import java.lang.management.RuntimeMXBean;
 import java.lang.management.ThreadMXBean;
 
-public class JvmHealthStatusProvider implements HealthStatusProvider {
+public class JvmHealthStatusProvider implements ContainerHealthStatusProvider {
 
     public static final String NAME = "jvm";
     public static final String VERSION = "1.0";
+
+    @Override
+    public int getPriority() {
+        return ContainerService.DEFAULT_PRIORITY;
+    }
+
+    @Override
+    public void init(Container container) throws Exception {
+
+    }
+
+    @Override
+    public void start(Container container) throws Exception {
+
+    }
+
+    @Override
+    public void stop(Container container) throws Exception {
+
+    }
 
     @Override
     public String getHealthStatusName() {

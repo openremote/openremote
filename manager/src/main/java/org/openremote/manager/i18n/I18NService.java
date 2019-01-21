@@ -11,6 +11,11 @@ public class I18NService implements ContainerService {
     protected ResourceBundle validationMessages;
 
     @Override
+    public int getPriority() {
+        return ContainerService.DEFAULT_PRIORITY;
+    }
+
+    @Override
     public void init(Container container) throws Exception {
         // TODO configurable per user session
         Locale.setDefault(Locale.US);

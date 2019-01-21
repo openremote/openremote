@@ -1,5 +1,5 @@
 /*
- * Copyright 2016, OpenRemote Inc.
+ * Copyright 2019, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -17,13 +17,10 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager;
+package org.openremote.container;
 
-import org.openremote.container.Container;
+import org.openremote.container.ContainerService;
+import org.openremote.model.system.HealthStatusProvider;
 
-public class Main {
-
-    public static void main(String[] args) throws Exception {
-        new Container().startBackground();
-    }
+public interface ContainerHealthStatusProvider extends HealthStatusProvider, ContainerService {
 }
