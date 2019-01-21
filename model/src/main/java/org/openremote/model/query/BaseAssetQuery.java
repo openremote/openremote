@@ -307,19 +307,19 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> {
 
                     predicateValue.getString("predicateType").ifPresent(predicateType -> {
                         switch (predicateType) {
-                            case "StringPredicate":
+                            case StringPredicate.name:
                                 attributePredicate.value = StringPredicate.fromObjectValue(predicateValue);
                                 break;
-                            case "BooleanPredicate":
+                            case BooleanPredicate.name:
                                 attributePredicate.value = BooleanPredicate.fromObjectValue(predicateValue);
                                 break;
-                            case "StringArrayPredicate":
+                            case StringArrayPredicate.name:
                                 attributePredicate.value = StringArrayPredicate.fromObjectValue(predicateValue);
                                 break;
-                            case "DateTimePredicate":
+                            case DateTimePredicate.name:
                                 attributePredicate.value = DateTimePredicate.fromObjectValue(predicateValue);
                                 break;
-                            case "NumberPredicate":
+                            case NumberPredicate.name:
                                 attributePredicate.value = NumberPredicate.fromObjectValue(predicateValue);
                                 break;
                         }
