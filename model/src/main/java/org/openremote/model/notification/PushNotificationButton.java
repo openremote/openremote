@@ -19,6 +19,8 @@
  */
 package org.openremote.model.notification;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Values;
 
@@ -30,7 +32,8 @@ public class PushNotificationButton {
     protected String title;
     protected PushNotificationAction action;
 
-    public PushNotificationButton(String title, PushNotificationAction action) {
+    @JsonCreator
+    public PushNotificationButton(@JsonProperty("title") String title, @JsonProperty("action") PushNotificationAction action) {
         this.title = title;
         this.action = action;
     }
