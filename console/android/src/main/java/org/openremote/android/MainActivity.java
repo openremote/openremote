@@ -534,7 +534,7 @@ public class MainActivity extends Activity {
                     String consoleId = data.getString("consoleId");
                     if (consoleId != null) {
                         ((MainActivity) activity).consoleId = consoleId;
-                        geofenceProvider.enable(MainActivity.this, String.format("%s/%s",
+                        geofenceProvider.enable(MainActivity.this, String.format("%s/api/%s",
                             getString(R.string.OR_BASE_SERVER),
                             getString(R.string.OR_REALM)),
                             consoleId, new GeofenceProvider.EnableCallback() {

@@ -82,7 +82,7 @@ open class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMess
                                 } else if action == Actions.providerEnable {
                                     if let data = postMessageDict[DefaultsKey.dataKey] as? [String: String] {
                                         if let consoleId = data[GeofenceProvider.consoleIdKey] {
-                                            geofenceProvider?.enable(baseUrl: "\(ORServer.baseUrl)\(ORServer.realm)", consoleId: consoleId,  callback: { enableData in
+                                            geofenceProvider?.enable(baseUrl: "\(ORServer.baseUrl)api/\(ORServer.realm)", consoleId: consoleId,  callback: { enableData in
                                                 self.sendData(data: enableData)
                                                 DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(3)) {
                                                     self.geofenceProvider?.fetchGeofences()

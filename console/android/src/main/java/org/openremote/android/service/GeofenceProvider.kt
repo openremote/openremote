@@ -128,7 +128,7 @@ class GeofenceProvider(val context: Context) : ActivityCompat.OnRequestPermissio
     }
 
     val version = "ORConsole"
-    val geofenceFetchEndpoint = "rules/geofences/"
+    val geofenceFetchEndpoint = "api/rules/geofences/"
 
     private val geofencingClient: GeofencingClient by lazy {
         LocationServices.getGeofencingClient(context)
