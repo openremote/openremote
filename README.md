@@ -24,7 +24,13 @@ Alternatively you can build the docker images locally, to do this please refer t
 docker-compose -p openremote -f profile/demo.yml up --build
 ```
 
-Once you have running docker containers you can Access the manager UI and API on https://localhost/ with username `admin` and password `secret`. Accept the 'insecure' self-signed SSL certificate.
+Once you have running docker containers you can Access the manager UI and API (you will have to accept the 'insecure' self-signed SSL certificate):
+
+```
+URL: https://localhost/ (https://192.168.99.100/ if using Docker Toolbox)
+Username: admin
+Password: secret
+```
                                                 
 The console app of `customerA` can be accessed on https://localhost/customerA/ with username `testuser3` and password `testuser3`.
 
