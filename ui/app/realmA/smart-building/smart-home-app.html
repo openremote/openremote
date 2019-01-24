@@ -3,19 +3,19 @@
 
 <!-- You can add other dependencies in package.json and then load them here -->
 
-<link rel="import" href="smart-home-component.html">
-<link rel="import" href="smart-home-style.html">
-<link rel="import" href="smart-home-header.html">
-<link rel="import" href="smart-home-body.html">
-<link rel="import" href="smart-home-scenes.html">
-<link rel="import" href="smart-home-energy.html">
-<link rel="import" href="smart-home-security.html">
-<link rel="import" href="smart-home-climate.html">
-<link rel="import" href="smart-home-settings.html">
+<link rel="import" href="smart-building-component.html">
+<link rel="import" href="smart-building-style.html">
+<link rel="import" href="smart-building-header.html">
+<link rel="import" href="smart-building-body.html">
+<link rel="import" href="smart-building-scenes.html">
+<link rel="import" href="smart-building-energy.html">
+<link rel="import" href="smart-building-security.html">
+<link rel="import" href="smart-building-climate.html">
+<link rel="import" href="smart-building-settings.html">
 
-<dom-module id="smart-home-app">
+<dom-module id="smart-building-app">
     <template>
-        <style include="smart-home-style">
+        <style include="smart-building-style">
             :host {
                 min-height: 100vh;
             }
@@ -23,7 +23,7 @@
 
         <app-location use-hash-as-path route="{{appLocation}}"></app-location>
 
-        <smart-home-header active-nav="[[view]]" hide-nav$="[[isActiveView(view, 'settings')]]">
+        <smart-building-header active-nav="[[view]]" hide-nav$="[[isActiveView(view, 'settings')]]">
 
             <template is="dom-if" if="[[!isActiveView(view, 'settings')]]">
                 <slot slot="leftItem"
@@ -55,35 +55,35 @@
                 </div>
             </template>
 
-        </smart-home-header>
+        </smart-building-header>
 
-        <smart-home-body>
+        <smart-building-body>
 
-            <smart-home-scenes hidden$="[[!isActiveView(view, 'scenes')]]"
-                               residence="[[residence]]"></smart-home-scenes>
+            <smart-building-scenes hidden$="[[!isActiveView(view, 'scenes')]]"
+                               residence="[[residence]]"></smart-building-scenes>
 
-            <smart-home-energy hidden$="[[!isActiveView(view, 'energy')]]"
+            <smart-building-energy hidden$="[[!isActiveView(view, 'energy')]]"
                                residence="[[residence]]"
-                               rooms="[[rooms]]"></smart-home-energy>
+                               rooms="[[rooms]]"></smart-building-energy>
 
-            <smart-home-security hidden$="[[!isActiveView(view, 'security')]]"
+            <smart-building-security hidden$="[[!isActiveView(view, 'security')]]"
                                  residence="[[residence]]"
-                                 rooms="[[rooms]]"></smart-home-security>
+                                 rooms="[[rooms]]"></smart-building-security>
 
-            <smart-home-climate hidden$="[[!isActiveView(view, 'climate')]]"
+            <smart-building-climate hidden$="[[!isActiveView(view, 'climate')]]"
                                 residence="[[residence]]"
-                                rooms="[[rooms]]"></smart-home-climate>
+                                rooms="[[rooms]]"></smart-building-climate>
 
-            <smart-home-settings hidden$="[[!isActiveView(view, 'settings')]]"
-                                 residence="[[residence]]"></smart-home-settings>
+            <smart-building-settings hidden$="[[!isActiveView(view, 'settings')]]"
+                                 residence="[[residence]]"></smart-building-settings>
 
-        </smart-home-body>
+        </smart-building-body>
     </template>
 
     <script>
-        class SmartHomeApp extends SmartHomeComponent {
+        class SmartBuildingApp extends SmartBuildingComponent {
             static get is() {
-                return "smart-home-app";
+                return "smart-building-app";
             }
 
             static get properties() {
@@ -182,7 +182,7 @@
             }
         }
 
-        defineAppElement(SmartHomeApp, SmartHomeApp.is, "SmartHomeApp");
+        defineAppElement(SmartBuildingApp, SmartBuildingApp.is, "SmartBuildingApp");
     </script>
 
 </dom-module>

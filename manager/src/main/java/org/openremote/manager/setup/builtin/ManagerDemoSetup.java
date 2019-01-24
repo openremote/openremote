@@ -23,10 +23,7 @@ import org.openremote.agent.protocol.simulator.SimulatorProtocol;
 import org.openremote.container.Container;
 import org.openremote.manager.security.UserConfiguration;
 import org.openremote.manager.setup.AbstractManagerSetup;
-import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.asset.AssetMeta;
-import org.openremote.model.asset.UserAsset;
+import org.openremote.model.asset.*;
 import org.openremote.model.attribute.*;
 import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.security.Tenant;
@@ -54,15 +51,17 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
     public static final int DEMO_RULE_STATES_APARTMENT_2 = 11;
     public static final int DEMO_RULE_STATES_APARTMENT_3 = 0;
     public static final int DEMO_RULE_STATES_SMART_OFFICE = 1;
-    public static final int DEMO_RULE_STATES_SMART_HOME = DEMO_RULE_STATES_APARTMENT_1 + DEMO_RULE_STATES_APARTMENT_2 + DEMO_RULE_STATES_APARTMENT_3;
-    public static final int DEMO_RULE_STATES_CUSTOMER_A = DEMO_RULE_STATES_SMART_HOME;
-    public static final int DEMO_RULE_STATES_GLOBAL = DEMO_RULE_STATES_CUSTOMER_A + DEMO_RULE_STATES_SMART_OFFICE;
+    public static final int DEMO_RULE_STATES_SMART_BUILDING = DEMO_RULE_STATES_APARTMENT_1 + DEMO_RULE_STATES_APARTMENT_2 + DEMO_RULE_STATES_APARTMENT_3;
+    public static final int DEMO_RULE_STATES_SMART_CITY = 65;
+    public static final int DEMO_RULE_STATES_CUSTOMER_A = DEMO_RULE_STATES_SMART_BUILDING;
+    public static final int DEMO_RULE_STATES_GLOBAL = DEMO_RULE_STATES_CUSTOMER_A + DEMO_RULE_STATES_SMART_OFFICE + DEMO_RULE_STATES_SMART_CITY;
     public static final int DEMO_RULE_STATES_APARTMENT_1_WITH_SCENES = DEMO_RULE_STATES_APARTMENT_1 + 28;
     public static final int DEMO_RULE_STATES_SMART_HOME_WITH_SCENES = DEMO_RULE_STATES_APARTMENT_1_WITH_SCENES + DEMO_RULE_STATES_APARTMENT_2 + DEMO_RULE_STATES_APARTMENT_3;
     public static final int DEMO_RULE_STATES_CUSTOMER_A_WITH_SCENES = DEMO_RULE_STATES_SMART_HOME_WITH_SCENES;
     public static final int DEMO_RULE_STATES_GLOBAL_WITH_SCENES = DEMO_RULE_STATES_CUSTOMER_A_WITH_SCENES;
     public static GeoJSONPoint SMART_OFFICE_LOCATION = new GeoJSONPoint(5.460315214821094, 51.44541688237109);
-    public static GeoJSONPoint SMART_HOME_LOCATION = new GeoJSONPoint(5.470945, 51.438000);
+    public static GeoJSONPoint SMART_BUILDING_LOCATION = new GeoJSONPoint(5.470945, 51.438000);
+    public static GeoJSONPoint SMART_CITY_LOCATION = new GeoJSONPoint(5.670945, 51.435000);
     public static final String agentProtocolConfigName = "simulator123";
     public static final String thingLightToggleAttributeName = "light1Toggle";
     final protected boolean importDemoScenes;
@@ -83,7 +82,11 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
     public String apartment2BathroomId;
     public String apartment3LivingroomId;
     public String masterRealmId;
-    public String customerARealmId;
+    public String realmATenantId;
+    public String realmBTenantId;
+    public String smartCityServiceAgentId;
+
+
 
     public ManagerDemoSetup(Container container, boolean importDemoScenes) {
         super(container);
@@ -95,16 +98,18 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
 
         KeycloakDemoSetup keycloakDemoSetup = setupService.getTaskOfType(KeycloakDemoSetup.class);
         Tenant masterTenant = keycloakDemoSetup.masterTenant;
-        Tenant customerATenant = keycloakDemoSetup.customerATenant;
+        Tenant realmATenant = keycloakDemoSetup.tenantA;
+        Tenant realmBTenant = keycloakDemoSetup.tenantB;
         masterRealmId = masterTenant.getId();
-        customerARealmId = customerATenant.getId();
+        realmATenantId = realmATenant.getId();
+        realmBTenantId = realmBTenant.getId();
 
         // ################################ Demo assets for 'master' realm ###################################
 
         ObjectValue locationValue = SMART_OFFICE_LOCATION.toValue();
 
         Asset smartOffice = new Asset();
-        smartOffice.setRealmId(masterTenant.getId());
+        smartOffice.setRealmId(masterRealmId);
         smartOffice.setName("Smart Office");
         smartOffice.setType(BUILDING);
         List<AssetAttribute> smartOfficeAttributes = Arrays.asList(
@@ -365,15 +370,15 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                                                      AttributeEvent.Source.SENSOR);
         });
 
-        // ################################ Demo assets for 'customerA' realm ###################################
+        // ################################ Demo assets for 'tenantA' realm ###################################
 
-        ObjectValue locationValueA = SMART_HOME_LOCATION.toValue();
+        ObjectValue locationValueA = SMART_BUILDING_LOCATION.toValue();
 
-        Asset smartHome = new Asset();
-        smartHome.setRealmId(customerATenant.getId());
-        smartHome.setName("Smart Home");
-        smartHome.setType(BUILDING);
-        smartHome.addAttributes(
+        Asset smartBuilding = new Asset();
+        smartBuilding.setRealmId(realmATenantId);
+        smartBuilding.setName("Smart Building");
+        smartBuilding.setType(BUILDING);
+        smartBuilding.addAttributes(
             new AssetAttribute(AttributeType.LOCATION, locationValueA),
             new AssetAttribute("geoStreet", STRING, Values.create("Wilhelminaplein 21C"))
                 .setMeta(
@@ -396,11 +401,11 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                     new MetaItem(ABOUT, Values.create("http://project-haystack.org/tag/geoCountry"))
                 )
         );
-        smartHome = assetStorageService.merge(smartHome);
-        smartHomeId = smartHome.getId();
+        smartBuilding = assetStorageService.merge(smartBuilding);
+        smartHomeId = smartBuilding.getId();
 
         // The "Apartment 1" is the demo apartment with complex scenes
-        Asset apartment1 = createDemoApartment(smartHome, "Apartment 1")
+        Asset apartment1 = createDemoApartment(smartBuilding, "Apartment 1")
             .addAttributes(new AssetAttribute(AttributeType.LOCATION, locationValueA));
         apartment1 = assetStorageService.merge(apartment1);
         apartment1Id = apartment1.getId();
@@ -522,7 +527,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
             apartment1 = assetStorageService.merge(apartment1);
         }
 
-        Asset apartment2 = new Asset("Apartment 2", RESIDENCE, smartHome);
+        Asset apartment2 = new Asset("Apartment 2", RESIDENCE, smartBuilding);
         apartment2.addAttributes(
             new AssetAttribute(AttributeType.LOCATION, locationValueA),
             new AssetAttribute("allLightsOffSwitch", AttributeValueType.BOOLEAN, Values.create(true))
@@ -619,7 +624,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         apartment2Bathroom = assetStorageService.merge(apartment2Bathroom);
         apartment2BathroomId = apartment2Bathroom.getId();
 
-        Asset apartment3 = new Asset("Apartment 3", RESIDENCE, smartHome)
+        Asset apartment3 = new Asset("Apartment 3", RESIDENCE, smartBuilding)
             .addAttributes(new AssetAttribute(AttributeType.LOCATION, locationValueA));
         apartment3 = assetStorageService.merge(apartment3);
         apartment3Id = apartment3.getId();
@@ -635,19 +640,19 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
 
         // ################################ Link demo users and assets ###################################
 
-        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.customerATenant.getId(),
+        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.tenantA.getId(),
                                                          keycloakDemoSetup.testuser3Id,
                                                          apartment1Id));
-        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.customerATenant.getId(),
+        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.tenantA.getId(),
                                                          keycloakDemoSetup.testuser3Id,
                                                          apartment1LivingroomId));
-        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.customerATenant.getId(),
+        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.tenantA.getId(),
                                                          keycloakDemoSetup.testuser3Id,
                                                          apartment1KitchenId));
-        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.customerATenant.getId(),
+        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.tenantA.getId(),
                                                          keycloakDemoSetup.testuser3Id,
                                                          apartment1HallwayId));
-        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.customerATenant.getId(),
+        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.tenantA.getId(),
                                                          keycloakDemoSetup.testuser3Id,
                                                          apartment2Id));
 
@@ -656,5 +661,100 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         UserConfiguration testuser3Config = identityService.getUserConfiguration(keycloakDemoSetup.testuser3Id);
         testuser3Config.setRestricted(true);
         testuser3Config = identityService.mergeUserConfiguration(testuser3Config);
+
+        // ################################ Realm B ###################################
+
+        ObjectValue locationValueB = SMART_CITY_LOCATION.toValue();
+
+
+        Asset smartCity = new Asset();
+        smartCity.setRealmId(realmBTenantId);
+        smartCity.setName("Smart City");
+        smartCity.setType(BUILDING);
+        smartCity.addAttributes(
+            new AssetAttribute(AttributeType.LOCATION, locationValueB),
+
+            new AssetAttribute("geoCity", STRING, Values.create("Eindhoven"))
+                .setMeta(
+                    new MetaItem(LABEL, Values.create("City")),
+                    new MetaItem(ABOUT, Values.create("http://project-haystack.org/tag/geoCity"))
+                ),
+            new AssetAttribute("geoCountry", STRING, Values.create("Netherlands"))
+                .setMeta(
+                    new MetaItem(LABEL, Values.create("Country")),
+                    new MetaItem(ABOUT, Values.create("http://project-haystack.org/tag/geoCountry"))
+                )
+        );
+        smartCity = assetStorageService.merge(smartCity);
+
+        Asset smartCityServiceAgent = new Asset("Service Agent (Simulator)", AGENT, smartCity);
+        smartCityServiceAgent.addAttributes(
+            initProtocolConfiguration(new AssetAttribute("citySimulator"), SimulatorProtocol.PROTOCOL_NAME)
+                .addMeta(
+                    new MetaItem(
+                        SimulatorProtocol.CONFIG_MODE,
+                        Values.create(SimulatorProtocol.Mode.WRITE_THROUGH_IMMEDIATE.toString())
+                    ))
+        );
+        smartCityServiceAgent = assetStorageService.merge(smartCityServiceAgent);
+        smartCityServiceAgentId = smartCityServiceAgent.getId();
+
+        // ################################ Realm B Area 1 ###################################
+
+        Asset assetArea1 = new Asset("Area 1", THING, smartCity);
+        assetArea1 = assetStorageService.merge(assetArea1);
+
+        Asset camera1Asset = createDemoCameraAsset("Camera1", assetArea1, () -> new MetaItem[]{
+            new MetaItem(AGENT_LINK, new AttributeRef(smartCityServiceAgentId, "citySimulator").toArrayValue()),
+            new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME))
+        });
+        camera1Asset = assetStorageService.merge(camera1Asset);
+
+        Asset microPhone1Asset = createDemoMicrophoneAsset("Microphone1", assetArea1, () -> new MetaItem[]{
+            new MetaItem(AGENT_LINK, new AttributeRef(smartCityServiceAgentId, "citySimulator").toArrayValue()),
+            new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME))
+        });
+        microPhone1Asset = assetStorageService.merge(microPhone1Asset);
+
+        Asset enviroment1Asset = createDemoEnviromentAsset("Enviroment1", assetArea1, () -> new MetaItem[]{
+            new MetaItem(AGENT_LINK, new AttributeRef(smartCityServiceAgentId, "citySimulator").toArrayValue()),
+            new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME))
+        });
+        enviroment1Asset = assetStorageService.merge(enviroment1Asset);
+
+        Asset light1Asset = createDemoLightAsset("Light1", assetArea1);
+        light1Asset = assetStorageService.merge(light1Asset);
+
+        // ################################ Realm B Area 2 ###################################
+
+        Asset assetArea2 = new Asset("Area 2", THING, smartCity);
+        assetArea2 = assetStorageService.merge(assetArea2);
+
+        Asset camera2Asset = createDemoCameraAsset("Camera2", assetArea2, () -> new MetaItem[]{
+            new MetaItem(AGENT_LINK, new AttributeRef(smartCityServiceAgentId, "citySimulator").toArrayValue()),
+            new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME))
+        });
+        camera2Asset = assetStorageService.merge(camera2Asset);
+
+        Asset enviroment2Asset = createDemoEnviromentAsset("Enviroment2", assetArea2, () -> new MetaItem[]{
+            new MetaItem(AGENT_LINK, new AttributeRef(smartCityServiceAgentId, "citySimulator").toArrayValue()),
+            new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME))
+        });
+        enviroment2Asset = assetStorageService.merge(enviroment2Asset);
+
+
+        // ################################ Realm B Area 3 ###################################
+
+        Asset assetArea3 = new Asset("Area 3", THING, smartCity);
+        assetArea3 = assetStorageService.merge(assetArea3);
+
+        Asset camera3Asset = createDemoCameraAsset("Camera3", assetArea3, () -> new MetaItem[]{
+            new MetaItem(AGENT_LINK, new AttributeRef(smartCityServiceAgentId, "citySimulator").toArrayValue()),
+            new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME))
+        });
+        camera3Asset = assetStorageService.merge(camera3Asset);
+
+        Asset light3Asset = createDemoLightAsset("Light3", assetArea3);
+        light3Asset = assetStorageService.merge(light3Asset);
     }
 }

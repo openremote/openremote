@@ -1,9 +1,9 @@
-<link rel="import" href="smart-home-component.html">
-<link rel="import" href="smart-home-style.html">
+<link rel="import" href="smart-building-component.html">
+<link rel="import" href="smart-building-style.html">
 
-<dom-module id="smart-home-header">
+<dom-module id="smart-building-header">
     <template>
-        <style include="smart-home-style">
+        <style include="smart-building-style">
 
             .header {
                 background-color: var(--theme-darkgrey);
@@ -66,9 +66,9 @@
     </template>
 
     <script>
-        class SmartHomeHeader extends SmartHomeComponent {
+        class SmartBuildingHeader extends SmartBuildingComponent {
             static get is() {
-                return "smart-home-header";
+                return "smart-building-header";
             }
 
             static get properties() {
@@ -95,7 +95,7 @@
             }
         }
 
-        defineAppElement(SmartHomeHeader, SmartHomeHeader.is, "SmartHomeHeader");
+        defineAppElement(SmartBuildingHeader, SmartBuildingHeader.is, "SmartBuildingHeader");
     </script>
 
 </dom-module>

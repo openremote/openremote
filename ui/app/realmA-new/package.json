@@ -1,5 +1,5 @@
 {
-  "name": "@openremote/app-customerA",
+  "name": "@openremote/app-tenantA",
   "version": "1.0.0",
   "description": "Built in demo console application",
   "private": true,

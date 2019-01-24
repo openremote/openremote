@@ -4,7 +4,6 @@ import com.google.common.collect.Lists
 import com.google.firebase.messaging.Message
 import org.openremote.container.timer.TimerService
 import org.openremote.manager.asset.AssetStorageService
-import org.openremote.manager.notification.NotificationService
 import org.openremote.manager.notification.PushNotificationHandler
 import org.openremote.manager.rules.RulesEngine
 import org.openremote.manager.rules.RulesService
@@ -21,7 +20,6 @@ import org.openremote.model.geo.GeoJSONPoint
 import org.openremote.model.notification.AbstractNotificationMessage
 import org.openremote.model.notification.Notification
 import org.openremote.model.notification.NotificationSendResult
-import org.openremote.model.notification.PushNotificationMessage
 import org.openremote.model.rules.Ruleset
 import org.openremote.model.rules.TenantRuleset
 import org.openremote.model.value.ObjectValue
@@ -72,12 +70,12 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         def rulesetStorageService = container.getService(RulesetStorageService.class)
         def timerService = container.getService(TimerService.class)
         def assetStorageService = container.getService(AssetStorageService.class)
-        RulesEngine customerAEngine
+        RulesEngine tenantAEngine
 
         and: "some rules"
         Ruleset ruleset = new TenantRuleset(
                 "Demo Apartment - All Lights Off",
-                keycloakDemoSetup.customerATenant.id,
+                keycloakDemoSetup.tenantA.id,
                 getClass().getResource("/org/openremote/test/rules/BasicJsonRules.json").text,
                 Ruleset.Lang.JSON
         )
@@ -85,10 +83,10 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         expect: "the rule engines to become available and be running with asset states inserted"
         conditions.eventually {
-            customerAEngine = rulesService.tenantEngines.get(keycloakDemoSetup.customerATenant.id)
-            assert customerAEngine != null
-            assert customerAEngine.isRunning()
-            assert customerAEngine.assetStates.size() == DEMO_RULE_STATES_CUSTOMER_A
+            tenantAEngine = rulesService.tenantEngines.get(keycloakDemoSetup.tenantA.id)
+            assert tenantAEngine != null
+            assert tenantAEngine.isRunning()
+            assert tenantAEngine.assetStates.size() == DEMO_RULE_STATES_CUSTOMER_A
         }
 
         and: "the room lights in an apartment to be on"
@@ -102,15 +100,15 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         when: "a user authenticates"
         def accessToken = authenticate(
                 container,
-                keycloakDemoSetup.customerATenant.realm,
+                keycloakDemoSetup.tenantA.realm,
                 KEYCLOAK_CLIENT_ID,
                 "testuser3",
                 "testuser3"
         ).token
 
         and: "a console is registered by that user"
-        def authenticatedConsoleResource = getClientApiTarget(serverUri(serverPort), keycloakDemoSetup.customerATenant.realm, accessToken).proxy(ConsoleResource.class)
-        def authenticatedAssetResource = getClientApiTarget(serverUri(serverPort), keycloakDemoSetup.customerATenant.realm, accessToken).proxy(AssetResource.class)
+        def authenticatedConsoleResource = getClientApiTarget(serverUri(serverPort), keycloakDemoSetup.tenantA.realm, accessToken).proxy(ConsoleResource.class)
+        def authenticatedAssetResource = getClientApiTarget(serverUri(serverPort), keycloakDemoSetup.tenantA.realm, accessToken).proxy(AssetResource.class)
         def consoleRegistration = new ConsoleRegistration(null,
                 "Test Console",
                 "1.0",
@@ -139,7 +137,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         assert consoleRegistration.id != null
 
         when: "the console location is set to the apartment"
-        authenticatedAssetResource.writeAttributeValue(null, consoleRegistration.id, LOCATION.name, ManagerDemoSetup.SMART_HOME_LOCATION.toValue().toJson())
+        authenticatedAssetResource.writeAttributeValue(null, consoleRegistration.id, LOCATION.name, ManagerDemoSetup.SMART_BUILDING_LOCATION.toValue().toJson())
 
         then: "the consoles location should have been updated"
         conditions.eventually {
@@ -149,16 +147,16 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
                 GeoJSONPoint.fromValue(it)
             }.orElse(null)
             assert assetLocation != null
-            assert assetLocation.x == ManagerDemoSetup.SMART_HOME_LOCATION.x
-            assert assetLocation.y == ManagerDemoSetup.SMART_HOME_LOCATION.y
-            assert assetLocation.z == ManagerDemoSetup.SMART_HOME_LOCATION.z
+            assert assetLocation.x == ManagerDemoSetup.SMART_BUILDING_LOCATION.x
+            assert assetLocation.y == ManagerDemoSetup.SMART_BUILDING_LOCATION.y
+            assert assetLocation.z == ManagerDemoSetup.SMART_BUILDING_LOCATION.z
         }
 
         then: "the console location asset state should be in the rule engine"
         conditions.eventually {
-            assert customerAEngine.assetStates.find {
+            assert tenantAEngine.assetStates.find {
                 it.id == consoleRegistration.id && it.value.flatMap { GeoJSONPoint.fromValue(it) }.map {
-                    it.x == ManagerDemoSetup.SMART_HOME_LOCATION.x && it.y == ManagerDemoSetup.SMART_HOME_LOCATION.y ? it : null
+                    it.x == ManagerDemoSetup.SMART_BUILDING_LOCATION.x && it.y == ManagerDemoSetup.SMART_BUILDING_LOCATION.y ? it : null
                 }.isPresent()
             } != null
         }
@@ -182,7 +180,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         and: "the rule reset fact should have been created"
         conditions.eventually {
-            assert customerAEngine.facts.getOptional("Test Rule_" + consoleRegistration.id + "_location").isPresent()
+            assert tenantAEngine.facts.getOptional("Test Rule_" + consoleRegistration.id + "_location").isPresent()
         }
 
         and: "after a few seconds the rule should not have fired again"
@@ -191,11 +189,11 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "the console device moves back inside the home geofence (as defined in the rule)"
-        authenticatedAssetResource.writeAttributeValue(null, consoleRegistration.id, LOCATION.name, ManagerDemoSetup.SMART_HOME_LOCATION.toValue().toJson())
+        authenticatedAssetResource.writeAttributeValue(null, consoleRegistration.id, LOCATION.name, ManagerDemoSetup.SMART_BUILDING_LOCATION.toValue().toJson())
 
         then: "the rule reset fact should be removed"
         conditions.eventually {
-            assert !customerAEngine.facts.getOptional("Test Rule_" + consoleRegistration.id + "_location").isPresent()
+            assert !tenantAEngine.facts.getOptional("Test Rule_" + consoleRegistration.id + "_location").isPresent()
         }
 
         when: "the console device moves outside the home geofence again (as defined in the rule)"

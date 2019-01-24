@@ -1,11 +1,11 @@
-<link rel="import" href="smart-home-component.html">
-<link rel="import" href="smart-home-style.html">
-<link rel="import" href="smart-home-section.html">
-<link rel="import" href="smart-home-smart.html">
+<link rel="import" href="smart-building-component.html">
+<link rel="import" href="smart-building-style.html">
+<link rel="import" href="smart-building-section.html">
+<link rel="import" href="smart-building-smart.html">
 
-<dom-module id="smart-home-energy">
+<dom-module id="smart-building-energy">
     <template>
-        <style include="smart-home-style">
+        <style include="smart-building-style">
 
             .smartSwitchItem {
                 margin: 10px 0;
@@ -29,12 +29,12 @@
 
         </style>
 
-        <smart-home-smart residence="[[residence]]"></smart-home-smart>
+        <smart-building-smart residence="[[residence]]"></smart-building-smart>
 
-        <smart-home-section>
+        <smart-building-section>
             <template is="dom-repeat" items="[[smartSwitches]]">
                 <div class="layout horizontal center smartSwitchItem">
-                    <div><img height="30" src="smart-home/img/home_on.png"/></div>
+                    <div><img height="30" src="smart-building/img/home_on.png"/></div>
                     <div class="flex layout horizontal smartSwitchLabel">
                         [[item.label]]
                     </div>
@@ -65,17 +65,17 @@
                     </template>
                 </div>
             </template>
-        </smart-home-section>
+        </smart-building-section>
 
         <!-- TODO This section is not functional, not bound to any assets
-        <smart-home-section>
+        <smart-building-section>
             <div class="layout horizontal center">
                 <div class="flex" style="position: relative; padding-left: 10px;">
                     <div style="position: absolute;">
                         <div style="position: relative; left: 40px; top: 65px;">12%</div>
                         <div style="position: relative; top: 65px; left: 41px; font-size: x-small;">[[localize('Green')]]</div>
                     </div>
-                    <img width="110" height="110" src="smart-home/img/home_large_energy.png"/>
+                    <img width="110" height="110" src="smart-building/img/home_large_energy.png"/>
                 </div>
                 <div class="layout vertical" style="font-size: smaller; margin-right: 5px;">
 
@@ -98,15 +98,15 @@
                     </div>
                 </div>
             </div>
-        </smart-home-section>
+        </smart-building-section>
         -->
 
     </template>
 
     <script>
-        class SmartHomeEnergy extends SmartHomeComponent {
+        class SmartBuildingEnergy extends SmartBuildingComponent {
             static get is() {
-                return "smart-home-energy";
+                return "smart-building-energy";
             }
 
             static get properties() {
@@ -225,7 +225,7 @@
 
         }
 
-        defineAppElement(SmartHomeEnergy, SmartHomeEnergy.is, "SmartHomeEnergy");
+        defineAppElement(SmartBuildingEnergy, SmartBuildingEnergy.is, "SmartBuildingEnergy");
     </script>
 
 </dom-module>

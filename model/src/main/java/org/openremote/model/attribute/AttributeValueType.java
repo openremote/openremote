@@ -97,6 +97,12 @@ public enum AttributeValueType {
         .map(array -> new ValidationFailure(ValueHolder.ValueFailureReason.VALUE_INVALID_COLOR_FORMAT))
     ),
 
+    SOUND_DB("file-sound-o", ValueType.NUMBER, value -> Values.getNumber(value)
+        .filter(n -> n < 0)
+        .map(n -> new ValidationFailure(ValueHolder.ValueFailureReason.VALUE_SOUND_OUT_OF_RANGE)),
+        new MetaItem(FORMAT, Values.create("%d dB"))
+    ),
+
     TEMPERATURE_CELCIUS("thermometer", ValueType.NUMBER, value -> Values.getNumber(value)
         .filter(n -> n < -273.15)
         .map(n -> new ValidationFailure(ValueHolder.ValueFailureReason.VALUE_TEMPERATURE_OUT_OF_RANGE)),

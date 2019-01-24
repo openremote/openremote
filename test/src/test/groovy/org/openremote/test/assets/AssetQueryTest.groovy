@@ -22,7 +22,6 @@ import spock.util.concurrent.PollingConditions
 import javax.persistence.EntityManager
 import java.time.Instant
 import java.time.LocalDateTime
-import java.time.ZoneId
 import java.time.ZoneOffset
 import java.util.function.Function
 
@@ -157,7 +156,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         then: "result should contain only ids, names and attribute names and label meta"
         assets.size() == 11
         assets[0].id == managerDemoSetup.smartHomeId
-        assets[0].name == "Smart Home"
+        assets[0].name == "Smart Building"
         assets[1].id == managerDemoSetup.apartment1Id
         assets[1].createdOn == null
         assets[1].name == "Apartment 1"
@@ -206,7 +205,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         asset.parentId == managerDemoSetup.smartHomeId
         asset.parentName == null
         asset.parentType == null
-        asset.realmId == keycloakDemoSetup.customerATenant.id
+        asset.realmId == keycloakDemoSetup.tenantA.id
         asset.tenantRealm == null
         asset.tenantDisplayName == null
         asset.path.length == 2
@@ -319,11 +318,11 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets.get(0).name == "Apartment 1"
         assets.get(0).wellKnownType == AssetType.RESIDENCE
         assets.get(0).parentId == managerDemoSetup.smartHomeId
-        assets.get(0).parentName == "Smart Home"
+        assets.get(0).parentName == "Smart Building"
         assets.get(0).parentType == AssetType.BUILDING.value
-        assets.get(0).realmId == keycloakDemoSetup.customerATenant.id
-        assets.get(0).tenantRealm == keycloakDemoSetup.customerATenant.realm
-        assets.get(0).tenantDisplayName == keycloakDemoSetup.customerATenant.displayName
+        assets.get(0).realmId == keycloakDemoSetup.tenantA.id
+        assets.get(0).tenantRealm == keycloakDemoSetup.tenantA.realm
+        assets.get(0).tenantDisplayName == keycloakDemoSetup.tenantA.displayName
         assets.get(0).path == null
         assets.get(0).attributesList.size() == 0
         assets.get(1).id == managerDemoSetup.apartment2Id
@@ -333,7 +332,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets = assetStorageService.findAll(
                 new AssetQuery()
                         .parent(new ParentPredicate(managerDemoSetup.smartHomeId))
-                        .tenant(new TenantPredicate(keycloakDemoSetup.customerATenant.id))
+                        .tenant(new TenantPredicate(keycloakDemoSetup.tenantA.id))
         )
 
         then: "result should match"
@@ -346,7 +345,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets = assetStorageService.findAll(
                 new AssetQuery()
                         .parent(new ParentPredicate(managerDemoSetup.smartHomeId))
-                        .tenant(new TenantPredicate(keycloakDemoSetup.customerATenant.id))
+                        .tenant(new TenantPredicate(keycloakDemoSetup.tenantA.id))
                         .orderBy(new OrderBy(NAME, true))
         )
 
@@ -437,9 +436,10 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         )
 
         then: "result should match"
-        assets.size() == 2
+        assets.size() == 3
         assets.get(0).id == managerDemoSetup.agentId
         assets.get(1).id == managerDemoSetup.apartment1ServiceAgentId
+        assets.get(2).id == managerDemoSetup.smartCityServiceAgentId
 
         when: "a query is executed"
         assets = assetStorageService.findAll(new AssetQuery()
@@ -586,9 +586,9 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         asset.parentId != null
         asset.parentName == "Apartment 1"
         asset.parentType == AssetType.RESIDENCE.getValue()
-        asset.realmId == keycloakDemoSetup.customerATenant.id
-        asset.tenantRealm == keycloakDemoSetup.customerATenant.realm
-        asset.tenantDisplayName == keycloakDemoSetup.customerATenant.displayName
+        asset.realmId == keycloakDemoSetup.tenantA.id
+        asset.tenantRealm == keycloakDemoSetup.tenantA.realm
+        asset.tenantDisplayName == keycloakDemoSetup.tenantA.displayName
         asset.path != null
         asset.getAttributesList().size() == 3
         asset.getAttribute("co2Level").isPresent()
@@ -614,9 +614,9 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         asset.parentId != null
         asset.parentName == "Apartment 1"
         asset.parentType == AssetType.RESIDENCE.getValue()
-        asset.realmId == keycloakDemoSetup.customerATenant.id
-        asset.tenantRealm == keycloakDemoSetup.customerATenant.realm
-        asset.tenantDisplayName == keycloakDemoSetup.customerATenant.displayName
+        asset.realmId == keycloakDemoSetup.tenantA.id
+        asset.tenantRealm == keycloakDemoSetup.tenantA.realm
+        asset.tenantDisplayName == keycloakDemoSetup.tenantA.displayName
         asset.path != null
         asset.getAttributesList().size() == 1
         asset.getAttribute("co2Level").isPresent()

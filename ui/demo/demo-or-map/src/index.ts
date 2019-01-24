@@ -9,5 +9,5 @@ openremote.init({
     autoLogin: true,
     keycloakUrl: "http://localhost:8080/auth",
     managerUrl: "http://localhost:8080",
-    realm: "customerA"
+    realm: "tenantA"
 });

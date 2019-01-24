@@ -25,7 +25,7 @@ rules.add()
     .name("Duplicate radial location predicate")
     .when(
     { facts ->
-        facts.matchFirstAssetState(new AssetQuery().attributes(new LocationAttributePredicate(new RadialGeofencePredicate(100, ManagerDemoSetup.SMART_HOME_LOCATION.y, ManagerDemoSetup.SMART_HOME_LOCATION.x)))).isPresent() &&
+        facts.matchFirstAssetState(new AssetQuery().attributes(new LocationAttributePredicate(new RadialGeofencePredicate(100, ManagerDemoSetup.SMART_BUILDING_LOCATION.y, ManagerDemoSetup.SMART_BUILDING_LOCATION.x)))).isPresent() &&
             !facts.matchFirst("DuplicateLocation").isPresent()
     })
     .then(

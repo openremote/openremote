@@ -28,7 +28,7 @@ rules.add()
         def consoleIds = facts.matchAssetState(new AssetQuery()
                 .type(AssetType.CONSOLE)
                 .attributes(new LocationAttributePredicate(
-                new RadialGeofencePredicate(100, ManagerDemoSetup.SMART_HOME_LOCATION.y, ManagerDemoSetup.SMART_HOME_LOCATION.x))))
+                new RadialGeofencePredicate(100, ManagerDemoSetup.SMART_BUILDING_LOCATION.y, ManagerDemoSetup.SMART_BUILDING_LOCATION.x))))
                 .filter({ !facts.getOptional("welcomeHome" + "_${it.id}").isPresent() })
                 .map({ it.id })
                 .collect()

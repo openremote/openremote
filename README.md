@@ -32,7 +32,7 @@ Username: admin
 Password: secret
 ```
                                                 
-The console app of `customerA` can be accessed on https://localhost/customerA/ with username `testuser3` and password `testuser3`.
+The console app of `tenantA` can be accessed on https://localhost/tenantA/ with username `testuser3` and password `testuser3`.
 
 Stop the stack and remove all unused data volumes (alternatively delete only the openremote volumes if you don't want all unused volumes to be removed) with:
 

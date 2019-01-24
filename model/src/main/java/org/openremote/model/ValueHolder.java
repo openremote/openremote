@@ -39,7 +39,8 @@ public interface ValueHolder {
         VALUE_INVALID_EMAIL_FORMAT,
         VALUE_INVALID,
         VALUE_MISMATCH,
-        VALUE_REQUIRED
+        VALUE_REQUIRED,
+        VALUE_SOUND_OUT_OF_RANGE
     }
 
     void clearValue();

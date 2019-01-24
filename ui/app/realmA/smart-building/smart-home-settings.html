@@ -1,12 +1,12 @@
-<link rel="import" href="smart-home-component.html">
-<link rel="import" href="smart-home-style.html">
-<link rel="import" href="smart-home-section.html">
-<link rel="import" href="smart-home-temperature-select.html">
+<link rel="import" href="smart-building-component.html">
+<link rel="import" href="smart-building-style.html">
+<link rel="import" href="smart-building-section.html">
+<link rel="import" href="smart-building-temperature-select.html">
 <link rel="import" href="/static/src/or-checkbox/or-checkbox.html">
 
-<dom-module id="smart-home-settings">
+<dom-module id="smart-building-settings">
     <template>
-        <style include="smart-home-style">
+        <style include="smart-building-style">
             .infoLabel {
                 font-size: smaller;
                 font-style: italic;
@@ -43,7 +43,7 @@
 
         </style>
 
-        <smart-home-section title="[[localize('Vacation')]]" collapsed>
+        <smart-building-section title="[[localize('Vacation')]]" collapsed>
             <div class="layout horizontal center" style="margin-bottom: 10px;">
                 <div class="flex">[[localize('On vacation until')]]</div>
                 <input class="or-Input or-InputDate"
@@ -53,9 +53,9 @@
                        value="[[vacationUntil]]"
                        on-input="onVacationUntilChange"/>
             </div>
-        </smart-home-section>
+        </smart-building-section>
 
-        <smart-home-section title="[[localize('Weekly Schedule')]]" collapsed>
+        <smart-building-section title="[[localize('Weekly Schedule')]]" collapsed>
             <div class="layout horizontal">
                 <div class="layout horizontal first row">
                     <div class="first field">[[localize('Scene')]]</div>
@@ -86,9 +86,9 @@
                     </template>
                 </div>
             </template>
-        </smart-home-section>
+        </smart-building-section>
 
-        <smart-home-section title="[[localize('Scene Configuration')]]" collapsed>
+        <smart-building-section title="[[localize('Scene Configuration')]]" collapsed>
             <div class="layout horizontal">
                 <div class="layout horizontal first row">
                     <div class="first field">[[localize('Alarm')]]</div>
@@ -130,25 +130,25 @@
                 <template is="dom-repeat" items="{{scenes}}" as="scene">
                     <div class="flex layout horizontal center-center row">
                         <div class="field">
-                            <smart-home-temperature-select
+                            <smart-building-temperature-select
                                     temperature="[[getSceneTemperature(residence.attributes, scene.name)]]"
                                     on-change="onSceneTemperatureChange"
-                                    temperature-format="%0f° C"></smart-home-temperature-select>
+                                    temperature-format="%0f° C"></smart-building-temperature-select>
                         </div>
                     </div>
                 </template>
             </div>
 
-        </smart-home-section>
+        </smart-building-section>
 
         <div class="layout horizontal center-center infoLabel">[[residence.name]]</div>
 
     </template>
 
     <script>
-        class SmartHomeSettings extends SmartHomeComponent {
+        class SmartBuildingSettings extends SmartBuildingComponent {
             static get is() {
-                return "smart-home-settings";
+                return "smart-building-settings";
             }
 
             static get properties() {
@@ -248,7 +248,7 @@
             }
         }
 
-        defineAppElement(SmartHomeSettings, SmartHomeSettings.is, "SmartHomeSettings");
+        defineAppElement(SmartBuildingSettings, SmartBuildingSettings.is, "SmartBuildingSettings");
     </script>
 
 </dom-module>

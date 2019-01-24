@@ -18,15 +18,15 @@ class BasicRulesImport {
     final Long globalRulesetId
     final Long globalRuleset2Id
     final Long masterRulesetId
-    final Long customerARulesetId
-    final Long customerBRulesetId
+    final Long tenantARulesetId
+    final Long tenantBRulesetId
     final Long apartment1RulesetId
     final Long apartment2RulesetId
     final Long apartment3RulesetId
 
     RulesEngine globalEngine
     RulesEngine masterEngine
-    RulesEngine customerAEngine
+    RulesEngine tenantAEngine
     RulesEngine apartment1Engine
     RulesEngine apartment2Engine
     RulesEngine apartment3Engine
@@ -59,21 +59,21 @@ class BasicRulesImport {
         masterRulesetId = rulesetStorageService.merge(ruleset).id
 
         ruleset = new TenantRuleset(
-                "Some customerA tenant demo rules",
-                keycloakDemoSetup.customerATenant.id,
+                "Some tenantA tenant demo rules",
+                keycloakDemoSetup.tenantA.id,
                 getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetStates.groovy").text,
                 GROOVY
         )
-        customerARulesetId = rulesetStorageService.merge(ruleset).id
+        tenantARulesetId = rulesetStorageService.merge(ruleset).id
 
         ruleset = new TenantRuleset(
-                "Some customerB tenant demo rules",
-                keycloakDemoSetup.customerBTenant.id,
+                "Some tenantB tenant demo rules",
+                keycloakDemoSetup.tenantB.id,
                 getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetStates.groovy").text,
                 GROOVY
         )
         ruleset.setEnabled(false)
-        customerBRulesetId = rulesetStorageService.merge(ruleset).id
+        tenantBRulesetId = rulesetStorageService.merge(ruleset).id
 
         ruleset = new AssetRuleset(
                 "Some apartment 1 demo rules",
@@ -120,15 +120,15 @@ class BasicRulesImport {
         assert masterEngine.deployments.size() == 1
         assert masterEngine.deployments.values().iterator().next().name == "Some master tenant demo rules"
         assert masterEngine.deployments.values().iterator().next().status == DEPLOYED
-        customerAEngine = rulesService.tenantEngines.get(keycloakDemoSetup.customerATenant.id)
-        assert customerAEngine != null
-        customerAEngine.disableTemporaryFactExpiration = true
-        assert customerAEngine.isRunning()
-        assert customerAEngine.deployments.size() == 1
-        assert customerAEngine.deployments.values().iterator().next().name == "Some customerA tenant demo rules"
-        assert customerAEngine.deployments.values().iterator().next().status == DEPLOYED
-        def customerBEngine = rulesService.tenantEngines.get(keycloakDemoSetup.customerBTenant.id)
-        assert customerBEngine == null
+        tenantAEngine = rulesService.tenantEngines.get(keycloakDemoSetup.tenantA.id)
+        assert tenantAEngine != null
+        tenantAEngine.disableTemporaryFactExpiration = true
+        assert tenantAEngine.isRunning()
+        assert tenantAEngine.deployments.size() == 1
+        assert tenantAEngine.deployments.values().iterator().next().name == "Some tenantA tenant demo rules"
+        assert tenantAEngine.deployments.values().iterator().next().status == DEPLOYED
+        def tenantBEngine = rulesService.tenantEngines.get(keycloakDemoSetup.tenantB.id)
+        assert tenantBEngine == null
 
         assert rulesService.assetEngines.size() == 2
         apartment1Engine = rulesService.assetEngines.get(managerDemoSetup.apartment1Id)
@@ -153,7 +153,7 @@ class BasicRulesImport {
 
     void resetRulesFired(RulesEngine... engine) {
         // Remove all named facts (those are the only ones inserted by basic test rules)
-        Collection<RulesEngine> engines = [globalEngine, masterEngine, customerAEngine, apartment2Engine, apartment3Engine]
+        Collection<RulesEngine> engines = [globalEngine, masterEngine, tenantAEngine, apartment2Engine, apartment3Engine]
         engines.addAll(engine)
         engines.forEach({ e ->
             e.facts.namedFacts.keySet().forEach({ factName ->
@@ -163,7 +163,7 @@ class BasicRulesImport {
     }
 
     void assertNoRulesFired(RulesEngine... engine) {
-        Collection<RulesEngine> engines = [globalEngine, masterEngine, customerAEngine, apartment2Engine, apartment3Engine]
+        Collection<RulesEngine> engines = [globalEngine, masterEngine, tenantAEngine, apartment2Engine, apartment3Engine]
         engines.addAll(engine)
         engines.forEach({ e ->
             assert e.facts.namedFacts.size() == 0

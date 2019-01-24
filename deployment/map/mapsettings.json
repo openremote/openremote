@@ -7,7 +7,7 @@
       "maxZoom": 19,
       "boxZoom": false
     },
-    "customerA": {
+    "tenantA": {
       "center": [5.4774, 51.4370],
       "bounds": [5.343, 51.378, 5.591, 51.509],
       "zoom": 13,

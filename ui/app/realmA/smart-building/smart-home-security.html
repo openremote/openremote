@@ -1,12 +1,12 @@
-<link rel="import" href="smart-home-component.html">
-<link rel="import" href="smart-home-style.html">
-<link rel="import" href="smart-home-section.html">
-<link rel="import" href="smart-home-smart.html">
+<link rel="import" href="smart-building-component.html">
+<link rel="import" href="smart-building-style.html">
+<link rel="import" href="smart-building-section.html">
+<link rel="import" href="smart-building-smart.html">
 <link rel="import" href="/static/src/or-checkbox/or-checkbox.html">
 
-<dom-module id="smart-home-security">
+<dom-module id="smart-building-security">
     <template>
-        <style include="smart-home-style">
+        <style include="smart-building-style">
 
             .alarm {
                 margin: 10px 0;
@@ -30,16 +30,16 @@
 
         </style>
 
-        <smart-home-smart residence="[[residence]]"></smart-home-smart>
+        <smart-building-smart residence="[[residence]]"></smart-building-smart>
 
-        <smart-home-section>
+        <smart-building-section>
 
             <div class="layout horizontal center alarm">
                 <template is="dom-if" if="[[residence.attributes.presenceDetected.value]]">
-                    <img height="80" src="smart-home/img/eye_large_active.png"/>
+                    <img height="80" src="smart-building/img/eye_large_active.png"/>
                 </template>
                 <template is="dom-if" if="[[!residence.attributes.presenceDetected.value]]">
-                    <img height="80" src="smart-home/img/eye_large.png"/>
+                    <img height="80" src="smart-building/img/eye_large.png"/>
                 </template>
                 <div class="flex layout vertical residencePresenceStatus">
                     <div>[[localize('Alarm')]]</div>
@@ -57,7 +57,7 @@
                 <template is="dom-repeat" items="[[roomsPresenceStatus]]">
                     <div class="layout horizontal center roomPresenceStatusItem">
                         <div class="layout vertical center-center">
-                            <img height="30" src="smart-home/img/eye.png"/>
+                            <img height="30" src="smart-building/img/eye.png"/>
                         </div>
                         <div class="flex layout horizontal roomLabel">
                             [[localize(item.roomName)]]
@@ -69,14 +69,14 @@
                 </template>
             </div>
 
-        </smart-home-section>
+        </smart-building-section>
 
     </template>
 
     <script>
-        class SmartHomeSecurity extends SmartHomeComponent {
+        class SmartBuildingSecurity extends SmartBuildingComponent {
             static get is() {
-                return "smart-home-security";
+                return "smart-building-security";
             }
 
             static get properties() {
@@ -115,7 +115,7 @@
             }
         }
 
-        defineAppElement(SmartHomeSecurity, SmartHomeSecurity.is, "SmartHomeSecurity");
+        defineAppElement(SmartBuildingSecurity, SmartBuildingSecurity.is, "SmartBuildingSecurity");
     </script>
 
 </dom-module>

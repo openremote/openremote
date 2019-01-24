@@ -37,5 +37,5 @@ openremote.init({
     keycloakUrl: "http://localhost:8080/auth",
     auth: Auth.KEYCLOAK,
     autoLogin: true,
-    realm: "customerA"
+    realm: "tenantA"
 }).then(renderUi);

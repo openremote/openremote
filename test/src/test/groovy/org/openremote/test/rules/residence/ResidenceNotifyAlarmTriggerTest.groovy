@@ -100,7 +100,7 @@ class ResidenceNotifyAlarmTriggerTest extends Specification implements ManagerCo
         assert !livingRoomAsset.getAttribute("presenceDetected").orElse(null).valueAsBoolean.orElse(null)
 
         and: "an authenticated test user"
-        def realm = "customerA"
+        def realm = "tenantA"
         def accessToken = authenticate(
                 container,
                 realm,

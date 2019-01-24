@@ -1,9 +1,9 @@
-<link rel="import" href="smart-home-component.html">
-<link rel="import" href="smart-home-style.html">
+<link rel="import" href="smart-building-component.html">
+<link rel="import" href="smart-building-style.html">
 
-<dom-module id="smart-home-temperature-select">
+<dom-module id="smart-building-temperature-select">
     <template>
-        <style include="smart-home-style">
+        <style include="smart-building-style">
         </style>
 
         <div class="or-Select">
@@ -20,9 +20,9 @@
     </template>
 
     <script>
-        class SmartHomeTemperatureSelect extends SmartHomeComponent {
+        class SmartBuildingTemperatureSelect extends SmartBuildingComponent {
             static get is() {
-                return "smart-home-temperature-select";
+                return "smart-building-temperature-select";
             }
 
             static get properties() {
@@ -62,7 +62,7 @@
             }
         }
 
-        defineAppElement(SmartHomeTemperatureSelect, SmartHomeTemperatureSelect.is, "SmartHomeTemperatureSelect");
+        defineAppElement(SmartBuildingTemperatureSelect, SmartBuildingTemperatureSelect.is, "SmartBuildingTemperatureSelect");
     </script>
 
 </dom-module>

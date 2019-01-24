@@ -1,12 +1,12 @@
-<link rel="import" href="smart-home-component.html">
-<link rel="import" href="smart-home-style.html">
-<link rel="import" href="smart-home-section.html">
-<link rel="import" href="smart-home-smart.html">
-<link rel="import" href="smart-home-temperature-select.html">
+<link rel="import" href="smart-building-component.html">
+<link rel="import" href="smart-building-style.html">
+<link rel="import" href="smart-building-section.html">
+<link rel="import" href="smart-building-smart.html">
+<link rel="import" href="smart-building-temperature-select.html">
 
-<dom-module id="smart-home-climate">
+<dom-module id="smart-building-climate">
     <template>
-        <style include="smart-home-style">
+        <style include="smart-building-style">
 
             .roomLabel {
                 padding: 0 10px;
@@ -29,23 +29,23 @@
             }
         </style>
 
-        <smart-home-smart residence="[[residence]]"></smart-home-smart>
+        <smart-building-smart residence="[[residence]]"></smart-building-smart>
 
-        <smart-home-section>
+        <smart-building-section>
             <template is="dom-repeat" items="[[roomsTemperature]]">
                 <div class="layout horizontal center roomItem">
                     <div class="layout vertical center-center">
-                        <img height="30" src="smart-home/img/temperature.png"/>
+                        <img height="30" src="smart-building/img/temperature.png"/>
                     </div>
                     <div class="flex layout horizontal center roomLabel">
                         [[localize(item.roomName)]]
                     </div>
                     <template is="dom-if" if="[[item.roomHasTargetTemperature]]">
                         <div class="targetTemperature">
-                            <smart-home-temperature-select
+                            <smart-building-temperature-select
                                     temperature="[[item.targetTemperature]]"
                                     on-change="onTargetTemperatureChange"
-                                    temperature-format="[[item.targetTemperatureFormat]]"></smart-home-temperature-select>
+                                    temperature-format="[[item.targetTemperatureFormat]]"></smart-building-temperature-select>
                         </div>
                     </template>
                     <template is="dom-if" if="[[item.roomHasCurrentTemperature]]">
@@ -55,13 +55,13 @@
                     </template>
                 </div>
             </template>
-        </smart-home-section>
+        </smart-building-section>
 
-        <smart-home-section>
+        <smart-building-section>
             <template is="dom-repeat" items="[[roomsCO2]]">
                 <div class="layout horizontal center roomItem">
                     <div class="layout vertical center-center">
-                        <img height="30" src="smart-home/img/co2.png"/>
+                        <img height="30" src="smart-building/img/co2.png"/>
                     </div>
                     <div class="flex layout horizontal center roomLabel">
                         [[localize(item.roomName)]]
@@ -71,13 +71,13 @@
                     </div>
                 </div>
             </template>
-        </smart-home-section>
+        </smart-building-section>
 
-        <smart-home-section>
+        <smart-building-section>
             <template is="dom-repeat" items="[[roomsHumidity]]">
                 <div class="layout horizontal center roomItem">
                     <div class="layout vertical center-center">
-                        <img height="30" src="smart-home/img/humidity.png"/>
+                        <img height="30" src="smart-building/img/humidity.png"/>
                     </div>
                     <div class="flex layout horizontal center roomLabel">
                         [[localize(item.roomName)]]
@@ -87,13 +87,13 @@
                     </div>
                 </div>
             </template>
-        </smart-home-section>
+        </smart-building-section>
 
         <template is="dom-if" if="[[ventilationMode]]">
-            <smart-home-section>
+            <smart-building-section>
                 <div class="layout horizontal center ventilationItem">
                     <div class="layout vertical center-center">
-                        <img height="30" src="smart-home/img/ventilation.png"/>
+                        <img height="30" src="smart-building/img/ventilation.png"/>
                     </div>
                     <div class="flex layout horizontal ventilationLabel">
                         [[localize('Ventilation')]]
@@ -110,15 +110,15 @@
                         </div>
                     </div>
                 </div>
-            </smart-home-section>
+            </smart-building-section>
         </template>
 
     </template>
 
     <script>
-        class SmartHomeClimate extends SmartHomeComponent {
+        class SmartBuildingClimate extends SmartBuildingComponent {
             static get is() {
-                return "smart-home-climate";
+                return "smart-building-climate";
             }
 
             static get properties() {
@@ -267,7 +267,7 @@
             }
         }
 
-        defineAppElement(SmartHomeClimate, SmartHomeClimate.is, "SmartHomeClimate");
+        defineAppElement(SmartBuildingClimate, SmartBuildingClimate.is, "SmartBuildingClimate");
     </script>
 
 </dom-module>

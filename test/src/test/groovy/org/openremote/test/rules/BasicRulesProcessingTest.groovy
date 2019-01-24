@@ -56,7 +56,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
             assert rulesService.assetStates.size() == DEMO_RULE_STATES_GLOBAL
             assert rulesImport.globalEngine.assetStates.size() == DEMO_RULE_STATES_GLOBAL
             assert rulesImport.masterEngine.assetStates.size() == DEMO_RULE_STATES_SMART_OFFICE
-            assert rulesImport.customerAEngine.assetStates.size() == DEMO_RULE_STATES_CUSTOMER_A
+            assert rulesImport.tenantAEngine.assetStates.size() == DEMO_RULE_STATES_CUSTOMER_A
             assert rulesImport.apartment2Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_2
             assert rulesImport.apartment3Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_3
         }
@@ -73,8 +73,8 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
             def expectedFiredRules = ["All"]
             assertRulesFired(rulesImport.globalEngine, 1)
             assertRulesFired(rulesImport.globalEngine, expectedFiredRules)
-            assertRulesFired(rulesImport.customerAEngine, 1)
-            assertRulesFired(rulesImport.customerAEngine, expectedFiredRules)
+            assertRulesFired(rulesImport.tenantAEngine, 1)
+            assertRulesFired(rulesImport.tenantAEngine, expectedFiredRules)
             assertRulesFired(rulesImport.apartment2Engine, 1)
             assertRulesFired(rulesImport.apartment2Engine, expectedFiredRules)
             assertRulesFired(rulesImport.apartment3Engine, 0)
@@ -122,14 +122,14 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
             assert rulesService.assetStates.size() == DEMO_RULE_STATES_GLOBAL
             assert rulesImport.globalEngine.assetStates.size() == DEMO_RULE_STATES_GLOBAL
             assert rulesImport.masterEngine.assetStates.size() == DEMO_RULE_STATES_SMART_OFFICE
-            assert rulesImport.customerAEngine.assetStates.size() == DEMO_RULE_STATES_CUSTOMER_A
+            assert rulesImport.tenantAEngine.assetStates.size() == DEMO_RULE_STATES_CUSTOMER_A
             assert rulesImport.apartment2Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_2
             assert rulesImport.apartment3Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_3
         }
 
-        when: "a LHS filtering test rule definition is loaded into the smart home asset"
+        when: "a LHS filtering test rule definition is loaded into the Smart Building asset"
         def assetRuleset = new AssetRuleset(
-            "Some smart home asset rules",
+            "Some Smart Building asset rules",
             managerDemoSetup.smartHomeId,
             getClass().getResource("/org/openremote/test/rules/BasicSmartHomeMatchAllAssetStates.groovy").text,
             Ruleset.Lang.GROOVY
@@ -137,24 +137,24 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         rulesetStorageService.merge(assetRuleset)
         RulesEngine smartHomeEngine = null
 
-        then: "the smart home rule engine should have ben created, loaded the new rule definition and facts and started"
+        then: "the Smart Building rule engine should have ben created, loaded the new rule definition and facts and started"
         conditions.eventually {
             smartHomeEngine = rulesService.assetEngines.get(managerDemoSetup.smartHomeId)
             assert smartHomeEngine != null
             assert smartHomeEngine.isRunning()
             assert smartHomeEngine.deployments.size() == 1
             assert smartHomeEngine.deployments.values().any({
-                it.name == "Some smart home asset rules" && it.status == DEPLOYED
+                it.name == "Some Smart Building asset rules" && it.status == DEPLOYED
             })
         }
 
         and: "the new rule engine is fully initialised"
         conditions.eventually {
-            assert smartHomeEngine.assetStates.size() == DEMO_RULE_STATES_SMART_HOME
+            assert smartHomeEngine.assetStates.size() == DEMO_RULE_STATES_SMART_BUILDING
             assertRulesFired(rulesImport.globalEngine, 1)
             assertRulesFired(rulesImport.globalEngine, ["All"])
-            assertRulesFired(rulesImport.customerAEngine, 1)
-            assertRulesFired(rulesImport.customerAEngine, ["All"])
+            assertRulesFired(rulesImport.tenantAEngine, 1)
+            assertRulesFired(rulesImport.tenantAEngine, ["All"])
             assertRulesFired(rulesImport.apartment2Engine, 1)
             assertRulesFired(rulesImport.apartment2Engine, ["All"])
             assertRulesFired(rulesImport.apartment3Engine, 0)
@@ -173,8 +173,8 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         conditions.eventually {
             assertRulesFired(rulesImport.globalEngine, 1)
             assertRulesFired(rulesImport.globalEngine, ["All"])
-            assertRulesFired(rulesImport.customerAEngine, 1)
-            assertRulesFired(rulesImport.customerAEngine, ["All"])
+            assertRulesFired(rulesImport.tenantAEngine, 1)
+            assertRulesFired(rulesImport.tenantAEngine, ["All"])
             assertRulesFired(rulesImport.apartment2Engine, 1)
             assertRulesFired(rulesImport.apartment2Engine, ["All"])
             assertRulesFired(rulesImport.apartment3Engine, 0)
@@ -211,7 +211,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         rulesImport.resetRulesFired()
         def apartment2 = assetStorageService.find(managerDemoSetup.apartment2Id)
         def asset = new Asset("Kitchen", AssetType.ROOM, apartment2)
-        asset.setRealmId(keycloakDemoSetup.customerATenant.getId())
+        asset.setRealmId(keycloakDemoSetup.tenantA.getId())
         def attributes = [
             new AssetAttribute("testString", AttributeValueType.STRING, Values.create("test"))
                 .setMeta(
@@ -227,15 +227,15 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
             assert rulesService.assetStates.size() == DEMO_RULE_STATES_GLOBAL + 1
             assert rulesImport.globalEngine.assetStates.size() == DEMO_RULE_STATES_GLOBAL + 1
             assert rulesImport.masterEngine.assetStates.size() == DEMO_RULE_STATES_SMART_OFFICE
-            assert rulesImport.customerAEngine.assetStates.size() == DEMO_RULE_STATES_CUSTOMER_A + 1
+            assert rulesImport.tenantAEngine.assetStates.size() == DEMO_RULE_STATES_CUSTOMER_A + 1
             assert rulesImport.apartment2Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_2 + 1
             assert rulesImport.apartment3Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_3
             assertRulesFired(rulesImport.globalEngine, 1)
             assertRulesFired(rulesImport.globalEngine, ["All"])
             assertRulesFired(rulesImport.masterEngine, 1)
             assertRulesFired(rulesImport.masterEngine, ["All"])
-            assertRulesFired(rulesImport.customerAEngine, 1)
-            assertRulesFired(rulesImport.customerAEngine, ["All"])
+            assertRulesFired(rulesImport.tenantAEngine, 1)
+            assertRulesFired(rulesImport.tenantAEngine, ["All"])
             assertRulesFired(rulesImport.apartment2Engine, 1)
             assertRulesFired(rulesImport.apartment2Engine, ["All"])
             assertRulesFired(rulesImport.apartment3Engine, 0)
@@ -258,11 +258,11 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
             assert rulesService.assetStates.size() == DEMO_RULE_STATES_GLOBAL + 1
             assert rulesImport.globalEngine.assetStates.size() == DEMO_RULE_STATES_GLOBAL + 1
             assert rulesImport.masterEngine.assetStates.size() == DEMO_RULE_STATES_SMART_OFFICE
-            assert rulesImport.customerAEngine.assetStates.size() == DEMO_RULE_STATES_CUSTOMER_A + 1
+            assert rulesImport.tenantAEngine.assetStates.size() == DEMO_RULE_STATES_CUSTOMER_A + 1
             assert rulesImport.apartment2Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_2 + 1
             assert rulesImport.apartment3Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_3
             assertRulesFired(rulesImport.globalEngine, 0)
-            assertRulesFired(rulesImport.customerAEngine, 0)
+            assertRulesFired(rulesImport.tenantAEngine, 0)
             assertRulesFired(rulesImport.apartment2Engine, 0)
             assertRulesFired(rulesImport.apartment3Engine, 0)
         }
@@ -284,13 +284,13 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
             assert rulesService.assetStates.size() == DEMO_RULE_STATES_GLOBAL
             assert rulesImport.globalEngine.assetStates.size() == DEMO_RULE_STATES_GLOBAL
             assert rulesImport.masterEngine.assetStates.size() == DEMO_RULE_STATES_SMART_OFFICE
-            assert rulesImport.customerAEngine.assetStates.size() == DEMO_RULE_STATES_CUSTOMER_A
+            assert rulesImport.tenantAEngine.assetStates.size() == DEMO_RULE_STATES_CUSTOMER_A
             assert rulesImport.apartment2Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_2
             assert rulesImport.apartment3Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_3
             assertRulesFired(rulesImport.globalEngine, 1)
             assertRulesFired(rulesImport.globalEngine, ["All"])
-            assertRulesFired(rulesImport.customerAEngine, 1)
-            assertRulesFired(rulesImport.customerAEngine, ["All"])
+            assertRulesFired(rulesImport.tenantAEngine, 1)
+            assertRulesFired(rulesImport.tenantAEngine, ["All"])
             assertRulesFired(rulesImport.apartment2Engine, 1)
             assertRulesFired(rulesImport.apartment2Engine, ["All"])
             assertRulesFired(rulesImport.apartment3Engine, 0)
@@ -316,13 +316,13 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
             assert rulesService.assetStates.size() == DEMO_RULE_STATES_GLOBAL + 2
             assert rulesImport.globalEngine.assetStates.size() == DEMO_RULE_STATES_GLOBAL + 2
             assert rulesImport.masterEngine.assetStates.size() == DEMO_RULE_STATES_SMART_OFFICE
-            assert rulesImport.customerAEngine.assetStates.size() == DEMO_RULE_STATES_CUSTOMER_A + 2
+            assert rulesImport.tenantAEngine.assetStates.size() == DEMO_RULE_STATES_CUSTOMER_A + 2
             assert rulesImport.apartment2Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_2 + 2
             assert rulesImport.apartment3Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_3
             assertRulesFired(rulesImport.globalEngine, 1)
             assertRulesFired(rulesImport.globalEngine, ["All"])
-            assertRulesFired(rulesImport.customerAEngine, 1)
-            assertRulesFired(rulesImport.customerAEngine, ["All"])
+            assertRulesFired(rulesImport.tenantAEngine, 1)
+            assertRulesFired(rulesImport.tenantAEngine, ["All"])
             assertRulesFired(rulesImport.apartment2Engine, 1)
             assertRulesFired(rulesImport.apartment2Engine, ["All"])
             assertRulesFired(rulesImport.apartment3Engine, 0)
@@ -337,13 +337,13 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
             assert rulesService.assetStates.size() == DEMO_RULE_STATES_GLOBAL
             assert rulesImport.globalEngine.assetStates.size() == DEMO_RULE_STATES_GLOBAL
             assert rulesImport.masterEngine.assetStates.size() == DEMO_RULE_STATES_SMART_OFFICE
-            assert rulesImport.customerAEngine.assetStates.size() == DEMO_RULE_STATES_CUSTOMER_A
+            assert rulesImport.tenantAEngine.assetStates.size() == DEMO_RULE_STATES_CUSTOMER_A
             assert rulesImport.apartment2Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_2
             assert rulesImport.apartment3Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_3
             assertRulesFired(rulesImport.globalEngine, 1)
             assertRulesFired(rulesImport.globalEngine, ["All"])
-            assertRulesFired(rulesImport.customerAEngine, 1)
-            assertRulesFired(rulesImport.customerAEngine, ["All"])
+            assertRulesFired(rulesImport.tenantAEngine, 1)
+            assertRulesFired(rulesImport.tenantAEngine, ["All"])
             assertRulesFired(rulesImport.apartment2Engine, 1)
             assertRulesFired(rulesImport.apartment2Engine, ["All"])
             assertRulesFired(rulesImport.apartment3Engine, 0)
@@ -375,23 +375,23 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
             rulesImport.assertEnginesReady(rulesService, keycloakDemoSetup, managerDemoSetup)
         }
 
-        when: "a broken RHS rule is loaded into the customerA engine"
+        when: "a broken RHS rule is loaded into the tenantA engine"
         def ruleset = new TenantRuleset(
             "Some broken test rules",
-            keycloakDemoSetup.customerATenant.id,
+            keycloakDemoSetup.tenantA.id,
             getClass().getResource("/org/openremote/test/rules/BasicBrokenRules.groovy").text,
             Ruleset.Lang.GROOVY
         )
         rulesetStorageService.merge(ruleset)
 
-        then: "the customerA engine should not run and the rule engine status should indicate the issue"
+        then: "the tenantA engine should not run and the rule engine status should indicate the issue"
         conditions.eventually {
-            assert rulesImport.customerAEngine.deployments.size() == 2
-            assert !rulesImport.customerAEngine.running
-            assert rulesImport.customerAEngine.deployments.values().any({
-                it.name == "Some customerA tenant demo rules" && it.status == READY
+            assert rulesImport.tenantAEngine.deployments.size() == 2
+            assert !rulesImport.tenantAEngine.running
+            assert rulesImport.tenantAEngine.deployments.values().any({
+                it.name == "Some tenantA tenant demo rules" && it.status == READY
             })
-            assert rulesImport.customerAEngine.deployments.values().any({
+            assert rulesImport.tenantAEngine.deployments.values().any({
                 it.name == "Some broken test rules" && it.status == COMPILATION_ERROR && it.error instanceof RuntimeException
             })
         }
