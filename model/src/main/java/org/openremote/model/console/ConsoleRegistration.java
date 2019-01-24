@@ -24,24 +24,90 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Map;
 
+/**
+ * Encapsulates data about a console instance that is used to generate an {@link org.openremote.model.asset.Asset} of
+ * type {@link org.openremote.model.asset.AssetType#CONSOLE}. The console is considered the app used to view the web
+ * application (client), for example:
+ * <p>
+ * Google Chrome on Windows 10 64-bit used to view the manager and customerA applications would generate the following
+ * registration:
+ * <blockquote><pre>{@code
+ * {
+ *    "name": "Chrome",
+ *    "version": "71.0.3578.98",
+ *    "platform": "Windows 10 64-bit",
+ *    "model": null,
+ *    "providers": {
+ *        "push": {
+ *            "data": {
+ *               "token": "ASasm,sASKasjASasjASJas"
+ *            },
+ *            "version": "web",
+ *            "disabled": false,
+ *            "hasPermission": true,
+ *            "requiresPermission": true
+ *         }
+ *    },
+ *    "apps": {
+ *        "manager": "1.0.0",
+ *        "customerA": "1.0.0"
+ *    }
+ * }</pre></blockquote>
+ * <p>
+ * An Android console app called "Smart City" on a Samsung Galaxy S9 running Android 8.0 would generate the following
+ * registration:
+ * <blockquote><pre>{@code
+ * {
+ *    "name": "Smart City",
+ *    "version": "1.0.0",
+ *    "platform": "Android 8.0",
+ *    "model": "Samsung Galaxy S9",
+ *    "providers": {
+ *        "push": {
+ *            "data": {
+ *               "token": "ASasm,sASKasjASasjASJas"
+ *            },
+ *            "version": "fcm",
+ *            "disabled": false,
+ *            "hasPermission": true,
+ *            "requiresPermission": true
+ *         },
+ *        "geofence": {
+ *           "version": "ORConsole",
+ *           "disabled": false,
+ *           "hasPermission": true,
+ *           "requiresPermission": true
+ *        }
+ *    },
+ *    "apps": {
+ *        "smartcity": "1.0.0"
+ *    }
+ * }</pre></blockquote>
+ */
 public class ConsoleRegistration {
     protected String id;
     protected String name;
     protected String version;
     protected String platform;
+    protected String model;
     protected Map<String, ConsoleProvider> providers;
+    protected Map<String, String> apps;
 
     @JsonCreator
     public ConsoleRegistration(@JsonProperty("id") String id,
                                @JsonProperty("name") String name,
                                @JsonProperty("version") String version,
                                @JsonProperty("platform") String platform,
-                               @JsonProperty("providers") Map<String, ConsoleProvider> providers) {
+                               @JsonProperty("providers") Map<String, ConsoleProvider> providers,
+                               @JsonProperty("model") String model,
+                               @JsonProperty("apps") Map<String, String> apps) {
         this.id = id;
         this.name = name;
         this.version = version;
         this.platform = platform;
         this.providers = providers;
+        this.model = model;
+        this.apps = apps;
     }
 
     public String getId() {
@@ -64,7 +130,15 @@ public class ConsoleRegistration {
         return platform;
     }
 
+    public String getModel() {
+        return model;
+    }
+
     public Map<String, ConsoleProvider> getProviders() {
         return providers;
+    }
+
+    public Map<String, String> getApps() {
+        return apps;
     }
 }

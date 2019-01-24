@@ -32,6 +32,7 @@ public class ConsoleProvider {
     protected String version;
     protected boolean requiresPermission;
     protected boolean hasPermission;
+    protected boolean success;
     protected boolean disabled;
     protected ObjectValue data;
 
@@ -39,11 +40,13 @@ public class ConsoleProvider {
     public ConsoleProvider(@JsonProperty("version") String version,
                            @JsonProperty("requiresPermission") boolean requiresPermission,
                            @JsonProperty("hasPermission") boolean hasPermission,
+                           @JsonProperty("success") boolean success,
                            @JsonProperty("disabled") boolean disabled,
                            @JsonProperty("data") ObjectValue data) {
         this.version = version;
         this.requiresPermission = requiresPermission;
         this.hasPermission = hasPermission;
+        this.success = success;
         this.disabled = disabled;
         this.data = data;
     }
@@ -58,6 +61,10 @@ public class ConsoleProvider {
 
     public boolean isHasPermission() {
         return hasPermission;
+    }
+
+    public boolean isSuccess() {
+        return success;
     }
 
     public boolean isDisabled() {
@@ -78,9 +85,10 @@ public class ConsoleProvider {
 
             boolean hasPermission = obj.getBoolean("hasPermission").orElse(!requiresPermission.get());
             boolean disabled = obj.getBoolean("disabled").orElse(false);
+            boolean success = obj.getBoolean("success").orElse(false);
             ObjectValue data = obj.getObject("data").orElse(null);
 
-            return Optional.of(new ConsoleProvider(version.get(), requiresPermission.get(), hasPermission, disabled, data));
+            return Optional.of(new ConsoleProvider(version.get(), requiresPermission.get(), hasPermission, success, disabled, data));
         });
     }
 

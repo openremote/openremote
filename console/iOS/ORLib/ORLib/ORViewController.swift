@@ -113,7 +113,7 @@ open class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMess
             options: []) {
             let theJSONText = String(data: theJSONData,
                                      encoding: .utf8)
-            let returnMessage = "openremote.INSTANCE.console.handleProviderResponse('\(theJSONText ?? "null")')"
+            let returnMessage = "OpenRemoteConsole.handleProviderResponse('\(theJSONText ?? "null")')"
             DispatchQueue.main.async {
                 self.myWebView?.evaluateJavaScript("\(returnMessage)", completionHandler: { (any, error) in
                     print("JSON string = \(theJSONText!)")

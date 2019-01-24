@@ -602,7 +602,7 @@ public class MainActivity extends Activity {
                 activity.runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        webView.evaluateJavascript(String.format("openremote.INSTANCE.console.handleProviderResponse('%s')", jsonString), null);
+                        webView.evaluateJavascript(String.format("OpenRemoteConsole.handleProviderResponse('%s')", jsonString), null);
                     }
                 });
             } catch (JsonProcessingException e) {

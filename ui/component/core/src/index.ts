@@ -1,3 +1,8 @@
+import 'url-search-params-polyfill';
+import {Console} from "./console";
+import rest from "@openremote/rest";
+import {AxiosRequestConfig} from 'axios';
+
 export enum ORError {
     NONE = "NONE",
     MANAGER_FAILED_TO_LOAD = "MANAGER_FAILED_TO_LOAD",
@@ -15,7 +20,9 @@ export enum OREvent {
     INIT = "INIT",
     AUTHENTICATED = "AUTHENTICATED",
     ERROR = "ERROR",
-    READY = "READY"
+    READY = "READY",
+    CONSOLE_INIT = "CONSOLE_INIT",
+    CONSOLE_READY = "CONSOLE_READY"
 }
 
 export interface Credentials {
@@ -31,10 +38,12 @@ export interface LoginOptions {
 export interface ManagerConfig {
     managerUrl: string;
     keycloakUrl?: string;
+    appVersion?: string;
     auth?: Auth;
-    realm?: string;
-    autoLogin: boolean;
+    realm: string;
+    autoLogin?: boolean;
     credentials?: Credentials;
+    consoleAutoEnable: boolean;
 }
 
 export type EventCallback = (event: OREvent) => any;
@@ -134,6 +143,7 @@ export class Manager {
     private _keycloakUpdateTokenInterval?: number = undefined;
     private _managerVersion: string = "";
     private _listeners: EventCallback[] = [];
+    private _console!: Console;
 
     public isManagerSameOrigin(): boolean {
         if (!this.initialised) {
@@ -168,10 +178,20 @@ export class Manager {
 
         this._config = config = Manager.normaliseConfig(config);
         const success = await this.doInit(config);
+
+        if (success) {
+            this.doRestApiInit();
+        }
+
         if (success) {
             this._ready = true;
             this.emitEvent(OREvent.READY);
         }
+
+        if (success) {
+            this.doConsoleInit();
+        }
+
         return success;
     }
 
@@ -216,6 +236,47 @@ export class Manager {
                 this.setError(ORError.AUTH_TYPE_UNSUPPORTED);
                 this.emitEvent(OREvent.INIT);
                 return false;
+        }
+    }
+
+    protected doRestApiInit() {
+
+        rest.setTimeout(10000);
+        rest.initialise(this.getBaseUrl());
+
+        if (this._config.auth === Auth.BASIC && this._config.credentials) {
+            rest.setBasicAuth(this._config.credentials.username, this._config.credentials.password);
+        } else if (this._config.auth === Auth.KEYCLOAK) {
+            // Add interceptor to inject authorization header on each request
+            rest.addRequestInterceptor(
+                (config) => {
+                    if (!config.headers.Authorization) {
+                        const token = this.getKeycloakToken();
+
+                        if (token) {
+                            config.headers.Authorization = "Bearer " + token;
+                        }
+                    }
+
+                    return config;
+                }
+            );
+        }
+    }
+
+    protected async doConsoleInit() {
+        let orConsole = new Console(this._config.realm, this._config.consoleAutoEnable, () => {
+            this._console.sendRegistration();
+            this.emitEvent(OREvent.CONSOLE_READY);
+        });
+
+        this._console = orConsole;
+
+        await orConsole.initialise();
+        this.emitEvent(OREvent.CONSOLE_INIT);
+
+        if (orConsole.autoEnable && orConsole.pendingProviderEnables.length > 0) {
+            await orConsole.enableProviders();
         }
     }
 
@@ -277,6 +338,12 @@ export class Manager {
 
     public isSuperUser() {
         return this.hasRole("admin");
+    }
+
+    public getBaseUrl() {
+        let baseUrl = this._config.managerUrl;
+        baseUrl += "/api/" + this._config.realm + "/";
+        return baseUrl;
     }
 
     public hasRole(role: string) {
@@ -445,9 +512,11 @@ export class Manager {
     }
 
     protected emitEvent(event: OREvent) {
-        for (const listener of this._listeners) {
-            listener(event);
-        }
+        window.setTimeout(() => {
+            for (const listener of this._listeners) {
+                listener(event);
+            }
+        }, 0);
     }
 
     protected setError(error: ORError) {
