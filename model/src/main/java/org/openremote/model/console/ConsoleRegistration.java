@@ -48,10 +48,10 @@ import java.util.Map;
  *            "requiresPermission": true
  *         }
  *    },
- *    "apps": {
- *        "manager": "1.0.0",
- *        "customerA": "1.0.0"
- *    }
+ *    "apps": [
+ *        "manager"
+ *        "customerA"
+ *    ]
  * }</pre></blockquote>
  * <p>
  * An Android console app called "Smart City" on a Samsung Galaxy S9 running Android 8.0 would generate the following
@@ -79,9 +79,9 @@ import java.util.Map;
  *           "requiresPermission": true
  *        }
  *    },
- *    "apps": {
- *        "smartcity": "1.0.0"
- *    }
+ *    "apps": [
+ *        "smartcity"
+ *    ]
  * }</pre></blockquote>
  */
 public class ConsoleRegistration {
@@ -91,7 +91,7 @@ public class ConsoleRegistration {
     protected String platform;
     protected String model;
     protected Map<String, ConsoleProvider> providers;
-    protected Map<String, String> apps;
+    protected String[] apps;
 
     @JsonCreator
     public ConsoleRegistration(@JsonProperty("id") String id,
@@ -100,7 +100,7 @@ public class ConsoleRegistration {
                                @JsonProperty("platform") String platform,
                                @JsonProperty("providers") Map<String, ConsoleProvider> providers,
                                @JsonProperty("model") String model,
-                               @JsonProperty("apps") Map<String, String> apps) {
+                               @JsonProperty("apps") String[] apps) {
         this.id = id;
         this.name = name;
         this.version = version;
@@ -138,7 +138,7 @@ public class ConsoleRegistration {
         return providers;
     }
 
-    public Map<String, String> getApps() {
+    public String[] getApps() {
         return apps;
     }
 }

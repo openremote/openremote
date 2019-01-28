@@ -1,5 +1,7 @@
 import {ConsoleRegistration} from "@openremote/model";
 import rest from "@openremote/rest";
+import openremote from "./index";
+import {AxiosResponse} from "axios";
 
 declare function require(name: string): any;
 
@@ -10,6 +12,8 @@ export interface ProviderMessage {
     provider: string;
     action: string;
     data?: any;
+
+    [x: string]: any;
 }
 
 interface ProviderInitialiseResponse extends ProviderMessage {
@@ -17,6 +21,7 @@ interface ProviderInitialiseResponse extends ProviderMessage {
     requiresPermission: boolean;
     hasPermission: boolean;
     success: boolean;
+    enabled: boolean;
 }
 
 export interface ProviderEnableRequest extends ProviderMessage {
@@ -31,13 +36,14 @@ export interface ProviderEnableResponse extends ProviderMessage {
 export class Console {
 
     protected _realm: string;
-    private _registration: ConsoleRegistration;
-    private _autoEnable: boolean = false;
+    protected _registration: ConsoleRegistration;
+    protected _autoEnable: boolean = false;
     protected _initialised: boolean = false;
     protected _initialiseInProgress: boolean = false;
     protected _pendingProviderPromises: { [name: string]: ((response: any) => void) | null } = {};
-    private _pendingProviderEnables: string[] = [];
+    protected _pendingProviderEnables: string[] = [];
     protected _enableCompleteCallback: (() => void) | null;
+    protected _registrationTimer: number | null = null;
 
     constructor(realm: string, autoEnable: boolean, enableComplete: () => void) {
 
@@ -57,11 +63,7 @@ export class Console {
         let consoleProviders = queryParams.get("consoleProviders");
         let autoEnableStr = queryParams.get("consoleAutoEnable");
 
-        if (!consoleProviders) {
-            //consoleProviders = "push"; // Use push provider by default
-        }
-
-        let requestedProviders = consoleProviders && consoleProviders.length > 0 ? consoleProviders.split(" ") : [];
+        let requestedProviders = consoleProviders && consoleProviders.length > 0 ? consoleProviders.split(" ") : ["push", "storage"];
         this._pendingProviderEnables = consoleProviders && consoleProviders.length > 0 ? consoleProviders.split(" ") : [];
 
         // Look for existing console registration in local storage or just create a new one
@@ -70,7 +72,20 @@ export class Console {
         let consoleRegStr = window.localStorage.getItem("OpenRemoteConsole:" + realm);
         if (consoleRegStr) {
             try {
-                consoleReg = JSON.parse(consoleRegStr) as ConsoleRegistration;
+                let storedRegObj = JSON.parse(consoleRegStr);
+                let storedReg = storedRegObj as ConsoleRegistration;
+                if (storedReg.id) {
+                    consoleReg.id = storedReg.id;
+                }
+                if (storedReg.name) {
+                    consoleReg.name = storedReg.name;
+                }
+                if (storedReg.providers) {
+                    consoleReg.providers = storedReg.providers;
+                }
+                if (storedReg.apps) {
+                    consoleReg.apps = storedReg.apps;
+                }
             } catch (e) {
                 console.error("Failed to deserialise console registration");
             }
@@ -80,12 +95,20 @@ export class Console {
         consoleReg.providers = {};
 
         for (let providerName of requestedProviders) {
-            let provider = oldProviders && oldProviders.hasOwnProperty(providerName) ? oldProviders[providerName] : {disabled: false};
+            let provider = oldProviders && oldProviders.hasOwnProperty(providerName) ? oldProviders[providerName] : {
+                enabled: false,
+                disabled: false
+            };
             consoleReg.providers[providerName] = provider;
-            if (provider.disabled) {
+            if (provider.disabled || provider.enabled) {
                 let index = this._pendingProviderEnables.indexOf(providerName);
                 this._pendingProviderEnables.splice(index, 1);
             }
+        }
+
+        let appName = openremote.getAppName();
+        if (appName.length > 0 && consoleReg.apps!.indexOf(appName) < 0) {
+            consoleReg.apps!.push(appName);
         }
 
         this._registration = consoleReg;
@@ -148,21 +171,7 @@ export class Console {
             if (this._registration.providers) {
 
                 for (let providerName of Object.keys(this._registration.providers)) {
-                    let initResponse = await this._initialiseProvider(providerName);
-
-                    this._registration.providers![providerName].version = initResponse.version;
-                    this._registration.providers![providerName].requiresPermission = initResponse.requiresPermission;
-                    this._registration.providers![providerName].hasPermission = initResponse.hasPermission;
-                    this._registration.providers![providerName].success = initResponse.success;
-
-                    if (!initResponse.success) {
-                        console.debug("Provider initialisation failed: '" + providerName + "'");
-                        this._registration.providers![providerName].disabled = true;
-                        let index = this._pendingProviderEnables.indexOf(providerName);
-                        if (index >= 0) {
-                            this._pendingProviderEnables.splice(index, 1);
-                        }
-                    }
+                    await this._initialiseProvider(providerName);
                 }
             }
 
@@ -170,13 +179,10 @@ export class Console {
             this._initialiseInProgress = false;
 
             if (this._pendingProviderEnables.length === 0) {
-                let callback = this._enableCompleteCallback;
-                this._enableCompleteCallback = null;
-                if (callback) {
-                    window.setTimeout(() => {
-                        callback!()
-                    }, 0);
-                }
+                this.sendRegistration();
+                this._callCompletedCallback();
+            } else if (this._autoEnable) {
+                await this.enableProviders();
             }
         } catch (e) {
             console.error(e);
@@ -184,24 +190,6 @@ export class Console {
         }
     }
 
-    protected static _createConsoleRegistration(): ConsoleRegistration {
-        let reg: ConsoleRegistration = {
-            name: platform.name,
-            version: platform.version,
-            platform: platform.os.toString(),
-            model: ((platform.manufacturer ? platform.manufacturer + " " : "") + (platform.product ? platform.product : "")).trim()
-        };
-
-        return reg;
-    }
-
-    protected async _initialiseProvider(provider: string): Promise<ProviderInitialiseResponse> {
-        console.debug("Console: initialising provider '" + provider + "'");
-        return await this.sendProviderMessage({
-                provider: provider,
-                action: "PROVIDER_INIT"
-            }, true);
-    }
 
     // This mechanism doesn't support sending extra data to the providers being enabled and it doesn't allow data
     // to be retrieved from the replies; if that is required then providers should be manually enabled from the calling app
@@ -215,35 +203,37 @@ export class Console {
         }
     }
 
-    public async enableProvider(provider: string, data?: any): Promise<ProviderEnableResponse> {
+    public async enableProvider(providerName: string, data?: any): Promise<ProviderEnableResponse> {
         if (!this._initialised) {
             console.debug("Console must be initialised before disabling providers");
             throw new Error("Console must be initialised before enabling providers");
         }
 
-        if (!this._registration.providers!.hasOwnProperty(provider)) {
-            console.debug("Invalid console provider '" + provider + "'");
-            throw new Error("Invalid console provider '" + provider + "'");
+        if (!this._registration.providers!.hasOwnProperty(providerName)) {
+            console.debug("Invalid console provider '" + providerName + "'");
+            throw new Error("Invalid console provider '" + providerName + "'");
         }
 
-        console.debug("Console: enabling provider '" + provider + "'");
+        console.debug("Console: enabling provider '" + providerName + "'");
         let msg: ProviderEnableRequest = {
-            provider: provider,
+            provider: providerName,
             action: "PROVIDER_ENABLE",
             consoleId: this._registration.id!,
             data
         };
         let response = await this.sendProviderMessage(msg, true);
-        let index = this._pendingProviderEnables.indexOf(provider);
+
+        this._registration.providers![providerName].hasPermission = response.hasPermission;
+        this._registration.providers![providerName].success = response.success;
+        this._registration.providers![providerName].enabled = response.success;
+
+        let index = this._pendingProviderEnables.indexOf(providerName);
 
         if (index >= 0) {
             this._pendingProviderEnables.splice(index, 1);
             if (this._pendingProviderEnables.length === 0) {
-                let callback = this._enableCompleteCallback;
-                this._enableCompleteCallback = null;
-                if (callback) {
-                    callback();
-                }
+                this.sendRegistration();
+                this._callCompletedCallback();
             }
         }
 
@@ -268,10 +258,11 @@ export class Console {
             action: "PROVIDER_DISABLE"
         }, true);
         this._registration.providers![provider].disabled = true;
+        this._registration.providers![provider].enabled = false;
         return response;
     }
 
-    public async sendProviderMessage(message: ProviderMessage, waitForResponse: boolean) : Promise<any> {
+    public async sendProviderMessage(message: ProviderMessage, waitForResponse: boolean): Promise<any | null> {
         if (!this._registration.providers!.hasOwnProperty(message.provider)) {
             console.debug("Invalid console provider '" + message.provider + "'");
             throw new Error("Invalid console provider '" + message.provider + "'");
@@ -288,34 +279,62 @@ export class Console {
             throw new Error("Message already pending for provider '" + name + "' with action '" + message.action + "'");
         }
 
-        await new Promise(resolve => {
+        return await new Promise(resolve => {
             this._pendingProviderPromises[promiseName] = resolve;
             this._doSendProviderMessage(message);
         });
     }
 
-    private _doSendProviderMessage(msg: any) {
-        if (this.isMobile) {
-            this.postNativeShellMessage({type: "provider", data: msg});
-        } else {
-            // TODO: Implement web browser provider handling (web push etc.)
-        }
-    }
-
+    // Uses a delayed mechanism to avoid excessive calls to the server during enabling providers
     public async sendRegistration(): Promise<void> {
-        console.debug("Console: updating registration");
-        let response = await rest.api.ConsoleResource.register(this._registration);
-        if (response.status !== 200) {
-            throw new Error("Failed to register console");
+        if (this._registrationTimer) {
+            window.clearTimeout(this._registrationTimer);
+            this._registrationTimer = null;
         }
 
-        this._registration = response.data;
-        console.debug("Console: registration successful");
-        console.debug("Console: updating locally stored registration");
-        window.localStorage.setItem("OpenRemoteConsole:" + this._realm, JSON.stringify(this._registration));
+        await new Promise(resolve => {
+            this._registrationTimer = window.setTimeout(() => {
+                this._registrationTimer = null;
+                console.debug("Console: updating registration");
+
+                try {
+                    rest.api.ConsoleResource.register(this._registration).then((response: AxiosResponse<ConsoleRegistration>) => {
+                        if (response.status !== 200) {
+                            throw new Error("Failed to register console");
+                        }
+
+                        this._registration = response.data;
+                        console.debug("Console: registration successful");
+                        console.debug("Console: updating locally stored registration");
+                        window.localStorage.setItem("OpenRemoteConsole:" + this._realm, JSON.stringify(this._registration));
+                    });
+                } finally {
+                    resolve();
+                }
+            }, 2000);
+        });
     }
 
-    public postNativeShellMessage(jsonMessage: any) {
+    public storeData(key: string, value: string | null) {
+        this.sendProviderMessage({
+            provider: "storage",
+            action: "STORE",
+            key: key,
+            value: value
+        }, false);
+    }
+
+
+    public async retrieveData(key: string): Promise<string | null> {
+        let response = await this.sendProviderMessage({
+            provider: "storage",
+            action: "RETRIEVE",
+            key: key
+        }, true) as string;
+        return response;
+    }
+
+    protected _postNativeShellMessage(jsonMessage: any) {
         if (this.shellAndroid) {
             // @ts-ignore
             return window.MobileInterface.postMessage(JSON.stringify(jsonMessage));
@@ -326,19 +345,8 @@ export class Console {
         }
     }
 
-    protected readNativeShellMessage(messageKey: string): string | null {
-        if (this.shellAndroid) {
-            // @ts-ignore
-            return window.MobileInterface.getMessage(messageKey);
-        }
-        if (this.shellApple) {
-            return prompt(messageKey);
-        }
-        return null;
-    }
-
     // This is called by native web view code
-    handleProviderResponse(msg: any) {
+    protected _handleProviderResponse(msg: any) {
         if (!msg) {
             return;
         }
@@ -347,11 +355,157 @@ export class Console {
         let name = msgJson.provider;
         let action = msgJson.action;
 
-        let resolve = this._pendingProviderPromises[name+action];
+        let resolve = this._pendingProviderPromises[name + action];
 
         if (resolve != null) {
-            this._pendingProviderPromises[name+action] = null;
+            this._pendingProviderPromises[name + action] = null;
             resolve(msgJson);
         }
+    }
+
+    protected _doSendProviderMessage(msg: any) {
+        if (this.isMobile) {
+            this._postNativeShellMessage({type: "provider", data: msg});
+        } else {
+            if (!msg.provider || !msg.action) {
+                return;
+            }
+            switch (msg.provider.trim().toUpperCase()) {
+                // TODO: Implement web browser provider handling (web push etc.)
+                case "PUSH":
+
+                    switch (msg.action.trim().toUpperCase()) {
+                        case "PROVIDER_INIT":
+                            this._handleProviderResponse(JSON.stringify({
+                                action: "PROVIDER_INIT",
+                                provider: "push",
+                                version: "web",
+                                enabled: true,
+                                requiresPermission: false
+                            }));
+                            break;
+                        case "PROVIDER_ENABLE":
+                            this._handleProviderResponse(JSON.stringify({
+                                action: "PROVIDER_ENABLE",
+                                provider: "push",
+                                hasPermission: true,
+                                success: true
+                            }));
+                            break;
+                        default:
+                            throw new Error("Unsupported provider '" + msg.provider + "' and action '" + msg.action + "'");
+                    }
+
+                    break;
+
+                case "STORAGE":
+
+                    switch (msg.action) {
+                        case "PROVIDER_INIT":
+                            this._handleProviderResponse(JSON.stringify({
+                                action: "PROVIDER_INIT",
+                                provider: "storage",
+                                version: "1.0.0",
+                                enabled: true,
+                                requiresPermission: false
+                            }));
+                            break;
+                        case "PROVIDER_ENABLE":
+                            this._handleProviderResponse(JSON.stringify({
+                                action: "PROVIDER_ENABLE",
+                                provider: "storage",
+                                hasPermission: true,
+                                success: true
+                            }));
+                            break;
+                        case "STORE":
+                            let keyValue = msg.key ? msg.key.trim() : null;
+
+                            if (!keyValue || keyValue.length === 0) {
+                                throw new Error("Storage provider 'store' action requires a `key`");
+                            }
+
+                            if (msg.hasOwnProperty("value")) {
+                                if (msg.value === null) {
+                                    window.localStorage.removeItem(keyValue);
+                                } else {
+                                    window.localStorage.setItem(keyValue, msg.value);
+                                }
+                            }
+
+                            break;
+                        case "RETRIEVE":
+                            keyValue = msg.key ? msg.key.trim() : null;
+
+                            if (!keyValue || keyValue.length === 0) {
+                                throw new Error("Storage provider 'retrieve' action requires a `key`");
+                            }
+
+                            this._handleProviderResponse(JSON.stringify({
+                                action: "RETRIEVE",
+                                provider: "storage",
+                                key: keyValue,
+                                value: window.localStorage.getItem(keyValue)
+                            }));
+                            break;
+                        default:
+                            throw new Error("Unsupported provider '" + msg.provider + "' and action '" + msg.action + "'");
+                    }
+                    break;
+            }
+
+        }
+    }
+
+    protected _callCompletedCallback() {
+        let callback = this._enableCompleteCallback;
+        this._enableCompleteCallback = null;
+        if (callback) {
+            window.setTimeout(() => {
+                callback!()
+            }, 0);
+        }
+    }
+
+    protected static _createConsoleRegistration(): ConsoleRegistration {
+        let reg: ConsoleRegistration = {
+            name: platform.name,
+            version: platform.version,
+            platform: platform.os.toString(),
+            apps: [],
+            model: ((platform.manufacturer ? platform.manufacturer + " " : "") + (platform.product ? platform.product : "")).trim()
+        };
+
+        return reg;
+    }
+
+    protected async _initialiseProvider(providerName: string): Promise<ProviderInitialiseResponse> {
+        console.debug("Console: initialising provider '" + providerName + "'");
+        let initResponse = await this.sendProviderMessage({
+            provider: providerName,
+            action: "PROVIDER_INIT"
+        }, true);
+
+        this._registration.providers![providerName].version = initResponse.version;
+        this._registration.providers![providerName].requiresPermission = initResponse.requiresPermission;
+        this._registration.providers![providerName].hasPermission = initResponse.hasPermission;
+        this._registration.providers![providerName].success = initResponse.success;
+        this._registration.providers![providerName].enabled = initResponse.enabled;
+
+        if (!initResponse.success) {
+            console.debug("Provider initialisation failed: '" + providerName + "'");
+            this._registration.providers![providerName].disabled = true;
+            let index = this._pendingProviderEnables.indexOf(providerName);
+            if (index >= 0) {
+                this._pendingProviderEnables.splice(index, 1);
+            }
+        } else if (initResponse.enabled) {
+            let index = this._pendingProviderEnables.indexOf(providerName);
+            if (index >= 0) {
+                this._pendingProviderEnables.splice(index, 1);
+            }
+        }
+
+        return initResponse;
     }
 }

@@ -7,7 +7,8 @@ export enum ORError {
     NONE = "NONE",
     MANAGER_FAILED_TO_LOAD = "MANAGER_FAILED_TO_LOAD",
     KEYCLOAK_FAILED_TO_LOAD = "KEYCLOAK_FAILED_TO_LOAD",
-    AUTH_TYPE_UNSUPPORTED = "AUTH_TYPE_UNSUPPORTED"
+    AUTH_TYPE_UNSUPPORTED = "AUTH_TYPE_UNSUPPORTED",
+    CONSOLE_ERROR = "CONSOLE_INIT_ERROR"
 }
 
 export enum Auth {
@@ -43,7 +44,7 @@ export interface ManagerConfig {
     realm: string;
     autoLogin?: boolean;
     credentials?: Credentials;
-    consoleAutoEnable: boolean;
+    consoleAutoEnable?: boolean;
 }
 
 export type EventCallback = (event: OREvent) => any;
@@ -90,6 +91,10 @@ export class Manager {
         return this._error != null;
     }
 
+    get console() {
+        return this._console;
+    }
+
     protected static normaliseConfig(config: ManagerConfig): ManagerConfig {
         const normalisedConfig: ManagerConfig = Object.assign({}, config);
 
@@ -117,19 +122,11 @@ export class Manager {
             }
         }
 
-        return normalisedConfig;
-    }
+        if (!normalisedConfig.consoleAutoEnable) {
+            normalisedConfig.consoleAutoEnable = true;
+        }
 
-    // TODO: Implement console offline tokens
-    protected static getNativeOfflineRefreshToken(): string | null {
-        // if (this.console && this.console.enabled) {
-        //     let storedToken = this.console.readNativeShellMessage('token');
-        //     if (storedToken && storedToken.length > 0) {
-        //         let storedTokenParsed = JSON.parse(storedToken);
-        //         return storedTokenParsed.refreshToken;
-        //     }
-        // }
-        return null;
+        return normalisedConfig;
     }
 
     private _error: ORError = ORError.NONE;
@@ -176,11 +173,19 @@ export class Manager {
             console.log("Already initialised");
         }
 
-        this._config = config = Manager.normaliseConfig(config);
-        const success = await this.doInit(config);
+        this._config = Manager.normaliseConfig(config);
+        let success = await this.doInit();
 
         if (success) {
-            this.doRestApiInit();
+            success = this.doRestApiInit();
+        }
+
+        if (success) {
+            success = await this.doConsoleInit();
+        }
+
+        if (success) {
+            success = await this.doAuthInit();
         }
 
         if (success) {
@@ -188,14 +193,10 @@ export class Manager {
             this.emitEvent(OREvent.READY);
         }
 
-        if (success) {
-            this.doConsoleInit();
-        }
-
         return success;
     }
 
-    protected async doInit(config: ManagerConfig): Promise<boolean> {
+    protected async doInit(): Promise<boolean> {
         // Check manager exists by calling the info endpoint
         try {
             const json = await new Promise<any>((resolve, reject) => {
@@ -210,73 +211,75 @@ export class Manager {
                 oReq.send();
             });
             this._managerVersion = json && json.version ? json.version : "";
+            return true;
         } catch (e) {
             // TODO: Implement auto retry?
-            console.info("Failed to contact the manager", e);
+            console.error("Failed to contact the manager", e);
             this.setError(ORError.MANAGER_FAILED_TO_LOAD);
-            this.emitEvent(OREvent.INIT);
             return false;
         }
+    }
 
-        switch (config.auth) {
+    protected async doAuthInit(): Promise<boolean> {
+        let success = true;
+        switch (this._config.auth) {
             case Auth.BASIC:
                 // TODO: Implement Basic auth support
+                if (this._config.credentials) {
+                    rest.setBasicAuth(this._config.credentials.username, this._config.credentials.password);
+                }
                 this.setError(ORError.AUTH_TYPE_UNSUPPORTED);
-                this.emitEvent(OREvent.INIT);
-                return false;
+                success = false;
+                break;
             case Auth.KEYCLOAK:
-                const success = await this.loadAndInitialiseKeycloak(config);
-                this.emitEvent(OREvent.INIT);
-                return success;
+                success = await this.loadAndInitialiseKeycloak();
+                // Add interceptor to inject authorization header on each request
+                rest.addRequestInterceptor(
+                    (config: AxiosRequestConfig) => {
+                        if (!config.headers.Authorization) {
+                            const token = this.getKeycloakToken();
+
+                            if (token) {
+                                config.headers.Authorization = "Bearer " + token;
+                            }
+                        }
+
+                        return config;
+                    }
+                );
+                break;
             case Auth.NONE:
                 // Nothing for us to do here
-                this.emitEvent(OREvent.INIT);
-                return true;
+                break;
             default:
                 this.setError(ORError.AUTH_TYPE_UNSUPPORTED);
-                this.emitEvent(OREvent.INIT);
-                return false;
+                success = false;
+                break;
         }
+
+        return success;
     }
 
-    protected doRestApiInit() {
-
+    protected doRestApiInit(): boolean {
         rest.setTimeout(10000);
         rest.initialise(this.getBaseUrl());
-
-        if (this._config.auth === Auth.BASIC && this._config.credentials) {
-            rest.setBasicAuth(this._config.credentials.username, this._config.credentials.password);
-        } else if (this._config.auth === Auth.KEYCLOAK) {
-            // Add interceptor to inject authorization header on each request
-            rest.addRequestInterceptor(
-                (config) => {
-                    if (!config.headers.Authorization) {
-                        const token = this.getKeycloakToken();
-
-                        if (token) {
-                            config.headers.Authorization = "Bearer " + token;
-                        }
-                    }
-
-                    return config;
-                }
-            );
-        }
+        return true;
     }
 
-    protected async doConsoleInit() {
-        let orConsole = new Console(this._config.realm, this._config.consoleAutoEnable, () => {
-            this._console.sendRegistration();
-            this.emitEvent(OREvent.CONSOLE_READY);
-        });
+    protected async doConsoleInit(): Promise<boolean> {
+        try {
+            let orConsole = new Console(this._config.realm, this._config.consoleAutoEnable!, () => {
+                this.emitEvent(OREvent.CONSOLE_READY);
+            });
 
-        this._console = orConsole;
+            this._console = orConsole;
 
-        await orConsole.initialise();
-        this.emitEvent(OREvent.CONSOLE_INIT);
-
-        if (orConsole.autoEnable && orConsole.pendingProviderEnables.length > 0) {
-            await orConsole.enableProviders();
+            await orConsole.initialise();
+            this.emitEvent(OREvent.CONSOLE_INIT);
+            return true;
+        } catch (e) {
+            this.setError(ORError.CONSOLE_ERROR);
+            return false;
         }
     }
 
@@ -300,6 +303,9 @@ export class Manager {
 
     public logout(redirectUrl?: string) {
         if (this._keycloak) {
+            if (this.console.isMobile) {
+                this.console.storeData("REFRESH_TOKEN", null);
+            }
             const options = redirectUrl && redirectUrl !== "" ? {redirectUri: redirectUrl} : null;
             this._keycloak.logout(options);
         }
@@ -346,6 +352,11 @@ export class Manager {
         return baseUrl;
     }
 
+    public getAppName(): string {
+        let pathArr = location.pathname.split('/');
+        return pathArr.length >= 1 ? pathArr[1] : "";
+    }
+
     public hasRole(role: string) {
         return this._roles && this._roles.indexOf(role) >= 0;
     }
@@ -372,25 +383,33 @@ export class Manager {
         return undefined;
     }
 
-    // TODO: Native shell support
-    protected isNative(): boolean {
-        // return this.console && this.console.enabled;
-        return false;
+    protected isMobile(): boolean {
+        return this.console && this.console.isMobile;
     }
 
-    protected onAuthenticated() {
+    protected _onAuthenticated() {
+        // If native shell is enabled, we need an offline refresh token
+        if (this.console && this.console.isMobile && this.config.auth === Auth.KEYCLOAK) {
 
+            if (this._keycloak.refreshTokenParsed.typ === "Offline") {
+                console.debug("Storing offline refresh token");
+                this.console.storeData("REFRESH_TOKEN", this._keycloak.refreshToken);
+            } else {
+                console.debug("No offline refresh token available");
+                this.console.storeData("REFRESH_TOKEN", null);
+            }
+        }
     }
 
     // NOTE: The below works with Keycloak 2.x JS API - They made breaking changes in newer versions
     // so this will need updating.
-    protected async loadAndInitialiseKeycloak(config: ManagerConfig): Promise<boolean> {
+    protected async loadAndInitialiseKeycloak(): Promise<boolean> {
 
         // Load the keycloak JS API
         const promise = new Promise<Event>((resolve, reject) => {
             // Load keycloak script from keycloak server
             const scriptElement = document.createElement("script");
-            scriptElement.src = config.keycloakUrl + "/js/keycloak.js";
+            scriptElement.src = this._config.keycloakUrl + "/js/keycloak.js";
             scriptElement.onload = (e) => resolve(e);
             scriptElement.onerror = (e) => reject(e);
             document.querySelector("head")!.appendChild(scriptElement);
@@ -408,8 +427,8 @@ export class Manager {
             // Initialise keycloak
             this._keycloak = (window as any).Keycloak({
                 clientId: "openremote",
-                realm: config.realm,
-                url: config.keycloakUrl
+                realm: this._config.realm,
+                url: this._config.keycloakUrl
             });
 
             this._keycloak.onAuthSuccess = () => {
@@ -426,13 +445,16 @@ export class Manager {
             // so putting a check in place; wrap keycloak promise in proper ES6 promise
             let keycloakPromise: any = null;
             try {
+                // Try to use a stored offline refresh token if defined
+                let offlineToken = await this.getNativeOfflineRefreshToken();
+
                 const authenticated = await new Promise<boolean>(((resolve, reject) => {
                     keycloakPromise = resolve;
                     this._keycloak.init({
                         checkLoginIframe: false, // Doesn't work well with offline tokens
-                        onLoad: config.autoLogin ? "login-required" : "check-sso",
-                        refreshToken: Manager.getNativeOfflineRefreshToken(), // Try to use a stored offline refresh token
-                        scope: this.isNative() ? "offline_access" : null
+                        onLoad: this._config.autoLogin ? "login-required" : "check-sso",
+                        refreshToken: offlineToken,
+                        scope: this.isMobile() ? "offline_access" : null
                     }).success((auth: boolean) => {
                         resolve(auth);
                     }).error(() => {
@@ -456,7 +478,7 @@ export class Manager {
                     this._keycloakUpdateTokenInterval = setInterval(() => {
                         this.updateKeycloakAccessToken();
                     }, 10000);
-                    this.onAuthenticated();
+                    this._onAuthenticated();
                 }
                 this.setAuthenticated(authenticated);
                 return true;
@@ -469,27 +491,6 @@ export class Manager {
             this.setError(ORError.KEYCLOAK_FAILED_TO_LOAD);
             return false;
         }
-    }
-
-    // TODO: Implement console offline tokens
-    protected storeNativeOfflineRefreshToken() {
-        // // If native shell is enabled, we need an offline refresh token
-        // if (this.console && this.console.enabled) {
-        //
-        //     // If we don't have an offline refresh token, try to get one
-        //     if (this.keycloak.refreshTokenParsed.typ !== "Offline") {
-        //         console.debug("Native shell enabled, requesting offline refresh token")
-        //         this.doKeycloakLogin()
-        //         return;
-        //     }
-        //
-        //     // Transfer offline refresh token to native shell so it can be stored for future usage
-        //     console.debug("Native shell enabled, storing offline refresh token");
-        //     this.console.postNativeShellMessage({
-        //         type: 'token',
-        //         data: {refreshToken: this.keycloak.refreshToken}
-        //     });
-        // }
     }
 
     protected updateKeycloakAccessToken(): Promise<boolean> {
@@ -509,6 +510,17 @@ export class Manager {
                     throw new Error("Access token update failed, refresh token expired, login required");
                 });
         });
+    }
+
+    protected async getNativeOfflineRefreshToken(): Promise<string | null> {
+        if (this.console && this.console.isMobile) {
+            return await this.console.sendProviderMessage({
+                provider: "storage",
+                action: "RETRIEVE",
+                key: "REFRESH_TOKEN"
+            }, true);
+        }
+        return null;
     }
 
     protected emitEvent(event: OREvent) {

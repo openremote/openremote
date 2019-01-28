@@ -15,10 +15,10 @@ let mainTemplate = (openremote: Manager) => html`
 <p><b>Roles: </b> ${openremote.roles ? openremote.roles.join(", ") : ""}</p>
 <p><b>Is Super User: </b> ${openremote.isSuperUser()}</p>
 <p><b>Is Manager Same Origin: </b> ${openremote.isManagerSameOrigin()}</p>
-
 <p><b>Is Error: </b> ${openremote.isError}</p>
 <p><b>Error:</b> ${openremote.error}</p>
 <p><b>Config: </b> ${openremote.config ? JSON.stringify(openremote.config) : ""}</p>
+<p><b>Console Registration: </b>${openremote.console ? JSON.stringify(openremote.console.registration) : ""}</p>
 `;
 
 function refresh() {
@@ -30,10 +30,9 @@ openremote.addListener(event => {
 });
 
 openremote.init({
-    managerUrl: "http://localhost:8080",
-    keycloakUrl: "http://localhost:8080/auth",
+    managerUrl: "http://192.168.1.85:8080",
+    keycloakUrl: "http://192.168.1.85:8080/auth",
     auth: Auth.KEYCLOAK,
     autoLogin: false,
-    realm: "master",
-    consoleAutoEnable: true
+    realm: "master"
 }).then(refresh);
