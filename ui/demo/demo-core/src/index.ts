@@ -2,8 +2,8 @@ import {html, render} from "lit-html";
 import {when} from "lit-html/directives/when";
 import openremote, {Auth, Manager} from "@openremote/core";
 
-let loggedInTemplate = (openremote:Manager) => html `<span>Welcome ${openremote.username}</span> (<a href="${openremote.getLogoutUrl()}">logout</a>)`;
-let loggedOutTemplate = (openremote:Manager) => html `<span>Please <a href="${openremote.getLoginUrl()}">login</a>`;
+let loggedInTemplate = (openremote:Manager) => html `<span>Welcome ${openremote.username}</span>(<button @click="${ ()=> {openremote.logout()}}">logout</button>)`;
+let loggedOutTemplate = (openremote:Manager) => html `<span>Please</span><button @click="${() => {openremote.login()}}">login</button>`;
 
 let mainTemplate = (openremote: Manager) => html`
 <p><b>Message:</b> ${when(openremote.authenticated, () => loggedInTemplate(openremote), () => loggedOutTemplate(openremote))}</p>

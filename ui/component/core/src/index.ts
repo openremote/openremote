@@ -2,6 +2,7 @@ import 'url-search-params-polyfill';
 import {Console} from "./console";
 import rest from "@openremote/rest";
 import {AxiosRequestConfig} from 'axios';
+import {EventProvider} from "./event";
 
 export enum ORError {
     NONE = "NONE",
@@ -23,7 +24,16 @@ export enum OREvent {
     ERROR = "ERROR",
     READY = "READY",
     CONSOLE_INIT = "CONSOLE_INIT",
-    CONSOLE_READY = "CONSOLE_READY"
+    CONSOLE_READY = "CONSOLE_READY",
+    EVENTS_CONNECTED = "EVENTS_CONNECTED",
+    EVENTS_CONNECTING = "EVENTS_CONNECTING",
+    EVENTS_DISCONNECTED = "EVENTS_DISCONNECTED",
+}
+
+export enum EventSubscription {
+    NONE = "NONE",
+    WEBSOCKET = "WEBSOCKET",
+    POLLING = "POLLING"
 }
 
 export interface Credentials {
@@ -45,6 +55,8 @@ export interface ManagerConfig {
     autoLogin?: boolean;
     credentials?: Credentials;
     consoleAutoEnable?: boolean;
+    eventSubscription?: EventSubscription;
+    pollingIntervalMillis?: number
 }
 
 export type EventCallback = (event: OREvent) => any;
@@ -95,6 +107,10 @@ export class Manager {
         return this._console;
     }
 
+    get events() {
+        return this._events;
+    }
+
     protected static normaliseConfig(config: ManagerConfig): ManagerConfig {
         const normalisedConfig: ManagerConfig = Object.assign({}, config);
 
@@ -126,6 +142,14 @@ export class Manager {
             normalisedConfig.consoleAutoEnable = true;
         }
 
+        if (!normalisedConfig.eventSubscription) {
+            normalisedConfig.eventSubscription = EventSubscription.WEBSOCKET;
+        }
+
+        if (!normalisedConfig.pollingIntervalMillis || normalisedConfig.pollingIntervalMillis < 5000) {
+            normalisedConfig.pollingIntervalMillis = 10000;
+        }
+
         return normalisedConfig;
     }
 
@@ -141,6 +165,7 @@ export class Manager {
     private _managerVersion: string = "";
     private _listeners: EventCallback[] = [];
     private _console!: Console;
+    private _events: EventProvider | null = null;
 
     public isManagerSameOrigin(): boolean {
         if (!this.initialised) {
@@ -190,7 +215,7 @@ export class Manager {
 
         if (success) {
             this._ready = true;
-            this.emitEvent(OREvent.READY);
+            this._emitEvent(OREvent.READY);
         }
 
         return success;
@@ -215,7 +240,7 @@ export class Manager {
         } catch (e) {
             // TODO: Implement auto retry?
             console.error("Failed to contact the manager", e);
-            this.setError(ORError.MANAGER_FAILED_TO_LOAD);
+            this._setError(ORError.MANAGER_FAILED_TO_LOAD);
             return false;
         }
     }
@@ -228,7 +253,7 @@ export class Manager {
                 if (this._config.credentials) {
                     rest.setBasicAuth(this._config.credentials.username, this._config.credentials.password);
                 }
-                this.setError(ORError.AUTH_TYPE_UNSUPPORTED);
+                this._setError(ORError.AUTH_TYPE_UNSUPPORTED);
                 success = false;
                 break;
             case Auth.KEYCLOAK:
@@ -252,7 +277,7 @@ export class Manager {
                 // Nothing for us to do here
                 break;
             default:
-                this.setError(ORError.AUTH_TYPE_UNSUPPORTED);
+                this._setError(ORError.AUTH_TYPE_UNSUPPORTED);
                 success = false;
                 break;
         }
@@ -262,43 +287,25 @@ export class Manager {
 
     protected doRestApiInit(): boolean {
         rest.setTimeout(10000);
-        rest.initialise(this.getBaseUrl());
+        rest.initialise(this.getApiBaseUrl());
         return true;
     }
-
+    
     protected async doConsoleInit(): Promise<boolean> {
         try {
             let orConsole = new Console(this._config.realm, this._config.consoleAutoEnable!, () => {
-                this.emitEvent(OREvent.CONSOLE_READY);
+                this._emitEvent(OREvent.CONSOLE_READY);
             });
 
             this._console = orConsole;
 
             await orConsole.initialise();
-            this.emitEvent(OREvent.CONSOLE_INIT);
+            this._emitEvent(OREvent.CONSOLE_INIT);
             return true;
         } catch (e) {
-            this.setError(ORError.CONSOLE_ERROR);
+            this._setError(ORError.CONSOLE_ERROR);
             return false;
         }
-    }
-
-    public getLogoutUrl(redirectUrl?: string) {
-        if (this._keycloak) {
-            const options = redirectUrl && redirectUrl !== "" ? {redirectUri: redirectUrl} : null;
-            return this._keycloak.createLogoutUrl(options);
-        }
-
-        return "#";
-    }
-
-    public getLoginUrl(redirectUrl?: string) {
-        if (this._keycloak) {
-            const options = redirectUrl && redirectUrl !== "" ? {redirectUri: redirectUrl} : null;
-            return this._keycloak.createLoginUrl(options);
-        }
-
-        return "#";
     }
 
     public logout(redirectUrl?: string) {
@@ -325,7 +332,7 @@ export class Manager {
 
                 if (username && password && username !== "" && password !== "") {
                     // TODO: Perform some request to check basic auth credentials
-                    this.setAuthenticated(true);
+                    this._setAuthenticated(true);
                 }
                 break;
             case Auth.KEYCLOAK:
@@ -333,6 +340,9 @@ export class Manager {
                     const keycloakOptions: any = {};
                     if (options && options.redirectUrl && options.redirectUrl !== "") {
                         keycloakOptions.redirectUri = options.redirectUrl;
+                    }
+                    if (this.isMobile()) {
+                        keycloakOptions.scope = "offline_access";
                     }
                     this._keycloak.login(keycloakOptions);
                 }
@@ -346,7 +356,7 @@ export class Manager {
         return this.hasRole("admin");
     }
 
-    public getBaseUrl() {
+    public getApiBaseUrl() {
         let baseUrl = this._config.managerUrl;
         baseUrl += "/api/" + this._config.realm + "/";
         return baseUrl;
@@ -395,8 +405,7 @@ export class Manager {
                 console.debug("Storing offline refresh token");
                 this.console.storeData("REFRESH_TOKEN", this._keycloak.refreshToken);
             } else {
-                console.debug("No offline refresh token available");
-                this.console.storeData("REFRESH_TOKEN", null);
+                this.login();
             }
         }
     }
@@ -420,7 +429,7 @@ export class Manager {
 
             // Should have Keycloak global var now
             if (!(window as any).Keycloak) {
-                this.setError(ORError.KEYCLOAK_FAILED_TO_LOAD);
+                this._setError(ORError.KEYCLOAK_FAILED_TO_LOAD);
                 return false;
             }
 
@@ -438,7 +447,7 @@ export class Manager {
             };
 
             this._keycloak.onAuthError = () => {
-                this.setAuthenticated(false);
+                this._setAuthenticated(false);
             };
 
             // There's a bug in some Keycloak versions which means the init promise doesn't resolve
@@ -446,15 +455,14 @@ export class Manager {
             let keycloakPromise: any = null;
             try {
                 // Try to use a stored offline refresh token if defined
-                let offlineToken = await this.getNativeOfflineRefreshToken();
+                let offlineToken = await this._getNativeOfflineRefreshToken();
 
                 const authenticated = await new Promise<boolean>(((resolve, reject) => {
                     keycloakPromise = resolve;
                     this._keycloak.init({
-                        checkLoginIframe: false, // Doesn't work well with offline tokens
+                        checkLoginIframe: !this.isMobile(), // Doesn't work well with offline tokens
                         onLoad: this._config.autoLogin ? "login-required" : "check-sso",
-                        refreshToken: offlineToken,
-                        scope: this.isMobile() ? "offline_access" : null
+                        refreshToken: offlineToken
                     }).success((auth: boolean) => {
                         resolve(auth);
                     }).error(() => {
@@ -465,6 +473,7 @@ export class Manager {
                 keycloakPromise = null;
 
                 if (authenticated) {
+
                     this._name = this._keycloak.tokenParsed.name;
                     this._username = this._keycloak.tokenParsed.preferred_username;
                     this._roles = this._keycloak.realmAccess.roles;
@@ -480,15 +489,16 @@ export class Manager {
                     }, 10000);
                     this._onAuthenticated();
                 }
-                this.setAuthenticated(authenticated);
+                this._setAuthenticated(authenticated);
                 return true;
             } catch (e) {
+                console.error(e);
                 keycloakPromise = null;
-                this.setAuthenticated(false);
+                this._setAuthenticated(false);
                 return false;
             }
         } catch (error) {
-            this.setError(ORError.KEYCLOAK_FAILED_TO_LOAD);
+            this._setError(ORError.KEYCLOAK_FAILED_TO_LOAD);
             return false;
         }
     }
@@ -512,18 +522,14 @@ export class Manager {
         });
     }
 
-    protected async getNativeOfflineRefreshToken(): Promise<string | null> {
+    protected async _getNativeOfflineRefreshToken(): Promise<string | null> {
         if (this.console && this.console.isMobile) {
-            return await this.console.sendProviderMessage({
-                provider: "storage",
-                action: "RETRIEVE",
-                key: "REFRESH_TOKEN"
-            }, true);
+            return await this.console.retrieveData("REFRESH_TOKEN");
         }
         return null;
     }
 
-    protected emitEvent(event: OREvent) {
+    protected _emitEvent(event: OREvent) {
         window.setTimeout(() => {
             for (const listener of this._listeners) {
                 listener(event);
@@ -531,15 +537,15 @@ export class Manager {
         }, 0);
     }
 
-    protected setError(error: ORError) {
+    protected _setError(error: ORError) {
         this._error = error;
-        this.emitEvent(OREvent.ERROR);
+        this._emitEvent(OREvent.ERROR);
     }
 
-    private setAuthenticated(authenticated: boolean) {
+    protected _setAuthenticated(authenticated: boolean) {
         this._authenticated = authenticated;
         if (authenticated) {
-            this.emitEvent(OREvent.AUTHENTICATED);
+            this._emitEvent(OREvent.AUTHENTICATED);
         }
     }
 }

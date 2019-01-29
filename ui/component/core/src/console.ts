@@ -64,6 +64,10 @@ export class Console {
         let autoEnableStr = queryParams.get("consoleAutoEnable");
 
         let requestedProviders = consoleProviders && consoleProviders.length > 0 ? consoleProviders.split(" ") : ["push", "storage"];
+
+        if (requestedProviders.indexOf("storage") < 0) {
+            requestedProviders.push("storage"); // Storage provider is essential to operation and should always be available
+        }
         this._pendingProviderEnables = consoleProviders && consoleProviders.length > 0 ? consoleProviders.split(" ") : [];
 
         // Look for existing console registration in local storage or just create a new one
@@ -330,8 +334,13 @@ export class Console {
             provider: "storage",
             action: "RETRIEVE",
             key: key
-        }, true) as string;
-        return response;
+        }, true);
+
+        if (response && response.hasOwnProperty("value")) {
+            return JSON.parse(response.value);
+        }
+
+        return null;
     }
 
     protected _postNativeShellMessage(jsonMessage: any) {
@@ -342,24 +351,6 @@ export class Console {
         if (this.shellApple) {
             // @ts-ignore
             return window.webkit.messageHandlers.int.postMessage(jsonMessage);
-        }
-    }
-
-    // This is called by native web view code
-    protected _handleProviderResponse(msg: any) {
-        if (!msg) {
-            return;
-        }
-
-        let msgJson = JSON.parse(msg);
-        let name = msgJson.provider;
-        let action = msgJson.action;
-
-        let resolve = this._pendingProviderPromises[name + action];
-
-        if (resolve != null) {
-            this._pendingProviderPromises[name + action] = null;
-            resolve(msgJson);
         }
     }
 
@@ -453,7 +444,24 @@ export class Console {
                     }
                     break;
             }
+        }
+    }
 
+    // This is called by native web view code
+    protected _handleProviderResponse(msg: any) {
+        if (!msg) {
+            return;
+        }
+
+        let msgJson = JSON.parse(msg);
+        let name = msgJson.provider;
+        let action = msgJson.action;
+
+        let resolve = this._pendingProviderPromises[name + action];
+
+        if (resolve != null) {
+            this._pendingProviderPromises[name + action] = null;
+            resolve(msgJson);
         }
     }
 
