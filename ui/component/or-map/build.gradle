@@ -8,4 +8,4 @@ task build() {
     dependsOn npmBuild
 }
 
-npmBuild.dependsOn(resolveTask(":ui:component:rest:build"))
+npmBuild.dependsOn resolveTask(":ui:component:rest:build")

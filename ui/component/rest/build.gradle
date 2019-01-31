@@ -12,7 +12,6 @@ buildscript {
 }
 
 dependencies {
-    compile resolveProject(":model")
     compile 'cz.habarta.typescript-generator:typescript-generator-core:2.9.456'
 }
 
@@ -54,4 +53,6 @@ clean {
     }
 }
 
-build.dependsOn generateTypeScript, npmBuild
+build.dependsOn npmBuild
+
+npmBuild.dependsOn resolveTask(":ui:component:model:build"), generateTypeScript

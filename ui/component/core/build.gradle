@@ -7,3 +7,5 @@ task clean() {
 task build() {
     dependsOn npmBuild
 }
+
+npmBuild.dependsOn resolveTask(":ui:component:model:build"), resolveTask(":ui:component:rest:build")
