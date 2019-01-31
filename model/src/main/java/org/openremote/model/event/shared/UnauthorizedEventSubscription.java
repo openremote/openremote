@@ -30,7 +30,7 @@ import org.openremote.model.event.Event;
  */
 public class UnauthorizedEventSubscription<E extends SharedEvent> {
 
-    public static final String MESSAGE_PREFIX = "UNAUTHORIZED";
+    public static final String MESSAGE_PREFIX = "UNAUTHORIZED:";
 
     protected String eventType;
 

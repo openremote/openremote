@@ -65,59 +65,12 @@ public class TokenService {
         realm = context.getString(R.string.OR_REALM);
     }
 
-    public void saveToken(String refreshToken) {
-        LOG.fine("Saving offline refresh token");
-        SharedPreferences.Editor editor = sharedPref.edit();
-        editor.putString(refreshTokenKey, refreshToken);
-        editor.commit();
-    }
-
-    public String getJsonToken() {
-        String refreshToken = sharedPref.getString(refreshTokenKey, null);
-        return refreshToken == null ? null : "{ \"refreshToken\": \"" + refreshToken + "\"}";
-    }
-
-    public void withAccessToken(final TokenCallback callback) {
-        Call<Map<String, String>> call = oauth2Service.refreshToken(realm, "refresh_token", "openremote", sharedPref.getString(refreshTokenKey, null));
-        call.enqueue(new Callback<Map<String, String>>() {
-            @Override
-            public void onResponse(Call<Map<String, String>> call, Response<Map<String, String>> response) {
-                if (response.isSuccessful()) {
-                    if (response.body() != null) {
-                        try {
-                            LOG.fine("Access token successfully updated");
-                            callback.onToken("Bearer " + response.body().get("access_token"));
-                        } catch (IOException e) {
-                            callback.onFailure(e);
-                        }
-                    } else {
-                        callback.onFailure(new NullPointerException("No response body on update access token request"));
-                    }
-                } else {
-                    callback.onFailure(new IllegalStateException("Unsuccessful response in update access token request: " + response.code()));
-                }
-            }
-
-            @Override
-            public void onFailure(Call call, Throwable t) {
-                callback.onFailure(t);
-            }
-        });
-    }
-
     public void sendOrStoreFCMToken(String fcmToken, String deviceId) {
         LOG.info("Storing FCM token: " + fcmToken);
         LOG.info("Storing Device ID: " + deviceId);
         SharedPreferences.Editor editor = sharedPref.edit();
         editor.putString(fcmTokenKey, fcmToken);
         editor.putString(deviceIdKey, deviceId);
-        editor.commit();
-    }
-
-    public void clearToken() {
-        LOG.info("Clearing auth refresh token");
-        SharedPreferences.Editor editor = sharedPref.edit();
-        editor.remove(refreshTokenKey);
         editor.commit();
     }
 
@@ -188,37 +141,6 @@ public class TokenService {
             LOG.log(Level.SEVERE, "HTTP request failed", e);
         }
     }
-
-//    public void executeAction(final AlertAction alertAction) {
-//        withAccessToken(new TokenCallback() {
-//            @Override
-//            public void onToken(String accessToken) throws IOException {
-//                restApiResource.updateAssetAction(realm, accessToken, alertAction.getAssetId(), alertAction.getAttributeName(), alertAction.getRawJson()).enqueue(new Callback<Void>() {
-//                    @Override
-//                    public void onResponse(Call<Void> call, Response<Void> response) {
-//                        if (response.code() != 204) {
-//                            LOG.severe("Error executing asset write: " + alertAction + ", response code: " + response.code());
-//                        } else {
-//                            LOG.fine("Asset write executed successfully: " + alertAction);
-//                        }
-//                    }
-//
-//                    @Override
-//                    public void onFailure(Call<Void> call, Throwable t) {
-//                        LOG.log(Level.SEVERE, "Error executing asset write: " + alertAction, t);
-//                    }
-//                });
-//
-//            }
-//
-//            @Override
-//            public void onFailure(Throwable t) {
-//                // TODO We should tell the user to login again or it will never work
-//                LOG.log(Level.SEVERE, "Error executing asset write (no access token): " + alertAction, t);
-//            }
-//        });
-//
-//    }
 
     public void notificationDelivered(final Long notificationId, final String fcmToken) {
         LOG.info("Notification status update 'delivered': " + notificationId);
@@ -297,5 +219,33 @@ public class TokenService {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    protected void withAccessToken(final TokenCallback callback) {
+        Call<Map<String, String>> call = oauth2Service.refreshToken(realm, "refresh_token", "openremote", sharedPref.getString(refreshTokenKey, null));
+        call.enqueue(new Callback<Map<String, String>>() {
+            @Override
+            public void onResponse(Call<Map<String, String>> call, Response<Map<String, String>> response) {
+                if (response.isSuccessful()) {
+                    if (response.body() != null) {
+                        try {
+                            LOG.fine("Access token successfully updated");
+                            callback.onToken("Bearer " + response.body().get("access_token"));
+                        } catch (IOException e) {
+                            callback.onFailure(e);
+                        }
+                    } else {
+                        callback.onFailure(new NullPointerException("No response body on update access token request"));
+                    }
+                } else {
+                    callback.onFailure(new IllegalStateException("Unsuccessful response in update access token request: " + response.code()));
+                }
+            }
+
+            @Override
+            public void onFailure(Call call, Throwable t) {
+                callback.onFailure(t);
+            }
+        });
     }
 }

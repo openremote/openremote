@@ -44,9 +44,9 @@ android {
 dependencies {
     implementation "com.squareup.okhttp3:okhttp:$okhttp3Version"
     implementation "com.squareup.retrofit2:retrofit:$retrofitVersion"
-    api "com.android.support:support-compat:$androidSupportVersion"
-    api "com.android.support:appcompat-v7:$androidSupportVersion"
-    api "com.google.firebase:firebase-core:$fcmVersion"
+    implementation "com.android.support:support-compat:$androidSupportVersion"
+    implementation "com.android.support:appcompat-v7:$androidSupportVersion"
+    implementation "com.google.firebase:firebase-core:$fcmVersion"
     implementation "com.google.firebase:firebase-messaging:$fcmVersion"
     implementation "com.squareup.retrofit2:converter-jackson:$jacksonVersion"
     implementation "com.squareup.retrofit2:converter-scalars:$retrofitVersion"

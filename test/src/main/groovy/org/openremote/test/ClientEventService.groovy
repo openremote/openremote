@@ -89,7 +89,7 @@ class ClientEventService implements EventService {
         void sendSubscription(EventSubscription subscription) {
             if (session == null || !session.isOpen())
                 throw new IllegalStateException("Session not open")
-            final String data = EventSubscription.MESSAGE_PREFIX + objectMapper.writeValueAsString(subscription)
+            final String data = EventSubscription.SUBSCRIBE_MESSAGE_PREFIX + objectMapper.writeValueAsString(subscription)
             session.basicRemote.sendText(data)
         }
 

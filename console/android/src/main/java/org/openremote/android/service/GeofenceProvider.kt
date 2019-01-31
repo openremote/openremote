@@ -142,6 +142,7 @@ class GeofenceProvider(val context: Context) : ActivityCompat.OnRequestPermissio
                 "provider" to "geofence",
                 "version" to version,
                 "requiresPermission" to true,
+                "enabled" to (ContextCompat.checkSelfPermission(context, ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED),
                 "hasPermission" to (ContextCompat.checkSelfPermission(context, ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED),
                 "success" to true
         )
@@ -186,34 +187,38 @@ class GeofenceProvider(val context: Context) : ActivityCompat.OnRequestPermissio
         val url = "${getBaseUrl(context)}/$geofenceFetchEndpoint${getConsoleId(context)}"
         LOG.info("Fetching geofences from server: ${url}")
 
-        val geofencesJson = URL(url).readText()
-        val geofences = JSON.readValue(geofencesJson, Array<GeofenceDefinition>::class.java)
+        try {
+            val geofencesJson = URL(url).readText()
+            val geofences = JSON.readValue(geofencesJson, Array<GeofenceDefinition>::class.java)
 
-        LOG.info("Fetched geofences=${geofences.size}")
+            LOG.info("Fetched geofences=${geofences.size}")
 
-        // Remove previous fences that no longer exist
-        val oldFences = getGeofences(context)
-        val remainingFences : ArrayList<GeofenceProvider.GeofenceDefinition> = arrayListOf()
+            // Remove previous fences that no longer exist
+            val oldFences = getGeofences(context)
+            val remainingFences: ArrayList<GeofenceProvider.GeofenceDefinition> = arrayListOf()
 
-        oldFences.forEach { oldFence ->
-            if (geofences.none { Objects.equals(it.id, oldFence.id)}) {
-                LOG.info("Geofence now obsolete: $oldFence")
-                removeGeofence(oldFence.id)
-            } else {
-                remainingFences.add(oldFence)
-                LOG.info("Geofence unchanged: $oldFence")
+            oldFences.forEach { oldFence ->
+                if (geofences.none { Objects.equals(it.id, oldFence.id) }) {
+                    LOG.info("Geofence now obsolete: $oldFence")
+                    removeGeofence(oldFence.id)
+                } else {
+                    remainingFences.add(oldFence)
+                    LOG.info("Geofence unchanged: $oldFence")
+                }
             }
-        }
 
-        geofences.forEach { geofence ->
-            if (remainingFences.none { Objects.equals(it.id, geofence.id)}) {
-                addGeofence(geofencingClient, getGeofencePendingIntent(context, getBaseUrl(context).orEmpty()), geofence)
+            geofences.forEach { geofence ->
+                if (remainingFences.none { Objects.equals(it.id, geofence.id) }) {
+                    addGeofence(geofencingClient, getGeofencePendingIntent(context, getBaseUrl(context).orEmpty()), geofence)
+                }
             }
-        }
 
-        sharedPreferences.edit()
-                .putString(geofencesKey, geofencesJson)
-                .apply()
+            sharedPreferences.edit()
+                    .putString(geofencesKey, geofencesJson)
+                    .apply()
+        } catch (e: Exception) {
+            LOG.log(Level.SEVERE, "Failed to refresh geofences", e)
+        }
     }
 
     private fun onEnable(callback: EnableCallback?) {

@@ -2,8 +2,8 @@ import {html, render} from "lit-html";
 import {when} from "lit-html/directives/when";
 import openremote, {Auth, Manager} from "@openremote/core";
 
-let loggedInTemplate = (openremote:Manager) => html `<span>Welcome ${openremote.username}</span> (<a href="${openremote.getLogoutUrl()}">logout</a>)`;
-let loggedOutTemplate = (openremote:Manager) => html `<span>Please <a href="${openremote.getLoginUrl()}">login</a>`;
+let loggedInTemplate = (openremote:Manager) => html `<span>Welcome ${openremote.username}</span>(<button @click="${ ()=> {openremote.logout()}}">logout</button>)`;
+let loggedOutTemplate = (openremote:Manager) => html `<span>Please</span><button @click="${() => {openremote.login()}}">login</button>`;
 
 let mainTemplate = (openremote: Manager) => html`
 <p><b>Message:</b> ${when(openremote.authenticated, () => loggedInTemplate(openremote), () => loggedOutTemplate(openremote))}</p>
@@ -15,10 +15,10 @@ let mainTemplate = (openremote: Manager) => html`
 <p><b>Roles: </b> ${openremote.roles ? openremote.roles.join(", ") : ""}</p>
 <p><b>Is Super User: </b> ${openremote.isSuperUser()}</p>
 <p><b>Is Manager Same Origin: </b> ${openremote.isManagerSameOrigin()}</p>
-
 <p><b>Is Error: </b> ${openremote.isError}</p>
 <p><b>Error:</b> ${openremote.error}</p>
 <p><b>Config: </b> ${openremote.config ? JSON.stringify(openremote.config) : ""}</p>
+<p><b>Console Registration: </b>${openremote.console ? JSON.stringify(openremote.console.registration) : ""}</p>
 `;
 
 function refresh() {
@@ -30,8 +30,8 @@ openremote.addListener(event => {
 });
 
 openremote.init({
-    managerUrl: "http://localhost:8080",
-    keycloakUrl: "http://localhost:8080/auth",
+    managerUrl: "http://192.168.1.85:8080",
+    keycloakUrl: "http://192.168.1.85:8080/auth",
     auth: Auth.KEYCLOAK,
     autoLogin: false,
     realm: "master"

@@ -3,8 +3,8 @@ import openremote, {Auth, Manager} from "@openremote/core";
 import rest from "@openremote/rest";
 import {AssetQuery} from "@openremote/model";
 
-let loggedInTemplate = (openremote: Manager) => html`<span>Welcome ${openremote.username}</span> (<a href="${openremote.getLogoutUrl()}">logout</a>)`;
-let loggedOutTemplate = (openremote: Manager) => html`<span>Please <a href="${openremote.getLoginUrl()}">login</a>`;
+let loggedInTemplate = (openremote:Manager) => html `<span>Welcome ${openremote.username}</span>(<button @click="${ ()=> {openremote.logout()}}">logout</button>)`;
+let loggedOutTemplate = (openremote:Manager) => html `<span>Please</span><button @click="${() => {openremote.login()}}">login</button>`;
 
 function renderUi() {
     if (openremote.authenticated) {
