@@ -12,6 +12,7 @@ buildscript {
 }
 
 dependencies {
+    compile resolveProject(":model")
     compile 'cz.habarta.typescript-generator:typescript-generator-core:2.9.456'
 }
 

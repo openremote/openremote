@@ -1,6 +1,10 @@
 FROM debian:stretch
 MAINTAINER support@openremote.io
 
+# Add git commit label must be specified at build time using --build-arg GIT_COMMIT=dadadadadad
+ARG GIT_COMMIT=unknown
+LABEL git-commit=$GIT_COMMIT
+
 # Install curl, wget, ca-certificates, procps
 RUN apt-get update && apt-get install -y --no-install-recommends \
         procps \
