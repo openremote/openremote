@@ -68,7 +68,7 @@ public class EventServiceImpl implements EventService {
     public <E extends SharedEvent> void subscribe(Class<E> eventClass, EventFilter<E> filter) {
         EventSubscription<E> subscription = new EventSubscription<>(eventClass, filter);
         final String key = subscription.getEventType();
-        final String data = EventSubscription.MESSAGE_PREFIX + eventSubscriptionMapper.write(subscription);
+        final String data = EventSubscription.SUBSCRIBE_MESSAGE_PREFIX + eventSubscriptionMapper.write(subscription);
 
         if (activeSubscriptions.containsKey(key)) {
             DomGlobal.clearInterval(activeSubscriptions.get(key));

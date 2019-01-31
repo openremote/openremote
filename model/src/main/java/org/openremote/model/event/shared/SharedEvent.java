@@ -64,7 +64,7 @@ import org.openremote.model.syslog.SyslogEvent;
 )
 public abstract class SharedEvent extends Event {
 
-    public static final String MESSAGE_PREFIX = "EVENT";
+    public static final String MESSAGE_PREFIX = "EVENT:";
 
     public SharedEvent(long timestamp) {
         super(timestamp);

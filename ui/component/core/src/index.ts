@@ -2,7 +2,7 @@ import 'url-search-params-polyfill';
 import {Console} from "./console";
 import rest from "@openremote/rest";
 import {AxiosRequestConfig} from 'axios';
-import {EventProvider} from "./event";
+import {EventProvider, EventProviderStatus, WebSocketEventProvider} from "./event";
 
 export enum ORError {
     NONE = "NONE",
@@ -30,8 +30,7 @@ export enum OREvent {
     EVENTS_DISCONNECTED = "EVENTS_DISCONNECTED",
 }
 
-export enum EventSubscription {
-    NONE = "NONE",
+export enum EventProviderType {
     WEBSOCKET = "WEBSOCKET",
     POLLING = "POLLING"
 }
@@ -55,7 +54,7 @@ export interface ManagerConfig {
     autoLogin?: boolean;
     credentials?: Credentials;
     consoleAutoEnable?: boolean;
-    eventSubscription?: EventSubscription;
+    eventProviderType?: EventProviderType;
     pollingIntervalMillis?: number
 }
 
@@ -142,8 +141,8 @@ export class Manager {
             normalisedConfig.consoleAutoEnable = true;
         }
 
-        if (!normalisedConfig.eventSubscription) {
-            normalisedConfig.eventSubscription = EventSubscription.WEBSOCKET;
+        if (!normalisedConfig.eventProviderType) {
+            normalisedConfig.eventProviderType = EventProviderType.WEBSOCKET;
         }
 
         if (!normalisedConfig.pollingIntervalMillis || normalisedConfig.pollingIntervalMillis < 5000) {
@@ -211,6 +210,10 @@ export class Manager {
 
         if (success) {
             success = await this.doAuthInit();
+        }
+
+        if (success) {
+            success = this.doEventsSubscriptionInit();
         }
 
         if (success) {
@@ -290,7 +293,34 @@ export class Manager {
         rest.initialise(this.getApiBaseUrl());
         return true;
     }
-    
+
+    protected doEventsSubscriptionInit(): boolean {
+        switch (this._config.eventProviderType) {
+            case EventProviderType.WEBSOCKET:
+                this._events = new WebSocketEventProvider(this._config.managerUrl, (status: EventProviderStatus) => {this.onEventsProviderStatusChanged(status)});
+                this._events.connect();
+                break;
+            case EventProviderType.POLLING:
+                break;
+        }
+
+        return true;
+    }
+
+    protected onEventsProviderStatusChanged(status: EventProviderStatus) {
+        switch (status) {
+            case EventProviderStatus.DISCONNECTED:
+                this._emitEvent(OREvent.EVENTS_DISCONNECTED);
+                break;
+            case EventProviderStatus.CONNECTED:
+                this._emitEvent(OREvent.EVENTS_CONNECTED);
+                break;
+            case EventProviderStatus.CONNECTING:
+                this._emitEvent(OREvent.EVENTS_CONNECTING);
+                break;
+        }
+    }
+
     protected async doConsoleInit(): Promise<boolean> {
         try {
             let orConsole = new Console(this._config.realm, this._config.consoleAutoEnable!, () => {
@@ -517,7 +547,7 @@ export class Manager {
                     // IDENTITY_SESSION_MAX_MINUTES and IDENTITY_SESSION_OFFLINE_TIMEOUT_MINUTES server config
                     console.info("Access token update failed, refresh token expired, login required");
                     this._keycloak.clearToken();
-                    throw new Error("Access token update failed, refresh token expired, login required");
+                    this._keycloak.login();
                 });
         });
     }

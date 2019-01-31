@@ -51,7 +51,7 @@
                 if (subscription.eventType in this.activeSubscriptions) {
                     clearInterval(this.activeSubscriptions[subscription.eventType]);
                 }
-                let message = "SUBSCRIBE" + JSON.stringify(subscription);
+                let message = "SUBSCRIBE:" + JSON.stringify(subscription);
                 openremote.INSTANCE.sendServiceMessage(message);
                 let interval = setInterval(
                     () => openremote.INSTANCE.sendServiceMessage(message), this.renewalPeriodSeconds / 2 * 1000
@@ -62,7 +62,7 @@
             unsubscribe(eventType) {
                 if (eventType in this.activeSubscriptions) {
                     clearInterval(this.activeSubscriptions[eventType]);
-                    let message = "UNSUBSCRIBE" + JSON.stringify({eventType: eventType});
+                    let message = "UNSUBSCRIBE:" + JSON.stringify({eventType: eventType});
                     openremote.INSTANCE.sendServiceMessage(message);
                     delete this.activeSubscriptions[eventType];
                     this.notifyPath("activeSubscriptions." + eventType);

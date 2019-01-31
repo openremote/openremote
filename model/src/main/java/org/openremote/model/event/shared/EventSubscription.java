@@ -33,7 +33,8 @@ import java.util.function.Consumer;
  */
 public class EventSubscription<E extends SharedEvent> {
 
-    public static final String MESSAGE_PREFIX = "SUBSCRIBE";
+    public static final String SUBSCRIBE_MESSAGE_PREFIX = "SUBSCRIBE:";
+    public static final String SUBSCRIBED_MESSAGE_PREFIX = "SUBSCRIBED:";
     public static final int RENEWAL_PERIOD_SECONDS = 300;
 
     protected String eventType;

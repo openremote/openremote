@@ -372,7 +372,8 @@ export class Console {
                                 provider: "push",
                                 version: "web",
                                 enabled: true,
-                                requiresPermission: false
+                                requiresPermission: false,
+                                success: true
                             }));
                             break;
                         case "PROVIDER_ENABLE":
@@ -398,7 +399,8 @@ export class Console {
                                 provider: "storage",
                                 version: "1.0.0",
                                 enabled: true,
-                                requiresPermission: false
+                                requiresPermission: false,
+                                success: true
                             }));
                             break;
                         case "PROVIDER_ENABLE":

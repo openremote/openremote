@@ -74,9 +74,9 @@ public class EventTypeConverters implements TypeConverters {
 
     @Converter
     public EventSubscription readEventSubscription(String string, Exchange exchange) throws Exception {
-        if (!string.startsWith(EventSubscription.MESSAGE_PREFIX))
+        if (!string.startsWith(EventSubscription.SUBSCRIBE_MESSAGE_PREFIX))
             return null;
-        string = string.substring(EventSubscription.MESSAGE_PREFIX.length());
+        string = string.substring(EventSubscription.SUBSCRIBE_MESSAGE_PREFIX.length());
         return Container.JSON.readValue(string, EventSubscription.class);
     }
 

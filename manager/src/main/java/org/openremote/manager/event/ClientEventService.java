@@ -38,7 +38,6 @@ import org.openremote.model.event.shared.UnauthorizedEventSubscription;
 import org.openremote.model.syslog.SyslogEvent;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.logging.Logger;
 
@@ -155,7 +154,7 @@ public class ClientEventService implements ContainerService {
                     .stop()
                     .end()
                     .choice()
-                    .when(bodyAs(String.class).startsWith(EventSubscription.MESSAGE_PREFIX))
+                    .when(bodyAs(String.class).startsWith(EventSubscription.SUBSCRIBE_MESSAGE_PREFIX))
                     .convertBodyTo(EventSubscription.class)
                     .process(exchange -> {
                         String sessionKey = getSessionKey(exchange);
