@@ -38,6 +38,7 @@ import org.openremote.android.service.TokenService;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class MainActivity extends Activity {
@@ -55,7 +56,6 @@ public class MainActivity extends Activity {
     protected int webViewTimeout = WEBVIEW_LOAD_TIMEOUT_DEFAULT;
     protected boolean webViewLoaded;
     protected ErrorViewHolder errorViewHolder;
-    protected Context context;
     protected SharedPreferences sharedPreferences;
     protected GeofenceProvider geofenceProvider;
     protected String consoleId;
@@ -112,7 +112,7 @@ public class MainActivity extends Activity {
         String version = "N/A";
 
         try {
-            PackageInfo pInfo = context.getPackageManager().getPackageInfo(getPackageName(), 0);
+            PackageInfo pInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
             version = pInfo.versionName;
         } catch (PackageManager.NameNotFoundException e) {
             e.printStackTrace();
@@ -135,6 +135,8 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+
         if (BuildConfig.DEBUG) {
             // Check write permission for logging purposes
 
@@ -153,9 +155,6 @@ public class MainActivity extends Activity {
         } catch (NumberFormatException nfe) {
             System.out.println("Could not parse console load timeout value: " + nfe);
         }
-
-        context = this;
-        sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
 
         // Enable remote debugging of WebView from Chrome Debugger tools
         if (0 != (getApplicationInfo().flags & ApplicationInfo.FLAG_DEBUGGABLE)) {
@@ -293,11 +292,11 @@ public class MainActivity extends Activity {
                     request.getUrl().getLastPathSegment().equals("token") &&
                     request.getMethod().equals("POST") &&
                     errorResponse.getStatusCode() == 400) {
-                    webAppInterface.tokenService.clearToken();
-                    return;
-                }
+                        MainActivity.this.storeData(getString(R.string.SHARED_PREF_REFRESH_TOKEN), null);
+                        return;
+                    }
 
-                handleError(errorResponse.getStatusCode(), errorResponse.getReasonPhrase(), request.getUrl().toString(), request.isForMainFrame());
+                    handleError(errorResponse.getStatusCode(), errorResponse.getReasonPhrase(), request.getUrl().toString(), request.isForMainFrame());
             }
 
             @Override
@@ -412,9 +411,9 @@ public class MainActivity extends Activity {
             public void onDownloadStart(String url, String userAgent, String contentDisposition, String mimetype, long contentLength) {
 
                 String writePermission = Manifest.permission.WRITE_EXTERNAL_STORAGE;
-                if (ContextCompat.checkSelfPermission(context, writePermission) != PackageManager.PERMISSION_GRANTED) {
+                if (ContextCompat.checkSelfPermission(MainActivity.this, writePermission) != PackageManager.PERMISSION_GRANTED) {
                     // Write permission has not been granted yet, request it.
-                    ActivityCompat.requestPermissions((MainActivity) context, new String[]{writePermission}, WRITE_PERMISSION_FOR_DOWNLOAD);
+                    ActivityCompat.requestPermissions(MainActivity.this, new String[]{writePermission}, WRITE_PERMISSION_FOR_DOWNLOAD);
                 } else {
                     DownloadManager.Request request = new
                         DownloadManager.Request(Uri.parse(url));
@@ -478,27 +477,14 @@ public class MainActivity extends Activity {
         }
 
         @JavascriptInterface
-        public void logOut() {
-            tokenService.clearToken();
-        }
-
-        @JavascriptInterface
         public void postMessage(String jsonMessage) throws JSONException {
             JSONObject reader = new JSONObject(jsonMessage);
             String messageType = reader.getString("type");
             JSONObject data = reader.optJSONObject("data");
             switch (messageType) {
-                case "token":
-                    LOG.fine("Received WebApp message, storing offline refresh token");
-                    tokenService.saveToken(data.getString("refreshToken"));
-                    break;
-                case "logout":
-                    LOG.fine("Received WebApp message, logout");
-                    tokenService.clearToken();
-                    break;
                 case "error":
                     LOG.fine("Received WebApp message, error: " + data.getString("error"));
-                    Handler mainHandler = new Handler(context.getMainLooper());
+                    Handler mainHandler = new Handler(getMainLooper());
                     mainHandler.post(new Runnable() {
                         @Override
                         public void run() {
@@ -511,9 +497,11 @@ public class MainActivity extends Activity {
                     if (action != null) {
                         String provider = data.getString("provider");
                         if (provider.equalsIgnoreCase("geofence")) {
-                            handleGeofenceProviderMessage(action, data.has("data") ? data.getJSONObject("data") : null);
+                            handleGeofenceProviderMessage(data);
                         } else if (provider.equalsIgnoreCase("push")) {
-                            handlePushProviderMessage(action, data.has("data") ? data.getJSONObject("data") : null);
+                            handlePushProviderMessage(data);
+                        } else if (provider.equalsIgnoreCase("storage")) {
+                            handleStorageProviderMessage(data);
                         }
                     }
                     break;
@@ -521,7 +509,9 @@ public class MainActivity extends Activity {
             }
         }
 
-        protected void handleGeofenceProviderMessage(String action, JSONObject data) throws JSONException {
+        protected void handleGeofenceProviderMessage(JSONObject data) throws JSONException {
+            String action = data.getString("action");
+
             if (geofenceProvider == null) {
                 geofenceProvider = new GeofenceProvider(activity);
             }
@@ -530,21 +520,20 @@ public class MainActivity extends Activity {
                 Map<String, Object> initData = geofenceProvider.initialize();
                 notifyClient(initData);
             } else if (action.equalsIgnoreCase("PROVIDER_ENABLE")) {
-                if (data != null) {
-                    String consoleId = data.getString("consoleId");
-                    if (consoleId != null) {
-                        ((MainActivity) activity).consoleId = consoleId;
-                        geofenceProvider.enable(MainActivity.this, String.format("%s/api/%s",
-                            getString(R.string.OR_BASE_SERVER),
-                            getString(R.string.OR_REALM)),
-                            consoleId, new GeofenceProvider.EnableCallback() {
-                                @Override
-                                public void accept(@NotNull Map<String, ?> responseData) {
-                                    //noinspection unchecked
-                                    notifyClient((Map<String, Object>) responseData);
-                                }
-                            });
-                    }
+                String consoleId = data.getString("consoleId");
+
+                if (consoleId != null) {
+                    ((MainActivity) activity).consoleId = consoleId;
+                    geofenceProvider.enable(MainActivity.this, String.format("%s/api/%s",
+                        getString(R.string.OR_BASE_SERVER),
+                        getString(R.string.OR_REALM)),
+                        consoleId, new GeofenceProvider.EnableCallback() {
+                            @Override
+                            public void accept(@NotNull Map<String, ?> responseData) {
+                                //noinspection unchecked
+                                notifyClient((Map<String, Object>) responseData);
+                            }
+                        });
                 }
             } else if (action.equalsIgnoreCase("PROVIDER_DISABLE")) {
                 geofenceProvider.disable();
@@ -557,24 +546,26 @@ public class MainActivity extends Activity {
             }
         }
 
-        protected void handlePushProviderMessage(String action, JSONObject data) throws JSONException {
+        protected void handlePushProviderMessage(JSONObject data) throws JSONException {
+            String action = data.getString("action");
+
             if (action.equalsIgnoreCase("PROVIDER_INIT")) {
                 // Push permission is covered by the INTERNET permission and is not a runtime permission
                 Map<String, Object> response = new HashMap<>();
                 response.put("action", "PROVIDER_INIT");
                 response.put("provider", "push");
                 response.put("version", "fcm");
+                response.put("enabled", false);
                 response.put("requiresPermission", false);
+                response.put("hasPermission", true);
                 response.put("success", true);
                 notifyClient(response);
             } else if (action.equalsIgnoreCase("PROVIDER_ENABLE")) {
-                if (data != null) {
-                    String consoleId = data.getString("consoleId");
-                    if (consoleId != null) {
-                        sharedPreferences.edit().putString(GeofenceProvider.Companion.getConsoleIdKey(), consoleId).apply();
-                    }
-                }
+                String consoleId = data.getString("consoleId");
 
+                if (consoleId != null) {
+                    sharedPreferences.edit().putString(GeofenceProvider.Companion.getConsoleIdKey(), consoleId).apply();
+                }
                 // TODO: Implement topic support
                 String fcmToken = FirebaseInstanceId.getInstance().getToken();
                 Map<String, Object> response = new HashMap<>();
@@ -595,30 +586,79 @@ public class MainActivity extends Activity {
             }
         }
 
-        protected void notifyClient(Map<String, Object> data) {
-            try {
-                final String jsonString = new ObjectMapper().writeValueAsString(data);
+        protected void handleStorageProviderMessage(JSONObject data) throws JSONException {
+            String action = data.getString("action");
 
-                activity.runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        webView.evaluateJavascript(String.format("OpenRemoteConsole.handleProviderResponse('%s')", jsonString), null);
-                    }
-                });
-            } catch (JsonProcessingException e) {
-                e.printStackTrace();
+            if (action.equalsIgnoreCase("PROVIDER_INIT")) {
+                Map<String, Object> response = new HashMap<>();
+                response.put("action", "PROVIDER_INIT");
+                response.put("provider", "storage");
+                response.put("version", "1.0.0");
+                response.put("enabled", true);
+                response.put("requiresPermission", false);
+                response.put("hasPermission", true);
+                response.put("success", true);
+                notifyClient(response);
+            } else if (action.equalsIgnoreCase("PROVIDER_ENABLE")) {
+                // Doesn't require enabling but just in case it gets called lets return a valid response
+                Map<String, Object> response = new HashMap<>();
+                response.put("action", "PROVIDER_ENABLE");
+                response.put("provider", "storage");
+                response.put("hasPermission", true);
+                response.put("success", true);
+                notifyClient(response);
+            } else if (action.equalsIgnoreCase("STORE")) {
+                try {
+                    String key = data.getString("key");
+                    String valueJson = data.getString("value");
+                    storeData(key, valueJson);
+                } catch (JSONException e) {
+                    LOG.log(Level.SEVERE, "Failed to store data", e);
+                }
+            } else if (action.equalsIgnoreCase("RETRIEVE")) {
+                try {
+                    String key = data.getString("key");
+                    String dataJson = retrieveData(key);
+                    Map<String, Object> response = new HashMap<>();
+                    response.put("action", "RETRIEVE");
+                    response.put("provider", "storage");
+                    response.put("key", key);
+                    response.put("value", dataJson);
+                    notifyClient(response);
+                } catch (JSONException e) {
+                    LOG.log(Level.SEVERE, "Failed to retrieve data", e);
+                }
             }
         }
+    }
 
-        @JavascriptInterface
-        public String getMessage(String messageKey) {
-            switch (messageKey) {
-                case "token":
-                    return tokenService.getJsonToken();
-                default:
-                    return "{}";
-            }
+    protected void notifyClient(Map<String, Object> data) {
+        try {
+            final String jsonString = new ObjectMapper().writeValueAsString(data);
+
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    webView.evaluateJavascript(String.format("OpenRemoteConsole._handleProviderResponse('%s')", jsonString), null);
+                }
+            });
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
         }
+    }
+
+    protected void storeData(String key, String data) {
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        if (data == null) {
+            editor.remove(key);
+        } else {
+            editor.putString(key, data);
+        }
+        editor.apply();
+    }
+
+    protected String retrieveData(String key) {
+        return sharedPreferences.getString(key, null);
     }
 
     protected void onConnectivityChanged(boolean connectivity) {
