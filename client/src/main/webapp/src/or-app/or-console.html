@@ -123,6 +123,8 @@
             ready() {
                 super.ready();
 
+                this.$.queryParams.paramsString = window.location.search.slice(1);
+                let queryParams = this.$.queryParams.paramsObject;
 
                 // If console query parameters set then they take precedence
                 if (queryParams.consoleName) {
