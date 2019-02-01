@@ -13,7 +13,8 @@ module.exports = {
     devtool: 'inline-source-map',
     devServer: {
         port: 9000,
-        contentBase: './dist'
+        contentBase: './dist',
+        publicPath: "/" + __dirname.split(path.sep).slice(-1)[0]  + "/"
     },
     plugins: [
         new HtmlWebpackPlugin({
