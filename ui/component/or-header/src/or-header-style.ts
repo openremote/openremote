@@ -1,4 +1,4 @@
-import {html} from 'lit-html';
+import {html} from 'lit-element';
 export const OrHeaderStyle = html`
 <style>
     or-header a, a:link, a:visited {

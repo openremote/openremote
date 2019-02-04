@@ -11,8 +11,7 @@
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
-    "lit-element": "^2.0.0-rc.2",
-    "lit-html": "1.0.0-rc.2"
+    "lit-element": "^2.0.0-rc.2"
   },
   "devDependencies": {
     "@polymer/decorators": "^3.0.0",
