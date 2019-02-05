@@ -23,30 +23,31 @@ import org.openremote.model.event.Event;
 
 /**
  * A client can unsubscribe from {@link SharedEvent}s on the server, providing the
- * type of event it doesn't want to receive anymore
+ * type of event it doesn't want to receive anymore or the subscription ID to remove
+ * a specific subscriber.
  */
-// TODO: Remove eventType once manager updated to use new UI components
 public class CancelEventSubscription<E extends SharedEvent> {
 
     public static final String MESSAGE_PREFIX = "UNSUBSCRIBE:";
 
     protected String eventType;
 
-    protected Long subscriptionId;
+    protected String subscriptionId;
 
     protected CancelEventSubscription() {
     }
 
-    public CancelEventSubscription(Long subscriptionId) {
+    public CancelEventSubscription(String eventType, String subscriptionId) {
+        this.eventType = eventType;
         this.subscriptionId = subscriptionId;
     }
 
-    public CancelEventSubscription(String eventType) {
-        this.eventType = eventType;
+    public CancelEventSubscription(Class<E> eventClass) {
+        this(Event.getEventType(eventClass), null);
     }
 
-    public CancelEventSubscription(Class<E> eventClass) {
-        this(Event.getEventType(eventClass));
+    public CancelEventSubscription(Class<E> eventClass, String subscriptionId) {
+        this(Event.getEventType(eventClass), subscriptionId);
     }
 
     public String getEventType() {
@@ -57,12 +58,8 @@ public class CancelEventSubscription<E extends SharedEvent> {
         this.eventType = eventType;
     }
 
-    public Long getSubscriptionId() {
+    public String getSubscriptionId() {
         return subscriptionId;
-    }
-
-    public void setSubscriptionId(Long subscriptionId) {
-        this.subscriptionId = subscriptionId;
     }
 
     @Override

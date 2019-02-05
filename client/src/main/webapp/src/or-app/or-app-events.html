@@ -42,7 +42,7 @@
                     eventType: "attribute",
                     filter: {
                         filterType: "attribute-entity-id",
-                        entityId: assetIds
+                        entityIds: assetIds
                     }
                 });
             }
@@ -79,10 +79,10 @@
             onServiceMessageReceived(data) {
                 if (!data)
                     return;
-                if (data.startsWith("UNAUTHORIZED")) {
+                if (data.startsWith("UNAUTHORIZED:")) {
                     openremote.INSTANCE.setError("Unauthorized event subscription.");
-                } else if (data.startsWith("EVENT")) {
-                    data = data.substring("EVENT".length);
+                } else if (data.startsWith("EVENT:")) {
+                    data = data.substring("EVENT:".length);
                     if (data.startsWith("[")) {
                         // Handle array of events
                         let events = JSON.parse(data);

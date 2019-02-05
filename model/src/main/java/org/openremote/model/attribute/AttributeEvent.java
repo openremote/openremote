@@ -67,21 +67,21 @@ public class AttributeEvent extends SharedEvent {
 
         public static final String FILTER_TYPE = "attribute-entity-id";
 
-        protected String[] entityId = new String[0];
+        protected String[] entityIds = new String[0];
 
         protected EntityIdFilter() {
         }
 
-        public EntityIdFilter(String... entityId) {
-            this.entityId = entityId;
+        public EntityIdFilter(String... entityIds) {
+            this.entityIds = entityIds;
         }
 
-        public String[] getEntityId() {
-            return entityId;
+        public String[] getEntityIds() {
+            return entityIds;
         }
 
-        public void setEntityId(String[] entityId) {
-            this.entityId = entityId;
+        public void setEntityIds(String[] entityIds) {
+            this.entityIds = entityIds;
         }
 
         @Override
@@ -91,13 +91,13 @@ public class AttributeEvent extends SharedEvent {
 
         @Override
         public boolean apply(AttributeEvent event) {
-            return Arrays.asList(entityId).contains(event.getEntityId());
+            return Arrays.asList(entityIds).contains(event.getEntityId());
         }
 
         @Override
         public String toString() {
             return getClass().getSimpleName() + "{" +
-                "entityId='" + Arrays.toString(entityId) + '\'' +
+                "entityIds='" + Arrays.toString(entityIds) + '\'' +
                 '}';
         }
     }

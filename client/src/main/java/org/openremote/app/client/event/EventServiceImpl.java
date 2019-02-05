@@ -103,7 +103,7 @@ public class EventServiceImpl implements EventService {
     public void stop() {
         for (Map.Entry<String, Double> entry : activeSubscriptions.entrySet()) {
             DomGlobal.clearInterval(entry.getValue());
-            CancelEventSubscription cancellation = new CancelEventSubscription(entry.getKey());
+            CancelEventSubscription cancellation = new CancelEventSubscription(entry.getKey(), null);
             sendServiceMessage(CancelEventSubscription.MESSAGE_PREFIX + cancelEventSubscriptionMapper.write(cancellation));
         }
         activeSubscriptions.clear();
@@ -119,18 +119,33 @@ public class EventServiceImpl implements EventService {
         if (data.startsWith(UnauthorizedEventSubscription.MESSAGE_PREFIX)) {
             data = data.substring(UnauthorizedEventSubscription.MESSAGE_PREFIX.length());
             UnauthorizedEventSubscription failure = unauthorizedEventSubscriptionMapper.read(data);
-            eventBus.dispatch(new SubscriptionFailureEvent(failure.getEventType()));
+            eventBus.dispatch(new SubscriptionFailureEvent(failure.getSubscription().getEventType()));
         } else if (data.startsWith(SharedEvent.MESSAGE_PREFIX)) {
             data = data.substring(SharedEvent.MESSAGE_PREFIX.length());
-            if (data.startsWith("[")) {
+            if (data.startsWith("{")) {
+                SharedEvent event = sharedEventMapper.read(data);
+                eventBus.dispatch(event);
+            } else if (data.startsWith("[")) {
                 // Handle array of events
                 SharedEvent[] events = sharedEventArrayMapper.read(data);
                 for (SharedEvent event : events) {
                     eventBus.dispatch(event);
                 }
             } else {
-                SharedEvent event = sharedEventMapper.read(data);
-                eventBus.dispatch(event);
+                String[] dataArr = data.split(":(.+)");
+                if (dataArr.length == 2) {
+                    String subscriptionId = dataArr[0];
+                    if (dataArr[1].startsWith("[")) {
+                        // Handle array of events
+                        SharedEvent[] events = sharedEventArrayMapper.read(data);
+                        for (SharedEvent event : events) {
+                            eventBus.dispatch(event);
+                        }
+                    } else {
+                        SharedEvent event = sharedEventMapper.read(data);
+                        eventBus.dispatch(event);
+                    }
+                }
             }
         }
     }

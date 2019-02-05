@@ -164,15 +164,12 @@ public class MapWidget extends FlowPanel {
             throw new IllegalStateException("Already initialized");
         }
 
-        ObjectValue mapOptions = Values.createObject();
+        ObjectValue mapOptions = mapSettings.getObject("options").flatMap(opts -> opts.getObject("default")).orElse(null);
         mapOptions.put("style", mapSettings.deepCopy());
-        mapOptions.put("minZoom", mapSettings.getNumber("minZoom").orElse(0d));
-        mapOptions.put("maxZoom", mapSettings.getNumber("maxZoom").orElse(22d));
-        if (mapSettings.getArray("maxBounds").isPresent()) {
-            mapOptions.put("maxBounds", mapSettings.getArray("maxBounds").get());
-        }
-        if (mapSettings.getBoolean("boxZoom").isPresent()) {
-            mapOptions.put("boxZoom", mapSettings.getBoolean("boxZoom").get());
+        mapOptions.put("minZoom", mapOptions.getNumber("minZoom").orElse(0d));
+        mapOptions.put("maxZoom", mapOptions.getNumber("maxZoom").orElse(22d));
+        if (mapOptions.getArray("bounds").isPresent()) {
+            mapOptions.put("maxBounds", mapOptions.getArray("bounds").get());
         }
         mapOptions.put("container", hostElementId);
         mapOptions.put("attributionControl", true);

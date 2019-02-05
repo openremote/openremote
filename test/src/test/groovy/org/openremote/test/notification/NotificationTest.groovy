@@ -134,27 +134,33 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
         when: "various consoles are registered"
         def consoleRegistration = new ConsoleRegistration(null,
-                                                          "Test Console",
-                                                          "1.0",
-                                                          "Android 7.0",
-                                                          new HashMap<String, ConsoleProvider>() {
-                                                              {
-                                                                  put("geofence", new ConsoleProvider(
-                                                                      ORConsoleGeofenceAssetAdapter.NAME,
-                                                                      true,
-                                                                      false,
-                                                                      false,
-                                                                      null
-                                                                  ))
-                                                                  put("push", new ConsoleProvider(
-                                                                      "fcm",
-                                                                      true,
-                                                                      true,
-                                                                      false,
-                                                                      (ObjectValue)parse("{token: \"23123213ad2313b0897efd\"}").orElse(null)
-                                                                  ))
-                                                              }
-                                                          })
+                "Test Console",
+                "1.0",
+                "Android 7.0",
+                new HashMap<String, ConsoleProvider>() {
+                    {
+                        put("geofence", new ConsoleProvider(
+                                ORConsoleGeofenceAssetAdapter.NAME,
+                                true,
+                                false,
+                                false,
+                                false,
+                                false,
+                                null
+                        ))
+                        put("push", new ConsoleProvider(
+                                "fcm",
+                                true,
+                                true,
+                                true,
+                                true,
+                                false,
+                                (ObjectValue) parse("{token: \"23123213ad2313b0897efd\"}").orElse(null)
+                        ))
+                    }
+                },
+                "",
+                ["manager"] as String)
         def testuser2Console = testuser2ConsoleResource.register(null, consoleRegistration)
         def testuser3Console1 = testuser3ConsoleResource.register(null, consoleRegistration)
         def testuser3Console2 = testuser3ConsoleResource.register(null, consoleRegistration)
@@ -189,7 +195,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         ex.response.status == 403
 
         when: "the admin user sends a notification to a user in a different realm"
-        notification.targets = new Notification.Targets(Notification.TargetType.USER, keycloakDemoSetup.realmAUser)
+        notification.targets = new Notification.Targets(Notification.TargetType.USER, keycloakDemoSetup.testuser2Id)
         advancePseudoClock(1, TimeUnit.HOURS, container)
         adminNotificationResource.sendNotification(null, notification)
 
@@ -197,7 +203,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         notificationIds.size() == 5
 
         when: "a regular user sends a push notification to a user in a different realm"
-        notification.targets = new Notification.Targets(Notification.TargetType.USER, keycloakDemoSetup.realmAUser)
+        notification.targets = new Notification.Targets(Notification.TargetType.USER, keycloakDemoSetup.testuser2Id)
         testuser1NotificationResource.sendNotification(null, notification)
 
         then: "access should be forbidden"
@@ -205,7 +211,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         ex.response.status == 403
 
         when: "a restricted user sends a push notification to another user in the same realm"
-        notification.targets = new Notification.Targets(Notification.TargetType.USER, keycloakDemoSetup.realmAUser)
+        notification.targets = new Notification.Targets(Notification.TargetType.USER, keycloakDemoSetup.testuser2Id)
         testuser3NotificationResource.sendNotification(null, notification)
 
         then: "access should be forbidden"

@@ -23,11 +23,14 @@ import org.apache.camel.Exchange;
 import org.apache.camel.Message;
 import org.apache.camel.impl.DefaultMessage;
 import org.openremote.container.timer.TimerService;
+import org.openremote.container.util.UniqueIdentifierGenerator;
 import org.openremote.container.web.socket.WebsocketConstants;
 import org.openremote.manager.concurrent.ManagerExecutorService;
+import org.openremote.model.event.TriggeredEventSubscription;
 import org.openremote.model.event.shared.CancelEventSubscription;
 import org.openremote.model.event.shared.EventSubscription;
 import org.openremote.model.event.shared.SharedEvent;
+import org.openremote.model.util.TextUtil;
 
 import java.util.*;
 import java.util.logging.Logger;
@@ -42,7 +45,7 @@ public class EventSubscriptions {
     private static final Logger LOG = Logger.getLogger(EventSubscriptions.class.getName());
 
     final protected TimerService timerService;
-    final protected Map<String, SessionSubscriptions> sessionSubscriptions = new HashMap<>();
+    final protected Map<String, SessionSubscriptions> sessionSubscriptionIdMap = new HashMap<>();
 
     class SessionSubscriptions extends HashSet<SessionSubscription> {
         public void removeExpired() {
@@ -56,25 +59,47 @@ public class EventSubscriptions {
             );
         }
 
-        public void update(boolean restrictedUser, EventSubscription eventSubscription) {
-            cancel(eventSubscription.getEventType());
+        public void createOrUpdate(boolean restrictedUser, EventSubscription eventSubscription) {
+
+            if (TextUtil.isNullOrEmpty(eventSubscription.getSubscriptionId())) {
+                cancelByType(eventSubscription.getEventType());
+            } else {
+                cancelById(eventSubscription.getSubscriptionId());
+            }
+
             add(new SessionSubscription(restrictedUser, timerService.getCurrentTimeMillis(), eventSubscription));
         }
 
-        public void cancel(String eventType) {
+        public void update(boolean resstrictedUser, String[] subscriptionIds) {
+            List<String> ids = Arrays.asList(subscriptionIds);
+            forEach(sessionSubscription -> {
+                if (ids.contains(sessionSubscription.subscriptionId)) {
+                    sessionSubscription.restrictedUser = resstrictedUser;
+                    sessionSubscription.timestamp = timerService.getCurrentTimeMillis();
+                }
+            });
+        }
+
+        public void cancelByType(String eventType) {
             removeIf(sessionSubscription -> sessionSubscription.subscription.getEventType().equals(eventType));
+        }
+
+        public void cancelById(String subscriptionId) {
+            removeIf(sessionSubscription -> sessionSubscription.subscription.getSubscriptionId().equals(subscriptionId));
         }
     }
 
     class SessionSubscription {
-        final boolean restrictedUser;
-        final long timestamp;
+        boolean restrictedUser;
+        long timestamp;
         final EventSubscription subscription;
+        final String subscriptionId;
 
         public SessionSubscription(boolean restrictedUser, long timestamp, EventSubscription subscription) {
             this.restrictedUser = restrictedUser;
             this.timestamp = timestamp;
             this.subscription = subscription;
+            this.subscriptionId = subscription.getSubscriptionId();
         }
 
         public boolean matches(boolean accessibleForRestrictedUsers, SharedEvent event) {
@@ -94,39 +119,53 @@ public class EventSubscriptions {
         LOG.info("Starting background task checking for expired event subscriptions from clients");
         this.timerService = timerService;
         executorService.scheduleAtFixedRate(() -> {
-            synchronized (this.sessionSubscriptions) {
-                for (SessionSubscriptions subscriptions : sessionSubscriptions.values()) {
+            synchronized (this.sessionSubscriptionIdMap) {
+                for (SessionSubscriptions subscriptions : sessionSubscriptionIdMap.values()) {
                     subscriptions.removeExpired();
                 }
             }
         }, 5000, 1000);
     }
 
-    public void update(String sessionKey, boolean restrictedUser, EventSubscription subscription) {
-        synchronized (this.sessionSubscriptions) {
+    public void createOrUpdate(String sessionKey, boolean restrictedUser, EventSubscription subscription) {
+        synchronized (this.sessionSubscriptionIdMap) {
             // TODO Check if the user can actually subscribe to the events it wants, how do we do that?
-            LOG.fine("For session '" + sessionKey + "', updating: " + subscription);
+            LOG.fine("For session '" + sessionKey + "', creating/updating: " + subscription);
             SessionSubscriptions sessionSubscriptions =
-                this.sessionSubscriptions.computeIfAbsent(sessionKey, k -> new SessionSubscriptions());
-            sessionSubscriptions.update(restrictedUser, subscription);
+                this.sessionSubscriptionIdMap.computeIfAbsent(sessionKey, k -> new SessionSubscriptions());
+            sessionSubscriptions.createOrUpdate(restrictedUser, subscription);
+        }
+    }
+
+    public void update(String sessionKey, boolean restrictedUser, String[] subscriptionIds) {
+        synchronized (this.sessionSubscriptionIdMap) {
+            SessionSubscriptions sessionSubscriptions = this.sessionSubscriptionIdMap.get(sessionKey);
+            if (sessionSubscriptions != null) {
+                LOG.fine("For session '" + sessionKey + "', updating: " + Arrays.toString(subscriptionIds));
+                sessionSubscriptions.update(restrictedUser, subscriptionIds);
+            }
         }
     }
 
     public void cancel(String sessionKey, CancelEventSubscription subscription) {
-        synchronized (this.sessionSubscriptions) {
-            if (!this.sessionSubscriptions.containsKey(sessionKey))
+        synchronized (this.sessionSubscriptionIdMap) {
+            if (!this.sessionSubscriptionIdMap.containsKey(sessionKey))
                 return;
             LOG.fine("For session '" + sessionKey + "', cancelling: " + subscription);
-            SessionSubscriptions sessionSubscriptions = this.sessionSubscriptions.get(sessionKey);
-            sessionSubscriptions.cancel(subscription.getEventType());
+            SessionSubscriptions sessionSubscriptions = this.sessionSubscriptionIdMap.get(sessionKey);
+            if (TextUtil.isNullOrEmpty(subscription.getSubscriptionId())) {
+                sessionSubscriptions.cancelByType(subscription.getEventType());
+            } else {
+                sessionSubscriptions.cancelById(subscription.getSubscriptionId());
+            }
         }
     }
 
     public void cancelAll(String sessionKey) {
-        synchronized (this.sessionSubscriptions) {
-            if (this.sessionSubscriptions.containsKey(sessionKey)) {
+        synchronized (this.sessionSubscriptionIdMap) {
+            if (this.sessionSubscriptionIdMap.containsKey(sessionKey)) {
                 LOG.fine("Cancelling all subscriptions for session: " + sessionKey);
-                this.sessionSubscriptions.remove(sessionKey);
+                this.sessionSubscriptionIdMap.remove(sessionKey);
             }
         }
     }
@@ -141,8 +180,8 @@ public class EventSubscriptions {
         boolean accessibleForRestrictedUsers = exchange.getIn().getHeader(HEADER_ACCESS_RESTRICTED, false, Boolean.class);
 
         Set<Map.Entry<String, SessionSubscriptions>> sessionSubscriptionsSet;
-        synchronized (this.sessionSubscriptions) {
-            sessionSubscriptionsSet = new HashSet<>(sessionSubscriptions.entrySet());
+        synchronized (this.sessionSubscriptionIdMap) {
+            sessionSubscriptionsSet = new HashSet<>(sessionSubscriptionIdMap.entrySet());
         }
 
         for (Map.Entry<String, SessionSubscriptions> entry : sessionSubscriptionsSet) {
@@ -157,14 +196,17 @@ public class EventSubscriptions {
                 if (sessionSubscription.subscription.getFilter() == null
                     || sessionSubscription.subscription.getFilter().apply(event)) {
                     LOG.fine("Creating message for subscribed session '" + sessionKey + "': " + event);
+
+                    TriggeredEventSubscription<SharedEvent> triggeredEventSubscription = new TriggeredEventSubscription<>(event, sessionSubscription.subscriptionId);
+
                     if (sessionSubscription.subscription.getInternalConsumer() == null) {
                         Message msg = new DefaultMessage();
-                        msg.setBody(event); // Don't copy the event, use same reference
+                        msg.setBody(triggeredEventSubscription); // Don't copy the event, use same reference
                         msg.setHeaders(new HashMap<>(exchange.getIn().getHeaders())); // Copy headers
                         msg.setHeader(WebsocketConstants.SESSION_KEY, sessionKey);
                         messageList.add(msg);
                     } else {
-                        sessionSubscription.subscription.getInternalConsumer().accept(event);
+                        sessionSubscription.subscription.getInternalConsumer().accept(triggeredEventSubscription);
                     }
                 }
             }

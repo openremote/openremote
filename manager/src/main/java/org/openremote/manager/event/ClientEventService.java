@@ -31,10 +31,7 @@ import org.openremote.container.web.socket.WebsocketConstants;
 import org.openremote.manager.concurrent.ManagerExecutorService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.model.Constants;
-import org.openremote.model.event.shared.CancelEventSubscription;
-import org.openremote.model.event.shared.EventSubscription;
-import org.openremote.model.event.shared.SharedEvent;
-import org.openremote.model.event.shared.UnauthorizedEventSubscription;
+import org.openremote.model.event.shared.*;
 import org.openremote.model.syslog.SyslogEvent;
 
 import java.util.Collection;
@@ -49,7 +46,7 @@ import static org.apache.camel.builder.PredicateBuilder.or;
  * Messages always start with a message discriminator in all uppercase letters, followed
  * by an optional JSON payload.
  * <p>
- * The following messages can be send by a client:
+ * The following messages can be sent by a client:
  * <dl>
  * <dt><code>SUBSCRIBE{...}</code><dt>
  * <dd><p>
@@ -163,13 +160,14 @@ public class ClientEventService implements ContainerService {
                         if (eventSubscriptionAuthorizers.stream()
                             .anyMatch(authorizer -> authorizer.apply(authContext, subscription))) {
                             boolean restrictedUser = identityService.getIdentityProvider().isRestrictedUser(authContext.getUserId());
-                            eventSubscriptions.update(sessionKey, restrictedUser, subscription);
+                            eventSubscriptions.createOrUpdate(sessionKey, restrictedUser, subscription);
+                            sendToSession(sessionKey, subscription);
                         } else {
                             LOG.warning("Unauthorized subscription from '"
                                 + authContext.getUsername() + "' in realm '" + authContext.getAuthenticatedRealm()
                                 + "': " + subscription
                             );
-                            sendToSession(sessionKey, new UnauthorizedEventSubscription(subscription.getEventType()));
+                            sendToSession(sessionKey, new UnauthorizedEventSubscription(subscription));
                         }
                     })
                     .when(bodyAs(String.class).startsWith(CancelEventSubscription.MESSAGE_PREFIX))
@@ -177,6 +175,14 @@ public class ClientEventService implements ContainerService {
                     .process(exchange -> {
                         String sessionKey = getSessionKey(exchange);
                         eventSubscriptions.cancel(sessionKey, exchange.getIn().getBody(CancelEventSubscription.class));
+                    })
+                    .when(bodyAs(String.class).startsWith(RenewEventSubscriptions.MESSAGE_PREFIX))
+                    .convertBodyTo(RenewEventSubscriptions.class)
+                    .process(exchange -> {
+                        String sessionKey = getSessionKey(exchange);
+                        AuthContext authContext = exchange.getIn().getHeader(Constants.AUTH_CONTEXT, AuthContext.class);
+                        boolean restrictedUser = identityService.getIdentityProvider().isRestrictedUser(authContext.getUserId());
+                        eventSubscriptions.update(sessionKey, restrictedUser,exchange.getIn().getBody(RenewEventSubscriptions.class).getSubscriptionIds());
                     })
                     .when(bodyAs(String.class).startsWith(SharedEvent.MESSAGE_PREFIX))
                     .convertBodyTo(SharedEvent.class)

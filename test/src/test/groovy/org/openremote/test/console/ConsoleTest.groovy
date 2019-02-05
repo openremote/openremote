@@ -141,17 +141,23 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
                                 true,
                                 false,
                                 false,
+                                false,
+                                false,
                                 null
                         ))
                         put("push", new ConsoleProvider(
                                 "fcm",
                                 true,
                                 true,
+                                true,
+                                true,
                                 false,
                                 (ObjectValue) parse("{token: \"23123213ad2313b0897efd\"}").orElse(null)
                         ))
                     }
-                })
+                },
+                "",
+                ["manager"] as String)
         def returnedConsoleRegistration = authenticatedConsoleResource.register(null, consoleRegistration)
         def consoleId = returnedConsoleRegistration.getId()
         def console = assetStorageService.find(consoleId, true)
@@ -189,8 +195,10 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
                 "Test 1.0",
                 false,
                 false,
+                false,
+                false,
                 true,
-                null
+                null,
         ))
         returnedConsoleRegistration = authenticatedConsoleResource.register(null, returnedConsoleRegistration)
         console = assetStorageService.find(consoleId, true)
@@ -291,7 +299,7 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         }.orElse(null) == "23123213ad2313b0897efd"
 
         when: "an invalid console registration is registered"
-        def invalidRegistration = new ConsoleRegistration(null, null, "1.0", null, null)
+        def invalidRegistration = new ConsoleRegistration(null, null, "1.0", null, null, null, null)
         authenticatedConsoleResource.register(null, invalidRegistration)
 
         then: "the result should be bad request"

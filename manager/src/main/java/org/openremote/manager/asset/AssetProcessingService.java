@@ -178,7 +178,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                 boolean isRestrictedUser = identityService.getIdentityProvider().isRestrictedUser(auth.getUserId());
 
                 // Client can subscribe to several assets
-                for (String assetId : filter.getEntityId()) {
+                for (String assetId : filter.getEntityIds()) {
                     Asset asset = assetStorageService.find(assetId);
                     // If the asset doesn't exist, subscription must fail
                     if (asset == null)

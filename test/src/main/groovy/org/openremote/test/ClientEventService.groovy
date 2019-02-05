@@ -52,18 +52,34 @@ class ClientEventService implements EventService {
                         if (data.startsWith(UnauthorizedEventSubscription.MESSAGE_PREFIX)) {
                             data = data.substring(UnauthorizedEventSubscription.MESSAGE_PREFIX.length())
                             UnauthorizedEventSubscription failure = objectMapper.readValue(data, UnauthorizedEventSubscription.class)
-                            eventBus.dispatch(new SubscriptionFailureEvent(failure.getEventType()))
+                            eventBus.dispatch(new SubscriptionFailureEvent(failure.subscription.getEventType()))
                         } else if (data.startsWith(SharedEvent.MESSAGE_PREFIX)) {
                             data = data.substring(SharedEvent.MESSAGE_PREFIX.length())
-                            if (data.startsWith("[")) {
+
+                            if (data.startsWith("{")) {
+                                SharedEvent event = objectMapper.readValue(data, SharedEvent.class)
+                                eventBus.dispatch(event)
+                            } else if (data.startsWith("[")) {
                                 // Handle array of events
                                 SharedEvent[] events = objectMapper.readValue(data, SharedEvent[].class)
                                 for (SharedEvent event : events) {
                                     eventBus.dispatch(event)
                                 }
                             } else {
-                                SharedEvent event = objectMapper.readValue(data, SharedEvent.class)
-                                eventBus.dispatch(event)
+                                String[] dataArr = data.split(":(.+)")
+                                if (dataArr.length == 2) {
+                                    String subscriptionId = dataArr[0]
+                                    if (dataArr[1].startsWith("[")) {
+                                        // Handle array of events
+                                        SharedEvent[] events = objectMapper.readValue(data, SharedEvent[].class)
+                                        for (SharedEvent event : events) {
+                                            eventBus.dispatch(event)
+                                        }
+                                    } else {
+                                        SharedEvent event = objectMapper.readValue(data, SharedEvent.class)
+                                        eventBus.dispatch(event)
+                                    }
+                                }
                             }
                         }
                     } catch (Throwable t) {

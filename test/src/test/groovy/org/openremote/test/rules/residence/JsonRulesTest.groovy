@@ -120,17 +120,23 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
                                 true,
                                 false,
                                 false,
+                                false,
+                                false,
                                 null
                         ))
                         put("push", new ConsoleProvider(
                                 "fcm",
                                 true,
                                 true,
+                                true,
+                                true,
                                 false,
                                 (ObjectValue) parse("{token: \"23123213ad2313b0897efd\"}").orElse(null)
                         ))
                     }
-                })
+                },
+                "",
+                ["manager"] as String[])
         consoleRegistration = authenticatedConsoleResource.register(null, consoleRegistration)
 
         then: "the console should have been registered"

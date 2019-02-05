@@ -43,12 +43,13 @@ import org.apache.camel.Converter;
 import org.apache.camel.Exchange;
 import org.apache.camel.TypeConverters;
 import org.openremote.container.Container;
-import org.openremote.model.event.shared.CancelEventSubscription;
-import org.openremote.model.event.shared.EventSubscription;
-import org.openremote.model.event.shared.SharedEvent;
-import org.openremote.model.event.shared.UnauthorizedEventSubscription;
+import org.openremote.model.event.TriggeredEventSubscription;
+import org.openremote.model.event.shared.*;
+import org.openremote.model.util.TextUtil;
 
 import java.util.logging.Logger;
+
+import static org.openremote.model.event.shared.EventSubscription.SUBSCRIBED_MESSAGE_PREFIX;
 
 public class EventTypeConverters implements TypeConverters {
 
@@ -65,11 +66,25 @@ public class EventTypeConverters implements TypeConverters {
     }
 
     @Converter
+    public String writeTriggeredEventSubscription(TriggeredEventSubscription triggeredEventSubscription, Exchange exchange) throws Exception {
+        if (!TextUtil.isNullOrEmpty(triggeredEventSubscription.getSubscriptionId())) {
+            return SharedEvent.MESSAGE_PREFIX + triggeredEventSubscription.getSubscriptionId() + ":" + Container.JSON.writeValueAsString(triggeredEventSubscription.getEvent());
+        }
+
+        return SharedEvent.MESSAGE_PREFIX + Container.JSON.writeValueAsString(triggeredEventSubscription.getEvent());
+    }
+
+    @Converter
     public SharedEvent readEvent(String string, Exchange exchange) throws Exception {
         if (!string.startsWith(SharedEvent.MESSAGE_PREFIX))
             return null;
         string = string.substring(SharedEvent.MESSAGE_PREFIX.length());
         return Container.JSON.readValue(string, SharedEvent.class);
+    }
+
+    @Converter
+    public String writeEventSubscription(EventSubscription eventSubscription, Exchange exchange) throws Exception {
+        return SUBSCRIBED_MESSAGE_PREFIX + Container.JSON.writeValueAsString(eventSubscription);
     }
 
     @Converter
@@ -91,5 +106,13 @@ public class EventTypeConverters implements TypeConverters {
     @Converter
     public String writeUnauthorizedEventSubscription(UnauthorizedEventSubscription unauthorizedEventSubscription, Exchange exchange) throws Exception {
         return UnauthorizedEventSubscription.MESSAGE_PREFIX + Container.JSON.writeValueAsString(unauthorizedEventSubscription);
+    }
+
+    @Converter
+    public RenewEventSubscriptions readRenewEventSubscriptions(String string, Exchange exchange) throws Exception {
+        if (!string.startsWith(RenewEventSubscriptions.MESSAGE_PREFIX))
+            return null;
+        string = string.substring(RenewEventSubscriptions.MESSAGE_PREFIX.length());
+        return Container.JSON.readValue(string, RenewEventSubscriptions.class);
     }
 }

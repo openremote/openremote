@@ -20,6 +20,7 @@
 package org.openremote.model.event.shared;
 
 import org.openremote.model.event.Event;
+import org.openremote.model.event.TriggeredEventSubscription;
 
 import java.util.function.Consumer;
 
@@ -30,6 +31,9 @@ import java.util.function.Consumer;
  * <p>
  * Subscriptions must be refreshed by the client every {@link #RENEWAL_PERIOD_SECONDS}
  * or the server will expire and remove the subscription.
+ * <p>
+ * A subscription can optionally contain a {@link #subscriptionId} which allows a client
+ * to have multiple subscriptions for the same event type.
  */
 public class EventSubscription<E extends SharedEvent> {
 
@@ -39,10 +43,12 @@ public class EventSubscription<E extends SharedEvent> {
 
     protected String eventType;
     protected EventFilter<E> filter;
+    protected String subscriptionId;
+
     /**
      * Optional only set when an internal subscription is made
      */
-    protected Consumer<E> internalConsumer;
+    protected Consumer<TriggeredEventSubscription<E>> internalConsumer;
 
     protected EventSubscription() {
     }
@@ -64,9 +70,16 @@ public class EventSubscription<E extends SharedEvent> {
         this.filter = filter;
     }
 
-    public EventSubscription(Class<E> eventClass, EventFilter<E> filter, Consumer<E> internalConsumer) {
+    public EventSubscription(Class<E> eventClass, EventFilter<E> filter, Consumer<TriggeredEventSubscription<E>> internalConsumer) {
         this.eventType = Event.getEventType(eventClass);
         this.filter = filter;
+        this.internalConsumer = internalConsumer;
+    }
+
+    public EventSubscription(Class<E> eventClass, EventFilter<E> filter, String subscriptionId, Consumer<TriggeredEventSubscription<E>> internalConsumer) {
+        this.eventType = Event.getEventType(eventClass);
+        this.filter = filter;
+        this.subscriptionId = subscriptionId;
         this.internalConsumer = internalConsumer;
     }
 
@@ -90,8 +103,12 @@ public class EventSubscription<E extends SharedEvent> {
         return Event.getEventType(eventClass).equals(getEventType());
     }
 
-    public Consumer<E> getInternalConsumer() {
+    public Consumer<TriggeredEventSubscription<E>> getInternalConsumer() {
         return internalConsumer;
+    }
+
+    public String getSubscriptionId() {
+        return subscriptionId;
     }
 
     @Override
@@ -99,6 +116,7 @@ public class EventSubscription<E extends SharedEvent> {
         return getClass().getSimpleName() + "{" +
             "eventType='" + eventType + '\'' +
             ", filter=" + filter +
+            "subscriptionId='" + subscriptionId + '\'' +
             '}';
     }
 }

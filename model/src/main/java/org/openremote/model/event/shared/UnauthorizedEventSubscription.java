@@ -19,8 +19,6 @@
  */
 package org.openremote.model.event.shared;
 
-import org.openremote.model.event.Event;
-
 /**
  * The server returns this message when an {@link EventSubscription} failed.
  * <p>
@@ -32,31 +30,23 @@ public class UnauthorizedEventSubscription<E extends SharedEvent> {
 
     public static final String MESSAGE_PREFIX = "UNAUTHORIZED:";
 
-    protected String eventType;
+    protected EventSubscription subscription;
 
     protected UnauthorizedEventSubscription() {
     }
 
-    public UnauthorizedEventSubscription(String eventType) {
-        this.eventType = eventType;
+    public UnauthorizedEventSubscription(EventSubscription subscription) {
+        this.subscription = subscription;
     }
 
-    public UnauthorizedEventSubscription(Class<E> eventClass) {
-        this(Event.getEventType(eventClass));
-    }
-
-    public String getEventType() {
-        return eventType;
-    }
-
-    public void setEventType(String eventType) {
-        this.eventType = eventType;
+    public EventSubscription getSubscription() {
+        return subscription;
     }
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + "{" +
-            "eventType='" + eventType + '\'' +
-            '}';
+        return "UnauthorizedEventSubscription{" +
+                "subscription=" + subscription +
+                '}';
     }
 }

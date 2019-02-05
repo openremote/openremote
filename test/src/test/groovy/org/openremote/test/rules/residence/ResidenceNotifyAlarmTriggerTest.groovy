@@ -4,7 +4,6 @@ import com.google.common.collect.Lists
 import com.google.firebase.messaging.Message
 import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
-import org.openremote.manager.notification.NotificationService
 import org.openremote.manager.notification.PushNotificationHandler
 import org.openremote.manager.rules.RulesEngine
 import org.openremote.manager.rules.RulesService
@@ -17,7 +16,10 @@ import org.openremote.model.attribute.AttributeRef
 import org.openremote.model.console.ConsoleProvider
 import org.openremote.model.console.ConsoleRegistration
 import org.openremote.model.console.ConsoleResource
-import org.openremote.model.notification.*
+import org.openremote.model.notification.AbstractNotificationMessage
+import org.openremote.model.notification.Notification
+import org.openremote.model.notification.NotificationSendResult
+import org.openremote.model.notification.PushNotificationMessage
 import org.openremote.model.rules.AssetRuleset
 import org.openremote.model.rules.Ruleset
 import org.openremote.model.value.ObjectValue
@@ -66,7 +68,7 @@ class ResidenceNotifyAlarmTriggerTest extends Specification implements ManagerCo
         def conditions = new PollingConditions(timeout: 20, delay: 1)
         def serverPort = findEphemeralPort()
         def services = Lists.newArrayList(defaultServices())
-        services.removeIf {it instanceof PushNotificationHandler}
+        services.removeIf { it instanceof PushNotificationHandler }
         services.add(mockPushNotificationHandler)
         def container = startContainerWithPseudoClock(defaultConfig(serverPort), services)
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
@@ -114,27 +116,33 @@ class ResidenceNotifyAlarmTriggerTest extends Specification implements ManagerCo
 
         when: "a console is registered by the test user"
         def consoleRegistration = new ConsoleRegistration(null,
-                                                          "Test Console",
-                                                          "1.0",
-                                                          "Android 7.0",
-                                                          new HashMap<String, ConsoleProvider>() {
-                                                              {
-                                                                  put("geofence", new ConsoleProvider(
-                                                                      ORConsoleGeofenceAssetAdapter.NAME,
-                                                                      true,
-                                                                      false,
-                                                                      false,
-                                                                      null
-                                                                  ))
-                                                                  put("push", new ConsoleProvider(
-                                                                      "fcm",
-                                                                      true,
-                                                                      true,
-                                                                      false,
-                                                                      (ObjectValue)parse("{token: \"23123213ad2313b0897efd\"}").orElse(null)
-                                                                  ))
-                                                              }
-                                                          })
+                "Test Console",
+                "1.0",
+                "Android 7.0",
+                new HashMap<String, ConsoleProvider>() {
+                    {
+                        put("geofence", new ConsoleProvider(
+                                ORConsoleGeofenceAssetAdapter.NAME,
+                                true,
+                                false,
+                                false,
+                                false,
+                                false,
+                                null
+                        ))
+                        put("push", new ConsoleProvider(
+                                "fcm",
+                                true,
+                                true,
+                                true,
+                                true,
+                                false,
+                                (ObjectValue) parse("{token: \"23123213ad2313b0897efd\"}").orElse(null)
+                        ))
+                    }
+                },
+                "",
+                ["manager"] as String)
         def returnedConsoleRegistration = authenticatedConsoleResource.register(null, consoleRegistration)
 
         then: "the console should be registered"

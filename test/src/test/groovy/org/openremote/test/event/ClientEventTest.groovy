@@ -191,14 +191,14 @@ class ClientEventTest extends Specification implements ManagerContainerTrait, Gw
 
         and: "an internal attribute event subscription is made"
         List<AttributeEvent> internalReceivedEvents = []
-        internalClientEventService.getEventSubscriptions().update(
+        internalClientEventService.getEventSubscriptions().createOrUpdate(
                 ClientEventTest.class.getName(),
                 false,
                 new EventSubscription<>(
                         AttributeEvent.class,
                         new AttributeEvent.EntityIdFilter(managerDemoSetup.thingId),
-                        { attributeEvent ->
-                            internalReceivedEvents.add(attributeEvent as AttributeEvent)
+                        { triggeredEventSubscription ->
+                            internalReceivedEvents.add(triggeredEventSubscription.event as AttributeEvent)
                         }
                 ))
 
