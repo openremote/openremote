@@ -33,7 +33,7 @@ generateTypeScript {
     ]
     customTypeNamingFunction = "function(name, simpleName) { if (name.indexOf(\"\$\") > 0) return name.substr(name.lastIndexOf(\".\")+1).replace(\"\$\",\"\"); }"
     customTypeMappings = [
-            "org.openremote.model.value.ObjectValue:object",
+            "org.openremote.model.value.ObjectValue:{ [id: string]: any }",
             "org.openremote.model.value.ArrayValue:Array<any>",
             "org.openremote.model.value.NumberValue:number",
             "org.openremote.model.value.StringValue:string",

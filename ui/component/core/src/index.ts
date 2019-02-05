@@ -9,7 +9,8 @@ export enum ORError {
     MANAGER_FAILED_TO_LOAD = "MANAGER_FAILED_TO_LOAD",
     KEYCLOAK_FAILED_TO_LOAD = "KEYCLOAK_FAILED_TO_LOAD",
     AUTH_TYPE_UNSUPPORTED = "AUTH_TYPE_UNSUPPORTED",
-    CONSOLE_ERROR = "CONSOLE_INIT_ERROR"
+    CONSOLE_ERROR = "CONSOLE_INIT_ERROR",
+    EVENTS_CONNECTION_ERROR = "EVENTS_CONNECTION_ERROR"
 }
 
 export enum Auth {
@@ -99,7 +100,11 @@ export class Manager {
     }
 
     get isError() {
-        return this._error != null;
+        return this._error != null && this._error !== ORError.NONE;
+    }
+
+    get connectionStatus() {
+        return this._events && this._events.status;
     }
 
     get console() {
@@ -212,9 +217,10 @@ export class Manager {
             success = await this.doAuthInit();
         }
 
-        if (success) {
-            success = this.doEventsSubscriptionInit();
-        }
+        // TODO: Reinstate this once websocket supports anonymous connections
+        // if (success) {
+        //     success = await this.doEventsSubscriptionInit();
+        // }
 
         if (success) {
             this._ready = true;
@@ -294,17 +300,23 @@ export class Manager {
         return true;
     }
 
-    protected doEventsSubscriptionInit(): boolean {
+    protected async doEventsSubscriptionInit(): Promise<boolean> {
+        let connected = false;
+
         switch (this._config.eventProviderType) {
             case EventProviderType.WEBSOCKET:
                 this._events = new WebSocketEventProvider(this._config.managerUrl, (status: EventProviderStatus) => {this.onEventsProviderStatusChanged(status)});
-                this._events.connect();
+                connected = await this._events.connect();
                 break;
             case EventProviderType.POLLING:
                 break;
         }
 
-        return true;
+        if (!connected) {
+            this._setError(ORError.EVENTS_CONNECTION_ERROR);
+        }
+
+        return connected;
     }
 
     protected onEventsProviderStatusChanged(status: EventProviderStatus) {
@@ -572,10 +584,19 @@ export class Manager {
         this._emitEvent(OREvent.ERROR);
     }
 
+    // TODO: Remove events logic once websocket supports anonymous connections
     protected _setAuthenticated(authenticated: boolean) {
         this._authenticated = authenticated;
         if (authenticated) {
             this._emitEvent(OREvent.AUTHENTICATED);
+            if (!this._events) {
+                this.doEventsSubscriptionInit();
+            }
+        } else {
+            if (this._events != null) {
+                this._events.disconnect();
+            }
+            this._events = null;
         }
     }
 }

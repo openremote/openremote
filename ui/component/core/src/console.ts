@@ -12,7 +12,6 @@ export interface ProviderMessage {
     provider: string;
     action: string;
     data?: any;
-
     [x: string]: any;
 }
 
@@ -169,7 +168,7 @@ export class Console {
         try {
             // Get an ID for this console if it doesn't have one
             if (!this._registration.id) {
-                await this.sendRegistration();
+                await this.sendRegistration(0);
             }
 
             if (this._registration.providers) {
@@ -190,6 +189,7 @@ export class Console {
             }
         } catch (e) {
             console.error(e);
+        } finally {
             this._initialiseInProgress = false;
         }
     }
@@ -290,13 +290,18 @@ export class Console {
     }
 
     // Uses a delayed mechanism to avoid excessive calls to the server during enabling providers
-    public async sendRegistration(): Promise<void> {
+    public sendRegistration(delay?: number): Promise<void> {
+
         if (this._registrationTimer) {
             window.clearTimeout(this._registrationTimer);
             this._registrationTimer = null;
         }
 
-        await new Promise(resolve => {
+        delay = delay !== undefined ? delay : 2000;
+
+        console.debug("Sending registration in: " + delay + "ms");
+
+        return new Promise((resolve, reject) => {
             this._registrationTimer = window.setTimeout(() => {
                 this._registrationTimer = null;
                 console.debug("Console: updating registration");
@@ -311,11 +316,13 @@ export class Console {
                         console.debug("Console: registration successful");
                         console.debug("Console: updating locally stored registration");
                         window.localStorage.setItem("OpenRemoteConsole:" + this._realm, JSON.stringify(this._registration));
+                        resolve();
                     });
-                } finally {
-                    resolve();
+                } catch (e) {
+                    console.error("Failed to register console");
+                    reject("Failed to register console");
                 }
-            }, 2000);
+            },);
         });
     }
 
@@ -367,22 +374,25 @@ export class Console {
 
                     switch (msg.action.trim().toUpperCase()) {
                         case "PROVIDER_INIT":
-                            this._handleProviderResponse(JSON.stringify({
+                            let initResponse: ProviderInitialiseResponse = {
                                 action: "PROVIDER_INIT",
                                 provider: "push",
                                 version: "web",
                                 enabled: true,
+                                hasPermission: true,
                                 requiresPermission: false,
                                 success: true
-                            }));
+                            };
+                            this._handleProviderResponse(JSON.stringify(initResponse));
                             break;
                         case "PROVIDER_ENABLE":
-                            this._handleProviderResponse(JSON.stringify({
+                            let enableResponse: ProviderEnableResponse = {
                                 action: "PROVIDER_ENABLE",
                                 provider: "push",
                                 hasPermission: true,
                                 success: true
-                            }));
+                            };
+                            this._handleProviderResponse(JSON.stringify(enableResponse));
                             break;
                         default:
                             throw new Error("Unsupported provider '" + msg.provider + "' and action '" + msg.action + "'");
@@ -394,22 +404,25 @@ export class Console {
 
                     switch (msg.action) {
                         case "PROVIDER_INIT":
-                            this._handleProviderResponse(JSON.stringify({
+                            let initResponse: ProviderInitialiseResponse = {
                                 action: "PROVIDER_INIT",
                                 provider: "storage",
                                 version: "1.0.0",
                                 enabled: true,
+                                hasPermission: true,
                                 requiresPermission: false,
                                 success: true
-                            }));
+                            };
+                            this._handleProviderResponse(JSON.stringify(initResponse));
                             break;
                         case "PROVIDER_ENABLE":
-                            this._handleProviderResponse(JSON.stringify({
+                            let enableResponse: ProviderEnableResponse = {
                                 action: "PROVIDER_ENABLE",
                                 provider: "storage",
                                 hasPermission: true,
                                 success: true
-                            }));
+                            };
+                            this._handleProviderResponse(JSON.stringify(enableResponse));
                             break;
                         case "STORE":
                             let keyValue = msg.key ? msg.key.trim() : null;

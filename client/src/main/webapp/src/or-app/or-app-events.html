@@ -34,7 +34,7 @@
                         value: value
                     }
                 }
-                openremote.INSTANCE.sendServiceMessage("EVENT" + JSON.stringify(attributeEvent));
+                openremote.INSTANCE.sendServiceMessage("EVENT:" + JSON.stringify(attributeEvent));
             }
 
             subscribeAttributeEvents(assetIds) {

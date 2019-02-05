@@ -23,7 +23,6 @@ import org.apache.camel.Exchange;
 import org.apache.camel.Message;
 import org.apache.camel.impl.DefaultMessage;
 import org.openremote.container.timer.TimerService;
-import org.openremote.container.util.UniqueIdentifierGenerator;
 import org.openremote.container.web.socket.WebsocketConstants;
 import org.openremote.manager.concurrent.ManagerExecutorService;
 import org.openremote.model.event.TriggeredEventSubscription;
@@ -197,7 +196,7 @@ public class EventSubscriptions {
                     || sessionSubscription.subscription.getFilter().apply(event)) {
                     LOG.fine("Creating message for subscribed session '" + sessionKey + "': " + event);
 
-                    TriggeredEventSubscription<SharedEvent> triggeredEventSubscription = new TriggeredEventSubscription<>(event, sessionSubscription.subscriptionId);
+                    TriggeredEventSubscription<SharedEvent> triggeredEventSubscription = new TriggeredEventSubscription<>(new SharedEvent[] {event}, sessionSubscription.subscriptionId);
 
                     if (sessionSubscription.subscription.getInternalConsumer() == null) {
                         Message msg = new DefaultMessage();

@@ -37,7 +37,6 @@ import org.openremote.container.persistence.PersistenceEvent;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.AuthContext;
 import org.openremote.container.timer.TimerService;
-import org.openremote.container.web.WebService;
 import org.openremote.manager.asset.console.ConsoleResourceImpl;
 import org.openremote.manager.event.ClientEventService;
 import org.openremote.manager.rules.AssetQueryPredicate;
@@ -50,6 +49,7 @@ import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeType;
 import org.openremote.model.calendar.CalendarEvent;
 import org.openremote.model.calendar.RecurrenceRule;
+import org.openremote.model.event.TriggeredEventSubscription;
 import org.openremote.model.event.shared.TenantFilter;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.BaseAssetQuery;
@@ -67,9 +67,8 @@ import javax.persistence.EntityManager;
 import javax.persistence.NoResultException;
 import javax.persistence.TypedQuery;
 import java.sql.*;
-import java.time.Instant;
-import java.util.*;
 import java.util.Date;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -188,7 +187,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 if (authContext.isSuperUser()) {
                     Asset asset = find(event.getAssetId(), true);
                     if (asset != null)
-                        replyWithAttributeEvents(sessionKey, asset, event.getAttributeNames());
+                        replyWithAttributeEvents(sessionKey, event.getSubscriptionId(), asset, event.getAttributeNames());
                     return;
                 }
 
@@ -203,7 +202,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                     identityService.getIdentityProvider().isRestrictedUser(authContext.getUserId()) ? RESTRICTED_READ : PRIVATE_READ
                 );
                 if (asset != null) {
-                    replyWithAttributeEvents(sessionKey, asset, event.getAttributeNames());
+                    replyWithAttributeEvents(sessionKey, event.getSubscriptionId(), asset, event.getAttributeNames());
                 }
             });
 
@@ -1402,15 +1401,18 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         }
     }
 
-    protected void replyWithAttributeEvents(String sessionKey, Asset asset, String[] attributeNames) {
+    protected void replyWithAttributeEvents(String sessionKey, String subscriptionId, Asset asset, String[] attributeNames) {
         List<String> names = attributeNames == null ? Collections.emptyList() : Arrays.asList(attributeNames);
 
         // Client may want to read a subset or all attributes of the asset
-        clientEventService.sendToSession(sessionKey, asset.getAttributesStream()
-            .filter(attribute -> names.isEmpty() || attribute.getName().filter(names::contains).isPresent())
-            .map(AssetAttribute::getStateEvent)
-            .filter(Optional::isPresent)
-            .map(Optional::get).toArray(AttributeEvent[]::new));
+        AttributeEvent[] events = asset.getAttributesStream()
+                .filter(attribute -> names.isEmpty() || attribute.getName().filter(names::contains).isPresent())
+                .map(AssetAttribute::getStateEvent)
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .toArray(AttributeEvent[]::new);
+        TriggeredEventSubscription<AttributeEvent> triggeredEventSubscription = new TriggeredEventSubscription<>(events, subscriptionId);
+        clientEventService.sendToSession(sessionKey, triggeredEventSubscription);
     }
 
     protected static boolean calendarEventPredicateMatches(CalendarEventActivePredicate eventActivePredicate, Asset asset) {

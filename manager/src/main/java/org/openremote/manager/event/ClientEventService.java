@@ -128,6 +128,7 @@ public class ClientEventService implements ContainerService {
             new EventTypeConverters()
         );
 
+        // TODO: Remove prefix and just use event type then use a subscription wrapper to pass subscription ID around
         messageBrokerSetupService.getContext().addRoutes(new RouteBuilder() {
             @Override
             public void configure() throws Exception {

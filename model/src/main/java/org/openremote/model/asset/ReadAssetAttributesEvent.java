@@ -40,6 +40,8 @@ public class ReadAssetAttributesEvent extends SharedEvent {
 
     protected String[] attributeNames;
 
+    protected String subscriptionId;
+
     protected ReadAssetAttributesEvent() {
     }
 
@@ -62,6 +64,14 @@ public class ReadAssetAttributesEvent extends SharedEvent {
 
     public void setAttributeNames(String[] attributeNames) {
         this.attributeNames = attributeNames;
+    }
+
+    public String getSubscriptionId() {
+        return subscriptionId;
+    }
+
+    public void setSubscriptionId(String subscriptionId) {
+        this.subscriptionId = subscriptionId;
     }
 
     @Override
