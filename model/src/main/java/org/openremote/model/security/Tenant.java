@@ -63,6 +63,9 @@ public class Tenant {
     @Transient
     protected Boolean duplicateEmailsAllowed;
 
+    @Transient
+    protected Boolean rememberMe;
+
     @JsIgnore
     public Tenant() {
         this(null, null, null, null);
@@ -138,6 +141,14 @@ public class Tenant {
 
     public void setDuplicateEmailsAllowed(Boolean duplicateEmailsAllowed) {
         this.duplicateEmailsAllowed = duplicateEmailsAllowed;
+    }
+
+    public Boolean getRememberMe() {
+        return rememberMe;
+    }
+
+    public void setRememberMe(Boolean rememberMe) {
+        this.rememberMe = rememberMe;
     }
 
     public boolean isActive(double currentTimeMillis) {
