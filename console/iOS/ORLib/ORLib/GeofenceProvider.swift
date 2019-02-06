@@ -8,7 +8,7 @@ public class GeofenceProvider: NSObject, URLSessionDelegate {
     static let geoPostUrlsKey = "geoPostUrls"
 
     let version = "ORConsole"
-    let geofenceFetchEndpoint = "rules/geofences/"
+    let geofenceFetchEndpoint = "api/rules/geofences/"
     let locationManager = CLLocationManager()
     let userdefaults = UserDefaults(suiteName: ORAppGroup.entitlement)
     var geoPostUrls = [String:[String]]()
@@ -37,9 +37,10 @@ public class GeofenceProvider: NSObject, URLSessionDelegate {
             DefaultsKey.actionKey: Actions.providerInit,
             DefaultsKey.providerKey: Providers.geofence,
             DefaultsKey.versionKey: version,
-            DefaultsKey.requiresPermissionKey: true,
-            DefaultsKey.hasPermissionKey: checkPermission(),
-            DefaultsKey.successKey: true
+            DefaultsKey.requiresPermissionKey: false,
+            DefaultsKey.hasPermissionKey: true,
+            DefaultsKey.successKey: true,
+            DefaultsKey.enabledKey: true
         ]
     }
 
@@ -116,7 +117,7 @@ public class GeofenceProvider: NSObject, URLSessionDelegate {
     public func disable()-> [String: Any] {
         locationManager.stopMonitoringSignificantLocationChanges()
         return [
-            DefaultsKey.actionKey: "PROVIDER_DISABLE",
+            DefaultsKey.actionKey: Actions.providerDisable,
             DefaultsKey.providerKey: Providers.geofence
         ]
     }
@@ -173,7 +174,7 @@ public class GeofenceProvider: NSObject, URLSessionDelegate {
 
             if !sendQueued {
                 sendQueued = true
-                DispatchQueue.global().async {
+                DispatchQueue.global().asyncAfter(deadline: .now() + .seconds(2)) {
                     self.doSendLocation()
                 }
             }

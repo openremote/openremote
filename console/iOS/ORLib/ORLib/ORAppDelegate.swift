@@ -22,6 +22,7 @@ import UIKit
 import UserNotifications
 import FirebaseCore
 import FirebaseMessaging
+import FirebaseInstanceID
 import CoreLocation
 
 @UIApplicationMain
@@ -39,13 +40,11 @@ open class ORAppDelegate: UIResponder, UIApplicationDelegate, URLSessionDelegate
         UNUserNotificationCenter.current().delegate = self
         // if the app was launched because of geofencing
 
-#if DEBUG
         var paths = NSSearchPathForDirectoriesInDomains(.documentDirectory, .userDomainMask, true)
         let documentsDirectory = paths[0]
         let fileName = "\(Date()).log"
         let logFilePath = (documentsDirectory as NSString).appendingPathComponent(fileName)
         freopen(logFilePath.cString(using: String.Encoding.ascii)!, "a+", stderr)
-#endif
 
         if launchOptions?[UIApplicationLaunchOptionsKey.location] != nil {
             NSLog("%@", "App started from location update")
@@ -53,6 +52,17 @@ open class ORAppDelegate: UIResponder, UIApplicationDelegate, URLSessionDelegate
             geofenceProvider = GeofenceProvider()
             if CLLocationManager.authorizationStatus() == .authorizedAlways {
                 geofenceProvider?.locationManager.startMonitoringSignificantLocationChanges()
+            }
+        } else if let remoteNotifcation = launchOptions?[UIApplicationLaunchOptionsKey.remoteNotification] as? [AnyHashable: Any] {
+            NSLog("%@", "App started from remote notification")
+            if let action = remoteNotifcation[DefaultsKey.actionKey] as? String {
+                if action == Actions.geofenceRefresh {
+                    geofenceProvider = GeofenceProvider()
+                    geofenceProvider?.refreshGeofences()
+                    if CLLocationManager.authorizationStatus() == .authorizedAlways {
+                        geofenceProvider?.locationManager.startMonitoringSignificantLocationChanges()
+                    }
+                }
             }
         } else {
             FirebaseApp.configure()
@@ -121,20 +131,43 @@ open class ORAppDelegate: UIResponder, UIApplicationDelegate, URLSessionDelegate
 
     open func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
         Messaging.messaging().apnsToken = deviceToken
+        InstanceID.instanceID().getID { (result, error) in
+            if let error = error {
+                print("Error fetching remote instange ID: \(error)")
+            }
+            if let token =  InstanceID.instanceID().token(), let deviceId = result {
+                TokenManager.sharedInstance.storeDeviceId(token: token, deviceId: deviceId)
+            }
+        }
     }
 
     open func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable : Any], fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
         if let action = userInfo[DefaultsKey.actionKey] as? String {
             if action == Actions.geofenceRefresh {
-                (self.window?.rootViewController as! ORViewcontroller).geofenceProvider?.refreshGeofences()
+                if let controllerGeofenceProvider = (self.window?.rootViewController as! ORViewcontroller).geofenceProvider {
+                    controllerGeofenceProvider.refreshGeofences()
+                } else if let delegateGeofenceProvider = geofenceProvider {
+                    delegateGeofenceProvider.refreshGeofences()
+                } else {
+                    geofenceProvider = GeofenceProvider()
+                    geofenceProvider!.refreshGeofences()
+                }
+            } else if action == Actions.store {
+                if let data = userInfo[DefaultsKey.dataKey] as? [String: String] {
+                    if let key = data["key"] {
+                        if let storageProvider = (self.window?.rootViewController as! ORViewcontroller).storageProvider {
+                            storageProvider.store(key: key, data: data["value"])
+                        }
+                    }
+                }
             }
         }
+
         if let notificationIdString = userInfo[ActionType.notificationId] as? String, let notificationId = Int64(notificationIdString) {
             if let defaults = UserDefaults(suiteName: ORAppGroup.entitlement), let consoleId = defaults.string(forKey: GeofenceProvider.consoleIdKey) {
                 ORNotificationResource.sharedInstance.notificationDelivered(notificationId: notificationId, targetId: consoleId)
             }
         }
-
         completionHandler(UIBackgroundFetchResult.newData)
     }
 
@@ -178,7 +211,6 @@ open class ORAppDelegate: UIResponder, UIApplicationDelegate, URLSessionDelegate
                 reachabilityAlertShown = false
             }
         }
-
     }
 
     open func urlSession(_ session: URLSession, didReceive challenge: URLAuthenticationChallenge, completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
@@ -193,7 +225,7 @@ open class ORAppDelegate: UIResponder, UIApplicationDelegate, URLSessionDelegate
 }
 
 extension ORAppDelegate : UNUserNotificationCenterDelegate {
-    
+
     open func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
         let userInfo = notification.request.content.userInfo
         var notificationId : Int64? = nil
@@ -306,12 +338,26 @@ extension ORAppDelegate : UNUserNotificationCenterDelegate {
 extension ORAppDelegate : MessagingDelegate {
     open func messaging(_ messaging: Messaging, didRefreshRegistrationToken fcmToken: String) {
         print("Firebase registration token: \(fcmToken)")
-        TokenManager.sharedInstance.storeDeviceId(token: fcmToken)
+        InstanceID.instanceID().getID { (result, error) in
+            if let error = error {
+                print("Error fetching remote instange ID: \(error)")
+            }
+            if let token =  InstanceID.instanceID().token(), let deviceId = result {
+                TokenManager.sharedInstance.storeDeviceId(token: token, deviceId: deviceId)
+            }
+        }
     }
 
     open func messaging(_ messaging: Messaging, didReceiveRegistrationToken fcmToken: String) {
         print("Firebase registration token: \(fcmToken)")
-        TokenManager.sharedInstance.storeDeviceId(token: fcmToken)
+        InstanceID.instanceID().getID { (result, error) in
+            if let error = error {
+                print("Error fetching remote instange ID: \(error)")
+            }
+            if let token =  InstanceID.instanceID().token(), let deviceId = result {
+                TokenManager.sharedInstance.storeDeviceId(token: token, deviceId: deviceId)
+            }
+        }
     }
 }
 

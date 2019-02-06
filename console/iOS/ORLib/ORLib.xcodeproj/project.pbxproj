@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		4C33B4772209D10200681732 /* StorageProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C33B4762209D10200681732 /* StorageProvider.swift */; };
 		4C4C2FB81FD8044A0071CBDA /* ORNotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C4C2FB71FD8044A0071CBDA /* ORNotificationService.swift */; };
 		4C56E5E520C583FB004483C7 /* ORAssetResoure.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C56E5E420C583FB004483C7 /* ORAssetResoure.swift */; };
 		4C77278520BC13E800322CBC /* PushNotificationProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C77278320BC13E800322CBC /* PushNotificationProvider.swift */; };
@@ -27,6 +28,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		4C33B4762209D10200681732 /* StorageProvider.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = StorageProvider.swift; sourceTree = "<group>"; };
 		4C4C2FB71FD8044A0071CBDA /* ORNotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ORNotificationService.swift; sourceTree = "<group>"; };
 		4C56E5E420C583FB004483C7 /* ORAssetResoure.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ORAssetResoure.swift; sourceTree = "<group>"; };
 		4C77278320BC13E800322CBC /* PushNotificationProvider.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PushNotificationProvider.swift; sourceTree = "<group>"; };
@@ -106,6 +108,7 @@
 		4CC3FD8E210F63650025579A /* ConsoleProviders */ = {
 			isa = PBXGroup;
 			children = (
+				4C33B4762209D10200681732 /* StorageProvider.swift */,
 				4C77278420BC13E800322CBC /* GeofenceProvider.swift */,
 				4C77278320BC13E800322CBC /* PushNotificationProvider.swift */,
 			);
@@ -209,6 +212,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				4C33B4772209D10200681732 /* StorageProvider.swift in Sources */,
 				4C77278620BC13E800322CBC /* GeofenceProvider.swift in Sources */,
 				4C9FC2F2211B2F8100D8FD18 /* ORPushNotificationButton.swift in Sources */,
 				4C56E5E520C583FB004483C7 /* ORAssetResoure.swift in Sources */,

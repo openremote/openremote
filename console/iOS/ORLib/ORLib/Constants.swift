@@ -27,10 +27,9 @@ public enum AccesTokenResult<String>
 }
 
 public enum DefaultsKey {
-    public static let token = "token"
-    public static let refreshToken = "refreshToken"
-    public static let idToken = "idToken"
-    public static let deviceId = "deviceToken"
+    public static let refreshTokenKey = "REFRESH_TOKEN"
+    public static let fcmTokenKey = "FCM_TOKEN_KEY"
+    public static let fcmDeviceIdKey = "FCM_DEVICE_ID_KEY"
     public static let actionKey = "action"
     public static let buttonsKey = "buttons"
     public static let providerKey = "provider"
@@ -39,6 +38,7 @@ public enum DefaultsKey {
     public static let hasPermissionKey = "hasPermission"
     public static let successKey = "success"
     public static let dataKey = "data"
+    public static let enabledKey = "enabled"
 }
 
 public enum Actions {
@@ -46,11 +46,14 @@ public enum Actions {
     public static let providerEnable = "PROVIDER_ENABLE"
     public static let providerDisable = "PROVIDER_DISABLE"
     public static let geofenceRefresh = "GEOFENCE_REFRESH"
+    public static let store = "STORE"
+    public static let retrieve = "RETRIEVE"
 }
 
 public enum Providers {
     public static let push = "push"
     public static let geofence = "geofence"
+    public static let storage = "storage"
 }
 
 public enum NotificationsNames {

@@ -24,80 +24,32 @@ import WebKit
 
 public class TokenManager:NSObject, URLSessionDelegate {
 
-    public var offlineToken : String?
-    public var refreshToken : String?
-    public var idToken : String?
-    public var deviceId : String?
-    public var hasToken: Bool
+    let defaults = UserDefaults(suiteName: ORAppGroup.entitlement)
 
     public static let sharedInstance = TokenManager()
-
-    override init() {
-        let defaults = UserDefaults(suiteName: ORAppGroup.entitlement)
-        defaults?.synchronize()
-        if defaults?.value(forKey: DefaultsKey.token) != nil
-            && defaults?.value(forKey: DefaultsKey.refreshToken) != nil
-            && defaults?.value(forKey: DefaultsKey.idToken) != nil {
-            hasToken = true
-            offlineToken = defaults?.value(forKey: DefaultsKey.token) as? String
-            refreshToken = defaults?.value(forKey: DefaultsKey.refreshToken) as? String
-            idToken = defaults?.value(forKey: DefaultsKey.idToken) as? String
-        } else {
-            hasToken = false
-            offlineToken = nil
-            refreshToken = nil
-            idToken = nil
-        }
-        deviceId = defaults?.value(forKey: DefaultsKey.deviceId) as? String
-        super.init()
-    }
-
-    public func storeTokens(tokenJsonDictionnary : [String : String]?) {
-        let defaults = UserDefaults(suiteName: ORAppGroup.entitlement)
-
-        if (tokenJsonDictionnary?["refreshToken"] != nil) {
-            offlineToken = tokenJsonDictionnary?["token"] ?? nil
-            refreshToken = tokenJsonDictionnary?["refreshToken"]! ?? nil
-            idToken = tokenJsonDictionnary?["idToken"] ?? nil
-            defaults?.set(offlineToken, forKey: DefaultsKey.token)
-            defaults?.set(refreshToken, forKey: DefaultsKey.refreshToken)
-            defaults?.set(idToken, forKey: DefaultsKey.idToken)
-            hasToken = true;
-
-            // We just got a token, try to send the FCM token, we might not have been able to talk to backend when we got it initialy
-            sendDeviceId()
-        }
-    }
 
     public func logout() {
         resetToken()
     }
 
     public func resetToken() {
-        hasToken = false
-        offlineToken = nil
-        refreshToken = nil
-        idToken = nil
-        let defaults = UserDefaults(suiteName: ORAppGroup.entitlement)
-        defaults?.removeObject(forKey: DefaultsKey.token)
-        defaults?.removeObject(forKey: DefaultsKey.refreshToken)
-        defaults?.removeObject(forKey: DefaultsKey.idToken)
+        defaults?.removeObject(forKey: DefaultsKey.fcmDeviceIdKey)
+        defaults?.removeObject(forKey: DefaultsKey.refreshTokenKey)
+        defaults?.removeObject(forKey: DefaultsKey.fcmTokenKey)
     }
 
     public func resetTokenAndAuthenticate() {
         resetToken()
-        //        authenticate()
     }
 
-    public func storeDeviceId(token : String) {
-        let defaults = UserDefaults(suiteName: ORAppGroup.entitlement)
-        deviceId = token
-        defaults?.set(token, forKey: DefaultsKey.deviceId)
+    public func storeDeviceId(token : String, deviceId: String) {
+        defaults?.set(token, forKey: DefaultsKey.fcmTokenKey)
+        defaults?.set(deviceId, forKey: DefaultsKey.fcmDeviceIdKey)
         sendDeviceId()
     }
 
-    public func sendDeviceId() {
-        if (deviceId != nil && hasToken) {
+    private func sendDeviceId() {
+        if let fcmToken = defaults?.string(forKey: DefaultsKey.fcmTokenKey), let deviceId = defaults?.string(forKey: DefaultsKey.fcmDeviceIdKey) {
             UIApplication.shared.isNetworkActivityIndicatorVisible = true
             self.getAccessToken { (accessTokenResult) in
                 switch accessTokenResult {
@@ -109,7 +61,7 @@ public class TokenManager:NSObject, URLSessionDelegate {
                     let request = NSMutableURLRequest(url: urlRequest)
                     request.addValue("application/x-www-form-urlencoded", forHTTPHeaderField:"Content-Type");
                     request.httpMethod = "PUT"
-                    let postString = String(format:"token=%@&device_id=%@", self.deviceId!, (UIDevice.current.identifierForVendor?.uuidString)!)
+                    let postString = String(format:"token=%@&device_id=%@", fcmToken, deviceId)
                     request.httpBody = postString.data(using: .utf8)
                     request.addValue(String(format:"Bearer %@", accessToken!), forHTTPHeaderField: "Authorization")
                     let sessionConfiguration = URLSessionConfiguration.default
@@ -146,10 +98,13 @@ public class TokenManager:NSObject, URLSessionDelegate {
 
     public func getAccessToken(callback: @escaping (AccesTokenResult<String>) -> ()) {
         guard let tkurlRequest = URL(string: String(format:"\(ORServer.scheme)://%@/auth/realms/%@/protocol/openid-connect/token", ORServer.hostURL, ORServer.realm)) else { return }
+
+        guard let refreshToken = defaults?.string(forKey: DefaultsKey.refreshTokenKey) else { return }
+
         let tkRequest = NSMutableURLRequest(url: tkurlRequest)
         tkRequest.addValue("application/x-www-form-urlencoded", forHTTPHeaderField:"Content-Type");
         tkRequest.httpMethod = "POST"
-        let postString = String(format:"grant_type=refresh_token&refresh_token=%@&client_id=%@", refreshToken!, ORClient.clientId)
+        let postString = String(format:"grant_type=refresh_token&refresh_token=%@&client_id=%@", refreshToken, ORClient.clientId)
 
         tkRequest.httpBody = postString.data(using: .utf8)
         let sessionConfiguration = URLSessionConfiguration.default

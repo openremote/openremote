@@ -32,6 +32,7 @@ open class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMess
 
     var geofenceProvider: GeofenceProvider?
     var pushProvider: PushNotificationProvider?
+    var storageProvider: StorageProvider?
     
     open override func viewDidLoad() {
         super.viewDidLoad()
@@ -47,9 +48,6 @@ open class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMess
         let jsonDictionnary = message.body as? [String : Any]
         if let type = jsonDictionnary?["type"] as? String {
             switch (type) {
-            case "token":
-                let tokenJsonDictionnary = jsonDictionnary?[DefaultsKey.dataKey] as? [String : String]
-                TokenManager.sharedInstance.storeTokens(tokenJsonDictionnary: tokenJsonDictionnary)
             case "provider":
                 if let postMessageDict = jsonDictionnary?[DefaultsKey.dataKey] as? [String: Any] {
                     if let action = postMessageDict[DefaultsKey.actionKey] as? String {
@@ -73,8 +71,7 @@ open class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMess
                                         sendData(data: disableData)
                                     }
                                 }
-                            }
-                            if provider == Providers.geofence {
+                            } else if provider == Providers.geofence {
                                 if action == Actions.providerInit {
                                     geofenceProvider = GeofenceProvider()
                                     let initializeData = geofenceProvider!.initialize()
@@ -97,6 +94,34 @@ open class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMess
                                         sendData(data: disableData)
                                     }
                                 }
+                            } else if provider == Providers.storage {
+                                if action == Actions.providerInit {
+                                    storageProvider = StorageProvider()
+                                    let initializeData = storageProvider!.initialize()
+                                    sendData(data: initializeData)
+                                } else if action == Actions.providerEnable {
+                                    if let enableData = storageProvider?.enable() {
+                                        sendData(data: enableData)
+                                    }
+                                } else if action == Actions.store {
+                                    if let data = postMessageDict[DefaultsKey.dataKey] as? [String: String] {
+                                        if let key = data["key"] {
+                                            storageProvider?.store(key: key, data: data["value"])
+                                        }
+                                    }
+                                } else if action == Actions.retrieve {
+                                    if let data = postMessageDict[DefaultsKey.dataKey] as? [String: String] {
+                                        if let key = data["key"] {
+                                            if let retrieveData = storageProvider?.retrieve(key: key) {
+                                                sendData(data: retrieveData)
+                                            }
+                                        }
+                                    }
+                                } else if action == Actions.providerDisable {
+                                    if let disableData = storageProvider?.disable() {
+                                        sendData(data: disableData)
+                                    }
+                                }
                             }
                         }
                     }
@@ -113,7 +138,7 @@ open class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMess
             options: []) {
             let theJSONText = String(data: theJSONData,
                                      encoding: .utf8)
-            let returnMessage = "OpenRemoteConsole.handleProviderResponse('\(theJSONText ?? "null")')"
+            let returnMessage = "openremote.INSTANCE.console.handleProviderResponse('\(theJSONText ?? "null")')"
             DispatchQueue.main.async {
                 self.myWebView?.evaluateJavaScript("\(returnMessage)", completionHandler: { (any, error) in
                     print("JSON string = \(theJSONText!)")
@@ -127,21 +152,6 @@ open class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMess
         TokenManager.sharedInstance.resetTokenAndAuthenticate()
         self.dismiss(animated: true, completion: nil)
         completionHandler()
-    }
-    
-    open func webView(_ webView: WKWebView, runJavaScriptTextInputPanelWithPrompt prompt: String, defaultText: String?, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping (String?) -> Void) {
-        var exec_template : String? = nil
-        switch (prompt) {
-        case "token":
-            if TokenManager.sharedInstance.offlineToken != nil && TokenManager.sharedInstance.refreshToken != nil && TokenManager.sharedInstance.idToken != nil {
-                exec_template = "{ \"token\": \"\(TokenManager.sharedInstance.offlineToken ?? "null")\", \"refreshToken\": \"\(TokenManager.sharedInstance.refreshToken ?? "null")\",\"idToken\": \"\(TokenManager.sharedInstance.idToken ?? "null")\"}"
-            }
-            
-        default:
-            print("Unknown message type: \(prompt )")
-        }
-        
-        completionHandler(exec_template)
     }
     
     open func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
@@ -167,6 +177,10 @@ open class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMess
         if let response = navigationResponse.response as? HTTPURLResponse {
             if response.statusCode != 200 && response.statusCode != 204 {
                 decisionHandler(.cancel)
+
+                if response.url?.lastPathComponent == "token" && response.statusCode == 400 {
+                    TokenManager.sharedInstance.resetToken()
+                }
 
                 isLoading = false
                 handleError(errorCode: response.statusCode, description: "Error in request", failingUrl: response.url?.absoluteString ?? "", isForMainFrame: true)

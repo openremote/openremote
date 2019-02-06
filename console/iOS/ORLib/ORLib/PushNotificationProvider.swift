@@ -72,7 +72,7 @@ public class PushNotificationProvider: NSObject {
                     DefaultsKey.providerKey: Providers.push,
                     DefaultsKey.hasPermissionKey: true,
                     DefaultsKey.successKey: true,
-                    DefaultsKey.dataKey: [DefaultsKey.token: TokenManager.sharedInstance.deviceId]
+                    DefaultsKey.dataKey: ["token": self.userdefaults?.string(forKey: DefaultsKey.fcmTokenKey)]
                     ])
 
             case .denied:
@@ -81,7 +81,7 @@ public class PushNotificationProvider: NSObject {
                     DefaultsKey.providerKey: Providers.push,
                     DefaultsKey.hasPermissionKey: false,
                     DefaultsKey.successKey: true,
-                    DefaultsKey.dataKey: [DefaultsKey.token: TokenManager.sharedInstance.deviceId]
+                    DefaultsKey.dataKey: ["token": self.userdefaults?.string(forKey: DefaultsKey.fcmTokenKey)]
                     ])
 
             case .notDetermined:
@@ -99,7 +99,7 @@ public class PushNotificationProvider: NSObject {
                             DefaultsKey.providerKey: Providers.push,
                             DefaultsKey.hasPermissionKey: granted,
                             DefaultsKey.successKey: true,
-                            DefaultsKey.dataKey: [DefaultsKey.token: TokenManager.sharedInstance.deviceId]
+                            DefaultsKey.dataKey: ["token": self.userdefaults?.string(forKey: DefaultsKey.fcmTokenKey)]
                             ])
                 })
 
