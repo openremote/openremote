@@ -24,6 +24,12 @@ Alternatively you can build the docker images locally, to do this please refer t
 docker-compose -p openremote -f profile/demo.yml up --build
 ```
 
+***NOTE: If you are using docker toolbox (Virtual Box) then you must specify the `IDENTITY_NETWORK_HOST` environment variable as the IP address of the docker VM:***
+```
+Command Prompt: set IDENTITY_NETWORK_HOST=192.168.99.100 && docker-compose...
+Bash: IDENTITY_NETWORK_HOST=192.168.99.100 docker-compose....
+```
+
 Once you have running docker containers you can Access the manager UI and API (you will have to accept the 'insecure' self-signed SSL certificate):
 
 ```
