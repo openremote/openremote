@@ -26,7 +26,7 @@ docker-compose -p openremote -f profile/demo.yml up --build
 
 ***NOTE: If you are using docker toolbox (Virtual Box) then you must specify the `IDENTITY_NETWORK_HOST` environment variable as the IP address of the docker VM:***
 ```
-Command Prompt: set IDENTITY_NETWORK_HOST=192.168.99.100 && docker-compose...
+Command Prompt: set "IDENTITY_NETWORK_HOST=192.168.99.100" && docker-compose... (quotation marks are essential)
 Bash: IDENTITY_NETWORK_HOST=192.168.99.100 docker-compose....
 ```
 
