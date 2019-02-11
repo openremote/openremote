@@ -77,7 +77,6 @@ HEALTHCHECK --interval=3s --timeout=3s --start-period=2s --retries=120 CMD curl 
 
 WORKDIR /opt/app
 
-ADD deployment /deployment
 RUN mkdir -p /deployment/extensions
 
 ADD lib /opt/app/lib

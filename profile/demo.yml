@@ -42,10 +42,18 @@ version: '2.2'
 # If you enable volume mappings in services, you need this. Otherwise, remove the volumes
 volumes:
   proxy-data:
-  #deployment-data:
+  deployment-data:
   postgresql-data:
 
 services:
+
+  # This service will only populate an empty volume on startup and then exit.
+  # If the volume already contains data, it exits immediately.
+  deployment:
+    build: '../deployment'
+    image: openremote/deployment:latest
+    volumes:
+      - deployment-data:/deployment
 
   # This configuration does not store SSL certificate data and allow changes to the
   # proxy configuration, it is only configured for deployment on localhost. You can
@@ -73,23 +81,8 @@ services:
     depends_on:
       keycloak:
         condition: service_healthy
-    # volumes:
-      # The ../deployment directory is baked into the managers image. Here you can
-      # override it with either a (different) host-mapped directory or a named data volume.
-
-      # Use local deployment data in host-mapped directory for easy development.
-      # - ${DEPLOYMENT_DIRECTORY:-../deployment}:/deployment
-
-      # Use a named volume. When the volume is empty on startup, the files in the manager
-      # image's /deployment directory will be copied into the empty volume, thus
-      # giving you a default configuration to modify. Access the volume with:
-      #
-      # docker run --rm -it -v openremote_deployment-data:/deployment debian:stretch /bin/bash
-      # > ls -la /deployment
-      #
-      # To use a volume, enable this:
-      #
-      # - deployment-data:/deployment
+    volumes:
+      - deployment-data:/deployment
 
   keycloak:
     extends:
@@ -99,7 +92,7 @@ services:
       postgresql:
         condition: service_healthy
     volumes:
-      - ../ui/keycloak/themes/openremote:/opt/jboss/keycloak/themes/openremote
+      - deployment-data:/deployment
 
   # This configuration stores postgresql data in a Docker volume. You manage this volume
   # independently from your stack with with 'docker volume ls', 'docker volume rm', etc.

@@ -35,11 +35,11 @@ services:
       # The public host name of this OpenRemote installation. Set this to request/manage an SSL
       # certificate with the free https://letsencrypt.org/ provider. The default 'localhost' will
       # rely on a baked-in self-signed certificate. If you change this, adjust manager#IDENTITY_NETWORK_HOST.
-      # DOMAINNAME: localhost
+      DOMAINNAME: ${DOMAINNAME:-localhost}
 
       # Provide your own email address for your SSL certificates with Let's Encrypt. This should
       # be set when DOMAINNAME is not 'localhost'.
-      # LE_EMAIL: 'no-reply@openremote.io'
+      LE_EMAIL: ${LE_EMAIL:-}
 
       # Enable --staging will manage fake certificates, so avoid hitting the rate limits of Let's Encrypt
       # when testing (this is important, you are limited to 5 duplicate certificates per week!)

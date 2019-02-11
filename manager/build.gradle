@@ -45,6 +45,7 @@ distributions {
 }
 
 installDist {
+    dependsOn resolveTask(":ui:installDist")
     doLast {
         // Delete the useless start scripts, they have a hardcoded classpath
         delete "${buildDir}/install/$distributions.main.baseName/bin"
