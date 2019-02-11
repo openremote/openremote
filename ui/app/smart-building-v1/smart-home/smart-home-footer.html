@@ -1,14 +1,18 @@
-<link rel="import" href="smart-building-component.html">
-<link rel="import" href="smart-building-style.html">
+<link rel="import" href="smart-home-component.html">
+<link rel="import" href="smart-home-style.html">
 
-<dom-module id="smart-building-header">
+<dom-module id="smart-home-footer">
     <template>
-        <style include="smart-building-style">
+        <style include="smart-home-style">
 
-            .header {
-                background-color: var(--theme-darkgrey);
-                padding: 7px 15px;
-                min-height: 34px;
+            .footer {
+                font-size: 25px;
+                position: fixed;
+                bottom: 0px;
+                left: 0px;
+                right: 0px;
+                background-color: var(--theme-white);
+                box-shadow: 0px 5px 5px -3px rgba(0, 0, 0, 0.2), 0px 8px 10px 1px rgba(0, 0, 0, 0.14), 0px 3px 14px 2px rgba(0, 0, 0, 0.12);
             }
 
             .headerItem ::slotted(*) {
@@ -34,41 +38,27 @@
 
             .navItem.active {
                 color: var(--theme-black);
-                border-bottom: 3px solid var(--theme-lightgreen);
                 font-weight: 600;
             }
 
         </style>
 
-        <div class="flex-none layout horizontal center header">
-            <div class="flex layout horizontal center">
-
-                <div class="flex layout horizontal headerItem">
-                    <slot name="leftItem"></slot>
-                </div>
-
-                <div class="layout horizontal headerItem">
-                    <slot name="rightItem"></slot>
-                </div>
-
-            </div>
-        </div>
-
         <template is="dom-if" if="[[!hideNav]]">
-            <div class="flex-none layout horizontal nav">
-                <a href="#scenes" class$="[[getNavItemClass(activeNav, 'scenes')]]">{{localize('Home')}}</a>
-                <a href="#energy" class$="[[getNavItemClass(activeNav, 'energy')]]">{{localize('Energy')}}</a>
-                <a href="#security" class$="[[getNavItemClass(activeNav, 'security')]]">{{localize('Security')}}</a>
-                <a href="#climate" class$="[[getNavItemClass(activeNav, 'climate')]]">{{localize('Climate')}}</a>
+            <div class="footer flex-none layout horizontal nav">
+                <a href="#scenes" class$="[[getNavItemClass(activeNav, 'scenes')]]"><span class$="[[icon('th-large')]]"></span></a>
+                <a href="#control" class$="[[getNavItemClass(activeNav, 'control')]]"><span class$="[[icon('lightbulb')]]"></span></a>
+                <a href="#climate" class$="[[getNavItemClass(activeNav, 'climate')]]"><span class$="[[icon('thermometer-half')]]"></span></a>
+                <a href="#energy" class$="[[getNavItemClass(activeNav, 'energy')]]"><span class$="[[icon('burn')]]"></span></a>
+                <a href="#security" class$="[[getNavItemClass(activeNav, 'security')]]"><span class$="[[icon('shield-alt')]]"></span></a>
             </div>
         </template>
 
     </template>
 
     <script>
-        class SmartBuildingHeader extends SmartBuildingComponent {
+        class SmartHomeFooter extends SmartHomeComponent {
             static get is() {
-                return "smart-building-header";
+                return "smart-home-footer";
             }
 
             static get properties() {
@@ -95,7 +85,7 @@
             }
         }
 
-        defineAppElement(SmartBuildingHeader, SmartBuildingHeader.is, "SmartBuildingHeader");
+        defineAppElement(SmartHomeFooter, SmartHomeFooter.is, "SmartHomeFooter");
     </script>
 
 </dom-module>

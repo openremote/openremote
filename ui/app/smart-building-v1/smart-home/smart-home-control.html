@@ -1,11 +1,11 @@
-<link rel="import" href="smart-building-component.html">
-<link rel="import" href="smart-building-style.html">
-<link rel="import" href="smart-building-section.html">
-<link rel="import" href="smart-building-smart.html">
+<link rel="import" href="smart-home-component.html">
+<link rel="import" href="smart-home-style.html">
+<link rel="import" href="smart-home-section.html">
+<link rel="import" href="smart-home-temperature-select.html">
 
-<dom-module id="smart-building-energy">
+<dom-module id="smart-home-control">
     <template>
-        <style include="smart-building-style">
+        <style include="smart-home-style">
 
             .smartSwitchItem {
                 margin: 10px 0;
@@ -29,84 +29,81 @@
 
         </style>
 
-        <smart-building-smart residence="[[residence]]"></smart-building-smart>
+        <div id="page-container">
+            <div class="layout horizontal center heading">
+                <span>[[localize('Lighting')]]</span>
+            </div>
 
-        <smart-building-section>
-            <template is="dom-repeat" items="[[smartSwitches]]">
-                <div class="layout horizontal center smartSwitchItem">
-                    <div><img height="30" src="smart-building/img/home_on.png"/></div>
-                    <div class="flex layout horizontal smartSwitchLabel">
-                        [[item.label]]
-                    </div>
-                    <div class="layout horizontal smartSwitchMode">
-                        <div class="or-Select">
-                            <select value="{{item.mode::change}}"
-                                    on-change="onSmartSwitchModeChange"
-                                    title="[[localize('Mode')]]">
-                                <option value="NOW_ON">[[localize('Now on')]]</option>
-                                <option value="ON_AT">[[localize('On at')]]</option>
-                                <option value="READY_AT">[[localize('Ready at')]]</option>
-                            </select>
-                        </div>
-                    </div>
-                    <template is="dom-if" if="[[item.hourMinuteVisible]]">
-                        <div class="layout horizontal center">
-                            <template is="dom-if" if="[[item.hourMinuteTomorrow]]">
-                                <div class="smartSwitchTomorrow">([[localize('tomorrow')]])</div>
+            <div class="section">
+                <template is="dom-repeat" items="[[lights]]">
+                    <template is="dom-if" if="[[isLightType(item, 'BOOLEAN')]]">
+                        <div class="layout horizontal center smartSwitchItem">
+                            <div><img height="30" src="smart-home/img/lightbulb.png"/></div>
+                            <div class="flex layout horizontal smartSwitchLabel">
+                                [[item.label]]
+                            </div>
+                            <template is="dom-if" if="[[isLightType(item, 'BOOLEAN')]]">
+                                <div class="layout horizontal smartSwitchMode">
+                                    <or-checkbox checked="[[item.value]]"
+                                                 on-change="onLightChange"></or-checkbox>
+                                </div>
                             </template>
-                            <input class="or-Input or-InputTime smartSwitchTimeInput"
-                                   title="[[localize('Begin/end of cycle')]]"
-                                   type="time"
-                                   step="60"
-                                   required
-                                   value="{{item.hourMinute::input}}"
-                                   on-input="onSmartSwitchHourMinuteChange"/>
+                            <template is="dom-if" if="[[isLightType(item, 'NUMBER')]]">
+                                <div class="layout horizontal center">
+                                    <span>SLIDER</span>
+                                </div>
+                            </template>
                         </div>
                     </template>
-                </div>
-            </template>
-        </smart-building-section>
-
-        <!-- TODO This section is not functional, not bound to any assets
-        <smart-building-section>
-            <div class="layout horizontal center">
-                <div class="flex" style="position: relative; padding-left: 10px;">
-                    <div style="position: absolute;">
-                        <div style="position: relative; left: 40px; top: 65px;">12%</div>
-                        <div style="position: relative; top: 65px; left: 41px; font-size: x-small;">[[localize('Green')]]</div>
-                    </div>
-                    <img width="110" height="110" src="smart-building/img/home_large_energy.png"/>
-                </div>
-                <div class="layout vertical" style="font-size: smaller; margin-right: 5px;">
-
-                    <div class="layout horizontal" style="margin: 5px 0;">
-                        <div class="flex" style="padding-right: 20px;">[[localize('Usage today')]]</div>
-                        <div>418W</div>
-                    </div>
-
-                    <div class="layout horizontal" style="margin: 5px 0; color: var(--theme-mediumgrey)">
-                        <div class="flex">[[localize('Zone & Battery')]]</div>
-                        <div>9%</div>
-                    </div>
-
-                    <div style="margin-bottom:5px;width:87%;height:10px; background-color: var(--theme-lightgreen);"></div>
-                    <div class="" style="width:17%;height:10px; background-color: var(--theme-mediumgrey)"></div>
-
-                    <div class="layout horizontal" style="margin: 5px 0; color: var(--theme-mediumgrey)">
-                        <div class="flex">[[localize('Grid')]]</div>
-                        <div>91%</div>
-                    </div>
-                </div>
+                </template>
             </div>
-        </smart-building-section>
-        -->
 
+            <div class="layout horizontal center heading">
+                <span>[[localize('Appliances')]]</span>
+            </div>
+
+            <div class="section">
+                <template is="dom-repeat" items="[[smartSwitches]]">
+                    <div class="layout horizontal center smartSwitchItem">
+                        <div><img height="30" src="smart-home/img/home_on.png"/></div>
+                        <div class="flex layout horizontal smartSwitchLabel">
+                            [[item.label]]
+                        </div>
+                        <div class="layout horizontal smartSwitchMode">
+                            <div class="or-Select">
+                                <select value="{{item.mode::change}}"
+                                        on-change="onSmartSwitchModeChange"
+                                        title="[[localize('Mode')]]">
+                                    <option value="NOW_ON">[[localize('Now on')]]</option>
+                                    <option value="ON_AT">[[localize('On at')]]</option>
+                                    <option value="READY_AT">[[localize('Ready at')]]</option>
+                                </select>
+                            </div>
+                        </div>
+                        <template is="dom-if" if="[[item.hourMinuteVisible]]">
+                            <div class="layout horizontal center">
+                                <template is="dom-if" if="[[item.hourMinuteTomorrow]]">
+                                    <div class="smartSwitchTomorrow">([[localize('tomorrow')]])</div>
+                                </template>
+                                <input class="or-Input or-InputTime smartSwitchTimeInput"
+                                       title="[[localize('Begin/end of cycle')]]"
+                                       type="time"
+                                       step="60"
+                                       required
+                                       value="{{item.hourMinute::input}}"
+                                       on-input="onSmartSwitchHourMinuteChange"/>
+                            </div>
+                        </template>
+                    </div>
+                </template>
+            </div>
+        </div>
     </template>
 
     <script>
-        class SmartBuildingEnergy extends SmartBuildingComponent {
+        class SmartHomeControl extends SmartHomeComponent {
             static get is() {
-                return "smart-building-energy";
+                return "smart-home-control";
             }
 
             static get properties() {
@@ -115,11 +112,64 @@
                         type: Array,
                         computed: "computeSmartSwitches(rooms.*)"
                     },
+                    lights: {
+                        type: Array,
+                        computed: "computeLights(rooms.*)"
+                    },
                     smartSwitchHourMinuteChangeDebouncer: {
                         type: Object,
                         value: {}
                     }
                 }
+            }
+
+            computeLights() {
+                let lights = [];
+                if (!this.rooms)
+                    return lights;
+                this.rooms.forEach(room => {
+                    Object.keys(room.attributes).forEach(attr => {
+                        if (attr.startsWith("lights")) {
+                            lights.push(
+                                {
+                                    roomId: room.id,
+                                    name: attr,
+                                    label: this.getLightsLabel(room.name, room.attributes[attr]),
+                                    type: room.attributes[attr].type,
+                                    value: room.attributes[attr].value
+                                }
+                            )
+                        }
+                    })
+                })
+                return lights;
+            }
+
+            getLightsLabel(roomName, attribute) {
+                let name = roomName;
+
+                if (attribute && attribute.meta) {
+                    for (let i = 0; i < attribute.meta.length; i++) {
+                        let metaItem = attribute.meta[i];
+                        if (metaItem.name === "urn:openremote:asset:meta:label") {
+                            name = metaItem.value;
+                        }
+                    }
+                }
+
+                return this.localize(name);
+            }
+
+            isLightType(item, type) {
+                return item.type === type;
+            }
+
+            onLightChange(e) {
+                let light = e.model.item;
+                let value = e.detail;
+                this.sendAttributeEvent(
+                    light.roomId, light.name, value
+                );
             }
 
             computeSmartSwitches() {
@@ -222,10 +272,9 @@
 
                 return hourMinuteMoment ? hourMinuteMoment.valueOf() : null;
             }
-
         }
 
-        defineAppElement(SmartBuildingEnergy, SmartBuildingEnergy.is, "SmartBuildingEnergy");
+        defineAppElement(SmartHomeControl, SmartHomeControl.is, "SmartHomeControl");
     </script>
 
 </dom-module>

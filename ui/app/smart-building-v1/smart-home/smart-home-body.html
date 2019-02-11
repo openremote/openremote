@@ -1,0 +1,28 @@
+<link rel="import" href="smart-home-component.html">
+<link rel="import" href="smart-home-style.html">
+
+<dom-module id="smart-home-body">
+    <template>
+        <style include="smart-home-style">
+        </style>
+
+        <slot></slot>
+
+    </template>
+
+    <script>
+        class SmartHomeBody extends SmartHomeComponent {
+            static get is() {
+                return "smart-home-body";
+            }
+
+            ready() {
+                super.ready();
+                this.shadowRoot.host.classList.add("scroll", "layout", "vertical");
+            }
+        }
+
+        defineAppElement(SmartHomeBody, SmartHomeBody.is, "SmartHomeBody");
+    </script>
+
+</dom-module>

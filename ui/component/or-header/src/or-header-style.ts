@@ -1,6 +1,5 @@
-import {html} from 'lit-element';
-export const OrHeaderStyle = html`
-<style>
+import {css} from 'lit-element';
+export const OrHeaderStyle = css`
     or-header a, a:link, a:visited {
         text-decoration: none !important;
     }
@@ -71,5 +70,4 @@ export const OrHeaderStyle = html`
      [slot="desktop-left"] > a[selected] {
         border-bottom: 4px solid #A3BDD0;
      }
-</style>
 `;

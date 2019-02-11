@@ -1,0 +1,67 @@
+<link rel="import" href="smart-home-component.html">
+<link rel="import" href="smart-home-style.html">
+<link rel="import" href="smart-home-section.html">
+
+<dom-module id="smart-home-energy">
+    <template>
+        <style include="smart-home-style">
+
+
+        </style>
+
+        <!-- TODO This section is not functional, not bound to any assets
+        <smart-home-section>
+            <div class="layout horizontal center">
+                <div class="flex" style="position: relative; padding-left: 10px;">
+                    <div style="position: absolute;">
+                        <div style="position: relative; left: 40px; top: 65px;">12%</div>
+                        <div style="position: relative; top: 65px; left: 41px; font-size: x-small;">[[localize('Green')]]</div>
+                    </div>
+                    <img width="110" height="110" src="smart-home/img/home_large_energy.png"/>
+                </div>
+                <div class="layout vertical" style="font-size: smaller; margin-right: 5px;">
+
+                    <div class="layout horizontal" style="margin: 5px 0;">
+                        <div class="flex" style="padding-right: 20px;">[[localize('Usage today')]]</div>
+                        <div>418W</div>
+                    </div>
+
+                    <div class="layout horizontal" style="margin: 5px 0; color: var(--theme-mediumgrey)">
+                        <div class="flex">[[localize('Zone & Battery')]]</div>
+                        <div>9%</div>
+                    </div>
+
+                    <div style="margin-bottom:5px;width:87%;height:10px; background-color: var(--theme-lightgreen);"></div>
+                    <div class="" style="width:17%;height:10px; background-color: var(--theme-mediumgrey)"></div>
+
+                    <div class="layout horizontal" style="margin: 5px 0; color: var(--theme-mediumgrey)">
+                        <div class="flex">[[localize('Grid')]]</div>
+                        <div>91%</div>
+                    </div>
+                </div>
+            </div>
+        </smart-home-section>
+        -->
+
+    </template>
+
+    <script>
+        class SmartHomeEnergy extends SmartHomeComponent {
+            static get is() {
+                return "smart-home-energy";
+            }
+
+            static get properties() {
+                return {
+
+                }
+            }
+
+
+
+        }
+
+        defineAppElement(SmartHomeEnergy, SmartHomeEnergy.is, "SmartHomeEnergy");
+    </script>
+
+</dom-module>

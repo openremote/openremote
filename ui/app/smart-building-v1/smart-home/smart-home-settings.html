@@ -1,0 +1,273 @@
+<link rel="import" href="smart-home-component.html">
+<link rel="import" href="smart-home-style.html">
+<link rel="import" href="smart-home-section.html">
+<link rel="import" href="smart-home-temperature-select.html">
+<link rel="import" href="/static/src/or-checkbox/or-checkbox.html">
+
+<dom-module id="smart-home-settings">
+    <template>
+        <style include="smart-home-style">
+            smart-home-section {
+                margin: 10px 0 20px 0;
+            }
+
+            .infoLabel {
+                font-size: smaller;
+                font-style: italic;
+                color: var(--theme-white);
+                margin: 20px;
+            }
+
+            .row .field {
+                font-size: smaller;
+                margin: 0.6em 0;
+            }
+
+            .row .first.field {
+                max-width: 5.5em;
+                min-width: 5.5em;
+            }
+
+            .first.row {
+                background-color: var(--theme-lightergrey);
+                color: var(--theme-black);
+            }
+
+            .first.row .first.field {
+                font-weight: 600;
+                margin: 0;
+                padding: 0.6em 0;
+                background-color: var(--theme-white);
+            }
+
+            .row .field .or-InputTime {
+                max-width: 3em;
+                text-align: center;
+                padding: 0 0.2em;
+            }
+
+        </style>
+
+        <div id="page-container">
+            <div class="layout horizontal center heading">
+                <span>[[localize('Weekly schedule')]]</span>
+            </div>
+
+            <smart-home-section class="section">
+                <div class="layout horizontal">
+                    <div class="layout horizontal first row">
+                        <div class="first field">[[localize('Scene')]]</div>
+                    </div>
+                    <template is="dom-repeat" items="{{scenes}}" as="scene">
+                        <div class="flex layout horizontal center-center first row">
+                            <div class="field">[[localize(scene.label)]]</div>
+                        </div>
+                    </template>
+                </div>
+                <template is="dom-repeat" items="{{weekdays}}" as="weekday">
+                    <div class="layout horizontal">
+                        <div class="layout horizontal center row">
+                            <div class="first field">[[localize(weekday)]]</div>
+                        </div>
+                        <template is="dom-repeat" items="{{scenes}}" as="scene">
+                            <div class="flex layout horizontal center-center row">
+                                <div class="field">
+                                    <input class="or-Input or-InputTime"
+                                           title="[[localize('Scene start time')]]"
+                                           type="time"
+                                           step="60"
+                                           required
+                                           value="[[getSceneTime(residence.attributes, weekday, scene.name)]]"
+                                           on-input="onSceneTimeChange"/>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </template>
+            </smart-home-section>
+
+            <div class="layout horizontal center heading">
+                <span>[[localize('Vacation')]]</span>
+            </div>
+            <div class="section">
+                <div class="layout horizontal center" style="margin-bottom: 10px;">
+                    <div class="flex">[[localize('On vacation until')]]</div>
+                    <input class="or-Input or-InputDate"
+                           title="[[localize('End of vacation')]]"
+                           type="date"
+                           empty$="[[vacationUntilEmpty]]"
+                           value="[[vacationUntil]]"
+                           on-input="onVacationUntilChange"/>
+                </div>
+            </div>
+
+            <div class="layout horizontal center heading">
+                <span>[[localize('Scene configuration')]]</span>
+            </div>
+
+            <div class="section">
+
+                <div class="layout horizontal" style="margin-top: 20px;">
+                    <div class="layout horizontal first row">
+                        <div class="first field">[[localize('Climate')]]</div>
+                    </div>
+                    <template is="dom-repeat" items="{{scenes}}" as="scene">
+                        <div class="flex layout horizontal center-center first row">
+                            <div class="field">[[localize(scene.label)]]</div>
+                        </div>
+                    </template>
+                </div>
+                <div class="layout horizontal">
+                    <div class="layout horizontal center row">
+                        <div class="first field">[[localize('Temperature')]]</div>
+                    </div>
+                    <template is="dom-repeat" items="{{scenes}}" as="scene">
+                        <div class="flex layout horizontal center-center row">
+                            <div class="field">
+                                <smart-home-temperature-select
+                                        temperature="[[getSceneTemperature(residence.attributes, scene.name)]]"
+                                        on-change="onSceneTemperatureChange"
+                                        temperature-format="%0f° C"></smart-home-temperature-select>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="layout horizontal">
+                    <div class="layout horizontal first row">
+                        <div class="first field">[[localize('Alarm')]]</div>
+                    </div>
+                    <template is="dom-repeat" items="{{scenes}}" as="scene">
+                        <div class="flex layout horizontal center-center first row">
+                            <div class="field">[[localize(scene.label)]]</div>
+                        </div>
+                    </template>
+                </div>
+                <div class="layout horizontal">
+                    <div class="layout horizontal center row">
+                        <div class="first field">[[localize('Enabled')]]</div>
+                    </div>
+                    <template is="dom-repeat" items="{{scenes}}" as="scene">
+                        <div class="flex layout horizontal center-center row">
+                            <div class="field">
+                                <or-checkbox checked="[[getAlarmEnabled(residence.attributes, scene.name)]]"
+                                             on-change="onAlarmEnabledChange"></or-checkbox>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+
+            </div>
+        </div>
+
+    </template>
+
+    <script>
+        class SmartHomeSettings extends SmartHomeComponent {
+            static get is() {
+                return "smart-home-settings";
+            }
+
+            static get properties() {
+                return {
+                    vacationUntilEmpty: {
+                        type: Boolean,
+                        computed: "computeVacationUntilEmpty(residence.attributes)"
+                    },
+                    vacationUntil: {
+                        type: String,
+                        computed: "computeVacationUntil(residence.attributes)"
+                    },
+                    scenes: {
+                        type: Array,
+                        value: [
+                            {name: "morning", label: "Morning"},
+                            {name: "day", label: "Day"},
+                            {name: "evening", label: "Evening"},
+                            {name: "night", label: "Night"},
+                        ]
+                    },
+                    weekdays: {
+                        type: Array,
+                        value: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+                    },
+                }
+            }
+
+            static get observers() {
+                return [
+                    "onResidenceChange(residence.*)"
+                ]
+            }
+
+            onResidenceChange() {
+                // When anything on residence changes, notify everyone that attributes (might have) changed
+                this.notifyPath("residence.attributes")
+            }
+
+
+            computeVacationUntilEmpty(attributes) {
+                return !attributes || !attributes.vacationUntil || !attributes.vacationUntil.value;
+            }
+
+            computeVacationUntil(attributes) {
+                return attributes && attributes.vacationUntil && attributes.vacationUntil.value
+                    ? moment(attributes.vacationUntil.value).format("YYYY-MM-DD")
+                    : moment().add(7, "days").format("YYYY-MM-DD"); // Show 1 week in future if no vacation until set
+            }
+
+            onVacationUntilChange(e) {
+                let vacationUntilMoment = moment(e.target.value, "YYYY-MM-DD");
+                this.sendAttributeEvent(
+                    this.residence.id,
+                    "vacationUntil",
+                    // Vacation until must be in future or clear
+                    vacationUntilMoment.isAfter(moment()) ? vacationUntilMoment.valueOf() : undefined
+                );
+            }
+
+            getSceneTime(attributes, weekday, scene) {
+                let weekdayUpperCase = weekday.toUpperCase();
+                return attributes && attributes[scene + "SceneTime" + weekdayUpperCase]
+                    ? moment(attributes[scene + "SceneTime" + weekdayUpperCase].value, "HH:mm:ss").format("HH:mm")
+                    : undefined;
+            }
+
+            onSceneTimeChange(e) {
+                let weekdayUpperCase = e.model.weekday.toUpperCase();
+                let scene = e.model.scene.name;
+                let value = moment(e.target.value, "HH:mm").format("HH:mm:ss");
+                this.sendAttributeEvent(this.residence.id, scene + "SceneTime" + weekdayUpperCase, value);
+            }
+
+            getAlarmEnabled(attributes, scene) {
+                return attributes && attributes[scene + "SceneAlarmEnabled"]
+                    ? attributes[scene + "SceneAlarmEnabled"].value
+                    : undefined;
+            }
+
+            onAlarmEnabledChange(e) {
+                let scene = e.model.scene.name;
+                let enabled = e.detail;
+                this.sendAttributeEvent(this.residence.id, scene + "SceneAlarmEnabled", enabled);
+            }
+
+            getSceneTemperature(attributes, scene) {
+                return attributes && attributes[scene + "SceneTargetTemperature"]
+                    ? parseInt(attributes[scene + "SceneTargetTemperature"].value) // TODO Cut off decimal
+                    : undefined;
+            }
+
+            onSceneTemperatureChange(e) {
+                let scene = e.model.scene.name;
+                let temperature = e.detail;
+                this.sendAttributeEvent(this.residence.id, scene + "SceneTargetTemperature", temperature);
+            }
+        }
+
+        defineAppElement(SmartHomeSettings, SmartHomeSettings.is, "SmartHomeSettings");
+    </script>
+
+</dom-module>

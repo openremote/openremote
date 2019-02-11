@@ -12,7 +12,7 @@
   "license": "AGPL-3.0-or-later",
   "dependencies": {},
   "devDependencies": {
-    "typescript": "^3.1.6"
+    "typescript": "^3.2.2"
   },
   "files": [
     "dist"

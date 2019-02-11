@@ -1,12 +1,11 @@
-<link rel="import" href="smart-building-component.html">
-<link rel="import" href="smart-building-style.html">
-<link rel="import" href="smart-building-section.html">
-<link rel="import" href="smart-building-smart.html">
-<link rel="import" href="smart-building-temperature-select.html">
+<link rel="import" href="smart-home-component.html">
+<link rel="import" href="smart-home-style.html">
+<link rel="import" href="smart-home-section.html">
+<link rel="import" href="smart-home-temperature-select.html">
 
-<dom-module id="smart-building-climate">
+<dom-module id="smart-home-climate">
     <template>
-        <style include="smart-building-style">
+        <style include="smart-home-style">
 
             .roomLabel {
                 padding: 0 10px;
@@ -29,71 +28,48 @@
             }
         </style>
 
-        <smart-building-smart residence="[[residence]]"></smart-building-smart>
+        <div id="page-container">
 
-        <smart-building-section>
-            <template is="dom-repeat" items="[[roomsTemperature]]">
-                <div class="layout horizontal center roomItem">
-                    <div class="layout vertical center-center">
-                        <img height="30" src="smart-building/img/temperature.png"/>
-                    </div>
-                    <div class="flex layout horizontal center roomLabel">
-                        [[localize(item.roomName)]]
-                    </div>
-                    <template is="dom-if" if="[[item.roomHasTargetTemperature]]">
-                        <div class="targetTemperature">
-                            <smart-building-temperature-select
-                                    temperature="[[item.targetTemperature]]"
-                                    on-change="onTargetTemperatureChange"
-                                    temperature-format="[[item.targetTemperatureFormat]]"></smart-building-temperature-select>
+            <template is="dom-if" if="[[roomsTemperature]]">
+                <div class="layout horizontal center heading">
+                    <span>[[localize('Temperature')]]</span>
+                </div>
+
+                <div class="section">
+                    <template is="dom-repeat" items="[[roomsTemperature]]">
+                        <div class="layout horizontal center roomItem">
+                            <div class="layout vertical center-center">
+                                <img height="30" src="smart-home/img/temperature.png"/>
+                            </div>
+                            <div class="flex layout horizontal center roomLabel">
+                                [[localize(item.roomName)]]
+                            </div>
+                            <template is="dom-if" if="[[item.roomHasTargetTemperature]]">
+                                <div class="targetTemperature">
+                                    <smart-home-temperature-select
+                                            temperature="[[item.targetTemperature]]"
+                                            on-change="onTargetTemperatureChange"
+                                            temperature-format="[[item.targetTemperatureFormat]]"></smart-home-temperature-select>
+                                </div>
+                            </template>
+                            <template is="dom-if" if="[[item.roomHasCurrentTemperature]]">
+                                <div class="attributeValue">
+                                    [[formatAttributeValue(item.currentTemperatureFormat, item.currentTemperature)]]
+                                </div>
+                            </template>
                         </div>
                     </template>
-                    <template is="dom-if" if="[[item.roomHasCurrentTemperature]]">
-                        <div class="attributeValue">
-                            [[formatAttributeValue(item.currentTemperatureFormat, item.currentTemperature)]]
-                        </div>
-                    </template>
                 </div>
             </template>
-        </smart-building-section>
 
-        <smart-building-section>
-            <template is="dom-repeat" items="[[roomsCO2]]">
-                <div class="layout horizontal center roomItem">
-                    <div class="layout vertical center-center">
-                        <img height="30" src="smart-building/img/co2.png"/>
-                    </div>
-                    <div class="flex layout horizontal center roomLabel">
-                        [[localize(item.roomName)]]
-                    </div>
-                    <div class="attributeValue">
-                        [[formatAttributeValue(item.co2LevelFormat, item.co2Level)]]
-                    </div>
-                </div>
-            </template>
-        </smart-building-section>
+            <div class="layout horizontal center heading">
+                <span>[[localize('Ventilation')]]</span>
+            </div>
 
-        <smart-building-section>
-            <template is="dom-repeat" items="[[roomsHumidity]]">
-                <div class="layout horizontal center roomItem">
-                    <div class="layout vertical center-center">
-                        <img height="30" src="smart-building/img/humidity.png"/>
-                    </div>
-                    <div class="flex layout horizontal center roomLabel">
-                        [[localize(item.roomName)]]
-                    </div>
-                    <div class="attributeValue">
-                        [[formatAttributeValue(item.humidityFormat, item.humidity)]]
-                    </div>
-                </div>
-            </template>
-        </smart-building-section>
-
-        <template is="dom-if" if="[[ventilationMode]]">
-            <smart-building-section>
+            <div class="section">
                 <div class="layout horizontal center ventilationItem">
                     <div class="layout vertical center-center">
-                        <img height="30" src="smart-building/img/ventilation.png"/>
+                        <img height="30" src="smart-home/img/ventilation.png"/>
                     </div>
                     <div class="flex layout horizontal ventilationLabel">
                         [[localize('Ventilation')]]
@@ -110,15 +86,59 @@
                         </div>
                     </div>
                 </div>
-            </smart-building-section>
-        </template>
+            </div>
 
+
+            <template is="dom-if" if="[[roomsCO2]]">
+                <div class="layout horizontal center heading">
+                    <span>CO<sup>2</sup></span>
+                </div>
+
+                <div class="section">
+                    <template is="dom-repeat" items="[[roomsCO2]]">
+                        <div class="layout horizontal center roomItem">
+                            <div class="layout vertical center-center">
+                                <img height="30" src="smart-home/img/co2.png"/>
+                            </div>
+                            <div class="flex layout horizontal center roomLabel">
+                                [[localize(item.roomName)]]
+                            </div>
+                            <div class="attributeValue">
+                                [[formatAttributeValue(item.co2LevelFormat, item.co2Level)]]
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </template>
+
+            <template is="dom-if" if="[[roomsHumidity]]">
+                <div class="layout horizontal center heading">
+                    <span>[[localize('Humidity')]]</span>
+                </div>
+
+                <div class="section">
+                    <template is="dom-repeat" items="[[roomsHumidity]]">
+                        <div class="layout horizontal center roomItem">
+                            <div class="layout vertical center-center">
+                                <img height="30" src="smart-home/img/humidity.png"/>
+                            </div>
+                            <div class="flex layout horizontal center roomLabel">
+                                [[localize(item.roomName)]]
+                            </div>
+                            <div class="attributeValue">
+                                [[formatAttributeValue(item.humidityFormat, item.humidity)]]
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </template>
+        </div>
     </template>
 
     <script>
-        class SmartBuildingClimate extends SmartBuildingComponent {
+        class SmartHomeClimate extends SmartHomeComponent {
             static get is() {
-                return "smart-building-climate";
+                return "smart-home-climate";
             }
 
             static get properties() {
@@ -267,7 +287,7 @@
             }
         }
 
-        defineAppElement(SmartBuildingClimate, SmartBuildingClimate.is, "SmartBuildingClimate");
+        defineAppElement(SmartHomeClimate, SmartHomeClimate.is, "SmartHomeClimate");
     </script>
 
 </dom-module>

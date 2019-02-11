@@ -1,4 +1,7 @@
-import {LitElement, html, property} from 'lit-element';
+import {OrHeaderStyle} from "@openremote/or-header/src/or-header-style";
+import {LitElement, html, css, property} from 'lit-element';
+
+const menuIcon = html`<svg height="24" viewBox="0 0 24 24" width="24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"></path></svg>`;
 
 const menu = html`<svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" xmlns:xlink="http://www.w3.org/1999/xlink" enable-background="new 0 0 24 24">
   <g>
@@ -21,10 +24,8 @@ class OrHeader extends LitElement {
     @property({type: String})
     private logo = '';
 
-    protected render() {
-        return html`
-            <style>
-                  app-header {
+    static styles = css `
+                  #app-header {
                     position: absolute;
                     top: 0;
                     left: 0;
@@ -56,8 +57,7 @@ class OrHeader extends LitElement {
                     margin-left: auto;
                     margin-right: 20px;
                   }
-                
-                  
+                                  
                   app-drawer {
                     z-index: 999999;
                     position: absolute;
@@ -115,9 +115,12 @@ class OrHeader extends LitElement {
                         display: block;
                     }
                   }
-            </style>
+    `;
+
+    protected render() {
+        return html`
            <!-- Header -->
-            <app-header condenses reveals effects="waterfall">
+            <div id="app-header">
                 <div class="toolbar-top">
                         <div><img id="logo" src="${this.logo}" /></div>
                         <!-- This gets hidden on a small screen-->
@@ -130,7 +133,7 @@ class OrHeader extends LitElement {
                     
                         <button class="menu-btn" title="Menu" @click="${this._menuButtonClicked}">${this._drawerOpened ? close : menu}</button>
                     </div>
-            </app-header>
+            </div>
             
             <app-drawer ?opened="${this._drawerOpened}" @click="${this._close}">
                 <nav class="drawer-list">
@@ -141,11 +144,6 @@ class OrHeader extends LitElement {
             </app-drawer>
             
         `;
-    }
-
-
-    constructor() {
-        super();
     }
 
     private _close () {

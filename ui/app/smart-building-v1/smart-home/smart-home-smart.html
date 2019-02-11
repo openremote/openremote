@@ -1,19 +1,19 @@
-<link rel="import" href="smart-building-component.html">
-<link rel="import" href="smart-building-style.html">
-<link rel="import" href="smart-building-section.html">
+<link rel="import" href="smart-home-component.html">
+<link rel="import" href="smart-home-style.html">
+<link rel="import" href="smart-home-section.html">
 <link rel="import" href="/static/src/or-checkbox/or-checkbox.html">
 
-<dom-module id="smart-building-smart">
+<dom-module id="smart-home-smart">
     <template>
-        <style include="smart-building-style">
+        <style include="smart-home-style">
             .smartLabel {
                 margin: 0 10px;
             }
         </style>
 
-        <smart-building-section>
+        <smart-home-section>
             <div class="layout horizontal center">
-                <img height="30" src="smart-building/img/star.png"/>
+                <img height="30" src="smart-home/img/star.png"/>
                 <!-- "All Smart" currently means enabling/disabling automatic scene switching based on schedule -->
                 <div class="flex layout horizontal smartLabel">[[localize('All Smart')]]</div>
                 <div class="layout horizontal">
@@ -21,14 +21,14 @@
                                  on-change="onSmartToggleChange"></or-checkbox>
                 </div>
             </div>
-        </smart-building-section>
+        </smart-home-section>
 
     </template>
 
     <script>
-        class SmartBuildingSmart extends SmartBuildingComponent {
+        class SmartHomeSmart extends SmartHomeComponent {
             static get is() {
-                return "smart-building-smart";
+                return "smart-home-smart";
             }
 
             ready() {
@@ -43,7 +43,7 @@
             }
         }
 
-        defineAppElement(SmartBuildingSmart, SmartBuildingSmart.is, "SmartBuildingSmart");
+        defineAppElement(SmartHomeSmart, SmartHomeSmart.is, "SmartHomeSmart");
     </script>
 
 </dom-module>

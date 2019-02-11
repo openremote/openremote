@@ -1,9 +1,9 @@
-<link rel="import" href="smart-building-component.html">
-<link rel="import" href="smart-building-style.html">
+<link rel="import" href="smart-home-component.html">
+<link rel="import" href="smart-home-style.html">
 
-<dom-module id="smart-building-section">
+<dom-module id="smart-home-section">
     <template>
-        <style include="smart-building-style">
+        <style include="smart-home-style">
             :host {
                 background-color: var(--theme-white);
                 border-radius: 10px;
@@ -59,9 +59,9 @@
     </template>
 
     <script>
-        class SmartBuildingSection extends SmartBuildingComponent {
+        class SmartHomeSection extends SmartHomeComponent {
             static get is() {
-                return "smart-building-section";
+                return "smart-home-section";
             }
 
             static get properties() {
@@ -87,7 +87,7 @@
             }
         }
 
-        defineAppElement(SmartBuildingSection, SmartBuildingSection.is, "SmartBuildingSection");
+        defineAppElement(SmartHomeSection, SmartHomeSection.is, "SmartHomeSection");
     </script>
 
 </dom-module>
