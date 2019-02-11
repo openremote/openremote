@@ -4,7 +4,7 @@ task build {
 
 task installDist(type: Copy) {
     dependsOn build
-    from(buildDir) {
+    from(projectDir) {
         exclude "gwt", "build.gradle", "package.json", "yarn.lock", ".bowerrc"
     }
     into "${resolveProject(':deployment').projectDir}/manager/app/${projectDir.name}"
