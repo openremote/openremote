@@ -101,9 +101,10 @@ services:
 
       # This switch can wipe your database, this is the factory reset!
       SETUP_WIPE_CLEAN_INSTALL: 'true'
+      SETUP_ADMIN_PASSWORD: ${SETUP_ADMIN_PASSWORD:-secret}
+
       # When you are ready to permanently install your project, replace it with the next lines...
       # SETUP_WIPE_CLEAN_INSTALL: # Allow override on CLI
-      # SETUP_ADMIN_PASSWORD: # Allow override on CLI
 
       # Configure SMTP smart host, to send password reset emails etc.
       #SETUP_EMAIL_HOST: smtp-host.demo.tld
@@ -172,7 +173,7 @@ services:
       # APP_DOCROOT: '/deployment/manager/app'
       # SHARED_DOCROOT: '/deployment/manager/shared'
       # Custom default app name to load when '/' is requested
-      # APP_DEFAULT: 'manager`
+      APP_DEFAULT: ${APP_DEFAULT:-manager}
 
       # Disable HTTP redirects when a console application requests libraries which
       # are delivered and used on the platform. This is necessary if your console application
@@ -268,7 +269,8 @@ services:
       KEYCLOAK_LOGLEVEL: INFO
 
       # CHANGE THIS PASSWORD BEFORE STARTING THE STACK! THIS IS ONLY FOR DEMO!
-      SETUP_ADMIN_PASSWORD: secret
+      SETUP_ADMIN_PASSWORD: ${SETUP_ADMIN_PASSWORD:-secret}
+
       # When you are ready to permanently install your project, replace it with the next line ...
       # SETUP_ADMIN_PASSWORD: # Allow override on CLI
 

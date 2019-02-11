@@ -41,7 +41,7 @@ version: '2.2'
 
 # If you enable volume mappings in services, you need this. Otherwise, remove the volumes
 volumes:
-  #proxy-data:
+  proxy-data:
   #deployment-data:
   postgresql-data:
 
@@ -58,11 +58,8 @@ services:
     depends_on:
       manager:
         condition: service_healthy
-    # volumes:
-      # Store data either in host-mapped directory or a named Docker volume
-      # - ${DEPLOYMENT_DIRECTORY:-../deployment}/proxy:/deployment
-      # - proxy-data:/deployment
-      #
+    volumes:
+      - proxy-data:/deployment
       # Override the haproxy.cfg with custom file
       # -${MY_PROXY_CONFIG_FILE}:/etc/haproxy/haproxy.cfg
 
@@ -94,13 +91,6 @@ services:
       #
       # - deployment-data:/deployment
 
-    environment:
-      # This switch can wipe all your Manager and Keycloak data, this is the factory reset!
-      SETUP_WIPE_CLEAN_INSTALL: 'true'
-      # When you are ready to permanently install your project, replace it with the next lines...
-      # SETUP_WIPE_CLEAN_INSTALL: # Allow override on CLI
-      # SETUP_ADMIN_PASSWORD: # Allow override on CLI
-
   keycloak:
     extends:
       file: deploy.yml
@@ -110,11 +100,6 @@ services:
         condition: service_healthy
     volumes:
       - ../ui/keycloak/themes/openremote:/opt/jboss/keycloak/themes/openremote
-    environment:
-      # CHANGE THIS PASSWORD BEFORE STARTING THE STACK! THIS IS ONLY FOR DEMO!
-      SETUP_ADMIN_PASSWORD: secret
-      # When you are ready to permanently install your project, replace it with the next line ...
-      # SETUP_ADMIN_PASSWORD: # Allow override on CLI
 
   # This configuration stores postgresql data in a Docker volume. You manage this volume
   # independently from your stack with with 'docker volume ls', 'docker volume rm', etc.
@@ -124,11 +109,4 @@ services:
       file: deploy.yml
       service: postgresql
     volumes:
-      # Store data either in host-mapped directory or a named Docker volume.
-
-      # By default, we use a named volume to avoid permission problems with PostgreSQL.
       - postgresql-data:/deployment
-
-      # If you use a directory, it must be owned by user:group 5432:5432 and mode 700!
-      #
-      # - ${DEPLOYMENT_DIRECTORY:-../deployment}/postgresql:/deployment
