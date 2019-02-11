@@ -76,6 +76,8 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
     public String apartment1LivingroomId;
     public String apartment1KitchenId;
     public String apartment1HallwayId;
+    public String apartment1Bedroom1Id;
+    public String apartment1BathroomId;
     public String apartment2Id;
     public String apartment3Id;
     public String apartment2LivingroomId;
@@ -425,7 +427,23 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         /* ############################ ROOMS ############################## */
 
         Asset apartment1Livingroom = createDemoApartmentRoom(apartment1, "Living Room")
-            .addAttributes(new AssetAttribute(AttributeType.LOCATION, locationValueA));
+            .addAttributes(
+                    new AssetAttribute(AttributeType.LOCATION, locationValueA),
+                    new AssetAttribute("lightsCeiling", NUMBER, Values.create(0))
+                            .setMeta(
+                                    new MetaItem(RANGE_MIN, Values.create(0)),
+                                    new MetaItem(RANGE_MAX, Values.create(100)),
+                                    new MetaItem(LABEL, Values.create("Living room ceiling")),
+                                    new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)),
+                                    new MetaItem(ACCESS_RESTRICTED_WRITE, Values.create(true))
+                            ),
+                    new AssetAttribute("lightsStand", AttributeValueType.BOOLEAN, Values.create(true))
+                            .setMeta(
+                                    new MetaItem(LABEL, Values.create("Living room stand")),
+                                    new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)),
+                                    new MetaItem(ACCESS_RESTRICTED_WRITE, Values.create(true))
+                            )
+            );
         addDemoApartmentRoomMotionSensor(apartment1Livingroom, true, () -> new MetaItem[]{
             new MetaItem(AGENT_LINK, new AttributeRef(apartment1ServiceAgentId, "apartmentSimulator").toArrayValue()),
             new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME))
@@ -451,7 +469,12 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         apartment1LivingroomId = apartment1Livingroom.getId();
 
         Asset apartment1Kitchen = createDemoApartmentRoom(apartment1, "Kitchen")
-            .addAttributes(new AssetAttribute(AttributeType.LOCATION, locationValueA));
+            .addAttributes(
+                    new AssetAttribute(AttributeType.LOCATION, locationValueA),
+                    new AssetAttribute("lights", AttributeValueType.BOOLEAN, Values.create(true))
+                        .addMeta(new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)))
+                        .addMeta(new MetaItem(ACCESS_RESTRICTED_WRITE, Values.create(true)))
+            );
         addDemoApartmentRoomMotionSensor(apartment1Kitchen, true, () -> new MetaItem[]{
             new MetaItem(AGENT_LINK, new AttributeRef(apartment1ServiceAgentId, "apartmentSimulator").toArrayValue()),
             new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME))
@@ -493,7 +516,12 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         apartment1KitchenId = apartment1Kitchen.getId();
 
         Asset apartment1Hallway = createDemoApartmentRoom(apartment1, "Hallway")
-            .addAttributes(new AssetAttribute(AttributeType.LOCATION, locationValueA));
+            .addAttributes(
+                    new AssetAttribute(AttributeType.LOCATION, locationValueA),
+                    new AssetAttribute("lights", AttributeValueType.BOOLEAN, Values.create(true))
+                            .addMeta(new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)))
+                            .addMeta(new MetaItem(ACCESS_RESTRICTED_WRITE, Values.create(true)))
+            );
         addDemoApartmentRoomMotionSensor(apartment1Hallway, true, () -> new MetaItem[]{
             new MetaItem(AGENT_LINK, new AttributeRef(apartment1ServiceAgentId, "apartmentSimulator").toArrayValue()),
             new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME))
@@ -502,17 +530,67 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         apartment1Hallway = assetStorageService.merge(apartment1Hallway);
         apartment1HallwayId = apartment1Hallway.getId();
 
+        Asset apartment1Bedroom1 = createDemoApartmentRoom(apartment1, "Bedroom")
+                .addAttributes(
+                        new AssetAttribute(AttributeType.LOCATION, locationValueA),
+                        new AssetAttribute("lights", AttributeValueType.BOOLEAN, Values.create(true))
+                                .addMeta(new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)))
+                                .addMeta(new MetaItem(ACCESS_RESTRICTED_WRITE, Values.create(true)))
+                );
+        addDemoApartmentRoomCO2Sensor(apartment1Bedroom1, true, () -> new MetaItem[]{
+                new MetaItem(AGENT_LINK, new AttributeRef(apartment1ServiceAgentId, "apartmentSimulator").toArrayValue()),
+                new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME))
+        });
+        addDemoApartmentRoomHumiditySensor(apartment1Bedroom1, true, () -> new MetaItem[]{
+                new MetaItem(AGENT_LINK, new AttributeRef(apartment1ServiceAgentId, "apartmentSimulator").toArrayValue()),
+                new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME))
+        });
+        addDemoApartmentRoomThermometer(apartment1Bedroom1, true, () -> new MetaItem[]{
+                new MetaItem(AGENT_LINK, new AttributeRef(apartment1ServiceAgentId, "apartmentSimulator").toArrayValue()),
+                new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME))
+        });
+        addDemoApartmentTemperatureControl(apartment1Bedroom1, true, () -> new MetaItem[]{
+                new MetaItem(AGENT_LINK, new AttributeRef(apartment1ServiceAgentId, "apartmentSimulator").toArrayValue()),
+                new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME))
+        });
+
+        apartment1Bedroom1 = assetStorageService.merge(apartment1Bedroom1);
+        apartment1Bedroom1Id = apartment1Bedroom1.getId();
+
+        Asset apartment1Bathroom = new Asset("Bathroom", ROOM, apartment1);
+        apartment1Bathroom.addAttributes(
+            new AssetAttribute(AttributeType.LOCATION, locationValueA),
+            new AssetAttribute("lights", AttributeValueType.BOOLEAN, Values.create(true))
+                    .setMeta(
+                            new MetaItem(RULE_STATE, Values.create(true)),
+                            new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)),
+                            new MetaItem(ACCESS_RESTRICTED_WRITE, Values.create(true))
+                    )
+        );
+        addDemoApartmentRoomThermometer(apartment1Bathroom, true, () -> new MetaItem[]{
+                new MetaItem(AGENT_LINK, new AttributeRef(apartment1ServiceAgentId, "apartmentSimulator").toArrayValue()),
+                new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME))
+        });
+        addDemoApartmentTemperatureControl(apartment1Bathroom, true, () -> new MetaItem[]{
+                new MetaItem(AGENT_LINK, new AttributeRef(apartment1ServiceAgentId, "apartmentSimulator").toArrayValue()),
+                new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME))
+        });
+        apartment1Bathroom = assetStorageService.merge(apartment1Bathroom);
+        apartment1BathroomId = apartment1Bathroom.getId();
+
+
         addDemoApartmentVentilation(apartment1, true, () -> new MetaItem[]{
             new MetaItem(AGENT_LINK, new AttributeRef(apartment1ServiceAgentId, "apartmentSimulator").toArrayValue()),
             new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME))
         });
 
         apartment1 = assetStorageService.merge(apartment1);
+        apartment1Id = apartment1.getId();
 
         if (importDemoScenes) {
             Scene[] scenes = new Scene[]{
-                new Scene("homeScene", "Home scene", "HOME", "0 0 7 ? *", false, 21d),
-                new Scene("awayScene", "Away scene", "AWAY", "0 30 8 ? *", true, 15d),
+                new Scene("morningScene", "Morning scene", "MORNING", "0 0 7 ? *", false, 21d),
+                new Scene("dayScene", "Day scene", "DAY", "0 30 8 ? *", true, 15d),
                 new Scene("eveningScene", "Evening scene", "EVENING", "0 30 17 ? *", false, 22d),
                 new Scene("nightScene", "Night scene", "NIGHT", "0 0 22 ? *", true, 19d)
             };
@@ -651,10 +729,16 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                                                          apartment1KitchenId));
         assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.tenantA.getId(),
                                                          keycloakDemoSetup.testuser3Id,
-                                                         apartment1HallwayId));
+                                                         apartment1Bedroom1Id));
         assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.tenantA.getId(),
                                                          keycloakDemoSetup.testuser3Id,
-                                                         apartment2Id));
+                                                         apartment1BathroomId));
+        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.tenantA.getId(),
+                                                         keycloakDemoSetup.testuser3Id,
+                                                         apartment1HallwayId));
+//        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.tenantA.getId(),
+//                                                         keycloakDemoSetup.testuser2Id,
+//                                                         apartment2Id));
 
         // ################################ Make users restricted ###################################
 

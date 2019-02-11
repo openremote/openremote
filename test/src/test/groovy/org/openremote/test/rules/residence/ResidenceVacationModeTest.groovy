@@ -68,11 +68,11 @@ class ResidenceVacationModeTest extends Specification implements ManagerContaine
                 managerDemoSetup.apartment1Id, "vacationUntil", Values.create(fiveDaysInFuture)
         ))
 
-        then: "the AWAY scene should be executed and scene timers disabled"
+        then: "the DAY scene should be executed and scene timers disabled"
         conditions.eventually {
             def asset = assetStorageService.find(managerDemoSetup.apartment1Id, true)
             def executionStatus = AttributeExecuteStatus.fromString(
-                    asset.getAttribute("awayScene").get().getValueAsString().get()
+                    asset.getAttribute("dayScene").get().getValueAsString().get()
             ).get()
             assert executionStatus == AttributeExecuteStatus.COMPLETED
             assert !asset.getAttribute("sceneTimerEnabled").get().getValueAsBoolean().get()

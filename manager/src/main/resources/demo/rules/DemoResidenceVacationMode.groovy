@@ -24,7 +24,7 @@ class VacationMode {
 }
 
 rules.add()
-        .name("When residence has vacation until in future, add vacation mode, execute AWAY scene and disable scene timers")
+        .name("When residence has vacation until in future, add vacation mode, execute DAY scene and disable scene timers")
         .when(
         { facts ->
             facts.matchAssetState(

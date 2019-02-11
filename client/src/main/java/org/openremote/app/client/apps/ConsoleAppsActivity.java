@@ -28,6 +28,7 @@ import org.openremote.model.event.bus.EventBus;
 import org.openremote.model.event.bus.EventRegistration;
 
 import javax.inject.Inject;
+import java.util.Arrays;
 import java.util.Collection;
 
 public class ConsoleAppsActivity
@@ -65,6 +66,8 @@ public class ConsoleAppsActivity
             consoleAppResource::getInstalledApps,
             200,
             appNames -> {
+                // Remove manager (this app)
+                appNames = Arrays.stream(appNames).filter(name -> !name.equalsIgnoreCase("manager")).toArray(String[]::new);
                 view.setApps(appNames);
                 if (getPlace().getRealm() != null) {
                     for (String appName : appNames) {

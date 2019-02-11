@@ -65,7 +65,7 @@ class MacroProtocolTest extends Specification implements ManagerContainerTrait {
             def apartment1 = assetStorageService.find(managerDemoSetup.apartment1Id, true)
             def livingRoom = assetStorageService.find(managerDemoSetup.apartment1LivingroomId, true)
             assert apartment1.getAttribute("alarmEnabled").get().getValueAsBoolean().orElse(false)
-            assert apartment1.getAttribute("lastExecutedScene").get().getValueAsString().orElse("") == "AWAY"
+            assert apartment1.getAttribute("lastExecutedScene").get().getValueAsString().orElse("") == "DAY"
             assert livingRoom.getAttribute("targetTemperature").get().getValueAsNumber().orElse(0d) == 15d
         }
 

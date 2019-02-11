@@ -175,7 +175,7 @@ class TimerProtocolTest extends Specification implements ManagerContainerTrait {
         conditions.eventually {
             apartment1 = assetStorageService.find(apartment1.id, true)
             apartment1.getAttribute("awayScene").get().getValueAsString().get() == "COMPLETED"
-            apartment1.getAttribute("lastExecutedScene").get().getValueAsString().get() == "AWAY"
+            apartment1.getAttribute("lastExecutedScene").get().getValueAsString().get() == "DAY"
         }
 
         when: "a trigger is deleted"
