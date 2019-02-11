@@ -75,11 +75,11 @@ public enum AssetType implements AssetTypeDescriptor {
 
     ROOM(ASSET_NAMESPACE + ":room", "cube"),
 
-    AGENT(ASSET_NAMESPACE + ":agent", "gears"),
+    AGENT(ASSET_NAMESPACE + ":agent", "cogs"),
 
-    CONSOLE(ASSET_NAMESPACE + ":console", "mobile"),
+    CONSOLE(ASSET_NAMESPACE + ":console", "mobile-alt"),
 
-    THING(ASSET_NAMESPACE + ":thing", "gear");
+    THING(ASSET_NAMESPACE + ":thing", "cog");
 
     final protected String value;
     final protected String icon;

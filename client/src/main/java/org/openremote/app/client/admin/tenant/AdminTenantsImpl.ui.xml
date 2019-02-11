@@ -48,7 +48,7 @@
             <g:HTMLPanel ui:field="mainContent"
                          styleName="flex {widgetStyle.MainContent}">
 
-                <w:Headline icon="group"
+                <w:Headline icon="users"
                                  text="{managerMessages.manageTenants}"/>
 
                 <g:Label ui:field="noTenantsLabel"

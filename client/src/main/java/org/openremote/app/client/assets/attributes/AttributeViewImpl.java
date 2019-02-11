@@ -248,7 +248,7 @@ public class AttributeViewImpl extends FormGroup implements AttributeView {
         if (attribute.isExecutable()) {
             formLabel.setIcon("cog");
         } else if (attribute.isProtocolConfiguration()) {
-            formLabel.setIcon("gears");
+            formLabel.setIcon("cogs");
         } else {
             formLabel.setIcon(attribute.getType().map(AttributeValueType::getIcon).orElse(AttributeValueType.DEFAULT_ICON));
         }

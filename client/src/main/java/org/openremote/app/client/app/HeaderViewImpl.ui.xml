@@ -26,24 +26,24 @@
 
         <w:PushButton ui:field="rulesButton"
                            addStyleNames="{widgetStyle.NavItem}"
-                           icon="chain"
+                           icon="link"
                            text="{managerMessages.rules}"/>
 
         <w:PushButton ui:field="notificationsButton"
                            addStyleNames="{widgetStyle.NavItem}"
-                           icon="send"
+                           icon="paper-plane"
                            text="{managerMessages.notifications}"/>
 
         <w:PushButton ui:field="appsButton"
                            addStyleNames="{widgetStyle.NavItem}"
-                           icon="connectdevelop"
+                           icon="mobile-alt"
                            text="{managerMessages.apps}"/>
 
         <g:HTMLPanel styleName="flex"/>
 
         <w:PushButton ui:field="adminButton"
                            addStyleNames="{widgetStyle.NavItem}"
-                           icon="gears"
+                           icon="cogs"
                            text="{managerMessages.admin}"/>
 
         <w:PushButton ui:field="userButton"

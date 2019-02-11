@@ -24,7 +24,7 @@
 
         <w:Hyperlink ui:field="tenantsLink"
                           addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem}"
-                          icon="group"
+                          icon="users"
                           text="{managerMessages.manageTenants}"/>
 
         <w:Hyperlink ui:field="usersLink"

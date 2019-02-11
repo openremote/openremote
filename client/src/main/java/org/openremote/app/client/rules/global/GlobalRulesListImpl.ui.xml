@@ -59,7 +59,7 @@
 
                     <w:Hyperlink
                             addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem}"
-                            icon="chain"
+                            icon="link"
                             targetHistoryToken="globalRules:"
                             text="{managerMessages.manageGlobalRulesets}"/>
 
@@ -68,7 +68,7 @@
                 <g:HTMLPanel ui:field="mainContent"
                              styleName="flex {widgetStyle.MainContent}">
 
-                    <w:Headline ui:field="headline" icon="chain"
+                    <w:Headline ui:field="headline" icon="link"
                                      text="{managerMessages.manageGlobalRulesets}"/>
 
                     <w:Form ui:field="engineStatusForm" visible="true">

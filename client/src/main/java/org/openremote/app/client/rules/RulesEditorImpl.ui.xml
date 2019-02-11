@@ -38,7 +38,7 @@
 
                     <w:Hyperlink
                             addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem}"
-                            icon="chain"
+                            icon="link"
                             targetHistoryToken="globalRules:"
                             text="{managerMessages.manageGlobalRulesets}"/>
 

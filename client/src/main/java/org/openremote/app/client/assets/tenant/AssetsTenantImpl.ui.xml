@@ -27,7 +27,7 @@
 
                         <w:Headline ui:field="headline"
                                          sub="{managerMessages.linkAssetUsers}"
-                                         icon="group"/>
+                                         icon="users"/>
 
                         <assetBrowser:AssetSelector ui:field="assetSelector"/>
 
