@@ -19,6 +19,7 @@
  */
 package org.openremote.manager.setup.builtin;
 
+import org.apache.commons.io.IOUtils;
 import org.openremote.agent.protocol.simulator.SimulatorProtocol;
 import org.openremote.container.Container;
 import org.openremote.manager.security.UserConfiguration;
@@ -26,6 +27,7 @@ import org.openremote.manager.setup.AbstractManagerSetup;
 import org.openremote.model.asset.*;
 import org.openremote.model.attribute.*;
 import org.openremote.model.geo.GeoJSONPoint;
+import org.openremote.model.rules.AssetRuleset;
 import org.openremote.model.security.Tenant;
 import org.openremote.model.simulator.element.ColorSimulatorElement;
 import org.openremote.model.simulator.element.NumberSimulatorElement;
@@ -43,6 +45,7 @@ import static org.openremote.model.asset.AssetMeta.*;
 import static org.openremote.model.asset.AssetType.*;
 import static org.openremote.model.asset.agent.ProtocolConfiguration.initProtocolConfiguration;
 import static org.openremote.model.attribute.AttributeValueType.*;
+import static org.openremote.model.rules.Ruleset.Lang.GROOVY;
 
 public class ManagerDemoSetup extends AbstractManagerSetup {
 
@@ -837,6 +840,13 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
             new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(NumberSimulatorElement.ELEMENT_NAME))
         });
         camera3Asset = assetStorageService.merge(camera3Asset);
+
+        AssetRuleset camera3Rules = new AssetRuleset(
+            "Camera3_Rules",
+            camera3Asset.getId(),
+            IOUtils.toString(getClass().getResource("/demo/rules/DemoSmartCityCamera.groovy"), "UTF-8"),
+            GROOVY);
+        camera3Rules = rulesetStorageService.merge(camera3Rules);
 
         Asset light3Asset = createDemoLightAsset("Light3", assetArea3);
         light3Asset = assetStorageService.merge(light3Asset);
