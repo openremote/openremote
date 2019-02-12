@@ -4,7 +4,7 @@ Pod::Spec.new do |s|
   s.pod_target_xcconfig = {
     "OTHER_LDFLAGS" => '$(inherited) -ObjC',
     "CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES" => 'YES',
-    "FRAMEWORK_SEARCH_PATHS" => '$(inherited) $(PODS_ROOT)/Firebase $(PODS_ROOT)/FirebaseCore/Frameworks $(PODS_ROOT)/FirebaseInstanceID/Frameworks $(PODS_ROOT)/FirebaseAnalytics/Frameworks'
+    "FRAMEWORK_SEARCH_PATHS" => '$(inherited) $(PODS_ROOT)/FirebaseCore/Frameworks $(PODS_ROOT)/FirebaseInstanceID/Frameworks $(PODS_ROOT)/FirebaseMessaging/Frameworks'
   }
   s.swift_version = '4.1'
   s.name = "ORLib"
@@ -14,9 +14,8 @@ Pod::Spec.new do |s|
   s.authors = 'OpenRemote'
   s.homepage = "http://www.openremote.io"
   s.source = { :git => 'https://github.com/openremote/openremote.git', :tag => 'cocoapod' + s.version.to_s }
-  s.frameworks = 'Foundation', 'FirebaseCore', 'FirebaseInstanceID', 'FirebaseAnalytics', 'FirebaseCoreDiagnostics', 'FirebaseNanoPB'
+  s.frameworks = 'Foundation', 'FirebaseCore', 'FirebaseInstanceID', 'FirebaseMessaging'
   s.libraries = 'c++', 'sqlite3', 'z'
-  s.dependency 'Firebase', '~> 4.6.0'
   s.dependency 'Firebase/Core', '~> 4.6.0'
   s.dependency 'Firebase/Messaging', '~> 4.6.0'
   s.source_files = 'console/iOS/ORLib/**/*.{swift}'
