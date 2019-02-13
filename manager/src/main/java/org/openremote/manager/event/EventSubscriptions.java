@@ -31,6 +31,7 @@ import org.openremote.model.event.shared.EventSubscription;
 import org.openremote.model.event.shared.SharedEvent;
 import org.openremote.model.util.TextUtil;
 
+import java.lang.reflect.Array;
 import java.util.*;
 import java.util.logging.Logger;
 
@@ -195,8 +196,9 @@ public class EventSubscriptions {
                 if (sessionSubscription.subscription.getFilter() == null
                     || sessionSubscription.subscription.getFilter().apply(event)) {
                     LOG.fine("Creating message for subscribed session '" + sessionKey + "': " + event);
-
-                    TriggeredEventSubscription<SharedEvent> triggeredEventSubscription = new TriggeredEventSubscription<>(new SharedEvent[] {event}, sessionSubscription.subscriptionId);
+                    SharedEvent[] events = (SharedEvent[])Array.newInstance(event.getClass(), 1);
+                    events[0] = event;
+                    TriggeredEventSubscription triggeredEventSubscription = new TriggeredEventSubscription<>(events, sessionSubscription.subscriptionId);
 
                     if (sessionSubscription.subscription.getInternalConsumer() == null) {
                         Message msg = new DefaultMessage();
