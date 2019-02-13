@@ -142,7 +142,7 @@ export class Manager {
             }
         }
 
-        if (!normalisedConfig.consoleAutoEnable) {
+        if (normalisedConfig.consoleAutoEnable === undefined) {
             normalisedConfig.consoleAutoEnable = true;
         }
 
