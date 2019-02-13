@@ -51,7 +51,7 @@ class AssetUserLinkingTest extends Specification implements ManagerContainerTrai
         def userAssets = assetResource.getUserAssetLinks(null, keycloakDemoSetup.tenantA.id, null, null)
 
         then: "result should match"
-        userAssets.length == 5
+        userAssets.length == 6
         userAssets.any {
             it.id.realmId == keycloakDemoSetup.tenantA.id &&
                     it.id.userId == keycloakDemoSetup.testuser3Id &&
@@ -87,9 +87,17 @@ class AssetUserLinkingTest extends Specification implements ManagerContainerTrai
         userAssets.any {
             it.id.realmId == keycloakDemoSetup.tenantA.id &&
                     it.id.userId == keycloakDemoSetup.testuser3Id &&
-                    it.id.assetId == managerDemoSetup.apartment2Id &&
-                    it.assetName == "Apartment 2" &&
-                    it.parentAssetName == "Smart Building" &&
+                    it.id.assetId == managerDemoSetup.apartment1Bedroom1Id &&
+                    it.assetName == "Bedroom" &&
+                    it.parentAssetName == "Apartment 1" &&
+                    it.userFullName == "testuser3 (DemoA3 DemoLast)"
+        }
+        userAssets.any {
+            it.id.realmId == keycloakDemoSetup.tenantA.id &&
+                    it.id.userId == keycloakDemoSetup.testuser3Id &&
+                    it.id.assetId == managerDemoSetup.apartment1BathroomId &&
+                    it.assetName == "Bathroom" &&
+                    it.parentAssetName == "Apartment 1" &&
                     it.userFullName == "testuser3 (DemoA3 DemoLast)"
         }
 
@@ -97,7 +105,7 @@ class AssetUserLinkingTest extends Specification implements ManagerContainerTrai
         userAssets = assetResource.getUserAssetLinks(null, keycloakDemoSetup.tenantA.id, keycloakDemoSetup.testuser3Id, null)
 
         then: "result should match"
-        userAssets.length == 5
+        userAssets.length == 6
 
         when: "the realm and user don't match"
         assetResource.getUserAssetLinks(null, keycloakDemoSetup.tenantB.id, keycloakDemoSetup.testuser3Id, null)

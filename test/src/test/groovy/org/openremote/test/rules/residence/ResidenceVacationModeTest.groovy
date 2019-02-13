@@ -57,7 +57,7 @@ class ResidenceVacationModeTest extends Specification implements ManagerContaine
             // The macro should be ready
             def asset = assetStorageService.find(managerDemoSetup.apartment1Id, true)
             def executionStatus = AttributeExecuteStatus.fromString(
-                    asset.getAttribute("awayScene").get().getValueAsString().get()
+                    asset.getAttribute("dayScene").get().getValueAsString().get()
             ).get()
             assert executionStatus == AttributeExecuteStatus.READY
         }
@@ -77,8 +77,8 @@ class ResidenceVacationModeTest extends Specification implements ManagerContaine
             assert executionStatus == AttributeExecuteStatus.COMPLETED
             assert !asset.getAttribute("sceneTimerEnabled").get().getValueAsBoolean().get()
             DayOfWeek.values().each {
-                assert !asset.getAttribute("homeSceneEnabled" + it.name()).get().getValueAsBoolean().get()
-                assert !asset.getAttribute("awaySceneEnabled" + it.name()).get().getValueAsBoolean().get()
+                assert !asset.getAttribute("morningSceneEnabled" + it.name()).get().getValueAsBoolean().get()
+                assert !asset.getAttribute("daySceneEnabled" + it.name()).get().getValueAsBoolean().get()
                 assert !asset.getAttribute("eveningSceneEnabled" + it.name()).get().getValueAsBoolean().get()
                 assert !asset.getAttribute("nightSceneEnabled" + it.name()).get().getValueAsBoolean().get()
             }
@@ -93,8 +93,8 @@ class ResidenceVacationModeTest extends Specification implements ManagerContaine
             assert asset.getAttribute("vacationUntil").get().getValueAsNumber().get() == fiveDaysInFuture
             assert !asset.getAttribute("sceneTimerEnabled").get().getValueAsBoolean().get()
             DayOfWeek.values().each {
-                assert !asset.getAttribute("homeSceneEnabled" + it.name()).get().getValueAsBoolean().get()
-                assert !asset.getAttribute("awaySceneEnabled" + it.name()).get().getValueAsBoolean().get()
+                assert !asset.getAttribute("morningSceneEnabled" + it.name()).get().getValueAsBoolean().get()
+                assert !asset.getAttribute("daySceneEnabled" + it.name()).get().getValueAsBoolean().get()
                 assert !asset.getAttribute("eveningSceneEnabled" + it.name()).get().getValueAsBoolean().get()
                 assert !asset.getAttribute("nightSceneEnabled" + it.name()).get().getValueAsBoolean().get()
             }
@@ -109,8 +109,8 @@ class ResidenceVacationModeTest extends Specification implements ManagerContaine
             assert !asset.getAttribute("vacationUntil").get().getValue().isPresent()
             assert asset.getAttribute("sceneTimerEnabled").get().getValueAsBoolean().get()
             DayOfWeek.values().each {
-                assert asset.getAttribute("homeSceneEnabled" + it.name()).get().getValueAsBoolean().get()
-                assert asset.getAttribute("awaySceneEnabled" + it.name()).get().getValueAsBoolean().get()
+                assert asset.getAttribute("morningSceneEnabled" + it.name()).get().getValueAsBoolean().get()
+                assert asset.getAttribute("daySceneEnabled" + it.name()).get().getValueAsBoolean().get()
                 assert asset.getAttribute("eveningSceneEnabled" + it.name()).get().getValueAsBoolean().get()
                 assert asset.getAttribute("nightSceneEnabled" + it.name()).get().getValueAsBoolean().get()
             }

@@ -50,7 +50,7 @@ import static org.openremote.model.rules.Ruleset.Lang.GROOVY;
 public class ManagerDemoSetup extends AbstractManagerSetup {
 
     // Update these numbers whenever you change a RULE_STATE flag in test data
-    public static final int DEMO_RULE_STATES_APARTMENT_1 = 37;
+    public static final int DEMO_RULE_STATES_APARTMENT_1 = 44;
     public static final int DEMO_RULE_STATES_APARTMENT_2 = 11;
     public static final int DEMO_RULE_STATES_APARTMENT_3 = 0;
     public static final int DEMO_RULE_STATES_SMART_OFFICE = 1;
@@ -73,7 +73,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
     public String lobbyId;
     public String agentId;
     public String thingId;
-    public String smartHomeId;
+    public String smartBuildingId;
     public String apartment1Id;
     public String apartment1ServiceAgentId;
     public String apartment1LivingroomId;
@@ -407,7 +407,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                 )
         );
         smartBuilding = assetStorageService.merge(smartBuilding);
-        smartHomeId = smartBuilding.getId();
+        smartBuildingId = smartBuilding.getId();
 
         // The "Apartment 1" is the demo apartment with complex scenes
         Asset apartment1 = createDemoApartment(smartBuilding, "Apartment 1")

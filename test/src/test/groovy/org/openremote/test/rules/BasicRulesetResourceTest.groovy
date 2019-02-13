@@ -728,14 +728,14 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex.response.status == 403
 
         when: "some asset rules of a protected assigned asset are retrieved"
-        def ruleDefinitions = rulesetResource.getAssetRulesets(null, managerDemoSetup.apartment2Id)
+        def ruleDefinitions = rulesetResource.getAssetRulesets(null, managerDemoSetup.apartment1Id)
 
         then: "result should match"
         ruleDefinitions.length == 1
-        ruleDefinitions[0].name == "Some apartment 2 demo rules"
+        ruleDefinitions[0].name == "Some apartment 1 demo rules"
 
         when: "some asset rules of a protected but not assigned asset are retrieved"
-        rulesetResource.getAssetRulesets(null, managerDemoSetup.apartment3Id)
+        rulesetResource.getAssetRulesets(null, managerDemoSetup.apartment2Id)
 
         then: "access should be forbidden"
         ex = thrown()
@@ -797,9 +797,9 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex.response.status == 403
 
         when: "an asset ruleset is created in the authenticated realm"
-        def assetRuleset = new AssetRuleset("Test asset definition", managerDemoSetup.apartment2Id, "SomeRulesCode", GROOVY)
+        def assetRuleset = new AssetRuleset("Test asset definition", managerDemoSetup.apartment1Id, "SomeRulesCode", GROOVY)
         rulesetResource.createAssetRuleset(null, assetRuleset)
-        def rulesetId = rulesetResource.getAssetRulesets(null, managerDemoSetup.apartment2Id)[1].id
+        def rulesetId = rulesetResource.getAssetRulesets(null, managerDemoSetup.apartment1Id)[1].id
         assetRuleset = rulesetResource.getAssetRuleset(null, rulesetId)
         def lastModified = assetRuleset.lastModified
 
@@ -810,7 +810,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         lastModified.time < System.currentTimeMillis()
         assetRuleset.name == "Test asset definition"
         assetRuleset.rules == "SomeRulesCode"
-        assetRuleset.assetId == managerDemoSetup.apartment2Id
+        assetRuleset.assetId == managerDemoSetup.apartment1Id
 
         when: "an asset ruleset is updated"
         assetRuleset.name = "Renamed test asset definition"
@@ -825,7 +825,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         lastModified.time < System.currentTimeMillis()
         assetRuleset.name == "Renamed test asset definition"
         assetRuleset.rules == "SomeRulesCodeModified"
-        assetRuleset.assetId == managerDemoSetup.apartment2Id
+        assetRuleset.assetId == managerDemoSetup.apartment1Id
 
         when: "an asset ruleset is updated with a changed asset ID"
         assetRuleset.assetId = managerDemoSetup.apartment3Id
@@ -844,7 +844,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex.response.status == 400
 
         when: "an asset ruleset is updated with an invalid id"
-        assetRuleset.assetId = managerDemoSetup.apartment2Id
+        assetRuleset.assetId = managerDemoSetup.apartment1Id
         assetRuleset.id = 1234567890l
         rulesetResource.updateAssetRuleset(null, rulesetId, assetRuleset)
 

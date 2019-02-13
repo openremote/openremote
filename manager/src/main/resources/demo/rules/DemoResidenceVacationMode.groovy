@@ -51,7 +51,7 @@ rules.add()
             def vacationModeExpiresMillis = vacationMode.until - facts.clock.timestamp
             facts.putTemporary(vacationModeExpiresMillis, vacationMode)
 
-            facts.updateAssetState(vacationMode.residenceId, "awayScene", REQUEST_START)
+            facts.updateAssetState(vacationMode.residenceId, "dayScene", REQUEST_START)
                     .updateAssetState(vacationMode.residenceId, "disableSceneTimer", REQUEST_START)
         })
 

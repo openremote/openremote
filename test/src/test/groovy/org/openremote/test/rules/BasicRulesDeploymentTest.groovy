@@ -145,7 +145,7 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
 
         then: "the apartment rules engine should be removed"
         conditions.eventually {
-            assert rulesService.assetEngines.size() == 1
+            assert rulesService.assetEngines.size() == 2
             def apartment2Engine = rulesService.assetEngines.get(managerDemoSetup.apartment2Id)
             def apartment3Engine = rulesService.assetEngines.get(managerDemoSetup.apartment3Id)
             assert apartment2Engine == null
@@ -204,7 +204,7 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
         and: "other rule engines should be unaffected"
         conditions.eventually {
             assert rulesService.tenantEngines.size() == 2
-            assert rulesService.assetEngines.size() == 0
+            assert rulesService.assetEngines.size() == 1
             def masterEngine = rulesService.tenantEngines.get(keycloakDemoSetup.masterTenant.id)
             def tenantBEngine = rulesService.tenantEngines.get(keycloakDemoSetup.tenantB.id)
             assert masterEngine != null
@@ -222,7 +222,7 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
             tenantAEngine = rulesService.tenantEngines.get(keycloakDemoSetup.tenantA.id)
             apartment3Engine = rulesService.assetEngines.get(managerDemoSetup.apartment3Id)
             assert rulesService.tenantEngines.size() == 3
-            assert rulesService.assetEngines.size() == 1
+            assert rulesService.assetEngines.size() == 2
             assert tenantAEngine != null
             assert tenantAEngine.isRunning()
             assert tenantAEngine.deployments.size() == 2
@@ -243,7 +243,7 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
 //            assert rulesService.tenantEngines.get(keycloakDemoSetup.tenantATenant.id) == null
 //            assert smartHomeEngine.isRunning() == false
 //            assert smartHomeEngine.allRulesets.length == 0
-//            assert rulesService.assetEngines.get(managerDemoSetup.smartHomeId) == null
+//            assert rulesService.assetEngines.get(managerDemoSetup.smartBuildingId) == null
 //            assert apartment3Engine.isRunning() == false
 //            assert apartment3Engine.allRulesets.length == 0
 //            assert rulesService.assetEngines.get(managerDemoSetup.apartment3Id) == null

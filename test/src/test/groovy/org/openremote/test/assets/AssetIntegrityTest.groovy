@@ -131,7 +131,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
 
         when: "an asset is updated with a parent in a different realm"
         testAsset = assetResource.get(null, testAsset.getId())
-        testAsset.setParentId(managerDemoSetup.smartHomeId)
+        testAsset.setParentId(managerDemoSetup.smartBuildingId)
         assetResource.update(null, testAsset.id, testAsset)
 
         then: "the request should be bad"

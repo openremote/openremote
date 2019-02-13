@@ -130,7 +130,7 @@ class BasicRulesImport {
         def tenantBEngine = rulesService.tenantEngines.get(keycloakDemoSetup.tenantB.id)
         assert tenantBEngine == null
 
-        assert rulesService.assetEngines.size() == 2
+        assert rulesService.assetEngines.size() == 3
         apartment1Engine = rulesService.assetEngines.get(managerDemoSetup.apartment1Id)
         assert apartment1Engine == null
         apartment2Engine = rulesService.assetEngines.get(managerDemoSetup.apartment2Id)

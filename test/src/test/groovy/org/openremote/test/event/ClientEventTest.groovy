@@ -198,7 +198,7 @@ class ClientEventTest extends Specification implements ManagerContainerTrait, Gw
                         AttributeEvent.class,
                         new AttributeEvent.EntityIdFilter(managerDemoSetup.thingId),
                         { triggeredEventSubscription ->
-                            internalReceivedEvents.add(triggeredEventSubscription.event as AttributeEvent)
+                            internalReceivedEvents.add(triggeredEventSubscription.events[0] as AttributeEvent)
                         }
                 ))
 
