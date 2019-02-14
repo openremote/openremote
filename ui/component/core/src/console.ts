@@ -140,7 +140,7 @@ export class Console {
     }
 
     get pendingProviderEnables(): string[] {
-        return this._pendingProviderEnables;
+        return this._pendingProviderEnables.slice(0);
     }
 
     public get shellApple(): boolean {
