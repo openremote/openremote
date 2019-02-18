@@ -1,6 +1,6 @@
+var HtmlWebpackPlugin = require("html-webpack-plugin");
 var path = require("path");
 var CopyWebpackPlugin = require("copy-webpack-plugin");
-var HtmlWebpackPlugin = require("html-webpack-plugin");
 
 module.exports = {
     mode: 'development',
@@ -8,7 +8,7 @@ module.exports = {
         'bundle': './src/index.js'
     },
     output: {
-        path:     __dirname + "/dist",
+        path: __dirname + "/dist",
         filename: "[name].[hash].js",
         publicPath: ""
     },
@@ -63,8 +63,9 @@ module.exports = {
                 test: /\.(png|jpg|gif|svg|eot|ttf|woff|woff2)$/,
                 loader: 'url-loader',
                 options: {
-                    limit: 10000,
-                },
+                    outputPath: "images/",
+                    limit: 10000
+                }
             }
         ]
     }

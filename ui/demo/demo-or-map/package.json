@@ -22,22 +22,23 @@
     "@babel/plugin-transform-runtime": "^7.2.0",
     "@babel/preset-env": "^7.2.0",
     "@babel/runtime": "^7.2.0",
-    "@polymer/iron-demo-helpers": "^3.0.0-pre.19",
     "babel-loader": "^8.0.4",
     "copy-webpack-plugin": "^4.6.0",
-    "cross-env": "^5.2.0",
+    "html-webpack-plugin": "^3.2.0",
+    "source-map-loader": "^0.2.4",
+    "style-loader": "^0.23.1",
     "css-loader": "^2.0.0",
     "fast-async": "^6.3.8",
     "file-loader": "^2.0.0",
-    "html-webpack-plugin": "^3.2.0",
     "raw-loader": "^0.5.1",
+    "cross-env": "^5.2.0",
     "shx": "^0.3.2",
-    "style-loader": "^0.23.1",
     "tslint": "^5.11.0",
     "typescript": "^3.2.2",
     "url-loader": "^1.1.2",
     "webpack": "^4.24.0",
     "webpack-cli": "^3.1.2",
-    "webpack-dev-server": "^3.1.10"
+    "webpack-dev-server": "^3.1.10",
+    "@polymer/iron-demo-helpers": "^3.0.0-pre.19"
   }
 }
