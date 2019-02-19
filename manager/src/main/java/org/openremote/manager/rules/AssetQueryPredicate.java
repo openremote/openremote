@@ -59,11 +59,12 @@ public class AssetQueryPredicate implements Predicate<AssetState> {
     final protected AssetStorageService assetStorageService;
 
     // TODO: Remove this ctor once asset queries merged
+    @SuppressWarnings("unchecked")
     public AssetQueryPredicate(TimerService timerService, AssetStorageService assetStorageService, BaseAssetQuery query) {
         this.timerService = timerService;
         this.assetStorageService = assetStorageService;
         this.query = new NewAssetQuery();
-        this.query.ids = query.ids != null ? (String[])query.ids.toArray(new String[query.ids.size()]) : null;
+        this.query.ids = query.ids != null ? (String[])query.ids.toArray(new String[0]) : null;
         this.query.names = query.name != null ? new StringPredicate[] {query.name} : null;
         this.query.parents = query.parent != null ? new ParentPredicate[] {query.parent} : null;
         this.query.paths = query.path != null ? new PathPredicate[] {query.path} : null;

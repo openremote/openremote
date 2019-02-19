@@ -177,6 +177,7 @@ public class MapService implements ContainerService {
                     .host(tileServerHost)
                     .port(tileServerPort);
 
+            @SuppressWarnings("deprecation")
             ProxyHandler proxyHandler = new ProxyHandler(
                     new io.undertow.server.handlers.proxy.SimpleProxyClientProvider(tileServerUri.build()),
                     getInteger(container.getConfig(), MAP_TILESERVER_REQUEST_TIMEOUT, MAP_TILESERVER_REQUEST_TIMEOUT_DEFAULT),
