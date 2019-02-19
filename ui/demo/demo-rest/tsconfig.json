@@ -4,6 +4,6 @@
     "./src"
   ],
   "references": [
-    { "path": "../../component/rest" }
+    { "path": "../../component/core" }
   ]
 }
