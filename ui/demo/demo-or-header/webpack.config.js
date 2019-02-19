@@ -1,6 +1,5 @@
 var HtmlWebpackPlugin = require("html-webpack-plugin");
 var path = require("path");
-var CopyWebpackPlugin = require("copy-webpack-plugin");
 
 module.exports = {
     mode: 'development',
@@ -23,14 +22,7 @@ module.exports = {
             chunksSortMode: 'none',
             inject: false,
             template: 'index.html'
-        }),
-        new CopyWebpackPlugin([
-            {
-                from: path.dirname(require.resolve("@webcomponents/webcomponentsjs")),
-                to: "modules/@webcomponents/webcomponentsjs",
-                ignore: "!*.js"
-            }
-        ])
+        })
     ],
     module: {
         rules: [
@@ -64,8 +56,8 @@ module.exports = {
                 loader: 'url-loader',
                 options: {
                     outputPath: "images/",
-                    limit: 10000
-                }
+                    limit: 10000,
+                },
             }
         ]
     }
