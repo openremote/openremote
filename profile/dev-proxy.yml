@@ -49,7 +49,7 @@ services:
     build:
       context: ../keycloak
       dockerfile: dev.Dockerfile
-    image: openremote/keycloak_dev:latest
+    image: openremote/keycloak_dev:${DATE_TAG:-latest}
     # Access directly if needed on localhost
     ports:
       - "127.0.0.1:8081:8080"

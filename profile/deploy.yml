@@ -1,13 +1,8 @@
 # OpenRemote v3
 #
-# Install Docker Community edition (https://docker.com/) on Windows, macOS, or Linux.
-#
-# Start the stack with:
-#
-#   docker-compose -p openremote -f profile/demo.yml up
-#
-# Note that you must extend this configuration to complete it with service
-# dependencies and volume mappings, see demo.yml.
+# This is the base configuration profile. Note that you must extend this
+# configuration to complete it with service dependencies and volume
+# mappings, see docker-compose.yml for a usable complete configuration.
 #
 version: '2.2'
 
@@ -21,7 +16,7 @@ services:
       context: '../proxy'
 
     # Image will be pulled when using the `docker-compose pull` command or `docker-compose up --no-build`
-    image: openremote/proxy:latest
+    image: openremote/proxy:${DATE_TAG:-latest}
 
     environment:
 
@@ -86,7 +81,7 @@ services:
     build: '../manager/build/install/manager'
 
     # Image will be pulled when using the `docker-compose pull` command or `docker-compose up --no-build`
-    image: openremote/manager:latest
+    image: openremote/manager:${DATE_TAG:-latest}
 
     environment:
 
@@ -257,7 +252,7 @@ services:
     build: '../keycloak'
 
     # Image will be pulled when using the `docker-compose pull` command or `docker-compose up --no-build`
-    image: openremote/keycloak:latest
+    image: openremote/keycloak:${DATE_TAG:-latest}
 
     environment:
 
@@ -304,7 +299,7 @@ services:
     build: '../postgresql'
 
     # Image will be pulled when using the `docker-compose pull` command or `docker-compose up --no-build`
-    image: openremote/postgresql:latest
+    image: openremote/postgresql:${DATE_TAG:-latest}
 
     environment:
 
@@ -313,7 +308,7 @@ services:
       TZ: Europe/Zurich
 
       # Create database and user if there is no data. For production, run
-      # this once with your volume mapping for the data directory (see demo.yml),
+      # this once with your volume mapping for the data directory (see docker-compose.yml),
       # then remove the variables and restart to preserve the stored data. It
       # doesn't hurt if you don't remove it, an existing will never be reconfigured.
       POSTGRES_DB: openremote
@@ -335,4 +330,4 @@ services:
   # Map tile server for serving raster tiles using mbtiles
   map:
     build: '../map'
-    image: openremote/tileserver-gl
+    image: openremote/tileserver-gl:${DATE_TAG:-latest}

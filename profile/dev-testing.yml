@@ -20,7 +20,7 @@ services:
     build:
       context: ../keycloak
       dockerfile: dev.Dockerfile
-    image: openremote/keycloak_dev:latest
+    image: openremote/keycloak_dev:${DATE_TAG:-latest}
     volumes:
       - ../ui/keycloak/themes/openremote:/opt/jboss/keycloak/themes/openremote
     depends_on:

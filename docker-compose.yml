@@ -5,11 +5,11 @@
 #
 # Install Docker Community edition (https://docker.com/) on Windows, macOS, or Linux.
 #
-# Start a transient demo stack with:
+# Start a demo stack in the project root directory with:
 #
-#   docker-compose -p openremote -f profile/demo.yml up
+#   docker-compose up
 #
-# For full documentation, see deploy.yml
+# For full documentation, see profile/deploy.yml
 #
 # Steps to create a permanent installation:
 #
@@ -26,16 +26,17 @@
 #
 #   SETUP_WIPE_CLEAN_INSTALL=true \
 #   SETUP_ADMIN_PASSWORD=secret \
-#   docker-compose -p openremote -f profile/demo.yml up
+#   docker-compose up
 #
 # This creates the initial database and optionally imports some examples. Inspect the
-# running installation and ensure it's working. You are now ready to restart the stack
-# without the clean wipe option. Passwords can be changed in the application.
+# running installation and ensure it's working. You should now stop the stack and remove
+# all containers. It is important that you recreate the containers and start again WITHOUT
+# the SETUP_WIPE_CLEAN_INSTALL setting! Passwords can be changed in the application.
 #
 # Database schemas will be upgraded to new versions of the services automatically, you do
 # not have to wipe all data to install a new version of OpenRemote.
 #
-# Your extension JAR files should be in the manager's ../deployment/manager/extensions/ directory.
+# Your extension JAR files should be in the deployment/manager/extensions/ directory.
 #
 version: '2.2'
 
@@ -50,8 +51,8 @@ services:
   # This service will only populate an empty volume on startup and then exit.
   # If the volume already contains data, it exits immediately.
   deployment:
-    build: '../deployment'
-    image: openremote/deployment:latest
+    build: 'deployment'
+    image: openremote/deployment:${DATE_TAG:-latest}
     volumes:
       - deployment-data:/deployment
 
@@ -61,7 +62,7 @@ services:
   # and SSL certificates.
   proxy:
     extends:
-      file: deploy.yml
+      file: profile/deploy.yml
       service: proxy
     depends_on:
       manager:
@@ -76,7 +77,7 @@ services:
   # configuration files which were baked into the managers image.
   manager:
     extends:
-      file: deploy.yml
+      file: profile/deploy.yml
       service: manager
     depends_on:
       keycloak:
@@ -86,7 +87,7 @@ services:
 
   keycloak:
     extends:
-      file: deploy.yml
+      file: profile/deploy.yml
       service: keycloak
     depends_on:
       postgresql:
@@ -99,7 +100,7 @@ services:
   # Alternatively, you can store postgresql data in a directory on your host.
   postgresql:
     extends:
-      file: deploy.yml
+      file: profile/deploy.yml
       service: postgresql
     volumes:
       - postgresql-data:/deployment

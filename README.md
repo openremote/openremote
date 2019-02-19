@@ -8,49 +8,79 @@ If you want to try OpenRemote v2, [read the OpenRemote v2 documentation](https:/
 
 ## Quickstart
 
-Checkout this project or at a minimum, get the Docker Compose [profiles](profile/) and ensure you have [Docker Community Edition](https://www.docker.com/) installed, then either use images from docker hub (easiest) or build the images locally first.
+Checkout this project and ensure you have [Docker Community Edition](https://www.docker.com/) installed, then either use images from Docker Hub (easiest) or build the images locally first.
 
-### Use images from Docker Hub
-We publish our docker images to [Docker Hub](https://hub.docker.com/u/openremote/), please be aware that the published images may be out of date compared to the codebase, if you want to run the latest code then you may need to build the images first. To run a demo using Docker Hub images simply run the following command from the repo root (or directory containing the `profile` directory if you only downloaded the profiles):
-
-```
-docker-compose -p openremote -f profile/demo.yml up --no-build
-```
-
-### Build images locally
-Alternatively you can build the docker images locally, to do this please refer to the [Developer Guide](https://github.com/openremote/openremote/wiki/Developer-Guide%3A-Building-the-code) to build the code, once the code is built
+***NOTE: If you are not using Docker Community Edition but the older Docker Toolbox (Virtual Box), you must specify the `IDENTITY_NETWORK_HOST` environment variable as the IP address of the Docker VM when executing `docker-compose` commands:***
 
 ```
-docker-compose -p openremote -f profile/demo.yml up --build
+Windows Command Prompt (quotes are essential):
+set "IDENTITY_NETWORK_HOST=192.168.99.100" && docker-compose ...
+
+Bash:
+IDENTITY_NETWORK_HOST=192.168.99.100 docker-compose ...
 ```
 
-***NOTE: If you are using docker toolbox (Virtual Box) then you must specify the `IDENTITY_NETWORK_HOST` environment variable as the IP address of the docker VM:***
-```
-Command Prompt: set "IDENTITY_NETWORK_HOST=192.168.99.100" && docker-compose... (quotation marks are essential)
-Bash: IDENTITY_NETWORK_HOST=192.168.99.100 docker-compose....
-```
+### Starting OpenRemote with images from Docker Hub
 
-Once you have running docker containers you can Access the manager UI and API (you will have to accept the 'insecure' self-signed SSL certificate):
+We publish Docker images to [Docker Hub](https://hub.docker.com/u/openremote/), please be aware that the published images may be out of date compared to this codebase. If you want to run the latest code, build the images from this source.
+
+To run OpenRemote using Docker Hub images simply execute the following command from the checked out root project directory:
 
 ```
-URL: https://localhost/ (https://192.168.99.100/ if using Docker Toolbox)
+docker-compose up --no-build
+```
+
+### Starting OpenRemote with source-build images
+
+Alternatively you can build the Docker images locally from source. First build the code:
+
+```
+./gradlew clean build installDist -x test
+```
+
+Next, build the Docker images and start the stack with:
+
+```
+docker-compose up --build
+```
+
+A first build will download many dependencies (and cache them locally for future builds), this can take up to 30 minutes.
+
+### Using the OpenRemote demo
+
+When all Docker containers are ready, you can access the OpenRemote UI and API with a webbrowser (replace `localhost` with `192.168.99.100` if you are using Docker Toolbox):
+
+**OpenRemote Manager:** https://localhost
 Username: admin
 Password: secret
-```
-                                                
-The console app of `tenantA` can be accessed on https://localhost/tenantA/ with username `testuser3` and password `testuser3`.
 
-Stop the stack and remove all unused data volumes (alternatively delete only the openremote volumes if you don't want all unused volumes to be removed) with:
+**Demo Smart Building App:** https://localhost/smart-building-v1/
+Username: testuser3
+Password: testuser3
+
+You must accept and make an exception for the 'insecure' self-signed SSL certificate. You can configure a production installation of OpenRemote with a your own certificate or automatically use one from [Let's Encrypt](https://letsencrypt.org/).
+
+### Preserving data and configuration
+
+Interrupting the `docker-compose up` execution stops the stack running in the foreground. The OpenRemote containers will stop but not be removed. To stop **and** remove the containers, use:
 
 ```
-docker-compose -p openremote -f profile/demo.yml down
-docker volume prune
+docker-compose down
 ```
 
-To preserve data between restarts, don't delete the Docker volumes `openremote_deployment-data` and `openremote_postgresql-data` between restarts. You must also change `SETUP_WIPE_CLEAN_INSTALL` to `false` in `demo.yml`!
+This will not affect your data, which is durably stored independently from containers in Docker volumes (see all with `docker volume ls`):
+
+- `openremote_deployment-data` (map tiles, static resources)
+- `openremote_postgresql-data` (user/asset database storage)
+- `openremote_proxy-data` (SSL proxy configuration and certificates)
+
+If you want to create a backup of your installation, make a copy of these volumes.
+
+**The default configuration will wipe the user/asset database storage and import demo data when containers are started!** This can be changed with the environment variable `SETUP_WIPE_CLEAN_INSTALL`.  Set it to to `false` in `docker-compose.yml` or provide it on the command line.
+
+When a configuration environment variable is changed, you must recreate containers. Stop and remove them with `docker-compose down` and then `docker-compose up` the stack again.
 
 More configuration options of the images are documented [in the deploy.yml profile](https://github.com/openremote/openremote/blob/master/profile/deploy.yml).
-
 
 ## Contributing to OpenRemote
 
