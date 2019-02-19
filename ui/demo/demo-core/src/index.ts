@@ -104,8 +104,8 @@ openremote.addListener((event: OREvent) => {
 });
 
 openremote.init({
-    managerUrl: "http://192.168.1.85:8080",
-    keycloakUrl: "http://192.168.1.85:8080/auth",
+    managerUrl: "http://localhost:8080",
+    keycloakUrl: "http://localhost:8080/auth",
     auth: Auth.KEYCLOAK,
     autoLogin: false,
     realm: "tenantA"
