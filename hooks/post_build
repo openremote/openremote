@@ -1,6 +1,10 @@
 #!/bin/bash
-echo "===> Building OpenRemote images"
+echo "===> Building OpenRemote source"
 docker run --privileged \
-  -v $(pwd):/openremote \
+  -v $(pwd):/src \
   -v /var/run/docker.sock:/var/run/docker.sock \
-  $IMAGE_NAME
+  $IMAGE_NAME \
+  cd /src && ./gradlew clean build installDist
+
+echo "===> Building OpenRemote images"
+docker-compose -p openremote build
