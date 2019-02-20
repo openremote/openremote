@@ -1,0 +1,6 @@
+#!/bin/bash
+echo "===> Building OpenRemote images"
+docker run --privileged \
+  -v $(pwd):/openremote \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  $IMAGE_NAME
