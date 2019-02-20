@@ -79,4 +79,4 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     docker-ce docker-ce-cli containerd.io \
     && rm -rf /var/lib/apt/lists/*
 
-ENTRYPOINT docker ps -a
+VOLUME src
