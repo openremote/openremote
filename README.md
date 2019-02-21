@@ -35,7 +35,7 @@ docker-compose up --no-build
 Alternatively you can build the Docker images locally from source. First build the code:
 
 ```
-./gradlew clean build installDist -x test
+./gradlew clean installDist
 ```
 
 Next, build the Docker images and start the stack with:
