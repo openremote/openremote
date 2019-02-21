@@ -60,23 +60,24 @@ LABEL git-commit=$GIT_COMMIT
 
 ############ EDITS ABOVE THIS LINE SHOULD BE DONE IN ALL DOCKERFILES! ################
 
-ENV JAVA_OPTS -Xmx1g
+# Install Docker client
+RUN curl -fsSL https://download.docker.com/linux/debian/gpg | apt-key add -
+RUN add-apt-repository \
+       "deb [arch=amd64] https://download.docker.com/linux/debian \
+       $(lsb_release -cs) \
+       stable"
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    docker-ce docker-ce-cli containerd.io \
+    && rm -rf /var/lib/apt/lists/*
 
-ENV APP_DOCROOT /deployment/manager/app
-ENV UI_DOCROOT /deployment/manager/ui
-ENV SHARED_DOCROOT /deployment/manager/shared
-ENV LOGGING_CONFIG_FILE /deployment/manager/logging.properties
-ENV MAP_TILES_PATH /deployment/map/mapdata.mbtiles
-ENV MAP_SETTINGS_PATH /deployment/map/mapsettings.json
+# Install Docker Compose executable
+RUN curl -L https://github.com/docker/compose/releases/download/1.23.2/docker-compose-`uname -s`-`uname -m` \
+    -o /usr/local/bin/docker-compose && \
+    chmod +x /usr/local/bin/docker-compose
 
-EXPOSE 8080
+# Install NodeJS 10 and Yarn
+RUN curl -sL https://deb.nodesource.com/setup_10.x | bash - && \
+    apt-get install -y nodejs && \
+    npm install --global yarn
 
-HEALTHCHECK --interval=3s --timeout=3s --start-period=2s --retries=120 CMD curl --fail --silent http://localhost:8080 || exit 1
-
-WORKDIR /opt/app
-
-RUN mkdir -p /deployment/extensions
-
-ADD lib /opt/app/lib
-
-ENTRYPOINT java $JAVA_OPTS -cp /opt/app/lib/*:/deployment/manager/extensions/* org.openremote.manager.Main
+WORKDIR /openremote
