@@ -1,5 +1,5 @@
 import {OrHeaderStyle} from "@openremote/or-header/src/or-header-style";
-import {LitElement, html, css, property} from 'lit-element';
+import {css, html, LitElement, property, customElement} from "lit-element";
 
 const menuIcon = html`<svg height="24" viewBox="0 0 24 24" width="24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"></path></svg>`;
 
@@ -16,15 +16,16 @@ const close = html`<svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox
   <path d="M14.1,11.3c-0.2-0.2-0.2-0.5,0-0.7l7.5-7.5c0.2-0.2,0.3-0.5,0.3-0.7s-0.1-0.5-0.3-0.7l-1.4-1.4C20,0.1,19.7,0,19.5,0  c-0.3,0-0.5,0.1-0.7,0.3l-7.5,7.5c-0.2,0.2-0.5,0.2-0.7,0L3.1,0.3C2.9,0.1,2.6,0,2.4,0S1.9,0.1,1.7,0.3L0.3,1.7C0.1,1.9,0,2.2,0,2.4  s0.1,0.5,0.3,0.7l7.5,7.5c0.2,0.2,0.2,0.5,0,0.7l-7.5,7.5C0.1,19,0,19.3,0,19.5s0.1,0.5,0.3,0.7l1.4,1.4c0.2,0.2,0.5,0.3,0.7,0.3  s0.5-0.1,0.7-0.3l7.5-7.5c0.2-0.2,0.5-0.2,0.7,0l7.5,7.5c0.2,0.2,0.5,0.3,0.7,0.3s0.5-0.1,0.7-0.3l1.4-1.4c0.2-0.2,0.3-0.5,0.3-0.7  s-0.1-0.5-0.3-0.7L14.1,11.3z"/>
 </svg>`;
 
+@customElement("or-header")
 class OrHeader extends LitElement {
 
     @property({type: Boolean})
     private _drawerOpened = false;
 
     @property({type: String})
-    private logo = '';
+    private logo = "";
 
-    static styles = css `
+    static styles = css`
                   #app-header {
                     position: absolute;
                     top: 0;
@@ -146,16 +147,11 @@ class OrHeader extends LitElement {
         `;
     }
 
-    private _close () {
+    private _close() {
         this._drawerOpened = false;
     }
 
     private _menuButtonClicked() {
         this._drawerOpened = !this._drawerOpened;
     }
-
 }
-
-window.customElements.define('or-header', OrHeader);
-
-

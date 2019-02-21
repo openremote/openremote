@@ -56,7 +56,7 @@ export interface ManagerConfig {
     credentials?: Credentials;
     consoleAutoEnable?: boolean;
     eventProviderType?: EventProviderType;
-    pollingIntervalMillis?: number
+    pollingIntervalMillis?: number;
 }
 
 export type EventCallback = (event: OREvent) => any;
@@ -497,12 +497,12 @@ export class Manager {
             let keycloakPromise: any = null;
             try {
                 // Try to use a stored offline refresh token if defined
-                let offlineToken = await this._getNativeOfflineRefreshToken();
+                const offlineToken = await this._getNativeOfflineRefreshToken();
 
                 const authenticated = await new Promise<boolean>(((resolve, reject) => {
                     keycloakPromise = resolve;
                     this._keycloak.init({
-                        checkLoginIframe: !this.isMobile(), // Doesn't work well with offline tokens
+                        checkLoginIframe: false, // Doesn't work well with offline tokens or periodic token updates
                         onLoad: this._config.autoLogin ? "login-required" : "check-sso",
                         refreshToken: offlineToken
                     }).success((auth: boolean) => {
