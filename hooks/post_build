@@ -4,7 +4,7 @@ docker run -v $(pwd):/openremote \
     $IMAGE_NAME \
     /bin/sh -c "./gradlew --console plain clean installDist"
 
-echo "===> Building OpenRemote images"
+echo "===> Building OpenRemote images for Git source commit: $SOURCE_COMMIT"
 docker run \
   -v $(pwd):/openremote \
   -v /var/run/docker.sock:/var/run/docker.sock \
@@ -12,7 +12,7 @@ docker run \
   $IMAGE_NAME \
   /bin/sh -c "docker-compose -f profile/deploy.yml build --build-arg GIT_COMMIT=$SOURCE_COMMIT"
 
-echo "===> Pushing OpenRemote images"
+echo "===> Pushing OpenRemote images tagged: $CACHE_TAG"
 docker push openremote/manager:$CACHE_TAG
 docker push openremote/keycloak:$CACHE_TAG
 docker push openremote/proxy:$CACHE_TAG
