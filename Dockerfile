@@ -29,15 +29,6 @@ RUN { \
 RUN ln -svT "/usr/lib/jvm/java-8-openjdk-$(dpkg --print-architecture)" /docker-java-home
 ENV JAVA_HOME /docker-java-home
 
-ENV JAVA_VERSION 8u181
-ENV JAVA_DEBIAN_VERSION 8u181-b13-2~deb9u1
-
-# see https://bugs.debian.org/775775
-# and https://github.com/docker-library/java/issues/19#issuecomment-70546872
-# and https://packages.debian.org/stretch/ca-certificates-java
-# TODO This seems to be fixed now?
-#ENV CA_CERTIFICATES_JAVA_VERSION 20170929~deb9u1
-
 RUN set -ex; \
 	\
 # deal with slim variants not having man page directories (which causes "update-alternatives" to fail)
@@ -47,7 +38,7 @@ RUN set -ex; \
 	\
 	apt-get update; \
 	apt-get install -y \
-		openjdk-8-jdk="$JAVA_DEBIAN_VERSION" \
+		openjdk-8-jdk \
 		ca-certificates-java\
 	; \
 	rm -rf /var/lib/apt/lists/*; \
@@ -60,14 +51,14 @@ RUN set -ex; \
 # ... and verify that it actually worked for one of the alternatives we care about
 	update-alternatives --query java | grep -q 'Status: manual'
 
-# see CA_CERTIFICATES_JAVA_VERSION notes above
+# Run postinst because it might not happen on install
 RUN /var/lib/dpkg/info/ca-certificates-java.postinst configure
 
 # Add git commit label must be specified at build time using --build-arg GIT_COMMIT=dadadadadad
 ARG GIT_COMMIT=unknown
 LABEL git-commit=$GIT_COMMIT
 
-ENV JAVA_OPTS -Xmx1g
+############ EDITS ABOVE THIS LINE SHOULD BE DONE IN ALL DOCKERFILES! ################
 
 # Install Docker client
 RUN curl -fsSL https://download.docker.com/linux/debian/gpg | apt-key add -
@@ -79,4 +70,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     docker-ce docker-ce-cli containerd.io \
     && rm -rf /var/lib/apt/lists/*
 
-VOLUME src
+# Install Docker Compose executable
+RUN curl -L https://github.com/docker/compose/releases/download/1.23.2/docker-compose-`uname -s`-`uname -m` \
+    -o /usr/local/bin/docker-compose && \
+    chmod +x /usr/local/bin/docker-compose
+
+# Install NodeJS 10 and Yarn
+RUN curl -sL https://deb.nodesource.com/setup_10.x | bash - && \
+    apt-get install -y nodejs && \
+    npm install --global yarn
+
+WORKDIR /openremote

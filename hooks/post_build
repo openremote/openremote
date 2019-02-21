@@ -1,10 +1,20 @@
 #!/bin/bash
 echo "===> Building OpenRemote source"
-docker run --privileged \
-  -v $(pwd):/src \
-  -v /var/run/docker.sock:/var/run/docker.sock \
-  $IMAGE_NAME \
-  cd /src && ./gradlew clean build installDist
+docker run -v $(pwd):/openremote \
+    $IMAGE_NAME \
+    /bin/sh -c "./gradlew --console plain clean installDist"
 
 echo "===> Building OpenRemote images"
-docker-compose -p openremote build
+docker run \
+  -v $(pwd):/openremote \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  --env DATE_TAG=$CACHE_TAG \
+  $IMAGE_NAME \
+  /bin/sh -c "docker-compose -f profile/deploy.yml build --build-arg GIT_COMMIT=$SOURCE_COMMIT"
+
+echo "===> Pushing OpenRemote images"
+docker push openremote/manager:$CACHE_TAG
+docker push openremote/keycloak:$CACHE_TAG
+docker push openremote/proxy:$CACHE_TAG
+docker push openremote/postgresql:$CACHE_TAG
+docker push openremote/tileserver-gl:$CACHE_TAG
