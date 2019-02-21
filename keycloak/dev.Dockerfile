@@ -1,8 +1,11 @@
 FROM debian:stretch
 MAINTAINER support@openremote.io
 
-# Install curl, wget, ca-certificates, procps
+# Install utilities
 RUN apt-get update && apt-get install -y --no-install-recommends \
+        apt-transport-https \
+        gnupg2 \
+        software-properties-common \
         procps \
 		ca-certificates \
 		curl \
@@ -26,14 +29,6 @@ RUN { \
 RUN ln -svT "/usr/lib/jvm/java-8-openjdk-$(dpkg --print-architecture)" /docker-java-home
 ENV JAVA_HOME /docker-java-home
 
-ENV JAVA_VERSION 8u181
-ENV JAVA_DEBIAN_VERSION 8u181-b13-2~deb9u1
-
-# see https://bugs.debian.org/775775
-# and https://github.com/docker-library/java/issues/19#issuecomment-70546872
-# and https://packages.debian.org/stretch/ca-certificates-java
-ENV CA_CERTIFICATES_JAVA_VERSION 20170929~deb9u1
-
 RUN set -ex; \
 	\
 # deal with slim variants not having man page directories (which causes "update-alternatives" to fail)
@@ -43,8 +38,8 @@ RUN set -ex; \
 	\
 	apt-get update; \
 	apt-get install -y \
-		openjdk-8-jdk="$JAVA_DEBIAN_VERSION" \
-		ca-certificates-java="$CA_CERTIFICATES_JAVA_VERSION" \
+		openjdk-8-jdk \
+		ca-certificates-java\
 	; \
 	rm -rf /var/lib/apt/lists/*; \
 	\
@@ -56,8 +51,14 @@ RUN set -ex; \
 # ... and verify that it actually worked for one of the alternatives we care about
 	update-alternatives --query java | grep -q 'Status: manual'
 
-# see CA_CERTIFICATES_JAVA_VERSION notes above
+# Run postinst because it might not happen on install
 RUN /var/lib/dpkg/info/ca-certificates-java.postinst configure
+
+# Add git commit label must be specified at build time using --build-arg GIT_COMMIT=dadadadadad
+ARG GIT_COMMIT=unknown
+LABEL git-commit=$GIT_COMMIT
+
+############ EDITS ABOVE THIS LINE SHOULD BE DONE IN ALL DOCKERFILES! ################
 
 # Install dependencies for JBoss AS
 RUN apt-get update \

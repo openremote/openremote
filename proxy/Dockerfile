@@ -1,8 +1,11 @@
 FROM debian:stretch
 MAINTAINER support@openremote.io
 
-# Install curl, wget, ca-certificates, procps
+# Install utilities
 RUN apt-get update && apt-get install -y --no-install-recommends \
+        apt-transport-https \
+        gnupg2 \
+        software-properties-common \
         procps \
 		ca-certificates \
 		curl \
