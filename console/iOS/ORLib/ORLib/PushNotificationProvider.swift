@@ -19,7 +19,7 @@ public class PushNotificationProvider: NSObject {
         super.init()
     }
     
-    public func initialize(callback:@escaping ([String: Any]) ->(Void)) {
+    public func initialize(callback:@escaping ([String: Any?]) ->(Void)) {
         UNUserNotificationCenter.current().getNotificationSettings { (settings) in
             switch settings.authorizationStatus {
 
@@ -30,7 +30,8 @@ public class PushNotificationProvider: NSObject {
                     DefaultsKey.versionKey: self.version,
                     DefaultsKey.hasPermissionKey: true,
                     DefaultsKey.requiresPermissionKey: true,
-                    DefaultsKey.successKey: true
+                    DefaultsKey.successKey: true,
+                    DefaultsKey.enabledKey: false
                     ])
 
             case .denied:
@@ -40,7 +41,8 @@ public class PushNotificationProvider: NSObject {
                     DefaultsKey.versionKey: self.version,
                     DefaultsKey.hasPermissionKey: false,
                     DefaultsKey.requiresPermissionKey: true,
-                    DefaultsKey.successKey: true
+                    DefaultsKey.successKey: true,
+                    DefaultsKey.enabledKey: false
                     ])
 
             case .notDetermined:
@@ -48,9 +50,10 @@ public class PushNotificationProvider: NSObject {
                     DefaultsKey.actionKey: Actions.providerInit,
                     DefaultsKey.providerKey: Providers.push,
                     DefaultsKey.versionKey: self.version,
-                    DefaultsKey.hasPermissionKey: false,
+                    DefaultsKey.hasPermissionKey: nil,
                     DefaultsKey.requiresPermissionKey: true,
-                    DefaultsKey.successKey: true
+                    DefaultsKey.successKey: true,
+                    DefaultsKey.enabledKey: false
                     ])
             }
         }

@@ -59,12 +59,10 @@ open class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMess
                                         self.sendData(data: initalizeData)
                                     })
                                 } else if action == Actions.providerEnable {
-                                    if let data = postMessageDict[DefaultsKey.dataKey] as? [String: String] {
-                                        if let consoleId = data[GeofenceProvider.consoleIdKey] {
-                                            pushProvider?.enable(consoleId: consoleId, callback: { enableData in
-                                                self.sendData(data: enableData)
-                                            })
-                                        }
+                                    if let consoleId = postMessageDict[GeofenceProvider.consoleIdKey] as? String {
+                                        pushProvider?.enable(consoleId: consoleId, callback: { enableData in
+                                            self.sendData(data: enableData)
+                                        })
                                     }
                                 } else if action == Actions.providerDisable {
                                     if let disableData = pushProvider?.disbale() {
@@ -77,15 +75,13 @@ open class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMess
                                     let initializeData = geofenceProvider!.initialize()
                                     sendData(data: initializeData)
                                 } else if action == Actions.providerEnable {
-                                    if let data = postMessageDict[DefaultsKey.dataKey] as? [String: String] {
-                                        if let consoleId = data[GeofenceProvider.consoleIdKey] {
-                                            geofenceProvider?.enable(baseUrl: "\(ORServer.baseUrl)api/\(ORServer.realm)", consoleId: consoleId,  callback: { enableData in
-                                                self.sendData(data: enableData)
-                                                DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(3)) {
-                                                    self.geofenceProvider?.fetchGeofences()
-                                                }
-                                            })
-                                        }
+                                    if let consoleId = postMessageDict[GeofenceProvider.consoleIdKey] as? String {
+                                        geofenceProvider?.enable(baseUrl: "\(ORServer.baseUrl)api/\(ORServer.realm)", consoleId: consoleId,  callback: { enableData in
+                                            self.sendData(data: enableData)
+                                            DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(3)) {
+                                                self.geofenceProvider?.fetchGeofences()
+                                            }
+                                        })
                                     }
                                 } else if action == Actions.geofenceRefresh {
                                     geofenceProvider?.refreshGeofences()
@@ -104,17 +100,13 @@ open class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMess
                                         sendData(data: enableData)
                                     }
                                 } else if action == Actions.store {
-                                    if let data = postMessageDict[DefaultsKey.dataKey] as? [String: String] {
-                                        if let key = data["key"] {
-                                            storageProvider?.store(key: key, data: data["value"])
-                                        }
+                                    if let key = postMessageDict["key"] as? String {
+                                        storageProvider?.store(key: key, data: postMessageDict["value"] as? String)
                                     }
                                 } else if action == Actions.retrieve {
-                                    if let data = postMessageDict[DefaultsKey.dataKey] as? [String: String] {
-                                        if let key = data["key"] {
-                                            if let retrieveData = storageProvider?.retrieve(key: key) {
-                                                sendData(data: retrieveData)
-                                            }
+                                    if let key = postMessageDict["key"] as? String {
+                                        if let retrieveData = storageProvider?.retrieve(key: key) {
+                                            sendData(data: retrieveData)
                                         }
                                     }
                                 } else if action == Actions.providerDisable {
@@ -132,13 +124,13 @@ open class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMess
         }
     }
 
-    open func sendData(data: [String: Any]) {
+    open func sendData(data: [String: Any?]) {
         if let theJSONData = try? JSONSerialization.data(
             withJSONObject: data,
             options: []) {
             let theJSONText = String(data: theJSONData,
                                      encoding: .utf8)
-            let returnMessage = "openremote.INSTANCE.console.handleProviderResponse('\(theJSONText ?? "null")')"
+            let returnMessage = "OpenRemoteConsole._handleProviderResponse('\(theJSONText ?? "null")')"
             DispatchQueue.main.async {
                 self.myWebView?.evaluateJavaScript("\(returnMessage)", completionHandler: { (any, error) in
                     print("JSON string = \(theJSONText!)")
@@ -252,7 +244,12 @@ open class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMess
         userController.addUserScript(userScript)
         
         webCfg.userContentController = userController;
-        let sbHeight = UIApplication.shared.statusBarFrame.height
+        let sbHeight: CGFloat
+        if #available(iOS 11.0, *) {
+            sbHeight = UIApplication.shared.keyWindow?.safeAreaInsets.top ?? UIApplication.shared.statusBarFrame.height
+        } else {
+            sbHeight = UIApplication.shared.statusBarFrame.height
+        }
         let webFrame = CGRect(x : 0,y : sbHeight,width : view.frame.size.width,height : view.frame.size.height - sbHeight)
         myWebView = WKWebView(frame: webFrame, configuration: webCfg)
         myWebView?.autoresizingMask = [.flexibleWidth, .flexibleHeight];

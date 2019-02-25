@@ -37,10 +37,10 @@ public class GeofenceProvider: NSObject, URLSessionDelegate {
             DefaultsKey.actionKey: Actions.providerInit,
             DefaultsKey.providerKey: Providers.geofence,
             DefaultsKey.versionKey: version,
-            DefaultsKey.requiresPermissionKey: false,
-            DefaultsKey.hasPermissionKey: true,
+            DefaultsKey.requiresPermissionKey: true,
+            DefaultsKey.hasPermissionKey: checkPermission(),
             DefaultsKey.successKey: true,
-            DefaultsKey.enabledKey: true
+            DefaultsKey.enabledKey: false
         ]
     }
 

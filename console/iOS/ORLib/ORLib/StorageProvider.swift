@@ -16,10 +16,10 @@ class StorageProvider: NSObject {
             DefaultsKey.actionKey: Actions.providerInit,
             DefaultsKey.providerKey: Providers.storage,
             DefaultsKey.versionKey: "1.0.0",
-            DefaultsKey.requiresPermissionKey: true,
+            DefaultsKey.requiresPermissionKey: false,
             DefaultsKey.hasPermissionKey: true,
             DefaultsKey.successKey: true,
-            DefaultsKey.enabledKey: false
+            DefaultsKey.enabledKey: true
         ]
     }
 
