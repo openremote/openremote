@@ -92,7 +92,7 @@ services:
       # If developer mode is enabled, all setup tasks will be executed on application startup.
       # This will clean all data in the database, and then import demo/test data. Some caching and
       # other runtime performance-optimizations will also be disabled.
-      DEV_MODE: 'false'
+      DEV_MODE: ${DEV_MODE:-false}
 
       # This switch can wipe your database, this is the factory reset!
       SETUP_WIPE_CLEAN_INSTALL: 'true'
