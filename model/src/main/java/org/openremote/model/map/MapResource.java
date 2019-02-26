@@ -38,7 +38,6 @@ public interface MapResource {
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @SuccessStatusCode(200)
-    @RolesAllowed({"read:map"})
     @SuppressWarnings("unusable-by-js")
     ObjectValue getSettings(@BeanParam RequestParams requestParams);
 
