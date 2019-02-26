@@ -1,7 +1,7 @@
 buildDir = "dist"
 
 task build {
-    dependsOn npmBuild
+    dependsOn rootProject.tasks.getByName("yarnInstall"), npmBuild
 }
 
 task clean() {

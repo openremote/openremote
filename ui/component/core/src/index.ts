@@ -526,7 +526,7 @@ export class Manager {
                         clearInterval(this._keycloakUpdateTokenInterval);
                         delete this._keycloakUpdateTokenInterval;
                     }
-                    this._keycloakUpdateTokenInterval = setInterval(() => {
+                    this._keycloakUpdateTokenInterval = window.setInterval(() => {
                         this.updateKeycloakAccessToken();
                     }, 10000);
                     this._onAuthenticated();

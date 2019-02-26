@@ -1,12 +1,4 @@
-apply plugin: 'idea'
-idea {
-    module {
-        excludeDirs += file("node_modules")
-    }
-}
-
 task build {
-    dependsOn yarnInstall
     // Add dependency to openremote ui build
     if (isCustomProject() && parent == rootProject) {
         dependsOn resolveTask(":ui:build")

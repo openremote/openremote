@@ -316,7 +316,7 @@ abstract class EventProviderImpl implements EventProvider {
 
         console.debug("Event provider scheduling reconnect in " + this._reconnectDelayMillis + "ms");
 
-        this._reconnectTimer = setTimeout(() => {
+        this._reconnectTimer = window.setTimeout(() => {
 
             if (this._disconnectRequested) {
                 return;

@@ -5,7 +5,7 @@ task clean() {
 }
 
 task build() {
-    dependsOn npmBuild
+    dependsOn rootProject.tasks.getByName("yarnInstall"), npmBuild
 }
 
 npmBuild.dependsOn resolveTask(":ui:component:core:build")

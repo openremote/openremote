@@ -1,3 +1,10 @@
+apply plugin: 'idea'
+idea {
+    module {
+        excludeDirs += file("node_modules")
+    }
+}
+
 allprojects {
     apply from: "${findProject(":openremote") != null ? project(":openremote").projectDir : rootDir}/project.gradle"
 }
