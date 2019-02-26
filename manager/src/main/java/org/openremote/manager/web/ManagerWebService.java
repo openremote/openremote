@@ -159,8 +159,10 @@ public class ManagerWebService extends WebService {
 
         // TODO: Remove this once GWT client is replaced
         // Add a file handler for GWT source files in dev mode
-        if (container.isDevMode()) {
-            final HttpHandler baseGwtFileHandler = createFileHandler(devMode, identityService, Paths.get("client/src/main/webapp"), null);
+        Path gwtSourceDir = Paths.get("client/src/main/webapp");
+
+        if (Files.exists(gwtSourceDir) && container.isDevMode()) {
+            final HttpHandler baseGwtFileHandler = createFileHandler(devMode, identityService, gwtSourceDir, null);
             final HttpHandler gwtFileHandler = exchange -> {
                 if (exchange.getRelativePath().isEmpty() || "/".equals(exchange.getRelativePath())) {
                     exchange.setRelativePath("/index.html");
