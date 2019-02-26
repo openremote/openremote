@@ -1,3 +1,4 @@
+import {JsonRulesetDefinition, PushNotificationMessage, RadialGeofencePredicate} from "@openremote/model";
 
 export class Deferred<T> {
 
@@ -24,4 +25,43 @@ export class Deferred<T> {
         });
         Object.freeze(this);
     }
+}
+
+export interface GeoNotification {
+    predicate: RadialGeofencePredicate
+    notification: PushNotificationMessage
+}
+
+export function getGeoNotificationsFromRulesSet(json: string): GeoNotification[] {
+
+    let rulesetDefinition: JsonRulesetDefinition = JSON.parse(json) as JsonRulesetDefinition;
+
+    let geoPredicates: GeoNotification[] = [];
+    let geoNotification: GeoNotification;
+
+    rulesetDefinition.rules!.forEach((rule) => {
+        geoNotification = {} as GeoNotification;
+        if (rule.when && rule.when.asset) {
+            rule.when.asset.attributes!.predicates!.forEach((predicate) => {
+                if (predicate.value!.predicateType == "radial" || predicate.value!.predicateType == "rect") {
+                    geoNotification.predicate = predicate.value as RadialGeofencePredicate
+                }
+            });
+        }
+
+        if (rule.then) {
+            rule.then.forEach((action) => {
+                if (action.action == "notification") {
+                    if (action.notification && action.notification.message) {
+                        geoNotification.notification = action.notification.message as PushNotificationMessage;
+                    }
+                }
+            });
+        }
+        if (geoNotification.predicate && geoNotification.notification) {
+            geoPredicates.push(geoNotification)
+        }
+    });
+
+    return geoPredicates;
 }
