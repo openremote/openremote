@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig",
+  "include": [
+    "./src"
+  ],
+  "references": [
+    { "path": "../../component/core" },
+    { "path": "../../component/rest" }
+  ]
+}
