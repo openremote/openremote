@@ -1,21 +1,10 @@
-# \<or-header\>
+# \<or-thermostat\>
 
-Displays header with menu based on slots.
+Displays room temperature and setpoint information.
 
-## Install the Polymer-CLI
+# Component Attributes
 
-First, make sure you have the [Polymer CLI](https://www.npmjs.com/package/polymer-cli) and npm (packaged with [Node.js](https://nodejs.org)) installed. Run `npm install` to install your element's dependencies, then run `polymer serve` to serve your element locally.
+* ***assetId*** - The ID of the room asset to display
+* label - The label to display in the thermostat
 
-## Viewing Your Element
-
-```
-$ polymer serve
-```
-
-## Running Tests
-
-```
-$ polymer test
-```
-
-Your application is already set up to be tested via [web-component-tester](https://github.com/Polymer/web-component-tester). Run `polymer test` to run your application's test suite locally.
+***BOLD ITEMS ARE REQUIRED***
