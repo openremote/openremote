@@ -5,6 +5,7 @@
   ],
   "references": [
     { "path": "../../component/core" },
-    { "path": "../../component/rest" }
+    { "path": "../../component/rest" },
+    { "path": "../../component/or-thermostat" }
   ]
 }
