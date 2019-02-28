@@ -25,14 +25,14 @@ import org.openremote.app.client.rules.RulesPlace;
 
 public class TenantRulesListPlace extends RulesPlace {
 
-    final String realmId;
+    final String realm;
 
-    public TenantRulesListPlace(String realmId) {
-        this.realmId = realmId;
+    public TenantRulesListPlace(String realm) {
+        this.realm = realm;
     }
 
-    public String getRealmId() {
-        return realmId;
+    public String getRealm() {
+        return realm;
     }
 
     @Prefix("tenantRules")
@@ -45,14 +45,14 @@ public class TenantRulesListPlace extends RulesPlace {
 
         @Override
         public String getToken(TenantRulesListPlace place) {
-            return place.getRealmId() != null ? place.getRealmId() : "";
+            return place.getRealm() != null ? place.getRealm() : "";
         }
     }
 
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
-            "realmId='" + realmId + '\'' +
+            "realm='" + realm + '\'' +
             '}';
     }
 }

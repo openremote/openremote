@@ -211,7 +211,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         rulesImport.resetRulesFired()
         def apartment2 = assetStorageService.find(managerDemoSetup.apartment2Id)
         def asset = new Asset("Kitchen", AssetType.ROOM, apartment2)
-        asset.setRealmId(keycloakDemoSetup.tenantA.getId())
+        asset.setRealm(keycloakDemoSetup.tenantA.getRealm())
         def attributes = [
             new AssetAttribute("testString", AttributeValueType.STRING, Values.create("test"))
                 .setMeta(
@@ -378,7 +378,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         when: "a broken RHS rule is loaded into the tenantA engine"
         def ruleset = new TenantRuleset(
             "Some broken test rules",
-            keycloakDemoSetup.tenantA.id,
+            keycloakDemoSetup.tenantA.realm,
             getClass().getResource("/org/openremote/test/rules/BasicBrokenRules.groovy").text,
             Ruleset.Lang.GROOVY
         )

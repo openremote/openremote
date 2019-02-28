@@ -100,7 +100,7 @@ public class RulesDemoSetup extends AbstractManagerSetup {
         try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/DemoConsoleLocation.groovy")) {
             String rules = IOUtils.toString(inputStream, Charset.forName("utf-8"));
             Ruleset ruleset = new TenantRuleset(
-                "Demo Console Location", keycloakDemoSetup.tenantA.getId(), rules, Ruleset.Lang.GROOVY
+                "Demo Console Location", keycloakDemoSetup.tenantA.getRealm(), rules, Ruleset.Lang.GROOVY
             );
             tenantARulesetId = rulesetStorageService.merge(ruleset).getId();
         }

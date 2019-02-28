@@ -64,7 +64,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ruleDefinitions[0].rules == null // Don't retrieve the (large) rules data when getting a list of rule definitions
 
         when: "some tenant rules are retrieved"
-        ruleDefinitions = rulesetResource.getTenantRulesets(null, keycloakDemoSetup.masterTenant.id)
+        ruleDefinitions = rulesetResource.getTenantRulesets(null, keycloakDemoSetup.masterTenant.realm)
 
         then: "result should match"
         ruleDefinitions.length == 1
@@ -72,7 +72,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ruleDefinitions[0].lang == GROOVY
 
         when: "some tenant rules in a non-authenticated realm are retrieved"
-        ruleDefinitions = rulesetResource.getTenantRulesets(null, keycloakDemoSetup.tenantA.id)
+        ruleDefinitions = rulesetResource.getTenantRulesets(null, keycloakDemoSetup.tenantA.realm)
 
         then: "result should match"
         ruleDefinitions.length == 1
@@ -135,9 +135,9 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex.response.status == 404
 
         when: "a tenant ruleset is created in the authenticated realm"
-        def tenantRuleset = new TenantRuleset("Test tenant definition", keycloakDemoSetup.masterTenant.id, "SomeRulesCode", GROOVY)
+        def tenantRuleset = new TenantRuleset("Test tenant definition", keycloakDemoSetup.masterTenant.realm, "SomeRulesCode", GROOVY)
         rulesetResource.createTenantRuleset(null, tenantRuleset)
-        rulesetId = rulesetResource.getTenantRulesets(null, keycloakDemoSetup.masterTenant.id)[1].id
+        rulesetId = rulesetResource.getTenantRulesets(null, keycloakDemoSetup.masterTenant.realm)[1].id
         tenantRuleset = rulesetResource.getTenantRuleset(null, rulesetId)
         lastModified = tenantRuleset.lastModified
 
@@ -148,7 +148,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         lastModified.time < System.currentTimeMillis()
         tenantRuleset.name == "Test tenant definition"
         tenantRuleset.rules == "SomeRulesCode"
-        tenantRuleset.realmId == keycloakDemoSetup.masterTenant.id
+        tenantRuleset.realm == keycloakDemoSetup.masterTenant.realm
 
         when: "a tenant ruleset is updated"
         tenantRuleset.name = "Renamed test tenant definition"
@@ -163,10 +163,10 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         lastModified.time < System.currentTimeMillis()
         tenantRuleset.name == "Renamed test tenant definition"
         tenantRuleset.rules == "SomeRulesCodeModified"
-        tenantRuleset.realmId == keycloakDemoSetup.masterTenant.id
+        tenantRuleset.realm == keycloakDemoSetup.masterTenant.realm
 
         when: "a tenant ruleset is updated with an invalid realm"
-        tenantRuleset.realmId = "thisdoesnotexist"
+        tenantRuleset.realm = "thisdoesnotexist"
         rulesetResource.updateTenantRuleset(null, rulesetId, tenantRuleset)
 
         then: "the request should be bad"
@@ -174,7 +174,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex.response.status == 400
 
         when: "a tenant ruleset is updated with an invalid id"
-        tenantRuleset.realmId = keycloakDemoSetup.masterTenant.id
+        tenantRuleset.realm = keycloakDemoSetup.masterTenant.realm
         tenantRuleset.id = 1234567890l
         rulesetResource.updateTenantRuleset(null, rulesetId, tenantRuleset)
 
@@ -198,9 +198,9 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex.response.status == 404
 
         when: "a tenant ruleset is created in a non-authenticated realm"
-        tenantRuleset = new TenantRuleset("Test tenant definition", keycloakDemoSetup.tenantA.id, "SomeRulesCode", GROOVY)
+        tenantRuleset = new TenantRuleset("Test tenant definition", keycloakDemoSetup.tenantA.realm, "SomeRulesCode", GROOVY)
         rulesetResource.createTenantRuleset(null, tenantRuleset)
-        rulesetId = rulesetResource.getTenantRulesets(null, keycloakDemoSetup.tenantA.id)[1].id
+        rulesetId = rulesetResource.getTenantRulesets(null, keycloakDemoSetup.tenantA.realm)[1].id
         tenantRuleset = rulesetResource.getTenantRuleset(null, rulesetId)
         lastModified = tenantRuleset.lastModified
 
@@ -211,7 +211,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         lastModified.time < System.currentTimeMillis()
         tenantRuleset.name == "Test tenant definition"
         tenantRuleset.rules == "SomeRulesCode"
-        tenantRuleset.realmId == keycloakDemoSetup.tenantA.id
+        tenantRuleset.realm == keycloakDemoSetup.tenantA.realm
 
         when: "an asset ruleset is created in the authenticated realm"
         def assetRuleset = new AssetRuleset("Test asset definition", managerDemoSetup.smartOfficeId, "SomeRulesCode", GROOVY)
@@ -336,14 +336,14 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex.response.status == 403
 
         when: "some tenant rules are retrieved"
-        def ruleDefinitions = rulesetResource.getTenantRulesets(null, keycloakDemoSetup.masterTenant.id)
+        def ruleDefinitions = rulesetResource.getTenantRulesets(null, keycloakDemoSetup.masterTenant.realm)
 
         then: "result should match"
         ruleDefinitions.length == 1
         ruleDefinitions[0].name == "Some master tenant demo rules"
 
         when: "some tenant rules in a non-authenticated realm are retrieved"
-        rulesetResource.getTenantRulesets(null, keycloakDemoSetup.tenantA.id)
+        rulesetResource.getTenantRulesets(null, keycloakDemoSetup.tenantA.realm)
 
         then: "access should be forbidden"
         ex = thrown()
@@ -381,9 +381,9 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex.response.status == 403
 
         when: "a tenant ruleset is created in the authenticated realm"
-        def tenantRuleset = new TenantRuleset("Test tenant definition", keycloakDemoSetup.masterTenant.id, "SomeRulesCode", GROOVY)
+        def tenantRuleset = new TenantRuleset("Test tenant definition", keycloakDemoSetup.masterTenant.realm, "SomeRulesCode", GROOVY)
         rulesetResource.createTenantRuleset(null, tenantRuleset)
-        def rulesetId = rulesetResource.getTenantRulesets(null, keycloakDemoSetup.masterTenant.id)[1].id
+        def rulesetId = rulesetResource.getTenantRulesets(null, keycloakDemoSetup.masterTenant.realm)[1].id
         tenantRuleset = rulesetResource.getTenantRuleset(null, rulesetId)
         def lastModified = tenantRuleset.lastModified
 
@@ -394,7 +394,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         lastModified.time < System.currentTimeMillis()
         tenantRuleset.name == "Test tenant definition"
         tenantRuleset.rules == "SomeRulesCode"
-        tenantRuleset.realmId == keycloakDemoSetup.masterTenant.id
+        tenantRuleset.realm == keycloakDemoSetup.masterTenant.realm
 
         when: "a tenant ruleset is updated"
         tenantRuleset.name = "Renamed test tenant definition"
@@ -409,10 +409,10 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         lastModified.time < System.currentTimeMillis()
         tenantRuleset.name == "Renamed test tenant definition"
         tenantRuleset.rules == "SomeRulesCodeModified"
-        tenantRuleset.realmId == keycloakDemoSetup.masterTenant.id
+        tenantRuleset.realm == keycloakDemoSetup.masterTenant.realm
 
         when: "a tenant ruleset is updated with an invalid realm"
-        tenantRuleset.realmId = "thisdoesnotexist"
+        tenantRuleset.realm = "thisdoesnotexist"
         rulesetResource.updateTenantRuleset(null, rulesetId, tenantRuleset)
 
         then: "the request should be bad"
@@ -420,7 +420,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex.response.status == 400
 
         when: "a tenant ruleset is updated with an invalid id"
-        tenantRuleset.realmId = keycloakDemoSetup.masterTenant.id
+        tenantRuleset.realm = keycloakDemoSetup.masterTenant.realm
         tenantRuleset.id = 1234567890l
         rulesetResource.updateTenantRuleset(null, rulesetId, tenantRuleset)
 
@@ -444,7 +444,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex.response.status == 404
 
         when: "a tenant ruleset is created in a non-authenticated realm"
-        tenantRuleset = new TenantRuleset("Test tenant definition", keycloakDemoSetup.tenantA.id, "SomeRulesCode", GROOVY)
+        tenantRuleset = new TenantRuleset("Test tenant definition", keycloakDemoSetup.tenantA.realm, "SomeRulesCode", GROOVY)
         rulesetResource.createTenantRuleset(null, tenantRuleset)
 
         then: "access should be forbidden"
@@ -566,14 +566,14 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex.response.status == 403
 
         when: "some tenant rules in a non-authenticated realm are retrieved"
-        rulesetResource.getTenantRulesets(null, keycloakDemoSetup.masterTenant.id)
+        rulesetResource.getTenantRulesets(null, keycloakDemoSetup.masterTenant.realm)
 
         then: "access should be forbidden"
         ex = thrown()
         ex.response.status == 403
 
         when: "some tenant rules in the authenticated realm are retrieved"
-        rulesetResource.getTenantRulesets(null, keycloakDemoSetup.tenantA.id)
+        rulesetResource.getTenantRulesets(null, keycloakDemoSetup.tenantA.realm)
 
         then: "access should be forbidden"
         ex = thrown()
@@ -611,7 +611,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex.response.status == 403
 
         when: "a tenant ruleset is created in the authenticated realm"
-        def tenantRuleset = new TenantRuleset("Test tenant definition", keycloakDemoSetup.tenantA.id, "SomeRulesCode", GROOVY)
+        def tenantRuleset = new TenantRuleset("Test tenant definition", keycloakDemoSetup.tenantA.realm, "SomeRulesCode", GROOVY)
         rulesetResource.createTenantRuleset(null, tenantRuleset)
 
         then: "access should be forbidden"
@@ -633,7 +633,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex.response.status == 403
 
         when: "a tenant ruleset is created in a non-authenticated realm"
-        tenantRuleset = new TenantRuleset("Test tenant definition", keycloakDemoSetup.tenantB.id, "SomeRulesCode", GROOVY)
+        tenantRuleset = new TenantRuleset("Test tenant definition", keycloakDemoSetup.tenantB.realm, "SomeRulesCode", GROOVY)
         rulesetResource.createTenantRuleset(null, tenantRuleset)
 
         then: "access should be forbidden"
@@ -641,7 +641,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex.response.status == 403
 
         when: "a tenant ruleset is created in the authenticated realm"
-        def assetRuleset = new AssetRuleset("Test asset definition", keycloakDemoSetup.tenantA.id, "SomeRulesCode", GROOVY)
+        def assetRuleset = new AssetRuleset("Test asset definition", keycloakDemoSetup.tenantA.realm, "SomeRulesCode", GROOVY)
         rulesetResource.createAssetRuleset(null, assetRuleset)
 
         then: "access should be forbidden"
@@ -663,7 +663,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex.response.status == 403
 
         when: "a tenant ruleset is created in a non-authenticated realm"
-        assetRuleset = new AssetRuleset("Test asset definition", keycloakDemoSetup.tenantB.id, "SomeRulesCode", GROOVY)
+        assetRuleset = new AssetRuleset("Test asset definition", keycloakDemoSetup.tenantB.realm, "SomeRulesCode", GROOVY)
         rulesetResource.createAssetRuleset(null, assetRuleset)
 
         then: "access should be forbidden"
@@ -714,14 +714,14 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex.response.status == 403
 
         when: "some tenant rules in a non-authenticated realm are retrieved"
-        rulesetResource.getTenantRulesets(null, keycloakDemoSetup.masterTenant.id)
+        rulesetResource.getTenantRulesets(null, keycloakDemoSetup.masterTenant.realm)
 
         then: "access should be forbidden"
         ex = thrown()
         ex.response.status == 403
 
         when: "some tenant rules in the authenticated realm are retrieved"
-        rulesetResource.getTenantRulesets(null, keycloakDemoSetup.tenantA.id)
+        rulesetResource.getTenantRulesets(null, keycloakDemoSetup.tenantA.realm)
 
         then: "access should be forbidden"
         ex = thrown()
@@ -766,7 +766,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex.response.status == 403
 
         when: "a tenant ruleset is created in the authenticated realm"
-        def tenantRuleset = new TenantRuleset("Test tenant definition", keycloakDemoSetup.tenantA.id, "SomeRulesCode", GROOVY)
+        def tenantRuleset = new TenantRuleset("Test tenant definition", keycloakDemoSetup.tenantA.realm, "SomeRulesCode", GROOVY)
         rulesetResource.createTenantRuleset(null, tenantRuleset)
 
         then: "access should be forbidden"
@@ -789,7 +789,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         ex.response.status == 404
 
         when: "a tenant ruleset is created in a non-authenticated realm"
-        tenantRuleset = new TenantRuleset("Test tenant definition", keycloakDemoSetup.tenantB.id, "SomeRulesCode", GROOVY)
+        tenantRuleset = new TenantRuleset("Test tenant definition", keycloakDemoSetup.tenantB.realm, "SomeRulesCode", GROOVY)
         rulesetResource.createTenantRuleset(null, tenantRuleset)
 
         then: "access should be forbidden"

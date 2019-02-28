@@ -94,9 +94,7 @@ class AssetPublicQueryTest extends Specification implements ManagerContainerTrai
         assets[0].name == "Some Public Asset"
         assets[0].wellKnownType == THING
         assets[0].parentId == managerDemoSetup.smartOfficeId
-        assets[0].realmId == keycloakDemoSetup.masterTenant.id
-        assets[0].tenantRealm == keycloakDemoSetup.masterTenant.realm
-        assets[0].tenantDisplayName == keycloakDemoSetup.masterTenant.displayName
+        assets[0].realm == keycloakDemoSetup.masterTenant.realm
         !assets[0].getAttribute("somePrivateAttribute").isPresent()
         assets[0].getAttribute("somePublicAttribute").get().getValue().get() == Values.create(456)
         assets[0].getAttribute("somePublicAttribute").get().getMeta().size() == 1
@@ -113,9 +111,7 @@ class AssetPublicQueryTest extends Specification implements ManagerContainerTrai
         assets[0].name == "Some Public Asset"
         assets[0].wellKnownType == THING
         assets[0].parentId == managerDemoSetup.smartOfficeId
-        assets[0].realmId == keycloakDemoSetup.masterTenant.id
-        assets[0].tenantRealm == keycloakDemoSetup.masterTenant.realm
-        assets[0].tenantDisplayName == keycloakDemoSetup.masterTenant.displayName
+        assets[0].realm == keycloakDemoSetup.masterTenant.realm
         !assets[0].getAttribute("somePrivateAttribute").isPresent()
         assets[0].getAttribute("somePublicAttribute").get().getValue().get() == Values.create(456)
         assets[0].getAttribute("somePublicAttribute").get().getMeta().size() == 1

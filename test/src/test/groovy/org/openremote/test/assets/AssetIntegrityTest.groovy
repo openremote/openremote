@@ -43,13 +43,13 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
         def assetResource = getClientApiTarget(serverUri, MASTER_REALM, accessToken).proxy(AssetResource.class)
 
         when: "an asset is created in the authenticated realm"
-        def testAsset = new Asset("Test Room", AssetType.ROOM, null, keycloakDemoSetup.masterTenant.id)
+        def testAsset = new Asset("Test Room", AssetType.ROOM, null, keycloakDemoSetup.masterTenant.realm)
         testAsset = assetResource.create(null, testAsset)
 
         then: "the asset should exist"
         testAsset.name == "Test Room"
         testAsset.wellKnownType == AssetType.ROOM
-        testAsset.realmId == keycloakDemoSetup.masterTenant.id
+        testAsset.realm == keycloakDemoSetup.masterTenant.realm
         testAsset.parentId == null
 
         when: "an asset is stored with an illegal attribute name"
@@ -104,7 +104,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
         testAsset.wellKnownType == AssetType.ROOM
 
         when: "an asset is updated with a non-existent realm"
-        testAsset.setRealmId("thisdoesnotexistitreallydoesnt")
+        testAsset.setRealm("thisdoesnotexistitreallydoesnt")
         assetResource.update(null, testAsset.id, testAsset)
 
         then: "the request should be forbidden"

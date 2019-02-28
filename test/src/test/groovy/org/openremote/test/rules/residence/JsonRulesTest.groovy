@@ -75,7 +75,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         and: "some rules"
         Ruleset ruleset = new TenantRuleset(
                 "Demo Apartment - All Lights Off",
-                keycloakDemoSetup.tenantA.id,
+                keycloakDemoSetup.tenantA.realm,
                 getClass().getResource("/org/openremote/test/rules/BasicJsonRules.json").text,
                 Ruleset.Lang.JSON
         )
@@ -83,7 +83,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         expect: "the rule engines to become available and be running with asset states inserted"
         conditions.eventually {
-            tenantAEngine = rulesService.tenantEngines.get(keycloakDemoSetup.tenantA.id)
+            tenantAEngine = rulesService.tenantEngines.get(keycloakDemoSetup.tenantA.realm)
             assert tenantAEngine != null
             assert tenantAEngine.isRunning()
             assert tenantAEngine.assetStates.size() == DEMO_RULE_STATES_CUSTOMER_A

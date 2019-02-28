@@ -79,7 +79,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                 List<Asset> result = assetStorageService.findAll(
                     new AssetQuery()
                         .parent(new ParentPredicate(true))
-                        .tenant(new TenantPredicate().realm(getAuthenticatedRealm()))
+                        .tenant(new TenantPredicate(getAuthenticatedRealm()))
                 );
                 return result.toArray(new Asset[result.size()]);
             }
@@ -92,11 +92,10 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
 
             // Filter assets that might have been moved into a different realm and can no longer be accessed by user
             // TODO: Should we forbid moving assets between realms?
-            Tenant authenticatedTenant = getAuthenticatedTenant();
             Iterator<Asset> it = assets.iterator();
             while (it.hasNext()) {
                 Asset asset = it.next();
-                if (!asset.getRealmId().equals(authenticatedTenant.getId())) {
+                if (!asset.getRealm().equals(getAuthenticatedRealm())) {
                     LOG.warning("User '" + getUsername() + "' linked to asset in other realm, skipping: " + asset);
                     it.remove();
                 }
@@ -112,22 +111,21 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
     }
 
     @Override
-    public UserAsset[] getUserAssetLinks(RequestParams requestParams, String realmId, String userId, String assetId) {
+    public UserAsset[] getUserAssetLinks(RequestParams requestParams, String realm, String userId, String assetId) {
         try {
-            if (realmId == null)
+            if (realm == null)
                 throw new WebApplicationException(BAD_REQUEST);
 
-            Tenant tenant = identityService.getIdentityProvider().getTenantForRealmId(realmId);
-            if (tenant == null)
+            if (!identityService.getIdentityProvider().tenantExists(realm))
                 throw new WebApplicationException(NOT_FOUND);
 
-            if (!isSuperUser() && (isRestrictedUser() && !getAuthenticatedTenant().getId().equals(tenant.getId())))
+            if (!(isSuperUser() || getAuthenticatedRealm().equals(realm)))
                 throw new WebApplicationException(FORBIDDEN);
 
-            if (userId != null && !identityService.getIdentityProvider().isUserInTenant(userId, realmId))
+            if (userId != null && !identityService.getIdentityProvider().isUserInTenant(userId, realm))
                 throw new WebApplicationException(BAD_REQUEST);
 
-            UserAsset[] result = assetStorageService.findUserAssets(realmId, userId, assetId).toArray(new UserAsset[0]);
+            UserAsset[] result = assetStorageService.findUserAssets(realm, userId, assetId).toArray(new UserAsset[0]);
 
             // Compress response (the request attribute enables the interceptor)
             request.setAttribute(HttpHeaders.CONTENT_ENCODING, "gzip");
@@ -142,15 +140,15 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
 
     @Override
     public void createUserAsset(RequestParams requestParams, UserAsset userAsset) {
-        String realmId = userAsset.getId().getRealmId();
+        String realm = userAsset.getId().getRealm();
         String userId = userAsset.getId().getUserId();
         String assetId = userAsset.getId().getAssetId();
 
-        if (!identityService.getIdentityProvider().isUserInTenant(userId, realmId))
+        if (!identityService.getIdentityProvider().isUserInTenant(userId, realm))
             throw new WebApplicationException(BAD_REQUEST);
 
         Asset asset;
-        if ((asset = assetStorageService.find(assetId)) == null || !asset.getRealmId().equals(realmId)) {
+        if ((asset = assetStorageService.find(assetId)) == null || !asset.getRealm().equals(realm)) {
             throw new WebApplicationException(BAD_REQUEST);
         }
 
@@ -161,28 +159,28 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
 
         // Restricted users or regular users in a different realm can not create links
         if (isRestrictedUser()
-            || !getAuthenticatedTenant().getId().equals(realmId))
+            || !getAuthenticatedTenant().getId().equals(realm))
             throw new WebApplicationException(FORBIDDEN);
 
         assetStorageService.storeUserAsset(userAsset);
     }
 
     @Override
-    public void deleteUserAsset(RequestParams requestParams, String realmId, String userId, String assetId) {
-        if (!identityService.getIdentityProvider().isUserInTenant(userId, realmId))
+    public void deleteUserAsset(RequestParams requestParams, String realm, String userId, String assetId) {
+        if (!identityService.getIdentityProvider().isUserInTenant(userId, realm))
             throw new WebApplicationException(BAD_REQUEST);
 
         if (isSuperUser()) {
-            assetStorageService.deleteUserAsset(realmId, userId, assetId);
+            assetStorageService.deleteUserAsset(realm, userId, assetId);
             return;
         }
 
         // Restricted users or regular users in a different realm can not delete links
         if (isRestrictedUser()
-            || !getAuthenticatedTenant().getId().equals(realmId))
+            || !getAuthenticatedTenant().getId().equals(realm))
             throw new WebApplicationException(FORBIDDEN);
 
-        assetStorageService.deleteUserAsset(realmId, userId, assetId);
+        assetStorageService.deleteUserAsset(realm, userId, assetId);
     }
 
     @Override
@@ -247,7 +245,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                 asset,
                 storageAsset,
                 isRestrictedUser ? storageAsset.getName() : null, // TODO We could allow restricted users to update names?
-                isRestrictedUser ? storageAsset.getRealmId() : null, // Restricted users can not change realm
+                isRestrictedUser ? storageAsset.getRealm() : null, // Restricted users can not change realm
                 isRestrictedUser ? storageAsset.getParentId() : null, // Restricted users can not change realm
                 storageAsset.getType(), // The type can never change
                 isRestrictedUser ? storageAsset.isAccessPublicRead() : null, // Restricted user can not change access public flag
@@ -439,8 +437,8 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             }
 
             // If there was no realm provided (create was called by regular user in manager UI), use the auth realm
-            if (asset.getRealmId() == null || asset.getRealmId().length() == 0) {
-                asset.setRealmId(getAuthenticatedTenant().getId());
+            if (asset.getRealm() == null || asset.getRealm().length() == 0) {
+                asset.setRealm(getAuthenticatedTenant().getId());
             }
 
             if (!isTenantActiveAndAccessible(asset)) {
@@ -538,10 +536,8 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             }
 
             Tenant tenant = query.tenant != null
-                ? !isNullOrEmpty(query.tenant.realmId)
-                ? identityService.getIdentityProvider().getTenantForRealmId(query.tenant.realmId)
-                : !isNullOrEmpty(query.tenant.realm)
-                ? identityService.getIdentityProvider().getTenantForRealm(query.tenant.realm)
+                ? !isNullOrEmpty(query.tenant.realm)
+                ? identityService.getIdentityProvider().getTenant(query.tenant.realm)
                 : getAuthenticatedTenant()
                 : getAuthenticatedTenant();
 
@@ -555,7 +551,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
 
             // This replicates behaviour of old getRoot and getChildren methods
             if (!isSuperUser() || query.parent == null || query.parent.noParent) {
-                query.tenant(new TenantPredicate(tenant.getId()));
+                query.tenant(new TenantPredicate(tenant.getRealm()));
             }
 
             List<Asset> result = assetStorageService.findAll(query);
@@ -581,7 +577,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
 
         // Force realm to be request realm
         if (query.tenant == null) {
-            query.tenant(new TenantPredicate().realm(requestRealm));
+            query.tenant(new TenantPredicate(requestRealm));
         } else {
             query.tenant.realm = requestRealm;
         }

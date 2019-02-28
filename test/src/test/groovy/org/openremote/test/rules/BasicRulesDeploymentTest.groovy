@@ -74,7 +74,7 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
         when: "a new tenant rule definition is added to Tenant A"
         ruleset = new TenantRuleset(
                 "Some more tenantA tenant rules",
-                keycloakDemoSetup.tenantA.id,
+                keycloakDemoSetup.tenantA.realm,
                 getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetStates2.groovy").text,
                 GROOVY
         )
@@ -82,7 +82,7 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
 
         then: "Tenant A rules engine should load this definition and restart successfully"
         conditions.eventually {
-            def tenantAEngine = rulesService.tenantEngines.get(keycloakDemoSetup.tenantA.id)
+            def tenantAEngine = rulesService.tenantEngines.get(keycloakDemoSetup.tenantA.realm)
             assert tenantAEngine != null
             assert tenantAEngine.isRunning()
             assert tenantAEngine.deployments.size() == 2
@@ -93,7 +93,7 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
         when: "a new tenant rule definition is added to Tenant B"
         ruleset = new TenantRuleset(
                 "Some more tenantB tenant rules",
-                keycloakDemoSetup.tenantB.id,
+                keycloakDemoSetup.tenantB.realm,
                 getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetStates2.groovy").text,
                 GROOVY
         )
@@ -101,7 +101,7 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
 
         then: "a tenant rules engine should be created for Tenant B and load this definition and start successfully"
         conditions.eventually {
-            def tenantBEngine = rulesService.tenantEngines.get(keycloakDemoSetup.tenantB.id)
+            def tenantBEngine = rulesService.tenantEngines.get(keycloakDemoSetup.tenantB.realm)
             assert rulesService.tenantEngines.size() == 3
             assert tenantBEngine != null
             assert tenantBEngine.isRunning()
@@ -116,7 +116,7 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
 
         then: "Tenant B rule engine should load this definition and restart successfully"
         conditions.eventually {
-            def tenantBEngine = rulesService.tenantEngines.get(keycloakDemoSetup.tenantB.id)
+            def tenantBEngine = rulesService.tenantEngines.get(keycloakDemoSetup.tenantB.realm)
             assert rulesService.tenantEngines.size() == 3
             assert tenantBEngine != null
             assert tenantBEngine.isRunning()
@@ -133,7 +133,7 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
 
         then: "Tenant B rule engine should remove it again"
         conditions.eventually {
-            def tenantBEngine = rulesService.tenantEngines.get(keycloakDemoSetup.tenantB.id)
+            def tenantBEngine = rulesService.tenantEngines.get(keycloakDemoSetup.tenantB.realm)
             assert tenantBEngine != null
             assert tenantBEngine.isRunning()
             assert tenantBEngine.deployments.size() == 1
@@ -185,7 +185,7 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
         }
 
         when: "a tenant is disabled"
-        def tenantAEngine = rulesService.tenantEngines.get(keycloakDemoSetup.tenantA.id)
+        def tenantAEngine = rulesService.tenantEngines.get(keycloakDemoSetup.tenantA.realm)
         def apartment3Engine = rulesService.assetEngines.get(managerDemoSetup.apartment3Id)
         def tenantATenant = keycloakDemoSetup.tenantA
         tenantATenant.setEnabled(false)
@@ -195,7 +195,7 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
         conditions.eventually {
             assert tenantAEngine.isRunning() == false
             assert tenantAEngine.deployments.size() == 2
-            assert rulesService.tenantEngines.get(keycloakDemoSetup.tenantA.id) == null
+            assert rulesService.tenantEngines.get(keycloakDemoSetup.tenantA.realm) == null
             assert apartment3Engine.isRunning() == false
             assert apartment3Engine.deployments.size() == 1
             assert rulesService.assetEngines.get(managerDemoSetup.apartment3Id) == null
@@ -205,8 +205,8 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
         conditions.eventually {
             assert rulesService.tenantEngines.size() == 2
             assert rulesService.assetEngines.size() == 1
-            def masterEngine = rulesService.tenantEngines.get(keycloakDemoSetup.masterTenant.id)
-            def tenantBEngine = rulesService.tenantEngines.get(keycloakDemoSetup.tenantB.id)
+            def masterEngine = rulesService.tenantEngines.get(keycloakDemoSetup.masterTenant.realm)
+            def tenantBEngine = rulesService.tenantEngines.get(keycloakDemoSetup.tenantB.realm)
             assert masterEngine != null
             assert masterEngine.isRunning()
             assert tenantBEngine != null
@@ -219,7 +219,7 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
 
         then: "the tenants rule engine should start and all asset rule engines from this realm should also start"
         conditions.eventually {
-            tenantAEngine = rulesService.tenantEngines.get(keycloakDemoSetup.tenantA.id)
+            tenantAEngine = rulesService.tenantEngines.get(keycloakDemoSetup.tenantA.realm)
             apartment3Engine = rulesService.assetEngines.get(managerDemoSetup.apartment3Id)
             assert rulesService.tenantEngines.size() == 3
             assert rulesService.assetEngines.size() == 2

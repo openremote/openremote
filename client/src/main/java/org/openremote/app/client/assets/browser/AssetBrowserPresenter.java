@@ -87,7 +87,7 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
         environment.getEventBus().register(
             AssetTreeModifiedEvent.class,
             event -> {
-                String modifiedNodeId = event.isTenantModified() ? event.getRealmId() : event.getAssetId();
+                String modifiedNodeId = event.isTenantModified() ? event.getRealm() : event.getAssetId();
                 if (event.isNewAssetChildren()) {
                     LOG.fine("Asset tree modified on server, forcing open due to new child asset: " + modifiedNodeId);
                     view.refresh(event.getAssetId(), modifiedNodeId);
@@ -106,7 +106,7 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
             AssetTreeModifiedEvent.class,
             environment.getApp().getSecurity().isSuperUser()
                 ? null
-                : new TenantFilter(currentTenant.getId())
+                : new TenantFilter(currentTenant.getRealm())
         );
     }
 
@@ -186,24 +186,18 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
 
     @Override
     public void selectRealm(String realm) {
-        selectTenant(realm, false);
-    }
-
-    @Override
-    public void selectTenant(String realmId) {
-        selectTenant(realmId, true);
-    }
-
-    protected void selectTenant(String value, boolean compareId) {
         TenantTreeNode selectedTenantNode = null;
-        if (!TextUtil.isNullOrEmpty(value)) {
-            for (TenantTreeNode tenantNode : tenantNodes) {
-                String matchValue = compareId ? tenantNode.getId() : tenantNode.getTenant().getRealm();
 
-                if (matchValue.equals(value))
+        if (!TextUtil.isNullOrEmpty(realm)) {
+            for (TenantTreeNode tenantNode : tenantNodes) {
+
+                if (tenantNode.getId().equals(realm)) {
                     selectedTenantNode = tenantNode;
+                    break;
+                }
             }
         }
+
         if (selectedTenantNode != null) {
             onNodeSelected(selectedTenantNode);
             selectedNodePath = new String[]{selectedTenantNode.getId()};
@@ -313,7 +307,7 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
         List<String> path = new ArrayList<>();
         if (environment.getApp().getSecurity().isSuperUser()) {
             for (TenantTreeNode tenantNode : tenantNodes) {
-                if (tenantNode.getId().equals(asset.getRealmId())) {
+                if (tenantNode.getId().equals(asset.getRealm())) {
                     path.add(tenantNode.getId());
                     break;
                 }

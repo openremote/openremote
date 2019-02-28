@@ -34,38 +34,38 @@ public class TenantRuleset extends Ruleset {
 
     public static final String TYPE = "tenant";
 
-    @Column(name = "REALM_ID", nullable = false)
-    protected String realmId;
+    @Column(name = "REALM", nullable = false)
+    protected String realm;
 
     public TenantRuleset() {
     }
 
-    public TenantRuleset(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String realmId, Lang lang) {
+    public TenantRuleset(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String realm, Lang lang) {
         super(id, version, createdOn, lastModified, name, enabled, lang);
-        this.realmId = realmId;
+        this.realm = realm;
     }
 
-    public TenantRuleset(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String rules, Lang lang, String realmId) {
+    public TenantRuleset(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String rules, Lang lang, String realm) {
         super(id, version, createdOn, lastModified, name, enabled, rules, lang);
-        this.realmId = realmId;
+        this.realm = realm;
     }
 
-    public TenantRuleset(String realmId) {
-        this(null, realmId, null, Lang.GROOVY);
+    public TenantRuleset(String realm) {
+        this(null, realm, null, Lang.GROOVY);
 
     }
 
-    public TenantRuleset(String name, String realmId, String rules, Lang lang) {
+    public TenantRuleset(String name, String realm, String rules, Lang lang) {
         super(name, rules, lang);
-        this.realmId = realmId;
+        this.realm = realm;
     }
 
-    public String getRealmId() {
-        return realmId;
+    public String getRealm() {
+        return realm;
     }
 
-    public void setRealmId(String realmId) {
-        this.realmId = realmId;
+    public void setRealm(String realm) {
+        this.realm = realm;
     }
 
     @Override
@@ -78,7 +78,7 @@ public class TenantRuleset extends Ruleset {
             ", createdOn='" + createdOn + '\'' +
             ", lastModified='" + lastModified + '\'' +
             ", enabled='" + enabled + '\'' +
-            ", realmId='" + realmId + '\'' +
+            ", realm='" + realm + '\'' +
             '}';
     }
 }

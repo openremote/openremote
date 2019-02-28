@@ -196,7 +196,7 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> {
             NAME,
             ASSET_TYPE,
             PARENT_ID,
-            REALM_ID
+            REALM
         }
 
         public Property property;

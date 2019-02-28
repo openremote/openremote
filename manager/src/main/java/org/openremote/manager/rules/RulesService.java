@@ -53,7 +53,6 @@ import org.openremote.model.value.ObjectValue;
 
 import javax.persistence.EntityManager;
 import java.util.*;
-import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -110,7 +109,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
     protected AssetProcessingService assetProcessingService;
     protected ClientEventService clientEventService;
     protected RulesEngine<GlobalRuleset> globalEngine;
-    protected String[] activeTenantIds;
+    protected Tenant[] tenants;
     protected AssetLocationPredicateProcessor locationPredicateRulesConsumer;
     protected Map<RulesEngine, List<RulesEngine.AssetStateLocationPredicates>> engineAssetLocationPredicateMap = new HashMap<>();
     protected Set<String> assetsWithModifiedLocationPredicates = new HashSet<>();
@@ -210,9 +209,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
             locationPredicateRulesConsumer = this::onEngineLocationRulesChanged;
 
             for (GeofenceAssetAdapter geofenceAssetAdapter : geofenceAssetAdapters) {
-                if (geofenceAssetAdapter instanceof ContainerService) {
-                    ((ContainerService) geofenceAssetAdapter).start(container);
-                }
+                geofenceAssetAdapter.start(container);
             }
         }
 
@@ -220,12 +217,12 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
         rulesetStorageService.findEnabledGlobalRulesets().forEach(this::deployGlobalRuleset);
 
         LOG.info("Deploying tenant rulesets");
-        activeTenantIds = identityService.getIdentityProvider().getActiveTenantIds();
+        tenants = identityService.getIdentityProvider().getTenants();
         rulesetStorageService.findEnabledTenantRulesets()
             .stream()
             .filter(rd ->
-                Arrays.stream(activeTenantIds)
-                    .anyMatch(tenantId -> rd.getRealmId().equals(tenantId))
+                Arrays.stream(tenants)
+                    .anyMatch(tenant -> rd.getRealm().equals(tenant.getRealm()))
             ).forEach(this::deployTenantRuleset);
 
         LOG.info("Deploying asset rulesets");
@@ -251,12 +248,10 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
     public void stop(Container container) throws Exception {
         withLock(getClass().getSimpleName() + "::stop", () -> {
             for (GeofenceAssetAdapter geofenceAssetAdapter : geofenceAssetAdapters) {
-                if (geofenceAssetAdapter instanceof ContainerService) {
-                    try {
-                        ((ContainerService) geofenceAssetAdapter).stop(container);
-                    } catch (Exception e) {
-                        LOG.log(SEVERE, "Exception thrown whilst stopping geofence adapter", e);
-                    }
+                try {
+                    geofenceAssetAdapter.stop(container);
+                } catch (Exception e) {
+                    LOG.log(SEVERE, "Exception thrown whilst stopping geofence adapter", e);
                 }
             }
 
@@ -320,9 +315,9 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
     protected void processTenantChange(Tenant tenant, PersistenceEvent.Cause cause) {
         withLock(getClass().getSimpleName() + "::processTenantChange", () -> {
             // Check if enabled status has changed
-            boolean wasEnabled = Arrays.asList(activeTenantIds).contains(tenant.getId());
+            boolean wasEnabled = Arrays.stream(tenants).anyMatch(t -> tenant.getRealm().equals(t.getRealm()));
             boolean isEnabled = tenant.getEnabled() && cause != PersistenceEvent.Cause.DELETE;
-            activeTenantIds = identityService.getIdentityProvider().getActiveTenantIds();
+            tenants = identityService.getIdentityProvider().getTenants();
 
             if (wasEnabled == isEnabled) {
                 // Nothing to do here
@@ -331,29 +326,29 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
 
             if (wasEnabled) {
                 // Remove tenant rules engine for this tenant if it exists
-                RulesEngine<TenantRuleset> tenantRulesEngine = tenantEngines.get(tenant.getId());
+                RulesEngine<TenantRuleset> tenantRulesEngine = tenantEngines.get(tenant.getRealm());
                 if (tenantRulesEngine != null) {
                     tenantRulesEngine.stop();
-                    tenantEngines.remove(tenant.getId());
+                    tenantEngines.remove(tenant.getRealm());
                 }
 
                 // Remove any asset rules engines for assets in this realm
                 assetEngines.values().stream()
-                    .filter(re -> re.getId().getRealmId().map(id -> id.equals(tenant.getId())).orElse(false))
+                    .filter(re -> re.getId().getRealm().map(id -> id.equals(tenant.getRealm())).orElse(false))
                     .forEach(RulesEngine::stop);
                 assetEngines.entrySet().removeIf(entry ->
-                    entry.getValue().getId().getRealmId().map(id -> id.equals(tenant.getId())).orElse(
+                    entry.getValue().getId().getRealm().map(id -> id.equals(tenant.getRealm())).orElse(
                         false)
                 );
 
             } else {
                 // Create tenant rules engines for this tenant if it has any rulesets
                 rulesetStorageService
-                    .findEnabledTenantRulesets(tenant.getId())
+                    .findEnabledTenantRulesets(tenant.getRealm())
                     .forEach(this::deployTenantRuleset);
 
                 // Create any asset rules engines for assets in this realm that have rulesets
-                deployAssetRulesets(rulesetStorageService.findEnabledAssetRulesets(tenant.getId()));
+                deployAssetRulesets(rulesetStorageService.findEnabledAssetRulesets(tenant.getRealm()));
             }
         });
     }
@@ -479,7 +474,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
                     if (newEngine != null) {
                         // Push all existing facts into the engine, this is an initial import of state so fire delayed
                         assetStates.forEach(assetState -> {
-                            if (assetState.getRealmId().equals(((TenantRuleset) ruleset).getRealmId())) {
+                            if (assetState.getRealm().equals(((TenantRuleset) ruleset).getRealm())) {
                                 newEngine.updateFact(assetState, false);
                             }
                         });
@@ -549,7 +544,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
 
             // Look for existing rules engines for this tenant
             RulesEngine<TenantRuleset> tenentRulesEngine = tenantEngines
-                .computeIfAbsent(ruleset.getRealmId(), (realmId) -> {
+                .computeIfAbsent(ruleset.getRealm(), (realm) -> {
                     created[0] = true;
                     return new RulesEngine<>(
                         timerService,
@@ -559,7 +554,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
                         assetProcessingService,
                         notificationService,
                         clientEventService,
-                        new RulesEngineId<>(realmId),
+                        new RulesEngineId<>(realm),
                         locationPredicateRulesConsumer
                     );
                 });
@@ -572,13 +567,13 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
 
     protected void undeployTenantRuleset(TenantRuleset ruleset) {
         withLock(getClass().getSimpleName() + "::undeployTenantRuleset", () -> {
-            RulesEngine<TenantRuleset> rulesEngine = tenantEngines.get(ruleset.getRealmId());
+            RulesEngine<TenantRuleset> rulesEngine = tenantEngines.get(ruleset.getRealm());
             if (rulesEngine == null) {
                 return;
             }
 
             if (rulesEngine.removeRuleset(ruleset)) {
-                tenantEngines.remove(ruleset.getRealmId());
+                tenantEngines.remove(ruleset.getRealm());
             }
         });
     }
@@ -593,12 +588,12 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
                 new Pair<>(assetStorageService.find(es.getKey(), true), es.getValue())
             )
             .filter(assetAndRules -> assetAndRules.key != null)
-            .collect(Collectors.groupingBy(assetAndRules -> assetAndRules.key.getRealmId()))
+            .collect(Collectors.groupingBy(assetAndRules -> assetAndRules.key.getRealm()))
             .entrySet()
             .stream()
             .filter(es -> Arrays
-                .stream(activeTenantIds)
-                .anyMatch(at -> es.getKey().equals(at)))
+                .stream(tenants)
+                .anyMatch(at -> es.getKey().equals(at.getRealm())))
             .forEach(es -> {
                 List<Pair<Asset, List<AssetRuleset>>> tenantAssetAndRules = es.getValue();
 
@@ -627,7 +622,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
                         assetProcessingService,
                         notificationService,
                         clientEventService,
-                        new RulesEngineId<>(ruleset.getRealmId(), assetId),
+                        new RulesEngineId<>(ruleset.getRealm(), assetId),
                         locationPredicateRulesConsumer
                     );
                 });
@@ -653,7 +648,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
     protected void insertAssetEvent(AssetState assetState, String expires) {
         withLock(getClass().getSimpleName() + "::insertAssetEvent", () -> {
             // Get the chain of rule engines that we need to pass through
-            List<RulesEngine> rulesEngines = getEnginesInScope(assetState.getRealmId(), assetState.getPath());
+            List<RulesEngine> rulesEngines = getEnginesInScope(assetState.getRealm(), assetState.getPath());
 
             // Check that all engines in the scope are available
             if (rulesEngines.stream().anyMatch(RulesEngine::isError)) {
@@ -682,7 +677,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
             LOG.fine("Updating asset state: " + assetState);
 
             // Get the chain of rule engines that we need to pass through
-            List<RulesEngine> rulesEngines = getEnginesInScope(assetState.getRealmId(), assetState.getPath());
+            List<RulesEngine> rulesEngines = getEnginesInScope(assetState.getRealm(), assetState.getPath());
 
             if (!skipStatusCheck) {
                 // Check that all engines in the scope are available
@@ -707,7 +702,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
 
     protected void retractAssetState(AssetState assetState) {
         // Get the chain of rule engines that we need to pass through
-        List<RulesEngine> rulesEngines = getEnginesInScope(assetState.getRealmId(), assetState.getPath());
+        List<RulesEngine> rulesEngines = getEnginesInScope(assetState.getRealm(), assetState.getPath());
 
         // Remove asset state with same attribute ref
         assetStates.remove(assetState);
@@ -729,7 +724,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
             .collect(Collectors.toList());
     }
 
-    protected List<RulesEngine> getEnginesInScope(String realmId, String[] assetPath) {
+    protected List<RulesEngine> getEnginesInScope(String realm, String[] assetPath) {
         List<RulesEngine> rulesEngines = new ArrayList<>();
 
         // Add global engine (if it exists)
@@ -738,7 +733,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
         }
 
         // Add tenant engine (if it exists)
-        RulesEngine tenantRulesEngine = tenantEngines.get(realmId);
+        RulesEngine tenantRulesEngine = tenantEngines.get(realm);
 
         if (tenantRulesEngine != null) {
             rulesEngines.add(tenantRulesEngine);
@@ -909,15 +904,15 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
             }
         }
 
-        for (Map.Entry<String, RulesEngine<TenantRuleset>> realmIdAndEngine : tenantEngines.entrySet()) {
-            if (realmIdAndEngine.getValue().deployments.containsKey(rulesetId)) {
-                return Optional.of(realmIdAndEngine.getValue().deployments.get(rulesetId));
+        for (Map.Entry<String, RulesEngine<TenantRuleset>> realmAndEngine : tenantEngines.entrySet()) {
+            if (realmAndEngine.getValue().deployments.containsKey(rulesetId)) {
+                return Optional.of(realmAndEngine.getValue().deployments.get(rulesetId));
             }
         }
 
-        for (Map.Entry<String, RulesEngine<AssetRuleset>> realmIdAndEngine : assetEngines.entrySet()) {
-            if (realmIdAndEngine.getValue().deployments.containsKey(rulesetId)) {
-                return Optional.of(realmIdAndEngine.getValue().deployments.get(rulesetId));
+        for (Map.Entry<String, RulesEngine<AssetRuleset>> realmAndEngine : assetEngines.entrySet()) {
+            if (realmAndEngine.getValue().deployments.containsKey(rulesetId)) {
+                return Optional.of(realmAndEngine.getValue().deployments.get(rulesetId));
             }
         }
 

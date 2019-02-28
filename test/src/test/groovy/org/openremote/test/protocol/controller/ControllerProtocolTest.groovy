@@ -198,7 +198,7 @@ class ControllerProtocolTest extends Specification implements ManagerContainerTr
 
         and: "an agent with a Controller protocol configuration is created"
         def agent = new Asset()
-        agent.setRealmId(Constants.MASTER_REALM)
+        agent.setRealm(Constants.MASTER_REALM)
         agent.setName("Test Agent")
         agent.setType(AssetType.AGENT)
         agent.setAttributes(

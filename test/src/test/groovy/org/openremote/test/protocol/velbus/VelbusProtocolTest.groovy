@@ -99,7 +99,7 @@ class VelbusProtocolTest extends Specification implements ManagerContainerTrait 
 
         and: "a VELBUS agent is created"
         def agent = new Asset("VELBUS", AssetType.AGENT)
-        agent.setRealmId(MASTER_REALM)
+        agent.setRealm(MASTER_REALM)
         agent.setType(AssetType.AGENT)
         agent.setAttributes(
             initProtocolConfiguration(new AssetAttribute("protocolConfig"), velbusProtocol.getProtocolName())
@@ -160,7 +160,7 @@ class VelbusProtocolTest extends Specification implements ManagerContainerTrait 
 
         and: "a VELBUS agent is created"
         def agent = new Asset("VELBUS", AssetType.AGENT)
-        agent.setRealmId(MASTER_REALM)
+        agent.setRealm(MASTER_REALM)
         agent.setType(AssetType.AGENT)
         agent.setAttributes(
             initProtocolConfiguration(new AssetAttribute("protocolConfig"), VelbusSerialProtocol.PROTOCOL_NAME)

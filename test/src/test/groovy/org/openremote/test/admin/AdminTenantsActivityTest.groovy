@@ -69,7 +69,7 @@ class AdminTenantsActivityTest extends Specification implements ManagerContainer
         and: "a test client app"
         def testApp = new TestOpenRemoteApp(
                 keycloakProvider.getKeycloakDeployment(realm, KEYCLOAK_CLIENT_ID),
-                identityService.getIdentityProvider().getTenantForRealm(realm),
+                identityService.getIdentityProvider().getTenant(realm),
                 accessToken
         )
 

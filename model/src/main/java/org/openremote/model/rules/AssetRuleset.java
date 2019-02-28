@@ -39,7 +39,7 @@ public class AssetRuleset extends Ruleset {
     protected String assetId;
 
     @Transient
-    protected String realmId;
+    protected String realm;
 
     public AssetRuleset() {
     }
@@ -49,7 +49,7 @@ public class AssetRuleset extends Ruleset {
     }
 
     public AssetRuleset(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String assetId, Lang lang) {
-        this(id, version, createdOn, lastModified, name, enabled, null, lang, null, assetId);
+        this(id, version, createdOn, lastModified, name, enabled, null, lang, assetId, null);
     }
 
     public AssetRuleset(String name, String assetId, String rules, Lang lang) {
@@ -57,10 +57,10 @@ public class AssetRuleset extends Ruleset {
         this.assetId = assetId;
     }
 
-    public AssetRuleset(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String rules, Lang lang, String assetId, String realmId) {
+    public AssetRuleset(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String rules, Lang lang, String assetId, String realm) {
         super(id, version, createdOn, lastModified, name, enabled, rules, lang);
         this.assetId = assetId;
-        this.realmId = realmId;
+        this.realm = realm;
     }
 
     public String getAssetId() {
@@ -71,12 +71,12 @@ public class AssetRuleset extends Ruleset {
         this.assetId = assetId;
     }
 
-    public String getRealmId() {
-        return realmId;
+    public String getRealm() {
+        return realm;
     }
 
-    public void setRealmId(String realmId) {
-        this.realmId = realmId;
+    public void setRealm(String realm) {
+        this.realm = realm;
     }
 
     @Override
@@ -89,6 +89,7 @@ public class AssetRuleset extends Ruleset {
                 ", createdOn='" + createdOn + '\'' +
                 ", lastModified='" + lastModified + '\'' +
                 ", enabled='" + enabled + '\'' +
+                ", realm='" + realm + '\'' +
                 ", assetId='" + assetId + '\'' +
                 '}';
     }

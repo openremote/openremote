@@ -52,7 +52,7 @@ class BasicRulesImport {
 
         ruleset = new TenantRuleset(
                 "Some master tenant demo rules",
-                keycloakDemoSetup.masterTenant.id,
+                keycloakDemoSetup.masterTenant.realm,
                 getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetStates.groovy").text,
                 GROOVY
         )
@@ -60,7 +60,7 @@ class BasicRulesImport {
 
         ruleset = new TenantRuleset(
                 "Some tenantA tenant demo rules",
-                keycloakDemoSetup.tenantA.id,
+                keycloakDemoSetup.tenantA.realm,
                 getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetStates.groovy").text,
                 GROOVY
         )
@@ -68,7 +68,7 @@ class BasicRulesImport {
 
         ruleset = new TenantRuleset(
                 "Some tenantB tenant demo rules",
-                keycloakDemoSetup.tenantB.id,
+                keycloakDemoSetup.tenantB.realm,
                 getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetStates.groovy").text,
                 GROOVY
         )
@@ -113,21 +113,21 @@ class BasicRulesImport {
         assert globalEngine.deployments.values().any { it -> it.name == "Some global demo rules" && it.status == DEPLOYED }
 
         assert rulesService.tenantEngines.size() == 2
-        masterEngine = rulesService.tenantEngines.get(keycloakDemoSetup.masterTenant.id)
+        masterEngine = rulesService.tenantEngines.get(keycloakDemoSetup.masterTenant.realm)
         masterEngine.disableTemporaryFactExpiration = true
         assert masterEngine != null
         assert masterEngine.isRunning()
         assert masterEngine.deployments.size() == 1
         assert masterEngine.deployments.values().iterator().next().name == "Some master tenant demo rules"
         assert masterEngine.deployments.values().iterator().next().status == DEPLOYED
-        tenantAEngine = rulesService.tenantEngines.get(keycloakDemoSetup.tenantA.id)
+        tenantAEngine = rulesService.tenantEngines.get(keycloakDemoSetup.tenantA.realm)
         assert tenantAEngine != null
         tenantAEngine.disableTemporaryFactExpiration = true
         assert tenantAEngine.isRunning()
         assert tenantAEngine.deployments.size() == 1
         assert tenantAEngine.deployments.values().iterator().next().name == "Some tenantA tenant demo rules"
         assert tenantAEngine.deployments.values().iterator().next().status == DEPLOYED
-        def tenantBEngine = rulesService.tenantEngines.get(keycloakDemoSetup.tenantB.id)
+        def tenantBEngine = rulesService.tenantEngines.get(keycloakDemoSetup.tenantB.realm)
         assert tenantBEngine == null
 
         assert rulesService.assetEngines.size() == 3

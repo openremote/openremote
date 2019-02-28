@@ -72,12 +72,12 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
     }
 
     @Override
-    public RulesEngineInfo getTenantEngineInfo(RequestParams requestParams, String realmId) {
-        if (!isRealmAccessibleByUser(realmId) || isRestrictedUser()) {
+    public RulesEngineInfo getTenantEngineInfo(RequestParams requestParams, String realm) {
+        if (!isRealmAccessibleByUser(realm) || isRestrictedUser()) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
 
-        RulesEngine<TenantRuleset> engine = rulesService.tenantEngines.get(realmId);
+        RulesEngine<TenantRuleset> engine = rulesService.tenantEngines.get(realm);
         return getEngineInfo(engine);
     }
 
@@ -88,7 +88,7 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
         if (asset == null)
             return null;
 
-        if (!isRealmAccessibleByUser(asset.getTenantRealm())) {
+        if (!isRealmAccessibleByUser(asset.getRealm())) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
 
@@ -161,13 +161,13 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
         if (asset == null)
             return new AssetRuleset[0];
 
-        if (!isRealmAccessibleByUser(asset.getTenantRealm())) {
+        if (!isRealmAccessibleByUser(asset.getRealm())) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
         if (isRestrictedUser() && !assetStorageService.isUserAsset(getUserId(), assetId)) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
-        List<AssetRuleset> result = rulesetStorageService.findAssetRulesets(asset.getRealmId(), assetId);
+        List<AssetRuleset> result = rulesetStorageService.findAssetRulesets(asset.getRealm(), assetId);
 
         // Try and retrieve transient status and error data
         result.forEach(ruleset ->
@@ -226,7 +226,7 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
 
     @Override
     public void createTenantRuleset(@BeanParam RequestParams requestParams, TenantRuleset ruleset) {
-        Tenant tenant = identityService.getIdentityProvider().getTenantForRealmId(ruleset.getRealmId());
+        Tenant tenant = identityService.getIdentityProvider().getTenant(ruleset.getRealm());
         if (tenant == null) {
             throw new WebApplicationException(BAD_REQUEST);
         }
@@ -243,7 +243,7 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
         if (ruleset == null) {
             throw new WebApplicationException(NOT_FOUND);
         }
-        Tenant tenant = identityService.getIdentityProvider().getTenantForRealmId(ruleset.getRealmId());
+        Tenant tenant = identityService.getIdentityProvider().getTenant(ruleset.getRealm());
         if (tenant == null) {
             throw new WebApplicationException(BAD_REQUEST);
         }
@@ -260,7 +260,7 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
         if (existingRuleset == null) {
             throw new WebApplicationException(NOT_FOUND);
         }
-        Tenant tenant = identityService.getIdentityProvider().getTenantForRealmId(existingRuleset.getRealmId());
+        Tenant tenant = identityService.getIdentityProvider().getTenant(existingRuleset.getRealm());
         if (tenant == null) {
             throw new WebApplicationException(BAD_REQUEST);
         }
@@ -271,7 +271,7 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
         if (!id.equals(ruleset.getId())) {
             throw new WebApplicationException("Requested ID and ruleset ID don't match", BAD_REQUEST);
         }
-        if (!existingRuleset.getRealmId().equals(ruleset.getRealmId())) {
+        if (!existingRuleset.getRealm().equals(ruleset.getRealm())) {
             throw new WebApplicationException("Requested realm and existing ruleset realm must match", BAD_REQUEST);
         }
         rulesetStorageService.merge(ruleset);
@@ -283,7 +283,7 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
         if (ruleset == null) {
             return;
         }
-        Tenant tenant = identityService.getIdentityProvider().getTenantForRealmId(ruleset.getRealmId());
+        Tenant tenant = identityService.getIdentityProvider().getTenant(ruleset.getRealm());
         if (tenant == null) {
             throw new WebApplicationException(BAD_REQUEST);
         }
@@ -305,7 +305,7 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
         if (asset == null) {
             throw new WebApplicationException(NOT_FOUND);
         }
-        if (!isRealmAccessibleByUser(asset.getTenantRealm())) {
+        if (!isRealmAccessibleByUser(asset.getRealm())) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
         if (isRestrictedUser() && !assetStorageService.isUserAsset(getUserId(), asset.getId())) {
@@ -324,7 +324,7 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
         if (asset == null) {
             throw new WebApplicationException(NOT_FOUND);
         }
-        if (!isRealmAccessibleByUser(asset.getTenantRealm())) {
+        if (!isRealmAccessibleByUser(asset.getRealm())) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
         if (isRestrictedUser() && !assetStorageService.isUserAsset(getUserId(), asset.getId())) {
@@ -343,7 +343,7 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
         if (asset == null) {
             throw new WebApplicationException(NOT_FOUND);
         }
-        if (!isRealmAccessibleByUser(asset.getTenantRealm())) {
+        if (!isRealmAccessibleByUser(asset.getRealm())) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
         if (isRestrictedUser() && !assetStorageService.isUserAsset(getUserId(), asset.getId())) {
@@ -369,7 +369,7 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
         if (asset == null) {
             throw new WebApplicationException(NOT_FOUND);
         }
-        if (!isRealmAccessibleByUser(asset.getTenantRealm())) {
+        if (!isRealmAccessibleByUser(asset.getRealm())) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
         if (isRestrictedUser() && !assetStorageService.isUserAsset(getUserId(), asset.getId())) {
@@ -394,7 +394,7 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
         if (!asset.isAccessPublicRead()) {
 
             // If asset is linked to users then only those users can get the geofences for it
-            List<UserAsset> userAssetLinks = assetStorageService.findUserAssets(asset.getRealmId(), null, assetId);
+            List<UserAsset> userAssetLinks = assetStorageService.findUserAssets(asset.getRealm(), null, assetId);
 
             if (!userAssetLinks.isEmpty()) {
                 if (!isAuthenticated() || userAssetLinks.stream().noneMatch(userAssetLink -> userAssetLink.getId().getUserId().equals(getUserId()))) {

@@ -342,17 +342,17 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                     throw new IllegalStateException("Invalid parent");
 
                 // .. the parent should be in the same realm
-                if (asset.getRealmId() != null && !parent.getRealmId().equals(asset.getRealmId())) {
-                    throw new IllegalStateException("Parent not in same realm as asset: " + asset.getRealmId());
-                } else if (asset.getRealmId() == null) {
+                if (asset.getRealm() != null && !parent.getRealm().equals(asset.getRealm())) {
+                    throw new IllegalStateException("Parent not in same realm as asset: " + asset.getRealm());
+                } else if (asset.getRealm() == null) {
                     // ... and if we don't have a realm identifier, use the parent's
-                    asset.setRealmId(parent.getRealmId());
+                    asset.setRealm(parent.getRealm());
                 }
             }
 
             // Validate realm
-            if (!identityService.getIdentityProvider().isActiveTenant(asset.getRealmId())) {
-                throw new IllegalStateException("Realm not found/active: " + asset.getRealmId());
+            if (!identityService.getIdentityProvider().tenantExists(asset.getRealm())) {
+                throw new IllegalStateException("Realm not found/active: " + asset.getRealm());
             }
 
             // Validate attributes
@@ -381,7 +381,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             // If username present
             User user = null;
             if (!TextUtil.isNullOrEmpty(userName)) {
-                user = identityService.getIdentityProvider().getUser(asset.getRealmId(), userName);
+                user = identityService.getIdentityProvider().getUser(asset.getRealm(), userName);
                 if (user == null) {
                     throw new IllegalStateException("User not found: " + userName);
                 }
@@ -392,7 +392,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             Asset updatedAsset = em.merge(asset);
 
             if (user != null) {
-                storeUserAsset(em, new UserAsset(user.getRealmId(), user.getId(), updatedAsset.getId()));
+                storeUserAsset(em, new UserAsset(user.getRealm(), user.getId(), updatedAsset.getId()));
             }
 
             return updatedAsset;
@@ -477,20 +477,20 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     /**
      * Indicates if the specified asset belongs to the specified realm
      */
-    public boolean isRealmAsset(String realmId, String assetId) {
-        return isRealmAssets(realmId, Collections.singletonList(assetId));
+    public boolean isRealmAsset(String realm, String assetId) {
+        return isRealmAssets(realm, Collections.singletonList(assetId));
     }
 
     /**
      * Indicates if the specified assets belong to the specified realm
      */
-    public boolean isRealmAssets(String realmId, List<String> assetIds) {
+    public boolean isRealmAssets(String realm, List<String> assetIds) {
         return persistenceService.doReturningTransaction(entityManager -> {
             try {
                 return entityManager.createQuery(
-                    "select count(a) from Asset a where a.realmId = :realmId and a.id in :assetIds",
+                    "select count(a) from Asset a where a.realm = :realm and a.id in :assetIds",
                     Long.class)
-                    .setParameter("realmId", realmId)
+                    .setParameter("realm", realm)
                     .setParameter("assetIds", assetIds)
                     .getSingleResult() == assetIds.size();
             } catch (NoResultException ex) {
@@ -520,15 +520,15 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         }));
     }
 
-    public List<UserAsset> findUserAssets(String realmId, String userId, String assetId) {
+    public List<UserAsset> findUserAssets(String realm, String userId, String assetId) {
         return persistenceService.doReturningTransaction(entityManager -> {
             StringBuilder sb = new StringBuilder();
             Map<String, Object> parameters = new HashMap<>(3);
             sb.append("select ua from UserAsset ua where 1=1");
 
-            if (!isNullOrEmpty(realmId)) {
-                sb.append(" and ua.id.realmId = :realmId");
-                parameters.put("realmId", realmId);
+            if (!isNullOrEmpty(realm)) {
+                sb.append(" and ua.id.realm = :realm");
+                parameters.put("realm", realm);
             }
             if (!isNullOrEmpty(userId)) {
                 sb.append(" and ua.id.userId = :userId");
@@ -559,9 +559,9 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
      * This used to automatically unrestrict a user  if no assets are linked to the them anymore but this has been
      * disabled as it no longer fitted with use cases.
      */
-    public void deleteUserAsset(String realmId, String userId, String assetId) {
+    public void deleteUserAsset(String realm, String userId, String assetId) {
         persistenceService.doTransaction(entityManager -> {
-            UserAsset userAsset = entityManager.find(UserAsset.class, new UserAsset.Id(realmId, userId, assetId));
+            UserAsset userAsset = entityManager.find(UserAsset.class, new UserAsset.Id(realm, userId, assetId));
             if (userAsset != null)
                 entityManager.remove(userAsset);
         });
@@ -679,7 +679,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
         sb.append("select A.ID as ID, A.NAME as NAME, A.ACCESS_PUBLIC_READ as ACCESS_PUBLIC_READ");
         sb.append(
-            ", A.CREATED_ON AS CREATED_ON, A.ASSET_TYPE AS ASSET_TYPE, A.PARENT_ID AS PARENT_ID, A.REALM_ID AS REALM_ID");
+            ", A.CREATED_ON AS CREATED_ON, A.ASSET_TYPE AS ASSET_TYPE, A.PARENT_ID AS PARENT_ID, A.REALM AS REALM");
 
         if (include == AssetQuery.Include.ONLY_ID_AND_NAME) {
             return sb.toString();
@@ -691,7 +691,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 sb.append(", A.OBJ_VERSION as OBJ_VERSION");
                 sb.append(", P.NAME as PARENT_NAME, P.ASSET_TYPE as PARENT_TYPE");
                 if (!recursive || level == 3) {
-                    sb.append(", R.NAME as TENANT_NAME, RA.VALUE as TENANT_DISPLAY_NAME");
+                    sb.append(", R.NAME as TENANT_NAME");
                 }
                 break;
         }
@@ -802,8 +802,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             query.select.include != AssetQuery.Include.ONLY_ID_AND_NAME_AND_ATTRIBUTES;
 
         if ((!recursive || level == 3) && (includeRealmInfo || query.tenant != null)) {
-            sb.append("join PUBLIC.REALM R on R.ID = A.REALM_ID ");
-            sb.append("join PUBLIC.REALM_ATTRIBUTE RA on RA.REALM_ID = R.ID and RA.NAME = 'displayName' ");
+            sb.append("join PUBLIC.REALM R on R.NAME = A.REALM ");
         }
 
         if ((!recursive || level == 3) && query.ids == null && query.userId != null) {
@@ -844,8 +843,8 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 case PARENT_ID:
                     sb.append(" A.PARENT_ID ");
                     break;
-                case REALM_ID:
-                    sb.append(" A.REALM_ID ");
+                case REALM:
+                    sb.append(" A.REALM ");
                     break;
             }
             sb.append(query.orderBy.descending ? "desc " : "asc ");
@@ -926,11 +925,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         }
 
         if (!recursive || level == 3) {
-            if (query.tenant != null && query.tenant.realmId != null) {
-                sb.append(" and R.ID = ?");
-                final int pos = binders.size() + 1;
-                binders.add(st -> st.setString(pos, query.tenant.realmId));
-            } else if (query.tenant != null && query.tenant.realm != null) {
+            if (query.tenant != null && !TextUtil.isNullOrEmpty(query.tenant.realm)) {
                 sb.append(" and R.NAME = ?");
                 final int pos = binders.size() + 1;
                 binders.add(st -> st.setString(pos, query.tenant.realm));
@@ -1248,7 +1243,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                     rs.getString("ID"), rs.getLong("OBJ_VERSION"), rs.getTimestamp("CREATED_ON"), rs.getString("NAME"),
                     rs.getString("ASSET_TYPE"), rs.getBoolean("ACCESS_PUBLIC_READ"),
                     rs.getString("PARENT_ID"), rs.getString("PARENT_NAME"), rs.getString("PARENT_TYPE"),
-                    rs.getString("REALM_ID"), rs.getString("TENANT_NAME"), rs.getString("TENANT_DISPLAY_NAME"),
+                    rs.getString("REALM"),
                     path != null ? (String[]) path.getArray() : null,
                     attributes != null && attributes.length() > 0 ? Values.instance().<ObjectValue>parse(attributes).orElse(
                         null)
@@ -1316,20 +1311,20 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         switch (persistenceEvent.getCause()) {
             case INSERT:
                 clientEventService.publishEvent(
-                    new AssetTreeModifiedEvent(timerService.getCurrentTimeMillis(), asset.getRealmId(), asset.getId())
+                    new AssetTreeModifiedEvent(timerService.getCurrentTimeMillis(), asset.getRealm(), asset.getId())
                 );
                 if (asset.getParentId() != null) {
                     // Child asset created
                     clientEventService.publishEvent(
                         new AssetTreeModifiedEvent(timerService.getCurrentTimeMillis(),
-                            asset.getRealmId(),
+                            asset.getRealm(),
                             asset.getParentId(),
                             true)
                     );
                 } else {
                     // Child asset created (root asset)
                     clientEventService.publishEvent(
-                        new AssetTreeModifiedEvent(timerService.getCurrentTimeMillis(), asset.getRealmId(), true)
+                        new AssetTreeModifiedEvent(timerService.getCurrentTimeMillis(), asset.getRealm(), true)
                     );
                 }
                 break;
@@ -1341,7 +1336,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 if (!Objects.equals(previousName, currentName)) {
                     clientEventService.publishEvent(
                         new AssetTreeModifiedEvent(timerService.getCurrentTimeMillis(),
-                            asset.getRealmId(),
+                            asset.getRealm(),
                             asset.getId())
                     );
                     break;
@@ -1353,19 +1348,19 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 if (!Objects.equals(previousParentId, currentParentId)) {
                     clientEventService.publishEvent(
                         new AssetTreeModifiedEvent(timerService.getCurrentTimeMillis(),
-                            asset.getRealmId(),
+                            asset.getRealm(),
                             asset.getId())
                     );
                     break;
                 }
 
                 // Did the realm change?
-                String previousRealmId = persistenceEvent.getPreviousState("realmId");
-                String currentRealmId = persistenceEvent.getCurrentState("realmId");
-                if (!Objects.equals(previousRealmId, currentRealmId)) {
+                String previousRealm = persistenceEvent.getPreviousState("realm");
+                String currentRealm = persistenceEvent.getCurrentState("realm");
+                if (!Objects.equals(previousRealm, currentRealm)) {
                     clientEventService.publishEvent(
                         new AssetTreeModifiedEvent(timerService.getCurrentTimeMillis(),
-                            asset.getRealmId(),
+                            asset.getRealm(),
                             asset.getId())
                     );
                     break;
@@ -1395,7 +1390,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 break;
             case DELETE:
                 clientEventService.publishEvent(
-                    new AssetTreeModifiedEvent(timerService.getCurrentTimeMillis(), asset.getRealmId(), asset.getId())
+                    new AssetTreeModifiedEvent(timerService.getCurrentTimeMillis(), asset.getRealm(), asset.getId())
                 );
                 break;
         }

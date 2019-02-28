@@ -344,7 +344,7 @@ public abstract class AbstractHttpServerProtocol extends AbstractProtocol {
 
         // Get realm from owning agent asset
         Asset agent = assetService.getAgent(protocolConfiguration);
-        String agentRealm = agent.getTenantRealm();
+        String agentRealm = agent.getRealm();
 
         if (TextUtil.isNullOrEmpty(agentRealm)) {
             throw new IllegalStateException("Cannot determine the realm that this protocol configuration belongs to");

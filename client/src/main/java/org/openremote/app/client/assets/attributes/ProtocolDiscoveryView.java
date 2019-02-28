@@ -42,13 +42,13 @@ public class ProtocolDiscoveryView extends AbstractAttributeViewExtension {
     public static class DiscoveryRequest {
         protected final String protocolConfigurationName;
         protected final String parentId;
-        protected final String realmId;
+        protected final String realm;
         protected final FileInfo fileInfo;
 
-        public DiscoveryRequest(String protocolConfigurationName, String parentId, String realmId, FileInfo fileInfo) {
+        public DiscoveryRequest(String protocolConfigurationName, String parentId, String realm, FileInfo fileInfo) {
             this.protocolConfigurationName = protocolConfigurationName;
             this.parentId = parentId;
-            this.realmId = realmId;
+            this.realm = realm;
             this.fileInfo = fileInfo;
         }
 
@@ -60,8 +60,8 @@ public class ProtocolDiscoveryView extends AbstractAttributeViewExtension {
             return parentId;
         }
 
-        public String getRealmId() {
-            return realmId;
+        public String getRealm() {
+            return realm;
         }
 
         public FileInfo getFileInfo() {
@@ -72,7 +72,7 @@ public class ProtocolDiscoveryView extends AbstractAttributeViewExtension {
     protected final ProtocolDescriptor protocolDescriptor;
     protected final AssetSelector assetSelector;
     protected final BiConsumer<DiscoveryRequest, Runnable> discoveryRequestConsumer;
-    protected String importRealmId;
+    protected String importRealm;
     protected String importParentId;
     protected FileUploadLabelled fileUpload;
 
@@ -97,11 +97,11 @@ public class ProtocolDiscoveryView extends AbstractAttributeViewExtension {
             true,
             treeNode -> {
                 importParentId = null;
-                importRealmId = null;
+                importRealm = null;
 
                 if (treeNode instanceof TenantTreeNode) {
                     TenantTreeNode tenantTreeNode = (TenantTreeNode)treeNode;
-                    importRealmId = tenantTreeNode.getId();
+                    importRealm = tenantTreeNode.getId();
                 } else if (treeNode instanceof AssetTreeNode) {
                     AssetTreeNode assetTreeNode = (AssetTreeNode)treeNode;
                     importParentId = assetTreeNode.getId();
@@ -176,7 +176,7 @@ public class ProtocolDiscoveryView extends AbstractAttributeViewExtension {
         fileUpload.setText(environment.getMessages().importInProgress());
 
         FileInfo fileInfo = new FileInfo(name, data, binary);
-        DiscoveryRequest discoveryRequest = new DiscoveryRequest(attribute.getName().orElse(""), importParentId, importRealmId, fileInfo);
+        DiscoveryRequest discoveryRequest = new DiscoveryRequest(attribute.getName().orElse(""), importParentId, importRealm, fileInfo);
         if (discoveryRequestConsumer != null) {
             discoveryRequestConsumer.accept(discoveryRequest, () -> {
                 fileUpload.setText(environment.getMessages().uploadProtocolFile());

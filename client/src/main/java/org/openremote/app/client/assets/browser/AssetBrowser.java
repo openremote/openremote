@@ -28,8 +28,8 @@ import org.openremote.model.interop.Consumer;
  * Browse tenants and assets in a tree view.
  *
  * Listen to {@link AssetBrowserSelection} events to be notified of user selections. Call
- * the methods {@link Presenter#selectAsset(Asset)}, {@link Presenter#selectTenant)}
- * and {@link Presenter#clearSelection} to modify the browser's current selected node.
+ * the methods {@link Presenter#selectAsset(Asset)} and {@link Presenter#clearSelection}
+ * to modify the browser's current selected node.
  */
 public interface AssetBrowser extends IsWidget {
 
@@ -50,8 +50,6 @@ public interface AssetBrowser extends IsWidget {
         void selectAsset(Asset asset);
 
         void selectAssetById(String assetId);
-
-        void selectTenant(String realmId);
 
         void selectRealm(String realm);
 

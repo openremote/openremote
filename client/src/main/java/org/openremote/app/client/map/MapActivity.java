@@ -62,7 +62,7 @@ public class MapActivity extends AssetBrowsingActivity<MapPlace> implements MapV
     final ObjectValueMapper objectValueMapper;
 
     String assetId;
-    String realmId;
+    String realm;
     Asset asset;
     List<AssetAttribute> dashboardAttributes = new ArrayList<>();
 
@@ -89,7 +89,7 @@ public class MapActivity extends AssetBrowsingActivity<MapPlace> implements MapV
             assetId = mapAssetPlace.getAssetId();
         } else if (place instanceof MapTenantPlace) {
             MapTenantPlace mapTenantPlace = (MapTenantPlace) place;
-            realmId = mapTenantPlace.getRealmId();
+            realm = mapTenantPlace.getRealm();
         }
         return this;
     }
@@ -101,8 +101,8 @@ public class MapActivity extends AssetBrowsingActivity<MapPlace> implements MapV
 
         registrations.add(eventBus.register(AssetBrowserSelection.class, event -> {
             if (event.getSelectedNode() instanceof TenantTreeNode) {
-                String selectedRealmId = event.getSelectedNode().getId();
-                if (this.realmId == null || !this.realmId.equals(selectedRealmId)) {
+                String selectedRealm = event.getSelectedNode().getId();
+                if (this.realm == null || !this.realm.equals(selectedRealm)) {
                     environment.getPlaceController().goTo(
                         new MapTenantPlace(event.getSelectedNode().getId())
                     );
@@ -183,7 +183,7 @@ public class MapActivity extends AssetBrowsingActivity<MapPlace> implements MapV
                     );
                 }
             });
-        } else if (realmId != null) {
+        } else if (realm != null) {
             // TODO: Tenant map not implemented
         }
     }

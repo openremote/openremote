@@ -48,7 +48,7 @@ public class ManagerDemoAgentSetup extends AbstractManagerSetup {
     public static final String SETUP_IMPORT_DEMO_AGENT_VELBUS = "SETUP_IMPORT_DEMO_AGENT_VELBUS";
     public static final String SETUP_IMPORT_DEMO_AGENT_VELBUS_COM_PORT = "SETUP_IMPORT_DEMO_AGENT_VELBUS_COM_PORT";
 
-    public String masterRealmId;
+    public String masterRealm;
 
     final protected boolean knx;
     final protected String knxGatewayIp;
@@ -73,10 +73,10 @@ public class ManagerDemoAgentSetup extends AbstractManagerSetup {
 
         KeycloakDemoSetup keycloakDemoSetup = setupService.getTaskOfType(KeycloakDemoSetup.class);
         Tenant masterTenant = keycloakDemoSetup.masterTenant;
-        masterRealmId = masterTenant.getId();
+        masterRealm = masterTenant.getRealm();
 
         Asset agent = new Asset("Demo Agent", AGENT);
-        agent.setRealmId(masterRealmId);
+        agent.setRealm(masterRealm);
         agent = assetStorageService.merge(agent);
 
         if (knx) {
@@ -88,7 +88,7 @@ public class ManagerDemoAgentSetup extends AbstractManagerSetup {
                         new MetaItem(KNXProtocol.META_KNX_LOCAL_IP, Values.create(knxLocalIp))
                     )
             );
-            Asset knxDevices = new Asset("KNX Devices", THING, agent, masterRealmId);
+            Asset knxDevices = new Asset("KNX Devices", THING, agent, masterRealm);
             knxDevices = assetStorageService.merge(knxDevices);
         }
 
@@ -100,7 +100,7 @@ public class ManagerDemoAgentSetup extends AbstractManagerSetup {
                         new MetaItem(VelbusSerialProtocol.META_VELBUS_SERIAL_PORT, Values.create(velbusComPort))
                     )
             );
-            Asset velbusDevices = new Asset("VELBUS Devices", THING, agent, masterRealmId);
+            Asset velbusDevices = new Asset("VELBUS Devices", THING, agent, masterRealm);
             velbusDevices = assetStorageService.merge(velbusDevices);
         }
 

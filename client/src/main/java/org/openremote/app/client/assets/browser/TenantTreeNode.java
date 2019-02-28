@@ -36,7 +36,7 @@ public class TenantTreeNode extends BrowserTreeNode {
 
     @Override
     public String getId() {
-        return tenant.getId();
+        return tenant.getRealm();
     }
 
     @Override

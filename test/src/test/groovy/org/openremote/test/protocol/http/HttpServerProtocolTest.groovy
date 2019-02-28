@@ -39,7 +39,6 @@ import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
 import javax.ws.rs.ForbiddenException
-import javax.ws.rs.ProcessingException
 import javax.ws.rs.HttpMethod
 import javax.ws.rs.client.ClientRequestContext
 import javax.ws.rs.client.ClientRequestFilter
@@ -303,7 +302,7 @@ class HttpServerProtocolTest extends Specification implements ManagerContainerTr
 
         when: "an agent with a test HTTP server protocol configuration is created"
         def agent = new Asset()
-        agent.setRealmId(MASTER_REALM)
+        agent.setRealm(MASTER_REALM)
         agent.setName("Test Agent")
         agent.setType(AssetType.AGENT)
         agent.setAttributes(

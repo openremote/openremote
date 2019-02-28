@@ -24,21 +24,21 @@ package org.openremote.model.event.shared;
  */
 public abstract class TenantScopedEvent extends SharedEvent {
 
-    public String realmId;
+    public String realm;
 
-    public TenantScopedEvent(long timestamp, String realmId) {
+    public TenantScopedEvent(long timestamp, String realm) {
         super(timestamp);
-        this.realmId = realmId;
+        this.realm = realm;
     }
 
-    public TenantScopedEvent(String realmId) {
-        this.realmId = realmId;
+    public TenantScopedEvent(String realm) {
+        this.realm = realm;
     }
 
     protected TenantScopedEvent() {
     }
 
-    public String getRealmId() {
-        return realmId;
+    public String getRealm() {
+        return realm;
     }
 }

@@ -62,7 +62,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         when: "the root assets of the authenticated realm are retrieved"
         assets = assetResource.queryAssets(null,
                 new AssetQuery()
-                        .tenant(new TenantPredicate(keycloakDemoSetup.masterTenant.id))
+                        .tenant(new TenantPredicate(keycloakDemoSetup.masterTenant.realm))
                         .parent(new ParentPredicate(true))
         )
 
@@ -83,7 +83,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         when: "the root assets of the authenticated realm are retrieved"
         assets = assetResource.queryAssets(null,
                 new AssetQuery()
-                        .tenant(new TenantPredicate(keycloakDemoSetup.masterTenant.id))
+                        .tenant(new TenantPredicate(keycloakDemoSetup.masterTenant.realm))
                         .parent(new ParentPredicate(true))
         )
 
@@ -94,7 +94,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         when: "the root assets of the given realm are retrieved"
         assets = assetResource.queryAssets(null,
                 new AssetQuery()
-                        .tenant(new TenantPredicate(keycloakDemoSetup.tenantA.id))
+                        .tenant(new TenantPredicate(keycloakDemoSetup.tenantA.realm))
                         .parent(new ParentPredicate(true))
         )
 
@@ -130,14 +130,14 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         /* ############################################## WRITE ####################################### */
 
         when: "an asset is created in the authenticated realm"
-        def testAsset = new Asset("Test Room", AssetType.ROOM, null, keycloakDemoSetup.masterTenant.id)
+        def testAsset = new Asset("Test Room", AssetType.ROOM, null, keycloakDemoSetup.masterTenant.realm)
         testAsset = assetResource.create(null, testAsset)
         testAsset = assetResource.get(null, testAsset.getId())
 
         then: "the asset should exist"
         testAsset.name == "Test Room"
         testAsset.wellKnownType == AssetType.ROOM
-        testAsset.realmId == keycloakDemoSetup.masterTenant.id
+        testAsset.realm == keycloakDemoSetup.masterTenant.realm
         testAsset.parentId == null
 
         when: "an asset is made public"
@@ -157,13 +157,13 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         testAsset.parentId == managerDemoSetup.groundFloorId
 
         when: "an asset is moved to a foreign realm and made a root asset"
-        testAsset.setRealmId(keycloakDemoSetup.tenantA.id)
+        testAsset.setRealm(keycloakDemoSetup.tenantA.realm)
         testAsset.setParentId(null)
         assetResource.update(null, testAsset.id, testAsset)
         testAsset = assetResource.get(null, testAsset.getId())
 
         then: "the asset should be updated"
-        testAsset.realmId == keycloakDemoSetup.tenantA.id
+        testAsset.realm == keycloakDemoSetup.tenantA.realm
         testAsset.parentId == null
 
         when: "an asset is updated with a new parent in a foreign realm"
@@ -172,7 +172,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         testAsset = assetResource.get(null, testAsset.getId())
 
         then: "the asset should be updated"
-        testAsset.realmId == keycloakDemoSetup.tenantA.id
+        testAsset.realm == keycloakDemoSetup.tenantA.realm
         testAsset.parentId == managerDemoSetup.smartBuildingId
 
         when: "an asset is deleted in the authenticated realm"
@@ -266,7 +266,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         when: "the root assets of the authenticated realm are retrieved"
         assets = assetResource.queryAssets(null,
                 new AssetQuery()
-                        .tenant(new TenantPredicate(keycloakDemoSetup.masterTenant.id))
+                        .tenant(new TenantPredicate(keycloakDemoSetup.masterTenant.realm))
                         .parent(new ParentPredicate(true))
         )
 
@@ -293,12 +293,12 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         then: "result should match"
         assets.length == 1
         assets[0].id == managerDemoSetup.smartOfficeId
-        assets[0].realmId == keycloakDemoSetup.masterTenant.id
+        assets[0].realm == keycloakDemoSetup.masterTenant.realm
 
         when: "the root assets of the given realm are retrieved"
         assets = assetResource.queryAssets(null,
                 new AssetQuery()
-                        .tenant(new TenantPredicate(keycloakDemoSetup.tenantA.id))
+                        .tenant(new TenantPredicate(keycloakDemoSetup.tenantA.realm))
                         .parent(new ParentPredicate(true))
         )
 
@@ -337,7 +337,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         then: "the asset should exist"
         testAsset.name == "Test Room"
         testAsset.wellKnownType == AssetType.ROOM
-        testAsset.realmId == keycloakDemoSetup.masterTenant.id
+        testAsset.realm == keycloakDemoSetup.masterTenant.realm
         testAsset.parentId == null
 
         when: "an asset is updated with a new parent in the authenticated realm"
@@ -349,7 +349,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         testAsset.parentId == managerDemoSetup.groundFloorId
 
         when: "an asset is moved to a foreign realm and made a root asset"
-        testAsset.setRealmId(keycloakDemoSetup.tenantA.id)
+        testAsset.setRealm(keycloakDemoSetup.tenantA.realm)
         testAsset.setParentId(null)
         assetResource.update(null, testAsset.id, testAsset)
 
@@ -435,7 +435,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         when: "the root assets of a foreign realm are retrieved"
         assets = assetResource.queryAssets(null,
                 new AssetQuery()
-                        .tenant(new TenantPredicate(keycloakDemoSetup.masterTenant.id))
+                        .tenant(new TenantPredicate(keycloakDemoSetup.masterTenant.realm))
                         .parent(new ParentPredicate(true))
         )
 
@@ -451,12 +451,12 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         then: "result should match"
         assets.length == 1
         assets[0].id == managerDemoSetup.smartBuildingId
-        assets[0].realmId == keycloakDemoSetup.tenantA.id
+        assets[0].realm == keycloakDemoSetup.tenantA.realm
 
         when: "the root assets of the given realm are retrieved"
         assets = assetResource.queryAssets(null,
                 new AssetQuery()
-                        .tenant(new TenantPredicate(keycloakDemoSetup.tenantB.id))
+                        .tenant(new TenantPredicate(keycloakDemoSetup.tenantB.realm))
                         .parent(new ParentPredicate(true))
         )
 
@@ -488,7 +488,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         /* ############################################## WRITE ####################################### */
 
         when: "an asset is created in a foreign realm"
-        def testAsset = new Asset("Test Room", AssetType.ROOM, null, keycloakDemoSetup.masterTenant.id)
+        def testAsset = new Asset("Test Room", AssetType.ROOM, null, keycloakDemoSetup.masterTenant.realm)
         assetResource.create(null, testAsset)
 
         then: "access should be forbidden"
@@ -505,7 +505,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         ex.response.status == 403
 
         when: "an asset is created in the authenticated realm"
-        testAsset = new Asset("Test Room", AssetType.ROOM, null, keycloakDemoSetup.tenantA.id)
+        testAsset = new Asset("Test Room", AssetType.ROOM, null, keycloakDemoSetup.tenantA.realm)
         assetResource.create(null, testAsset)
 
         then: "access should be forbidden"
@@ -575,7 +575,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         apartment1.id == managerDemoSetup.apartment1Id
         apartment1.name == "Apartment 1"
         apartment1.createdOn.getTime() < System.currentTimeMillis()
-        apartment1.realmId == keycloakDemoSetup.tenantA.id
+        apartment1.realm == keycloakDemoSetup.tenantA.realm
         apartment1.type == AssetType.RESIDENCE.value
         apartment1.parentId == managerDemoSetup.smartBuildingId
         apartment1.path == null
@@ -604,7 +604,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         when: "the root assets of a foreign realm are retrieved"
         assets = assetResource.queryAssets(null,
                 new AssetQuery()
-                        .tenant(new TenantPredicate(keycloakDemoSetup.masterTenant.id))
+                        .tenant(new TenantPredicate(keycloakDemoSetup.masterTenant.realm))
                         .parent(new ParentPredicate(true))
         )
 
@@ -623,7 +623,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         when: "the root assets of the given realm are retrieved"
         assets = assetResource.queryAssets(null,
                 new AssetQuery()
-                        .tenant(new TenantPredicate(keycloakDemoSetup.tenantB.id))
+                        .tenant(new TenantPredicate(keycloakDemoSetup.tenantB.realm))
                         .parent(new ParentPredicate(true))
         )
 
@@ -694,7 +694,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         /* ############################################## WRITE ####################################### */
 
         when: "an asset is created in a foreign realm"
-        def testAsset = new Asset("Test Room", AssetType.ROOM, null, keycloakDemoSetup.masterTenant.id)
+        def testAsset = new Asset("Test Room", AssetType.ROOM, null, keycloakDemoSetup.masterTenant.realm)
         assetResource.create(null, testAsset)
 
         then: "access should be forbidden"
@@ -738,7 +738,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         assert testAsset.getName() == "Living Room"
 
         when: "an asset is created in the authenticated realm"
-        testAsset = new Asset("Test Room", AssetType.ROOM, null, keycloakDemoSetup.tenantA.id)
+        testAsset = new Asset("Test Room", AssetType.ROOM, null, keycloakDemoSetup.tenantA.realm)
         assetResource.create(null, testAsset)
 
         then: "access should be forbidden"
