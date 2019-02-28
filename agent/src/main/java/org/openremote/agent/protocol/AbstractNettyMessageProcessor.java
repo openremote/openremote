@@ -73,7 +73,7 @@ public abstract class AbstractNettyMessageProcessor<T> implements MessageProcess
         @Override
         public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
             super.exceptionCaught(ctx, cause);
-            AbstractNettyMessageProcessor.this.onEncodeException(ctx, cause);
+            AbstractNettyMessageProcessor.this.onDecodeException(ctx, cause);
         }
     }
 
@@ -91,7 +91,7 @@ public abstract class AbstractNettyMessageProcessor<T> implements MessageProcess
         @Override
         public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
             super.exceptionCaught(ctx, cause);
-            AbstractNettyMessageProcessor.this.onDecodeException(ctx, cause);
+            AbstractNettyMessageProcessor.this.onEncodeException(ctx, cause);
         }
     }
 
