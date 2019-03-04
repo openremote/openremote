@@ -32,9 +32,7 @@ export interface GeoNotification {
     notification: PushNotificationMessage
 }
 
-export function getGeoNotificationsFromRulesSet(json: string): GeoNotification[] {
-
-    let rulesetDefinition: JsonRulesetDefinition = JSON.parse(json) as JsonRulesetDefinition;
+export function getGeoNotificationsFromRulesSet(rulesetDefinition: JsonRulesetDefinition): GeoNotification[] {
 
     let geoPredicates: GeoNotification[] = [];
     let geoNotification: GeoNotification;

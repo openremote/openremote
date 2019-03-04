@@ -23,7 +23,6 @@ import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.timer.TimerService;
-import org.openremote.container.web.WebService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebService;
@@ -76,7 +75,7 @@ public class RulesetStorageService implements ContainerService {
         return persistenceService.doReturningTransaction(entityManager ->
                                                              entityManager.createQuery(
                                                                  "select new org.openremote.model.rules.GlobalRuleset(" +
-                                                                     "rs.id, rs.version, rs.createdOn, rs.lastModified, rs.name, rs.enabled, rs.lang" +
+                                                                     "rs.id, rs.version, rs.createdOn, rs.lastModified, rs.name, rs.enabled, rs.rules, rs.lang" +
                                                                      ") " +
                                                                      "from GlobalRuleset rs " +
                                                                      "order by rs.createdOn asc",
@@ -91,7 +90,7 @@ public class RulesetStorageService implements ContainerService {
     public List<TenantRuleset> findTenantRulesets(String realm, boolean onlyPublic) {
 
         String query = "select new org.openremote.model.rules.TenantRuleset(" +
-                "rs.id, rs.version, rs.createdOn, rs.lastModified, rs.name, rs.enabled, rs.realm, rs.lang, rs.accessPublicRead" +
+                "rs.id, rs.version, rs.createdOn, rs.lastModified, rs.name, rs.enabled, rs.rules, rs.lang, rs.realm, rs.accessPublicRead" +
                 ") " +
                 "from TenantRuleset rs " +
                 "where rs.realm = :realm ";
@@ -117,7 +116,7 @@ public class RulesetStorageService implements ContainerService {
     public List<AssetRuleset> findAssetRulesets(String realm, String assetId, boolean onlyPublic) {
 
         String query = "select new org.openremote.model.rules.AssetRuleset(" +
-                "rs.id, rs.version, rs.createdOn, rs.lastModified, rs.name, rs.enabled, rs.assetId, rs.lang, rs.accessPublicRead" +
+                "rs.id, rs.version, rs.createdOn, rs.lastModified, rs.name, rs.enabled, rs.rules, rs.assetId, rs.lang, rs.accessPublicRead" +
                 ") " +
                 "from AssetRuleset rs, Asset a " +
                 "where rs.assetId = :assetId and rs.assetId = a.id and a.realm = :realm ";
