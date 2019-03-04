@@ -91,7 +91,7 @@ public class RulesHealthStatusProvider implements ContainerHealthStatusProvider 
                 errorEngines++;
             }
 
-            tenantEngines.put(tenantEngine.getId().getRealmId().orElse(""), getEngineHealthStatus(tenantEngine));
+            tenantEngines.put(tenantEngine.getId().getRealm().orElse(""), getEngineHealthStatus(tenantEngine));
         }
 
         ObjectValue assetEngines = Values.createObject();

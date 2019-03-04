@@ -554,7 +554,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
                 clientEventService.publishEvent(
                     new AgentStatusEvent(
                         timerService.getCurrentTimeMillis(),
-                        agentMap.get(protocolRef.getEntityId()).getRealmId(),
+                        agentMap.get(protocolRef.getEntityId()).getRealm(),
                         protocolRef,
                         connectionStatus
                     )

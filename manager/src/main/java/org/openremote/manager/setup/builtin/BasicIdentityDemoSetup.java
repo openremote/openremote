@@ -59,7 +59,7 @@ public class BasicIdentityDemoSetup implements Setup {
     public void onStart() throws Exception {
 
         // Tenants
-        masterTenant = identityService.getIdentityProvider().getTenantForRealm(Constants.MASTER_REALM);
+        masterTenant = identityService.getIdentityProvider().getTenant(Constants.MASTER_REALM);
 
         // Users
 

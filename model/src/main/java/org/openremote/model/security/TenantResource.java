@@ -58,16 +58,6 @@ public interface TenantResource {
     @SuppressWarnings("unusable-by-js")
     Tenant get(@BeanParam RequestParams requestParams, @PathParam("realm") String realm);
 
-    /**
-     * Regular users can call this, but only to obtain details about their currently authenticated and active realm.
-     */
-    @GET
-    @Path("for/{realmId}")
-    @Produces(APPLICATION_JSON)
-    @SuccessStatusCode(200)
-    @SuppressWarnings("unusable-by-js")
-    Tenant getForRealmId(@BeanParam RequestParams requestParams, @PathParam("realmId") String realmId);
-
     @PUT
     @Path("{realm}")
     @Consumes(APPLICATION_JSON)

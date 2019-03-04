@@ -52,7 +52,7 @@ public class TenantRulesListActivity
     final TenantRulesetArrayMapper tenantRulesetArrayMapper;
     final RulesResource rulesResource;
 
-    String realmId;
+    String realm;
 
     @Inject
     public TenantRulesListActivity(Environment environment,
@@ -74,7 +74,7 @@ public class TenantRulesListActivity
 
     @Override
     protected AppActivity<TenantRulesListPlace> init(TenantRulesListPlace place) {
-        this.realmId = place.getRealmId();
+        this.realm = place.getRealm();
         return this;
     }
 
@@ -88,34 +88,34 @@ public class TenantRulesListActivity
             RulesModule.createDefaultNavigationListener(environment)
         ));
 
-        if (realmId != null) {
+        if (realm != null) {
 
             subscribeStatusEvents(true, registrations);
 
-            assetBrowserPresenter.selectTenant(realmId);
+            assetBrowserPresenter.selectRealm(realm);
 
             environment.getApp().getRequests().sendAndReturn(
                 tenantMapper,
-                params -> tenantResource.getForRealmId(params, realmId),
+                params -> tenantResource.get(params, realm),
                 200,
                 tenant -> {
                     view.setRealmLabel(tenant.getDisplayName());
                     view.setCreateRulesetHistoryToken(
-                        environment.getPlaceHistoryMapper().getToken(new TenantRulesEditorPlace(realmId))
+                        environment.getPlaceHistoryMapper().getToken(new TenantRulesEditorPlace(realm))
                     );
                 }
             );
 
             environment.getApp().getRequests().sendAndReturn(
                 rulesEngineInfoMapper,
-                params -> rulesResource.getTenantEngineInfo(params, realmId),
+                params -> rulesResource.getTenantEngineInfo(params, realm),
                 new double[] {200, 204},
                 view::onEngineStatusChanged
             );
 
             environment.getApp().getRequests().sendAndReturn(
                 tenantRulesetArrayMapper,
-                params -> rulesResource.getTenantRulesets(params, realmId),
+                params -> rulesResource.getTenantRulesets(params, realm),
                 200,
                 results -> view.setRulesets(new ArrayList<>(Arrays.asList(results)))
             );
@@ -131,7 +131,7 @@ public class TenantRulesListActivity
 
     @Override
     public void onRulesetSelected(TenantRuleset ruleset) {
-        environment.getPlaceController().goTo(new TenantRulesEditorPlace(realmId, ruleset.getId()));
+        environment.getPlaceController().goTo(new TenantRulesEditorPlace(realm, ruleset.getId()));
     }
 
     protected void subscribeStatusEvents(boolean subscribe, Collection<EventRegistration> registrations) {
@@ -142,7 +142,7 @@ public class TenantRulesListActivity
             registrations.add(environment.getEventBus().register(
                 RulesEngineStatusEvent.class,
                 e -> {
-                    if (realmId.equals(e.getEngineId())) {
+                    if (realm.equals(e.getEngineId())) {
                         view.onEngineStatusChanged(e.getEngineInfo());
                     }
                 }
@@ -151,7 +151,7 @@ public class TenantRulesListActivity
             registrations.add(environment.getEventBus().register(
                 RulesetChangedEvent.class,
                 e -> {
-                    if (realmId.equals(e.getEngineId())) {
+                    if (realm.equals(e.getEngineId())) {
                         view.onRulesetStatusChanged((TenantRuleset) e.getRuleset());
                     }
                 }

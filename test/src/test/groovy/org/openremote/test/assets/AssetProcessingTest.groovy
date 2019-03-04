@@ -167,7 +167,7 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
         mockAgent.setAttributes(
                 ProtocolConfiguration.initProtocolConfiguration(new AssetAttribute("mock123"), mockProtocolName)
         )
-        mockAgent.setRealmId(keycloakDemoSetup.masterTenant.id)
+        mockAgent.setRealm(keycloakDemoSetup.masterTenant.realm)
         mockAgent = assetStorageService.merge(mockAgent)
 
         and: "a mock thing asset is created with a valid protocol attribute, an invalid protocol attribute and a plain attribute"

@@ -20,7 +20,6 @@
 package org.openremote.app.client.assets.asset;
 
 import com.google.gwt.http.client.URL;
-import org.openremote.app.client.AppSecurity;
 import org.openremote.app.client.Environment;
 import org.openremote.app.client.assets.AgentStatusEventMapper;
 import org.openremote.app.client.assets.AssetMapper;
@@ -202,7 +201,7 @@ public class AssetViewActivity
 
     protected void subscribeAgentStatus(boolean subscribe) {
         if (subscribe) {
-            environment.getEventService().subscribe(AgentStatusEvent.class, new TenantFilter<>(asset.getRealmId()));
+            environment.getEventService().subscribe(AgentStatusEvent.class, new TenantFilter<>(asset.getRealm()));
         } else {
             environment.getEventService().unsubscribe(AgentStatusEvent.class);
         }
@@ -278,7 +277,7 @@ public class AssetViewActivity
             .put("id", Values.create(asset.getId()))
             .toJson();
         view.setAccessPublicReadAnchor(
-            "/" + asset.getTenantRealm() + "/asset/public/query?q=" + URL.encodeQueryString(query)
+            "/" + asset.getRealm() + "/asset/public/query?q=" + URL.encodeQueryString(query)
         );
     }
 

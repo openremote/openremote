@@ -23,17 +23,17 @@ public class TenantFilter<T extends TenantScopedEvent> extends EventFilter<T> {
 
     public static final String FILTER_TYPE = "tenant";
 
-    protected String realmId;
+    protected String realm;
 
     protected TenantFilter() {
     }
 
-    public TenantFilter(String realmId) {
-        this.realmId = realmId;
+    public TenantFilter(String realm) {
+        this.realm = realm;
     }
 
-    public String getRealmId() {
-        return realmId;
+    public String getRealm() {
+        return realm;
     }
 
     @Override
@@ -43,13 +43,13 @@ public class TenantFilter<T extends TenantScopedEvent> extends EventFilter<T> {
 
     @Override
     public boolean apply(TenantScopedEvent event) {
-        return getRealmId().equals(event.getRealmId());
+        return getRealm().equals(event.getRealm());
     }
 
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
-            "realmId='" + realmId + '\'' +
+            "realm='" + realm + '\'' +
             '}';
     }
 }

@@ -89,7 +89,7 @@ public interface AssetResource {
     /**
      * Retrieve links between assets and users.
      * <p>
-     * The <code>realmId</code> parameter is required, <code>userId</code> and <code>assetId</code> can be null.
+     * The <code>realm</code> parameter is required, <code>userId</code> and <code>assetId</code> can be null.
      * <p>
      * If the authenticated user is the superuser, assigned assets from any realm can be retrieved. Otherwise the
      * authenticated realm must be the same as the given realm. A 403 status is returned if a regular user tries to
@@ -106,7 +106,7 @@ public interface AssetResource {
     @RolesAllowed({"read:assets"})
     @SuppressWarnings("unusable-by-js")
     UserAsset[] getUserAssetLinks(@BeanParam RequestParams requestParams,
-                                  @QueryParam("realmId") String realmId,
+                                  @QueryParam("realm") String realm,
                                   @QueryParam("userId") String userId,
                                   @QueryParam("assetId") String assetId);
 
@@ -129,7 +129,7 @@ public interface AssetResource {
     /**
      * Delete a link between asset and user.
      * <p>
-     * The <code>realmId</code> is required.
+     * The <code>realm</code> is required.
      * <p>
      * If the authenticated user is the superuser, asset/user links from any realm can be deleted. Otherwise assets
      * must be in the same realm as the authenticated user. A 403 status is returned if a regular user tries to delete
@@ -137,12 +137,12 @@ public interface AssetResource {
      * 400 status is returned if the user or asset or realm doesn't exist.
      */
     @DELETE
-    @Path("link/{realmId}/{userId}/{assetId}")
+    @Path("link/{realm}/{userId}/{assetId}")
     @SuccessStatusCode(204)
     @RolesAllowed({"write:assets"})
     @SuppressWarnings("unusable-by-js")
     void deleteUserAsset(@BeanParam RequestParams requestParams,
-                         @PathParam("realmId") String realmId,
+                         @PathParam("realm") String realm,
                          @PathParam("userId") String userId,
                          @PathParam("assetId") String assetId);
 

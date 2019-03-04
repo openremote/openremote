@@ -104,7 +104,7 @@ class KNXProtocolTest extends Specification implements ManagerContainerTrait {
                     new MetaItem(KNXProtocol.META_KNX_IP_CONNECTION_TYPE, Values.create("dummy"))
                 )
         )
-        knxAgent.setRealmId(Constants.MASTER_REALM)
+        knxAgent.setRealm(Constants.MASTER_REALM)
         knxAgent = assetStorageService.merge(knxAgent)
 
         then: "the protocol configurations should be linked and their deployment status should be available in the agent service"

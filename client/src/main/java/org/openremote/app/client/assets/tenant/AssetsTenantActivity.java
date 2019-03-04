@@ -54,7 +54,7 @@ public class AssetsTenantActivity extends AssetBrowsingActivity<AssetsTenantPlac
     UserResource userResource;
     final protected UserArrayMapper userArrayMapper;
 
-    protected String realmId;
+    protected String realm;
     protected Tenant tenant;
     protected User[] users;
 
@@ -85,7 +85,7 @@ public class AssetsTenantActivity extends AssetBrowsingActivity<AssetsTenantPlac
 
     @Override
     protected AppActivity<AssetsTenantPlace> init(AssetsTenantPlace place) {
-        this.realmId = place.getRealmId();
+        this.realm = place.getRealm();
         return this;
     }
 
@@ -96,7 +96,7 @@ public class AssetsTenantActivity extends AssetBrowsingActivity<AssetsTenantPlac
 
         registrations.add(eventBus.register(AssetBrowserSelection.class, event -> {
             if (event.getSelectedNode() instanceof TenantTreeNode) {
-                if (this.realmId == null || !this.realmId.equals(event.getSelectedNode().getId())) {
+                if (this.realm == null || !this.realm.equals(event.getSelectedNode().getId())) {
                     environment.getPlaceController().goTo(
                         new AssetsTenantPlace(event.getSelectedNode().getId())
                     );
@@ -136,7 +136,7 @@ public class AssetsTenantActivity extends AssetBrowsingActivity<AssetsTenantPlac
             view.setCreateAssetLinkEnabled(false);
         } else {
             AssetTreeNode assetTreeNode = (AssetTreeNode) treeNode;
-            if (!assetTreeNode.getAsset().getRealmId().equals(this.realmId)) {
+            if (!assetTreeNode.getAsset().getRealm().equals(this.realm)) {
                 environment.getEventBus().dispatch(new ShowFailureEvent(
                     environment.getMessages().assetNotInTenant(this.tenant.getDisplayName()), 2000
                 ));
@@ -155,7 +155,7 @@ public class AssetsTenantActivity extends AssetBrowsingActivity<AssetsTenantPlac
     public void onCreateAssetLink() {
         if (selectedUserId == null || selectedAssetId == null)
             return;
-        UserAsset userAsset = new UserAsset(realmId, selectedUserId, selectedAssetId);
+        UserAsset userAsset = new UserAsset(realm, selectedUserId, selectedAssetId);
         view.setFormBusy(true);
         environment.getApp().getRequests().sendWith(
             userAssetMapper,
@@ -176,7 +176,7 @@ public class AssetsTenantActivity extends AssetBrowsingActivity<AssetsTenantPlac
         view.setFormBusy(true);
         environment.getApp().getRequests().sendWith(
             userAssetMapper,
-            requestParams -> assetResource.deleteUserAsset(requestParams, id.getRealmId(), id.getUserId(), id.getAssetId()),
+            requestParams -> assetResource.deleteUserAsset(requestParams, id.getRealm(), id.getUserId(), id.getAssetId()),
             204,
             () -> {
                 environment.getEventBus().dispatch(new ShowSuccessEvent(
@@ -197,16 +197,16 @@ public class AssetsTenantActivity extends AssetBrowsingActivity<AssetsTenantPlac
 
     protected void loadTenant() {
         view.setFormBusy(true);
-        if (this.realmId == null)
+        if (this.realm == null)
             return;
         environment.getApp().getRequests().sendAndReturn(
             tenantMapper,
-            requestParams -> tenantResource.getForRealmId(requestParams, this.realmId),
+            requestParams -> tenantResource.get(requestParams, this.realm),
             200,
             tenant -> {
                 this.tenant = tenant;
                 loadUsers(() -> {
-                    assetBrowserPresenter.selectTenant(tenant.getId());
+                    assetBrowserPresenter.selectRealm(tenant.getRealm());
                     writeTenantToView();
                     loadUserAssets();
                     view.setFormBusy(false);
@@ -233,13 +233,13 @@ public class AssetsTenantActivity extends AssetBrowsingActivity<AssetsTenantPlac
     protected void loadUserAssets() {
         environment.getApp().getRequests().sendAndReturn(
             userAssetArrayMapper,
-            requestParams -> assetResource.getUserAssetLinks(requestParams, realmId, selectedUserId, selectedAssetId),
+            requestParams -> assetResource.getUserAssetLinks(requestParams, realm, selectedUserId, selectedAssetId),
             200,
             userAssets -> {
 
                 // Do not allow creating a duplicate of a link we already have
                 if ((userAssets.length == 1
-                    && userAssets[0].getId().equals(new UserAsset.Id(realmId, selectedUserId, selectedAssetId))))
+                    && userAssets[0].getId().equals(new UserAsset.Id(realm, selectedUserId, selectedAssetId))))
                 view.setCreateAssetLinkEnabled(false);
 
                 view.setUserAssets(userAssets);

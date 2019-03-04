@@ -83,7 +83,7 @@ class ResidenceNotifyAlarmTriggerTest extends Specification implements ManagerCo
                 "Demo Apartment - Notify Alarm Trigger",
                 managerDemoSetup.apartment1Id,
                 getClass().getResource("/demo/rules/DemoResidenceNotifyAlarmTrigger.groovy").text,
-                Ruleset.Lang.GROOVY
+                Ruleset.Lang.GROOVY, false
         )
         rulesetStorageService.merge(ruleset)
 

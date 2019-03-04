@@ -190,7 +190,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                         // TODO Restricted clients should only receive events for RESTRICTED_READ attributes!
                     } else {
                         // Regular users can only get attribute events for assets in their realm
-                        if (!asset.getTenantRealm().equals(auth.getAuthenticatedRealm()))
+                        if (!asset.getRealm().equals(auth.getAuthenticatedRealm()))
                             return false;
                     }
                 }

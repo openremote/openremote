@@ -1,0 +1,14 @@
+
+/*
+  Adds public read flag to rulesets
+ */
+
+-- UPDATE ASSET_RULESET
+
+ALTER TABLE ASSET_RULESET
+  ADD COLUMN ACCESS_PUBLIC_READ boolean not null DEFAULT false;
+
+
+-- UPDATE TENANT_RULESET
+ALTER TABLE TENANT_RULESET
+  ADD COLUMN ACCESS_PUBLIC_READ boolean not null DEFAULT false;

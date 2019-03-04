@@ -194,7 +194,7 @@ public abstract class AbstractAssetActivity<V
         } else {
             view.setParentNode(
                 new TenantTreeNode(
-                    new Tenant(asset.getRealmId(), asset.getTenantRealm(), asset.getTenantDisplayName(), true)
+                    new Tenant(asset.getRealm(), asset.getRealm(), asset.getRealm(), true)
                 )
             );
         }

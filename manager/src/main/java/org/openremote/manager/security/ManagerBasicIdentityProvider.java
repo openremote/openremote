@@ -113,23 +113,18 @@ public class ManagerBasicIdentityProvider extends BasicIdentityProvider implemen
     }
 
     @Override
-    public boolean isUserInTenant(String userId, String realmId) {
+    public boolean isUserInTenant(String userId, String realm) {
         return true;
     }
 
     @Override
-    public Tenant[] getTenants(ClientRequestInfo clientRequestInfo) {
+    public Tenant[] getTenants() {
         return new Tenant[]{masterTenant};
     }
 
     @Override
-    public Tenant getTenantForRealm(String realm) {
+    public Tenant getTenant(String realm) {
         return Objects.equals(realm, Constants.MASTER_REALM) ? masterTenant : null;
-    }
-
-    @Override
-    public Tenant getTenantForRealmId(String realmId) {
-        return Objects.equals(realmId, Constants.MASTER_REALM) ? masterTenant : null;
     }
 
     @Override
@@ -160,17 +155,12 @@ public class ManagerBasicIdentityProvider extends BasicIdentityProvider implemen
 
     @Override
     public boolean isTenantActiveAndAccessible(AuthContext authContext, Asset asset) {
-        return Objects.equals(asset.getRealmId(), Constants.MASTER_REALM);
+        return Objects.equals(asset.getRealm(), Constants.MASTER_REALM);
     }
 
     @Override
-    public String[] getActiveTenantIds() {
-        return new String[]{Constants.MASTER_REALM};
-    }
-
-    @Override
-    public boolean isActiveTenant(String realmId) {
-        return Objects.equals(realmId, Constants.MASTER_REALM);
+    public boolean tenantExists(String realm) {
+        return Objects.equals(realm, Constants.MASTER_REALM);
     }
 
     @Override

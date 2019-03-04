@@ -138,10 +138,10 @@ public class HeaderPresenter implements HeaderView.Presenter {
             return;
         }
         if (assetBrowserSelection.getSelectedNode() instanceof TenantTreeNode) {
-            placeController.goTo(new NotificationsPlace(((TenantTreeNode) assetBrowserSelection.getSelectedNode()).getTenant().getRealm(), null));
+            placeController.goTo(new NotificationsPlace(assetBrowserSelection.getSelectedNode().getId(), null));
         } else if (assetBrowserSelection.getSelectedNode() instanceof AssetTreeNode) {
             placeController.goTo(
-                new NotificationsPlace(((AssetTreeNode) assetBrowserSelection.getSelectedNode()).getAsset().getTenantRealm(),
+                new NotificationsPlace(((AssetTreeNode) assetBrowserSelection.getSelectedNode()).getAsset().getRealm(),
                 assetBrowserSelection.getSelectedNode().getId()));
         } else {
             placeController.goTo(new NotificationsPlace());

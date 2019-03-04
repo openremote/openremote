@@ -49,7 +49,7 @@ public class AssetsFacade<T extends Ruleset> extends Assets {
         public AssetsRestrictedQueryFacade() {
             if (TenantRuleset.class.isAssignableFrom(rulesEngineId.getScope())) {
                 tenant = new TenantPredicate(
-                    rulesEngineId.getRealmId().orElseThrow(() -> new IllegalArgumentException("Realm ID missing: " + rulesEngineId))
+                    rulesEngineId.getRealm().orElseThrow(() -> new IllegalArgumentException("Realm ID missing: " + rulesEngineId))
                 );
             }
             if (AssetRuleset.class.isAssignableFrom(rulesEngineId.getScope())) {

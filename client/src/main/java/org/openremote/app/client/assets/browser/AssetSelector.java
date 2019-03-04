@@ -137,7 +137,7 @@ public class AssetSelector extends FormGroup {
         assetBrowserPresenter.useSelector(null);
         if (originalNode != null) {
             if (originalNode instanceof TenantTreeNode) {
-                assetBrowserPresenter.selectTenant(originalNode.getId());
+                assetBrowserPresenter.selectRealm(originalNode.getId());
             } else if (originalNode instanceof AssetTreeNode) {
                 assetBrowserPresenter.selectAssetById(originalNode.getId());
             }
@@ -170,7 +170,7 @@ public class AssetSelector extends FormGroup {
         } else if (treeNode instanceof AssetTreeNode) {
             AssetTreeNode assetTreeNode = (AssetTreeNode) treeNode;
             outputTenantDisplayName.setVisible(true);
-            outputTenantDisplayName.setText(assetTreeNode.getAsset().getTenantDisplayName());
+            outputTenantDisplayName.setText(assetTreeNode.getAsset().getRealm());
             outputAssetName.setVisible(true);
             outputAssetName.setText(treeNode.getLabel());
         }

@@ -41,7 +41,7 @@ class ResidenceAutoVentilationTest extends Specification implements ManagerConta
                 "Demo Apartment - Auto Ventilation",
                 managerDemoSetup.apartment1Id,
                 getClass().getResource("/demo/rules/DemoResidenceAutoVentilation.groovy").text,
-                Ruleset.Lang.GROOVY
+                Ruleset.Lang.GROOVY, false
         )
         rulesetStorageService.merge(ruleset)
 

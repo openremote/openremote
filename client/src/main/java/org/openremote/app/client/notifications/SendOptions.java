@@ -36,8 +36,8 @@ public class SendOptions extends FilterOptions {
     protected Supplier<AbstractNotificationMessage> messageSupplier;
     protected AbstractNotificationMessage message;
 
-    public SendOptions(Map<String, String> realms, Map<String, String> realmIds,  BiConsumer<FilterOptions, Consumer<Map<String, String>>> targetsSupplier, Supplier<AbstractNotificationMessage> messageSupplier) {
-        super(realms, realmIds, targetsSupplier);
+    public SendOptions(Map<String, String> realms, BiConsumer<FilterOptions, Consumer<Map<String, String>>> targetsSupplier, Supplier<AbstractNotificationMessage> messageSupplier) {
+        super(realms, targetsSupplier);
         this.messageSupplier = messageSupplier;
     }
 

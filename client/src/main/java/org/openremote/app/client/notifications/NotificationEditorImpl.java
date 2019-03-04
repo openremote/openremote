@@ -168,7 +168,7 @@ public class NotificationEditorImpl implements NotificationEditor {
                 sendOptions.setSelectedRealm(realmsList.getSelectedValue());
                 
                 if (sendOptions.getSelectedTargetType() == Notification.TargetType.TENANT) {
-                    sendOptions.setSelectedTarget(sendOptions.getSelectedRealmId());
+                    sendOptions.setSelectedTarget(sendOptions.getSelectedRealm());
                 }
             }
         });
@@ -177,7 +177,7 @@ public class NotificationEditorImpl implements NotificationEditor {
             if (sendOptions != null) {
                 sendOptions.setSelectedTargetType(targetTypesList.getSelectedValue());
                 if (sendOptions.getSelectedTargetType() == Notification.TargetType.TENANT) {
-                    sendOptions.setSelectedTarget(sendOptions.getSelectedRealmId());
+                    sendOptions.setSelectedTarget(sendOptions.getSelectedRealm());
                     targetsGroup.setVisible(false);
                 } else {
                     targetsList.selectItem("");

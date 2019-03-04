@@ -38,29 +38,35 @@ public class AssetRuleset extends Ruleset {
     @Column(name = "ASSET_ID", length = 22, nullable = false, columnDefinition = "char(22)")
     protected String assetId;
 
+    @Column(name = "ACCESS_PUBLIC_READ", nullable = false)
+    protected boolean accessPublicRead;
+
     @Transient
-    protected String realmId;
+    protected String realm;
 
     public AssetRuleset() {
     }
 
-    public AssetRuleset(String assetId) {
+    public AssetRuleset(String assetId, boolean accessPublicRead) {
         this.assetId = assetId;
+        this.accessPublicRead = accessPublicRead;
     }
 
-    public AssetRuleset(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String assetId, Lang lang) {
-        this(id, version, createdOn, lastModified, name, enabled, null, lang, null, assetId);
+    public AssetRuleset(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String assetId, Lang lang, boolean accessPublicRead) {
+        this(id, version, createdOn, lastModified, name, enabled, null, lang, assetId, null, accessPublicRead);
     }
 
-    public AssetRuleset(String name, String assetId, String rules, Lang lang) {
+    public AssetRuleset(String name, String assetId, String rules, Lang lang, boolean accessPublicRead) {
         super(name, rules, lang);
         this.assetId = assetId;
+        this.accessPublicRead = accessPublicRead;
     }
 
-    public AssetRuleset(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String rules, Lang lang, String assetId, String realmId) {
+    public AssetRuleset(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String rules, Lang lang, String assetId, String realm, boolean accessPublicRead) {
         super(id, version, createdOn, lastModified, name, enabled, rules, lang);
         this.assetId = assetId;
-        this.realmId = realmId;
+        this.realm = realm;
+        this.accessPublicRead = accessPublicRead;
     }
 
     public String getAssetId() {
@@ -71,12 +77,20 @@ public class AssetRuleset extends Ruleset {
         this.assetId = assetId;
     }
 
-    public String getRealmId() {
-        return realmId;
+    public String getRealm() {
+        return realm;
     }
 
-    public void setRealmId(String realmId) {
-        this.realmId = realmId;
+    public void setRealm(String realm) {
+        this.realm = realm;
+    }
+
+    public boolean isAccessPublicRead() {
+        return accessPublicRead;
+    }
+
+    public void setAccessPublicRead(boolean accessPublicRead) {
+        this.accessPublicRead = accessPublicRead;
     }
 
     @Override
@@ -89,7 +103,9 @@ public class AssetRuleset extends Ruleset {
                 ", createdOn='" + createdOn + '\'' +
                 ", lastModified='" + lastModified + '\'' +
                 ", enabled='" + enabled + '\'' +
+                ", realm='" + realm + '\'' +
                 ", assetId='" + assetId + '\'' +
+                ", accessPublicRead='" + accessPublicRead + '\'' +
                 '}';
     }
 }

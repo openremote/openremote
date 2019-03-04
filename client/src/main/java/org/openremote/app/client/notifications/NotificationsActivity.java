@@ -124,7 +124,7 @@ public class NotificationsActivity extends AssetBrowsingActivity<NotificationsPl
             if (event.getSelectedNode() instanceof TenantTreeNode) {
                 realm = ((TenantTreeNode) event.getSelectedNode()).getTenant().getRealm();
             } else if (event.getSelectedNode() instanceof AssetTreeNode) {
-                realm = ((AssetTreeNode) event.getSelectedNode()).getAsset().getTenantRealm();
+                realm = ((AssetTreeNode) event.getSelectedNode()).getAsset().getRealm();
                 assetId = event.getSelectedNode().getId();
             }
 
@@ -146,10 +146,7 @@ public class NotificationsActivity extends AssetBrowsingActivity<NotificationsPl
             Map<String, String> realms = Arrays.stream(tenants)
                 .collect(Collectors.toMap(Tenant::getRealm, Tenant::getDisplayName));
 
-            Map<String, String> realmIds = Arrays.stream(tenants)
-                .collect(Collectors.toMap(Tenant::getRealm, Tenant::getId));
-
-            filterOptions = new FilterOptions(realms, realmIds, this::loadTargets);
+            filterOptions = new FilterOptions(realms, this::loadTargets);
 
             String selectedRealm = !TextUtil.isNullOrEmpty(place.getRealm()) && realms.containsKey(place.getRealm())
                 ? place.getRealm() : null;
@@ -194,11 +191,8 @@ public class NotificationsActivity extends AssetBrowsingActivity<NotificationsPl
             Map<String, String> realms = Arrays.stream(tenants)
                 .collect(Collectors.toMap(Tenant::getRealm, Tenant::getDisplayName));
 
-            Map<String, String> realmIds = Arrays.stream(tenants)
-                .collect(Collectors.toMap(Tenant::getRealm, Tenant::getId));
-
             if (sendOptions == null) {
-                sendOptions = new SendOptions(realms, realmIds, this::loadTargets, this::createMessage);
+                sendOptions = new SendOptions(realms, this::loadTargets, this::createMessage);
             }
 
             String selectedRealm = !TextUtil.isNullOrEmpty(place.getRealm()) && realms.containsKey(place.getRealm())
@@ -234,7 +228,7 @@ public class NotificationsActivity extends AssetBrowsingActivity<NotificationsPl
 
     @Override
     public void deleteNotifications() {
-        String tenantId = filterOptions.getTenantId();
+        String tenantId = filterOptions.getRealm();
         String userId = filterOptions.getUserId();
         String assetId = filterOptions.getAssetId();
         Long fromTimestamp = filterOptions.getFromTimestamp();
@@ -407,7 +401,7 @@ public class NotificationsActivity extends AssetBrowsingActivity<NotificationsPl
                 new AssetQuery()
                     .select(new BaseAssetQuery
                         .Select(BaseAssetQuery.Include.ONLY_ID_AND_NAME))
-                    .tenant(new TenantPredicate().realm(realm))),
+                    .tenant(new TenantPredicate(realm))),
             200,
             assetConsumer::accept);
     }
@@ -419,7 +413,7 @@ public class NotificationsActivity extends AssetBrowsingActivity<NotificationsPl
             return;
         }
 
-        String tenantId = filterOptions.getTenantId();
+        String tenantId = filterOptions.getRealm();
         String userId = filterOptions.getUserId();
         String assetId = filterOptions.getAssetId();
         Long fromTimestamp = filterOptions.getFromTimestamp();

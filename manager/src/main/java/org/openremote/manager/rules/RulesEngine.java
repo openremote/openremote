@@ -530,7 +530,7 @@ public class RulesEngine<T extends Ruleset> {
     protected void publishRulesEngineStatus() {
         withLock(getClass().getSimpleName() + "::publishRulesEngineStatus", () -> {
 
-            String engineId = id == null ? null : id.getRealmId().orElse(id.getAssetId().orElse(null));
+            String engineId = id == null ? null : id.getRealm().orElse(id.getAssetId().orElse(null));
             int compilationErrors = getCompilationErrorDeploymentCount();
             int executionErrors = getExecutionErrorDeploymentCount();
             RulesEngineInfo engineInfo = new RulesEngineInfo(
@@ -554,7 +554,7 @@ public class RulesEngine<T extends Ruleset> {
     protected void publishRulesetStatus(Ruleset ruleset, RulesetStatus status, String error) {
         withLock(getClass().getSimpleName() + "::publishRulesetStatus", () -> {
 
-            String engineId = id == null ? null : id.getRealmId().orElse(id.getAssetId().orElse(null));
+            String engineId = id == null ? null : id.getRealm().orElse(id.getAssetId().orElse(null));
 
             ruleset.setStatus(status);
             ruleset.setError(error);

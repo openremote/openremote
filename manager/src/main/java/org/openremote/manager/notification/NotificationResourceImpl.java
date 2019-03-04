@@ -214,7 +214,7 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
                         LOG.fine("DENIED: User request to update a notification sent to an asset that doesn't exist");
                         throw new WebApplicationException("Asset not found", NOT_FOUND);
                     }
-                    if (!asset.getRealmId().equals(managerIdentityService.getIdentityProvider().getTenantForRealm(getAuthenticatedRealm()).getId())) {
+                    if (!asset.getRealm().equals(getAuthenticatedRealm())) {
                         LOG.fine("DENIED: User request to update a notification sent to an asset that is in another realm");
                         throw new WebApplicationException("Asset not in users realm", FORBIDDEN);
                     }

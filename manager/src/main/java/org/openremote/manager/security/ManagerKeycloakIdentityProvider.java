@@ -159,15 +159,9 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
 
         sb.append(" WHERE 1=1");
 
-        if (query.tenantPredicate != null) {
-            if (!TextUtil.isNullOrEmpty(query.tenantPredicate.realmId)) {
-                sb.append(" AND u.realmId = ?").append(parameters.size() + 1);
-                parameters.add(query.tenantPredicate.realmId);
-            } else if (!TextUtil.isNullOrEmpty(query.tenantPredicate.realm)) {
-                sb.append(" AND u.realm = ?").append(parameters.size() + 1);
-                parameters.add(query.tenantPredicate.realm);
-            }
-
+        if (query.tenantPredicate != null && !TextUtil.isNullOrEmpty(query.tenantPredicate.realm)) {
+            sb.append(" AND u.realm = ?").append(parameters.size() + 1);
+            parameters.add(query.tenantPredicate.realm);
         }
         if (query.assetPredicate != null) {
             sb.append(" AND ua.id.assetId = ?").append(parameters.size() + 1);
@@ -198,11 +192,11 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     }
 
     @Override
-    public User getUser(String realmId, String userName) {
+    public User getUser(String realm, String userName) {
         return persistenceService.doReturningTransaction(em -> {
             List<User> result =
-                em.createQuery("select u from User u where u.realmId = :realmId and u.username = :username", User.class)
-                    .setParameter("realmId", realmId)
+                em.createQuery("select u from User u where u.realm = :realm and u.username = :username", User.class)
+                    .setParameter("realm", realm)
                     .setParameter("username", userName)
                     .getResultList();
             return result.size() > 0 ? result.get(0) : null;
@@ -324,38 +318,34 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     }
 
     @Override
-    public Tenant[] getTenants(ClientRequestInfo clientRequestInfo) {
-        List<RealmRepresentation> realms = getRealms(clientRequestInfo).findAll();
+    public Tenant[] getTenants() {
 
-        // Make sure the master tenant is always on top
-        realms.sort((o1, o2) -> {
-            if (o1.getRealm().equals(MASTER_REALM))
-                return -1;
-            if (o2.getRealm().equals(MASTER_REALM))
-                return 1;
-            return o1.getRealm().compareTo(o2.getRealm());
+        return persistenceService.doReturningTransaction(entityManager -> {
+            List<Tenant> realms = entityManager.createQuery(
+                "select t from Tenant t where t.enabled = true and (t.notBefore is null or t.notBefore = 0 or to_timestamp(t.notBefore) <= now())"
+            , Tenant.class).getResultList();
+
+            // Make sure the master tenant is always on top
+            realms.sort((o1, o2) -> {
+                if (o1.getRealm().equals(MASTER_REALM))
+                    return -1;
+                if (o2.getRealm().equals(MASTER_REALM))
+                    return 1;
+                return o1.getRealm().compareTo(o2.getRealm());
+            });
+
+            return realms.toArray(new Tenant[realms.size()]);
         });
-
-        List<Tenant> tenants = new ArrayList<>();
-        for (RealmRepresentation realm : realms) {
-            tenants.add(convert(Container.JSON, Tenant.class, realm));
-        }
-        return tenants.toArray(new Tenant[tenants.size()]);
     }
 
     @Override
-    public Tenant getTenantForRealm(String realm) {
+    public Tenant getTenant(String realm) {
         return persistenceService.doReturningTransaction(em -> {
-            List<Tenant> result =
-                em.createQuery("select t from Tenant t where t.realm = :realm", Tenant.class)
-                    .setParameter("realm", realm).getResultList();
-            return result.size() > 0 ? result.get(0) : null;
-        });
-    }
-
-    @Override
-    public Tenant getTenantForRealmId(String realmId) {
-        return persistenceService.doReturningTransaction(em -> em.find(Tenant.class, realmId));
+                    List<Tenant> tenants = em.createQuery("select t from Tenant t where t.realm = :realm and t.enabled = true and (t.notBefore is null or t.notBefore = 0 or to_timestamp(t.notBefore) <= now())", Tenant.class)
+                            .setParameter("realm", realm).getResultList();
+                    return tenants.size() == 1 ? tenants.get(0) : null;
+                }
+        );
     }
 
     @Override
@@ -387,7 +377,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
 
     @Override
     public void deleteTenant(ClientRequestInfo clientRequestInfo, String realm) {
-        Tenant tenant = getTenantForRealm(realm);
+        Tenant tenant = getTenant(realm);
         if (tenant != null) {
             LOG.fine("Delete tenant: " + realm);
             getRealms(clientRequestInfo).realm(realm).remove();
@@ -411,26 +401,18 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
      */
     @Override
     public boolean isTenantActiveAndAccessible(AuthContext authContext, Asset asset) {
-        return isTenantActiveAndAccessible(authContext, getTenantForRealmId(asset.getRealmId()));
+        return isTenantActiveAndAccessible(authContext, getTenant(asset.getRealm()));
     }
 
     @Override
-    public String[] getActiveTenantIds() {
-        return persistenceService.doReturningTransaction(entityManager -> {
-            @SuppressWarnings("unchecked")
-            List<String> results = entityManager.createQuery(
-                "select t.id from Tenant t where " +
-                    "t.enabled = true and (t.notBefore is null or t.notBefore = 0 or to_timestamp(t.notBefore) <= now())"
-            ).getResultList();
-            return results.toArray(new String[results.size()]);
-        });
-    }
-
-    @Override
-    public boolean isActiveTenant(String realmId) {
+    public boolean tenantExists(String realm) {
         return persistenceService.doReturningTransaction(em -> {
-            Tenant tenant = em.find(Tenant.class, realmId);
-            return tenant != null && tenant.isActive(timerService.getCurrentTimeMillis());
+
+            long count = em.createQuery(
+                    "select count(t) from Tenant t where t.realm = :realm and t.enabled = true and (t.notBefore is null or t.notBefore = 0 or to_timestamp(t.notBefore) <= now())",
+                    Long.class).setParameter("realm", realm).getSingleResult();
+
+            return count > 0;
         });
     }
 
@@ -441,10 +423,10 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
     }
 
     @Override
-    public boolean isUserInTenant(String userId, String realmId) {
+    public boolean isUserInTenant(String userId, String realm) {
         return persistenceService.doReturningTransaction(em -> {
             User user = em.find(User.class, userId);
-            return (user != null && realmId.equals(user.getRealmId()));
+            return (user != null && realm.equals(user.getRealm()));
         });
     }
 
@@ -469,10 +451,11 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
 
         // Ensure filter matches authenticated realm
         if (filter != null) {
-            Tenant authenticatedTenant = getTenantForRealm(auth.getAuthenticatedRealm());
-            if (authenticatedTenant == null)
+            String authenticatedRealm = auth.getAuthenticatedRealm();
+
+            if (TextUtil.isNullOrEmpty(authenticatedRealm))
                 return false;
-            if (filter.getRealmId().equals(authenticatedTenant.getId()))
+            if (authenticatedRealm.equals(filter.getRealm()))
                 return true;
         }
 
@@ -564,7 +547,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
         );
 
         clientEventService.publishEvent(
-            new AssetTreeModifiedEvent(timerService.getCurrentTimeMillis(), tenant.getId(), null)
+            new AssetTreeModifiedEvent(timerService.getCurrentTimeMillis(), tenant.getRealm(), null)
         );
     }
 

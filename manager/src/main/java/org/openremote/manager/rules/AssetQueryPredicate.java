@@ -279,8 +279,7 @@ public class AssetQueryPredicate implements Predicate<AssetState> {
 
     public static Predicate<AssetState> asPredicate(TenantPredicate predicate) {
         return assetState ->
-            (predicate.realm == null || predicate.realm.equals(assetState.getTenantRealm()))
-                && (predicate.realmId == null || predicate.realmId.equals(assetState.getRealmId()));
+            predicate == null || (predicate.realm != null && predicate.realm.equals(assetState.getRealm()));
     }
 
     public static Predicate<Coordinate> asPredicate(GeofencePredicate predicate) {

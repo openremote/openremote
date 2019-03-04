@@ -38,7 +38,7 @@ class RulesExecutionFailureTest extends Specification implements ManagerContaine
                 "Failure Ruleset",
                 managerDemoSetup.apartment2Id,
                 getClass().getResource("/org/openremote/test/failure/RulesFailureConditionInvalidReturn.groovy").text,
-                Ruleset.Lang.GROOVY
+                Ruleset.Lang.GROOVY, false
         )
         ruleset = rulesetStorageService.merge(ruleset)
 
@@ -74,7 +74,7 @@ class RulesExecutionFailureTest extends Specification implements ManagerContaine
                 "Failure Ruleset",
                 managerDemoSetup.apartment2Id,
                 getClass().getResource("/org/openremote/test/failure/RulesFailureConditionThrowsException.groovy").text,
-                Ruleset.Lang.GROOVY
+                Ruleset.Lang.GROOVY, false
         )
         ruleset = rulesetStorageService.merge(ruleset)
 
@@ -110,7 +110,7 @@ class RulesExecutionFailureTest extends Specification implements ManagerContaine
                 "Failure Ruleset",
                 managerDemoSetup.apartment2Id,
                 getClass().getResource("/org/openremote/test/failure/RulesFailureActionThrowsException.groovy").text,
-                Ruleset.Lang.GROOVY
+                Ruleset.Lang.GROOVY, false
         )
         ruleset = rulesetStorageService.merge(ruleset)
 
@@ -146,7 +146,7 @@ class RulesExecutionFailureTest extends Specification implements ManagerContaine
                 "Failure Ruleset",
                 managerDemoSetup.apartment2Id,
                 getClass().getResource("/org/openremote/test/failure/RulesFailureLoop.groovy").text,
-                Ruleset.Lang.GROOVY
+                Ruleset.Lang.GROOVY, false
         )
         ruleset = rulesetStorageService.merge(ruleset)
 

@@ -4,6 +4,6 @@ task clean() {
     }
 }
 
-task build() {
-    dependsOn rootProject.tasks.getByName("yarnInstall"), npmBuild
-}
+//task build() {
+//    dependsOn rootProject.tasks.getByName("yarnInstall"), npmBuild
+//}

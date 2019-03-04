@@ -36,15 +36,12 @@ import org.openremote.model.security.Tenant;
 import org.openremote.model.util.TextUtil;
 
 import javax.ws.rs.BadRequestException;
-import javax.ws.rs.ForbiddenException;
-import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static javax.ws.rs.core.Response.Status.FORBIDDEN;
 import static org.openremote.container.concurrent.GlobalLock.withLockReturning;
 
 public class ConsoleResourceImpl extends ManagerWebResource implements ConsoleResource {
@@ -60,6 +57,11 @@ public class ConsoleResourceImpl extends ManagerWebResource implements ConsoleRe
 
     @Override
     public ConsoleRegistration register(RequestParams requestParams, ConsoleRegistration consoleRegistration) {
+
+        if (getRequestTenant() == null) {
+            throw new BadRequestException("Invalid realm");
+        }
+
         // Validate the console registration
         List<ValidationFailure> failures = new ArrayList<>();
         if (!ConsoleConfiguration.validateConsoleRegistration(consoleRegistration, failures)) {
@@ -83,7 +85,7 @@ public class ConsoleResourceImpl extends ManagerWebResource implements ConsoleRe
                 true,
                 true);
 
-            consoleAsset.setRealmId(getRequestTenant().getId());
+            consoleAsset.setRealm(getRequestRealm());
             consoleAsset.setParentId(getConsoleParentAssetId(getRequestRealm()));
             consoleAsset.setId(consoleRegistration.getId());
         } else {
@@ -103,7 +105,7 @@ public class ConsoleResourceImpl extends ManagerWebResource implements ConsoleRe
 
         // If authenticated link the console to this user
         if (isAuthenticated()) {
-            assetStorageService.storeUserAsset(new UserAsset(getAuthenticatedTenant().getId(), getUserId(), consoleAsset.getId()));
+            assetStorageService.storeUserAsset(new UserAsset(getAuthenticatedRealm(), getUserId(), consoleAsset.getId()));
         }
 
         return consoleRegistration;
@@ -129,7 +131,7 @@ public class ConsoleResourceImpl extends ManagerWebResource implements ConsoleRe
         if (consoleParent == null) {
             consoleParent = new Asset(CONSOLE_PARENT_ASSET_NAME, AssetType.THING);
             consoleParent.setId(id);
-            consoleParent.setRealmId(tenant.getId());
+            consoleParent.setRealm(tenant.getRealm());
             assetStorageService.merge(consoleParent);
         }
         return consoleParent;

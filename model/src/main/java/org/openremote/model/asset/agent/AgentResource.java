@@ -138,7 +138,7 @@ public interface AgentResource {
         @PathParam("agentId") String agentId,
         @PathParam("protocolConfigurationName") String protocolConfigurationName,
         @QueryParam("parentId") String parentId,
-        @QueryParam("realmId") String realmId
+        @QueryParam("realm") String realm
     );
 
     /**
@@ -162,7 +162,7 @@ public interface AgentResource {
         @PathParam("agentId") String agentId,
         @PathParam("protocolConfigurationName") String protocolConfigurationName,
         @QueryParam("parentId") String parentId,
-        @QueryParam("realmId") String realmId,
+        @QueryParam("realm") String realm,
         FileInfo fileInfo
     );
 }

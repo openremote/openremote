@@ -48,11 +48,11 @@ public interface RulesResource {
      * Retrieve information about the specified tenant rules engine (if engine doesn't exist then will return null).
      */
     @GET
-    @Path("info/tenant/{realmId}")
+    @Path("info/tenant/{realm}")
     @SuccessStatusCode(200)
     @RolesAllowed({"read:rules"})
     @SuppressWarnings("unusable-by-js")
-    RulesEngineInfo getTenantEngineInfo(@BeanParam RequestParams requestParams, @PathParam("realmId") String realmId);
+    RulesEngineInfo getTenantEngineInfo(@BeanParam RequestParams requestParams, @PathParam("realm") String realm);
 
     /**
      * Retrieve information about the specified asset rules engine (if engine doesn't exist then will return null).
@@ -81,12 +81,11 @@ public interface RulesResource {
      * can not be found.
      */
     @GET
-    @Path("tenant/for/{realmId}")
+    @Path("tenant/for/{realm}")
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
-    @RolesAllowed({"read:rules"})
     @SuppressWarnings("unusable-by-js")
-    TenantRuleset[] getTenantRulesets(@BeanParam RequestParams requestParams, @PathParam("realmId") String realmId);
+    TenantRuleset[] getTenantRulesets(@BeanParam RequestParams requestParams, @PathParam("realm") String realm);
 
     /**
      * Retrieve rules of an asset. The superuser can retrieve rules of all realms and assets, a 403 status is returned
@@ -97,7 +96,6 @@ public interface RulesResource {
     @Path("asset/for/{assetId}")
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
-    @RolesAllowed({"read:rules"})
     @SuppressWarnings("unusable-by-js")
     AssetRuleset[] getAssetRulesets(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId);
 

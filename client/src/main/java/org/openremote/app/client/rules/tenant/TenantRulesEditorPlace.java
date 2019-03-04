@@ -25,25 +25,25 @@ import org.openremote.app.client.rules.RulesEditorPlace;
 
 public class TenantRulesEditorPlace extends RulesEditorPlace {
 
-    final protected String realmId;
+    final protected String realm;
 
-    public TenantRulesEditorPlace(String realmId) {
+    public TenantRulesEditorPlace(String realm) {
         super();
-        this.realmId = realmId;
+        this.realm = realm;
     }
 
-    public TenantRulesEditorPlace(String realmId, String rulesetId) {
+    public TenantRulesEditorPlace(String realm, String rulesetId) {
         super(rulesetId);
-        this.realmId = realmId;
+        this.realm = realm;
     }
 
-    public TenantRulesEditorPlace(String realmId, Long rulesetId) {
+    public TenantRulesEditorPlace(String realm, Long rulesetId) {
         super(rulesetId);
-        this.realmId = realmId;
+        this.realm = realm;
     }
 
-    public String getRealmId() {
-        return realmId;
+    public String getRealm() {
+        return realm;
     }
 
     @Prefix("tenantRulesEditor")
@@ -66,10 +66,10 @@ public class TenantRulesEditorPlace extends RulesEditorPlace {
 
         @Override
         public String getToken(TenantRulesEditorPlace place) {
-            if (place.getRealmId() == null) {
+            if (place.getRealm() == null) {
                 return "";
             }
-            return place.getRealmId() + ":" + (place.getRulesetId() != null ? place.getRulesetId() : "");
+            return place.getRealm() + ":" + (place.getRulesetId() != null ? place.getRulesetId() : "");
         }
     }
 }

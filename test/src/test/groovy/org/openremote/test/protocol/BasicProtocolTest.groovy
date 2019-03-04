@@ -194,7 +194,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait, 
                     new MetaItem(AssetMeta.DISABLED, Values.create(true))
                 )
         )
-        mockAgent.setRealmId(MASTER_REALM)
+        mockAgent.setRealm(MASTER_REALM)
         mockAgent = assetStorageService.merge(mockAgent)
 
         then: "the protocol configurations should be linked and their deployment status should be available in the agent service"

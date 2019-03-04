@@ -56,9 +56,7 @@ public class TenantResourceImpl extends ManagerWebResource implements TenantReso
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
         try {
-            return identityService.getIdentityProvider().getTenants(
-                new ClientRequestInfo(getClientRemoteAddress(), requestParams.getBearerAuth())
-            );
+            return identityService.getIdentityProvider().getTenants();
         } catch (ClientErrorException ex) {
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
         } catch (Exception ex) {
@@ -68,19 +66,7 @@ public class TenantResourceImpl extends ManagerWebResource implements TenantReso
 
     @Override
     public Tenant get(RequestParams requestParams, String realm) {
-        Tenant tenant = identityService.getIdentityProvider().getTenantForRealm(realm);
-        if (tenant == null)
-            throw new WebApplicationException(NOT_FOUND);
-        if (!isTenantActiveAndAccessible(tenant)) {
-            LOG.fine("Forbidden access for user '" + getUsername() + "': " + tenant);
-            throw new WebApplicationException(Response.Status.FORBIDDEN);
-        }
-        return tenant;
-    }
-
-    @Override
-    public Tenant getForRealmId(RequestParams requestParams, String realmId) {
-        Tenant tenant = identityService.getIdentityProvider().getTenantForRealmId(realmId);
+        Tenant tenant = identityService.getIdentityProvider().getTenant(realm);
         if (tenant == null)
             throw new WebApplicationException(NOT_FOUND);
         if (!isTenantActiveAndAccessible(tenant)) {

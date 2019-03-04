@@ -98,15 +98,15 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         and: "the demo location predicate console rules are loaded"
         Ruleset ruleset = new TenantRuleset(
                 "Demo Tenant A - Console Location",
-                keycloakDemoSetup.tenantA.id,
+                keycloakDemoSetup.tenantA.realm,
                 getClass().getResource("/demo/rules/DemoConsoleLocation.groovy").text,
-                Ruleset.Lang.GROOVY
+                Ruleset.Lang.GROOVY, false
         )
         rulesetStorageService.merge(ruleset)
 
         expect: "the rule engine to become available and be running"
         conditions.eventually {
-            def tenantAEngine = rulesService.tenantEngines.get(keycloakDemoSetup.tenantA.id)
+            def tenantAEngine = rulesService.tenantEngines.get(keycloakDemoSetup.tenantA.realm)
             assert tenantAEngine != null
             assert tenantAEngine.isRunning()
             assert tenantAEngine.assetStates.size() == DEMO_RULE_STATES_CUSTOMER_A
@@ -185,7 +185,7 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         }.orElse(null) == "23123213ad2313b0897efd"
 
         and: "the console should have been linked to the authenticated user"
-        def userAssets = assetStorageService.findUserAssets(keycloakDemoSetup.tenantA.id, keycloakDemoSetup.testuser3Id, consoleId)
+        def userAssets = assetStorageService.findUserAssets(keycloakDemoSetup.tenantA.realm, keycloakDemoSetup.testuser3Id, consoleId)
         assert userAssets.size() == 1
         assert userAssets.get(0).assetName == "Test Console"
 
@@ -412,7 +412,7 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
             assert asset != null
             assert asset.getAttribute(LOCATION.name).flatMap { it.valueTimestamp }.orElse(Long.MIN_VALUE) > timestamp
             assert notificationIds.size() == 1
-            def tenantAEngine = rulesService.tenantEngines.get(keycloakDemoSetup.tenantA.id)
+            def tenantAEngine = rulesService.tenantEngines.get(keycloakDemoSetup.tenantA.realm)
             assert tenantAEngine != null
             assert tenantAEngine.isRunning()
             assert !tenantAEngine.facts.getOptional("welcomeHome_${testUser3Console2.id}").isPresent()
@@ -503,7 +503,7 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
                 "Console test location predicates",
                 testUser3Console1.parentId,
                 getClass().getResource("/org/openremote/test/rules/BasicLocationPredicates.groovy").text,
-                Ruleset.Lang.GROOVY
+                Ruleset.Lang.GROOVY, false
         )
         newRuleset = rulesetStorageService.merge(newRuleset)
         RulesEngine consoleParentEngine = null

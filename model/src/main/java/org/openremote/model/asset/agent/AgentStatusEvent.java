@@ -35,8 +35,8 @@ public class AgentStatusEvent extends TenantScopedEvent {
     protected AgentStatusEvent() {
     }
 
-    public AgentStatusEvent(long timestamp, String realmId, AttributeRef protocolConfiguration, ConnectionStatus connectionStatus) {
-        super(timestamp, realmId);
+    public AgentStatusEvent(long timestamp, String realm, AttributeRef protocolConfiguration, ConnectionStatus connectionStatus) {
+        super(timestamp, realm);
         this.protocolConfiguration = protocolConfiguration;
         this.connectionStatus = connectionStatus;
     }
@@ -52,7 +52,7 @@ public class AgentStatusEvent extends TenantScopedEvent {
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
-            "realmId=" + realmId +
+            "realm=" + realm +
             ", protocolConfiguration=" + protocolConfiguration +
             ", connectionStatus=" + connectionStatus +
             '}';

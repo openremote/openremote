@@ -151,8 +151,7 @@ public class AssetEditActivity
             assetBrowserPresenter.clearSelection();
             asset = new Asset();
             asset.setName("My New Asset");
-            asset.setRealmId(environment.getApp().getTenant().getId());
-            asset.setTenantDisplayName(environment.getApp().getTenant().getDisplayName());
+            asset.setRealm(environment.getApp().getTenant().getId());
             asset.setType(AssetType.THING);
         }
 
@@ -169,8 +168,7 @@ public class AssetEditActivity
     @Override
     public void onParentSelection(BrowserTreeNode treeNode) {
         if (treeNode instanceof TenantTreeNode) {
-            asset.setRealmId(treeNode.getId());
-            asset.setTenantDisplayName(treeNode.getLabel());
+            asset.setRealm(treeNode.getId());
             parentAsset = null;
         } else if (treeNode instanceof AssetTreeNode) {
             assetBrowserPresenter.loadAsset(treeNode.getId(), loadedAsset -> {
@@ -359,8 +357,8 @@ public class AssetEditActivity
 
             // Retrieve agents in the same realm as the asset (if it has been assigned a realm otherwise
             // the query will be automatically restricted to the logged in users realm)
-            if (!isNullOrEmpty(asset.getRealmId())) {
-                query.tenant(new TenantPredicate(asset.getRealmId()));
+            if (!isNullOrEmpty(asset.getRealm())) {
+                query.tenant(new TenantPredicate(asset.getRealm()));
             }
 
             // Agents must have protocol configurations
@@ -374,8 +372,8 @@ public class AssetEditActivity
 
             // Limit to assets that have the same realm as the asset being edited (if it has been assigned a realm
             // otherwise the query will be automatically restricted to the logged in users realm)
-            if (!isNullOrEmpty(asset.getRealmId())) {
-                query.tenant(new TenantPredicate(asset.getRealmId()));
+            if (!isNullOrEmpty(asset.getRealm())) {
+                query.tenant(new TenantPredicate(asset.getRealm()));
             }
         }
 
@@ -652,8 +650,7 @@ public class AssetEditActivity
     protected void readFromView() {
         asset.setName(view.getName());
         if (parentAsset != null) {
-            asset.setRealmId(parentAsset.getRealmId());
-            asset.setTenantDisplayName(parentAsset.getTenantDisplayName());
+            asset.setRealm(parentAsset.getRealm());
             asset.setParentId(parentAsset.getId());
         } else {
             asset.setParentId(null);
@@ -688,7 +685,7 @@ public class AssetEditActivity
                         requestParams, assetId,
                         request.getProtocolConfigurationName(),
                         request.getParentId(),
-                        request.getRealmId(),
+                        request.getRealm(),
                         request.getFileInfo()
                     );
                 } else {
@@ -696,7 +693,7 @@ public class AssetEditActivity
                         requestParams, assetId,
                         request.getProtocolConfigurationName(),
                         request.getParentId(),
-                        request.getRealmId()
+                        request.getRealm()
                     );
                 }
             },
