@@ -845,7 +845,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
             "Camera3_Rules",
             camera3Asset.getId(),
             IOUtils.toString(getClass().getResource("/demo/rules/DemoSmartCityCamera.groovy"), "UTF-8"),
-            GROOVY);
+            GROOVY, false);
         camera3Rules = rulesetStorageService.merge(camera3Rules);
 
         Asset light3Asset = createDemoLightAsset("Light3", assetArea3);

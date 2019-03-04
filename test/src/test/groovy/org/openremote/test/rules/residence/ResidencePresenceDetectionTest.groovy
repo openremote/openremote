@@ -40,7 +40,7 @@ class ResidencePresenceDetectionTest extends Specification implements ManagerCon
                 "Demo Apartment - Presence Detection with motion and CO2 sensors",
                 managerDemoSetup.apartment1Id,
                 getClass().getResource("/demo/rules/DemoResidencePresenceDetection.groovy").text,
-                Ruleset.Lang.GROOVY
+                Ruleset.Lang.GROOVY, false
         )
         rulesetStorageService.merge(ruleset)
 
@@ -174,7 +174,7 @@ class ResidencePresenceDetectionTest extends Specification implements ManagerCon
                 "Demo Apartment - Presence Detection with motion sensor",
                 managerDemoSetup.apartment1Id,
                 getClass().getResource("/demo/rules/DemoResidencePresenceDetection.groovy").text,
-                Ruleset.Lang.GROOVY
+                Ruleset.Lang.GROOVY, false
         )
         rulesetStorageService.merge(ruleset)
 

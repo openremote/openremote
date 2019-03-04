@@ -40,7 +40,7 @@ class ResidenceSmartSwitchTest extends Specification implements ManagerContainer
                 "Demo Apartment - Smart Start",
                 managerDemoSetup.apartment1Id,
                 getClass().getResource("/demo/rules/DemoResidenceSmartSwitch.groovy").text,
-                Ruleset.Lang.GROOVY
+                Ruleset.Lang.GROOVY, false
         )
         rulesetStorageService.merge(ruleset)
 
@@ -170,7 +170,7 @@ class ResidenceSmartSwitchTest extends Specification implements ManagerContainer
                 "Demo Apartment - Smart Start",
                 managerDemoSetup.apartment1Id,
                 getClass().getResource("/demo/rules/DemoResidenceSmartSwitch.groovy").text,
-                Ruleset.Lang.GROOVY
+                Ruleset.Lang.GROOVY, false
         )
         rulesetStorageService.merge(ruleset)
 
@@ -268,7 +268,7 @@ class ResidenceSmartSwitchTest extends Specification implements ManagerContainer
                 "Demo Apartment - Smart Start",
                 managerDemoSetup.apartment1Id,
                 getClass().getResource("/demo/rules/DemoResidenceSmartSwitch.groovy").text,
-                Ruleset.Lang.GROOVY
+                Ruleset.Lang.GROOVY, false
         )
         rulesetStorageService.merge(ruleset)
 
@@ -390,7 +390,7 @@ class ResidenceSmartSwitchTest extends Specification implements ManagerContainer
                 "Demo Apartment - Smart Start",
                 managerDemoSetup.apartment1Id,
                 getClass().getResource("/demo/rules/DemoResidenceSmartSwitch.groovy").text,
-                Ruleset.Lang.GROOVY
+                Ruleset.Lang.GROOVY, false
         )
         rulesetStorageService.merge(ruleset)
 
@@ -489,7 +489,7 @@ class ResidenceSmartSwitchTest extends Specification implements ManagerContainer
                 "Demo Apartment - Smart Start",
                 managerDemoSetup.apartment1Id,
                 getClass().getResource("/demo/rules/DemoResidenceSmartSwitch.groovy").text,
-                Ruleset.Lang.GROOVY
+                Ruleset.Lang.GROOVY, false
         )
         rulesetStorageService.merge(ruleset)
 

@@ -84,7 +84,6 @@ public interface RulesResource {
     @Path("tenant/for/{realm}")
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
-    @RolesAllowed({"read:rules"})
     @SuppressWarnings("unusable-by-js")
     TenantRuleset[] getTenantRulesets(@BeanParam RequestParams requestParams, @PathParam("realm") String realm);
 
@@ -97,7 +96,6 @@ public interface RulesResource {
     @Path("asset/for/{assetId}")
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
-    @RolesAllowed({"read:rules"})
     @SuppressWarnings("unusable-by-js")
     AssetRuleset[] getAssetRulesets(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId);
 

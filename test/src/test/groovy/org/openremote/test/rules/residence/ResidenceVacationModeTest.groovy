@@ -43,7 +43,7 @@ class ResidenceVacationModeTest extends Specification implements ManagerContaine
                 "Demo Apartment - Vacation Mode",
                 managerDemoSetup.apartment1Id,
                 getClass().getResource("/demo/rules/DemoResidenceVacationMode.groovy").text,
-                Ruleset.Lang.GROOVY
+                Ruleset.Lang.GROOVY, false
         )
         rulesetStorageService.merge(ruleset)
 

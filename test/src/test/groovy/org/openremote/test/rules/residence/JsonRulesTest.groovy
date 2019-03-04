@@ -77,7 +77,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
                 "Demo Apartment - All Lights Off",
                 keycloakDemoSetup.tenantA.realm,
                 getClass().getResource("/org/openremote/test/rules/BasicJsonRules.json").text,
-                Ruleset.Lang.JSON
+                Ruleset.Lang.JSON, false
         )
         rulesetStorageService.merge(ruleset)
 

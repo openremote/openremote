@@ -100,7 +100,7 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
                 "Demo Tenant A - Console Location",
                 keycloakDemoSetup.tenantA.realm,
                 getClass().getResource("/demo/rules/DemoConsoleLocation.groovy").text,
-                Ruleset.Lang.GROOVY
+                Ruleset.Lang.GROOVY, false
         )
         rulesetStorageService.merge(ruleset)
 
@@ -503,7 +503,7 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
                 "Console test location predicates",
                 testUser3Console1.parentId,
                 getClass().getResource("/org/openremote/test/rules/BasicLocationPredicates.groovy").text,
-                Ruleset.Lang.GROOVY
+                Ruleset.Lang.GROOVY, false
         )
         newRuleset = rulesetStorageService.merge(newRuleset)
         RulesEngine consoleParentEngine = null

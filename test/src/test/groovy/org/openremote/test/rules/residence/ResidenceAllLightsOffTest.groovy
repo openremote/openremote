@@ -38,7 +38,7 @@ class ResidenceAllLightsOffTest extends Specification implements ManagerContaine
                 "Demo Apartment - All Lights Off",
                 managerDemoSetup.apartment2Id,
                 getClass().getResource("/demo/rules/DemoResidenceAllLightsOff.js").text,
-                Ruleset.Lang.JAVASCRIPT
+                Ruleset.Lang.JAVASCRIPT, false
         )
         rulesetStorageService.merge(ruleset)
 

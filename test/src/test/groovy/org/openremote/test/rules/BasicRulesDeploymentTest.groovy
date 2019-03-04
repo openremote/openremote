@@ -76,7 +76,7 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
                 "Some more tenantA tenant rules",
                 keycloakDemoSetup.tenantA.realm,
                 getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetStates2.groovy").text,
-                GROOVY
+                GROOVY, false
         )
         rulesetStorageService.merge(ruleset)
 
@@ -95,7 +95,7 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
                 "Some more tenantB tenant rules",
                 keycloakDemoSetup.tenantB.realm,
                 getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetStates2.groovy").text,
-                GROOVY
+                GROOVY, false
         )
         rulesetStorageService.merge(ruleset)
 

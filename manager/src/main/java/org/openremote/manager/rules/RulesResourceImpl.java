@@ -23,6 +23,7 @@ import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebResource;
+import org.openremote.model.Constants;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.BaseAssetQuery;
@@ -30,6 +31,7 @@ import org.openremote.model.asset.UserAsset;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.rules.*;
 import org.openremote.model.rules.geofence.GeofenceDefinition;
+import org.openremote.model.security.ClientRole;
 import org.openremote.model.security.Tenant;
 
 import javax.ws.rs.BeanParam;
@@ -137,10 +139,14 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
 
     @Override
     public TenantRuleset[] getTenantRulesets(@BeanParam RequestParams requestParams, String realmId) {
-        if (!isRealmAccessibleByUser(realmId) || isRestrictedUser()) {
+
+        if (isAuthenticated() && !isRealmAccessibleByUser(realmId)) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
-        List<TenantRuleset> result = rulesetStorageService.findTenantRulesets(realmId);
+
+        boolean publicOnly = !isAuthenticated() || isRestrictedUser() | !hasResourceRole(ClientRole.READ_RULES.getValue(), Constants.KEYCLOAK_CLIENT_ID);
+
+        List<TenantRuleset> result = rulesetStorageService.findTenantRulesets(realmId, publicOnly);
 
         // Try and retrieve transient status and error data
         result.forEach(ruleset ->
@@ -161,13 +167,13 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
         if (asset == null)
             return new AssetRuleset[0];
 
-        if (!isRealmAccessibleByUser(asset.getRealm())) {
+        if (isAuthenticated() && !isRealmAccessibleByUser(asset.getRealm())) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
-        if (isRestrictedUser() && !assetStorageService.isUserAsset(getUserId(), assetId)) {
-            throw new WebApplicationException(Response.Status.FORBIDDEN);
-        }
-        List<AssetRuleset> result = rulesetStorageService.findAssetRulesets(asset.getRealm(), assetId);
+
+        boolean publicOnly = !isAuthenticated() || (isRestrictedUser() && !assetStorageService.isUserAsset(getUserId(), assetId)) || !hasResourceRole(ClientRole.READ_RULES.getValue(), Constants.KEYCLOAK_CLIENT_ID);
+
+        List<AssetRuleset> result = rulesetStorageService.findAssetRulesets(asset.getRealm(), assetId, publicOnly);
 
         // Try and retrieve transient status and error data
         result.forEach(ruleset ->

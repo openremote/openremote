@@ -132,7 +132,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
             "Some Smart Building asset rules",
             managerDemoSetup.smartBuildingId,
             getClass().getResource("/org/openremote/test/rules/BasicSmartHomeMatchAllAssetStates.groovy").text,
-            Ruleset.Lang.GROOVY
+            Ruleset.Lang.GROOVY, false
         )
         rulesetStorageService.merge(assetRuleset)
         RulesEngine smartHomeEngine = null
@@ -380,7 +380,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
             "Some broken test rules",
             keycloakDemoSetup.tenantA.realm,
             getClass().getResource("/org/openremote/test/rules/BasicBrokenRules.groovy").text,
-            Ruleset.Lang.GROOVY
+            Ruleset.Lang.GROOVY, false
         )
         rulesetStorageService.merge(ruleset)
 

@@ -54,7 +54,7 @@ class BasicRulesImport {
                 "Some master tenant demo rules",
                 keycloakDemoSetup.masterTenant.realm,
                 getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetStates.groovy").text,
-                GROOVY
+                GROOVY, false
         )
         masterRulesetId = rulesetStorageService.merge(ruleset).id
 
@@ -62,7 +62,7 @@ class BasicRulesImport {
                 "Some tenantA tenant demo rules",
                 keycloakDemoSetup.tenantA.realm,
                 getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetStates.groovy").text,
-                GROOVY
+                GROOVY, false
         )
         tenantARulesetId = rulesetStorageService.merge(ruleset).id
 
@@ -70,7 +70,7 @@ class BasicRulesImport {
                 "Some tenantB tenant demo rules",
                 keycloakDemoSetup.tenantB.realm,
                 getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetStates.groovy").text,
-                GROOVY
+                GROOVY, false
         )
         ruleset.setEnabled(false)
         tenantBRulesetId = rulesetStorageService.merge(ruleset).id
@@ -79,7 +79,7 @@ class BasicRulesImport {
                 "Some apartment 1 demo rules",
                 managerDemoSetup.apartment1Id,
                 getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetStates.groovy").text,
-                GROOVY
+                GROOVY, false
         )
         ruleset.setEnabled(false)
         apartment1RulesetId = rulesetStorageService.merge(ruleset).id
@@ -88,7 +88,7 @@ class BasicRulesImport {
                 "Some apartment 2 demo rules",
                 managerDemoSetup.apartment2Id,
                 getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetStates.groovy").text,
-                GROOVY
+                GROOVY, false
         )
         apartment2RulesetId = rulesetStorageService.merge(ruleset).id
 
@@ -96,7 +96,7 @@ class BasicRulesImport {
                 "Some apartment 3 demo rules",
                 managerDemoSetup.apartment3Id,
                 getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetStates.groovy").text,
-                GROOVY
+                GROOVY, false
         )
         apartment3RulesetId = rulesetStorageService.merge(ruleset).id
     }
