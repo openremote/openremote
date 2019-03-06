@@ -1,12 +1,11 @@
-import {html, PolymerElement} from "@polymer/polymer";
-import {property, query, observe, customElement} from "@polymer/decorators";
+import {LitElement, property, query, customElement, PropertyValues, html} from "lit-element";
 import {MapWidget} from "../mapwidget";
 
 /**
  * Base class for all map markers
  */
 @customElement("or-map-marker")
-export class OrMapMarker extends PolymerElement {
+export class OrMapMarker extends LitElement {
     protected _added: boolean = false;
     protected _attached: boolean = false;
 
@@ -28,7 +27,7 @@ export class OrMapMarker extends PolymerElement {
     @query("slot")
     _slot!: HTMLSlotElement;
 
-    static get template() {
+    protected render() {
         return html`
           <style>
             :host {
@@ -60,7 +59,22 @@ export class OrMapMarker extends PolymerElement {
         this._attached = false;
     }
 
-    @observe("visible", "lat", "lng", "map")
+    
+    protected updated(changedProps: PropertyValues){
+        //@observe("visible", "lat", "lng", "map")
+        if(changedProps.has('visible')){
+            this._updateMarker();
+        }
+        if(changedProps.has('lat')){
+            this._updateMarker();
+        }
+        if(changedProps.has('lng')){
+            this._updateMarker();
+        }
+        if(changedProps.has('map')){
+            this._updateMarker();
+        }
+    }
     _updateMarker() {
         if (!this._attached || !this.map) return;
 

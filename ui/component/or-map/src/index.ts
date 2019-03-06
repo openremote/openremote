@@ -1,7 +1,7 @@
 import openremote, {EventCallback, OREvent} from "@openremote/core";
 import {html, PolymerElement} from "@polymer/polymer";
 import { FlattenedNodesObserver } from '@polymer/polymer/lib/utils/flattened-nodes-observer.js';
-import {customElement, property} from '@polymer/decorators';
+import {customElement, property} from 'lit-element';
 import {OrMapMarker} from "./markers/or-map-marker";
 
 import {MapWidget} from "./mapwidget";

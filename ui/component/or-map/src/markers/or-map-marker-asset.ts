@@ -1,5 +1,4 @@
-import {html} from "@polymer/polymer";
-import {customElement, property, observe} from "@polymer/decorators";
+import {customElement, property, PropertyValues} from "lit-element";
 import {OrMapMarker} from "./or-map-marker";
 import rest from "@openremote/rest";
 import {Asset, AssetAttribute, GeoJSONPoint} from "@openremote/model";
@@ -13,7 +12,7 @@ import {GenericAxiosResponse} from "axios";
 @customElement('or-map-marker-asset')
 export class OrMapMarkerAsset extends OrMapMarker {
 
-    @property({type: String, observer: "_assetChanged"})
+    @property({type: String})
     asset?: string;
 
     @property({type: Object})
@@ -23,6 +22,22 @@ export class OrMapMarkerAsset extends OrMapMarker {
         super();
     }
 
+    protected updated(changedProps: PropertyValues){
+        //@observe("visible", "lat", "lng", "map")
+        if(changedProps.has('asset')){
+            this._assetChanged();
+        }
+        if(changedProps.has('lat')){
+            this._updateMarker();
+        }
+        if(changedProps.has('lng')){
+            this._updateMarker();
+        }
+        if(changedProps.has('map')){
+            this._updateMarker();
+        }
+    }
+    
     _createMarkerElement(): HTMLElement {
         let className = ("or-map-marker " + this.className).trim();
         let ele = document.createElement("div");
@@ -81,4 +96,3 @@ export class OrMapMarkerAsset extends OrMapMarker {
         }
     }
 }
-
