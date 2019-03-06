@@ -71,6 +71,13 @@ class OrThermostat extends LitElement {
         this.requestUpdate("_targetTemperature", oldValue);
     };
 
+    private raiseTargetTemperatureByControl () : void {
+        this.targetTemperature = this._targetTemperature + 1;
+    }
+    private lowerTargetTemperatureByControl () : void {
+        this.targetTemperature = this._targetTemperature - 1;
+    }
+
     connectedCallback() {
         this._connected = true;
         if (this.assetId) {
@@ -86,9 +93,11 @@ class OrThermostat extends LitElement {
 
     protected render() {
         return html`
-            <p>${this._displayedLabel}</p>
-            <p>${this._currentTemperature}</p>
-            <p>${this._targetTemperature}</p>
+            <p>displayed: ${this._displayedLabel}</p>
+            <p>current temp: ${this._currentTemperature}</p>
+            <button @click="${this.lowerTargetTemperatureByControl}">-</button>
+            <p>target temp: ${this._targetTemperature}</p>
+            <button @click="${this.raiseTargetTemperatureByControl}">+</button>
         `;
     }
 }
