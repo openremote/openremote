@@ -72,10 +72,12 @@ class OrThermostat extends LitElement {
     };
 
     private raiseTargetTemperatureByControl () : void {
-        this.targetTemperature = this._targetTemperature + 1;
+        let newVal = this._targetTemperature + 1;
+        this.targetTemperature = newVal;
     }
     private lowerTargetTemperatureByControl () : void {
-        this.targetTemperature = this._targetTemperature - 1;
+        let newVal = this._targetTemperature - 1;
+        this.targetTemperature = newVal;
     }
 
     connectedCallback() {
