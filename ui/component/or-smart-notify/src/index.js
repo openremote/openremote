@@ -4,13 +4,13 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
-import { html, LitElement, property } from 'lit-element';
+import { html, LitElement, property, customElement } from 'lit-element';
 import moment from 'moment';
 import { icon } from '@fortawesome/fontawesome-svg-core';
 import { faClock } from '@fortawesome/free-regular-svg-icons';
 import { faTimes } from '@fortawesome/free-solid-svg-icons';
 import REST from "@openremote/rest";
-class OrSmartNotify extends LitElement {
+let OrSmartNotify = class OrSmartNotify extends LitElement {
     constructor() {
         super();
         // if smart notify popup is visible
@@ -23,10 +23,11 @@ class OrSmartNotify extends LitElement {
         this.smartNotify = {};
         // default function on smartyNotify
         this.currentTime = '-';
+        const self = this;
         this.currentTime = moment().format('HH:mm');
         setInterval(function () {
-            this.currentTime = moment().format('HH:mm');
-        }.bind(this), 500);
+            self.currentTime = moment().format('HH:mm');
+        }, 500);
     }
     render() {
         // language=HTML
@@ -242,32 +243,34 @@ class OrSmartNotify extends LitElement {
     `;
     }
     getSmartNotify() {
+        const self = this;
         return new Promise(function (resolve, reject) {
             const smartNotifyQuery = {
                 name: { predicateType: "string", value: "SMART_NOTIFY_ASSET" },
                 select: { include: "ALL_EXCEPT_PATH" /* ALL_EXCEPT_PATH */ }
             };
-            REST.api.AssetResource.queryAssets(smartNotifyQuery).then(response => {
+            REST.api.AssetResource.queryAssets(smartNotifyQuery).then((response) => {
                 console.log("Setting Smart Notify");
                 if (response.data) {
-                    this.smartNotify = response.data[0];
-                    this.isActive = this.smartNotify.attributes.SMART_NOTIFY_ENABLED.value ? true : false;
-                    this.onChange();
+                    self.smartNotify = response.data[0];
+                    self.isActive = self.smartNotify.attributes.SMART_NOTIFY_ENABLED.value ? true : false;
+                    self.onChange();
                     resolve(response);
                 }
-            }).catch(reason => {
+            }).catch((reason) => {
                 reject(Error("Error:" + reason));
                 console.log("Error:" + reason);
             });
-        }.bind(this));
+        });
     }
     checkSmartNotifyMarkers() {
+        const self = this;
         if (this.isActive && this.smartNotify.attributes.SMART_NOTIFY_RESULT.value.markers && this.smartNotify.attributes.SMART_NOTIFY_RESULT.value.markers.length > 0) {
         }
         else if (this.isActive && this.smartNotify.attributes.SMART_NOTIFY_RESULT.value.markers.length === 0) {
             this.getSmartNotify().then(() => {
                 setTimeout(function () {
-                    this.checkSmartNotifyMarkers();
+                    self.checkSmartNotifyMarkers();
                 }.bind(this), 3000);
             });
         }
@@ -283,7 +286,7 @@ class OrSmartNotify extends LitElement {
             this.smartNotify.attributes.SMART_NOTIFY_ENABLED.value = null;
             this.isActive = false;
         }
-        REST.api.AssetResource.update(this.smartNotify.id, this.smartNotify).then(response => {
+        REST.api.AssetResource.update(this.smartNotify.id, this.smartNotify).then((response) => {
             console.log("Setting Smart Notify");
             this.smartNotify.version = this.smartNotify.version + 1;
             if (isChecked == true) {
@@ -295,7 +298,7 @@ class OrSmartNotify extends LitElement {
                 this.smartNotify.attributes.SMART_NOTIFY_RESULT.value.markers = [];
                 this.onChange();
             }
-        }).catch(reason => console.log("Error:" + reason));
+        }).catch((reason) => console.log("Error:" + reason));
     }
     close() {
         this.isVisible = false;
@@ -303,7 +306,7 @@ class OrSmartNotify extends LitElement {
     toggleVisibility() {
         this.isVisible = !this.isVisible;
     }
-}
+};
 __decorate([
     property({ type: Function })
 ], OrSmartNotify.prototype, "onChange", void 0);
@@ -322,5 +325,7 @@ __decorate([
 __decorate([
     property({ type: String })
 ], OrSmartNotify.prototype, "currentTime", void 0);
-window.customElements.define('or-smart-notify', OrSmartNotify);
+OrSmartNotify = __decorate([
+    customElement('or-smart-notify')
+], OrSmartNotify);
 //# sourceMappingURL=index.js.map

@@ -21,10 +21,12 @@ class OrTimeline extends LitElement {
         this.step = 5;
     }
     render() {
-        const range = this.shadowRoot.getElementById('or-timeline-slider');
-        if (range) {
-            range.value = Math.round(this.current);
-            this.moveBubble(range);
+        if (this.shadowRoot) {
+            const range = this.shadowRoot.getElementById('or-timeline-slider');
+            if (range) {
+                range.value = Math.round(this.current);
+                this.moveBubble(range);
+            }
         }
         return html `
               <style>
@@ -182,7 +184,9 @@ class OrTimeline extends LitElement {
             el = e.target;
         }
         else {
-            el = this.shadowRoot.getElementById('or-timeline-slider');
+            if (this.shadowRoot) {
+                el = this.shadowRoot.getElementById('or-timeline-slider');
+            }
         }
         if (el) {
             if (value) {
@@ -211,8 +215,12 @@ class OrTimeline extends LitElement {
                 offset -= newPoint;
             }
             // Move bubble
-            const range = this.shadowRoot.getElementById('range-value');
-            range.style.left = newPlace + "px";
+            if (this.shadowRoot) {
+                const range = this.shadowRoot.getElementById('range-value');
+                if (range) {
+                    range.style.left = newPlace + "px";
+                }
+            }
         }
     }
     valueChange(e) {

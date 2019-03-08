@@ -101,8 +101,8 @@ class OrTimeline extends LitElement {
                         flex-basis: 100%;
                         
                         overflow: visible;
-                        color: #dcdcdc;
-                        border-left: 1px solid #dcdcdc;
+                        color: var(--timeline-grey,  darkgrey);
+                        border-left: 1px solid var(--timeline-grey,  darkgrey);
                         font-size: 12px;
                         -webkit-user-select: none;
                         -moz-user-select: none;
@@ -121,6 +121,7 @@ class OrTimeline extends LitElement {
                         background-color:  var(--timeline-accent,  blue);
                         height: 30px; 
                         width: 60px;
+                        margin-left: -30px;
                         text-align: center; 
                         color: white; 
                         display: inline-block; 
@@ -131,10 +132,11 @@ class OrTimeline extends LitElement {
                     }
                     
                     .time-value-container {
-                        width: 100%;
+                        width: calc(100% - 80px);
                         display: block;
                         position: relative;
                         height: 30px;
+                        margin: 0 50px 0 30px;
                     }
               </style>
             
@@ -208,17 +210,21 @@ class OrTimeline extends LitElement {
             // Figure out placement percentage between left and right of input
             const newPoint = v / this.maxRange;
             // Janky value to get pointer to line up better
-            let offset = 0;
+            let offset = 30;
             let newPlace;
 
             // Prevent bubble from going beyond left or right (unsupported browsers)
             if (newPoint < 0) {
                 newPlace = 0;
             } else if (newPoint > 1) {
-                newPlace = width;
+                newPlace = width - offset;
             } else {
-                newPlace = width * newPoint + offset;
-                offset -= newPoint;
+                newPlace = (width - offset) * newPoint;
+
+                if(newPlace < 0 ) {
+                    newPlace = 0;
+                }
+
             }
 
             // Move bubble
