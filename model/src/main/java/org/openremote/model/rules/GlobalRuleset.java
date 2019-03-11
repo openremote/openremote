@@ -35,15 +35,11 @@ public class GlobalRuleset extends Ruleset {
     public GlobalRuleset() {
     }
 
-    public GlobalRuleset(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, Lang lang) {
-        super(id, version, createdOn, lastModified, name, enabled, lang);
-    }
-
-    public GlobalRuleset(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String rules, Lang lang) {
+    public GlobalRuleset(long id, long version, Date createdOn, Date lastModified, boolean enabled, String name, Lang lang, String rules) {
         super(id, version, createdOn, lastModified, name, enabled, rules, lang);
     }
 
-    public GlobalRuleset(String name, String rules, Lang lang) {
+    public GlobalRuleset(String name, Lang lang, String rules) {
         super(name, rules, lang);
     }
 

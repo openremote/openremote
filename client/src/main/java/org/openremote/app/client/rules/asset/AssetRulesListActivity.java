@@ -114,7 +114,7 @@ public class AssetRulesListActivity
 
             environment.getApp().getRequests().sendAndReturn(
                 assetRulesetArrayMapper,
-                params -> rulesResource.getAssetRulesets(params, assetId),
+                params -> rulesResource.getAssetRulesets(params, assetId, false),
                 200,
                 results -> view.setRulesets(new ArrayList<>(Arrays.asList(results)))
             );

@@ -739,9 +739,25 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.tenantA.getRealm(),
                                                          keycloakDemoSetup.testuser3Id,
                                                          apartment1HallwayId));
-//        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.tenantA.getRealm(),
-//                                                         keycloakDemoSetup.testuser2Id,
-//                                                         apartment2Id));
+
+        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.tenantA.getRealm(),
+                keycloakDemoSetup.buildingUserId,
+                apartment1Id));
+        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.tenantA.getRealm(),
+                keycloakDemoSetup.buildingUserId,
+                apartment1LivingroomId));
+        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.tenantA.getRealm(),
+                keycloakDemoSetup.buildingUserId,
+                apartment1KitchenId));
+        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.tenantA.getRealm(),
+                keycloakDemoSetup.buildingUserId,
+                apartment1Bedroom1Id));
+        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.tenantA.getRealm(),
+                keycloakDemoSetup.buildingUserId,
+                apartment1BathroomId));
+        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.tenantA.getRealm(),
+                keycloakDemoSetup.buildingUserId,
+                apartment1HallwayId));
 
         // ################################ Make users restricted ###################################
 
@@ -749,10 +765,13 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         testuser3Config.setRestricted(true);
         testuser3Config = identityService.mergeUserConfiguration(testuser3Config);
 
+        UserConfiguration buildingUserConfig = identityService.getUserConfiguration(keycloakDemoSetup.buildingUserId);
+        testuser3Config.setRestricted(true);
+        buildingUserConfig = identityService.mergeUserConfiguration(buildingUserConfig);
+
         // ################################ Realm B ###################################
 
         ObjectValue locationValueB = SMART_CITY_LOCATION.toValue();
-
 
         Asset smartCity = new Asset();
         smartCity.setRealm(this.realmBTenant);
@@ -843,9 +862,9 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
 
         AssetRuleset camera3Rules = new AssetRuleset(
             "Camera3_Rules",
-            camera3Asset.getId(),
-            IOUtils.toString(getClass().getResource("/demo/rules/DemoSmartCityCamera.groovy"), "UTF-8"),
-            GROOVY, false);
+                GROOVY, IOUtils.toString(getClass().getResource("/demo/rules/DemoSmartCityCamera.groovy"), "UTF-8"), camera3Asset.getId(),
+                false
+        );
         camera3Rules = rulesetStorageService.merge(camera3Rules);
 
         Asset light3Asset = createDemoLightAsset("Light3", assetArea3);

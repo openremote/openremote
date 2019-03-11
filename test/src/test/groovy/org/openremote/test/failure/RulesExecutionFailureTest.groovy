@@ -1,21 +1,15 @@
 package org.openremote.test.failure
 
-import org.openremote.manager.notification.NotificationService
-import org.openremote.manager.notification.PushNotificationHandler
+
 import org.openremote.manager.rules.RulesEngine
 import org.openremote.manager.rules.RulesFacts
 import org.openremote.manager.rules.RulesService
 import org.openremote.manager.rules.RulesetStorageService
 import org.openremote.manager.setup.SetupService
-import org.openremote.manager.setup.builtin.KeycloakDemoSetup
 import org.openremote.manager.setup.builtin.ManagerDemoSetup
-import org.openremote.model.notification.AbstractNotificationMessage
-import org.openremote.model.notification.Notification
-import org.openremote.model.notification.NotificationSendResult
 import org.openremote.model.rules.AssetRuleset
 import org.openremote.model.rules.Ruleset
 import org.openremote.model.rules.RulesetStatus
-import org.openremote.model.rules.TenantRuleset
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
@@ -35,10 +29,8 @@ class RulesExecutionFailureTest extends Specification implements ManagerContaine
 
         and: "some rules"
         Ruleset ruleset = new AssetRuleset(
-                "Failure Ruleset",
-                managerDemoSetup.apartment2Id,
-                getClass().getResource("/org/openremote/test/failure/RulesFailureConditionInvalidReturn.groovy").text,
-                Ruleset.Lang.GROOVY, false
+                "Failure Ruleset", Ruleset.Lang.GROOVY, getClass().getResource("/org/openremote/test/failure/RulesFailureConditionInvalidReturn.groovy").text,
+                managerDemoSetup.apartment2Id, false
         )
         ruleset = rulesetStorageService.merge(ruleset)
 
@@ -71,10 +63,8 @@ class RulesExecutionFailureTest extends Specification implements ManagerContaine
 
         and: "some rules"
         Ruleset ruleset = new AssetRuleset(
-                "Failure Ruleset",
-                managerDemoSetup.apartment2Id,
-                getClass().getResource("/org/openremote/test/failure/RulesFailureConditionThrowsException.groovy").text,
-                Ruleset.Lang.GROOVY, false
+                "Failure Ruleset", Ruleset.Lang.GROOVY, getClass().getResource("/org/openremote/test/failure/RulesFailureConditionThrowsException.groovy").text,
+                managerDemoSetup.apartment2Id, false
         )
         ruleset = rulesetStorageService.merge(ruleset)
 
@@ -107,10 +97,8 @@ class RulesExecutionFailureTest extends Specification implements ManagerContaine
 
         and: "some rules"
         Ruleset ruleset = new AssetRuleset(
-                "Failure Ruleset",
-                managerDemoSetup.apartment2Id,
-                getClass().getResource("/org/openremote/test/failure/RulesFailureActionThrowsException.groovy").text,
-                Ruleset.Lang.GROOVY, false
+                "Failure Ruleset", Ruleset.Lang.GROOVY, getClass().getResource("/org/openremote/test/failure/RulesFailureActionThrowsException.groovy").text,
+                managerDemoSetup.apartment2Id, false
         )
         ruleset = rulesetStorageService.merge(ruleset)
 
@@ -143,10 +131,8 @@ class RulesExecutionFailureTest extends Specification implements ManagerContaine
 
         and: "some rules"
         Ruleset ruleset = new AssetRuleset(
-                "Failure Ruleset",
-                managerDemoSetup.apartment2Id,
-                getClass().getResource("/org/openremote/test/failure/RulesFailureLoop.groovy").text,
-                Ruleset.Lang.GROOVY, false
+                "Failure Ruleset", Ruleset.Lang.GROOVY, getClass().getResource("/org/openremote/test/failure/RulesFailureLoop.groovy").text,
+                managerDemoSetup.apartment2Id, false
         )
         ruleset = rulesetStorageService.merge(ruleset)
 

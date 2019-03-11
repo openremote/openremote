@@ -56,9 +56,8 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
 
         when: "a new global rule definition is added"
         def ruleset = new GlobalRuleset(
-                "Some more global rules",
-                getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetStates2.groovy").text,
-                GROOVY
+                "Some more global rules", GROOVY,
+                getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetStates2.groovy").text
         )
         rulesetStorageService.merge(ruleset)
 
@@ -73,10 +72,9 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
 
         when: "a new tenant rule definition is added to Tenant A"
         ruleset = new TenantRuleset(
-                "Some more tenantA tenant rules",
-                keycloakDemoSetup.tenantA.realm,
-                getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetStates2.groovy").text,
-                GROOVY, false
+                "Some more tenantA tenant rules", GROOVY, getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetStates2.groovy").text,
+                keycloakDemoSetup.tenantA.realm
+                , false
         )
         rulesetStorageService.merge(ruleset)
 
@@ -92,10 +90,9 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
 
         when: "a new tenant rule definition is added to Tenant B"
         ruleset = new TenantRuleset(
-                "Some more tenantB tenant rules",
-                keycloakDemoSetup.tenantB.realm,
-                getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetStates2.groovy").text,
-                GROOVY, false
+                "Some more tenantB tenant rules", GROOVY, getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetStates2.groovy").text,
+                keycloakDemoSetup.tenantB.realm
+                , false
         )
         rulesetStorageService.merge(ruleset)
 
@@ -155,9 +152,8 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
 
         when: "a broken rule definition is added to the global rules engine"
         ruleset = new GlobalRuleset(
-                "Some broken global rules",
-                getClass().getResource("/org/openremote/test/rules/BasicBrokenRules.groovy").text,
-                GROOVY
+                "Some broken global rules", GROOVY,
+                getClass().getResource("/org/openremote/test/rules/BasicBrokenRules.groovy").text
         )
         ruleset = rulesetStorageService.merge(ruleset)
 
@@ -193,10 +189,10 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
 
         then: "the tenants rule engine should stop and all asset rule engines in this realm should also stop"
         conditions.eventually {
-            assert tenantAEngine.isRunning() == false
+            assert !tenantAEngine.isRunning()
             assert tenantAEngine.deployments.size() == 2
             assert rulesService.tenantEngines.get(keycloakDemoSetup.tenantA.realm) == null
-            assert apartment3Engine.isRunning() == false
+            assert !apartment3Engine.isRunning()
             assert apartment3Engine.deployments.size() == 1
             assert rulesService.assetEngines.get(managerDemoSetup.apartment3Id) == null
         }

@@ -37,10 +37,8 @@ class ResidenceSmartSwitchTest extends Specification implements ManagerContainer
 
         and: "some rules"
         Ruleset ruleset = new AssetRuleset(
-                "Demo Apartment - Smart Start",
-                managerDemoSetup.apartment1Id,
-                getClass().getResource("/demo/rules/DemoResidenceSmartSwitch.groovy").text,
-                Ruleset.Lang.GROOVY, false
+                "Demo Apartment - Smart Start", Ruleset.Lang.GROOVY, getClass().getResource("/demo/rules/DemoResidenceSmartSwitch.groovy").text,
+                managerDemoSetup.apartment1Id, false
         )
         rulesetStorageService.merge(ruleset)
 
@@ -167,10 +165,8 @@ class ResidenceSmartSwitchTest extends Specification implements ManagerContainer
 
         and: "some rules"
         Ruleset ruleset = new AssetRuleset(
-                "Demo Apartment - Smart Start",
-                managerDemoSetup.apartment1Id,
-                getClass().getResource("/demo/rules/DemoResidenceSmartSwitch.groovy").text,
-                Ruleset.Lang.GROOVY, false
+                "Demo Apartment - Smart Start", Ruleset.Lang.GROOVY, getClass().getResource("/demo/rules/DemoResidenceSmartSwitch.groovy").text,
+                managerDemoSetup.apartment1Id, false
         )
         rulesetStorageService.merge(ruleset)
 
@@ -265,10 +261,8 @@ class ResidenceSmartSwitchTest extends Specification implements ManagerContainer
 
         and: "some rules"
         Ruleset ruleset = new AssetRuleset(
-                "Demo Apartment - Smart Start",
-                managerDemoSetup.apartment1Id,
-                getClass().getResource("/demo/rules/DemoResidenceSmartSwitch.groovy").text,
-                Ruleset.Lang.GROOVY, false
+                "Demo Apartment - Smart Start", Ruleset.Lang.GROOVY, getClass().getResource("/demo/rules/DemoResidenceSmartSwitch.groovy").text,
+                managerDemoSetup.apartment1Id, false
         )
         rulesetStorageService.merge(ruleset)
 
@@ -387,10 +381,8 @@ class ResidenceSmartSwitchTest extends Specification implements ManagerContainer
 
         and: "some rules"
         Ruleset ruleset = new AssetRuleset(
-                "Demo Apartment - Smart Start",
-                managerDemoSetup.apartment1Id,
-                getClass().getResource("/demo/rules/DemoResidenceSmartSwitch.groovy").text,
-                Ruleset.Lang.GROOVY, false
+                "Demo Apartment - Smart Start", Ruleset.Lang.GROOVY, getClass().getResource("/demo/rules/DemoResidenceSmartSwitch.groovy").text,
+                managerDemoSetup.apartment1Id, false
         )
         rulesetStorageService.merge(ruleset)
 
@@ -486,10 +478,8 @@ class ResidenceSmartSwitchTest extends Specification implements ManagerContainer
 
         and: "some rules"
         Ruleset ruleset = new AssetRuleset(
-                "Demo Apartment - Smart Start",
-                managerDemoSetup.apartment1Id,
-                getClass().getResource("/demo/rules/DemoResidenceSmartSwitch.groovy").text,
-                Ruleset.Lang.GROOVY, false
+                "Demo Apartment - Smart Start", Ruleset.Lang.GROOVY, getClass().getResource("/demo/rules/DemoResidenceSmartSwitch.groovy").text,
+                managerDemoSetup.apartment1Id, false
         )
         rulesetStorageService.merge(ruleset)
 

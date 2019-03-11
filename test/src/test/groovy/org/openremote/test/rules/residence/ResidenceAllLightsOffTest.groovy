@@ -35,10 +35,8 @@ class ResidenceAllLightsOffTest extends Specification implements ManagerContaine
 
         and: "some rules"
         Ruleset ruleset = new AssetRuleset(
-                "Demo Apartment - All Lights Off",
-                managerDemoSetup.apartment2Id,
-                getClass().getResource("/demo/rules/DemoResidenceAllLightsOff.js").text,
-                Ruleset.Lang.JAVASCRIPT, false
+                "Demo Apartment - All Lights Off", Ruleset.Lang.JAVASCRIPT, getClass().getResource("/demo/rules/DemoResidenceAllLightsOff.js").text,
+                managerDemoSetup.apartment2Id, false
         )
         rulesetStorageService.merge(ruleset)
 

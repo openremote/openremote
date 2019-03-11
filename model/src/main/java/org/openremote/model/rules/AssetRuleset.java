@@ -19,10 +19,7 @@
  */
 package org.openremote.model.rules;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Table;
-import javax.persistence.Transient;
+import javax.persistence.*;
 import java.util.Date;
 
 /**
@@ -47,22 +44,13 @@ public class AssetRuleset extends Ruleset {
     public AssetRuleset() {
     }
 
-    public AssetRuleset(String assetId, boolean accessPublicRead) {
-        this.assetId = assetId;
-        this.accessPublicRead = accessPublicRead;
-    }
-
-    public AssetRuleset(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String assetId, Lang lang, boolean accessPublicRead) {
-        this(id, version, createdOn, lastModified, name, enabled, null, lang, assetId, null, accessPublicRead);
-    }
-
-    public AssetRuleset(String name, String assetId, String rules, Lang lang, boolean accessPublicRead) {
+    public AssetRuleset(String name, Lang lang, String rules, String assetId, boolean accessPublicRead) {
         super(name, rules, lang);
         this.assetId = assetId;
         this.accessPublicRead = accessPublicRead;
     }
 
-    public AssetRuleset(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String rules, Lang lang, String assetId, String realm, boolean accessPublicRead) {
+    public AssetRuleset(long id, long version, Date createdOn, Date lastModified, boolean enabled, String name, Lang lang, String rules, String realm, String assetId, boolean accessPublicRead) {
         super(id, version, createdOn, lastModified, name, enabled, rules, lang);
         this.assetId = assetId;
         this.realm = realm;

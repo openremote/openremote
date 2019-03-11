@@ -84,7 +84,7 @@ public class TenantRulesEditorActivity
 
     @Override
     protected TenantRuleset newRuleset() {
-        return new TenantRuleset(realm, false);
+        return new TenantRuleset(null, null, null, realm, false);
     }
 
     @Override

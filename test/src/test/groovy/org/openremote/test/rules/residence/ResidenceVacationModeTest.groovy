@@ -40,10 +40,8 @@ class ResidenceVacationModeTest extends Specification implements ManagerContaine
 
         and: "some rules"
         Ruleset ruleset = new AssetRuleset(
-                "Demo Apartment - Vacation Mode",
-                managerDemoSetup.apartment1Id,
-                getClass().getResource("/demo/rules/DemoResidenceVacationMode.groovy").text,
-                Ruleset.Lang.GROOVY, false
+                "Demo Apartment - Vacation Mode", Ruleset.Lang.GROOVY, getClass().getResource("/demo/rules/DemoResidenceVacationMode.groovy").text,
+                managerDemoSetup.apartment1Id, false
         )
         rulesetStorageService.merge(ruleset)
 

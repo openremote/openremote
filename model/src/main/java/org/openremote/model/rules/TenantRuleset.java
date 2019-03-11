@@ -43,24 +43,14 @@ public class TenantRuleset extends Ruleset {
     public TenantRuleset() {
     }
 
-    public TenantRuleset(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String realm, Lang lang, boolean accessPublicRead) {
-        super(id, version, createdOn, lastModified, name, enabled, lang);
-        this.realm = realm;
-        this.accessPublicRead = accessPublicRead;
-    }
-
-    public TenantRuleset(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String rules, Lang lang, String realm, boolean accessPublicRead) {
-        super(id, version, createdOn, lastModified, name, enabled, rules, lang);
-        this.realm = realm;
-        this.accessPublicRead = accessPublicRead;
-    }
-
-    public TenantRuleset(String realm, boolean accessPublicRead) {
-        this(null, realm, null, Lang.GROOVY, accessPublicRead);
-    }
-
-    public TenantRuleset(String name, String realm, String rules, Lang lang, boolean accessPublicRead) {
+    public TenantRuleset(String name, Lang lang, String rules, String realm, boolean accessPublicRead) {
         super(name, rules, lang);
+        this.realm = realm;
+        this.accessPublicRead = accessPublicRead;
+    }
+
+    public TenantRuleset(long id, long version, Date createdOn, Date lastModified, boolean enabled, String name, Lang lang, String rules, String realm, boolean accessPublicRead) {
+        super(id, version, createdOn, lastModified, name, enabled, rules, lang);
         this.realm = realm;
         this.accessPublicRead = accessPublicRead;
     }
