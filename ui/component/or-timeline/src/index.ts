@@ -48,6 +48,7 @@ class OrTimeline extends LitElement {
                       transition: opacity .2s;
                       
                       border-radius: 6px;
+                      cursor: pointer;
                     }
                     
                     /* The slider handle (use -webkit- (Chrome, Opera, Safari, Edge) and -moz- (Firefox) to override default look) */ 
