@@ -4,5 +4,8 @@
     "ui/app/*",
     "ui/component/*",
     "ui/demo/*"
-  ]
+  ],
+  "resolutions": {
+    "growl": "^1.10.5"
+  }
 }
