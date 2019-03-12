@@ -70,7 +70,7 @@ A first build will download many dependencies (and cache them locally for future
 
 When all Docker containers are ready, you can access the OpenRemote UI and API with a webbrowser (if you are using Docker Toolbox replace `localhost` with `192.168.99.100`):
 
-**OpenRemote Manager:** https://localhost 
+**OpenRemote Manager:** https://localhost  
 Username: admin  
 Password: secret
 
