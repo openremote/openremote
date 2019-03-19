@@ -217,7 +217,7 @@ let OrSmartNotify = class OrSmartNotify extends LitElement {
                     </a>
                 </div>
                  <div class="layout horizontal">
-                    <div style="background-color: var(--app-lightgrey-color, #dedede);" class="flex padding-10">Wachttijd berekenen</div>
+                    <div style="background-color: var(--app-lightgrey-color, #dedede);" class="flex padding-10">Activeren</div>
                     <div class="flex t-center">
                         <label class="switch">
                           <input @change="${this.setSmartNotify}" ?disabled="${this.isDisabled}" ?checked="${this.isActive}" type="checkbox">

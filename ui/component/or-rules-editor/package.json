@@ -1,0 +1,30 @@
+{
+  "name": "@openremote/or-rules-editor",
+  "version": "1.0.0",
+  "description": "OpenRemote Rules Editor",
+  "main": "dist/index.js",
+  "types": "src/index.ts",
+  "scripts": {
+    "build": "npx tsc",
+    "test": "echo \"No tests\" && exit 0"
+  },
+  "author": "OpenRemote",
+  "license": "AGPL-3.0-or-later",
+  "dependencies": {
+    "@openremote/or-input": "^1.0.0",
+    "@openremote/or-select": "^1.0.0",
+    "@openremote/rest": "^1.0.0",
+    "@openremote/core": "^1.0.0",
+    "lit-element": "^2.0.1",
+    "moment": "^2.24.0"
+  },
+  "devDependencies": {
+    "@polymer/decorators": "^3.0.0",
+    "@polymer/iron-demo-helpers": "^3.0.0-pre.19",
+    "@webcomponents/webcomponentsjs": "^2.2.7",
+    "style-loader": "^0.23.1",
+    "tslint": "^5.11.0",
+    "typescript": "^3.2.2",
+    "wct-browser-legacy": "^1.0.0"
+  }
+}
