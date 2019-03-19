@@ -550,7 +550,7 @@ public abstract class AbstractManagerSetup implements Setup {
                     new MetaItem(READ_ONLY, Values.create(true)),
                     new MetaItem(RULE_STATE, Values.create(true))
                 ),
-            new AssetAttribute("cameraCountTotalAlertLevel", NUMBER)
+            new AssetAttribute("cameraCountTotalAlertLevel", NUMBER, Values.create(100))
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Camera Count Total Alert Level")),
                     new MetaItem(DESCRIPTION, Values.create("When Camera Count Total equals or passes this value, an alert will be sent")),
@@ -560,10 +560,10 @@ public abstract class AbstractManagerSetup implements Setup {
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Camera Count Total Alert")),
                     new MetaItem(DESCRIPTION, Values.create("True when alert rule is triggered")),
-                    new MetaItem(READ_ONLY, Values.create(true)),
+//                    new MetaItem(READ_ONLY, Values.create(true)),
                     new MetaItem(RULE_STATE, Values.create(true))
                 ),
-            new AssetAttribute("cameraCountGrowthAlertLevel", NUMBER)
+            new AssetAttribute("cameraCountGrowthAlertLevel", NUMBER, Values.create(200))
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Camera Count Growth Alert Level")),
                     new MetaItem(DESCRIPTION, Values.create("When Camera Count Growth equals or passes this value, an alert will be sent")),
@@ -591,7 +591,7 @@ public abstract class AbstractManagerSetup implements Setup {
                     new MetaItem(READ_ONLY, Values.create(true)),
                     new MetaItem(RULE_STATE, Values.create(true))
                 ).addMeta(agentLinker.get()),
-            new AssetAttribute("microphoneLevelAlertLevel", SOUND_DB)
+            new AssetAttribute("microphoneLevelAlertLevel", SOUND_DB, Values.create(80))
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Microphone Level Alert Level")),
                     new MetaItem(DESCRIPTION, Values.create("Level of dB when alert will be send")),
@@ -667,7 +667,7 @@ public abstract class AbstractManagerSetup implements Setup {
                     new MetaItem(READ_ONLY, Values.create(true)),
                     new MetaItem(RULE_STATE, Values.create(true))
                 ).addMeta(agentLinker.get()),
-            new AssetAttribute("ozonAlertLevel", NUMBER)
+            new AssetAttribute("ozonAlertLevel", NUMBER, Values.create(300))
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Ozon Alert Level")),
                     new MetaItem(DESCRIPTION, Values.create("µg/m3")),

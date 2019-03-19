@@ -62,29 +62,22 @@ rules.add()
         .when({
     facts ->
 
-        LOG.info("cam: "+ facts.matchAssetState(new AssetQuery()
-                .name(new StringPredicate(BaseAssetQuery.Match.BEGIN, "Camera"))).collect())
-
         def cameraIds = facts.matchAssetState(new AssetQuery()
                 .name(new StringPredicate(BaseAssetQuery.Match.BEGIN, "Camera"))
                 .attributeName("cameraCountTotalAlert"))
                 .filter(
                 {
-                    LOG.info("id: " + it.id)
-                    LOG.info("cameraCountTotalAlert: " + it.valueAsBoolean)
-                    LOG.info("OrElse: " + it.valueAsBoolean.orElse(false))
-
                     !it.valueAsBoolean.orElse(false) &&
                     facts.matchFirstAssetState(new AssetQuery()
                             .id(it.id)
                             .attributeName("cameraCountTotal"))
                             .map({ it.valueAsNumber.orElse(-1) })
-                            .orElse(-1) >=
+                            .orElse(-1) >
                             facts.matchFirstAssetState(new AssetQuery()
                                     .id(it.id)
-                                    .attributeName("cameraCountTotalAlert"))
-                                    .map({ it.valueAsNumber.orElse(0) })
-                                    .orElse(0)
+                                    .attributeName("cameraCountTotalAlertLevel"))
+                                    .map({ it.valueAsNumber.orElse(-1) })
+                                    .orElse(-1)
                 })
                 .map({ it.id })
                 .collect()
@@ -98,8 +91,7 @@ rules.add()
 }).then({
     facts ->
         List<String> cameraIds = facts.bound("cameraIds")
-        def attributesEvents = cameraIds.collect {
-            new AttributeEvent(it, "cameraCountTotalAlert", Values.create(true))
-        } as AttributeEvent[]
-        assets.dispatch(attributesEvents)
+        cameraIds.forEach({
+            facts.updateAssetState(it, "cameraCountTotalAlert", true)
+        })
 })
