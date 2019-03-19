@@ -560,7 +560,7 @@ public abstract class AbstractManagerSetup implements Setup {
                 .setMeta(
                     new MetaItem(LABEL, Values.create("Camera Count Total Alert")),
                     new MetaItem(DESCRIPTION, Values.create("True when alert rule is triggered")),
-//                    new MetaItem(READ_ONLY, Values.create(true)),
+                    new MetaItem(READ_ONLY, Values.create(true)),
                     new MetaItem(RULE_STATE, Values.create(true))
                 ),
             new AssetAttribute("cameraCountGrowthAlertLevel", NUMBER, Values.create(200))
