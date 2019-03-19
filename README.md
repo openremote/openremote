@@ -33,10 +33,10 @@ docker-compose up --no-build
 
 ```
 Windows Command Prompt (quotes are essential):
-set "IDENTITY_NETWORK_HOST=192.168.99.100" && docker-compose up --build
+set "IDENTITY_NETWORK_HOST=192.168.99.100" && docker-compose up --no-build
 
 Bash:
-IDENTITY_NETWORK_HOST=192.168.99.100 docker-compose up --build
+IDENTITY_NETWORK_HOST=192.168.99.100 docker-compose up --no-build
 ```
 
 ### 2. Starting OpenRemote with source-build images
