@@ -10,13 +10,12 @@ If you want to try OpenRemote v2, [read the OpenRemote v2 documentation](https:/
 
 Before following this quickstart make sure you have [prepared your environment](https://github.com/openremote/openremote/wiki/Developer-Guide%3A-Preparing-the-environment). There are 2 options start with OpenRemote:
 1. Use the images from Docker Hub (easiest)
-2. Checkout this project and build the images locally first.
+2. Checkout this project and build the images locally first
 
 ### 1. Starting OpenRemote with images from Docker Hub
 
-We publish Docker images to [Docker Hub](https://hub.docker.com/u/openremote/), please be aware that the published images may be out of date compared to this codebase. If you want to run the latest code, build the images from this source.
+We publish Docker images to [Docker Hub](https://hub.docker.com/u/openremote/):
 
-Get the images using the following commands in the designated folder:
 ```
 docker pull openremote/postgresql
 docker pull openremote/keycloak
@@ -24,7 +23,7 @@ docker pull openremote/proxy
 docker pull openremote/manager
 ```
 
-To run OpenRemote using Docker Hub images simply execute the following command from the checked out root project directory:
+To run OpenRemote using Docker Hub images, execute the following command from the checked out root project directory:
 
 ```
 docker-compose up --no-build
@@ -104,7 +103,7 @@ More configuration options of the images are documented [in the deploy.yml profi
 
 ## Contributing to OpenRemote
 
-We work with Java, Groovy, JavaScript, Gradle, Docker, and a wide range of APIs and protocol implementations. Clone or checkout this project and send us pull requests, ensure that code is covered by tests and that the full test suite passes.
+We work with Java, Groovy, TypeScript, Gradle, Docker, and a wide range of APIs and protocol implementations. Clone or checkout this project and send us pull requests, ensure that code is covered by tests and that the full test suite passes.
 
 For more information and how to set up a development environment, see the [Developer Guide](https://github.com/openremote/openremote/wiki).
 
