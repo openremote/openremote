@@ -75,8 +75,8 @@ Username: admin
 Password: secret
 
 **Demo Smart Building App:** https://localhost/smart-building-v1/  
-Username: testuser3  
-Password: testuser3
+Username: building  
+Password: building
 
 You must accept and make an exception for the 'insecure' self-signed SSL certificate. You can configure a production installation of OpenRemote with a your own certificate or automatically use one from [Let's Encrypt](https://letsencrypt.org/).
 
