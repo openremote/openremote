@@ -6,9 +6,5 @@
   },
   "include": [
     "./src"
-  ],
-  "references": [
-    { "path": "../rest" },
-    { "path": "../or-icon" }
   ]
 }
