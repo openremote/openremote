@@ -45,7 +45,7 @@ module.exports = {
             {
                 test: /\.js$/,
                 include: function(modulePath) {
-                    return /(@webcomponents[\/|\\]shadycss|lit-css|styled-lit-element|lit-html|@polymer|@lit|pwa-helpers)/.test(modulePath) || !/node_modules/.test(modulePath);
+                    return /(@webcomponents[\/|\\]shadycss|lit-css|styled-lit-element|lit-html|lit-element|@polymer|@lit|pwa-helpers)/.test(modulePath) || !/node_modules/.test(modulePath);
                 },
                 use: [
                     {

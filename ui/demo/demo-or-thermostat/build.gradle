@@ -1,9 +1,13 @@
 buildDir = "dist"
 
-task build {
-    dependsOn rootProject.tasks.getByName("yarnInstall"), npmBuild
-}
-
 task clean() {
     dependsOn npmClean
+}
+
+task build() {
+    dependsOn npmBuild
+}
+
+task installDist() {
+    dependsOn build
 }

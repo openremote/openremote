@@ -38,6 +38,8 @@ idea {
         testOutputDir file('build/classes/test')
         excludeDirs += file(".node")
         excludeDirs += file("node_modules")
+        excludeDirs += file("dist")
+        excludeDirs += file("build")
     }
 }
 if (project.convention.findPlugin(JavaPluginConvention)) {
@@ -57,6 +59,11 @@ ext.npmCommand = {
         isFamily(FAMILY_WINDOWS) ? "${cmd}.cmd" : cmd
 }
 
+// Add yarn tasks
+task yarnInstall(type: Exec){
+    commandLine npmCommand("yarn"), "install"
+}
+
 // Add npm tasks
 task npmInstall(type: Exec){
     // Use yarn
@@ -66,6 +73,7 @@ task npmClean(type: Exec){
     commandLine npmCommand("npm"), "run-script", "clean"
 }
 task npmBuild(type: Exec){
+    dependsOn tasks.getByPath(":yarnInstall")
     commandLine npmCommand("npm"), "run-script", "build"
 }
 task npmTest(type: Exec){
@@ -76,11 +84,6 @@ task npmServe(type: Exec){
 }
 task npmServeProduction(type: Exec){
     commandLine npmCommand("npm"), "run-script", "serveProduction"
-}
-
-// Add yarn tasks
-task yarnInstall(type: Exec){
-    commandLine npmCommand("yarn"), "install"
 }
 
 // Add typescript tasks

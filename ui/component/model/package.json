@@ -11,9 +11,7 @@
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
   "dependencies": {},
-  "devDependencies": {
-    "typescript": "^3.2.2"
-  },
+  "devDependencies": {},
   "files": [
     "dist"
   ]
