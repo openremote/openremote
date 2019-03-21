@@ -1,3 +1,5 @@
+buildDir = "dist"
+
 task clean() {
     doLast {
         delete "dist"

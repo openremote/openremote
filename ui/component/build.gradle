@@ -3,8 +3,12 @@ task build() {
     dependsOn getTasksByName("build", true).findAll {
         
         def isComponentBuild = it.path.contains(":ui:component") && it.project != project
-        if (isComponentBuild && !it.path.contains(":ui:component:core") && !it.path.contains(":ui:component:model") && !it.path.contains(":ui:component:rest")) {
-            it.dependsOn resolveTask(":ui:component:core:build")
+        if (isComponentBuild) {
+            if (it.path.contains(":ui:component:core")) {
+                it.project.getTasksByName("npmBuild", false)[0].dependsOn resolveTask(":ui:component:model:build"), resolveTask(":ui:component:rest:build")
+            } else if (!it.path.contains(":ui:component:model") && !it.path.contains(":ui:component:rest")) {
+                it.dependsOn resolveTask(":ui:component:core:build")
+            }
         }
         
         return isComponentBuild
