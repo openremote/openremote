@@ -18,6 +18,9 @@ module.exports = {
         contentBase: './dist',
         publicPath: "/" + __dirname.split(path.sep).slice(-1)[0]  + "/"
     },
+    watchOptions: {
+        ignored: ['**/*.ts', 'node_modules']
+    },
     plugins: [
         new HtmlWebpackPlugin({
             chunksSortMode: 'none',
