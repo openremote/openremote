@@ -707,6 +707,20 @@
     "@polymer/iron-scroll-target-behavior" "^3.0.0-pre.26"
     "@polymer/polymer" "^3.0.0"
 
+"@openremote/model@1.0.0":
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/@openremote/model/-/model-1.0.0.tgz#a58c9806b438765187eb3940e56c02b06d6483da"
+  integrity sha512-hgDpSDlM5TUZTl+mnlgipRPJeDo/CtbnmDLJz/tc2zliFsSoq3+B198Py0CCTtmGYQDOPYeBo4Y1R6+rMriKug==
+
+"@openremote/rest@1.0.0":
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/@openremote/rest/-/rest-1.0.0.tgz#8c3ac93fa16e55606ed4ca48b39abb1c12bde125"
+  integrity sha512-k7AJBAfb7/yRDwCy5TKlU8VFdbHhJ3ypPJpZERVEp4egLY335hCVpLdDbb9oLUuHllAVv+/4n/QV1vAcBuz41Q==
+  dependencies:
+    "@openremote/core" "^1.0.0"
+    "@openremote/model" "^1.0.0"
+    axios "^0.18.0"
+
 "@polymer/decorators@^3.0.0":
   version "3.0.0"
   resolved "https://registry.yarnpkg.com/@polymer/decorators/-/decorators-3.0.0.tgz#e4212ac976d9abd1210f560b6e1be4165c1c0183"

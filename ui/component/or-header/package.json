@@ -1,6 +1,6 @@
 {
   "name": "@openremote/or-header",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "Displays header with menu for mobile and desktop",
   "main": "dist/index.js",
   "types": "src/index.ts",

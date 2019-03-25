@@ -1,6 +1,6 @@
 {
   "name": "@openremote/rest",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "OpenRemote 3.x REST API",
   "main": "dist/index.js",
   "types": "src/index.ts",

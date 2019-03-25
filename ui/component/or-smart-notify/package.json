@@ -1,8 +1,8 @@
 {
   "name": "@openremote/or-smart-notify",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "OpenRemote Smarty Notify element",
-  "main": "src/index.js",
+  "main": "dist/index.js",
   "types": "src/index.ts",
   "scripts": {
     "build": "npx tsc -b",

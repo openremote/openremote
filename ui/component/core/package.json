@@ -1,6 +1,6 @@
 {
   "name": "@openremote/core",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "OpenRemote 3.x Core",
   "main": "dist/index.js",
   "types": "src/index.ts",

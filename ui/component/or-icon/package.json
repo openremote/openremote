@@ -11,6 +11,7 @@
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
+    "xmldom": "^0.1.27",
     "@openremote/rest": "^1.0.0",
     "@types/mapbox-gl": "^0.51.1",
     "lit-element": "^2.0.1",
@@ -28,3 +29,4 @@
     "xpath": "^0.0.27"
   }
 }
+
