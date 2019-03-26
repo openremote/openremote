@@ -43,7 +43,7 @@ export class MapWidget {
 
             if (!MapWidget._mapboxJsStyle) {
                 // @ts-ignore
-                MapWidget._mapboxJsStyle = await import("mapbox.js/theme/style.css");
+                MapWidget._mapboxJsStyle = await import("mapbox.js/dist/mapbox.css");
             }
 
             // Add style to shadow root
