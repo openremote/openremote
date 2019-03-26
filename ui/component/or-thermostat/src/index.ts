@@ -30,7 +30,7 @@ class OrThermostat extends LitElement {
             console.log("Event Received:" + JSON.stringify(event, null, 2));
             if (event.attributeState
                 && event.attributeState.attributeRef!.attributeName === "targetTemperature") {
-                this._targetTemperature = event.attributeState!.value;
+                this.targetTemperature = event.attributeState!.value;
             }
             if (event.attributeState
                 && event.attributeState.attributeRef!.attributeName === "currentTemperature") {
@@ -67,9 +67,20 @@ class OrThermostat extends LitElement {
 
     private set targetTemperature (newValue:number) {
         let oldValue = this._targetTemperature;
-        //update view
         this._targetTemperature = newValue;
-        //send event to manager
+        this.requestUpdate("_targetTemperature", oldValue);
+    };
+
+    private raiseTargetTemperatureByControl () : void {
+        let newVal = this._targetTemperature + 1;
+
+        console.log('setting new temp',newVal);
+
+        //use setter to update temp
+        this.targetTemperature = newVal;
+
+        //update view
+        this._targetTemperature = newVal;
         const event:AttributeEvent = {
             "eventType": "attribute",
             "attributeState": {
@@ -77,16 +88,10 @@ class OrThermostat extends LitElement {
                     "entityId": this.assetId,
                     "attributeName": "targetTemperature"
                 },
-                "value": newValue
+                "value": newVal
             }
         };
         openremote.events!.sendEvent(event);
-        this.requestUpdate("_targetTemperature", oldValue);
-    };
-
-    private raiseTargetTemperatureByControl () : void {
-        this.targetTemperature = this._targetTemperature + 1;
-
     }
     private lowerTargetTemperatureByControl () : void {
         this.targetTemperature = this._targetTemperature - 1;
