@@ -13,7 +13,7 @@
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
-    "@openremote/core": "^1.0.0",
+    "@openremote/core": "^1.0.1",
     "lit-html": "^0.12.0"
   },
   "devDependencies": {

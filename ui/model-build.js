@@ -10,5 +10,8 @@ if (!isORRepo) {
     cwd = path.join(cwd, "openremote");
 }
 
-const gradleModelWatch = spawnSync('gradlew', ["modelWatch"], {cwd: cwd, shell: true});
+const gradleModelWatch = spawnSync((process.platform === "win32" ? "gradlew" : "./gradlew"), ["modelWatch"], {
+    cwd: cwd,
+    shell: true
+});
 process.exit(gradleModelWatch.status);
