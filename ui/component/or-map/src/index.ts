@@ -117,7 +117,7 @@ export class OrMap extends PolymerElement {
             this._map.load().then(() => {
                 // Get markers from slot
                 let slotElement = this.shadowRoot!.getElementById('markers-slot');
-                this._observer = new FlattenedNodesObserver(slotElement!, (info) => {
+                this._observer = new FlattenedNodesObserver(slotElement!, (info: any) => {
                     this._processNewMarkers(info.addedNodes);
                     this._processRemovedMarkers(info.removedNodes);
                 });
