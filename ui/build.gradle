@@ -1,6 +1,12 @@
 task deleteNodeModules {
     doFirst {
-        delete "${project(':openremote').projectDir}/node_modules"
+       delete "${project(':openremote').projectDir}/node_modules"
+    }
+}
+
+task clean {
+    if (isCustomProject() && parent == rootProject) {
+        dependsOn deleteNodeModules
     }
 }
 
@@ -10,7 +16,7 @@ task build {
     // Add dependency to openremote ui build for custom projects
     // and also remove node_modules dir from openremote repo
     if (isCustomProject() && parent == rootProject) {
-        dependsOn resolveTask(":ui:build"), deleteNodeModules        
+        dependsOn resolveTask(":ui:build")
     }
 }
 
