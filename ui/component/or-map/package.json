@@ -11,6 +11,8 @@
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
+    "@polymer/polymer": "^3.2.0",
+    "@polymer/decorators": "^3.0.0",
     "@openremote/core": "^1.0.0",
     "lit-element": "^2.0.1",
     "@types/mapbox-gl": "^0.51.1",
