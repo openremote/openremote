@@ -68,19 +68,7 @@ class OrThermostat extends LitElement {
     private set targetTemperature (newValue:number) {
         let oldValue = this._targetTemperature;
         this._targetTemperature = newValue;
-        this.requestUpdate("_targetTemperature", oldValue);
-    };
 
-    private raiseTargetTemperatureByControl () : void {
-        let newVal = this._targetTemperature + 1;
-
-        console.log('setting new temp',newVal);
-
-        //use setter to update temp
-        this.targetTemperature = newVal;
-
-        //update view
-        this._targetTemperature = newVal;
         const event:AttributeEvent = {
             "eventType": "attribute",
             "attributeState": {
@@ -92,6 +80,19 @@ class OrThermostat extends LitElement {
             }
         };
         openremote.events!.sendEvent(event);
+        
+        this.requestUpdate("_targetTemperature", oldValue);
+    };
+
+    private raiseTargetTemperatureByControl () : void {
+        let newVal = this._targetTemperature + 1;
+
+        //use setter to update temp
+        this.targetTemperature = newVal;
+
+        //update view
+        this._targetTemperature = newVal;
+
     }
     private lowerTargetTemperatureByControl () : void {
         this.targetTemperature = this._targetTemperature - 1;
