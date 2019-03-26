@@ -71,7 +71,7 @@ class OrThermostat extends LitElement {
         this._targetTemperature = newValue;
         //send event to manager
         const event:AttributeEvent = {
-            eventType: "attribute",
+            "eventType": "attribute",
             "attributeState": {
                 "attributeRef": {
                     "entityId": this.assetId,
@@ -85,14 +85,11 @@ class OrThermostat extends LitElement {
     };
 
     private raiseTargetTemperatureByControl () : void {
-
-        //use setter to update temp
         this.targetTemperature = this._targetTemperature + 1;
 
     }
     private lowerTargetTemperatureByControl () : void {
-        let newVal = this._targetTemperature - 1;
-        this.targetTemperature = newVal;
+        this.targetTemperature = this._targetTemperature - 1;
     }
 
     connectedCallback() {
@@ -112,9 +109,10 @@ class OrThermostat extends LitElement {
         return html`
             <p>displayed: ${this._displayedLabel}</p>
             <p>current temp: ${this._currentTemperature}</p>
-            <button @click="${this.lowerTargetTemperatureByControl}">-</button>
-            <p>target temp: ${this._targetTemperature}</p>
-            <button @click="${this.raiseTargetTemperatureByControl}">+</button>
+            <p>target temp:</p>
+            <button style="display:inline" @click="${this.lowerTargetTemperatureByControl}">-</button>
+            <span>${this._targetTemperature}</span>
+            <button style="display:inline" @click="${this.raiseTargetTemperatureByControl}">+</button>
         `;
     }
 }
