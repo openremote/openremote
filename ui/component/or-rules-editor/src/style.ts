@@ -9,7 +9,7 @@ export const style = css`
 
         --bg-white: #FFFFFF;
         --bg-grey: #F5F5F5;
-        --app-lightgrey-color: #e4e4e4;
+        --app-lightgrey-color: #f2f2f2;
     }
 
     .rule-editor-container {
@@ -37,30 +37,30 @@ export const style = css`
         display: flex;
         flex-direction: column;
     }
-    
+
     or-rule-list {
         flex-grow: 1;
     }
-    
+
     .bottom-toolbar {
         display: flex;
-        
+
         border-top: 1px solid var(--app-lightgrey-color);
     }
-    
+
     icon {
         cursor: pointer;
-        padding: 10px;
+        padding: 5px;
         margin: 10px;
         border: 1px solid var(--app-lightgrey-color);
         border-radius: 3px;
     }
-    
+
     icon:hover {
         background-color: var(--app-primary-color);
         color: var(--app-white-color, #FFF);
     }
-    
+
     or-body,
     .content {
         display: flex;
@@ -70,11 +70,11 @@ export const style = css`
     or-body {
         flex-direction: column;
     }
-    
+
     .content {
         flex-direction: row;
     }
-    
+
     or-rule-then,
     or-rule-when {
         display: flex;
@@ -83,4 +83,9 @@ export const style = css`
         background-color: var(--app-lightgrey-color);
         max-width: 50%;
     }
+
+    .small-icon {
+        --or-icon-height: 16px;
+    }
+
 `;

@@ -1,13 +1,25 @@
-import {html, LitElement, property, customElement} from 'lit-element';
+import {html, LitElement, property, customElement, PropertyValues} from 'lit-element';
 
 import {style} from './style';
-import {Rule, RuleTrigger, AttributePredicate, BaseAssetQueryMatch} from "@openremote/model";
+import {Rule, RuleTrigger, AttributePredicate, BaseAssetQueryMatch, NewAssetQuery} from "@openremote/model";
 
 import '../or-rule-when-condition';
 
+
+const ruleModel:Rule = {
+    name: "",
+    when: undefined,
+    then: undefined
+};
+
 const defaultWhenCondition:RuleTrigger = {
     "asset": {
-        "types": [],
+        "types": [{
+            "predicateType": "string",
+            "match": BaseAssetQueryMatch.EXACT,
+            "value": "urn:openremote:asset:kmar:flight"
+            }
+        ],
         "attributes": {
             "predicates": []
         }
@@ -20,9 +32,7 @@ const defaultPredicate:AttributePredicate = {
         match: BaseAssetQueryMatch.EXACT
     },
     value: {
-        predicateType: "string",
-        match: BaseAssetQueryMatch.EXACT,
-        value: ""
+        predicateType: "string"
     }
 
 };
@@ -43,14 +53,14 @@ class OrRuleWhen extends LitElement {
                 <h3>Als..</h3>
                 <div class="rule-when-container bg-white shadow">
                     ${this.rule && this.rule.when && this.rule.when.asset && this.rule.when.asset.attributes && this.rule.when.asset.attributes.predicates ? html`
-                        ${this.rule.when.asset.attributes.predicates.map((predicate:AttributePredicate) => {
+                        ${this.rule.when.asset.attributes.predicates.map((predicate:AttributePredicate, index) => {
                             return html`
-                                    <or-rule-when-condition .predicate="${predicate}"></or-rule-when-condition>
+                                    <or-rule-when-condition index="${index}" .predicate="${predicate}"></or-rule-when-condition>
                                     <span class="rule-additional">&</span>
                             `
                         })}
                     `: ``}
-                    <a class="button-add" @click="${this.addWhenRule}">+</a>
+                    <a class="button-add" @click="${this.addWhenCondition}">+</a>
                 </div>
             </div>
         `;
@@ -64,9 +74,18 @@ class OrRuleWhen extends LitElement {
 
     constructor() {
         super();
+        this.addEventListener('when-condition:delete', this.deleteWhenCondition);
+
     }
 
-    addWhenRule () {
+    protected updated(_changedProperties: PropertyValues): void {
+        super.updated(_changedProperties);
+        if (!this.rule) {
+            this.rule = ruleModel;
+        }
+    }
+
+    addWhenCondition () {
         if(this.rule && !this.rule.when) {
             this.rule.when = defaultWhenCondition;
         }
@@ -78,5 +97,14 @@ class OrRuleWhen extends LitElement {
 
     }
 
+    deleteWhenCondition (e:any) {
+
+        const index = e.detail.index;
+
+        if(this.rule && this.rule.when && this.rule.when.asset && this.rule.when.asset.attributes && this.rule.when.asset.attributes.predicates) {
+            this.rule.when.asset.attributes.predicates.splice(index, 1);
+            this.requestUpdate();
+        }
+    }
 }
 

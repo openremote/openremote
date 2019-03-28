@@ -19,14 +19,17 @@ class OrSelectAssetAttribute extends LitElement {
     @property({type: String})
     value: any;
 
+    @property({type: Boolean})
+    disabled: boolean = false;
+
     protected render() {
 
         // TODO types should be based on rules-config
         return html`
-             <select id="or-select-asset-attribute" @change="${this.onChange}">
+             <select ?disabled="${this.disabled}" id="or-select-asset-attribute" @change="${this.onChange}">
                 ${this.attributeDescriptors ? this.attributeDescriptors.map((attribute:AttributeDescriptor) => {
                     return html`
-                        <option value="${attribute.name}">${attribute.name}</option>
+                        <option ?selected="${attribute.name === this.value}" value="${attribute.name}">${attribute.name}</option>
                     `
                 }) : ``}
             </select>
@@ -53,6 +56,8 @@ class OrSelectAssetAttribute extends LitElement {
         // TODO what is the attribute name of profile flights?
         this.attributeDescriptors = [
             { name: 'flightProfile', valueType: AttributeValueType.STRING },
+            { name: 'profileName', valueType: AttributeValueType.STRING },
+            { name: 'profileColor', valueType: AttributeValueType.STRING },
             { name: 'airportIata', valueType: AttributeValueType.STRING },
             { name: 'airlineIata', valueType: AttributeValueType.STRING },
             { name: 'originRegion', valueType: AttributeValueType.STRING },

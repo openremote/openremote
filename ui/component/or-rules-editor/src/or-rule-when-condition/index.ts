@@ -4,6 +4,7 @@ import '../selects/or-select-operator';
 
 import '@openremote/or-input';
 import '@openremote/or-select';
+import '@openremote/or-icon';
 
 import {style} from './style';
 import {AttributePredicate} from "@openremote/model";
@@ -23,19 +24,30 @@ class OrRuleWhenCondition extends LitElement {
             <div class="rule-container">
                 ${this.predicate ? html`
                     <or-select-asset-type>
-                        <i class="material-icons">
-                            ${this.predicate.name ? this.predicate.name.value : 'defaultIcon'}
-                        </i>
+                        <or-icon icon="${this.predicate.name ? 'airplane' : 'airplane'}">
+                        </or-icon>
                     </or-select-asset-type>
+                    
                     ${this.predicate.name ? html`
                         <or-select-asset-attribute icon="${this.predicate}" value="${this.predicate.name.value}"></or-select-asset-attribute>
-                    ` : ``}
                     
-                    ${this.predicate.value && this.predicate.value.predicateType === 'string' ? html`
-                        <or-select-operator type="${this.predicate.value.predicateType}" value="${this.predicate.value.match}"></or-select-operator>
-                    
-                        <or-input type="text" value="${this.predicate.value.value}"></or-input>
-                    
+                        ${this.predicate.value && this.predicate.value.predicateType === 'string' ? html`
+                            ${this.predicate.name.value ? html`
+                                <or-select-operator type="${this.predicate.value.predicateType}" value="${this.predicate.value.match}"></or-select-operator>
+                            ` : ``}
+                            
+                            ${this.predicate.value.match ? html`
+                                <or-input type="text" value="${this.predicate.value.value ? this.predicate.value.value : ''}"></or-input>
+                            ` : ``}
+                            
+                             ${this.predicate.value.value ? html`
+                                <a @click="${this.deleteCondition}">
+                                 <or-icon class="small-icon" icon="delete"></or-icon>
+                                </a>
+                            ` : ``}
+                            
+                        ` : ``}
+                        
                     ` : ``}
                     
                 ` : ``}
@@ -45,6 +57,10 @@ class OrRuleWhenCondition extends LitElement {
 
     @property({type: Object})
     predicate?: AttributePredicate;
+
+    @property({type: Number})
+    index?: number;
+
 
     // setAssetType(value:string) {
     //     const assetType = {
@@ -65,6 +81,7 @@ class OrRuleWhenCondition extends LitElement {
         if(this.predicate && this.predicate.name) {
             this.predicate.name.value = value;
             console.log(this.predicate);
+            this.requestUpdate();
         }
     }
 
@@ -73,6 +90,7 @@ class OrRuleWhenCondition extends LitElement {
         if(this.predicate && this.predicate.value && this.predicate.value.predicateType === 'string') {
             this.predicate.value.match = value;
             console.log(this.predicate);
+            this.requestUpdate();
         }
     }
 
@@ -82,7 +100,20 @@ class OrRuleWhenCondition extends LitElement {
         if(this.predicate && this.predicate.value && this.predicate.value.predicateType === 'string') {
             this.predicate.value.value = value;
             console.log(this.predicate);
+            this.requestUpdate();
         }
+    }
+
+    deleteCondition (){
+
+        let event = new CustomEvent('when-condition:delete', {
+            detail: { index: this.index },
+            bubbles: true,
+            composed: true });
+
+        this.dispatchEvent(event);
+
+        this.requestUpdate();
     }
 
     constructor() {

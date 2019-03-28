@@ -11,11 +11,13 @@
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
+    "@openremote/core": "^1.0.0",
     "@openremote/or-input": "^1.0.0",
     "@openremote/or-select": "^1.0.0",
     "@openremote/rest": "^1.0.0",
-    "@openremote/core": "^1.0.0",
+    "@types/lodash-es": "^4.17.3",
     "lit-element": "^2.0.1",
+    "lodash-es": "^4.17.11",
     "moment": "^2.24.0"
   },
   "devDependencies": {

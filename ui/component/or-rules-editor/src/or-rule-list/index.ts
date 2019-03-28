@@ -1,9 +1,12 @@
 import {html, LitElement, property, PropertyValues} from 'lit-element';
-import {Rule} from '@openremote/model';
+import {TenantRuleset} from '@openremote/model';
 
 class OrRulesList extends LitElement {
     @property({type: Array})
-    rules: Rule[] = [];
+    rulesets: TenantRuleset[] = [];
+
+    @property({type: Object})
+    ruleset?: TenantRuleset;
 
     protected render() {
 
@@ -38,6 +41,7 @@ class OrRulesList extends LitElement {
                             cursor: pointer;
                         }
                         
+                        .list-item[selected],
                         .list-item:hover {
                             border-left-color: var(--app-primary-color);
                             background-color: var(--app-lightgrey-color);
@@ -57,14 +61,18 @@ class OrRulesList extends LitElement {
                         .bg-green {
                             background-color: green;
                         }
+                        
+                        .bg-red {
+                            background-color: red
+                        }
             </style>
             <div class="list-container">
-                ${this.rules && this.rules.map((rule: Rule, index:number) => {
+                ${this.rulesets && this.rulesets.map((ruleset: TenantRuleset, index:number) => {
                     return html`
-                        <a class="d-flex list-item" @click="${()=> this.setActiveRule(this.rules[index])}">
-                            <span class="rule-status ${!rule.name ? '' : 'bg-green'}"></span>
+                        <a ?selected="${this.ruleset && ruleset.id === this.ruleset.id}" class="d-flex list-item" @click="${()=> this.setActiveRule(this.rulesets[index])}">
+                            <span class="rule-status ${ruleset.enabled ? 'bg-green' : 'bg-red'}"></span>
                             <div class="flex">
-                                <span>${rule.name}</span>
+                                <span>${ruleset.name}</span>
                             </div>
                         </a>
                     `
@@ -73,10 +81,10 @@ class OrRulesList extends LitElement {
         `;
     }
 
-    setActiveRule (rule:Rule) {
+    setActiveRule (ruleset:TenantRuleset) {
         this.requestUpdate();
         let event = new CustomEvent('rules:set-active-rule', {
-            detail: {rule: rule},
+            detail: {ruleset: ruleset},
             bubbles: true,
             composed: true
         });

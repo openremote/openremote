@@ -8,9 +8,10 @@ export const style = css`
     
     .rule-container {
           display: flex;
-          padding: 20px;
+          margin-bottom: 10px;
+          padding: 15px 20px;
           
-          border-radius: 3px;
-          border: 1px solid var(--lightgrey-color);
+          border-radius: 5px;
+          border: 1px solid var(--app-lightgrey-color, #F5F5F5);
     }
 `;

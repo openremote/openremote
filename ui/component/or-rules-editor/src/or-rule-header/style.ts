@@ -1,11 +1,10 @@
 import {css} from 'lit-element';
 
-
+// language=CSS
 export const style = css`
     :host {
         display: block;
         width: 100%;
-        height: 300px;
 
         z-index: 1;
     }
@@ -34,5 +33,24 @@ export const style = css`
         margin-left: auto;
         color: var(--app-white-color, #FFF);
         font-weight: bold;
+    }
+    
+    or-input {
+       padding: 10px;
+    }
+    
+   .rule-status {
+        width: 8px;
+        height: 8px;
+        border-radius: 8px;
+        margin: 15px
+    }
+    
+    .bg-green {
+        background-color: green;
+    }
+    
+    .bg-red {
+        background-color: red
     }
 `;

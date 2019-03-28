@@ -10,11 +10,14 @@ class OrRuleWhen extends LitElement {
     @property({type: String})
     value?: BaseAssetQueryMatch;
 
+    @property({type: Boolean})
+    disabled: boolean = false;
+
     protected render() {
 
         return html`
              ${this.type ? html`
-                <select id="or-select-operator" @change="${this.onChange}">
+                <select ?disabled="${this.disabled}" id="or-select-operator" @change="${this.onChange}">
                     <option ?selected="${this.value === BaseAssetQueryMatch.EXACT}" value="${BaseAssetQueryMatch.EXACT}">=</option>
                     <option ?selected="${this.value === BaseAssetQueryMatch.NOT_EXACT}" value="${BaseAssetQueryMatch.NOT_EXACT}">!=</option>
                     ${this.type === AttributeValueType.NUMBER ? html`

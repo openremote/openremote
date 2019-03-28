@@ -1,13 +1,25 @@
-import {html, LitElement, property, customElement} from 'lit-element';
+import {html, LitElement, property, customElement, PropertyValues} from 'lit-element';
 
 import {style} from './style';
-import {Rule, RuleTrigger, RuleActionUnion} from "@openremote/model";
+import {Rule, RuleTrigger, RuleActionUnion, NewAssetQuery, BaseAssetQueryMatch} from "@openremote/model";
 
 import '../or-rule-then-condition';
 
 let defaultThen:RuleActionUnion[] = [];
+
+const defaultAssetType:NewAssetQuery = {
+    "types": [{
+        "predicateType": "string",
+        "match": BaseAssetQueryMatch.EXACT,
+        "value": "urn:openremote:asset:kmar:flight"
+    }]
+};
+
 let defaultThenCondition:RuleActionUnion = {
-    action: "write-attribute"
+    action: "write-attribute",
+    attributeName: 'profileName',
+    value: 'profiel naam',
+    target: { "useAssetsFromWhen": true}
 };
 
 @customElement('or-rule-then')
@@ -31,10 +43,9 @@ class OrRuleThen extends LitElement {
                                 <span class="rule-additional">&</span>
                                 `
                             }) : ``}
-                        <a class="button-add" @click="${this.addThenRule}">+</a>
+                        <a class="button-add" @click="${this.addThenCondition}">+</a>
                     </div>
                 </div>
-            
         `;
     }
 
@@ -45,10 +56,16 @@ class OrRuleThen extends LitElement {
         super();
     }
 
-    addThenRule () {
+    protected updated(_changedProperties: PropertyValues): void {
+        super.updated(_changedProperties);
         if(this.rule && !this.rule.then) {
             this.rule.then = defaultThen;
-            console.log(this.rule);
+        }
+    }
+
+    addThenCondition () {
+        if(this.rule && !this.rule.then) {
+            this.rule.then = defaultThen;
 
         }
 

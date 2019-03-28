@@ -4,11 +4,14 @@ import '../selects/or-select-asset-attribute';
 
 import '@openremote/or-input';
 import '@openremote/or-select';
+import '@openremote/or-icon';
 
 import {style} from './style';
 
-import {RuleActionUnion} from "@openremote/model";
+import {RuleActionUnion, RuleActionWriteAttribute} from "@openremote/model";
 
+
+// TODO use create select option to
 @customElement('or-rule-then-condition')
 class OrRuleThenCondition extends LitElement {
 
@@ -22,23 +25,36 @@ class OrRuleThenCondition extends LitElement {
 
         return html`
             <div class="rule-container">
-                <or-select-asset-type></or-select-asset-type>
-                <or-select-asset-attribute type="${this.condition}"></or-select-asset-attribute>
-                <or-select-operator type="${this.condition}"></or-select-operator>
-                <or-input type="text"></or-input>
+                ${this.condition ? html`
+                   <or-select-asset-attribute disabled type="${this.condition}" value="${this.condition.attributeName}"></or-select-asset-attribute>
+                   <or-select-operator disabled type="${this.condition}" value="EQUAL"></or-select-operator>
+                    
+                   <or-input type="text" value="${this.condition.value}"></or-input>
+                ` : ``}
             </div>
         `;
     }
 
     @property({type: Object})
-    condition?: RuleActionUnion;
+    condition?: RuleActionWriteAttribute;
 
     @property({type: Number})
     private value: number = 0;
 
+    setValue(e:any) {
+        const value = e.detail.value;
+
+        if(this.condition && this.condition.value) {
+            this.condition.value = value;
+            this.requestUpdate();
+        }
+    }
+
 
     constructor() {
         super();
+
+        this.addEventListener('or-input:changed', this.setValue);
     }
 
 

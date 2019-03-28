@@ -4,14 +4,15 @@ import '../selects/or-select-asset-attribute';
 
 import '@openremote/or-input';
 import '@openremote/or-select';
-import {Rule} from '@openremote/model';
+import '@openremote/or-icon';
+import {TenantRuleset} from '@openremote/model';
 
 import {style} from './style';
 
 @customElement('or-rule-header')
 class OrRuleHeader extends LitElement {
     @property({type: Object})
-    rule?: Rule;
+    ruleset?: TenantRuleset;
 
     @property({type: Boolean})
     editmode: boolean = false;
@@ -26,19 +27,19 @@ class OrRuleHeader extends LitElement {
 
         return html`
             <div class="rule-container">
-                ${this.editmode ? html`
+              
                     <div class="layout horizontal">
-                        <or-input type="text" value="${this.rule ? this.rule.name : null}"></or-input>
-                        <span @click="${this.toggleEditmode}">edit</span>
+                        ${this.editmode ? html`
+                            <or-input type="text" value="${this.ruleset ? this.ruleset.name : null}"></or-input>
+                        ` : html`
+                            <h1>${this.ruleset ? this.ruleset.name : ''}</h1>
+                        `}
+                        
+                        <span @click="${this.toggleEditmode}"><or-icon style="margin:10px;" icon="pencil-outline"></or-icon></span>
+                        <span class="rule-status ${this.ruleset && this.ruleset.enabled ? 'bg-green' : 'bg-red'}"></span>
+                        <or-toggle @click="${this.toggleEnabled}">toggle</or-toggle>
                         <button @click="${this.updateRule}">opslaan</button>
                     </div>
-                ` : html`
-                    <div class="layout horizontal">
-                        <h1>${this.rule ? this.rule.name : ''}</h1>
-                        <span @click="${this.toggleEditmode}">edit</span>
-                        <button @click="${this.updateRule}">opslaan</button>
-                    </div>
-                `}
             </div>
         `;
     }
@@ -50,19 +51,28 @@ class OrRuleHeader extends LitElement {
 
     changeName (e:any) {
         const value = e.detail.value;
-        if(this.rule) {
-            this.rule.name = value;
-            console.log(this.rule);
+        if(this.ruleset) {
+            this.ruleset.name = value;
+            console.log(this.ruleset);
         }
     }
 
     updateRule() {
         let event = new CustomEvent('rules:update-rule', {
-            detail: {rule: this.rule},
+            detail: {ruleset: this.ruleset},
             bubbles: true,
             composed: true
         });
         this.dispatchEvent(event);
+    }
+
+    toggleEnabled () {
+        if(this.ruleset){
+            this.ruleset.enabled = !this.ruleset.enabled;
+
+            this.updateRule();
+            this.requestUpdate();
+        }
     }
 
     toggleEditmode() {

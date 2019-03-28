@@ -20,15 +20,18 @@ export const style = css`
     .button-add {
         display: block;
         cursor: pointer;
-        padding: 15px 40px;
+        padding: 10px 40px;
         font-size: 20px;
         font-weight: bold;
-        box-sizing: border-box;
+        height: 32px;
+        box-sizing: content-box;
         border: 3px dashed var(--app-lightgrey-color, #e4e4e4);
     }
     
     .rule-additional {
-        padding: 15px 20px;
+        height: 38px;
+        line-height: 38px;
+        padding: 10px 20px;
         font-size: 20px;
         font-weight: bold;
     }
