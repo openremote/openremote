@@ -16,7 +16,7 @@
     "@openremote/or-select": "^1.0.0",
     "@openremote/rest": "^1.0.0",
     "@types/lodash-es": "^4.17.3",
-    "lit-element": "^2.0.1",
+    "lit-element": "^2.1.0",
     "lodash-es": "^4.17.11",
     "moment": "^2.24.0"
   },

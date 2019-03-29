@@ -13,7 +13,7 @@
   "dependencies": {
     "@openremote/rest": "^1.0.0",
     "@openremote/model": "^1.0.0",
-    "lit-element": "^2.0.1",
+    "lit-element": "^2.1.0",
     "@fortawesome/fontawesome-svg-core": "^1.2.12",
     "@fortawesome/free-solid-svg-icons": "^5.6.3",
     "@fortawesome/free-regular-svg-icons": "^5.6.3",
