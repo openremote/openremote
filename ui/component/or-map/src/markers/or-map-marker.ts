@@ -1,116 +1,153 @@
-import {html, PolymerElement} from "@polymer/polymer";
-import {property, query, observe, customElement} from "@polymer/decorators";
-import {MapWidget} from "../mapwidget";
+import {css, customElement, LitElement, property, PropertyValues, query, html} from "lit-element";
+import {html as litHtml, render} from "lit-html";
+
+export enum OrMapMarkerEvent {
+    CLICKED = "or-map-marker-clicked",
+    CHANGED = "or-map-marker-changed"
+}
+
+declare global {
+    export interface HTMLElementEventMap {
+        [OrMapMarkerEvent.CHANGED]: OrMapMarkerChangedEvent;
+        [OrMapMarkerEvent.CLICKED]: OrMapMarkerClickedEvent;
+    }
+}
+
+export class OrMapMarkerChangedEvent extends CustomEvent<MarkerChangedEventDetail> {
+
+    constructor(marker: OrMapMarker, prop: string) {
+        super(OrMapMarkerEvent.CHANGED, {
+            detail: {
+                marker: marker,
+                property: prop
+            },
+            bubbles: true,
+            composed: true
+        });
+    }
+}
+
+export class OrMapMarkerClickedEvent extends CustomEvent<MarkerEventDetail> {
+
+    constructor(marker: OrMapMarker) {
+        super(OrMapMarkerEvent.CLICKED, {
+            detail: {
+                marker: marker
+            },
+            bubbles: true,
+            composed: true
+        });
+    }
+}
+
+export interface MarkerEventDetail {
+    marker: OrMapMarker;
+}
+
+export interface MarkerChangedEventDetail extends MarkerEventDetail {
+    property: string;
+}
 
 /**
- * Base class for all map markers
+ * Base class for all map markers.
+ *
+ * This component doesn't directly render anything instead it generates DOM that can be added to the map component
  */
 @customElement("or-map-marker")
-export class OrMapMarker extends PolymerElement {
-    protected _added: boolean = false;
-    protected _attached: boolean = false;
+export class OrMapMarker extends LitElement {
+
+    public static styles = css`
+        :host {
+            display: none;
+        }
+        
+        slot {
+            display: none;
+        }
+    `;
+
+    protected static _defaultTemplate = (icon: string | undefined) => litHtml`
+        <div class="or-map-marker-default">
+            <or-icon icon="or:marker"></or-icon>
+            <or-icon class="marker-icon" icon="${icon || ""}"></or-icon>
+        </div>
+    `
 
     @property({type: Number})
-    lat: number = 0;
+    public lat: number = 0;
 
     @property({type: Number})
-    lng: number = 0;
+    public lng: number = 0;
 
     @property({type: Boolean})
-    visible: boolean = true;
+    public visible: boolean = true;
 
-    @property({type: Object})
-    _ele!: HTMLElement;
+    @property({type: String})
+    public icon?: string;
 
-    @property({type: Object})
-    map?: MapWidget;
+    @property({type: Boolean})
+    public interactive: boolean = true;
 
     @query("slot")
-    _slot!: HTMLSlotElement;
+    protected _slot?: HTMLSlotElement;
 
-    static get template() {
+    public _onClick(e: MouseEvent) {
+        this.dispatchEvent(new OrMapMarkerClickedEvent(this));
+    }
+
+    /**
+     * Override in sub types to return custom marker HTML
+     */
+    public createMarkerElement(): HTMLElement {
+
+        const ele = document.createElement("div");
+        this.setMarkerElementClassNames(ele);
+
+        // Append child elements
+        let hasChildren = false;
+        
+        if (this._slot) {
+            this._slot.assignedNodes({flatten: true}).forEach((child) => {
+                if (child instanceof HTMLElement) {
+                    ele.appendChild(child.cloneNode(true));
+                    hasChildren = true;
+                }
+            });
+        }
+        
+        if (!hasChildren) {
+            // Append default marker
+            this.addDefaultMarkerContent(ele);
+        }
+
+        return ele;
+    }
+
+    protected shouldUpdate(_changedProperties: PropertyValues): boolean {
+        Object.keys(_changedProperties).forEach((prop) => this._raisePropertyChange(prop));
+        return false;
+    }
+
+    protected render() {
         return html`
-          <style>
-            :host {
-                display: block;
-                overflow: hidden;
-            }
-            #map {            
-                position: relative;
-                width: 100%;
-                height: 100%;
-            }
-            slot {
-                display: none;
-            }
-          </style>
           <slot></slot>
         `;
     }
 
-    connectedCallback() {
-        super.connectedCallback();
-        this._attached = true;
-        this._ele = this._createMarkerElement();
+    protected _raisePropertyChange(prop: string) {
+        this.dispatchEvent(new OrMapMarkerChangedEvent(this, prop));
     }
 
-    disconnectedCallback() {
-        super.disconnectedCallback();
-        this._removeMarker();
-        this._attached = false;
+    protected setMarkerElementClassNames(markerElement: HTMLElement) {
+        let classes = "or-map-marker ";
+        if (this.interactive) {
+            classes += "interactive ";
+        }
+        const className = (classes + this.className).trim();
+        markerElement.className = className;
     }
 
-    @observe("visible", "lat", "lng", "map")
-    _updateMarker() {
-        if (!this._attached || !this.map) return;
-
-        if (!this._ele) {
-            this._ele = this._createMarkerElement();
-        }
-
-        if (!this._ele) {
-            return;
-        }
-
-        if (!this.visible) {
-            this._removeMarker();
-        } else {
-            this._addMarker();
-            this.map!.updateMarkerPosition(this);
-        }
-    }
-
-    _addMarker() {
-        if (!this._added) {
-            this.map!.addMarker(this);
-            this._added = true;
-        }
-    }
-
-    _removeMarker() {
-        if (this._added) {
-            this.map!.removeMarker(this);
-            this._added = false;
-        }
-    }
-
-    //TODO make this optional?
-    _onClick(e:any) {
-    }
-
-    _createMarkerElement(): HTMLElement {
-        let children = this._slot.assignedNodes({flatten:true});
-        let len = children.length;
-        let className = ("or-map-marker " + this.className).trim();
-        let ele = document.createElement("div");
-        ele.className = className;
-
-        if (len > 0) {
-            // if more than 1 ele put inside wrapper
-            for (var i=0; i<len; ++i) {
-                ele.appendChild(children[i]);
-            }
-        }
-        return ele;
+    protected addDefaultMarkerContent(markerElement: HTMLElement) {
+        render(OrMapMarker._defaultTemplate(this.icon), markerElement);
     }
 }

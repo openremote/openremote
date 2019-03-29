@@ -1,15 +1,42 @@
+/* tslint:disable:class-name */
 declare module "mapbox.js" {
+
+    export type Point2d = [number, number];
+    export type Point3d = [number, number, number];
+
+    export type LatLngLike = Point2d | Point3d | LatLng;
+    export type LatLngBoundsLike = [LatLngLike, LatLngLike] | LatLngBounds;
 
     export default L;
 
-    type Point2d = [number, number];
-    type Point3d = [number, number, number];
+    export class LatLng {
+        public alt?: number;
+        public lat: number;
+        public lng: number;
+        private constructor(lat: number, lng: number, alt?: number);
+    }
 
-    type LatLngLike = Point2d | Point3d | LatLng;
-    type LatLngBoundsLike = [LatLngLike, LatLngLike] | LatLngBounds;
+    export class LatLngBounds {
+        private constructor();
+        public getSouthEast(): LatLng;
+        public getNorthWest(): LatLng;
+        public getNorthEast(): LatLng;
+        public getSouthWest(): LatLng;
+        public getCenter(): LatLng;
+    }
+
+    export class Map {
+        private constructor();
+        public getBoundsZoom(bounds: LatLngBoundsLike, inside?: boolean): number;
+        public setMaxZoom(zoom: number): this;
+        public setMinZoom(zoom: number): this;
+        public getContainer(): HTMLElement;
+        public setView(center: LatLngLike, zoom?: number, options?: ZoomPanOptions): this;
+        public setZoom(zoom: number, options?: ZoomOptions): this;
+    }
 
     export interface MapOptions {
-        zoom?: number,
+        zoom?: number;
         boxZoom?: boolean;
         center?: LatLngLike;
         maxBounds?: LatLngBoundsLike;
@@ -18,22 +45,22 @@ declare module "mapbox.js" {
     }
 
     export interface IconOptions {
-        iconUrl?: string,
-        iconRetinaUrl?: string,
-        iconSize?: Point2d,
-        iconAnchor?: Point2d,
-        popupAnchor?: Point2d,
-        tooltipAnchor?: Point2d,
-        shadowUrl?: string,
-        shadowRetinaUrl?: string,
-        shadowSize?: Point2d,
-        shadowAnchor?: Point2d,
-        className?: string
+        iconUrl?: string;
+        iconRetinaUrl?: string;
+        iconSize?: Point;
+        iconAnchor?: Point;
+        popupAnchor?: Point;
+        tooltipAnchor?: Point;
+        shadowUrl?: string;
+        shadowRetinaUrl?: string;
+        shadowSize?: Point;
+        shadowAnchor?: Point;
+        className?: string;
     }
 
     export interface DivIconOptions extends IconOptions {
-        html?: string,
-        bgPos?: Point2d
+        html?: string;
+        bgPos?: Point;
     }
 
     export interface MarkerOptions {
@@ -43,56 +70,61 @@ declare module "mapbox.js" {
         alt?: string;
         zIndexOffset?: number;
         opacity?: number;
+        clickable?: boolean;
     }
 
-    export class LatLng {
-        private constructor();
-
-        lat: number;
-        lng: number;
-        alt?: number;
+    export interface ZoomOptions {
+        animate?: boolean;
     }
 
-    export class LatLngBounds {
-        private constructor();
-        getSouthEast(): LatLng;
-        getNorthWest(): LatLng;
-        getNorthEast(): LatLng;
-        getSouthWest(): LatLng;
-        getCenter(): LatLng;
+    export interface PanOptions extends ZoomOptions {
+        duration?: number;
+        easeLinearity?: number;
+        noMoveStart?: boolean;
     }
 
-    export class Icon {
+    export interface ZoomPanOptions extends ZoomOptions {
+        reset?: boolean;
+        pan?: PanOptions;
+        zoom?: ZoomOptions;
+    }
+
+    export interface Icon {
 
     }
 
-    export class DivIcon extends Icon {
+    export interface DivIcon extends Icon {
 
+    }
+
+    export interface Point {
+        x: number;
+        y: number;
     }
 
     export class Marker extends Layer {
-        setLatLng(latLng: LatLngLike): this;
-        on(event: any, func: any): this;
+        public setLatLng(latLng: LatLngLike): this;
+        public on(event: any, func: any): this;
+        public off(event: any, func?: any): this;
+        public getElement(): HTMLElement;
     }
 
     class Layer {
-        addTo(addTo: L.mapbox.map): this;
-        removeFrom(removeFrom: L.mapbox.map): this;
+        public addTo(addTo: Map): this;
+        public removeFrom(removeFrom: Map): this;
     }
 
-    export namespace L {
+    namespace L {
+
         namespace mapbox {
-            export class map {
-                constructor(element: string | Element, tilejson: object, options?: MapOptions);
-                getBoundsZoom(bounds: LatLngBoundsLike, inside?: boolean): number;
-                setMaxZoom(zoom: number): this;
-                setMinZoom(zoom: number): this;
-            }
+            function map(element: string | Element, tilejson: object, options?: MapOptions): Map;
         }
 
         function icon(options: IconOptions): Icon;
 
         function divIcon(options: DivIconOptions): DivIcon;
+
+        function point(x: number, y: number): Point;
 
         function latLng(lat: number, lng: number, alt?: number): LatLng;
 
