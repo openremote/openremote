@@ -4,6 +4,7 @@
   "homepage": "http://openremote.com/",
   "author": "OpenRemote",
   "description": "OR Manager",
+  "private": true,
   "main": "index.html",
   "license": "AGPL-3.0-or-later",
   "ignore": [
@@ -26,5 +27,8 @@
   "resolutions": {
     "@polymer/polymer": "^2.6.1",
     "@polymer/promise-polyfill": "^1.0.1-pre.3"
+  },
+  "workspaces": {
+    "nohoist": ["@polymer/**", "@webcomponents/**", "font-awesome", "moment", "intl", "chart.js"]
   }
 }

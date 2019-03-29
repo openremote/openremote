@@ -157,6 +157,8 @@ task gwtSuperDev(dependsOn: classes, type: JavaExec) {
     jvmArgs("-Dgwt.persistentunitcachedir=$gwtCacheDir")
 }
 
+gwtSuperDev.dependsOn tasks.getByPath(":yarnInstall")
+
 installDist {
     dependsOn resolveTask(":client:src:main:webapp:installDist")
     into "${resolveProject(':deployment').projectDir}/manager/app/manager"
