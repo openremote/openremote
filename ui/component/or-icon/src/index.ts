@@ -51,7 +51,7 @@ export class OrIcon extends LitElement {
         }
     `;
 
-    @property({type: String})
+    @property({type: String, reflect: true})
     icon?: string;
 
     protected _iconElement?: Element;
@@ -81,7 +81,7 @@ export class OrIcon extends LitElement {
     protected _updateIcon(requestUpdate: boolean) {
         this._iconElement = undefined;
         window.removeEventListener(IconEvent.ICONSET_ADDED, this._handler);
-        let parts = (this.icon || '').split(':');
+        let parts = (this.icon || "").split(":");
         let iconName = parts.pop();
         let iconSetName = parts.pop() || OrIcon._DEFAULT_ICONSET;
         if (!iconSetName || iconSetName === "" || !iconName || iconName === "") {

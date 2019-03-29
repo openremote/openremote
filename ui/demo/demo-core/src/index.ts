@@ -1,5 +1,5 @@
 import {html, render} from "lit-html";
-    import {when} from "lit-html/directives/when";
+import {when} from "lit-html/directives/when";
 import rest from "@openremote/rest";
 import openremote, {Auth, Manager, OREvent} from "@openremote/core";
 import "@openremote/or-icon";
@@ -10,7 +10,7 @@ import {
     AssetQuery,
     AttributeEvent,
     BaseAssetQueryInclude,
-    BaseAssetQueryMatch
+    BaseAssetQueryMatch, StringPredicate
 } from "@openremote/model";
 
 let alarmEnabled = false;
@@ -39,7 +39,7 @@ let mainTemplate = (openremote: Manager) => html`
 <p><b>Config: </b> ${openremote.config ? JSON.stringify(openremote.config, null, 2) : ""}</p>
 <p><b>Console Registration: </b>${openremote.console ? JSON.stringify(openremote.console.registration, null, 2) : ""}</p>
 <p><b>Icon Example (Material Design icon set): </b><or-icon icon="access-point" /></p>
-<p><b>Icon Example (OR icon set): </b><or-icon icon="or:logo"></or-icon><or-icon icon="or:logo-plain"></or-icon></p>
+<p><b>Icon Example (OR icon set): </b><or-icon icon="or:logo"></or-icon><or-icon icon="or:logo-plain"></or-icon><or-icon style="fill: #C4D600;" icon="or:marker"></or-icon></p>
 <p><b>Icon Example (dynamic Set click to add): </b><button @click="${() => {createIconSet()}}">Load</button>: <or-icon icon="test:x"></or-icon></p>
 `;
 

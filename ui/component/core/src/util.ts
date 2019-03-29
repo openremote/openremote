@@ -28,8 +28,8 @@ export class Deferred<T> {
 }
 
 export interface GeoNotification {
-    predicate: RadialGeofencePredicate
-    notification: PushNotificationMessage
+    predicate: RadialGeofencePredicate;
+    notification: PushNotificationMessage;
 }
 
 export function getGeoNotificationsFromRulesSet(rulesetDefinition: JsonRulesetDefinition): GeoNotification[] {
