@@ -72,8 +72,8 @@ public class MapService implements ContainerService {
     protected Metadata metadata;
     protected ObjectValue mapConfig;
     protected ObjectValue mapSource;
-    protected ObjectValue mapSettings;
-    protected ObjectValue mapSettingsJs;
+    protected Map<String, ObjectValue> mapSettings = new HashMap<>();
+    protected Map<String, ObjectValue> mapSettingsJs = new HashMap<>();
 
     protected static Metadata getMetadata(Connection connection) {
 
@@ -256,21 +256,24 @@ public class MapService implements ContainerService {
      */
     public ObjectValue getMapSettings(String realm, UriBuilder baseUriBuilder) {
 
-        if (mapSettings != null) {
-            return mapSettings;
+        if (mapSettings.containsKey(realm)) {
+            return mapSettings.get(realm);
         }
 
-        mapSettings = Values.createObject();
+        final ObjectValue settings = mapSettings.computeIfAbsent(realm, r -> {
+            if (metadata.isValid() && mapConfig.hasKeys()) {
+                // Use config as a settings base and convert URLs
+                return mapConfig.deepCopy();
+            }
+            return Values.createObject();
+        });
 
         if (!metadata.isValid() || !mapConfig.hasKeys()) {
-            return mapSettings;
+            return settings;
         }
 
-        // Use config as a settings base and convert URLs
-        mapSettings = mapConfig.deepCopy();
-
         // Set vector_tiles URL to MapResource getSource endpoint
-        mapSettings.getObject("sources")
+        settings.getObject("sources")
                 .flatMap(s -> s.getObject("vector_tiles"))
                 .ifPresent(vectorTilesObj -> {
 
@@ -304,25 +307,25 @@ public class MapService implements ContainerService {
                 });
 
         // Set sprite URL to shared folder
-        mapSettings.getString("sprite").ifPresent(sprite -> {
+        settings.getString("sprite").ifPresent(sprite -> {
             String spriteUri =
                     baseUriBuilder.clone()
                             .replacePath(ManagerWebService.SHARED_PATH)
                             .path(sprite)
                             .build().toString();
-            mapSettings.put("sprite", spriteUri);
+            settings.put("sprite", spriteUri);
         });
 
         // Set glyphs URL to shared folder (tileserver-gl glyphs url cannot contain a path segment so add /fonts here
-        mapSettings.getString("glyphs").ifPresent(glyphs -> {
+        settings.getString("glyphs").ifPresent(glyphs -> {
             String glyphsUri =
                     baseUriBuilder.clone()
                             .replacePath(ManagerWebService.SHARED_PATH)
                             .build().toString() + "/fonts/" + glyphs;
-            mapSettings.put("glyphs", glyphsUri);
+            settings.put("glyphs", glyphsUri);
         });
 
-        return mapSettings;
+        return settings;
     }
 
     /**
@@ -330,28 +333,28 @@ public class MapService implements ContainerService {
      */
     public ObjectValue getMapSettingsJs(String realm, UriBuilder baseUriBuilder) {
 
-        if (mapSettingsJs != null) {
-            return mapSettingsJs;
+        if (mapSettingsJs.containsKey(realm)) {
+            return mapSettingsJs.get(realm);
         }
 
-        mapSettingsJs = Values.createObject();
+        final ObjectValue settings = mapSettings.computeIfAbsent(realm, r -> Values.createObject());
 
         if (!metadata.isValid() || !mapConfig.hasKeys()) {
-            return mapSettingsJs;
+            return settings;
         }
 
         ArrayValue tilesArray = Values.createArray();
         String tileUrl = baseUriBuilder.clone().replacePath(RASTER_MAP_TILE_PATH).build().toString() + "/{z}/{x}/{y}.png";
         tilesArray.set(0, tileUrl);
 
-        mapSettingsJs.put("options", mapConfig.getObject("options").orElse(null));
+        settings.put("options", mapConfig.getObject("options").orElse(null));
 
-        mapSettingsJs.put("attribution", metadata.attribution);
-        mapSettingsJs.put("format", "png");
-        mapSettingsJs.put("type", "baselayer");
-        mapSettingsJs.put("tiles", tilesArray);
+        settings.put("attribution", metadata.attribution);
+        settings.put("format", "png");
+        settings.put("type", "baselayer");
+        settings.put("tiles", tilesArray);
 
-        return mapSettingsJs;
+        return settings;
     }
 
     public byte[] getMapTile(int zoom, int column, int row) {
