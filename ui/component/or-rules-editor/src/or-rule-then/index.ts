@@ -5,7 +5,8 @@ import {Rule, RuleTrigger, RuleActionUnion, NewAssetQuery, BaseAssetQueryMatch} 
 
 import '../or-rule-then-condition';
 
-let defaultThen:RuleActionUnion[] = [];
+
+let hasAddThenCondition:Boolean = false
 
 const defaultAssetType:NewAssetQuery = {
     "types": [{
@@ -21,6 +22,15 @@ let defaultThenCondition:RuleActionUnion = {
     value: 'profiel naam',
     target: { "useAssetsFromWhen": true}
 };
+
+let secondThenCondition:RuleActionUnion = {
+    action: "write-attribute",
+    attributeName: 'profileColor',
+    value: 'orange',
+    target: { "useAssetsFromWhen": true}
+};
+
+let defaultThen:RuleActionUnion[] = [defaultThenCondition, secondThenCondition];
 
 @customElement('or-rule-then')
 class OrRuleThen extends LitElement {
@@ -43,7 +53,9 @@ class OrRuleThen extends LitElement {
                                 <span class="rule-additional">&</span>
                                 `
                             }) : ``}
-                        <a class="button-add" @click="${this.addThenCondition}">+</a>
+                       ${hasAddThenCondition ? html`
+                            <a class="button-add" @click="${this.addThenCondition}">+</a>
+                       `: ``}
                     </div>
                 </div>
         `;
@@ -60,6 +72,7 @@ class OrRuleThen extends LitElement {
         super.updated(_changedProperties);
         if(this.rule && !this.rule.then) {
             this.rule.then = defaultThen;
+            this.requestUpdate();
         }
     }
 

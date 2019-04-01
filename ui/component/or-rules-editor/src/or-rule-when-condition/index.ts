@@ -80,7 +80,8 @@ class OrRuleWhenCondition extends LitElement {
 
         if(this.predicate && this.predicate.name) {
             this.predicate.name.value = value;
-            console.log(this.predicate);
+
+            this.setOperator(e)
             this.requestUpdate();
         }
     }
@@ -89,7 +90,6 @@ class OrRuleWhenCondition extends LitElement {
         const value = e.detail.value;
         if(this.predicate && this.predicate.value && this.predicate.value.predicateType === 'string') {
             this.predicate.value.match = value;
-            console.log(this.predicate);
             this.requestUpdate();
         }
     }
@@ -99,7 +99,6 @@ class OrRuleWhenCondition extends LitElement {
 
         if(this.predicate && this.predicate.value && this.predicate.value.predicateType === 'string') {
             this.predicate.value.value = value;
-            console.log(this.predicate);
             this.requestUpdate();
         }
     }

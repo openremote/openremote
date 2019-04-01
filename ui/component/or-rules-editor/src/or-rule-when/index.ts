@@ -29,10 +29,12 @@ const defaultWhenCondition:RuleTrigger = {
 const defaultPredicate:AttributePredicate = {
     name: {
         predicateType: "string",
-        match: BaseAssetQueryMatch.EXACT
+        match: BaseAssetQueryMatch.EXACT,
+        value: "airlineIata"
     },
     value: {
-        predicateType: "string"
+        predicateType: "string",
+        match: BaseAssetQueryMatch.EXACT
     }
 
 };
