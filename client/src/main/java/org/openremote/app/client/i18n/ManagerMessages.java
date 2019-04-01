@@ -232,7 +232,11 @@ public interface ManagerMessages extends Messages {
 
     String uploadProtocolFile();
 
+    String discoverDevices();
+
     String importInProgress();
+
+    String discoveryInProgress();
 
     String or();
 
@@ -423,6 +427,12 @@ public interface ManagerMessages extends Messages {
     String protocolLinkDiscoverySuccess(int assetCount);
 
     String protocolLinkDiscoveryFailure(int failureCode);
+
+    String protocolLinkImportStarted();
+
+    String protocolLinkImportSuccess(int assetCount);
+
+    String protocolLinkImportFailure(int failureCode);
 
     String attributeLinkConverterValues();
 

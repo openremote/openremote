@@ -674,7 +674,14 @@ public class AssetEditActivity
     }
 
     protected void doProtocolDiscovery(ProtocolDiscoveryView.DiscoveryRequest request, Runnable callback) {
-        showInfo(environment.getMessages().protocolLinkDiscoveryStarted());
+
+        final boolean isImport = request.getFileInfo() != null;
+
+        if (isImport) {
+            showInfo(environment.getMessages().protocolLinkImportStarted());
+        } else {
+            showInfo(environment.getMessages().protocolLinkDiscoveryStarted());
+        }
 
         environment.getApp().getRequests().sendWithAndReturn(
             assetArrayMapper,
@@ -702,7 +709,11 @@ public class AssetEditActivity
                 updateMetaItemDescriptors();
                 view.setFormBusy(false);
                 view.setAvailableAttributeTypes(attributeTypesToList());
-                showSuccess(environment.getMessages().protocolLinkDiscoverySuccess(discoveredAssets.length));
+                if (isImport) {
+                    showSuccess(environment.getMessages().protocolLinkImportSuccess(discoveredAssets.length));
+                } else {
+                    showSuccess(environment.getMessages().protocolLinkDiscoverySuccess(discoveredAssets.length));
+                }
                 callback.run();
             }
         );
