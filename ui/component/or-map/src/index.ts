@@ -1,6 +1,6 @@
 import openremote, {EventCallback, OREvent} from "@openremote/core";
 import {FlattenedNodesObserver} from "@polymer/polymer/lib/utils/flattened-nodes-observer.js";
-import {css, customElement, html, LitElement, property, query} from "lit-element";
+import {css, customElement, html, LitElement, property, query, PropertyValues} from "lit-element";
 import {LngLat, LngLatBoundsLike, LngLatLike} from "mapbox-gl";
 import {MapWidget} from "./mapwidget";
 import {
@@ -139,8 +139,7 @@ export class OrMap extends LitElement {
         this._observer!.disconnect();
     }
 
-    public connectedCallback() {
-        super.connectedCallback();
+    protected firstUpdated(_changedProperties: PropertyValues): void {
 
         if (!openremote.ready) {
             // Defer until openremote is initialised
