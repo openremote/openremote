@@ -1,11 +1,12 @@
-import {html, LitElement, property, customElement} from 'lit-element';
+import {html, LitElement, property, customElement, TemplateResult} from 'lit-element';
+
 import '../selects/or-select-operator';
 import '../selects/or-select-asset-attribute';
 
 import '@openremote/or-input';
 import '@openremote/or-select';
 import '@openremote/or-icon';
-
+import handler from '../index';
 import {style} from './style';
 
 import {RuleActionUnion, RuleActionWriteAttribute} from "@openremote/model";
@@ -28,8 +29,7 @@ class OrRuleThenCondition extends LitElement {
                 ${this.condition ? html`
                    <or-select-asset-attribute disabled type="${this.condition}" value="${this.condition.attributeName}"></or-select-asset-attribute>
                    <or-select-operator disabled type="${this.condition}" value="EQUAL"></or-select-operator>
-                    
-                   <or-input type="text" value="${this.condition.value}"></or-input>
+                   ${this.createInputControl(this.condition)}
                 ` : ``}
             </div>
         `;
@@ -41,6 +41,19 @@ class OrRuleThenCondition extends LitElement {
     @property({type: Number})
     private value: number = 0;
 
+    protected createInputControl(condition:RuleActionWriteAttribute) {
+        for (let i=0; i< handler.handlers.length; i++) {
+            let h = handler.handlers[i];
+
+            let result = h(condition);
+
+            if(result) {
+                return result
+            }
+        }
+        return html`<or-input type="text" value="${condition.value}"></or-input>`;
+    }
+
     setValue(e:any) {
         const value = e.detail.value;
 
@@ -49,7 +62,6 @@ class OrRuleThenCondition extends LitElement {
             this.requestUpdate();
         }
     }
-
 
     constructor() {
         super();

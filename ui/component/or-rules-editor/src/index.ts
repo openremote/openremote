@@ -1,8 +1,8 @@
-import {html, LitElement, property, customElement} from 'lit-element';
+import {html, LitElement, property, customElement, TemplateResult} from 'lit-element';
 
 import '@openremote/or-select';
 import '@openremote/or-icon';
-import {Rule, JsonRulesetDefinition, Ruleset, RulesetLang, TenantRuleset} from '@openremote/model';
+import {Rule, JsonRulesetDefinition, Ruleset, RulesetLang, TenantRuleset, RuleActionWriteAttribute} from '@openremote/model';
 import openremote from "@openremote/core";
 import rest from "@openremote/rest";
 
@@ -28,6 +28,22 @@ const rulesetModel:TenantRuleset = {
     accessPublicRead: true,
     rules: JSON.stringify({rules: [ruleModel]})
 };
+
+
+class InputHandlers {
+    handlers: ((condition:RuleActionWriteAttribute) => TemplateResult)[] = [];
+
+    public addInputHandler(callback:(condition:RuleActionWriteAttribute) => TemplateResult) {
+        this.handlers.push(callback);
+    }
+
+    public removeInputHandler() {
+
+    }
+}
+
+export default new InputHandlers();
+
 
 @customElement('or-rules-editor')
 class OrRulesEditor extends LitElement {
