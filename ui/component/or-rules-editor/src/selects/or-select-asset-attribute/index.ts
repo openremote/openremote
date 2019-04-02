@@ -53,7 +53,6 @@ class OrSelectAssetAttribute extends LitElement {
         super();
 
         // TODO Should come from rules-config based on asset type?
-
         this.attributeDescriptors = [
             { name: 'flightProfile', valueType: AttributeValueType.STRING },
             { name: 'profileName', valueType: AttributeValueType.STRING },
