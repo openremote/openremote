@@ -41,7 +41,7 @@ class OrRuleThenCondition extends LitElement {
     @property({type: Number})
     private value: number = 0;
 
-    protected createInputControl(condition:RuleActionWriteAttribute) {
+    protected createInputControl(condition:RuleActionWriteAttribute):TemplateResult {
         for (let i=0; i< handler.handlers.length; i++) {
             let h = handler.handlers[i];
 
