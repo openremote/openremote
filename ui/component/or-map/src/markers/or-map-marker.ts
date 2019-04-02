@@ -66,12 +66,12 @@ export class OrMapMarker extends LitElement {
         }
     `;
 
-    protected static _defaultTemplate = (icon: string | undefined) => litHtml`
+    protected static _defaultTemplate = (icon: string | undefined) => `
         <div class="or-map-marker-default">
             <or-icon icon="or:marker"></or-icon>
             <or-icon class="marker-icon" icon="${icon || ""}"></or-icon>
         </div>
-    `
+    `;
 
     @property({type: Number})
     public lat: number = 0;
@@ -124,7 +124,7 @@ export class OrMapMarker extends LitElement {
     }
 
     protected shouldUpdate(_changedProperties: PropertyValues): boolean {
-        Object.keys(_changedProperties).forEach((prop) => this._raisePropertyChange(prop));
+        _changedProperties.forEach((oldValue, prop) => this._raisePropertyChange(prop as string));
         return false;
     }
 
@@ -148,6 +148,6 @@ export class OrMapMarker extends LitElement {
     }
 
     protected addDefaultMarkerContent(markerElement: HTMLElement) {
-        render(OrMapMarker._defaultTemplate(this.icon), markerElement);
+        markerElement.innerHTML = OrMapMarker._defaultTemplate(this.icon);
     }
 }

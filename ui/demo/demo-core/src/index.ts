@@ -10,8 +10,9 @@ import {
     AssetQuery,
     AttributeEvent,
     BaseAssetQueryInclude,
-    BaseAssetQueryMatch, StringPredicate
+    BaseAssetQueryMatch, StringPredicate, Asset
 } from "@openremote/model";
+import {getApartment1Asset} from "./util";
 
 let alarmEnabled = false;
 
@@ -72,33 +73,13 @@ async function subscribeApartmentAttributeEvents(assetId: string) {
 }
 
 async function initApartment1Asset(): Promise<void> {
-    let query: AssetQuery = {
-        name: {
-            predicateType: "string",
-            match: BaseAssetQueryMatch.EXACT,
-            value: "Apartment 1"
-        },
-        type: {
-            predicateType: "string",
-            match: BaseAssetQueryMatch.EXACT,
-            value: "urn:openremote:asset:residence"
-        },
-        select: {
-            include: BaseAssetQueryInclude.ONLY_ID_AND_NAME
-        }
-    };
+    
+    const apartment1 = await getApartment1Asset();
 
-    let response = await rest.api.AssetResource.queryAssets(query);
-    let assets = response.data;
-
-    if (assets.length !== 1) {
-        console.log("Failed to retrieve the 'Apartment 1' asset");
-        return;
+    if (apartment1) {
+        console.log("Apartment 1 Asset received: " + JSON.stringify(apartment1, null, 2));
+        subscribeApartmentAttributeEvents(apartment1.id!);
     }
-
-    let apartment1 = assets[0];
-    console.log("Apartment 1 Asset received: " + JSON.stringify(apartment1, null, 2));
-    subscribeApartmentAttributeEvents(apartment1.id!);
 }
 
 openremote.addListener((event: OREvent) => {

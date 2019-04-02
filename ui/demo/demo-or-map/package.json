@@ -12,6 +12,7 @@
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
+    "@openremote/demo-core": "^1.0.0",
     "@openremote/or-map": "^1.0.0-alpha",
     "source-map-loader": "^0.2.4"
   },

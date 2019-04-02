@@ -337,7 +337,7 @@ public class MapService implements ContainerService {
             return mapSettingsJs.get(realm);
         }
 
-        final ObjectValue settings = mapSettings.computeIfAbsent(realm, r -> Values.createObject());
+        final ObjectValue settings = mapSettingsJs.computeIfAbsent(realm, r -> Values.createObject());
 
         if (!metadata.isValid() || !mapConfig.hasKeys()) {
             return settings;
