@@ -62,6 +62,45 @@
           },
           "attributeName": "lightSwitch",
           "value": false
+        },
+        {
+          "action": "update-attribute",
+          "target": {
+            "assets": {
+              "parent": {
+                "type": "urn:openremote:asset:residence",
+                "name": "Apartment 2"
+              },
+              "type": {
+                "predicateType": "string",
+                "match": "EXACT",
+                "value": "urn:openremote:asset:room"
+              }
+            }
+          },
+          "attributeName": "lightSwitchTriggerTimes",
+          "value": "2100",
+          "updateAction": "ADD"
+        },
+        {
+          "action": "update-attribute",
+          "target": {
+            "assets": {
+              "parent": {
+                "type": "urn:openremote:asset:residence",
+                "name": "Apartment 2"
+              },
+              "type": {
+                "predicateType": "string",
+                "match": "EXACT",
+                "value": "urn:openremote:asset:room"
+              }
+            }
+          },
+          "attributeName": "plantsWaterLevels",
+          "key": "cactus",
+          "value": 0.7,
+          "updateAction": "REPLACE"
         }
       ],
       "reset": {

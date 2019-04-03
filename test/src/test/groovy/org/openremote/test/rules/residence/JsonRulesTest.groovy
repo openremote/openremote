@@ -92,6 +92,8 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         conditions.eventually {
             def livingroomAsset = assetStorageService.find(managerDemoSetup.apartment2LivingroomId, true)
             assert livingroomAsset.getAttribute("lightSwitch").get().valueAsBoolean.get()
+            assert livingroomAsset.getAttribute("lightSwitchTriggerTimes").get().valueAsArray.get().length() == 2
+            assert livingroomAsset.getAttribute("plantsWaterLevels").get().valueAsObject.get().getNumber("cactus").get() == 0.8
             def bathRoomAsset = assetStorageService.find(managerDemoSetup.apartment2BathroomId, true)
             assert bathRoomAsset.getAttribute("lightSwitch").get().valueAsBoolean.get()
         }
@@ -173,6 +175,8 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         conditions.eventually {
             def livingroomAsset = assetStorageService.find(managerDemoSetup.apartment2LivingroomId, true)
             assert !livingroomAsset.getAttribute("lightSwitch").get().valueAsBoolean.get()
+            assert livingroomAsset.getAttribute("lightSwitchTriggerTimes").get().valueAsArray.get().length() == 3
+            assert livingroomAsset.getAttribute("plantsWaterLevels").get().valueAsObject.get().getNumber("cactus").get() == 0.7
             def bathRoomAsset = assetStorageService.find(managerDemoSetup.apartment2BathroomId, true)
             assert !bathRoomAsset.getAttribute("lightSwitch").get().valueAsBoolean.get()
         }

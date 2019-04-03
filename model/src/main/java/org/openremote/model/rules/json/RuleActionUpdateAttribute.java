@@ -1,5 +1,5 @@
 /*
- * Copyright 2018, OpenRemote Inc.
+ * Copyright 2017, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -19,19 +19,20 @@
  */
 package org.openremote.model.rules.json;
 
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import org.openremote.model.value.Value;
 
-@JsonSubTypes({
-        @JsonSubTypes.Type(value = RuleActionWait.class, name = "wait"),
-        @JsonSubTypes.Type(value = RuleActionWriteAttribute.class, name = "write-attribute"),
-        @JsonSubTypes.Type(value = RuleActionNotification.class, name = "notification"),
-        @JsonSubTypes.Type(value = RuleActionUpdateAttribute.class, name = "update-attribute")
-})
-@JsonTypeInfo(
-        use = JsonTypeInfo.Id.NAME,
-        property = "action"
-)
-public interface RuleAction {
+public class RuleActionUpdateAttribute extends RuleActionWithTarget {
+    public String attributeName;
+    public Value value;
+    public String key;
+    public Integer index;
+    public UpdateAction updateAction;
 
+    public enum UpdateAction {
+        ADD,
+        ADD_OR_REPLACE,
+        REPLACE,
+        DELETE,
+        CLEAR
+    }
 }

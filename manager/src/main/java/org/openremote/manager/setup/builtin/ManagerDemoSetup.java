@@ -24,7 +24,10 @@ import org.openremote.agent.protocol.simulator.SimulatorProtocol;
 import org.openremote.container.Container;
 import org.openremote.manager.security.UserConfiguration;
 import org.openremote.manager.setup.AbstractManagerSetup;
-import org.openremote.model.asset.*;
+import org.openremote.model.asset.Asset;
+import org.openremote.model.asset.AssetAttribute;
+import org.openremote.model.asset.AssetMeta;
+import org.openremote.model.asset.UserAsset;
 import org.openremote.model.attribute.*;
 import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.rules.AssetRuleset;
@@ -51,7 +54,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
 
     // Update these numbers whenever you change a RULE_STATE flag in test data
     public static final int DEMO_RULE_STATES_APARTMENT_1 = 44;
-    public static final int DEMO_RULE_STATES_APARTMENT_2 = 11;
+    public static final int DEMO_RULE_STATES_APARTMENT_2 = 13;
     public static final int DEMO_RULE_STATES_APARTMENT_3 = 0;
     public static final int DEMO_RULE_STATES_SMART_OFFICE = 1;
     public static final int DEMO_RULE_STATES_SMART_BUILDING = DEMO_RULE_STATES_APARTMENT_1 + DEMO_RULE_STATES_APARTMENT_2 + DEMO_RULE_STATES_APARTMENT_3;
@@ -663,6 +666,16 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
             new AssetAttribute("windowOpen", AttributeValueType.BOOLEAN, Values.create(false))
                 .setMeta(
                     new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true))
+                ),
+            new AssetAttribute("lightSwitchTriggerTimes", ARRAY, Values.createArray().add(Values.create("1800")).add(Values.create("0830")))
+                .setMeta(
+                    new MetaItem(LABEL, Values.create("Lightswitch Trigger Times")),
+                    new MetaItem(RULE_STATE, Values.create(true))
+                ),
+            new AssetAttribute("plantsWaterLevels", OBJECT, Values.createObject().put("cactus", 0.8))
+                .setMeta(
+                    new MetaItem(LABEL, Values.create("Water levels of the plants")),
+                    new MetaItem(RULE_STATE, Values.create(true))
                 )
         );
         apartment2Livingroom = assetStorageService.merge(apartment2Livingroom);
