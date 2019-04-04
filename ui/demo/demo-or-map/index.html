@@ -25,7 +25,7 @@
                 --or-map-marker-fill: blue;
                 --or-map-marker-icon-width: 38px;
                 --or-map-marker-icon-height: 38px;
-                --or-map-marker-icon-transform: translate(-50%, 9px);
+                --or-map-marker-icon-transform: translate(-50%, -31px);
                 --or-map-marker-icon-fill: red;
             }
         </style>
@@ -37,10 +37,10 @@
     <demo-snippet>
         <template>
             <or-map type="RASTER" center="5.454250, 51.445990" style="height: 500px; width: 100%;">
-                <or-map-marker lat="51.445990" lng="5.454250" click-action="showCard" class="marker" icon="or:logo-plain"></or-map-marker>
+                <or-map-marker lat="51.445990" lng="5.454250" class="marker" icon="or:logo-plain"></or-map-marker>
             </or-map>
             <or-map id="vector" center="5.454250, 51.445990" style="height: 500px; width: 100%;">
-                <or-map-marker lat="51.445990" lng="5.454250" click-action="showCard" class="marker" icon="or:logo-plain"></or-map-marker>
+                <or-map-marker lat="51.445990" lng="5.454250" class="marker" icon="or:logo-plain"></or-map-marker>
             </or-map>
         </template>
     </demo-snippet>

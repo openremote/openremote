@@ -77,8 +77,6 @@ export class MapWidget {
             return;
         }
 
-        this._loaded = true;
-
         if (this._type === Type.RASTER) {
 
             if (!MapWidget._mapboxJsStyle) {
@@ -171,6 +169,8 @@ export class MapWidget {
 
             this._mapGl = new map.Map(options);
         }
+
+        this._loaded = true;
     }
 
     public addMarker(marker: OrMapMarker) {
@@ -182,16 +182,14 @@ export class MapWidget {
     }
 
     public onMarkerChanged(marker: OrMapMarker, prop: string) {
+        if (!this._loaded) {
+            return;
+        }
+
         switch (prop) {
-            case "icon":
-                this._updateMarkerElement(marker, true);
-                break;
             case "lat":
             case "lng":
                 this._updateMarkerPosition(marker);
-                break;
-            case "visible":
-                this._updateMarkerVisibility(marker);
                 break;
         }
     }
@@ -213,68 +211,44 @@ export class MapWidget {
         }
     }
 
-    protected _updateMarkerVisibility(marker: OrMapMarker) {
-        switch (this._type) {
-            case Type.RASTER:
-                const m: MarkerJS | undefined = this._markersJs.get(marker);
-                if (m && m.getElement()) {
-                    if (marker.visible) {
-                        m.getElement().removeAttribute("hidden");
-                    } else {
-                        m.getElement().setAttribute("hidden", "true");
-                    }
-                }
-                break;
-            case Type.VECTOR:
-                const mGl: MarkerGL | undefined = this._markersGl.get(marker);
-                if (mGl) {
-                    if (marker.visible) {
-                        mGl.getElement().removeAttribute("hidden");
-                    } else {
-                        mGl.getElement().setAttribute("hidden", "true");
-                    }
-                }
-                break;
-        }
-    }
-
     protected _updateMarkerElement(marker: OrMapMarker, doAdd: boolean) {
 
         switch (this._type) {
             case Type.RASTER:
                 let m = this._markersJs.get(marker);
                 if (m) {
+                    this._removeMarkerClickHandler(marker, marker.markerContainer as HTMLElement);
+                    marker._actualMarkerElement = undefined;
                     m.removeFrom(this._mapJs!);
                     this._markersJs.delete(marker);
-                    this._removeMarkerClickHandler(marker, m.getElement());
                 }
 
                 if (doAdd) {
-                    const elem = marker.createMarkerElement();
+                    const elem = marker._createMarkerElement();
                     if (elem) {
                         const icon = L.divIcon({html: elem.outerHTML, className: "or-marker-raster"});
                         m = L.marker([marker.lat, marker.lng], {icon: icon, clickable: marker.interactive});
                         m.addTo(this._mapJs!);
-
+                        marker._actualMarkerElement = m.getElement() ? m.getElement().firstElementChild as HTMLDivElement : undefined;
                         if (marker.interactive) {
-                            this._addMarkerClickHandler(marker, m.getElement());
+                            this._addMarkerClickHandler(marker, marker.markerContainer as HTMLElement);
                         }
 
                         this._markersJs.set(marker, m);
-                        this._updateMarkerVisibility(marker);
                     }
                 }
                 break;
             case Type.VECTOR:
                 let mGl = this._markersGl.get(marker);
                 if (mGl) {
+                    marker._actualMarkerElement = undefined;
+                    this._removeMarkerClickHandler(marker, mGl.getElement());
                     mGl.remove();
                     this._markersGl.delete(marker);
-                    this._removeMarkerClickHandler(marker, mGl.getElement());
                 }
 
                 if (doAdd) {
-                    const elem = marker.createMarkerElement();
+                    const elem = marker._createMarkerElement();
 
                     if (elem) {
                         mGl = new MarkerGL({
@@ -285,7 +259,8 @@ export class MapWidget {
                             .addTo(this._mapGl!);
 
                         this._markersGl.set(marker, mGl);
-                        this._updateMarkerVisibility(marker);
+
+                        marker._actualMarkerElement = mGl.getElement() as HTMLDivElement;
 
                         if (marker.interactive) {
                             this._addMarkerClickHandler(marker, mGl.getElement());
@@ -297,17 +272,19 @@ export class MapWidget {
     }
 
     protected _addMarkerClickHandler(marker: OrMapMarker, elem: HTMLElement) {
-        const handler = (ev: MouseEvent) => {
-            ev.stopPropagation();
-            marker._onClick(ev);
-        };
-        this._clickHandlers.set(marker, handler);
-        elem.addEventListener("click", handler);
+        if (elem) {
+            const handler = (ev: MouseEvent) => {
+                ev.stopPropagation();
+                marker._onClick(ev);
+            };
+            this._clickHandlers.set(marker, handler);
+            elem.addEventListener("click", handler);
+        }
     }
 
     protected _removeMarkerClickHandler(marker: OrMapMarker, elem: HTMLElement) {
         const handler = this._clickHandlers.get(marker);
-        if (handler) {
+        if (handler && elem) {
             elem.removeEventListener("click", handler);
             this._clickHandlers.delete(marker);
         }

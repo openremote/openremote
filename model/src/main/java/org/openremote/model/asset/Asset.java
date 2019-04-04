@@ -241,7 +241,7 @@ public class Asset implements IdentifiableEntity {
     protected Date createdOn;
 
     @NotNull(message = "{Asset.name.NotNull}")
-    @Size(min = 3, max = 1023, message = "{Asset.name.Size}")
+    @Size(min = 1, max = 1023, message = "{Asset.name.Size}")
     @Column(name = "NAME", nullable = false, length = 1023)
     protected String name;
 

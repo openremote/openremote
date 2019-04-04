@@ -29,6 +29,7 @@ export class IconSetSvg implements IconSet {
         } else {
             const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
             path.setAttribute("d", iconData);
+            path.style.pointerEvents = "pointer-events: var(--or-icon-pointer-events, none);";
             svg.appendChild(path);
         }
         return svg;

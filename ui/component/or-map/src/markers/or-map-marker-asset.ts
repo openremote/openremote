@@ -10,6 +10,8 @@ export class OrMapMarkerAsset extends OrMapMarker {
     @property({type: String})
     public asset?: string;
 
+    public assetTypeAsIcon: boolean = true;
+
     constructor() {
         super();
     }
@@ -61,11 +63,13 @@ export class OrMapMarkerAsset extends OrMapMarker {
                 // Model d.ts is clearly not perfect need to sort out Jackson annotations
                 this.lat = (location.coordinates as any)[1] || 0;
                 this.lng = (location.coordinates as any)[0] || 0;
-                if (asset.type) {
-                    // TODO: Get hold of icon from asset type
-                    this.icon = "office-building";
-                } else {
-                    this.icon = undefined;
+                if (this.assetTypeAsIcon) {
+                    if (asset.type) {
+                        // TODO: Get hold of icon from asset type
+                        this.icon = "office-building";
+                    } else {
+                        this.icon = undefined;
+                    }
                 }
                 this.visible = true;
             }).catch(() => {

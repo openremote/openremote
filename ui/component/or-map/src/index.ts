@@ -1,10 +1,10 @@
 import openremote, {EventCallback, OREvent} from "@openremote/core";
 import {FlattenedNodesObserver} from "@polymer/polymer/lib/utils/flattened-nodes-observer.js";
-import {css, customElement, html, LitElement, property, query, PropertyValues} from "lit-element";
+import {css, customElement, html, LitElement, property, query, PropertyValues, CSSResult} from "lit-element";
 import {LngLat, LngLatBoundsLike, LngLatLike} from "mapbox-gl";
 import {MapWidget} from "./mapwidget";
 import {
-    OrMapMarker, OrMapMarkerEvent, OrMapMarkerChangedEvent
+    OrMapMarker, OrMapMarkerEvent, OrMapMarkerChangedEvent, MarkerStyle
 } from "./markers/or-map-marker";
 import {getLngLat} from "./util";
 
@@ -25,16 +25,20 @@ export interface ViewSettings {
 @customElement("or-map")
 export class OrMap extends LitElement {
 
-    public static styles = css`
+    public static styles = [
+        MarkerStyle,
+        css`
         :host {
             display: block;
             overflow: hidden;
         }
+        
         #map {            
             position: relative;
             width: 100%;
             height: 100%;
         }
+        
         slot {
             display: none;
         }
@@ -46,47 +50,12 @@ export class OrMap extends LitElement {
         .leaflet-marker-icon, .mapboxgl-marker {
             pointer-events: none !important;
         }
-
-        /* Offset margin set by leaflet-marker-icon */        
-        .leaflet-marker-icon .or-map-marker {
-            margin-left: 6px;
-            margin-top: 6px;
-        }
-        
-        .or-map-marker {
-            position: absolute; /* This makes mapboxJS behave like mapboxGL */
-            cursor: grab;
-        }
-        
-        .or-map-marker.interactive {
-            cursor: pointer;
-        }
-        
-        .or-map-marker>*{
-            pointer-events: visible;
-        }
-        
-        .or-map-marker-default {
-            position: relative;
-            transform: var(--or-map-marker-transform, translate(-24px, -45px));
-            --or-icon-width: var(--or-map-marker-width, 48px);
-            --or-icon-height: var(--or-map-marker-height, 48px);
-            --or-icon-fill-color: var(--or-map-marker-fill, #1D5632);            
-        }
-        
-        .or-map-marker-default .marker-icon {
-            position: absolute;
-            left: 50%;
-            top: 0px;
-            --or-icon-fill-color: var(--or-map-marker-icon-fill, #FFF);
-            --or-icon-width: var(--or-map-marker-icon-width, 24px);
-            --or-icon-height: var(--or-map-marker-icon-height, 24px);
-            transform: var(--or-map-marker-icon-transform, translate(-50%, 5px));            
-        }
-    `;
+    `];
 
     @property({type: String})
     public type: Type = Type.VECTOR;
+
+    protected _markerStyles: string[] = [];
 
     @property({type: String, converter: {
             fromAttribute(value: string | null, type?: String): LngLatLike | undefined {
@@ -122,6 +91,7 @@ export class OrMap extends LitElement {
     protected _map?: MapWidget;
     protected _loaded: boolean = false;
     protected _observer?: FlattenedNodesObserver;
+    protected _markers: OrMapMarker[] = [];
 
     @query("#map")
     protected _mapContainer?: HTMLElement;
@@ -132,6 +102,10 @@ export class OrMap extends LitElement {
     constructor() {
         super();
         this.addEventListener(OrMapMarkerEvent.CHANGED, this._onMarkerChangedEvent);
+    }
+
+    public get markers(): OrMapMarker[] {
+        return this._markers;
     }
 
     public disconnectedCallback() {
@@ -192,6 +166,36 @@ export class OrMap extends LitElement {
             }
 
             if (node instanceof OrMapMarker) {
+
+                this._markers.push(node);
+
+                // Add styles of marker class to the shadow root if not already added
+                const className = node.constructor.name;
+                if (this._markerStyles.indexOf(className) < 0) {
+                    const styles = (node.constructor as any).styles;
+                    let stylesArr: CSSResult[] = [];
+
+                    if (styles) {
+                        if (!Array.isArray(styles)) {
+                            stylesArr.push(styles as CSSResult);
+                        } else {
+                            stylesArr = styles as CSSResult[];
+                        }
+
+                        stylesArr.forEach((styleItem) => {
+                            const styleElem = document.createElement("style");
+                            styleElem.textContent = styleItem.toString();
+                            if (this._mapContainer!.children.length > 0) {
+                                this._mapContainer!.insertBefore(styleElem, this._mapContainer!.children[0]);
+                            } else {
+                                this._mapContainer!.appendChild(styleElem);
+                            }
+                        })
+                    }
+
+                    this._markerStyles.push(className);
+                }
+
                 this._map.addMarker(node);
             }
         });
@@ -204,6 +208,10 @@ export class OrMap extends LitElement {
             }
 
             if (node instanceof OrMapMarker) {
+                const i = this._markers.indexOf(node);
+                if (i >= 0) {
+                    this._markers.splice(i, 1);
+                }
                 this._map.removeMarker(node);
             }
         });
