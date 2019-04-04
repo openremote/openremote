@@ -39,11 +39,16 @@ public class JaxRsClientOnlyProcessor implements cz.habarta.typescript.generator
                 return null;
             }
             if (!rawClass.getName().endsWith("Resource")) {
+                String name = rawClass.getName();
                 String simpleName = rawClass.getSimpleName();
+                if (name.indexOf("$") > 0) {
+                    simpleName = name.substring(name.lastIndexOf(".")+1).replace("$","");
+                }
                 if ("RequestParams".equals(simpleName)) {
                     simpleName = simpleName + "<any,any>";
                 }
                 simpleName = "Model." + simpleName;
+
                 return new Result(new TsType.VerbatimType(simpleName));
             }
         }

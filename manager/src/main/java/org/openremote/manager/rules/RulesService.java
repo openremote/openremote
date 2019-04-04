@@ -214,11 +214,11 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
         }
 
         LOG.info("Deploying global rulesets");
-        rulesetStorageService.findGlobalRulesets(true, true).forEach(this::deployGlobalRuleset);
+        rulesetStorageService.findGlobalRulesets(true, null, true).forEach(this::deployGlobalRuleset);
 
         LOG.info("Deploying tenant rulesets");
         tenants = identityService.getIdentityProvider().getTenants();
-        rulesetStorageService.findTenantRulesets(false, true, true)
+        rulesetStorageService.findTenantRulesets(false, true, null, true)
             .stream()
             .filter(rd ->
                 Arrays.stream(tenants)
@@ -227,7 +227,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
 
         LOG.info("Deploying asset rulesets");
         // Group by asset ID then tenant and check tenant is enabled
-        deployAssetRulesets(rulesetStorageService.findAssetRulesets(null, null, false, true, true));
+        deployAssetRulesets(rulesetStorageService.findAssetRulesets(null, null, false, true, null, true));
 
         LOG.info("Loading all assets with fact attributes to initialize state of rules engines");
         Stream<Pair<Asset, Stream<AssetAttribute>>> assetRuleAttributes = findRuleStateAttributes();
@@ -344,11 +344,11 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
             } else {
                 // Create tenant rules engines for this tenant if it has any rulesets
                 rulesetStorageService
-                    .findTenantRulesets(tenant.getRealm(), false, true, true)
+                    .findTenantRulesets(tenant.getRealm(), false, true, null, true)
                     .forEach(this::deployTenantRuleset);
 
                 // Create any asset rules engines for assets in this realm that have rulesets
-                deployAssetRulesets(rulesetStorageService.findAssetRulesetsByRealm(tenant.getRealm(), false, true, true));
+                deployAssetRulesets(rulesetStorageService.findAssetRulesetsByRealm(tenant.getRealm(), false, true, null, true));
             }
         });
     }

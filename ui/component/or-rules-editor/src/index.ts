@@ -1,8 +1,8 @@
-import {html, LitElement, property, customElement, TemplateResult} from 'lit-element';
+import {customElement, html, LitElement, property, TemplateResult} from 'lit-element';
 
 import '@openremote/or-select';
 import '@openremote/or-icon';
-import {Rule, JsonRulesetDefinition, Ruleset, RulesetLang, TenantRuleset, RuleActionWriteAttribute} from '@openremote/model';
+import {Rule, RuleActionWriteAttribute, RulesetLang, TenantRuleset} from '@openremote/model';
 import openremote from "@openremote/core";
 import rest from "@openremote/rest";
 
@@ -109,7 +109,7 @@ class OrRulesEditor extends LitElement {
 
 
     readRules() {
-        rest.api.RulesResource.getTenantRulesets(openremote.config.realm,  { fullyPopulate: true }).then((response: any) => {
+        rest.api.RulesResource.getTenantRulesets(openremote.config.realm,  { language: RulesetLang.JSON, fullyPopulate: true }).then((response: any) => {
             if (response && response.data) {
                 this.rulesets = response.data;
                 if(this.ruleset && this.rulesets) {
@@ -132,7 +132,6 @@ class OrRulesEditor extends LitElement {
             console.log("Error:" + reason);
         });
     }
-
 
     createRule() {
         if(this.rulesets) {

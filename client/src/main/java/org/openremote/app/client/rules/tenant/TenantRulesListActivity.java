@@ -115,7 +115,7 @@ public class TenantRulesListActivity
 
             environment.getApp().getRequests().sendAndReturn(
                 tenantRulesetArrayMapper,
-                params -> rulesResource.getTenantRulesets(params, realm, false),
+                params -> rulesResource.getTenantRulesets(params, realm, null, false),
                 200,
                 results -> view.setRulesets(new ArrayList<>(Arrays.asList(results)))
             );

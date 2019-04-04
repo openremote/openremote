@@ -70,7 +70,7 @@ public class RulesetStorageService implements ContainerService {
 
     }
 
-    public List<GlobalRuleset> findGlobalRulesets(boolean onlyEnabled, boolean fullyPopulate) {
+    public List<GlobalRuleset> findGlobalRulesets(boolean onlyEnabled, Ruleset.Lang language, boolean fullyPopulate) {
 
         String query = "select new org.openremote.model.rules.GlobalRuleset(" +
                 "rs.id, rs.version, rs.createdOn, rs.lastModified, rs.enabled, rs.name, rs.lang";
@@ -84,21 +84,31 @@ public class RulesetStorageService implements ContainerService {
             query += "and rs.enabled = true ";
         }
 
+        if (language != null) {
+            query += "and rs.lang = :lang ";
+        }
+
         query += "order by rs.createdOn asc";
 
         String finalQuery = query;
-        return persistenceService.doReturningTransaction(entityManager ->
-                entityManager.createQuery(
+        return persistenceService.doReturningTransaction(entityManager -> {
+                TypedQuery<GlobalRuleset> qry = entityManager.createQuery(
                         finalQuery,
                         GlobalRuleset.class
-                ).getResultList()
-        );
+                );
+
+                if (language != null) {
+                    qry.setParameter("lang", language);
+                }
+
+                return qry.getResultList();
+        });
     }
 
-    public List<TenantRuleset> findTenantRulesets(boolean onlyPublic, boolean onlyEnabled, boolean fullyPopulate) {
-        return findTenantRulesets(null, onlyPublic, onlyEnabled, fullyPopulate);
+    public List<TenantRuleset> findTenantRulesets(boolean onlyPublic, boolean onlyEnabled, Ruleset.Lang language, boolean fullyPopulate) {
+        return findTenantRulesets(null, onlyPublic, onlyEnabled, language, fullyPopulate);
     }
-    public List<TenantRuleset> findTenantRulesets(String realm, boolean onlyPublic, boolean onlyEnabled, boolean fullyPopulate) {
+    public List<TenantRuleset> findTenantRulesets(String realm, boolean onlyPublic, boolean onlyEnabled, Ruleset.Lang language, boolean fullyPopulate) {
 
         String query = "select new org.openremote.model.rules.TenantRuleset(" +
                 "rs.id, rs.version, rs.createdOn, rs.lastModified, rs.enabled, rs.name, rs.lang";
@@ -123,6 +133,10 @@ public class RulesetStorageService implements ContainerService {
             query += "and rs.enabled = true ";
         }
 
+        if (language != null) {
+            query += "and rs.lang = :lang ";
+        }
+
         query += "order by rs.createdOn asc";
 
         String finalQuery = query;
@@ -134,18 +148,22 @@ public class RulesetStorageService implements ContainerService {
                     if (includeRealm) {
                         qry.setParameter("realm", realm);
                     }
+                    if (language != null) {
+                        qry.setParameter("lang", language);
+                    }
+
                     return qry.getResultList();
                 }
         );
     }
 
-    public List<AssetRuleset> findAssetRulesetsByRealm(String realm, boolean onlyPublic, boolean onlyEnabled, boolean fullyPopulate) {
-        return findAssetRulesets(realm, null, onlyPublic, onlyEnabled, fullyPopulate);
+    public List<AssetRuleset> findAssetRulesetsByRealm(String realm, boolean onlyPublic, boolean onlyEnabled, Ruleset.Lang language, boolean fullyPopulate) {
+        return findAssetRulesets(realm, null, onlyPublic, onlyEnabled, language, fullyPopulate);
     }
-    public List<AssetRuleset> findAssetRulesetsByAssetId(String assetId, boolean onlyPublic, boolean onlyEnabled, boolean fullyPopulate) {
-        return findAssetRulesets(null, assetId, onlyPublic, onlyEnabled, fullyPopulate);
+    public List<AssetRuleset> findAssetRulesetsByAssetId(String assetId, boolean onlyPublic, boolean onlyEnabled, Ruleset.Lang language, boolean fullyPopulate) {
+        return findAssetRulesets(null, assetId, onlyPublic, onlyEnabled, language, fullyPopulate);
     }
-    public List<AssetRuleset> findAssetRulesets(String realm, String assetId, boolean onlyPublic, boolean onlyEnabled, boolean fullyPopulate) {
+    public List<AssetRuleset> findAssetRulesets(String realm, String assetId, boolean onlyPublic, boolean onlyEnabled, Ruleset.Lang language, boolean fullyPopulate) {
 
         String query = "select new org.openremote.model.rules.AssetRuleset(" +
                 "rs.id, rs.version, rs.createdOn, rs.lastModified, rs.enabled, rs.name, rs.lang";
@@ -175,6 +193,10 @@ public class RulesetStorageService implements ContainerService {
             query += "and rs.enabled = true ";
         }
 
+        if (language != null) {
+            query += "and rs.lang = :lang ";
+        }
+
         query += "order by rs.createdOn asc";
 
         String finalQuery = query;
@@ -190,6 +212,9 @@ public class RulesetStorageService implements ContainerService {
                     }
                     if (includeAssetId) {
                         qry.setParameter("assetId", assetId);
+                    }
+                    if (language != null) {
+                        qry.setParameter("lang", language);
                     }
 
                     return qry.getResultList();

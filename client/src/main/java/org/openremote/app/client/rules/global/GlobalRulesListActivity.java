@@ -78,7 +78,7 @@ public class GlobalRulesListActivity
 
         environment.getApp().getRequests().sendAndReturn(
             globalRulesetArrayMapper,
-            requestParams -> rulesResource.getGlobalRulesets(requestParams, false),
+            requestParams -> rulesResource.getGlobalRulesets(requestParams, null, false),
             200,
             results -> view.setRulesets(new ArrayList<>(Arrays.asList(results)))
         );

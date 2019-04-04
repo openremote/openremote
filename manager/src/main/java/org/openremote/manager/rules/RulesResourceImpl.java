@@ -118,12 +118,12 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
     }
 
     @Override
-    public GlobalRuleset[] getGlobalRulesets(@BeanParam RequestParams requestParams, boolean fullyPopulate) {
+    public GlobalRuleset[] getGlobalRulesets(@BeanParam RequestParams requestParams, Ruleset.Lang language, boolean fullyPopulate) {
         if (!isSuperUser()) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
 
-        List<GlobalRuleset> result = rulesetStorageService.findGlobalRulesets(false, fullyPopulate);
+        List<GlobalRuleset> result = rulesetStorageService.findGlobalRulesets(false, language, fullyPopulate);
 
         // Try and retrieve transient status and error data
         result.forEach(ruleset ->
@@ -139,7 +139,7 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
     }
 
     @Override
-    public TenantRuleset[] getTenantRulesets(@BeanParam RequestParams requestParams, String realmId, boolean fullyPopulate) {
+    public TenantRuleset[] getTenantRulesets(@BeanParam RequestParams requestParams, String realmId, Ruleset.Lang language, boolean fullyPopulate) {
 
         if (isAuthenticated() && !isRealmAccessibleByUser(realmId)) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
@@ -147,7 +147,7 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
 
         boolean publicOnly = !isAuthenticated() || isRestrictedUser() | !hasResourceRole(ClientRole.READ_RULES.getValue(), Constants.KEYCLOAK_CLIENT_ID);
 
-        List<TenantRuleset> result = rulesetStorageService.findTenantRulesets(realmId, publicOnly, false, fullyPopulate);
+        List<TenantRuleset> result = rulesetStorageService.findTenantRulesets(realmId, publicOnly, false, language, fullyPopulate);
 
         // Try and retrieve transient status and error data
         result.forEach(ruleset ->
@@ -163,7 +163,7 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
     }
 
     @Override
-    public AssetRuleset[] getAssetRulesets(@BeanParam RequestParams requestParams, String assetId, boolean fullyPopulate) {
+    public AssetRuleset[] getAssetRulesets(@BeanParam RequestParams requestParams, String assetId, Ruleset.Lang language, boolean fullyPopulate) {
         Asset asset = assetStorageService.find(assetId, false);
         if (asset == null)
             return new AssetRuleset[0];
@@ -174,7 +174,7 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
 
         boolean publicOnly = !isAuthenticated() || (isRestrictedUser() && !assetStorageService.isUserAsset(getUserId(), assetId)) || !hasResourceRole(ClientRole.READ_RULES.getValue(), Constants.KEYCLOAK_CLIENT_ID);
 
-        List<AssetRuleset> result = rulesetStorageService.findAssetRulesets(asset.getRealm(), assetId, publicOnly, false, fullyPopulate);
+        List<AssetRuleset> result = rulesetStorageService.findAssetRulesets(asset.getRealm(), assetId, publicOnly, false, language, fullyPopulate);
 
         // Try and retrieve transient status and error data
         result.forEach(ruleset ->
