@@ -30,7 +30,7 @@ public interface AssetModelProvider {
 
     MetaItemDescriptor[] getMetaItemDescriptors();
 
-    AssetDescriptor[] getAssetTypeDescriptors();
+    AssetDescriptor[] getAssetDescriptors();
 
     AttributeDescriptor[] getAttributeDescriptors();
 

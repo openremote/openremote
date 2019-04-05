@@ -32,7 +32,7 @@ public class DefaultAssetModelProvider implements AssetModelProvider {
     }
 
     @Override
-    public AssetDescriptor[] getAssetTypeDescriptors() {
+    public AssetDescriptor[] getAssetDescriptors() {
         return AssetType.values();
     }
 

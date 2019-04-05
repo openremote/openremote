@@ -64,7 +64,7 @@ public class AssetModel {
         List<AssetDescriptor> assetTypeList = new ArrayList<>();
         ServiceLoader.load(AssetModelProvider.class).forEach(assetModelProvider -> {
             LOG.fine("Adding asset type descriptors of: " + assetModelProvider);
-            assetTypeList.addAll(Arrays.asList(assetModelProvider.getAssetTypeDescriptors()));
+            assetTypeList.addAll(Arrays.asList(assetModelProvider.getAssetDescriptors()));
         });
 
         WELL_KNOWN_ASSET_TYPES = assetTypeList.toArray(new AssetDescriptor[assetTypeList.size()]);
