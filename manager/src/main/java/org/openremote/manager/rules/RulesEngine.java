@@ -32,7 +32,7 @@ import org.openremote.manager.rules.facade.NotificationsFacade;
 import org.openremote.manager.rules.facade.UsersFacade;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.AssetMeta;
+import org.openremote.model.asset.MetaItemType;
 import org.openremote.model.attribute.AttributeType;
 import org.openremote.model.query.filter.GeofencePredicate;
 import org.openremote.model.query.filter.LocationAttributePredicate;
@@ -506,7 +506,7 @@ public class RulesEngine<T extends Ruleset> {
     }
 
     /**
-     * This is called with all the asset's that have a location attribute marked with {@link AssetMeta#RULE_STATE} and
+     * This is called with all the asset's that have a location attribute marked with {@link MetaItemType#RULE_STATE} and
      * that are in the scope of a rule containing a location predicate.
      */
     protected void processLocationRules(List<AssetStateLocationPredicates> assetStateLocationPredicates) {

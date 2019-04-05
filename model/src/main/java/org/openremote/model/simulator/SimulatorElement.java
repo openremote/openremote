@@ -120,7 +120,7 @@ public abstract class SimulatorElement implements ValueHolder {
     public List<ValidationFailure> getValidationFailures() {
         List<ValidationFailure> failures = new ArrayList<>();
         if (elementValue != null) {
-            expectedType.isValidValue(elementValue).ifPresent(failures::add);
+            expectedType.getValidator().flatMap(v -> v.apply(elementValue)).ifPresent(failures::add);
         }
         return failures;
     }

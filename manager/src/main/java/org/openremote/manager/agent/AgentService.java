@@ -37,7 +37,7 @@ import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.asset.AssetMeta;
+import org.openremote.model.asset.MetaItemType;
 import org.openremote.model.asset.AssetType;
 import org.openremote.model.asset.agent.*;
 import org.openremote.model.attribute.AttributeEvent;
@@ -481,7 +481,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
                     .select(new AssetQuery.Select(AssetQuery.Include.ALL))
                     .attributeMeta(
                         new AttributeRefPredicate(
-                            AssetMeta.AGENT_LINK,
+                            MetaItemType.AGENT_LINK,
                             protocolAttributeRef.getEntityId(),
                             protocolAttributeRef.getAttributeName()
                         )
@@ -511,7 +511,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
                     .select(new AssetQuery.Select(AssetQuery.Include.ALL))
                     .attributeMeta(
                         new AttributeRefPredicate(
-                            AssetMeta.AGENT_LINK,
+                            MetaItemType.AGENT_LINK,
                             protocolAttributeRef.getEntityId(),
                             protocolAttributeRef.getAttributeName()
                         )

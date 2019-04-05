@@ -32,7 +32,7 @@ import org.openremote.container.timer.TimerService;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.ValueHolder;
 import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.asset.AssetMeta;
+import org.openremote.model.asset.MetaItemType;
 import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.asset.agent.ProtocolConfiguration;
@@ -476,7 +476,7 @@ public abstract class AbstractProtocol implements Protocol {
         AttributeValidationResult result = new AttributeValidationResult(protocolConfiguration.getName().orElse(""));
 
         if (!ProtocolConfiguration.isProtocolConfiguration(protocolConfiguration)) {
-            result.addMetaFailure(new ValidationFailure(MetaItem.MetaItemFailureReason.META_ITEM_MISSING, AssetMeta.PROTOCOL_CONFIGURATION.name()));
+            result.addMetaFailure(new ValidationFailure(MetaItem.MetaItemFailureReason.META_ITEM_MISSING, MetaItemType.PROTOCOL_CONFIGURATION.name()));
         }
         if (!ProtocolConfiguration.isValidProtocolName(protocolConfiguration.getValueAsString().orElse(null))) {
             result.addAttributeFailure(new ValidationFailure(ValueHolder.ValueFailureReason.VALUE_INVALID));

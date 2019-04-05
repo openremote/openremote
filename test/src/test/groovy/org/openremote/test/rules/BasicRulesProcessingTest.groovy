@@ -10,7 +10,7 @@ import org.openremote.manager.setup.builtin.KeycloakDemoSetup
 import org.openremote.manager.setup.builtin.ManagerDemoSetup
 import org.openremote.model.asset.Asset
 import org.openremote.model.asset.AssetAttribute
-import org.openremote.model.asset.AssetMeta
+import org.openremote.model.asset.MetaItemType
 import org.openremote.model.asset.AssetType
 import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.attribute.AttributeValueType
@@ -213,7 +213,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         def attributes = [
             new AssetAttribute("testString", AttributeValueType.STRING, Values.create("test"))
                 .setMeta(
-                new Meta(new MetaItem(AssetMeta.RULE_STATE, Values.create(true))
+                new Meta(new MetaItem(MetaItemType.RULE_STATE, Values.create(true))
                 )
             )
         ]
@@ -244,7 +244,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         attributes = [
             new AssetAttribute("testString", AttributeValueType.STRING, Values.create("test"))
                 .setMeta(
-                new MetaItem(AssetMeta.RULE_STATE, Values.create(true))
+                new MetaItem(MetaItemType.RULE_STATE, Values.create(true))
             ),
             new AssetAttribute("testInteger", AttributeValueType.NUMBER, Values.create(0))
         ]
@@ -270,7 +270,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         attributes = [
             new AssetAttribute("testString", AttributeValueType.STRING, Values.create("test"))
                 .setMeta(
-                new MetaItem(AssetMeta.RULE_STATE, Values.create(false))
+                new MetaItem(MetaItemType.RULE_STATE, Values.create(false))
             ),
             new AssetAttribute("testInteger", AttributeValueType.NUMBER, Values.create(0))
         ]
@@ -299,11 +299,11 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         attributes = [
             new AssetAttribute("testString", AttributeValueType.STRING, Values.create("test"))
                 .setMeta(
-                new MetaItem(AssetMeta.RULE_STATE, Values.create(true))
+                new MetaItem(MetaItemType.RULE_STATE, Values.create(true))
             ),
             new AssetAttribute("testInteger", AttributeValueType.NUMBER, Values.create(0))
                 .setMeta(
-                new MetaItem(AssetMeta.RULE_STATE, Values.create(true))
+                new MetaItem(MetaItemType.RULE_STATE, Values.create(true))
             )
         ]
         asset.setAttributes(attributes)

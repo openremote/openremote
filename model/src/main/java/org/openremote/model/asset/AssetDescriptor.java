@@ -20,16 +20,18 @@
 package org.openremote.model.asset;
 
 import org.openremote.model.attribute.AttributeDescriptor;
-import org.openremote.model.attribute.MetaItemDescriptor;
 
-/**
- * Extend the asset model in custom projects.
- */
-public interface AssetModelProvider {
+import java.util.Optional;
 
-    MetaItemDescriptor[] getMetaItemDescriptors();
+public interface AssetDescriptor {
 
-    AssetDescriptor[] getAssetTypeDescriptors();
+    String getName();
 
-    AttributeDescriptor[] getAttributeDescriptors();
+    String getType();
+
+    String getIcon();
+
+    boolean getAccessPublicRead();
+
+    Optional<AttributeDescriptor[]> getAttributeDescriptors();
 }

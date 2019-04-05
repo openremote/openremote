@@ -24,7 +24,6 @@ import org.openremote.model.ValidationFailure;
 import org.openremote.model.ValueHolder;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.asset.AssetMeta;
 import org.openremote.model.asset.AssetType;
 import org.openremote.model.attribute.AttributeType;
 import org.openremote.model.attribute.Meta;
@@ -41,9 +40,9 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static org.openremote.model.asset.AssetMeta.ACCESS_PUBLIC_WRITE;
-import static org.openremote.model.asset.AssetMeta.ACCESS_RESTRICTED_WRITE;
-import static org.openremote.model.asset.AssetMeta.RULE_STATE;
+import static org.openremote.model.asset.MetaItemType.ACCESS_PUBLIC_WRITE;
+import static org.openremote.model.asset.MetaItemType.ACCESS_RESTRICTED_WRITE;
+import static org.openremote.model.asset.MetaItemType.RULE_STATE;
 
 public final class ConsoleConfiguration {
 

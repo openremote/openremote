@@ -79,7 +79,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets.size() == 1
         assets[0].id == managerDemoSetup.agentId
         assets[0].name == "Demo Agent"
-        assets[0].type == AssetType.AGENT.getValue()
+        assets[0].type == AssetType.AGENT.getType()
         assets[0].parentId == null
         assets[0].parentName == null
         assets[0].parentType == null
@@ -160,7 +160,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets[1].id == managerDemoSetup.apartment1Id
         assets[1].createdOn == null
         assets[1].name == "Apartment 1"
-        assets[1].type == AssetType.RESIDENCE.getValue()
+        assets[1].type == AssetType.RESIDENCE.getType()
         assets[1].parentId == null
         assets[1].parentName == null
         assets[1].parentType == null
@@ -174,7 +174,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets[1].getAttribute("lastExecutedScene").isPresent()
         assets[1].getAttribute("presenceDetected").isPresent()
         assets[1].getAttribute("alarmEnabled").get().meta.size() == 1
-        assets[1].getAttribute("alarmEnabled").get().getMetaItem(AssetMeta.LABEL).isPresent()
+        assets[1].getAttribute("alarmEnabled").get().getMetaItem(MetaItemType.LABEL).isPresent()
         assets[1].getAttribute("alarmEnabled").get().getLabelOrName().get() == "Alarm enabled"
         assets[2].id == managerDemoSetup.apartment1ServiceAgentId
         assets[3].id == managerDemoSetup.apartment1LivingroomId
@@ -309,7 +309,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets.get(0).wellKnownType == AssetType.RESIDENCE
         assets.get(0).parentId == managerDemoSetup.smartBuildingId
         assets.get(0).parentName == "Smart Building"
-        assets.get(0).parentType == AssetType.BUILDING.value
+        assets.get(0).parentType == AssetType.BUILDING.type
         assets.get(0).realm == keycloakDemoSetup.tenantA.realm
         assets.get(0).path == null
         assets.get(0).attributesList.size() == 0
@@ -462,7 +462,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets = assetStorageService.findAll(
                 new AssetQuery()
                         .tenant(new TenantPredicate(keycloakDemoSetup.masterTenant.realm))
-                        .attributeMeta(new AttributeMetaPredicate(AssetMeta.STORE_DATA_POINTS, new BooleanPredicate(true)))
+                        .attributeMeta(new AttributeMetaPredicate(MetaItemType.STORE_DATA_POINTS, new BooleanPredicate(true)))
         )
 
         then: "result should match"
@@ -483,7 +483,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets = assetStorageService.findAll(
                 new AssetQuery().attributeMeta(
                         new AttributeRefPredicate(
-                                AssetMeta.AGENT_LINK,
+                                MetaItemType.AGENT_LINK,
                                 managerDemoSetup.agentId,
                                 managerDemoSetup.agentProtocolConfigName
                         )
@@ -498,7 +498,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets = assetStorageService.findAll(
                 new AssetQuery().attributeMeta(
                         new AttributeRefPredicate(
-                                AssetMeta.AGENT_LINK,
+                                MetaItemType.AGENT_LINK,
                                 managerDemoSetup.agentId,
                                 managerDemoSetup.agentProtocolConfigName
                         )
@@ -513,7 +513,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets = assetStorageService.findAll(
                 new AssetQuery().attributeMeta(
                         new AttributeRefPredicate(
-                                AssetMeta.AGENT_LINK,
+                                MetaItemType.AGENT_LINK,
                                 managerDemoSetup.agentId,
                                 managerDemoSetup.agentProtocolConfigName
                         )
@@ -527,7 +527,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets = assetStorageService.findAll(
                 new AssetQuery().attributeMeta(
                         new AttributeRefPredicate(
-                                AssetMeta.AGENT_LINK,
+                                MetaItemType.AGENT_LINK,
                                 managerDemoSetup.agentId,
                                 managerDemoSetup.agentProtocolConfigName
                         )
@@ -542,7 +542,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets = assetStorageService.findAll(
                 new AssetQuery().attributeMeta(
                         new AttributeRefPredicate(
-                                AssetMeta.AGENT_LINK,
+                                MetaItemType.AGENT_LINK,
                                 managerDemoSetup.agentId,
                                 managerDemoSetup.agentProtocolConfigName
                         )
@@ -581,7 +581,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         asset.wellKnownType == AssetType.ROOM
         asset.parentId != null
         asset.parentName == "Apartment 1"
-        asset.parentType == AssetType.RESIDENCE.getValue()
+        asset.parentType == AssetType.RESIDENCE.getType()
         asset.realm == keycloakDemoSetup.tenantA.realm
         asset.path != null
         asset.getAttributesList().size() == 3
@@ -607,7 +607,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         asset.wellKnownType == AssetType.ROOM
         asset.parentId != null
         asset.parentName == "Apartment 1"
-        asset.parentType == AssetType.RESIDENCE.getValue()
+        asset.parentType == AssetType.RESIDENCE.getType()
         asset.realm == keycloakDemoSetup.tenantA.realm
         asset.path != null
         asset.getAttributesList().size() == 1

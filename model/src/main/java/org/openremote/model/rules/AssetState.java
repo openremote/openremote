@@ -323,7 +323,7 @@ public class AssetState implements Comparable<AssetState> {
             ", parentName='" + getParentName() + '\'' +
             ", type='" + getType() + '\'' +
             ", attributeName='" + getAttributeName() + '\'' +
-            ", attributeValueType=" + getAttributeValueType() +
+            ", attributeValueDescriptor=" + getAttributeValueType() +
             ", value=" + (getValue().isPresent() ? getValue().get().toJson() : "null") + // TODO Performance?
             ", timestamp=" + getTimestamp() +
             ", oldValue=" + (getOldValue().isPresent() ? getOldValue().get().toJson() : "null") +

@@ -28,10 +28,7 @@ import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
 import com.google.gwt.uibinder.client.UiHandler;
 import com.google.gwt.user.client.ui.*;
-import com.google.inject.Provider;
 import org.openremote.app.client.Environment;
-import org.openremote.app.client.app.dialog.Confirmation;
-import org.openremote.app.client.app.dialog.JsonEditor;
 import org.openremote.app.client.assets.attributes.AttributeView;
 import org.openremote.app.client.assets.browser.AssetBrowser;
 import org.openremote.app.client.assets.browser.AssetSelector;
@@ -42,7 +39,7 @@ import org.openremote.app.client.widget.PushButton;
 import org.openremote.model.Constants;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetType;
-import org.openremote.model.asset.AssetTypeDescriptor;
+import org.openremote.model.asset.AssetDescriptor;
 import org.openremote.model.geo.GeoJSON;
 import org.openremote.model.geo.GeoJSONFeatureCollection;
 import org.openremote.model.geo.GeoJSONPoint;
@@ -129,7 +126,7 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
     @UiField
     FormGroup typeGroup;
     @UiField(provided = true)
-    FormValueListBox<AssetTypeDescriptor> typeListBox;
+    FormValueListBox<AssetDescriptor> typeListBox;
     @UiField
     FormInputText typeInput;
     @UiField
@@ -201,9 +198,9 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
         };
 
         typeListBox = new FormValueListBox<>(
-            new AbstractRenderer<AssetTypeDescriptor>() {
+            new AbstractRenderer<AssetDescriptor>() {
                 @Override
-                public String render(AssetTypeDescriptor assetType) {
+                public String render(AssetDescriptor assetType) {
                     if (assetType == null)
                         assetType = AssetType.CUSTOM;
                     return environment.getMessages().assetTypeLabel(assetType.getName());
@@ -436,13 +433,13 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
     /* ############################################################################ */
 
     @Override
-    public void selectWellKnownType(AssetTypeDescriptor assetType) {
+    public void selectWellKnownType(AssetDescriptor assetType) {
         typeListBox.setValue(assetType);
         typeInput.setVisible(assetType == AssetType.CUSTOM);
     }
 
     @Override
-    public void setAvailableWellKnownTypes(AssetTypeDescriptor[] assetTypes) {
+    public void setAvailableWellKnownTypes(AssetDescriptor[] assetTypes) {
         typeListBox.setAcceptableValues(Arrays.asList(assetTypes));
     }
 
@@ -450,7 +447,7 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
     public void setType(String type) {
         typeInput.setValue(type);
         //TODO replace with AssetModel getValues, through a http request
-        AssetTypeDescriptor assetType = AssetType.getByValue(type).orElse(AssetType.CUSTOM);
+        AssetDescriptor assetType = AssetType.getByValue(type).orElse(AssetType.CUSTOM);
         if (assetType == AssetType.CUSTOM) {
             headline.setSub(type);
         } else {

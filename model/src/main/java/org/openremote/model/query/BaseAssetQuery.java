@@ -399,7 +399,7 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> {
     }
 
     public CHILD type(AssetType assetType) {
-        return type(new StringPredicate(assetType.getValue()));
+        return type(new StringPredicate(assetType.getType()));
     }
 
     public CHILD attributes(AttributePredicate... attributePredicates) {

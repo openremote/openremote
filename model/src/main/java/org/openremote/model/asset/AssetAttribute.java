@@ -29,9 +29,10 @@ import org.openremote.model.value.Values;
 
 import java.util.*;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.openremote.model.asset.AssetMeta.*;
+import static org.openremote.model.asset.MetaItemType.*;
 import static org.openremote.model.attribute.MetaItem.isMetaNameEqualTo;
 import static org.openremote.model.attribute.MetaItem.replaceMetaByName;
 import static org.openremote.model.util.TextUtil.isNullOrEmpty;
@@ -58,22 +59,36 @@ public class AssetAttribute extends Attribute {
     }
 
     public AssetAttribute(AttributeDescriptor attributeDescriptor) {
-        this(attributeDescriptor.getName(), attributeDescriptor.getValueType(), attributeDescriptor.getDefaultValue());
+        this(attributeDescriptor.getName(), attributeDescriptor);
+    }
+
+    public AssetAttribute(String name, AttributeDescriptor attributeDescriptor) {
+        this(name, attributeDescriptor, attributeDescriptor.getInitialValue());
     }
 
     public AssetAttribute(AttributeDescriptor attributeDescriptor, Value value) {
-        this(attributeDescriptor, value, 0);
+        this(attributeDescriptor.getName(), attributeDescriptor, value);
+    }
+
+    public AssetAttribute(String name, AttributeDescriptor attributeDescriptor, Value value) {
+        this(name, attributeDescriptor, value, 0L);
     }
 
     public AssetAttribute(AttributeDescriptor attributeDescriptor, Value value, long timestamp) {
-        super(attributeDescriptor.getName(), attributeDescriptor.getValueType(), value);
+        this(attributeDescriptor.getName(), attributeDescriptor, value, timestamp);
+    }
+
+    public AssetAttribute(String name, AttributeDescriptor attributeDescriptor, Value value, long timestamp) {
+        super(name, attributeDescriptor.getValueDescriptor(), value);
         if (value != null) {
-            if (value.getType() != attributeDescriptor.getValueType().getValueType()) {
+            if (value.getType() != attributeDescriptor.getValueDescriptor().getValueType()) {
                 throw new IllegalArgumentException("Provided value type is not compatible with this attribute type");
             }
         }
         setValue(value, timestamp);
-        addMeta(attributeDescriptor.getDefaultMetaItems());
+        attributeDescriptor.getMetaItemDescriptors().ifPresent(metaItemDescriptors ->
+            addMeta(Arrays.stream(metaItemDescriptors).map(MetaItem::new).toArray(MetaItem[]::new))
+        );
     }
 
     public AssetAttribute(String name, AttributeValueType type, Value value, long timestamp) {
@@ -103,8 +118,6 @@ public class AssetAttribute extends Attribute {
         super(name, type, value, timestamp);
         setAssetId(assetId);
     }
-
-    //TODO constructor which takes a AttributeDescriptor
 
     public Optional<String> getAssetId() {
         return Optional.ofNullable(assetId);
@@ -155,6 +168,13 @@ public class AssetAttribute extends Attribute {
     public AssetAttribute addMeta(MetaItem... meta) {
         if (meta != null) {
             getMeta().addAll(Arrays.asList(meta));
+        }
+        return this;
+    }
+
+    public AssetAttribute addMeta(MetaItemDescriptor... metaItemDescriptors) {
+        if (metaItemDescriptors != null) {
+            getMeta().addAll(Arrays.stream(metaItemDescriptors).map(MetaItem::new).collect(Collectors.toList()));
         }
         return this;
     }
@@ -273,7 +293,7 @@ public class AssetAttribute extends Attribute {
     }
 
     /**
-     * Defaults to <code>true</code> if there is no {@link AssetMeta#DISABLED} item.
+     * Defaults to <code>true</code> if there is no {@link MetaItemType#DISABLED} item.
      */
     public boolean isEnabled() {
         return getMetaStream()
@@ -293,7 +313,7 @@ public class AssetAttribute extends Attribute {
 
     public boolean isAccessRestrictedRead() {
         return getMetaStream()
-            .filter(isMetaNameEqualTo(AssetMeta.ACCESS_RESTRICTED_READ))
+            .filter(isMetaNameEqualTo(MetaItemType.ACCESS_RESTRICTED_READ))
             .findFirst()
             .map(metaItem -> metaItem.getValueAsBoolean().orElse(false))
             .orElse(false);
@@ -301,7 +321,7 @@ public class AssetAttribute extends Attribute {
 
     public boolean isAccessRestrictedWrite() {
         return getMetaStream()
-            .filter(isMetaNameEqualTo(AssetMeta.ACCESS_RESTRICTED_WRITE))
+            .filter(isMetaNameEqualTo(MetaItemType.ACCESS_RESTRICTED_WRITE))
             .findFirst()
             .map(metaItem -> metaItem.getValueAsBoolean().orElse(false))
             .orElse(false);
@@ -309,7 +329,7 @@ public class AssetAttribute extends Attribute {
 
     public boolean isAccessPublicRead() {
         return getMetaStream()
-            .filter(isMetaNameEqualTo(AssetMeta.ACCESS_PUBLIC_READ))
+            .filter(isMetaNameEqualTo(MetaItemType.ACCESS_PUBLIC_READ))
             .findFirst()
             .map(metaItem -> metaItem.getValueAsBoolean().orElse(false))
             .orElse(false);

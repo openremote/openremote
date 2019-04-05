@@ -43,6 +43,7 @@ import javax.ws.rs.core.HttpHeaders;
 import java.io.IOException;
 import java.util.*;
 import java.util.logging.Logger;
+import java.util.stream.Stream;
 
 import static javax.ws.rs.core.Response.Status.*;
 import static org.openremote.container.Container.JSON;
@@ -308,12 +309,12 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
 
                         // An attribute added by a restricted user must be readable by restricted users
                         if (!updatedAttribute.isAccessRestrictedRead()) {
-                            updatedAttribute.addMeta(new MetaItem(AssetMeta.ACCESS_RESTRICTED_READ, Values.create(true)));
+                            updatedAttribute.addMeta(new MetaItem(MetaItemType.ACCESS_RESTRICTED_READ, Values.create(true)));
                         }
 
                         // An attribute added by a restricted user must be writable by restricted users
                         if (!updatedAttribute.isAccessRestrictedWrite()) {
-                            updatedAttribute.addMeta(new MetaItem(AssetMeta.ACCESS_RESTRICTED_WRITE, Values.create(true)));
+                            updatedAttribute.addMeta(new MetaItem(MetaItemType.ACCESS_RESTRICTED_WRITE, Values.create(true)));
                         }
 
                         // Add the new attribute
@@ -333,8 +334,8 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             // TODO Implement "Saved Filter/Searches" properly, allowing restricted users to create rule state flags is not great
             resultAsset.getAttributesStream().forEach(attribute -> {
                 if (attribute.getType().map(attributeType -> attributeType == AttributeValueType.RULES_TEMPLATE_FILTER).orElse(false)
-                    && !attribute.hasMetaItem(AssetMeta.RULE_STATE)) {
-                    attribute.addMeta(new MetaItem(AssetMeta.RULE_STATE, Values.create(true)));
+                    && !attribute.hasMetaItem(MetaItemType.RULE_STATE)) {
+                    attribute.addMeta(new MetaItem(MetaItemType.RULE_STATE, Values.create(true)));
                 }
             });
 
@@ -352,15 +353,15 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
         asset.getAttributesStream().forEach(assetAttribute -> {
             AssetModel.getAttributeDescriptor(assetAttribute.name).ifPresent(wellKnownAttribute -> {
                 //Check if the type matches
-                if (!wellKnownAttribute.getValueType().equals(assetAttribute.getTypeOrThrow())) {
+                if (!wellKnownAttribute.getValueDescriptor().equals(assetAttribute.getTypeOrThrow())) {
                     throw new IllegalStateException(
                         String.format("Well known attribute isn't of the correct type. Attribute name: %s. Expected type: %s",
-                            assetAttribute.name, wellKnownAttribute.getValueType().name()));
+                            assetAttribute.name, wellKnownAttribute.getValueDescriptor().getName()));
                 }
 
                 //Check if the value is valid
-                wellKnownAttribute.getValueType()
-                    .isValidValue(assetAttribute.getValue().orElseThrow(() -> new IllegalStateException("Value is empty for " + assetAttribute.name)))
+                wellKnownAttribute.getValueDescriptor()
+                    .getValidator().flatMap(v -> v.apply(assetAttribute.getValue().orElseThrow(() -> new IllegalStateException("Value is empty for " + assetAttribute.name))))
                     .ifPresent(validationFailure -> {
                         throw new IllegalStateException(
                             String.format("Validation failed for %s with reason %s", assetAttribute.name, validationFailure.getReason().name())
@@ -458,31 +459,33 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                 newAsset.setId(asset.getId());
             }
 
-            AssetModel.getAssetTypeDescriptor(asset.getType()).ifPresent(descriptor -> {
+            AssetModel.getAssetDescriptor(asset.getType()).ifPresent(assetDescriptor -> {
 
-                newAsset.setAccessPublicRead(descriptor.getAccessPublicRead());
-                //Add default meta items if not present
-                newAsset.getAttributesStream().forEach(AssetAttribute ->
-                    descriptor.getDefaultAttributes().filter(defaultAttribute ->
-                        defaultAttribute.getNameOrThrow().equalsIgnoreCase(AssetAttribute.getNameOrThrow())
-                    ).findFirst().ifPresent(defaultAttribute -> {
-                        AssetAttribute.addMeta(
-                            defaultAttribute.getMetaStream().filter(defaultMeta ->
-                                AssetAttribute.getMetaStream().noneMatch(serverMeta ->
-                                    serverMeta.equals(defaultMeta))
-                            ).toArray(MetaItem[]::new)
-                        );
-                    })
-                );
+                newAsset.setAccessPublicRead(assetDescriptor.getAccessPublicRead());
 
-                //Add missing attributes
-                newAsset.addAttributes(descriptor.getDefaultAttributes()
-                    .filter(assetAttribute ->
-                        newAsset.getAttributesStream().noneMatch(serverAttribute ->
-                            serverAttribute.getNameOrThrow().equalsIgnoreCase(assetAttribute.getNameOrThrow())
-                        )
-                    ).toArray(AssetAttribute[]::new)
-                );
+                // Add meta items to well known attributes if not present
+                newAsset.getAttributesStream().forEach(assetAttribute -> {
+                        Optional<AttributeDescriptor> attributeDescriptor = assetDescriptor.getAttributeDescriptors()
+                                .flatMap(attributeDescriptors ->
+                                    Arrays.stream(attributeDescriptors)
+                                            .filter(attrDescriptor -> attrDescriptor.getName().equals(assetAttribute.getNameOrThrow()))
+                                            .findFirst()
+                                );
+
+                        attributeDescriptor.ifPresent(defaultAttribute ->
+                                        defaultAttribute.getMetaItemDescriptors().ifPresent(metaItemDescriptors ->
+                                                assetAttribute.addMeta(
+                                                        Arrays.stream(metaItemDescriptors).filter(metaItemDescriptor -> !assetAttribute.hasMetaItem(metaItemDescriptor)).map(MetaItem::new).toArray(MetaItem[]::new)
+                                                ))
+                                );
+                });
+
+                // Add attributes for this well known asset if not present
+                assetDescriptor.getAttributeDescriptors().ifPresent(attributeDescriptors ->
+                        newAsset.addAttributes(
+                                Arrays.stream(attributeDescriptors).filter(attributeDescriptor ->
+                                        !newAsset.hasAttribute(attributeDescriptor.getName())).map(AssetAttribute::new).toArray(AssetAttribute[]::new)
+                        ));
             });
 
             //Check if a well known attribute is added

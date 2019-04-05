@@ -35,14 +35,14 @@ import java.util.Date;
  * <ul>
  * <li>
  * When a restricted client reads assets, only dynamic attributes with
- * {@link AssetMeta#ACCESS_RESTRICTED_READ} and attribute meta items with {@link MetaItemDescriptor.Access#restrictedRead}
+ * {@link MetaItemType#ACCESS_RESTRICTED_READ} and attribute meta items with {@link MetaItemDescriptor.Access#restrictedRead}
  * are included. A restricted client may submit a query for public assets and dynamic attributes with
- * {@link AssetMeta#ACCESS_PUBLIC_READ} and meta items with {@link MetaItemDescriptor.Access#publicRead}.
+ * {@link MetaItemType#ACCESS_PUBLIC_READ} and meta items with {@link MetaItemDescriptor.Access#publicRead}.
  * </li>
  * <li>
  * When a restricted client updates existing assets, new dynamic attributes can be added, but
- * only attributes with {@link AssetMeta#ACCESS_RESTRICTED_WRITE} can be updated or deleted. Any new attributes
- * are automatically set with {@link AssetMeta#ACCESS_RESTRICTED_READ} and {@link AssetMeta#ACCESS_RESTRICTED_WRITE},
+ * only attributes with {@link MetaItemType#ACCESS_RESTRICTED_WRITE} can be updated or deleted. Any new attributes
+ * are automatically set with {@link MetaItemType#ACCESS_RESTRICTED_READ} and {@link MetaItemType#ACCESS_RESTRICTED_WRITE},
  * thus ensuring that a restricted client can fully access its own attributes. Any added, updated, or removed meta
  * items of attributes must be {@link MetaItemDescriptor.Access#restrictedWrite}.
  * </li>

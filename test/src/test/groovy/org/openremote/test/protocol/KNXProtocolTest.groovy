@@ -23,8 +23,8 @@ import org.apache.commons.lang3.SystemUtils
 import org.openremote.model.asset.Asset
 import tuwien.auto.calimero.server.knxnetip.DefaultServiceContainer
 
-import static org.openremote.model.asset.AssetMeta.DESCRIPTION
-import static org.openremote.model.asset.AssetMeta.LABEL
+import static org.openremote.model.asset.MetaItemType.DESCRIPTION
+import static org.openremote.model.asset.MetaItemType.LABEL
 
 import org.openremote.agent.protocol.knx.KNXProtocol
 import org.openremote.model.asset.agent.ConnectionStatus
@@ -34,7 +34,7 @@ import org.openremote.manager.asset.AssetStorageService
 
 import org.openremote.model.Constants
 import org.openremote.model.asset.AssetAttribute
-import org.openremote.model.asset.AssetMeta
+import org.openremote.model.asset.MetaItemType
 import org.openremote.model.asset.AssetType
 import org.openremote.model.asset.agent.ProtocolConfiguration
 import org.openremote.model.attribute.*
@@ -129,7 +129,7 @@ class KNXProtocolTest extends Specification implements ManagerContainerTrait {
                         new MetaItem(KNXProtocol.META_KNX_ACTION_GA, Values.create("1/0/17")),
                         new MetaItem(KNXProtocol.META_KNX_STATUS_GA, Values.create("0/4/14")),
                         new MetaItem(KNXProtocol.META_KNX_DPT, Values.create("1.001")),
-                        new MetaItem(AssetMeta.AGENT_LINK, new AttributeRef(knxAgent.getId(), "knxConfig").toArrayValue())
+                        new MetaItem(MetaItemType.AGENT_LINK, new AttributeRef(knxAgent.getId(), "knxConfig").toArrayValue())
                     )
         )
         knxThing = assetStorageService.merge(knxThing)

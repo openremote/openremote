@@ -7,7 +7,7 @@ import org.openremote.model.AbstractValueHolder;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.asset.AssetMeta;
+import org.openremote.model.asset.MetaItemType;
 import org.openremote.model.asset.AssetType;
 import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.asset.agent.ConnectionStatus;
@@ -519,7 +519,7 @@ public class KNXProtocol extends AbstractProtocol implements ProtocolLinkedAttri
         AttributeValueType type = TypeMapper.toAttributeType(datapoint);
 
         AssetAttribute attr = asset.getAttribute(attrName).orElse(new AssetAttribute(attrName, type).setMeta(
-                        new MetaItem(AssetMeta.LABEL, Values.create(name)), 
+                        new MetaItem(MetaItemType.LABEL, Values.create(name)),
                         new MetaItem(KNXProtocol.META_KNX_DPT, Values.create(datapoint.getDPT())),
                         agentLink
         ));

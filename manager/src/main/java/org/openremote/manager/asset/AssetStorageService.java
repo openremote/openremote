@@ -732,7 +732,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             sb.append("select jsonb_agg(AM.VALUE)");
             sb.append(" from jsonb_array_elements(AX.VALUE #> '{meta}') as AM");
             sb.append(" where AM.VALUE #>> '{name}' = '");
-            sb.append(AssetMeta.LABEL.getUrn());
+            sb.append(MetaItemType.LABEL.getUrn());
             sb.append("'))) from jsonb_each(A.attributes) as AX");
             if (access != PRIVATE_READ) {
                 // Use implicit inner join on meta array set to only select non-private attributes
@@ -772,7 +772,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             // Filter non-private access attributes
             AttributeMetaPredicate accessPredicate =
                 new AttributeMetaPredicate()
-                    .itemName(access == RESTRICTED_READ ? AssetMeta.ACCESS_RESTRICTED_READ : AssetMeta.ACCESS_PUBLIC_READ)
+                    .itemName(access == RESTRICTED_READ ? MetaItemType.ACCESS_RESTRICTED_READ : MetaItemType.ACCESS_PUBLIC_READ)
                     .itemValue(new BooleanPredicate(true));
             sb.append(buildAttributeMetaFilter(accessPredicate, binders));
         }

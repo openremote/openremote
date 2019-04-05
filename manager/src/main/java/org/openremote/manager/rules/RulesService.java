@@ -38,7 +38,7 @@ import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.model.Constants;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.asset.AssetMeta;
+import org.openremote.model.asset.MetaItemType;
 import org.openremote.model.attribute.AttributeEvent.Source;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.filter.AttributeMetaPredicate;
@@ -80,7 +80,7 @@ import static org.openremote.model.asset.AssetAttribute.getAddedOrModifiedAttrib
  * If an updated attribute {@link AssetAttribute#isRuleEvent}, another temporary {@link AssetState} fact is inserted in
  * the rules engines in scope. This fact expires automatically if the lifetime set in {@link
  * RulesService#RULE_EVENT_EXPIRES} is reached, or if the lifetime set in the attribute {@link
- * AssetMeta#RULE_EVENT_EXPIRES} is reached.
+ * MetaItemType#RULE_EVENT_EXPIRES} is reached.
  * <p>
  * Each asset attribute update is processed in the following order:
  * <ol>
@@ -756,7 +756,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
                 .select(new AssetQuery.Select(AssetQuery.Include.ALL))
                 .attributeMeta(
                     new AttributeMetaPredicate(
-                        AssetMeta.RULE_STATE,
+                        MetaItemType.RULE_STATE,
                         new BooleanPredicate(true))
                 ));
 
@@ -768,7 +768,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
 
     /**
      * Called when an engine's rules change identifying assets with location attributes marked with {@link
-     * AssetMeta#RULE_STATE} that also have {@link LocationAttributePredicate} in the rules. The job here is to
+     * MetaItemType#RULE_STATE} that also have {@link LocationAttributePredicate} in the rules. The job here is to
      * identify the asset's (via {@link AssetState}) that have modified {@link LocationAttributePredicate}s and to
      * notify the {@link GeofenceAssetAdapter}s.
      */

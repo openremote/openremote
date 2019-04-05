@@ -26,7 +26,7 @@ import org.openremote.manager.security.UserConfiguration;
 import org.openremote.manager.setup.AbstractManagerSetup;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.asset.AssetMeta;
+import org.openremote.model.asset.MetaItemType;
 import org.openremote.model.asset.UserAsset;
 import org.openremote.model.attribute.*;
 import org.openremote.model.geo.GeoJSONPoint;
@@ -44,7 +44,7 @@ import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.openremote.model.asset.AssetMeta.*;
+import static org.openremote.model.asset.MetaItemType.*;
 import static org.openremote.model.asset.AssetType.*;
 import static org.openremote.model.asset.agent.ProtocolConfiguration.initProtocolConfiguration;
 import static org.openremote.model.attribute.AttributeValueType.*;
@@ -491,7 +491,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                 switch (attributeIndex) {
                     case 2:
                         return new MetaItem[]{
-                            new MetaItem(AssetMeta.AGENT_LINK,
+                            new MetaItem(MetaItemType.AGENT_LINK,
                                          new AttributeRef(apartment1ServiceAgentId,
                                                           "apartmentSimulator").toArrayValue()),
                             new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT,
@@ -499,7 +499,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                         };
                     case 3:
                         return new MetaItem[]{
-                            new MetaItem(AssetMeta.AGENT_LINK,
+                            new MetaItem(MetaItemType.AGENT_LINK,
                                          new AttributeRef(apartment1ServiceAgentId,
                                                           "apartmentSimulator").toArrayValue()),
                             new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT,
@@ -507,7 +507,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                         };
                     case 4:
                         return new MetaItem[]{
-                            new MetaItem(AssetMeta.AGENT_LINK,
+                            new MetaItem(MetaItemType.AGENT_LINK,
                                          new AttributeRef(apartment1ServiceAgentId,
                                                           "apartmentSimulator").toArrayValue()),
                             new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT,

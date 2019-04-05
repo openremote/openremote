@@ -72,19 +72,19 @@ public abstract class Attribute extends AbstractValueTimestampHolder {
         setName(name);
     }
 
-    protected Attribute(String name, AttributeValueType type) {
+    protected Attribute(String name, AttributeValueDescriptor type) {
         this(name);
         setName(name);
         setType(type);
     }
 
-    protected Attribute(String name, AttributeValueType type, Value value, long timestamp) {
+    protected Attribute(String name, AttributeValueDescriptor type, Value value, long timestamp) {
         this(name, type);
         setValue(value);
         setValueTimestamp(timestamp);
     }
 
-    protected Attribute(String name, AttributeValueType type, Value value) {
+    protected Attribute(String name, AttributeValueDescriptor type, Value value) {
         this(name, type);
         setValue(value);
     }
@@ -118,9 +118,9 @@ public abstract class Attribute extends AbstractValueTimestampHolder {
         return getType().orElseThrow(() -> new IllegalStateException("Attribute doesn't have a type"));
     }
 
-    public void setType(AttributeValueType type) {
+    public void setType(AttributeValueDescriptor type) {
         Objects.requireNonNull(type);
-        getObjectValue().put(TYPE_FIELD_NAME, Values.create(type.name()));
+        getObjectValue().put(TYPE_FIELD_NAME, Values.create(type.getName()));
     }
 
     public void clearType() {
@@ -220,7 +220,7 @@ public abstract class Attribute extends AbstractValueTimestampHolder {
 
         // Value can be empty, if it's not it must validate with the type
         getValue().flatMap(value ->
-            getType().flatMap(attributeType -> attributeType.isValidValue(value))
+            getType().flatMap(AttributeValueType::getValidator).flatMap(v -> v.apply(value))
         ).ifPresent(failures::add);
 
         if (includeMeta) {

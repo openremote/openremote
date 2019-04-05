@@ -46,7 +46,7 @@ public class PersistenceEvent<T> {
     }
 
     public static Predicate isPersistenceEventForAssetType(AssetType assetType) {
-        return isPersistenceEventForAssetType(assetType.getValue());
+        return isPersistenceEventForAssetType(assetType.getType());
     }
 
     public static Predicate isPersistenceEventForAssetType(String assetType) {

@@ -45,7 +45,7 @@ import java.util.function.Supplier;
 import static org.openremote.agent.protocol.macro.MacroProtocol.META_MACRO_ACTION_INDEX;
 import static org.openremote.agent.protocol.timer.TimerConfiguration.initTimerConfiguration;
 import static org.openremote.agent.protocol.timer.TimerProtocol.META_TIMER_VALUE_LINK;
-import static org.openremote.model.asset.AssetMeta.*;
+import static org.openremote.model.asset.MetaItemType.*;
 import static org.openremote.model.asset.AssetType.*;
 import static org.openremote.model.asset.agent.ProtocolConfiguration.initProtocolConfiguration;
 import static org.openremote.model.attribute.AttributeValueType.*;

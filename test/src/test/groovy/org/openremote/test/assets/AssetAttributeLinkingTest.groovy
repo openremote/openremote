@@ -6,7 +6,7 @@ import org.openremote.manager.asset.AssetStorageService
 import org.openremote.model.Constants
 import org.openremote.model.asset.Asset
 import org.openremote.model.asset.AssetAttribute
-import org.openremote.model.asset.AssetMeta
+import org.openremote.model.asset.MetaItemType
 import org.openremote.model.asset.AssetType
 import org.openremote.model.attribute.*
 import org.openremote.model.value.Values
@@ -69,8 +69,8 @@ class AssetAttributeLinkingTest extends Specification implements ManagerContaine
         attributeLinkCounter.put("attributeRef", new AttributeRef(asset2.id, "counter").toArrayValue())
         attributeLinkCounter.put("converter", converterCounter)
 
-        asset1.getAttribute("button").get().addMeta(new MetaItem(AssetMeta.ATTRIBUTE_LINK, attributeLinkOnOff))
-        asset1.getAttribute("button").get().addMeta(new MetaItem(AssetMeta.ATTRIBUTE_LINK, attributeLinkCounter))
+        asset1.getAttribute("button").get().addMeta(new MetaItem(MetaItemType.ATTRIBUTE_LINK, attributeLinkOnOff))
+        asset1.getAttribute("button").get().addMeta(new MetaItem(MetaItemType.ATTRIBUTE_LINK, attributeLinkCounter))
         asset1 = assetStorageService.merge(asset1)
 
         and: "the button is pressed for a short period"

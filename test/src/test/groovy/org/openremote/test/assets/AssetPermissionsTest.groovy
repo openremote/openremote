@@ -24,7 +24,7 @@ import static org.openremote.container.util.MapAccess.getString
 import static org.openremote.manager.setup.AbstractKeycloakSetup.SETUP_ADMIN_PASSWORD
 import static org.openremote.manager.setup.AbstractKeycloakSetup.SETUP_ADMIN_PASSWORD_DEFAULT
 import static org.openremote.model.Constants.*
-import static org.openremote.model.asset.AssetMeta.*
+import static org.openremote.model.asset.MetaItemType.*
 import static org.openremote.model.attribute.AttributeValueType.BOOLEAN
 import static org.openremote.model.attribute.AttributeValueType.NUMBER
 import static org.openremote.model.attribute.MetaItem.isMetaNameEqualTo
@@ -576,7 +576,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         apartment1.name == "Apartment 1"
         apartment1.createdOn.getTime() < System.currentTimeMillis()
         apartment1.realm == keycloakDemoSetup.tenantA.realm
-        apartment1.type == AssetType.RESIDENCE.value
+        apartment1.type == AssetType.RESIDENCE.type
         apartment1.parentId == managerDemoSetup.smartBuildingId
         apartment1.path == null
         apartment1.attributesList.size() == 0

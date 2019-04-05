@@ -30,11 +30,11 @@ public class DefaultAssetModelProvider implements AssetModelProvider {
 
     @Override
     public MetaItemDescriptor[] getMetaItemDescriptors() {
-        return AssetMeta.values();
+        return MetaItemType.values();
     }
 
     @Override
-    public AssetTypeDescriptor[] getAssetTypeDescriptors() {
+    public AssetDescriptor[] getAssetTypeDescriptors() {
         return AssetType.values();
     }
 

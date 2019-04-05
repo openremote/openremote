@@ -44,7 +44,7 @@ import static org.openremote.model.util.TextUtil.REGEXP_PATTERN_INTEGER_POSITIVE
  * <p>
  * TODO https://people.eecs.berkeley.edu/~arka/papers/buildsys2015_metadatasurvey.pdf
  */
-public enum AssetMeta implements MetaItemDescriptor {
+public enum MetaItemType implements MetaItemDescriptor {
 
     /**
      * Marks an attribute of an agent asset as a {@link org.openremote.model.asset.agent.ProtocolConfiguration}. The
@@ -391,11 +391,11 @@ public enum AssetMeta implements MetaItemDescriptor {
     final protected String patternFailureMessage;
     final protected Function<Value, Optional<ValidationFailure>> validator;
 
-    AssetMeta(String urn, Access access, ValueType valueType, String pattern, String patternFailureMessage, Value initialValue, boolean valueFixed) {
+    MetaItemType(String urn, Access access, ValueType valueType, String pattern, String patternFailureMessage, Value initialValue, boolean valueFixed) {
         this(urn, access, valueType, pattern, patternFailureMessage, initialValue, valueFixed, null);
     }
 
-    AssetMeta(String urn, Access access, ValueType valueType, String pattern, String patternFailureMessage, Value initialValue, boolean valueFixed, Function<Value, Optional<ValidationFailure>> validator) {
+    MetaItemType(String urn, Access access, ValueType valueType, String pattern, String patternFailureMessage, Value initialValue, boolean valueFixed, Function<Value, Optional<ValidationFailure>> validator) {
         if (initialValue != null && initialValue.getType() != valueType) {
             throw new IllegalStateException("Initial asset meta value must be of the same type as the asset meta");
         }
@@ -457,5 +457,9 @@ public enum AssetMeta implements MetaItemDescriptor {
     @Override
     public boolean isValueFixed() {
         return valueFixed;
+    }
+
+    public MetaItemDescriptor withInitialValue(Value initialValue) {
+        return new MetaItemDescriptorImpl(this, initialValue);
     }
 }

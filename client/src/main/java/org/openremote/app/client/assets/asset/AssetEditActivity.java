@@ -61,6 +61,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static org.openremote.model.asset.AssetAttribute.attributesFromJson;
+import static org.openremote.model.asset.AssetType.CUSTOM;
 import static org.openremote.model.attribute.Attribute.ATTRIBUTE_NAME_VALIDATOR;
 import static org.openremote.model.attribute.Attribute.isAttributeNameEqualTo;
 import static org.openremote.model.attribute.MetaItem.isMetaNameEqualTo;
@@ -83,7 +84,7 @@ public class AssetEditActivity
     protected final AssetAttributeMapper assetAttributeMapper;
     protected final Consumer<ConstraintViolation[]> validationErrorHandler;
     protected List<ProtocolDescriptor> protocolDescriptors = new ArrayList<>();
-    protected List<MetaItemDescriptor> metaItemDescriptors = new ArrayList<>(Arrays.asList(AssetMeta.values())); // TODO Get meta item descriptors from server
+    protected List<MetaItemDescriptor> metaItemDescriptors = new ArrayList<>(Arrays.asList(MetaItemType.values())); // TODO Get meta item descriptors from server
     protected GeoJSONPoint selectedCoordinates;
     protected List<AssetAttribute> initialAssetAttributes;
 
@@ -201,7 +202,7 @@ public class AssetEditActivity
     }
 
     @Override
-    public void onAssetTypeSelected(AssetTypeDescriptor type) {
+    public void onAssetTypeSelected(AssetDescriptor type) {
         asset.setType(type);
         writeAttributeTypesToView(this::writeAttributesToView);
     }
@@ -242,7 +243,7 @@ public class AssetEditActivity
 
             attribute = new AssetAttribute();
             attribute.setType(attributeValueType);
-            attribute.addMeta(attributeValueType.getDefaultMetaItems());
+            attributeValueType.getMetaItemDescriptors().ifPresent(attribute::addMeta);
         }
 
         attribute.setName(name);
@@ -362,7 +363,7 @@ public class AssetEditActivity
             }
 
             // Agents must have protocol configurations
-            query.attributeMeta(new AttributeMetaPredicate(AssetMeta.PROTOCOL_CONFIGURATION, new BooleanPredicate(true)));
+            query.attributeMeta(new AttributeMetaPredicate(MetaItemType.PROTOCOL_CONFIGURATION, new BooleanPredicate(true)));
 
             // Only show protocol configurations
             attributeFilter = ProtocolConfiguration::isProtocolConfiguration;
@@ -414,7 +415,7 @@ public class AssetEditActivity
         switch (valueType) {
             case ARRAY:
                 if (valueHolder instanceof MetaItem) {
-                    if (isMetaNameEqualTo((MetaItem) valueHolder, AssetMeta.AGENT_LINK)) {
+                    if (isMetaNameEqualTo((MetaItem) valueHolder, MetaItemType.AGENT_LINK)) {
                         boolean isReadOnly = isValueReadOnly(valueHolder);
                         String assetWatermark = environment.getMessages().selectAgent();
                         String attributeWatermark = environment.getMessages().selectProtocolConfiguration();
@@ -432,7 +433,7 @@ public class AssetEditActivity
                 break;
             case OBJECT:
                 if (valueHolder instanceof MetaItem) {
-                    if (isMetaNameEqualTo((MetaItem) valueHolder, AssetMeta.ATTRIBUTE_LINK)) {
+                    if (isMetaNameEqualTo((MetaItem) valueHolder, MetaItemType.ATTRIBUTE_LINK)) {
                         boolean isReadOnly = isValueReadOnly(valueHolder);
                         String assetWatermark = environment.getMessages().selectAsset();
                         String attributeWatermark = environment.getMessages().selectAttribute();
@@ -570,7 +571,14 @@ public class AssetEditActivity
     protected void writeAttributeTypesToView(Runnable onComplete) {
         view.selectWellKnownType(asset.getWellKnownType());
         //TODO replace with AssetModel getValuesSorted, through a http request
-        view.setAvailableWellKnownTypes(AssetType.valuesSorted());
+        List<AssetDescriptor> list = new ArrayList<>(Arrays.asList(AssetType.values()));
+        list.sort(Comparator.comparing(AssetDescriptor::getName));
+        if (list.contains(CUSTOM)) {
+            // CUSTOM should be first
+            list.remove(CUSTOM);
+            list.add(0, CUSTOM);
+        }
+        view.setAvailableWellKnownTypes(list.toArray(new AssetDescriptor[list.size()]));
         view.setType(asset.getType());
         view.setTypeEditable(isNullOrEmpty(assetId));
 
@@ -655,7 +663,7 @@ public class AssetEditActivity
         } else {
             asset.setParentId(null);
         }
-        if (AssetType.CUSTOM.equals(asset.getWellKnownType())) {
+        if (CUSTOM.equals(asset.getWellKnownType())) {
             asset.setType(view.getType());
         }
         if (selectedCoordinates != null) {

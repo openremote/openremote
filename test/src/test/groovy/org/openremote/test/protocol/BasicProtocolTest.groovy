@@ -28,7 +28,7 @@ import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.model.asset.Asset
 import org.openremote.model.asset.AssetAttribute
-import org.openremote.model.asset.AssetMeta
+import org.openremote.model.asset.MetaItemType
 import org.openremote.model.asset.AssetType
 import org.openremote.model.asset.agent.ConnectionStatus
 import org.openremote.model.asset.agent.ProtocolConfiguration
@@ -191,7 +191,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait, 
             ProtocolConfiguration.initProtocolConfiguration(new AssetAttribute("mockConfig4"), mockProtocolName)
                 .addMeta(
                     new MetaItem("MOCK_REQUIRED_META", Values.create(true)),
-                    new MetaItem(AssetMeta.DISABLED, Values.create(true))
+                    new MetaItem(MetaItemType.DISABLED, Values.create(true))
                 )
         )
         mockAgent.setRealm(MASTER_REALM)
@@ -221,7 +221,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait, 
                 .setMeta(
                     new MetaItem("MOCK_ATTRIBUTE_REQUIRED_META", Values.create(true)),
                     new MetaItem(
-                        AssetMeta.AGENT_LINK,
+                        MetaItemType.AGENT_LINK,
                         new AttributeRef(mockAgent.getId(), "mockConfig1").toArrayValue()
                     )
                 ),
@@ -229,14 +229,14 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait, 
                 .setMeta(
                     new MetaItem("MOCK_ATTRIBUTE_REQUIRED_META", Values.create(true)),
                     new MetaItem(
-                        AssetMeta.AGENT_LINK,
+                        MetaItemType.AGENT_LINK,
                         new AttributeRef(mockAgent.getId(), "mockConfig1").toArrayValue()
                     )
                 ),
             new AssetAttribute("invalidToggle1", AttributeValueType.BOOLEAN)
                 .setMeta(
                     new MetaItem(
-                        AssetMeta.AGENT_LINK,
+                        MetaItemType.AGENT_LINK,
                         new AttributeRef(mockAgent.getId(), "mockConfig1").toArrayValue()
                     )
                 ),
@@ -244,7 +244,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait, 
                 .setMeta(
                 new MetaItem("MOCK_ATTRIBUTE_REQUIRED_META", Values.create(true)),
                 new MetaItem(
-                        AssetMeta.AGENT_LINK,
+                        MetaItemType.AGENT_LINK,
                         new AttributeRef(mockAgent.getId(), "mockConfig2").toArrayValue()
                 )
             ),
@@ -252,7 +252,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait, 
                 .setMeta(
                 new MetaItem("MOCK_ATTRIBUTE_REQUIRED_META", Values.create(true)),
                 new MetaItem(
-                        AssetMeta.AGENT_LINK,
+                        MetaItemType.AGENT_LINK,
                         new AttributeRef(mockAgent.getId(), "mockConfig2").toArrayValue()
                 )
             ),
@@ -260,7 +260,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait, 
                 .setMeta(
                 new MetaItem("MOCK_ATTRIBUTE_REQUIRED_META", Values.create(true)),
                 new MetaItem(
-                        AssetMeta.AGENT_LINK,
+                        MetaItemType.AGENT_LINK,
                         new AttributeRef(mockAgent.getId(), "mockConfig3").toArrayValue()
                 )
             ),
@@ -268,7 +268,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait, 
                 .setMeta(
                 new MetaItem("MOCK_ATTRIBUTE_REQUIRED_META", Values.create(true)),
                 new MetaItem(
-                        AssetMeta.AGENT_LINK,
+                        MetaItemType.AGENT_LINK,
                         new AttributeRef(mockAgent.getId(), "mockConfig3").toArrayValue()
                 )
             ),
@@ -276,7 +276,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait, 
                 .setMeta(
                 new MetaItem("MOCK_ATTRIBUTE_REQUIRED_META", Values.create(true)),
                 new MetaItem(
-                        AssetMeta.AGENT_LINK,
+                        MetaItemType.AGENT_LINK,
                         new AttributeRef(mockAgent.getId(), "mockConfig4").toArrayValue()
                 )
             ),
@@ -284,30 +284,30 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait, 
                     .setMeta(
                     new MetaItem("MOCK_ATTRIBUTE_REQUIRED_META", Values.create(true)),
                     new MetaItem(
-                            AssetMeta.AGENT_LINK,
+                            MetaItemType.AGENT_LINK,
                             new AttributeRef(mockAgent.getId(), "mockConfig4").toArrayValue()
                     )
             ),
             new AssetAttribute("invalidToggle5", AttributeValueType.BOOLEAN, Values.create(false))
                 .setMeta(
                     new MetaItem(
-                        AssetMeta.AGENT_LINK,
+                        MetaItemType.AGENT_LINK,
                         new AttributeRef(mockAgent.getId(), "INVALID CONFIG").toArrayValue()
                     )
                 ),
             new AssetAttribute("plainAttribute", AttributeValueType.STRING, Values.create("demo"))
                 .setMeta(
                 new MetaItem(
-                        AssetMeta.DESCRIPTION,
+                        MetaItemType.DESCRIPTION,
                         Values.create("A plain string attribute for storing information")
                 ),
-                new MetaItem(AssetMeta.READ_ONLY, Values.create(true))
+                new MetaItem(MetaItemType.READ_ONLY, Values.create(true))
             ),
             new AssetAttribute("filterRegex", AttributeValueType.NUMBER)
                 .setMeta(
                 new MetaItem("MOCK_ATTRIBUTE_REQUIRED_META", Values.create(true)),
                 new MetaItem(
-                    AssetMeta.AGENT_LINK,
+                    MetaItemType.AGENT_LINK,
                     new AttributeRef(mockAgent.getId(), "mockConfig1").toArrayValue()
                 ),
                 new MetaItem(
@@ -319,7 +319,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait, 
                 .setMeta(
                 new MetaItem("MOCK_ATTRIBUTE_REQUIRED_META", Values.create(true)),
                 new MetaItem(
-                    AssetMeta.AGENT_LINK,
+                    MetaItemType.AGENT_LINK,
                     new AttributeRef(mockAgent.getId(), "mockConfig1").toArrayValue()
                 ),
                 new MetaItem(
@@ -331,7 +331,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait, 
                 .setMeta(
                 new MetaItem("MOCK_ATTRIBUTE_REQUIRED_META", Values.create(true)),
                 new MetaItem(
-                    AssetMeta.AGENT_LINK,
+                    MetaItemType.AGENT_LINK,
                     new AttributeRef(mockAgent.getId(), "mockConfig1").toArrayValue()
                 ),
                 new MetaItem(

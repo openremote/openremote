@@ -50,7 +50,7 @@ public class ParentPredicate {
     }
 
     public ParentPredicate type(AssetType type) {
-        return type(type.getValue());
+        return type(type.getType());
     }
 
     public ParentPredicate name(String name) {

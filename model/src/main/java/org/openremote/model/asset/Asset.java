@@ -282,7 +282,7 @@ public class Asset implements IdentifiableEntity {
     public Asset() {
     }
 
-    public Asset(String name, AssetType type) {
+    public Asset(String name, AssetDescriptor type) {
         this(name, type, null, null);
     }
 
@@ -290,19 +290,21 @@ public class Asset implements IdentifiableEntity {
         this(name, type, false, null, null);
     }
 
-    public Asset(@NotNull String name, @NotNull AssetType type, Asset parent) {
-        this(name, type.getValue(), parent);
+    public Asset(@NotNull String name, @NotNull AssetDescriptor type, Asset parent) {
+        this(name, type, parent, null);
     }
 
     public Asset(@NotNull String name, @NotNull String type, Asset parent) {
         this(name, type, false, parent, null);
     }
 
-    public Asset(@NotNull String name, @NotNull AssetType type, Asset parent, @NotNull String realm) {
-        this(name, type.getValue(), false, parent, realm);
+    public Asset(@NotNull String name, @NotNull AssetDescriptor type, Asset parent, String realm) {
+        this(name, type.getType(), type.getAccessPublicRead(), parent, realm);
+        type.getAttributeDescriptors().ifPresent(attributeDescriptors ->
+                addAttributes(Arrays.stream(attributeDescriptors).map(AssetAttribute::new).toArray(AssetAttribute[]::new)));
     }
 
-    public Asset(@NotNull String name, @NotNull String type, boolean accessPublicRead, Asset parent, @NotNull String realm) {
+    public Asset(@NotNull String name, @NotNull String type, boolean accessPublicRead, Asset parent, String realm) {
         setRealm(realm);
         setName(name);
         setType(type);
@@ -416,8 +418,8 @@ public class Asset implements IdentifiableEntity {
         this.type = type;
     }
 
-    public void setType(AssetTypeDescriptor type) {
-        setType(type != null ? type.getValue() : null);
+    public void setType(AssetDescriptor type) {
+        setType(type != null ? type.getType() : null);
     }
 
     public boolean isAccessPublicRead() {
@@ -526,9 +528,8 @@ public class Asset implements IdentifiableEntity {
 
     public List<AssetAttribute> getAttributesList() {
         if (attributeList == null) {
-            attributeList = new ObservableList<>(attributesFromJson(attributes, id).collect(Collectors.toList()), () -> {
-                this.attributes = attributesToJson(attributeList).orElse(Values.createObject());
-            });
+            attributeList = new ObservableList<>(attributesFromJson(attributes, id).collect(Collectors.toList()),
+                    () -> this.attributes = attributesToJson(attributeList).orElse(Values.createObject()));
         }
         return attributeList;
     }
@@ -610,11 +611,13 @@ public class Asset implements IdentifiableEntity {
     public void setCoordinates(GeoJSONPoint coordinates) {
         AssetAttribute locationAttribute = getAttributesStream()
             .filter(attribute -> attribute.getNameOrThrow().equals(LOCATION.getName()))
-            .findFirst().orElse(new AssetAttribute(LOCATION.getName(), LOCATION.getValueType()));
+            .findFirst().orElse(new AssetAttribute(LOCATION));
 
         locationAttribute.setValue(coordinates == null ? null : coordinates.toValue());
         replaceAttribute(locationAttribute);
     }
+
+
 
     public boolean hasGeoFeature() {
         return getCoordinates() != null;

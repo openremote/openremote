@@ -197,7 +197,7 @@ public interface AssetResource {
      * <p>
      * If the asset or attribute doesn't exist then a 404 status is returned.
      * <p>
-     * If an attribute is marked as {@link AssetMeta#ACCESS_PUBLIC_WRITE} then the attribute can be written publicly
+     * If an attribute is marked as {@link MetaItemType#ACCESS_PUBLIC_WRITE} then the attribute can be written publicly
      * <p>
      * This operation is ultimately asynchronous, any call will return before the actual attribute value is changed in
      * any storage or downstream processors. Thus any constraint violation or processing error will not be returned from
