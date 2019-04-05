@@ -20,6 +20,7 @@
 package org.openremote.model.asset;
 
 import org.openremote.model.attribute.AttributeDescriptor;
+import org.openremote.model.attribute.AttributeValueDescriptor;
 import org.openremote.model.attribute.MetaItemDescriptor;
 
 /**
@@ -32,4 +33,6 @@ public interface AssetModelProvider {
     AssetDescriptor[] getAssetTypeDescriptors();
 
     AttributeDescriptor[] getAttributeDescriptors();
+
+    AttributeValueDescriptor[] getAttributeValueDescriptors();
 }
