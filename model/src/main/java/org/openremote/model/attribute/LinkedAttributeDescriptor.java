@@ -23,7 +23,7 @@ public class LinkedAttributeDescriptor {
 
     protected final String name;
     protected final String displayName;
-    protected final AttributeValueType attributeValueType;
+    protected final AttributeValueDescriptor attributeValueDescriptor;
     protected final boolean readOnly;
     protected final boolean executable;
     protected final MetaItem[] metaItems;
@@ -31,13 +31,13 @@ public class LinkedAttributeDescriptor {
     public LinkedAttributeDescriptor(
         String name,
         String displayName,
-        AttributeValueType attributeValueType,
+        AttributeValueType attributeValueDescriptor,
         boolean readOnly,
         boolean executable,
         MetaItem[] metaItems) {
         this.name = name;
         this.displayName = displayName;
-        this.attributeValueType = attributeValueType;
+        this.attributeValueDescriptor = attributeValueDescriptor;
         this.readOnly = readOnly;
         this.executable = executable;
         this.metaItems = metaItems;
@@ -51,8 +51,8 @@ public class LinkedAttributeDescriptor {
         return displayName;
     }
 
-    public AttributeValueType getAttributeValueType() {
-        return attributeValueType;
+    public AttributeValueDescriptor getAttributeValueDescriptor() {
+        return attributeValueDescriptor;
     }
 
     public boolean isReadOnly() {

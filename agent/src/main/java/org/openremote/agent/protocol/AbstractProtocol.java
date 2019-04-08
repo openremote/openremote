@@ -382,7 +382,7 @@ public abstract class AbstractProtocol implements Protocol {
                 }
 
                 // Do basic value conversion
-                Optional<ValueType> attributeValueType = attribute.getType().map(AttributeValueType::getValueType);
+                Optional<ValueType> attributeValueType = attribute.getType().map(AttributeValueDescriptor::getValueType);
 
                 if (value != null && attributeValueType.isPresent()) {
                     if (attributeValueType.get() != value.getType()) {

@@ -26,7 +26,7 @@ import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetType;
 import org.openremote.model.attribute.AttributeEvent;
-import org.openremote.model.attribute.AttributeValueType;
+import org.openremote.model.attribute.AttributeValueDescriptor;
 import org.openremote.model.attribute.Meta;
 import org.openremote.model.value.ArrayValue;
 import org.openremote.model.value.ObjectValue;
@@ -49,7 +49,7 @@ public class AssetState implements Comparable<AssetState> {
 
     final protected String attributeName;
 
-    final protected AttributeValueType attributeValueType;
+    final protected AttributeValueDescriptor attributeValueType;
 
     final protected Value value;
 
@@ -133,7 +133,7 @@ public class AssetState implements Comparable<AssetState> {
         return attributeName;
     }
 
-    public AttributeValueType getAttributeValueType() {
+    public AttributeValueDescriptor getAttributeValueType() {
         return attributeValueType;
     }
 

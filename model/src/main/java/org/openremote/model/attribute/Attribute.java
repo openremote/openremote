@@ -24,6 +24,7 @@ import com.google.gwt.regexp.shared.RegExp;
 import org.openremote.model.AbstractValueTimestampHolder;
 import org.openremote.model.HasUniqueResourceName;
 import org.openremote.model.ValidationFailure;
+import org.openremote.model.util.AssetModelUtil;
 import org.openremote.model.util.EnumUtil;
 import org.openremote.model.value.*;
 
@@ -93,6 +94,7 @@ public abstract class Attribute extends AbstractValueTimestampHolder {
         return Optional.ofNullable(name);
     }
 
+    @JsonIgnore
     public String getNameOrThrow() {
         return getName().orElseThrow(() -> new IllegalStateException("Attribute doesn't have a name"));
     }
@@ -106,15 +108,16 @@ public abstract class Attribute extends AbstractValueTimestampHolder {
         this.name = null;
     }
 
-    public Optional<AttributeValueType> getType() {
-        return getObjectValue().getString(TYPE_FIELD_NAME).flatMap(name -> EnumUtil.enumFromString(AttributeValueType.class, name));
+    public Optional<AttributeValueDescriptor> getType() {
+        return getObjectValue().getString(TYPE_FIELD_NAME).flatMap(AssetModelUtil::getAttributeValueDescriptor);
     }
 
     /**
      * The below is used in a sufficient number of places to provide it here as a utility method
      * with a standardised exception message.
      */
-    public AttributeValueType getTypeOrThrow() {
+    @JsonIgnore
+    public AttributeValueDescriptor getTypeOrThrow() {
         return getType().orElseThrow(() -> new IllegalStateException("Attribute doesn't have a type"));
     }
 
@@ -147,6 +150,7 @@ public abstract class Attribute extends AbstractValueTimestampHolder {
         return meta;
     }
 
+    @JsonIgnore
     public Stream<MetaItem> getMetaStream() {
         return getMeta().stream();
     }
@@ -220,7 +224,7 @@ public abstract class Attribute extends AbstractValueTimestampHolder {
 
         // Value can be empty, if it's not it must validate with the type
         getValue().flatMap(value ->
-            getType().flatMap(AttributeValueType::getValidator).flatMap(v -> v.apply(value))
+            getType().flatMap(AttributeValueDescriptor::getValidator).flatMap(v -> v.apply(value))
         ).ifPresent(failures::add);
 
         if (includeMeta) {

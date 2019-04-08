@@ -42,6 +42,7 @@ import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeEvent.Source;
 import org.openremote.model.attribute.AttributeExecuteStatus;
 import org.openremote.model.security.ClientRole;
+import org.openremote.model.util.AssetModelUtil;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.Values;
 
@@ -349,7 +350,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                     }
 
                     //Check if attribute is well known and the value is valid
-                    AssetModel.getAttributeDescriptor(oldAttribute.name).ifPresent(wellKnownAttribute -> {
+                    AssetModelUtil.getAttributeDescriptor(oldAttribute.name).ifPresent(wellKnownAttribute -> {
                         // Check if the value is valid
                         wellKnownAttribute.getValueDescriptor()
                             .getValidator().flatMap(v -> v.apply(event.getValue().orElse(null)))

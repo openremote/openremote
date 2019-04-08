@@ -19,6 +19,7 @@
  */
 package org.openremote.model.attribute;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.ValueHolder;

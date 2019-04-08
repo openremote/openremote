@@ -47,6 +47,7 @@ import org.openremote.model.ValidationFailure;
 import org.openremote.model.asset.*;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeType;
+import org.openremote.model.attribute.MetaItemDescriptor;
 import org.openremote.model.calendar.CalendarEvent;
 import org.openremote.model.calendar.RecurrenceRule;
 import org.openremote.model.event.TriggeredEventSubscription;
@@ -56,6 +57,7 @@ import org.openremote.model.query.BaseAssetQuery;
 import org.openremote.model.query.filter.*;
 import org.openremote.model.security.ClientRole;
 import org.openremote.model.security.User;
+import org.openremote.model.util.AssetModelUtil;
 import org.openremote.model.util.Pair;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.value.ObjectValue;
@@ -74,6 +76,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
+import static java.util.stream.Collectors.joining;
 import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_TOPIC;
 import static org.openremote.container.persistence.PersistenceEvent.isPersistenceEventForEntityType;
 import static org.openremote.manager.event.ClientEventService.CLIENT_EVENT_TOPIC;
@@ -105,6 +108,8 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         }
     }
 
+    protected static String META_ITEM_RESTRICTED_READ_SQL_FRAGMENT;
+    protected static String META_ITEM_PUBLIC_READ_SQL_FRAGMENT;
     private static final Logger LOG = Logger.getLogger(AssetStorageService.class.getName());
 
     protected TimerService timerService;
@@ -123,6 +128,12 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         persistenceService = container.getService(PersistenceService.class);
         identityService = container.getService(ManagerIdentityService.class);
         clientEventService = container.getService(ClientEventService.class);
+
+        META_ITEM_RESTRICTED_READ_SQL_FRAGMENT =
+                " ('" + Arrays.stream(AssetModelUtil.getMetaItemDescriptors()).filter(i -> i.getAccess().restrictedRead).map(MetaItemDescriptor::getUrn).collect(joining("','")) + "')";
+
+        META_ITEM_PUBLIC_READ_SQL_FRAGMENT =
+                " ('" + Arrays.stream(AssetModelUtil.getMetaItemDescriptors()).filter(i -> i.getAccess().publicRead).map(MetaItemDescriptor::getUrn).collect(joining("','")) + "')";
 
         clientEventService.addSubscriptionAuthorizer((auth, subscription) ->
             (subscription.isEventType(AssetTreeModifiedEvent.class) || subscription.isEventType(
@@ -749,7 +760,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             sb.append(" INNER JOIN LATERAL (");
             sb.append("select jsonb_agg(AM.value) AS VALUE from jsonb_array_elements(AX.VALUE #> '{meta}') as AM");
             sb.append(" where AM.VALUE #>> '{name}' IN");
-            sb.append(access == RESTRICTED_READ ? AssetModel.META_ITEM_RESTRICTED_READ_SQL_FRAGMENT : AssetModel.META_ITEM_PUBLIC_READ_SQL_FRAGMENT);
+            sb.append(access == RESTRICTED_READ ? META_ITEM_RESTRICTED_READ_SQL_FRAGMENT : META_ITEM_PUBLIC_READ_SQL_FRAGMENT);
             sb.append(") as AMF ON true");
         } else {
             sb.append("select json_object_agg(AX.key, AX.value) from jsonb_each(A.attributes) as AX");

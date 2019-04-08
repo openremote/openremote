@@ -32,6 +32,7 @@ import org.openremote.model.query.BaseAssetQuery.Select;
 import org.openremote.model.query.filter.ParentPredicate;
 import org.openremote.model.query.filter.TenantPredicate;
 import org.openremote.model.security.Tenant;
+import org.openremote.model.util.AssetModelUtil;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueException;
@@ -43,7 +44,6 @@ import javax.ws.rs.core.HttpHeaders;
 import java.io.IOException;
 import java.util.*;
 import java.util.logging.Logger;
-import java.util.stream.Stream;
 
 import static javax.ws.rs.core.Response.Status.*;
 import static org.openremote.container.Container.JSON;
@@ -285,10 +285,10 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                         Meta existingMetaItems = existingAttribute.getMeta().copy();
 
                         // Remove any writable existing meta items
-                        existingMetaItems.removeIf(AssetModel::isMetaItemRestrictedWrite);
+                        existingMetaItems.removeIf(AssetModelUtil::isMetaItemRestrictedWrite);
 
                         // Add any writable updated meta items
-                        updatedMetaItems.stream().filter(AssetModel::isMetaItemRestrictedWrite).forEach(existingMetaItems::add);
+                        updatedMetaItems.stream().filter(AssetModelUtil::isMetaItemRestrictedWrite).forEach(existingMetaItems::add);
 
                         // Replace existing with updated attribute
                         updatedAttribute.setMeta(existingMetaItems);
@@ -298,7 +298,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
 
                         // An attribute added by a restricted user can only have meta items which are writable
                         updatedAttribute.getMetaStream().forEach(metaItem -> {
-                            if (!AssetModel.isMetaItemRestrictedWrite(metaItem)) {
+                            if (!AssetModelUtil.isMetaItemRestrictedWrite(metaItem)) {
                                 LOG.fine("Attribute has " + metaItem + " not writable by restricted client: " + updatedAttributeName);
                                 throw new WebApplicationException(
                                     "Attribute has meta item not writable by restricted client: " + updatedAttributeName,
@@ -351,7 +351,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
 
     private void checkForWellKnownAttributes(Asset asset) {
         asset.getAttributesStream().forEach(assetAttribute -> {
-            AssetModel.getAttributeDescriptor(assetAttribute.name).ifPresent(wellKnownAttribute -> {
+            AssetModelUtil.getAttributeDescriptor(assetAttribute.name).ifPresent(wellKnownAttribute -> {
                 //Check if the type matches
                 if (!wellKnownAttribute.getValueDescriptor().equals(assetAttribute.getTypeOrThrow())) {
                     throw new IllegalStateException(
@@ -459,7 +459,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                 newAsset.setId(asset.getId());
             }
 
-            AssetModel.getAssetDescriptor(asset.getType()).ifPresent(assetDescriptor -> {
+            AssetModelUtil.getAssetDescriptor(asset.getType()).ifPresent(assetDescriptor -> {
 
                 newAsset.setAccessPublicRead(assetDescriptor.getAccessPublicRead());
 

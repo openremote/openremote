@@ -317,7 +317,7 @@ public abstract class AbstractVelbusProtocol extends AbstractProtocol implements
 
             getLinkedAttributeDescriptors(deviceType.get(), baseAddress)
                 .forEach(descriptor -> {
-                    AssetAttribute attribute = new AssetAttribute(descriptor.getName(), descriptor.getAttributeValueType())
+                    AssetAttribute attribute = new AssetAttribute(descriptor.getName(), descriptor.getAttributeValueDescriptor())
                         .setMeta(
                             agentLink,
                             new MetaItem(MetaItemType.LABEL, Values.create(descriptor.getDisplayName()))

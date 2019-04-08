@@ -54,7 +54,7 @@ public class AssetAttribute extends Attribute {
         super(name);
     }
 
-    public AssetAttribute(String name, AttributeValueType type) {
+    public AssetAttribute(String name, AttributeValueDescriptor type) {
         super(name, type);
     }
 

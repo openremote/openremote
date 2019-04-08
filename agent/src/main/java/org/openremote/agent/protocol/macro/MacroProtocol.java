@@ -243,7 +243,7 @@ public class MacroProtocol extends AbstractProtocol {
             // Verify the type of the attribute matches the action value
             if (attribute
                 .getType()
-                .map(AttributeValueType::getValueType)
+                .map(AttributeValueDescriptor::getValueType)
                 .orElse(null) != actionValue.getType()) {
                 // Use a value of null so it is clear that the attribute isn't linked correctly
                 actionValue = null;
