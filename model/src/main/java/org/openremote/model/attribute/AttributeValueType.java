@@ -19,7 +19,6 @@
  */
 package org.openremote.model.attribute;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.ValueHolder;
@@ -200,16 +199,8 @@ public enum AttributeValueType implements AttributeValueDescriptor {
     final protected Function<Value, Optional<ValidationFailure>> validator;
     final protected MetaItemDescriptor[] metaItemDescriptors;
 
-    AttributeValueType(String icon, ValueType valueType) {
-        this(icon, valueType, (MetaItemDescriptor) null);
-    }
-
     AttributeValueType(String icon, ValueType valueType, MetaItemDescriptor... metaItemDescriptors) {
         this(icon, valueType, null, metaItemDescriptors);
-    }
-
-    AttributeValueType(String icon, ValueType valueType, Function<Value, Optional<ValidationFailure>> validator) {
-        this(icon, valueType, validator, (MetaItemDescriptor) null);
     }
 
     AttributeValueType(String icon, ValueType valueType, Function<Value, Optional<ValidationFailure>> validator, MetaItemDescriptor... metaItemDescriptors) {

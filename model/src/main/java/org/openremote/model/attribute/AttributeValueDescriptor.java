@@ -19,6 +19,8 @@
  */
 package org.openremote.model.attribute;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueType;
@@ -26,8 +28,10 @@ import org.openremote.model.value.ValueType;
 import java.util.Optional;
 import java.util.function.Function;
 
+@JsonFormat(shape = JsonFormat.Shape.OBJECT)
 public interface AttributeValueDescriptor {
 
+    @JsonProperty
     String getName();
 
     String getIcon();

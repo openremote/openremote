@@ -19,11 +19,13 @@
  */
 package org.openremote.model.attribute;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import org.openremote.model.value.Value;
 
 import java.util.Optional;
 
-public interface AttributeDescriptor {
+@JsonFormat(shape = JsonFormat.Shape.OBJECT)
+public interface AttributeTypeDescriptor {
 
     String getName();
 

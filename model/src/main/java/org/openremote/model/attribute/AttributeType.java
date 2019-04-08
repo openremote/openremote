@@ -27,7 +27,7 @@ import java.util.Optional;
 import static org.openremote.model.asset.MetaItemType.*;
 import static org.openremote.model.attribute.AttributeValueType.*;
 
-public enum AttributeType implements AttributeDescriptor {
+public enum AttributeType implements AttributeTypeDescriptor {
 
     CONSOLE_NAME("consoleName", STRING),
 
@@ -80,11 +80,11 @@ public enum AttributeType implements AttributeDescriptor {
         this.initialValue = initialValue;
     }
 
-    public static Optional<AttributeDescriptor> getByValue(String name) {
+    public static Optional<AttributeTypeDescriptor> getByValue(String name) {
         if (name == null)
             return Optional.empty();
 
-        for (AttributeDescriptor descriptor : values()) {
+        for (AttributeTypeDescriptor descriptor : values()) {
             if (name.equals(descriptor.getName()))
                 return Optional.of(descriptor);
         }

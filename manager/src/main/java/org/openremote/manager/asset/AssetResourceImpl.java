@@ -465,7 +465,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
 
                 // Add meta items to well known attributes if not present
                 newAsset.getAttributesStream().forEach(assetAttribute -> {
-                        Optional<AttributeDescriptor> attributeDescriptor = assetDescriptor.getAttributeDescriptors()
+                        Optional<AttributeTypeDescriptor> attributeDescriptor = assetDescriptor.getAttributeTypeDescriptors()
                                 .flatMap(attributeDescriptors ->
                                     Arrays.stream(attributeDescriptors)
                                             .filter(attrDescriptor -> attrDescriptor.getName().equals(assetAttribute.getNameOrThrow()))
@@ -481,7 +481,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                 });
 
                 // Add attributes for this well known asset if not present
-                assetDescriptor.getAttributeDescriptors().ifPresent(attributeDescriptors ->
+                assetDescriptor.getAttributeTypeDescriptors().ifPresent(attributeDescriptors ->
                         newAsset.addAttributes(
                                 Arrays.stream(attributeDescriptors).filter(attributeDescriptor ->
                                         !newAsset.hasAttribute(attributeDescriptor.getName())).map(AssetAttribute::new).toArray(AssetAttribute[]::new)

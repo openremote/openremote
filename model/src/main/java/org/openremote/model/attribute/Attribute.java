@@ -25,7 +25,6 @@ import org.openremote.model.AbstractValueTimestampHolder;
 import org.openremote.model.HasUniqueResourceName;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.util.AssetModelUtil;
-import org.openremote.model.util.EnumUtil;
 import org.openremote.model.value.*;
 
 import java.util.*;

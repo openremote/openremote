@@ -26,7 +26,7 @@ import org.openremote.model.AbstractValueHolder;
 import org.openremote.model.IdentifiableEntity;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.attribute.Attribute;
-import org.openremote.model.attribute.AttributeDescriptor;
+import org.openremote.model.attribute.AttributeTypeDescriptor;
 import org.openremote.model.geo.GeoJSON;
 import org.openremote.model.geo.GeoJSONFeature;
 import org.openremote.model.geo.GeoJSONFeatureCollection;
@@ -300,7 +300,7 @@ public class Asset implements IdentifiableEntity {
 
     public Asset(@NotNull String name, @NotNull AssetDescriptor type, Asset parent, String realm) {
         this(name, type.getType(), type.getAccessPublicRead(), parent, realm);
-        type.getAttributeDescriptors().ifPresent(attributeDescriptors ->
+        type.getAttributeTypeDescriptors().ifPresent(attributeDescriptors ->
                 addAttributes(Arrays.stream(attributeDescriptors).map(AssetAttribute::new).toArray(AssetAttribute[]::new)));
     }
 
@@ -366,8 +366,8 @@ public class Asset implements IdentifiableEntity {
         return this;
     }
 
-    public Asset removeAttribute(AttributeDescriptor attributeDescriptor) {
-        return removeAttribute(attributeDescriptor.getName());
+    public Asset removeAttribute(AttributeTypeDescriptor attributeTypeDescriptor) {
+        return removeAttribute(attributeTypeDescriptor.getName());
     }
 
     public String getId() {
@@ -538,7 +538,7 @@ public class Asset implements IdentifiableEntity {
         return attributes != null && attributes.hasKey(name);
     }
 
-    public Optional<AssetAttribute> getAttribute(AttributeDescriptor descriptor) {
+    public Optional<AssetAttribute> getAttribute(AttributeTypeDescriptor descriptor) {
         return getAttribute(descriptor.getName());
     }
 

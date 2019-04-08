@@ -31,13 +31,13 @@ public class LinkedAttributeDescriptor {
     public LinkedAttributeDescriptor(
         String name,
         String displayName,
-        AttributeValueType attributeValueDescriptor,
+        AttributeValueType attributeValueTypeDescriptor,
         boolean readOnly,
         boolean executable,
         MetaItem[] metaItems) {
         this.name = name;
         this.displayName = displayName;
-        this.attributeValueDescriptor = attributeValueDescriptor;
+        this.attributeValueDescriptor = attributeValueTypeDescriptor;
         this.readOnly = readOnly;
         this.executable = executable;
         this.metaItems = metaItems;

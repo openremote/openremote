@@ -145,6 +145,13 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         );
 
         container.getService(ManagerWebService.class).getApiSingletons().add(
+            new AssetModelResourceImpl(
+                container.getService(TimerService.class),
+                identityService
+            )
+        );
+
+        container.getService(ManagerWebService.class).getApiSingletons().add(
             new AssetResourceImpl(
                 container.getService(TimerService.class),
                 identityService,
