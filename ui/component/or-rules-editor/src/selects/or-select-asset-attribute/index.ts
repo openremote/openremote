@@ -1,46 +1,52 @@
-import {html, LitElement, customElement, property} from 'lit-element';
-//import "@material/mwc-icon"
-import {AttributeDescriptor, AttributeValueType} from "@openremote/model"
+import {html, LitElement, customElement, property} from "lit-element";
+import {AttributeDescriptor, AttributeValueType, AttributeValueDescriptor, ValueType} from "@openremote/model";
 
-@customElement('or-select-asset-attribute')
+const Test = {
+    STRING: {name: "flightProfile", icon: "file-text-o", valueType: ValueType.STRING},
+    NUMBER: {name: ""}
+};
+@customElement("or-select-asset-attribute")
 class OrSelectAssetAttribute extends LitElement {
+
+    @property({type: String})
+    public icon: string = "";
+
+    @property({type: String})
+    public assetType: string = "";
+
+    @property({type: Array})
+    public attributeDescriptors?: AttributeDescriptor[];
+
+    @property({type: String})
+    public value: any;
+
+    @property({type: Boolean})
+    public disabled: boolean = false;
     @property({type: Function})
     private changed: any;
 
-    @property({type: String})
-    icon: string = '';
+    constructor() {
+        super();
 
-    @property({type: String})
-    assetType: string = '';
-
-    @property({type: Array})
-    attributeDescriptors?: AttributeDescriptor[];
-
-    @property({type: String})
-    value: any;
-
-    @property({type: Boolean})
-    disabled: boolean = false;
-
-    protected render() {
-
-        // TODO types should be based on rules-config
-        return html`
-             <select ?disabled="${this.disabled}" id="or-select-asset-attribute" @change="${this.onChange}">
-                ${this.attributeDescriptors ? this.attributeDescriptors.map((attribute:AttributeDescriptor) => {
-                    return html`
-                        <option ?selected="${attribute.name === this.value}" value="${attribute.name}">${attribute.name}</option>
-                    `
-                }) : ``}
-            </select>
-        `;
+        // TODO Should come from rules-config based on asset type?
+        this.attributeDescriptors = [
+            { name: "flightProfile", valueDescriptor: { name: "NUMBER", valueType: ValueType.NUMBER } },
+            { name: "profileName", valueDescriptor: { name: "STRING", valueType: ValueType.STRING } },
+            { name: "profileColor", valueDescriptor: { name: "STRING", valueType: ValueType.STRING } },
+            { name: "airportIata", valueDescriptor: { name: "STRING", valueType: ValueType.STRING } },
+            { name: "airlineIata", valueDescriptor: { name: "STRING", valueType: ValueType.STRING } },
+            { name: "originRegion", valueDescriptor: { name: "STRING", valueType: ValueType.STRING } },
+            { name: "languageCodes", valueDescriptor: { name: "STRING", valueType: ValueType.STRING } },
+            { name: "passengerCapacity",  valueDescriptor: { name: "NUMBER", valueType: ValueType.NUMBER } },
+            { name: "countryCode", valueDescriptor: { name: "STRING", valueType: ValueType.STRING } }
+        ];
     }
 
-    onChange() {
-        if(this.shadowRoot){
-            const value = (<HTMLInputElement>this.shadowRoot.getElementById('or-select-asset-attribute')).value;
+    public onChange() {
+        if (this.shadowRoot) {
+            const value = (this.shadowRoot.getElementById("or-select-asset-attribute") as HTMLInputElement).value;
 
-            let event = new CustomEvent('asset-attribute:changed', {
+            const event = new CustomEvent("asset-attribute:changed", {
                 detail: { value: value },
                 bubbles: true,
                 composed: true });
@@ -49,23 +55,17 @@ class OrSelectAssetAttribute extends LitElement {
         }
     }
 
-    constructor() {
-        super();
+    protected render() {
 
-        // TODO Should come from rules-config based on asset type?
-        this.attributeDescriptors = [
-            { name: 'flightProfile', valueType: AttributeValueType.STRING },
-            { name: 'profileName', valueType: AttributeValueType.STRING },
-            { name: 'profileColor', valueType: AttributeValueType.STRING },
-            { name: 'airportIata', valueType: AttributeValueType.STRING },
-            { name: 'airlineIata', valueType: AttributeValueType.STRING },
-            { name: 'originRegion', valueType: AttributeValueType.STRING },
-            { name: 'languageCodes', valueType: AttributeValueType.STRING },
-            { name: 'passengerCapacity',  valueType: AttributeValueType.NUMBER },
-            { name: 'countryCode', valueType: AttributeValueType.STRING }
-        ];
+        // TODO types should be based on rules-config
+        return html`
+             <select ?disabled="${this.disabled}" id="or-select-asset-attribute" @change="${this.onChange}">
+                ${this.attributeDescriptors ? this.attributeDescriptors.map((attribute: AttributeDescriptor) => {
+                    return html`
+                        <option ?selected="${attribute.name === this.value}" value="${attribute.name}">${attribute.name}</option>
+                    `;
+                }) : ``}
+            </select>
+        `;
     }
-
-
 }
-
