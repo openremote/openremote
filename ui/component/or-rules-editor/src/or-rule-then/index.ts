@@ -1,7 +1,8 @@
 import {html, LitElement, property, customElement, PropertyValues} from 'lit-element';
 
 import {style} from './style';
-import {Rule, RuleTrigger, RuleActionUnion, NewAssetQuery, BaseAssetQueryMatch} from "@openremote/model";
+import {Rule, RuleTrigger, RuleActionUnion, NewAssetQuery, BaseAssetQueryMatch, RuleActionUpdateAttributeUpdateAction,
+    AttributeDescriptor} from "@openremote/model";
 
 import '../or-rule-then-condition';
 
@@ -15,9 +16,14 @@ const defaultAssetType:NewAssetQuery = {
 };
 
 let defaultThenCondition:RuleActionUnion = {
-    action: "write-attribute",
-    attributeName: 'profileColor',
-    value: {"%RULESET_ID%": {"profileName":"%RULESET_NAME%", "profileColor": "red"}},
+    action: "update-attribute",
+    updateAction: RuleActionUpdateAttributeUpdateAction.ADD_OR_REPLACE,
+    attributeName: "profiles",
+    key: "%RULESET_ID%",
+    value:  {
+        profileName: "%RULESET_NAME%",
+        profileColor: "orange"
+    },
     target: { "useAssetsFromWhen": true}
 };
 
@@ -40,7 +46,7 @@ class OrRuleThen extends LitElement {
                     <div class="rule-then-container bg-white shadow">
                        ${this.rule && this.rule.then ? this.rule.then.map((then:RuleActionUnion) => {
                                 return html`
-                                <or-rule-then-condition .condition="${then}"></or-rule-then-condition>
+                                <or-rule-then-condition .condition="${then}" .attributeDescriptors="${this.attributeDescriptors}"></or-rule-then-condition>
                                 <span class="rule-additional">&</span>
                                 `
                             }) : ``}
@@ -52,6 +58,10 @@ class OrRuleThen extends LitElement {
 
     @property({type: Object})
     rule?: Rule;
+
+    @property({type: Array})
+    public attributeDescriptors?: AttributeDescriptor[];
+
 
     constructor() {
         super();

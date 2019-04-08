@@ -7,8 +7,9 @@ import "@openremote/or-select";
 import "@openremote/or-icon";
 import handler from "../index";
 import {style} from "./style";
+import set from 'lodash/set';
 
-import {RuleActionUnion, RuleActionWriteAttribute} from "@openremote/model";
+import {RuleActionUnion, RuleActionWriteAttribute, AttributeDescriptor} from "@openremote/model";
 
 // TODO use create select option to
 @customElement("or-rule-then-condition")
@@ -26,6 +27,9 @@ class OrRuleThenCondition extends LitElement {
     @property({type: Number})
     private value: number = 0;
 
+    @property({type: Array})
+    public attributeDescriptors?: AttributeDescriptor[];
+
     constructor() {
         super();
 
@@ -34,9 +38,9 @@ class OrRuleThenCondition extends LitElement {
 
     public setValue(e: any) {
         const value = e.detail.value;
-
+        const name = e.detail.name;
         if (this.condition && this.condition.value) {
-            this.condition.value = value;
+            this.condition.value = set(this.condition.value, name, value);
             this.requestUpdate();
         }
     }
@@ -46,7 +50,7 @@ class OrRuleThenCondition extends LitElement {
         return html`
             <div class="rule-container">
                 ${this.condition ? html`
-                   <or-select-asset-attribute disabled type="${this.condition}" value="${this.condition.attributeName}"></or-select-asset-attribute>
+                   <or-select-asset-attribute disabled type="${this.condition}" value="${this.condition.attributeName}" .attributeDescriptors="${this.attributeDescriptors}"></or-select-asset-attribute>
                    <or-select-operator disabled type="${this.condition}" value="EQUAL"></or-select-operator>
                    ${this.createInputControl(this.condition!)}
                 ` : ``}
@@ -59,7 +63,8 @@ class OrRuleThenCondition extends LitElement {
 
             const result = h(this.condition!);
             if (result) {
-               return html`${result}`;
+                let response = html`${result}`;
+                return response;
             }
         }
 

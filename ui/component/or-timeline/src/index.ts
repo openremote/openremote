@@ -211,7 +211,7 @@ class OrTimeline extends LitElement {
             // Figure out placement percentage between left and right of input
             const newPoint = v / this.maxRange;
             // Janky value to get pointer to line up better
-            let offset = 30;
+            let offset = 15;
             let newPlace;
 
             // Prevent bubble from going beyond left or right (unsupported browsers)

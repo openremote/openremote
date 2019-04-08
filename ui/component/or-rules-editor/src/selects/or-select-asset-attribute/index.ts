@@ -1,6 +1,8 @@
 import {html, LitElement, customElement, property} from "lit-element";
 import {AttributeDescriptor, AttributeValueType, AttributeValueDescriptor, ValueType} from "@openremote/model";
 
+import {selectStyle} from "@openremote/or-select/dist/style";
+
 const Test = {
     STRING: {name: "flightProfile", icon: "file-text-o", valueType: ValueType.STRING},
     NUMBER: {name: ""}
@@ -22,23 +24,17 @@ class OrSelectAssetAttribute extends LitElement {
 
     @property({type: Boolean})
     public disabled: boolean = false;
+
     @property({type: Function})
     private changed: any;
 
     constructor() {
         super();
+    }
 
-        // TODO Should come from rules-config based on asset type?
-        this.attributeDescriptors = [
-            { name: "flightProfile", valueDescriptor: { name: "NUMBER", valueType: ValueType.NUMBER } },
-            { name: "profileName", valueDescriptor: { name: "STRING", valueType: ValueType.STRING } },
-            { name: "profileColor", valueDescriptor: { name: "STRING", valueType: ValueType.STRING } },
-            { name: "airportIata", valueDescriptor: { name: "STRING", valueType: ValueType.STRING } },
-            { name: "airlineIata", valueDescriptor: { name: "STRING", valueType: ValueType.STRING } },
-            { name: "originRegion", valueDescriptor: { name: "STRING", valueType: ValueType.STRING } },
-            { name: "languageCodes", valueDescriptor: { name: "STRING", valueType: ValueType.STRING } },
-            { name: "passengerCapacity",  valueDescriptor: { name: "NUMBER", valueType: ValueType.NUMBER } },
-            { name: "countryCode", valueDescriptor: { name: "STRING", valueType: ValueType.STRING } }
+    static get styles() {
+        return [
+            selectStyle
         ];
     }
 

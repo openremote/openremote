@@ -2,7 +2,14 @@ import {customElement, html, LitElement, property, TemplateResult} from "lit-ele
 
 import "@openremote/or-select";
 import "@openremote/or-icon";
-import {Rule, RuleActionWriteAttribute, RulesetLang, TenantRuleset} from "@openremote/model";
+import {
+    AttributeDescriptor,
+    Rule,
+    RuleActionWriteAttribute,
+    RulesetLang,
+    TenantRuleset,
+    ValueType
+} from "@openremote/model";
 import openremote from "@openremote/core";
 import rest from "@openremote/rest";
 
@@ -27,6 +34,32 @@ const rulesetModel: TenantRuleset = {
     realm: openremote.getRealm(),
     accessPublicRead: true,
     rules: JSON.stringify({rules: [ruleModel]})
+};
+
+
+const attributeDescriptors: AttributeDescriptor[] = [
+    {name: "profiles", valueDescriptor: {name: "STRING", valueType: ValueType.STRING}},
+    {name: "airportIata", valueDescriptor: {name: "STRING", valueType: ValueType.STRING}},
+    {name: "airlineIata", valueDescriptor: {name: "STRING", valueType: ValueType.STRING}},
+    {name: "originRegion", valueDescriptor: {name: "STRING", valueType: ValueType.STRING}},
+    {name: "languageCodes", valueDescriptor: {name: "STRING", valueType: ValueType.STRING}},
+    {name: "passengerCapacity", valueDescriptor: {name: "NUMBER", valueType: ValueType.NUMBER}},
+    {name: "countryCode", valueDescriptor: {name: "STRING", valueType: ValueType.STRING}}
+];
+
+const rulesEditorConfig = {
+    languageCodes: {
+        options: [
+            "Dutch",
+            "English",
+        ]
+    },
+    countryCode: {
+        options: [
+            "NL",
+            "GB",
+        ]
+    },
 };
 
 class InputHandlers {
@@ -74,13 +107,17 @@ class OrRulesEditor extends LitElement {
         super();
         this.readRules();
         this.addEventListener("rules:set-active-rule", this.setActiveRule);
+        this.addEventListener("rules:write-rule", this.writeRule);
         this.addEventListener("rules:create-rule", this.createRule);
         this.addEventListener("rules:update-rule", this.updateRule);
         this.addEventListener("rules:delete-rule", this.deleteRule);
     }
 
     public readRules() {
-        rest.api.RulesResource.getTenantRulesets(openremote.config.realm,  { language: RulesetLang.JSON, fullyPopulate: true }).then((response: any) => {
+        rest.api.RulesResource.getTenantRulesets(openremote.config.realm, {
+            language: RulesetLang.JSON,
+            fullyPopulate: true
+        }).then((response: any) => {
             if (response && response.data) {
                 this.rulesets = response.data;
                 if (this.ruleset && this.rulesets) {
@@ -112,7 +149,15 @@ class OrRulesEditor extends LitElement {
             this.ruleset = newRule;
             this.computeRuleset();
 
-            rest.api.RulesResource.createTenantRuleset(newRule).then((response: any) => {
+
+        }
+    }
+
+    public writeRule() {
+        if (this.ruleset && this.rule) {
+            this.rule.name = this.ruleset.name;
+            this.ruleset.rules = JSON.stringify({rules: [this.rule]});
+            rest.api.RulesResource.createTenantRuleset(this.ruleset).then((response: any) => {
                 this.readRules();
             });
         }
@@ -128,11 +173,11 @@ class OrRulesEditor extends LitElement {
 
             // Parse rule to string of array of rules
             this.rule.name = this.ruleset.name;
-            this.ruleset.rules = JSON.stringify({rules: [this.rule] });
+            this.ruleset.rules = JSON.stringify({rules: [this.rule]});
 
             // this.ruleset.rules = JSON.stringify(this.rules);
             rest.api.RulesResource.updateTenantRuleset(this.ruleset.id, this.ruleset).then((response: any) => {
-               this.readRules();
+                this.readRules();
             });
         }
 
@@ -162,7 +207,6 @@ class OrRulesEditor extends LitElement {
             this.rule = ruleModel;
             this.rule.name = this.ruleset.name;
         }
-
         this.requestUpdate();
     }
 
@@ -177,7 +221,7 @@ class OrRulesEditor extends LitElement {
         return html`
             <div class="rule-editor-container">
               <side-menu class="bg-white shadow">
-                    <or-rule-list .rulesets="${this.rulesets}" .ruleset="${this.ruleset}"></or-rule-list>
+                    <or-rule-list .rulesets="${this.rulesets}" .ruleset="${this.ruleset}" ></or-rule-list>
                     <div class="bottom-toolbar">
                       <icon class="small-icon" @click="${this.deleteRule}"><or-icon icon="delete"></or-icon></icon>
                       <icon class="small-icon" @click="${this.createRule}"><or-icon icon="plus"></or-icon></icon>
@@ -185,12 +229,12 @@ class OrRulesEditor extends LitElement {
               </side-menu>
               ${this.ruleset ? html`
                     <or-body>
-                        <or-rule-header class="bg-white shadow" .ruleset="${this.ruleset}"></or-rule-header>
+                        <or-rule-header class="bg-white shadow" .ruleset="${this.ruleset}" .rule="${this.rule}"></or-rule-header>
                         
                         ${this.rule ? html`
                             <div class="content">
-                                <or-rule-when .rule="${this.rule}"></or-rule-when>
-                                <or-rule-then .rule="${this.rule}"></or-rule-then>
+                                <or-rule-when .rule="${this.rule}" .attributeDescriptors="${attributeDescriptors}"></or-rule-when>
+                                <or-rule-then .rule="${this.rule}" .attributeDescriptors="${attributeDescriptors}"></or-rule-then>
                             </div>
                         ` : ``}
                     

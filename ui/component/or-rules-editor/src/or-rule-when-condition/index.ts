@@ -7,7 +7,8 @@ import '@openremote/or-select';
 import '@openremote/or-icon';
 
 import {style} from './style';
-import {AttributePredicate} from "@openremote/model";
+import {AttributePredicate, AttributeDescriptor, ValueType} from "@openremote/model";
+import find from 'lodash/find';
 
 @customElement('or-rule-when-condition')
 class OrRuleWhenCondition extends LitElement {
@@ -29,15 +30,19 @@ class OrRuleWhenCondition extends LitElement {
                     </or-select-asset-type>
                     
                     ${this.predicate.name ? html`
-                        <or-select-asset-attribute icon="${this.predicate}" value="${this.predicate.name.value}"></or-select-asset-attribute>
+                        <or-select-asset-attribute icon="${this.predicate}" value="${this.predicate.name.value}" .attributeDescriptors="${this.attributeDescriptors}"></or-select-asset-attribute>
                     
                         ${this.predicate.value && this.predicate.value.predicateType === 'string' ? html`
                             ${this.predicate.name.value ? html`
-                                <or-select-operator type="${this.predicate.value.predicateType}" value="${this.predicate.value.match}"></or-select-operator>
+                                <or-select-operator type="${this.getAttributeDescriptors(this.predicate.name.value)!.valueDescriptor!.valueType}" value="${this.predicate.value.match}"></or-select-operator>
                             ` : ``}
                             
-                            ${this.predicate.value.match ? html`
-                                <or-input type="text" value="${this.predicate.value.value ? this.predicate.value.value : ''}"></or-input>
+                            ${this.predicate.name.value && this.predicate.value.match ? html`
+                                ${this.getAttributeDescriptors(this.predicate.name.value)!.valueDescriptor!.valueType === ValueType.ARRAY  ? html`
+                                    <or-select .options="${this.getAttributeDescriptors(this.predicate.name.value)!.initialValue}" value="${this.predicate.value.value ? this.predicate.value.value : ''}"></or-select>
+                                `: html`
+                                    <or-input type="text" value="${this.predicate.value.value ? this.predicate.value.value : ''}"></or-input>
+                                `}
                             ` : ``}
                             
                              ${this.predicate.value.value ? html`
@@ -61,6 +66,8 @@ class OrRuleWhenCondition extends LitElement {
     @property({type: Number})
     index?: number;
 
+    @property({type: Array})
+    public attributeDescriptors?: AttributeDescriptor[];
 
     // setAssetType(value:string) {
     //     const assetType = {
@@ -75,13 +82,17 @@ class OrRuleWhenCondition extends LitElement {
     //     }
     // }
 
+    getAttributeDescriptors(name: string) {
+        return find(this.attributeDescriptors, ['name', name]);
+    }
+
     setAssetAttribute(e:any) {
         const value = e.detail.value;
 
         if(this.predicate && this.predicate.name) {
             this.predicate.name.value = value;
 
-            this.setOperator(e)
+            this.setOperator(e);
             this.requestUpdate();
         }
     }

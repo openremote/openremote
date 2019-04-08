@@ -1,16 +1,11 @@
 import {html, LitElement, property, customElement, PropertyValues} from 'lit-element';
 
 import {style} from './style';
-import {Rule, RuleTrigger, AttributePredicate, BaseAssetQueryMatch, NewAssetQuery} from "@openremote/model";
+import {Rule, RuleTrigger, AttributePredicate, BaseAssetQueryMatch, NewAssetQuery, AttributeDescriptor,
+    BaseAssetQueryOperator} from "@openremote/model";
 
 import '../or-rule-when-condition';
 
-
-const ruleModel:Rule = {
-    name: "",
-    when: undefined,
-    then: undefined
-};
 
 const defaultWhenCondition:RuleTrigger = {
     "asset": {
@@ -57,7 +52,7 @@ class OrRuleWhen extends LitElement {
                     ${this.rule && this.rule.when && this.rule.when.asset && this.rule.when.asset.attributes && this.rule.when.asset.attributes.predicates ? html`
                         ${this.rule.when.asset.attributes.predicates.map((predicate:AttributePredicate, index) => {
                             return html`
-                                    <or-rule-when-condition index="${index}" .predicate="${predicate}"></or-rule-when-condition>
+                                    <or-rule-when-condition index="${index}" .predicate="${predicate}" .attributeDescriptors="${this.attributeDescriptors}"></or-rule-when-condition>
                                     <span class="rule-additional">&</span>
                             `
                         })}
@@ -74,6 +69,10 @@ class OrRuleWhen extends LitElement {
     @property({type: Array})
     predicates?: AttributePredicate[] = [];
 
+    @property({type: Array})
+    public attributeDescriptors?: AttributeDescriptor[];
+
+
     constructor() {
         super();
         this.addEventListener('when-condition:delete', this.deleteWhenCondition);
@@ -82,8 +81,10 @@ class OrRuleWhen extends LitElement {
 
     protected updated(_changedProperties: PropertyValues): void {
         super.updated(_changedProperties);
-        if (!this.rule) {
-            this.rule = ruleModel;
+        if(this.rule && !this.rule.when) {
+            this.rule.when = defaultWhenCondition;
+            this.addPredicate();
+            this.requestUpdate();
         }
     }
 
@@ -92,11 +93,15 @@ class OrRuleWhen extends LitElement {
             this.rule.when = defaultWhenCondition;
         }
 
+        this.addPredicate();
+        this.requestUpdate();
+
+    }
+
+    addPredicate() {
         if(this.rule && this.rule.when && this.rule.when.asset && this.rule.when.asset.attributes && this.rule.when.asset.attributes.predicates) {
             this.rule.when.asset.attributes.predicates.push(defaultPredicate);
-            this.requestUpdate();
         }
-
     }
 
     deleteWhenCondition (e:any) {

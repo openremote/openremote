@@ -1,5 +1,7 @@
 import {html, LitElement, property} from 'lit-element';
 
+
+import {orInputStyle} from './style';
 class OrInput extends LitElement {
 
     @property({type: String})
@@ -11,6 +13,13 @@ class OrInput extends LitElement {
     @property({type: String})
     value: string = '';
 
+
+    static get styles() {
+        return [
+            orInputStyle
+        ];
+    }
+
     protected render() {
 
         return html`
@@ -21,16 +30,17 @@ class OrInput extends LitElement {
 
     onChange() {
         if(this.shadowRoot){
-            const value = (<HTMLInputElement>this.shadowRoot.getElementById('or-input')).value;
+            const input = (<HTMLInputElement>this.shadowRoot.getElementById('or-input'));
+            const value = input.value;
+            const name = input.name;
 
             // Launch event for all parent elements
             let event = new CustomEvent('or-input:changed', {
-                detail: { value: value },
+                detail: { value: value, name: name  },
                 bubbles: true,
                 composed: true });
 
             this.dispatchEvent(event);
-
         }
     }
 
