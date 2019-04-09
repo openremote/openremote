@@ -6,8 +6,10 @@ task clean() {
     }
 }
 
+npmBuild.dependsOn resolveTask(":ui:component:or-select:build"), resolveTask(":ui:component:or-input:build")
+
 task build() {
-    dependsOn npmBuild, resolveTask(":ui:component:or-select:build"), resolveTask(":ui:component:or-input:build")
+    dependsOn npmBuild
 }
 
 task installDist() {
