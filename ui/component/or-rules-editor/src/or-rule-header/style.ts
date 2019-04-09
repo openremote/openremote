@@ -33,8 +33,16 @@ export const style = css`
         margin-left: auto;
         color: var(--app-white-color, #FFF);
         font-weight: bold;
+        cursor: pointer;
     }
     
+    .button-simple {
+        margin-left: 10px;
+        border: none;
+        color: var(--app-primary-color);
+        background-color: var(--app-white-color);
+    }
+
     or-input {
        padding: 10px;
     }

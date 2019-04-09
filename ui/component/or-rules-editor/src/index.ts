@@ -3,12 +3,10 @@ import {customElement, html, LitElement, property, TemplateResult} from "lit-ele
 import "@openremote/or-select";
 import "@openremote/or-icon";
 import {
-    AttributeDescriptor,
     Rule,
     RuleActionWriteAttribute,
     RulesetLang,
-    TenantRuleset,
-    ValueType
+    TenantRuleset
 } from "@openremote/model";
 import openremote from "@openremote/core";
 import rest from "@openremote/rest";
@@ -21,46 +19,8 @@ import "./or-rule-header";
 import {style} from "./style";
 import findIndex from "lodash-es/findIndex";
 
-const ruleModel: Rule = {
-    name: "",
-    when: undefined,
-    then: undefined
-};
-
-const rulesetModel: TenantRuleset = {
-    name: "New Rule",
-    type: "tenant",
-    lang: RulesetLang.JSON,
-    realm: openremote.getRealm(),
-    accessPublicRead: true,
-    rules: JSON.stringify({rules: [ruleModel]})
-};
-
-
-const attributeDescriptors: AttributeDescriptor[] = [
-    {name: "profiles", valueDescriptor: {name: "STRING", valueType: ValueType.STRING}},
-    {name: "airportIata", valueDescriptor: {name: "STRING", valueType: ValueType.STRING}},
-    {name: "airlineIata", valueDescriptor: {name: "STRING", valueType: ValueType.STRING}},
-    {name: "originRegion", valueDescriptor: {name: "STRING", valueType: ValueType.STRING}},
-    {name: "languageCodes", valueDescriptor: {name: "STRING", valueType: ValueType.STRING}},
-    {name: "passengerCapacity", valueDescriptor: {name: "NUMBER", valueType: ValueType.NUMBER}},
-    {name: "countryCode", valueDescriptor: {name: "STRING", valueType: ValueType.STRING}}
-];
-
-const rulesEditorConfig = {
-    languageCodes: {
-        options: [
-            "Dutch",
-            "English",
-        ]
-    },
-    countryCode: {
-        options: [
-            "NL",
-            "GB",
-        ]
-    },
-};
+import {attributeDescriptors} from "./const/attribute-descriptors";
+import {ruleModel, rulesetModel, rulesEditorConfig} from "./const/rule-config";
 
 class InputHandlers {
     public handlers: Array<(condition: RuleActionWriteAttribute) => TemplateResult | undefined> = [];
@@ -78,6 +38,14 @@ class InputHandlers {
 }
 
 export default new InputHandlers();
+
+function confirmDialog(msg: string) {
+    return new Promise( (resolve, reject) => {
+        const confirmed = window.confirm(msg);
+
+        return confirmed ? resolve(true) : reject(false);
+    });
+}
 
 @customElement("or-rules-editor")
 class OrRulesEditor extends LitElement {
@@ -106,114 +74,13 @@ class OrRulesEditor extends LitElement {
     constructor() {
         super();
         this.readRules();
+
         this.addEventListener("rules:set-active-rule", this.setActiveRule);
         this.addEventListener("rules:write-rule", this.writeRule);
         this.addEventListener("rules:create-rule", this.createRule);
         this.addEventListener("rules:update-rule", this.updateRule);
         this.addEventListener("rules:delete-rule", this.deleteRule);
-    }
 
-    public readRules() {
-        rest.api.RulesResource.getTenantRulesets(openremote.config.realm, {
-            language: RulesetLang.JSON,
-            fullyPopulate: true
-        }).then((response: any) => {
-            if (response && response.data) {
-                this.rulesets = response.data;
-                if (this.ruleset && this.rulesets) {
-                    const index = findIndex(this.rulesets, ["id", this.ruleset.id]);
-                    let updatedRuleset;
-
-                    // ID is not found when a new ruleset is added
-                    if (index > 0) {
-                        updatedRuleset = this.rulesets[index];
-                    } else {
-                        updatedRuleset = this.rulesets[this.rulesets.length - 1];
-                    }
-
-                    this.ruleset = updatedRuleset;
-                    this.computeRuleset();
-                }
-                this.requestUpdate();
-            }
-        }).catch((reason: any) => {
-            console.log("Error:" + reason);
-        });
-    }
-
-    public createRule() {
-        if (this.rulesets) {
-
-            const newRule = rulesetModel;
-            this.rulesets = [...this.rulesets, rulesetModel];
-            this.ruleset = newRule;
-            this.computeRuleset();
-
-
-        }
-    }
-
-    public writeRule() {
-        if (this.ruleset && this.rule) {
-            this.rule.name = this.ruleset.name;
-            this.ruleset.rules = JSON.stringify({rules: [this.rule]});
-            rest.api.RulesResource.createTenantRuleset(this.ruleset).then((response: any) => {
-                this.readRules();
-            });
-        }
-    }
-
-    public updateRule(e: any) {
-        this.ruleset = e.detail.ruleset;
-        if (this.ruleset && this.ruleset.id && this.rule) {
-            delete this.ruleset.lastModified;
-            delete this.ruleset.createdOn;
-            delete this.ruleset.status;
-            delete this.ruleset.error;
-
-            // Parse rule to string of array of rules
-            this.rule.name = this.ruleset.name;
-            this.ruleset.rules = JSON.stringify({rules: [this.rule]});
-
-            // this.ruleset.rules = JSON.stringify(this.rules);
-            rest.api.RulesResource.updateTenantRuleset(this.ruleset.id, this.ruleset).then((response: any) => {
-                this.readRules();
-            });
-        }
-
-    }
-
-    public deleteRule() {
-        if (this.ruleset && this.ruleset.id) {
-            rest.api.RulesResource.deleteTenantRuleset(this.ruleset.id).then((response: any) => {
-
-                if (this.rulesets && this.ruleset) {
-                    const index = findIndex(this.rulesets, ["id", this.ruleset.id]);
-                    this.rulesets.splice(index, 1);
-                    this.rulesets = [...this.rulesets];
-                    this.ruleset = undefined;
-                    this.rule = undefined;
-                    this.requestUpdate();
-                }
-
-            });
-        }
-    }
-
-    public computeRuleset() {
-        if (this.ruleset && this.ruleset.rules) {
-            this.rule = JSON.parse(this.ruleset.rules).rules[0];
-        } else if (this.ruleset && !this.ruleset.rules) {
-            this.rule = ruleModel;
-            this.rule.name = this.ruleset.name;
-        }
-        this.requestUpdate();
-    }
-
-    public setActiveRule(e: any) {
-        this.ruleset = e.detail.ruleset;
-
-        this.computeRuleset();
     }
 
     protected render() {
@@ -243,5 +110,143 @@ class OrRulesEditor extends LitElement {
           </div>
         `;
     }
-}
 
+    private readRules() {
+        rest.api.RulesResource.getTenantRulesets(openremote.config.realm, {
+            language: RulesetLang.JSON,
+            fullyPopulate: true
+        }).then((response: any) => {
+            if (response && response.data) {
+                this.rulesets = response.data;
+                if (this.ruleset && this.rulesets) {
+                    const index = findIndex(this.rulesets, ["id", this.ruleset.id]);
+                    let updatedRuleset;
+
+                    // ID is not found when a new ruleset is added
+                    if (index > 0) {
+                        updatedRuleset = this.rulesets[index];
+                    } else {
+                        updatedRuleset = this.rulesets[this.rulesets.length - 1];
+                    }
+
+                    this.ruleset = updatedRuleset;
+                    this.computeRuleset();
+                }
+                this.requestUpdate();
+            }
+        }).catch((reason: any) => {
+            console.log("Error:" + reason);
+        });
+    }
+
+    private createRule() {
+        const shouldContinue = this.shouldShowModal();
+        if (!shouldContinue) {
+            return;
+        }
+
+        if (this.rulesets) {
+            const newRule = rulesetModel;
+            this.rulesets = [...this.rulesets, rulesetModel];
+            this.ruleset = newRule;
+            this.computeRuleset();
+        }
+    }
+
+    private writeRule() {
+        if (this.ruleset && this.rule) {
+            this.rule.name = this.ruleset.name;
+            this.ruleset.rules = JSON.stringify({rules: [this.rule]});
+            rest.api.RulesResource.createTenantRuleset(this.ruleset).then((response: any) => {
+                this.readRules();
+            });
+        }
+    }
+
+    private updateRule(e: any) {
+        this.ruleset = e.detail.ruleset;
+        if (this.ruleset && this.ruleset.id && this.rule) {
+            delete this.ruleset.lastModified;
+            delete this.ruleset.createdOn;
+            delete this.ruleset.status;
+            delete this.ruleset.error;
+
+            // Parse rule to string of array of rules
+            this.rule.name = this.ruleset.name;
+            this.ruleset.rules = JSON.stringify({rules: [this.rule]});
+
+            // this.ruleset.rules = JSON.stringify(this.rules);
+            rest.api.RulesResource.updateTenantRuleset(this.ruleset.id, this.ruleset).then((response: any) => {
+                this.readRules();
+            });
+        }
+
+    }
+
+    private deleteRule() {
+
+        if (!this.ruleset || !this.ruleset.id) {
+            return;
+        }
+        const id = this.ruleset.id;
+
+        confirmDialog("Weet je zeker dat je deze regel wilt verwijderen?")
+            .then(() =>  {
+                    rest.api.RulesResource.deleteTenantRuleset(id).then(() => {
+                        this.cleanRule();
+                    });
+            })
+            .catch(() => {
+                // do something when canceled?
+            });
+
+    }
+
+    private cleanRule() {
+        if (this.rulesets && this.ruleset) {
+            const index = findIndex(this.rulesets, ["id", this.ruleset.id]);
+            this.rulesets.splice(index, 1);
+            this.rulesets = [...this.rulesets];
+            this.ruleset = undefined;
+            this.rule = undefined;
+            this.requestUpdate();
+        }
+    }
+
+    private computeRuleset() {
+        if (this.ruleset && this.ruleset.rules) {
+            this.rule = JSON.parse(this.ruleset.rules).rules[0];
+        } else if (this.ruleset && !this.ruleset.rules) {
+            this.rule = ruleModel;
+            this.rule.name = this.ruleset.name;
+        }
+        this.requestUpdate();
+    }
+
+    private setActiveRule(e: any) {
+       const shouldContinue = this.shouldShowModal();
+       if (!shouldContinue) {
+           return;
+       }
+       this.ruleset = e.detail.ruleset;
+       this.computeRuleset();
+    }
+
+    private shouldShowModal() {
+         if (this.ruleset && this.ruleset.rules !== JSON.stringify({rules: [this.rule]})) {
+            confirmDialog("Weet je zeker dat je deze regel niet wilt opslaan?")
+                .then(() =>  {
+                    this.readRules();
+                    return true;
+                })
+                .catch(() => {
+                    return false;
+                });
+        } else {
+             return true;
+         }
+
+    }
+
+
+}

@@ -83,7 +83,9 @@ class OrRuleWhen extends LitElement {
         super.updated(_changedProperties);
         if(this.rule && !this.rule.when) {
             this.rule.when = defaultWhenCondition;
-            this.addPredicate();
+            if(this.rule!.when!.asset!.attributes!.predicates!.length === 0) {
+                this.addPredicate();
+            }
             this.requestUpdate();
         }
     }

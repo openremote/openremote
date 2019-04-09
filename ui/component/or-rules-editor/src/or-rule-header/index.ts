@@ -37,7 +37,8 @@ class OrRuleHeader extends LitElement {
                         
                         <span @click="${this.toggleEditmode}"><or-icon style="margin:10px;" icon="pencil-outline"></or-icon></span>
                         <span class="rule-status ${this.ruleset && this.ruleset.enabled ? 'bg-green' : 'bg-red'}"></span>
-                        <or-toggle @click="${this.toggleEnabled}">toggle</or-toggle>
+                        <button class="button-simple" @click="${this.toggleEnabled}">${this.ruleset!.enabled ? 'deactiveren' : 'publiceren'}</button>
+                        
                         ${this.ruleset && this.ruleset.id ? html`
                             <button @click="${this.updateRule}">opslaan</button>
                         ` : html`
@@ -58,7 +59,6 @@ class OrRuleHeader extends LitElement {
         const value = e.detail.value;
         if(this.ruleset) {
             this.ruleset.name = value;
-            console.log(this.ruleset);
         }
     }
 

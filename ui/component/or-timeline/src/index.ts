@@ -164,7 +164,6 @@ class OrTimeline extends LitElement {
                
     `;
     }
-    // default value in minutes
     @property({type: Function})
     private onChange: any;
 
