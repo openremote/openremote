@@ -51,9 +51,6 @@ class OrThermostat extends LitElement {
         }
     }
 
-    static styles = css`
-    `;
-
     private set displayedLabel (newValue:string) {
         let oldValue = this._displayedLabel;
         this._displayedLabel = newValue;
@@ -101,14 +98,30 @@ class OrThermostat extends LitElement {
         super.disconnectedCallback();
     }
 
+    static styles = css`
+        .wrapper {
+            display: flex;
+        }
+        
+        .btn {
+            flex-basis: 20px;
+        }
+        .display_temp {
+            flex: 1 auto;
+            text-align: center;
+        }
+    `;
+
     protected render() {
+        // <p>displayed: ${this._displayedLabel}</p>
+        // <p>current temp: ${this._currentTemperature}</p>
+        // <p>target temp:</p>
         return html`
-            <p>displayed: ${this._displayedLabel}</p>
-            <p>current temp: ${this._currentTemperature}</p>
-            <p>target temp:</p>
-            <button style="display:inline" @click="${this.lowerTargetTemperatureByControl}">-</button>
-            <span>${this._targetTemperature}</span>
-            <button style="display:inline" @click="${this.raiseTargetTemperatureByControl}">+</button>
+            <div class="wrapper">
+                <button class="btn" style="display:inline" @click="${this.lowerTargetTemperatureByControl}">-</button>
+                <span class="display_temp">${this._targetTemperature}</span>
+                <button class="btn" style="display:inline" @click="${this.raiseTargetTemperatureByControl}">+</button>
+            </div>
         `;
     }
 }
