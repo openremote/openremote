@@ -25,7 +25,7 @@ import org.openremote.model.value.Value;
 import java.util.Optional;
 
 @JsonFormat(shape = JsonFormat.Shape.OBJECT)
-public interface AttributeTypeDescriptor {
+public interface AttributeDescriptor {
 
     String getName();
 

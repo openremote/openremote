@@ -19,7 +19,7 @@
  */
 package org.openremote.model.asset;
 
-import org.openremote.model.attribute.AttributeTypeDescriptor;
+import org.openremote.model.attribute.AttributeDescriptor;
 
 import java.util.*;
 
@@ -58,17 +58,17 @@ public enum AssetType implements AssetDescriptor {
     final protected String type;
     final protected String icon;
     final protected boolean accessPublicRead;
-    final protected AttributeTypeDescriptor[] attributeTypeDescriptors;
+    final protected AttributeDescriptor[] attributeDescriptors;
 
-    AssetType(String type, String icon, AttributeTypeDescriptor... attributeTypeDescriptors) {
-        this(type, icon, false, attributeTypeDescriptors);
+    AssetType(String type, String icon, AttributeDescriptor... attributeDescriptors) {
+        this(type, icon, false, attributeDescriptors);
     }
 
-    AssetType(String type, String icon, boolean accessPublicRead, AttributeTypeDescriptor... attributeTypeDescriptors) {
+    AssetType(String type, String icon, boolean accessPublicRead, AttributeDescriptor... attributeDescriptors) {
         this.type = type;
         this.icon = icon;
         this.accessPublicRead = accessPublicRead;
-        this.attributeTypeDescriptors = attributeTypeDescriptors;
+        this.attributeDescriptors = attributeDescriptors;
     }
 
     public static Optional<AssetType> getByValue(String value) {
@@ -103,7 +103,7 @@ public enum AssetType implements AssetDescriptor {
     }
 
     @Override
-    public Optional<AttributeTypeDescriptor[]> getAttributeTypeDescriptors() {
-        return Optional.ofNullable(attributeTypeDescriptors);
+    public Optional<AttributeDescriptor[]> getAttributeDescriptors() {
+        return Optional.ofNullable(attributeDescriptors);
     }
 }

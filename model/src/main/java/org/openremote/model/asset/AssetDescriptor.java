@@ -21,7 +21,7 @@ package org.openremote.model.asset;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.openremote.model.attribute.AttributeTypeDescriptor;
+import org.openremote.model.attribute.AttributeDescriptor;
 
 import java.util.Optional;
 
@@ -37,5 +37,5 @@ public interface AssetDescriptor {
 
     boolean getAccessPublicRead();
 
-    Optional<AttributeTypeDescriptor[]> getAttributeTypeDescriptors();
+    Optional<AttributeDescriptor[]> getAttributeDescriptors();
 }

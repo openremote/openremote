@@ -21,7 +21,7 @@ package org.openremote.model.util;
 
 import org.openremote.model.asset.AssetDescriptor;
 import org.openremote.model.asset.AssetModelProvider;
-import org.openremote.model.attribute.AttributeTypeDescriptor;
+import org.openremote.model.attribute.AttributeDescriptor;
 import org.openremote.model.attribute.AttributeValueDescriptor;
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.attribute.MetaItemDescriptor;
@@ -41,7 +41,7 @@ import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 public class AssetModelUtil {
 
     protected static AssetDescriptor[] assetDescriptors = new AssetDescriptor[0];
-    protected static AttributeTypeDescriptor[] attributeTypeDescriptors = new AttributeTypeDescriptor[0];
+    protected static AttributeDescriptor[] attributeDescriptors = new AttributeDescriptor[0];
     protected static AttributeValueDescriptor[] attributeValueDescriptors = new AttributeValueDescriptor[0];
     protected static MetaItemDescriptor[] metaItemDescriptors = new MetaItemDescriptor[0];
 
@@ -55,10 +55,10 @@ public class AssetModelUtil {
     }
 
     /**
-     * This should be called by something in the VM at startup to populate the available {@link AttributeTypeDescriptor}s.
+     * This should be called by something in the VM at startup to populate the available {@link AttributeDescriptor}s.
      */
-    public static void setAttributeTypeDescriptors(AttributeTypeDescriptor[] attributeTypeDescriptors) {
-        AssetModelUtil.attributeTypeDescriptors = attributeTypeDescriptors;
+    public static void setAttributeDescriptors(AttributeDescriptor[] attributeDescriptors) {
+        AssetModelUtil.attributeDescriptors = attributeDescriptors;
     }
 
     /**
@@ -79,8 +79,8 @@ public class AssetModelUtil {
         return assetDescriptors;
     }
 
-    public static AttributeTypeDescriptor[] getAttributeTypeDescriptors() {
-        return attributeTypeDescriptors;
+    public static AttributeDescriptor[] getAttributeDescriptors() {
+        return attributeDescriptors;
     }
 
     public static AttributeValueDescriptor[] getAttributeValueDescriptors() {
@@ -112,13 +112,13 @@ public class AssetModelUtil {
         return Optional.empty();
     }
 
-    public static Optional<AttributeTypeDescriptor> getAttributeDescriptor(String name) {
+    public static Optional<AttributeDescriptor> getAttributeDescriptor(String name) {
         if (name == null)
             return Optional.empty();
 
-        for (AttributeTypeDescriptor attributeTypeDescriptor : attributeTypeDescriptors) {
-            if (name.equals(attributeTypeDescriptor.getName()))
-                return Optional.of(attributeTypeDescriptor);
+        for (AttributeDescriptor attributeDescriptor : attributeDescriptors) {
+            if (name.equals(attributeDescriptor.getName()))
+                return Optional.of(attributeDescriptor);
         }
         return Optional.empty();
     }

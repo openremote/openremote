@@ -19,39 +19,44 @@
  */
 package org.openremote.model.attribute;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.Values;
 
 import java.util.Optional;
 
 import static org.openremote.model.asset.MetaItemType.*;
-import static org.openremote.model.attribute.AttributeValueType.*;
+import static org.openremote.model.attribute.AttributeValueType.OBJECT;
 
-public enum AttributeType implements AttributeTypeDescriptor {
+public enum AttributeType implements AttributeDescriptor {
 
-    CONSOLE_NAME("consoleName", STRING),
+    STRING("string", org.openremote.model.attribute.AttributeValueType.STRING),
 
-    CONSOLE_VERSION("consoleVersion", STRING),
+    NUMBER("number", org.openremote.model.attribute.AttributeValueType.NUMBER),
 
-    CONSOLE_PLATFORM("consolePlatform", STRING),
+    CONSOLE_NAME("consoleName", org.openremote.model.attribute.AttributeValueType.STRING),
+
+    CONSOLE_VERSION("consoleVersion", org.openremote.model.attribute.AttributeValueType.STRING),
+
+    CONSOLE_PLATFORM("consolePlatform", org.openremote.model.attribute.AttributeValueType.STRING),
 
     CONSOLE_PROVIDERS("consoleProviders", OBJECT),
 
     EMAIL("email", AttributeValueType.EMAIL, LABEL.withInitialValue(Values.create("Email"))),
 
-    GEO_CITY("city", STRING,
+    GEO_CITY("city", org.openremote.model.attribute.AttributeValueType.STRING,
             LABEL.withInitialValue(Values.create("City")),
             ABOUT.withInitialValue(Values.create("http://project-haystack.org/tag/geoCity"))),
 
-    GEO_COUNTRY("country", STRING,
+    GEO_COUNTRY("country", org.openremote.model.attribute.AttributeValueType.STRING,
             LABEL.withInitialValue(Values.create("Country")),
             ABOUT.withInitialValue(Values.create("http://project-haystack.org/tag/geoCountry"))),
 
-    GEO_POSTAL_CODE("postalCode", NUMBER,
+    GEO_POSTAL_CODE("postalCode", org.openremote.model.attribute.AttributeValueType.NUMBER,
             LABEL.withInitialValue(Values.create("Postal Code")),
             ABOUT.withInitialValue(Values.create("http://project-haystack.org/tag/geoPostalCode"))),
 
-    GEO_STREET("street", STRING,
+    GEO_STREET("street", org.openremote.model.attribute.AttributeValueType.STRING,
             LABEL.withInitialValue(Values.create("Street")),
             ABOUT.withInitialValue(Values.create("http://project-haystack.org/tag/geoStreet"))),
 
@@ -59,7 +64,7 @@ public enum AttributeType implements AttributeTypeDescriptor {
 
     SURFACE_AREA(
             "surfaceArea",
-            NUMBER,
+        org.openremote.model.attribute.AttributeValueType.NUMBER,
             LABEL.withInitialValue(Values.create("Surface Area")),
             DESCRIPTION.withInitialValue(Values.create("Floor area of building measured in m²")),
             ABOUT.withInitialValue(Values.create("http://project-haystack.org/tag/area")));
@@ -80,11 +85,11 @@ public enum AttributeType implements AttributeTypeDescriptor {
         this.initialValue = initialValue;
     }
 
-    public static Optional<AttributeTypeDescriptor> getByValue(String name) {
+    public static Optional<AttributeDescriptor> getByValue(String name) {
         if (name == null)
             return Optional.empty();
 
-        for (AttributeTypeDescriptor descriptor : values()) {
+        for (AttributeDescriptor descriptor : values()) {
             if (name.equals(descriptor.getName()))
                 return Optional.of(descriptor);
         }
@@ -109,5 +114,38 @@ public enum AttributeType implements AttributeTypeDescriptor {
     @Override
     public Value getInitialValue() {
         return initialValue;
+    }
+
+    public AttributeDescriptor withName(String name, MetaItemDescriptor... metaItemDescriptors) {
+        return withName(name, null, metaItemDescriptors);
+    }
+
+    public AttributeDescriptor withName(String name, Value initialValue, MetaItemDescriptor... metaItemDescriptors) {
+
+        return new AttributeDescriptor() {
+            @Override
+            @JsonProperty
+            public String getName() {
+                return name;
+            }
+
+            @Override
+            @JsonProperty
+            public AttributeValueDescriptor getValueDescriptor() {
+                return attributeValueDescriptor;
+            }
+
+            @Override
+            @JsonProperty
+            public Optional<MetaItemDescriptor[]> getMetaItemDescriptors() {
+                return Optional.ofNullable(metaItemDescriptors);
+            }
+
+            @Override
+            @JsonProperty
+            public Value getInitialValue() {
+                return initialValue;
+            }
+        };
     }
 }

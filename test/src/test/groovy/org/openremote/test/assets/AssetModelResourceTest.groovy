@@ -20,20 +20,8 @@
 package org.openremote.test.assets
 
 import org.openremote.container.Container
-import org.openremote.container.persistence.PersistenceService
-import org.openremote.manager.asset.AssetStorageService
-import org.openremote.manager.setup.SetupService
-import org.openremote.manager.setup.builtin.KeycloakDemoSetup
-import org.openremote.manager.setup.builtin.ManagerDemoSetup
-import org.openremote.model.asset.Asset
-import org.openremote.model.asset.AssetAttribute
 import org.openremote.model.asset.AssetModelResource
-import org.openremote.model.asset.AssetResource
-import org.openremote.model.attribute.MetaItem
-import org.openremote.model.query.AssetQuery
-import org.openremote.model.query.BaseAssetQuery
 import org.openremote.model.value.ValueType
-import org.openremote.model.value.Values
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Shared
 import spock.lang.Specification
@@ -47,9 +35,6 @@ import static org.openremote.model.asset.AssetType.FLOOR
 import static org.openremote.model.asset.AssetType.RESIDENCE
 import static org.openremote.model.asset.AssetType.ROOM
 import static org.openremote.model.asset.AssetType.THING
-import static org.openremote.model.asset.MetaItemType.ACCESS_PUBLIC_READ
-import static org.openremote.model.asset.MetaItemType.LABEL
-import static org.openremote.model.attribute.AttributeValueType.NUMBER
 
 class AssetModelResourceTest extends Specification implements ManagerContainerTrait {
 
@@ -80,8 +65,8 @@ class AssetModelResourceTest extends Specification implements ManagerContainerTr
         assetDescriptors.size() == 8
         assetDescriptors[0].name == CUSTOM.name
         assetDescriptors[1].name == BUILDING.name
-        assetDescriptors[1].attributeTypeDescriptors.get().length == 4
-        assetDescriptors[1].attributeTypeDescriptors.get()[0].valueDescriptor.name == ValueType.STRING
+        assetDescriptors[1].attributeDescriptors.get().length == 4
+        assetDescriptors[1].attributeDescriptors.get()[0].valueDescriptor.name == ValueType.STRING
         assetDescriptors[2].name == FLOOR.name
         assetDescriptors[3].name == RESIDENCE.name
         assetDescriptors[4].name == ROOM.name

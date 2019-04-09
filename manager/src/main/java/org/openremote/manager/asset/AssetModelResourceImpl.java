@@ -24,7 +24,7 @@ import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebResource;
 import org.openremote.model.asset.AssetDescriptor;
 import org.openremote.model.asset.AssetModelResource;
-import org.openremote.model.attribute.AttributeTypeDescriptor;
+import org.openremote.model.attribute.AttributeDescriptor;
 import org.openremote.model.attribute.AttributeValueDescriptor;
 import org.openremote.model.attribute.MetaItemDescriptor;
 import org.openremote.model.http.RequestParams;
@@ -42,8 +42,8 @@ public class AssetModelResourceImpl extends ManagerWebResource implements AssetM
     }
 
     @Override
-    public AttributeTypeDescriptor[] getAttributeTypeDescriptors(RequestParams requestParams) {
-        return AssetModelUtil.getAttributeTypeDescriptors();
+    public AttributeDescriptor[] getAttributeTypeDescriptors(RequestParams requestParams) {
+        return AssetModelUtil.getAttributeDescriptors();
     }
 
     @Override

@@ -58,35 +58,35 @@ public class AssetAttribute extends Attribute {
         super(name, type);
     }
 
-    public AssetAttribute(AttributeTypeDescriptor attributeTypeDescriptor) {
-        this(attributeTypeDescriptor.getName(), attributeTypeDescriptor);
+    public AssetAttribute(AttributeDescriptor attributeDescriptor) {
+        this(attributeDescriptor.getName(), attributeDescriptor);
     }
 
-    public AssetAttribute(String name, AttributeTypeDescriptor attributeTypeDescriptor) {
-        this(name, attributeTypeDescriptor, attributeTypeDescriptor.getInitialValue());
+    public AssetAttribute(String name, AttributeDescriptor attributeDescriptor) {
+        this(name, attributeDescriptor, attributeDescriptor.getInitialValue());
     }
 
-    public AssetAttribute(AttributeTypeDescriptor attributeTypeDescriptor, Value value) {
-        this(attributeTypeDescriptor.getName(), attributeTypeDescriptor, value);
+    public AssetAttribute(AttributeDescriptor attributeDescriptor, Value value) {
+        this(attributeDescriptor.getName(), attributeDescriptor, value);
     }
 
-    public AssetAttribute(String name, AttributeTypeDescriptor attributeTypeDescriptor, Value value) {
-        this(name, attributeTypeDescriptor, value, 0L);
+    public AssetAttribute(String name, AttributeDescriptor attributeDescriptor, Value value) {
+        this(name, attributeDescriptor, value, 0L);
     }
 
-    public AssetAttribute(AttributeTypeDescriptor attributeTypeDescriptor, Value value, long timestamp) {
-        this(attributeTypeDescriptor.getName(), attributeTypeDescriptor, value, timestamp);
+    public AssetAttribute(AttributeDescriptor attributeDescriptor, Value value, long timestamp) {
+        this(attributeDescriptor.getName(), attributeDescriptor, value, timestamp);
     }
 
-    public AssetAttribute(String name, AttributeTypeDescriptor attributeTypeDescriptor, Value value, long timestamp) {
-        super(name, attributeTypeDescriptor.getValueDescriptor(), value);
+    public AssetAttribute(String name, AttributeDescriptor attributeDescriptor, Value value, long timestamp) {
+        super(name, attributeDescriptor.getValueDescriptor(), value);
         if (value != null) {
-            if (value.getType() != attributeTypeDescriptor.getValueDescriptor().getValueType()) {
+            if (value.getType() != attributeDescriptor.getValueDescriptor().getValueType()) {
                 throw new IllegalArgumentException("Provided value type is not compatible with this attribute type");
             }
         }
         setValue(value, timestamp);
-        attributeTypeDescriptor.getMetaItemDescriptors().ifPresent(metaItemDescriptors ->
+        attributeDescriptor.getMetaItemDescriptors().ifPresent(metaItemDescriptors ->
             addMeta(Arrays.stream(metaItemDescriptors).map(MetaItem::new).toArray(MetaItem[]::new))
         );
     }

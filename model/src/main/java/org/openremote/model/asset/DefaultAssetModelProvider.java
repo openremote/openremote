@@ -37,7 +37,7 @@ public class DefaultAssetModelProvider implements AssetModelProvider {
     }
 
     @Override
-    public AttributeTypeDescriptor[] getAttributeTypeDescriptors() {
+    public AttributeDescriptor[] getAttributeTypeDescriptors() {
         return AttributeType.values();
     }
 

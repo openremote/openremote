@@ -23,7 +23,7 @@ import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.model.asset.AssetDescriptor;
 import org.openremote.model.asset.AssetModelProvider;
-import org.openremote.model.attribute.AttributeTypeDescriptor;
+import org.openremote.model.attribute.AttributeDescriptor;
 import org.openremote.model.attribute.AttributeValueDescriptor;
 import org.openremote.model.attribute.MetaItemDescriptor;
 import org.openremote.model.util.AssetModelUtil;
@@ -51,7 +51,7 @@ public class AssetModelService implements ContainerService {
     public void init(Container container) throws Exception {
 
         List<AssetDescriptor> assetDescriptors = new ArrayList<>();
-        List<AttributeTypeDescriptor> attributeTypeDescriptors = new ArrayList<>();
+        List<AttributeDescriptor> attributeDescriptors = new ArrayList<>();
         List<AttributeValueDescriptor> attributeValueDescriptors = new ArrayList<>();
         List<MetaItemDescriptor> metaItemDescriptors = new ArrayList<>();
 
@@ -59,13 +59,13 @@ public class AssetModelService implements ContainerService {
             LOG.fine("Adding asset model descriptors of provider: " + assetModelProvider.getClass().getName());
 
             assetDescriptors.addAll(Arrays.asList(assetModelProvider.getAssetDescriptors()));
-            attributeTypeDescriptors.addAll(Arrays.asList(assetModelProvider.getAttributeTypeDescriptors()));
+            attributeDescriptors.addAll(Arrays.asList(assetModelProvider.getAttributeTypeDescriptors()));
             attributeValueDescriptors.addAll(Arrays.asList(assetModelProvider.getAttributeValueDescriptors()));
             metaItemDescriptors.addAll(Arrays.asList(assetModelProvider.getMetaItemDescriptors()));
         });
 
         AssetModelUtil.setAssetDescriptors(assetDescriptors.toArray(new AssetDescriptor[0]));
-        AssetModelUtil.setAttributeTypeDescriptors(attributeTypeDescriptors.toArray(new AttributeTypeDescriptor[0]));
+        AssetModelUtil.setAttributeDescriptors(attributeDescriptors.toArray(new AttributeDescriptor[0]));
         AssetModelUtil.setAttributeValueDescriptors(attributeValueDescriptors.toArray(new AttributeValueDescriptor[0]));
         AssetModelUtil.setMetaItemDescriptors(metaItemDescriptors.toArray(new MetaItemDescriptor[0]));
     }
