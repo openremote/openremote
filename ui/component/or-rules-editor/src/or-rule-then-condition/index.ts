@@ -7,11 +7,10 @@ import "@openremote/or-select";
 import "@openremote/or-icon";
 import handler from "../index";
 import {style} from "./style";
-import set from 'lodash/set';
+import set from "lodash/set";
 
-import {RuleActionUnion, RuleActionWriteAttribute, AttributeDescriptor} from "@openremote/model";
+import {RuleActionWriteAttribute} from "@openremote/model";
 
-// TODO use create select option to
 @customElement("or-rule-then-condition")
 class OrRuleThenCondition extends LitElement {
 
@@ -26,9 +25,6 @@ class OrRuleThenCondition extends LitElement {
 
     @property({type: Number})
     private value: number = 0;
-
-    @property({type: Array})
-    public attributeDescriptors?: AttributeDescriptor[];
 
     constructor() {
         super();
@@ -50,7 +46,7 @@ class OrRuleThenCondition extends LitElement {
         return html`
             <div class="rule-container">
                 ${this.condition ? html`
-                   <or-select-asset-attribute disabled type="${this.condition}" value="${this.condition.attributeName}" .attributeDescriptors="${this.attributeDescriptors}"></or-select-asset-attribute>
+                   <or-select-asset-attribute disabled type="${this.condition}" value="${this.condition.attributeName}"></or-select-asset-attribute>
                    <or-select-operator disabled type="${this.condition}" value="EQUAL"></or-select-operator>
                    ${this.createInputControl(this.condition!)}
                 ` : ``}
@@ -63,7 +59,7 @@ class OrRuleThenCondition extends LitElement {
 
             const result = h(this.condition!);
             if (result) {
-                let response = html`${result}`;
+                const response = html`${result}`;
                 return response;
             }
         }

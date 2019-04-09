@@ -1,12 +1,11 @@
-import {html, LitElement, customElement, property} from "lit-element";
+import {html, LitElement, customElement, property, PropertyValues} from "lit-element";
 import {AttributeDescriptor, AttributeValueType, AttributeValueDescriptor, ValueType} from "@openremote/model";
 
 import {selectStyle} from "@openremote/or-select/dist/style";
 
-const Test = {
-    STRING: {name: "flightProfile", icon: "file-text-o", valueType: ValueType.STRING},
-    NUMBER: {name: ""}
-};
+import {attributeDescriptors} from "../../const/attribute-descriptors";
+import {rulesEditorConfig} from "../../const/rule-config";
+
 @customElement("or-select-asset-attribute")
 class OrSelectAssetAttribute extends LitElement {
 
@@ -17,7 +16,11 @@ class OrSelectAssetAttribute extends LitElement {
     public assetType: string = "";
 
     @property({type: Array})
-    public attributeDescriptors?: AttributeDescriptor[];
+    public attributeDescriptors?: AttributeDescriptor[] = attributeDescriptors;
+
+    // TODO replace with type from rulesEditor config?
+    @property({type: Array})
+    public options?: any[];
 
     @property({type: String})
     public value: any;
@@ -56,7 +59,7 @@ class OrSelectAssetAttribute extends LitElement {
         // TODO types should be based on rules-config
         return html`
              <select ?disabled="${this.disabled}" id="or-select-asset-attribute" @change="${this.onChange}">
-                ${this.attributeDescriptors ? this.attributeDescriptors.map((attribute: AttributeDescriptor) => {
+                ${this.options ? this.options.map((attribute: AttributeDescriptor) => {
                     return html`
                         <option ?selected="${attribute.name === this.value}" value="${attribute.name}">${attribute.name}</option>
                     `;
@@ -64,4 +67,17 @@ class OrSelectAssetAttribute extends LitElement {
             </select>
         `;
     }
+
+    protected firstUpdated(_changedProperties: PropertyValues): void {
+        super.firstUpdated(_changedProperties);
+        if (!this.attributeDescriptors) {
+            return;
+        }
+
+        this.options = this.attributeDescriptors.filter((obj) => {
+            return obj.name && rulesEditorConfig.options.attributeValueDescriptors.hasOwnProperty(obj.name);
+        });
+
+    }
+
 }

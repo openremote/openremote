@@ -20,7 +20,7 @@ import {style} from "./style";
 import findIndex from "lodash-es/findIndex";
 
 import {attributeDescriptors} from "./const/attribute-descriptors";
-import {ruleModel, rulesetModel, rulesEditorConfig} from "./const/rule-config";
+import {ruleTemplate, rulesetTemplate} from "./const/rule-config";
 
 class InputHandlers {
     public handlers: Array<(condition: RuleActionWriteAttribute) => TemplateResult | undefined> = [];
@@ -146,8 +146,8 @@ class OrRulesEditor extends LitElement {
         }
 
         if (this.rulesets) {
-            const newRule = rulesetModel;
-            this.rulesets = [...this.rulesets, rulesetModel];
+            const newRule = rulesetTemplate;
+            this.rulesets = [...this.rulesets, rulesetTemplate];
             this.ruleset = newRule;
             this.computeRuleset();
         }
@@ -217,7 +217,7 @@ class OrRulesEditor extends LitElement {
         if (this.ruleset && this.ruleset.rules) {
             this.rule = JSON.parse(this.ruleset.rules).rules[0];
         } else if (this.ruleset && !this.ruleset.rules) {
-            this.rule = ruleModel;
+            this.rule = ruleTemplate;
             this.rule.name = this.ruleset.name;
         }
         this.requestUpdate();
