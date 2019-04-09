@@ -99,16 +99,32 @@ class OrThermostat extends LitElement {
     }
 
     static styles = css`
+        .wrapper,
+        .inner-wrapper {
+            align-items: center;
+        }
         .wrapper {
             display: flex;
         }
-        
-        .btn {
-            flex-basis: 20px;
+        .inner-wrapper {
+            display: flex;
+            flex-grow: 1;
+            justify-content: center;
         }
-        .display_temp {
-            flex: 1 auto;
+        
+        .icon,
+        .display-temp {
+            flex-basis: 50px;
+        }
+        .btn {
+            width: 20px;
+        }
+        .target-temp {
+            padding: 0 20px;
             text-align: center;
+        }
+        .display-temp {
+            text-align: right;
         }
     `;
 
@@ -118,9 +134,13 @@ class OrThermostat extends LitElement {
         // <p>target temp:</p>
         return html`
             <div class="wrapper">
+              <div class="icon">[i]</div>
+              <div class="inner-wrapper">
                 <button class="btn" style="display:inline" @click="${this.lowerTargetTemperatureByControl}">-</button>
-                <span class="display_temp">${this._targetTemperature}</span>
+                <span class="target-temp">${this._targetTemperature}&deg;</span>
                 <button class="btn" style="display:inline" @click="${this.raiseTargetTemperatureByControl}">+</button>
+              </div>
+              <div class="display-temp">[tmp&deg;]</div>
             </div>
         `;
     }
