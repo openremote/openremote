@@ -32,6 +32,7 @@ import org.openremote.model.query.BaseAssetQuery.Select;
 import org.openremote.model.query.filter.ParentPredicate;
 import org.openremote.model.query.filter.TenantPredicate;
 import org.openremote.model.security.Tenant;
+import org.openremote.model.util.AssetModelUtil;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueException;
@@ -79,7 +80,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                 List<Asset> result = assetStorageService.findAll(
                     new AssetQuery()
                         .parent(new ParentPredicate(true))
-                        .tenant(new TenantPredicate().realm(getAuthenticatedRealm()))
+                        .tenant(new TenantPredicate(getAuthenticatedRealm()))
                 );
                 return result.toArray(new Asset[result.size()]);
             }
@@ -92,11 +93,10 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
 
             // Filter assets that might have been moved into a different realm and can no longer be accessed by user
             // TODO: Should we forbid moving assets between realms?
-            Tenant authenticatedTenant = getAuthenticatedTenant();
             Iterator<Asset> it = assets.iterator();
             while (it.hasNext()) {
                 Asset asset = it.next();
-                if (!asset.getRealmId().equals(authenticatedTenant.getId())) {
+                if (!asset.getRealm().equals(getAuthenticatedRealm())) {
                     LOG.warning("User '" + getUsername() + "' linked to asset in other realm, skipping: " + asset);
                     it.remove();
                 }
@@ -112,22 +112,21 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
     }
 
     @Override
-    public UserAsset[] getUserAssetLinks(RequestParams requestParams, String realmId, String userId, String assetId) {
+    public UserAsset[] getUserAssetLinks(RequestParams requestParams, String realm, String userId, String assetId) {
         try {
-            if (realmId == null)
+            if (realm == null)
                 throw new WebApplicationException(BAD_REQUEST);
 
-            Tenant tenant = identityService.getIdentityProvider().getTenantForRealmId(realmId);
-            if (tenant == null)
+            if (!identityService.getIdentityProvider().tenantExists(realm))
                 throw new WebApplicationException(NOT_FOUND);
 
-            if (!isSuperUser() && (isRestrictedUser() && !getAuthenticatedTenant().getId().equals(tenant.getId())))
+            if (!(isSuperUser() || getAuthenticatedRealm().equals(realm)))
                 throw new WebApplicationException(FORBIDDEN);
 
-            if (userId != null && !identityService.getIdentityProvider().isUserInTenant(userId, realmId))
+            if (userId != null && !identityService.getIdentityProvider().isUserInTenant(userId, realm))
                 throw new WebApplicationException(BAD_REQUEST);
 
-            UserAsset[] result = assetStorageService.findUserAssets(realmId, userId, assetId).toArray(new UserAsset[0]);
+            UserAsset[] result = assetStorageService.findUserAssets(realm, userId, assetId).toArray(new UserAsset[0]);
 
             // Compress response (the request attribute enables the interceptor)
             request.setAttribute(HttpHeaders.CONTENT_ENCODING, "gzip");
@@ -142,15 +141,15 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
 
     @Override
     public void createUserAsset(RequestParams requestParams, UserAsset userAsset) {
-        String realmId = userAsset.getId().getRealmId();
+        String realm = userAsset.getId().getRealm();
         String userId = userAsset.getId().getUserId();
         String assetId = userAsset.getId().getAssetId();
 
-        if (!identityService.getIdentityProvider().isUserInTenant(userId, realmId))
+        if (!identityService.getIdentityProvider().isUserInTenant(userId, realm))
             throw new WebApplicationException(BAD_REQUEST);
 
         Asset asset;
-        if ((asset = assetStorageService.find(assetId)) == null || !asset.getRealmId().equals(realmId)) {
+        if ((asset = assetStorageService.find(assetId)) == null || !asset.getRealm().equals(realm)) {
             throw new WebApplicationException(BAD_REQUEST);
         }
 
@@ -161,28 +160,28 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
 
         // Restricted users or regular users in a different realm can not create links
         if (isRestrictedUser()
-            || !getAuthenticatedTenant().getId().equals(realmId))
+            || !getAuthenticatedTenant().getId().equals(realm))
             throw new WebApplicationException(FORBIDDEN);
 
         assetStorageService.storeUserAsset(userAsset);
     }
 
     @Override
-    public void deleteUserAsset(RequestParams requestParams, String realmId, String userId, String assetId) {
-        if (!identityService.getIdentityProvider().isUserInTenant(userId, realmId))
+    public void deleteUserAsset(RequestParams requestParams, String realm, String userId, String assetId) {
+        if (!identityService.getIdentityProvider().isUserInTenant(userId, realm))
             throw new WebApplicationException(BAD_REQUEST);
 
         if (isSuperUser()) {
-            assetStorageService.deleteUserAsset(realmId, userId, assetId);
+            assetStorageService.deleteUserAsset(realm, userId, assetId);
             return;
         }
 
         // Restricted users or regular users in a different realm can not delete links
         if (isRestrictedUser()
-            || !getAuthenticatedTenant().getId().equals(realmId))
+            || !getAuthenticatedTenant().getId().equals(realm))
             throw new WebApplicationException(FORBIDDEN);
 
-        assetStorageService.deleteUserAsset(realmId, userId, assetId);
+        assetStorageService.deleteUserAsset(realm, userId, assetId);
     }
 
     @Override
@@ -247,7 +246,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                 asset,
                 storageAsset,
                 isRestrictedUser ? storageAsset.getName() : null, // TODO We could allow restricted users to update names?
-                isRestrictedUser ? storageAsset.getRealmId() : null, // Restricted users can not change realm
+                isRestrictedUser ? storageAsset.getRealm() : null, // Restricted users can not change realm
                 isRestrictedUser ? storageAsset.getParentId() : null, // Restricted users can not change realm
                 storageAsset.getType(), // The type can never change
                 isRestrictedUser ? storageAsset.isAccessPublicRead() : null, // Restricted user can not change access public flag
@@ -286,10 +285,10 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                         Meta existingMetaItems = existingAttribute.getMeta().copy();
 
                         // Remove any writable existing meta items
-                        existingMetaItems.removeIf(AssetModel::isMetaItemRestrictedWrite);
+                        existingMetaItems.removeIf(AssetModelUtil::isMetaItemRestrictedWrite);
 
                         // Add any writable updated meta items
-                        updatedMetaItems.stream().filter(AssetModel::isMetaItemRestrictedWrite).forEach(existingMetaItems::add);
+                        updatedMetaItems.stream().filter(AssetModelUtil::isMetaItemRestrictedWrite).forEach(existingMetaItems::add);
 
                         // Replace existing with updated attribute
                         updatedAttribute.setMeta(existingMetaItems);
@@ -299,7 +298,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
 
                         // An attribute added by a restricted user can only have meta items which are writable
                         updatedAttribute.getMetaStream().forEach(metaItem -> {
-                            if (!AssetModel.isMetaItemRestrictedWrite(metaItem)) {
+                            if (!AssetModelUtil.isMetaItemRestrictedWrite(metaItem)) {
                                 LOG.fine("Attribute has " + metaItem + " not writable by restricted client: " + updatedAttributeName);
                                 throw new WebApplicationException(
                                     "Attribute has meta item not writable by restricted client: " + updatedAttributeName,
@@ -310,12 +309,12 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
 
                         // An attribute added by a restricted user must be readable by restricted users
                         if (!updatedAttribute.isAccessRestrictedRead()) {
-                            updatedAttribute.addMeta(new MetaItem(AssetMeta.ACCESS_RESTRICTED_READ, Values.create(true)));
+                            updatedAttribute.addMeta(new MetaItem(MetaItemType.ACCESS_RESTRICTED_READ, Values.create(true)));
                         }
 
                         // An attribute added by a restricted user must be writable by restricted users
                         if (!updatedAttribute.isAccessRestrictedWrite()) {
-                            updatedAttribute.addMeta(new MetaItem(AssetMeta.ACCESS_RESTRICTED_WRITE, Values.create(true)));
+                            updatedAttribute.addMeta(new MetaItem(MetaItemType.ACCESS_RESTRICTED_WRITE, Values.create(true)));
                         }
 
                         // Add the new attribute
@@ -335,8 +334,8 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             // TODO Implement "Saved Filter/Searches" properly, allowing restricted users to create rule state flags is not great
             resultAsset.getAttributesStream().forEach(attribute -> {
                 if (attribute.getType().map(attributeType -> attributeType == AttributeValueType.RULES_TEMPLATE_FILTER).orElse(false)
-                    && !attribute.hasMetaItem(AssetMeta.RULE_STATE)) {
-                    attribute.addMeta(new MetaItem(AssetMeta.RULE_STATE, Values.create(true)));
+                    && !attribute.hasMetaItem(MetaItemType.RULE_STATE)) {
+                    attribute.addMeta(new MetaItem(MetaItemType.RULE_STATE, Values.create(true)));
                 }
             });
 
@@ -352,17 +351,17 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
 
     private void checkForWellKnownAttributes(Asset asset) {
         asset.getAttributesStream().forEach(assetAttribute -> {
-            AssetModel.getAttributeDescriptor(assetAttribute.name).ifPresent(wellKnownAttribute -> {
+            AssetModelUtil.getAttributeDescriptor(assetAttribute.name).ifPresent(wellKnownAttribute -> {
                 //Check if the type matches
-                if (!wellKnownAttribute.getValueType().equals(assetAttribute.getTypeOrThrow())) {
+                if (!wellKnownAttribute.getValueDescriptor().equals(assetAttribute.getTypeOrThrow())) {
                     throw new IllegalStateException(
                         String.format("Well known attribute isn't of the correct type. Attribute name: %s. Expected type: %s",
-                            assetAttribute.name, wellKnownAttribute.getValueType().name()));
+                            assetAttribute.name, wellKnownAttribute.getValueDescriptor().getName()));
                 }
 
                 //Check if the value is valid
-                wellKnownAttribute.getValueType()
-                    .isValidValue(assetAttribute.getValue().orElseThrow(() -> new IllegalStateException("Value is empty for " + assetAttribute.name)))
+                wellKnownAttribute.getValueDescriptor()
+                    .getValidator().flatMap(v -> v.apply(assetAttribute.getValue().orElseThrow(() -> new IllegalStateException("Value is empty for " + assetAttribute.name))))
                     .ifPresent(validationFailure -> {
                         throw new IllegalStateException(
                             String.format("Validation failed for %s with reason %s", assetAttribute.name, validationFailure.getReason().name())
@@ -439,8 +438,8 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             }
 
             // If there was no realm provided (create was called by regular user in manager UI), use the auth realm
-            if (asset.getRealmId() == null || asset.getRealmId().length() == 0) {
-                asset.setRealmId(getAuthenticatedTenant().getId());
+            if (asset.getRealm() == null || asset.getRealm().length() == 0) {
+                asset.setRealm(getAuthenticatedTenant().getId());
             }
 
             if (!isTenantActiveAndAccessible(asset)) {
@@ -460,31 +459,33 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                 newAsset.setId(asset.getId());
             }
 
-            AssetModel.getAssetTypeDescriptor(asset.getType()).ifPresent(descriptor -> {
+            AssetModelUtil.getAssetDescriptor(asset.getType()).ifPresent(assetDescriptor -> {
 
-                newAsset.setAccessPublicRead(descriptor.getAccessPublicRead());
-                //Add default meta items if not present
-                newAsset.getAttributesStream().forEach(AssetAttribute ->
-                    descriptor.getDefaultAttributes().filter(defaultAttribute ->
-                        defaultAttribute.getNameOrThrow().equalsIgnoreCase(AssetAttribute.getNameOrThrow())
-                    ).findFirst().ifPresent(defaultAttribute -> {
-                        AssetAttribute.addMeta(
-                            defaultAttribute.getMetaStream().filter(defaultMeta ->
-                                AssetAttribute.getMetaStream().noneMatch(serverMeta ->
-                                    serverMeta.equals(defaultMeta))
-                            ).toArray(MetaItem[]::new)
-                        );
-                    })
-                );
+                newAsset.setAccessPublicRead(assetDescriptor.getAccessPublicRead());
 
-                //Add missing attributes
-                newAsset.addAttributes(descriptor.getDefaultAttributes()
-                    .filter(assetAttribute ->
-                        newAsset.getAttributesStream().noneMatch(serverAttribute ->
-                            serverAttribute.getNameOrThrow().equalsIgnoreCase(assetAttribute.getNameOrThrow())
-                        )
-                    ).toArray(AssetAttribute[]::new)
-                );
+                // Add meta items to well known attributes if not present
+                newAsset.getAttributesStream().forEach(assetAttribute -> {
+                        Optional<AttributeDescriptor> attributeDescriptor = assetDescriptor.getAttributeDescriptors()
+                                .flatMap(attributeDescriptors ->
+                                    Arrays.stream(attributeDescriptors)
+                                            .filter(attrDescriptor -> attrDescriptor.getName().equals(assetAttribute.getNameOrThrow()))
+                                            .findFirst()
+                                );
+
+                        attributeDescriptor.ifPresent(defaultAttribute ->
+                                        defaultAttribute.getMetaItemDescriptors().ifPresent(metaItemDescriptors ->
+                                                assetAttribute.addMeta(
+                                                        Arrays.stream(metaItemDescriptors).filter(metaItemDescriptor -> !assetAttribute.hasMetaItem(metaItemDescriptor)).map(MetaItem::new).toArray(MetaItem[]::new)
+                                                ))
+                                );
+                });
+
+                // Add attributes for this well known asset if not present
+                assetDescriptor.getAttributeDescriptors().ifPresent(attributeDescriptors ->
+                        newAsset.addAttributes(
+                                Arrays.stream(attributeDescriptors).filter(attributeDescriptor ->
+                                        !newAsset.hasAttribute(attributeDescriptor.getName())).map(AssetAttribute::new).toArray(AssetAttribute[]::new)
+                        ));
             });
 
             //Check if a well known attribute is added
@@ -538,10 +539,8 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             }
 
             Tenant tenant = query.tenant != null
-                ? !isNullOrEmpty(query.tenant.realmId)
-                ? identityService.getIdentityProvider().getTenantForRealmId(query.tenant.realmId)
-                : !isNullOrEmpty(query.tenant.realm)
-                ? identityService.getIdentityProvider().getTenantForRealm(query.tenant.realm)
+                ? !isNullOrEmpty(query.tenant.realm)
+                ? identityService.getIdentityProvider().getTenant(query.tenant.realm)
                 : getAuthenticatedTenant()
                 : getAuthenticatedTenant();
 
@@ -555,7 +554,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
 
             // This replicates behaviour of old getRoot and getChildren methods
             if (!isSuperUser() || query.parent == null || query.parent.noParent) {
-                query.tenant(new TenantPredicate(tenant.getId()));
+                query.tenant(new TenantPredicate(tenant.getRealm()));
             }
 
             List<Asset> result = assetStorageService.findAll(query);
@@ -581,7 +580,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
 
         // Force realm to be request realm
         if (query.tenant == null) {
-            query.tenant(new TenantPredicate().realm(requestRealm));
+            query.tenant(new TenantPredicate(requestRealm));
         } else {
             query.tenant.realm = requestRealm;
         }

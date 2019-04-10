@@ -27,8 +27,6 @@ import org.openremote.model.rules.Notifications;
 import org.openremote.model.rules.Ruleset;
 import org.openremote.model.rules.TenantRuleset;
 
-import java.util.function.Consumer;
-
 import static org.openremote.model.notification.Notification.Source.ASSET_RULESET;
 import static org.openremote.model.notification.Notification.Source.GLOBAL_RULESET;
 import static org.openremote.model.notification.Notification.Source.TENANT_RULESET;
@@ -51,7 +49,7 @@ public class NotificationsFacade<T extends Ruleset> extends Notifications {
             source = GLOBAL_RULESET;
         } else if (rulesEngineId.getScope() == TenantRuleset.class) {
             source = TENANT_RULESET;
-            sourceId = rulesEngineId.getRealmId().orElseThrow(() -> new IllegalStateException("Tenant ruleset must have a realm ID"));
+            sourceId = rulesEngineId.getRealm().orElseThrow(() -> new IllegalStateException("Tenant ruleset must have a realm ID"));
         } else {
             source = ASSET_RULESET;
             sourceId = rulesEngineId.getAssetId().orElseThrow(() -> new IllegalStateException("Asset ruleset must have an asset ID"));

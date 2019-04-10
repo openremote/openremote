@@ -1,0 +1,29 @@
+{
+  "name": "@openremote/or-select",
+  "version": "1.0.0",
+  "description": "OpenRemote select",
+  "main": "dist/index.js",
+  "types": "src/index.ts",
+  "scripts": {
+    "build": "npx tsc",
+    "test": "echo \"No tests\" && exit 0"
+  },
+  "author": "OpenRemote",
+  "license": "AGPL-3.0-or-later",
+  "dependencies": {
+    "lit-element": "^2.1.0",
+    "@material/select": "^1.0.1",
+    "@material/list": "^1.0.1",
+    "@material/menu": "^1.0.1",
+    "@material/menu-surface": "^1.0.1"
+  },
+  "devDependencies": {
+    "@polymer/decorators": "^3.0.0",
+    "@polymer/iron-demo-helpers": "^3.0.0-pre.19",
+    "@webcomponents/webcomponentsjs": "^2.0.0",
+    "style-loader": "^0.23.1",
+    "tslint": "^5.11.0",
+    "typescript": "^3.2.2",
+    "wct-browser-legacy": "^1.0.0"
+  }
+}

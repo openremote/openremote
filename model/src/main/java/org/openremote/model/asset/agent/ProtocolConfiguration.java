@@ -21,6 +21,7 @@ package org.openremote.model.asset.agent;
 
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.asset.AssetAttribute;
+import org.openremote.model.asset.MetaItemType;
 import org.openremote.model.attribute.AttributeValueType;
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.util.TextUtil;
@@ -29,14 +30,14 @@ import org.openremote.model.value.Values;
 import java.util.Optional;
 import java.util.function.UnaryOperator;
 
-import static org.openremote.model.asset.AssetMeta.PROTOCOL_CONFIGURATION;
+import static org.openremote.model.asset.MetaItemType.PROTOCOL_CONFIGURATION;
 import static org.openremote.model.attribute.MetaItem.isMetaNameEqualTo;
 
 /**
  * Agent attributes can be named protocol configurations, defining a logical instance of a protocol.
  * <p>
  * A protocol configuration attribute must be marked
- * {@link org.openremote.model.asset.AssetMeta#PROTOCOL_CONFIGURATION} and its
+ * {@link MetaItemType#PROTOCOL_CONFIGURATION} and its
  * value must be valid RfC 2141 URN.
  * <p>
  * Protocol-specific settings and details are managed as {@link MetaItem} of the attribute.

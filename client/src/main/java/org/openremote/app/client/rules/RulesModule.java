@@ -41,7 +41,7 @@ public class RulesModule extends AbstractGinModule {
         return event -> {
             if (event.getSelectedNode() instanceof TenantTreeNode) {
                 environment.getPlaceController().goTo(
-                    new TenantRulesListPlace(event.getSelectedNode().getId())
+                    new TenantRulesListPlace(((TenantTreeNode) event.getSelectedNode()).getTenant().getRealm())
                 );
             } else if (event.getSelectedNode() instanceof AssetTreeNode) {
                 environment.getPlaceController().goTo(

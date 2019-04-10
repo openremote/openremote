@@ -18,6 +18,16 @@
 
     <custom-style>
         <style is="custom-style" include="demo-pages-shared-styles">
+            #vector {
+                --or-map-marker-width: 80px;
+                --or-map-marker-height: 80px;
+                --or-map-marker-transform: translate(-40px, -75px);
+                --or-map-marker-fill: blue;
+                --or-map-marker-icon-width: 38px;
+                --or-map-marker-icon-height: 38px;
+                --or-map-marker-icon-transform: translate(-50%, -31px);
+                --or-map-marker-icon-fill: red;
+            }
         </style>
     </custom-style>
 </head>
@@ -26,11 +36,11 @@
     <h3>Demo</h3>
     <demo-snippet>
         <template>
-            <or-map type="RASTER" style="height: 500px; width: 100%;">
-                <or-map-marker lat="51.4403423" lng="5.4679712" click-action="showCard" class="marker"></or-map-marker>
+            <or-map type="RASTER" center="5.454250, 51.445990" style="height: 500px; width: 100%;">
+                <or-map-marker lat="51.445990" lng="5.454250" class="marker" icon="or:logo-plain"></or-map-marker>
             </or-map>
-            <or-map style="height: 500px; width: 100%;">
-                <or-map-marker lat="51.4403423" lng="5.4679712" click-action="showCard" class="marker"></or-map-marker>
+            <or-map id="vector" center="5.454250, 51.445990" style="height: 500px; width: 100%;">
+                <or-map-marker lat="51.445990" lng="5.454250" class="marker" icon="or:logo-plain"></or-map-marker>
             </or-map>
         </template>
     </demo-snippet>

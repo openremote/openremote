@@ -1,116 +1,270 @@
-import {html, PolymerElement} from "@polymer/polymer";
-import {property, query, observe, customElement} from "@polymer/decorators";
-import {MapWidget} from "../mapwidget";
+import {css, customElement, LitElement, property, PropertyValues, query, html} from "lit-element";
+import {Type} from "../index";
+import {Marker as MarkerJS} from "mapbox.js";
+
+export enum OrMapMarkerEvent {
+    CLICKED = "or-map-marker-clicked",
+    CHANGED = "or-map-marker-changed"
+}
+
+declare global {
+    export interface HTMLElementEventMap {
+        [OrMapMarkerEvent.CHANGED]: OrMapMarkerChangedEvent;
+        [OrMapMarkerEvent.CLICKED]: OrMapMarkerClickedEvent;
+    }
+}
+
+export class OrMapMarkerChangedEvent extends CustomEvent<MarkerChangedEventDetail> {
+
+    constructor(marker: OrMapMarker, prop: string) {
+        super(OrMapMarkerEvent.CHANGED, {
+            detail: {
+                marker: marker,
+                property: prop
+            },
+            bubbles: true,
+            composed: true
+        });
+    }
+}
+
+export class OrMapMarkerClickedEvent extends CustomEvent<MarkerEventDetail> {
+
+    constructor(marker: OrMapMarker) {
+        super(OrMapMarkerEvent.CLICKED, {
+            detail: {
+                marker: marker
+            },
+            bubbles: true,
+            composed: true
+        });
+    }
+}
+
+export interface MarkerEventDetail {
+    marker: OrMapMarker;
+}
+
+export interface MarkerChangedEventDetail extends MarkerEventDetail {
+    property: string;
+}
+
+export const MarkerStyle = css`
+        .or-map-marker {
+            position: absolute; /* This makes mapboxJS behave like mapboxGL */
+        }
+        
+        .marker-container {
+            position: relative;
+            transform: var(--or-map-marker-transform, translate(-24px, -45px));
+            cursor: pointer;
+            --or-icon-width: var(--or-map-marker-width, 48px);
+            --or-icon-height: var(--or-map-marker-height, 48px);
+            --or-icon-fill-color: var(--or-map-marker-fill, #1D5632);
+        }
+        
+        .or-map-marker.interactive .marker-container {            
+            pointer-events: all;            
+        }
+        
+        .or-map-marker-default.interactive .marker-container {
+            pointer-events: none;
+            --or-icon-pointer-events: visible;
+        }
+                       
+        .or-map-marker .marker-icon {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            z-index: 1000;
+            --or-icon-fill-color: var(--or-map-marker-icon-fill, #FFF);
+            --or-icon-width: var(--or-map-marker-icon-width, 24px);
+            --or-icon-height: var(--or-map-marker-icon-height, 24px);
+            transform: var(--or-map-marker-icon-transform, translate(-50%, -19px));            
+        }
+`;
 
 /**
- * Base class for all map markers
+ * Base class for all map markers.
+ *
+ * This component doesn't directly render anything instead it generates DOM that can be added to the map component
  */
 @customElement("or-map-marker")
-export class OrMapMarker extends PolymerElement {
-    protected _added: boolean = false;
-    protected _attached: boolean = false;
+export class OrMapMarker extends LitElement {
+
+    protected static _defaultTemplate = (icon: string | undefined) => `
+        <or-icon icon="or:marker"></or-icon>
+        <or-icon class="marker-icon" icon="${icon || ""}"></or-icon>
+    `
 
     @property({type: Number})
-    lat: number = 0;
+    public lat: number = 0;
 
     @property({type: Number})
-    lng: number = 0;
+    public lng: number = 0;
 
     @property({type: Boolean})
-    visible: boolean = true;
+    public visible: boolean = true;
 
-    @property({type: Object})
-    _ele!: HTMLElement;
+    @property({type: String})
+    public icon?: string;
 
-    @property({type: Object})
-    map?: MapWidget;
+    @property({type: Boolean})
+    public interactive: boolean = true;
+
+    @property({type: Boolean})
+    active: boolean = false;
+
+    // This is the actual map marker element not the same element as returned from createMarkerElement when using raster map
+    public _actualMarkerElement?: HTMLDivElement;
 
     @query("slot")
-    _slot!: HTMLSlotElement;
+    protected _slot?: HTMLSlotElement;
 
-    static get template() {
+    public get markerContainer(): HTMLDivElement | undefined {
+        if (this._actualMarkerElement) {
+            return this._actualMarkerElement.firstElementChild as HTMLDivElement;
+        }
+    }
+
+    public _onClick(e: MouseEvent) {
+        this.dispatchEvent(new OrMapMarkerClickedEvent(this));
+    }
+
+    public _createMarkerElement(): HTMLDivElement {
+        const markerElem = document.createElement("div");
+        const markerContainerElem = document.createElement("div");
+        markerElem.appendChild(markerContainerElem);
+        this.addMarkerClassNames(markerElem);
+        this.addMarkerContainerClassNames(markerContainerElem);
+        let content = this.createMarkerContent();
+        if (!content) {
+            // Append default marker
+            markerElem.classList.add("or-map-marker-default");
+            content = this.createDefaultMarkerContent();
+        }
+        markerContainerElem.appendChild(content);
+        this.updateInteractive(markerElem);
+        this.updateVisibility(markerElem);
+        this.updateActive(markerElem);
+        return markerElem;
+    }
+
+    /**
+     * Override in sub types to customise the look of the marker. If undefined returned then a default marker will
+     * be used instead.
+     */
+    public createMarkerContent(): HTMLElement | undefined {
+
+        // Append child elements
+        let hasChildren = false;
+        let container = document.createElement("div");
+
+        if (this._slot) {
+            this._slot.assignedNodes({flatten: true}).forEach((child) => {
+                if (child instanceof HTMLElement) {
+                    container.appendChild(child.cloneNode(true));
+                    hasChildren = true;
+                }
+            });
+        }
+        
+        if (!hasChildren) {
+            return;
+        }
+
+        return container;
+    }
+
+    protected shouldUpdate(_changedProperties: PropertyValues): boolean {
+        if (_changedProperties.has("icon")) {
+            this.refreshMarkerContent();
+        }
+
+        if (_changedProperties.has("visible")) {
+            this.updateVisibility(this._actualMarkerElement);
+        }
+
+        if (_changedProperties.has("interactive")) {
+            this.updateInteractive(this._actualMarkerElement);
+        }
+
+        if (_changedProperties.has("active")) {
+            this.updateActive(this._actualMarkerElement);
+        }
+
+        _changedProperties.forEach((oldValue, prop) => this._raisePropertyChange(prop as string));
+        return false;
+    }
+
+    protected updateVisibility(container?: HTMLDivElement) {
+        if (container) {
+            if (this.visible) {
+                container.removeAttribute("hidden");
+            } else {
+                container.setAttribute("hidden", "true");
+            }
+        }
+    }
+
+    protected updateActive(container?: HTMLDivElement) {
+        if (container) {
+            if (this.active) {
+                container.classList.add("active");
+            } else {
+                container.classList.remove("active");
+            }
+        }
+    }
+
+    protected updateInteractive(container?: HTMLDivElement) {
+        if (container) {
+            if (this.interactive) {
+                container.classList.add("interactive");
+            } else {
+                container.classList.remove("interactive");
+            }
+        }
+    }
+
+    protected refreshMarkerContent() {
+        if (this.markerContainer) {
+            let content = this.createMarkerContent();
+            if (!content) {
+                // Append default marker
+                this._actualMarkerElement!.classList.add("or-map-marker-default");
+                content = this.createDefaultMarkerContent();
+            } else {
+                this._actualMarkerElement!.classList.remove("or-map-marker-default");
+            }
+            if (this.markerContainer.children.length > 0) {
+                this.markerContainer.removeChild(this.markerContainer.children[0]);
+            }
+            this.markerContainer.appendChild(content);
+        }
+    }
+
+    protected render() {
         return html`
-          <style>
-            :host {
-                display: block;
-                overflow: hidden;
-            }
-            #map {            
-                position: relative;
-                width: 100%;
-                height: 100%;
-            }
-            slot {
-                display: none;
-            }
-          </style>
           <slot></slot>
         `;
     }
 
-    connectedCallback() {
-        super.connectedCallback();
-        this._attached = true;
-        this._ele = this._createMarkerElement();
+    protected _raisePropertyChange(prop: string) {
+        this.dispatchEvent(new OrMapMarkerChangedEvent(this, prop));
     }
 
-    disconnectedCallback() {
-        super.disconnectedCallback();
-        this._removeMarker();
-        this._attached = false;
+    protected addMarkerClassNames(markerElement: HTMLElement) {
+        markerElement.classList.add("or-map-marker");
     }
 
-    @observe("visible", "lat", "lng", "map")
-    _updateMarker() {
-        if (!this._attached || !this.map) return;
-
-        if (!this._ele) {
-            this._ele = this._createMarkerElement();
-        }
-
-        if (!this._ele) {
-            return;
-        }
-
-        if (!this.visible) {
-            this._removeMarker();
-        } else {
-            this._addMarker();
-            this.map!.updateMarkerPosition(this);
-        }
+    protected addMarkerContainerClassNames(markerContainer: HTMLElement) {
+        markerContainer.classList.add("marker-container");
     }
 
-    _addMarker() {
-        if (!this._added) {
-            this.map!.addMarker(this);
-            this._added = true;
-        }
-    }
-
-    _removeMarker() {
-        if (this._added) {
-            this.map!.removeMarker(this);
-            this._added = false;
-        }
-    }
-
-    //TODO make this optional?
-    _onClick(e:any) {
-    }
-
-    _createMarkerElement(): HTMLElement {
-        let children = this._slot.assignedNodes({flatten:true});
-        let len = children.length;
-        let className = ("or-map-marker " + this.className).trim();
-        let ele = document.createElement("div");
-        ele.className = className;
-
-        if (len > 0) {
-            // if more than 1 ele put inside wrapper
-            for (var i=0; i<len; ++i) {
-                ele.appendChild(children[i]);
-            }
-        }
-        return ele;
+    protected createDefaultMarkerContent(): HTMLElement {
+        const div = document.createElement("div");
+        div.innerHTML = OrMapMarker._defaultTemplate(this.icon);
+        return div;
     }
 }

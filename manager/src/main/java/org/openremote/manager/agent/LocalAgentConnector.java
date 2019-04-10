@@ -55,7 +55,7 @@ public class LocalAgentConnector implements AgentConnector {
             .map(protocolConfigurationRef -> new Pair<>(protocolConfigurationRef, agentService.getProtocolConnectionStatus(protocolConfigurationRef)))
             .map(pair -> new AgentStatusEvent(
                 agentService.timerService.getCurrentTimeMillis(),
-                asset.getRealmId(),
+                asset.getRealm(),
                 pair.key,
                 pair.value)
             )

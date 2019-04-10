@@ -4,14 +4,15 @@
   "description": "Component Demo",
   "scripts": {
     "clean": "npx shx rm -rf dist",
-    "build": "npx tsc -b && npx cross-env NODE_ENV=production webpack",
-    "serve": "npx webpack-dev-server",
+    "build": "node ../../model-build.js && npx tsc -b && npx cross-env NODE_ENV=production webpack",
+    "serve": "node ../../model-build.js && npx tsc -b && npx webpack-dev-server",
+    "watch": "node ../../model-build.js && npx tsc -b -w",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
-    "@openremote/or-header": "^1.0.0",
+    "@openremote/or-header": "^1.0.2",
     "source-map-loader": "^0.2.4"
   },
   "devDependencies": {

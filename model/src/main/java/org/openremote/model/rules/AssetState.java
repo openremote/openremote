@@ -26,16 +26,13 @@ import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetType;
 import org.openremote.model.attribute.AttributeEvent;
-import org.openremote.model.attribute.AttributeValueType;
+import org.openremote.model.attribute.AttributeValueDescriptor;
 import org.openremote.model.attribute.Meta;
 import org.openremote.model.value.ArrayValue;
 import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.Values;
 
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.Date;
 import java.util.Objects;
 import java.util.Optional;
@@ -52,13 +49,11 @@ public class AssetState implements Comparable<AssetState> {
 
     final protected String attributeName;
 
-    final protected AttributeValueType attributeValueType;
+    final protected AttributeValueDescriptor attributeValueType;
 
     final protected Value value;
 
     final protected long timestamp;
-
-    final protected LocalDateTime time;
 
     final protected AttributeEvent.Source source;
 
@@ -86,9 +81,7 @@ public class AssetState implements Comparable<AssetState> {
 
     final protected AssetType parentType;
 
-    final protected String realmId;
-
-    final protected String tenantRealm;
+    final protected String realm;
 
     final protected Meta meta;
 
@@ -97,7 +90,6 @@ public class AssetState implements Comparable<AssetState> {
         this.attributeValueType = that.attributeValueType;
         this.value = that.value;
         this.timestamp = that.timestamp;
-        this.time = that.time;
         this.source = that.source;
         this.oldValue = that.oldValue;
         this.oldValueTimestamp = that.oldValueTimestamp;
@@ -111,8 +103,7 @@ public class AssetState implements Comparable<AssetState> {
         this.parentName = that.parentName;
         this.parentTypeString = that.parentTypeString;
         this.parentType = that.parentType;
-        this.realmId = that.realmId;
-        this.tenantRealm = that.tenantRealm;
+        this.realm = that.realm;
         this.meta = that.meta;
     }
 
@@ -121,7 +112,6 @@ public class AssetState implements Comparable<AssetState> {
         this.attributeValueType = attribute.getTypeOrThrow();
         this.value = attribute.getValue().orElse(null);
         this.timestamp = attribute.getValueTimestamp().orElse(-1L);
-        this.time = timestamp > 0 ? LocalDateTime.ofInstant(Instant.ofEpochMilli(timestamp), ZoneId.systemDefault()) : null;
         this.source = source;
         this.oldValue = asset.getAttribute(attributeName).flatMap(AbstractValueHolder::getValue).orElse(null);
         this.oldValueTimestamp = asset.getAttribute(attributeName).flatMap(AbstractValueTimestampHolder::getValueTimestamp).orElse(-1L);
@@ -135,8 +125,7 @@ public class AssetState implements Comparable<AssetState> {
         this.parentName = asset.getParentName();
         this.parentTypeString = asset.getParentType();
         this.parentType = asset.getParentWellKnownType();
-        this.realmId = asset.getRealmId();
-        this.tenantRealm = asset.getTenantRealm();
+        this.realm = asset.getRealm();
         this.meta = attribute.getMeta();
     }
 
@@ -144,7 +133,7 @@ public class AssetState implements Comparable<AssetState> {
         return attributeName;
     }
 
-    public AttributeValueType getAttributeValueType() {
+    public AttributeValueDescriptor getAttributeValueType() {
         return attributeValueType;
     }
 
@@ -154,10 +143,6 @@ public class AssetState implements Comparable<AssetState> {
 
     public long getTimestamp() {
         return timestamp;
-    }
-
-    public LocalDateTime getTime() {
-        return time;
     }
 
     public AttributeEvent.Source getSource() {
@@ -212,12 +197,8 @@ public class AssetState implements Comparable<AssetState> {
         return parentType;
     }
 
-    public String getRealmId() {
-        return realmId;
-    }
-
-    public String getTenantRealm() {
-        return tenantRealm;
+    public String getRealm() {
+        return realm;
     }
 
     public Meta getMeta() {
@@ -342,10 +323,9 @@ public class AssetState implements Comparable<AssetState> {
             ", parentName='" + getParentName() + '\'' +
             ", type='" + getType() + '\'' +
             ", attributeName='" + getAttributeName() + '\'' +
-            ", attributeValueType=" + getAttributeValueType() +
+            ", attributeValueDescriptor=" + getAttributeValueType() +
             ", value=" + (getValue().isPresent() ? getValue().get().toJson() : "null") + // TODO Performance?
             ", timestamp=" + getTimestamp() +
-            ", time=" + getTime() +
             ", oldValue=" + (getOldValue().isPresent() ? getOldValue().get().toJson() : "null") +
             ", oldValueTimestamp=" + getOldValueTimestamp() +
             ", source=" + getSource() +

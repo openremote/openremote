@@ -29,7 +29,6 @@ import org.openremote.model.asset.agent.ProtocolConfiguration;
 import org.openremote.model.asset.agent.ProtocolDescriptor;
 import org.openremote.model.attribute.*;
 import org.openremote.model.value.ArrayValue;
-import org.openremote.model.value.NumberValue;
 import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.ValueType;
 
@@ -65,8 +64,8 @@ import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
  * sensible logging to allow fault finding).
  * <h3>Connecting attributes to actuators and sensors</h3>
  * {@link AssetAttribute}s of {@link Asset}s can be linked to a protocol configuration
- * instance by creating an {@link AssetMeta#AGENT_LINK} {@link MetaItem} on an attribute.
- * Besides the {@link AssetMeta#AGENT_LINK}, other protocol-specific meta items may also be
+ * instance by creating an {@link MetaItemType#AGENT_LINK} {@link MetaItem} on an attribute.
+ * Besides the {@link MetaItemType#AGENT_LINK}, other protocol-specific meta items may also be
  * required when an asset attribute is linked to a protocol configuration instance.
  * Attributes linked to a protocol configuration instance will get passed to the protocol via
  * a call to {@link #linkAttributes}.
@@ -180,7 +179,7 @@ public interface Protocol extends ContainerService {
      * into an {@link ConnectionStatus#ERROR} state or to continue running (appropriate logging should
      * always be used).
      * <p>
-     * Attributes are linked to a protocol configuration via an {@link AssetMeta#AGENT_LINK} meta item.
+     * Attributes are linked to a protocol configuration via an {@link MetaItemType#AGENT_LINK} meta item.
      */
     void linkAttributes(Collection<AssetAttribute> attributes, AssetAttribute protocolConfiguration);
 

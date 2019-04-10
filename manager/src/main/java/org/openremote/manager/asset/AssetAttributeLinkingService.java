@@ -24,7 +24,7 @@ import org.openremote.container.ContainerService;
 import org.openremote.manager.asset.AssetProcessingException.Reason;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.asset.AssetMeta;
+import org.openremote.model.asset.MetaItemType;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.attribute.*;
 import org.openremote.model.attribute.AttributeEvent.Source;
@@ -43,10 +43,10 @@ import static org.openremote.model.attribute.AttributeEvent.Source.ATTRIBUTE_LIN
 import static org.openremote.model.attribute.MetaItem.isMetaNameEqualTo;
 
 /**
- * This service processes asset updates on attributes that have one or more {@link AssetMeta#ATTRIBUTE_LINK} meta items.
+ * This service processes asset updates on attributes that have one or more {@link MetaItemType#ATTRIBUTE_LINK} meta items.
  * <p>
  * If such an event occurs then the event is 'forwarded' to the linked attribute; an attribute can contain multiple
- * {@link AssetMeta#ATTRIBUTE_LINK} meta items; optionally the value forwarded to the linked attribute can be modified
+ * {@link MetaItemType#ATTRIBUTE_LINK} meta items; optionally the value forwarded to the linked attribute can be modified
  * by configuring the converter property in the meta item's value:
  * <p>
  * By default the exact value of the attribute is forwarded unless a key exists in the converter JSON Object that
@@ -57,7 +57,7 @@ import static org.openremote.model.attribute.MetaItem.isMetaNameEqualTo;
  * <p>
  * To convert null values the converter key of "NULL" can be used.
  * <p>
- * Example {@link AssetMeta#ATTRIBUTE_LINK} meta items:
+ * Example {@link MetaItemType#ATTRIBUTE_LINK} meta items:
  * <blockquote><pre>{@code
  * [
  * "name": "urn:openremote:asset:meta:attributeLink",
@@ -120,7 +120,7 @@ public class AssetAttributeLinkingService implements ContainerService, AssetUpda
         }
 
         attribute.getMetaStream()
-            .filter(isMetaNameEqualTo(AssetMeta.ATTRIBUTE_LINK))
+            .filter(isMetaNameEqualTo(MetaItemType.ATTRIBUTE_LINK))
             .forEach(metaItem -> processLinkedAttributeUpdate(em, metaItem, attribute.getState().orElse(null)));
 
         return false;

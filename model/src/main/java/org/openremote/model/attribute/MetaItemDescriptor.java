@@ -19,8 +19,8 @@
  */
 package org.openremote.model.attribute;
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.openremote.model.HasUniqueResourceName;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.value.Value;
@@ -30,8 +30,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 
-@JsonSerialize(as = MetaItemDescriptorImpl.class)
-@JsonDeserialize(as = MetaItemDescriptorImpl.class)
+@JsonFormat(shape = JsonFormat.Shape.OBJECT)
 public interface MetaItemDescriptor extends HasUniqueResourceName {
 
     /**
@@ -108,6 +107,7 @@ public interface MetaItemDescriptor extends HasUniqueResourceName {
         HTTP_URL
     }
 
+    @JsonProperty
     String name();
 
     String getUrn();

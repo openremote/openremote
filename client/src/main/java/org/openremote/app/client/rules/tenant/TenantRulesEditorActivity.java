@@ -46,7 +46,7 @@ public class TenantRulesEditorActivity
     final TenantResource tenantResource;
     final TenantRulesetMapper tenantRulesetMapper;
 
-    String realmId;
+    String realm;
 
     @Inject
     public TenantRulesEditorActivity(Environment environment,
@@ -64,7 +64,7 @@ public class TenantRulesEditorActivity
 
     @Override
     protected AppActivity<TenantRulesEditorPlace> init(TenantRulesEditorPlace place) {
-        realmId = place.getRealmId();
+        realm = place.getRealm();
         return super.init(place);
     }
 
@@ -74,7 +74,7 @@ public class TenantRulesEditorActivity
 
         environment.getApp().getRequests().sendAndReturn(
             tenantMapper,
-            params -> tenantResource.getForRealmId(params, realmId),
+            params -> tenantResource.get(params, realm),
             200,
             tenant -> {
                 view.setHeadline(tenant.getDisplayName(), environment.getMessages().editTenantRuleset());
@@ -84,7 +84,7 @@ public class TenantRulesEditorActivity
 
     @Override
     protected TenantRuleset newRuleset() {
-        return new TenantRuleset(realmId);
+        return new TenantRuleset(null, null, null, realm, false);
     }
 
     @Override
@@ -109,7 +109,7 @@ public class TenantRulesEditorActivity
 
     @Override
     protected void afterCreate() {
-        environment.getPlaceController().goTo(new TenantRulesListPlace(realmId));
+        environment.getPlaceController().goTo(new TenantRulesListPlace(realm));
     }
 
     @Override
@@ -119,7 +119,7 @@ public class TenantRulesEditorActivity
 
     @Override
     protected void afterUpdate() {
-        environment.getPlaceController().goTo(new TenantRulesEditorPlace(realmId, rulesetId));
+        environment.getPlaceController().goTo(new TenantRulesEditorPlace(realm, rulesetId));
     }
 
     @Override
@@ -129,11 +129,11 @@ public class TenantRulesEditorActivity
 
     @Override
     protected void afterDelete() {
-        environment.getPlaceController().goTo(new TenantRulesListPlace(realmId));
+        environment.getPlaceController().goTo(new TenantRulesListPlace(realm));
     }
 
     @Override
     public void cancel() {
-        environment.getPlaceController().goTo(new TenantRulesListPlace(realmId));
+        environment.getPlaceController().goTo(new TenantRulesListPlace(realm));
     }
 }

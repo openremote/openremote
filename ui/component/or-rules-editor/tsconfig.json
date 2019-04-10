@@ -1,0 +1,16 @@
+{
+  "extends": "../../tsconfig",
+  "compilerOptions": {
+    "outDir": "./dist/",
+    "rootDir": "src"
+  },
+  "include": [
+    "./src"
+  ],
+  "references": [
+    { "path": "../core" },
+    { "path": "../or-select" },
+    { "path": "../or-input" },
+    { "path": "../rest" }
+  ]
+}

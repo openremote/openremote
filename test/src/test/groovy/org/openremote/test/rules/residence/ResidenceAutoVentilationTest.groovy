@@ -38,10 +38,8 @@ class ResidenceAutoVentilationTest extends Specification implements ManagerConta
 
         and: "some rules"
         Ruleset ruleset = new AssetRuleset(
-                "Demo Apartment - Auto Ventilation",
-                managerDemoSetup.apartment1Id,
-                getClass().getResource("/demo/rules/DemoResidenceAutoVentilation.groovy").text,
-                Ruleset.Lang.GROOVY
+                "Demo Apartment - Auto Ventilation", Ruleset.Lang.GROOVY, getClass().getResource("/demo/rules/DemoResidenceAutoVentilation.groovy").text,
+                managerDemoSetup.apartment1Id, false
         )
         rulesetStorageService.merge(ruleset)
 

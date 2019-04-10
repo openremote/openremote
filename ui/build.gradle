@@ -1,10 +1,23 @@
+task deleteNodeModules {
+    doFirst {
+       delete "${project(':openremote').projectDir}/node_modules"
+    }
+}
+
+task clean {
+    if (isCustomProject() && parent == rootProject) {
+        dependsOn deleteNodeModules
+    }
+}
+
 task build {
-    // Add dependency to openremote ui build
+    dependsOn tasks.getByPath(":yarnInstall")
+
+    // Add dependency to openremote ui build for custom projects
+    // and also remove node_modules dir from openremote repo
     if (isCustomProject() && parent == rootProject) {
         dependsOn resolveTask(":ui:build")
     }
-    // Build components before anything else
-    dependsOn getTasksByName("build", true).findAll {it.path.contains(":ui:component")}
 }
 
 task installDist {

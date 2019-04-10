@@ -65,7 +65,7 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
         and: "a test client app"
         def testApp = new TestOpenRemoteApp(
                 keycloakProvider.getKeycloakDeployment(realm, KEYCLOAK_CLIENT_ID),
-                identityService.getIdentityProvider().getTenantForRealm(realm),
+                identityService.getIdentityProvider().getTenant(realm),
                 accessToken
         )
 
@@ -162,13 +162,13 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
             assert rowData[0] instanceof TenantTreeNode
             assert rowData[0].label == "Master"
             assert rowData[0].icon == "group"
-            assert rowData[0].tenant.id == keycloakDemoSetup.masterTenant.id
+            assert rowData[0].id == keycloakDemoSetup.masterTenant.realm
             assert rowData[1] instanceof TenantTreeNode
             assert rowData[1].label == "Tenant A"
-            assert rowData[1].tenant.id == keycloakDemoSetup.tenantA.id
+            assert rowData[1].id == keycloakDemoSetup.tenantA.realm
             assert rowData[2] instanceof TenantTreeNode
             assert rowData[2].label == "Tenant B"
-            assert rowData[2].tenant.id == keycloakDemoSetup.tenantB.id
+            assert rowData[2].id == keycloakDemoSetup.tenantB.realm
         }
         1 * treeDisplay.setRowCount(3, true)
 
@@ -196,7 +196,7 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
         conditions.eventually {
             assert collectedSharedEvents.size() == 1
             assert collectedSharedEvents[0] instanceof AssetTreeModifiedEvent
-            assert collectedSharedEvents[0].realmId == keycloakDemoSetup.masterTenant.id
+            assert collectedSharedEvents[0].realm == keycloakDemoSetup.masterTenant.realm
             assert collectedSharedEvents[0].assetId == managerDemoSetup.smartOfficeId
         }
 
@@ -214,14 +214,14 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
             // The inserted new asset
             assert collectedSharedEvents.any {
                 (it instanceof AssetTreeModifiedEvent
-                        && it.realmId == keycloakDemoSetup.masterTenant.id
+                        && it.realm == keycloakDemoSetup.masterTenant.realm
                         && it.assetId == asset.id
                         && !it.newAssetChildren)
             }
             // The parent which has a new child asset
             assert collectedSharedEvents.any {
                 (it instanceof AssetTreeModifiedEvent
-                        && it.realmId == keycloakDemoSetup.masterTenant.id
+                        && it.realm == keycloakDemoSetup.masterTenant.realm
                         && it.assetId == managerDemoSetup.smartOfficeId
                         && it.newAssetChildren)
             }
@@ -263,7 +263,7 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
         and: "a test client app"
         def testApp = new TestOpenRemoteApp(
                 keycloakProvider.getKeycloakDeployment(realm, KEYCLOAK_CLIENT_ID),
-                identityService.getIdentityProvider().getTenantForRealm(realm),
+                identityService.getIdentityProvider().getTenant(realm),
                 accessToken
         )
 
@@ -389,7 +389,7 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
         conditions.eventually {
             assert collectedSharedEvents.size() == 1
             assert collectedSharedEvents[0] instanceof AssetTreeModifiedEvent
-            assert collectedSharedEvents[0].realmId == keycloakDemoSetup.masterTenant.id
+            assert collectedSharedEvents[0].realm == keycloakDemoSetup.masterTenant.realm
             assert collectedSharedEvents[0].assetId == managerDemoSetup.groundFloorId
         }
 
@@ -400,7 +400,7 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
         collectedSharedEvents.clear()
         clientEventService.subscribe(
                 AssetTreeModifiedEvent.class,
-                new TenantFilter(keycloakDemoSetup.tenantA.id)
+                new TenantFilter(keycloakDemoSetup.tenantA.realm)
         )
 
         then: "the server should return a failure"
@@ -441,7 +441,7 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
         and: "a test client app"
         def testApp = new TestOpenRemoteApp(
                 keycloakProvider.getKeycloakDeployment(realm, KEYCLOAK_CLIENT_ID),
-                identityService.getIdentityProvider().getTenantForRealm(realm),
+                identityService.getIdentityProvider().getTenant(realm),
                 accessToken
         )
 

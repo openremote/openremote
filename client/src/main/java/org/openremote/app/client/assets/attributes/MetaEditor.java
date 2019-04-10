@@ -25,7 +25,7 @@ import org.openremote.app.client.widget.*;
 import org.openremote.app.client.Environment;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.asset.AssetMeta;
+import org.openremote.model.asset.MetaItemType;
 import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.asset.agent.ProtocolDescriptor;
 import org.openremote.model.attribute.AttributeValidationResult;
@@ -67,7 +67,7 @@ public class MetaEditor extends AbstractAttributeViewExtension {
 
             // Don't show protocol configuration item in main section
             if (!newItem && item.getName()
-                .map(name -> AssetMeta.PROTOCOL_CONFIGURATION.getUrn().equals(name))
+                .map(name -> MetaItemType.PROTOCOL_CONFIGURATION.getUrn().equals(name))
                 .orElse(false)) {
                 setVisible(false);
             }
@@ -276,7 +276,7 @@ public class MetaEditor extends AbstractAttributeViewExtension {
         this.attribute = attribute;
         this.style = style;
         this.protocolDescriptorSupplier = protocolDescriptorSupplier;
-        isProtocolConfiguration = attribute.hasMetaItem(AssetMeta.PROTOCOL_CONFIGURATION);
+        isProtocolConfiguration = attribute.hasMetaItem(MetaItemType.PROTOCOL_CONFIGURATION);
 
         refreshMetaItemDescriptors();
 
@@ -316,14 +316,14 @@ public class MetaEditor extends AbstractAttributeViewExtension {
             }
         }
 
-        metaItemDescriptors.addAll(Arrays.asList(AssetMeta.values())); // TODO Get meta item descriptors from server
+        metaItemDescriptors.addAll(Arrays.asList(MetaItemType.values())); // TODO Get meta item descriptors from server
 
         this.metaItemDescriptors = metaItemDescriptors.stream()
             .filter(metaItemDescriptor -> {
                 // Always auto add protocol configuration using protocol from attribute drop down (don't allow manual add)
                 // Agent link shouldn't be allowed on protocol configurations
-                return metaItemDescriptor != AssetMeta.PROTOCOL_CONFIGURATION &&
-                    (!isProtocolConfiguration || metaItemDescriptor != AssetMeta.AGENT_LINK);
+                return metaItemDescriptor != MetaItemType.PROTOCOL_CONFIGURATION &&
+                    (!isProtocolConfiguration || metaItemDescriptor != MetaItemType.AGENT_LINK);
             })
             .sorted(Comparator.comparing(metaItemDescriptor -> getMetaItemDisplayName(environment, metaItemDescriptor.name())))
             .toArray(MetaItemDescriptor[]::new);
@@ -401,7 +401,7 @@ public class MetaEditor extends AbstractAttributeViewExtension {
             itemEditor.item.clearValue();
 
             // TODO Should use meta item descriptors from server
-            Value initialValue = Arrays.stream(AssetMeta.values())
+            Value initialValue = Arrays.stream(MetaItemType.values())
                 .filter(assetMeta -> assetMeta.getUrn().equals(itemEditor.nameList.getSelectedValue()))
                 .findFirst()
                 .map(MetaItemDescriptor::getInitialValue)

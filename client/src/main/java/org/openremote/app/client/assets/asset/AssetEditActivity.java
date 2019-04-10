@@ -61,6 +61,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static org.openremote.model.asset.AssetAttribute.attributesFromJson;
+import static org.openremote.model.asset.AssetType.CUSTOM;
 import static org.openremote.model.attribute.Attribute.ATTRIBUTE_NAME_VALIDATOR;
 import static org.openremote.model.attribute.Attribute.isAttributeNameEqualTo;
 import static org.openremote.model.attribute.MetaItem.isMetaNameEqualTo;
@@ -83,7 +84,7 @@ public class AssetEditActivity
     protected final AssetAttributeMapper assetAttributeMapper;
     protected final Consumer<ConstraintViolation[]> validationErrorHandler;
     protected List<ProtocolDescriptor> protocolDescriptors = new ArrayList<>();
-    protected List<MetaItemDescriptor> metaItemDescriptors = new ArrayList<>(Arrays.asList(AssetMeta.values())); // TODO Get meta item descriptors from server
+    protected List<MetaItemDescriptor> metaItemDescriptors = new ArrayList<>(Arrays.asList(MetaItemType.values())); // TODO Get meta item descriptors from server
     protected GeoJSONPoint selectedCoordinates;
     protected List<AssetAttribute> initialAssetAttributes;
 
@@ -151,8 +152,7 @@ public class AssetEditActivity
             assetBrowserPresenter.clearSelection();
             asset = new Asset();
             asset.setName("My New Asset");
-            asset.setRealmId(environment.getApp().getTenant().getId());
-            asset.setTenantDisplayName(environment.getApp().getTenant().getDisplayName());
+            asset.setRealm(environment.getApp().getTenant().getId());
             asset.setType(AssetType.THING);
         }
 
@@ -169,8 +169,7 @@ public class AssetEditActivity
     @Override
     public void onParentSelection(BrowserTreeNode treeNode) {
         if (treeNode instanceof TenantTreeNode) {
-            asset.setRealmId(treeNode.getId());
-            asset.setTenantDisplayName(treeNode.getLabel());
+            asset.setRealm(treeNode.getId());
             parentAsset = null;
         } else if (treeNode instanceof AssetTreeNode) {
             assetBrowserPresenter.loadAsset(treeNode.getId(), loadedAsset -> {
@@ -203,7 +202,7 @@ public class AssetEditActivity
     }
 
     @Override
-    public void onAssetTypeSelected(AssetTypeDescriptor type) {
+    public void onAssetTypeSelected(AssetDescriptor type) {
         asset.setType(type);
         writeAttributeTypesToView(this::writeAttributesToView);
     }
@@ -244,7 +243,7 @@ public class AssetEditActivity
 
             attribute = new AssetAttribute();
             attribute.setType(attributeValueType);
-            attribute.addMeta(attributeValueType.getDefaultMetaItems());
+            attributeValueType.getMetaItemDescriptors().ifPresent(attribute::addMeta);
         }
 
         attribute.setName(name);
@@ -359,12 +358,12 @@ public class AssetEditActivity
 
             // Retrieve agents in the same realm as the asset (if it has been assigned a realm otherwise
             // the query will be automatically restricted to the logged in users realm)
-            if (!isNullOrEmpty(asset.getRealmId())) {
-                query.tenant(new TenantPredicate(asset.getRealmId()));
+            if (!isNullOrEmpty(asset.getRealm())) {
+                query.tenant(new TenantPredicate(asset.getRealm()));
             }
 
             // Agents must have protocol configurations
-            query.attributeMeta(new AttributeMetaPredicate(AssetMeta.PROTOCOL_CONFIGURATION, new BooleanPredicate(true)));
+            query.attributeMeta(new AttributeMetaPredicate(MetaItemType.PROTOCOL_CONFIGURATION, new BooleanPredicate(true)));
 
             // Only show protocol configurations
             attributeFilter = ProtocolConfiguration::isProtocolConfiguration;
@@ -374,8 +373,8 @@ public class AssetEditActivity
 
             // Limit to assets that have the same realm as the asset being edited (if it has been assigned a realm
             // otherwise the query will be automatically restricted to the logged in users realm)
-            if (!isNullOrEmpty(asset.getRealmId())) {
-                query.tenant(new TenantPredicate(asset.getRealmId()));
+            if (!isNullOrEmpty(asset.getRealm())) {
+                query.tenant(new TenantPredicate(asset.getRealm()));
             }
         }
 
@@ -416,7 +415,7 @@ public class AssetEditActivity
         switch (valueType) {
             case ARRAY:
                 if (valueHolder instanceof MetaItem) {
-                    if (isMetaNameEqualTo((MetaItem) valueHolder, AssetMeta.AGENT_LINK)) {
+                    if (isMetaNameEqualTo((MetaItem) valueHolder, MetaItemType.AGENT_LINK)) {
                         boolean isReadOnly = isValueReadOnly(valueHolder);
                         String assetWatermark = environment.getMessages().selectAgent();
                         String attributeWatermark = environment.getMessages().selectProtocolConfiguration();
@@ -434,7 +433,7 @@ public class AssetEditActivity
                 break;
             case OBJECT:
                 if (valueHolder instanceof MetaItem) {
-                    if (isMetaNameEqualTo((MetaItem) valueHolder, AssetMeta.ATTRIBUTE_LINK)) {
+                    if (isMetaNameEqualTo((MetaItem) valueHolder, MetaItemType.ATTRIBUTE_LINK)) {
                         boolean isReadOnly = isValueReadOnly(valueHolder);
                         String assetWatermark = environment.getMessages().selectAsset();
                         String attributeWatermark = environment.getMessages().selectAttribute();
@@ -572,7 +571,14 @@ public class AssetEditActivity
     protected void writeAttributeTypesToView(Runnable onComplete) {
         view.selectWellKnownType(asset.getWellKnownType());
         //TODO replace with AssetModel getValuesSorted, through a http request
-        view.setAvailableWellKnownTypes(AssetType.valuesSorted());
+        List<AssetDescriptor> list = new ArrayList<>(Arrays.asList(AssetType.values()));
+        list.sort(Comparator.comparing(AssetDescriptor::getName));
+        if (list.contains(CUSTOM)) {
+            // CUSTOM should be first
+            list.remove(CUSTOM);
+            list.add(0, CUSTOM);
+        }
+        view.setAvailableWellKnownTypes(list.toArray(new AssetDescriptor[list.size()]));
         view.setType(asset.getType());
         view.setTypeEditable(isNullOrEmpty(assetId));
 
@@ -652,13 +658,12 @@ public class AssetEditActivity
     protected void readFromView() {
         asset.setName(view.getName());
         if (parentAsset != null) {
-            asset.setRealmId(parentAsset.getRealmId());
-            asset.setTenantDisplayName(parentAsset.getTenantDisplayName());
+            asset.setRealm(parentAsset.getRealm());
             asset.setParentId(parentAsset.getId());
         } else {
             asset.setParentId(null);
         }
-        if (AssetType.CUSTOM.equals(asset.getWellKnownType())) {
+        if (CUSTOM.equals(asset.getWellKnownType())) {
             asset.setType(view.getType());
         }
         if (selectedCoordinates != null) {
@@ -677,7 +682,14 @@ public class AssetEditActivity
     }
 
     protected void doProtocolDiscovery(ProtocolDiscoveryView.DiscoveryRequest request, Runnable callback) {
-        showInfo(environment.getMessages().protocolLinkDiscoveryStarted());
+
+        final boolean isImport = request.getFileInfo() != null;
+
+        if (isImport) {
+            showInfo(environment.getMessages().protocolLinkImportStarted());
+        } else {
+            showInfo(environment.getMessages().protocolLinkDiscoveryStarted());
+        }
 
         environment.getApp().getRequests().sendWithAndReturn(
             assetArrayMapper,
@@ -688,7 +700,7 @@ public class AssetEditActivity
                         requestParams, assetId,
                         request.getProtocolConfigurationName(),
                         request.getParentId(),
-                        request.getRealmId(),
+                        request.getRealm(),
                         request.getFileInfo()
                     );
                 } else {
@@ -696,7 +708,7 @@ public class AssetEditActivity
                         requestParams, assetId,
                         request.getProtocolConfigurationName(),
                         request.getParentId(),
-                        request.getRealmId()
+                        request.getRealm()
                     );
                 }
             },
@@ -705,7 +717,11 @@ public class AssetEditActivity
                 updateMetaItemDescriptors();
                 view.setFormBusy(false);
                 view.setAvailableAttributeTypes(attributeTypesToList());
-                showSuccess(environment.getMessages().protocolLinkDiscoverySuccess(discoveredAssets.length));
+                if (isImport) {
+                    showSuccess(environment.getMessages().protocolLinkImportSuccess(discoveredAssets.length));
+                } else {
+                    showSuccess(environment.getMessages().protocolLinkDiscoverySuccess(discoveredAssets.length));
+                }
                 callback.run();
             }
         );

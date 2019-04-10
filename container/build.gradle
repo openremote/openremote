@@ -17,6 +17,7 @@ dependencies {
     compile "com.devskiller.friendly-id:friendly-id:$friendlyIdVersion"
 
     compile "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider:$jacksonVersion"
+    compile "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:$jacksonVersion"
 
     compile "io.undertow:undertow-servlet:$undertowVersion"
     compile "io.undertow:undertow-websockets-jsr:$undertowVersion"

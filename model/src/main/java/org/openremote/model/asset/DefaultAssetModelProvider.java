@@ -19,9 +19,7 @@
  */
 package org.openremote.model.asset;
 
-import org.openremote.model.attribute.AttributeDescriptor;
-import org.openremote.model.attribute.AttributeType;
-import org.openremote.model.attribute.MetaItemDescriptor;
+import org.openremote.model.attribute.*;
 
 /**
  * The built-in and well-known asset model.
@@ -30,17 +28,22 @@ public class DefaultAssetModelProvider implements AssetModelProvider {
 
     @Override
     public MetaItemDescriptor[] getMetaItemDescriptors() {
-        return AssetMeta.values();
+        return MetaItemType.values();
     }
 
     @Override
-    public AssetTypeDescriptor[] getAssetTypeDescriptors() {
+    public AssetDescriptor[] getAssetDescriptors() {
         return AssetType.values();
     }
 
     @Override
-    public AttributeDescriptor[] getAttributeDescriptors() {
+    public AttributeDescriptor[] getAttributeTypeDescriptors() {
         return AttributeType.values();
+    }
+
+    @Override
+    public AttributeValueDescriptor[] getAttributeValueDescriptors() {
+        return AttributeValueType.values();
     }
 
     @Override

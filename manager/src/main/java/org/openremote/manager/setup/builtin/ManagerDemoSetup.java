@@ -24,7 +24,10 @@ import org.openremote.agent.protocol.simulator.SimulatorProtocol;
 import org.openremote.container.Container;
 import org.openremote.manager.security.UserConfiguration;
 import org.openremote.manager.setup.AbstractManagerSetup;
-import org.openremote.model.asset.*;
+import org.openremote.model.asset.Asset;
+import org.openremote.model.asset.AssetAttribute;
+import org.openremote.model.asset.MetaItemType;
+import org.openremote.model.asset.UserAsset;
 import org.openremote.model.attribute.*;
 import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.rules.AssetRuleset;
@@ -41,7 +44,7 @@ import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.openremote.model.asset.AssetMeta.*;
+import static org.openremote.model.asset.MetaItemType.*;
 import static org.openremote.model.asset.AssetType.*;
 import static org.openremote.model.asset.agent.ProtocolConfiguration.initProtocolConfiguration;
 import static org.openremote.model.attribute.AttributeValueType.*;
@@ -51,7 +54,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
 
     // Update these numbers whenever you change a RULE_STATE flag in test data
     public static final int DEMO_RULE_STATES_APARTMENT_1 = 44;
-    public static final int DEMO_RULE_STATES_APARTMENT_2 = 11;
+    public static final int DEMO_RULE_STATES_APARTMENT_2 = 13;
     public static final int DEMO_RULE_STATES_APARTMENT_3 = 0;
     public static final int DEMO_RULE_STATES_SMART_OFFICE = 1;
     public static final int DEMO_RULE_STATES_SMART_BUILDING = DEMO_RULE_STATES_APARTMENT_1 + DEMO_RULE_STATES_APARTMENT_2 + DEMO_RULE_STATES_APARTMENT_3;
@@ -86,9 +89,9 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
     public String apartment2LivingroomId;
     public String apartment2BathroomId;
     public String apartment3LivingroomId;
-    public String masterRealmId;
-    public String realmATenantId;
-    public String realmBTenantId;
+    public String masterRealm;
+    public String realmATenant;
+    public String realmBTenant;
     public String smartCityServiceAgentId;
 
 
@@ -105,16 +108,16 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         Tenant masterTenant = keycloakDemoSetup.masterTenant;
         Tenant realmATenant = keycloakDemoSetup.tenantA;
         Tenant realmBTenant = keycloakDemoSetup.tenantB;
-        masterRealmId = masterTenant.getId();
-        realmATenantId = realmATenant.getId();
-        realmBTenantId = realmBTenant.getId();
+        masterRealm = masterTenant.getRealm();
+        this.realmATenant = realmATenant.getRealm();
+        this.realmBTenant = realmBTenant.getRealm();
 
         // ################################ Demo assets for 'master' realm ###################################
 
         ObjectValue locationValue = SMART_OFFICE_LOCATION.toValue();
 
         Asset smartOffice = new Asset();
-        smartOffice.setRealmId(masterRealmId);
+        smartOffice.setRealm(masterRealm);
         smartOffice.setName("Smart Office");
         smartOffice.setType(BUILDING);
         List<AssetAttribute> smartOfficeAttributes = Arrays.asList(
@@ -380,7 +383,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         ObjectValue locationValueA = SMART_BUILDING_LOCATION.toValue();
 
         Asset smartBuilding = new Asset();
-        smartBuilding.setRealmId(realmATenantId);
+        smartBuilding.setRealm(this.realmATenant);
         smartBuilding.setName("Smart Building");
         smartBuilding.setType(BUILDING);
         smartBuilding.addAttributes(
@@ -488,7 +491,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                 switch (attributeIndex) {
                     case 2:
                         return new MetaItem[]{
-                            new MetaItem(AssetMeta.AGENT_LINK,
+                            new MetaItem(MetaItemType.AGENT_LINK,
                                          new AttributeRef(apartment1ServiceAgentId,
                                                           "apartmentSimulator").toArrayValue()),
                             new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT,
@@ -496,7 +499,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                         };
                     case 3:
                         return new MetaItem[]{
-                            new MetaItem(AssetMeta.AGENT_LINK,
+                            new MetaItem(MetaItemType.AGENT_LINK,
                                          new AttributeRef(apartment1ServiceAgentId,
                                                           "apartmentSimulator").toArrayValue()),
                             new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT,
@@ -504,7 +507,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                         };
                     case 4:
                         return new MetaItem[]{
-                            new MetaItem(AssetMeta.AGENT_LINK,
+                            new MetaItem(MetaItemType.AGENT_LINK,
                                          new AttributeRef(apartment1ServiceAgentId,
                                                           "apartmentSimulator").toArrayValue()),
                             new MetaItem(SimulatorProtocol.SIMULATOR_ELEMENT,
@@ -663,6 +666,16 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
             new AssetAttribute("windowOpen", AttributeValueType.BOOLEAN, Values.create(false))
                 .setMeta(
                     new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true))
+                ),
+            new AssetAttribute("lightSwitchTriggerTimes", ARRAY, Values.createArray().add(Values.create("1800")).add(Values.create("0830")))
+                .setMeta(
+                    new MetaItem(LABEL, Values.create("Lightswitch Trigger Times")),
+                    new MetaItem(RULE_STATE, Values.create(true))
+                ),
+            new AssetAttribute("plantsWaterLevels", OBJECT, Values.createObject().put("cactus", 0.8))
+                .setMeta(
+                    new MetaItem(LABEL, Values.create("Water levels of the plants")),
+                    new MetaItem(RULE_STATE, Values.create(true))
                 )
         );
         apartment2Livingroom = assetStorageService.merge(apartment2Livingroom);
@@ -721,27 +734,43 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
 
         // ################################ Link demo users and assets ###################################
 
-        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.tenantA.getId(),
+        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.tenantA.getRealm(),
                                                          keycloakDemoSetup.testuser3Id,
                                                          apartment1Id));
-        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.tenantA.getId(),
+        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.tenantA.getRealm(),
                                                          keycloakDemoSetup.testuser3Id,
                                                          apartment1LivingroomId));
-        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.tenantA.getId(),
+        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.tenantA.getRealm(),
                                                          keycloakDemoSetup.testuser3Id,
                                                          apartment1KitchenId));
-        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.tenantA.getId(),
+        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.tenantA.getRealm(),
                                                          keycloakDemoSetup.testuser3Id,
                                                          apartment1Bedroom1Id));
-        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.tenantA.getId(),
+        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.tenantA.getRealm(),
                                                          keycloakDemoSetup.testuser3Id,
                                                          apartment1BathroomId));
-        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.tenantA.getId(),
+        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.tenantA.getRealm(),
                                                          keycloakDemoSetup.testuser3Id,
                                                          apartment1HallwayId));
-//        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.tenantA.getId(),
-//                                                         keycloakDemoSetup.testuser2Id,
-//                                                         apartment2Id));
+
+        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.tenantA.getRealm(),
+                keycloakDemoSetup.buildingUserId,
+                apartment1Id));
+        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.tenantA.getRealm(),
+                keycloakDemoSetup.buildingUserId,
+                apartment1LivingroomId));
+        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.tenantA.getRealm(),
+                keycloakDemoSetup.buildingUserId,
+                apartment1KitchenId));
+        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.tenantA.getRealm(),
+                keycloakDemoSetup.buildingUserId,
+                apartment1Bedroom1Id));
+        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.tenantA.getRealm(),
+                keycloakDemoSetup.buildingUserId,
+                apartment1BathroomId));
+        assetStorageService.storeUserAsset(new UserAsset(keycloakDemoSetup.tenantA.getRealm(),
+                keycloakDemoSetup.buildingUserId,
+                apartment1HallwayId));
 
         // ################################ Make users restricted ###################################
 
@@ -749,13 +778,16 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         testuser3Config.setRestricted(true);
         testuser3Config = identityService.mergeUserConfiguration(testuser3Config);
 
+        UserConfiguration buildingUserConfig = identityService.getUserConfiguration(keycloakDemoSetup.buildingUserId);
+        testuser3Config.setRestricted(true);
+        buildingUserConfig = identityService.mergeUserConfiguration(buildingUserConfig);
+
         // ################################ Realm B ###################################
 
         ObjectValue locationValueB = SMART_CITY_LOCATION.toValue();
 
-
         Asset smartCity = new Asset();
-        smartCity.setRealmId(realmBTenantId);
+        smartCity.setRealm(this.realmBTenant);
         smartCity.setName("Smart City");
         smartCity.setType(BUILDING);
         smartCity.addAttributes(
@@ -843,9 +875,9 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
 
         AssetRuleset camera3Rules = new AssetRuleset(
             "Camera3_Rules",
-            camera3Asset.getId(),
-            IOUtils.toString(getClass().getResource("/demo/rules/DemoSmartCityCamera.groovy"), "UTF-8"),
-            GROOVY);
+                GROOVY, IOUtils.toString(getClass().getResource("/demo/rules/DemoSmartCityCamera.groovy"), "UTF-8"), camera3Asset.getId(),
+                false
+        );
         camera3Rules = rulesetStorageService.merge(camera3Rules);
 
         Asset light3Asset = createDemoLightAsset("Light3", assetArea3);

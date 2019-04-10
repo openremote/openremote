@@ -42,6 +42,22 @@ public class MetaItemDescriptorImpl implements MetaItemDescriptor {
     protected final boolean valueFixed;
     protected final String patternFailureMessage;
 
+    public MetaItemDescriptorImpl(MetaItemDescriptor metaItemDescriptor) {
+        this(metaItemDescriptor, metaItemDescriptor.getInitialValue());
+    }
+
+    public MetaItemDescriptorImpl(MetaItemDescriptor metaItemDescriptor, Value initialValue) {
+        this(metaItemDescriptor.name(),
+                metaItemDescriptor.getUrn(),
+                metaItemDescriptor.getValueType(),
+                metaItemDescriptor.isRequired(),
+                metaItemDescriptor.getPattern(),
+                metaItemDescriptor.getPatternFailureMessage(),
+                metaItemDescriptor.getMaxPerAttribute(),
+                initialValue,
+                metaItemDescriptor.isValueFixed());
+    }
+
     public MetaItemDescriptorImpl(String name,
                                   String urn,
                                   ValueType valueType,
@@ -51,7 +67,7 @@ public class MetaItemDescriptorImpl implements MetaItemDescriptor {
                                   Integer maxPerAttribute,
                                   Value initialValue,
                                   boolean valueFixed) {
-        this(name, urn, valueType, Access.ACCESS_PRIVATE,required, pattern, patternFailureMessage, maxPerAttribute, initialValue, valueFixed);
+        this(name, urn, valueType, Access.ACCESS_PRIVATE, required, pattern, patternFailureMessage, maxPerAttribute, initialValue, valueFixed);
     }
 
     @JsonCreator
@@ -136,16 +152,16 @@ public class MetaItemDescriptorImpl implements MetaItemDescriptor {
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
-            "name='" + name + '\'' +
-            ", urn='" + urn + '\'' +
-            ", valueType=" + valueType +
-            ", access=" + access +
-            ", required=" + required +
-            ", pattern='" + pattern + '\'' +
-            ", maxPerAttribute=" + maxPerAttribute +
-            ", initialValue=" + initialValue +
-            ", valueFixed=" + valueFixed +
-            ", patternFailureMessage='" + patternFailureMessage + '\'' +
-            '}';
+                "name='" + name + '\'' +
+                ", urn='" + urn + '\'' +
+                ", valueType=" + valueType +
+                ", access=" + access +
+                ", required=" + required +
+                ", pattern='" + pattern + '\'' +
+                ", maxPerAttribute=" + maxPerAttribute +
+                ", initialValue=" + initialValue +
+                ", valueFixed=" + valueFixed +
+                ", patternFailureMessage='" + patternFailureMessage + '\'' +
+                '}';
     }
 }

@@ -21,7 +21,7 @@ package org.openremote.agent.protocol.timer;
 
 import org.openremote.agent.protocol.AbstractProtocol;
 import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.asset.AssetMeta;
+import org.openremote.model.asset.MetaItemType;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.attribute.*;
 import org.openremote.model.util.TextUtil;
@@ -50,7 +50,7 @@ import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
  * </ul>
  * <p>
  * {@link AssetAttribute}s can be linked to time triggers to read/write the trigger time and/or enable/disable the
- * trigger. A linked attribute must have a valid {@link AssetMeta#AGENT_LINK} Meta Item and
+ * trigger. A linked attribute must have a valid {@link MetaItemType#AGENT_LINK} Meta Item and
  * also a {@link #META_TIMER_VALUE_LINK} Meta Item to indicate what value of timer to link to {@link TimerValue}
  */
 public class TimerProtocol extends AbstractProtocol {

@@ -517,7 +517,7 @@ public class ControllerProtocol extends AbstractProtocol {
      */
     private void updateAttributeValue(AttributeRef attributeRef, String value) {
         LOG.fine("### Updating attribute " + attributeRef + " with value " + value);
-        AttributeValueType attributeType = this.linkedAttributes.get(attributeRef).getTypeOrThrow();
+        AttributeValueDescriptor attributeType = this.linkedAttributes.get(attributeRef).getTypeOrThrow();
 
         ValueType valueType = attributeType.getValueType();
         try {

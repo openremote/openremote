@@ -3,6 +3,10 @@
   "workspaces": [
     "ui/app/*",
     "ui/component/*",
-    "ui/demo/*"
-  ]
+    "ui/demo/*",
+    "client/src/main/webapp"
+  ],
+  "resolutions": {
+    "growl": "^1.10.5"
+  }
 }

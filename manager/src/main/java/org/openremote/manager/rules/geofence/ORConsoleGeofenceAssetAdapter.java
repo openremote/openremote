@@ -21,8 +21,6 @@ package org.openremote.manager.rules.geofence;
 
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.Container;
-import org.openremote.container.ContainerService;
-import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.message.MessageBrokerSetupService;
 import org.openremote.container.persistence.PersistenceEvent;
 import org.openremote.manager.asset.AssetStorageService;
@@ -114,7 +112,7 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
                     new ObjectValueKeyPredicate("geofence")))
             .stream()
             .filter(ORConsoleGeofenceAssetAdapter::isLinkedToORConsoleGeofenceAdapter)
-            .forEach(asset -> consoleIdRealmMap.put(asset.getId(), asset.getTenantRealm()));
+            .forEach(asset -> consoleIdRealmMap.put(asset.getId(), asset.getRealm()));
     }
 
     @Override
@@ -290,8 +288,7 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
                 case UPDATE:
 
                     if (isLinkedToORConsoleGeofenceAdapter(asset)) {
-                        String realm = TextUtil.isNullOrEmpty(asset.getTenantRealm()) ? identityService.getIdentityProvider().getTenantForRealmId(asset.getRealmId()).getRealm() : asset.getTenantRealm();
-                        consoleIdRealmMap.put(asset.getId(), realm);
+                        consoleIdRealmMap.put(asset.getId(), asset.getRealm());
                     } else {
                         consoleIdRealmMap.remove(asset.getId());
                     }

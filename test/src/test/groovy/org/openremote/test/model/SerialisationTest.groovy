@@ -24,7 +24,7 @@ import org.openremote.container.Container
 import org.openremote.model.ValidationFailure
 import org.openremote.model.ValueHolder
 import org.openremote.model.asset.AssetAttribute
-import org.openremote.model.asset.AssetMeta
+import org.openremote.model.asset.MetaItemType
 import org.openremote.model.asset.agent.ProtocolConfiguration
 import org.openremote.model.attribute.AttributeValidationResult
 import org.openremote.model.attribute.MetaItem
@@ -38,8 +38,8 @@ class SerialisationTest extends Specification {
         AssetAttribute attribute = new AssetAttribute("testAttribute")
         ProtocolConfiguration.initProtocolConfiguration(attribute, SimulatorProtocol.PROTOCOL_NAME)
         attribute.addMeta(
-            new MetaItem(AssetMeta.READ_ONLY, Values.create(true)),
-            new MetaItem(AssetMeta.LABEL, Values.create("Test Attribute"))
+            new MetaItem(MetaItemType.READ_ONLY, Values.create(true)),
+            new MetaItem(MetaItemType.LABEL, Values.create("Test Attribute"))
         )
 
         String str = Container.JSON.writeValueAsString(attribute)
@@ -50,15 +50,15 @@ class SerialisationTest extends Specification {
         attribute.getName().get().equals("testAttribute")
         attribute.getValueAsString().isPresent()
         attribute.getValueAsString().get().equals(SimulatorProtocol.PROTOCOL_NAME)
-        attribute.getMetaItem(AssetMeta.PROTOCOL_CONFIGURATION).isPresent()
-        attribute.getMetaItem(AssetMeta.PROTOCOL_CONFIGURATION).get().getValueAsBoolean().isPresent()
-        attribute.getMetaItem(AssetMeta.PROTOCOL_CONFIGURATION).get().getValueAsBoolean().get()
-        attribute.getMetaItem(AssetMeta.READ_ONLY).isPresent()
-        attribute.getMetaItem(AssetMeta.READ_ONLY).get().getValueAsBoolean().isPresent()
-        attribute.getMetaItem(AssetMeta.READ_ONLY).get().getValueAsBoolean().get()
-        attribute.getMetaItem(AssetMeta.LABEL).isPresent()
-        attribute.getMetaItem(AssetMeta.LABEL).get().getValueAsString().isPresent()
-        attribute.getMetaItem(AssetMeta.LABEL).get().getValueAsString().get().equals("Test Attribute")
+        attribute.getMetaItem(MetaItemType.PROTOCOL_CONFIGURATION).isPresent()
+        attribute.getMetaItem(MetaItemType.PROTOCOL_CONFIGURATION).get().getValueAsBoolean().isPresent()
+        attribute.getMetaItem(MetaItemType.PROTOCOL_CONFIGURATION).get().getValueAsBoolean().get()
+        attribute.getMetaItem(MetaItemType.READ_ONLY).isPresent()
+        attribute.getMetaItem(MetaItemType.READ_ONLY).get().getValueAsBoolean().isPresent()
+        attribute.getMetaItem(MetaItemType.READ_ONLY).get().getValueAsBoolean().get()
+        attribute.getMetaItem(MetaItemType.LABEL).isPresent()
+        attribute.getMetaItem(MetaItemType.LABEL).get().getValueAsString().isPresent()
+        attribute.getMetaItem(MetaItemType.LABEL).get().getValueAsString().get().equals("Test Attribute")
     }
 
     def "Serialize/Deserialize AttributeValidationResult"() {

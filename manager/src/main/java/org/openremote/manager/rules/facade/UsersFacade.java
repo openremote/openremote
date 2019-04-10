@@ -60,7 +60,7 @@ public class UsersFacade<T extends Ruleset> extends Users {
             if (TenantRuleset.class.isAssignableFrom(rulesEngineId.getScope())) {
                 // Restrict tenant
                 tenantPredicate = new TenantPredicate(
-                    rulesEngineId.getRealmId().orElseThrow(() -> new IllegalArgumentException("Realm ID missing: " + rulesEngineId))
+                    rulesEngineId.getRealm().orElseThrow(() -> new IllegalArgumentException("Realm ID missing: " + rulesEngineId))
                 );
             } else if (AssetRuleset.class.isAssignableFrom(rulesEngineId.getScope())) {
                 tenantPredicate = null;
@@ -71,8 +71,7 @@ public class UsersFacade<T extends Ruleset> extends Users {
                     if (assetId.equals(assetPredicate.id)) {
                         pathPredicate = null;
                     } else {
-                        pathPredicate = new PathPredicate(new String[]{rulesEngineId.getAssetId().orElseThrow(
-                            IllegalArgumentException::new)});
+                        pathPredicate = new PathPredicate(rulesEngineId.getAssetId().orElseThrow(IllegalArgumentException::new));
                     }
                 } else if (pathPredicate != null) {
                     // Path must contain this engines asset ID

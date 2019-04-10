@@ -11,7 +11,7 @@ import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.model.asset.Asset
 import org.openremote.model.asset.AssetAttribute
-import org.openremote.model.asset.AssetMeta
+import org.openremote.model.asset.MetaItemType
 import org.openremote.model.asset.AssetType
 import org.openremote.model.asset.agent.AgentLink
 import org.openremote.model.asset.agent.AgentResource
@@ -99,7 +99,7 @@ class VelbusProtocolTest extends Specification implements ManagerContainerTrait 
 
         and: "a VELBUS agent is created"
         def agent = new Asset("VELBUS", AssetType.AGENT)
-        agent.setRealmId(MASTER_REALM)
+        agent.setRealm(MASTER_REALM)
         agent.setType(AssetType.AGENT)
         agent.setAttributes(
             initProtocolConfiguration(new AssetAttribute("protocolConfig"), velbusProtocol.getProtocolName())
@@ -121,7 +121,7 @@ class VelbusProtocolTest extends Specification implements ManagerContainerTrait 
                         Values.create("CH1")
                     ),
                     new MetaItem(
-                            AssetMeta.AGENT_LINK,
+                            MetaItemType.AGENT_LINK,
                             new AttributeRef(agent.id, "protocolConfig").toArrayValue()
                     )
                 )
@@ -160,7 +160,7 @@ class VelbusProtocolTest extends Specification implements ManagerContainerTrait 
 
         and: "a VELBUS agent is created"
         def agent = new Asset("VELBUS", AssetType.AGENT)
-        agent.setRealmId(MASTER_REALM)
+        agent.setRealm(MASTER_REALM)
         agent.setType(AssetType.AGENT)
         agent.setAttributes(
             initProtocolConfiguration(new AssetAttribute("protocolConfig"), VelbusSerialProtocol.PROTOCOL_NAME)

@@ -1,5 +1,5 @@
 task build {
-    dependsOn rootProject.tasks.getByName("yarnInstall")
+    dependsOn tasks.getByPath(":yarnInstall")
 }
 
 task installDist(type: Copy) {

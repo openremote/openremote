@@ -45,7 +45,7 @@ import org.openremote.model.ValidationFailure;
 import org.openremote.model.ValueHolder;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.asset.AssetMeta;
+import org.openremote.model.asset.MetaItemType;
 import org.openremote.model.asset.agent.ProtocolConfiguration;
 import org.openremote.model.attribute.*;
 import org.openremote.model.event.bus.EventBus;
@@ -194,7 +194,7 @@ public abstract class AbstractAssetActivity<V
         } else {
             view.setParentNode(
                 new TenantTreeNode(
-                    new Tenant(asset.getRealmId(), asset.getTenantRealm(), asset.getTenantDisplayName(), true)
+                    new Tenant(asset.getRealm(), asset.getRealm(), asset.getRealm(), true)
                 )
             );
         }
@@ -359,7 +359,7 @@ public abstract class AbstractAssetActivity<V
 
     protected Optional<MetaItemDescriptor> getMetaItemDescriptor(MetaItem item) {
         // TODO Should use meta item descriptors from server
-        return Arrays.stream(AssetMeta.values())
+        return Arrays.stream(MetaItemType.values())
             .filter(assetMeta -> assetMeta.getUrn().equals(item.getName().orElse("")))
             .findFirst()
             .map(assetMeta -> (MetaItemDescriptor)assetMeta);
@@ -399,9 +399,9 @@ public abstract class AbstractAssetActivity<V
         // Meta item value is read only if value is fixed
         if (valueHolder instanceof MetaItem) {
             // TODO Should use meta item descriptors from server
-            return Arrays.stream(AssetMeta.values())
+            return Arrays.stream(MetaItemType.values())
                 .filter(assetMeta -> assetMeta.getUrn().equals(((MetaItem) valueHolder).getName()))
-                .map(AssetMeta::isValueFixed)
+                .map(MetaItemType::isValueFixed)
                 .findFirst().orElse(false);
         }
 

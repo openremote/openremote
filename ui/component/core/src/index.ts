@@ -1,6 +1,7 @@
 import 'url-search-params-polyfill';
 import {Console} from "./console";
 import rest from "@openremote/rest";
+import {IconSets} from "@openremote/or-icon";
 import {AxiosRequestConfig} from 'axios';
 import {EventProvider, EventProviderStatus, WebSocketEventProvider} from "./event";
 
@@ -20,8 +21,6 @@ export enum Auth {
 }
 
 export enum OREvent {
-    INIT = "INIT",
-    AUTHENTICATED = "AUTHENTICATED",
     ERROR = "ERROR",
     READY = "READY",
     CONSOLE_INIT = "CONSOLE_INIT",
@@ -57,6 +56,7 @@ export interface ManagerConfig {
     consoleAutoEnable?: boolean;
     eventProviderType?: EventProviderType;
     pollingIntervalMillis?: number;
+    loadIcons?: boolean;
 }
 
 export type EventCallback = (event: OREvent) => any;
@@ -154,6 +154,10 @@ export class Manager {
             normalisedConfig.pollingIntervalMillis = 10000;
         }
 
+        if (normalisedConfig.loadIcons === undefined) {
+            normalisedConfig.loadIcons = true;
+        }
+
         return normalisedConfig;
     }
 
@@ -203,7 +207,12 @@ export class Manager {
         }
 
         this._config = Manager.normaliseConfig(config);
-        let success = await this.doInit();
+
+        let success = await this.doAuthInit();
+
+        if (success) {
+            success = await this.doInit();
+        }
 
         if (success) {
             success = this.doRestApiInit();
@@ -211,10 +220,6 @@ export class Manager {
 
         if (success) {
             success = await this.doConsoleInit();
-        }
-
-        if (success) {
-            success = await this.doAuthInit();
         }
 
         // TODO: Reinstate this once websocket supports anonymous connections
@@ -245,6 +250,13 @@ export class Manager {
                 oReq.send();
             });
             this._managerVersion = json && json.version ? json.version : "";
+
+            // Async load material design icons if requested
+            if (this._config.loadIcons) {
+                let mdiIconSet = await import(/* webpackChunkName: "mdi-icons" */ "@openremote/or-icon/dist/mdi-icons");
+                IconSets.addIconSet("mdi", mdiIconSet.default);
+            }
+
             return true;
         } catch (e) {
             // TODO: Implement auto retry?
@@ -573,7 +585,8 @@ export class Manager {
 
     protected _emitEvent(event: OREvent) {
         window.setTimeout(() => {
-            for (const listener of this._listeners) {
+            let listeners = this._listeners.slice();
+            for (const listener of listeners) {
                 listener(event);
             }
         }, 0);
@@ -588,7 +601,6 @@ export class Manager {
     protected _setAuthenticated(authenticated: boolean) {
         this._authenticated = authenticated;
         if (authenticated) {
-            this._emitEvent(OREvent.AUTHENTICATED);
             if (!this._events) {
                 this.doEventsSubscriptionInit();
             }

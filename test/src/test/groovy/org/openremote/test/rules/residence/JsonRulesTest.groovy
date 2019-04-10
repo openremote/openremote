@@ -74,16 +74,15 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         and: "some rules"
         Ruleset ruleset = new TenantRuleset(
-                "Demo Apartment - All Lights Off",
-                keycloakDemoSetup.tenantA.id,
-                getClass().getResource("/org/openremote/test/rules/BasicJsonRules.json").text,
-                Ruleset.Lang.JSON
+                "Demo Apartment - All Lights Off", Ruleset.Lang.JSON, getClass().getResource("/org/openremote/test/rules/BasicJsonRules.json").text,
+                keycloakDemoSetup.tenantA.realm
+                , false
         )
         rulesetStorageService.merge(ruleset)
 
         expect: "the rule engines to become available and be running with asset states inserted"
         conditions.eventually {
-            tenantAEngine = rulesService.tenantEngines.get(keycloakDemoSetup.tenantA.id)
+            tenantAEngine = rulesService.tenantEngines.get(keycloakDemoSetup.tenantA.realm)
             assert tenantAEngine != null
             assert tenantAEngine.isRunning()
             assert tenantAEngine.assetStates.size() == DEMO_RULE_STATES_CUSTOMER_A
@@ -93,6 +92,8 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         conditions.eventually {
             def livingroomAsset = assetStorageService.find(managerDemoSetup.apartment2LivingroomId, true)
             assert livingroomAsset.getAttribute("lightSwitch").get().valueAsBoolean.get()
+            assert livingroomAsset.getAttribute("lightSwitchTriggerTimes").get().valueAsArray.get().length() == 2
+            assert livingroomAsset.getAttribute("plantsWaterLevels").get().valueAsObject.get().getNumber("cactus").get() == 0.8
             def bathRoomAsset = assetStorageService.find(managerDemoSetup.apartment2BathroomId, true)
             assert bathRoomAsset.getAttribute("lightSwitch").get().valueAsBoolean.get()
         }
@@ -174,6 +175,8 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         conditions.eventually {
             def livingroomAsset = assetStorageService.find(managerDemoSetup.apartment2LivingroomId, true)
             assert !livingroomAsset.getAttribute("lightSwitch").get().valueAsBoolean.get()
+            assert livingroomAsset.getAttribute("lightSwitchTriggerTimes").get().valueAsArray.get().length() == 3
+            assert livingroomAsset.getAttribute("plantsWaterLevels").get().valueAsObject.get().getNumber("cactus").get() == 0.7
             def bathRoomAsset = assetStorageService.find(managerDemoSetup.apartment2BathroomId, true)
             assert !bathRoomAsset.getAttribute("lightSwitch").get().valueAsBoolean.get()
         }

@@ -1,4 +1,4 @@
-/*
+    /*
  * Copyright 2017, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
@@ -24,6 +24,7 @@ import elemental.client.Browser;
 import elemental.html.Blob;
 import elemental.html.FileReader;
 import org.openremote.app.client.widget.FileUploadLabelled;
+import org.openremote.app.client.widget.FormButton;
 import org.openremote.app.client.widget.FormGroupActions;
 import org.openremote.app.client.Environment;
 import org.openremote.app.client.assets.browser.AssetBrowser;
@@ -42,13 +43,13 @@ public class ProtocolDiscoveryView extends AbstractAttributeViewExtension {
     public static class DiscoveryRequest {
         protected final String protocolConfigurationName;
         protected final String parentId;
-        protected final String realmId;
+        protected final String realm;
         protected final FileInfo fileInfo;
 
-        public DiscoveryRequest(String protocolConfigurationName, String parentId, String realmId, FileInfo fileInfo) {
+        public DiscoveryRequest(String protocolConfigurationName, String parentId, String realm, FileInfo fileInfo) {
             this.protocolConfigurationName = protocolConfigurationName;
             this.parentId = parentId;
-            this.realmId = realmId;
+            this.realm = realm;
             this.fileInfo = fileInfo;
         }
 
@@ -60,8 +61,8 @@ public class ProtocolDiscoveryView extends AbstractAttributeViewExtension {
             return parentId;
         }
 
-        public String getRealmId() {
-            return realmId;
+        public String getRealm() {
+            return realm;
         }
 
         public FileInfo getFileInfo() {
@@ -72,7 +73,7 @@ public class ProtocolDiscoveryView extends AbstractAttributeViewExtension {
     protected final ProtocolDescriptor protocolDescriptor;
     protected final AssetSelector assetSelector;
     protected final BiConsumer<DiscoveryRequest, Runnable> discoveryRequestConsumer;
-    protected String importRealmId;
+    protected String importRealm;
     protected String importParentId;
     protected FileUploadLabelled fileUpload;
 
@@ -97,11 +98,11 @@ public class ProtocolDiscoveryView extends AbstractAttributeViewExtension {
             true,
             treeNode -> {
                 importParentId = null;
-                importRealmId = null;
+                importRealm = null;
 
                 if (treeNode instanceof TenantTreeNode) {
                     TenantTreeNode tenantTreeNode = (TenantTreeNode)treeNode;
-                    importRealmId = tenantTreeNode.getId();
+                    importRealm = tenantTreeNode.getId();
                 } else if (treeNode instanceof AssetTreeNode) {
                     AssetTreeNode assetTreeNode = (AssetTreeNode)treeNode;
                     importParentId = assetTreeNode.getId();
@@ -127,7 +128,6 @@ public class ProtocolDiscoveryView extends AbstractAttributeViewExtension {
         add(assetSelector);
 
         if (protocolDescriptor.isDeviceImport()) {
-            FormGroupActions actions = new FormGroupActions();
             fileUpload = new FileUploadLabelled();
             fileUpload.setIcon("upload");
             fileUpload.getElement().addClassName(environment.getWidgetStyle().FormControl());
@@ -141,17 +141,28 @@ public class ProtocolDiscoveryView extends AbstractAttributeViewExtension {
                 }
                 Blob file = (Blob) files.get(0);
                 final FileReader reader = Browser.getWindow().newFileReader();
+                onDeviceDiscoveryImportStart();
                 if (file.getType().matches("text.*")) {
-                    reader.setOnloadend(evt -> doDiscoveryImport(fileUpload.getFileUpload().getFilename(), reader.getResult().toString(), false));
+                    reader.setOnloadend(evt -> doDeviceImport(fileUpload.getFileUpload().getFilename(), reader.getResult().toString(), false, this::onDeviceDiscoveryImportEnd));
                     reader.readAsText(file, "UTF-8");
                 } else {
-                    reader.setOnloadend(evt -> doDiscoveryImport(fileUpload.getFileUpload().getFilename(), reader.getResult().toString(), true));
+                    reader.setOnloadend(evt -> doDeviceImport(fileUpload.getFileUpload().getFilename(), reader.getResult().toString(), true, this::onDeviceDiscoveryImportEnd));
                     reader.readAsDataURL(file);
                 }
             });
-
-            actions.add(fileUpload);
             assetSelector.getFormGroupActions().add(fileUpload);
+        }
+
+        if (protocolDescriptor.isDeviceDiscovery()) {
+            FormGroupActions actions = new FormGroupActions();
+            FormButton btn = new FormButton(environment.getMessages().discoverDevices());
+            btn.setIcon("search");
+            btn.addClickHandler(event -> {
+                onDeviceDiscoveryImportStart();
+                doDeviceDiscovery(this::onDeviceDiscoveryImportEnd);
+            });
+            actions.add(btn);
+            assetSelector.getFormGroupActions().add(btn);
         }
     }
 
@@ -170,18 +181,28 @@ public class ProtocolDiscoveryView extends AbstractAttributeViewExtension {
 
     }
 
-    protected void doDiscoveryImport(String name, String data, boolean binary) {
-        fileUpload.clearInput();
-        setDisabled(true);
-        fileUpload.setText(environment.getMessages().importInProgress());
-
+    protected void doDeviceImport(String name, String data, boolean binary, Runnable callback) {
         FileInfo fileInfo = new FileInfo(name, data, binary);
-        DiscoveryRequest discoveryRequest = new DiscoveryRequest(attribute.getName().orElse(""), importParentId, importRealmId, fileInfo);
+        DiscoveryRequest discoveryRequest = new DiscoveryRequest(attribute.getName().orElse(""), importParentId, importRealm, fileInfo);
         if (discoveryRequestConsumer != null) {
-            discoveryRequestConsumer.accept(discoveryRequest, () -> {
-                fileUpload.setText(environment.getMessages().uploadProtocolFile());
-                setDisabled(false);
-            });
+            discoveryRequestConsumer.accept(discoveryRequest, callback);
         }
+    }
+
+    protected void doDeviceDiscovery(Runnable callback) {
+        DiscoveryRequest discoveryRequest = new DiscoveryRequest(attribute.getName().orElse(""), importParentId, importRealm, null);
+        if (discoveryRequestConsumer != null) {
+            discoveryRequestConsumer.accept(discoveryRequest, callback);
+        }
+    }
+
+
+    protected void onDeviceDiscoveryImportStart() {
+        fileUpload.clearInput();
+        this.setDisabled(true);
+    }
+
+    protected void onDeviceDiscoveryImportEnd() {
+        this.setDisabled(false);
     }
 }

@@ -54,6 +54,8 @@ clean {
     }
 }
 
-build.dependsOn rootProject.tasks.getByName("yarnInstall"), npmBuild
+build.dependsOn generateTypeScript, resolveTask(":ui:component:model:build"), npmBuild
 
-npmBuild.dependsOn resolveTask(":ui:component:model:build"), generateTypeScript
+task installDist() {
+    dependsOn build
+}

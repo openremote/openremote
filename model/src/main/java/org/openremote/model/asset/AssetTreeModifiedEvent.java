@@ -42,19 +42,19 @@ public class AssetTreeModifiedEvent extends TenantScopedEvent {
     protected AssetTreeModifiedEvent() {
     }
 
-    public AssetTreeModifiedEvent(long timestamp, String realmId, String assetId) {
-        super(timestamp, realmId);
-        this.realmId = realmId;
+    public AssetTreeModifiedEvent(long timestamp, String realm, String assetId) {
+        super(timestamp, realm);
+        this.realm = realm;
         this.assetId = assetId;
     }
 
-    public AssetTreeModifiedEvent(long timestamp, String realmId, String parentId, boolean newAssetChildren) {
-        this(timestamp, realmId, parentId);
+    public AssetTreeModifiedEvent(long timestamp, String realm, String parentId, boolean newAssetChildren) {
+        this(timestamp, realm, parentId);
         this.newAssetChildren = newAssetChildren;
     }
 
-    public AssetTreeModifiedEvent(long timestamp, String realmId, boolean newAssetChildren) {
-        this(timestamp, realmId, null);
+    public AssetTreeModifiedEvent(long timestamp, String realm, boolean newAssetChildren) {
+        this(timestamp, realm, null);
         this.newAssetChildren = newAssetChildren;
     }
 
@@ -64,8 +64,8 @@ public class AssetTreeModifiedEvent extends TenantScopedEvent {
      * of the realm of a newly created root asset.
      */
     @Override
-    public String getRealmId() {
-        return super.getRealmId();
+    public String getRealm() {
+        return super.getRealm();
     }
 
     /**
@@ -78,11 +78,11 @@ public class AssetTreeModifiedEvent extends TenantScopedEvent {
     }
 
     public boolean isTenantModified() {
-        return getRealmId() != null && getAssetId() == null;
+        return getRealm() != null && getAssetId() == null;
     }
 
     /**
-     * @return <code>true</code> if child assets were added to parent {@link #assetId} or {@link #realmId}.
+     * @return <code>true</code> if child assets were added to parent {@link #assetId} or {@link #realm}.
      */
     public boolean isNewAssetChildren() {
         return newAssetChildren;
@@ -95,7 +95,7 @@ public class AssetTreeModifiedEvent extends TenantScopedEvent {
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
-            "realmId='" + realmId + '\'' +
+            "realm='" + realm + '\'' +
             ", assetId='" + assetId + '\'' +
             ", newAssetChildren=" + newAssetChildren +
             '}';

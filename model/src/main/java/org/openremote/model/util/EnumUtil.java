@@ -28,7 +28,6 @@ import java.util.Optional;
 public final class EnumUtil {
     private EnumUtil() {}
 
-
     public static Value enumToValue(Enum<?> enumValue, ValueType valueType) {
 
         switch (valueType) {

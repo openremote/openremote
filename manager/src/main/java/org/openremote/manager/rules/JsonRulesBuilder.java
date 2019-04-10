@@ -23,25 +23,26 @@ import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.concurrent.ManagerExecutorService;
 import org.openremote.manager.rules.facade.NotificationsFacade;
-import org.openremote.model.attribute.Meta;
+import org.openremote.model.AbstractValueHolder;
+import org.openremote.model.asset.Asset;
+import org.openremote.model.attribute.Attribute;
 import org.openremote.model.notification.Notification;
+import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.BaseAssetQuery;
-import org.openremote.model.query.NewAssetQuery;
 import org.openremote.model.query.UserQuery;
-import org.openremote.model.query.filter.AttributeMetaPredicate;
-import org.openremote.model.query.filter.NewAttributePredicate;
 import org.openremote.model.rules.AssetState;
 import org.openremote.model.rules.Assets;
 import org.openremote.model.rules.Users;
 import org.openremote.model.rules.json.*;
 import org.openremote.model.util.TextUtil;
-import org.openremote.model.value.Value;
+import org.openremote.model.value.*;
 
-import java.util.*;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -323,6 +324,99 @@ public class JsonRulesBuilder extends RulesBuilder {
                     long millis = ((RuleActionWait) ruleAction).millis;
                     if (millis > 0) {
                         delay += millis;
+                    }
+                } else if (ruleAction instanceof RuleActionUpdateAttribute) {
+                    RuleActionUpdateAttribute attributeUpdateAction = (RuleActionUpdateAttribute) ruleAction;
+
+                    if (!TextUtil.isNullOrEmpty(attributeUpdateAction.attributeName)) {
+                        RuleActionWithTarget.Target target = attributeUpdateAction.target;
+
+                        List<String> ids = null;
+
+                        if (target != null) {
+
+                            // Only assets make sense as the target
+                            if (target.useAssetsFromWhen && assetStates != null) {
+                                ids = assetStates.stream().map(AssetState::getId).collect(Collectors.toList());
+                            } else if (target.assets != null) {
+                                ids = getAssetIds(assetsFacade, target.assets);
+                            }
+                        }
+
+                        if (ids != null) {
+                            List<String> finalIds = ids;
+                            action = () ->
+                                finalIds.forEach(id -> {
+                                    ValueType valueType = null;
+                                    Value currentValue = null;
+                                    if (assetStates != null) {
+                                        Optional<AssetState> assetState = assetStates
+                                            .stream()
+                                            .filter(state -> state.getId().equals(id) && state.getAttributeName().equals(attributeUpdateAction.attributeName))
+                                            .findFirst();
+                                        if (assetState.isPresent()) {
+                                            valueType = assetState.get().getAttributeValueType().getValueType();
+                                            if (valueType.equals(ValueType.ARRAY)) {
+                                                currentValue = assetState.get().getValue().orElse(Values.createArray());
+                                            } else if (valueType.equals(ValueType.OBJECT)) {
+                                                currentValue = assetState.get().getValue().orElse(Values.createObject());
+                                            } else {
+                                                throw new IllegalArgumentException("Only Attributes of type ArrayValue or ObjectValue are allowed for RuleActionUpdateAttribute");
+                                            }
+                                        }
+                                    }
+
+                                    if (valueType == null || currentValue == null) {
+                                        Asset asset = assetStorageService.find(new AssetQuery().select(new BaseAssetQuery.Select(BaseAssetQuery.Include.ONLY_ID_AND_NAME_AND_ATTRIBUTES)).id(id).attributeName(attributeUpdateAction.attributeName));
+                                        if (asset != null) {
+                                            valueType = asset.getAttribute(attributeUpdateAction.attributeName).flatMap(Attribute::getType).get().getValueType();
+                                            if (valueType.equals(ValueType.ARRAY)) {
+                                                currentValue = asset.getAttribute(attributeUpdateAction.attributeName).flatMap(AbstractValueHolder::getValueAsArray).orElse(Values.createArray());
+                                            } else if (valueType.equals(ValueType.OBJECT)) {
+                                                currentValue = asset.getAttribute(attributeUpdateAction.attributeName).flatMap(AbstractValueHolder::getValueAsObject).orElse(Values.createObject());
+                                            } else {
+                                                throw new IllegalArgumentException("Only Attributes of type ArrayValue or ObjectValue are allowed for RuleActionUpdateAttribute");
+                                            }
+                                        }
+                                    }
+
+                                    if (valueType != null && currentValue != null) {
+
+                                        switch (attributeUpdateAction.updateAction) {
+                                            case ADD:
+                                                if (valueType.equals(ValueType.ARRAY)) {
+                                                    ((ArrayValue) currentValue).add(attributeUpdateAction.value);
+                                                } else {
+                                                    ((ObjectValue) currentValue).put(attributeUpdateAction.key, attributeUpdateAction.value);
+                                                }
+                                                break;
+                                            case ADD_OR_REPLACE:
+                                            case REPLACE:
+                                                if (valueType.equals(ValueType.ARRAY)) {
+                                                    ((ArrayValue) currentValue).set(attributeUpdateAction.index, attributeUpdateAction.value);
+                                                } else {
+                                                    ((ObjectValue) currentValue).put(attributeUpdateAction.key, attributeUpdateAction.value);
+                                                }
+                                                break;
+                                            case DELETE:
+                                                if (valueType.equals(ValueType.ARRAY)) {
+                                                    ((ArrayValue) currentValue).remove(attributeUpdateAction.index);
+                                                } else {
+                                                    ((ObjectValue) currentValue).remove(attributeUpdateAction.key);
+                                                }
+                                                break;
+                                            case CLEAR:
+                                                if (valueType.equals(ValueType.ARRAY)) {
+                                                    currentValue = Values.createArray();
+                                                } else {
+                                                    currentValue = Values.createObject();
+                                                }
+                                                break;
+                                        }
+                                        assetsFacade.dispatch(id, attributeUpdateAction.attributeName, currentValue);
+                                    }
+                                });
+                        }
                     }
                 }
 

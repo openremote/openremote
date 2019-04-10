@@ -38,6 +38,8 @@ idea {
         testOutputDir file('build/classes/test')
         excludeDirs += file(".node")
         excludeDirs += file("node_modules")
+        excludeDirs += file("dist")
+        excludeDirs += file("build")
     }
 }
 if (project.convention.findPlugin(JavaPluginConvention)) {
@@ -57,30 +59,37 @@ ext.npmCommand = {
         isFamily(FAMILY_WINDOWS) ? "${cmd}.cmd" : cmd
 }
 
-// Add npm tasks
-task npmInstall(type: Exec){
-    // Use yarn
-    commandLine npmCommand("yarn"), "install"
-}
-task npmClean(type: Exec){
-    commandLine npmCommand("npm"), "run-script", "clean"
-}
-task npmBuild(type: Exec){
-    commandLine npmCommand("npm"), "run-script", "build"
-}
-task npmTest(type: Exec){
-    commandLine npmCommand("npm"), "run-script", "test"
-}
-task npmServe(type: Exec){
-    commandLine npmCommand("npm"), "run-script", "serve"
-}
-task npmServeProduction(type: Exec){
-    commandLine npmCommand("npm"), "run-script", "serveProduction"
-}
-
 // Add yarn tasks
 task yarnInstall(type: Exec){
     commandLine npmCommand("yarn"), "install"
+}
+task yarnInstallForce(type: Exec){
+    commandLine npmCommand("yarn"), "install", "--force"
+}
+
+// Add npm tasks
+task npmInstall(type: Exec){
+    commandLine npmCommand("npm"), "install"
+}
+task npmClean(type: Exec){
+    dependsOn tasks.getByPath(":yarnInstall")
+    commandLine npmCommand("npm"), "run-script", "clean"
+}
+task npmBuild(type: Exec){
+    dependsOn tasks.getByPath(":yarnInstall")
+    commandLine npmCommand("npm"), "run-script", "build"
+}
+task npmTest(type: Exec){
+    dependsOn tasks.getByPath(":yarnInstall")
+    commandLine npmCommand("npm"), "run-script", "test"
+}
+task npmServe(type: Exec){
+    dependsOn tasks.getByPath(":yarnInstall")
+    commandLine npmCommand("npm"), "run-script", "serve"
+}
+task npmServeProduction(type: Exec){
+    dependsOn tasks.getByPath(":yarnInstall")
+    commandLine npmCommand("npm"), "run-script", "serveProduction"
 }
 
 // Add typescript tasks

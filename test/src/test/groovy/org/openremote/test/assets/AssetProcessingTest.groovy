@@ -7,7 +7,7 @@ import org.openremote.manager.setup.builtin.KeycloakDemoSetup
 import org.openremote.manager.setup.builtin.ManagerDemoSetup
 import org.openremote.model.asset.Asset
 import org.openremote.model.asset.AssetAttribute
-import org.openremote.model.asset.AssetMeta
+import org.openremote.model.asset.MetaItemType
 import org.openremote.model.asset.AssetType
 import org.openremote.model.asset.agent.ProtocolConfiguration
 import org.openremote.model.attribute.*
@@ -167,7 +167,7 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
         mockAgent.setAttributes(
                 ProtocolConfiguration.initProtocolConfiguration(new AssetAttribute("mock123"), mockProtocolName)
         )
-        mockAgent.setRealmId(keycloakDemoSetup.masterTenant.id)
+        mockAgent.setRealm(keycloakDemoSetup.masterTenant.realm)
         mockAgent = assetStorageService.merge(mockAgent)
 
         and: "a mock thing asset is created with a valid protocol attribute, an invalid protocol attribute and a plain attribute"
@@ -176,29 +176,29 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
                 new AssetAttribute("light1Toggle", AttributeValueType.BOOLEAN, Values.create(true))
                         .setMeta(
                         new MetaItem(
-                                AssetMeta.DESCRIPTION,
+                                MetaItemType.DESCRIPTION,
                                 Values.create("The switch for the light 1 in the living room")
                         ),
                         new MetaItem(
-                                AssetMeta.AGENT_LINK,
+                                MetaItemType.AGENT_LINK,
                                 new AttributeRef(mockAgent.getId(), "mock123").toArrayValue()
                         )
                 ),
                 new AssetAttribute("light2Toggle", AttributeValueType.BOOLEAN, Values.create(true))
                         .setMeta(
                         new MetaItem(
-                                AssetMeta.DESCRIPTION,
+                                MetaItemType.DESCRIPTION,
                                 Values.create("The switch for the light 2 in the living room")
                         ),
                         new MetaItem(
-                                AssetMeta.AGENT_LINK,
+                                MetaItemType.AGENT_LINK,
                                 new AttributeRef("INVALID AGENT ID", managerDemoSetup.agentProtocolConfigName).toArrayValue()
                         )
                 ),
                 new AssetAttribute("plainAttribute", AttributeValueType.STRING, Values.create("demo"))
                         .setMeta(
                         new MetaItem(
-                                AssetMeta.DESCRIPTION,
+                                MetaItemType.DESCRIPTION,
                                 Values.create("A plain string attribute for storing information")
                         )
                 )

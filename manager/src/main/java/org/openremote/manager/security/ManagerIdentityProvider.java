@@ -61,13 +61,11 @@ public interface ManagerIdentityProvider extends IdentityProvider {
 
     boolean isRestrictedUser(String userId);
 
-    boolean isUserInTenant(String userId, String realmId);
+    boolean isUserInTenant(String userId, String realm);
 
-    Tenant[] getTenants(ClientRequestInfo clientRequestInfo);
+    Tenant[] getTenants();
 
-    Tenant getTenantForRealm(String realm);
-
-    Tenant getTenantForRealmId(String realmId);
+    Tenant getTenant(String realm);
 
     void updateTenant(ClientRequestInfo clientRequestInfo, String realm, Tenant tenant);
 
@@ -81,9 +79,7 @@ public interface ManagerIdentityProvider extends IdentityProvider {
 
     boolean isTenantActiveAndAccessible(AuthContext authContext, Asset asset);
 
-    String[] getActiveTenantIds();
-
-    boolean isActiveTenant(String realmId);
+    boolean tenantExists(String realm);
 
     /**
      * Superusers can subscribe to all events, regular users must be in the same realm as the filter and any

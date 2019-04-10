@@ -48,7 +48,6 @@ public class FilterOptions {
     }
 
     final protected Map<String, String> realms;
-    final protected Map<String, String> realmIds;
     final protected BiConsumer<FilterOptions, Consumer<Map<String, String>>> targetsSupplier;
     protected Map<String, String> targets = new HashMap<>();
     protected String selectedNotificationType = NOTIFICATION_TYPES[0]; // Only one type at the moment so select it
@@ -59,9 +58,8 @@ public class FilterOptions {
     protected Runnable targetsChangedCallback;
     protected Runnable changedCallback;
 
-    public FilterOptions(Map<String, String> realms, Map<String, String> realmIds, BiConsumer<FilterOptions, Consumer<Map<String, String>>> targetsSupplier) {
+    public FilterOptions(Map<String, String> realms, BiConsumer<FilterOptions, Consumer<Map<String, String>>> targetsSupplier) {
         this.realms = realms;
-        this.realmIds = realmIds;
         this.targetsSupplier = targetsSupplier;
     }
 
@@ -75,10 +73,6 @@ public class FilterOptions {
 
     public Map<String, String> getRealms() {
         return realms;
-    }
-
-    public Map<String, String> getRealmIds() {
-        return realmIds;
     }
 
     public Map<String, String> getTargets() {
@@ -111,10 +105,6 @@ public class FilterOptions {
 
     public String getSelectedRealm() {
         return selectedRealm;
-    }
-
-    public String getSelectedRealmId() {
-        return selectedRealm == null ? null : realmIds.get(selectedRealm);
     }
 
     public void setSelectedRealm(String selectedRealm) {
@@ -193,8 +183,8 @@ public class FilterOptions {
         return fromTimestamp;
     }
 
-    public String getTenantId() {
-        return getSelectedTargetType() == Notification.TargetType.TENANT ? getSelectedRealmId() : null;
+    public String getRealm() {
+        return getSelectedTargetType() == Notification.TargetType.TENANT ? getSelectedRealm() : null;
     }
 
     public String getUserId() {

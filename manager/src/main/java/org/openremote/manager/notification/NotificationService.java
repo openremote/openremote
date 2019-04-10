@@ -30,7 +30,6 @@ import org.openremote.container.message.MessageBrokerSetupService;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.AuthContext;
 import org.openremote.container.timer.TimerService;
-import org.openremote.container.web.WebService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebService;
@@ -47,8 +46,6 @@ import javax.persistence.Query;
 import javax.persistence.TypedQuery;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.time.temporal.TemporalField;
-import java.time.temporal.WeekFields;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
@@ -180,7 +177,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                     }
 
                     // Validate access and map targets to handler compatible targets
-                    String realmId = null;
+                    String realm = null;
                     String userId = null;
                     String assetId = null;
                     AtomicReference<String> sourceId = new AtomicReference<>();
@@ -200,7 +197,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                                 throw new NotificationProcessingException(INSUFFICIENT_ACCESS);
                             }
 
-                            realmId = identityService.getIdentityProvider().getTenantForRealm(authContext.getAuthenticatedRealm()).getId();
+                            realm = authContext.getAuthenticatedRealm();
                             userId = authContext.getUserId();
                             sourceId.set(userId);
                             isSuperUser = authContext.isSuperUser();
@@ -212,22 +209,22 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                             break;
 
                         case TENANT_RULESET:
-                            realmId = exchange.getIn().getHeader(Notification.HEADER_SOURCE_ID, String.class);
-                            sourceId.set(realmId);
+                            realm = exchange.getIn().getHeader(Notification.HEADER_SOURCE_ID, String.class);
+                            sourceId.set(realm);
                             break;
 
                         case ASSET_RULESET:
                             assetId = exchange.getIn().getHeader(Notification.HEADER_SOURCE_ID, String.class);
                             sourceId.set(assetId);
                             Asset asset = assetStorageService.find(assetId, false);
-                            realmId = asset.getRealmId();
+                            realm = asset.getRealm();
                             break;
                     }
 
                     LOG.info("Sending " + notification.getMessage().getType() + " notification '" + notification.getName() + "': '" + source + ":" + sourceId.get() + "' -> " + notification.getTargets());
 
                     // Check access permissions
-                    checkAccess(source, sourceId.get(), notification.getTargets(), realmId, userId, isSuperUser, isRestrictedUser, assetId);
+                    checkAccess(source, sourceId.get(), notification.getTargets(), realm, userId, isSuperUser, isRestrictedUser, assetId);
 
                     // Map targets to handler compatible targets
                     List<Notification.Targets> mappedTargetsList = Arrays.stream(notification.getTargets().getIds())
@@ -522,7 +519,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
     }
 
     @SuppressWarnings("unchecked")
-    protected void checkAccess(Notification.Source source, String sourceId, Notification.Targets targets, String realmId, String userId, boolean isSuperUser, boolean isRestrictedUser, String assetId) throws NotificationProcessingException {
+    protected void checkAccess(Notification.Source source, String sourceId, Notification.Targets targets, String realm, String userId, boolean isSuperUser, boolean isRestrictedUser, String assetId) throws NotificationProcessingException {
 
         if (isSuperUser) {
             return;
@@ -535,7 +532,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                     throw new NotificationProcessingException(INSUFFICIENT_ACCESS);
                 }
             case USER:
-                if (TextUtil.isNullOrEmpty(realmId) || isRestrictedUser) {
+                if (TextUtil.isNullOrEmpty(realm) || isRestrictedUser) {
                     throw new NotificationProcessingException(INSUFFICIENT_ACCESS);
                 }
 
@@ -544,10 +541,10 @@ public class NotificationService extends RouteBuilder implements ContainerServic
 
                 if (targets.getType() == Notification.TargetType.USER) {
                     realmMatch = Arrays.stream(identityService.getIdentityProvider().getUsers(Arrays.asList(targets.getIds())))
-                            .allMatch(user -> realmId.equals(user.getRealmId()));
+                            .allMatch(user -> realm.equals(user.getRealm()));
                 } else {
                     // Can only send to the same realm as the requestor realm
-                    realmMatch = targets.getIds().length == 1 && realmId.equals(targets.getIds()[0]);
+                    realmMatch = targets.getIds().length == 1 && realm.equals(targets.getIds()[0]);
                 }
 
                 if (!realmMatch) {
@@ -556,7 +553,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                 break;
 
             case ASSET:
-                if (TextUtil.isNullOrEmpty(realmId)) {
+                if (TextUtil.isNullOrEmpty(realm)) {
                     throw new NotificationProcessingException(INSUFFICIENT_ACCESS);
                 }
 
@@ -566,7 +563,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                 }
 
                 // Target assets must be in the same realm as requestor
-                if (!assetStorageService.isRealmAssets(realmId, Arrays.asList(targets.getIds()))) {
+                if (!assetStorageService.isRealmAssets(realm, Arrays.asList(targets.getIds()))) {
                     throw new NotificationProcessingException(INSUFFICIENT_ACCESS, "Targets must all be in the same realm as the requestor");
                 }
 

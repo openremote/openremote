@@ -31,7 +31,6 @@ import org.openremote.model.query.BaseAssetQuery;
 import org.openremote.model.query.NewAssetQuery;
 import org.openremote.model.query.filter.AttributePredicate;
 import org.openremote.model.query.filter.GeofencePredicate;
-import org.openremote.model.query.filter.NewAttributePredicate;
 import org.openremote.model.rules.AssetState;
 import org.openremote.model.rules.Assets;
 import org.openremote.model.rules.TemporaryFact;
@@ -614,8 +613,8 @@ public class RulesFacts extends Facts implements RuleListener {
             case PARENT_ID:
                 keyExtractor = AssetState::getParentId;
                 break;
-            case REALM_ID:
-                keyExtractor = AssetState::getRealmId;
+            case REALM:
+                keyExtractor = AssetState::getRealm;
                 break;
         }
 

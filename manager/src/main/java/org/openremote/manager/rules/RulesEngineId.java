@@ -30,14 +30,14 @@ import java.util.Optional;
 /**
  * The scope of a {@link RulesEngine} and, optional, the tenant or asset it belongs to.
  *
- * An engine in {@link org.openremote.model.rules.GlobalRuleset} scope has no {@link #realmId}
+ * An engine in {@link org.openremote.model.rules.GlobalRuleset} scope has no {@link #realm}
  * or {@link #assetId}. An engine {@link org.openremote.model.rules.TenantRuleset} scope has only
- * {@link #realmId}. An engine in {@link org.openremote.model.rules.AssetRuleset} scope has both.
+ * {@link #realm}. An engine in {@link org.openremote.model.rules.AssetRuleset} scope has both.
  */
 public class RulesEngineId<T extends Ruleset> {
 
     final protected Class<T> scope;
-    final protected String realmId;
+    final protected String realm;
     final protected String assetId;
 
     @SuppressWarnings("unchecked")
@@ -46,18 +46,18 @@ public class RulesEngineId<T extends Ruleset> {
     }
 
     @SuppressWarnings("unchecked")
-    public RulesEngineId(String realmId) {
-        this((Class<T>) TenantRuleset.class, realmId, null);
+    public RulesEngineId(String realm) {
+        this((Class<T>) TenantRuleset.class, realm, null);
     }
 
     @SuppressWarnings("unchecked")
-    public RulesEngineId(String realmId, String assetId) {
-        this((Class<T>) AssetRuleset.class, realmId, assetId);
+    public RulesEngineId(String realm, String assetId) {
+        this((Class<T>) AssetRuleset.class, realm, assetId);
     }
 
-    protected RulesEngineId(Class<T> scope, String realmId, String assetId) {
+    protected RulesEngineId(Class<T> scope, String realm, String assetId) {
         this.scope = scope;
-        this.realmId = realmId;
+        this.realm = realm;
         this.assetId = assetId;
     }
 
@@ -65,8 +65,8 @@ public class RulesEngineId<T extends Ruleset> {
         return scope;
     }
 
-    public Optional<String> getRealmId() {
-        return Optional.ofNullable(realmId);
+    public Optional<String> getRealm() {
+        return Optional.ofNullable(realm);
     }
 
     public Optional<String> getAssetId() {
@@ -79,21 +79,21 @@ public class RulesEngineId<T extends Ruleset> {
         if (o == null || getClass() != o.getClass()) return false;
         RulesEngineId that = (RulesEngineId) o;
         return scope == that.scope &&
-            Objects.equals(realmId, that.realmId) &&
+            Objects.equals(realm, that.realm) &&
             Objects.equals(assetId, that.assetId);
     }
 
     @Override
     public int hashCode() {
 
-        return Objects.hash(scope, realmId, assetId);
+        return Objects.hash(scope, realm, assetId);
     }
 
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
             "scope=" + scope.getSimpleName() +
-            ", realmId='" + realmId + '\'' +
+            ", realm='" + realm + '\'' +
             ", assetId='" + assetId + '\'' +
             '}';
     }

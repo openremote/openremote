@@ -69,7 +69,7 @@ class KNXImportTest extends Specification implements ManagerContainerTrait {
         knxAgent.setAttributes(
             ProtocolConfiguration.initProtocolConfiguration(new AssetAttribute("knxConfigError1"), KNXProtocol.PROTOCOL_NAME)
         )
-        knxAgent.setRealmId(Constants.MASTER_REALM)
+        knxAgent.setRealm(Constants.MASTER_REALM)
         knxAgent = assetStorageService.merge(knxAgent)
 
         then: "the protocol configurations should be linked and their deployment status should be available in the agent service"

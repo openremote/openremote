@@ -25,7 +25,8 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 @JsonSubTypes({
         @JsonSubTypes.Type(value = RuleActionWait.class, name = "wait"),
         @JsonSubTypes.Type(value = RuleActionWriteAttribute.class, name = "write-attribute"),
-        @JsonSubTypes.Type(value = RuleActionNotification.class, name = "notification")
+        @JsonSubTypes.Type(value = RuleActionNotification.class, name = "notification"),
+        @JsonSubTypes.Type(value = RuleActionUpdateAttribute.class, name = "update-attribute")
 })
 @JsonTypeInfo(
         use = JsonTypeInfo.Id.NAME,

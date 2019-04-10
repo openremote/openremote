@@ -196,7 +196,7 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> {
             NAME,
             ASSET_TYPE,
             PARENT_ID,
-            REALM_ID
+            REALM
         }
 
         public Property property;
@@ -399,7 +399,7 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> {
     }
 
     public CHILD type(AssetType assetType) {
-        return type(new StringPredicate(assetType.getValue()));
+        return type(new StringPredicate(assetType.getType()));
     }
 
     public CHILD attributes(AttributePredicate... attributePredicates) {

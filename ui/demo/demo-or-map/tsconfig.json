@@ -5,6 +5,7 @@
     "../../component/or-map/@types"
   ],
   "references": [
+    { "path": "../../demo/demo-core" },
     { "path": "../../component/core" },
     { "path": "../../component/rest" },
     { "path": "../../component/or-map" }

@@ -25,6 +25,7 @@ import org.openremote.model.ValidationFailure;
 import org.openremote.model.ValueHolder;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.AttributeValueType;
+import org.openremote.model.attribute.AttributeValueDescriptor;
 import org.openremote.model.simulator.element.ColorSimulatorElement;
 import org.openremote.model.simulator.element.NumberSimulatorElement;
 import org.openremote.model.simulator.element.SwitchSimulatorElement;
@@ -51,7 +52,7 @@ import java.util.Optional;
 public abstract class SimulatorElement implements ValueHolder {
 
     public AttributeRef attributeRef;
-    public AttributeValueType expectedType;
+    public AttributeValueDescriptor expectedType;
     // TODO GWT jackson doesn't like fields with the same name as getters in the hierarchy
     public Value elementValue = null;
 
@@ -67,7 +68,7 @@ public abstract class SimulatorElement implements ValueHolder {
         return attributeRef;
     }
 
-    public AttributeValueType getExpectedType() {
+    public AttributeValueDescriptor getExpectedType() {
         return expectedType;
     }
 
@@ -120,7 +121,7 @@ public abstract class SimulatorElement implements ValueHolder {
     public List<ValidationFailure> getValidationFailures() {
         List<ValidationFailure> failures = new ArrayList<>();
         if (elementValue != null) {
-            expectedType.isValidValue(elementValue).ifPresent(failures::add);
+            expectedType.getValidator().flatMap(v -> v.apply(elementValue)).ifPresent(failures::add);
         }
         return failures;
     }

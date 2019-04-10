@@ -37,10 +37,8 @@ class ResidencePresenceDetectionTest extends Specification implements ManagerCon
 
         and: "some rules"
         Ruleset ruleset = new AssetRuleset(
-                "Demo Apartment - Presence Detection with motion and CO2 sensors",
-                managerDemoSetup.apartment1Id,
-                getClass().getResource("/demo/rules/DemoResidencePresenceDetection.groovy").text,
-                Ruleset.Lang.GROOVY
+                "Demo Apartment - Presence Detection with motion and CO2 sensors", Ruleset.Lang.GROOVY, getClass().getResource("/demo/rules/DemoResidencePresenceDetection.groovy").text,
+                managerDemoSetup.apartment1Id, false
         )
         rulesetStorageService.merge(ruleset)
 
@@ -171,10 +169,8 @@ class ResidencePresenceDetectionTest extends Specification implements ManagerCon
 
         and: "some rules"
         Ruleset ruleset = new AssetRuleset(
-                "Demo Apartment - Presence Detection with motion sensor",
-                managerDemoSetup.apartment1Id,
-                getClass().getResource("/demo/rules/DemoResidencePresenceDetection.groovy").text,
-                Ruleset.Lang.GROOVY
+                "Demo Apartment - Presence Detection with motion sensor", Ruleset.Lang.GROOVY, getClass().getResource("/demo/rules/DemoResidencePresenceDetection.groovy").text,
+                managerDemoSetup.apartment1Id, false
         )
         rulesetStorageService.merge(ruleset)
 

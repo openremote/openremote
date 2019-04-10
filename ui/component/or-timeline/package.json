@@ -1,17 +1,17 @@
 {
   "name": "@openremote/or-timeline",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "OpenRemote Timeline",
-  "main": "src/index.js",
+  "main": "dist/index.js",
   "types": "src/index.ts",
   "scripts": {
-    "build": "npx tsc",
+    "build": "npx tsc -b",
     "test": "echo \"No tests\" && exit 0"
   },
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
-    "lit-element": "^2.0.1",
+    "lit-element": "^2.1.0",
     "moment": "^2.24.0"
   },
   "devDependencies": {

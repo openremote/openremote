@@ -31,7 +31,7 @@ import org.openremote.manager.asset.AssetStorageService
 import org.openremote.model.Constants
 import org.openremote.model.asset.Asset
 import org.openremote.model.asset.AssetAttribute
-import org.openremote.model.asset.AssetMeta
+import org.openremote.model.asset.MetaItemType
 import org.openremote.model.asset.AssetType
 import org.openremote.model.asset.agent.ConnectionStatus
 import org.openremote.model.attribute.AttributeEvent
@@ -299,7 +299,7 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
 
         and: "an agent with a HTTP client protocol configuration is created"
         def agent = new Asset()
-        agent.setRealmId(Constants.MASTER_REALM)
+        agent.setRealm(Constants.MASTER_REALM)
         agent.setName("Test Agent")
         agent.setType(AssetType.AGENT)
         agent.setAttributes(
@@ -464,7 +464,7 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
             // attribute that sends requests to the server using PUT with dynamic body and custom header to override parent
             new AssetAttribute("putRequestWithHeaders", AttributeValueType.OBJECT)
                 .addMeta(
-                    new MetaItem(AssetMeta.AGENT_LINK, new AttributeRef(agent.id, "protocolConfig").toArrayValue()),
+                    new MetaItem(MetaItemType.AGENT_LINK, new AttributeRef(agent.id, "protocolConfig").toArrayValue()),
                     new MetaItem(HttpClientProtocol.META_ATTRIBUTE_PATH, Values.create("put_request_with_headers")),
                     new MetaItem(HttpClientProtocol.META_ATTRIBUTE_METHOD, Values.create(HttpMethod.PUT)),
                     new MetaItem(
@@ -483,13 +483,13 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
             // attribute that sends requests to the server using GET with dynamic path
             new AssetAttribute("getRequestWithDynamicPath", AttributeValueType.OBJECT)
                 .addMeta(
-                    new MetaItem(AssetMeta.AGENT_LINK, new AttributeRef(agent.id, "protocolConfig").toArrayValue()),
+                    new MetaItem(MetaItemType.AGENT_LINK, new AttributeRef(agent.id, "protocolConfig").toArrayValue()),
                     new MetaItem(HttpClientProtocol.META_ATTRIBUTE_PATH, Values.create('value/{$value}/set'))
                 ),
             // attribute that polls the server using GET and uses regex filter on response
             new AssetAttribute("getPollSlow", AttributeValueType.NUMBER)
                 .addMeta(
-                    new MetaItem(AssetMeta.AGENT_LINK, new AttributeRef(agent.id, "protocolConfig").toArrayValue()),
+                    new MetaItem(MetaItemType.AGENT_LINK, new AttributeRef(agent.id, "protocolConfig").toArrayValue()),
                     new MetaItem(HttpClientProtocol.META_ATTRIBUTE_PATH, Values.create("get_poll_slow")),
                     new MetaItem(HttpClientProtocol.META_ATTRIBUTE_POLLING_SECONDS, Values.create(50)), // This is ms in testing
                     new MetaItem(
@@ -500,7 +500,7 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
             // attribute that polls the server using GET and uses regex filter on response
             new AssetAttribute("getPollFast", AttributeValueType.NUMBER)
                 .addMeta(
-                    new MetaItem(AssetMeta.AGENT_LINK, new AttributeRef(agent.id, "protocolConfig").toArrayValue()),
+                    new MetaItem(MetaItemType.AGENT_LINK, new AttributeRef(agent.id, "protocolConfig").toArrayValue()),
                     new MetaItem(HttpClientProtocol.META_ATTRIBUTE_PATH, Values.create("get_poll_fast")),
                     new MetaItem(HttpClientProtocol.META_ATTRIBUTE_POLLING_SECONDS, Values.create(40)), // This is ms in testing
                     new MetaItem(
@@ -627,33 +627,33 @@ class HttpClientProtocolTest extends Specification implements ManagerContainerTr
         asset2.addAttributes(
             new AssetAttribute("getSuccess", AttributeValueType.STRING)
                 .addMeta(
-                    new MetaItem(AssetMeta.AGENT_LINK, new AttributeRef(agent.id, "protocolConfig2").toArrayValue()),
+                    new MetaItem(MetaItemType.AGENT_LINK, new AttributeRef(agent.id, "protocolConfig2").toArrayValue()),
                     new MetaItem(HttpClientProtocol.META_ATTRIBUTE_PATH, Values.create("get_success_200"))
                 ),
             new AssetAttribute("getFailure", AttributeValueType.STRING)
                 .addMeta(
-                    new MetaItem(AssetMeta.AGENT_LINK, new AttributeRef(agent.id, "protocolConfig2").toArrayValue()),
+                    new MetaItem(MetaItemType.AGENT_LINK, new AttributeRef(agent.id, "protocolConfig2").toArrayValue()),
                     new MetaItem(HttpClientProtocol.META_ATTRIBUTE_PATH, Values.create("get_failure_401"))
                 ),
             new AssetAttribute("pollFailure", AttributeValueType.STRING)
                 .addMeta(
-                    new MetaItem(AssetMeta.AGENT_LINK, new AttributeRef(agent.id, "protocolConfig3").toArrayValue()),
+                    new MetaItem(MetaItemType.AGENT_LINK, new AttributeRef(agent.id, "protocolConfig3").toArrayValue()),
                     new MetaItem(HttpClientProtocol.META_ATTRIBUTE_PATH, Values.create("get_failure_401")),
                     new MetaItem(HttpClientProtocol.META_ATTRIBUTE_POLLING_SECONDS, Values.create(50)), // This is ms in testing
                 ),
             new AssetAttribute("getSuccess2", AttributeValueType.STRING)
                 .addMeta(
-                new MetaItem(AssetMeta.AGENT_LINK, new AttributeRef(agent.id, "protocolConfig4").toArrayValue()),
+                new MetaItem(MetaItemType.AGENT_LINK, new AttributeRef(agent.id, "protocolConfig4").toArrayValue()),
                 new MetaItem(HttpClientProtocol.META_ATTRIBUTE_PATH, Values.create("get_success_200"))
             ),
             new AssetAttribute("getFailure2", AttributeValueType.STRING)
                 .addMeta(
-                new MetaItem(AssetMeta.AGENT_LINK, new AttributeRef(agent.id, "protocolConfig4").toArrayValue()),
+                new MetaItem(MetaItemType.AGENT_LINK, new AttributeRef(agent.id, "protocolConfig4").toArrayValue()),
                 new MetaItem(HttpClientProtocol.META_ATTRIBUTE_PATH, Values.create("get_failure_401"))
             ),
             new AssetAttribute("getRedirect", AttributeValueType.STRING)
                 .addMeta(
-                new MetaItem(AssetMeta.AGENT_LINK, new AttributeRef(agent.id, "protocolConfig4").toArrayValue()),
+                new MetaItem(MetaItemType.AGENT_LINK, new AttributeRef(agent.id, "protocolConfig4").toArrayValue()),
                 new MetaItem(HttpClientProtocol.META_ATTRIBUTE_PATH, Values.create("redirect"))
             ),
         )

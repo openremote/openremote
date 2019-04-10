@@ -29,7 +29,7 @@ import org.openremote.manager.asset.AssetStorageService
 import org.openremote.model.Constants
 import org.openremote.model.asset.Asset
 import org.openremote.model.asset.AssetAttribute
-import org.openremote.model.asset.AssetMeta
+import org.openremote.model.asset.MetaItemType
 import org.openremote.model.asset.AssetType
 import org.openremote.model.asset.agent.ConnectionStatus
 import org.openremote.model.asset.agent.ProtocolConfiguration
@@ -198,7 +198,7 @@ class ControllerProtocolTest extends Specification implements ManagerContainerTr
 
         and: "an agent with a Controller protocol configuration is created"
         def agent = new Asset()
-        agent.setRealmId(Constants.MASTER_REALM)
+        agent.setRealm(Constants.MASTER_REALM)
         agent.setName("Test Agent")
         agent.setType(AssetType.AGENT)
         agent.setAttributes(
@@ -229,14 +229,14 @@ class ControllerProtocolTest extends Specification implements ManagerContainerTr
                 // attribute that sends requests to the server using PUT with dynamic body and custom header to override parent
                 new AssetAttribute("sensor", AttributeValueType.STRING)
                         .addMeta(
-                        new MetaItem(AssetMeta.AGENT_LINK, new AttributeRef(agent.id, CONTROLLERPROTOCOL_ATTRIBUTE_NAME).toArrayValue()),
+                        new MetaItem(MetaItemType.AGENT_LINK, new AttributeRef(agent.id, CONTROLLERPROTOCOL_ATTRIBUTE_NAME).toArrayValue()),
                         new MetaItem(ControllerProtocol.META_ATTRIBUTE_DEVICE_NAME, Values.create("MyDevice")),
                         new MetaItem(ControllerProtocol.META_ATTRIBUTE_SENSOR_NAME, Values.create("my_sensor1a")),
-                        new MetaItem(AssetMeta.READ_ONLY, Values.create(true))
+                        new MetaItem(MetaItemType.READ_ONLY, Values.create(true))
                 ),
                 new AssetAttribute("command", AttributeValueType.STRING)
                         .addMeta(
-                        new MetaItem(AssetMeta.AGENT_LINK, new AttributeRef(agent.id, CONTROLLERPROTOCOL_ATTRIBUTE_NAME).toArrayValue()),
+                        new MetaItem(MetaItemType.AGENT_LINK, new AttributeRef(agent.id, CONTROLLERPROTOCOL_ATTRIBUTE_NAME).toArrayValue()),
                         new MetaItem(ControllerProtocol.META_ATTRIBUTE_DEVICE_NAME, Values.create("MyDevice")),
                         new MetaItem(ControllerProtocol.META_ATTRIBUTE_COMMAND_NAME, Values.create("my_command"))
                 )
@@ -313,7 +313,7 @@ class ControllerProtocolTest extends Specification implements ManagerContainerTr
                 // attribute that sends requests to the server using PUT with dynamic body and custom header to override parent
                 new AssetAttribute("command", AttributeValueType.STRING, Values.create("command1"))
                         .addMeta(
-                        new MetaItem(AssetMeta.AGENT_LINK, new AttributeRef(agent.id, CONTROLLERPROTOCOL_ATTRIBUTE_NAME3).toArrayValue()),
+                        new MetaItem(MetaItemType.AGENT_LINK, new AttributeRef(agent.id, CONTROLLERPROTOCOL_ATTRIBUTE_NAME3).toArrayValue()),
                         new MetaItem(ControllerProtocol.META_ATTRIBUTE_DEVICE_NAME, Values.create("DeviceName2")),
                         new MetaItem(ControllerProtocol.META_ATTRIBUTE_COMMANDS_MAP, Values.<ObjectValue>parse(/{"command1": "my_command", "command2": "wrong"}/).get())
                         )

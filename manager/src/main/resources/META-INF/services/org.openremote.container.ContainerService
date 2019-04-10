@@ -5,6 +5,7 @@ org.openremote.manager.rules.RulesHealthStatusProvider
 org.openremote.manager.agent.AgentHealthStatusProvider
 org.openremote.manager.datapoint.AssetDatapointHealthStatusProvider
 org.openremote.manager.rules.geofence.ORConsoleGeofenceAssetAdapter
+org.openremote.manager.asset.AssetModelService
 org.openremote.manager.concurrent.ManagerExecutorService
 org.openremote.container.timer.TimerService
 org.openremote.manager.i18n.I18NService

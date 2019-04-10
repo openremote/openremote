@@ -23,8 +23,6 @@ import jsinterop.annotations.JsType;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetResource;
-import org.openremote.model.asset.agent.AgentStatusEvent;
-import org.openremote.model.asset.agent.ProtocolDescriptor;
 import org.openremote.model.attribute.AttributeValidationResult;
 import org.openremote.model.file.FileInfo;
 import org.openremote.model.http.RequestParams;
@@ -138,7 +136,7 @@ public interface AgentResource {
         @PathParam("agentId") String agentId,
         @PathParam("protocolConfigurationName") String protocolConfigurationName,
         @QueryParam("parentId") String parentId,
-        @QueryParam("realmId") String realmId
+        @QueryParam("realm") String realm
     );
 
     /**
@@ -162,7 +160,7 @@ public interface AgentResource {
         @PathParam("agentId") String agentId,
         @PathParam("protocolConfigurationName") String protocolConfigurationName,
         @QueryParam("parentId") String parentId,
-        @QueryParam("realmId") String realmId,
+        @QueryParam("realm") String realm,
         FileInfo fileInfo
     );
 }

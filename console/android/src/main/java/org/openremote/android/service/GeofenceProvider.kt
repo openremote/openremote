@@ -128,7 +128,7 @@ class GeofenceProvider(val context: Context) : ActivityCompat.OnRequestPermissio
     }
 
     val version = "ORConsole"
-    val geofenceFetchEndpoint = "api/rules/geofences/"
+    val geofenceFetchEndpoint = "rules/geofences/"
 
     private val geofencingClient: GeofencingClient by lazy {
         LocationServices.getGeofencingClient(context)
@@ -142,9 +142,9 @@ class GeofenceProvider(val context: Context) : ActivityCompat.OnRequestPermissio
                 "provider" to "geofence",
                 "version" to version,
                 "requiresPermission" to true,
-                "enabled" to (ContextCompat.checkSelfPermission(context, ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED),
                 "hasPermission" to (ContextCompat.checkSelfPermission(context, ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED),
-                "success" to true
+                "success" to true,
+                "enabled" to false
         )
     }
 

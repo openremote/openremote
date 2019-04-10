@@ -10,7 +10,7 @@ import org.openremote.manager.setup.builtin.KeycloakDemoSetup
 import org.openremote.manager.setup.builtin.ManagerDemoSetup
 import org.openremote.model.asset.Asset
 import org.openremote.model.asset.AssetAttribute
-import org.openremote.model.asset.AssetMeta
+import org.openremote.model.asset.MetaItemType
 import org.openremote.model.asset.AssetType
 import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.attribute.AttributeValueType
@@ -129,10 +129,8 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
 
         when: "a LHS filtering test rule definition is loaded into the Smart Building asset"
         def assetRuleset = new AssetRuleset(
-            "Some Smart Building asset rules",
-            managerDemoSetup.smartBuildingId,
-            getClass().getResource("/org/openremote/test/rules/BasicSmartHomeMatchAllAssetStates.groovy").text,
-            Ruleset.Lang.GROOVY
+                "Some Smart Building asset rules", Ruleset.Lang.GROOVY, getClass().getResource("/org/openremote/test/rules/BasicSmartHomeMatchAllAssetStates.groovy").text,
+                managerDemoSetup.smartBuildingId, false
         )
         rulesetStorageService.merge(assetRuleset)
         RulesEngine smartHomeEngine = null
@@ -211,11 +209,11 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         rulesImport.resetRulesFired()
         def apartment2 = assetStorageService.find(managerDemoSetup.apartment2Id)
         def asset = new Asset("Kitchen", AssetType.ROOM, apartment2)
-        asset.setRealmId(keycloakDemoSetup.tenantA.getId())
+        asset.setRealm(keycloakDemoSetup.tenantA.getRealm())
         def attributes = [
             new AssetAttribute("testString", AttributeValueType.STRING, Values.create("test"))
                 .setMeta(
-                new Meta(new MetaItem(AssetMeta.RULE_STATE, Values.create(true))
+                new Meta(new MetaItem(MetaItemType.RULE_STATE, Values.create(true))
                 )
             )
         ]
@@ -246,7 +244,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         attributes = [
             new AssetAttribute("testString", AttributeValueType.STRING, Values.create("test"))
                 .setMeta(
-                new MetaItem(AssetMeta.RULE_STATE, Values.create(true))
+                new MetaItem(MetaItemType.RULE_STATE, Values.create(true))
             ),
             new AssetAttribute("testInteger", AttributeValueType.NUMBER, Values.create(0))
         ]
@@ -272,7 +270,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         attributes = [
             new AssetAttribute("testString", AttributeValueType.STRING, Values.create("test"))
                 .setMeta(
-                new MetaItem(AssetMeta.RULE_STATE, Values.create(false))
+                new MetaItem(MetaItemType.RULE_STATE, Values.create(false))
             ),
             new AssetAttribute("testInteger", AttributeValueType.NUMBER, Values.create(0))
         ]
@@ -301,11 +299,11 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         attributes = [
             new AssetAttribute("testString", AttributeValueType.STRING, Values.create("test"))
                 .setMeta(
-                new MetaItem(AssetMeta.RULE_STATE, Values.create(true))
+                new MetaItem(MetaItemType.RULE_STATE, Values.create(true))
             ),
             new AssetAttribute("testInteger", AttributeValueType.NUMBER, Values.create(0))
                 .setMeta(
-                new MetaItem(AssetMeta.RULE_STATE, Values.create(true))
+                new MetaItem(MetaItemType.RULE_STATE, Values.create(true))
             )
         ]
         asset.setAttributes(attributes)
@@ -377,10 +375,9 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
 
         when: "a broken RHS rule is loaded into the tenantA engine"
         def ruleset = new TenantRuleset(
-            "Some broken test rules",
-            keycloakDemoSetup.tenantA.id,
-            getClass().getResource("/org/openremote/test/rules/BasicBrokenRules.groovy").text,
-            Ruleset.Lang.GROOVY
+                "Some broken test rules", Ruleset.Lang.GROOVY, getClass().getResource("/org/openremote/test/rules/BasicBrokenRules.groovy").text,
+                keycloakDemoSetup.tenantA.realm
+                , false
         )
         rulesetStorageService.merge(ruleset)
 

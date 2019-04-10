@@ -175,7 +175,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         anonymousConsole.id != null
 
         when: "the admin user sends a push notification to an entire realm"
-        notification.targets = new Notification.Targets(Notification.TargetType.TENANT, keycloakDemoSetup.tenantA.id)
+        notification.targets = new Notification.Targets(Notification.TargetType.TENANT, keycloakDemoSetup.tenantA.realm)
         adminNotificationResource.sendNotification(null, notification)
 
         then: "all consoles in that realm should have been sent a notification"
@@ -577,13 +577,13 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
         def notification = new Notification(
                 "Test",
                 new EmailNotificationMessage().setSubject("Test").setText("Hello world!"),
-                new Notification.Targets(Notification.TargetType.TENANT, managerDemoSetup.realmATenantId), null, null)
-        notificationService.sendNotification(notification, Notification.Source.TENANT_RULESET, managerDemoSetup.realmATenantId)
+                new Notification.Targets(Notification.TargetType.TENANT, managerDemoSetup.realmATenant), null, null)
+        notificationService.sendNotification(notification, Notification.Source.TENANT_RULESET, managerDemoSetup.realmATenant)
 
         then: "the email should have been sent to all tenant users"
         conditions.eventually {
-            assert notificationMessages.size() == 2
-            assert toAddresses.size() == 2
+            assert notificationMessages.size() == 3
+            assert toAddresses.size() == 3
             assert ((EmailNotificationMessage) notificationMessages.get(0)).getText() == "Hello world!"
             assert ((EmailNotificationMessage) notificationMessages.get(0)).getSubject() == "Test"
             assert ((EmailNotificationMessage) notificationMessages.get(0)).getFrom().getAddress() == mockEmailNotificationHandler.defaultFrom
@@ -592,6 +592,7 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
             assert ((EmailNotificationMessage) notificationMessages.get(1)).getFrom().getAddress() == mockEmailNotificationHandler.defaultFrom
             assert toAddresses.any { ((EmailNotificationMessage.Recipient)it).getAddress() == "testuser2@openremote.local" }
             assert toAddresses.any { ((EmailNotificationMessage.Recipient)it).getAddress() == "testuser3@openremote.local" }
+            assert toAddresses.any { ((EmailNotificationMessage.Recipient)it).getAddress() == "building@openremote.local" }
         }
 
         when: "an email attribute is added to an asset"
@@ -605,8 +606,8 @@ class NotificationTest extends Specification implements ManagerContainerTrait {
 
         then: "the child asset with the email attribute should have been sent an email"
         conditions.eventually {
-            assert notificationMessages.size() == 3
-            assert toAddresses.size() == 3
+            assert notificationMessages.size() == 4
+            assert toAddresses.size() == 4
             assert toAddresses.any { ((EmailNotificationMessage.Recipient)it).getAddress() == "kitchen@openremote.local" }
         }
 

@@ -8,29 +8,39 @@ If you want to try OpenRemote v2, [read the OpenRemote v2 documentation](https:/
 
 ## Quickstart
 
-Checkout this project and ensure you have [Docker Community Edition](https://www.docker.com/) installed, then either use images from Docker Hub (easiest) or build the images locally first.
+Before following this quickstart make sure you have [prepared your environment](https://github.com/openremote/openremote/wiki/Developer-Guide%3A-Preparing-the-environment). There are two options how to start with OpenRemote:
 
-***NOTE: If you are not using Docker Community Edition but the older Docker Toolbox (Virtual Box), you must specify the `IDENTITY_NETWORK_HOST` environment variable as the IP address of the Docker VM when executing `docker-compose` commands:***
+1. Use the images from Docker Hub (easiest)
+2. Checkout this project and build the images locally first
+
+### 1. Starting OpenRemote with images from Docker Hub
+
+We publish Docker images to [Docker Hub](https://hub.docker.com/u/openremote/):
 
 ```
-Windows Command Prompt (quotes are essential):
-set "IDENTITY_NETWORK_HOST=192.168.99.100" && docker-compose ...
-
-Bash:
-IDENTITY_NETWORK_HOST=192.168.99.100 docker-compose ...
+docker pull openremote/postgresql
+docker pull openremote/keycloak
+docker pull openremote/proxy
+docker pull openremote/manager
 ```
 
-### Starting OpenRemote with images from Docker Hub
-
-We publish Docker images to [Docker Hub](https://hub.docker.com/u/openremote/), please be aware that the published images may be out of date compared to this codebase. If you want to run the latest code, build the images from this source.
-
-To run OpenRemote using Docker Hub images simply execute the following command from the checked out root project directory:
+To run OpenRemote using Docker Hub images, execute the following command from the checked out root project directory:
 
 ```
 docker-compose up --no-build
 ```
 
-### Starting OpenRemote with source-build images
+***NOTE:*** If you are not using Docker Community Edition but the older **Docker Toolbox (Virtual Box),** you must specify the `IDENTITY_NETWORK_HOST` environment variable as the IP address of the Docker VM when executing `docker-compose` commands:
+
+```
+Windows Command Prompt (quotes are essential):
+set "IDENTITY_NETWORK_HOST=192.168.99.100" && docker-compose up --no-build
+
+Bash:
+IDENTITY_NETWORK_HOST=192.168.99.100 docker-compose up --no-build
+```
+
+### 2. Starting OpenRemote with source-build images
 
 Alternatively you can build the Docker images locally from source. First build the code:
 
@@ -44,19 +54,29 @@ Next, build the Docker images and start the stack with:
 docker-compose up --build
 ```
 
+***NOTE:*** If you are not using Docker Community Edition but the older **Docker Toolbox (Virtual Box),** you must specify the `IDENTITY_NETWORK_HOST` environment variable as the IP address of the Docker VM when executing `docker-compose` commands:
+
+```
+Windows Command Prompt (quotes are essential):
+set "IDENTITY_NETWORK_HOST=192.168.99.100" && docker-compose up --build
+
+Bash:
+IDENTITY_NETWORK_HOST=192.168.99.100 docker-compose up --build
+```
+
 A first build will download many dependencies (and cache them locally for future builds), this can take up to 30 minutes.
 
 ### Using the OpenRemote demo
 
-When all Docker containers are ready, you can access the OpenRemote UI and API with a webbrowser (replace `localhost` with `192.168.99.100` if you are using Docker Toolbox):
+When all Docker containers are ready, you can access the OpenRemote UI and API with a webbrowser (if you are using Docker Toolbox replace `localhost` with `192.168.99.100`):
 
 **OpenRemote Manager:** https://localhost  
 Username: admin  
 Password: secret
 
 **Demo Smart Building App:** https://localhost/smart-building-v1/  
-Username: testuser3  
-Password: testuser3
+Username: building  
+Password: building
 
 You must accept and make an exception for the 'insecure' self-signed SSL certificate. You can configure a production installation of OpenRemote with a your own certificate or automatically use one from [Let's Encrypt](https://letsencrypt.org/).
 
@@ -84,7 +104,7 @@ More configuration options of the images are documented [in the deploy.yml profi
 
 ## Contributing to OpenRemote
 
-We work with Java, Groovy, JavaScript, Gradle, Docker, and a wide range of APIs and protocol implementations. Clone or checkout this project and send us pull requests, ensure that code is covered by tests and that the full test suite passes.
+We work with Java, Groovy, TypeScript, Gradle, Docker, and a wide range of APIs and protocol implementations. Clone or checkout this project and send us pull requests, ensure that code is covered by tests and that the full test suite passes.
 
 For more information and how to set up a development environment, see the [Developer Guide](https://github.com/openremote/openremote/wiki).
 

@@ -26,7 +26,7 @@ import org.openremote.agent.protocol.velbus.device.VelbusDeviceType;
 import org.openremote.container.util.CodecUtil;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.asset.AssetMeta;
+import org.openremote.model.asset.MetaItemType;
 import org.openremote.model.asset.AssetType;
 import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.asset.agent.ConnectionStatus;
@@ -305,29 +305,29 @@ public abstract class AbstractVelbusProtocol extends AbstractProtocol implements
             device.setAttributes(
                 new AssetAttribute("build", AttributeValueType.STRING, Values.create(build))
                     .setMeta(
-                        new MetaItem(AssetMeta.LABEL, Values.create("Build")),
-                        new MetaItem(AssetMeta.READ_ONLY, Values.create(true))
+                        new MetaItem(MetaItemType.LABEL, Values.create("Build")),
+                        new MetaItem(MetaItemType.READ_ONLY, Values.create(true))
                     ),
                 new AssetAttribute("serialNumber", AttributeValueType.STRING, Values.create(serial))
                     .setMeta(
-                        new MetaItem(AssetMeta.LABEL, Values.create("Serial No")),
-                        new MetaItem(AssetMeta.READ_ONLY, Values.create(true))
+                        new MetaItem(MetaItemType.LABEL, Values.create("Serial No")),
+                        new MetaItem(MetaItemType.READ_ONLY, Values.create(true))
                     )
             );
 
             getLinkedAttributeDescriptors(deviceType.get(), baseAddress)
                 .forEach(descriptor -> {
-                    AssetAttribute attribute = new AssetAttribute(descriptor.getName(), descriptor.getAttributeValueType())
+                    AssetAttribute attribute = new AssetAttribute(descriptor.getName(), descriptor.getAttributeValueDescriptor())
                         .setMeta(
                             agentLink,
-                            new MetaItem(AssetMeta.LABEL, Values.create(descriptor.getDisplayName()))
+                            new MetaItem(MetaItemType.LABEL, Values.create(descriptor.getDisplayName()))
                         )
                         .addMeta(descriptor.getMetaItems());
 
                     if (descriptor.isReadOnly()) {
-                        attribute.addMeta(new MetaItem(AssetMeta.READ_ONLY, Values.create(true)));
+                        attribute.addMeta(new MetaItem(MetaItemType.READ_ONLY, Values.create(true)));
                     } else if(descriptor.isExecutable()) {
-                        attribute.addMeta(new MetaItem(AssetMeta.EXECUTABLE, Values.create(true)));
+                        attribute.addMeta(new MetaItem(MetaItemType.EXECUTABLE, Values.create(true)));
                     }
 
                     device.addAttributes(attribute);

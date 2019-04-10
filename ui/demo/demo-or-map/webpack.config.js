@@ -18,6 +18,9 @@ module.exports = {
         contentBase: './dist',
         publicPath: "/" + __dirname.split(path.sep).slice(-1)[0]  + "/"
     },
+    watchOptions: {
+        ignored: ['**/*.ts', 'node_modules']
+    },
     plugins: [
         new HtmlWebpackPlugin({
             chunksSortMode: 'none',
@@ -45,7 +48,7 @@ module.exports = {
             {
                 test: /\.js$/,
                 include: function(modulePath) {
-                    return /(@webcomponents[\/|\\]shadycss|lit-css|styled-lit-element|lit-html|@polymer|@lit|pwa-helpers)/.test(modulePath) || !/node_modules/.test(modulePath);
+                    return /(@webcomponents[\/|\\]shadycss|lit-css|styled-lit-element|lit-html|lit-element|@polymer|@lit|pwa-helpers)/.test(modulePath) || !/node_modules/.test(modulePath);
                 },
                 use: [
                     {

@@ -6,6 +6,12 @@
     "variable-name": [false],
     "trailing-comma": [false],
     "no-trailing-whitespace": [false],
-    "no-console": [false]
+    "no-console": [false],
+    "max-classes-per-file": false,
+    "max-line-length": false,
+    "ordered-imports": false,
+    "object-literal-sort-keys": false,
+    "ban-types": false,
+    "object-literal-shorthand": false
   }
 }

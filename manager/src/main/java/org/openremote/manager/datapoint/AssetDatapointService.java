@@ -6,7 +6,6 @@ import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.timer.TimerService;
-import org.openremote.container.web.WebService;
 import org.openremote.manager.asset.AssetProcessingException;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.asset.AssetUpdateProcessor;
@@ -15,7 +14,7 @@ import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.asset.AssetMeta;
+import org.openremote.model.asset.MetaItemType;
 import org.openremote.model.attribute.AttributeEvent.Source;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.datapoint.AssetDatapoint;
@@ -49,7 +48,7 @@ import static java.util.stream.Collectors.toList;
 
 /**
  * Store and retrieve datapoints for asset attributes and periodically purge data points based on
- * {@link org.openremote.model.asset.AssetMeta#DATA_POINTS_MAX_AGE_DAYS} {@link org.openremote.model.attribute.MetaItem}
+ * {@link MetaItemType#DATA_POINTS_MAX_AGE_DAYS} {@link org.openremote.model.attribute.MetaItem}
  * and {@link #DATA_POINTS_MAX_AGE_DAYS} setting; storage duration defaults to {@value #DATA_POINTS_MAX_AGE_DAYS_DEFAULT}
  * days.
  */
@@ -295,8 +294,8 @@ public class AssetDatapointService implements ContainerService, AssetUpdateProce
         List<Asset> assets = assetStorageService.findAll(
                 new AssetQuery()
                         .attributeMeta(
-                                new AttributeMetaPredicate(AssetMeta.DATA_POINTS_MAX_AGE_DAYS),
-                                new AttributeMetaPredicate(AssetMeta.STORE_DATA_POINTS))
+                                new AttributeMetaPredicate(MetaItemType.DATA_POINTS_MAX_AGE_DAYS),
+                                new AttributeMetaPredicate(MetaItemType.STORE_DATA_POINTS))
                         .select(new BaseAssetQuery.Select(BaseAssetQuery.Include.ONLY_ID_AND_NAME_AND_ATTRIBUTES)));
 
         List<AssetAttribute> attributes = assets.stream()
@@ -304,7 +303,7 @@ public class AssetDatapointService implements ContainerService, AssetUpdateProce
                         .getAttributesStream()
                         .filter(assetAttribute ->
                                 assetAttribute.isStoreDatapoints()
-                                        && assetAttribute.hasMetaItem(AssetMeta.DATA_POINTS_MAX_AGE_DAYS))
+                                        && assetAttribute.hasMetaItem(MetaItemType.DATA_POINTS_MAX_AGE_DAYS))
                         .collect(toList()))
                 .flatMap(List::stream)
                 .collect(toList());
@@ -322,7 +321,7 @@ public class AssetDatapointService implements ContainerService, AssetUpdateProce
             Map<Integer, List<AssetAttribute>> ageAttributeRefMap = attributes.stream()
                     .collect(groupingBy(attribute ->
                             attribute
-                                    .getMetaItem(AssetMeta.DATA_POINTS_MAX_AGE_DAYS)
+                                    .getMetaItem(MetaItemType.DATA_POINTS_MAX_AGE_DAYS)
                                     .flatMap(metaItem ->
                                             Values.getIntegerCoerced(metaItem.getValue().orElse(null)))
                                     .orElse(maxDatapointAgeDays)));

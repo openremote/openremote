@@ -23,13 +23,13 @@ import org.openremote.model.AbstractValueHolder;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.MetaItem;
-import org.openremote.model.asset.AssetMeta;
+import org.openremote.model.asset.MetaItemType;
 
 import java.util.Optional;
 
 import static org.openremote.model.attribute.MetaItem.isMetaNameEqualTo;
 import static org.openremote.model.attribute.MetaItem.replaceMetaByName;
-import static org.openremote.model.asset.AssetMeta.AGENT_LINK;
+import static org.openremote.model.asset.MetaItemType.AGENT_LINK;
 
 /**
  * An asset attribute can be linked to an agent's {@link ProtocolConfiguration},
@@ -38,7 +38,7 @@ import static org.openremote.model.asset.AssetMeta.AGENT_LINK;
  * Value changes will be send to the protocol (actuators) and the protocol can update the attribute's
  * value (sensors).
  * <p>
- * The link is configured through an {@link AttributeRef} in {@link AssetMeta#AGENT_LINK}.
+ * The link is configured through an {@link AttributeRef} in {@link MetaItemType#AGENT_LINK}.
  */
 final public class AgentLink {
 

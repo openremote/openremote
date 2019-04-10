@@ -23,6 +23,7 @@ out/
 bower_components/
 node_modules/
 yarn-error.log
+ui/**/yarn.lock
 
 console/iOS/DerivedData
 console/iOS/Pods

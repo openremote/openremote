@@ -34,38 +34,41 @@ public class TenantRuleset extends Ruleset {
 
     public static final String TYPE = "tenant";
 
-    @Column(name = "REALM_ID", nullable = false)
-    protected String realmId;
+    @Column(name = "REALM", nullable = false)
+    protected String realm;
+
+    @Column(name = "ACCESS_PUBLIC_READ", nullable = false)
+    protected boolean accessPublicRead;
 
     public TenantRuleset() {
     }
 
-    public TenantRuleset(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String realmId, Lang lang) {
-        super(id, version, createdOn, lastModified, name, enabled, lang);
-        this.realmId = realmId;
-    }
-
-    public TenantRuleset(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String rules, Lang lang, String realmId) {
-        super(id, version, createdOn, lastModified, name, enabled, rules, lang);
-        this.realmId = realmId;
-    }
-
-    public TenantRuleset(String realmId) {
-        this(null, realmId, null, Lang.GROOVY);
-
-    }
-
-    public TenantRuleset(String name, String realmId, String rules, Lang lang) {
+    public TenantRuleset(String name, Lang lang, String rules, String realm, boolean accessPublicRead) {
         super(name, rules, lang);
-        this.realmId = realmId;
+        this.realm = realm;
+        this.accessPublicRead = accessPublicRead;
     }
 
-    public String getRealmId() {
-        return realmId;
+    public TenantRuleset(long id, long version, Date createdOn, Date lastModified, boolean enabled, String name, Lang lang, String rules, String realm, boolean accessPublicRead) {
+        super(id, version, createdOn, lastModified, name, enabled, rules, lang);
+        this.realm = realm;
+        this.accessPublicRead = accessPublicRead;
     }
 
-    public void setRealmId(String realmId) {
-        this.realmId = realmId;
+    public String getRealm() {
+        return realm;
+    }
+
+    public void setRealm(String realm) {
+        this.realm = realm;
+    }
+
+    public boolean isAccessPublicRead() {
+        return accessPublicRead;
+    }
+
+    public void setAccessPublicRead(boolean accessPublicRead) {
+        this.accessPublicRead = accessPublicRead;
     }
 
     @Override
@@ -78,7 +81,8 @@ public class TenantRuleset extends Ruleset {
             ", createdOn='" + createdOn + '\'' +
             ", lastModified='" + lastModified + '\'' +
             ", enabled='" + enabled + '\'' +
-            ", realmId='" + realmId + '\'' +
+            ", realm='" + realm + '\'' +
+            ", accessPublicRead='" + accessPublicRead + '\'' +
             '}';
     }
 }

@@ -19,34 +19,21 @@
  */
 package org.openremote.model.query.filter;
 
-import org.openremote.model.query.BaseAssetQuery;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class TenantPredicate {
 
-    public String realmId;
     public String realm;
 
-    public TenantPredicate() {
-    }
-
-    public TenantPredicate(String realmId) {
-        this.realmId = realmId;
-    }
-
-    public TenantPredicate realmId(String id) {
-        this.realmId = id;
-        return this;
-    }
-
-    public TenantPredicate realm(String name) {
-        this.realm = name;
-        return this;
+    @JsonCreator
+    public TenantPredicate(@JsonProperty("realm") String realm) {
+        this.realm = realm;
     }
 
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
-            "realmId='" + realmId + '\'' +
             ", realm='" + realm + '\'' +
             '}';
     }

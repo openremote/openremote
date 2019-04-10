@@ -30,7 +30,7 @@ import org.openremote.model.AbstractValueHolder;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.ValueHolder;
 import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.asset.AssetMeta;
+import org.openremote.model.asset.MetaItemType;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.asset.agent.ProtocolConfiguration;
 import org.openremote.model.attribute.*;
@@ -76,7 +76,7 @@ import static org.openremote.model.util.TextUtil.*;
  * #META_PROTOCOL_FOLLOW_REDIRECTS}</li> <li>{@link #META_FAILURE_CODES}</li> <li>{@link #META_HEADERS}</li> </ul>
  * <h1>Linked Attributes</h1>
  * <p>
- * {@link Attribute}s that are linked to this protocol using an {@link AssetMeta#AGENT_LINK} {@link MetaItem} support
+ * {@link Attribute}s that are linked to this protocol using an {@link MetaItemType#AGENT_LINK} {@link MetaItem} support
  * the following meta items: <ul> <li>{@link #META_ATTRIBUTE_PATH} (<b>if not supplied then base URI is used</b>)</li>
  * <li>{@link #META_ATTRIBUTE_METHOD}</li> <li>{@link #META_ATTRIBUTE_BODY}</li> <li>{@link
  * #META_ATTRIBUTE_POLLING_SECONDS} (<b>required if attribute value should be set by the response received from this

@@ -23,7 +23,6 @@ import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.timer.TimerService;
-import org.openremote.container.web.WebService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebService;
@@ -31,7 +30,9 @@ import org.openremote.model.rules.AssetRuleset;
 import org.openremote.model.rules.GlobalRuleset;
 import org.openremote.model.rules.Ruleset;
 import org.openremote.model.rules.TenantRuleset;
+import org.openremote.model.util.TextUtil;
 
+import javax.persistence.TypedQuery;
 import java.util.List;
 
 public class RulesetStorageService implements ContainerService {
@@ -50,13 +51,13 @@ public class RulesetStorageService implements ContainerService {
         identityService = container.getService(ManagerIdentityService.class);
 
         container.getService(ManagerWebService.class).getApiSingletons().add(
-            new RulesResourceImpl(
-                container.getService(TimerService.class),
-                container.getService(ManagerIdentityService.class),
-                this,
-                container.getService(AssetStorageService.class),
-                container.getService(RulesService.class)
-            )
+                new RulesResourceImpl(
+                        container.getService(TimerService.class),
+                        container.getService(ManagerIdentityService.class),
+                        this,
+                        container.getService(AssetStorageService.class),
+                        container.getService(RulesService.class)
+                )
         );
     }
 
@@ -69,166 +70,176 @@ public class RulesetStorageService implements ContainerService {
 
     }
 
-    /**
-     * The {@link Ruleset#rules} property is not populated for this query to avoid loading multiple large strings.
-     */
-    public List<GlobalRuleset> findGlobalRulesets() {
-        return persistenceService.doReturningTransaction(entityManager ->
-                                                             entityManager.createQuery(
-                                                                 "select new org.openremote.model.rules.GlobalRuleset(" +
-                                                                     "rs.id, rs.version, rs.createdOn, rs.lastModified, rs.name, rs.enabled, rs.lang" +
-                                                                     ") " +
-                                                                     "from GlobalRuleset rs " +
-                                                                     "order by rs.createdOn asc",
-                                                                 GlobalRuleset.class
-                                                             ).getResultList()
-        );
-    }
+    public List<GlobalRuleset> findGlobalRulesets(boolean onlyEnabled, Ruleset.Lang language, boolean fullyPopulate) {
 
-    /**
-     * The {@link Ruleset#rules} property is not populated for this query to avoid loading multiple large strings.
-     */
-    public List<TenantRuleset> findTenantRulesets(String realmId) {
-        return persistenceService.doReturningTransaction(entityManager ->
-                                                             entityManager.createQuery(
-                                                                 "select new org.openremote.model.rules.TenantRuleset(" +
-                                                                     "rs.id, rs.version, rs.createdOn, rs.lastModified, rs.name, rs.enabled, rs.realmId, rs.lang" +
-                                                                     ") " +
-                                                                     "from TenantRuleset rs " +
-                                                                     "where rs.realmId = :realmId " +
-                                                                     "order by rs.createdOn asc",
-                                                                 TenantRuleset.class
-                                                             ).setParameter("realmId", realmId).getResultList()
-        );
-    }
+        String query = "select new org.openremote.model.rules.GlobalRuleset(" +
+                "rs.id, rs.version, rs.createdOn, rs.lastModified, rs.enabled, rs.name, rs.lang";
 
-    /**
-     * The {@link Ruleset#rules} property is not populated for this query to avoid loading multiple large strings.
-     */
-    public List<AssetRuleset> findAssetRulesets(String realmId, String assetId) {
-        return persistenceService.doReturningTransaction(entityManager ->
-                                                             entityManager.createQuery(
-                                                                 "select new org.openremote.model.rules.AssetRuleset(" +
-                                                                     "rs.id, rs.version, rs.createdOn, rs.lastModified, rs.name, rs.enabled, rs.assetId, rs.lang" +
-                                                                     ") " +
-                                                                     "from AssetRuleset rs, Asset a " +
-                                                                     "where rs.assetId = :assetId and rs.assetId = a.id and a.realmId = :realmId " +
-                                                                     "order by rs.createdOn asc",
-                                                                 AssetRuleset.class
-                                                             ).setParameter("realmId", realmId).setParameter("assetId",
-                                                                                                             assetId).getResultList()
-        );
-    }
+        query += fullyPopulate ? ", rs.rules" : ", cast(null as string)";
 
-    /**
-     * @return Fully populated rulesets including {@link Ruleset#rules} property.
-     */
-    public List<GlobalRuleset> findEnabledGlobalRulesets() {
-        return persistenceService.doReturningTransaction(entityManager ->
-                                                             entityManager.createQuery(
-                                                                 "select new org.openremote.model.rules.GlobalRuleset(" +
-                                                                     "rs.id, rs.version, rs.createdOn, rs.lastModified, rs.name, rs.enabled, rs.rules, rs.lang" +
-                                                                     ") " +
-                                                                     "from GlobalRuleset rs " +
-                                                                     "where rs.enabled = true",
-                                                                 GlobalRuleset.class
-                                                             ).getResultList()
-        );
-    }
+        query += ") " +
+                "from GlobalRuleset rs where 1=1 ";
 
-    /**
-     * @return Fully populated rulesets including {@link Ruleset#rules} property.
-     */
-    public List<TenantRuleset> findEnabledTenantRulesets() {
-        return persistenceService.doReturningTransaction(entityManager ->
-                                                             entityManager.createQuery(
-                                                                 "select new org.openremote.model.rules.TenantRuleset(" +
-                                                                     "rs.id, rs.version, rs.createdOn, rs.lastModified, rs.name, rs.enabled, rs.rules, rs.lang, rs.realmId" +
-                                                                     ") " +
-                                                                     "from TenantRuleset rs " +
-                                                                     "where rs.enabled = true",
-                                                                 TenantRuleset.class
-                                                             ).getResultList()
-        );
-    }
+        if (onlyEnabled) {
+            query += "and rs.enabled = true ";
+        }
 
-    /**
-     * @return Fully populated rulesets including {@link Ruleset#rules} property.
-     */
-    public List<TenantRuleset> findEnabledTenantRulesets(String realmId) {
-        return persistenceService.doReturningTransaction(entityManager ->
-                                                             entityManager.createQuery(
-                                                                 "select new org.openremote.model.rules.TenantRuleset(" +
-                                                                     "rs.id, rs.version, rs.createdOn, rs.lastModified, rs.name, rs.enabled, rs.rules, rs.lang, rs.realmId" +
-                                                                     ") " +
-                                                                     "from TenantRuleset rs " +
-                                                                     "where rs.enabled = true and rs.realmId = :realmId",
-                                                                 TenantRuleset.class
-                                                             ).setParameter("realmId", realmId).getResultList()
-        );
-    }
+        if (language != null) {
+            query += "and rs.lang = :lang ";
+        }
 
-    /**
-     * @return Fully populated rulesets including {@link Ruleset#rules} property.
-     */
-    public List<AssetRuleset> findEnabledAssetRulesets() {
-        return persistenceService.doReturningTransaction(entityManager ->
-                                                             entityManager.createQuery(
-                                                                 "select new org.openremote.model.rules.AssetRuleset(" +
-                                                                     "rs.id, rs.version, rs.createdOn, rs.lastModified, rs.name, rs.enabled, rs.rules, rs.lang, rs.assetId, a.realmId" +
-                                                                     ") " +
-                                                                     "from AssetRuleset rs, Asset a " +
-                                                                     "where rs.assetId = a.id " +
-                                                                     "and rs.enabled = true ",
-                                                                 AssetRuleset.class
-                                                             ).getResultList()
-        );
-    }
+        query += "order by rs.createdOn asc";
 
-    /**
-     * @return Fully populated ruleset including {@link Ruleset#rules} property.
-     */
-    public AssetRuleset findEnabledAssetRuleset(Long id) {
+        String finalQuery = query;
         return persistenceService.doReturningTransaction(entityManager -> {
-                                                             List<AssetRuleset> result = entityManager.createQuery(
-                                                                 "select new org.openremote.model.rules.AssetRuleset(" +
-                                                                     "rs.id, rs.version, rs.createdOn, rs.lastModified, rs.name, rs.enabled, rs.rules, rs.lang, rs.assetId, a.realmId" +
-                                                                     ") " +
-                                                                     "from AssetRuleset rs, Asset a " +
-                                                                     "where rs.assetId = a.id " +
-                                                                     "and rs.id = :id " +
-                                                                     "and rs.enabled = true ",
-                                                                 AssetRuleset.class
-                                                             ).setParameter("id", id).getResultList();
-                                                             return result.size() > 0 ? result.get(0) : null;
-                                                         }
+                TypedQuery<GlobalRuleset> qry = entityManager.createQuery(
+                        finalQuery,
+                        GlobalRuleset.class
+                );
+
+                if (language != null) {
+                    qry.setParameter("lang", language);
+                }
+
+                return qry.getResultList();
+        });
+    }
+
+    public List<TenantRuleset> findTenantRulesets(boolean onlyPublic, boolean onlyEnabled, Ruleset.Lang language, boolean fullyPopulate) {
+        return findTenantRulesets(null, onlyPublic, onlyEnabled, language, fullyPopulate);
+    }
+    public List<TenantRuleset> findTenantRulesets(String realm, boolean onlyPublic, boolean onlyEnabled, Ruleset.Lang language, boolean fullyPopulate) {
+
+        String query = "select new org.openremote.model.rules.TenantRuleset(" +
+                "rs.id, rs.version, rs.createdOn, rs.lastModified, rs.enabled, rs.name, rs.lang";
+
+        query += fullyPopulate ? ", rs.rules" : ", cast(null as string)";
+
+        query += ", rs.realm, rs.accessPublicRead) " +
+                "from TenantRuleset rs " +
+                "where 1=1 ";
+
+        boolean includeRealm = !TextUtil.isNullOrEmpty(realm);
+
+        if (includeRealm) {
+            query += "and rs.realm = :realm ";
+        }
+
+        if (onlyPublic) {
+            query += "and rs.accessPublicRead = true ";
+        }
+
+        if (onlyEnabled) {
+            query += "and rs.enabled = true ";
+        }
+
+        if (language != null) {
+            query += "and rs.lang = :lang ";
+        }
+
+        query += "order by rs.createdOn asc";
+
+        String finalQuery = query;
+        return persistenceService.doReturningTransaction(entityManager -> {
+                    TypedQuery<TenantRuleset> qry = entityManager.createQuery(
+                            finalQuery,
+                            TenantRuleset.class
+                    );
+                    if (includeRealm) {
+                        qry.setParameter("realm", realm);
+                    }
+                    if (language != null) {
+                        qry.setParameter("lang", language);
+                    }
+
+                    return qry.getResultList();
+                }
         );
     }
 
-    /**
-     * @return Fully populated rulesets including {@link Ruleset#rules} property.
-     */
-    public List<AssetRuleset> findEnabledAssetRulesets(String realmId) {
-        return persistenceService.doReturningTransaction(entityManager ->
-                                                             entityManager.createQuery(
-                                                                 "select new org.openremote.model.rules.AssetRuleset(" +
-                                                                     "rs.id, rs.version, rs.createdOn, rs.lastModified, rs.name, rs.enabled, rs.rules, rs.lang, rs.assetId, a.realmId" +
-                                                                     ") " +
-                                                                     "from AssetRuleset rs, Asset a " +
-                                                                     "where rs.assetId = a.id and a.realmId = :realmId " +
-                                                                     "and rs.enabled = true",
-                                                                 AssetRuleset.class
-                                                             ).setParameter("realmId", realmId).getResultList()
+    public List<AssetRuleset> findAssetRulesetsByRealm(String realm, boolean onlyPublic, boolean onlyEnabled, Ruleset.Lang language, boolean fullyPopulate) {
+        return findAssetRulesets(realm, null, onlyPublic, onlyEnabled, language, fullyPopulate);
+    }
+    public List<AssetRuleset> findAssetRulesetsByAssetId(String assetId, boolean onlyPublic, boolean onlyEnabled, Ruleset.Lang language, boolean fullyPopulate) {
+        return findAssetRulesets(null, assetId, onlyPublic, onlyEnabled, language, fullyPopulate);
+    }
+    public List<AssetRuleset> findAssetRulesets(String realm, String assetId, boolean onlyPublic, boolean onlyEnabled, Ruleset.Lang language, boolean fullyPopulate) {
+
+        String query = "select new org.openremote.model.rules.AssetRuleset(" +
+                "rs.id, rs.version, rs.createdOn, rs.lastModified, rs.enabled, rs.name, rs.lang";
+
+        query += fullyPopulate ? ", rs.rules" : ", cast(null as string)";
+
+        query += ", a.realm, rs.assetId, rs.accessPublicRead) " +
+                "from AssetRuleset rs, Asset a " +
+                "where rs.assetId = a.id ";
+
+        boolean includeRealm = !TextUtil.isNullOrEmpty(realm);
+        boolean includeAssetId = !TextUtil.isNullOrEmpty(assetId);
+
+        if (includeRealm) {
+            query += "and a.realm = :realm ";
+        }
+
+        if (includeAssetId) {
+            query += "and rs.assetId = :assetId ";
+        }
+
+        if (onlyPublic) {
+            query += "and rs.accessPublicRead = true ";
+        }
+
+        if (onlyEnabled) {
+            query += "and rs.enabled = true ";
+        }
+
+        if (language != null) {
+            query += "and rs.lang = :lang ";
+        }
+
+        query += "order by rs.createdOn asc";
+
+        String finalQuery = query;
+
+        return persistenceService.doReturningTransaction(entityManager -> {
+                    TypedQuery<AssetRuleset> qry = entityManager.createQuery(
+                            finalQuery,
+                            AssetRuleset.class
+                    );
+
+                    if (includeRealm) {
+                        qry.setParameter("realm", realm);
+                    }
+                    if (includeAssetId) {
+                        qry.setParameter("assetId", assetId);
+                    }
+                    if (language != null) {
+                        qry.setParameter("lang", language);
+                    }
+
+                    return qry.getResultList();
+                }
         );
     }
 
     public <T extends Ruleset> T findById(Class<T> rulesetType, Long id) {
-        return persistenceService.doReturningTransaction(em -> em.find(rulesetType, id));
+
+        return persistenceService.doReturningTransaction(em -> {
+            T ruleset = em.find(rulesetType, id);
+
+            if (rulesetType == AssetRuleset.class && ruleset != null && TextUtil.isNullOrEmpty(((AssetRuleset)ruleset).getRealm())) {
+                // Asset rulesets require special treatment as realm is transient - TODO Should a JPA mapping be used?
+                String realm = em.createQuery("select a.realm from AssetRuleset rs, Asset a where a.id = rs.assetId and rs.id = :id", String.class).setParameter("id", id).getSingleResult();
+                ((AssetRuleset) ruleset).setRealm(realm);
+            }
+
+            return ruleset;
+        });
     }
 
     public <T extends Ruleset> T merge(T ruleset) {
         return persistenceService.doReturningTransaction(entityManager ->
-                                                             entityManager.merge(ruleset)
+                entityManager.merge(ruleset)
         );
     }
 

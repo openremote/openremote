@@ -19,16 +19,12 @@
  */
 package org.openremote.model.asset;
 
-import org.openremote.model.attribute.MetaItem;
-import org.openremote.model.value.Values;
+import org.openremote.model.attribute.AttributeDescriptor;
 
 import java.util.*;
-import java.util.stream.Stream;
 
 import static org.openremote.model.Constants.ASSET_NAMESPACE;
-import static org.openremote.model.asset.AssetMeta.*;
-import static org.openremote.model.attribute.AttributeValueType.NUMBER;
-import static org.openremote.model.attribute.AttributeValueType.STRING;
+import static org.openremote.model.attribute.AttributeType.*;
 
 /**
  * Asset type is an arbitrary string. It should be URI. This enum contains the well-known URIs for functionality we want
@@ -36,38 +32,16 @@ import static org.openremote.model.attribute.AttributeValueType.STRING;
  * <p>
  * TODO https://people.eecs.berkeley.edu/~arka/papers/buildsys2015_metadatasurvey.pdf
  */
-public enum AssetType implements AssetTypeDescriptor {
+public enum AssetType implements AssetDescriptor {
 
     CUSTOM(null, "cube"),
 
     BUILDING(ASSET_NAMESPACE + ":building", "building",
-             new AssetAttribute("area", NUMBER)
-                 .setMeta(
-                     new MetaItem(LABEL, Values.create("Surface Area")),
-                     new MetaItem(DESCRIPTION, Values.create("Floor area of building measured in m²")),
-                     new MetaItem(ABOUT, Values.create("http://project-haystack.org/tag/area"))
-                 ),
-             new AssetAttribute("geoStreet", STRING)
-                 .setMeta(
-                     new MetaItem(LABEL, Values.create("Street")),
-                     new MetaItem(ABOUT, Values.create("http://project-haystack.org/tag/geoStreet"))
-                 ),
-             new AssetAttribute("geoPostalCode", NUMBER)
-                 .setMeta(
-                     new MetaItem(LABEL, Values.create("Postal Code")),
-                     new MetaItem(ABOUT, Values.create("http://project-haystack.org/tag/geoPostalCode"))
-                 ),
-             new AssetAttribute("geoCity", STRING)
-                 .setMeta(
-                     new MetaItem(LABEL, Values.create("City")),
-                     new MetaItem(ABOUT, Values.create("http://project-haystack.org/tag/geoCity"))
-                 ),
-             new AssetAttribute("geoCountry", STRING)
-                 .setMeta(
-                     new MetaItem(LABEL, Values.create("Country")),
-                     new MetaItem(ABOUT, Values.create("http://project-haystack.org/tag/geoCountry"))
-                 )
-    ),
+            SURFACE_AREA,
+            GEO_STREET,
+            GEO_CITY,
+            GEO_COUNTRY,
+            GEO_POSTAL_CODE),
 
     FLOOR(ASSET_NAMESPACE + ":floor", "server"),
 
@@ -81,33 +55,20 @@ public enum AssetType implements AssetTypeDescriptor {
 
     THING(ASSET_NAMESPACE + ":thing", "cog");
 
-    final protected String value;
+    final protected String type;
     final protected String icon;
     final protected boolean accessPublicRead;
-    final protected AssetAttribute[] defaultAttributes;
+    final protected AttributeDescriptor[] attributeDescriptors;
 
-    AssetType(String value, String icon, AssetAttribute... defaultAttributes) {
-        this(value, icon, false, defaultAttributes);
+    AssetType(String type, String icon, AttributeDescriptor... attributeDescriptors) {
+        this(type, icon, false, attributeDescriptors);
     }
 
-    AssetType(String value, String icon, boolean accessPublicRead, AssetAttribute... defaultAttributes) {
-        this.value = value;
+    AssetType(String type, String icon, boolean accessPublicRead, AttributeDescriptor... attributeDescriptors) {
+        this.type = type;
         this.icon = icon;
         this.accessPublicRead = accessPublicRead;
-        this.defaultAttributes = defaultAttributes;
-    }
-
-    public static AssetTypeDescriptor[] valuesSorted() {
-        List<AssetTypeDescriptor> list = new ArrayList<>(Arrays.asList(values()));
-
-        list.sort(Comparator.comparing(AssetTypeDescriptor::getName));
-        if (list.contains(CUSTOM)) {
-            // CUSTOM should be first
-            list.remove(CUSTOM);
-            list.add(0, CUSTOM);
-        }
-
-        return list.toArray(new AssetTypeDescriptor[list.size()]);
+        this.attributeDescriptors = attributeDescriptors;
     }
 
     public static Optional<AssetType> getByValue(String value) {
@@ -115,7 +76,7 @@ public enum AssetType implements AssetTypeDescriptor {
             return Optional.empty();
 
         for (AssetType assetType : values()) {
-            if (value.equals(assetType.getValue()))
+            if (value.equals(assetType.getType()))
                 return Optional.of(assetType);
         }
         return Optional.empty();
@@ -127,8 +88,8 @@ public enum AssetType implements AssetTypeDescriptor {
     }
 
     @Override
-    public String getValue() {
-        return value;
+    public String getType() {
+        return type;
     }
 
     @Override
@@ -142,7 +103,7 @@ public enum AssetType implements AssetTypeDescriptor {
     }
 
     @Override
-    public Stream<AssetAttribute> getDefaultAttributes() {
-        return defaultAttributes != null ? Arrays.stream(defaultAttributes) : Stream.empty();
+    public Optional<AttributeDescriptor[]> getAttributeDescriptors() {
+        return Optional.ofNullable(attributeDescriptors);
     }
 }

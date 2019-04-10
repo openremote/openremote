@@ -42,6 +42,7 @@ import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeEvent.Source;
 import org.openremote.model.attribute.AttributeExecuteStatus;
 import org.openremote.model.security.ClientRole;
+import org.openremote.model.util.AssetModelUtil;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.Values;
 
@@ -190,7 +191,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                         // TODO Restricted clients should only receive events for RESTRICTED_READ attributes!
                     } else {
                         // Regular users can only get attribute events for assets in their realm
-                        if (!asset.getTenantRealm().equals(auth.getAuthenticatedRealm()))
+                        if (!asset.getRealm().equals(auth.getAuthenticatedRealm()))
                             return false;
                     }
                 }
@@ -281,7 +282,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                             AuthContext authContext = exchange.getIn().getHeader(Constants.AUTH_CONTEXT, AuthContext.class);
                             if (authContext == null) {
                                 // Check attribute has public write flag
-                                if (!oldAttribute.getMetaItem(AssetMeta.ACCESS_PUBLIC_WRITE).isPresent()) {
+                                if (!oldAttribute.getMetaItem(MetaItemType.ACCESS_PUBLIC_WRITE).isPresent()) {
                                     throw new AssetProcessingException(NO_AUTH_CONTEXT);
                                 }
                                 // Check read-only
@@ -349,10 +350,10 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                     }
 
                     //Check if attribute is well known and the value is valid
-                    AssetModel.getAttributeDescriptor(oldAttribute.name).ifPresent(wellKnownAttribute -> {
+                    AssetModelUtil.getAttributeDescriptor(oldAttribute.name).ifPresent(wellKnownAttribute -> {
                         // Check if the value is valid
-                        wellKnownAttribute.getValueType()
-                            .isValidValue(event.getValue().orElse(null))
+                        wellKnownAttribute.getValueDescriptor()
+                            .getValidator().flatMap(v -> v.apply(event.getValue().orElse(null)))
                             .ifPresent(validationFailure -> {
                                 throw new AssetProcessingException(
                                     INVALID_VALUE_FOR_WELL_KNOWN_ATTRIBUTE

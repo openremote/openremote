@@ -24,7 +24,7 @@ import org.openremote.app.client.widget.AttributeRefEditor;
 import org.openremote.app.client.widget.FormView;
 import org.openremote.model.ValueHolder;
 import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.asset.AssetTypeDescriptor;
+import org.openremote.model.asset.AssetDescriptor;
 import org.openremote.model.interop.Consumer;
 import org.openremote.model.util.Pair;
 
@@ -41,7 +41,7 @@ public interface AssetEdit extends FormView, AssetBaseView<AssetEdit.Presenter> 
 
         void onAccessPublicRead(boolean enabled);
 
-        void onAssetTypeSelected(AssetTypeDescriptor value);
+        void onAssetTypeSelected(AssetDescriptor value);
 
         boolean addAttribute(String name, String type);
 
@@ -66,9 +66,9 @@ public interface AssetEdit extends FormView, AssetBaseView<AssetEdit.Presenter> 
 
     void hideMapPopup();
 
-    void selectWellKnownType(AssetTypeDescriptor assetType);
+    void selectWellKnownType(AssetDescriptor assetType);
 
-    void setAvailableWellKnownTypes(AssetTypeDescriptor[] assetTypes);
+    void setAvailableWellKnownTypes(AssetDescriptor[] assetTypes);
 
     void setType(String type);
 

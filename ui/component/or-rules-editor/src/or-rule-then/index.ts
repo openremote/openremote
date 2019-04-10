@@ -1,0 +1,74 @@
+import {html, LitElement, property, customElement, PropertyValues} from "lit-element";
+
+import {style} from "./style";
+import {Rule, RuleActionUnion,
+    AttributeDescriptor} from "@openremote/model";
+
+import "../or-rule-then-condition";
+import {rulesEditorConfig, defaultThen, defaultThenCondition} from "../const/rule-config";
+
+@customElement("or-rule-then")
+class OrRuleThen extends LitElement {
+
+    static get styles() {
+        return [
+            style
+        ]
+    }
+
+    @property({type: Object})
+    public rule?: Rule;
+
+    @property({type: Array})
+    public attributeDescriptors?: AttributeDescriptor[];
+
+    constructor() {
+        super();
+    }
+
+    protected render() {
+
+        return html`
+               <div class="rule-content-section">
+                    <h3>Dan..</h3>
+                    <div class="rule-then-container bg-white shadow">
+                       ${this.rule && this.rule.then ? this.rule.then.map((then: RuleActionUnion) => {
+                            return html`
+                                <or-rule-then-condition .condition="${then}" .attributeDescriptors="${this.attributeDescriptors}"></or-rule-then-condition>
+                                
+                               ${rulesEditorConfig.controls.addThenCondition ? html`
+                                    <span class="rule-additional">&</span>
+                               ` : ``}
+                               
+                        `; }) : ``}
+                       
+                       ${rulesEditorConfig.controls.addThenCondition ? html`
+                            <a class="button-add" @click="${this.addThenCondition}">+</a>
+                       ` : ``}
+                    </div>
+                </div>
+        `;
+    }
+
+    protected updated(_changedProperties: PropertyValues): void {
+        super.updated(_changedProperties);
+        if (this.rule && !this.rule.then) {
+            this.rule.then = defaultThen;
+            this.requestUpdate();
+        }
+    }
+
+    private addThenCondition () {
+        if (this.rule && !this.rule.then) {
+            this.rule.then = defaultThen;
+
+        }
+
+        if (this.rule && this.rule.then) {
+            this.rule.then.push(defaultThenCondition);
+            this.requestUpdate();
+        }
+
+    }
+
+}

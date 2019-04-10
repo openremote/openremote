@@ -5,16 +5,15 @@ apply plugin: 'kotlin-android'
 version = projectVersion
 
 android {
-    compileSdkVersion Integer.valueOf(androidCompileVersion)
+    compileSdkVersion androidCompileVersion
     buildToolsVersion androidBuildToolsVersion
 
     defaultConfig {
 
-        minSdkVersion Integer.valueOf(androidMinVersion)
-        targetSdkVersion Integer.valueOf(androidTargetVersion)
+        minSdkVersion androidMinVersion
+        targetSdkVersion androidTargetVersion
         versionCode Integer.valueOf(projectVersionCode)
         versionName project.version
-
     }
 
     packagingOptions {
@@ -38,7 +37,6 @@ android {
     buildTypes {
 
     }
-    buildToolsVersion '28.0.3'
 }
 
 dependencies {
@@ -46,7 +44,7 @@ dependencies {
     implementation "com.squareup.retrofit2:retrofit:$retrofitVersion"
     implementation "com.android.support:support-compat:$androidSupportVersion"
     implementation "com.android.support:appcompat-v7:$androidSupportVersion"
-    implementation "com.google.firebase:firebase-core:$fcmVersion"
+    implementation "com.google.firebase:firebase-core:$firebaseCoreVersion"
     implementation "com.google.firebase:firebase-messaging:$fcmVersion"
     implementation "com.squareup.retrofit2:converter-jackson:$jacksonVersion"
     implementation "com.squareup.retrofit2:converter-scalars:$retrofitVersion"

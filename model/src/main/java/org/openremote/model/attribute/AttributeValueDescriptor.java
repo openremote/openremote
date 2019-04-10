@@ -1,5 +1,5 @@
 /*
- * Copyright 2017, OpenRemote Inc.
+ * Copyright 2019, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -17,19 +17,28 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.model.asset;
+package org.openremote.model.attribute;
 
-import java.util.stream.Stream;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import org.openremote.model.ValidationFailure;
+import org.openremote.model.value.Value;
+import org.openremote.model.value.ValueType;
 
-public interface AssetTypeDescriptor {
+import java.util.Optional;
+import java.util.function.Function;
 
+@JsonFormat(shape = JsonFormat.Shape.OBJECT)
+public interface AttributeValueDescriptor {
+
+    @JsonProperty
     String getName();
-
-    String getValue();
 
     String getIcon();
 
-    boolean getAccessPublicRead();
+    ValueType getValueType();
 
-    Stream<AssetAttribute> getDefaultAttributes();
+    Optional<MetaItemDescriptor[]> getMetaItemDescriptors();
+
+    Optional<Function<Value, Optional<ValidationFailure>>> getValidator();
 }

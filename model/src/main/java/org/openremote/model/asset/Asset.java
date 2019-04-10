@@ -64,10 +64,7 @@ import static org.openremote.model.attribute.AttributeType.LOCATION;
  * The properties {@link #parentName} and {@link #parentType} are transient, not required
  * for storing assets, and only resolved and usable when the asset is loaded from storage.
  * <p>
- * An asset is stored in and therefore access-controlled through a {@link #realmId}. The
- * transient properties {@link #tenantRealm} (the unique realm name of the realm
- * ID) and {@link #tenantDisplayName} are only resolved and usable when the asset is loaded
- * from storage and not relevant for storing assets.
+ * An asset is stored in and therefore access-controlled through a {@link #realm}.
  * <p>
  * The {@link #createdOn} value is milliseconds since the Unix epoch.
  * <p>
@@ -97,9 +94,8 @@ import static org.openremote.model.attribute.AttributeType.LOCATION;
  * "name": "Smart Building",
  * "type": "urn:openremote:asset:building",
  * "accessPublicRead": false,
- * "realmId": "c38a3fdf-9d74-4dac-940c-50d3dce1d248",
- * "tenantRealm": "tenantA",
- * "tenantDisplayName": "Tenant A",
+ * "realm": "tenantA",
+ * "realmDisplayName": "Tenant A",
  * "path": [
  * "0oI7Gf_kTh6WyRJFUTr8Lg"
  * ],
@@ -120,7 +116,7 @@ import static org.openremote.model.attribute.AttributeType.LOCATION;
  * "parentId": "0oI7Gf_kTh6WyRJFUTr8Lg",
  * "parentName": "Smart Building",
  * "parentType": "urn:openremote:asset:building",
- * "realmId": "c38a3fdf-9d74-4dac-940c-50d3dce1d248",
+ * "realm": "c38a3fdf-9d74-4dac-940c-50d3dce1d248",
  * "tenantRealm": "tenantA",
  * "tenantDisplayName": "Tenant A",
  * "path": [
@@ -144,7 +140,7 @@ import static org.openremote.model.attribute.AttributeType.LOCATION;
  * "parentId": "B0x8ZOqZQHGjq_l0RxAJBA",
  * "parentName": "Apartment 1",
  * "parentType": "urn:openremote:asset:residence",
- * "realmId": "c38a3fdf-9d74-4dac-940c-50d3dce1d248",
+ * "realm": "c38a3fdf-9d74-4dac-940c-50d3dce1d248",
  * "tenantRealm": "tenantA",
  * "tenantDisplayName": "Tenant A",
  * "path": [
@@ -169,7 +165,7 @@ import static org.openremote.model.attribute.AttributeType.LOCATION;
  * "parentId": "bzlRiJmSSMCl8HIUt9-lMg",
  * "parentName": "Living Room",
  * "parentType": "urn:openremote:asset:room",
- * "realmId": "c38a3fdf-9d74-4dac-940c-50d3dce1d248",
+ * "realm": "c38a3fdf-9d74-4dac-940c-50d3dce1d248",
  * "tenantRealm": "tenantA",
  * "tenantDisplayName": "Tenant A",
  * "path": [
@@ -245,7 +241,7 @@ public class Asset implements IdentifiableEntity {
     protected Date createdOn;
 
     @NotNull(message = "{Asset.name.NotNull}")
-    @Size(min = 3, max = 1023, message = "{Asset.name.Size}")
+    @Size(min = 1, max = 1023, message = "{Asset.name.Size}")
     @Column(name = "NAME", nullable = false, length = 1023)
     protected String name;
 
@@ -266,14 +262,8 @@ public class Asset implements IdentifiableEntity {
     @Transient
     protected String parentType;
 
-    @Column(name = "REALM_ID", nullable = false)
-    protected String realmId;
-
-    @Transient
-    protected String tenantRealm;
-
-    @Transient
-    protected String tenantDisplayName;
+    @Column(name = "REALM", nullable = false)
+    protected String realm;
 
     @Transient
     @JsonIgnore
@@ -292,7 +282,7 @@ public class Asset implements IdentifiableEntity {
     public Asset() {
     }
 
-    public Asset(String name, AssetType type) {
+    public Asset(String name, AssetDescriptor type) {
         this(name, type, null, null);
     }
 
@@ -300,20 +290,22 @@ public class Asset implements IdentifiableEntity {
         this(name, type, false, null, null);
     }
 
-    public Asset(@NotNull String name, @NotNull AssetType type, Asset parent) {
-        this(name, type.getValue(), parent);
+    public Asset(@NotNull String name, @NotNull AssetDescriptor type, Asset parent) {
+        this(name, type, parent, null);
     }
 
     public Asset(@NotNull String name, @NotNull String type, Asset parent) {
         this(name, type, false, parent, null);
     }
 
-    public Asset(@NotNull String name, @NotNull AssetType type, Asset parent, @NotNull String realmId) {
-        this(name, type.getValue(), false, parent, realmId);
+    public Asset(@NotNull String name, @NotNull AssetDescriptor type, Asset parent, String realm) {
+        this(name, type.getType(), type.getAccessPublicRead(), parent, realm);
+        type.getAttributeDescriptors().ifPresent(attributeDescriptors ->
+                addAttributes(Arrays.stream(attributeDescriptors).map(AssetAttribute::new).toArray(AssetAttribute[]::new)));
     }
 
-    public Asset(@NotNull String name, @NotNull String type, boolean accessPublicRead, Asset parent, @NotNull String realmId) {
-        setRealmId(realmId);
+    public Asset(@NotNull String name, @NotNull String type, boolean accessPublicRead, Asset parent, String realm) {
+        setRealm(realm);
         setName(name);
         setType(type);
         setParent(parent);
@@ -322,25 +314,20 @@ public class Asset implements IdentifiableEntity {
         // Initialise realm from parent
         // TODO: Need to look at this - can child have a different realm to the parent?
         if (parent != null) {
-            this.realmId = parent.getRealmId();
-            this.tenantRealm = parent.getTenantRealm();
-            this.tenantDisplayName = parent.getTenantDisplayName();
+            this.realm = parent.getRealm();
         }
     }
 
     public Asset(String id, long version, Date createdOn, String name, String type, boolean accessPublicRead,
                  String parentId, String parentName, String parentType,
-                 String realmId, String tenantRealm, String tenantDisplayName,
-                 String[] path, ObjectValue attributes) {
-        this(name, type, accessPublicRead, null, realmId);
+                 String realm, String[] path, ObjectValue attributes) {
+        this(name, type, accessPublicRead, null, realm);
         this.id = id;
         this.version = version;
         this.createdOn = createdOn;
         this.parentId = parentId;
         this.parentName = parentName;
         this.parentType = parentType;
-        this.tenantRealm = tenantRealm;
-        this.tenantDisplayName = tenantDisplayName;
         this.path = path;
         this.attributes = attributes;
     }
@@ -431,8 +418,8 @@ public class Asset implements IdentifiableEntity {
         this.type = type;
     }
 
-    public void setType(AssetTypeDescriptor type) {
-        setType(type != null ? type.getValue() : null);
+    public void setType(AssetDescriptor type) {
+        setType(type != null ? type.getType() : null);
     }
 
     public boolean isAccessPublicRead() {
@@ -490,34 +477,12 @@ public class Asset implements IdentifiableEntity {
         return AssetType.getByValue(getParentType()).orElse(AssetType.CUSTOM);
     }
 
-    public String getRealmId() {
-        return realmId;
+    public String getRealm() {
+        return realm;
     }
 
-    public void setRealmId(String realmId) {
-        this.realmId = realmId;
-    }
-
-    /**
-     * NOTE: This is a transient and optional property, set only in database query results.
-     */
-    public String getTenantRealm() {
-        return tenantRealm;
-    }
-
-    public void setTenantRealm(String tenantRealm) {
-        this.tenantRealm = tenantRealm;
-    }
-
-    /**
-     * NOTE: This is a transient and optional property, set only in database query results.
-     */
-    public String getTenantDisplayName() {
-        return tenantDisplayName;
-    }
-
-    public void setTenantDisplayName(String tenantDisplayName) {
-        this.tenantDisplayName = tenantDisplayName;
+    public void setRealm(String realm) {
+        this.realm = realm;
     }
 
     /**
@@ -563,9 +528,8 @@ public class Asset implements IdentifiableEntity {
 
     public List<AssetAttribute> getAttributesList() {
         if (attributeList == null) {
-            attributeList = new ObservableList<>(attributesFromJson(attributes, id).collect(Collectors.toList()), () -> {
-                this.attributes = attributesToJson(attributeList).orElse(Values.createObject());
-            });
+            attributeList = new ObservableList<>(attributesFromJson(attributes, id).collect(Collectors.toList()),
+                    () -> this.attributes = attributesToJson(attributeList).orElse(Values.createObject()));
         }
         return attributeList;
     }
@@ -619,9 +583,7 @@ public class Asset implements IdentifiableEntity {
             ", parentId='" + parentId + '\'' +
             ", parentName='" + parentName + '\'' +
             ", parentType='" + parentType + '\'' +
-            ", realmId='" + realmId + '\'' +
-            ", tenantRealm='" + tenantRealm + '\'' +
-            ", tenantDisplayName='" + tenantDisplayName + '\'' +
+            ", realm='" + realm + '\'' +
             ", path=" + Arrays.toString(path) +
             ", attributes=" + attributes +
             '}';
@@ -649,11 +611,13 @@ public class Asset implements IdentifiableEntity {
     public void setCoordinates(GeoJSONPoint coordinates) {
         AssetAttribute locationAttribute = getAttributesStream()
             .filter(attribute -> attribute.getNameOrThrow().equals(LOCATION.getName()))
-            .findFirst().orElse(new AssetAttribute(LOCATION.getName(), LOCATION.getValueType()));
+            .findFirst().orElse(new AssetAttribute(LOCATION));
 
         locationAttribute.setValue(coordinates == null ? null : coordinates.toValue());
         replaceAttribute(locationAttribute);
     }
+
+
 
     public boolean hasGeoFeature() {
         return getCoordinates() != null;
@@ -697,7 +661,7 @@ public class Asset implements IdentifiableEntity {
 
     public static Asset map(Asset assetToMap, Asset asset,
                             String overrideName,
-                            String overrideRealmId,
+                            String overrideRealm,
                             String overrideParentId,
                             String overrideType,
                             Boolean overrideAccessPublicRead,
@@ -716,9 +680,7 @@ public class Asset implements IdentifiableEntity {
         asset.setParentName(null);
         asset.setParentType(null);
 
-        asset.setRealmId(overrideRealmId != null ? overrideRealmId : assetToMap.getRealmId());
-        asset.setTenantRealm(null);
-        asset.setTenantDisplayName(null);
+        asset.setRealm(overrideRealm != null ? overrideRealm : assetToMap.getRealm());
 
         asset.setAttributes(overrideAttributes != null ? overrideAttributes : assetToMap.getAttributes());
 

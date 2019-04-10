@@ -27,7 +27,7 @@ import org.openremote.app.client.assets.attributes.AttributeView;
 import org.openremote.app.client.assets.attributes.MetaEditor;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.asset.AssetMeta;
+import org.openremote.model.asset.MetaItemType;
 import org.openremote.model.attribute.*;
 import org.openremote.model.interop.Consumer;
 import org.openremote.model.util.EnumUtil;
@@ -213,7 +213,7 @@ public class AttributeLinkEditor extends FlowPanel {
                 // Check item with this name doesn't already exist
                 boolean canAdd = !converterAttribute.hasMetaItem(item.getName().orElse(null));
                 if (!canAdd) {
-                    String metaItemName = getMetaItemDisplayName(environment, AssetMeta.ATTRIBUTE_LINK.name());
+                    String metaItemName = getMetaItemDisplayName(environment, MetaItemType.ATTRIBUTE_LINK.name());
                     showValidationError(attribute.getName().orElse(""), metaItemName, new ValidationFailure(FailureReason.CONVERTER_KEY_DUPLICATION, item.getName().orElse("")));
                     return false;
                 }
@@ -266,7 +266,7 @@ public class AttributeLinkEditor extends FlowPanel {
     @SuppressWarnings("ParameterCanBeLocal")
     protected void showConverterEditorValidationError(String attributeName, String metaItemName, ValidationFailure validationFailure) {
         // Replace metaItemName with AttributeLink
-        metaItemName = environment.getMessages().metaItemDisplayName(AssetMeta.ATTRIBUTE_LINK.name());
+        metaItemName = environment.getMessages().metaItemDisplayName(MetaItemType.ATTRIBUTE_LINK.name());
 
         // Replace meta item validation failures
         if (validationFailure != null) {

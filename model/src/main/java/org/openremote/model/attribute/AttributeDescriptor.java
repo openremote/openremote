@@ -19,15 +19,19 @@
  */
 package org.openremote.model.attribute;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import org.openremote.model.value.Value;
 
+import java.util.Optional;
+
+@JsonFormat(shape = JsonFormat.Shape.OBJECT)
 public interface AttributeDescriptor {
 
     String getName();
 
-    AttributeValueType getValueType();
+    AttributeValueDescriptor getValueDescriptor();
 
-    MetaItem[] getDefaultMetaItems();
+    Optional<MetaItemDescriptor[]> getMetaItemDescriptors();
 
-    Value getDefaultValue();
+    Value getInitialValue();
 }
