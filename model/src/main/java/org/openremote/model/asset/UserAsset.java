@@ -21,6 +21,7 @@ package org.openremote.model.asset;
 
 import org.hibernate.annotations.Formula;
 import org.openremote.model.attribute.MetaItemDescriptor;
+import org.openremote.model.attribute.MetaItemType;
 
 import javax.persistence.*;
 import java.io.Serializable;

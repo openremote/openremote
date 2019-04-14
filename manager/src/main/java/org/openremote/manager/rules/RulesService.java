@@ -38,7 +38,7 @@ import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.model.Constants;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.asset.MetaItemType;
+import org.openremote.model.attribute.MetaItemType;
 import org.openremote.model.attribute.AttributeEvent.Source;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.filter.AttributeMetaPredicate;

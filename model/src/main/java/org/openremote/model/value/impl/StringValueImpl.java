@@ -15,12 +15,15 @@
  */
 package org.openremote.model.value.impl;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import org.openremote.model.ModelModule;
 import org.openremote.model.value.StringValue;
 import org.openremote.model.value.ValueException;
 import org.openremote.model.value.ValueType;
 
 import java.util.Objects;
 
+@JsonSerialize(using = ModelModule.ValueJsonSerializer.class)
 public class StringValueImpl extends ValueImpl implements StringValue {
 
     private transient String string;

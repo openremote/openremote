@@ -126,9 +126,9 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
             new AssetQuery()
                 .select(new BaseAssetQuery.Select(BaseAssetQuery.Include.ALL_EXCEPT_PATH,
                     false,
-                    AttributeType.CONSOLE_PROVIDERS.getName()))
+                    AttributeType.CONSOLE_PROVIDERS.getAttributeName()))
                 .type(CONSOLE)
-                .attributeValue(AttributeType.CONSOLE_PROVIDERS.getName(),
+                .attributeValue(AttributeType.CONSOLE_PROVIDERS.getAttributeName(),
                     new ObjectValueKeyPredicate("push")))
             .stream()
             .filter(PushNotificationHandler::isLinkedToFcmProvider)
@@ -187,7 +187,7 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
         List<Asset> mappedConsoles;
 
         if (forTopic) {
-            select = new BaseAssetQuery.Select(ONLY_ID_AND_NAME_AND_ATTRIBUTES, false, AttributeType.CONSOLE_PROVIDERS.getName());
+            select = new BaseAssetQuery.Select(ONLY_ID_AND_NAME_AND_ATTRIBUTES, false, AttributeType.CONSOLE_PROVIDERS.getAttributeName());
         } else {
             select = new BaseAssetQuery.Select(ONLY_ID_AND_NAME);
         }
@@ -201,7 +201,7 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
                         .select(select)
                         .tenant(new TenantPredicate(targetId))
                         .type(AssetType.CONSOLE)
-                        .attributeValue(AttributeType.CONSOLE_PROVIDERS.getName(),
+                        .attributeValue(AttributeType.CONSOLE_PROVIDERS.getAttributeName(),
                             new ObjectValueKeyPredicate(PushNotificationMessage.TYPE))
                 );
 
@@ -231,7 +231,7 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
                             .select(select)
                             .ids(ids)
                             .type(AssetType.CONSOLE)
-                            .attributeValue(AttributeType.CONSOLE_PROVIDERS.getName(),
+                            .attributeValue(AttributeType.CONSOLE_PROVIDERS.getAttributeName(),
                                 new ObjectValueKeyPredicate(PushNotificationMessage.TYPE))
                     );
 
@@ -256,7 +256,7 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
                         .select(select)
                         .path(new PathPredicate(targetId))
                         .type(AssetType.CONSOLE)
-                        .attributeValue(AttributeType.CONSOLE_PROVIDERS.getName(),
+                        .attributeValue(AttributeType.CONSOLE_PROVIDERS.getAttributeName(),
                             new ObjectValueKeyPredicate(PushNotificationMessage.TYPE))
                 );
 

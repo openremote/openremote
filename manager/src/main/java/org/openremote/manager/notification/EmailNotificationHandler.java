@@ -186,10 +186,10 @@ public class EmailNotificationHandler implements NotificationHandler {
                                 .select(new BaseAssetQuery.Select(
                                         ONLY_ID_AND_NAME_AND_ATTRIBUTES,
                                         false,
-                                        AttributeType.EMAIL.getName()))
+                                        AttributeType.EMAIL.getAttributeName()))
                                 .path(new PathPredicate(targetId))
                                 .attributes(new AttributePredicate(
-                                        new StringPredicate(AttributeType.EMAIL.getName()),
+                                        new StringPredicate(AttributeType.EMAIL.getAttributeName()),
                                         new ValueNotEmptyPredicate())));
 
                 if (assets.isEmpty()) {

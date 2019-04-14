@@ -25,38 +25,37 @@ import org.openremote.model.value.Values;
 
 import java.util.Optional;
 
-import static org.openremote.model.asset.MetaItemType.*;
-import static org.openremote.model.attribute.AttributeValueType.OBJECT;
+import static org.openremote.model.attribute.MetaItemType.*;
 
 public enum AttributeType implements AttributeDescriptor {
 
-    STRING("string", org.openremote.model.attribute.AttributeValueType.STRING),
+    STRING("string", AttributeValueType.STRING),
 
-    NUMBER("number", org.openremote.model.attribute.AttributeValueType.NUMBER),
+    NUMBER("number", AttributeValueType.NUMBER),
 
-    CONSOLE_NAME("consoleName", org.openremote.model.attribute.AttributeValueType.STRING),
+    CONSOLE_NAME("consoleName", AttributeValueType.STRING),
 
-    CONSOLE_VERSION("consoleVersion", org.openremote.model.attribute.AttributeValueType.STRING),
+    CONSOLE_VERSION("consoleVersion", AttributeValueType.STRING),
 
-    CONSOLE_PLATFORM("consolePlatform", org.openremote.model.attribute.AttributeValueType.STRING),
+    CONSOLE_PLATFORM("consolePlatform", AttributeValueType.STRING),
 
-    CONSOLE_PROVIDERS("consoleProviders", OBJECT),
+    CONSOLE_PROVIDERS("consoleProviders", AttributeValueType.OBJECT),
 
     EMAIL("email", AttributeValueType.EMAIL, LABEL.withInitialValue(Values.create("Email"))),
 
-    GEO_CITY("city", org.openremote.model.attribute.AttributeValueType.STRING,
+    GEO_CITY("city", AttributeValueType.STRING,
             LABEL.withInitialValue(Values.create("City")),
             ABOUT.withInitialValue(Values.create("http://project-haystack.org/tag/geoCity"))),
 
-    GEO_COUNTRY("country", org.openremote.model.attribute.AttributeValueType.STRING,
+    GEO_COUNTRY("country", AttributeValueType.STRING,
             LABEL.withInitialValue(Values.create("Country")),
             ABOUT.withInitialValue(Values.create("http://project-haystack.org/tag/geoCountry"))),
 
-    GEO_POSTAL_CODE("postalCode", org.openremote.model.attribute.AttributeValueType.NUMBER,
+    GEO_POSTAL_CODE("postalCode", AttributeValueType.NUMBER,
             LABEL.withInitialValue(Values.create("Postal Code")),
             ABOUT.withInitialValue(Values.create("http://project-haystack.org/tag/geoPostalCode"))),
 
-    GEO_STREET("street", org.openremote.model.attribute.AttributeValueType.STRING,
+    GEO_STREET("street", AttributeValueType.STRING,
             LABEL.withInitialValue(Values.create("Street")),
             ABOUT.withInitialValue(Values.create("http://project-haystack.org/tag/geoStreet"))),
 
@@ -64,22 +63,23 @@ public enum AttributeType implements AttributeDescriptor {
 
     SURFACE_AREA(
             "surfaceArea",
-        org.openremote.model.attribute.AttributeValueType.NUMBER,
+        AttributeValueType.NUMBER,
             LABEL.withInitialValue(Values.create("Surface Area")),
             DESCRIPTION.withInitialValue(Values.create("Floor area of building measured in m²")),
             ABOUT.withInitialValue(Values.create("http://project-haystack.org/tag/area")));
 
-    final protected String name;
+
+    final protected String attributeName;
     final protected AttributeValueDescriptor attributeValueDescriptor;
     final protected Value initialValue;
     final protected MetaItemDescriptor[] metaItemDescriptors;
 
-    AttributeType(String name, AttributeValueDescriptor attributeValueDescriptor, MetaItemDescriptor... metaItemDescriptors) {
-        this(name, attributeValueDescriptor, null, metaItemDescriptors);
+    AttributeType(String attributeName, AttributeValueDescriptor attributeValueDescriptor, MetaItemDescriptor... metaItemDescriptors) {
+        this(attributeName, attributeValueDescriptor, null, metaItemDescriptors);
     }
 
-    AttributeType(String name, AttributeValueDescriptor attributeValueDescriptor, Value initialValue, MetaItemDescriptor... metaItemDescriptors) {
-        this.name = name;
+    AttributeType(String attributeName, AttributeValueDescriptor attributeValueDescriptor, Value initialValue, MetaItemDescriptor... metaItemDescriptors) {
+        this.attributeName = attributeName;
         this.attributeValueDescriptor = attributeValueDescriptor;
         this.metaItemDescriptors = metaItemDescriptors;
         this.initialValue = initialValue;
@@ -90,15 +90,21 @@ public enum AttributeType implements AttributeDescriptor {
             return Optional.empty();
 
         for (AttributeDescriptor descriptor : values()) {
-            if (name.equals(descriptor.getName()))
+            if (name.equals(descriptor.getAttributeName()))
                 return Optional.of(descriptor);
         }
         return Optional.empty();
     }
 
+
     @Override
     public String getName() {
-        return name;
+        return name();
+    }
+
+    @Override
+    public String getAttributeName() {
+        return attributeName;
     }
 
     @Override
@@ -124,8 +130,13 @@ public enum AttributeType implements AttributeDescriptor {
 
         return new AttributeDescriptor() {
             @Override
-            @JsonProperty
             public String getName() {
+                return name();
+            }
+
+            @Override
+            @JsonProperty
+            public String getAttributeName() {
                 return name;
             }
 

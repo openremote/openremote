@@ -45,7 +45,7 @@ import org.openremote.model.ValidationFailure;
 import org.openremote.model.ValueHolder;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.asset.MetaItemType;
+import org.openremote.model.attribute.MetaItemType;
 import org.openremote.model.asset.agent.ProtocolConfiguration;
 import org.openremote.model.attribute.*;
 import org.openremote.model.event.bus.EventBus;

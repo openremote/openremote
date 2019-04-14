@@ -117,7 +117,7 @@ public class AssetModelUtil {
             return Optional.empty();
 
         for (AttributeDescriptor attributeDescriptor : attributeDescriptors) {
-            if (name.equals(attributeDescriptor.getName()))
+            if (name.equals(attributeDescriptor.getAttributeName()))
                 return Optional.of(attributeDescriptor);
         }
         return Optional.empty();
@@ -155,7 +155,7 @@ public class AssetModelUtil {
 //    public static AssetDescriptor[] getAssetTypesSorted() {
 //        List<AssetDescriptor> list = new ArrayList<>(Arrays.asList(assetDescriptors));
 //
-//        list.sort(Comparator.comparing(AssetDescriptor::getName));
+//        list.sort(Comparator.comparing(AssetDescriptor::getAttributeName));
 //        if (list.contains(CUSTOM)) {
 //            // CUSTOM should be first
 //            list.remove(CUSTOM);

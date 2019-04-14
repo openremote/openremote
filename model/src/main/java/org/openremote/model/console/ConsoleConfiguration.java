@@ -40,9 +40,9 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static org.openremote.model.asset.MetaItemType.ACCESS_PUBLIC_WRITE;
-import static org.openremote.model.asset.MetaItemType.ACCESS_RESTRICTED_WRITE;
-import static org.openremote.model.asset.MetaItemType.RULE_STATE;
+import static org.openremote.model.attribute.MetaItemType.ACCESS_PUBLIC_WRITE;
+import static org.openremote.model.attribute.MetaItemType.ACCESS_RESTRICTED_WRITE;
+import static org.openremote.model.attribute.MetaItemType.RULE_STATE;
 
 public final class ConsoleConfiguration {
 
@@ -120,7 +120,7 @@ public final class ConsoleConfiguration {
             valid = false;
         }
 
-        Value providerValue = asset.getAttribute(AttributeType.CONSOLE_PROVIDERS.getName()).flatMap(AbstractValueHolder::getValue).orElse(null);
+        Value providerValue = asset.getAttribute(AttributeType.CONSOLE_PROVIDERS.getAttributeName()).flatMap(AbstractValueHolder::getValue).orElse(null);
 
         if (providerValue != null && !getConsoleProviders(asset).isPresent()) {
             if (validationFailures != null) {
@@ -217,7 +217,7 @@ public final class ConsoleConfiguration {
     public static Asset setConsolProviders(Asset asset, Map<String, ConsoleProvider> consoleProviderMap) {
         Objects.requireNonNull(asset);
         if (consoleProviderMap == null || consoleProviderMap.isEmpty()) {
-            asset.removeAttribute(AttributeType.CONSOLE_PROVIDERS.getName());
+            asset.removeAttribute(AttributeType.CONSOLE_PROVIDERS.getAttributeName());
             return asset;
         }
 
@@ -245,7 +245,7 @@ public final class ConsoleConfiguration {
         if (consoleProvider == null) {
             providerObj.remove(name);
             if (!providerObj.hasKeys()) {
-                asset.removeAttribute(AttributeType.CONSOLE_PROVIDERS.getName());
+                asset.removeAttribute(AttributeType.CONSOLE_PROVIDERS.getAttributeName());
             }
         } else {
             providerObj.put(name, consoleProvider.toValue());
@@ -253,7 +253,7 @@ public final class ConsoleConfiguration {
     }
 
     public static Optional<Map<String, ConsoleProvider>> getConsoleProviders(AssetAttribute attribute) {
-        if (attribute == null || !AttributeType.CONSOLE_PROVIDERS.getName().equals(attribute.getName().orElse(null))) {
+        if (attribute == null || !AttributeType.CONSOLE_PROVIDERS.getAttributeName().equals(attribute.getName().orElse(null))) {
             return Optional.empty();
         }
 

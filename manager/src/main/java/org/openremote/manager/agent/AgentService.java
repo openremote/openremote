@@ -37,7 +37,7 @@ import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.asset.MetaItemType;
+import org.openremote.model.attribute.MetaItemType;
 import org.openremote.model.asset.AssetType;
 import org.openremote.model.asset.agent.*;
 import org.openremote.model.attribute.AttributeEvent;

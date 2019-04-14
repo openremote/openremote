@@ -11,7 +11,7 @@ import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.model.asset.Asset
 import org.openremote.model.asset.AssetAttribute
-import org.openremote.model.asset.MetaItemType
+import org.openremote.model.attribute.MetaItemType
 import org.openremote.model.asset.AssetType
 import org.openremote.model.asset.agent.AgentLink
 import org.openremote.model.asset.agent.AgentResource

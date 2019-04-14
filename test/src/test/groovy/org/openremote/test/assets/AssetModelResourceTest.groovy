@@ -80,17 +80,17 @@ class AssetModelResourceTest extends Specification implements ManagerContainerTr
 
         then: "the eleven default types should be present"
         attributeTypeDescriptors.size() == 11
-        attributeTypeDescriptors[0].name == "consoleName"
-        attributeTypeDescriptors[1].name == "consoleVersion"
-        attributeTypeDescriptors[2].name == "consolePlatform"
-        attributeTypeDescriptors[3].name == "consoleProviders"
-        attributeTypeDescriptors[4].name == "email"
-        attributeTypeDescriptors[5].name == "city"
-        attributeTypeDescriptors[6].name == "country"
-        attributeTypeDescriptors[7].name == "postalCode"
-        attributeTypeDescriptors[8].name == "street"
-        attributeTypeDescriptors[9].name == "location"
-        attributeTypeDescriptors[10].name == "surfaceArea"
+        attributeTypeDescriptors[0].attributeName == "consoleName"
+        attributeTypeDescriptors[1].attributeName == "consoleVersion"
+        attributeTypeDescriptors[2].attributeName == "consolePlatform"
+        attributeTypeDescriptors[3].attributeName == "consoleProviders"
+        attributeTypeDescriptors[4].attributeName == "email"
+        attributeTypeDescriptors[5].attributeName == "city"
+        attributeTypeDescriptors[6].attributeName == "country"
+        attributeTypeDescriptors[7].attributeName == "postalCode"
+        attributeTypeDescriptors[8].attributeName == "street"
+        attributeTypeDescriptors[9].attributeName == "location"
+        attributeTypeDescriptors[10].attributeName == "surfaceArea"
 
         when: "a request for Attribute value types is made"
 

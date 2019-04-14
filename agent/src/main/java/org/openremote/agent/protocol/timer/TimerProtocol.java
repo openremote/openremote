@@ -21,7 +21,7 @@ package org.openremote.agent.protocol.timer;
 
 import org.openremote.agent.protocol.AbstractProtocol;
 import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.asset.MetaItemType;
+import org.openremote.model.attribute.MetaItemType;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.attribute.*;
 import org.openremote.model.util.TextUtil;

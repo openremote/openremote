@@ -29,6 +29,8 @@ public interface AttributeDescriptor {
 
     String getName();
 
+    String getAttributeName();
+
     AttributeValueDescriptor getValueDescriptor();
 
     Optional<MetaItemDescriptor[]> getMetaItemDescriptors();

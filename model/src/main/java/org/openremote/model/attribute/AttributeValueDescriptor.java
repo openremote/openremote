@@ -20,6 +20,7 @@
 package org.openremote.model.attribute;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.value.Value;
@@ -40,5 +41,6 @@ public interface AttributeValueDescriptor {
 
     Optional<MetaItemDescriptor[]> getMetaItemDescriptors();
 
+    @JsonIgnore
     Optional<Function<Value, Optional<ValidationFailure>>> getValidator();
 }

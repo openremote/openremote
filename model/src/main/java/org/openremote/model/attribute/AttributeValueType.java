@@ -29,7 +29,7 @@ import org.openremote.model.value.Values;
 import java.util.Optional;
 import java.util.function.Function;
 
-import static org.openremote.model.asset.MetaItemType.*;
+import static org.openremote.model.attribute.MetaItemType.*;
 import static org.openremote.model.attribute.AttributeValueType.AttributeValueTypeFailureReason.ATTRIBUTE_TYPE_VALUE_DOES_NOT_MATCH;
 
 /**

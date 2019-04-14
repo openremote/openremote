@@ -108,7 +108,7 @@ public interface MetaItemDescriptor extends HasUniqueResourceName {
     }
 
     @JsonProperty
-    String name();
+    String getName();
 
     String getUrn();
 

@@ -26,7 +26,7 @@ import org.openremote.agent.protocol.velbus.device.VelbusDeviceType;
 import org.openremote.container.util.CodecUtil;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.asset.MetaItemType;
+import org.openremote.model.attribute.MetaItemType;
 import org.openremote.model.asset.AssetType;
 import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.asset.agent.ConnectionStatus;

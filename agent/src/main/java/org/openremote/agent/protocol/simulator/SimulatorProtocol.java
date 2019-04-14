@@ -41,8 +41,8 @@ import java.util.stream.Collectors;
 import static org.openremote.container.concurrent.GlobalLock.withLock;
 import static org.openremote.container.concurrent.GlobalLock.withLockReturning;
 import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
-import static org.openremote.model.asset.MetaItemType.RANGE_MAX;
-import static org.openremote.model.asset.MetaItemType.RANGE_MIN;
+import static org.openremote.model.attribute.MetaItemType.RANGE_MAX;
+import static org.openremote.model.attribute.MetaItemType.RANGE_MIN;
 import static org.openremote.model.util.TextUtil.REGEXP_PATTERN_INTEGER_POSITIVE;
 
 public class SimulatorProtocol extends AbstractProtocol {

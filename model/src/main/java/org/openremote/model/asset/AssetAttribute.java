@@ -32,7 +32,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.openremote.model.asset.MetaItemType.*;
+import static org.openremote.model.attribute.MetaItemType.*;
 import static org.openremote.model.attribute.MetaItem.isMetaNameEqualTo;
 import static org.openremote.model.attribute.MetaItem.replaceMetaByName;
 import static org.openremote.model.util.TextUtil.isNullOrEmpty;
@@ -59,7 +59,7 @@ public class AssetAttribute extends Attribute {
     }
 
     public AssetAttribute(AttributeDescriptor attributeDescriptor) {
-        this(attributeDescriptor.getName(), attributeDescriptor);
+        this(attributeDescriptor.getAttributeName(), attributeDescriptor);
     }
 
     public AssetAttribute(String name, AttributeDescriptor attributeDescriptor) {
@@ -67,7 +67,7 @@ public class AssetAttribute extends Attribute {
     }
 
     public AssetAttribute(AttributeDescriptor attributeDescriptor, Value value) {
-        this(attributeDescriptor.getName(), attributeDescriptor, value);
+        this(attributeDescriptor.getAttributeName(), attributeDescriptor, value);
     }
 
     public AssetAttribute(String name, AttributeDescriptor attributeDescriptor, Value value) {
@@ -75,7 +75,7 @@ public class AssetAttribute extends Attribute {
     }
 
     public AssetAttribute(AttributeDescriptor attributeDescriptor, Value value, long timestamp) {
-        this(attributeDescriptor.getName(), attributeDescriptor, value, timestamp);
+        this(attributeDescriptor.getAttributeName(), attributeDescriptor, value, timestamp);
     }
 
     public AssetAttribute(String name, AttributeDescriptor attributeDescriptor, Value value, long timestamp) {

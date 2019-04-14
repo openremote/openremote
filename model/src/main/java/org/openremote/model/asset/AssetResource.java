@@ -21,6 +21,7 @@ package org.openremote.model.asset;
 
 import jsinterop.annotations.JsType;
 import org.openremote.model.attribute.AttributeRef;
+import org.openremote.model.attribute.MetaItemType;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.http.SuccessStatusCode;
 import org.openremote.model.query.AssetQuery;

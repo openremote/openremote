@@ -25,7 +25,7 @@ import org.openremote.app.client.widget.*;
 import org.openremote.app.client.Environment;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.asset.MetaItemType;
+import org.openremote.model.attribute.MetaItemType;
 import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.asset.agent.ProtocolDescriptor;
 import org.openremote.model.attribute.AttributeValidationResult;
@@ -144,7 +144,7 @@ public class MetaEditor extends AbstractAttributeViewExtension {
 
             Arrays.stream(metaItemDescriptors)
                 .forEach(metaItemDescriptor -> {
-                    String name = getMetaItemDisplayName(environment, metaItemDescriptor.name());
+                    String name = getMetaItemDisplayName(environment, metaItemDescriptor.getName());
                     nameList.addItem(name, metaItemDescriptor.getUrn());
                 });
         }
@@ -204,7 +204,7 @@ public class MetaEditor extends AbstractAttributeViewExtension {
                 }
             }
 
-            nameLabel.setText(currentMetaItemDescriptor.map(metaItemDescriptor -> getMetaItemDisplayName(environment, metaItemDescriptor.name())).orElse(urn));
+            nameLabel.setText(currentMetaItemDescriptor.map(metaItemDescriptor -> getMetaItemDisplayName(environment, metaItemDescriptor.getName())).orElse(urn));
             nameInput.setVisible(!currentMetaItemDescriptor.isPresent());
             typeList.setVisible(!currentMetaItemDescriptor.isPresent());
             typeList.selectItem(typeListValue);
@@ -325,7 +325,7 @@ public class MetaEditor extends AbstractAttributeViewExtension {
                 return metaItemDescriptor != MetaItemType.PROTOCOL_CONFIGURATION &&
                     (!isProtocolConfiguration || metaItemDescriptor != MetaItemType.AGENT_LINK);
             })
-            .sorted(Comparator.comparing(metaItemDescriptor -> getMetaItemDisplayName(environment, metaItemDescriptor.name())))
+            .sorted(Comparator.comparing(metaItemDescriptor -> getMetaItemDisplayName(environment, metaItemDescriptor.getName())))
             .toArray(MetaItemDescriptor[]::new);
 
         // Refresh the new item meta item editor
@@ -460,7 +460,7 @@ public class MetaEditor extends AbstractAttributeViewExtension {
                 .orElse(true);
 
             if (!canAdd) {
-                showValidationError(attribute.getName().orElse(""), null, new ValidationFailure(MetaItem.MetaItemFailureReason.META_ITEM_DUPLICATION, getMetaItemDisplayName(environment, descriptor[0].name())));
+                showValidationError(attribute.getName().orElse(""), null, new ValidationFailure(MetaItem.MetaItemFailureReason.META_ITEM_DUPLICATION, getMetaItemDisplayName(environment, descriptor[0].getName())));
                 return false;
             }
 
@@ -536,7 +536,7 @@ public class MetaEditor extends AbstractAttributeViewExtension {
                                 .map(parameter ->
                                     // Parameter should be meta item name URN
                                     getMetaItemDescriptor(parameter)
-                                        .map(metaItemDescriptor -> getMetaItemDisplayName(environment, metaItemDescriptor.name()))
+                                        .map(metaItemDescriptor -> getMetaItemDisplayName(environment, metaItemDescriptor.getName()))
                                         .orElse(parameter)
                                 )
                                 .orElse("")
@@ -560,7 +560,7 @@ public class MetaEditor extends AbstractAttributeViewExtension {
         if (failures != null) {
             Optional<MetaItemDescriptor> optionalMetaItemDescriptor = metaItemEditor.getCurrentDescriptor();
             String displayName = optionalMetaItemDescriptor
-                .map(metaItemDescriptor -> getMetaItemDisplayName(environment, metaItemDescriptor.name()))
+                .map(metaItemDescriptor -> getMetaItemDisplayName(environment, metaItemDescriptor.getName()))
                 .orElse(metaItemEditor.getItem().getName().orElse(""));
 
             failures.forEach(failure -> {

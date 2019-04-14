@@ -21,7 +21,7 @@ package org.openremote.model.asset.agent;
 
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.asset.MetaItemType;
+import org.openremote.model.attribute.MetaItemType;
 import org.openremote.model.attribute.AttributeValueType;
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.util.TextUtil;
@@ -30,7 +30,7 @@ import org.openremote.model.value.Values;
 import java.util.Optional;
 import java.util.function.UnaryOperator;
 
-import static org.openremote.model.asset.MetaItemType.PROTOCOL_CONFIGURATION;
+import static org.openremote.model.attribute.MetaItemType.PROTOCOL_CONFIGURATION;
 import static org.openremote.model.attribute.MetaItem.isMetaNameEqualTo;
 
 /**

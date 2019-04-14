@@ -47,7 +47,7 @@ public class MetaItemDescriptorImpl implements MetaItemDescriptor {
     }
 
     public MetaItemDescriptorImpl(MetaItemDescriptor metaItemDescriptor, Value initialValue) {
-        this(metaItemDescriptor.name(),
+        this(metaItemDescriptor.getName(),
                 metaItemDescriptor.getUrn(),
                 metaItemDescriptor.getValueType(),
                 metaItemDescriptor.isRequired(),
@@ -94,7 +94,7 @@ public class MetaItemDescriptorImpl implements MetaItemDescriptor {
     }
 
     @Override
-    public String name() {
+    public String getName() {
         return name;
     }
 

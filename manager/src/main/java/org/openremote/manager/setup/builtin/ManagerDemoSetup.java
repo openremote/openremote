@@ -26,7 +26,7 @@ import org.openremote.manager.security.UserConfiguration;
 import org.openremote.manager.setup.AbstractManagerSetup;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.asset.MetaItemType;
+import org.openremote.model.attribute.MetaItemType;
 import org.openremote.model.asset.UserAsset;
 import org.openremote.model.attribute.*;
 import org.openremote.model.geo.GeoJSONPoint;
@@ -44,7 +44,7 @@ import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.openremote.model.asset.MetaItemType.*;
+import static org.openremote.model.attribute.MetaItemType.*;
 import static org.openremote.model.asset.AssetType.*;
 import static org.openremote.model.asset.agent.ProtocolConfiguration.initProtocolConfiguration;
 import static org.openremote.model.attribute.AttributeValueType.*;

@@ -48,6 +48,7 @@ import org.openremote.model.asset.*;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeType;
 import org.openremote.model.attribute.MetaItemDescriptor;
+import org.openremote.model.attribute.MetaItemType;
 import org.openremote.model.calendar.CalendarEvent;
 import org.openremote.model.calendar.RecurrenceRule;
 import org.openremote.model.event.TriggeredEventSubscription;
@@ -1391,9 +1392,9 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                     "attributes"), asset.getId());
 
                 Optional<AssetAttribute> oldLocation = oldAttributes.filter(assetAttribute -> assetAttribute.name.equals(
-                    AttributeType.LOCATION.getName())).findFirst();
+                    AttributeType.LOCATION.getAttributeName())).findFirst();
                 Optional<AssetAttribute> currentLocation = currentAttributes.filter(assetAttribute -> assetAttribute.name.equals(
-                    AttributeType.LOCATION.getName())).findFirst();
+                    AttributeType.LOCATION.getAttributeName())).findFirst();
 
                 if (!(!oldLocation.isPresent() && !currentLocation.isPresent())) {
                     if (!oldLocation.isPresent() || !currentLocation.isPresent() || !oldLocation.get().equals(

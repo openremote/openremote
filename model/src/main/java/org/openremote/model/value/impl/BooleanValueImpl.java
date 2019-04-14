@@ -15,9 +15,12 @@
  */
 package org.openremote.model.value.impl;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import org.openremote.model.ModelModule;
 import org.openremote.model.value.BooleanValue;
 import org.openremote.model.value.ValueType;
 
+@JsonSerialize(using = ModelModule.ValueJsonSerializer.class)
 public class BooleanValueImpl extends ValueImpl implements BooleanValue {
 
     private static final BooleanValueImpl FALSE = new BooleanValueImpl(false);

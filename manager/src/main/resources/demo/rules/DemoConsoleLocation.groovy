@@ -64,7 +64,7 @@ rules.add()
 
         def consoleIds = facts.matchAssetState(new AssetQuery()
                 .type(AssetType.CONSOLE)
-                .attributeValue(AttributeType.LOCATION.name, new ValueEmptyPredicate()))
+                .attributeValue(AttributeType.LOCATION.attributeName, new ValueEmptyPredicate()))
                 .filter({ facts.getOptional("welcomeHome" + "_${it.id}").isPresent() })
                 .map({ it.id })
                 .collect()

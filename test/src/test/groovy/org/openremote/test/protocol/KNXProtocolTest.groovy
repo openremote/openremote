@@ -23,8 +23,8 @@ import org.apache.commons.lang3.SystemUtils
 import org.openremote.model.asset.Asset
 import tuwien.auto.calimero.server.knxnetip.DefaultServiceContainer
 
-import static org.openremote.model.asset.MetaItemType.DESCRIPTION
-import static org.openremote.model.asset.MetaItemType.LABEL
+import static org.openremote.model.attribute.MetaItemType.DESCRIPTION
+import static org.openremote.model.attribute.MetaItemType.LABEL
 
 import org.openremote.agent.protocol.knx.KNXProtocol
 import org.openremote.model.asset.agent.ConnectionStatus
@@ -34,7 +34,6 @@ import org.openremote.manager.asset.AssetStorageService
 
 import org.openremote.model.Constants
 import org.openremote.model.asset.AssetAttribute
-import org.openremote.model.asset.MetaItemType
 import org.openremote.model.asset.AssetType
 import org.openremote.model.asset.agent.ProtocolConfiguration
 import org.openremote.model.attribute.*

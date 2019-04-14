@@ -10,7 +10,7 @@ import org.openremote.manager.setup.builtin.KeycloakDemoSetup
 import org.openremote.manager.setup.builtin.ManagerDemoSetup
 import org.openremote.model.asset.Asset
 import org.openremote.model.asset.AssetAttribute
-import org.openremote.model.asset.MetaItemType
+import org.openremote.model.attribute.MetaItemType
 import org.openremote.model.asset.AssetType
 import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.attribute.AttributeValueType
