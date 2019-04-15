@@ -30,5 +30,5 @@ const gradleModelWatch = spawnSync((process.platform === "win32" ? "gradlew" : "
     cwd: cwd,
     shell: true
 });
-console.log("gradlew modelWatch finished!");
+console.log("gradlew modelWatch finished! Status = " + gradleModelWatch.status);
 process.exit(gradleModelWatch.status);
