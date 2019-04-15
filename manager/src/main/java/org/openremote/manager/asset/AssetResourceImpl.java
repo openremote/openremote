@@ -465,27 +465,30 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
 
                 // Add meta items to well known attributes if not present
                 newAsset.getAttributesStream().forEach(assetAttribute -> {
-                        Optional<AttributeDescriptor> attributeDescriptor = assetDescriptor.getAttributeDescriptors()
-                                .flatMap(attributeDescriptors ->
-                                    Arrays.stream(attributeDescriptors)
-                                            .filter(attrDescriptor -> attrDescriptor.getAttributeName().equals(assetAttribute.getNameOrThrow()))
-                                            .findFirst()
-                                );
-
-                        attributeDescriptor.ifPresent(defaultAttribute ->
-                                        defaultAttribute.getMetaItemDescriptors().ifPresent(metaItemDescriptors ->
-                                                assetAttribute.addMeta(
-                                                        Arrays.stream(metaItemDescriptors).filter(metaItemDescriptor -> !assetAttribute.hasMetaItem(metaItemDescriptor)).map(MetaItem::new).toArray(MetaItem[]::new)
-                                                ))
-                                );
+                    if (assetDescriptor.getAttributeDescriptors() != null) {
+                        Arrays.stream(assetDescriptor.getAttributeDescriptors())
+                                .filter(attrDescriptor -> attrDescriptor.getAttributeName().equals(assetAttribute.getNameOrThrow()))
+                                .findFirst()
+                                .ifPresent(defaultAttribute -> {
+                                    if (defaultAttribute.getMetaItemDescriptors() != null) {
+                                        assetAttribute.addMeta(
+                                                Arrays.stream(defaultAttribute.getMetaItemDescriptors())
+                                                        .filter(metaItemDescriptor -> !assetAttribute.hasMetaItem(metaItemDescriptor))
+                                                        .map(MetaItem::new)
+                                                        .toArray(MetaItem[]::new)
+                                        );
+                                    }
+                                });
+                    }
                 });
 
                 // Add attributes for this well known asset if not present
-                assetDescriptor.getAttributeDescriptors().ifPresent(attributeDescriptors ->
-                        newAsset.addAttributes(
-                                Arrays.stream(attributeDescriptors).filter(attributeDescriptor ->
-                                        !newAsset.hasAttribute(attributeDescriptor.getAttributeName())).map(AssetAttribute::new).toArray(AssetAttribute[]::new)
-                        ));
+                if (assetDescriptor.getAttributeDescriptors() != null) {
+                    newAsset.addAttributes(
+                            Arrays.stream(assetDescriptor.getAttributeDescriptors()).filter(attributeDescriptor ->
+                                    !newAsset.hasAttribute(attributeDescriptor.getAttributeName())).map(AssetAttribute::new).toArray(AssetAttribute[]::new)
+                    );
+                }
             });
 
             //Check if a well known attribute is added

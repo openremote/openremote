@@ -21,6 +21,7 @@ package org.openremote.test.assets
 
 import org.openremote.container.Container
 import org.openremote.model.asset.AssetModelResource
+import org.openremote.model.attribute.AttributeType
 import org.openremote.model.value.ValueType
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Shared
@@ -61,12 +62,12 @@ class AssetModelResourceTest extends Specification implements ManagerContainerTr
 
         def assetDescriptors = assetModelResource.getAssetDescriptors(null)
 
-        then: "the eight default types should be present"
+        then: "the default asset types should be present"
         assetDescriptors.size() == 8
         assetDescriptors[0].name == CUSTOM.name
         assetDescriptors[1].name == BUILDING.name
-        assetDescriptors[1].attributeDescriptors.get().length == 4
-        assetDescriptors[1].attributeDescriptors.get()[0].valueDescriptor.name == ValueType.STRING
+        assetDescriptors[1].attributeDescriptors.length == 5
+        assetDescriptors[1].attributeDescriptors.find {it.name == AttributeType.SURFACE_AREA.name}.valueDescriptor.valueType == ValueType.NUMBER
         assetDescriptors[2].name == FLOOR.name
         assetDescriptors[3].name == RESIDENCE.name
         assetDescriptors[4].name == ROOM.name
@@ -78,19 +79,21 @@ class AssetModelResourceTest extends Specification implements ManagerContainerTr
 
         def attributeTypeDescriptors = assetModelResource.getAttributeTypeDescriptors(null)
 
-        then: "the eleven default types should be present"
-        attributeTypeDescriptors.size() == 11
-        attributeTypeDescriptors[0].attributeName == "consoleName"
-        attributeTypeDescriptors[1].attributeName == "consoleVersion"
-        attributeTypeDescriptors[2].attributeName == "consolePlatform"
-        attributeTypeDescriptors[3].attributeName == "consoleProviders"
-        attributeTypeDescriptors[4].attributeName == "email"
-        attributeTypeDescriptors[5].attributeName == "city"
-        attributeTypeDescriptors[6].attributeName == "country"
-        attributeTypeDescriptors[7].attributeName == "postalCode"
-        attributeTypeDescriptors[8].attributeName == "street"
-        attributeTypeDescriptors[9].attributeName == "location"
-        attributeTypeDescriptors[10].attributeName == "surfaceArea"
+        then: "the default types should be present"
+        attributeTypeDescriptors.size() == 13
+        attributeTypeDescriptors.any {it.attributeName == "string"}
+        attributeTypeDescriptors.any {it.attributeName == "number"}
+        attributeTypeDescriptors.any {it.attributeName == "consoleName"}
+        attributeTypeDescriptors.any {it.attributeName == "consoleVersion"}
+        attributeTypeDescriptors.any {it.attributeName == "consolePlatform"}
+        attributeTypeDescriptors.any {it.attributeName == "consoleProviders"}
+        attributeTypeDescriptors.any {it.attributeName == "email"}
+        attributeTypeDescriptors.any {it.attributeName == "city"}
+        attributeTypeDescriptors.any {it.attributeName == "country"}
+        attributeTypeDescriptors.any {it.attributeName == "postalCode"}
+        attributeTypeDescriptors.any {it.attributeName == "street"}
+        attributeTypeDescriptors.any {it.attributeName == "location"}
+        attributeTypeDescriptors.any {it.attributeName == "surfaceArea"}
 
         when: "a request for Attribute value types is made"
 
@@ -103,7 +106,7 @@ class AssetModelResourceTest extends Specification implements ManagerContainerTr
 
         def metaItemDescriptors = assetModelResource.getMetaItemDescriptors(null)
 
-        then: "the 26 default MetaItem types should be present"
-        metaItemDescriptors.size() == 26
+        then: "the default MetaItem types should be present"
+        metaItemDescriptors.size() == 24
     }
 }

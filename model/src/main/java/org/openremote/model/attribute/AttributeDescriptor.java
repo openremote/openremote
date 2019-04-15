@@ -20,20 +20,28 @@
 package org.openremote.model.attribute;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.openremote.model.value.Value;
 
 import java.util.Optional;
 
 @JsonFormat(shape = JsonFormat.Shape.OBJECT)
+@JsonDeserialize(as = AttributeDescriptorImpl.class)
 public interface AttributeDescriptor {
 
+    @JsonProperty
     String getName();
 
+    @JsonProperty
     String getAttributeName();
 
+    @JsonProperty
     AttributeValueDescriptor getValueDescriptor();
 
-    Optional<MetaItemDescriptor[]> getMetaItemDescriptors();
+    @JsonProperty
+    MetaItemDescriptor[] getMetaItemDescriptors();
 
+    @JsonProperty
     Value getInitialValue();
 }

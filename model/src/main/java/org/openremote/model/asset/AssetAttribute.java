@@ -86,9 +86,9 @@ public class AssetAttribute extends Attribute {
             }
         }
         setValue(value, timestamp);
-        attributeDescriptor.getMetaItemDescriptors().ifPresent(metaItemDescriptors ->
-            addMeta(Arrays.stream(metaItemDescriptors).map(MetaItem::new).toArray(MetaItem[]::new))
-        );
+        if (attributeDescriptor.getMetaItemDescriptors() != null) {
+            addMeta(Arrays.stream(attributeDescriptor.getMetaItemDescriptors()).map(MetaItem::new).toArray(MetaItem[]::new));
+        }
     }
 
     public AssetAttribute(String name, AttributeValueType type, Value value, long timestamp) {

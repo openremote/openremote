@@ -243,7 +243,9 @@ public class AssetEditActivity
 
             attribute = new AssetAttribute();
             attribute.setType(attributeValueType);
-            attributeValueType.getMetaItemDescriptors().ifPresent(attribute::addMeta);
+            if (attributeValueType.getMetaItemDescriptors() != null) {
+                attribute.addMeta(attributeValueType.getMetaItemDescriptors());
+            }
         }
 
         attribute.setName(name);

@@ -232,8 +232,8 @@ public enum AttributeValueType implements AttributeValueDescriptor {
     }
 
     @Override
-    public Optional<MetaItemDescriptor[]> getMetaItemDescriptors() {
-        return Optional.ofNullable(metaItemDescriptors);
+    public MetaItemDescriptor[] getMetaItemDescriptors() {
+        return metaItemDescriptors;
     }
 
     @Override

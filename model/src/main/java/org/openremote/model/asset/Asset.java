@@ -300,8 +300,9 @@ public class Asset implements IdentifiableEntity {
 
     public Asset(@NotNull String name, @NotNull AssetDescriptor type, Asset parent, String realm) {
         this(name, type.getType(), type.getAccessPublicRead(), parent, realm);
-        type.getAttributeDescriptors().ifPresent(attributeDescriptors ->
-                addAttributes(Arrays.stream(attributeDescriptors).map(AssetAttribute::new).toArray(AssetAttribute[]::new)));
+        if (type.getAttributeDescriptors() != null) {
+            addAttributes(Arrays.stream(type.getAttributeDescriptors()).map(AssetAttribute::new).toArray(AssetAttribute[]::new));
+        }
     }
 
     public Asset(@NotNull String name, @NotNull String type, boolean accessPublicRead, Asset parent, String realm) {

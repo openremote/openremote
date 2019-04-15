@@ -19,7 +19,6 @@
  */
 package org.openremote.model.attribute;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.Values;
 
@@ -70,17 +69,17 @@ public enum AttributeType implements AttributeDescriptor {
 
 
     final protected String attributeName;
-    final protected AttributeValueDescriptor attributeValueDescriptor;
+    final protected AttributeValueDescriptor valueDescriptor;
     final protected Value initialValue;
     final protected MetaItemDescriptor[] metaItemDescriptors;
 
-    AttributeType(String attributeName, AttributeValueDescriptor attributeValueDescriptor, MetaItemDescriptor... metaItemDescriptors) {
-        this(attributeName, attributeValueDescriptor, null, metaItemDescriptors);
+    AttributeType(String attributeName, AttributeValueDescriptor valueDescriptor, MetaItemDescriptor... metaItemDescriptors) {
+        this(attributeName, valueDescriptor, null, metaItemDescriptors);
     }
 
-    AttributeType(String attributeName, AttributeValueDescriptor attributeValueDescriptor, Value initialValue, MetaItemDescriptor... metaItemDescriptors) {
+    AttributeType(String attributeName, AttributeValueDescriptor valueDescriptor, Value initialValue, MetaItemDescriptor... metaItemDescriptors) {
         this.attributeName = attributeName;
-        this.attributeValueDescriptor = attributeValueDescriptor;
+        this.valueDescriptor = valueDescriptor;
         this.metaItemDescriptors = metaItemDescriptors;
         this.initialValue = initialValue;
     }
@@ -109,12 +108,12 @@ public enum AttributeType implements AttributeDescriptor {
 
     @Override
     public AttributeValueDescriptor getValueDescriptor() {
-        return attributeValueDescriptor;
+        return valueDescriptor;
     }
 
     @Override
-    public Optional<MetaItemDescriptor[]> getMetaItemDescriptors() {
-        return Optional.ofNullable(metaItemDescriptors);
+    public MetaItemDescriptor[] getMetaItemDescriptors() {
+        return metaItemDescriptors;
     }
 
     @Override
@@ -123,40 +122,11 @@ public enum AttributeType implements AttributeDescriptor {
     }
 
     public AttributeDescriptor withName(String name, MetaItemDescriptor... metaItemDescriptors) {
-        return withName(name, null, metaItemDescriptors);
+        return withName(name, initialValue, metaItemDescriptors);
     }
 
     public AttributeDescriptor withName(String name, Value initialValue, MetaItemDescriptor... metaItemDescriptors) {
 
-        return new AttributeDescriptor() {
-            @Override
-            public String getName() {
-                return name();
-            }
-
-            @Override
-            @JsonProperty
-            public String getAttributeName() {
-                return name;
-            }
-
-            @Override
-            @JsonProperty
-            public AttributeValueDescriptor getValueDescriptor() {
-                return attributeValueDescriptor;
-            }
-
-            @Override
-            @JsonProperty
-            public Optional<MetaItemDescriptor[]> getMetaItemDescriptors() {
-                return Optional.ofNullable(metaItemDescriptors);
-            }
-
-            @Override
-            @JsonProperty
-            public Value getInitialValue() {
-                return initialValue;
-            }
-        };
+        return new AttributeDescriptorImpl(name, attributeName, valueDescriptor, metaItemDescriptors, initialValue);
     }
 }

@@ -21,6 +21,7 @@ package org.openremote.model.attribute;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.openremote.model.HasUniqueResourceName;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.value.Value;
@@ -31,6 +32,7 @@ import java.util.Optional;
 import java.util.function.Function;
 
 @JsonFormat(shape = JsonFormat.Shape.OBJECT)
+@JsonDeserialize(as = MetaItemDescriptorImpl.class)
 public interface MetaItemDescriptor extends HasUniqueResourceName {
 
     /**
