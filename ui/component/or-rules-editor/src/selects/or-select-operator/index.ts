@@ -1,5 +1,5 @@
 import {html, LitElement, property, customElement} from 'lit-element';
-import {AttributeValueType, BaseAssetQueryMatch, BaseAssetQueryOperator} from "@openremote/model";
+import {AttributeValueType, BaseAssetQueryMatch, BaseAssetQueryOperator, AttributeValueDescriptor} from "@openremote/model";
 
 import {selectStyle} from "@openremote/or-select/dist/style";
 
@@ -7,7 +7,7 @@ import {selectStyle} from "@openremote/or-select/dist/style";
 class OrRuleWhen extends LitElement {
 
     @property({type: String})
-    type?: AttributeValueType;
+    type?: AttributeValueDescriptor;
 
     @property({type: String})
     value?: BaseAssetQueryOperator;
