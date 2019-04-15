@@ -1,7 +1,7 @@
 {
   "name": "@openremote/model",
   "version": "1.0.1",
-  "main": "",
+  "main": "dist/index.js",
   "description": "OpenRemote 3.x Model Types",
   "types": "src/index.ts",
   "scripts": {
