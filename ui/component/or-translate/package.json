@@ -5,13 +5,14 @@
   "main": "dist/index.js",
   "types": "src/index.ts",
   "scripts": {
-    "build": "node mdi-iconset-generator.js && npx tsc -b",
+    "build": "npx tsc -b",
     "test": "echo \"No tests\" && exit 0"
   },
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
-    "lit-element": "^2.1.0"
+    "lit-element": "^2.1.0",
+    "i18next": "^15.0.9"
   },
   "devDependencies": {
     "@webcomponents/webcomponentsjs": "^2.0.0",
