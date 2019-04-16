@@ -14,7 +14,10 @@
   "license": "AGPL-3.0-or-later",
   "dependencies": {
     "@openremote/core": "^1.0.1",
-    "lit-html": "^0.12.0"
+    "@openremote/or-icon": "^1.0.0",
+    "@openremote/or-translate": "^1.0.0",
+    "lit-html": "^0.12.0",
+    "i18next": "^15.0.9"
   },
   "devDependencies": {
     "@babel/core": "^7.2.2",

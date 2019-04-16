@@ -1,0 +1,23 @@
+{
+  "asset": "Aanwinst",
+  "asset_plural": "Actief",
+  "scenes": "Scenes",
+  "settings": "Instellingen",
+  "selectLanguage": "Taal kiezen",
+  "logOut": "Uitloggen",
+  "logIn": "Log in",
+  "monday": "Maandag",
+  "tuesday": "Dinsdag",
+  "wednesday": "Woensdag",
+  "thursday": "Donderdag",
+  "friday": "Vrijdag",
+  "saturday": "Zaterdag",
+  "sunday": "Zondag",
+  "sceneStartTime": "Scene start time",
+  "sceneConfiguration": "Scene Configuratie",
+  "temperature": "Temperatuur",
+  "enabled": "Geactiveerd",
+  "disabled": "Invalide",
+  "scene": "Scene",
+  "user": "Gebruiker"
+}

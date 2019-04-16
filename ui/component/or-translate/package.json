@@ -1,7 +1,7 @@
 {
-  "name": "@openremote/or-icon",
+  "name": "@openremote/or-translate",
   "version": "1.0.0",
-  "description": "Displays s vector or raster map",
+  "description": "Provides a web component for translations using i18next",
   "main": "dist/index.js",
   "types": "src/index.ts",
   "scripts": {
@@ -14,15 +14,12 @@
     "lit-element": "^2.1.0"
   },
   "devDependencies": {
-    "xmldom": "^0.1.27",
-    "@mdi/svg": "^3.5.95",
     "@webcomponents/webcomponentsjs": "^2.0.0",
     "css-loader": "^2.0.0",
     "style-loader": "^0.23.1",
     "tslint": "^5.11.0",
     "typescript": "^3.2.2",
-    "wct-browser-legacy": "^1.0.0",
-    "xpath": "^0.0.27"
+    "wct-browser-legacy": "^1.0.0"
   }
 }
 

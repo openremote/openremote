@@ -1,18 +1,15 @@
 import {html, render} from "lit-html";
 import {when} from "lit-html/directives/when";
-import rest from "@openremote/rest";
 import openremote, {Auth, Manager, OREvent} from "@openremote/core";
 import "@openremote/or-icon";
+import "@openremote/or-translate";
 import {IconSets} from "@openremote/or-icon";
 import {IconSetSvg} from "@openremote/or-icon/dist/icon-set-svg";
+import i18next from "i18next";
 
-import {
-    AssetQuery,
-    AttributeEvent,
-    BaseAssetQueryInclude,
-    BaseAssetQueryMatch, StringPredicate, Asset
-} from "@openremote/model";
+import {AttributeEvent} from "@openremote/model";
 import {getApartment1Asset} from "./util";
+
 
 let alarmEnabled = false;
 
@@ -41,7 +38,8 @@ let mainTemplate = (openremote: Manager) => html`
 <p><b>Console Registration: </b>${openremote.console ? JSON.stringify(openremote.console.registration, null, 2) : ""}</p>
 <p><b>Icon Example (Material Design icon set): </b><or-icon icon="access-point" /></p>
 <p><b>Icon Example (OR icon set): </b><or-icon icon="or:logo"></or-icon><or-icon icon="or:logo-plain"></or-icon><or-icon style="fill: #C4D600;" icon="or:marker"></or-icon></p>
-<p><b>Icon Example (dynamic Set click to add): </b><button @click="${() => {createIconSet()}}">Load</button>: <or-icon icon="test:x"></or-icon></p>
+<p><b>Icon Example (dynamic Set click to add): </b><button @click="${() => createIconSet()}">Load</button>: <or-icon icon="test:x"></or-icon></p>
+<p><b>Translation Example: </b> <or-translate value="temperature"></or-translate>   <button @click="${() => toggleLanguage()}">${i18next.language}</button></p>
 `;
 
 let assetTemplate = (alarmEnabled: boolean) => html `
@@ -56,6 +54,10 @@ async function refreshUI() {
 function createIconSet() {
     let testIconSet = new IconSetSvg(100, {x: "<path d=\"M0,0 L100,100 M100,0 L0,100\" stroke=\"#000\"/>"});
     IconSets.addIconSet("test", testIconSet);
+}
+
+function toggleLanguage() {
+    i18next.changeLanguage(i18next.language === "en" ? "nl" : "en");
 }
 
 async function subscribeApartmentAttributeEvents(assetId: string) {

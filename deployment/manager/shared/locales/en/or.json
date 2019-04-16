@@ -1,0 +1,23 @@
+{
+  "asset": "Asset",
+  "asset_plural": "Assets",
+  "scenes": "Scenes",
+  "settings": "Settings",
+  "selectLanguage": "Select Language",
+  "logOut": "Log out",
+  "logIn": "Log in",
+  "monday": "Monday",
+  "tuesday": "Tuesday",
+  "wednesday": "Wednesday",
+  "thursday": "Thursday",
+  "friday": "Friday",
+  "saturday": "Saturday",
+  "sunday": "Sunday",
+  "sceneStartTime": "Scene start time",
+  "sceneConfiguration": "Scene Configuration",
+  "temperature": "Temperature",
+  "enabled": "Enabled",
+  "disabled": "Disabled",
+  "scene": "Scene",
+  "user": "User"
+}

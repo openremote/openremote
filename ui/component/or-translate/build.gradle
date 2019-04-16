@@ -1,0 +1,15 @@
+buildDir = "dist"
+
+task clean() {
+    doLast {
+        delete "dist"
+    }
+}
+
+task build() {
+    dependsOn npmBuild
+}
+
+task installDist() {
+    dependsOn build
+}
