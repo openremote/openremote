@@ -37,10 +37,13 @@ public interface AttributeValueDescriptor {
     @JsonProperty
     String getName();
 
+    @JsonProperty
     String getIcon();
 
+    @JsonProperty
     ValueType getValueType();
 
+    @JsonProperty
     MetaItemDescriptor[] getMetaItemDescriptors();
 
     @JsonIgnore

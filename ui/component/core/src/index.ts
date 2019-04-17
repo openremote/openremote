@@ -6,6 +6,7 @@ import {AxiosRequestConfig} from "axios";
 import {EventProvider, EventProviderStatus, WebSocketEventProvider} from "./event";
 import i18next from "i18next";
 import i18nextXhr from "i18next-xhr-backend";
+import {AssetDescriptor, AttributeDescriptor, AttributeValueDescriptor, MetaItemDescriptor, Asset} from "@openremote/model/dist";
 
 export enum ORError {
     NONE = "NONE",
@@ -61,9 +62,74 @@ export interface ManagerConfig {
     eventProviderType?: EventProviderType;
     pollingIntervalMillis?: number;
     loadIcons?: boolean;
+    loadDescriptors?: boolean;
     loadTranslations?: string[];
     translationsLoadPath?: string;
     configureTranslationsOptions?: (i18next: i18next.InitOptions) => void;
+}
+
+export class AssetModelUtil {
+
+    public static _assetDescriptors: AssetDescriptor[] = [];
+    public static _attributeDescriptors: AttributeDescriptor[] = [];
+    public static _attributeValueDescriptors: AttributeValueDescriptor[] = [];
+    public static _metaItemDescriptors: MetaItemDescriptor[] = [];
+
+    public static getAssetDescriptors(): AssetDescriptor[] {
+        return this._assetDescriptors;
+    }
+
+    public static getAttributeDescriptors(): AttributeDescriptor[] {
+        return this._attributeDescriptors;
+    }
+
+    public static getAttributeValueDescriptors(): AttributeValueDescriptor[] {
+        return this._attributeValueDescriptors;
+    }
+
+    public static getMetaItemDescriptors(): MetaItemDescriptor[] {
+        return this._metaItemDescriptors;
+    }
+
+    public static getAssetDescriptor(type?: string): AssetDescriptor | undefined {
+        if (!type) {
+            return;
+        }
+
+        return this._assetDescriptors.find((assetDescriptor) => {
+            return assetDescriptor.type === type;
+        });
+    }
+
+    public static getAttributeDescriptor(attributeName?: string): AttributeDescriptor | undefined {
+        if (!attributeName) {
+            return;
+        }
+
+        return this._attributeDescriptors.find((attributeDescriptor) => {
+            return attributeDescriptor.attributeName === attributeName;
+        });
+    }
+
+    public static getAttributeValueDescriptor(name?: string): AttributeValueDescriptor | undefined {
+        if (!name) {
+            return;
+        }
+
+        return this._attributeValueDescriptors.find((attributeValueDescriptor) => {
+            return attributeValueDescriptor.name === name;
+        });
+    }
+
+    public static getMetaItemDescriptor(urn?: string): MetaItemDescriptor | undefined {
+        if (!urn) {
+            return;
+        }
+
+        return this._metaItemDescriptors.find((metaItemDescriptor) => {
+            return metaItemDescriptor.urn === urn;
+        });
+    }
 }
 
 export type EventCallback = (event: OREvent) => any;
@@ -177,6 +243,10 @@ export class Manager {
             normalisedConfig.translationsLoadPath = "locales/{{lng}}/{{ns}}.json";
         }
 
+        if (normalisedConfig.loadDescriptors === undefined) {
+            normalisedConfig.loadDescriptors = true;
+        }
+
         return normalisedConfig;
     }
 
@@ -234,15 +304,19 @@ export class Manager {
         }
 
         if (success) {
-            success = await this.doTranslateInit();
-        }
-
-        if (success) {
             success = this.doRestApiInit();
         }
 
         if (success) {
             success = await this.doConsoleInit();
+        }
+
+        if (success) {
+            success = await this.doTranslateInit();
+        }
+
+        if (success) {
+            success = await this.doDescriptorsInit();
         }
 
         // TODO: Reinstate this once websocket supports anonymous connections
@@ -330,6 +404,28 @@ export class Manager {
             return false;
         }
 
+        return true;
+    }
+
+    protected async doDescriptorsInit(): Promise<boolean> {
+        if (!this.config.loadDescriptors) {
+            return true;
+        }
+
+        try {
+            const assetDescriptorResponse = await rest.api.AssetModelResource.getAssetDescriptors();
+            const attributeDescriptorResponse = await rest.api.AssetModelResource.getAttributeDescriptors();
+            const attributeValueDescriptorResponse = await rest.api.AssetModelResource.getAttributeValueDescriptors();
+            const metaItemDescriptorResponse = await rest.api.AssetModelResource.getMetaItemDescriptors();
+
+            AssetModelUtil._assetDescriptors = assetDescriptorResponse.data;
+            AssetModelUtil._attributeDescriptors = attributeDescriptorResponse.data;
+            AssetModelUtil._attributeValueDescriptors = attributeValueDescriptorResponse.data;
+            AssetModelUtil._metaItemDescriptors = metaItemDescriptorResponse.data;
+        } catch (e) {
+            console.error(e);
+            return false;
+        }
         return true;
     }
 
