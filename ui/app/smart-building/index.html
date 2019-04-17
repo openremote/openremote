@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, minimum-scale=1, initial-scale=1, user-scalable=yes">
+
+    <title>OpenRemote Smart Building Demo</title>
+
+    <link rel="icon" href="images/favicon.ico">
+
+    <!-- See https://goo.gl/OOhYW5 -->
+    <!--<link rel="manifest" href="manifest.json">-->
+
+    <!-- See https://goo.gl/qRE0vM -->
+    <meta name="theme-color" content="#3f51b5">
+
+    <!-- Add to homescreen for Chrome on Android. Fallback for manifest.json -->
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="application-name" content="Smart Building Demo">
+
+    <!-- Add to homescreen for Safari on iOS -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Smart Building Demo">
+
+    <!-- Homescreen icons -->
+    <link rel="apple-touch-icon" href="images/manifest/icon-48x48.png">
+    <link rel="apple-touch-icon" sizes="72x72" href="images/manifest/icon-72x72.png">
+    <link rel="apple-touch-icon" sizes="96x96" href="images/manifest/icon-96x96.png">
+    <link rel="apple-touch-icon" sizes="144x144" href="images/manifest/icon-144x144.png">
+    <link rel="apple-touch-icon" sizes="192x192" href="images/manifest/icon-192x192.png">
+
+    <!-- Tile icon for Windows 8 (144x144 + tile color) -->
+    <meta name="msapplication-TileImage" content="images/manifest/icon-144x144.png">
+    <meta name="msapplication-TileColor" content="#3f51b5">
+    <meta name="msapplication-tap-highlight" content="no">
+
+    <!-- Default twitter cards -->
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:site" content="@username">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="my-app">
+    <meta property="og:image" content="images/manifest/icon-144x144.png" />
+
+    <!-- Performance tip: hint to the browser to start the handshake for the fonts site -->
+    <link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <!--
+    Feature detect Custom Elements support. If the browser DOES support Custom
+    Elements then we need to load the custom-elements-es5-adapter because
+    our project code has been transpiled from ES2015 to ES5 and native Custom
+    Elements expect elements will be registered as classes.
+    -->
+    <script>if (!window.customElements) { document.write('<!--'); }</script>
+    <script src="./modules/@webcomponents/webcomponentsjs/custom-elements-es5-adapter.js"></script>
+    <!--! DO NOT REMOVE THIS COMMENT, WE NEED ITS CLOSING MARKER -->
+
+    <style type="text/css">
+        html, body {
+            margin: 0;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        body {
+            background: var(--theme-mediumgrey);
+            font-family: 'Open Sans', 'Roboto', Helvetica, Arial, Lucida, sans-serif;
+        }
+    </style>
+</head>
+<body>
+<smart-building-app>
+    <!-- You can override the logo
+    <img slot="logo" height="20" src="mylogo.png"/>
+    -->
+</smart-building-app>
+
+<!--
+Use the webcomponents-loader script which will feature detect which Web
+Components features are missing and lazy load the appropriate polyfills.
+When we hear the 'WebComponentsReady' event from the polyfill bundle we can
+insert our 'bundle.js'.
+-->
+<script>
+    (function () {
+        document.addEventListener('WebComponentsReady', function componentsReady() {
+            document.removeEventListener('WebComponentsReady', componentsReady, false);
+            var script = document.createElement('script');
+            script.src = '<%= htmlWebpackPlugin.files.js[0] %>';
+            var refScript = document.getElementsByTagName('script')[0];
+            refScript.parentNode.insertBefore(script, refScript);
+        }, false);
+    })();
+</script>
+<script src="modules/@webcomponents/webcomponentsjs/webcomponents-loader.js"></script>
+</body>
+</html>

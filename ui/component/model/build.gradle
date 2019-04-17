@@ -65,7 +65,7 @@ clean {
     }
 }
 
-build.dependsOn generateTypeScript
+build.dependsOn generateTypeScript, npmBuild
 
 task installDist() {
     dependsOn build
