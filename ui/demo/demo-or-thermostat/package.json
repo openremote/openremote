@@ -4,9 +4,11 @@
   "description": "Component Demo",
   "scripts": {
     "clean": "npx shx rm -rf dist",
-    "build": "node ../../model-build.js && npx tsc -b && npx cross-env NODE_ENV=production webpack",
-    "serve": "node ../../model-build.js && npx tsc -b && npx webpack-dev-server",
-    "watch": "node ../../model-build.js && npx tsc -b -w",
+    "modelBuild": "node ../../model-build.js",
+    "modelWatch": "node ../../model-watch.js",
+    "build": "npx tsc -b && npx cross-env NODE_ENV=production webpack",
+    "serve": "npx tsc -b && npx webpack-dev-server",
+    "watch": "npx tsc -b -w",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "OpenRemote",
