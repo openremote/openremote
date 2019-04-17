@@ -207,7 +207,7 @@ public class RulesetDeployment {
             JsonRulesetDefinition jsonRulesetDefinition = Container.JSON.readValue(rulesStr, JsonRulesetDefinition.class);
             JsonRulesBuilder jsonRulesBuilder = new JsonRulesBuilder(timerService, assetStorageService, executorService, assetsFacade, usersFacade, notificationFacade, this::scheduleRuleAction);
 
-            Arrays.stream(jsonRulesetDefinition.rules).forEach(jsonRulesBuilder::add);
+            Arrays.stream(jsonRulesetDefinition.rules).forEach(r -> jsonRulesBuilder.add(ruleset, r));
 
             for (Rule rule : jsonRulesBuilder.build()) {
                 RulesEngine.LOG.info("Registering JSON rule: " + rule.getName());

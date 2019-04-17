@@ -32,6 +32,7 @@ import org.openremote.model.query.BaseAssetQuery;
 import org.openremote.model.query.UserQuery;
 import org.openremote.model.rules.AssetState;
 import org.openremote.model.rules.Assets;
+import org.openremote.model.rules.Ruleset;
 import org.openremote.model.rules.Users;
 import org.openremote.model.rules.json.*;
 import org.openremote.model.util.TextUtil;
@@ -89,8 +90,8 @@ public class JsonRulesBuilder extends RulesBuilder {
         this.scheduledActionConsumer = scheduledActionConsumer;
     }
 
-    protected static String buildResetFactName(Rule rule, AssetState assetState) {
-        return rule.name + "_" + assetState.getId() + "_" + assetState.getAttributeName();
+    protected static String buildResetFactName(Ruleset ruleset, Rule rule, AssetState assetState) {
+        return ruleset.getId() + "_" + ruleset.getVersion() + "_" + rule.name + "_" + assetState.getId() + "_" + assetState.getAttributeName();
     }
 
     protected static List<String> getUserIds(Users users, UserQuery userQuery) {
@@ -115,10 +116,10 @@ public class JsonRulesBuilder extends RulesBuilder {
                 .collect(Collectors.toList());
     }
 
-    public JsonRulesBuilder add(Rule rule) {
+    public JsonRulesBuilder add(Ruleset ruleset, Rule rule) {
 
-        Condition condition = buildLhsCondition(rule);
-        Action action = buildAction(rule);
+        Condition condition = buildLhsCondition(ruleset, rule);
+        Action action = buildAction(ruleset, rule);
 
         if (condition == null || action == null) {
             throw new IllegalArgumentException("Error building JSON rule '" + rule.name + "'");
@@ -142,7 +143,7 @@ public class JsonRulesBuilder extends RulesBuilder {
                 })
                 .then(action);
 
-        Condition resetCondition = buildResetCondition(rule);
+        Condition resetCondition = buildResetCondition(ruleset, rule);
         Action resetAction = buildResetAction();
 
         if (resetCondition != null && resetAction != null) {
@@ -168,7 +169,7 @@ public class JsonRulesBuilder extends RulesBuilder {
         return this;
     }
 
-    protected Condition buildLhsCondition(Rule rule) {
+    protected Condition buildLhsCondition(Ruleset ruleset, Rule rule) {
         if (rule.when == null || (rule.when.asset == null && rule.when.timer == null)) {
             return facts -> false;
         }
@@ -189,7 +190,7 @@ public class JsonRulesBuilder extends RulesBuilder {
 
                 // Apply reset predicate (to prevent re-running a rule on an asset state before the reset has triggered)
                 assetStates = assetStates.filter(as -> {
-                    String factName = buildResetFactName(rule, as);
+                    String factName = buildResetFactName(ruleset, rule, as);
                     return !facts.getOptional(factName).isPresent();
                 });
 
@@ -235,7 +236,7 @@ public class JsonRulesBuilder extends RulesBuilder {
         };
     }
 
-    protected Action buildAction(Rule rule) {
+    protected Action buildAction(Ruleset ruleset, Rule rule) {
 
         return facts -> {
 
@@ -246,9 +247,9 @@ public class JsonRulesBuilder extends RulesBuilder {
 
                     // Add RuleFiredInfo fact to limit re-triggering of the rule for a given asset state
                     if (rule.reset == null || TextUtil.isNullOrEmpty(rule.reset.timer)) {
-                        facts.put(buildResetFactName(rule, assetState), new RuleFiredInfo(assetState));
+                        facts.put(buildResetFactName(ruleset, rule, assetState), new RuleFiredInfo(assetState));
                     } else if (!TextUtil.isNullOrEmpty(rule.reset.timer)) {
-                        facts.putTemporary(buildResetFactName(rule, assetState), rule.reset.timer, new RuleFiredInfo(assetState));
+                        facts.putTemporary(buildResetFactName(ruleset, rule, assetState), rule.reset.timer, new RuleFiredInfo(assetState));
                     }
                 }
             }
@@ -432,10 +433,9 @@ public class JsonRulesBuilder extends RulesBuilder {
         };
     }
 
-    protected Condition buildResetCondition(Rule rule) {
+    protected Condition buildResetCondition(Ruleset ruleset, Rule rule) {
 
-        // Timer only reset is handled in rule action with temporary fact other resets require rule.when.asset to be set
-        // so that we have
+        // Timer only reset is handled in rule action with temporary fact
         if (rule.reset == null || (!rule.reset.triggerNoLongerMatches && !rule.reset.attributeTimestampChange
                 && !rule.reset.attributeValueChange)) {
 
@@ -482,13 +482,13 @@ public class JsonRulesBuilder extends RulesBuilder {
                     .stream()
                     .filter(as -> {
 
-                        String factName = buildResetFactName(rule, as);
+                        String factName = buildResetFactName(ruleset, rule, as);
                         Optional<RuleFiredInfo> firedInfo = facts.getOptional(factName);
 
                         return firedInfo.filter(ruleFiredInfo -> resetPredicate.test(as, ruleFiredInfo)).isPresent();
 
                     })
-                    .map(as -> buildResetFactName(rule, as))
+                    .map(as -> buildResetFactName(ruleset, rule, as))
                     .collect(Collectors.toList());
 
             if (resetAssetStates.isEmpty()) {
