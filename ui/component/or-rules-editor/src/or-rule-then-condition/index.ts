@@ -46,6 +46,9 @@ class OrRuleThenCondition extends LitElement {
         return html`
             <div class="rule-container">
                 ${this.condition ? html`
+                   <or-select-asset-action>
+                        <or-icon icon="numeric-1-circle"></or-icon>
+                   </or-select-asset-action>
                    <or-select-asset-attribute disabled type="${this.condition}" value="${this.condition.attributeName}"></or-select-asset-attribute>
                    <or-select-operator disabled type="${this.condition}" value="EQUAL"></or-select-operator>
                    ${this.createInputControl(this.condition!)}

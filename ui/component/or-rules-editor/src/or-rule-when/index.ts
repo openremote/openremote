@@ -21,6 +21,7 @@ class OrRuleWhen extends LitElement {
     @property({type: Array})
     public predicates?: AttributePredicate[] = [];
 
+
     constructor() {
         super();
         this.addEventListener("when-condition:delete", this.deleteWhenCondition);
@@ -31,18 +32,17 @@ class OrRuleWhen extends LitElement {
 
         return html`
            <div class="rule-content-section">
-                <h3>Als..</h3>
                 <div class="rule-when-container bg-white shadow">
+                    <strong>Als..</strong>
                     ${this.rule && this.rule.when && this.rule.when.asset && this.rule.when.asset.attributes && this.rule.when.asset.attributes.predicates ? html`
                         ${this.rule.when.asset.attributes.predicates.map((predicate: AttributePredicate, index) => {
                             return html`
                                     <or-rule-when-condition index="${index}" .predicate="${predicate}"></or-rule-when-condition>
-                                    <span class="rule-additional">&</span>
                             `; })}
                     ` : ``}
                     
                    ${rulesEditorConfig.controls.addWhenCondition ? html`
-                        <a class="button-add" @click="${this.addWhenCondition}">+</a>
+                        <a class="button-add" @click="${this.addWhenCondition}">+ voeg nog een voorwaarde toe</a>
                     ` : ``}
                 </div>
             </div>
@@ -52,7 +52,7 @@ class OrRuleWhen extends LitElement {
     protected updated(_changedProperties: PropertyValues): void {
         super.updated(_changedProperties);
         if (this.rule && !this.rule.when) {
-            this.rule.when = defaultWhenCondition;
+            this.rule.when = {...defaultWhenCondition};
             if (this.rule!.when!.asset!.attributes!.predicates!.length === 0) {
                 this.addPredicate();
             }
@@ -62,7 +62,7 @@ class OrRuleWhen extends LitElement {
 
     private addWhenCondition() {
         if (this.rule && !this.rule.when) {
-            this.rule.when = defaultWhenCondition;
+            this.rule.when = {...defaultWhenCondition};
         }
 
         this.addPredicate();
@@ -72,7 +72,7 @@ class OrRuleWhen extends LitElement {
 
     private addPredicate() {
         if (this.rule && this.rule.when && this.rule.when.asset && this.rule.when.asset.attributes && this.rule.when.asset.attributes.predicates) {
-            this.rule.when.asset.attributes.predicates.push(defaultPredicate);
+            this.rule.when.asset.attributes.predicates.push({...defaultPredicate});
         }
     }
 

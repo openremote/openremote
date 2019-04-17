@@ -33,18 +33,17 @@ class OrRuleWhen extends LitElement {
                         <option ?selected="${this.value === BaseAssetQueryOperator.GREATER_THAN}" value="${BaseAssetQueryOperator.GREATER_THAN}" value="GREATER_THAN">></option>
                         <option ?selected="${this.value === BaseAssetQueryOperator.LESS_EQUALS}" value="${BaseAssetQueryOperator.LESS_EQUALS}" value="LESS_EQUALS">=<</option>
                         <option ?selected="${this.value === BaseAssetQueryOperator.GREATER_EQUALS}" value="${BaseAssetQueryOperator.GREATER_EQUALS}" value="GREATER_EQUALS">=></option>
-                    ` :``}
+                    ` : ``}
                 </select>
-            ` :``}
+            ` : ``}
         `;
     }
 
-
     onChange() {
-        if(this.shadowRoot){
+        if (this.shadowRoot) {
             const value = (<HTMLInputElement>this.shadowRoot.getElementById('or-select-operator')).value;
 
-            let event = new CustomEvent('operator:changed', {
+            const event = new CustomEvent('operator:changed', {
                 detail: { value: value },
                 bubbles: true,
                 composed: true });
@@ -57,6 +56,4 @@ class OrRuleWhen extends LitElement {
         super();
     }
 
-
 }
-

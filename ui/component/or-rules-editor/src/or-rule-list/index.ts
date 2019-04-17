@@ -34,17 +34,24 @@ class OrRulesList extends LitElement {
                         .list-item {
                             text-decoration: none;
                             height: 24px;
-                            padding: 20px 0;
-                            border-bottom: 1px solid var(--app-lightgrey-color);
+                            font-size: 15px;
+                            padding: 17px 0;
                             border-left: 5px solid transparent;
                             color: var(--app-grey-color);
                             cursor: pointer;
+                            
+                            transition: all 300ms ease-in;
                         }
                         
                         .list-item[selected],
-                        .list-item:hover {
+                        .list-item:hover  {
                             border-left-color: var(--app-primary-color);
-                            background-color: var(--app-lightgrey-color);
+                            background-color: #f7f7f7;
+                            color: #000000;
+                        }
+                        
+                        .list-item:hover {
+                          opacity: 0.77;
                         }
                         
                         .list-item > span {
@@ -69,13 +76,13 @@ class OrRulesList extends LitElement {
             <div class="list-container">
                 ${this.rulesets && this.rulesets.map((ruleset: TenantRuleset, index:number) => {
                     return html`
-                        <a ?selected="${this.ruleset && ruleset.id === this.ruleset.id}" class="d-flex list-item" @click="${()=> this.setActiveRule(this.rulesets[index])}">
-                            <span class="rule-status ${ruleset.enabled ? 'bg-green' : 'bg-red'}"></span>
+                        <a ?selected="${this.ruleset && ruleset.id === this.ruleset.id}" class="d-flex list-item" @click="${() => this.setActiveRule(this.rulesets[index])}">
+                            <span class="rule-status ${ruleset.enabled ? "bg-green" : "bg-red"}"></span>
                             <div class="flex">
-                                <span>${ruleset.name}</span>
+                                <span>${ruleset.name}<span style="color: var(--app-grey-color);">${!ruleset.id ? " [concept]" : ""}</span></span>
                             </div>
                         </a>
-                    `
+                    `;
                 })}
             </div>
         `;

@@ -1,4 +1,4 @@
-import {customElement, html, LitElement, property, TemplateResult} from "lit-element";
+import {customElement, html, LitElement, property, TemplateResult, PropertyValues} from "lit-element";
 
 import "@openremote/or-select";
 import "@openremote/or-icon";
@@ -71,10 +71,14 @@ class OrRulesEditor extends LitElement {
     @property({type: Object})
     private rule?: Rule;
 
+    @property({type: Boolean})
+    private isValidRule?: boolean;
+
     constructor() {
         super();
         this.readRules();
 
+        this.addEventListener("rules:validated", this.validatedRule);
         this.addEventListener("rules:set-active-rule", this.setActiveRule);
         this.addEventListener("rules:write-rule", this.writeRule);
         this.addEventListener("rules:create-rule", this.createRule);
@@ -96,19 +100,29 @@ class OrRulesEditor extends LitElement {
               </side-menu>
               ${this.ruleset ? html`
                     <or-body>
-                        <or-rule-header class="bg-white shadow" .ruleset="${this.ruleset}" .rule="${this.rule}"></or-rule-header>
-                        
+                    
                         ${this.rule ? html`
+                            <or-rule-header class="bg-white shadow" .ruleset="${this.ruleset}" .rule="${this.rule}" ?valid="${this.isValidRule}"></or-rule-header>
+                        
                             <div class="content">
                                 <or-rule-when .rule="${this.rule}" .attributeDescriptors="${attributeDescriptors}"></or-rule-when>
                                 <or-rule-then .rule="${this.rule}" .attributeDescriptors="${attributeDescriptors}"></or-rule-then>
                             </div>
-                        ` : ``}
+                        ` : `
+                            <div class="content layout vertical center-center">
+                                <h3>Kies links een profiel of maakt een nieuw profiel aan.</h3>
+                                <button @click="${this.createRule}">profiel aanmaken</button>
+                            </div>
+                        `}
                     
                     </or-body>
               ` : html``}
           </div>
         `;
+    }
+
+    private validatedRule(e: any) {
+        this.isValidRule = e.detail.isValidRule;
     }
 
     private readRules() {
@@ -146,7 +160,7 @@ class OrRulesEditor extends LitElement {
         }
 
         if (this.rulesets) {
-            const newRule = rulesetTemplate;
+            const newRule = {...rulesetTemplate};
             this.rulesets = [...this.rulesets, rulesetTemplate];
             this.ruleset = newRule;
             this.computeRuleset();
@@ -205,7 +219,12 @@ class OrRulesEditor extends LitElement {
     private cleanRule() {
         if (this.rulesets && this.ruleset) {
             const index = findIndex(this.rulesets, ["id", this.ruleset.id]);
-            this.rulesets.splice(index, 1);
+            if (index) {
+                this.rulesets.splice(index, 1);
+            } else {
+                this.rulesets.splice(this.rulesets.length - 1, 1);
+            }
+
             this.rulesets = [...this.rulesets];
             this.ruleset = undefined;
             this.rule = undefined;
@@ -217,7 +236,7 @@ class OrRulesEditor extends LitElement {
         if (this.ruleset && this.ruleset.rules) {
             this.rule = JSON.parse(this.ruleset.rules).rules[0];
         } else if (this.ruleset && !this.ruleset.rules) {
-            this.rule = ruleTemplate;
+            this.rule = {...ruleTemplate};
             this.rule.name = this.ruleset.name;
         }
         this.requestUpdate();

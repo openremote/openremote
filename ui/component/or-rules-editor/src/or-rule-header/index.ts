@@ -1,26 +1,29 @@
-import {html, LitElement, property, customElement} from 'lit-element';
+import {html, LitElement, property, customElement, PropertyValues} from 'lit-element';
 import '../selects/or-select-operator';
 import '../selects/or-select-asset-attribute';
 
 import '@openremote/or-input';
 import '@openremote/or-select';
 import '@openremote/or-icon';
-import {TenantRuleset} from '@openremote/model';
+import {TenantRuleset, Rule} from '@openremote/model';
 
 import {style} from './style';
 
 @customElement('or-rule-header')
 class OrRuleHeader extends LitElement {
     @property({type: Object})
-    ruleset?: TenantRuleset;
+    public ruleset?: TenantRuleset;
+
+    @property({type: Object})
+    public rule?: Rule;
 
     @property({type: Boolean})
-    editmode: boolean = false;
+    public valid: boolean = false;
 
     static get styles() {
         return [
             style
-        ]
+        ];
     }
 
     protected render() {
@@ -29,21 +32,20 @@ class OrRuleHeader extends LitElement {
             <div class="rule-container">
               
                     <div class="layout horizontal">
-                        ${this.editmode ? html`
-                            <or-input type="text" value="${this.ruleset ? this.ruleset.name : null}"></or-input>
-                        ` : html`
-                            <h1>${this.ruleset ? this.ruleset.name : ''}</h1>
-                        `}
+                        <input @change="${this.changeName}" type="text" .value="${this.ruleset ? this.ruleset.name : null}" />
                         
-                        <span @click="${this.toggleEditmode}"><or-icon style="margin:10px;" icon="pencil-outline"></or-icon></span>
-                        <span class="rule-status ${this.ruleset && this.ruleset.enabled ? 'bg-green' : 'bg-red'}"></span>
-                        <button class="button-simple" @click="${this.toggleEnabled}">${this.ruleset!.enabled ? 'deactiveren' : 'publiceren'}</button>
-                        
-                        ${this.ruleset && this.ruleset.id ? html`
-                            <button @click="${this.updateRule}">opslaan</button>
-                        ` : html`
-                            <button @click="${this.createRule}">toevoegen</button>
-                        `}
+                        <div class="layout horizontal" style="margin-left: auto;">
+                            <span style="margin: 9px 0;">Actief</span>
+                            <label class="switch" ?data-disabled="${!this.ruleset!.id}">
+                              <input @change="${this.toggleEnabled}" ?disabled="${!this.ruleset!.id}" ?checked="${this.ruleset!.enabled}" type="checkbox">
+                              <span class="slider round"></span>
+                            </label>
+                            ${this.ruleset && this.ruleset.id ? html`
+                                <button ?disabled="${!this.valid}" @click="${this.updateRule}">opslaan</button>
+                            ` : html`
+                                <button ?disabled="${!this.valid}" @click="${this.createRule}">opslaan</button>
+                            `}
+                        </div>
                         
                     </div>
             </div>
@@ -52,12 +54,11 @@ class OrRuleHeader extends LitElement {
 
     constructor() {
         super();
-        this.addEventListener('or-input:changed', this.changeName);
     }
 
-    changeName (e:any) {
-        const value = e.detail.value;
-        if(this.ruleset) {
+    changeName(e:any) {
+        const value = e.target.value;
+        if (this.ruleset) {
             this.ruleset.name = value;
         }
     }
@@ -87,10 +88,6 @@ class OrRuleHeader extends LitElement {
             this.updateRule();
             this.requestUpdate();
         }
-    }
-
-    toggleEditmode() {
-        this.editmode = !this.editmode;
     }
 
 }

@@ -3,6 +3,8 @@ import {css} from 'lit-element';
 // language=CSS
 export const style = css`
     
+    
+    
     .rule-content-section {
         flex-grow: 1;
         flex-basis: 1;
@@ -15,6 +17,7 @@ export const style = css`
 
         flex-wrap: wrap;
         background-color: var(--app-white-color, #FFF);
+        box-shadow: rgba(0, 0, 0, 0.11) 0px 1px 2px 0px;
     }
     
     .button-add {

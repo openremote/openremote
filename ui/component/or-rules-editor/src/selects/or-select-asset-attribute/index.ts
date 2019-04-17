@@ -10,9 +10,6 @@ import {rulesEditorConfig} from "../../const/rule-config";
 class OrSelectAssetAttribute extends LitElement {
 
     @property({type: String})
-    public icon: string = "";
-
-    @property({type: String})
     public assetType: string = "";
 
     @property({type: Array})
@@ -61,7 +58,7 @@ class OrSelectAssetAttribute extends LitElement {
              <select ?disabled="${this.disabled}" id="or-select-asset-attribute" @change="${this.onChange}">
                 ${this.options ? this.options.map((attribute: AttributeDescriptor) => {
                     return html`
-                        <option ?selected="${attribute.name === this.value}" value="${attribute.name}">${attribute.name}</option>
+                        <option ?selected="${attribute.attributeName === this.value}" value="${attribute.attributeName}">${attribute.attributeName}</option>
                     `;
                 }) : ``}
             </select>
@@ -75,7 +72,7 @@ class OrSelectAssetAttribute extends LitElement {
         }
 
         this.options = this.attributeDescriptors.filter((obj) => {
-            return obj.name && rulesEditorConfig.options.attributeValueDescriptors.hasOwnProperty(obj.name);
+            return obj.attributeName && rulesEditorConfig.options.attributeValueDescriptors.hasOwnProperty(obj.attributeName);
         });
 
     }

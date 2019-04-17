@@ -1,10 +1,11 @@
-import {html, LitElement, property, customElement} from "lit-element";
+import {html, LitElement, property, customElement, PropertyValues} from "lit-element";
 import "../selects/or-select-asset-attribute";
 import "../selects/or-select-operator";
 
 import "@openremote/or-input";
 import "@openremote/or-select";
 import "@openremote/or-icon";
+import {AssetModelUtil} from "@openremote/core";
 
 import {style} from "./style";
 import {AttributePredicate, AttributeDescriptor, ValueType} from "@openremote/model";
@@ -31,6 +32,9 @@ class OrRuleWhenCondition extends LitElement {
     @property({type: Array})
     public attributeDescriptors?: AttributeDescriptor[] = attributeDescriptors;
 
+    @property({type: Boolean})
+    public isValidRule: boolean = false;
+
     constructor() {
         super();
 
@@ -51,24 +55,25 @@ class OrRuleWhenCondition extends LitElement {
                     </or-select-asset-type>
                     
                     ${this.predicate.name ? html`
-                        <or-select-asset-attribute icon="${this.predicate}" value="${this.predicate.name.value}"></or-select-asset-attribute>
+                        <or-select-asset-attribute value="${this.predicate.name.value}"></or-select-asset-attribute>
                     
                         ${this.predicate.value && this.predicate.value.predicateType === "string" ? html`
                             ${this.predicate.name.value ? html`
-                                <or-select-operator type="${this.getAttributeDescriptors(this.predicate.name.value)!.valueDescriptor!.valueType}" value="${this.predicate.value.match}"></or-select-operator>
+                                <or-select-operator type="${this.getAttributeDescriptors(this.predicate.name.value)!.valueDescriptor!.valueType}" .value="${this.predicate.value.match}"></or-select-operator>
                             ` : ``}
                             
                             ${this.predicate.name.value && this.predicate.value.match ? html`
                                 ${this.getAttributeConfig(this.predicate.name.value)!.options  ? html`
-                                    <or-select .options="${this.getAttributeConfig(this.predicate.name.value).options}" value="${this.predicate.value.value ? this.predicate.value.value : ""}"></or-select>
+                                    ${this.predicate.value.value}
+                                    <or-select .options="${this.getAttributeConfig(this.predicate.name.value).options}" .value="${this.predicate.value.value ? this.predicate.value.value : ""}"></or-select>
                                 ` : html`
-                                    <or-input type="text" value="${this.predicate.value.value ? this.predicate.value.value : ""}"></or-input>
+                                    <or-input type="text" .value="${this.predicate.value.value ? this.predicate.value.value : null}"></or-input>
                                 `}
                             ` : ``}
                             
                              ${this.predicate.value.value ? html`
-                                <a @click="${this.deleteCondition}">
-                                 <or-icon class="small-icon" icon="delete"></or-icon>
+                                <a style="margin-left: auto;" @click="${this.deleteCondition}">
+                                 <or-icon class="small-icon" icon="close-circle"></or-icon>
                                 </a>
                             ` : ``}
                             
@@ -79,6 +84,29 @@ class OrRuleWhenCondition extends LitElement {
                 ` : ``}
             </div> 
         `;
+    }
+
+    protected updated(_changedProperties: PropertyValues): void {
+        super.updated(_changedProperties);
+        if (_changedProperties.has("predicate")) {
+            this.validateRule();
+        }
+    }
+
+    private validateRule() {
+
+        if (this.predicate && this.predicate.value && this.predicate.value.predicateType === "string" && this.predicate.value.value) {
+            this.isValidRule = true;
+        } else {
+            this.isValidRule = false;
+        }
+        const event = new CustomEvent("rules:validated", {
+            detail: { isValidRule: this.isValidRule },
+            bubbles: true,
+            composed: true });
+
+        this.dispatchEvent(event);
+
     }
 
     // setAssetType(value:string) {
@@ -94,8 +122,9 @@ class OrRuleWhenCondition extends LitElement {
     //     }
     // }
 
-    private getAttributeDescriptors(name: string) {
-        return find(this.attributeDescriptors, ["name", name]);
+    private getAttributeDescriptors(attributeName: string) {
+        console.log(AssetModelUtil.getAttributeDescriptor(attributeName));
+        return AssetModelUtil.getAttributeDescriptor(attributeName);
     }
 
     private getAttributeConfig(name: string) {
@@ -111,7 +140,7 @@ class OrRuleWhenCondition extends LitElement {
     private setAssetAttribute(e: any) {
         const value = e.detail.value;
 
-        if(this.predicate && this.predicate.name) {
+        if (this.predicate && this.predicate.name) {
             this.predicate.name.value = value;
 
             this.setOperator(e);
@@ -119,9 +148,9 @@ class OrRuleWhenCondition extends LitElement {
         }
     }
 
-    private setOperator(e: any){
+    private setOperator(e: any) {
         const value = e.detail.value;
-        if(this.predicate && this.predicate.value && this.predicate.value.predicateType === "string") {
+        if (this.predicate && this.predicate.value && this.predicate.value.predicateType === "string") {
             this.predicate.value.match = value;
             this.requestUpdate();
         }
@@ -130,8 +159,9 @@ class OrRuleWhenCondition extends LitElement {
     private setValue(e: any) {
         const value = e.detail.value;
 
-        if(this.predicate && this.predicate.value && this.predicate.value.predicateType === "string") {
+        if (this.predicate && this.predicate.value && this.predicate.value.predicateType === "string") {
             this.predicate.value.value = value;
+            this.validateRule();
             this.requestUpdate();
         }
     }

@@ -11,7 +11,7 @@ class OrInput extends LitElement {
     name: string = '';
 
     @property({type: String})
-    value: string = '';
+    public value: string = "";
 
 
     static get styles() {
@@ -23,14 +23,13 @@ class OrInput extends LitElement {
     protected render() {
 
         return html`
-             <input id="or-input" type="${this.type}" name="${this.name}" @change="${this.onChange}" value="${this.value}" />
+             <input class="or-input" type="${this.type}" name="${this.name}" @change="${this.onChange}" .value="${this.value}" />
         `;
     }
 
-
     onChange() {
         if(this.shadowRoot){
-            const input = (<HTMLInputElement>this.shadowRoot.getElementById('or-input'));
+            const input = (<HTMLInputElement> this.shadowRoot.querySelector('.or-input'));
             const value = input.value;
             const name = input.name;
 
@@ -43,7 +42,6 @@ class OrInput extends LitElement {
             this.dispatchEvent(event);
         }
     }
-
 
     constructor() {
         super();

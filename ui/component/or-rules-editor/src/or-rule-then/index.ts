@@ -13,7 +13,7 @@ class OrRuleThen extends LitElement {
     static get styles() {
         return [
             style
-        ]
+        ];
     }
 
     @property({type: Object})
@@ -30,8 +30,9 @@ class OrRuleThen extends LitElement {
 
         return html`
                <div class="rule-content-section">
-                    <h3>Dan..</h3>
                     <div class="rule-then-container bg-white shadow">
+                        <strong>Dan..</strong>
+
                        ${this.rule && this.rule.then ? this.rule.then.map((then: RuleActionUnion) => {
                             return html`
                                 <or-rule-then-condition .condition="${then}" .attributeDescriptors="${this.attributeDescriptors}"></or-rule-then-condition>
@@ -53,19 +54,19 @@ class OrRuleThen extends LitElement {
     protected updated(_changedProperties: PropertyValues): void {
         super.updated(_changedProperties);
         if (this.rule && !this.rule.then) {
-            this.rule.then = defaultThen;
+            this.rule.then = [...defaultThen];
             this.requestUpdate();
         }
     }
 
-    private addThenCondition () {
+    private addThenCondition() {
         if (this.rule && !this.rule.then) {
-            this.rule.then = defaultThen;
+            this.rule.then = [...defaultThen];
 
         }
 
         if (this.rule && this.rule.then) {
-            this.rule.then.push(defaultThenCondition);
+            this.rule.then.push({...defaultThenCondition});
             this.requestUpdate();
         }
 
