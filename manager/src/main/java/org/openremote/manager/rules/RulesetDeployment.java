@@ -201,7 +201,10 @@ public class RulesetDeployment {
 
     protected boolean startRulesJson(Ruleset ruleset, Assets assetsFacade, Users usersFacade, NotificationsFacade notificationFacade) {
         try {
-            JsonRulesetDefinition jsonRulesetDefinition = Container.JSON.readValue(ruleset.getRules(), JsonRulesetDefinition.class);
+            String rulesStr = ruleset.getRules();
+            rulesStr = rulesStr.replace("%RULESET_ID%", Long.toString(ruleset.getId()));
+            rulesStr = rulesStr.replace("%RULESET_NAME%", ruleset.getName());
+            JsonRulesetDefinition jsonRulesetDefinition = Container.JSON.readValue(rulesStr, JsonRulesetDefinition.class);
             JsonRulesBuilder jsonRulesBuilder = new JsonRulesBuilder(timerService, assetStorageService, executorService, assetsFacade, usersFacade, notificationFacade, this::scheduleRuleAction);
 
             Arrays.stream(jsonRulesetDefinition.rules).forEach(jsonRulesBuilder::add);
