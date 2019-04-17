@@ -30,12 +30,12 @@ public interface AssetDescriptor {
 
     @JsonProperty
     String getName();
-
+    @JsonProperty
     String getType();
-
+    @JsonProperty
     String getIcon();
-
+    @JsonProperty
     boolean getAccessPublicRead();
-
+    @JsonProperty
     AttributeDescriptor[] getAttributeDescriptors();
 }

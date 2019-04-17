@@ -69,7 +69,6 @@ public abstract class AbstractVelbusProtocol extends AbstractProtocol implements
     protected static final String VERSION = "1.0";
     protected static final List<MetaItemDescriptorImpl> META_ITEM_DESCRIPTORS = Collections.singletonList(
         new MetaItemDescriptorImpl(
-            "PROTOCOL_VELBUS_TIME_INJECTION_INTERVAL_SECONDS",
             META_VELBUS_TIME_INJECTION_INTERVAL_SECONDS,
             ValueType.NUMBER,
             false,
@@ -83,7 +82,6 @@ public abstract class AbstractVelbusProtocol extends AbstractProtocol implements
 
     public static final List<MetaItemDescriptor> ATTRIBUTE_META_ITEM_DESCRIPTORS = Arrays.asList(
         new MetaItemDescriptorImpl(
-            "PROTOCOL_VELBUS_DEVICE_ADDRESS",
             META_VELBUS_DEVICE_ADDRESS,
             ValueType.NUMBER,
             true,
@@ -94,7 +92,6 @@ public abstract class AbstractVelbusProtocol extends AbstractProtocol implements
             false
         ),
         new MetaItemDescriptorImpl(
-            "PROTOCOL_VELBUS_DEVICE_LINK",
             META_VELBUS_DEVICE_VALUE_LINK,
             ValueType.STRING,
             true,

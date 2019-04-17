@@ -412,11 +412,6 @@ public enum MetaItemType implements MetaItemDescriptor {
 
 
     @Override
-    public String getName() {
-        return this.name();
-    }
-
-    @Override
     public String getUrn() {
         return urn;
     }

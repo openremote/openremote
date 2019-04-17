@@ -122,7 +122,6 @@ public abstract class AbstractProtocol implements Protocol {
     static {
         attributeMetaItemDescriptors = Arrays.asList(
             new MetaItemDescriptorImpl(
-                "PROTOCOL_FILTERS",
                 META_PROTOCOL_FILTERS,
                 ValueType.ARRAY,
                 false,

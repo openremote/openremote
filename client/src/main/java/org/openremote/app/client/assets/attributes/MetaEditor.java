@@ -144,7 +144,7 @@ public class MetaEditor extends AbstractAttributeViewExtension {
 
             Arrays.stream(metaItemDescriptors)
                 .forEach(metaItemDescriptor -> {
-                    String name = getMetaItemDisplayName(environment, metaItemDescriptor.getName());
+                    String name = getMetaItemDisplayName(environment, metaItemDescriptor.getUrn());
                     nameList.addItem(name, metaItemDescriptor.getUrn());
                 });
         }
@@ -204,7 +204,7 @@ public class MetaEditor extends AbstractAttributeViewExtension {
                 }
             }
 
-            nameLabel.setText(currentMetaItemDescriptor.map(metaItemDescriptor -> getMetaItemDisplayName(environment, metaItemDescriptor.getName())).orElse(urn));
+            nameLabel.setText(currentMetaItemDescriptor.map(metaItemDescriptor -> getMetaItemDisplayName(environment, metaItemDescriptor.getUrn())).orElse(urn));
             nameInput.setVisible(!currentMetaItemDescriptor.isPresent());
             typeList.setVisible(!currentMetaItemDescriptor.isPresent());
             typeList.selectItem(typeListValue);
@@ -325,7 +325,7 @@ public class MetaEditor extends AbstractAttributeViewExtension {
                 return metaItemDescriptor != MetaItemType.PROTOCOL_CONFIGURATION &&
                     (!isProtocolConfiguration || metaItemDescriptor != MetaItemType.AGENT_LINK);
             })
-            .sorted(Comparator.comparing(metaItemDescriptor -> getMetaItemDisplayName(environment, metaItemDescriptor.getName())))
+            .sorted(Comparator.comparing(metaItemDescriptor -> getMetaItemDisplayName(environment, metaItemDescriptor.getUrn())))
             .toArray(MetaItemDescriptor[]::new);
 
         // Refresh the new item meta item editor
@@ -460,7 +460,7 @@ public class MetaEditor extends AbstractAttributeViewExtension {
                 .orElse(true);
 
             if (!canAdd) {
-                showValidationError(attribute.getName().orElse(""), null, new ValidationFailure(MetaItem.MetaItemFailureReason.META_ITEM_DUPLICATION, getMetaItemDisplayName(environment, descriptor[0].getName())));
+                showValidationError(attribute.getName().orElse(""), null, new ValidationFailure(MetaItem.MetaItemFailureReason.META_ITEM_DUPLICATION, getMetaItemDisplayName(environment, descriptor[0].getUrn())));
                 return false;
             }
 
@@ -536,7 +536,7 @@ public class MetaEditor extends AbstractAttributeViewExtension {
                                 .map(parameter ->
                                     // Parameter should be meta item name URN
                                     getMetaItemDescriptor(parameter)
-                                        .map(metaItemDescriptor -> getMetaItemDisplayName(environment, metaItemDescriptor.getName()))
+                                        .map(metaItemDescriptor -> getMetaItemDisplayName(environment, metaItemDescriptor.getUrn()))
                                         .orElse(parameter)
                                 )
                                 .orElse("")
@@ -560,7 +560,7 @@ public class MetaEditor extends AbstractAttributeViewExtension {
         if (failures != null) {
             Optional<MetaItemDescriptor> optionalMetaItemDescriptor = metaItemEditor.getCurrentDescriptor();
             String displayName = optionalMetaItemDescriptor
-                .map(metaItemDescriptor -> getMetaItemDisplayName(environment, metaItemDescriptor.getName()))
+                .map(metaItemDescriptor -> getMetaItemDisplayName(environment, metaItemDescriptor.getUrn()))
                 .orElse(metaItemEditor.getItem().getName().orElse(""));
 
             failures.forEach(failure -> {

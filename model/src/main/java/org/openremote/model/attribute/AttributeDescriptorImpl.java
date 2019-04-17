@@ -25,28 +25,31 @@ import org.openremote.model.value.Value;
 
 public class AttributeDescriptorImpl implements AttributeDescriptor {
 
-    protected String name;
     protected String attributeName;
     protected AttributeValueDescriptor valueDescriptor;
     protected MetaItemDescriptor[] metaItemDescriptors;
     protected Value initialValue;
 
+    public AttributeDescriptorImpl(String attributeName, AttributeValueDescriptor valueDescriptor) {
+        this.attributeName = attributeName;
+        this.valueDescriptor = valueDescriptor;
+    }
+
+    public AttributeDescriptorImpl(String attributeName, AttributeValueDescriptor valueDescriptor, Value initialValue) {
+        this.attributeName = attributeName;
+        this.valueDescriptor = valueDescriptor;
+        this.initialValue = initialValue;
+    }
+
     @JsonCreator
-    public AttributeDescriptorImpl(@JsonProperty("name") String name,
-                                   @JsonProperty("attributeName") String attributeName,
+    public AttributeDescriptorImpl(@JsonProperty("attributeName") String attributeName,
                                    @JsonProperty("valueDescriptor") AttributeValueDescriptor valueDescriptor,
                                    @JsonProperty("metaItemDescriptors") MetaItemDescriptor[] metaItemDescriptors,
                                    @JsonProperty("initialValue") Value initialValue) {
-        this.name = name;
         this.attributeName = attributeName;
         this.valueDescriptor = valueDescriptor;
         this.metaItemDescriptors = metaItemDescriptors;
         this.initialValue = initialValue;
-    }
-
-    @Override
-    public String getName() {
-        return name;
     }
 
     @Override

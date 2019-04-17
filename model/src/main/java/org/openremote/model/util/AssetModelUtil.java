@@ -101,13 +101,13 @@ public class AssetModelUtil {
         return Optional.empty();
     }
 
-    public static Optional<AssetDescriptor> getAssetDescriptor(String urn) {
-        if (urn == null)
+    public static Optional<AssetDescriptor> getAssetDescriptor(String assetType) {
+        if (assetType == null)
             return Optional.empty();
 
-        for (AssetDescriptor assetType : assetDescriptors) {
-            if (urn.equals(assetType.getType()))
-                return Optional.of(assetType);
+        for (AssetDescriptor assetDescriptor : assetDescriptors) {
+            if (assetType.equals(assetDescriptor.getType()))
+                return Optional.of(assetDescriptor);
         }
         return Optional.empty();
     }

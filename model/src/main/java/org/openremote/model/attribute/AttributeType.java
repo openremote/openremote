@@ -22,15 +22,9 @@ package org.openremote.model.attribute;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.Values;
 
-import java.util.Optional;
-
 import static org.openremote.model.attribute.MetaItemType.*;
 
 public enum AttributeType implements AttributeDescriptor {
-
-    STRING("string", AttributeValueType.STRING),
-
-    NUMBER("number", AttributeValueType.NUMBER),
 
     CONSOLE_NAME("consoleName", AttributeValueType.STRING),
 
@@ -84,23 +78,6 @@ public enum AttributeType implements AttributeDescriptor {
         this.initialValue = initialValue;
     }
 
-    public static Optional<AttributeDescriptor> getByValue(String name) {
-        if (name == null)
-            return Optional.empty();
-
-        for (AttributeDescriptor descriptor : values()) {
-            if (name.equals(descriptor.getAttributeName()))
-                return Optional.of(descriptor);
-        }
-        return Optional.empty();
-    }
-
-
-    @Override
-    public String getName() {
-        return name();
-    }
-
     @Override
     public String getAttributeName() {
         return attributeName;
@@ -119,14 +96,5 @@ public enum AttributeType implements AttributeDescriptor {
     @Override
     public Value getInitialValue() {
         return initialValue;
-    }
-
-    public AttributeDescriptor withName(String name, MetaItemDescriptor... metaItemDescriptors) {
-        return withName(name, initialValue, metaItemDescriptors);
-    }
-
-    public AttributeDescriptor withName(String name, Value initialValue, MetaItemDescriptor... metaItemDescriptors) {
-
-        return new AttributeDescriptorImpl(name, attributeName, valueDescriptor, metaItemDescriptors, initialValue);
     }
 }

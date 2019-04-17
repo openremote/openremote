@@ -31,9 +31,6 @@ import java.util.Optional;
 public interface AttributeDescriptor {
 
     @JsonProperty
-    String getName();
-
-    @JsonProperty
     String getAttributeName();
 
     @JsonProperty

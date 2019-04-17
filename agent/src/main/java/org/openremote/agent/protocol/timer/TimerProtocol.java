@@ -65,7 +65,7 @@ public class TimerProtocol extends AbstractProtocol {
     protected static final String VERSION = "1.0";
 
     protected static final List<MetaItemDescriptor> PROTOCOL_META_ITEM_DESCRIPTORS = Arrays.asList(
-        new MetaItemDescriptorImpl("PROTOCOL_TIMER_CRON",
+        new MetaItemDescriptorImpl(
             META_TIMER_CRON_EXPRESSION,
             ValueType.STRING,
             true,
@@ -75,7 +75,6 @@ public class TimerProtocol extends AbstractProtocol {
             null,
             false),
         new MetaItemDescriptorImpl(
-            "PROTOCOL_TIMER_ACTION",
             META_TIMER_ACTION,
             ValueType.OBJECT,
             true,
@@ -88,7 +87,6 @@ public class TimerProtocol extends AbstractProtocol {
 
     protected static final List<MetaItemDescriptor> ATTRIBUTE_META_ITEM_DESCRIPTORS = Collections.singletonList(
         new MetaItemDescriptorImpl(
-            "PROTOCOL_TIMER_LINK",
             META_TIMER_VALUE_LINK,
             ValueType.STRING,
             true,

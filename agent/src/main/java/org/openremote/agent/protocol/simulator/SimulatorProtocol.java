@@ -125,7 +125,7 @@ public class SimulatorProtocol extends AbstractProtocol {
     final protected Map<AttributeRef, SimulatorElement> elements = new HashMap<>();
 
     protected static final List<MetaItemDescriptor> PROTOCOL_META_ITEM_DESCRIPTORS = Arrays.asList(
-        new MetaItemDescriptorImpl("PROTOCOL_SIMULATOR_MODE",
+        new MetaItemDescriptorImpl(
             CONFIG_MODE,
             ValueType.STRING,
             false,
@@ -135,7 +135,6 @@ public class SimulatorProtocol extends AbstractProtocol {
             null,
             false),
         new MetaItemDescriptorImpl(
-            "PROTOCOL_SIMULATOR_WRITE_DELAY",
             CONFIG_WRITE_DELAY_MILLISECONDS,
             ValueType.NUMBER,
             false,
@@ -148,7 +147,6 @@ public class SimulatorProtocol extends AbstractProtocol {
 
     protected static final List<MetaItemDescriptor> ATTRIBUTE_META_ITEM_DESCRIPTORS = Collections.singletonList(
         new MetaItemDescriptorImpl(
-            "PROTOCOL_SIMULATOR_ELEMENT",
             SIMULATOR_ELEMENT,
             ValueType.STRING,
             true,
