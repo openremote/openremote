@@ -1,7 +1,7 @@
 import {html, LitElement, customElement, property, PropertyValues} from "lit-element";
 import {AttributeDescriptor, AttributeValueType, AttributeValueDescriptor, ValueType} from "@openremote/model";
-
 import {selectStyle} from "@openremote/or-select/dist/style";
+import i18next from "i18next";
 
 import {attributeDescriptors} from "../../const/attribute-descriptors";
 import {rulesEditorConfig} from "../../const/rule-config";
@@ -58,7 +58,7 @@ class OrSelectAssetAttribute extends LitElement {
              <select ?disabled="${this.disabled}" id="or-select-asset-attribute" @change="${this.onChange}">
                 ${this.options ? this.options.map((attribute: AttributeDescriptor) => {
                     return html`
-                        <option ?selected="${attribute.attributeName === this.value}" value="${attribute.attributeName}">${attribute.attributeName}</option>
+                        <option ?selected="${attribute.attributeName === this.value}" value="${attribute.attributeName}">${i18next.t(attribute.attributeName || "")}</option>
                     `;
                 }) : ``}
             </select>
@@ -71,8 +71,8 @@ class OrSelectAssetAttribute extends LitElement {
             return;
         }
 
-        this.options = this.attributeDescriptors.filter((obj) => {
-            return obj.attributeName && rulesEditorConfig.options.attributeValueDescriptors.hasOwnProperty(obj.attributeName);
+        this.options = this.attributeDescriptors.filter((attributeDescriptor) => {
+            return attributeDescriptor.attributeName && rulesEditorConfig.options.attributeValueDescriptors.hasOwnProperty(attributeDescriptor.attributeName);
         });
 
     }

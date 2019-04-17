@@ -21,6 +21,9 @@ import findIndex from "lodash-es/findIndex";
 
 import {attributeDescriptors} from "./const/attribute-descriptors";
 import {ruleTemplate, rulesetTemplate} from "./const/rule-config";
+import "@openremote/or-translate";
+import {translate} from "@openremote/or-translate/dist/translate-mixin";
+import i18next from "i18next";
 
 class InputHandlers {
     public handlers: Array<(condition: RuleActionWriteAttribute) => TemplateResult | undefined> = [];
@@ -48,7 +51,7 @@ function confirmDialog(msg: string) {
 }
 
 @customElement("or-rules-editor")
-class OrRulesEditor extends LitElement {
+class OrRulesEditor extends translate(i18next)(LitElement) {
 
     static get styles() {
         return [

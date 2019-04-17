@@ -101,6 +101,14 @@ export class AssetModelUtil {
         });
     }
 
+    public static getAssetAttributeDescriptor(assetDescriptor?: AssetDescriptor, attributeName?: string): AttributeDescriptor | undefined {
+        if (!attributeName || !assetDescriptor || !assetDescriptor.attributeDescriptors) {
+            return;
+        }
+
+        return assetDescriptor.attributeDescriptors.find((attributeDescriptor) => attributeDescriptor.attributeName === attributeName);
+    }
+
     public static getAttributeDescriptor(attributeName?: string): AttributeDescriptor | undefined {
         if (!attributeName) {
             return;
@@ -129,6 +137,16 @@ export class AssetModelUtil {
         return this._metaItemDescriptors.find((metaItemDescriptor) => {
             return metaItemDescriptor.urn === urn;
         });
+    }
+
+    public static attributeValueDescriptorsMatch(attributeValueDescriptor1: AttributeValueDescriptor, attributeValueDescriptor2: AttributeValueDescriptor) {
+        if (attributeValueDescriptor1 === attributeValueDescriptor2) {
+            return true;
+        }
+        if (!attributeValueDescriptor1 || !attributeValueDescriptor2) {
+            return false;
+        }
+        return attributeValueDescriptor1.name === attributeValueDescriptor2.name && attributeValueDescriptor1.valueType === attributeValueDescriptor2.valueType;
     }
 }
 
@@ -376,7 +394,8 @@ export class Manager {
         const initOptions: i18next.InitOptions = {
             lng: "en",
             fallbackLng: "en",
-            defaultNS: "or",
+            defaultNS: "app",
+            fallbackNS: "or",
             ns: this.config.loadTranslations,
             backend: {
                 loadPath: (langs: string[], namespaces: string[]) => {

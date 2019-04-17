@@ -1,4 +1,4 @@
-import {html, LitElement, property, customElement, PropertyValues} from "lit-element";
+import {customElement, html, LitElement, property, PropertyValues} from "lit-element";
 import "../selects/or-select-asset-attribute";
 import "../selects/or-select-operator";
 
@@ -8,8 +8,7 @@ import "@openremote/or-icon";
 import {AssetModelUtil} from "@openremote/core";
 
 import {style} from "./style";
-import {AttributePredicate, AttributeDescriptor, ValueType} from "@openremote/model";
-import find from "lodash/find";
+import {AttributeDescriptor, AttributePredicate, AssetDescriptor} from "@openremote/model";
 
 import {attributeDescriptors} from "../const/attribute-descriptors";
 import {rulesEditorConfig} from "../const/rule-config";
@@ -23,11 +22,16 @@ class OrRuleWhenCondition extends LitElement {
         ];
     }
 
+    protected assetDescriptor?: AssetDescriptor;
+
     @property({type: Object})
     public predicate?: AttributePredicate;
 
     @property({type: Number})
     public index?: number;
+
+    @property({type: String})
+    public assetType?: string;
 
     @property({type: Array})
     public attributeDescriptors?: AttributeDescriptor[] = attributeDescriptors;
@@ -41,7 +45,13 @@ class OrRuleWhenCondition extends LitElement {
         this.addEventListener("asset-attribute:changed", this.setAssetAttribute);
         this.addEventListener("operator:changed", this.setOperator);
         this.addEventListener("or-input:changed", this.setValue);
+    }
 
+    protected shouldUpdate(_changedProperties: Map<PropertyKey, unknown>): boolean {
+        if (_changedProperties.has("assetType")) {
+            this.assetDescriptor = AssetModelUtil.getAssetDescriptor(this.assetType) || {attributeDescriptors: []};
+        }
+        return super.shouldUpdate(_changedProperties);
     }
 
     protected render() {
@@ -59,7 +69,7 @@ class OrRuleWhenCondition extends LitElement {
                     
                         ${this.predicate.value && this.predicate.value.predicateType === "string" ? html`
                             ${this.predicate.name.value ? html`
-                                <or-select-operator type="${this.getAttributeDescriptors(this.predicate.name.value)!.valueDescriptor!.valueType}" .value="${this.predicate.value.match}"></or-select-operator>
+                                <or-select-operator .type="${this.getAttributeDescriptor(this.predicate.name.value)!.valueDescriptor}" .value="${this.predicate.value.match}"></or-select-operator>
                             ` : ``}
                             
                             ${this.predicate.name.value && this.predicate.value.match ? html`
@@ -122,9 +132,12 @@ class OrRuleWhenCondition extends LitElement {
     //     }
     // }
 
-    private getAttributeDescriptors(attributeName: string) {
-        console.log(AssetModelUtil.getAttributeDescriptor(attributeName));
-        return AssetModelUtil.getAttributeDescriptor(attributeName);
+    private getAttributeDescriptor(attributeName: string) {
+        if (!this.assetDescriptor) {
+            return;
+        }
+
+        return AssetModelUtil.getAssetAttributeDescriptor(this.assetDescriptor, attributeName);
     }
 
     private getAttributeConfig(name: string) {

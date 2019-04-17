@@ -28,16 +28,16 @@ class OrRuleWhen extends LitElement {
 
     }
 
+    // TODO: cleanup hacked asset type pass through
     protected render() {
-
         return html`
            <div class="rule-content-section">
                 <div class="rule-when-container bg-white shadow">
                     <strong>Als..</strong>
-                    ${this.rule && this.rule.when && this.rule.when.asset && this.rule.when.asset.attributes && this.rule.when.asset.attributes.predicates ? html`
+                    ${this.rule && this.rule.when && this.rule.when.asset && this.rule.when.asset.types && this.rule.when.asset.attributes && this.rule.when.asset.attributes.predicates ? html`
                         ${this.rule.when.asset.attributes.predicates.map((predicate: AttributePredicate, index) => {
                             return html`
-                                    <or-rule-when-condition index="${index}" .predicate="${predicate}"></or-rule-when-condition>
+                                    <or-rule-when-condition index="${index}" .assetType="${this.rule!.when!.asset!.types![0].value}" .predicate="${predicate}"></or-rule-when-condition>
                             `; })}
                     ` : ``}
                     
