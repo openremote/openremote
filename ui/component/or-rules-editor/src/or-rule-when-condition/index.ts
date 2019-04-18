@@ -156,8 +156,7 @@ class OrRuleWhenCondition extends LitElement {
         if (this.predicate && this.predicate.name) {
             this.predicate.name.value = value;
 
-            this.setOperator(e);
-            this.requestUpdate();
+                this.requestUpdate();
         }
     }
 
