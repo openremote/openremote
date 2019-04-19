@@ -59,11 +59,11 @@ public class MacroProtocol extends AbstractProtocol {
     protected static final MacroAction EMPTY_ACTION = new MacroAction(new AttributeState(new AttributeRef("ENTITY_ID", "ATTRIBUTE_NAME"), null));
 
     protected static final List<MetaItemDescriptor> PROTOCOL_META_ITEM_DESCRIPTORS = Collections.singletonList(
-        new MetaItemDescriptorImpl("PROTOCOL_MACRO_ACTION", META_MACRO_ACTION, ValueType.OBJECT, true, null, null, null, EMPTY_ACTION.toObjectValue(), false)
+        new MetaItemDescriptorImpl(META_MACRO_ACTION, ValueType.OBJECT, true, null, null, null, EMPTY_ACTION.toObjectValue(), false)
     );
 
     protected static final List<MetaItemDescriptor> ATTRIBUTE_META_ITEM_DESCRIPTORS = Collections.singletonList(
-        new MetaItemDescriptorImpl("PROTOCOL_MACRO_ACTION_INDEX", META_MACRO_ACTION_INDEX, ValueType.NUMBER, false, REGEXP_PATTERN_INTEGER_POSITIVE, MetaItemDescriptor.PatternFailure.INTEGER_POSITIVE.name(), null, null, false)
+        new MetaItemDescriptorImpl(META_MACRO_ACTION_INDEX, ValueType.NUMBER, false, REGEXP_PATTERN_INTEGER_POSITIVE, MetaItemDescriptor.PatternFailure.INTEGER_POSITIVE.name(), null, null, false)
     );
 
     class MacroExecutionTask {

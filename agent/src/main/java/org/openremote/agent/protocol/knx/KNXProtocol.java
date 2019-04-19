@@ -7,7 +7,7 @@ import org.openremote.model.AbstractValueHolder;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.asset.MetaItemType;
+import org.openremote.model.attribute.MetaItemType;
 import org.openremote.model.asset.AssetType;
 import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.asset.agent.ConnectionStatus;
@@ -110,18 +110,18 @@ public class KNXProtocol extends AbstractProtocol implements ProtocolLinkedAttri
     public static final String PATTERN_FAILURE_GROUP_ADDRESS = "KNX Group Address (e.g. 1/1/1)";
 
     protected static final List<MetaItemDescriptor> PROTOCOL_CONFIG_META_ITEM_DESCRIPTORS = Arrays.asList(
-        new MetaItemDescriptorImpl("PROTOCOL_KNX_IP", META_KNX_GATEWAY_IP, ValueType.STRING, false, null, null, 1, null, false),
-        new MetaItemDescriptorImpl("PROTOCOL_KNX_PORT", META_KNX_GATEWAY_PORT, ValueType.NUMBER, false, REGEXP_PATTERN_INTEGER_POSITIVE_NON_ZERO, MetaItemDescriptor.PatternFailure.INTEGER_POSITIVE_NON_ZERO.name(), 1, null, false),
-        new MetaItemDescriptorImpl("PROTOCOL_KNX_USENAT", META_KNX_GATEWAY_USENAT, ValueType.BOOLEAN, false, null, null, 1, Values.create(false), false),
-        new MetaItemDescriptorImpl("PROTOCOL_KNX_CONNECTION_TYPE", META_KNX_IP_CONNECTION_TYPE, ValueType.STRING, false, "^(TUNNELLING|ROUTING)$", PATTERN_FAILURE_CONNECTION_TYPE, 1, Values.create("TUNNELLING"), false),
-        new MetaItemDescriptorImpl("PROTOCOL_KNX_LOCAL_BUS_ADDRESS", META_KNX_LOCAL_BUS_ADDRESS, ValueType.STRING, false, REGEXP_BUS_ADDRESS, "0.0.0", 1, null, false),
-        new MetaItemDescriptorImpl("PROTOCOL_KNX_LOCAL_IP", META_KNX_LOCAL_IP, ValueType.STRING, false, null, null, 1, null, false)
+        new MetaItemDescriptorImpl(META_KNX_GATEWAY_IP, ValueType.STRING, false, null, null, 1, null, false),
+        new MetaItemDescriptorImpl(META_KNX_GATEWAY_PORT, ValueType.NUMBER, false, REGEXP_PATTERN_INTEGER_POSITIVE_NON_ZERO, MetaItemDescriptor.PatternFailure.INTEGER_POSITIVE_NON_ZERO.name(), 1, null, false),
+        new MetaItemDescriptorImpl(META_KNX_GATEWAY_USENAT, ValueType.BOOLEAN, false, null, null, 1, Values.create(false), false),
+        new MetaItemDescriptorImpl(META_KNX_IP_CONNECTION_TYPE, ValueType.STRING, false, "^(TUNNELLING|ROUTING)$", PATTERN_FAILURE_CONNECTION_TYPE, 1, Values.create("TUNNELLING"), false),
+        new MetaItemDescriptorImpl(META_KNX_LOCAL_BUS_ADDRESS, ValueType.STRING, false, REGEXP_BUS_ADDRESS, "0.0.0", 1, null, false),
+        new MetaItemDescriptorImpl(META_KNX_LOCAL_IP, ValueType.STRING, false, null, null, 1, null, false)
     );
 
     protected static final List<MetaItemDescriptor> ATTRIBUTE_META_ITEM_DESCRIPTORS = Arrays.asList(
-        new MetaItemDescriptorImpl("PROTOCOL_KNX_DPT", META_KNX_DPT, ValueType.STRING, true, REGEXP_DPT, PATTERN_FAILURE_DPT, 1, null, false),
-        new MetaItemDescriptorImpl("PROTOCOL_KNX_STATUS_GA", META_KNX_STATUS_GA, ValueType.STRING, false, REGEXP_GROUP_ADDRESS, PATTERN_FAILURE_GROUP_ADDRESS, 1, null, false),
-        new MetaItemDescriptorImpl("PROTOCOL_KNX_ACTION_GA", META_KNX_ACTION_GA, ValueType.STRING, false, REGEXP_GROUP_ADDRESS, PATTERN_FAILURE_GROUP_ADDRESS, 1, Values.create(false), false)
+        new MetaItemDescriptorImpl(META_KNX_DPT, ValueType.STRING, true, REGEXP_DPT, PATTERN_FAILURE_DPT, 1, null, false),
+        new MetaItemDescriptorImpl(META_KNX_STATUS_GA, ValueType.STRING, false, REGEXP_GROUP_ADDRESS, PATTERN_FAILURE_GROUP_ADDRESS, 1, null, false),
+        new MetaItemDescriptorImpl(META_KNX_ACTION_GA, ValueType.STRING, false, REGEXP_GROUP_ADDRESS, PATTERN_FAILURE_GROUP_ADDRESS, 1, Values.create(false), false)
     );
 
     final protected Map<String, KNXConnection> knxConnections = new HashMap<>();

@@ -21,21 +21,21 @@ package org.openremote.model.asset;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.openremote.model.attribute.AttributeDescriptor;
 
-import java.util.Optional;
-
 @JsonFormat(shape = JsonFormat.Shape.OBJECT)
+@JsonDeserialize(as = AssetDescriptorImpl.class)
 public interface AssetDescriptor {
 
     @JsonProperty
     String getName();
-
+    @JsonProperty
     String getType();
-
+    @JsonProperty
     String getIcon();
-
+    @JsonProperty
     boolean getAccessPublicRead();
-
-    Optional<AttributeDescriptor[]> getAttributeDescriptors();
+    @JsonProperty
+    AttributeDescriptor[] getAttributeDescriptors();
 }

@@ -41,7 +41,7 @@ import java.util.stream.IntStream
 import static org.openremote.manager.setup.builtin.ManagerDemoSetup.DEMO_RULE_STATES_CUSTOMER_A
 import static org.openremote.manager.setup.builtin.ManagerDemoSetup.SMART_BUILDING_LOCATION
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID
-import static org.openremote.model.asset.MetaItemType.RULE_STATE
+import static org.openremote.model.attribute.MetaItemType.RULE_STATE
 import static org.openremote.model.asset.AssetResource.Util.WRITE_ATTRIBUTE_HTTP_METHOD
 import static org.openremote.model.asset.AssetResource.Util.getWriteAttributeUrl
 import static org.openremote.model.attribute.AttributeType.LOCATION
@@ -356,13 +356,13 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         messages.clear()
 
         and: "an authenticated user updates the location of a linked console"
-        authenticatedAssetResource.writeAttributeValue(null, testUser3Console1.id, LOCATION.name, new GeoJSONPoint(0d, 0d, 0d).toValue().toJson())
+        authenticatedAssetResource.writeAttributeValue(null, testUser3Console1.id, LOCATION.attributeName, new GeoJSONPoint(0d, 0d, 0d).toValue().toJson())
 
         then: "the consoles location should have been updated"
         conditions.eventually {
             testUser3Console1 = assetStorageService.find(testUser3Console1.id, true)
             assert testUser3Console1 != null
-            def assetLocation = testUser3Console1.getAttribute(LOCATION.name).flatMap { it.value }.flatMap {
+            def assetLocation = testUser3Console1.getAttribute(LOCATION.attributeName).flatMap { it.value }.flatMap {
                 GeoJSONPoint.fromValue(it)
             }.orElse(null)
             assert assetLocation != null
@@ -379,7 +379,7 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
 //        ex.response.status == 403
 
         when: "a console's location is updated to be at the Smart Building"
-        authenticatedAssetResource.writeAttributeValue(null, testUser3Console2.id, LOCATION.name, SMART_BUILDING_LOCATION.toValue().toJson())
+        authenticatedAssetResource.writeAttributeValue(null, testUser3Console2.id, LOCATION.attributeName, SMART_BUILDING_LOCATION.toValue().toJson())
         long timestamp = Long.MAX_VALUE
 
         then: "a welcome home alert should be sent to the console"
@@ -387,29 +387,29 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
             assert notificationIds.size() == 1
             def asset = assetStorageService.find(testUser3Console2.id, true)
             assert asset != null
-            timestamp = asset.getAttribute(LOCATION.name).flatMap { it.valueTimestamp }.orElse(Long.MAX_VALUE)
+            timestamp = asset.getAttribute(LOCATION.attributeName).flatMap { it.valueTimestamp }.orElse(Long.MAX_VALUE)
         }
 
         when: "a console's location is updated to be at the Smart Building again"
-        authenticatedAssetResource.writeAttributeValue(null, testUser3Console2.id, LOCATION.name, SMART_BUILDING_LOCATION.toValue().toJson())
+        authenticatedAssetResource.writeAttributeValue(null, testUser3Console2.id, LOCATION.attributeName, SMART_BUILDING_LOCATION.toValue().toJson())
 
         then: "no more alerts should have been sent"
         conditions.eventually {
             def asset = assetStorageService.find(testUser3Console2.id, true)
             assert asset != null
-            assert asset.getAttribute(LOCATION.name).flatMap { it.valueTimestamp }.orElse(Long.MIN_VALUE) > timestamp
-            timestamp = asset.getAttribute(LOCATION.name).flatMap { it.valueTimestamp }.orElse(Long.MIN_VALUE)
+            assert asset.getAttribute(LOCATION.attributeName).flatMap { it.valueTimestamp }.orElse(Long.MIN_VALUE) > timestamp
+            timestamp = asset.getAttribute(LOCATION.attributeName).flatMap { it.valueTimestamp }.orElse(Long.MIN_VALUE)
             assert notificationIds.size() == 1
         }
 
         when: "a console's location is updated to be null"
-        authenticatedAssetResource.writeAttributeValue(null, testUser3Console2.id, LOCATION.name, "null")
+        authenticatedAssetResource.writeAttributeValue(null, testUser3Console2.id, LOCATION.attributeName, "null")
 
         then: "no more alerts should have been sent and the welcome reset rule should have fired on the tenant rule engine"
         conditions.eventually {
             def asset = assetStorageService.find(testUser3Console2.id, true)
             assert asset != null
-            assert asset.getAttribute(LOCATION.name).flatMap { it.valueTimestamp }.orElse(Long.MIN_VALUE) > timestamp
+            assert asset.getAttribute(LOCATION.attributeName).flatMap { it.valueTimestamp }.orElse(Long.MIN_VALUE) > timestamp
             assert notificationIds.size() == 1
             def tenantAEngine = rulesService.tenantEngines.get(keycloakDemoSetup.tenantA.realm)
             assert tenantAEngine != null
@@ -418,7 +418,7 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "a console's location is updated to be at the Smart Building again"
-        authenticatedAssetResource.writeAttributeValue(null, testUser3Console2.id, LOCATION.name, SMART_BUILDING_LOCATION.toValue().toJson())
+        authenticatedAssetResource.writeAttributeValue(null, testUser3Console2.id, LOCATION.attributeName, SMART_BUILDING_LOCATION.toValue().toJson())
 
         then: "another alert should have been sent"
         conditions.eventually {
@@ -443,7 +443,7 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         assert geofences[0].lng == expectedLocationPredicate.lng
         assert geofences[0].radius == expectedLocationPredicate.radius
         assert geofences[0].httpMethod == WRITE_ATTRIBUTE_HTTP_METHOD
-        assert geofences[0].url == getWriteAttributeUrl(new AttributeRef(testUser3Console1.id, LOCATION.getName()))
+        assert geofences[0].url == getWriteAttributeUrl(new AttributeRef(testUser3Console1.id, LOCATION.getAttributeName()))
 
 // TODO: Update once console permissions model finalised
 //        when: "an anonymous user tries to retrieve the geofences of a console linked to users"
@@ -463,7 +463,7 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         assert geofences[0].lng == expectedLocationPredicate.lng
         assert geofences[0].radius == expectedLocationPredicate.radius
         assert geofences[0].httpMethod == WRITE_ATTRIBUTE_HTTP_METHOD
-        assert geofences[0].url == getWriteAttributeUrl(new AttributeRef(testUser3Console2.id, LOCATION.getName()))
+        assert geofences[0].url == getWriteAttributeUrl(new AttributeRef(testUser3Console2.id, LOCATION.getAttributeName()))
 
         when: "the geofences of anonymousConsole1 are retrieved"
         geofences = anonymousRulesResource.getAssetGeofences(null, anonymousConsole1.id)
@@ -475,7 +475,7 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
         assert geofences[0].lng == expectedLocationPredicate.lng
         assert geofences[0].radius == expectedLocationPredicate.radius
         assert geofences[0].httpMethod == WRITE_ATTRIBUTE_HTTP_METHOD
-        assert geofences[0].url == getWriteAttributeUrl(new AttributeRef(anonymousConsole1.id, LOCATION.getName()))
+        assert geofences[0].url == getWriteAttributeUrl(new AttributeRef(anonymousConsole1.id, LOCATION.getAttributeName()))
 
         when: "the geofences of a non-existent console are retrieved"
         geofences = anonymousRulesResource.getAssetGeofences(null, UniqueIdentifierGenerator.generateId("nonExistentConsole"))
@@ -541,12 +541,12 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
             assert geofence1.lng == expectedLocationPredicate.lng
             assert geofence1.radius == expectedLocationPredicate.radius
             assert geofence1.httpMethod == WRITE_ATTRIBUTE_HTTP_METHOD
-            assert geofence1.url == getWriteAttributeUrl(new AttributeRef(testUser3Console1.id, LOCATION.getName()))
+            assert geofence1.url == getWriteAttributeUrl(new AttributeRef(testUser3Console1.id, LOCATION.getAttributeName()))
             assert geofence2.lat == newLocationPredicate.lat
             assert geofence2.lng == newLocationPredicate.lng
             assert geofence2.radius == newLocationPredicate.radius
             assert geofence2.httpMethod == WRITE_ATTRIBUTE_HTTP_METHOD
-            assert geofence2.url == getWriteAttributeUrl(new AttributeRef(testUser3Console1.id, LOCATION.getName()))
+            assert geofence2.url == getWriteAttributeUrl(new AttributeRef(testUser3Console1.id, LOCATION.getAttributeName()))
         }
 
         when: "an existing ruleset containing a radial location predicate is updated"
@@ -578,12 +578,12 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
             assert geofence1.lng == expectedLocationPredicate.lng
             assert geofence1.radius == expectedLocationPredicate.radius
             assert geofence1.httpMethod == WRITE_ATTRIBUTE_HTTP_METHOD
-            assert geofence1.url == getWriteAttributeUrl(new AttributeRef(testUser3Console1.id, LOCATION.getName()))
+            assert geofence1.url == getWriteAttributeUrl(new AttributeRef(testUser3Console1.id, LOCATION.getAttributeName()))
             assert geofence2.lat == newLocationPredicate.lat
             assert geofence2.lng == newLocationPredicate.lng
             assert geofence2.radius == newLocationPredicate.radius
             assert geofence2.httpMethod == WRITE_ATTRIBUTE_HTTP_METHOD
-            assert geofence2.url == getWriteAttributeUrl(new AttributeRef(testUser3Console1.id, LOCATION.getName()))
+            assert geofence2.url == getWriteAttributeUrl(new AttributeRef(testUser3Console1.id, LOCATION.getAttributeName()))
         }
 
         when: "a location predicate ruleset is removed"
@@ -603,7 +603,7 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
             assert geofences[0].lng == expectedLocationPredicate.lng
             assert geofences[0].radius == expectedLocationPredicate.radius
             assert geofences[0].httpMethod == WRITE_ATTRIBUTE_HTTP_METHOD
-            assert geofences[0].url == getWriteAttributeUrl(new AttributeRef(testUser3Console1.id, LOCATION.getName()))
+            assert geofences[0].url == getWriteAttributeUrl(new AttributeRef(testUser3Console1.id, LOCATION.getAttributeName()))
         }
 
         and: "the consoles should have been notified to refresh their geofences"
@@ -660,7 +660,7 @@ class ConsoleTest extends Specification implements ManagerContainerTrait {
 
         when: "the RULE_STATE meta is removed from a console's location attribute"
         testUser3Console1 = assetStorageService.find(testUser3Console1.id, true)
-        testUser3Console1.getAttribute(LOCATION.getName()).get().getMeta().removeIf({
+        testUser3Console1.getAttribute(LOCATION.getAttributeName()).get().getMeta().removeIf({
             it.name.orElse(null) == RULE_STATE.urn
         })
         testUser3Console1 = assetStorageService.merge(testUser3Console1)

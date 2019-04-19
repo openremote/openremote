@@ -145,25 +145,25 @@ public class ControllerProtocol extends AbstractProtocol {
     public static final int HEARTBEAT_DELAY_SECONDS = 5;
 
     protected static final List<MetaItemDescriptorImpl> PROTOCOL_META_ITEM_DESCRIPTORS = Arrays
-            .asList(new MetaItemDescriptorImpl("PROTOCOL_CONTROLLER_BASE_URI", META_PROTOCOL_BASE_URI, ValueType.STRING, true,
+            .asList(new MetaItemDescriptorImpl(META_PROTOCOL_BASE_URI, ValueType.STRING, true,
                             REGEXP_PATTERN_BASIC_HTTP_URL, MetaItemDescriptor.PatternFailure.HTTP_URL.name(), 1, null, false),
-                    new MetaItemDescriptorImpl("PROTOCOL_HTTP_CLIENT_USERNAME", META_PROTOCOL_USERNAME, ValueType.STRING, false,
+                    new MetaItemDescriptorImpl(META_PROTOCOL_USERNAME, ValueType.STRING, false,
                             REGEXP_PATTERN_STRING_NON_EMPTY_NO_WHITESPACE,
                             MetaItemDescriptor.PatternFailure.STRING_EMPTY_OR_CONTAINS_WHITESPACE.name(), 1, null, false),
-                    new MetaItemDescriptorImpl("PROTOCOL_HTTP_CLIENT_PASSWORD", META_PROTOCOL_PASSWORD, ValueType.STRING, false,
+                    new MetaItemDescriptorImpl(META_PROTOCOL_PASSWORD, ValueType.STRING, false,
                             REGEXP_PATTERN_STRING_NON_EMPTY_NO_WHITESPACE,
                             MetaItemDescriptor.PatternFailure.STRING_EMPTY_OR_CONTAINS_WHITESPACE.name(), 1, null, false));
 
     public static final List<MetaItemDescriptor> ATTRIBUTE_META_ITEM_DESCRIPTORS = Arrays
-            .asList(new MetaItemDescriptorImpl("PROTOCOL_DEVICE_NAME", META_ATTRIBUTE_DEVICE_NAME, ValueType.STRING, false,
+            .asList(new MetaItemDescriptorImpl(META_ATTRIBUTE_DEVICE_NAME, ValueType.STRING, false,
                             REGEXP_PATTERN_STRING_NON_EMPTY, MetaItemDescriptor.PatternFailure.STRING_EMPTY.name(), 1, null, false),
-                    new MetaItemDescriptorImpl("PROTOCOL_SENSOR_NAME", META_ATTRIBUTE_SENSOR_NAME, ValueType.STRING, false,
+                    new MetaItemDescriptorImpl(META_ATTRIBUTE_SENSOR_NAME, ValueType.STRING, false,
                             REGEXP_PATTERN_STRING_NON_EMPTY, MetaItemDescriptor.PatternFailure.STRING_EMPTY.name(), 1, null, false),
-                    new MetaItemDescriptorImpl("PROTOCOL_COMMAND_DEVICE_NAME", META_ATTRIBUTE_COMMAND_DEVICE_NAME, ValueType.STRING, false,
+                    new MetaItemDescriptorImpl(META_ATTRIBUTE_COMMAND_DEVICE_NAME, ValueType.STRING, false,
                             REGEXP_PATTERN_STRING_NON_EMPTY, MetaItemDescriptor.PatternFailure.STRING_EMPTY.name(), 1, null, false),
-                    new MetaItemDescriptorImpl("PROTOCOL_COMMAND_NAME", META_ATTRIBUTE_COMMAND_NAME, ValueType.STRING, false,
+                    new MetaItemDescriptorImpl(META_ATTRIBUTE_COMMAND_NAME, ValueType.STRING, false,
                             REGEXP_PATTERN_STRING_NON_EMPTY, MetaItemDescriptor.PatternFailure.STRING_EMPTY.name(), 1, null, false),
-                    new MetaItemDescriptorImpl("PROTOCOL_COMMANDS_MAP", META_ATTRIBUTE_COMMANDS_MAP, ValueType.OBJECT, false, null, null, 1, null,
+                    new MetaItemDescriptorImpl(META_ATTRIBUTE_COMMANDS_MAP, ValueType.OBJECT, false, null, null, 1, null,
                             false));
 
     /*--------------- Protocol attributes ---------------*/

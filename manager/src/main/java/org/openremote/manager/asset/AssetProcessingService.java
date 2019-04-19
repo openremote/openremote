@@ -41,6 +41,7 @@ import org.openremote.model.asset.*;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeEvent.Source;
 import org.openremote.model.attribute.AttributeExecuteStatus;
+import org.openremote.model.attribute.MetaItemType;
 import org.openremote.model.security.ClientRole;
 import org.openremote.model.util.AssetModelUtil;
 import org.openremote.model.value.Value;

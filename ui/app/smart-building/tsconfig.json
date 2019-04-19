@@ -1,0 +1,16 @@
+{
+  "extends": "../../tsconfig",
+  "compilerOptions": {
+    "strict": false
+  },
+  "include": [
+    "./src",
+    "./@types"
+  ],
+  "references": [
+    { "path": "../../component/core" },
+    { "path": "../../component/or-bottom-navigation" },
+    { "path": "../../component/rest" },
+    { "path": "../../component/or-header" }
+  ]
+}

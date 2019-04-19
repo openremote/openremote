@@ -4,21 +4,21 @@ import {
 } from "@openremote/model";
 
 export const attributeDescriptors: any[] =  [ {
-        name: "flightProfiles",
+        attributeName: "flightProfiles",
         attributeValueDescriptor : {
             icon : "cubes",
             valueType : "OBJECT",
             name: "OBJECT"
         }
     }, {
-        name: "languageCodes",
+        attributeName: "languageCodes",
         attributeValueDescriptor : {
             icon : "ellipsis-h",
             valueType : "ARRAY",
             name: "ARRAY"
         }
     }, {
-        name: "flightName",
+        attributeName: "flightName",
         metaItemDescriptors : [ ],
         valueDescriptor : {
             icon : "file-text-o",
@@ -26,7 +26,7 @@ export const attributeDescriptors: any[] =  [ {
             name: "STRING"
         }
     }, {
-        name: "flightDirection",
+        attributeName: "flightDirection",
         metaItemDescriptors : [ ],
         valueDescriptor : {
             icon : "file-text-o",
@@ -34,7 +34,7 @@ export const attributeDescriptors: any[] =  [ {
             name: "STRING"
         }
     }, {
-        name: "airlineIata",
+        attributeName: "airlineIata",
         metaItemDescriptors : [ ],
         valueDescriptor : {
             icon : "file-text-o",
@@ -42,7 +42,7 @@ export const attributeDescriptors: any[] =  [ {
             name: "STRING"
         }
     }, {
-        name: "scheduleDate",
+        attributeName: "scheduleDate",
         metaItemDescriptors : [ ],
         valueDescriptor : {
             icon : "file-text-o",
@@ -50,7 +50,7 @@ export const attributeDescriptors: any[] =  [ {
             name: "STRING"
         }
     }, {
-        name: "scheduleTime",
+        attributeName: "scheduleTime",
         metaItemDescriptors : [ ],
         valueDescriptor : {
             icon : "file-text-o",
@@ -58,7 +58,7 @@ export const attributeDescriptors: any[] =  [ {
             name: "STRING"
         }
     }, {
-        name: "scheduledInBlockTime",
+        attributeName: "scheduledInBlockTime",
         metaItemDescriptors : [ ],
         valueDescriptor : {
             icon : "file-text-o",
@@ -66,7 +66,7 @@ export const attributeDescriptors: any[] =  [ {
             name: "STRING"
         }
     }, {
-        name: "estimatedLandingTime",
+        attributeName: "estimatedLandingTime",
         metaItemDescriptors : [ ],
         valueDescriptor : {
             icon : "file-text-o",
@@ -74,7 +74,7 @@ export const attributeDescriptors: any[] =  [ {
             name: "STRING"
         }
     }, {
-        name: "actualLandingTime",
+        attributeName: "actualLandingTime",
         metaItemDescriptors : [ ],
         valueDescriptor : {
             icon : "file-text-o",
@@ -82,7 +82,7 @@ export const attributeDescriptors: any[] =  [ {
             name: "STRING"
         }
     }, {
-        name: "estimatedPierTime",
+        attributeName: "estimatedPierTime",
         metaItemDescriptors : [ ],
         valueDescriptor : {
             icon : "file-text-o",
@@ -90,7 +90,7 @@ export const attributeDescriptors: any[] =  [ {
             name: "STRING"
         }
     }, {
-        name: "estimatedCheckPointTime",
+        attributeName: "estimatedCheckPointTime",
         metaItemDescriptors : [ ],
         valueDescriptor : {
             icon : "file-text-o",
@@ -98,7 +98,7 @@ export const attributeDescriptors: any[] =  [ {
             name: "STRING"
         }
     }, {
-        name: "estimatedSchengenCheckPointTime",
+        attributeName: "estimatedSchengenCheckPointTime",
         metaItemDescriptors : [ ],
         valueDescriptor : {
             icon : "file-text-o",
@@ -106,7 +106,7 @@ export const attributeDescriptors: any[] =  [ {
             name: "STRING"
         }
     }, {
-        name: "terminal",
+        attributeName: "terminal",
         metaItemDescriptors : [ ],
         valueDescriptor : {
             icon : "file-text-o",
@@ -114,7 +114,7 @@ export const attributeDescriptors: any[] =  [ {
             name: "STRING"
         }
     }, {
-        name: "gate",
+        attributeName: "gate",
         metaItemDescriptors : [ ],
         valueDescriptor : {
             icon : "file-text-o",
@@ -122,7 +122,7 @@ export const attributeDescriptors: any[] =  [ {
             name: "STRING"
         }
     }, {
-        name: "gateNumber",
+        attributeName: "gateNumber",
         metaItemDescriptors : [ ],
         valueDescriptor : {
             icon : "hashtag",
@@ -130,7 +130,7 @@ export const attributeDescriptors: any[] =  [ {
             name: "NUMBER"
         }
     }, {
-        name: "pier",
+        attributeName: "pier",
         metaItemDescriptors : [ ],
         valueDescriptor : {
             icon : "file-text-o",
@@ -138,7 +138,7 @@ export const attributeDescriptors: any[] =  [ {
             name: "STRING"
         }
     }, {
-        name: "checkPoint",
+        attributeName: "checkPoint",
         metaItemDescriptors : [ ],
         valueDescriptor : {
             icon : "file-text-o",
@@ -146,7 +146,7 @@ export const attributeDescriptors: any[] =  [ {
             name: "STRING"
         }
     }, {
-        name: "pierDisplayName",
+        attributeName: "pierDisplayName",
         metaItemDescriptors : [ ],
         valueDescriptor : {
             icon : "file-text-o",
@@ -154,7 +154,7 @@ export const attributeDescriptors: any[] =  [ {
             name: "STRING"
         }
     }, {
-        name: "passengerCapacity",
+        attributeName: "passengerCapacity",
         metaItemDescriptors : [ ],
         valueDescriptor : {
             icon : "hashtag",
@@ -162,7 +162,7 @@ export const attributeDescriptors: any[] =  [ {
             name: "NUMBER"
         }
     }, {
-        name: "passengerArrivalCheckPoint",
+        attributeName: "passengerArrivalCheckPoint",
         metaItemDescriptors : [ ],
         valueDescriptor : {
             icon : "hashtag",
@@ -170,7 +170,7 @@ export const attributeDescriptors: any[] =  [ {
             name: "NUMBER"
         }
     }, {
-        name: "passengerSchengenCheckPoint",
+        attributeName: "passengerSchengenCheckPoint",
         metaItemDescriptors : [ ],
         valueDescriptor : {
             icon : "hashtag",
@@ -178,7 +178,7 @@ export const attributeDescriptors: any[] =  [ {
             name: "NUMBER"
         }
     }, {
-        name: "airportName",
+        attributeName: "airportName",
         metaItemDescriptors : [ ],
         valueDescriptor : {
             icon : "file-text-o",
@@ -186,7 +186,7 @@ export const attributeDescriptors: any[] =  [ {
             name: "STRING"
         }
     }, {
-        name: "airportIata",
+        attributeName: "airportIata",
         metaItemDescriptors : [ ],
         valueDescriptor : {
             icon : "file-text-o",
@@ -194,7 +194,7 @@ export const attributeDescriptors: any[] =  [ {
             name: "STRING"
         }
     }, {
-        name: "city",
+        attributeName: "city",
         metaItemDescriptors : [ ],
         valueDescriptor : {
             icon : "file-text-o",
@@ -202,7 +202,7 @@ export const attributeDescriptors: any[] =  [ {
             name: "STRING"
         }
     }, {
-        name: "countryCode",
+        attributeName: "countryCode",
         metaItemDescriptors : [ ],
         valueDescriptor : {
             icon : "file-text-o",
@@ -210,7 +210,7 @@ export const attributeDescriptors: any[] =  [ {
             name: "STRING"
         }
     }, {
-        name: "originRegion",
+        attributeName: "originRegion",
         metaItemDescriptors : [ ],
         valueDescriptor : {
             icon : "file-text-o",

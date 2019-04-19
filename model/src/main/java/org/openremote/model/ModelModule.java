@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.container.json;
+package org.openremote.model;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
@@ -36,7 +36,7 @@ import java.io.IOException;
 
 public class ModelModule extends SimpleModule {
 
-    private static class ValueJsonDeserializer<T extends Value> extends StdDeserializer<T> {
+    public static class ValueJsonDeserializer<T extends Value> extends StdDeserializer<T> {
 
         public ValueJsonDeserializer() {
             super(Value.class);
@@ -54,7 +54,7 @@ public class ModelModule extends SimpleModule {
         }
     }
 
-    private static class ValueJsonSerializer extends JsonSerializer<Value> {
+    public static class ValueJsonSerializer extends JsonSerializer<Value> {
         @Override
         public void serialize(Value value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
             if (value != null) {

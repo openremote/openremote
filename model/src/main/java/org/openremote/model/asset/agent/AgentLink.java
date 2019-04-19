@@ -23,13 +23,13 @@ import org.openremote.model.AbstractValueHolder;
 import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.MetaItem;
-import org.openremote.model.asset.MetaItemType;
+import org.openremote.model.attribute.MetaItemType;
 
 import java.util.Optional;
 
 import static org.openremote.model.attribute.MetaItem.isMetaNameEqualTo;
 import static org.openremote.model.attribute.MetaItem.replaceMetaByName;
-import static org.openremote.model.asset.MetaItemType.AGENT_LINK;
+import static org.openremote.model.attribute.MetaItemType.AGENT_LINK;
 
 /**
  * An asset attribute can be linked to an agent's {@link ProtocolConfiguration},

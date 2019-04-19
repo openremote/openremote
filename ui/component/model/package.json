@@ -1,11 +1,11 @@
 {
   "name": "@openremote/model",
   "version": "1.0.1",
-  "main": "",
+  "main": "dist/index.js",
   "description": "OpenRemote 3.x Model Types",
-  "types": "dist/index.d.ts",
+  "types": "src/index.ts",
   "scripts": {
-    "build": "exit 0",
+    "build": "npx tsc -b",
     "test": "echo \"No tests\" && exit 0"
   },
   "author": "OpenRemote",

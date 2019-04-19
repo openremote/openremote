@@ -55,7 +55,7 @@ public interface AssetModelResource {
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
     @SuppressWarnings("unusable-by-js")
-    AttributeDescriptor[] getAttributeTypeDescriptors(@BeanParam RequestParams requestParams);
+    AttributeDescriptor[] getAttributeDescriptors(@BeanParam RequestParams requestParams);
 
     /**
      * Retrieve attribute type descriptors {@link AttributeValueDescriptor} present.

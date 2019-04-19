@@ -15,9 +15,12 @@
  */
 package org.openremote.model.value.impl;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import org.openremote.model.ModelModule;
 import org.openremote.model.value.NumberValue;
 import org.openremote.model.value.ValueType;
 
+@JsonSerialize(using = ModelModule.ValueJsonSerializer.class)
 public class NumberValueImpl extends ValueImpl implements NumberValue {
 
     private transient double number;

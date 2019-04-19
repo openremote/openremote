@@ -101,13 +101,13 @@ public class AssetModelUtil {
         return Optional.empty();
     }
 
-    public static Optional<AssetDescriptor> getAssetDescriptor(String urn) {
-        if (urn == null)
+    public static Optional<AssetDescriptor> getAssetDescriptor(String assetType) {
+        if (assetType == null)
             return Optional.empty();
 
-        for (AssetDescriptor assetType : assetDescriptors) {
-            if (urn.equals(assetType.getType()))
-                return Optional.of(assetType);
+        for (AssetDescriptor assetDescriptor : assetDescriptors) {
+            if (assetType.equals(assetDescriptor.getType()))
+                return Optional.of(assetDescriptor);
         }
         return Optional.empty();
     }
@@ -117,7 +117,7 @@ public class AssetModelUtil {
             return Optional.empty();
 
         for (AttributeDescriptor attributeDescriptor : attributeDescriptors) {
-            if (name.equals(attributeDescriptor.getName()))
+            if (name.equals(attributeDescriptor.getAttributeName()))
                 return Optional.of(attributeDescriptor);
         }
         return Optional.empty();
@@ -155,7 +155,7 @@ public class AssetModelUtil {
 //    public static AssetDescriptor[] getAssetTypesSorted() {
 //        List<AssetDescriptor> list = new ArrayList<>(Arrays.asList(assetDescriptors));
 //
-//        list.sort(Comparator.comparing(AssetDescriptor::getName));
+//        list.sort(Comparator.comparing(AssetDescriptor::getAttributeName));
 //        if (list.contains(CUSTOM)) {
 //            // CUSTOM should be first
 //            list.remove(CUSTOM);

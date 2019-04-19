@@ -30,7 +30,7 @@ import org.openremote.model.AbstractValueHolder;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.ValueHolder;
 import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.asset.MetaItemType;
+import org.openremote.model.attribute.MetaItemType;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.asset.agent.ProtocolConfiguration;
 import org.openremote.model.attribute.*;
@@ -442,7 +442,6 @@ public class HttpClientProtocol extends AbstractProtocol {
 
     protected static final List<MetaItemDescriptorImpl> PROTOCOL_META_ITEM_DESCRIPTORS = Arrays.asList(
         new MetaItemDescriptorImpl(
-            "PROTOCOL_HTTP_CLIENT_BASE_URI",
             META_PROTOCOL_BASE_URI,
             ValueType.STRING,
             true,
@@ -452,7 +451,6 @@ public class HttpClientProtocol extends AbstractProtocol {
             null,
             false),
         new MetaItemDescriptorImpl(
-            "PROTOCOL_HTTP_CLIENT_USERNAME",
             META_PROTOCOL_USERNAME,
             ValueType.STRING,
             false,
@@ -462,7 +460,6 @@ public class HttpClientProtocol extends AbstractProtocol {
             null,
             false),
         new MetaItemDescriptorImpl(
-            "PROTOCOL_HTTP_CLIENT_PASSWORD",
             META_PROTOCOL_PASSWORD,
             ValueType.STRING,
             false,
@@ -472,7 +469,6 @@ public class HttpClientProtocol extends AbstractProtocol {
             null,
             false),
         new MetaItemDescriptorImpl(
-            "PROTOCOL_HTTP_CLIENT_OAUTH",
             META_PROTOCOL_OAUTH_GRANT,
             ValueType.OBJECT,
             false,
@@ -482,7 +478,6 @@ public class HttpClientProtocol extends AbstractProtocol {
             null,
             false),
         new MetaItemDescriptorImpl(
-            "PROTOCOL_HTTP_CLIENT_PING_PATH",
             META_PROTOCOL_PING_PATH,
             ValueType.STRING,
             false,
@@ -492,7 +487,6 @@ public class HttpClientProtocol extends AbstractProtocol {
             null,
             false),
         new MetaItemDescriptorImpl(
-            "PROTOCOL_HTTP_CLIENT_PING_METHOD",
             META_PROTOCOL_PING_METHOD,
             ValueType.STRING,
             false,
@@ -502,7 +496,6 @@ public class HttpClientProtocol extends AbstractProtocol {
             null,
             false),
         new MetaItemDescriptorImpl(
-            "PROTOCOL_HTTP_CLIENT_PING_BODY",
             META_PROTOCOL_PING_BODY,
             null,
             false,
@@ -512,7 +505,6 @@ public class HttpClientProtocol extends AbstractProtocol {
             null,
             false),
         new MetaItemDescriptorImpl(
-            "PROTOCOL_HTTP_CLIENT_PING_CONTENT_TYPE",
             META_PROTOCOL_PING_CONTENT_TYPE,
             ValueType.STRING,
             false,
@@ -522,7 +514,6 @@ public class HttpClientProtocol extends AbstractProtocol {
             null,
             false),
         new MetaItemDescriptorImpl(
-            "PROTOCOL_HTTP_CLIENT_PING_SECONDS",
             META_PROTOCOL_PING_SECONDS,
             ValueType.NUMBER,
             false,
@@ -532,7 +523,6 @@ public class HttpClientProtocol extends AbstractProtocol {
             null,
             false),
         new MetaItemDescriptorImpl(
-            "PROTOCOL_HTTP_CLIENT_PING_QUERY_PARAMETERS",
             META_PROTOCOL_PING_QUERY_PARAMETERS,
             ValueType.OBJECT,
             false,
@@ -542,7 +532,6 @@ public class HttpClientProtocol extends AbstractProtocol {
             null,
             false),
         new MetaItemDescriptorImpl(
-            "PROTOCOL_HTTP_CLIENT_PING_HEADERS",
             META_PROTOCOL_PING_HEADERS,
             ValueType.OBJECT,
             false,
@@ -552,7 +541,6 @@ public class HttpClientProtocol extends AbstractProtocol {
             null,
             false),
         new MetaItemDescriptorImpl(
-            "PROTOCOL_HTTP_CLIENT_FOLLOW_REDIRECTS",
             META_PROTOCOL_FOLLOW_REDIRECTS,
             ValueType.BOOLEAN,
             false,
@@ -562,7 +550,6 @@ public class HttpClientProtocol extends AbstractProtocol {
             null,
             false),
         new MetaItemDescriptorImpl(
-            "PROTOCOL_HTTP_CLIENT_QUERY_PARAMETERS",
             META_QUERY_PARAMETERS,
             ValueType.OBJECT,
             false,
@@ -572,7 +559,6 @@ public class HttpClientProtocol extends AbstractProtocol {
             null,
             false),
         new MetaItemDescriptorImpl(
-            "PROTOCOL_HTTP_CLIENT_HEADERS",
             META_QUERY_PARAMETERS,
             ValueType.OBJECT,
             false,
@@ -582,7 +568,6 @@ public class HttpClientProtocol extends AbstractProtocol {
             null,
             false),
         new MetaItemDescriptorImpl(
-            "PROTOCOL_HTTP_CLIENT_FAILURE_CODES",
             META_FAILURE_CODES,
             ValueType.ARRAY,
             false,
@@ -592,7 +577,6 @@ public class HttpClientProtocol extends AbstractProtocol {
             null,
             false),
         new MetaItemDescriptorImpl(
-            "PROTOCOL_HTTP_CLIENT_PAGING_ENABLED",
             META_PAGING_ENABLED,
             ValueType.BOOLEAN,
             false,
@@ -606,7 +590,6 @@ public class HttpClientProtocol extends AbstractProtocol {
 
     public static final List<MetaItemDescriptor> ATTRIBUTE_META_ITEM_DESCRIPTORS = Arrays.asList(
         new MetaItemDescriptorImpl(
-            "PROTOCOL_HTTP_CLIENT_PATH",
             META_ATTRIBUTE_PATH,
             ValueType.STRING,
             false,
@@ -616,7 +599,6 @@ public class HttpClientProtocol extends AbstractProtocol {
             null,
             false),
         new MetaItemDescriptorImpl(
-            "PROTOCOL_HTTP_CLIENT_METHOD",
             META_ATTRIBUTE_METHOD,
             ValueType.STRING,
             false,
@@ -626,7 +608,6 @@ public class HttpClientProtocol extends AbstractProtocol {
             null,
             false),
         new MetaItemDescriptorImpl(
-            "PROTOCOL_HTTP_CLIENT_BODY",
             META_ATTRIBUTE_BODY,
             null,
             false,
@@ -636,7 +617,6 @@ public class HttpClientProtocol extends AbstractProtocol {
             null,
             false),
         new MetaItemDescriptorImpl(
-            "PROTOCOL_HTTP_CLIENT_CONTENT_TYPE",
             META_ATTRIBUTE_CONTENT_TYPE,
             ValueType.STRING,
             false,
@@ -646,7 +626,6 @@ public class HttpClientProtocol extends AbstractProtocol {
             null,
             false),
         new MetaItemDescriptorImpl(
-            "PROTOCOL_HTTP_CLIENT_POLLING_SECONDS",
             META_ATTRIBUTE_POLLING_SECONDS,
             ValueType.NUMBER,
             false,
@@ -656,7 +635,6 @@ public class HttpClientProtocol extends AbstractProtocol {
             null,
             false),
         new MetaItemDescriptorImpl(
-            "PROTOCOL_HTTP_CLIENT_QUERY_PARAMETERS",
             META_QUERY_PARAMETERS,
             ValueType.OBJECT,
             false,
@@ -666,7 +644,6 @@ public class HttpClientProtocol extends AbstractProtocol {
             null,
             false),
         new MetaItemDescriptorImpl(
-            "PROTOCOL_HTTP_CLIENT_HEADERS",
             META_QUERY_PARAMETERS,
             ValueType.OBJECT,
             false,
@@ -676,7 +653,6 @@ public class HttpClientProtocol extends AbstractProtocol {
             null,
             false),
         new MetaItemDescriptorImpl(
-            "PROTOCOL_HTTP_CLIENT_FAILURE_CODES",
             META_FAILURE_CODES,
             ValueType.ARRAY,
             false,
@@ -686,7 +662,6 @@ public class HttpClientProtocol extends AbstractProtocol {
             null,
             false),
         new MetaItemDescriptorImpl(
-            "PROTOCOL_HTTP_CLIENT_PAGING_ENABLED",
             META_PAGING_ENABLED,
             ValueType.BOOLEAN,
             false,

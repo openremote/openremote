@@ -21,6 +21,7 @@ package org.openremote.model.attribute;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.openremote.model.HasUniqueResourceName;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.value.Value;
@@ -31,6 +32,7 @@ import java.util.Optional;
 import java.util.function.Function;
 
 @JsonFormat(shape = JsonFormat.Shape.OBJECT)
+@JsonDeserialize(as = MetaItemDescriptorImpl.class)
 public interface MetaItemDescriptor extends HasUniqueResourceName {
 
     /**
@@ -108,15 +110,15 @@ public interface MetaItemDescriptor extends HasUniqueResourceName {
     }
 
     @JsonProperty
-    String name();
-
     String getUrn();
 
+    @JsonProperty
     ValueType getValueType();
 
     /**
      * Access permissions for read/write operations performed by restricted or public clients.
      */
+    @JsonProperty
     Access getAccess();
 
     /**
@@ -124,11 +126,13 @@ public interface MetaItemDescriptor extends HasUniqueResourceName {
      * <p>
      * TODO Currently not used.
      */
+    @JsonProperty
     boolean isRequired();
 
     /**
      * A regex pattern that can be used for basic validation, can be <code>null</code> to disable validation.
      */
+    @JsonProperty
     String getPattern();
 
     /**
@@ -137,21 +141,25 @@ public interface MetaItemDescriptor extends HasUniqueResourceName {
      * <p>
      * Values defined in {@link PatternFailure} should support localisation.
      */
+    @JsonProperty
     String getPatternFailureMessage();
 
     /**
      * Gets the maximum number of these meta items allowed per attribute.
      */
+    @JsonProperty
     Integer getMaxPerAttribute();
 
     /**
      * Gets the initial value for new instances of this meta item, can be <code>null</code>.
      */
+    @JsonProperty
     Value getInitialValue();
 
     /**
      * Indicates if the value of this meta item is fixed and can't be edited.
      */
+    @JsonProperty
     boolean isValueFixed();
 
     /**

@@ -42,7 +42,6 @@ import org.openremote.model.query.filter.ObjectValueKeyPredicate;
 import org.openremote.model.query.filter.RadialGeofencePredicate;
 import org.openremote.model.rules.geofence.GeofenceDefinition;
 import org.openremote.model.syslog.SyslogCategory;
-import org.openremote.model.util.TextUtil;
 import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Values;
 
@@ -106,9 +105,9 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
             new AssetQuery()
                 .select(new BaseAssetQuery.Select(BaseAssetQuery.Include.ALL_EXCEPT_PATH,
                     false,
-                    AttributeType.CONSOLE_PROVIDERS.getName()))
+                    AttributeType.CONSOLE_PROVIDERS.getAttributeName()))
                 .type(CONSOLE)
-                .attributeValue(AttributeType.CONSOLE_PROVIDERS.getName(),
+                .attributeValue(AttributeType.CONSOLE_PROVIDERS.getAttributeName(),
                     new ObjectValueKeyPredicate("geofence")))
             .stream()
             .filter(ORConsoleGeofenceAssetAdapter::isLinkedToORConsoleGeofenceAdapter)
@@ -243,7 +242,7 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
     protected GeofenceDefinition locationPredicateToGeofenceDefinition(String assetId, GeofencePredicate geofencePredicate) {
         RadialGeofencePredicate radialLocationPredicate = (RadialGeofencePredicate) geofencePredicate;
         String id = assetId + "_" + Integer.toString(radialLocationPredicate.hashCode());
-        String url = getWriteAttributeUrl(new AttributeRef(assetId, AttributeType.LOCATION.getName()));
+        String url = getWriteAttributeUrl(new AttributeRef(assetId, AttributeType.LOCATION.getAttributeName()));
         return new GeofenceDefinition(id,
             radialLocationPredicate.getLat(),
             radialLocationPredicate.getLng(),

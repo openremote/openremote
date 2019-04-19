@@ -6,10 +6,12 @@ export const orInputStyle = css`
     input {
         position: relative;
         font-family: inherit;
-        background-color: transparent;
         padding: 10px;
         border-radius: 0;
         border: none;
         font-size: 14px;
+
+        border-bottom: 2px solid #d5d5d5;
+        background-color: #f2f2f2;
     }
 `;

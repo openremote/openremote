@@ -31,7 +31,6 @@ import java.util.function.Function;
 
 public class MetaItemDescriptorImpl implements MetaItemDescriptor {
 
-    protected final String name;
     protected final String urn;
     protected final ValueType valueType;
     protected final Access access;
@@ -47,8 +46,7 @@ public class MetaItemDescriptorImpl implements MetaItemDescriptor {
     }
 
     public MetaItemDescriptorImpl(MetaItemDescriptor metaItemDescriptor, Value initialValue) {
-        this(metaItemDescriptor.name(),
-                metaItemDescriptor.getUrn(),
+        this(metaItemDescriptor.getUrn(),
                 metaItemDescriptor.getValueType(),
                 metaItemDescriptor.isRequired(),
                 metaItemDescriptor.getPattern(),
@@ -58,8 +56,7 @@ public class MetaItemDescriptorImpl implements MetaItemDescriptor {
                 metaItemDescriptor.isValueFixed());
     }
 
-    public MetaItemDescriptorImpl(String name,
-                                  String urn,
+    public MetaItemDescriptorImpl(String urn,
                                   ValueType valueType,
                                   boolean required,
                                   String pattern,
@@ -67,12 +64,11 @@ public class MetaItemDescriptorImpl implements MetaItemDescriptor {
                                   Integer maxPerAttribute,
                                   Value initialValue,
                                   boolean valueFixed) {
-        this(name, urn, valueType, Access.ACCESS_PRIVATE, required, pattern, patternFailureMessage, maxPerAttribute, initialValue, valueFixed);
+        this(urn, valueType, Access.ACCESS_PRIVATE, required, pattern, patternFailureMessage, maxPerAttribute, initialValue, valueFixed);
     }
 
     @JsonCreator
-    public MetaItemDescriptorImpl(@JsonProperty("name") String name,
-                                  @JsonProperty("urn") String urn,
+    public MetaItemDescriptorImpl(@JsonProperty("urn") String urn,
                                   @JsonProperty("valueType") ValueType valueType,
                                   @JsonProperty("access") Access access,
                                   @JsonProperty("required") boolean required,
@@ -81,7 +77,6 @@ public class MetaItemDescriptorImpl implements MetaItemDescriptor {
                                   @JsonProperty("maxPerAttribute") Integer maxPerAttribute,
                                   @JsonProperty("initialValue") Value initialValue,
                                   @JsonProperty("valueFixed") boolean valueFixed) {
-        this.name = name;
         this.urn = urn;
         this.valueType = valueType;
         this.access = access;
@@ -91,11 +86,6 @@ public class MetaItemDescriptorImpl implements MetaItemDescriptor {
         this.maxPerAttribute = maxPerAttribute;
         this.initialValue = initialValue;
         this.valueFixed = valueFixed;
-    }
-
-    @Override
-    public String name() {
-        return name;
     }
 
     @Override
@@ -152,7 +142,6 @@ public class MetaItemDescriptorImpl implements MetaItemDescriptor {
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
-                "name='" + name + '\'' +
                 ", urn='" + urn + '\'' +
                 ", valueType=" + valueType +
                 ", access=" + access +

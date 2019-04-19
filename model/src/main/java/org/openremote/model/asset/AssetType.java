@@ -103,7 +103,7 @@ public enum AssetType implements AssetDescriptor {
     }
 
     @Override
-    public Optional<AttributeDescriptor[]> getAttributeDescriptors() {
-        return Optional.ofNullable(attributeDescriptors);
+    public AttributeDescriptor[] getAttributeDescriptors() {
+        return attributeDescriptors;
     }
 }

@@ -11,11 +11,10 @@
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
-    "xmldom": "^0.1.27",
-    "@openremote/rest": "^1.0.0",
     "lit-element": "^2.1.0"
   },
   "devDependencies": {
+    "xmldom": "^0.1.27",
     "@mdi/svg": "^3.5.95",
     "@webcomponents/webcomponentsjs": "^2.0.0",
     "css-loader": "^2.0.0",

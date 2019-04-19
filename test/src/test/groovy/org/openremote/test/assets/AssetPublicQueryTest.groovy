@@ -17,8 +17,8 @@ import spock.lang.Shared
 import spock.lang.Specification
 
 import static org.openremote.model.Constants.MASTER_REALM
-import static org.openremote.model.asset.MetaItemType.ACCESS_PUBLIC_READ
-import static org.openremote.model.asset.MetaItemType.LABEL
+import static org.openremote.model.attribute.MetaItemType.ACCESS_PUBLIC_READ
+import static org.openremote.model.attribute.MetaItemType.LABEL
 import static org.openremote.model.asset.AssetType.THING
 import static org.openremote.model.attribute.AttributeValueType.NUMBER
 import static org.openremote.model.query.BaseAssetQuery.Include

@@ -24,7 +24,7 @@ import org.openremote.container.ContainerService;
 import org.openremote.manager.asset.AssetProcessingException.Reason;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.asset.MetaItemType;
+import org.openremote.model.attribute.MetaItemType;
 import org.openremote.model.query.AssetQuery;
 import org.openremote.model.attribute.*;
 import org.openremote.model.attribute.AttributeEvent.Source;

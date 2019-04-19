@@ -36,6 +36,7 @@ import org.openremote.model.rules.json.RuleCondition;
  * There is an implicit AND between properties and an implicit OR between each value of a property.
  */
 // TODO: Merge with existing AssetQuery
+// TODO: types and attributes are linked and shouldn't be independently specified
 public class NewAssetQuery {
 
     public String[] ids;

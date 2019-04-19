@@ -15,6 +15,8 @@
  */
 package org.openremote.model.value.impl;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import org.openremote.model.ModelModule;
 import org.openremote.model.util.Pair;
 import org.openremote.model.value.*;
 
@@ -23,6 +25,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+@JsonSerialize(using = ModelModule.ValueJsonSerializer.class)
 public class ObjectValueImpl extends ValueImpl implements ObjectValue {
 
     private static List<String> stringifyOrder(String[] keys) {

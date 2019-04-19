@@ -1,9 +1,12 @@
-import 'url-search-params-polyfill';
+import "url-search-params-polyfill";
 import {Console} from "./console";
 import rest from "@openremote/rest";
 import {IconSets} from "@openremote/or-icon";
-import {AxiosRequestConfig} from 'axios';
+import {AxiosRequestConfig} from "axios";
 import {EventProvider, EventProviderStatus, WebSocketEventProvider} from "./event";
+import i18next from "i18next";
+import i18nextXhr from "i18next-xhr-backend";
+import {AssetDescriptor, AttributeDescriptor, AttributeValueDescriptor, MetaItemDescriptor, Asset} from "@openremote/model/dist";
 
 export enum ORError {
     NONE = "NONE",
@@ -28,6 +31,8 @@ export enum OREvent {
     EVENTS_CONNECTED = "EVENTS_CONNECTED",
     EVENTS_CONNECTING = "EVENTS_CONNECTING",
     EVENTS_DISCONNECTED = "EVENTS_DISCONNECTED",
+    TRANSLATE_INIT = "TRANSLATE_INIT",
+    TRANSLATE_LANGUAGE_CHANGED = "TRANSLATE_LANGUAGE_CHANGED"
 }
 
 export enum EventProviderType {
@@ -57,6 +62,92 @@ export interface ManagerConfig {
     eventProviderType?: EventProviderType;
     pollingIntervalMillis?: number;
     loadIcons?: boolean;
+    loadDescriptors?: boolean;
+    loadTranslations?: string[];
+    translationsLoadPath?: string;
+    configureTranslationsOptions?: (i18next: i18next.InitOptions) => void;
+}
+
+export class AssetModelUtil {
+
+    public static _assetDescriptors: AssetDescriptor[] = [];
+    public static _attributeDescriptors: AttributeDescriptor[] = [];
+    public static _attributeValueDescriptors: AttributeValueDescriptor[] = [];
+    public static _metaItemDescriptors: MetaItemDescriptor[] = [];
+
+    public static getAssetDescriptors(): AssetDescriptor[] {
+        return this._assetDescriptors;
+    }
+
+    public static getAttributeDescriptors(): AttributeDescriptor[] {
+        return this._attributeDescriptors;
+    }
+
+    public static getAttributeValueDescriptors(): AttributeValueDescriptor[] {
+        return this._attributeValueDescriptors;
+    }
+
+    public static getMetaItemDescriptors(): MetaItemDescriptor[] {
+        return this._metaItemDescriptors;
+    }
+
+    public static getAssetDescriptor(type?: string): AssetDescriptor | undefined {
+        if (!type) {
+            return;
+        }
+
+        return this._assetDescriptors.find((assetDescriptor) => {
+            return assetDescriptor.type === type;
+        });
+    }
+
+    public static getAssetAttributeDescriptor(assetDescriptor?: AssetDescriptor, attributeName?: string): AttributeDescriptor | undefined {
+        if (!attributeName || !assetDescriptor || !assetDescriptor.attributeDescriptors) {
+            return;
+        }
+
+        return assetDescriptor.attributeDescriptors.find((attributeDescriptor) => attributeDescriptor.attributeName === attributeName);
+    }
+
+    public static getAttributeDescriptor(attributeName?: string): AttributeDescriptor | undefined {
+        if (!attributeName) {
+            return;
+        }
+
+        return this._attributeDescriptors.find((attributeDescriptor) => {
+            return attributeDescriptor.attributeName === attributeName;
+        });
+    }
+
+    public static getAttributeValueDescriptor(name?: string): AttributeValueDescriptor | undefined {
+        if (!name) {
+            return;
+        }
+
+        return this._attributeValueDescriptors.find((attributeValueDescriptor) => {
+            return attributeValueDescriptor.name === name;
+        });
+    }
+
+    public static getMetaItemDescriptor(urn?: string): MetaItemDescriptor | undefined {
+        if (!urn) {
+            return;
+        }
+
+        return this._metaItemDescriptors.find((metaItemDescriptor) => {
+            return metaItemDescriptor.urn === urn;
+        });
+    }
+
+    public static attributeValueDescriptorsMatch(attributeValueDescriptor1: AttributeValueDescriptor, attributeValueDescriptor2: AttributeValueDescriptor) {
+        if (attributeValueDescriptor1 === attributeValueDescriptor2) {
+            return true;
+        }
+        if (!attributeValueDescriptor1 || !attributeValueDescriptor2) {
+            return false;
+        }
+        return attributeValueDescriptor1.name === attributeValueDescriptor2.name && attributeValueDescriptor1.valueType === attributeValueDescriptor2.valueType;
+    }
 }
 
 export type EventCallback = (event: OREvent) => any;
@@ -115,6 +206,10 @@ export class Manager {
         return this._events;
     }
 
+    get language() {
+        return i18next.language;
+    }
+
     protected static normaliseConfig(config: ManagerConfig): ManagerConfig {
         const normalisedConfig: ManagerConfig = Object.assign({}, config);
 
@@ -156,6 +251,18 @@ export class Manager {
 
         if (normalisedConfig.loadIcons === undefined) {
             normalisedConfig.loadIcons = true;
+        }
+
+        if (normalisedConfig.loadTranslations === undefined) {
+            normalisedConfig.loadTranslations = ["or"];
+        }
+
+        if (normalisedConfig.translationsLoadPath === undefined) {
+            normalisedConfig.translationsLoadPath = "locales/{{lng}}/{{ns}}.json";
+        }
+
+        if (normalisedConfig.loadDescriptors === undefined) {
+            normalisedConfig.loadDescriptors = true;
         }
 
         return normalisedConfig;
@@ -222,6 +329,14 @@ export class Manager {
             success = await this.doConsoleInit();
         }
 
+        if (success) {
+            success = await this.doTranslateInit();
+        }
+
+        if (success) {
+            success = await this.doDescriptorsInit();
+        }
+
         // TODO: Reinstate this once websocket supports anonymous connections
         // if (success) {
         //     success = await this.doEventsSubscriptionInit();
@@ -253,7 +368,7 @@ export class Manager {
 
             // Async load material design icons if requested
             if (this._config.loadIcons) {
-                let mdiIconSet = await import(/* webpackChunkName: "mdi-icons" */ "@openremote/or-icon/dist/mdi-icons");
+                const mdiIconSet = await import(/* webpackChunkName: "mdi-icons" */ "@openremote/or-icon/dist/mdi-icons");
                 IconSets.addIconSet("mdi", mdiIconSet.default);
             }
 
@@ -264,6 +379,73 @@ export class Manager {
             this._setError(ORError.MANAGER_FAILED_TO_LOAD);
             return false;
         }
+    }
+
+    protected async doTranslateInit(): Promise<boolean> {
+
+        i18next.on("initialized", (options) => {
+            this._emitEvent(OREvent.TRANSLATE_INIT);
+        });
+
+        i18next.on("languageChanged", () => {
+            this._emitEvent(OREvent.TRANSLATE_LANGUAGE_CHANGED);
+        });
+
+        const initOptions: i18next.InitOptions = {
+            lng: "en",
+            fallbackLng: "en",
+            defaultNS: "app",
+            fallbackNS: "or",
+            ns: this.config.loadTranslations,
+            backend: {
+                loadPath: (langs: string[], namespaces: string[]) => {
+                    if (namespaces.length === 1 && namespaces[0] === "or") {
+                        return this.config.managerUrl + "/shared/locales/{{lng}}/{{ns}}.json";
+                    }
+
+                    if (this.config.translationsLoadPath) {
+                        return this.config.translationsLoadPath;
+                    }
+
+                    return "locales/{{lng}}/{{ns}}.json";
+                }
+            }
+        };
+
+        if (this.config.configureTranslationsOptions) {
+            this.config.configureTranslationsOptions(initOptions);
+        }
+
+        try {
+            await i18next.use(i18nextXhr).init(initOptions);
+        } catch (e) {
+            console.error(e);
+            return false;
+        }
+
+        return true;
+    }
+
+    protected async doDescriptorsInit(): Promise<boolean> {
+        if (!this.config.loadDescriptors) {
+            return true;
+        }
+
+        try {
+            const assetDescriptorResponse = await rest.api.AssetModelResource.getAssetDescriptors();
+            const attributeDescriptorResponse = await rest.api.AssetModelResource.getAttributeDescriptors();
+            const attributeValueDescriptorResponse = await rest.api.AssetModelResource.getAttributeValueDescriptors();
+            const metaItemDescriptorResponse = await rest.api.AssetModelResource.getMetaItemDescriptors();
+
+            AssetModelUtil._assetDescriptors = assetDescriptorResponse.data;
+            AssetModelUtil._attributeDescriptors = attributeDescriptorResponse.data;
+            AssetModelUtil._attributeValueDescriptors = attributeValueDescriptorResponse.data;
+            AssetModelUtil._metaItemDescriptors = metaItemDescriptorResponse.data;
+        } catch (e) {
+            console.error(e);
+            return false;
+        }
+        return true;
     }
 
     protected async doAuthInit(): Promise<boolean> {

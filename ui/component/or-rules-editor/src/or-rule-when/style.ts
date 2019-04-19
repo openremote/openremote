@@ -14,17 +14,21 @@ export const style = css`
 
         background-color: var(--app-white-color, #FFF);
         flex-wrap: wrap;
+        box-shadow: rgba(0, 0, 0, 0.11) 0px 1px 2px 0px;
     }
     
     .button-add {
         display: block;
         cursor: pointer;
-        padding: 10px 40px;
-        font-size: 20px;
         font-weight: bold;    
         height: 32px;
         box-sizing: content-box;
-        border: 3px dashed var(--app-lightgrey-color, #e4e4e4);
+
+        padding: 0;
+        border: none;
+        font-size: 15px;
+        color: var(--app-primary-color);
+        
     }
     
     .rule-additional {

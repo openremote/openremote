@@ -27,7 +27,7 @@ import org.openremote.app.client.assets.attributes.AttributeView;
 import org.openremote.app.client.assets.attributes.MetaEditor;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.asset.MetaItemType;
+import org.openremote.model.attribute.MetaItemType;
 import org.openremote.model.attribute.*;
 import org.openremote.model.interop.Consumer;
 import org.openremote.model.util.EnumUtil;

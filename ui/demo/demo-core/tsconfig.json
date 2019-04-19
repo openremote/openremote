@@ -4,6 +4,7 @@
     "./src"
   ],
   "references": [
-    { "path": "../../component/core" }
+    { "path": "../../component/core" },
+    { "path": "../../component/or-translate" }
   ]
 }

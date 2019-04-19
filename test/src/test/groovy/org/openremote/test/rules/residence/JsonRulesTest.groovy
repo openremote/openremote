@@ -144,7 +144,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         assert consoleRegistration.id != null
 
         when: "the console location is set to the apartment"
-        authenticatedAssetResource.writeAttributeValue(null, consoleRegistration.id, LOCATION.name, ManagerDemoSetup.SMART_BUILDING_LOCATION.toValue().toJson())
+        authenticatedAssetResource.writeAttributeValue(null, consoleRegistration.id, LOCATION.attributeName, ManagerDemoSetup.SMART_BUILDING_LOCATION.toValue().toJson())
 
         then: "the consoles location should have been updated"
         conditions.eventually {
@@ -169,7 +169,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "the console device moves outside the home geofence (as defined in the rule)"
-        authenticatedAssetResource.writeAttributeValue(null, consoleRegistration.id, LOCATION.name, new GeoJSONPoint(0d,0d).toValue().toJson())
+        authenticatedAssetResource.writeAttributeValue(null, consoleRegistration.id, LOCATION.attributeName, new GeoJSONPoint(0d,0d).toValue().toJson())
 
         then: "the apartment lights should be switched off"
         conditions.eventually {
@@ -198,7 +198,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "the console device moves back inside the home geofence (as defined in the rule)"
-        authenticatedAssetResource.writeAttributeValue(null, consoleRegistration.id, LOCATION.name, ManagerDemoSetup.SMART_BUILDING_LOCATION.toValue().toJson())
+        authenticatedAssetResource.writeAttributeValue(null, consoleRegistration.id, LOCATION.attributeName, ManagerDemoSetup.SMART_BUILDING_LOCATION.toValue().toJson())
 
         then: "the rule reset fact should be removed"
         conditions.eventually {
@@ -206,7 +206,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "the console device moves outside the home geofence again (as defined in the rule)"
-        authenticatedAssetResource.writeAttributeValue(null, consoleRegistration.id, LOCATION.name, new GeoJSONPoint(0d,0d).toValue().toJson())
+        authenticatedAssetResource.writeAttributeValue(null, consoleRegistration.id, LOCATION.attributeName, new GeoJSONPoint(0d,0d).toValue().toJson())
 
         then: "another notification should have been sent to the console"
         conditions.eventually {
@@ -216,7 +216,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         when: "the console sends a location update with the same location but a newer timestamp"
         advancePseudoClock(35, MINUTES, container)
-        authenticatedAssetResource.writeAttributeValue(null, consoleRegistration.id, LOCATION.name, new GeoJSONPoint(0d,0d).toValue().toJson())
+        authenticatedAssetResource.writeAttributeValue(null, consoleRegistration.id, LOCATION.attributeName, new GeoJSONPoint(0d,0d).toValue().toJson())
 
         then: "another notification should have been sent to the console (because the reset condition includes reset on attributeTimestampChange)"
         conditions.eventually {
@@ -225,7 +225,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         }
 
         when: "the console sends a location update with a new location but still outside the geofence"
-        authenticatedAssetResource.writeAttributeValue(null, consoleRegistration.id, LOCATION.name, new GeoJSONPoint(10d,10d).toValue().toJson())
+        authenticatedAssetResource.writeAttributeValue(null, consoleRegistration.id, LOCATION.attributeName, new GeoJSONPoint(10d,10d).toValue().toJson())
 
         then: "another notification should have been sent to the console (because the reset condition includes reset on attributeValueChange)"
         conditions.eventually {

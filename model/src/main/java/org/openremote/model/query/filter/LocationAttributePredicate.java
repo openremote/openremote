@@ -30,14 +30,14 @@ import static org.openremote.model.attribute.AttributeType.LOCATION;
 public class LocationAttributePredicate extends AttributePredicate {
 
     public LocationAttributePredicate(GeofencePredicate geofencePredicate) {
-        super(new StringPredicate(AttributeType.LOCATION.getName()), geofencePredicate);
+        super(new StringPredicate(AttributeType.LOCATION.getAttributeName()), geofencePredicate);
     }
 
     public static List<GeofencePredicate> getLocationPredicates(List<AttributePredicate> attributePredicates) {
         return attributePredicates.stream()
                 .filter(attributePredicate -> attributePredicate.name != null
                         && attributePredicate.name.match == BaseAssetQuery.Match.EXACT
-                        && LOCATION.getName().equals(attributePredicate.name.value)
+                        && LOCATION.getAttributeName().equals(attributePredicate.name.value)
                         && attributePredicate.value instanceof GeofencePredicate)
                 .map(attributePredicate -> (GeofencePredicate) attributePredicate.value)
                 .collect(Collectors.toList());

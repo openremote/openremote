@@ -4,17 +4,32 @@ import {css} from 'lit-element';
 export const style = css`
     :host {
         display: block;
+        width: 100%;
     }
     
     .rule-container {
-          display: flex;
-          margin-bottom: 10px;
-          padding: 5px 20px;
-          
-          border-radius: 5px;
-          border: 1px solid var(--app-lightgrey-color, #F5F5F5);
+        display: flex;
+        margin: 10px 0;
+        width: 100%;
+        border-radius: 0;
+        padding: 0 0 20px 0;
+        border-bottom: 1px solid var(--app-lightgrey-color, #F5F5F5);
     }
+    
+    .rule-container > * {
+        margin-right: 20px;
+    }
+
+    .rule-container > *:last-child {
+        margin-right: 0;
+    }
+    
     or-icon {
         margin-top: 5px;
+    }
+    
+    .small-icon {
+        cursor: pointer;
+        fill: var(--app-grey-color, #F5F5F5);
     }
 `;

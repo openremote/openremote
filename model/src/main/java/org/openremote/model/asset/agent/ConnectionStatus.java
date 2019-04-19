@@ -19,7 +19,7 @@
  */
 package org.openremote.model.asset.agent;
 
-import org.openremote.model.asset.MetaItemType;
+import org.openremote.model.attribute.MetaItemType;
 import org.openremote.model.attribute.MetaItem;
 
 /**

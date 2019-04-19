@@ -78,14 +78,42 @@ export const style = css`
     or-rule-then,
     or-rule-when {
         display: flex;
-        flex-grow: 1;
-        padding: 0 10px;
+        flex: 1 1 0;
         background-color: var(--app-lightgrey-color);
-        max-width: 50%;
     }
 
+    or-rule-when {
+        padding-left: 10px;
+    }
+    
+    or-rule-then {
+        padding-right: 10px;
+    }
+    
     .small-icon {
         --or-icon-height: 16px;
     }
+    
+    button {
+        padding: 0 20px;
+        font-size: 14px;
+        height: 40px;
 
+        border-radius: 5px;
+        background-color: var(--app-primary-color);
+        margin-left: auto;
+        color: var(--app-white-color, #FFF);
+        font-weight: bold;
+        cursor: pointer;
+    }
+    
+    @media only screen 
+    and (min-device-width : 768px) 
+    and (max-device-width : 1024px)  { 
+        side-menu {
+            min-width: 150px;
+            width: 150px;
+        }
+    }
+    
 `;

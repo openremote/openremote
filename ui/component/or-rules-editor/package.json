@@ -12,8 +12,10 @@
   "license": "AGPL-3.0-or-later",
   "dependencies": {
     "@openremote/core": "^1.0.0",
+    "@openremote/model": "^1.0.1",
     "@openremote/or-input": "^1.0.0",
     "@openremote/or-select": "^1.0.0",
+    "@openremote/or-translate": "^1.0.0",
     "@openremote/rest": "^1.0.0",
     "@types/lodash-es": "^4.17.3",
     "lit-element": "^2.1.0",

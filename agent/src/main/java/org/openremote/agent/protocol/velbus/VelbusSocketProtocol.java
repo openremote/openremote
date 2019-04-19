@@ -43,7 +43,6 @@ public class VelbusSocketProtocol extends AbstractVelbusProtocol {
     public static final String META_VELBUS_SOCKET_PORT = PROTOCOL_NAME + ":port";
     public static final List<MetaItemDescriptorImpl> META_ITEM_DESCRIPTORS = Arrays.asList(
         new MetaItemDescriptorImpl(
-            "PROTOCOL_VELBUS_SOCKET_HOST",
             META_VELBUS_SOCKET_HOST,
             ValueType.STRING,
             true,
@@ -54,7 +53,6 @@ public class VelbusSocketProtocol extends AbstractVelbusProtocol {
             false
         ),
         new MetaItemDescriptorImpl(
-            "PROTOCOL_VELBUS_SOCKET_PORT",
             META_VELBUS_SOCKET_PORT,
             ValueType.NUMBER,
             true,

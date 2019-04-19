@@ -5,16 +5,21 @@
   "private": true,
   "scripts": {
     "clean": "npx shx rm -rf dist",
-    "build": "node ../../model-build.js && npx tsc -b && npx cross-env NODE_ENV=production webpack",
-    "serve": "node ../../model-build.js && npx tsc -b && npx webpack-dev-server",
-    "watch": "node ../../model-build.js && npx tsc -b -w",
+    "modelBuild": "node ../../model-build.js",
+    "modelWatch": "node ../../model-watch.js",
+    "build": "npx tsc -b && npx cross-env NODE_ENV=production webpack",
+    "serve": "npx webpack-dev-server",
+    "watch": "npx tsc -b -w",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "OpenRemote",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
     "@openremote/core": "^1.0.1",
-    "lit-html": "^0.12.0"
+    "@openremote/or-icon": "^1.0.0",
+    "@openremote/or-translate": "^1.0.0",
+    "lit-html": "^0.12.0",
+    "i18next": "^15.0.9"
   },
   "devDependencies": {
     "@babel/core": "^7.2.2",

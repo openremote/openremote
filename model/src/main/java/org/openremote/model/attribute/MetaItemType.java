@@ -17,10 +17,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.model.asset;
+package org.openremote.model.attribute;
 
 import org.openremote.model.ValidationFailure;
-import org.openremote.model.attribute.*;
+import org.openremote.model.asset.AssetModelProvider;
+import org.openremote.model.asset.UserAsset;
 import org.openremote.model.rules.AssetState;
 import org.openremote.model.rules.TemporaryFact;
 import org.openremote.model.value.Value;
@@ -408,6 +409,7 @@ public enum MetaItemType implements MetaItemDescriptor {
         this.pattern = pattern;
         this.patternFailureMessage = patternFailureMessage;
     }
+
 
     @Override
     public String getUrn() {

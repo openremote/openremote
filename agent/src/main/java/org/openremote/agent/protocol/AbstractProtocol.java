@@ -32,7 +32,7 @@ import org.openremote.container.timer.TimerService;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.ValueHolder;
 import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.asset.MetaItemType;
+import org.openremote.model.attribute.MetaItemType;
 import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.asset.agent.ConnectionStatus;
 import org.openremote.model.asset.agent.ProtocolConfiguration;
@@ -122,7 +122,6 @@ public abstract class AbstractProtocol implements Protocol {
     static {
         attributeMetaItemDescriptors = Arrays.asList(
             new MetaItemDescriptorImpl(
-                "PROTOCOL_FILTERS",
                 META_PROTOCOL_FILTERS,
                 ValueType.ARRAY,
                 false,

@@ -42,7 +42,7 @@ public class AssetModelResourceImpl extends ManagerWebResource implements AssetM
     }
 
     @Override
-    public AttributeDescriptor[] getAttributeTypeDescriptors(RequestParams requestParams) {
+    public AttributeDescriptor[] getAttributeDescriptors(RequestParams requestParams) {
         return AssetModelUtil.getAttributeDescriptors();
     }
 

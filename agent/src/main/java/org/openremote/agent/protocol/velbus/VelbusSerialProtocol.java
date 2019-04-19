@@ -46,7 +46,6 @@ public class VelbusSerialProtocol extends AbstractVelbusProtocol implements Prot
     public static final int DEFAULT_BAUDRATE = 38400;
     public static final List<MetaItemDescriptorImpl> PROTOCOL_META_ITEM_DESCRIPTORS = Arrays.asList(
         new MetaItemDescriptorImpl(
-            "PROTOCOL_VELBUS_SERIAL_PORT",
             META_VELBUS_SERIAL_PORT,
             ValueType.STRING,
             true,
@@ -57,7 +56,6 @@ public class VelbusSerialProtocol extends AbstractVelbusProtocol implements Prot
             false
         ),
         new MetaItemDescriptorImpl(
-            "PROTOCOL_VELBUS_SERIAL_BAUDRATE",
             META_VELBUS_SERIAL_BAUDRATE,
             ValueType.NUMBER,
             false,

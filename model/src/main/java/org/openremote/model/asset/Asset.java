@@ -300,8 +300,9 @@ public class Asset implements IdentifiableEntity {
 
     public Asset(@NotNull String name, @NotNull AssetDescriptor type, Asset parent, String realm) {
         this(name, type.getType(), type.getAccessPublicRead(), parent, realm);
-        type.getAttributeDescriptors().ifPresent(attributeDescriptors ->
-                addAttributes(Arrays.stream(attributeDescriptors).map(AssetAttribute::new).toArray(AssetAttribute[]::new)));
+        if (type.getAttributeDescriptors() != null) {
+            addAttributes(Arrays.stream(type.getAttributeDescriptors()).map(AssetAttribute::new).toArray(AssetAttribute[]::new));
+        }
     }
 
     public Asset(@NotNull String name, @NotNull String type, boolean accessPublicRead, Asset parent, String realm) {
@@ -367,7 +368,7 @@ public class Asset implements IdentifiableEntity {
     }
 
     public Asset removeAttribute(AttributeDescriptor attributeDescriptor) {
-        return removeAttribute(attributeDescriptor.getName());
+        return removeAttribute(attributeDescriptor.getAttributeName());
     }
 
     public String getId() {
@@ -539,7 +540,7 @@ public class Asset implements IdentifiableEntity {
     }
 
     public Optional<AssetAttribute> getAttribute(AttributeDescriptor descriptor) {
-        return getAttribute(descriptor.getName());
+        return getAttribute(descriptor.getAttributeName());
     }
 
     public Optional<AssetAttribute> getAttribute(String name) {
@@ -598,7 +599,7 @@ public class Asset implements IdentifiableEntity {
      */
     public GeoJSONPoint getCoordinates() {
         return getAttributesStream()
-            .filter(attribute -> attribute.getNameOrThrow().equals(LOCATION.getName()))
+            .filter(attribute -> attribute.getNameOrThrow().equals(LOCATION.getAttributeName()))
             .findFirst()
             .flatMap(AbstractValueHolder::getValue)
             .flatMap(GeoJSONPoint::fromValue)
@@ -610,7 +611,7 @@ public class Asset implements IdentifiableEntity {
      */
     public void setCoordinates(GeoJSONPoint coordinates) {
         AssetAttribute locationAttribute = getAttributesStream()
-            .filter(attribute -> attribute.getNameOrThrow().equals(LOCATION.getName()))
+            .filter(attribute -> attribute.getNameOrThrow().equals(LOCATION.getAttributeName()))
             .findFirst().orElse(new AssetAttribute(LOCATION));
 
         locationAttribute.setValue(coordinates == null ? null : coordinates.toValue());

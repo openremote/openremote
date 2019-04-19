@@ -20,7 +20,9 @@
 package org.openremote.model.attribute;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueType;
@@ -29,16 +31,21 @@ import java.util.Optional;
 import java.util.function.Function;
 
 @JsonFormat(shape = JsonFormat.Shape.OBJECT)
+@JsonDeserialize(as = AttributeValueDescriptorImpl.class)
 public interface AttributeValueDescriptor {
 
     @JsonProperty
     String getName();
 
+    @JsonProperty
     String getIcon();
 
+    @JsonProperty
     ValueType getValueType();
 
-    Optional<MetaItemDescriptor[]> getMetaItemDescriptors();
+    @JsonProperty
+    MetaItemDescriptor[] getMetaItemDescriptors();
 
+    @JsonIgnore
     Optional<Function<Value, Optional<ValidationFailure>>> getValidator();
 }
