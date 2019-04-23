@@ -578,6 +578,29 @@
                     dispatchEvent(new CustomEvent("AppReady", {detail: {app: openremote.INSTANCE}}));
                 }
 
+                // Load descriptors
+                openremote.INSTANCE.requests.sendAndReturn(
+                    (requestParams) => {
+                        openremote.REST.AssetModelResource.getAttributeValueDescriptors(requestParams);
+                    },
+                    200,
+                    (response) => {
+                        if (Array.isArray(response)) {
+                            let avds = response.map(av => {
+                                let metaItemDescriptors = [];
+                                if (av.metaItemDescriptors) {
+                                    metaItemDescriptors = av.metaItemDescriptors.map(mid => {
+                                        let access = mid.access ? new Model.MetaItemDescriptorAccess(mid.access.restrictedRead, mid.access.restrictedWrite, mid.access.publicRead) : null;
+                                        let initialValue = mid.initialValue !== undefined && mid.initialValue !== null ? Model.Values.fromAny(mid.initialValue).orElse(null) : null;
+                                        return new Model.MetaItemDescriptor(mid.urn, Model.ValueType.fromString(mid.valueType), access, mid.required, mid.pattern, mid.patternFailureMessage, mid.maxPerAttribute, initialValue, mid.valueFixed);
+                                    });
+                                }
+                                return new Model.AttributeValueDescriptor(av.name, av.icon, Model.ValueType.fromString(av.valueType), metaItemDescriptors, null);
+                            });
+                            org.openremote.model.util.AssetModelUtil.setAttributeValueDescriptors(avds);
+                        }
+                    });
+
                 // TODO: Implement this in a better way
                 // Initialise the console
                 openremote.INSTANCE.console.initialise();

@@ -21,8 +21,11 @@ package org.openremote.model.asset;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import jsinterop.annotations.JsConstructor;
+import jsinterop.annotations.JsType;
 import org.openremote.model.attribute.AttributeDescriptor;
 
+@JsType(namespace = "Model", name = "AssetDescriptor")
 public class AssetDescriptorImpl implements AssetDescriptor {
 
     protected String name;
@@ -32,6 +35,7 @@ public class AssetDescriptorImpl implements AssetDescriptor {
     AttributeDescriptor[] attributeDescriptors;
 
     @JsonCreator
+    @JsConstructor
     public AssetDescriptorImpl(@JsonProperty("name") String name,
                                @JsonProperty("type") String type,
                                @JsonProperty("icon") String icon,

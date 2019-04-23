@@ -22,6 +22,10 @@ package org.openremote.model.attribute;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import jsinterop.annotations.JsConstructor;
+import jsinterop.annotations.JsIgnore;
+import jsinterop.annotations.JsPackage;
+import jsinterop.annotations.JsType;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueType;
@@ -29,6 +33,7 @@ import org.openremote.model.value.ValueType;
 import java.util.Optional;
 import java.util.function.Function;
 
+@JsType(namespace = "Model", name = "MetaItemDescriptor")
 public class MetaItemDescriptorImpl implements MetaItemDescriptor {
 
     protected final String urn;
@@ -41,32 +46,7 @@ public class MetaItemDescriptorImpl implements MetaItemDescriptor {
     protected final boolean valueFixed;
     protected final String patternFailureMessage;
 
-    public MetaItemDescriptorImpl(MetaItemDescriptor metaItemDescriptor) {
-        this(metaItemDescriptor, metaItemDescriptor.getInitialValue());
-    }
-
-    public MetaItemDescriptorImpl(MetaItemDescriptor metaItemDescriptor, Value initialValue) {
-        this(metaItemDescriptor.getUrn(),
-                metaItemDescriptor.getValueType(),
-                metaItemDescriptor.isRequired(),
-                metaItemDescriptor.getPattern(),
-                metaItemDescriptor.getPatternFailureMessage(),
-                metaItemDescriptor.getMaxPerAttribute(),
-                initialValue,
-                metaItemDescriptor.isValueFixed());
-    }
-
-    public MetaItemDescriptorImpl(String urn,
-                                  ValueType valueType,
-                                  boolean required,
-                                  String pattern,
-                                  String patternFailureMessage,
-                                  Integer maxPerAttribute,
-                                  Value initialValue,
-                                  boolean valueFixed) {
-        this(urn, valueType, Access.ACCESS_PRIVATE, required, pattern, patternFailureMessage, maxPerAttribute, initialValue, valueFixed);
-    }
-
+    @JsConstructor
     @JsonCreator
     public MetaItemDescriptorImpl(@JsonProperty("urn") String urn,
                                   @JsonProperty("valueType") ValueType valueType,
@@ -86,6 +66,35 @@ public class MetaItemDescriptorImpl implements MetaItemDescriptor {
         this.maxPerAttribute = maxPerAttribute;
         this.initialValue = initialValue;
         this.valueFixed = valueFixed;
+    }
+
+    @JsIgnore
+    public MetaItemDescriptorImpl(MetaItemDescriptor metaItemDescriptor) {
+        this(metaItemDescriptor, metaItemDescriptor.getInitialValue());
+    }
+
+    @JsIgnore
+    public MetaItemDescriptorImpl(MetaItemDescriptor metaItemDescriptor, Value initialValue) {
+        this(metaItemDescriptor.getUrn(),
+                metaItemDescriptor.getValueType(),
+                metaItemDescriptor.isRequired(),
+                metaItemDescriptor.getPattern(),
+                metaItemDescriptor.getPatternFailureMessage(),
+                metaItemDescriptor.getMaxPerAttribute(),
+                initialValue,
+                metaItemDescriptor.isValueFixed());
+    }
+
+    @JsIgnore
+    public MetaItemDescriptorImpl(String urn,
+                                  ValueType valueType,
+                                  boolean required,
+                                  String pattern,
+                                  String patternFailureMessage,
+                                  Integer maxPerAttribute,
+                                  Value initialValue,
+                                  boolean valueFixed) {
+        this(urn, valueType, Access.ACCESS_PRIVATE, required, pattern, patternFailureMessage, maxPerAttribute, initialValue, valueFixed);
     }
 
     @Override

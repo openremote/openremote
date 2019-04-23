@@ -15,9 +15,11 @@
  */
 package org.openremote.model.value;
 
+import jsinterop.annotations.JsMethod;
 import jsinterop.base.Any;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.attribute.MetaItem;
+import org.openremote.model.util.TextUtil;
 import org.openremote.model.value.impl.ValueFactoryImpl;
 
 import java.util.List;
@@ -56,10 +58,20 @@ public class Values {
         return ValueFactoryImpl.INSTANCE;
     }
 
+
+    public static Value parseOrNull(String jsonString) {
+        try {
+            return parse(jsonString).orElse(null);
+        }
+        catch (Exception ignored) {}
+        return null;
+    }
+
     public static <T extends Value> Optional<T> parse(String jsonString) throws ValueException {
         return instance().parse(jsonString);
     }
 
+    @JsMethod(namespace = "Model.Values")
     public static native <T extends Value> Optional<T> fromAny(Any any) /*-{
         // TODO This makes a copy which is inefficient, need twice the memory. We need a better JSON API to share with Java and JS.
         return @org.openremote.model.value.Values::parse(Ljava/lang/String;)(JSON.stringify(any));

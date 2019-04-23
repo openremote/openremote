@@ -15,9 +15,15 @@
  */
 package org.openremote.model.value;
 
+import jsinterop.annotations.JsMethod;
+import jsinterop.annotations.JsType;
+
+import java.util.Locale;
+
 /**
  * Represents the type of the underlying value, the same as in JSON.
  */
+@JsType(namespace = "Model", name = "ValueType")
 public enum ValueType {
 
     OBJECT(ObjectValue.class),
@@ -45,5 +51,10 @@ public enum ValueType {
         }
 
         throw new IllegalStateException("Failed to get value type from model type");
+    }
+
+    @JsMethod
+    public static ValueType fromString(String value) {
+        return value == null ? null : valueOf(value.toUpperCase(Locale.ROOT));
     }
 }

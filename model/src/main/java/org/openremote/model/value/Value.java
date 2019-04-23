@@ -15,9 +15,7 @@
  */
 package org.openremote.model.value;
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import jsinterop.base.Any;
-import org.openremote.model.ModelModule;
 
 /**
  * Base interface for all values. This is a Java API for a JSON model and instances
