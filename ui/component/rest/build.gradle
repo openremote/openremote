@@ -52,7 +52,3 @@ clean {
 }
 
 build.dependsOn generateTypeScript, resolveTask(":ui:component:model:build"), npmBuild
-
-task installDist() {
-    dependsOn build
-}

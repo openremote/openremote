@@ -11,7 +11,3 @@ npmBuild.dependsOn resolveTask(":ui:component:or-translate:build"), resolveTask(
 task build() {
     dependsOn npmBuild
 }
-
-task installDist() {
-    dependsOn build
-}
