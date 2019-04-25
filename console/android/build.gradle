@@ -1,17 +1,34 @@
+buildscript {
+    ext.kotlin_version = "$kotlinVersion"
+    repositories {
+        google()
+        jcenter()
+    }
+    dependencies {
+        classpath "com.android.tools.build:gradle:$androidGradleVersion"
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+    }
+}
+
+allprojects {
+    repositories {
+        google()
+        jcenter()
+    }
+}
+
 apply plugin: "com.android.library"
 apply plugin: 'kotlin-android'
-
 
 version = projectVersion
 
 android {
-    compileSdkVersion androidCompileVersion
-    buildToolsVersion androidBuildToolsVersion
+    compileSdkVersion Integer.valueOf(androidCompileVersion)
 
     defaultConfig {
 
-        minSdkVersion androidMinVersion
-        targetSdkVersion androidTargetVersion
+        minSdkVersion Integer.valueOf(androidMinVersion)
+        targetSdkVersion Integer.valueOf(androidTargetVersion)
         versionCode Integer.valueOf(projectVersionCode)
         versionName project.version
     }
@@ -44,7 +61,7 @@ dependencies {
     implementation "com.squareup.retrofit2:retrofit:$retrofitVersion"
     implementation "com.android.support:support-compat:$androidSupportVersion"
     implementation "com.android.support:appcompat-v7:$androidSupportVersion"
-    implementation "com.google.firebase:firebase-core:$firebaseCoreVersion"
+    implementation "com.google.firebase:firebase-core:$fcmVersion"
     implementation "com.google.firebase:firebase-messaging:$fcmVersion"
     implementation "com.squareup.retrofit2:converter-jackson:$jacksonVersion"
     implementation "com.squareup.retrofit2:converter-scalars:$retrofitVersion"
