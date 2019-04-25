@@ -14,6 +14,7 @@ import com.google.android.gms.location.Geofence
 import com.google.android.gms.location.GeofencingClient
 import com.google.android.gms.location.GeofencingRequest
 import com.google.android.gms.location.LocationServices
+import org.openremote.android.MainActivity
 import org.openremote.android.R
 import java.net.URL
 import java.util.*
@@ -42,8 +43,9 @@ class GeofenceProvider(val context: Context) : ActivityCompat.OnRequestPermissio
 
     companion object {
         val baseUrlKey = "baseUrl"
-        val consoleIdKey = "consoleId"
+        val consoleIdKey = MainActivity.CONSOLE_ID_KEY
         val geofencesKey = "geofences"
+        val geofenceDisabledKey = "geofenceDisabled"
         var locationReponseCode = 101
         var JSON = ObjectMapper()
         val LOG = Logger.getLogger(GeofenceProvider::class.java.name)
@@ -137,6 +139,8 @@ class GeofenceProvider(val context: Context) : ActivityCompat.OnRequestPermissio
     var enableCallback: EnableCallback? = null
 
     fun initialize(): Map<String, Any> {
+        val sharedPreferences = context.getSharedPreferences(context.getString(R.string.OR_CONSOLE_NAME), Context.MODE_PRIVATE)
+
         return hashMapOf(
                 "action" to "PROVIDER_INIT",
                 "provider" to "geofence",
@@ -144,7 +148,8 @@ class GeofenceProvider(val context: Context) : ActivityCompat.OnRequestPermissio
                 "requiresPermission" to true,
                 "hasPermission" to (ContextCompat.checkSelfPermission(context, ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED),
                 "success" to true,
-                "enabled" to false
+                "enabled" to false, // Always require enabling to ensure geofences are refresh at startup
+                "disabled" to sharedPreferences.contains(geofenceDisabledKey)
         )
     }
 
@@ -155,6 +160,7 @@ class GeofenceProvider(val context: Context) : ActivityCompat.OnRequestPermissio
         sharedPreferences.edit()
                 .putString(baseUrlKey, baseUrl)
                 .putString(consoleIdKey, consoleId)
+                .remove(geofenceDisabledKey)
                 .apply()
 
         if(ContextCompat.checkSelfPermission(context, ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
@@ -175,6 +181,7 @@ class GeofenceProvider(val context: Context) : ActivityCompat.OnRequestPermissio
                 .remove(baseUrlKey)
                 .remove(consoleIdKey)
                 .remove(geofencesKey)
+                .putBoolean(geofenceDisabledKey, true)
                 .apply()
 
         //context.stopService(Intent(context, LocationService::class.java))
