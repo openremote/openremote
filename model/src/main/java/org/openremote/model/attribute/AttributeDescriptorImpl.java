@@ -21,8 +21,12 @@ package org.openremote.model.attribute;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import jsinterop.annotations.JsConstructor;
+import jsinterop.annotations.JsIgnore;
+import jsinterop.annotations.JsType;
 import org.openremote.model.value.Value;
 
+@JsType(namespace = "Model", name = "AttributeDescriptor")
 public class AttributeDescriptorImpl implements AttributeDescriptor {
 
     protected String attributeName;
@@ -30,18 +34,18 @@ public class AttributeDescriptorImpl implements AttributeDescriptor {
     protected MetaItemDescriptor[] metaItemDescriptors;
     protected Value initialValue;
 
+    @JsIgnore
     public AttributeDescriptorImpl(String attributeName, AttributeValueDescriptor valueDescriptor) {
-        this.attributeName = attributeName;
-        this.valueDescriptor = valueDescriptor;
+        this(attributeName, valueDescriptor, null, null);
     }
 
+    @JsIgnore
     public AttributeDescriptorImpl(String attributeName, AttributeValueDescriptor valueDescriptor, Value initialValue) {
-        this.attributeName = attributeName;
-        this.valueDescriptor = valueDescriptor;
-        this.initialValue = initialValue;
+        this(attributeName, valueDescriptor, null, initialValue);
     }
 
     @JsonCreator
+    @JsConstructor
     public AttributeDescriptorImpl(@JsonProperty("attributeName") String attributeName,
                                    @JsonProperty("valueDescriptor") AttributeValueDescriptor valueDescriptor,
                                    @JsonProperty("metaItemDescriptors") MetaItemDescriptor[] metaItemDescriptors,

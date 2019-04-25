@@ -22,6 +22,10 @@ package org.openremote.model.attribute;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import jsinterop.annotations.JsConstructor;
+import jsinterop.annotations.JsIgnore;
+import jsinterop.annotations.JsPackage;
+import jsinterop.annotations.JsType;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueType;
@@ -29,6 +33,7 @@ import org.openremote.model.value.ValueType;
 import java.util.Optional;
 import java.util.function.Function;
 
+@JsType(namespace = "Model", name = "AttributeValueDescriptor")
 public class AttributeValueDescriptorImpl implements AttributeValueDescriptor {
 
     protected String name;
@@ -38,6 +43,7 @@ public class AttributeValueDescriptorImpl implements AttributeValueDescriptor {
     @JsonIgnore
     protected Function<Value, Optional<ValidationFailure>> validator;
 
+    @JsIgnore
     @JsonCreator
     public AttributeValueDescriptorImpl(@JsonProperty("name") String name,
                                         @JsonProperty("icon") String icon,
@@ -46,6 +52,7 @@ public class AttributeValueDescriptorImpl implements AttributeValueDescriptor {
         this(name, icon, valueType, metaItemDescriptors, null);
     }
 
+    @JsConstructor
     public AttributeValueDescriptorImpl(String name, String icon, ValueType valueType, MetaItemDescriptor[] metaItemDescriptors, Function<Value, Optional<ValidationFailure>> validator) {
         this.name = name;
         this.icon = icon;

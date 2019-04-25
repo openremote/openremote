@@ -19,6 +19,9 @@
  */
 package org.openremote.model.util;
 
+import jsinterop.annotations.JsMethod;
+import jsinterop.annotations.JsPackage;
+import jsinterop.annotations.JsType;
 import org.openremote.model.asset.AssetDescriptor;
 import org.openremote.model.asset.AssetModelProvider;
 import org.openremote.model.attribute.AttributeDescriptor;
@@ -50,6 +53,7 @@ public class AssetModelUtil {
     /**
      * This should be called by something in the VM at startup to populate the available {@link AssetDescriptor}s.
      */
+    @JsMethod
     public static void setAssetDescriptors(AssetDescriptor[] assetDescriptors) {
         AssetModelUtil.assetDescriptors = assetDescriptors;
     }
@@ -57,6 +61,7 @@ public class AssetModelUtil {
     /**
      * This should be called by something in the VM at startup to populate the available {@link AttributeDescriptor}s.
      */
+    @JsMethod
     public static void setAttributeDescriptors(AttributeDescriptor[] attributeDescriptors) {
         AssetModelUtil.attributeDescriptors = attributeDescriptors;
     }
@@ -64,6 +69,7 @@ public class AssetModelUtil {
     /**
      * This should be called by something in the VM at startup to populate the available {@link AttributeValueDescriptor}s.
      */
+    @JsMethod
     public static void setAttributeValueDescriptors(AttributeValueDescriptor[] attributeValueDescriptors) {
         AssetModelUtil.attributeValueDescriptors = attributeValueDescriptors;
     }
@@ -71,22 +77,27 @@ public class AssetModelUtil {
     /**
      * This should be called by something in the VM at startup to populate the available {@link MetaItemDescriptor}s.
      */
+    @JsMethod
     public static void setMetaItemDescriptors(MetaItemDescriptor[] metaItemDescriptors) {
         AssetModelUtil.metaItemDescriptors = metaItemDescriptors;
     }
 
+    @JsMethod
     public static AssetDescriptor[] getAssetDescriptors() {
         return assetDescriptors;
     }
 
+    @JsMethod
     public static AttributeDescriptor[] getAttributeDescriptors() {
         return attributeDescriptors;
     }
 
+    @JsMethod
     public static AttributeValueDescriptor[] getAttributeValueDescriptors() {
         return attributeValueDescriptors;
     }
 
+    @JsMethod
     public static MetaItemDescriptor[] getMetaItemDescriptors() {
         return metaItemDescriptors;
     }

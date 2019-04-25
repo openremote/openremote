@@ -22,6 +22,9 @@ package org.openremote.model.attribute;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import jsinterop.annotations.JsConstructor;
+import jsinterop.annotations.JsIgnore;
+import jsinterop.annotations.JsType;
 import org.openremote.model.HasUniqueResourceName;
 import org.openremote.model.ValidationFailure;
 import org.openremote.model.value.Value;
@@ -39,6 +42,7 @@ public interface MetaItemDescriptor extends HasUniqueResourceName {
      * Control access to meta items when attributes are read/written. The default is
      * read/write access by regular and super-users only, meta items are considered private.
      */
+    @JsType(namespace = "Model", name = "MetaItemDescriptorAccess")
     class Access {
 
         public static Access ACCESS_PRIVATE = new Access();
@@ -64,10 +68,12 @@ public interface MetaItemDescriptor extends HasUniqueResourceName {
         /**
          * Private access only.
          */
+        @JsIgnore
         public Access() {
             this(false, false, false);
         }
 
+        @JsConstructor
         public Access(boolean restrictedRead, boolean restrictedWrite, boolean publicRead) {
             this.restrictedRead = restrictedRead;
             this.restrictedWrite = restrictedWrite;

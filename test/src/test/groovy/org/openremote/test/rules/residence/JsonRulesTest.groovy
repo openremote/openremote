@@ -78,7 +78,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
                 keycloakDemoSetup.tenantA.realm
                 , false
         )
-        rulesetStorageService.merge(ruleset)
+        ruleset = rulesetStorageService.merge(ruleset)
 
         expect: "the rule engines to become available and be running with asset states inserted"
         conditions.eventually {
@@ -189,7 +189,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         and: "the rule reset fact should have been created"
         conditions.eventually {
-            assert tenantAEngine.facts.getOptional("Test Rule_" + consoleRegistration.id + "_location").isPresent()
+            assert tenantAEngine.facts.getOptional(ruleset.id + "_" + ruleset.version + "_Test Rule_" + consoleRegistration.id + "_location").isPresent()
         }
 
         and: "after a few seconds the rule should not have fired again"
@@ -202,7 +202,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
 
         then: "the rule reset fact should be removed"
         conditions.eventually {
-            assert !tenantAEngine.facts.getOptional("Test Rule_" + consoleRegistration.id + "_location").isPresent()
+            assert !tenantAEngine.facts.getOptional(ruleset.id + "_" + ruleset.version + "_Test Rule_" + consoleRegistration.id + "_location").isPresent()
         }
 
         when: "the console device moves outside the home geofence again (as defined in the rule)"
