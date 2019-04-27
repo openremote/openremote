@@ -3,7 +3,7 @@ import {Console} from "./console";
 import rest from "@openremote/rest";
 import {IconSets} from "@openremote/or-icon";
 import {AxiosRequestConfig} from "axios";
-import {EventProvider, EventProviderStatus, WebSocketEventProvider} from "./event";
+import {EventProvider, EventProviderFactory, EventProviderStatus, WebSocketEventProvider} from "./event";
 import i18next from "i18next";
 import i18nextXhr from "i18next-xhr-backend";
 import {AssetDescriptor, AttributeDescriptor, AttributeValueDescriptor, MetaItemDescriptor, Asset} from "@openremote/model/dist";
@@ -152,7 +152,7 @@ export class AssetModelUtil {
 
 export type EventCallback = (event: OREvent) => any;
 
-export class Manager {
+export class Manager implements EventProviderFactory {
 
     get username() {
         return this._username;
@@ -208,6 +208,10 @@ export class Manager {
 
     get language() {
         return i18next.language;
+    }
+
+    getEventProvider(): EventProvider | undefined {
+        return this.events;
     }
 
     protected static normaliseConfig(config: ManagerConfig): ManagerConfig {
@@ -280,7 +284,7 @@ export class Manager {
     private _managerVersion: string = "";
     private _listeners: EventCallback[] = [];
     private _console!: Console;
-    private _events: EventProvider | null = null;
+    private _events?: EventProvider;
 
     public isManagerSameOrigin(): boolean {
         if (!this.initialised) {
@@ -499,7 +503,8 @@ export class Manager {
 
         switch (this._config.eventProviderType) {
             case EventProviderType.WEBSOCKET:
-                this._events = new WebSocketEventProvider(this._config.managerUrl, (status: EventProviderStatus) => {this.onEventsProviderStatusChanged(status)});
+                this._events = new WebSocketEventProvider(this._config.managerUrl);
+                this._events.subscribeStatusChange((status: EventProviderStatus) => this._onEventProviderStatusChanged(status));
                 connected = await this._events.connect();
                 break;
             case EventProviderType.POLLING:
@@ -513,7 +518,7 @@ export class Manager {
         return connected;
     }
 
-    protected onEventsProviderStatusChanged(status: EventProviderStatus) {
+    protected _onEventProviderStatusChanged(status: EventProviderStatus) {
         switch (status) {
             case EventProviderStatus.DISCONNECTED:
                 this._emitEvent(OREvent.EVENTS_DISCONNECTED);
@@ -787,10 +792,10 @@ export class Manager {
                 this.doEventsSubscriptionInit();
             }
         } else {
-            if (this._events != null) {
+            if (this._events) {
                 this._events.disconnect();
             }
-            this._events = null;
+            this._events = undefined;
         }
     }
 }
