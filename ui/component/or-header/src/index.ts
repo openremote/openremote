@@ -104,7 +104,9 @@ class OrHeader extends LitElement {
                     background: var(--app-drawer-background-color);
                     position: relative;
                   }
-                  
+                   slot[name="desktop-right"] {
+                    margin-left: auto;
+                   }
                   /* Wide layout: when the viewport width is bigger than 460px, layout
                   changes to a wide layout. */
                   @media (min-width: 460px) {

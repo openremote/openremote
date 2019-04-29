@@ -111,15 +111,15 @@ class OrRulesEditor extends translate(i18next)(LitElement) {
                                 <or-rule-when .rule="${this.rule}" .attributeDescriptors="${attributeDescriptors}"></or-rule-when>
                                 <or-rule-then .rule="${this.rule}" .attributeDescriptors="${attributeDescriptors}"></or-rule-then>
                             </div>
-                        ` : `
-                            <div class="content layout vertical center-center">
-                                <h3>Kies links een profiel of maakt een nieuw profiel aan.</h3>
-                                <button @click="${this.createRule}">profiel aanmaken</button>
-                            </div>
-                        `}
+                        ` : ``}
                     
                     </or-body>
-              ` : html``}
+              ` : html`
+                <div class="center-center">
+                    <h3>Kies links een profiel of maakt een nieuw profiel aan.</h3>
+                    <button style="margin: auto;" @click="${this.createRule}">profiel aanmaken</button>
+                </div>
+              `}
           </div>
         `;
     }

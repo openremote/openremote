@@ -10,6 +10,7 @@ import {
     RuleTrigger,
     AttributePredicate
 } from "@openremote/model";
+import {airlines, airports, countries, languages, regions} from "./resources";
 
 export const rulesEditorConfig = {
     controls: {
@@ -19,21 +20,21 @@ export const rulesEditorConfig = {
     options: {
         attributeValueDescriptors: {
             flightProfiles: {},
-            airportIata: {},
-            airlineIata: {},
-            originRegion: {},
+            airportIata: {
+                options: airports
+            },
+            airlineIata: {
+                options: airlines
+            },
+            originRegion: {
+                options: regions
+            },
             passengerCapacity: {},
             languageCodes: {
-                options: [
-                    "Dutch",
-                    "English",
-                ]
+                options: languages
             },
             countryCode: {
-                options: [
-                    "NL",
-                    "GB",
-                ]
+                options: countries
             }
         }
     }

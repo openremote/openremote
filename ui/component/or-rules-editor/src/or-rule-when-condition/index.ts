@@ -74,7 +74,6 @@ class OrRuleWhenCondition extends LitElement {
                             
                             ${this.predicate.name.value && this.predicate.value.match ? html`
                                 ${this.getAttributeConfig(this.predicate.name.value)!.options  ? html`
-                                    ${this.predicate.value.value}
                                     <or-select .options="${this.getAttributeConfig(this.predicate.name.value).options}" .value="${this.predicate.value.value ? this.predicate.value.value : ""}"></or-select>
                                 ` : html`
                                     <or-input type="text" .value="${this.predicate.value.value ? this.predicate.value.value : null}"></or-input>

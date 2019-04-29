@@ -1,6 +1,6 @@
 import {html, LitElement, property, PropertyValues} from 'lit-element';
 import {MDCSelect} from '@material/select';
-
+import i18next from "i18next";
 import {selectStyle} from './style';
 
 class OrSelect extends LitElement {
@@ -28,7 +28,7 @@ class OrSelect extends LitElement {
                <div class="mdc-select">
                       <select id="or-select" @change="${this.onChange}" name="${this.name}" >
                         ${this.options.map((option: string) => {
-                           return html`<option ?selected=${this.value === option} value="${option}">${option}</option>`
+                           return html`<option ?selected=${this.value === option} value="${option}">${i18next.t(option || "")}</option>`
                         })}
                       </select>
                 </div>
