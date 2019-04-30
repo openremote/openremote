@@ -6,7 +6,9 @@ import {
     EventSubscription,
     RenewEventSubscriptions,
     SharedEvent,
-    ReadAssetAttributesEvent
+    ReadAssetAttributesEvent,
+    AssetEvent,
+    ReadAssetEvent
 } from "@openremote/model";
 
 export enum EventProviderStatus {
@@ -30,7 +32,9 @@ export interface EventProvider {
 
     unsubscribe<T extends SharedEvent>(subscriptionId: string): void;
 
-    subscribeAttributeEvents(assetIds: string[], callback: (event: AttributeEvent) => void): Promise<string>;
+    subscribeAssetEvents(assetIds: string[] | null, callback: (event: AssetEvent) => void): Promise<string>;
+
+    subscribeAttributeEvents(assetIds: string[], requestCurrentValues: boolean, callback: (event: AttributeEvent) => void): Promise<string>;
 
     sendEvent<T extends SharedEvent>(event: T): void;
 }
@@ -207,12 +211,51 @@ abstract class EventProviderImpl implements EventProvider {
         this._doSend(event);
     }
 
-    public async subscribeAttributeEvents(assetIds: string[], callback: (event: AttributeEvent) => void): Promise<string> {
+    public async subscribeAssetEvents(assetIds: string[] | null, callback: (event: AssetEvent) => void): Promise<string> {
+        let subscription: EventSubscription<AssetEvent> = {
+            eventType: "asset"
+        };
+
+        if (assetIds && assetIds.length > 0) {
+            subscription.filter = {
+                filterType: "asset-id",
+                assetIds: assetIds
+            };
+        }
+
+        let subscriptionId: string | null = null;
+
+        try {
+            subscriptionId = await this.subscribe(subscription, callback);
+
+            // Get the current state of each asset
+            if (assetIds) {
+                assetIds.forEach(assetId => {
+                    let readEvent: ReadAssetEvent = {
+                        assetId: assetId,
+                        eventType: "read-asset",
+                        subscriptionId: subscriptionId!
+                    };
+                    this.sendEvent(readEvent);
+                });
+            }
+        } catch (e) {
+            console.error("Failed to subscribe to asset events for assets: " + assetIds);
+            if (subscriptionId) {
+                this.unsubscribe(subscriptionId);
+            }
+            throw e;
+        }
+
+        return subscriptionId!;
+    }
+
+    public async subscribeAttributeEvents(assetIds: string[], requestCurrentValues: boolean, callback: (event: AttributeEvent) => void): Promise<string> {
         let subscription: EventSubscription<AttributeEvent> = {
             eventType: "attribute",
             filter: {
-                filterType: "attribute-entity-id",
-                entityIds: assetIds
+                filterType: "asset-id",
+                assetIds: assetIds
             }
         };
 
@@ -222,14 +265,16 @@ abstract class EventProviderImpl implements EventProvider {
             subscriptionId = await this.subscribe(subscription, callback);
 
             // Get the current value of each assets attributes
-            assetIds.forEach(assetId => {
-                let readEvent: ReadAssetAttributesEvent = {
-                    assetId: assetId,
-                    eventType: "read-asset-attributes",
-                    subscriptionId: subscriptionId!
-                };
-                this.sendEvent(readEvent);
-            });
+            if (requestCurrentValues) {
+                assetIds.forEach(assetId => {
+                    let readEvent: ReadAssetAttributesEvent = {
+                        assetId: assetId,
+                        eventType: "read-asset-attributes",
+                        subscriptionId: subscriptionId!
+                    };
+                    this.sendEvent(readEvent);
+                });
+            }
         } catch (e) {
             console.error("Failed to subscribe to attribute events for assets: " + assetIds);
             if (subscriptionId) {
@@ -242,7 +287,7 @@ abstract class EventProviderImpl implements EventProvider {
     }
 
     protected _processNextSubscription() {
-        if (this._status != EventProviderStatus.CONNECTED || this._queuedSubscriptions.length === 0) {
+        if (this._status !== EventProviderStatus.CONNECTED || this._queuedSubscriptions.length === 0) {
             return;
         }
 

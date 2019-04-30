@@ -97,11 +97,11 @@ export class OrMapMarker extends LitElement {
         <or-icon class="marker-icon" icon="${icon || ""}"></or-icon>
     `
 
-    @property({type: Number})
-    public lat: number = 0;
+    @property({type: Number, reflect: true, attribute: true})
+    public lat?: number;
 
-    @property({type: Number})
-    public lng: number = 0;
+    @property({type: Number, reflect: true})
+    public lng?: number;
 
     @property({type: Boolean})
     public visible: boolean = true;

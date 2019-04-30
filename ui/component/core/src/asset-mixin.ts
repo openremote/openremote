@@ -1,7 +1,7 @@
 /* tslint:disable:no-empty */
 import {EventProviderFactory, EventProviderStatus} from "./event";
 import {arraysEqual} from "./util";
-import {AttributeEvent} from "@openremote/model";
+import {AttributeEvent, AssetEvent, AssetEventCause} from "@openremote/model";
 
 declare type Constructor<T = {}> = new (...args: any[]) => T;
 
@@ -10,7 +10,8 @@ export const subscribe = (eventProviderFactory: EventProviderFactory) => <T exte
     return class extends base {
 
         public _connectRequested = false;
-        public _subscriptionId?: string;
+        public _assetSubscriptionId?: string;
+        public _attributeSubscriptionId?: string;
         public _assetIds?: string[];
         public _statusCallback = (status: EventProviderStatus) => this._onEventProviderStatusChanged(status);
 
@@ -35,7 +36,11 @@ export const subscribe = (eventProviderFactory: EventProviderFactory) => <T exte
         }
 
         public connect() {
-            if (this._connectRequested || !eventProviderFactory.getEventProvider()) {
+            if (!eventProviderFactory.getEventProvider()) {
+                console.log("No event provider available so cannot subscribe");
+                return;
+            }
+            if (this._connectRequested) {
                 return;
             }
 
@@ -45,7 +50,7 @@ export const subscribe = (eventProviderFactory: EventProviderFactory) => <T exte
         }
 
         public async _doConnect() {
-            if (!this._connectRequested || this._subscriptionId) {
+            if (!this._connectRequested || this._attributeSubscriptionId) {
                 return;
             }
 
@@ -57,7 +62,8 @@ export const subscribe = (eventProviderFactory: EventProviderFactory) => <T exte
                 return;
             }
 
-            this._subscriptionId = await eventProviderFactory.getEventProvider()!.subscribeAttributeEvents(this._assetIds, (event) => this._onAttributeEvent(event));
+            this._assetSubscriptionId = await eventProviderFactory.getEventProvider()!.subscribeAssetEvents(this._assetIds, (event) => this._onAssetEvent(event));
+            this._attributeSubscriptionId = await eventProviderFactory.getEventProvider()!.subscribeAttributeEvents(this._assetIds, false, (event) => this._onAttributeEvent(event));
         }
 
         public disconnect() {
@@ -70,15 +76,17 @@ export const subscribe = (eventProviderFactory: EventProviderFactory) => <T exte
         }
 
         public _doDisconnect() {
-            if (!this._subscriptionId) {
+            if (!this._assetSubscriptionId) {
                 return;
             }
 
-            eventProviderFactory.getEventProvider()!.unsubscribe(this._subscriptionId);
-            this._subscriptionId = undefined;
+            eventProviderFactory.getEventProvider()!.unsubscribe(this._assetSubscriptionId);
+            eventProviderFactory.getEventProvider()!.unsubscribe(this._attributeSubscriptionId!);
+            this._assetSubscriptionId = undefined;
+            this._attributeSubscriptionId = undefined;
         }
 
-        public set assetIds(assetIds: string[]) {
+        public set assetIds(assetIds: string[] | undefined) {
             if (arraysEqual(this._assetIds, assetIds)) {
                 return;
             }
@@ -100,14 +108,25 @@ export const subscribe = (eventProviderFactory: EventProviderFactory) => <T exte
         }
 
         public _onAttributeEvent(event: AttributeEvent) {
-            if (!this._connectRequested || !this._subscriptionId) {
+            if (!this._connectRequested || !this._assetSubscriptionId) {
                 return;
             }
 
             this.onAttributeEvent(event);
         }
 
+        public _onAssetEvent(event: AssetEvent) {
+            if (!this._connectRequested || !this._assetSubscriptionId) {
+                return;
+            }
+
+            this.onAssetEvent(event);
+        }
+
         // noinspection JSUnusedLocalSymbols
         public onAttributeEvent(event: AttributeEvent) {}
+
+        // noinspection JSUnusedLocalSymbols
+        public onAssetEvent(event: AssetEvent) {}
     };
 };

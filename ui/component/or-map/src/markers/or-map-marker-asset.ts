@@ -1,38 +1,41 @@
 import {customElement, property, PropertyValues} from "lit-element";
 import {OrMapMarker} from "./or-map-marker";
-import rest from "@openremote/rest";
-import {Asset, AssetAttribute, GeoJSONPoint} from "@openremote/model";
-import {GenericAxiosResponse} from "axios";
+import {AttributeEvent, Attribute, AttributeType, GeoJSONPoint, AssetType, AssetEvent, AssetEventCause} from "@openremote/model";
+import {subscribe} from "@openremote/core/dist/asset-mixin";
+import openremote, {AssetModelUtil} from "@openremote/core";
 
 @customElement("or-map-marker-asset")
-export class OrMapMarkerAsset extends OrMapMarker {
+export class OrMapMarkerAsset extends subscribe(openremote)(OrMapMarker) {
 
-    @property({type: String})
+    @property({type: String, reflect: true, attribute: true})
     public asset?: string;
 
     public assetTypeAsIcon: boolean = true;
 
     constructor() {
         super();
+        this.visible = false;
     }
 
-    public connectedCallback(): void {
-        super.connectedCallback();
-    }
-
-    public disconnectedCallback(): void {
-        super.disconnectedCallback();
-    }
-
-    protected firstUpdated(_changedProperties: PropertyValues): void {
-        if (_changedProperties.has("asset")) {
-            this.refreshMarker();
+    protected set type(type: string | undefined) {
+        if (!type) {
+            this.visible = false;
+            return;
         }
+
+        const descriptor = AssetModelUtil.getAssetDescriptor(type);
+        const icon = descriptor ? descriptor.icon : AssetType.THING.icon;
+        this.icon = icon;
+        this.visible = true;
     }
 
     protected shouldUpdate(_changedProperties: PropertyValues): boolean {
         if (_changedProperties.has("asset")) {
-            this.refreshMarker();
+
+            this.lat = undefined;
+            this.lng = undefined;
+            this.type = undefined;
+            this.assetIds = this.asset && this.asset.length > 0 ? [this.asset] : undefined;
 
             if (Object.keys(_changedProperties).length === 1) {
                 return false;
@@ -41,47 +44,34 @@ export class OrMapMarkerAsset extends OrMapMarker {
         return super.shouldUpdate(_changedProperties);
     }
 
-    protected refreshMarker() {
+    public onAttributeEvent(event: AttributeEvent) {
+        if (event.attributeState!.attributeRef!.attributeName !== AttributeType.LOCATION.attributeName) {
+            return;
+        }
 
-        if (this.asset && this.asset.length > 0) {
-            this.getAsset().then((asset) => {
-                const attrs = asset.attributes as any;
-                const attr: AssetAttribute | undefined = attrs.location;
+        this._updateLocation(event.attributeState!.value as GeoJSONPoint);
 
-                if (!attr) {
-                    this.visible = false;
-                    return;
-                }
+    }
 
-                const location: GeoJSONPoint | null = attr.value as GeoJSONPoint;
-
-                if (!location) {
-                    this.visible = false;
-                    return;
-                }
-
-                // Model d.ts is clearly not perfect need to sort out Jackson annotations
-                this.lat = (location.coordinates as any)[1] || 0;
-                this.lng = (location.coordinates as any)[0] || 0;
-                if (this.assetTypeAsIcon) {
-                    if (asset.type) {
-                        // TODO: Get hold of icon from asset type
-                        this.icon = "office-building";
-                    } else {
-                        this.icon = undefined;
-                    }
-                }
-                this.visible = true;
-            }).catch(() => {
-                this.visible = false;
-            });
-        } else {
-            this.visible = false;
+    public onAssetEvent(event: AssetEvent) {
+        switch (event.cause) {
+            case AssetEventCause.READ:
+                const attr = event.asset && event.asset.attributes && event.asset.attributes.hasOwnProperty("location") ? event.asset.attributes.location as Attribute : null;
+                this._updateLocation(attr ? attr.value as GeoJSONPoint : null);
+            case AssetEventCause.CREATE:
+            case AssetEventCause.UPDATE:
+                this.type = event.asset!.type;
+                break;
+            case AssetEventCause.DELETE:
+                this.type = undefined;
+                this.lat = undefined;
+                this.lng = undefined;
+                break;
         }
     }
 
-    protected async getAsset(): Promise<Asset> {
-        const response: GenericAxiosResponse<Asset> = await rest.api.AssetResource.get(this.asset!);
-        return response.data;
+    protected _updateLocation(location: GeoJSONPoint | null) {
+        this.lat = location && location.coordinates ? (location.coordinates as any)[1] : undefined;
+        this.lng = location && location.coordinates ? (location.coordinates as any)[0] : undefined;
     }
 }

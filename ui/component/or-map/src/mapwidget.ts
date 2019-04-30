@@ -174,7 +174,9 @@ export class MapWidget {
     }
 
     public addMarker(marker: OrMapMarker) {
-        this._updateMarkerElement(marker, true);
+        if (marker.lat && marker.lng) {
+            this._updateMarkerElement(marker, true);
+        }
     }
 
     public removeMarker(marker: OrMapMarker) {
@@ -189,7 +191,15 @@ export class MapWidget {
         switch (prop) {
             case "lat":
             case "lng":
-                this._updateMarkerPosition(marker);
+                if (marker.lat && marker.lng) {
+                    if (marker._actualMarkerElement) {
+                        this._updateMarkerPosition(marker);
+                    } else {
+                        this._updateMarkerElement(marker, true);
+                    }
+                } else if (marker._actualMarkerElement) {
+                    this._updateMarkerElement(marker, false);
+                }
                 break;
         }
     }
@@ -199,13 +209,13 @@ export class MapWidget {
             case Type.RASTER:
                 const m: MarkerJS | undefined = this._markersJs.get(marker);
                 if (m) {
-                    m.setLatLng([marker.lat, marker.lng]);
+                    m.setLatLng([marker.lat!, marker.lng!]);
                 }
                 break;
             case Type.VECTOR:
                 const mGl: MarkerGL | undefined = this._markersGl.get(marker);
                 if (mGl) {
-                    mGl.setLngLat([marker.lng, marker.lat]);
+                    mGl.setLngLat([marker.lng!, marker.lat!]);
                 }
                 break;
         }
@@ -227,7 +237,7 @@ export class MapWidget {
                     const elem = marker._createMarkerElement();
                     if (elem) {
                         const icon = L.divIcon({html: elem.outerHTML, className: "or-marker-raster"});
-                        m = L.marker([marker.lat, marker.lng], {icon: icon, clickable: marker.interactive});
+                        m = L.marker([marker.lat!, marker.lng!], {icon: icon, clickable: marker.interactive});
                         m.addTo(this._mapJs!);
                         marker._actualMarkerElement = m.getElement() ? m.getElement().firstElementChild as HTMLDivElement : undefined;
                         if (marker.interactive) {
@@ -255,7 +265,7 @@ export class MapWidget {
                             element: elem,
                             anchor: "top-left"
                         })
-                            .setLngLat([marker.lng, marker.lat])
+                            .setLngLat([marker.lng!, marker.lat!])
                             .addTo(this._mapGl!);
 
                         this._markersGl.set(marker, mGl);

@@ -8,7 +8,7 @@
     "modelWatch": "node ../../model-watch.js",
     "build": "npx tsc -b && npx cross-env NODE_ENV=production webpack",
     "serve": "npx webpack-dev-server",
-    "watch": "node ../../model-build.js && npx tsc -b -w",
+    "watch": "npx tsc -b -w",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "OpenRemote",
