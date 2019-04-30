@@ -33,10 +33,7 @@ import org.openremote.app.client.interop.value.ObjectValueMapper;
 import org.openremote.app.client.simulator.Simulator;
 import org.openremote.app.client.widget.FormButton;
 import org.openremote.model.Constants;
-import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.asset.AssetResource;
-import org.openremote.model.asset.AssetType;
-import org.openremote.model.asset.ReadAssetAttributesEvent;
+import org.openremote.model.asset.*;
 import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.asset.agent.AgentResource;
 import org.openremote.model.asset.agent.AgentStatusEvent;
@@ -190,7 +187,7 @@ public class AssetViewActivity
         if (subscribe) {
             environment.getEventService().subscribe(
                 AttributeEvent.class,
-                new AttributeEvent.EntityIdFilter(asset.getId())
+                new AssetEvent.AssetIdFilter(asset.getId())
             );
         } else {
             environment.getEventService().unsubscribe(

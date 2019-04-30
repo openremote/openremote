@@ -372,7 +372,7 @@ public class ManagerKeycloakIdentityProvider extends KeycloakIdentityProvider im
         getRealms(clientRequestInfo).create(realmRepresentation);
         createClientApplication(clientRequestInfo, realmRepresentation.getRealm());
 
-        publishModification(PersistenceEvent.Cause.INSERT, tenant);
+        publishModification(PersistenceEvent.Cause.CREATE, tenant);
     }
 
     @Override

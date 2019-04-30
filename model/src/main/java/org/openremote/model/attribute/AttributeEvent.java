@@ -19,11 +19,9 @@
  */
 package org.openremote.model.attribute;
 
-import org.openremote.model.event.shared.EventFilter;
 import org.openremote.model.event.shared.SharedEvent;
 import org.openremote.model.value.Value;
 
-import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -63,45 +61,6 @@ public class AttributeEvent extends SharedEvent {
         SENSOR
     }
 
-    public static class EntityIdFilter extends EventFilter<AttributeEvent> {
-
-        public static final String FILTER_TYPE = "attribute-entity-id";
-
-        protected String[] entityIds = new String[0];
-
-        protected EntityIdFilter() {
-        }
-
-        public EntityIdFilter(String... entityIds) {
-            this.entityIds = entityIds;
-        }
-
-        public String[] getEntityIds() {
-            return entityIds;
-        }
-
-        public void setEntityIds(String[] entityIds) {
-            this.entityIds = entityIds;
-        }
-
-        @Override
-        public String getFilterType() {
-            return FILTER_TYPE;
-        }
-
-        @Override
-        public boolean apply(AttributeEvent event) {
-            return Arrays.asList(entityIds).contains(event.getEntityId());
-        }
-
-        @Override
-        public String toString() {
-            return getClass().getSimpleName() + "{" +
-                "entityIds='" + Arrays.toString(entityIds) + '\'' +
-                '}';
-        }
-    }
-
     protected AttributeState attributeState;
 
     protected AttributeEvent() {
@@ -113,6 +72,11 @@ public class AttributeEvent extends SharedEvent {
 
     public AttributeEvent(String entityId, String attributeName) {
         this(new AttributeState(new AttributeRef(entityId, attributeName)));
+    }
+
+    public AttributeEvent(String entityId, String attributeName, boolean deleted) {
+        this(new AttributeState(new AttributeRef(entityId, attributeName)));
+        attributeState.deleted = deleted;
     }
 
     public AttributeEvent(String entityId, String attributeName, Value value, long timestamp) {

@@ -37,6 +37,7 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> {
     public enum Include {
         ALL_EXCEPT_PATH_AND_ATTRIBUTES,
         ALL_EXCEPT_PATH,
+        ALL_EXCEPT_ATTRIBUTES,
         ONLY_ID_AND_NAME,
         ONLY_ID_AND_NAME_AND_ATTRIBUTES,
         ONLY_ID_AND_NAME_AND_ATTRIBUTE_NAMES,

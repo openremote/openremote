@@ -34,28 +34,16 @@ import java.util.Arrays;
  * If no attribute names and only an asset identifier are provided, all attributes
  * of the asset, accessible by the client, will be read/returned.
  */
-public class ReadAssetAttributesEvent extends SharedEvent {
-
-    protected String assetId;
+public class ReadAssetAttributesEvent extends ReadAssetEvent {
 
     protected String[] attributeNames;
-
-    protected String subscriptionId;
 
     protected ReadAssetAttributesEvent() {
     }
 
     public ReadAssetAttributesEvent(String assetId, String... attributeNames) {
-        this.assetId = assetId;
+        super(assetId);
         this.attributeNames = attributeNames;
-    }
-
-    public String getAssetId() {
-        return assetId;
-    }
-
-    public void setAssetId(String assetId) {
-        this.assetId = assetId;
     }
 
     public String[] getAttributeNames() {
@@ -66,19 +54,12 @@ public class ReadAssetAttributesEvent extends SharedEvent {
         this.attributeNames = attributeNames;
     }
 
-    public String getSubscriptionId() {
-        return subscriptionId;
-    }
-
-    public void setSubscriptionId(String subscriptionId) {
-        this.subscriptionId = subscriptionId;
-    }
-
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
             "assetId='" + assetId + '\'' +
             ", attributeNames=" + Arrays.toString(attributeNames) +
+            ", subscriptionId='" + subscriptionId + '\'' +
             '}';
     }
 }

@@ -24,8 +24,8 @@ import org.openremote.manager.asset.AssetProcessingService
 import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.setup.SetupService
 import org.openremote.manager.setup.builtin.ManagerDemoSetup
+import org.openremote.model.asset.AssetEvent
 import org.openremote.model.attribute.MetaItemType
-import org.openremote.model.asset.LocationEvent
 import org.openremote.model.asset.agent.AgentStatusEvent
 import org.openremote.model.asset.agent.ConnectionStatus
 import org.openremote.model.attribute.AttributeEvent
@@ -132,46 +132,46 @@ class ClientEventTest extends Specification implements ManagerContainerTrait, Gw
             assert collectedSharedEvents.isEmpty()
         }
 
-        when: "a subscription is made to the location event"
-        clientEventService.subscribe(LocationEvent.class)
+        when: "a subscription is made to the attribute event"
+        clientEventService.subscribe(AttributeEvent.class, new AssetEvent.AssetIdFilter(managerDemoSetup.thingId))
 
         and: "an assets location is changed"
         def asset = assetStorageService.find(managerDemoSetup.thingId, true)
         asset.setCoordinates(new GeoJSONPoint(120.1d, 50.43d))
         asset = assetStorageService.merge(asset)
 
-        then: "the location event should have been received"
+        then: "the attribute event should have been received"
         conditions.eventually {
             assert collectedSharedEvents.size() == 1
-            assert collectedSharedEvents[0] instanceof LocationEvent
-            assert (collectedSharedEvents[0] as LocationEvent).assetId == managerDemoSetup.thingId
-            assert (collectedSharedEvents[0] as LocationEvent).coordinates.x == 120.1d
-            assert (collectedSharedEvents[0] as LocationEvent).coordinates.y == 50.43d
+            assert collectedSharedEvents[0] instanceof AttributeEvent
+            assert (collectedSharedEvents[0] as AttributeEvent).entityId == managerDemoSetup.thingId
+            assert (collectedSharedEvents[0] as AttributeEvent).value.flatMap{GeoJSONPoint.fromValue(it)}.map{it.x}.orElse(null) == 120.1d
+            assert (collectedSharedEvents[0] as AttributeEvent).value.flatMap{GeoJSONPoint.fromValue(it)}.map{it.y}.orElse(null) == 50.43d
         }
 
         when: "the assets location is set to null"
         asset.setCoordinates(null)
         asset = assetStorageService.merge(asset)
 
-        then: "the location event should have been received with null coordinates"
+        then: "the attribute event should have been received with null coordinates"
         conditions.eventually {
             assert collectedSharedEvents.size() == 2
-            assert collectedSharedEvents[1] instanceof LocationEvent
-            assert (collectedSharedEvents[1] as LocationEvent).assetId == managerDemoSetup.thingId
-            assert (collectedSharedEvents[1] as LocationEvent).coordinates == null
+            assert collectedSharedEvents[1] instanceof AttributeEvent
+            assert (collectedSharedEvents[1] as AttributeEvent).entityId == managerDemoSetup.thingId
+            assert !(collectedSharedEvents[1] as AttributeEvent).value.isPresent()
         }
 
         when: "the location is changed"
         asset.setCoordinates(new GeoJSONPoint(-10.11d, -50.233d))
         asset = assetStorageService.merge(asset)
 
-        then: "the location event should have been received"
+        then: "the attribute event should have been received"
         conditions.eventually {
             assert collectedSharedEvents.size() == 3
-            assert collectedSharedEvents[2] instanceof LocationEvent
-            assert (collectedSharedEvents[2] as LocationEvent).assetId == managerDemoSetup.thingId
-            assert (collectedSharedEvents[2] as LocationEvent).coordinates.x == -10.11d
-            assert (collectedSharedEvents[2] as LocationEvent).coordinates.y == -50.233d
+            assert collectedSharedEvents[2] instanceof AttributeEvent
+            assert (collectedSharedEvents[2] as AttributeEvent).entityId == managerDemoSetup.thingId
+            assert (collectedSharedEvents[2] as AttributeEvent).value.flatMap{GeoJSONPoint.fromValue(it)}.map{it.x}.orElse(null) == -10.11d
+            assert (collectedSharedEvents[2] as AttributeEvent).value.flatMap{GeoJSONPoint.fromValue(it)}.map{it.y}.orElse(null) == -50.233d
         }
 
         when: "the location is set with the same value"
@@ -183,11 +183,11 @@ class ClientEventTest extends Specification implements ManagerContainerTrait, Gw
         assert collectedSharedEvents.size() == 3
 
         when: "the subscription is removed"
-        clientEventService.unsubscribe(LocationEvent.class)
+        clientEventService.unsubscribe(AttributeEvent.class)
         collectedSharedEvents.clear()
 
         and: "a new attribute event subscription is added"
-        clientEventService.subscribe(AttributeEvent.class, new AttributeEvent.EntityIdFilter(managerDemoSetup.thingId))
+        clientEventService.subscribe(AttributeEvent.class, new AssetEvent.AssetIdFilter(managerDemoSetup.thingId))
 
         and: "an internal attribute event subscription is made"
         List<AttributeEvent> internalReceivedEvents = []
@@ -196,7 +196,7 @@ class ClientEventTest extends Specification implements ManagerContainerTrait, Gw
                 false,
                 new EventSubscription<>(
                         AttributeEvent.class,
-                        new AttributeEvent.EntityIdFilter(managerDemoSetup.thingId),
+                        new AssetEvent.AssetIdFilter(managerDemoSetup.thingId),
                         { triggeredEventSubscription ->
                             internalReceivedEvents.add(triggeredEventSubscription.events[0] as AttributeEvent)
                         }

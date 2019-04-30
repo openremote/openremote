@@ -283,7 +283,7 @@ public class ORConsoleGeofenceAssetAdapter extends RouteBuilder implements Geofe
         withLock(getClass().getSimpleName() + "::processAssetChange", () -> {
             switch (persistenceEvent.getCause()) {
 
-                case INSERT:
+                case CREATE:
                 case UPDATE:
 
                     if (isLinkedToORConsoleGeofenceAdapter(asset)) {

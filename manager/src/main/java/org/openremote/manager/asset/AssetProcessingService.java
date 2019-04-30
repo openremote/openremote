@@ -160,15 +160,24 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
         clientEventService = container.getService(ClientEventService.class);
 
         clientEventService.addSubscriptionAuthorizer((auth, subscription) -> {
-            if (!subscription.isEventType(AttributeEvent.class)) {
+            if (!subscription.isEventType(AttributeEvent.class) && !subscription.isEventType(AssetEvent.class)) {
                 return false;
             }
 
-            // Always must have a filter, as you can't subscribe to ALL asset attribute events
-            if (subscription.getFilter() != null && subscription.getFilter() instanceof AttributeEvent.EntityIdFilter) {
-                AttributeEvent.EntityIdFilter filter = (AttributeEvent.EntityIdFilter) subscription.getFilter();
+            // Only Asset ID filters allowed
+            if (subscription.getFilter() != null && !(subscription.getFilter() instanceof  AssetEvent.AssetIdFilter)) {
+                return false;
+            }
 
-                // Superuser can get attribute events for any asset
+            // Attribute event subscriptions must have a filter, as you can't subscribe to ALL asset attribute events
+            if (subscription.isEventType(AttributeEvent.class) && subscription.getFilter() == null) {
+                return false;
+            }
+
+            if (subscription.getFilter() != null) {
+                AssetEvent.AssetIdFilter filter = (AssetEvent.AssetIdFilter) subscription.getFilter();
+
+                // Superuser can get events for any asset
                 if (auth.isSuperUser())
                     return true;
 
@@ -180,18 +189,18 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                 boolean isRestrictedUser = identityService.getIdentityProvider().isRestrictedUser(auth.getUserId());
 
                 // Client can subscribe to several assets
-                for (String assetId : filter.getEntityIds()) {
+                for (String assetId : filter.getAssetIds()) {
                     Asset asset = assetStorageService.find(assetId);
                     // If the asset doesn't exist, subscription must fail
                     if (asset == null)
                         return false;
                     if (isRestrictedUser) {
-                        // Restricted users can only get attribute events for their linked assets
+                        // Restricted users can only get events for their linked assets
                         if (!assetStorageService.isUserAsset(auth.getUserId(), assetId))
                             return false;
                         // TODO Restricted clients should only receive events for RESTRICTED_READ attributes!
                     } else {
-                        // Regular users can only get attribute events for assets in their realm
+                        // Regular users can only get events for assets in their realm
                         if (!asset.getRealm().equals(auth.getAuthenticatedRealm()))
                             return false;
                     }

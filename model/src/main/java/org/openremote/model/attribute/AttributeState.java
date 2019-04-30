@@ -37,6 +37,7 @@ public class AttributeState {
 
     protected AttributeRef attributeRef;
     protected Value value;
+    protected boolean deleted;
 
     protected AttributeState() {
     }
@@ -75,10 +76,17 @@ public class AttributeState {
         return Optional.ofNullable(value);
     }
 
+    public boolean isDeleted() {
+        return deleted;
+    }
+
     public ObjectValue toObjectValue() {
         ObjectValue objectValue = Values.createObject();
         objectValue.put("attributeRef", getAttributeRef().toArrayValue());
         getValue().ifPresent(v -> objectValue.put("value", value));
+        if (deleted) {
+            objectValue.put("deleted", Values.create(true));
+        }
         return objectValue;
     }
 
@@ -87,6 +95,7 @@ public class AttributeState {
         return getClass().getSimpleName() + "{" +
             "attributeRef=" + attributeRef +
             ", value=" + value +
+            ", deleted=" + deleted +
             '}';
     }
 

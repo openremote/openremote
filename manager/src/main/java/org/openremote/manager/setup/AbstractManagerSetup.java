@@ -33,6 +33,7 @@ import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.attribute.*;
+import org.openremote.model.geo.GeoJSONPoint;
 import org.openremote.model.value.Values;
 
 import java.time.DayOfWeek;
@@ -74,7 +75,7 @@ public abstract class AbstractManagerSetup implements Setup {
 
     // ################################ Demo apartment with complex scenes ###################################
 
-    protected Asset createDemoApartment(Asset parent, String name) {
+    protected Asset createDemoApartment(Asset parent, String name, GeoJSONPoint location) {
         Asset apartment = new Asset(name, RESIDENCE, parent);
         apartment.setAttributes(
             new AssetAttribute("alarmEnabled", AttributeValueType.BOOLEAN)
@@ -111,7 +112,9 @@ public abstract class AbstractManagerSetup implements Setup {
                     new MetaItem(READ_ONLY, Values.create(true)),
                     new MetaItem(RULE_STATE, Values.create(true)),
                     new MetaItem(SHOW_ON_DASHBOARD, Values.create(true))
-                )
+                ),
+            new AssetAttribute(AttributeType.LOCATION, location.toValue())
+                    .setMeta(new MetaItem(ACCESS_RESTRICTED_READ, Values.create(true)))
             /* TODO Unused, can be removed? Port schedule prediction from DRL...
             new AssetAttribute("autoSceneSchedule", AttributeValueType.BOOLEAN)
                 .setMeta(

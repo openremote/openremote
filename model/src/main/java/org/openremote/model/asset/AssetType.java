@@ -45,15 +45,15 @@ public enum AssetType implements AssetDescriptor {
 
     FLOOR(ASSET_NAMESPACE + ":floor", "server"),
 
-    RESIDENCE(ASSET_NAMESPACE + ":residence", "cubes"),
+    RESIDENCE(ASSET_NAMESPACE + ":residence", "home"),
 
-    ROOM(ASSET_NAMESPACE + ":room", "cube"),
+    ROOM(ASSET_NAMESPACE + ":room", "office"),
 
     AGENT(ASSET_NAMESPACE + ":agent", "cogs"),
 
-    CONSOLE(ASSET_NAMESPACE + ":console", "mobile-alt"),
+    CONSOLE(ASSET_NAMESPACE + ":console", "cellphone-android"),
 
-    THING(ASSET_NAMESPACE + ":thing", "cog");
+    THING(ASSET_NAMESPACE + ":thing", "settings");
 
     final protected String type;
     final protected String icon;

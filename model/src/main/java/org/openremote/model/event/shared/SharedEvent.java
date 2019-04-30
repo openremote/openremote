@@ -22,9 +22,10 @@ package org.openremote.model.event.shared;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import org.openremote.model.asset.AssetEvent;
 import org.openremote.model.asset.AssetTreeModifiedEvent;
-import org.openremote.model.asset.LocationEvent;
 import org.openremote.model.asset.ReadAssetAttributesEvent;
+import org.openremote.model.asset.ReadAssetEvent;
 import org.openremote.model.asset.agent.AgentStatusEvent;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.event.Event;
@@ -41,13 +42,14 @@ import org.openremote.model.syslog.SyslogEvent;
     // Events used on client and server (serializable)
     @JsonSubTypes.Type(value = SyslogEvent.class, name = "syslog"),
     @JsonSubTypes.Type(value = AttributeEvent.class, name = "attribute"),
+    @JsonSubTypes.Type(value = AssetEvent.class, name = "asset"),
     @JsonSubTypes.Type(value = ReadAssetAttributesEvent.class, name = "read-asset-attributes"),
+    @JsonSubTypes.Type(value = ReadAssetEvent.class, name = "read-asset"),
     @JsonSubTypes.Type(value = AssetTreeModifiedEvent.class, name = "asset-tree-modified"),
     @JsonSubTypes.Type(value = SimulatorState.class, name = "simulator-state"),
     @JsonSubTypes.Type(value = RequestSimulatorState.class, name = "request-simulator-state"),
     @JsonSubTypes.Type(value = AgentStatusEvent.class, name = "agent-status"),
     @JsonSubTypes.Type(value = RulesEngineStatusEvent.class, name = "rules-engine-status"),
-    @JsonSubTypes.Type(value = LocationEvent.class, name = "location"),
     @JsonSubTypes.Type(value = RulesetChangedEvent.class, name = "ruleset-changed")
 })
 @JsonTypeInfo(

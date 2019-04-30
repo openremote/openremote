@@ -22,7 +22,7 @@ package org.openremote.model.event.shared;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.asset.AssetEvent;
 import org.openremote.model.simulator.SimulatorState;
 import org.openremote.model.syslog.SyslogEvent;
 
@@ -32,7 +32,7 @@ import org.openremote.model.syslog.SyslogEvent;
 @JsonSubTypes({
     @JsonSubTypes.Type(value = TenantFilter.class, name = TenantFilter.FILTER_TYPE),
     @JsonSubTypes.Type(value = SyslogEvent.LevelCategoryFilter.class, name = SyslogEvent.LevelCategoryFilter.FILTER_TYPE),
-    @JsonSubTypes.Type(value = AttributeEvent.EntityIdFilter.class, name = AttributeEvent.EntityIdFilter.FILTER_TYPE),
+    @JsonSubTypes.Type(value = AssetEvent.AssetIdFilter.class, name = AssetEvent.AssetIdFilter.FILTER_TYPE),
     @JsonSubTypes.Type(value = SimulatorState.ConfigurationFilter.class, name = SimulatorState.ConfigurationFilter.FILTER_TYPE)
 })
 @JsonTypeInfo(

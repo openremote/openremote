@@ -33,6 +33,7 @@ import org.openremote.app.client.mvp.AcceptsView;
 import org.openremote.app.client.mvp.AppActivity;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
+import org.openremote.model.asset.AssetEvent;
 import org.openremote.model.asset.AssetResource;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeValueDescriptor;
@@ -180,7 +181,7 @@ public class MapActivity extends AssetBrowsingActivity<MapPlace> implements MapV
                     showAssetInfoItems();
                     environment.getEventService().subscribe(
                         AttributeEvent.class,
-                        new AttributeEvent.EntityIdFilter(asset.getId())
+                        new AssetEvent.AssetIdFilter(asset.getId())
                     );
                 }
             });
