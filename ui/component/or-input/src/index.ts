@@ -5,10 +5,13 @@ import {orInputStyle} from './style';
 class OrInput extends LitElement {
 
     @property({type: String})
-    type: string = 'text';
+    public type: string = "text";
 
     @property({type: String})
-    name: string = '';
+    public name: string = "";
+
+    @property({type: Boolean})
+    public required: boolean = false;
 
     @property({type: String})
     public value: string = "";
@@ -23,7 +26,7 @@ class OrInput extends LitElement {
     protected render() {
 
         return html`
-             <input class="or-input" type="${this.type}" name="${this.name}" @change="${this.onChange}" .value="${this.value}" />
+             <input class="or-input" ?required="${this.required}" type="${this.type}" name="${this.name}" @change="${this.onChange}" .value="${this.value}" />
         `;
     }
 

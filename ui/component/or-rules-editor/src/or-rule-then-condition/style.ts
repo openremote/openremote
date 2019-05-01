@@ -1,6 +1,6 @@
 import {css} from 'lit-element';
 
-
+// language=CSS
 export const style = css`
     :host {
         display: block;
@@ -20,7 +20,20 @@ export const style = css`
         margin-right: 20px;
     }
     
-    .rule-container > *:last-child {
+   .rule-container > [hidden] {
+        display: none;
+   }
+   
+   .rule-container > or-select-asset-action {
+        margin-right: 10px;
+   }
+   
+   .rule-container > or-select-asset-action or-icon {
+        margin-top: 7px;
+   }
+   
+   .rule-container > *:last-child {
         margin-right: 0;
-    }
+   }
+    
 `;

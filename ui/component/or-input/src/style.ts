@@ -14,4 +14,6 @@ export const orInputStyle = css`
         border-bottom: 2px solid #d5d5d5;
         background-color: #f2f2f2;
     }
+
+    input:focus:required:invalid { border-bottom: 2px solid red;}
 `;

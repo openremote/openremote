@@ -12,6 +12,9 @@ class OrSelectAssetAttribute extends LitElement {
     @property({type: String})
     public assetType: string = "";
 
+    @property({type: String})
+    public type: "when" | "then" = "when";
+
     @property({type: Array})
     public attributeDescriptors?: AttributeDescriptor[] = attributeDescriptors;
 
@@ -72,7 +75,13 @@ class OrSelectAssetAttribute extends LitElement {
         }
 
         this.options = this.attributeDescriptors.filter((attributeDescriptor) => {
-            return attributeDescriptor.attributeName && rulesEditorConfig.options.attributeValueDescriptors.hasOwnProperty(attributeDescriptor.attributeName);
+            if (this.type === "when") {
+                return attributeDescriptor.attributeName && rulesEditorConfig.options.when.attributeValueDescriptors.hasOwnProperty(attributeDescriptor.attributeName);
+            }
+
+            if (this.type === "then") {
+                return attributeDescriptor.attributeName && rulesEditorConfig.options.then.attributeValueDescriptors.hasOwnProperty(attributeDescriptor.attributeName);
+            }
         });
 
     }

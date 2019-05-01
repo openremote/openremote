@@ -65,18 +65,18 @@ class OrRuleWhenCondition extends LitElement {
                     </or-select-asset-type>
                     
                     ${this.predicate.name ? html`
-                        <or-select-asset-attribute value="${this.predicate.name.value}"></or-select-asset-attribute>
+                        <or-select-asset-attribute type="when" value="${this.predicate.name.value}"></or-select-asset-attribute>
                     
                         ${this.predicate.value && this.predicate.value.predicateType === "string" ? html`
                             ${this.predicate.name.value ? html`
-                                <or-select-operator .type="${this.getAttributeDescriptor(this.predicate.name.value)!.valueDescriptor}" .value="${this.predicate.value.match}"></or-select-operator>
+                                <or-select-operator .type="${this.getAttributeDescriptor(this.predicate.name.value)!.valueDescriptor!.valueType}" .value="${this.predicate.value.match}"></or-select-operator>
                             ` : ``}
                             
                             ${this.predicate.name.value && this.predicate.value.match ? html`
                                 ${this.getAttributeConfig(this.predicate.name.value)!.options  ? html`
                                     <or-select .options="${this.getAttributeConfig(this.predicate.name.value).options}" .value="${this.predicate.value.value ? this.predicate.value.value : ""}"></or-select>
                                 ` : html`
-                                    <or-input type="text" .value="${this.predicate.value.value ? this.predicate.value.value : null}"></or-input>
+                                    <or-input required type="${this.getAttributeDescriptor(this.predicate.name.value)!.valueDescriptor!.valueType}" .value="${this.predicate.value.value ? this.predicate.value.value : null}"></or-input>
                                 `}
                             ` : ``}
                             
@@ -140,7 +140,7 @@ class OrRuleWhenCondition extends LitElement {
     }
 
     private getAttributeConfig(name: string) {
-        const attributeValueDescriptors: any = rulesEditorConfig.options.attributeValueDescriptors;
+        const attributeValueDescriptors: any = rulesEditorConfig.options.when.attributeValueDescriptors;
 
         if (attributeValueDescriptors) {
             const attributeConfig = attributeValueDescriptors[name];

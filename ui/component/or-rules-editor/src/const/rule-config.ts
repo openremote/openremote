@@ -18,23 +18,29 @@ export const rulesEditorConfig = {
         addThenCondition: false,
     },
     options: {
-        attributeValueDescriptors: {
-            flightProfiles: {},
-            airportIata: {
-                options: airports
-            },
-            airlineIata: {
-                options: airlines
-            },
-            originRegion: {
-                options: regions
-            },
-            pax: {},
-            languageCodes: {
-                options: languages
-            },
-            countryCode: {
-                options: countries
+        when: {
+            attributeValueDescriptors: {
+                airportIata: {
+                    options: airports
+                },
+                airlineIata: {
+                    options: airlines
+                },
+                originRegion: {
+                    options: regions
+                },
+                passengerCapacity: {},
+                languageCodes: {
+                    options: languages
+                },
+                countryCode: {
+                    options: countries
+                }
+            }
+        },
+        then: {
+            attributeValueDescriptors: {
+                flightProfiles: {}
             }
         }
     }
@@ -47,7 +53,7 @@ export const ruleTemplate: Rule = {
 };
 
 export const rulesetTemplate: TenantRuleset = {
-    name: "New Rule",
+    name: "Nieuw Profiel",
     type: "tenant",
     lang: RulesetLang.JSON,
     realm: openremote.getRealm(),

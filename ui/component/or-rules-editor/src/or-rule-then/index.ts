@@ -7,6 +7,8 @@ import {Rule, RuleActionUnion,
 import "../or-rule-then-condition";
 import {rulesEditorConfig, defaultThen, defaultThenCondition} from "../const/rule-config";
 
+import cloneDeep from "lodash-es/cloneDeep";
+
 @customElement("or-rule-then")
 class OrRuleThen extends LitElement {
 
@@ -54,19 +56,19 @@ class OrRuleThen extends LitElement {
     protected updated(_changedProperties: PropertyValues): void {
         super.updated(_changedProperties);
         if (this.rule && !this.rule.then) {
-            this.rule.then = [...defaultThen];
+            this.rule.then = cloneDeep(defaultThen);
             this.requestUpdate();
         }
     }
 
     private addThenCondition() {
         if (this.rule && !this.rule.then) {
-            this.rule.then = [...defaultThen];
+            this.rule.then = cloneDeep(defaultThen);
 
         }
 
         if (this.rule && this.rule.then) {
-            this.rule.then.push({...defaultThenCondition});
+            this.rule.then.push(cloneDeep(defaultThenCondition));
             this.requestUpdate();
         }
 

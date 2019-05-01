@@ -35,7 +35,7 @@ class OrRuleHeader extends LitElement {
                         <input @change="${this.changeName}" type="text" .value="${this.ruleset ? this.ruleset.name : null}" />
                         
                         <div class="layout horizontal" style="margin-left: auto;">
-                            <span style="margin: 9px 0;">Actief</span>
+                            <span style="margin: 9px 0;" class="toggle-label" ?data-disabled="${!this.ruleset!.id}">Actief</span>
                             <label class="switch" ?data-disabled="${!this.ruleset!.id}">
                               <input @change="${this.toggleEnabled}" ?disabled="${!this.ruleset!.id}" ?checked="${this.ruleset!.enabled}" type="checkbox">
                               <span class="slider round"></span>
