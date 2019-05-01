@@ -1,16 +1,11 @@
-# OpenRemote Webcomponents
+# OpenRemote UI Components
 
-Library of Webcomponents for OpenRemote.
+Library of UI components that can be used to build web applications that communicate with an OpenRemote Manager.
 
 [Source](https://github.com/openremote/openremote) **·** [Documentation](https://github.com/openremote/openremote/wiki) **·** [Community](https://groups.google.com/forum/#!forum/openremotecommunity) **·** [Issues](https://github.com/openremote/openremote/issues) **·** [Docker Images](https://hub.docker.com/u/openremote/) **·** [OpenRemote Inc.](https://openremote.io)
 
+## Contributing
+Please refer to the [Developer Guide](https://github.com/openremote/openremote/wiki/Developer-Guide%3A-Working-on-the-UI) on how to contribute to the UI components.
 
-## Getting started with OpenRemote
-
-We are currently working on v3 of the OpenRemote platform. This is **beta** software that should be used only for development.
-
-If you are looking for OpenRemote v2.5, [read the OpenRemote v2 documentation](https://github.com/openremote/Documentation/wiki).
-
-## Discuss OpenRemote
-
-Join us on the [community group](https://groups.google.com/forum/#!forum/openremotecommunity).
+## Usage
+To consume the components in an application simply add the required dependencies to your `package.json` and then import the required component(s) using standard ES6 module syntax; for our own applications we use webpack for bundling (see the existing [apps](../apps) for examples). When using components from a custom project, yarn workspaces can be used to `symlink` the components to the code base allowing for tight development of components within an application.
