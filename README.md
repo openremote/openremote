@@ -32,17 +32,19 @@ docker-compose up --no-build
 
 ***NOTE:*** If you are not using Docker Community Edition but the older **Docker Toolbox (Virtual Box),** you must specify the `IDENTITY_NETWORK_HOST` environment variable as the IP address of the Docker VM when executing `docker-compose` commands:
 
-```
 Windows Command Prompt (quotes are essential):
+```
 set "IDENTITY_NETWORK_HOST=192.168.99.100" && docker-compose up --no-build
+```
 
 Bash:
+```
 IDENTITY_NETWORK_HOST=192.168.99.100 docker-compose up --no-build
 ```
 
 ### 2. Starting OpenRemote with source-build images
 
-Alternatively you can build the Docker images locally from source. First build the code:
+Alternatively you can build the Docker images locally from source, please see [here](https://github.com/openremote/openremote/wiki/Developer-Guide%3A-Preparing-the-environment) for required tooling. First build the code:
 
 ```
 ./gradlew clean installDist
@@ -56,11 +58,12 @@ docker-compose up --build
 
 ***NOTE:*** If you are not using Docker Community Edition but the older **Docker Toolbox (Virtual Box),** you must specify the `IDENTITY_NETWORK_HOST` environment variable as the IP address of the Docker VM when executing `docker-compose` commands:
 
-```
 Windows Command Prompt (quotes are essential):
+```
 set "IDENTITY_NETWORK_HOST=192.168.99.100" && docker-compose up --build
-
+```
 Bash:
+```
 IDENTITY_NETWORK_HOST=192.168.99.100 docker-compose up --build
 ```
 
