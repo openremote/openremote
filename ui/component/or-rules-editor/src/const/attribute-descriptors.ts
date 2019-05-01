@@ -154,7 +154,7 @@ export const attributeDescriptors: any[] =  [ {
             name: "STRING"
         }
     }, {
-        attributeName: "passengerCapacity",
+        attributeName: "pax",
         metaItemDescriptors : [ ],
         valueDescriptor : {
             icon : "hashtag",
@@ -162,7 +162,7 @@ export const attributeDescriptors: any[] =  [ {
             name: "NUMBER"
         }
     }, {
-        attributeName: "passengerArrivalCheckPoint",
+        attributeName: "paxArrivalCheckPoint",
         metaItemDescriptors : [ ],
         valueDescriptor : {
             icon : "hashtag",
@@ -170,7 +170,7 @@ export const attributeDescriptors: any[] =  [ {
             name: "NUMBER"
         }
     }, {
-        attributeName: "passengerSchengenCheckPoint",
+        attributeName: "paxSchengenCheckPoint",
         metaItemDescriptors : [ ],
         valueDescriptor : {
             icon : "hashtag",
