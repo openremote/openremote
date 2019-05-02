@@ -23,9 +23,11 @@ export class OrMapMarkerAsset extends subscribe(openremote)(OrMapMarker) {
             return;
         }
 
-        const descriptor = AssetModelUtil.getAssetDescriptor(type);
-        const icon = descriptor ? descriptor.icon : AssetType.THING.icon;
-        this.icon = icon;
+        if (this.assetTypeAsIcon) {
+            const descriptor = AssetModelUtil.getAssetDescriptor(type);
+            const icon = descriptor ? descriptor.icon : AssetType.THING.icon;
+            this.icon = icon;
+        }
         this.visible = true;
     }
 
