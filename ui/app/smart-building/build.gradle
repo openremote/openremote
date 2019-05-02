@@ -1,5 +1,8 @@
+//buildDir = "dist"
+//npmBuild.dependsOn(resolveTask(":ui:component:model:build"), resolveTask(":ui:component:rest:build"))
+//
 //task build {
-//    dependsOn resolveTask(":ui:component:model:build"), resolveTask(":ui:component:rest:build"), npmBuild
+//    dependsOn npmBuild
 //}
 //
 //task installDist(type: Copy) {
