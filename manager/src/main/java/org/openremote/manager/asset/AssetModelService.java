@@ -59,7 +59,7 @@ public class AssetModelService implements ContainerService {
             LOG.fine("Adding asset model descriptors of provider: " + assetModelProvider.getClass().getName());
 
             assetDescriptors.addAll(Arrays.asList(assetModelProvider.getAssetDescriptors()));
-            attributeDescriptors.addAll(Arrays.asList(assetModelProvider.getAttributeTypeDescriptors()));
+            attributeDescriptors.addAll(Arrays.asList(assetModelProvider.getAttributeDescriptors()));
             attributeValueDescriptors.addAll(Arrays.asList(assetModelProvider.getAttributeValueDescriptors()));
             metaItemDescriptors.addAll(Arrays.asList(assetModelProvider.getMetaItemDescriptors()));
         });

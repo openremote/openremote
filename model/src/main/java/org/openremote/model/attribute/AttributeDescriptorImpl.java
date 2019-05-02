@@ -36,20 +36,19 @@ public class AttributeDescriptorImpl implements AttributeDescriptor {
 
     @JsIgnore
     public AttributeDescriptorImpl(String attributeName, AttributeValueDescriptor valueDescriptor) {
-        this(attributeName, valueDescriptor, null, null);
+        this(attributeName, valueDescriptor, null, (MetaItemDescriptor) null);
     }
 
     @JsIgnore
     public AttributeDescriptorImpl(String attributeName, AttributeValueDescriptor valueDescriptor, Value initialValue) {
-        this(attributeName, valueDescriptor, null, initialValue);
+        this(attributeName, valueDescriptor, initialValue, (MetaItemDescriptor) null);
     }
 
     @JsonCreator
     @JsConstructor
     public AttributeDescriptorImpl(@JsonProperty("attributeName") String attributeName,
                                    @JsonProperty("valueDescriptor") AttributeValueDescriptor valueDescriptor,
-                                   @JsonProperty("metaItemDescriptors") MetaItemDescriptor[] metaItemDescriptors,
-                                   @JsonProperty("initialValue") Value initialValue) {
+                                   @JsonProperty("initialValue") Value initialValue, @JsonProperty("metaItemDescriptors") MetaItemDescriptor... metaItemDescriptors) {
         this.attributeName = attributeName;
         this.valueDescriptor = valueDescriptor;
         this.metaItemDescriptors = metaItemDescriptors;

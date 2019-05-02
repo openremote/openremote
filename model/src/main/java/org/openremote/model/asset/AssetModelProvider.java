@@ -32,7 +32,7 @@ public interface AssetModelProvider {
 
     AssetDescriptor[] getAssetDescriptors();
 
-    AttributeDescriptor[] getAttributeTypeDescriptors();
+    AttributeDescriptor[] getAttributeDescriptors();
 
     AttributeValueDescriptor[] getAttributeValueDescriptors();
 }
