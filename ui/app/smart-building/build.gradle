@@ -1,5 +1,5 @@
 //task build {
-//    dependsOn npmBuild
+//    dependsOn resolveTask(":ui:component:model:build"), resolveTask(":ui:component:rest:build"), npmBuild
 //}
 //
 //task installDist(type: Copy) {
