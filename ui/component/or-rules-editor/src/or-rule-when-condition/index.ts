@@ -5,7 +5,7 @@ import "../selects/or-select-operator";
 import "@openremote/or-input";
 import "@openremote/or-select";
 import "@openremote/or-icon";
-import {AssetModelUtil} from "@openremote/core";
+import openremote, {AssetModelUtil} from "@openremote/core";
 
 import {style} from "./style";
 import {AttributeDescriptor, AttributePredicate, AssetDescriptor} from "@openremote/model";
@@ -80,10 +80,14 @@ class OrRuleWhenCondition extends LitElement {
                                 `}
                             ` : ``}
                             
-                             ${this.predicate.value.value ? html`
-                                <a style="margin-left: auto;" @click="${this.deleteCondition}">
-                                 <or-icon class="small-icon" icon="close-circle"></or-icon>
-                                </a>
+                            ${openremote.hasRole("write:assets") ? html`
+                            
+                                 ${this.predicate.value.value ? html`
+                                    <a style="margin-left: auto;" @click="${this.deleteCondition}">
+                                     <or-icon class="small-icon" icon="close-circle"></or-icon>
+                                    </a>
+                                ` : ``}
+                            
                             ` : ``}
                             
                         ` : ``}

@@ -98,8 +98,10 @@ class OrRulesEditor extends translate(i18next)(LitElement) {
               <side-menu class="bg-white shadow">
                     <or-rule-list .rulesets="${this.rulesets}" .ruleset="${this.ruleset}" ></or-rule-list>
                     <div class="bottom-toolbar">
-                      <icon class="small-icon" @click="${this.deleteRule}"><or-icon icon="delete"></or-icon></icon>
-                      <icon style="margin-left: auto;" class="small-icon" @click="${this.createRule}"><or-icon icon="plus"></or-icon></icon>
+                        ${openremote.hasRole("write:assets") ? html`
+                          <icon class="small-icon" @click="${this.deleteRule}"><or-icon icon="delete"></or-icon></icon>
+                          <icon style="margin-left: auto;" class="small-icon" @click="${this.createRule}"><or-icon icon="plus"></or-icon></icon>
+                        ` : ``}
                     </div>
               </side-menu>
               ${this.ruleset ? html`
@@ -118,7 +120,9 @@ class OrRulesEditor extends translate(i18next)(LitElement) {
               ` : html`
                 <div class="center-center">
                     <h3 style="font-weight: normal;">Kies links een profiel of maak een nieuw profiel aan.</h3>
-                    <button style="margin: auto;" @click="${this.createRule}">profiel aanmaken</button>
+                    ${openremote.hasRole("write:assets") ? html`
+                        <button style="margin: auto;" @click="${this.createRule}">profiel aanmaken</button>
+                    ` : ``}
                 </div>
               `}
           </div>
@@ -138,7 +142,6 @@ class OrRulesEditor extends translate(i18next)(LitElement) {
                 this.rulesets = response.data;
                 if (this.ruleset && this.rulesets) {
                     const index = findIndex(this.rulesets, ["id", this.ruleset.id]);
-                    console.log(index, this.ruleset.id);
                     let updatedRuleset;
 
                     // ID is not found when a new ruleset is added

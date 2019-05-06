@@ -1,6 +1,7 @@
 import {html, LitElement, property, customElement, PropertyValues} from "lit-element";
 
 import {style} from "./style";
+import openremote from "@openremote/core";
 import {Rule, AttributePredicate} from "@openremote/model";
 
 import "../or-rule-when-condition";
@@ -43,8 +44,11 @@ class OrRuleWhen extends LitElement {
                             `; })}
                     ` : ``}
                     
-                   ${rulesEditorConfig.controls.addWhenCondition ? html`
-                        <a class="button-add" @click="${this.addWhenCondition}">+ voeg nog een voorwaarde toe</a>
+                    ${openremote.hasRole("write:assets") ? html`
+                       ${rulesEditorConfig.controls.addWhenCondition ? html`
+                            <a class="button-add" @click="${this.addWhenCondition}">+ voeg nog een voorwaarde toe</a>
+                        ` : ``}
+                       
                     ` : ``}
                 </div>
             </div>

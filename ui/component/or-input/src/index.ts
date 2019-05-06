@@ -1,5 +1,5 @@
-import {html, LitElement, property} from 'lit-element';
-
+import {html, LitElement, property, PropertyValues} from 'lit-element';
+import openremote from "@openremote/core";
 
 import {orInputStyle} from './style';
 class OrInput extends LitElement {
@@ -12,6 +12,9 @@ class OrInput extends LitElement {
 
     @property({type: Boolean})
     public required: boolean = false;
+
+    @property({type: Boolean})
+    public disabled: boolean = false;
 
     @property({type: String})
     public value: string = "";
@@ -26,7 +29,7 @@ class OrInput extends LitElement {
     protected render() {
 
         return html`
-             <input class="or-input" ?required="${this.required}" type="${this.type}" name="${this.name}" @change="${this.onChange}" .value="${this.value}" />
+             <input class="or-input" ?required="${this.required}" type="${this.type}" name="${this.name}" @change="${this.onChange}" .value="${this.value}"  ?disabled="${this.disabled} />
         `;
     }
 
@@ -50,7 +53,10 @@ class OrInput extends LitElement {
         super();
     }
 
-
+    protected firstUpdated(_changedProperties: PropertyValues): void {
+        super.firstUpdated(_changedProperties);
+        this.disabled = !openremote.hasRole("write:assets");
+    }
 }
 
 window.customElements.define('or-input', OrInput);
