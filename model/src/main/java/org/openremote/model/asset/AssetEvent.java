@@ -19,9 +19,8 @@
  */
 package org.openremote.model.asset;
 
-import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.event.shared.EventFilter;
-import org.openremote.model.event.shared.SharedEvent;
+import org.openremote.model.event.shared.SharedEventWithAssetId;
 
 import java.util.Arrays;
 
@@ -31,9 +30,9 @@ import java.util.Arrays;
  * the {@link org.openremote.model.attribute.AttributeEvent}. When the cause is {@link Cause#READ} then the asset's
  * {@link org.openremote.model.attribute.Attribute}s will be included in the asset otherwise they are not.
  */
-public class AssetEvent extends SharedEvent {
+public class AssetEvent extends SharedEventWithAssetId {
 
-    public static class AssetIdFilter extends EventFilter<AttributeEvent> {
+    public static class AssetIdFilter extends EventFilter<SharedEventWithAssetId> {
 
         public static final String FILTER_TYPE = "asset-id";
 
@@ -56,7 +55,7 @@ public class AssetEvent extends SharedEvent {
         }
 
         @Override
-        public boolean apply(AttributeEvent event) {
+        public boolean apply(SharedEventWithAssetId event) {
             return Arrays.asList(assetIds).contains(event.getEntityId());
         }
 
@@ -84,6 +83,10 @@ public class AssetEvent extends SharedEvent {
         this.cause = cause;
         this.asset = asset;
         this.updatedProperties = updatedProperties;
+    }
+
+    public String getEntityId() {
+        return asset.id;
     }
 
     public Cause getCause() {
