@@ -64,6 +64,15 @@ public enum AttributeValueType implements AttributeValueDescriptor {
             FORMAT.withInitialValue(Values.create("%3d %%"))
     ),
 
+    LEVEL_UINT8("level", ValueType.NUMBER,
+            value -> Values.getNumber(value)
+                    .filter(number -> number < 0 || number > 255)
+                    .map(number -> new ValidationFailure(ValueHolder.ValueFailureReason.VALUE_INVALID)),
+            RANGE_MIN.withInitialValue(Values.create(0)),
+            RANGE_MAX.withInitialValue(Values.create(255)),
+            FORMAT.withInitialValue(Values.create("%3d"))
+    ),
+
     TIMESTAMP_MILLIS("clock-o", ValueType.NUMBER, FORMAT.withInitialValue(Values.create("%d ms"))),
 
     TIMESTAMP_SECONDS("clock-o", ValueType.NUMBER, FORMAT.withInitialValue(Values.create("%d s"))),
