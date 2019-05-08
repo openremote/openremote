@@ -305,6 +305,8 @@ public class LDAPComponentBuilder {
         public static final String USER_OBJECT_CLASSES = "userObjectClasses";
 
         public static final String UID = "uid";
+        public static final String CN = "cn";
+        public static final String OBJECT_GUID = "objectGUID";
 
         public static final String CONNECTION_URL = "connectionUrl";
         public static final String USERS_DN = "usersDn";
