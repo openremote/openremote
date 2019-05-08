@@ -591,7 +591,7 @@
                                 if (av.metaItemDescriptors) {
                                     metaItemDescriptors = av.metaItemDescriptors.map(mid => {
                                         let access = mid.access ? new Model.MetaItemDescriptorAccess(mid.access.restrictedRead, mid.access.restrictedWrite, mid.access.publicRead) : null;
-                                        let initialValue = mid.initialValue !== undefined && mid.initialValue !== null ? Model.Values.fromAny(mid.initialValue).orElse(null) : null;
+                                        let initialValue = mid.initialValue !== undefined && mid.initialValue !== null ? Model.Values.parseOrNull(mid.initialValue) : null;
                                         return new Model.MetaItemDescriptor(mid.urn, Model.ValueType.fromString(mid.valueType), access, mid.required, mid.pattern, mid.patternFailureMessage, mid.maxPerAttribute, initialValue, mid.valueFixed);
                                     });
                                 }

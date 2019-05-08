@@ -58,7 +58,7 @@ public class Values {
         return ValueFactoryImpl.INSTANCE;
     }
 
-
+    @JsMethod(namespace = "Model.Values")
     public static Value parseOrNull(String jsonString) {
         try {
             return parse(jsonString).orElse(null);
@@ -71,7 +71,6 @@ public class Values {
         return instance().parse(jsonString);
     }
 
-    @JsMethod(namespace = "Model.Values")
     public static native <T extends Value> Optional<T> fromAny(Any any) /*-{
         // TODO This makes a copy which is inefficient, need twice the memory. We need a better JSON API to share with Java and JS.
         return @org.openremote.model.value.Values::parse(Ljava/lang/String;)(JSON.stringify(any));
