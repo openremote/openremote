@@ -49,8 +49,8 @@ class OrRuleThenCondition extends LitElement {
                    <or-select-asset-action>
                         <or-icon icon="numeric-1-circle"></or-icon>
                    </or-select-asset-action>
-                   <or-select-asset-attribute disabled type="${this.condition}" value="${this.condition.attributeName}"></or-select-asset-attribute>
-                   <or-select-operator disabled value="EQUAL"></or-select-operator>
+                   <or-select-asset-attribute type="then" disabled value="${this.condition.attributeName}"></or-select-asset-attribute>
+                   <or-select-operator hidden disabled value="EQUAL"></or-select-operator>
                    ${this.createInputControl(this.condition!)}
                 ` : ``}
             </div>

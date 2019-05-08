@@ -42,6 +42,32 @@ idea {
         excludeDirs += file("build")
     }
 }
+
+// Helper functions for project/task resolution when the main 
+// repo is checked out as a git submodule and therefore a subproject
+def isCustomProject() {
+    findProject(":openremote") != null
+}
+
+def resolvePath(String path) {
+    isCustomProject() ? ":openremote" + path : path
+}
+
+def resolveProject(String path) {
+    project(resolvePath(path))
+}
+
+def resolveTask(String path) {
+    tasks.getByPath(resolvePath(path))
+}
+
+ext {
+    resolvePath = this.&resolvePath
+    resolveProject = this.&resolveProject
+    resolveTask = this.&resolveTask
+    isCustomProject = this.&isCustomProject
+}
+
 if (project.convention.findPlugin(JavaPluginConvention)) {
     // Change the output directory for the main and test source sets back to the old path
     sourceSets.main.java.outputDir = new File(buildDir, "classes/main")
@@ -116,29 +142,4 @@ plugins.withType(JavaPlugin).whenPluginAdded {
 
     // JAR/ZIP base name is the fully qualified subproject name
     archivesBaseName = "${rootProject.name}${path.replaceAll(":", "-")}"
-}
-
-// Helper functions for project/task resolution when the main 
-// repo is checked out as a git submodule and therefore a subproject
-def isCustomProject() {
-    findProject(":openremote") != null
-}
-
-def resolvePath(String path) {
-    isCustomProject() ? ":openremote" + path : path
-}
-
-def resolveProject(String path) {
-    project(resolvePath(path))
-}
-
-def resolveTask(String path) {
-    tasks.getByPath(resolvePath(path))
-}
-
-ext {
-    resolvePath = this.&resolvePath
-    resolveProject = this.&resolveProject
-    resolveTask = this.&resolveTask
-    isCustomProject = this.&isCustomProject
 }

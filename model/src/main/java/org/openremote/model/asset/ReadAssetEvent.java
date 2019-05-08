@@ -19,46 +19,55 @@
  */
 package org.openremote.model.asset;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.event.shared.SharedEvent;
-import org.openremote.model.geo.GeoJSONPoint;
 
 import java.util.Arrays;
 
 /**
- * A location event.
+ * A client sends this event to the server to refresh its attribute state, expecting
+ * the server to answer "soon" with {@link AttributeEvent}s. If the server
+ * decides that the client doesn't have the right permissions, or if anything
+ * else is not in order (e.g. the asset doesn't exist), the server might not react
+ * at all.
+ * <p>
+ * If no attribute names and only an asset identifier are provided, all attributes
+ * of the asset, accessible by the client, will be read/returned.
  */
-public class LocationEvent extends SharedEvent {
+public class ReadAssetEvent extends SharedEvent {
 
     protected String assetId;
-    protected GeoJSONPoint coordinates;
 
-    @JsonCreator
-    public LocationEvent(
-        @JsonProperty("assetId") String assetId,
-        @JsonProperty("coordinates") GeoJSONPoint coordinates,
-        @JsonProperty("timestamp") long timestamp
-    ) {
-        super(timestamp);
+    protected String subscriptionId;
+
+    protected ReadAssetEvent() {
+    }
+
+    public ReadAssetEvent(String assetId) {
         this.assetId = assetId;
-        this.coordinates = coordinates;
     }
 
     public String getAssetId() {
         return assetId;
     }
 
-    public GeoJSONPoint getCoordinates() {
-        return coordinates;
+    public void setAssetId(String assetId) {
+        this.assetId = assetId;
+    }
+
+    public String getSubscriptionId() {
+        return subscriptionId;
+    }
+
+    public void setSubscriptionId(String subscriptionId) {
+        this.subscriptionId = subscriptionId;
     }
 
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
-            "timestamp=" + timestamp +
-            ", assetId=" + assetId +
-            ", coordinates=" + (coordinates == null ? "null" : coordinates.toValue()) +
-            "}";
+            "assetId='" + assetId + '\'' +
+            ", subscriptionId='" + subscriptionId + '\'' +
+            '}';
     }
 }

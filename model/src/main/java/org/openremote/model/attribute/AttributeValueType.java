@@ -42,15 +42,15 @@ import static org.openremote.model.attribute.AttributeValueType.AttributeValueTy
  */
 public enum AttributeValueType implements AttributeValueDescriptor {
 
-    STRING("file-text-o", ValueType.STRING),
+    STRING("format-text", ValueType.STRING),
 
-    NUMBER("hashtag", ValueType.NUMBER),
+    NUMBER("numeric", ValueType.NUMBER),
 
-    BOOLEAN("toggle-off", ValueType.BOOLEAN),
+    BOOLEAN("toggle-switch", ValueType.BOOLEAN),
 
-    OBJECT("cubes", ValueType.OBJECT),
+    OBJECT("cube", ValueType.OBJECT),
 
-    ARRAY("ellipsis-h", ValueType.ARRAY),
+    ARRAY("code-array", ValueType.ARRAY),
 
     // TODO Implement "Saved Filter/Searches" properly, see AssetResourceImpl
     RULES_TEMPLATE_FILTER("filter", ValueType.ARRAY),
@@ -68,28 +68,28 @@ public enum AttributeValueType implements AttributeValueDescriptor {
 
     TIMESTAMP_SECONDS("clock-o", ValueType.NUMBER, FORMAT.withInitialValue(Values.create("%d s"))),
 
-    TIME_SECONDS("clock-o", ValueType.NUMBER, FORMAT.withInitialValue(Values.create("%0.1f s"))),
+    TIME_SECONDS("clock-outline", ValueType.NUMBER, FORMAT.withInitialValue(Values.create("%0.1f s"))),
 
-    TIME_MINUTES("clock-o", ValueType.NUMBER, FORMAT.withInitialValue(Values.create("%0.1f min"))),
+    TIME_MINUTES("clock-outline", ValueType.NUMBER, FORMAT.withInitialValue(Values.create("%0.1f min"))),
 
     DATETIME("calendar", ValueType.STRING),
 
-    COLOR_RGB("paint-brush", ValueType.ARRAY, value -> Values.getArray(value)
+    COLOR_RGB("brush", ValueType.ARRAY, value -> Values.getArray(value)
             .filter(array -> array.length() != 3)
             .map(array -> new ValidationFailure(ValueHolder.ValueFailureReason.VALUE_INVALID_COLOR_FORMAT))
     ),
 
-    COLOR_ARGB("paint-brush", ValueType.ARRAY, value -> Values.getArray(value)
+    COLOR_ARGB("brush", ValueType.ARRAY, value -> Values.getArray(value)
             .filter(array -> array.length() != 4)
             .map(array -> new ValidationFailure(ValueHolder.ValueFailureReason.VALUE_INVALID_COLOR_FORMAT))
     ),
 
-    COLOR_HEX("paint-brush", ValueType.STRING, value -> Values.getString(value)
+    COLOR_HEX("brush", ValueType.STRING, value -> Values.getString(value)
             .filter(s -> !s.matches("[a-fA-F0-9]{6}"))
             .map(array -> new ValidationFailure(ValueHolder.ValueFailureReason.VALUE_INVALID_COLOR_FORMAT))
     ),
 
-    SOUND_DB("file-sound-o", ValueType.NUMBER, value -> Values.getNumber(value)
+    SOUND_DB("ear-hearing", ValueType.NUMBER, value -> Values.getNumber(value)
             .filter(n -> n < 0)
             .map(n -> new ValidationFailure(ValueHolder.ValueFailureReason.VALUE_SOUND_OUT_OF_RANGE)),
             FORMAT.withInitialValue(Values.create("%d dB"))
@@ -112,31 +112,31 @@ public enum AttributeValueType implements AttributeValueDescriptor {
             .map(n -> new ValidationFailure(ValueHolder.ValueFailureReason.VALUE_TEMPERATURE_OUT_OF_RANGE))
     ),
 
-    RAINFALL("tint", ValueType.NUMBER, FORMAT.withInitialValue(Values.create("%0.1f mm/h"))),
+    RAINFALL("water", ValueType.NUMBER, FORMAT.withInitialValue(Values.create("%0.1f mm/h"))),
 
-    BRIGHTNESS_LUX("sun-o", ValueType.NUMBER, FORMAT.withInitialValue(Values.create("%d lx"))),
+    BRIGHTNESS_LUX("white-balance-sunny", ValueType.NUMBER, FORMAT.withInitialValue(Values.create("%d lx"))),
 
-    DISTANCE_M("arrows-h", ValueType.NUMBER, FORMAT.withInitialValue(Values.create("%0.5f m"))),
+    DISTANCE_M("ruler", ValueType.NUMBER, FORMAT.withInitialValue(Values.create("%0.5f m"))),
 
-    DISTANCE_CM("arrows-h", ValueType.NUMBER, FORMAT.withInitialValue(Values.create("%0.5f cm"))),
+    DISTANCE_CM("ruler", ValueType.NUMBER, FORMAT.withInitialValue(Values.create("%0.5f cm"))),
 
-    DISTANCE_MM("arrows-h", ValueType.NUMBER, FORMAT.withInitialValue(Values.create("%0.5f mm"))),
+    DISTANCE_MM("ruler", ValueType.NUMBER, FORMAT.withInitialValue(Values.create("%0.5f mm"))),
 
-    DISTANCE_IN("arrows-h", ValueType.NUMBER, FORMAT.withInitialValue(Values.create("%0.5f \""))),
+    DISTANCE_IN("ruler", ValueType.NUMBER, FORMAT.withInitialValue(Values.create("%0.5f \""))),
 
-    DISTANCE_FT("arrows-h", ValueType.NUMBER, FORMAT.withInitialValue(Values.create("%0.5f '"))),
+    DISTANCE_FT("ruler", ValueType.NUMBER, FORMAT.withInitialValue(Values.create("%0.5f '"))),
 
-    DISTANCE_YARD("arrows-h", ValueType.NUMBER, FORMAT.withInitialValue(Values.create("%0.5f yd"))),
+    DISTANCE_YARD("ruler", ValueType.NUMBER, FORMAT.withInitialValue(Values.create("%0.5f yd"))),
 
-    SPEED_MS("rocket", ValueType.NUMBER, FORMAT.withInitialValue(Values.create("%0.3f m/s"))),
+    SPEED_MS("speedometer", ValueType.NUMBER, FORMAT.withInitialValue(Values.create("%0.3f m/s"))),
 
-    SPEED_KPH("rocket", ValueType.NUMBER, FORMAT.withInitialValue(Values.create("%0.1f km/h"))),
+    SPEED_KPH("speedometer", ValueType.NUMBER, FORMAT.withInitialValue(Values.create("%0.1f km/h"))),
 
-    SPEED_MPH("rocket", ValueType.NUMBER, FORMAT.withInitialValue(Values.create("%0.1f mi/h"))),
+    SPEED_MPH("speedometer", ValueType.NUMBER, FORMAT.withInitialValue(Values.create("%0.1f mi/h"))),
 
     CO2_PPM("leaf", ValueType.NUMBER, FORMAT.withInitialValue(Values.create("%4d ppm"))),
 
-    HUMIDITY_PERCENTAGE("tint", ValueType.NUMBER, value -> Values.getNumber(value)
+    HUMIDITY_PERCENTAGE("water-percent", ValueType.NUMBER, value -> Values.getNumber(value)
             .filter(number -> number < 0 || number > 100)
             .map(number -> new ValidationFailure(ValueHolder.ValueFailureReason.VALUE_PERCENTAGE_OUT_OF_RANGE)),
             RANGE_MIN.withInitialValue(Values.create(0)),
@@ -144,17 +144,17 @@ public enum AttributeValueType implements AttributeValueDescriptor {
             FORMAT.withInitialValue(Values.create("%3d %%"))
     ),
 
-    HUMIDITY_GPCM("tint", ValueType.NUMBER),
+    HUMIDITY_GPCM("water-percent", ValueType.NUMBER),
 
-    POWER_WATT("plug", ValueType.NUMBER, FORMAT.withInitialValue(Values.create("%0.5f W"))),
+    POWER_WATT("flash", ValueType.NUMBER, FORMAT.withInitialValue(Values.create("%0.5f W"))),
 
-    POWER_KILOWATT("plug", ValueType.NUMBER, FORMAT.withInitialValue(Values.create("%0.5f KW"))),
+    POWER_KILOWATT("flash", ValueType.NUMBER, FORMAT.withInitialValue(Values.create("%0.5f KW"))),
 
-    POWER_MEGAWATT("plug", ValueType.NUMBER, FORMAT.withInitialValue(Values.create("%0.5f MW"))),
+    POWER_MEGAWATT("flash", ValueType.NUMBER, FORMAT.withInitialValue(Values.create("%0.5f MW"))),
 
-    POWER_PERCENTAGE("plug", ValueType.NUMBER, FORMAT.withInitialValue(Values.create("%3d %%"))),
+    POWER_PERCENTAGE("flash", ValueType.NUMBER, FORMAT.withInitialValue(Values.create("%3d %%"))),
 
-    CHARGE_PERCENTAGE("battery-full", ValueType.NUMBER, value -> Values.getNumber(value)
+    CHARGE_PERCENTAGE("battery", ValueType.NUMBER, value -> Values.getNumber(value)
             .filter(number -> number < 0 || number > 100)
             .map(number -> new ValidationFailure(ValueHolder.ValueFailureReason.VALUE_PERCENTAGE_OUT_OF_RANGE)),
             RANGE_MIN.withInitialValue(Values.create(0)),
@@ -162,23 +162,23 @@ public enum AttributeValueType implements AttributeValueDescriptor {
             FORMAT.withInitialValue(Values.create("%3d %%"))
     ),
 
-    CHARGE_KWH("battery-full", ValueType.NUMBER, FORMAT.withInitialValue(Values.create("%0.5f KWh"))),
+    CHARGE_KWH("battery", ValueType.NUMBER, FORMAT.withInitialValue(Values.create("%0.5f KWh"))),
 
-    ENERGY_KWH("plug", ValueType.NUMBER, FORMAT.withInitialValue(Values.create("%0.5f KWh"))),
+    ENERGY_KWH("power-plug", ValueType.NUMBER, FORMAT.withInitialValue(Values.create("%0.5f KWh"))),
 
-    ENERGY_JOULE("plug", ValueType.NUMBER, FORMAT.withInitialValue(Values.create("%0.5f J"))),
+    ENERGY_JOULE("power-plug", ValueType.NUMBER, FORMAT.withInitialValue(Values.create("%0.5f J"))),
 
-    ENERGY_MEGAJOULE("plug", ValueType.NUMBER, FORMAT.withInitialValue(Values.create("%0.5f MJ"))),
+    ENERGY_MEGAJOULE("power-plug", ValueType.NUMBER, FORMAT.withInitialValue(Values.create("%0.5f MJ"))),
 
-    FLOW_LPM("tachometer", ValueType.NUMBER, FORMAT.withInitialValue(Values.create("%0.5f L/m"))),
+    FLOW_LPM("gauge", ValueType.NUMBER, FORMAT.withInitialValue(Values.create("%0.5f L/m"))),
 
-    FLOW_CMPS("tachometer", ValueType.NUMBER, FORMAT.withInitialValue(Values.create("%0.5f m³/s"))),
+    FLOW_CMPS("gauge", ValueType.NUMBER, FORMAT.withInitialValue(Values.create("%0.5f m³/s"))),
 
-    FLOW_CCMPS("tachometer", ValueType.NUMBER, FORMAT.withInitialValue(Values.create("%0.5f cm³/s"))),
+    FLOW_CCMPS("gauge", ValueType.NUMBER, FORMAT.withInitialValue(Values.create("%0.5f cm³/s"))),
 
-    FLOW_CFPS("tachometer", ValueType.NUMBER, FORMAT.withInitialValue(Values.create("%0.5f cfs"))),
+    FLOW_CFPS("gauge", ValueType.NUMBER, FORMAT.withInitialValue(Values.create("%0.5f cfs"))),
 
-    FLOW_GPM("tachometer", ValueType.NUMBER, FORMAT.withInitialValue(Values.create("%0.5f gpm"))),
+    FLOW_GPM("gauge", ValueType.NUMBER, FORMAT.withInitialValue(Values.create("%0.5f gpm"))),
 
     DIRECTION_DECIMAL_DEGREES("compass", ValueType.NUMBER, FORMAT.withInitialValue(Values.create("%0.1f deg"))),
 

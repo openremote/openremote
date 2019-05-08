@@ -38,6 +38,7 @@ export const style = css`
         height: 40px;
 
         border-radius: 5px;
+        border: none;
         background-color: var(--app-primary-color);
         margin-left: auto;
         color: var(--app-white-color, #FFF);
@@ -66,7 +67,7 @@ export const style = css`
         display: inline-block;
         width: 36px;
         height: 14px;
-        margin: 13px 20px
+        margin: 13px 30px 13px 10px;
     }
 
     /* Hide default HTML checkbox */
@@ -88,7 +89,15 @@ export const style = css`
         -webkit-transition: .4s;
         transition: .4s;
     }
-
+    
+    .switch[data-disabled] {
+        cursor: auto;
+    }
+    
+    .toggle-label[data-disabled] {
+        color:  #e4e4e4;
+    }
+    
     .switch[data-disabled] .slider::before {
         background-color: #e4e4e4;
     }

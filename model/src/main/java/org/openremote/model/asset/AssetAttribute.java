@@ -516,6 +516,16 @@ public class AssetAttribute extends Attribute {
         );
     }
 
+    /**
+     * @return All attributes that exist only in the new list (based on name).
+     */
+    public static Stream<AssetAttribute> getAddedAttributes(List<AssetAttribute> oldAttributes,
+                                                            List<AssetAttribute> newAttributes) {
+        return newAttributes.stream().filter(newAttribute -> oldAttributes.stream().noneMatch(
+                oldAttribute -> newAttribute.getNameOrThrow().equals(newAttribute.getNameOrThrow())
+        ));
+    }
+
     public static Stream<AssetAttribute> attributesFromJson(ObjectValue objectValue, String assetId) {
         if (objectValue == null || objectValue.keys().length == 0) {
             return Stream.empty();

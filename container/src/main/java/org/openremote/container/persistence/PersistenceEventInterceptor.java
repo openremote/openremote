@@ -55,7 +55,7 @@ public class PersistenceEventInterceptor extends EmptyInterceptor {
                           Object[] state, String[] propertyNames, Type[] types)
         throws CallbackException {
         persistenceEvents.add(new PersistenceEvent(
-            PersistenceEvent.Cause.INSERT,
+            PersistenceEvent.Cause.CREATE,
             entity,
             propertyNames,
             state

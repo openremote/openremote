@@ -35,7 +35,7 @@ public class PersistenceEvent<T> {
     public static final String HEADER_ENTITY_TYPE = PersistenceEvent.class.getSimpleName() + ".ENTITY_TYPE";
 
     public enum Cause {
-        INSERT, UPDATE, DELETE
+        CREATE, UPDATE, DELETE
     }
 
     public static Predicate isPersistenceEventForEntityType(Class<?> type) {

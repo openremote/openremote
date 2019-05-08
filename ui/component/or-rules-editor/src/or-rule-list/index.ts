@@ -31,6 +31,14 @@ class OrRulesList extends LitElement {
                         .list-container {
                         }
                         
+                        .list-title {
+                            display: block;
+                            padding: 17px 33px 10px 33px;
+                            text-transform: uppercase;
+                            color: var(--app-grey-color);
+                            opacity: 0.87;
+                        }
+                        
                         .list-item {
                             text-decoration: none;
                             height: 24px;
@@ -74,6 +82,7 @@ class OrRulesList extends LitElement {
                         }
             </style>
             <div class="list-container">
+                <strong class="list-title">Profielen</strong>
                 ${this.rulesets && this.rulesets.map((ruleset: TenantRuleset, index:number) => {
                     return html`
                         <a ?selected="${this.ruleset && ruleset.id === this.ruleset.id}" class="d-flex list-item" @click="${() => this.setActiveRule(this.rulesets[index])}">

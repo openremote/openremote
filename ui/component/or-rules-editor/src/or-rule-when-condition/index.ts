@@ -5,7 +5,7 @@ import "../selects/or-select-operator";
 import "@openremote/or-input";
 import "@openremote/or-select";
 import "@openremote/or-icon";
-import {AssetModelUtil} from "@openremote/core";
+import openremote, {AssetModelUtil} from "@openremote/core";
 
 import {style} from "./style";
 import {AttributeDescriptor, AttributePredicate, AssetDescriptor} from "@openremote/model";
@@ -65,26 +65,29 @@ class OrRuleWhenCondition extends LitElement {
                     </or-select-asset-type>
                     
                     ${this.predicate.name ? html`
-                        <or-select-asset-attribute value="${this.predicate.name.value}"></or-select-asset-attribute>
+                        <or-select-asset-attribute type="when" value="${this.predicate.name.value}"></or-select-asset-attribute>
                     
                         ${this.predicate.value && this.predicate.value.predicateType === "string" ? html`
                             ${this.predicate.name.value ? html`
-                                <or-select-operator .type="${this.getAttributeDescriptor(this.predicate.name.value)!.valueDescriptor}" .value="${this.predicate.value.match}"></or-select-operator>
+                                <or-select-operator .type="${this.getAttributeDescriptor(this.predicate.name.value)!.valueDescriptor!.valueType}" .value="${this.predicate.value.match}"></or-select-operator>
                             ` : ``}
                             
                             ${this.predicate.name.value && this.predicate.value.match ? html`
                                 ${this.getAttributeConfig(this.predicate.name.value)!.options  ? html`
-                                    ${this.predicate.value.value}
                                     <or-select .options="${this.getAttributeConfig(this.predicate.name.value).options}" .value="${this.predicate.value.value ? this.predicate.value.value : ""}"></or-select>
                                 ` : html`
-                                    <or-input type="text" .value="${this.predicate.value.value ? this.predicate.value.value : null}"></or-input>
+                                    <or-input required type="${this.getAttributeDescriptor(this.predicate.name.value)!.valueDescriptor!.valueType}" .value="${this.predicate.value.value ? this.predicate.value.value : null}"></or-input>
                                 `}
                             ` : ``}
                             
-                             ${this.predicate.value.value ? html`
-                                <a style="margin-left: auto;" @click="${this.deleteCondition}">
-                                 <or-icon class="small-icon" icon="close-circle"></or-icon>
-                                </a>
+                            ${openremote.hasRole("write:assets") ? html`
+                            
+                                 ${this.predicate.value.value ? html`
+                                    <a style="margin-left: auto;" @click="${this.deleteCondition}">
+                                     <or-icon class="small-icon" icon="close-circle"></or-icon>
+                                    </a>
+                                ` : ``}
+                            
                             ` : ``}
                             
                         ` : ``}
@@ -141,7 +144,7 @@ class OrRuleWhenCondition extends LitElement {
     }
 
     private getAttributeConfig(name: string) {
-        const attributeValueDescriptors: any = rulesEditorConfig.options.attributeValueDescriptors;
+        const attributeValueDescriptors: any = rulesEditorConfig.options.when.attributeValueDescriptors;
 
         if (attributeValueDescriptors) {
             const attributeConfig = attributeValueDescriptors[name];

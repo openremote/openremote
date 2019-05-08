@@ -294,7 +294,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
         LOG.finest("Processing agent persistence event: " + persistenceEvent.getCause());
 
         switch (persistenceEvent.getCause()) {
-            case INSERT:
+            case CREATE:
                 addReplaceAgent(agent);
                 linkProtocolConfigurations(
                     agent.getAttributesStream().filter(ProtocolConfiguration::isProtocolConfiguration)
@@ -365,7 +365,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Asse
         LOG.finest("Processing asset persistence event: " + persistenceEvent.getCause());
 
         switch (persistenceEvent.getCause()) {
-            case INSERT:
+            case CREATE:
 
                 // Asset insert persistence events can be fired before the agent insert persistence event
                 // so need to check that all protocol configs exist - any that don't we will exclude here

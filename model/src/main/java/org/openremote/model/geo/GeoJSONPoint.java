@@ -20,6 +20,7 @@
 package org.openremote.model.geo;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import org.openremote.model.value.ArrayValue;
@@ -56,18 +57,22 @@ public class GeoJSONPoint extends GeoJSONGeometry {
         return coordinates;
     }
 
+    @JsonIgnore
     public double getX() {
         return coordinates.getX();
     }
 
+    @JsonIgnore
     public double getY() {
         return coordinates.getY();
     }
 
+    @JsonIgnore
     public Double getZ() {
         return coordinates.getZ();
     }
 
+    @JsonIgnore
     public boolean hasZ() {
         return coordinates.hasZ();
     }

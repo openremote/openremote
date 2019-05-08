@@ -1,10 +1,13 @@
 import {html, LitElement, property, customElement, PropertyValues} from "lit-element";
 
 import {style} from "./style";
+import openremote from "@openremote/core";
 import {Rule, AttributePredicate} from "@openremote/model";
 
 import "../or-rule-when-condition";
 import {defaultPredicate, defaultWhenCondition, rulesEditorConfig} from "../const/rule-config";
+
+import cloneDeep from "lodash-es/cloneDeep";
 
 @customElement("or-rule-when")
 class OrRuleWhen extends LitElement {
@@ -41,8 +44,11 @@ class OrRuleWhen extends LitElement {
                             `; })}
                     ` : ``}
                     
-                   ${rulesEditorConfig.controls.addWhenCondition ? html`
-                        <a class="button-add" @click="${this.addWhenCondition}">+ voeg nog een voorwaarde toe</a>
+                    ${openremote.hasRole("write:assets") ? html`
+                       ${rulesEditorConfig.controls.addWhenCondition ? html`
+                            <a class="button-add" @click="${this.addWhenCondition}">+ voeg nog een voorwaarde toe</a>
+                        ` : ``}
+                       
                     ` : ``}
                 </div>
             </div>
@@ -52,7 +58,7 @@ class OrRuleWhen extends LitElement {
     protected updated(_changedProperties: PropertyValues): void {
         super.updated(_changedProperties);
         if (this.rule && !this.rule.when) {
-            this.rule.when = {...defaultWhenCondition};
+            this.rule.when = cloneDeep(defaultWhenCondition);
             if (this.rule!.when!.asset!.attributes!.predicates!.length === 0) {
                 this.addPredicate();
             }
@@ -62,7 +68,7 @@ class OrRuleWhen extends LitElement {
 
     private addWhenCondition() {
         if (this.rule && !this.rule.when) {
-            this.rule.when = {...defaultWhenCondition};
+            this.rule.when = cloneDeep(defaultWhenCondition);
         }
 
         this.addPredicate();
@@ -72,7 +78,9 @@ class OrRuleWhen extends LitElement {
 
     private addPredicate() {
         if (this.rule && this.rule.when && this.rule.when.asset && this.rule.when.asset.attributes && this.rule.when.asset.attributes.predicates) {
-            this.rule.when.asset.attributes.predicates.push({...defaultPredicate});
+            const newPredicate = cloneDeep(defaultPredicate);
+
+            this.rule.when.asset.attributes.predicates.push(newPredicate);
         }
     }
 

@@ -362,7 +362,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
                 new AssetState(loadedAsset, attribute.deepCopy(), Source.INTERNAL);
 
             switch (persistenceEvent.getCause()) {
-                case INSERT: {
+                case CREATE: {
                     // New asset has been created so get attributes that have RULE_STATE meta
                     List<AssetAttribute> ruleStateAttributes =
                         asset.getAttributesStream().filter(AssetAttribute::isRuleState).collect(Collectors.toList());
@@ -483,7 +483,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
 
                 } else if (ruleset instanceof AssetRuleset) {
 
-                    // Must reload from the database, the ruleset might not be completely hydrated on INSERT or UPDATE
+                    // Must reload from the database, the ruleset might not be completely hydrated on CREATE or UPDATE
                     AssetRuleset assetRuleset = rulesetStorageService.findById(AssetRuleset.class, ruleset.getId());
                     RulesEngine newEngine = deployAssetRuleset(assetRuleset);
                     if (newEngine != null) {

@@ -483,7 +483,7 @@ public class PushNotificationHandler extends RouteBuilder implements Notificatio
 
             switch (persistenceEvent.getCause()) {
 
-                case INSERT:
+                case CREATE:
                 case UPDATE:
 
                     consoleFCMTokenMap.put(asset.getId(), getFcmToken(asset).orElse(null));

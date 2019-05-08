@@ -39,7 +39,7 @@ class OrThermostat extends LitElement {
             }
         };
 
-        let subscriptionId = await openremote.events!.subscribeAttributeEvents([this.assetId!], callback);
+        const subscriptionId = await openremote.events!.subscribeAttributeEvents([this.assetId!], false, callback);
         this._subscriptionId = subscriptionId;
         console.log("Subscribed: " + subscriptionId);
     };

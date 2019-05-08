@@ -7,7 +7,3 @@ task clean() {
 task build() {
     dependsOn npmBuild
 }
-
-task installDist() {
-    dependsOn build
-}

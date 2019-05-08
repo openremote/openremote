@@ -98,13 +98,23 @@ export const style = css`
         padding: 0 20px;
         font-size: 14px;
         height: 40px;
-
+        border: none;
         border-radius: 5px;
         background-color: var(--app-primary-color);
         margin-left: auto;
         color: var(--app-white-color, #FFF);
         font-weight: bold;
         cursor: pointer;
+    }
+    
+    .center-center {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        
+        flex-direction: column;
+        text-align: center;
+        margin: auto;
     }
     
     @media only screen 

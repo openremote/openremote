@@ -50,6 +50,8 @@ public class MainActivity extends Activity {
     private static final int WEBVIEW_LOAD_TIMEOUT_DEFAULT = 5000;
 
     public static final String ACTION_BROADCAST = "ACTION_BROADCAST";
+    public static final String PUSH_PROVIDER_DISABLED_KEY = "PushProviderDisabled";
+    public static final String CONSOLE_ID_KEY = "consoleId";
 
     protected final ConnectivityChangeReceiver connectivityChangeReceiver = new ConnectivityChangeReceiver();
     protected WebView webView;
@@ -556,6 +558,7 @@ public class MainActivity extends Activity {
                 response.put("provider", "push");
                 response.put("version", "fcm");
                 response.put("enabled", false);
+                response.put("disabled", sharedPreferences.contains(PUSH_PROVIDER_DISABLED_KEY));
                 response.put("requiresPermission", false);
                 response.put("hasPermission", true);
                 response.put("success", true);
@@ -564,7 +567,10 @@ public class MainActivity extends Activity {
                 String consoleId = data.getString("consoleId");
 
                 if (consoleId != null) {
-                    sharedPreferences.edit().putString(GeofenceProvider.Companion.getConsoleIdKey(), consoleId).apply();
+                    sharedPreferences.edit()
+                            .putString(GeofenceProvider.Companion.getConsoleIdKey(), consoleId)
+                            .remove(PUSH_PROVIDER_DISABLED_KEY)
+                            .apply();
                 }
                 // TODO: Implement topic support
                 String fcmToken = FirebaseInstanceId.getInstance().getToken();
@@ -582,6 +588,7 @@ public class MainActivity extends Activity {
                 Map<String, Object> response = new HashMap<>();
                 response.put("action", "PROVIDER_DISABLE");
                 response.put("provider", "push");
+                sharedPreferences.edit().putBoolean(PUSH_PROVIDER_DISABLED_KEY, true).apply();
                 notifyClient(response);
             }
         }

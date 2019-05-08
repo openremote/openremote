@@ -10,6 +10,7 @@ import {
     RuleTrigger,
     AttributePredicate
 } from "@openremote/model";
+import {airlines, airports, countries, languages, regions} from "./resources";
 
 export const rulesEditorConfig = {
     controls: {
@@ -17,23 +18,29 @@ export const rulesEditorConfig = {
         addThenCondition: false,
     },
     options: {
-        attributeValueDescriptors: {
-            flightProfiles: {},
-            airportIata: {},
-            airlineIata: {},
-            originRegion: {},
-            passengerCapacity: {},
-            languageCodes: {
-                options: [
-                    "Dutch",
-                    "English",
-                ]
-            },
-            countryCode: {
-                options: [
-                    "NL",
-                    "GB",
-                ]
+        when: {
+            attributeValueDescriptors: {
+                airportIata: {
+                    options: airports
+                },
+                airlineIata: {
+                    options: airlines
+                },
+                originRegion: {
+                    options: regions
+                },
+                passengerCapacity: {},
+                languageCodes: {
+                    options: languages
+                },
+                countryCode: {
+                    options: countries
+                }
+            }
+        },
+        then: {
+            attributeValueDescriptors: {
+                flightProfiles: {}
             }
         }
     }
@@ -46,7 +53,7 @@ export const ruleTemplate: Rule = {
 };
 
 export const rulesetTemplate: TenantRuleset = {
-    name: "New Rule",
+    name: "Nieuw Profiel",
     type: "tenant",
     lang: RulesetLang.JSON,
     realm: openremote.getRealm(),

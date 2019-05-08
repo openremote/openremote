@@ -20,6 +20,14 @@ export const style = css`
         margin-right: 20px;
     }
 
+    .rule-container > or-select-asset-type {
+        margin-right: 10px;
+    }
+
+    .rule-container > or-select-asset-type or-icon {
+        margin-top: 7px;
+    }
+    
     .rule-container > *:last-child {
         margin-right: 0;
     }
@@ -30,6 +38,11 @@ export const style = css`
     
     .small-icon {
         cursor: pointer;
-        fill: var(--app-grey-color, #F5F5F5);
+        fill: rgb(213, 213, 213);
     }
+    
+    .small-icon:hover {
+        fill: var(--app-primary-color);
+    }
+    
 `;

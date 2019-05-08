@@ -21,6 +21,7 @@ interface ProviderInitialiseResponse extends ProviderMessage {
     hasPermission: boolean;
     success: boolean;
     enabled: boolean;
+    disabled: boolean;
 }
 
 export interface ProviderEnableRequest extends ProviderMessage {
@@ -103,10 +104,6 @@ export class Console {
                 disabled: false
             };
             consoleReg.providers[providerName] = provider;
-            if (provider.disabled || provider.enabled) {
-                let index = this._pendingProviderEnables.indexOf(providerName);
-                this._pendingProviderEnables.splice(index, 1);
-            }
         }
 
         let appName = openremote.getAppName();
@@ -172,7 +169,6 @@ export class Console {
             }
 
             if (this._registration.providers) {
-
                 for (let providerName of Object.keys(this._registration.providers)) {
                     await this._initialiseProvider(providerName);
                 }
@@ -379,6 +375,7 @@ export class Console {
                                 provider: "push",
                                 version: "web",
                                 enabled: true,
+                                disabled: false,
                                 hasPermission: true,
                                 requiresPermission: false,
                                 success: true
@@ -408,6 +405,7 @@ export class Console {
                                 action: "PROVIDER_INIT",
                                 provider: "storage",
                                 version: "1.0.0",
+                                disabled: false,
                                 enabled: true,
                                 hasPermission: true,
                                 requiresPermission: false,
@@ -502,33 +500,31 @@ export class Console {
         return reg;
     }
 
-    protected async _initialiseProvider(providerName: string): Promise<ProviderInitialiseResponse> {
+    protected async _initialiseProvider(providerName: string): Promise<void> {
         console.debug("Console: initialising provider '" + providerName + "'");
         let initResponse = await this.sendProviderMessage({
             provider: providerName,
             action: "PROVIDER_INIT"
-        }, true);
+        }, true) as ProviderInitialiseResponse;
 
         this._registration.providers![providerName].version = initResponse.version;
         this._registration.providers![providerName].requiresPermission = initResponse.requiresPermission;
         this._registration.providers![providerName].hasPermission = initResponse.hasPermission;
         this._registration.providers![providerName].success = initResponse.success;
         this._registration.providers![providerName].enabled = initResponse.enabled;
+        this._registration.providers![providerName].disabled = initResponse.disabled;
 
         if (!initResponse.success) {
             console.debug("Provider initialisation failed: '" + providerName + "'");
+            initResponse.disabled = true;
             this._registration.providers![providerName].disabled = true;
-            let index = this._pendingProviderEnables.indexOf(providerName);
-            if (index >= 0) {
-                this._pendingProviderEnables.splice(index, 1);
-            }
-        } else if (initResponse.enabled) {
+        }
+
+        if (initResponse.disabled || initResponse.enabled) {
             let index = this._pendingProviderEnables.indexOf(providerName);
             if (index >= 0) {
                 this._pendingProviderEnables.splice(index, 1);
             }
         }
-
-        return initResponse;
     }
 }

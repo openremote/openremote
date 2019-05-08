@@ -17,22 +17,16 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.model.asset;
+package org.openremote.model.event.shared;
 
-import org.openremote.model.attribute.AttributeDescriptor;
-import org.openremote.model.attribute.AttributeValueDescriptor;
-import org.openremote.model.attribute.MetaItemDescriptor;
+public abstract class SharedEventWithAssetId extends SharedEvent {
 
-/**
- * Extend the asset model in custom projects.
- */
-public interface AssetModelProvider {
+    public SharedEventWithAssetId() {
+    }
 
-    MetaItemDescriptor[] getMetaItemDescriptors();
+    public SharedEventWithAssetId(long timestamp) {
+        super(timestamp);
+    }
 
-    AssetDescriptor[] getAssetDescriptors();
-
-    AttributeDescriptor[] getAttributeDescriptors();
-
-    AttributeValueDescriptor[] getAttributeValueDescriptors();
+    public abstract String getEntityId();
 }

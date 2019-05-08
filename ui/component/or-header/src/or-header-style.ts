@@ -1,4 +1,6 @@
 import {css} from 'lit-element';
+
+// language=CSS
 export const OrHeaderStyle = css`
     or-header a, a:link, a:visited {
         text-decoration: none !important;
@@ -45,7 +47,11 @@ export const OrHeaderStyle = css`
         width: 14px;
         margin: -2px 4px;
       }
-      
+
+     [slot="desktop-right"] {
+        margin-left: auto;
+     }
+     
      [slot="desktop-left"] svg path {
         fill: rgba(255,255,255, 0.8);
      }

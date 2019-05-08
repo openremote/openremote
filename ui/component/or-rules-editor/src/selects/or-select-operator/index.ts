@@ -1,4 +1,5 @@
-import {html, LitElement, property, customElement} from "lit-element";
+import {html, LitElement, property, customElement, PropertyValues} from "lit-element";
+import openremote from "@openremote/core";
 import {AttributeValueType, BaseAssetQueryMatch, BaseAssetQueryOperator, AttributeValueDescriptor} from "@openremote/model";
 
 import {selectStyle} from "@openremote/or-select/dist/style";
@@ -57,4 +58,8 @@ class OrRuleWhen extends LitElement {
         super();
     }
 
+    protected firstUpdated(_changedProperties: PropertyValues): void {
+        super.firstUpdated(_changedProperties);
+        this.disabled = !openremote.hasRole("write:assets");
+    }
 }

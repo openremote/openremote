@@ -413,8 +413,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         smartBuildingId = smartBuilding.getId();
 
         // The "Apartment 1" is the demo apartment with complex scenes
-        Asset apartment1 = createDemoApartment(smartBuilding, "Apartment 1")
-            .addAttributes(new AssetAttribute(AttributeType.LOCATION, locationValueA));
+        Asset apartment1 = createDemoApartment(smartBuilding, "Apartment 1", SMART_BUILDING_LOCATION);
         apartment1 = assetStorageService.merge(apartment1);
         apartment1Id = apartment1.getId();
 

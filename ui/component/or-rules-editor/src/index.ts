@@ -18,6 +18,7 @@ import "./or-rule-header";
 
 import {style} from "./style";
 import findIndex from "lodash-es/findIndex";
+import cloneDeep from "lodash-es/cloneDeep";
 
 import {attributeDescriptors} from "./const/attribute-descriptors";
 import {ruleTemplate, rulesetTemplate} from "./const/rule-config";
@@ -97,8 +98,10 @@ class OrRulesEditor extends translate(i18next)(LitElement) {
               <side-menu class="bg-white shadow">
                     <or-rule-list .rulesets="${this.rulesets}" .ruleset="${this.ruleset}" ></or-rule-list>
                     <div class="bottom-toolbar">
-                      <icon class="small-icon" @click="${this.deleteRule}"><or-icon icon="delete"></or-icon></icon>
-                      <icon class="small-icon" @click="${this.createRule}"><or-icon icon="plus"></or-icon></icon>
+                        ${openremote.hasRole("write:assets") ? html`
+                          <icon class="small-icon" @click="${this.deleteRule}"><or-icon icon="delete"></or-icon></icon>
+                          <icon style="margin-left: auto;" class="small-icon" @click="${this.createRule}"><or-icon icon="plus"></or-icon></icon>
+                        ` : ``}
                     </div>
               </side-menu>
               ${this.ruleset ? html`
@@ -111,15 +114,17 @@ class OrRulesEditor extends translate(i18next)(LitElement) {
                                 <or-rule-when .rule="${this.rule}" .attributeDescriptors="${attributeDescriptors}"></or-rule-when>
                                 <or-rule-then .rule="${this.rule}" .attributeDescriptors="${attributeDescriptors}"></or-rule-then>
                             </div>
-                        ` : `
-                            <div class="content layout vertical center-center">
-                                <h3>Kies links een profiel of maakt een nieuw profiel aan.</h3>
-                                <button @click="${this.createRule}">profiel aanmaken</button>
-                            </div>
-                        `}
+                        ` : ``}
                     
                     </or-body>
-              ` : html``}
+              ` : html`
+                <div class="center-center">
+                    <h3 style="font-weight: normal;">Kies links een profiel of maak een nieuw profiel aan.</h3>
+                    ${openremote.hasRole("write:assets") ? html`
+                        <button style="margin: auto;" @click="${this.createRule}">profiel aanmaken</button>
+                    ` : ``}
+                </div>
+              `}
           </div>
         `;
     }
@@ -140,12 +145,12 @@ class OrRulesEditor extends translate(i18next)(LitElement) {
                     let updatedRuleset;
 
                     // ID is not found when a new ruleset is added
-                    if (index > 0) {
+                    if (index > -1) {
                         updatedRuleset = this.rulesets[index];
+                        console.log(updatedRuleset, this.rulesets[index]);
                     } else {
                         updatedRuleset = this.rulesets[this.rulesets.length - 1];
                     }
-
                     this.ruleset = updatedRuleset;
                     this.computeRuleset();
                 }
@@ -156,17 +161,18 @@ class OrRulesEditor extends translate(i18next)(LitElement) {
         });
     }
 
-    private createRule() {
-        const shouldContinue = this.shouldShowModal();
+    private async createRule() {
+        const shouldContinue = await this.shouldShowModal();
         if (!shouldContinue) {
             return;
         }
 
         if (this.rulesets) {
-            const newRule = {...rulesetTemplate};
+            const newRule = cloneDeep(rulesetTemplate);
             this.rulesets = [...this.rulesets, rulesetTemplate];
             this.ruleset = newRule;
-            this.computeRuleset();
+            this.computeRuleset()
+            // this.readRules();
         }
     }
 
@@ -207,7 +213,7 @@ class OrRulesEditor extends translate(i18next)(LitElement) {
         }
         const id = this.ruleset.id;
 
-        confirmDialog("Weet je zeker dat je deze regel wilt verwijderen?")
+        confirmDialog("Als je doorgaat worden je veranderingen niet opgeslagen. Doorgaan zonder opslaan?")
             .then(() =>  {
                     rest.api.RulesResource.deleteTenantRuleset(id).then(() => {
                         this.cleanRule();
@@ -239,31 +245,24 @@ class OrRulesEditor extends translate(i18next)(LitElement) {
         if (this.ruleset && this.ruleset.rules) {
             this.rule = JSON.parse(this.ruleset.rules).rules[0];
         } else if (this.ruleset && !this.ruleset.rules) {
-            this.rule = {...ruleTemplate};
+            this.rule = cloneDeep(ruleTemplate);
             this.rule.name = this.ruleset.name;
         }
         this.requestUpdate();
     }
 
-    private setActiveRule(e: any) {
-       const shouldContinue = this.shouldShowModal();
-       if (!shouldContinue) {
-           return;
-       }
-       this.ruleset = e.detail.ruleset;
-       this.computeRuleset();
+    private async setActiveRule(e: any) {
+        const shouldContinue = await this.shouldShowModal();
+        if (!shouldContinue) {
+            return;
+        }
+        this.ruleset = e.detail.ruleset;
+        this.readRules();
     }
 
     private shouldShowModal() {
          if (this.ruleset && this.ruleset.rules !== JSON.stringify({rules: [this.rule]})) {
-            confirmDialog("Weet je zeker dat je deze regel niet wilt opslaan?")
-                .then(() =>  {
-                    this.readRules();
-                    return true;
-                })
-                .catch(() => {
-                    return false;
-                });
+            return confirmDialog("Als je doorgaat worden je veranderingen niet opgeslagen. Doorgaan zonder opslaan?");
         } else {
              return true;
          }

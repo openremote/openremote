@@ -41,7 +41,7 @@ export function getGeoNotificationsFromRulesSet(rulesetDefinition: JsonRulesetDe
         geoNotification = {} as GeoNotification;
         if (rule.when && rule.when.asset) {
             rule.when.asset.attributes!.predicates!.forEach((predicate) => {
-                if (predicate.value!.predicateType == "radial" || predicate.value!.predicateType == "rect") {
+                if (predicate.value!.predicateType === "radial" || predicate.value!.predicateType === "rect") {
                     geoNotification.predicate = predicate.value as RadialGeofencePredicate
                 }
             });
@@ -49,7 +49,7 @@ export function getGeoNotificationsFromRulesSet(rulesetDefinition: JsonRulesetDe
 
         if (rule.then) {
             rule.then.forEach((action) => {
-                if (action.action == "notification") {
+                if (action.action === "notification") {
                     if (action.notification && action.notification.message) {
                         geoNotification.notification = action.notification.message as PushNotificationMessage;
                     }
@@ -62,4 +62,33 @@ export function getGeoNotificationsFromRulesSet(rulesetDefinition: JsonRulesetDe
     });
 
     return geoPredicates;
+}
+
+export function arraysEqual<T>(arr1?: T[], arr2?: T[]) {
+    if (arr1 === arr2) {
+         return true;
+    }
+    if (!arr1 || !arr2) {
+        return false;
+    }
+    if (arr1.length !== arr2.length) {
+        return false;
+    }
+    for (let i = arr1.length; i--;) {
+        if (arr1[i] !== arr2[i]) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+export function arrayRemove<T>(arr: T[], item: T) {
+    if (arr.length === 0) {
+        return;
+    }
+    const index = arr.indexOf(item);
+    if (index >= 0) {
+        arr.splice(index, 1);
+    }
 }

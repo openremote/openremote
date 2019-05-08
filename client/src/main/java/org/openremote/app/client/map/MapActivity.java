@@ -33,12 +33,14 @@ import org.openremote.app.client.mvp.AcceptsView;
 import org.openremote.app.client.mvp.AppActivity;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
+import org.openremote.model.asset.AssetEvent;
 import org.openremote.model.asset.AssetResource;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeValueDescriptor;
 import org.openremote.model.attribute.AttributeValueType;
 import org.openremote.model.event.bus.EventBus;
 import org.openremote.model.event.bus.EventRegistration;
+import org.openremote.model.event.shared.SharedEventWithAssetId;
 import org.openremote.model.geo.GeoJSON;
 import org.openremote.model.map.MapResource;
 import org.openremote.model.value.Values;
@@ -179,8 +181,8 @@ public class MapActivity extends AssetBrowsingActivity<MapPlace> implements MapV
                 if (asset.hasGeoFeature() || dashboardAttributes.size() > 0) {
                     showAssetInfoItems();
                     environment.getEventService().subscribe(
-                        AttributeEvent.class,
-                        new AttributeEvent.EntityIdFilter(asset.getId())
+                        SharedEventWithAssetId.class,
+                        new AssetEvent.AssetIdFilter(asset.getId())
                     );
                 }
             });

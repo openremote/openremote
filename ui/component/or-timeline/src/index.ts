@@ -76,6 +76,69 @@ class OrTimeline extends LitElement {
                       background-color: var(--timeline-accent,  blue); /* Green background */
                     }
                     
+                      .slider::-ms-track {
+                      -webkit-appearance: none;
+                      background: transparent;
+                      color: transparent;
+                    }
+                    
+                    .slider::-moz-range-track {
+                      -moz-appearance: none;
+                      background: transparent;
+                      color: transparent;
+                    }
+                    
+                    .slider:focus::-webkit-slider-runnable-track {
+                      background: transparent;
+                      border: transparent;
+                    }
+                    
+                    .slider:focus {
+                      outline: none;
+                    }
+                    
+                    .slider::-ms-thumb {
+                      pointer-events: all;
+                      width: 18px;
+                      height: 18px;
+                      border-radius: 14px;
+                      border: 0 none;
+                      background: var(--timeline-accent,  blue); ;
+                    }
+                    
+                    .slider::-moz-range-thumb {
+                      pointer-events: all;
+                      width: 18px;
+                      height: 18px;
+                      border-radius: 14px;
+                      border: 0 none;
+                      background: var(--timeline-accent,  blue); ;
+                    }
+                    
+                    .slider::-webkit-slider-thumb {
+                      pointer-events: all;
+                      width: 18px;
+                      height: 18px;
+                      border-radius: 14px;
+                      border: 0 none;
+                      background: var(--timeline-accent,  blue); ;
+                      -webkit-appearance: none;
+                    }
+                    
+                    .slider::-ms-fill-lower {
+                      background: transparent;
+                      border: 0 none;
+                    }
+                    
+                    .slider::-ms-fill-upper {
+                      background: transparent;
+                      border: 0 none;
+                    }
+                    
+                    .slider::-ms-tooltip {
+                      display: none;
+                    }
+                    
                     #timelineHourMarkers {
                         position: relative;
                       display: -webkit-box;

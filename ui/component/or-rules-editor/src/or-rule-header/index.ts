@@ -6,6 +6,7 @@ import '@openremote/or-input';
 import '@openremote/or-select';
 import '@openremote/or-icon';
 import {TenantRuleset, Rule} from '@openremote/model';
+import openremote from '@openremote/core';
 
 import {style} from './style';
 
@@ -32,19 +33,22 @@ class OrRuleHeader extends LitElement {
             <div class="rule-container">
               
                     <div class="layout horizontal">
-                        <input @change="${this.changeName}" type="text" .value="${this.ruleset ? this.ruleset.name : null}" />
+                        <input ?disabled="${!openremote.hasRole("write:assets")}"  @change="${this.changeName}" type="text" .value="${this.ruleset ? this.ruleset.name : null}" />
                         
                         <div class="layout horizontal" style="margin-left: auto;">
-                            <span style="margin: 9px 0;">Actief</span>
+                            <span style="margin: 9px 0;" class="toggle-label" ?data-disabled="${!this.ruleset!.id}">Actief</span>
                             <label class="switch" ?data-disabled="${!this.ruleset!.id}">
-                              <input @change="${this.toggleEnabled}" ?disabled="${!this.ruleset!.id}" ?checked="${this.ruleset!.enabled}" type="checkbox">
+                              <input @change="${this.toggleEnabled}" ?disabled="${!this.ruleset!.id || !openremote.hasRole("write:assets")}" ?checked="${this.ruleset!.enabled}" type="checkbox">
                               <span class="slider round"></span>
-                            </label>
-                            ${this.ruleset && this.ruleset.id ? html`
-                                <button ?disabled="${!this.valid}" @click="${this.updateRule}">opslaan</button>
-                            ` : html`
-                                <button ?disabled="${!this.valid}" @click="${this.createRule}">opslaan</button>
-                            `}
+                            </label>                    
+
+                            ${openremote.hasRole("write:assets") ? html`
+                                ${this.ruleset && this.ruleset.id ? html`
+                                    <button ?disabled="${!this.valid}" @click="${this.updateRule}">opslaan</button>
+                                ` : html`
+                                    <button ?disabled="${!this.valid}" @click="${this.createRule}">opslaan</button>
+                                `}
+                            ` : ``}
                         </div>
                         
                     </div>

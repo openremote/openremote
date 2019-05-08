@@ -1,12 +1,14 @@
 import openremote from "./index";
-import {Deferred} from "./util";
+import {arrayRemove, Deferred} from "./util";
 import {
     AttributeEvent,
     CancelEventSubscription,
     EventSubscription,
     RenewEventSubscriptions,
     SharedEvent,
-    ReadAssetAttributesEvent
+    ReadAssetAttributesEvent,
+    AssetEvent,
+    ReadAssetEvent
 } from "@openremote/model";
 
 export enum EventProviderStatus {
@@ -22,13 +24,24 @@ export interface EventProvider {
 
     disconnect(): void;
 
+    subscribeStatusChange(callback: (status: EventProviderStatus) => void): void;
+
+    unsubscribeStatusChange(callback: (status: EventProviderStatus) => void): void;
+
     subscribe<T extends SharedEvent>(eventSubscription: EventSubscription<T>, callback: (event: T) => void): Promise<string>;
 
     unsubscribe<T extends SharedEvent>(subscriptionId: string): void;
 
-    subscribeAttributeEvents(assetIds: string[], callback: (event: AttributeEvent) => void): Promise<string>;
+    subscribeAssetEvents(assetIds: string[] | null, callback: (event: AssetEvent) => void): Promise<string>;
+
+    subscribeAttributeEvents(assetIds: string[], requestCurrentValues: boolean, callback: (event: AttributeEvent) => void): Promise<string>;
 
     sendEvent<T extends SharedEvent>(event: T): void;
+}
+
+// Interface to provide a singleton implementation of EventProvider
+export interface EventProviderFactory {
+    getEventProvider(): EventProvider | undefined;
 }
 
 interface EventSubscriptionInfo<T extends SharedEvent> {
@@ -51,10 +64,9 @@ abstract class EventProviderImpl implements EventProvider {
     protected _disconnectRequested: boolean = false;
     protected _reconnectDelayMillis: number = WebSocketEventProvider.MIN_RECONNECT_DELAY;
     protected _reconnectTimer: number | null = null;
-    protected _statusCallback: (status: EventProviderStatus) => void;
     protected _status: EventProviderStatus = EventProviderStatus.DISCONNECTED;
     protected _connectingDeferred: Deferred<boolean> | null = null;
-
+    protected _statusCallbacks: Array<(status: EventProviderStatus) => void> = [];
     protected _pendingSubscription: EventSubscriptionInfo<SharedEvent> | null = null;
     protected _queuedSubscriptions: EventSubscriptionInfo<SharedEvent>[] = [];
     protected _subscriptionMap: { [id: string]: EventSubscriptionInfo<SharedEvent> } = {};
@@ -65,8 +77,12 @@ abstract class EventProviderImpl implements EventProvider {
         return this._status;
     }
 
-    protected constructor(statusCallback: (status: EventProviderStatus) => void) {
-        this._statusCallback = statusCallback;
+    public subscribeStatusChange(callback: (status: EventProviderStatus) => void): void {
+        this._statusCallbacks.push(callback);
+    }
+
+    public unsubscribeStatusChange(callback: (status: EventProviderStatus) => void): void {
+        arrayRemove(this._statusCallbacks, callback);
     }
 
     public connect(): Promise<boolean> {
@@ -195,12 +211,51 @@ abstract class EventProviderImpl implements EventProvider {
         this._doSend(event);
     }
 
-    public async subscribeAttributeEvents(assetIds: string[], callback: (event: AttributeEvent) => void): Promise<string> {
+    public async subscribeAssetEvents(assetIds: string[] | null, callback: (event: AssetEvent) => void): Promise<string> {
+        let subscription: EventSubscription<AssetEvent> = {
+            eventType: "asset"
+        };
+
+        if (assetIds && assetIds.length > 0) {
+            subscription.filter = {
+                filterType: "asset-id",
+                assetIds: assetIds
+            };
+        }
+
+        let subscriptionId: string | null = null;
+
+        try {
+            subscriptionId = await this.subscribe(subscription, callback);
+
+            // Get the current state of each asset
+            if (assetIds) {
+                assetIds.forEach(assetId => {
+                    let readEvent: ReadAssetEvent = {
+                        assetId: assetId,
+                        eventType: "read-asset",
+                        subscriptionId: subscriptionId!
+                    };
+                    this.sendEvent(readEvent);
+                });
+            }
+        } catch (e) {
+            console.error("Failed to subscribe to asset events for assets: " + assetIds);
+            if (subscriptionId) {
+                this.unsubscribe(subscriptionId);
+            }
+            throw e;
+        }
+
+        return subscriptionId!;
+    }
+
+    public async subscribeAttributeEvents(assetIds: string[], requestCurrentValues: boolean, callback: (event: AttributeEvent) => void): Promise<string> {
         let subscription: EventSubscription<AttributeEvent> = {
             eventType: "attribute",
             filter: {
-                filterType: "attribute-entity-id",
-                entityIds: assetIds
+                filterType: "asset-id",
+                assetIds: assetIds
             }
         };
 
@@ -210,16 +265,18 @@ abstract class EventProviderImpl implements EventProvider {
             subscriptionId = await this.subscribe(subscription, callback);
 
             // Get the current value of each assets attributes
-            assetIds.forEach(assetId => {
-                let readEvent: ReadAssetAttributesEvent = {
-                    assetId: assetId,
-                    eventType: "read-asset-attributes",
-                    subscriptionId: subscriptionId!
-                };
-                this.sendEvent(readEvent);
-            });
+            if (requestCurrentValues) {
+                assetIds.forEach(assetId => {
+                    let readEvent: ReadAssetAttributesEvent = {
+                        assetId: assetId,
+                        eventType: "read-asset-attributes",
+                        subscriptionId: subscriptionId!
+                    };
+                    this.sendEvent(readEvent);
+                });
+            }
         } catch (e) {
-            console.log("Failed to subscribe to attribute events for assets: " + assetIds);
+            console.error("Failed to subscribe to attribute events for assets: " + assetIds);
             if (subscriptionId) {
                 this.unsubscribe(subscriptionId);
             }
@@ -230,7 +287,7 @@ abstract class EventProviderImpl implements EventProvider {
     }
 
     protected _processNextSubscription() {
-        if (this._status != EventProviderStatus.CONNECTED || this._queuedSubscriptions.length === 0) {
+        if (this._status !== EventProviderStatus.CONNECTED || this._queuedSubscriptions.length === 0) {
             return;
         }
 
@@ -267,7 +324,7 @@ abstract class EventProviderImpl implements EventProvider {
 
         this._status = status;
         window.setTimeout(() => {
-            this._statusCallback(status);
+            this._statusCallbacks.forEach((cb) => cb(status));
         }, 0);
     }
 
@@ -362,8 +419,8 @@ export class WebSocketEventProvider extends EventProviderImpl {
         return this._endpointUrl;
     }
 
-    constructor(managerUrl: string, statusCallback: (connected: EventProviderStatus) => void) {
-        super(statusCallback);
+    constructor(managerUrl: string) {
+        super();
 
         this._endpointUrl = (managerUrl.startsWith("https:") ? "wss" : "ws") + "://" + managerUrl.substr(managerUrl.indexOf("://") + 3) + "/websocket/events";
 

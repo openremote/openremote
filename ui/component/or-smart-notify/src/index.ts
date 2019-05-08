@@ -1,4 +1,4 @@
-import {html, LitElement, property, customElement} from 'lit-element';
+import {html, LitElement, property, customElement, PropertyValues} from 'lit-element';
 
 import moment from 'moment';
 
@@ -8,6 +8,7 @@ import {faTimes} from '@fortawesome/free-solid-svg-icons';
 
 import REST from "@openremote/rest";
 import {AssetQuery, BaseAssetQueryInclude} from "@openremote/model";
+import openremote from "@openremote/core";
 
 @customElement('or-smart-notify')
 class OrSmartNotify extends LitElement {
@@ -247,6 +248,12 @@ class OrSmartNotify extends LitElement {
     // default function on smartyNotify
     @property({type: String})
     private currentTime: string = '-';
+
+
+    protected firstUpdated(_changedProperties: PropertyValues): void {
+        super.firstUpdated(_changedProperties);
+        this.isDisabled = !openremote.hasRole("write:assets");
+    }
 
     getSmartNotify() {
         const self:any = this;

@@ -277,7 +277,6 @@ public abstract class WebService implements ContainerService {
 
         CORSFilter corsFilter = new CORSFilter();
         corsFilter.getAllowedOrigins().add("*");
-        corsFilter.setAllowedHeaders("*");
         corsFilter.setAllowCredentials(true);
         corsFilter.setAllowedMethods("GET, POST, PUT, DELETE, OPTIONS, HEAD");
         corsFilter.setCorsMaxAge(1209600);
