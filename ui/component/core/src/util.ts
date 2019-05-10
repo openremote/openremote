@@ -1,4 +1,12 @@
-import {JsonRulesetDefinition, PushNotificationMessage, RadialGeofencePredicate} from "@openremote/model";
+import {
+    AttributePredicate,
+    GeofencePredicate,
+    JsonRulesetDefinition,
+    PushNotificationMessage,
+    RuleActionUnion,
+    RuleCondition,
+    RuleTrigger
+} from "@openremote/model";
 
 export class Deferred<T> {
 
@@ -28,40 +36,96 @@ export class Deferred<T> {
 }
 
 export interface GeoNotification {
-    predicate: RadialGeofencePredicate;
-    notification: PushNotificationMessage;
+    predicate: GeofencePredicate;
+    notification?: PushNotificationMessage;
 }
 
 export function getGeoNotificationsFromRulesSet(rulesetDefinition: JsonRulesetDefinition): GeoNotification[] {
 
-    let geoPredicates: GeoNotification[] = [];
-    let geoNotification: GeoNotification;
+    const geoNotifications: GeoNotification[] = [];
 
     rulesetDefinition.rules!.forEach((rule) => {
-        geoNotification = {} as GeoNotification;
-        if (rule.when && rule.when.asset) {
-            rule.when.asset.attributes!.predicates!.forEach((predicate) => {
-                if (predicate.value!.predicateType === "radial" || predicate.value!.predicateType === "rect") {
-                    geoNotification.predicate = predicate.value as RadialGeofencePredicate
-                }
-            });
-        }
 
-        if (rule.then) {
-            rule.then.forEach((action) => {
-                if (action.action === "notification") {
-                    if (action.notification && action.notification.message) {
-                        geoNotification.notification = action.notification.message as PushNotificationMessage;
+        if (rule.when && rule.then && rule.then.length > 0) {
+            const geoNotificationMap = new Map<String, GeoNotification[]>();
+            addGeofencePredicatesFromRuleTriggerCondition(rule.when, 0, geoNotificationMap);
+
+            if (geoNotificationMap.size > 0) {
+                rule.then.forEach((ruleAction) => addPushNotificationsFromRuleAction(ruleAction, geoNotificationMap));
+            }
+
+            for (const geoNotificationsArr of geoNotificationMap.values()) {
+                geoNotificationsArr.forEach((geoNotification) => {
+                    if (geoNotification.notification) {
+                        geoNotifications.push(geoNotification);
                     }
-                }
-            });
-        }
-        if (geoNotification.predicate && geoNotification.notification) {
-            geoPredicates.push(geoNotification)
+                });
+            }
         }
     });
 
-    return geoPredicates;
+    return geoNotifications;
+}
+
+function addGeofencePredicatesFromRuleTriggerCondition(ruleCondition: RuleCondition<RuleTrigger> | undefined, index: number, geoNotificationMap: Map<String, GeoNotification[]>) {
+    if (!ruleCondition) {
+        return;
+    }
+
+    if (ruleCondition.predicates) {
+        ruleCondition.predicates.forEach((ruleTrigger) => {
+            if (ruleTrigger.assets && ruleTrigger.assets.attributes) {
+                const geoNotifications: GeoNotification[] = [];
+                addGeoNotificationsFromAttributePredicateCondition(ruleTrigger.assets.attributes, geoNotifications);
+                if (geoNotifications.length > 0) {
+                    const tagName = ruleTrigger.tag || index.toString();
+                    geoNotificationMap.set(tagName, geoNotifications);
+                }
+            }
+        });
+    }
+}
+
+function addGeoNotificationsFromAttributePredicateCondition(attributeCondition: RuleCondition<AttributePredicate> | undefined, geoNotifications: GeoNotification[]) {
+    if (!attributeCondition) {
+        return;
+    }
+
+    attributeCondition.predicates!.forEach((predicate) => {
+        if (predicate.value && (predicate.value.predicateType === "radial" || predicate.value!.predicateType === "rect")) {
+            geoNotifications.push({
+                predicate: predicate.value as GeofencePredicate
+            });
+        }
+    });
+
+    if (attributeCondition.conditions) {
+        attributeCondition.conditions.forEach((condition) => addGeoNotificationsFromAttributePredicateCondition(condition, geoNotifications));
+    }
+}
+
+function addPushNotificationsFromRuleAction(ruleAction: RuleActionUnion, geoPredicateMap: Map<String, GeoNotification[]>) {
+    if (ruleAction && ruleAction.action === "notification") {
+        if (ruleAction.notification && ruleAction.notification.message && ruleAction.notification.message.type === "push") {
+            // Find applicable targets
+            const target = ruleAction.target;
+            if (target && target.ruleTriggerTag) {
+                const geoNotifications = geoPredicateMap.get(target.ruleTriggerTag);
+                if (geoNotifications) {
+                    geoNotifications.forEach((geoNotification) => {
+                        geoNotification.notification = ruleAction.notification!.message as PushNotificationMessage;
+                    });
+                }
+            } else {
+                // Applies to all LHS rule triggers
+                for (const geoNotifications of geoPredicateMap.values()) {
+                    geoNotifications.forEach((geoNotification) => {
+                        geoNotification.notification = ruleAction.notification!.message as PushNotificationMessage;
+                    });
+                }
+            }
+        }
+    }
 }
 
 export function arraysEqual<T>(arr1?: T[], arr2?: T[]) {
