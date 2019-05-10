@@ -20,6 +20,7 @@
 package org.openremote.model.query;
 
 import org.openremote.model.query.filter.*;
+import org.openremote.model.rules.json.RuleActionTarget;
 import org.openremote.model.rules.json.RuleCondition;
 
 /**
@@ -30,7 +31,7 @@ import org.openremote.model.rules.json.RuleCondition;
  * The {@link org.openremote.model.asset.Asset}s associated with the returned {@link org.openremote.model.rules.AssetState}s
  * are then used as the context for any {@link org.openremote.model.rules.json.RuleTriggerReset} to control when the
  * {@link NewAssetQuery} is allowed to be applied again to the same asset. They can also optionally be used as context
- * in the {@link org.openremote.model.rules.json.RuleActionWithTarget.Target}, to apply an action to the matched
+ * in the {@link RuleActionTarget}, to apply an action to the matched
  * {@link org.openremote.model.asset.Asset}s.
  * <p>
  * There is an implicit AND between properties and an implicit OR between each value of a property.
@@ -49,13 +50,13 @@ public class NewAssetQuery {
     public RuleCondition<AttributePredicate> attributes;
 
     /**
-     * To be used in combination with {@link #limit} to control the ordering of {@link org.openremote.model.rules.AssetState}s
+     * To be used in combination with {@link #limit} to control the ordering of {@link org.openremote.model.asset.Asset}s
      * before applying the limit.
      */
     public BaseAssetQuery.OrderBy orderBy;
 
     /**
-     * Means that only this number of matching {@link org.openremote.model.rules.AssetState} will be passed through as the context.
+     * Means that number of matching {@link org.openremote.model.asset.Asset}s will be limited to this amount.
      */
     public int limit;
 }

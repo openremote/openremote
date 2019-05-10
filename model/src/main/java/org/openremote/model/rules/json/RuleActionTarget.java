@@ -1,5 +1,5 @@
 /*
- * Copyright 2018, OpenRemote Inc.
+ * Copyright 2019, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -23,23 +23,15 @@ import org.openremote.model.query.AssetQuery;
 import org.openremote.model.query.UserQuery;
 
 /**
- * Indicates that the action should be scoped to the specified {@link Target}.
+ * None or one of the options should be set the precedence is:
+ * <ol>
+ * <li>{@link #ruleTriggerTag}</li>
+ * <li>{@link #assets}</li>
+ * <li>{@link #users}</li>
+ * </ol>
  */
-public abstract class RuleActionWithTarget implements RuleAction {
-
-    /**
-     * Only one of the options should be set the precedence is:
-     * <ol>
-     * <li>{@link #useAssetsFromWhen}</li>
-     * <li>{@link #assets}</li>
-     * <li>{@link #users}</li>
-     * </ol>
-     */
-    public static class Target {
-        public boolean useAssetsFromWhen;
-        public AssetQuery assets;
-        public UserQuery users;
-    }
-
-    public Target target;
+public class RuleActionTarget {
+    public String ruleTriggerTag;
+    public AssetQuery assets;
+    public UserQuery users;
 }

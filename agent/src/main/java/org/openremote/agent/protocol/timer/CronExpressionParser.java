@@ -20,6 +20,7 @@
 package org.openremote.agent.protocol.timer;
 
 import org.openremote.model.syslog.SyslogCategory;
+import org.openremote.model.util.TextUtil;
 import org.quartz.CronExpression;
 
 import java.util.EnumSet;
@@ -130,7 +131,7 @@ public class CronExpressionParser {
     protected boolean compatible = true;
     protected boolean valid;
 
-    protected CronExpressionParser(String cronExpression) {
+    public CronExpressionParser(String cronExpression) {
         valid = CronExpression.isValidExpression(cronExpression);
         originalCronExpression = cronExpression;
         String[] fields = cronExpression.split("\\s+");
@@ -140,7 +141,7 @@ public class CronExpressionParser {
             compatible = false;
         } else {
             for (int i=0; i<3; i++) {
-                Integer value = parseNumberExpression(fields[i]);
+                Integer value = TextUtil.asInteger(fields[i]).orElse(null);
                 if (value == null) {
                     compatible = false;
                 } else {
@@ -155,7 +156,7 @@ public class CronExpressionParser {
         }
     }
 
-    protected boolean isCompatible() {
+    public boolean isCompatible() {
         return compatible;
     }
 
@@ -163,7 +164,7 @@ public class CronExpressionParser {
         return valid;
     }
 
-    protected String buildCronExpression() {
+    public String buildCronExpression() {
         if (!isCompatible()) {
             return originalCronExpression;
         } else {
@@ -171,7 +172,7 @@ public class CronExpressionParser {
         }
     }
 
-    protected void setTime(int hours, int minutes, int seconds) {
+    public void setTime(int hours, int minutes, int seconds) {
         hours = Math.max(0, hours % 24);
         minutes = Math.max(0, minutes % 60);
         seconds = Math.max(0, seconds % 60);
@@ -182,17 +183,7 @@ public class CronExpressionParser {
         timeValues[SECONDS] = seconds;
     }
 
-    protected String getFormattedTime() {
+    public String getFormattedTime() {
         return String.format("%02d:%02d:%02d", timeValues[HOURS], timeValues[MINUTES], timeValues[SECONDS]);
     }
-
-    protected static Integer parseNumberExpression(String field) {
-        try {
-            return Integer.parseInt(field);
-        } catch(NumberFormatException e) {
-            LOG.info("Field is not a simple integer expression: " + field);
-            return null;
-        }
-    }
-
 }

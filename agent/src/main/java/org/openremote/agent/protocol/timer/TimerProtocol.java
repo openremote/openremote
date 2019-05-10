@@ -256,9 +256,9 @@ public class TimerProtocol extends AbstractProtocol {
                 Integer seconds;
 
                 if (writeTimeValues.length != 3
-                    || (hours = CronExpressionParser.parseNumberExpression(writeTimeValues[0])) == null
-                    || (minutes = CronExpressionParser.parseNumberExpression(writeTimeValues[1])) == null
-                    || (seconds = CronExpressionParser.parseNumberExpression(writeTimeValues[2])) == null) {
+                    || (hours = TextUtil.asInteger(writeTimeValues[0]).orElse(null)) == null
+                    || (minutes = TextUtil.asInteger(writeTimeValues[1]).orElse(null)) == null
+                    || (seconds = TextUtil.asInteger(writeTimeValues[2]).orElse(null)) == null) {
                     LOG.info("Expected value to be in format HH:MM:SS, actual: " + writeValue);
                     return;
                 }

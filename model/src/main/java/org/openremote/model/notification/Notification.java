@@ -22,7 +22,7 @@ package org.openremote.model.notification;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import java.util.List;
+import java.util.Collection;
 
 public class Notification {
 
@@ -45,7 +45,7 @@ public class Notification {
         protected TargetType type;
         protected String[] ids;
 
-        public Targets(TargetType type, List<String> ids) {
+        public Targets(TargetType type, Collection<String> ids) {
             this(type, ids.toArray(new String[ids.size()]));
         }
 

@@ -33,6 +33,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Restricts rule RHS access to the scope of the engine (a rule in asset scope can not access users in global scope).
@@ -55,6 +56,11 @@ public class UsersFacade<T extends Ruleset> extends Users {
 
         @Override
         public List<String> getResults() {
+            return stream().collect(Collectors.toList());
+        }
+
+        @Override
+        public Stream<String> stream() {
             // Do security checks to ensure correct scoping
             // No restriction for global rulesets
             if (TenantRuleset.class.isAssignableFrom(rulesEngineId.getScope())) {
@@ -87,8 +93,7 @@ public class UsersFacade<T extends Ruleset> extends Users {
             }
 
             return Arrays.stream(identityService.getIdentityProvider().getUsers(this))
-                .map(User::getId)
-                .collect(Collectors.toList());
+                .map(User::getId);
         }
     }
 

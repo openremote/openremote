@@ -95,9 +95,12 @@ public class RulesEngine<T extends Ruleset> {
     final protected InferenceRulesEngine engine;
 
     protected boolean running;
+    protected long lastFireTimestamp;
     protected boolean trackLocationPredicates;
     protected ScheduledFuture fireTimer;
     protected ScheduledFuture statsTimer;
+    protected List<RulesetDeployment> newlyAddedDeployments = new ArrayList<>();
+    protected boolean assetStatesChanged = false;
 
     // Only used to optimize toString(), contains the details of this engine
     protected String deploymentInfo;
@@ -208,6 +211,7 @@ public class RulesEngine<T extends Ruleset> {
 
         // Check if ruleset is already deployed (maybe an older version)
         if (deployment != null) {
+            deployment.onStop(facts);
             deployment.stop();
             LOG.info("Removing ruleset deployment: " + ruleset);
             deployments.remove(ruleset.getId());
@@ -215,6 +219,7 @@ public class RulesEngine<T extends Ruleset> {
         }
 
         deployment = new RulesetDeployment(ruleset, timerService, assetStorageService, executorService, assetsFacade, usersFacade, notificationFacade);
+        newlyAddedDeployments.add(deployment);
 
         boolean compilationSuccessful = deployment.start();
 
@@ -254,7 +259,6 @@ public class RulesEngine<T extends Ruleset> {
             deployment.getStatus(),
             deployment.getErrorMessage()
         );
-
         start();
     }
 
@@ -262,14 +266,15 @@ public class RulesEngine<T extends Ruleset> {
      * @return <code>true</code> if this rules engine has no deployments.
      */
     public boolean removeRuleset(Ruleset ruleset) {
-        if (!deployments.containsKey(ruleset.getId())) {
+        RulesetDeployment deployment = deployments.remove(ruleset.getId());
+
+        if (deployment == null) {
             LOG.finer("Ruleset cannot be retracted as it was never deployed: " + ruleset);
             return deployments.size() == 0;
         }
 
         stop();
-
-        RulesetDeployment deployment = deployments.remove(ruleset.getId());
+        deployment.onStop(facts);
         deployment.stop();
         updateDeploymentInfo();
 
@@ -385,8 +390,20 @@ public class RulesEngine<T extends Ruleset> {
         // Remove any expired temporary facts
         facts.removeExpiredTemporaryFacts();
 
+        // Call on start for any newly deployed rulesets
+        newlyAddedDeployments.forEach(rulesetDeployment -> rulesetDeployment.onStart(facts));
+        newlyAddedDeployments.clear();
+
+        // Notify rulesets if assetstates changed
+        boolean notifyAssetStatesChanged = assetStatesChanged;
+        assetStatesChanged = false;
+
         for (RulesetDeployment deployment : deployments.values()) {
             try {
+                if (notifyAssetStatesChanged) {
+                    deployment.onAssetStatesChanged(facts);
+                }
+
                 RULES_LOG.fine("Firing rules @" + clock + " of: " + deployment);
 
                 // If full detail logging is enabled
@@ -399,6 +416,7 @@ public class RulesEngine<T extends Ruleset> {
                 facts.reset();
 
                 long startTimestamp = System.currentTimeMillis();
+                lastFireTimestamp = startTimestamp;
                 engine.fire(deployment.getRules(), facts);
                 RULES_LOG.fine("Rules executed in: " + (System.currentTimeMillis() - startTimestamp) + "ms");
 
@@ -456,6 +474,7 @@ public class RulesEngine<T extends Ruleset> {
     }
 
     public void updateFact(AssetState assetState, boolean fireImmediately) {
+        assetStatesChanged = true;
         facts.putAssetState(assetState);
         trackLocationPredicates = trackLocationPredicates || assetState.getAttributeName().equals(AttributeType.LOCATION.getAttributeName());
         if (fireImmediately) {
@@ -464,12 +483,14 @@ public class RulesEngine<T extends Ruleset> {
     }
 
     public void removeFact(AssetState assetState) {
+        assetStatesChanged = true;
         facts.removeAssetState(assetState);
         trackLocationPredicates = trackLocationPredicates || assetState.getAttributeName().equals(AttributeType.LOCATION.getAttributeName());
         fire();
     }
 
     public void insertFact(String expires, AssetState assetState) {
+        assetStatesChanged = true;
         facts.insertAssetEvent(expires, assetState);
         trackLocationPredicates = trackLocationPredicates || assetState.getAttributeName().equals(AttributeType.LOCATION.getAttributeName());
         fire();

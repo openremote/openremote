@@ -30,7 +30,10 @@ import org.openremote.model.value.ObjectValue;
     @JsonSubTypes.Type(value = DateTimePredicate.class, name = DateTimePredicate.name),
     @JsonSubTypes.Type(value = NumberPredicate.class, name = NumberPredicate.name),
     @JsonSubTypes.Type(value = RadialGeofencePredicate.class, name = RadialGeofencePredicate.name),
-    @JsonSubTypes.Type(value = RectangularGeofencePredicate.class, name = RectangularGeofencePredicate.name)
+    @JsonSubTypes.Type(value = RectangularGeofencePredicate.class, name = RectangularGeofencePredicate.name),
+    @JsonSubTypes.Type(value = ObjectValueKeyPredicate.class, name = ObjectValueKeyPredicate.name),
+    @JsonSubTypes.Type(value = ValueEmptyPredicate.class, name = ValueEmptyPredicate.name),
+    @JsonSubTypes.Type(value = ValueNotEmptyPredicate.class, name = ValueNotEmptyPredicate.name)
 })
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.NAME,

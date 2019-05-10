@@ -21,6 +21,6 @@ package org.openremote.model.rules.json;
 
 import org.openremote.model.notification.Notification;
 
-public class RuleActionNotification extends RuleActionWithTarget {
+public class RuleActionNotification extends RuleAction {
     public Notification notification;
 }

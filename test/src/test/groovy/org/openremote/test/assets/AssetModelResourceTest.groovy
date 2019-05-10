@@ -97,8 +97,8 @@ class AssetModelResourceTest extends Specification implements ManagerContainerTr
 
         def attributeValueTypeDescriptors = assetModelResource.getAttributeValueDescriptors(null)
 
-        then: "the 50 default value types should be present"
-        attributeValueTypeDescriptors.size() == 50
+        then: "the default value types should be present"
+        attributeValueTypeDescriptors.size() == 51
 
         when: "a request for Attribute value types is made"
 

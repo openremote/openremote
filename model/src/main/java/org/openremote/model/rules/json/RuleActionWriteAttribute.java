@@ -21,7 +21,7 @@ package org.openremote.model.rules.json;
 
 import org.openremote.model.value.Value;
 
-public class RuleActionWriteAttribute extends RuleActionWithTarget {
+public class RuleActionWriteAttribute extends RuleAction {
     public String attributeName;
     public Value value;
 }

@@ -24,6 +24,8 @@ import org.openremote.model.value.Values;
 
 public class ValueEmptyPredicate implements ValuePredicate {
 
+    public static final String name = "value-empty";
+
     @Override
     public ObjectValue toModelValue() {
         ObjectValue objectValue = Values.createObject();

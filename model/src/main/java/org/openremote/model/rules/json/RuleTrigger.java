@@ -22,15 +22,21 @@ package org.openremote.model.rules.json;
 import org.openremote.model.query.NewAssetQuery;
 
 /**
- * There are two types of trigger supported and only one should be specified if both are specified then {@link #asset}
- * trigger will be used.
- * <ul>
- * <li>{@link #asset} see {@link NewAssetQuery}</li>
- * <li>{@link #timer} Allows timer expressions to be specified and thus creating a time based rule (e.g. "1h")</li>
- * </ul>
+ * Consists of a timer expression (interval, absolute, CRON etc.) or query for filtering
+ * {@link org.openremote.model.rules.AssetState}s, if both are specified then the timer is used.
+ * <p>
+ * For timer based trigger it evaluates to true if the timer expression matches the current time. For query based trigger
+ * it evaluates to true when one or more {@link org.openremote.model.rules.AssetState}s (referencing unique
+ * {@link org.openremote.model.asset.Asset}s) are returned after applying the query to the
+ * {@link org.openremote.model.rules.AssetState}s in the RuleEngine that this rule is loaded into.
+ * <p>
+ * The {@link #tag} is used to name the {@link org.openremote.model.asset.Asset}s that are filtered by the query and can
+ * be used in the rule RHS to perform actions on these specific assets.
  */
 public class RuleTrigger {
 
-    public NewAssetQuery asset;
     public String timer;
+    public NewAssetQuery assets;
+    public String tag;
+    public RuleTriggerReset reset;
 }

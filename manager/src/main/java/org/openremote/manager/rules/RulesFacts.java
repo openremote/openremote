@@ -100,7 +100,7 @@ public class RulesFacts extends Facts implements RuleListener {
         trackLocationRules = false;
         Map<String, Set<GeofencePredicate>> assetStateLocationPredicateMap = this.assetStateLocationPredicateMap;
         this.assetStateLocationPredicateMap = null;
-        return assetStateLocationPredicateMap.entrySet().stream()
+        return assetStateLocationPredicateMap == null ? null : assetStateLocationPredicateMap.entrySet().stream()
                 .map(assetStateSetEntry ->
                         new RulesEngine.AssetStateLocationPredicates(
                                 assetStateSetEntry.getKey(),

@@ -34,6 +34,7 @@ import org.openremote.model.query.filter.*;
 import org.openremote.model.rules.AssetState;
 import org.openremote.model.rules.json.RuleCondition;
 import org.openremote.model.rules.json.RuleOperator;
+import org.openremote.model.rules.json.RuleTrigger;
 import org.openremote.model.util.Pair;
 import org.openremote.model.util.TimeUtil;
 import org.openremote.model.value.Value;
@@ -427,40 +428,8 @@ public class AssetQueryPredicate implements Predicate<AssetState> {
         return meta -> meta.stream().anyMatch(metaItemPredicate);
     }
 
-    public static Predicate<RulesFacts> asPredicate(TimerService timerService, AssetStorageService assetStorageService, RuleCondition<NewAssetQuery> condition) {
-
-        if ((condition.predicates == null || condition.predicates.length == 0)
-                && (condition.conditions == null || condition.conditions.length == 0)) {
-            return facts -> true;
-        }
-
-        RuleOperator operator = condition.operator == null ? RuleOperator.AND : condition.operator;
-
-        List<Predicate<RulesFacts>> assetPredicates = new ArrayList<>();
-
-        if (condition.predicates != null && condition.predicates.length > 0) {
-            assetPredicates.addAll(
-                    Arrays.stream(condition.predicates)
-                            .map(p ->
-                                    (Predicate<RulesFacts>) facts ->
-                                            facts.matchAssetState(p).findFirst().isPresent())
-                            .collect(Collectors.toList())
-            );
-        }
-
-        if (condition.conditions != null && condition.conditions.length > 0) {
-            assetPredicates.addAll(
-                    Arrays.stream(condition.conditions)
-                            .map(c -> asPredicate(timerService, assetStorageService, c)).collect(Collectors.toList())
-            );
-        }
-
-        return asPredicate(assetPredicates, operator);
-    }
-
     public static Predicate<AssetState> asPredicate(Supplier<Long> currentMillisProducer, RuleCondition<AttributePredicate> condition) {
-        if ((condition.predicates == null || condition.predicates.length == 0)
-                && (condition.conditions == null || condition.conditions.length == 0)) {
+        if (conditionIsEmpty(condition)) {
             return as -> true;
         }
 
@@ -490,7 +459,12 @@ public class AssetQueryPredicate implements Predicate<AssetState> {
         return asPredicate(assetStatePredicates, operator);
     }
 
-    protected static <T> Predicate<T> asPredicate(List<Predicate<T>> predicates, RuleOperator operator) {
+    protected static boolean conditionIsEmpty(RuleCondition condition) {
+        return (condition.predicates == null || condition.predicates.length == 0)
+                && (condition.conditions == null || condition.conditions.length == 0);
+    }
+
+    protected static <T> Predicate<T> asPredicate(Collection<Predicate<T>> predicates, RuleOperator operator) {
         return in -> {
             boolean matched = false;
 

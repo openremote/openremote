@@ -21,13 +21,7 @@ package org.openremote.model.rules.json;
 
 import org.openremote.model.value.Value;
 
-public class RuleActionUpdateAttribute extends RuleActionWithTarget {
-    public String attributeName;
-    public Value value;
-    public String key;
-    public Integer index;
-    public UpdateAction updateAction;
-
+public class RuleActionUpdateAttribute extends RuleAction {
     public enum UpdateAction {
         ADD,
         ADD_OR_REPLACE,
@@ -35,4 +29,10 @@ public class RuleActionUpdateAttribute extends RuleActionWithTarget {
         DELETE,
         CLEAR
     }
+
+    public String attributeName;
+    public Value value;
+    public String key;
+    public Integer index;
+    public UpdateAction updateAction;
 }

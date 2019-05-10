@@ -348,8 +348,8 @@ public class BaseAssetQuery<CHILD extends BaseAssetQuery<CHILD>> {
         return (CHILD) this;
     }
 
-    public CHILD ids(List<String> ids) {
-        this.ids = ids;
+    public CHILD ids(Collection<String> ids) {
+        this.ids = ids != null ? new ArrayList<>(ids) : null;
         return (CHILD) this;
     }
 

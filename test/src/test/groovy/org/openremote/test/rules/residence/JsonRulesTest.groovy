@@ -187,25 +187,21 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
             assert targetIds[0] == consoleRegistration.id
         }
 
-        and: "the rule reset fact should have been created"
-        conditions.eventually {
-            assert tenantAEngine.facts.getOptional(ruleset.id + "_" + ruleset.version + "_Test Rule_" + consoleRegistration.id + "_location").isPresent()
-        }
-
         and: "after a few seconds the rule should not have fired again"
         new PollingConditions(initialDelay: 3).eventually {
             assert notificationMessages.size() == 1
         }
 
         when: "the console device moves back inside the home geofence (as defined in the rule)"
+        def lastFireTimestamp = tenantAEngine.lastFireTimestamp
         authenticatedAssetResource.writeAttributeValue(null, consoleRegistration.id, LOCATION.attributeName, ManagerDemoSetup.SMART_BUILDING_LOCATION.toValue().toJson())
 
-        then: "the rule reset fact should be removed"
+        and: "the engine fires at least one more time"
         conditions.eventually {
-            assert !tenantAEngine.facts.getOptional(ruleset.id + "_" + ruleset.version + "_Test Rule_" + consoleRegistration.id + "_location").isPresent()
+            assert tenantAEngine.lastFireTimestamp > lastFireTimestamp
         }
 
-        when: "the console device moves outside the home geofence again (as defined in the rule)"
+        and: "the console device moves outside the home geofence again (as defined in the rule)"
         authenticatedAssetResource.writeAttributeValue(null, consoleRegistration.id, LOCATION.attributeName, new GeoJSONPoint(0d,0d).toValue().toJson())
 
         then: "another notification should have been sent to the console"
@@ -218,7 +214,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         advancePseudoClock(35, MINUTES, container)
         authenticatedAssetResource.writeAttributeValue(null, consoleRegistration.id, LOCATION.attributeName, new GeoJSONPoint(0d,0d).toValue().toJson())
 
-        then: "another notification should have been sent to the console (because the reset condition includes reset on attributeTimestampChange)"
+        then: "another notification should have been sent to the console (because the reset condition includes reset on timestampChanges)"
         conditions.eventually {
             assert notificationMessages.size() == 3
             assert targetIds[2] == consoleRegistration.id
@@ -227,7 +223,7 @@ class JsonRulesTest extends Specification implements ManagerContainerTrait {
         when: "the console sends a location update with a new location but still outside the geofence"
         authenticatedAssetResource.writeAttributeValue(null, consoleRegistration.id, LOCATION.attributeName, new GeoJSONPoint(10d,10d).toValue().toJson())
 
-        then: "another notification should have been sent to the console (because the reset condition includes reset on attributeValueChange)"
+        then: "another notification should have been sent to the console (because the reset condition includes reset on valueChanges)"
         conditions.eventually {
             assert notificationMessages.size() == 4
             assert targetIds[3] == consoleRegistration.id

@@ -24,6 +24,7 @@ import org.openremote.model.value.Values;
 
 public class ObjectValueKeyPredicate implements ValuePredicate {
 
+    public static final String name = "object-value-key";
     public boolean negated;
     public String key;
 

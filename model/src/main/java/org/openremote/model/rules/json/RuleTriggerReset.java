@@ -19,35 +19,38 @@
  */
 package org.openremote.model.rules.json;
 
-import org.openremote.model.query.NewAssetQuery;
-
 /**
  * This defines when an {@link org.openremote.model.rules.AssetState} becomes eligible for triggering the rule again once
- * if has triggered a rule.
+ * if has triggered a rule. If a reset is not specified then {@link #noLongerMatches} is assumed.
  * <p>
  * There is an implicit OR condition between each option.
  */
 public class RuleTriggerReset {
 
     /**
-     * Simple timer expression e.g. '1h'
+     * Never reset i.e. fire once only for a given {@link org.openremote.model.rules.AssetState}.
+     */
+    public boolean never;
+
+    /**
+     * Simple timer expression e.g. '1h' that is started when
      */
     public String timer;
 
     /**
-     * When the {@link Rule#when} {@link NewAssetQuery} evaluates to true.
+     * When the {@link org.openremote.model.rules.AssetState} no longer evaluates to true.
      */
-    public boolean triggerNoLongerMatches;
+    public boolean noLongerMatches;
 
     /**
      * When the timestamp of the {@link org.openremote.model.rules.AssetState} changes in comparison to the timestamp
-     * at the time the rule fired.
+     * at the time when it matched.
      */
-    public boolean attributeTimestampChange;
+    public boolean timestampChanges;
 
     /**
      * When the value of the {@link org.openremote.model.rules.AssetState} changes in comparison to the value at the
-     * time the rule fired.
+     * time when it matched.
      */
-    public boolean attributeValueChange;
+    public boolean valueChanges;
 }

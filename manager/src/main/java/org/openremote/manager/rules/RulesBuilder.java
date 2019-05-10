@@ -30,6 +30,7 @@ import java.util.List;
  */
 public class RulesBuilder {
 
+    @FunctionalInterface
     public interface Condition {
         Object evaluate(RulesFacts facts);
     }

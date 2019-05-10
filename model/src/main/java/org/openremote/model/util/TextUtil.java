@@ -260,4 +260,15 @@ public class TextUtil {
     public static String toProperCase(String s, boolean convertUnderscoreToSpace) {
         return toCamelCase(s, true, convertUnderscoreToSpace);
     }
+
+    public static Optional<Integer> asInteger(String str) {
+        if (isNullOrEmpty(str)) {
+            return Optional.empty();
+        }
+        try {
+            return Optional.of(Integer.parseInt(str));
+        } catch(NumberFormatException e) {
+            return Optional.empty();
+        }
+    }
 }

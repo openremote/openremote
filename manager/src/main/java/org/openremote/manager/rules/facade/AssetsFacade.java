@@ -55,8 +55,8 @@ public class AssetsFacade<T extends Ruleset> extends Assets {
             if (AssetRuleset.class.isAssignableFrom(rulesEngineId.getScope())) {
                 Asset restrictedAsset = assetStorageService.find(
                     rulesEngineId.getAssetId().orElseThrow(() -> new IllegalStateException("Asset ID missing: " + rulesEngineId)),
-                    true
-                                                                );
+                    true);
+
                 if (restrictedAsset == null) {
                     throw new IllegalStateException("Asset is no longer available: " + rulesEngineId);
                 }
@@ -92,14 +92,13 @@ public class AssetsFacade<T extends Ruleset> extends Assets {
         }
 
         @Override
-        public String getResult() {
+        public Asset getResult() {
             // TODO: 'Security' checks must be done here as AssetQuery fields can easily be set by a rule
-            Asset asset = assetStorageService.find(this);
-            return asset != null ? asset.getId() : null;
+            return assetStorageService.find(this);
         }
 
         @Override
-        public Stream<String> stream() {
+        public Stream<Asset> stream() {
             // TODO: 'Security' checks must be done here as AssetQuery fields can easily be set by a rule
 
             if (this.select == null)
@@ -107,7 +106,7 @@ public class AssetsFacade<T extends Ruleset> extends Assets {
             Include oldValue = this.select.include;
             this.select.include = Include.ONLY_ID_AND_NAME;
             try {
-                return assetStorageService.findAll(this).stream().map(Asset::getId);
+                return assetStorageService.findAll(this).stream();
             } finally {
                 this.select.include = oldValue;
             }
