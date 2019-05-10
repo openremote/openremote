@@ -19,6 +19,8 @@
  */
 package org.openremote.model.query.filter;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Values;
 
@@ -32,7 +34,8 @@ public class ObjectValueKeyPredicate implements ValuePredicate {
         key = hasKey;
     }
 
-    public ObjectValueKeyPredicate(String hasKey, boolean negate) {
+    @JsonCreator
+    public ObjectValueKeyPredicate(@JsonProperty("key") String hasKey, @JsonProperty("negated") boolean negate) {
         key = hasKey;
         negated = negate;
     }

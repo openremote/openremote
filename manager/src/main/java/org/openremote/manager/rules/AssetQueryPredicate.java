@@ -22,6 +22,8 @@ package org.openremote.manager.rules;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Envelope;
 import org.geotools.referencing.GeodeticCalculator;
+import org.joda.time.format.DateTimeFormatter;
+import org.joda.time.format.ISODateTimeFormat;
 import org.openremote.container.timer.TimerService;
 import org.openremote.manager.asset.AssetStorageService;
 import org.openremote.model.attribute.Meta;
@@ -34,14 +36,11 @@ import org.openremote.model.query.filter.*;
 import org.openremote.model.rules.AssetState;
 import org.openremote.model.rules.json.RuleCondition;
 import org.openremote.model.rules.json.RuleOperator;
-import org.openremote.model.rules.json.RuleTrigger;
 import org.openremote.model.util.Pair;
 import org.openremote.model.util.TimeUtil;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.Values;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -58,6 +57,7 @@ public class AssetQueryPredicate implements Predicate<AssetState> {
     final protected NewAssetQuery query;
     final protected TimerService timerService;
     final protected AssetStorageService assetStorageService;
+    static final protected DateTimeFormatter dateFormatter = ISODateTimeFormat.dateTimeNoMillis();
 
     // TODO: Remove this ctor once asset queries merged
     @SuppressWarnings("unchecked")
@@ -498,17 +498,17 @@ public class AssetQueryPredicate implements Predicate<AssetState> {
             if (TimeUtil.isTimeDuration(dateTimePredicate.value)) {
                 from = currentMillis + TimeUtil.parseTimeDuration(dateTimePredicate.value);
             } else {
-                from = new SimpleDateFormat(dateTimePredicate.dateFormat).parse(dateTimePredicate.value).getTime();
+                from = dateFormatter.parseMillis(dateTimePredicate.value);
             }
 
             if (dateTimePredicate.operator == BaseAssetQuery.Operator.BETWEEN) {
                 if (TimeUtil.isTimeDuration(dateTimePredicate.rangeValue)) {
                     to = currentMillis + TimeUtil.parseTimeDuration(dateTimePredicate.rangeValue);
                 } else {
-                    to = new SimpleDateFormat(dateTimePredicate.dateFormat).parse(dateTimePredicate.rangeValue).getTime();
+                    to = dateFormatter.parseMillis(dateTimePredicate.rangeValue);
                 }
             }
-        } catch (ParseException e) {
+        } catch (IllegalArgumentException e) {
             from = null;
             to = null;
         }

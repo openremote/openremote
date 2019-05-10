@@ -22,6 +22,7 @@ package org.openremote.model.query.filter;
 import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Values;
 
+// TODO: Incorporate meta predicates here
 public class AttributePredicate {
 
     public StringPredicate name;

@@ -23,13 +23,17 @@ import org.openremote.model.query.BaseAssetQuery;
 import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Values;
 
+/**
+ * Predicate for date time values; provided values should be valid ISO 8601 datetime strings (e.g. yyyy-MM-dd'T'HH:mm:ssZ
+ * or yyyy-MM-dd'T'HH:mm:ss\u00b1HH:mm), it is recommended to include time zone information to avoid any issues working
+ * across timezones.
+ */
 public class DateTimePredicate implements ValuePredicate {
 
     public static final String name = "datetime";
     public String value; // Sliding window value e.g. 1h or fixed date time
     public String rangeValue; // Sliding window value e.g. 1h or fixed date time (used as upper bound when Operator.BETWEEN)
     public BaseAssetQuery.Operator operator = BaseAssetQuery.Operator.EQUALS;
-    public String dateFormat = "yyyy-MM-dd HH:mm:ss"; // SimpleDateFormat
 
     public DateTimePredicate() {
     }
@@ -48,9 +52,6 @@ public class DateTimePredicate implements ValuePredicate {
     public static DateTimePredicate fromObjectValue(ObjectValue objectValue) {
         DateTimePredicate dateTimePredicate = new DateTimePredicate();
 
-        objectValue.getString("dateFormat").ifPresent(format -> {
-            dateTimePredicate.dateFormat = format;
-        });
         objectValue.getString("value").ifPresent(value -> {
             dateTimePredicate.value = value;
         });
@@ -68,11 +69,6 @@ public class DateTimePredicate implements ValuePredicate {
         return this;
     }
 
-    public DateTimePredicate dateFormat(String dateFormat) {
-        this.dateFormat = dateFormat;
-        return this;
-    }
-
     public DateTimePredicate value(String value) {
         this.value = value;
         return this;
@@ -87,7 +83,6 @@ public class DateTimePredicate implements ValuePredicate {
     public ObjectValue toModelValue() {
         ObjectValue objectValue = Values.createObject();
         objectValue.put("predicateType", name);
-        objectValue.put("dateFormat", Values.create(dateFormat));
         objectValue.put("value", Values.create(value));
         objectValue.put("rangeValue", Values.create(rangeValue));
         objectValue.put("operator", Values.create(operator.toString()));
@@ -100,7 +95,6 @@ public class DateTimePredicate implements ValuePredicate {
                 "value='" + value + '\'' +
                 ", rangeValue='" + rangeValue + '\'' +
                 ", operator =" + operator +
-                ", dateFormat='" + dateFormat + '\'' +
                 '}';
     }
 }

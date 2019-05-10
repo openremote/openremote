@@ -870,8 +870,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
                         .attributeValue(
                             "openingDate",
                             new DateTimePredicate(rangeStart.format(ISO_LOCAL_DATE_TIME), rangeEnd.format(ISO_LOCAL_DATE_TIME))
-                                .operator(Operator.BETWEEN)
-                                .dateFormat("yyyy-MM-dd'T'HH:mm:ss"))
+                                .operator(Operator.BETWEEN))
         )
 
 
@@ -885,8 +884,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
                         .tenant(new TenantPredicate(keycloakDemoSetup.masterTenant.realm))
                         .attributeValue(
                             "openingDate",
-                            new DateTimePredicate(Operator.GREATER_THAN, rangeStart.format(ISO_LOCAL_DATE_TIME))
-                                .dateFormat("yyyy-MM-dd'T'HH:mm:ss"))
+                            new DateTimePredicate(Operator.GREATER_THAN, rangeStart.format(ISO_LOCAL_DATE_TIME)))
         )
 
 
@@ -900,8 +898,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
                         .tenant(new TenantPredicate(keycloakDemoSetup.masterTenant.realm))
                         .attributeValue(
                         "openingDate",
-                        new DateTimePredicate(Operator.LESS_THAN, rangeEnd.format(ISO_LOCAL_DATE_TIME))
-                                .dateFormat("yyyy-MM-dd'T'HH:mm:ss"))
+                        new DateTimePredicate(Operator.LESS_THAN, rangeEnd.format(ISO_LOCAL_DATE_TIME)))
         )
 
 
@@ -917,8 +914,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
                         .tenant(new TenantPredicate(keycloakDemoSetup.masterTenant.realm))
                         .attributeValue(
                         "openingDate",
-                        new DateTimePredicate(Operator.EQUALS, rangeStart.format(ISO_LOCAL_DATE_TIME))
-                                .dateFormat("yyyy-MM-dd'T'HH:mm:ss"))
+                        new DateTimePredicate(Operator.EQUALS, rangeStart.format(ISO_LOCAL_DATE_TIME)))
         )
 
 
