@@ -8,7 +8,8 @@ import {
     RuleActionUnion,
     RuleActionUpdateAttributeUpdateAction,
     RuleTrigger,
-    AttributePredicate
+    AttributePredicate,
+    RuleCondition
 } from "@openremote/model";
 import {airlines, airports, countries, languages, regions} from "./resources";
 
@@ -49,7 +50,49 @@ export const rulesEditorConfig = {
 export const ruleTemplate: Rule = {
     name: "",
     when: undefined,
-    then: undefined
+    then: undefined,
+    otherwise: [
+        {
+            action: "update-attribute",
+            updateAction: RuleActionUpdateAttributeUpdateAction.DELETE,
+            attributeName: "flightProfiles",
+            key: "%RULESET_ID%"
+        }
+    ],
+    onStop: [
+        {
+            action: "update-attribute",
+            updateAction: RuleActionUpdateAttributeUpdateAction.DELETE,
+            attributeName: "flightProfiles",
+            key: "%RULESET_ID%",
+            target: {
+                assets: {
+                    types: [
+                        {
+                            predicateType: "string",
+                            match: BaseAssetQueryMatch.EXACT,
+                            value: "urn:openremote:asset:kmar:flight"
+                        }
+                    ],
+                    attributes: {
+                        predicates: [
+                            {
+                                name: {
+                                    predicateType: "string",
+                                    match: BaseAssetQueryMatch.EXACT,
+                                    value: "flightProfiles"
+                                },
+                                value: {
+                                    predicateType: "object-value-key",
+                                    key: "%RULESET_ID%"
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+    ]
 };
 
 export const rulesetTemplate: TenantRuleset = {
@@ -60,7 +103,6 @@ export const rulesetTemplate: TenantRuleset = {
     accessPublicRead: true,
     rules: JSON.stringify({rules: [ruleTemplate]})
 };
-
 
 export const defaultAssetType: NewAssetQuery = {
     types: [{
@@ -78,24 +120,27 @@ export const defaultThenCondition: RuleActionUnion = {
     value:  {
         profileName: "%RULESET_NAME%",
         profileColor: "orange"
-    },
-    target: { useAssetsFromWhen: true}
+    }
 };
 
 export const defaultThen: RuleActionUnion[] = [defaultThenCondition];
 
-export const defaultWhenCondition: RuleTrigger = {
-    asset: {
-        types: [{
-            predicateType: "string",
-            match: BaseAssetQueryMatch.EXACT,
-            value: "urn:openremote:asset:kmar:flight"
+export const defaultWhenCondition: RuleCondition<RuleTrigger> = {
+    predicates: [
+        {
+            assets: {
+                types: [{
+                    predicateType: "string",
+                    match: BaseAssetQueryMatch.EXACT,
+                    value: "urn:openremote:asset:kmar:flight"
+                }
+                ],
+                attributes: {
+                    predicates: []
+                }
+            }
         }
-        ],
-        attributes: {
-            predicates: []
-        }
-    }
+    ]
 };
 
 export const defaultPredicate: AttributePredicate = {

@@ -24,7 +24,6 @@ class OrRuleWhen extends LitElement {
     @property({type: Array})
     public predicates?: AttributePredicate[] = [];
 
-
     constructor() {
         super();
         this.addEventListener("when-condition:delete", this.deleteWhenCondition);
@@ -37,10 +36,10 @@ class OrRuleWhen extends LitElement {
            <div class="rule-content-section">
                 <div class="rule-when-container bg-white shadow">
                     <strong>Als..</strong>
-                    ${this.rule && this.rule.when && this.rule.when.asset && this.rule.when.asset.types && this.rule.when.asset.attributes && this.rule.when.asset.attributes.predicates ? html`
-                        ${this.rule.when.asset.attributes.predicates.map((predicate: AttributePredicate, index) => {
+                    ${this.rule && this.rule.when && this.rule.when.predicates && this.rule.when.predicates.length > 0 && this.rule.when.predicates[0].assets && this.rule.when.predicates[0].assets.types && this.rule.when.predicates[0].assets.attributes && this.rule.when.predicates[0].assets.attributes.predicates ? html`
+                        ${this.rule.when.predicates[0].assets.attributes.predicates.map((predicate: AttributePredicate, index) => {
                             return html`
-                                    <or-rule-when-condition index="${index}" .assetType="${this.rule!.when!.asset!.types![0].value}" .predicate="${predicate}"></or-rule-when-condition>
+                                    <or-rule-when-condition index="${index}" .assetType="${this.rule!.when!.predicates![0]!.assets!.types![0].value}" .predicate="${predicate}"></or-rule-when-condition>
                             `; })}
                     ` : ``}
                     
@@ -59,7 +58,7 @@ class OrRuleWhen extends LitElement {
         super.updated(_changedProperties);
         if (this.rule && !this.rule.when) {
             this.rule.when = cloneDeep(defaultWhenCondition);
-            if (this.rule!.when!.asset!.attributes!.predicates!.length === 0) {
+            if (this.rule.when.predicates![0].assets!.attributes!.predicates!.length === 0) {
                 this.addPredicate();
             }
             this.requestUpdate();
@@ -77,10 +76,10 @@ class OrRuleWhen extends LitElement {
     }
 
     private addPredicate() {
-        if (this.rule && this.rule.when && this.rule.when.asset && this.rule.when.asset.attributes && this.rule.when.asset.attributes.predicates) {
+        if (this.rule && this.rule.when && this.rule.when.predicates && this.rule.when.predicates.length > 0 && this.rule.when.predicates[0].assets && this.rule.when.predicates[0].assets.attributes && this.rule.when.predicates[0].assets.attributes.predicates) {
             const newPredicate = cloneDeep(defaultPredicate);
 
-            this.rule.when.asset.attributes.predicates.push(newPredicate);
+            this.rule.when.predicates[0].assets.attributes.predicates.push(newPredicate);
         }
     }
 
@@ -88,8 +87,8 @@ class OrRuleWhen extends LitElement {
 
         const index = e.detail.index;
 
-        if (this.rule && this.rule.when && this.rule.when.asset && this.rule.when.asset.attributes && this.rule.when.asset.attributes.predicates) {
-            this.rule.when.asset.attributes.predicates.splice(index, 1);
+        if (this.rule && this.rule.when && this.rule.when.predicates && this.rule.when.predicates.length > 0 && this.rule.when.predicates[0].assets && this.rule.when.predicates[0].assets.attributes && this.rule.when.predicates[0].assets.attributes.predicates) {
+            this.rule.when.predicates[0].assets.attributes.predicates.splice(index, 1);
             this.requestUpdate();
         }
     }
