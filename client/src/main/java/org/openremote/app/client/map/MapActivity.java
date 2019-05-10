@@ -40,7 +40,6 @@ import org.openremote.model.attribute.AttributeValueDescriptor;
 import org.openremote.model.attribute.AttributeValueType;
 import org.openremote.model.event.bus.EventBus;
 import org.openremote.model.event.bus.EventRegistration;
-import org.openremote.model.event.shared.SharedEventWithAssetId;
 import org.openremote.model.geo.GeoJSON;
 import org.openremote.model.map.MapResource;
 import org.openremote.model.value.Values;
@@ -181,7 +180,7 @@ public class MapActivity extends AssetBrowsingActivity<MapPlace> implements MapV
                 if (asset.hasGeoFeature() || dashboardAttributes.size() > 0) {
                     showAssetInfoItems();
                     environment.getEventService().subscribe(
-                        SharedEventWithAssetId.class,
+                        AttributeEvent.class,
                         new AssetEvent.AssetIdFilter(asset.getId())
                     );
                 }

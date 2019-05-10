@@ -32,7 +32,7 @@ import java.util.Arrays;
  */
 public class AssetEvent extends SharedEventWithAssetId {
 
-    public static class AssetIdFilter extends EventFilter<SharedEventWithAssetId> {
+    public static class AssetIdFilter<T extends SharedEventWithAssetId> extends EventFilter<T> {
 
         public static final String FILTER_TYPE = "asset-id";
 

@@ -45,7 +45,6 @@ import org.openremote.model.datapoint.AssetDatapointResource;
 import org.openremote.model.datapoint.Datapoint;
 import org.openremote.model.datapoint.DatapointInterval;
 import org.openremote.model.datapoint.NumberDatapoint;
-import org.openremote.model.event.shared.SharedEventWithAssetId;
 import org.openremote.model.event.shared.TenantFilter;
 import org.openremote.model.interop.Consumer;
 import org.openremote.model.map.MapResource;
@@ -187,7 +186,7 @@ public class AssetViewActivity
     protected void subscribeLiveUpdates(boolean subscribe) {
         if (subscribe) {
             environment.getEventService().subscribe(
-                SharedEventWithAssetId.class,
+                AttributeEvent.class,
                 new AssetEvent.AssetIdFilter(asset.getId())
             );
         } else {
