@@ -684,6 +684,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Asse
                 // TODO This is not very useful without locking the engines until we are done with the update
                 for (RulesEngine rulesEngine : rulesEngines) {
                     if (rulesEngine.isError()) {
+                        LOG.severe("Cannot update asset state as one or more rule engines in scope are in an error state");
                         throw rulesEngine.getError();
                     }
                 }

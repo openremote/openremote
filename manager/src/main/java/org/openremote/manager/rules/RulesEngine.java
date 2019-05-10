@@ -391,7 +391,12 @@ public class RulesEngine<T extends Ruleset> {
         facts.removeExpiredTemporaryFacts();
 
         // Call on start for any newly deployed rulesets
-        newlyAddedDeployments.forEach(rulesetDeployment -> rulesetDeployment.onStart(facts));
+        newlyAddedDeployments.forEach(rulesetDeployment -> {
+            rulesetDeployment.onStart(facts);
+            if (!assetStatesChanged) {
+                rulesetDeployment.onAssetStatesChanged(facts);
+            }
+        });
         newlyAddedDeployments.clear();
 
         // Notify rulesets if assetstates changed

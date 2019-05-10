@@ -125,7 +125,7 @@ public class JsonRulesBuilder extends RulesBuilder {
                                 nextExecuteMillis = timerExpression.getNextInvalidTimeAfter(timerExpression.getNextInvalidTimeAfter(new Date(nextExecuteMillis))).getTime();
                     }
                 } catch (Exception e) {
-                    RulesEngine.RULES_LOG.log(Level.SEVERE, "Failed to parse rule trigger timer expression: " + ruleTrigger.timer, e);
+                    log(Level.SEVERE, "Failed to parse rule trigger timer expression: " + ruleTrigger.timer, e);
                 }
             }
 
@@ -175,6 +175,7 @@ public class JsonRulesBuilder extends RulesBuilder {
                 if (previouslyUnmatchedAssetStates != null) {
                     previouslyUnmatchedAssetStates.clear();
                 }
+                log(Level.FINEST, "Rule trigger has no unfiltered asset states so no match");
                 lastTriggerResult = new RuleTriggerResult(false, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), Collections.emptyList());
                 return;
             }
@@ -201,7 +202,13 @@ public class JsonRulesBuilder extends RulesBuilder {
 
             // Apply reset logic to make previously matched asset states eligible for matching again
             if (ruleTrigger.reset == null || ruleTrigger.reset.noLongerMatches) {
-                previouslyMatchedAssetStates.removeIf(assetState -> !matchedAssetStates.contains(assetState));
+                previouslyMatchedAssetStates.removeIf(assetState -> {
+                    boolean noLongerMatches = !matchedAssetStates.contains(assetState);
+                    if (noLongerMatches) {
+                        log(Level.FINER, "Rule trigger previously matched asset state no longer matches so resetting: " + assetState);
+                    }
+                    return noLongerMatches;
+                });
             }
 
             if (ruleTriggerResetHasTimer(ruleTrigger.reset)) {
@@ -210,6 +217,7 @@ public class JsonRulesBuilder extends RulesBuilder {
                     boolean expired = timestamp != null && timerService.getCurrentTimeMillis() > timestamp;
                     if (expired) {
                         previouslyMatchedExpiryTimes.remove(assetState);
+                        log(Level.FINER, "Rule trigger previously matched asset state timer has expired or timestamp has changed so resetting: " + assetState);
                     }
                     return expired;
                 });
@@ -222,7 +230,11 @@ public class JsonRulesBuilder extends RulesBuilder {
                         return false;
                     }
 
-                    return !Objects.equals(previousAssetState.getValue().orElse(null), matchedAssetStates.get(index).getValue().orElse(null));
+                    boolean valueChanged = !Objects.equals(previousAssetState.getValue().orElse(null), matchedAssetStates.get(index).getValue().orElse(null));
+                    if (valueChanged) {
+                        log(Level.FINER, "Rule trigger previously matched asset state value has changed so resetting: " + previousAssetState);
+                    }
+                    return valueChanged;
                 });
             }
 
@@ -251,6 +263,7 @@ public class JsonRulesBuilder extends RulesBuilder {
                     .collect(Collectors.toList());
 
             lastTriggerResult = new RuleTriggerResult((!matchedAssetIds.isEmpty() || !unmatchedAssetIds.isEmpty()), matchedAssetStates, matchedAssetIds, unmatchedAssetStates, unmatchedAssetIds);
+            log(Level.FINEST, "Rule trigger result: " + lastTriggerResult);
         }
 
         Collection<String> getMatchedAssetIds() {
@@ -284,6 +297,17 @@ public class JsonRulesBuilder extends RulesBuilder {
             this.unmatchedAssetStates = unmatchedAssetStates;
             this.unmatchedAssetIds = unmatchedAssetIds;
         }
+
+        @Override
+        public String toString() {
+            return RuleTriggerResult.class.getSimpleName() + "{" +
+                    "matches=" + matches +
+                    ", matchedAssetStates=" + matchedAssetStates.size() +
+                    ", unmatchedAssetStates=" + unmatchedAssetStates.size() +
+                    ", matchedAssetIds=" + matchedAssetIds.size() +
+                    ", unmatchedAssetIds=" + unmatchedAssetIds.size() +
+                    '}';
+        }
     }
 
     enum TargetType {
@@ -291,6 +315,7 @@ public class JsonRulesBuilder extends RulesBuilder {
         USER
     }
 
+    final static String LOG_PREFIX = "JSON Rules: ";
     final protected AssetStorageService assetStorageService;
     final protected TimerService timerService;
     final protected Assets assetsFacade;
@@ -328,7 +353,7 @@ public class JsonRulesBuilder extends RulesBuilder {
         Action action = buildRhsAction(rule, triggerStateMap);
 
         if (condition == null || action == null) {
-            throw new IllegalArgumentException("Error building JSON rule '" + rule.name + "'");
+            throw new IllegalArgumentException("Error building JSON rule when or then is not defined: " + rule.name);
         }
 
         add().name(rule.name)
@@ -376,12 +401,13 @@ public class JsonRulesBuilder extends RulesBuilder {
 
     protected Condition buildLhsCondition(Rule rule, Map<String, RuleTriggerState> triggerStateMap) {
         if (rule.when == null) {
-            return facts -> false;
+            return null;
         }
 
         return facts -> {
 
             // Update each trigger state
+            log(Level.FINEST, "Updating rule trigger states for rule: " + rule.name);
             triggerStateMap.values().forEach(RuleTriggerState::update);
 
             // Check triggers for matches
@@ -391,17 +417,23 @@ public class JsonRulesBuilder extends RulesBuilder {
 
     protected Action buildRhsAction(Rule rule, Map<String, RuleTriggerState> triggerStateMap) {
 
+        if (rule.then == null) {
+            return null;
+        }
+
         return facts -> {
 
-            executeRuleActions(rule.then, false, facts, triggerStateMap, assetsFacade, usersFacade, notificationFacade, timerService, assetStorageService, scheduledActionConsumer);
+            log(Level.FINER, "Triggered rule so executing 'then' actions for rule: " + rule.name);
+            executeRuleActions(rule, rule.then, "then", false, facts, triggerStateMap, assetsFacade, usersFacade, notificationFacade, timerService, assetStorageService, scheduledActionConsumer);
 
             if (rule.otherwise != null) {
-                executeRuleActions(rule.otherwise, true, facts, triggerStateMap, assetsFacade, usersFacade, notificationFacade, timerService, assetStorageService, scheduledActionConsumer);
+                log(Level.FINER, "Triggered rule so executing 'otherwise' actions for rule: " + rule.name);
+                executeRuleActions(rule, rule.otherwise, "otherwise", true, facts, triggerStateMap, assetsFacade, usersFacade, notificationFacade, timerService, assetStorageService, scheduledActionConsumer);
             }
         };
     }
 
-    public static void executeRuleActions(RuleAction[] ruleActions, boolean useUnmatched, RulesFacts facts, Map<String, RuleTriggerState> triggerStateMap, Assets assetsFacade, Users usersFacade, NotificationsFacade notificationsFacade, TimerService timerService, AssetStorageService assetStorageService, BiConsumer<Runnable, Long> scheduledActionConsumer) {
+    public static void executeRuleActions(Rule rule, RuleAction[] ruleActions, String actionsName, boolean useUnmatched, RulesFacts facts, Map<String, RuleTriggerState> triggerStateMap, Assets assetsFacade, Users usersFacade, NotificationsFacade notificationsFacade, TimerService timerService, AssetStorageService assetStorageService, BiConsumer<Runnable, Long> scheduledActionConsumer) {
 
         // Push rule trigger results into the trigger state for future runs and store timestamps where required
         if (triggerStateMap != null) {
@@ -436,9 +468,14 @@ public class JsonRulesBuilder extends RulesBuilder {
 
             long delay = 0L;
 
-            for (RuleAction ruleAction : ruleActions) {
+            for (int i=0; i<ruleActions.length; i++) {
+
+                RuleAction ruleAction = ruleActions[i];
                 JsonRulesBuilder.RuleActionExecution actionExecution = buildRuleActionExecution(
+                        rule,
                         ruleAction,
+                        actionsName,
+                        i,
                         useUnmatched,
                         facts,
                         triggerStateMap,
@@ -451,6 +488,7 @@ public class JsonRulesBuilder extends RulesBuilder {
                     delay += actionExecution.delay;
 
                     if (delay > 0L) {
+                        log(Level.FINE, "Delaying rule action for " + delay + "ms for rule action: " + rule.name + " '" + actionsName + "' action index " + i);
                         scheduledActionConsumer.accept(actionExecution.runnable, delay);
                     } else {
                         actionExecution.runnable.run();
@@ -469,21 +507,23 @@ public class JsonRulesBuilder extends RulesBuilder {
                 .getResults();
     }
 
-    protected static Collection<String> getAssetIds(Assets assets, org.openremote.model.query.AssetQuery assetQuery) {
+    protected static Collection<String> getAssetIds(Assets assets, NewAssetQuery newAssetQuery) {
+        AssetQuery query = new AssetQuery();
+        newAssetQueryToAssetQuery(newAssetQuery, query);
         return assets.query()
-                .ids(assetQuery.ids)
-                .name(assetQuery.name)
-                .parent(assetQuery.parent)
-                .path(assetQuery.path)
-                .type(assetQuery.type)
-                .attributes(assetQuery.attribute)
-                .attributeMeta(assetQuery.attributeMeta)
+                .ids(query.ids)
+                .name(query.name)
+                .parent(query.parent)
+                .path(query.path)
+                .type(query.type)
+                .attributes(query.attribute)
+                .attributeMeta(query.attributeMeta)
                 .stream()
                 .map(Asset::getId)
                 .collect(Collectors.toList());
     }
 
-    protected static RuleActionExecution buildRuleActionExecution(RuleAction ruleAction, boolean useUnmatched, RulesFacts facts, Map<String, RuleTriggerState> triggerStateMap, Assets assetsFacade, Users usersFacade, NotificationsFacade notificationsFacade, AssetStorageService assetStorageService) {
+    protected static RuleActionExecution buildRuleActionExecution(Rule rule, RuleAction ruleAction, String actionsName, int index, boolean useUnmatched, RulesFacts facts, Map<String, RuleTriggerState> triggerStateMap, Assets assetsFacade, Users usersFacade, NotificationsFacade notificationsFacade, AssetStorageService assetStorageService) {
 
         if (ruleAction instanceof RuleActionNotification) {
             RuleActionNotification notificationAction = (RuleActionNotification) ruleAction;
@@ -497,11 +537,13 @@ public class JsonRulesBuilder extends RulesBuilder {
                     targetType = Notification.TargetType.USER;
                 }
 
-                if (ids != null) {
-                    notificationAction.notification.setTargets(
-                            new Notification.Targets(targetType, ids));
+                if (ids == null) {
+                    log(Level.FINEST, "No targets for notification rule action so skipping: " + rule.name + " '" + actionsName + "' action index " + index);
+                    return null;
                 }
 
+                notificationAction.notification.setTargets(new Notification.Targets(targetType, ids));
+                log(Level.FINE, "Sending notification for rule action: " + rule.name + " '" + actionsName + "' action index " + index);
                 return new RuleActionExecution(() -> notificationsFacade.send(notificationAction.notification), 0);
             }
         }
@@ -517,11 +559,15 @@ public class JsonRulesBuilder extends RulesBuilder {
             if (!TextUtil.isNullOrEmpty(attributeAction.attributeName)) {
                 Collection<String> ids = getRuleActionTargetIds(ruleAction.target, useUnmatched, triggerStateMap, assetsFacade, usersFacade);
 
-                if (ids != null) {
-                    return new RuleActionExecution(() ->
-                            ids.forEach(id ->
-                                    assetsFacade.dispatch(id, attributeAction.attributeName, attributeAction.value)), 0);
+                if (ids == null) {
+                    log(Level.FINEST, "No targets for write attribute rule action so skipping: " + rule.name + " '" + actionsName + "' action index " + index);
+                    return null;
                 }
+
+                log(Level.FINE, "Writing attribute '" + attributeAction.attributeName + "' for " + ids.size() + " asset(s) for rule action: " + rule.name + " '" + actionsName + "' action index " + index);
+                return new RuleActionExecution(() ->
+                        ids.forEach(id ->
+                                assetsFacade.dispatch(id, attributeAction.attributeName, attributeAction.value)), 0);
             }
         }
 
@@ -530,11 +576,13 @@ public class JsonRulesBuilder extends RulesBuilder {
             if (millis > 0) {
                 return new RuleActionExecution(null, millis);
             }
+            log(Level.FINEST, "Invalid delay for wait rule action so skipping: " + rule.name + " '" + actionsName + "' action index " + index);
         }
 
         if (ruleAction instanceof RuleActionUpdateAttribute) {
 
             if (targetIsNotAssets(ruleAction.target)) {
+                log(Level.FINEST, "Invalid target update attribute rule action so skipping: " + rule.name + " '" + actionsName + "' action index " + index);
                 return null;
             }
 
@@ -543,7 +591,7 @@ public class JsonRulesBuilder extends RulesBuilder {
             if (!TextUtil.isNullOrEmpty(attributeUpdateAction.attributeName)) {
 
                 Map<String, Pair<ValueType, Value>> assetAttributeValueMap = new HashMap<>();
-                AssetQuery assetQuery = null;
+                NewAssetQuery assetQuery = null;
 
                 if (ruleAction.target == null || ruleAction.target.assets == null) {
                     Collection<String> assetIds = getRuleActionTargetIds(ruleAction.target, useUnmatched, triggerStateMap, assetsFacade, usersFacade);
@@ -558,7 +606,7 @@ public class JsonRulesBuilder extends RulesBuilder {
                         if (assetState.isPresent()) {
                             ValueType valueType = assetState.get().getValue().map(Value::getType).orElseGet(() -> assetState.get().getAttributeValueType() != null ? assetState.get().getAttributeValueType().getValueType() : null);
                             if (!(valueType == ValueType.ARRAY || valueType == ValueType.OBJECT)) {
-                                RulesEngine.RULES_LOG.warning("JSON Rule: Rule action target asset '" + assetState.get().getId() + "' cannot determine value type or incompatible value type for attribute: " + attributeUpdateAction.attributeName);
+                                log(Level.WARNING, "JSON Rule: Rule action target asset '" + assetState.get().getId() + "' cannot determine value type or incompatible value type for attribute: " + attributeUpdateAction.attributeName);
                             } else {
                                 assetAttributeValueMap.put(assetState.get().getId(), new Pair<>(valueType, assetState.get().getValue().orElse(null)));
                             }
@@ -568,7 +616,8 @@ public class JsonRulesBuilder extends RulesBuilder {
                     }).collect(Collectors.toList());
 
                     if (!assetsToLookup.isEmpty()) {
-                        assetQuery = new AssetQuery().ids(assetsToLookup);
+                        assetQuery = new NewAssetQuery();
+                        assetQuery.ids = assetsToLookup.toArray(new String[0]);
                     }
                 } else {
                     assetQuery = ruleAction.target.assets;
@@ -579,11 +628,11 @@ public class JsonRulesBuilder extends RulesBuilder {
                     assets.forEach(asset -> {
                         Attribute attribute = asset.getAttribute(attributeUpdateAction.attributeName).orElse(null);
                         if (attribute == null) {
-                            RulesEngine.RULES_LOG.warning("JSON Rule: Rule action target asset '" + asset.getId() + "' doesn't have requested attribute: " + attributeUpdateAction.attributeName);
+                            log(Level.WARNING, "JSON Rule: Rule action target asset '" + asset.getId() + "' doesn't have requested attribute: " + attributeUpdateAction.attributeName);
                         } else {
                             ValueType valueType = attribute.getValue().map(Value::getType).orElseGet(() -> attribute.getType().map(AttributeValueDescriptor::getValueType).orElse(null));
                             if (!(valueType == ValueType.ARRAY || valueType == ValueType.OBJECT)) {
-                                RulesEngine.RULES_LOG.warning("JSON Rule: Rule action target asset '" + asset.getId() + "' cannot determine value type or incompatible value type for attribute: " + attributeUpdateAction.attributeName);
+                                log(Level.WARNING, "JSON Rule: Rule action target asset '" + asset.getId() + "' cannot determine value type or incompatible value type for attribute: " + attributeUpdateAction.attributeName);
                             } else {
                                 assetAttributeValueMap.put(asset.getId(), new Pair<>(valueType, attribute.getValue().orElse(null)));
                             }
@@ -591,11 +640,22 @@ public class JsonRulesBuilder extends RulesBuilder {
                     });
                 }
 
+                assetAttributeValueMap.keySet().removeIf(assetId -> {
+                            Pair<ValueType, Value> valueTypeValue = assetAttributeValueMap.get(assetId);
+                            return valueTypeValue.value == null
+                                    && (attributeUpdateAction.updateAction == RuleActionUpdateAttribute.UpdateAction.DELETE
+                                    || attributeUpdateAction.updateAction == RuleActionUpdateAttribute.UpdateAction.CLEAR);
+                        });
+
+                if (assetAttributeValueMap.isEmpty()) {
+                    return null;
+                }
+
+                log(Level.FINE, "Updating attribute '" + attributeUpdateAction.attributeName + "' for " + assetAttributeValueMap.size() + " asset(s) for rule action: " + rule.name + " '" + actionsName + "' action index " + index);
                 return new RuleActionExecution(() ->
                         assetAttributeValueMap.forEach((id, valueAndType) -> {
                             ValueType valueType = valueAndType.key;
                             Value value = valueAndType.value;
-                            boolean skip = false;
 
                             switch (attributeUpdateAction.updateAction) {
                                 case ADD:
@@ -624,43 +684,34 @@ public class JsonRulesBuilder extends RulesBuilder {
                                             ((ObjectValue) value).put(attributeUpdateAction.key, attributeUpdateAction.value);
                                         } else {
                                             try {
-                                                RulesEngine.RULES_LOG.warning("JSON Rule: Rule action missing required 'key': " + Container.JSON.writeValueAsString(attributeUpdateAction));
+                                                log(Level.WARNING, "JSON Rule: Rule action missing required 'key': " + Container.JSON.writeValueAsString(attributeUpdateAction));
                                             } catch (JsonProcessingException ignored) {
                                             }
                                         }
                                     }
                                     break;
                                 case DELETE:
-                                    if (value == null) {
-                                        skip = true;
+                                    if (valueType.equals(ValueType.ARRAY)) {
+                                        ((ArrayValue) value).remove(attributeUpdateAction.index);
                                     } else {
-                                        if (valueType.equals(ValueType.ARRAY)) {
-                                            ((ArrayValue) value).remove(attributeUpdateAction.index);
-                                        } else {
-                                            ((ObjectValue) value).remove(attributeUpdateAction.key);
-                                        }
+                                        ((ObjectValue) value).remove(attributeUpdateAction.key);
                                     }
                                     break;
                                 case CLEAR:
-                                    if (value == null) {
-                                        skip = true;
-                                    } else {
-                                        if (valueType.equals(ValueType.ARRAY)) {
+                                    if (valueType.equals(ValueType.ARRAY)) {
                                             value = Values.createArray();
                                         } else {
                                             value = Values.createObject();
-                                        }
-                                    }
+                                }
                                     break;
                             }
 
-                            if (!skip) {
-                                assetsFacade.dispatch(id, attributeUpdateAction.attributeName, value);
-                            }
+                            assetsFacade.dispatch(id, attributeUpdateAction.attributeName, value);
                         }), 0);
             }
         }
 
+        log(Level.FINE, "Unsupported rule action: " + rule.name + " '" + actionsName + "' action index " + index);
         return null;
     }
 
@@ -674,19 +725,23 @@ public class JsonRulesBuilder extends RulesBuilder {
             }
             query.ids(ids);
         } else {
-            query.ids(target.assets.ids)
-                    .name(target.assets.name)
-                    .parent(target.assets.parent)
-                    .path(target.assets.path)
-                    .type(target.assets.type)
-                    .attributes(target.assets.attribute)
-                    .attributeMeta(target.assets.attributeMeta);
+            newAssetQueryToAssetQuery(target.assets, query);
         }
 
         query.select = new BaseAssetQuery.Select(BaseAssetQuery.Include.ONLY_ID_AND_NAME_AND_ATTRIBUTES);
         return assetStorageService.findAll(query).stream();
     }
-
+    
+    // TODO: This is a hack until AssetQuery and NewAssetQuery are merged
+    protected static void newAssetQueryToAssetQuery(NewAssetQuery newQuery, BaseAssetQuery query) {
+        query.ids(newQuery.ids)
+                .name(newQuery.names != null && newQuery.names.length > 0 ? newQuery.names[0] : null)
+                .parent(newQuery.parents != null && newQuery.parents.length > 0 ? newQuery.parents[0] : null)
+                .path(newQuery.paths != null && newQuery.paths.length > 0 ? newQuery.paths[0] : null)
+                .type(newQuery.types != null && newQuery.types.length > 0 ? newQuery.types[0] : null)
+                .attributes(newQuery.attributes != null && newQuery.attributes.predicates != null ? newQuery.attributes.predicates : null);
+    }
+    
     protected static Collection<String> getRuleActionTargetIds(RuleActionTarget target, boolean useUnmatched, Map<String, RuleTriggerState> triggerStateMap, Assets assetsFacade, Users usersFacade) {
         if (target != null) {
             if (!TextUtil.isNullOrEmpty(target.ruleTriggerTag) && triggerStateMap != null) {
@@ -775,5 +830,13 @@ public class JsonRulesBuilder extends RulesBuilder {
 
     protected static boolean targetIsNotAssets(RuleActionTarget target) {
         return target != null && target.assets == null && TextUtil.isNullOrEmpty(target.ruleTriggerTag);
+    }
+
+    protected static void log(Level level, String message) {
+        RulesEngine.RULES_LOG.log(level, LOG_PREFIX + message);
+    }
+
+    protected static void log(Level level, String message, Throwable t) {
+        RulesEngine.RULES_LOG.log(level, LOG_PREFIX + message, t);
     }
 }

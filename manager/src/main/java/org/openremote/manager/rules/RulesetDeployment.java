@@ -185,7 +185,7 @@ public class RulesetDeployment {
     public void onStart(RulesFacts facts) {
         if (jsonRulesetDefinition != null && jsonRulesetDefinition.rules != null && jsonRulesetDefinition.rules.length > 0) {
             Arrays.stream(jsonRulesetDefinition.rules).forEach(jsonRule ->
-                executeRuleActions(jsonRule.onStart, false, facts, null, assetsFacade, usersFacade, notificationsFacade, timerService, assetStorageService, this::scheduleRuleAction));
+                executeRuleActions(jsonRule, jsonRule.onStart, "onStart", false, facts, null, assetsFacade, usersFacade, notificationsFacade, timerService, assetStorageService, this::scheduleRuleAction));
         }
     }
 
@@ -208,7 +208,7 @@ public class RulesetDeployment {
     public void onStop(RulesFacts facts) {
         if (jsonRulesetDefinition != null && jsonRulesetDefinition.rules != null && jsonRulesetDefinition.rules.length > 0) {
             Arrays.stream(jsonRulesetDefinition.rules).forEach(jsonRule ->
-                    executeRuleActions(jsonRule.onStop, false, facts, null, assetsFacade, usersFacade, notificationsFacade, timerService, assetStorageService, this::scheduleRuleAction));
+                    executeRuleActions(jsonRule, jsonRule.onStop, "onStop", false, facts, null, assetsFacade, usersFacade, notificationsFacade, timerService, assetStorageService, this::scheduleRuleAction));
         }
     }
 
@@ -248,7 +248,12 @@ public class RulesetDeployment {
             return false;
         }
 
-        Arrays.stream(jsonRulesetDefinition.rules).forEach(r -> jsonRulesBuilder.add(r));
+        try {
+            Arrays.stream(jsonRulesetDefinition.rules).forEach(r -> jsonRulesBuilder.add(r));
+        } catch (Exception e) {
+            RulesEngine.LOG.log(Level.SEVERE, "Exception occurred during ruleset deployment: " + ruleset);
+            return false;
+        }
 
         for (Rule rule : jsonRulesBuilder.build()) {
             RulesEngine.LOG.info("Registering JSON rule: " + rule.getName());
