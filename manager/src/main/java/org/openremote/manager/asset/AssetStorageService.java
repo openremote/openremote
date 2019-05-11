@@ -488,6 +488,9 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     }
 
     public boolean isUserAsset(String userId, String assetId) {
+        if (TextUtil.isNullOrEmpty(userId) || TextUtil.isNullOrEmpty(assetId)) {
+            return false;
+        }
         return persistenceService.doReturningTransaction(entityManager -> {
             try {
                 String queryStr = TextUtil.isNullOrEmpty(userId) ?
@@ -510,6 +513,9 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     }
 
     public boolean isUserAsset(List<String> userIds, String assetId) {
+        if (userIds == null || userIds.isEmpty() || TextUtil.isNullOrEmpty(assetId)) {
+            return false;
+        }
         return persistenceService.doReturningTransaction(entityManager -> {
             try {
                 return entityManager.createQuery(
@@ -525,6 +531,9 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     }
 
     public boolean isUserAssets(String userId, List<String> assetIds) {
+        if (TextUtil.isNullOrEmpty(userId) || assetIds == null || assetIds.isEmpty()) {
+            return false;
+        }
         return persistenceService.doReturningTransaction(entityManager -> {
             try {
                 return entityManager.createQuery(
@@ -550,6 +559,9 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
      * Indicates if the specified assets belong to the specified realm
      */
     public boolean isRealmAssets(String realm, List<String> assetIds) {
+        if (TextUtil.isNullOrEmpty(realm) || assetIds == null || assetIds.isEmpty()) {
+            return false;
+        }
         return persistenceService.doReturningTransaction(entityManager -> {
             try {
                 return entityManager.createQuery(

@@ -7,7 +7,10 @@ import org.openremote.manager.asset.AssetStorageService
 import org.openremote.manager.setup.SetupService
 import org.openremote.manager.setup.builtin.KeycloakDemoSetup
 import org.openremote.manager.setup.builtin.ManagerDemoSetup
-import org.openremote.model.asset.*
+import org.openremote.model.asset.Asset
+import org.openremote.model.asset.AssetAttribute
+import org.openremote.model.asset.AssetType
+import org.openremote.model.asset.CalendarEventConfiguration
 import org.openremote.model.attribute.MetaItemType
 import org.openremote.model.calendar.CalendarEvent
 import org.openremote.model.calendar.RecurrenceRule
@@ -22,11 +25,11 @@ import spock.util.concurrent.PollingConditions
 
 import javax.persistence.EntityManager
 import java.time.Instant
-import java.time.LocalDateTime
 import java.time.ZoneOffset
+import java.time.ZonedDateTime
 import java.util.function.Function
 
-import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME
+import static java.time.format.DateTimeFormatter.ISO_ZONED_DATE_TIME
 import static org.openremote.model.asset.AssetType.THING
 import static org.openremote.model.attribute.AttributeValueType.DATETIME
 import static org.openremote.model.query.BaseAssetQuery.*
@@ -861,15 +864,15 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         )
         lobby = assetStorageService.merge(lobby)
 
-        def rangeStart = LocalDateTime.ofInstant(Instant.ofEpochMilli(1517151600000), ZoneOffset.UTC).minusHours(2) // 28/01/2018 @ 1:00pm (UTC)
-        def rangeEnd = LocalDateTime.ofInstant(Instant.ofEpochMilli(1517151600000), ZoneOffset.UTC).plusHours(3) // 28/01/2018 @ 6:00pm (UTC)
+        def rangeStart = ZonedDateTime.ofInstant(Instant.ofEpochMilli(1517151600000), ZoneOffset.UTC).minusHours(2) // 28/01/2018 @ 1:00pm (UTC)
+        def rangeEnd = ZonedDateTime.ofInstant(Instant.ofEpochMilli(1517151600000), ZoneOffset.UTC).plusHours(3) // 28/01/2018 @ 6:00pm (UTC)
 
         def assets = assetStorageService.findAll(
                 new AssetQuery()
                         .tenant(new TenantPredicate(keycloakDemoSetup.masterTenant.realm))
                         .attributeValue(
                             "openingDate",
-                            new DateTimePredicate(rangeStart.format(ISO_LOCAL_DATE_TIME), rangeEnd.format(ISO_LOCAL_DATE_TIME))
+                            new DateTimePredicate(rangeStart.format(ISO_ZONED_DATE_TIME), rangeEnd.format(ISO_ZONED_DATE_TIME))
                                 .operator(Operator.BETWEEN))
         )
 
@@ -884,7 +887,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
                         .tenant(new TenantPredicate(keycloakDemoSetup.masterTenant.realm))
                         .attributeValue(
                             "openingDate",
-                            new DateTimePredicate(Operator.GREATER_THAN, rangeStart.format(ISO_LOCAL_DATE_TIME)))
+                            new DateTimePredicate(Operator.GREATER_THAN, rangeStart.format(ISO_ZONED_DATE_TIME)))
         )
 
 
@@ -898,7 +901,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
                         .tenant(new TenantPredicate(keycloakDemoSetup.masterTenant.realm))
                         .attributeValue(
                         "openingDate",
-                        new DateTimePredicate(Operator.LESS_THAN, rangeEnd.format(ISO_LOCAL_DATE_TIME)))
+                        new DateTimePredicate(Operator.LESS_THAN, rangeEnd.format(ISO_ZONED_DATE_TIME)))
         )
 
 
@@ -907,14 +910,14 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets[0].id == lobby.id
 
         when: "the lobby has an opening date and the date is equal to the filtering date"
-        rangeStart = LocalDateTime.ofInstant(Instant.ofEpochMilli(1517151600000), ZoneOffset.UTC) // 28/01/2018 @ 2:00pm (UTC)
+        rangeStart = ZonedDateTime.ofInstant(Instant.ofEpochMilli(1517151600000), ZoneOffset.UTC) // 28/01/2018 @ 2:00pm (UTC)
 
         assets = assetStorageService.findAll(
                 new AssetQuery()
                         .tenant(new TenantPredicate(keycloakDemoSetup.masterTenant.realm))
                         .attributeValue(
                         "openingDate",
-                        new DateTimePredicate(Operator.EQUALS, rangeStart.format(ISO_LOCAL_DATE_TIME)))
+                        new DateTimePredicate(Operator.EQUALS, rangeStart.format(ISO_ZONED_DATE_TIME)))
         )
 
 

@@ -157,7 +157,7 @@ public class NotificationService extends RouteBuilder implements ContainerServic
                         throw new NotificationProcessingException(MISSING_MESSAGE, "Notification message must be set");
                     }
 
-                    if (notification.getTargets() == null || notification.getTargets().getType() == null || notification.getTargets().getIds() == null || Arrays.stream(notification.getTargets().getIds()).anyMatch(TextUtil::isNullOrEmpty)) {
+                    if (notification.getTargets() == null || notification.getTargets().getType() == null || notification.getTargets().getIds() == null || notification.getTargets().getIds().length == 0 || Arrays.stream(notification.getTargets().getIds()).anyMatch(TextUtil::isNullOrEmpty)) {
                         throw new NotificationProcessingException(MISSING_TARGETS, "Notification targets must be set");
                     }
 

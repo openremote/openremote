@@ -41,6 +41,7 @@ import org.openremote.model.util.TimeUtil;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.Values;
 
+import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -57,7 +58,6 @@ public class AssetQueryPredicate implements Predicate<AssetState> {
     final protected NewAssetQuery query;
     final protected TimerService timerService;
     final protected AssetStorageService assetStorageService;
-    static final protected DateTimeFormatter dateFormatter = ISODateTimeFormat.dateTimeNoMillis();
 
     // TODO: Remove this ctor once asset queries merged
     @SuppressWarnings("unchecked")
@@ -498,14 +498,14 @@ public class AssetQueryPredicate implements Predicate<AssetState> {
             if (TimeUtil.isTimeDuration(dateTimePredicate.value)) {
                 from = currentMillis + TimeUtil.parseTimeDuration(dateTimePredicate.value);
             } else {
-                from = dateFormatter.parseMillis(dateTimePredicate.value);
+                from = ZonedDateTime.parse(dateTimePredicate.value).toInstant().toEpochMilli();
             }
 
             if (dateTimePredicate.operator == BaseAssetQuery.Operator.BETWEEN) {
                 if (TimeUtil.isTimeDuration(dateTimePredicate.rangeValue)) {
                     to = currentMillis + TimeUtil.parseTimeDuration(dateTimePredicate.rangeValue);
                 } else {
-                    to = dateFormatter.parseMillis(dateTimePredicate.rangeValue);
+                    to = ZonedDateTime.parse(dateTimePredicate.rangeValue).toInstant().toEpochMilli();
                 }
             }
         } catch (IllegalArgumentException e) {
