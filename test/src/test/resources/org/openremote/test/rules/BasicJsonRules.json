@@ -53,15 +53,19 @@
           "action": "write-attribute",
           "target": {
             "assets": {
-              "parent": {
-                "type": "urn:openremote:asset:residence",
-                "name": "Apartment 2"
-              },
-              "type": {
-                "predicateType": "string",
-                "match": "EXACT",
-                "value": "urn:openremote:asset:room"
-              }
+              "parents": [
+                {
+                  "type": "urn:openremote:asset:residence",
+                  "name": "Apartment 2"
+                }
+              ],
+              "types": [
+                {
+                  "predicateType": "string",
+                  "match": "EXACT",
+                  "value": "urn:openremote:asset:room"
+                }
+              ]
             }
           },
           "attributeName": "lightSwitch",
@@ -71,15 +75,19 @@
           "action": "update-attribute",
           "target": {
             "assets": {
-              "parent": {
-                "type": "urn:openremote:asset:residence",
-                "name": "Apartment 2"
-              },
-              "type": {
-                "predicateType": "string",
-                "match": "EXACT",
-                "value": "urn:openremote:asset:room"
-              }
+              "parents": [
+                {
+                  "type": "urn:openremote:asset:residence",
+                  "name": "Apartment 2"
+                }
+              ],
+              "types": [
+                {
+                  "predicateType": "string",
+                  "match": "EXACT",
+                  "value": "urn:openremote:asset:room"
+                }
+              ]
             }
           },
           "attributeName": "lightSwitchTriggerTimes",
@@ -90,15 +98,19 @@
           "action": "update-attribute",
           "target": {
             "assets": {
-              "parent": {
-                "type": "urn:openremote:asset:residence",
-                "name": "Apartment 2"
-              },
-              "type": {
-                "predicateType": "string",
-                "match": "EXACT",
-                "value": "urn:openremote:asset:room"
-              }
+              "parents": [
+                {
+                  "type": "urn:openremote:asset:residence",
+                  "name": "Apartment 2"
+                }
+              ],
+              "types": [
+                {
+                  "predicateType": "string",
+                  "match": "EXACT",
+                  "value": "urn:openremote:asset:room"
+                }
+              ]
             }
           },
           "attributeName": "plantsWaterLevels",
