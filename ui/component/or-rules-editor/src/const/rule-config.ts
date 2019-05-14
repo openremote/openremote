@@ -21,7 +21,7 @@ export const rulesEditorConfig = {
     options: {
         when: {
             attributeValueDescriptors: {
-                airportIata: {
+                departureAirportIata: {
                     options: airports
                 },
                 airlineIata: {

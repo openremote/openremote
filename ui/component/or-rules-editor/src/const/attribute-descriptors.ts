@@ -186,7 +186,7 @@ export const attributeDescriptors: any[] =  [ {
             name: "STRING"
         }
     }, {
-        attributeName: "airportIata",
+        attributeName: "departureAirportIata",
         metaItemDescriptors : [ ],
         valueDescriptor : {
             icon : "file-text-o",
