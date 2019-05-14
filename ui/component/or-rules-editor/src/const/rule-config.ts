@@ -30,7 +30,7 @@ export const rulesEditorConfig = {
                 originRegion: {
                     options: regions
                 },
-                passengerCapacity: {},
+                pax: {},
                 languageCodes: {
                     options: languages
                 },

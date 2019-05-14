@@ -35,7 +35,7 @@ class OrRuleWhen extends LitElement {
         return html`
            <div class="rule-content-section">
                 <div class="rule-when-container bg-white shadow">
-                    <strong>Als..</strong>
+                    <strong>Als...</strong>
                     ${this.rule && this.rule.when && this.rule.when.predicates && this.rule.when.predicates.length > 0 && this.rule.when.predicates[0].assets && this.rule.when.predicates[0].assets.types && this.rule.when.predicates[0].assets.attributes && this.rule.when.predicates[0].assets.attributes.predicates ? html`
                         ${this.rule.when.predicates[0].assets.attributes.predicates.map((predicate: AttributePredicate, index) => {
                             return html`

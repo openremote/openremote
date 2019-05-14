@@ -33,7 +33,7 @@ class OrRuleThen extends LitElement {
         return html`
                <div class="rule-content-section">
                     <div class="rule-then-container bg-white shadow">
-                        <strong>Dan..</strong>
+                        <strong>Dan...</strong>
 
                        ${this.rule && this.rule.then ? this.rule.then.map((then: RuleActionUnion) => {
                             return html`

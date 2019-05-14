@@ -195,7 +195,7 @@ class OrSmartNotify extends LitElement {
                     <icon>${icon(faClock).node.item(0)}</icon>
                     <div class="flex padding-2-5" style="font-weight: 600;">Smart Notify</div>
                  
-                    <a style="height: 22px;" @click="${this.close}">
+                    <a style="cursor: pointer;height: 22px;" @click="${this.close}">
                        <icon>${icon(faTimes).node.item(0)}</icon>
                     </a>
                 </div>

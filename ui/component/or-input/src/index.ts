@@ -1,7 +1,7 @@
-import {html, LitElement, property, PropertyValues} from 'lit-element';
+import {html, LitElement, property, PropertyValues} from "lit-element";
 import openremote from "@openremote/core";
 
-import {orInputStyle} from './style';
+import {orInputStyle} from "./style";
 class OrInput extends LitElement {
 
     @property({type: String})
@@ -29,18 +29,18 @@ class OrInput extends LitElement {
     protected render() {
 
         return html`
-             <input class="or-input" ?required="${this.required}" type="${this.type}" name="${this.name}" @change="${this.onChange}" .value="${this.value}"  ?disabled="${this.disabled} />
+             <input class="or-input" ?required="${this.required}" type="${this.type}" name="${this.name}" @change="${this.onChange}" value="${this.value}"  ?disabled="${this.disabled}" />
         `;
     }
 
     onChange() {
-        if(this.shadowRoot){
-            const input = (<HTMLInputElement> this.shadowRoot.querySelector('.or-input'));
+        if (this.shadowRoot) {
+            const input = (<HTMLInputElement> this.shadowRoot.querySelector(".or-input"));
             const value = input.value;
             const name = input.name;
 
             // Launch event for all parent elements
-            let event = new CustomEvent('or-input:changed', {
+            const event = new CustomEvent("or-input:changed", {
                 detail: { value: value, name: name  },
                 bubbles: true,
                 composed: true });
@@ -59,4 +59,4 @@ class OrInput extends LitElement {
     }
 }
 
-window.customElements.define('or-input', OrInput);
+window.customElements.define("or-input", OrInput);

@@ -147,7 +147,6 @@ class OrRulesEditor extends translate(i18next)(LitElement) {
                     // ID is not found when a new ruleset is added
                     if (index > -1) {
                         updatedRuleset = this.rulesets[index];
-                        console.log(updatedRuleset, this.rulesets[index]);
                     } else {
                         updatedRuleset = this.rulesets[this.rulesets.length - 1];
                     }
@@ -171,7 +170,7 @@ class OrRulesEditor extends translate(i18next)(LitElement) {
             const newRule = cloneDeep(rulesetTemplate);
             this.rulesets = [...this.rulesets, rulesetTemplate];
             this.ruleset = newRule;
-            this.computeRuleset()
+            this.computeRuleset();
             // this.readRules();
         }
     }

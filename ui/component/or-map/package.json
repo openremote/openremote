@@ -1,6 +1,6 @@
 {
   "name": "@openremote/or-map",
-  "version": "1.0.0-alpha",
+  "version": "1.0.2-alpha",
   "description": "Displays s vector or raster map",
   "main": "dist/index.js",
   "types": "src/index.ts",

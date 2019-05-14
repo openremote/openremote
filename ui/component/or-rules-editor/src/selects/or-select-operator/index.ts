@@ -1,15 +1,15 @@
 import {html, LitElement, property, customElement, PropertyValues} from "lit-element";
 import openremote from "@openremote/core";
-import {AttributeValueType, BaseAssetQueryMatch, BaseAssetQueryOperator, AttributeValueDescriptor} from "@openremote/model";
+import {AttributeValueType, BaseAssetQueryMatch, BaseAssetQueryOperator, AttributeValueDescriptor, ValueType} from "@openremote/model";
 
 import {selectStyle} from "@openremote/or-select/dist/style";
 import {AssetModelUtil} from "@openremote/core/dist";
 
-@customElement('or-select-operator')
+@customElement("or-select-operator")
 class OrRuleWhen extends LitElement {
 
-    @property({type: Object})
-    type?: AttributeValueDescriptor;
+    @property({type: String})
+    type?: ValueType;
 
     @property({type: String})
     value?: BaseAssetQueryOperator;
@@ -30,7 +30,7 @@ class OrRuleWhen extends LitElement {
                 <select ?disabled="${this.disabled}" id="or-select-operator" @change="${this.onChange}">
                     <option ?selected="${this.value === BaseAssetQueryOperator.EQUALS}" value="${BaseAssetQueryOperator.EQUALS}">=</option>
                     <option ?selected="${this.value === BaseAssetQueryOperator.NOT_EQUALS}" value="${BaseAssetQueryOperator.NOT_EQUALS}">!=</option>
-                    ${AssetModelUtil.attributeValueDescriptorsMatch(this.type, AttributeValueType.NUMBER) ? html`
+                    ${this.type === ValueType.NUMBER ? html`
                         <option ?selected="${this.value === BaseAssetQueryOperator.LESS_THAN}" value="${BaseAssetQueryOperator.LESS_THAN}" value="LESS_THAN"><</option>
                         <option ?selected="${this.value === BaseAssetQueryOperator.GREATER_THAN}" value="${BaseAssetQueryOperator.GREATER_THAN}" value="GREATER_THAN">></option>
                         <option ?selected="${this.value === BaseAssetQueryOperator.LESS_EQUALS}" value="${BaseAssetQueryOperator.LESS_EQUALS}" value="LESS_EQUALS">=<</option>

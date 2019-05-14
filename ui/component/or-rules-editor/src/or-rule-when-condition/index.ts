@@ -66,10 +66,10 @@ class OrRuleWhenCondition extends LitElement {
                     
                     ${this.predicate.name ? html`
                         <or-select-asset-attribute type="when" value="${this.predicate.name.value}"></or-select-asset-attribute>
-                    
+                        
                         ${this.predicate.value && this.predicate.value.predicateType === "string" ? html`
                             ${this.predicate.name.value ? html`
-                                <or-select-operator .type="${this.getAttributeDescriptor(this.predicate.name.value)!.valueDescriptor!.valueType}" .value="${this.predicate.value.match}"></or-select-operator>
+                                <or-select-operator type="${this.getAttributeDescriptor(this.predicate.name.value)!.valueDescriptor!.valueType}" .value="${this.predicate.value.match}"></or-select-operator>
                             ` : ``}
                             
                             ${this.predicate.name.value && this.predicate.value.match ? html`
@@ -80,7 +80,7 @@ class OrRuleWhenCondition extends LitElement {
                                 `}
                             ` : ``}
                             
-                            ${openremote.hasRole("write:assets") ? html`
+                              ${openremote.hasRole("write:assets") ? html`
                             
                                  ${this.predicate.value.value ? html`
                                     <a style="margin-left: auto;" @click="${this.deleteCondition}">
