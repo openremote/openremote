@@ -12,6 +12,7 @@ import {
 } from "@openremote/model";
 import rest from "@openremote/rest";
 import openremote, {Auth, Manager, OREvent} from "@openremote/core";
+import {getApartment1Asset} from "../../demo-core/src/util";
 
 async function initApartment1Asset(): Promise<string|undefined> {
     let query: AssetQuery = {
@@ -70,4 +71,12 @@ openremote.init({
     keycloakUrl: "https://localhost/auth",
     managerUrl: "https://localhost",
     realm: "tenantA"
-});
+})
+    .then(getApartment1Asset)
+    .then((apartment1) => {
+
+        if (apartment1) {
+            console.log(apartment1);
+        }
+    });
+
