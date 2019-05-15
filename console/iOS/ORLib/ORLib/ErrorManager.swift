@@ -28,8 +28,8 @@ public class ErrorManager : NSObject {
             NSLog("showing error %@",error as NSError)
             let topWindow = UIWindow(frame: UIScreen.main.bounds)
             topWindow.rootViewController = UIViewController()
-            topWindow.windowLevel = UIWindowLevelAlert + 1
-            let alertVC = UIAlertController(title: "Error", message: error.localizedDescription, preferredStyle: UIAlertControllerStyle.alert)
+            topWindow.windowLevel = UIWindow.Level.alert + 1
+            let alertVC = UIAlertController(title: "Error", message: error.localizedDescription, preferredStyle: UIAlertController.Style.alert)
             let alertAction = UIAlertAction(title: "Done", style: .cancel) { (action) in
                 topWindow.rootViewController?.presentedViewController?.dismiss(animated: true, completion: nil)
                 topWindow.isHidden = true

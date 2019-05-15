@@ -6,9 +6,10 @@ public class GeofenceProvider: NSObject, URLSessionDelegate {
     static let baseUrlKey = "baseUrl"
     static let consoleIdKey = "consoleId"
     static let geoPostUrlsKey = "geoPostUrls"
+    static let geoDisabledKey = "geoDisabled"
 
     let version = "ORConsole"
-    let geofenceFetchEndpoint = "api/rules/geofences/"
+    let geofenceFetchEndpoint = "rules/geofences/"
     let locationManager = CLLocationManager()
     let userdefaults = UserDefaults(suiteName: ORAppGroup.entitlement)
     var geoPostUrls = [String:[String]]()
@@ -40,7 +41,8 @@ public class GeofenceProvider: NSObject, URLSessionDelegate {
             DefaultsKey.requiresPermissionKey: true,
             DefaultsKey.hasPermissionKey: checkPermission(),
             DefaultsKey.successKey: true,
-            DefaultsKey.enabledKey: false
+            DefaultsKey.enabledKey: false,
+            DefaultsKey.disabledKey: userdefaults?.bool(forKey: GeofenceProvider.geoDisabledKey) ?? false
         ]
     }
 
@@ -90,6 +92,7 @@ public class GeofenceProvider: NSObject, URLSessionDelegate {
         self.consoleId = consoleId
         userdefaults?.set(self.baseURL, forKey: GeofenceProvider.baseUrlKey)
         userdefaults?.set(self.consoleId, forKey: GeofenceProvider.consoleIdKey)
+        userdefaults?.removeObject(forKey: GeofenceProvider.geoDisabledKey)
         userdefaults?.synchronize()
         enableCallback = callback
         if checkPermission() {
@@ -116,6 +119,10 @@ public class GeofenceProvider: NSObject, URLSessionDelegate {
 
     public func disable()-> [String: Any] {
         locationManager.stopMonitoringSignificantLocationChanges()
+        userdefaults?.set(true, forKey: GeofenceProvider.geoDisabledKey)
+        userdefaults?.removeObject(forKey: GeofenceProvider.baseUrlKey)
+        userdefaults?.removeObject(forKey: GeofenceProvider.consoleIdKey)
+        userdefaults?.synchronize()
         return [
             DefaultsKey.actionKey: Actions.providerDisable,
             DefaultsKey.providerKey: Providers.geofence

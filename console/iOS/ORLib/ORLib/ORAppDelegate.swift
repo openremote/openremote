@@ -36,7 +36,7 @@ open class ORAppDelegate: UIResponder, UIApplicationDelegate, URLSessionDelegate
 
     private var geofenceProvider : GeofenceProvider?
 
-    open func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplicationLaunchOptionsKey: Any]?) -> Bool {
+    open func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         UNUserNotificationCenter.current().delegate = self
         // if the app was launched because of geofencing
 
@@ -46,14 +46,14 @@ open class ORAppDelegate: UIResponder, UIApplicationDelegate, URLSessionDelegate
         let logFilePath = (documentsDirectory as NSString).appendingPathComponent(fileName)
         freopen(logFilePath.cString(using: String.Encoding.ascii)!, "a+", stderr)
 
-        if launchOptions?[UIApplicationLaunchOptionsKey.location] != nil {
+        if launchOptions?[UIApplication.LaunchOptionsKey.location] != nil {
             NSLog("%@", "App started from location update")
             // create new GeofenceProvider which creates a CLLocationManager that will receive the location update
             geofenceProvider = GeofenceProvider()
             if CLLocationManager.authorizationStatus() == .authorizedAlways {
                 geofenceProvider?.locationManager.startMonitoringSignificantLocationChanges()
             }
-        } else if let remoteNotifcation = launchOptions?[UIApplicationLaunchOptionsKey.remoteNotification] as? [AnyHashable: Any] {
+        } else if let remoteNotifcation = launchOptions?[UIApplication.LaunchOptionsKey.remoteNotification] as? [AnyHashable: Any] {
             NSLog("%@", "App started from remote notification")
             if let action = remoteNotifcation[DefaultsKey.actionKey] as? String {
                 if action == Actions.geofenceRefresh {
@@ -186,7 +186,7 @@ open class ORAppDelegate: UIResponder, UIApplicationDelegate, URLSessionDelegate
             if (!reachabilityAlertShown) {
                 let topWindow = UIWindow(frame: UIScreen.main.bounds)
                 topWindow.rootViewController = UIViewController()
-                topWindow.windowLevel = UIWindowLevelAlert + 1
+                topWindow.windowLevel = UIWindow.Level.alert + 1
 
                 reachabilityAlert = UIAlertController(title: "Network Error", message: "Your device seems to be offline", preferredStyle: .alert)
                 let reachabilityRetryAction = UIAlertAction(title: "Retry", style: .default, handler: { (action) in

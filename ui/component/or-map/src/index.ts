@@ -184,7 +184,7 @@ export class OrMap extends LitElement {
 
                         stylesArr.forEach((styleItem) => {
                             const styleElem = document.createElement("style");
-                            styleElem.textContent = styleItem.toString();
+                            styleElem.textContent = String(styleItem.toString());
                             if (this._mapContainer!.children.length > 0) {
                                 this._mapContainer!.insertBefore(styleElem, this._mapContainer!.children[0]);
                             } else {

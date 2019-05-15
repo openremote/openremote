@@ -39,6 +39,7 @@ public enum DefaultsKey {
     public static let successKey = "success"
     public static let dataKey = "data"
     public static let enabledKey = "enabled"
+    public static let disabledKey = "disabled"
 }
 
 public enum Actions {

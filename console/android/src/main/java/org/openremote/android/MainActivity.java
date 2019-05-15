@@ -185,7 +185,7 @@ public class MainActivity extends Activity {
     protected void openIntentUrl(Intent intent) {
         if (!intent.hasExtra("appUrl")) {
             String url = getClientUrl();
-            LOG.fine("Loading web view: " + url);
+                LOG.fine("Loading web view: " + url);
             loadUrl(url);
         } else {
             String url = getClientUrl();

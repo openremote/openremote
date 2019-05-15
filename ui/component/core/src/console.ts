@@ -163,15 +163,15 @@ export class Console {
         this._initialiseInProgress = true;
 
         try {
-            // Get an ID for this console if it doesn't have one
-            if (!this._registration.id) {
-                await this.sendRegistration(0);
-            }
-
             if (this._registration.providers) {
                 for (let providerName of Object.keys(this._registration.providers)) {
                     await this._initialiseProvider(providerName);
                 }
+            }
+
+            // Get an ID for this console if it doesn't have one
+            if (!this._registration.id) {
+                await this.sendRegistration(0);
             }
 
             this._initialised = true;
@@ -226,6 +226,7 @@ export class Console {
         this._registration.providers![providerName].hasPermission = response.hasPermission;
         this._registration.providers![providerName].success = response.success;
         this._registration.providers![providerName].enabled = response.success;
+        this._registration.providers![providerName].data = response.data;
 
         let index = this._pendingProviderEnables.indexOf(providerName);
 
@@ -513,6 +514,7 @@ export class Console {
         this._registration.providers![providerName].success = initResponse.success;
         this._registration.providers![providerName].enabled = initResponse.enabled;
         this._registration.providers![providerName].disabled = initResponse.disabled;
+        this._registration.providers![providerName].data = initResponse.data;
 
         if (!initResponse.success) {
             console.debug("Provider initialisation failed: '" + providerName + "'");

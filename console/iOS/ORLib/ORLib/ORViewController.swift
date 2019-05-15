@@ -65,7 +65,7 @@ open class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMess
                                         })
                                     }
                                 } else if action == Actions.providerDisable {
-                                    if let disableData = pushProvider?.disbale() {
+                                    if let disableData = pushProvider?.disable() {
                                         sendData(data: disableData)
                                     }
                                 }
@@ -78,7 +78,7 @@ open class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMess
                                     if let consoleId = postMessageDict[GeofenceProvider.consoleIdKey] as? String {
                                         geofenceProvider?.enable(baseUrl: "\(ORServer.baseUrl)api/\(ORServer.realm)", consoleId: consoleId,  callback: { enableData in
                                             self.sendData(data: enableData)
-                                            DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(3)) {
+                                            DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(5)) {
                                                 self.geofenceProvider?.fetchGeofences()
                                             }
                                         })
@@ -155,7 +155,7 @@ open class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMess
             let app = UIApplication.shared
             if navigationAction.targetFrame == nil, let url = navigationAction.request.url{
                 if app.canOpenURL(url) {
-                    app.open(url, options: [:], completionHandler: nil)
+                    app.open(url, options: convertToUIApplicationOpenExternalURLOptionsKeyDictionary([:]), completionHandler: nil)
                     decisionHandler(.cancel)
                 }
             } else {
@@ -322,4 +322,9 @@ open class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMess
             }
         }
     }
+}
+
+// Helper function inserted by Swift 4.2 migrator.
+fileprivate func convertToUIApplicationOpenExternalURLOptionsKeyDictionary(_ input: [String: Any]) -> [UIApplication.OpenExternalURLOptionsKey: Any] {
+	return Dictionary(uniqueKeysWithValues: input.map { key, value in (UIApplication.OpenExternalURLOptionsKey(rawValue: key), value)})
 }

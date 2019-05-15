@@ -14,6 +14,7 @@ public class PushNotificationProvider: NSObject {
     let userdefaults = UserDefaults(suiteName: ORAppGroup.entitlement)
     let version = "fcm"
     public var consoleId: String = ""
+    static let pushDisabledKey = "pushDisabled"
     
     public override init() {
         super.init()
@@ -31,7 +32,8 @@ public class PushNotificationProvider: NSObject {
                     DefaultsKey.hasPermissionKey: true,
                     DefaultsKey.requiresPermissionKey: true,
                     DefaultsKey.successKey: true,
-                    DefaultsKey.enabledKey: false
+                    DefaultsKey.enabledKey: false,
+                    DefaultsKey.disabledKey: self.userdefaults?.bool(forKey: PushNotificationProvider.pushDisabledKey) ?? false
                     ])
 
             case .denied:
@@ -42,10 +44,11 @@ public class PushNotificationProvider: NSObject {
                     DefaultsKey.hasPermissionKey: false,
                     DefaultsKey.requiresPermissionKey: true,
                     DefaultsKey.successKey: true,
-                    DefaultsKey.enabledKey: false
+                    DefaultsKey.enabledKey: false,
+                    DefaultsKey.disabledKey: self.userdefaults?.bool(forKey: PushNotificationProvider.pushDisabledKey) ?? false
                     ])
 
-            case .notDetermined:
+            default:
                 callback( [
                     DefaultsKey.actionKey: Actions.providerInit,
                     DefaultsKey.providerKey: Providers.push,
@@ -53,7 +56,8 @@ public class PushNotificationProvider: NSObject {
                     DefaultsKey.hasPermissionKey: nil,
                     DefaultsKey.requiresPermissionKey: true,
                     DefaultsKey.successKey: true,
-                    DefaultsKey.enabledKey: false
+                    DefaultsKey.enabledKey: false,
+                    DefaultsKey.disabledKey: self.userdefaults?.bool(forKey: PushNotificationProvider.pushDisabledKey) ?? false
                     ])
             }
         }
@@ -62,6 +66,7 @@ public class PushNotificationProvider: NSObject {
     public func enable(consoleId: String, callback:@escaping ([String: Any]) ->(Void)) {
         self.consoleId = consoleId
         userdefaults?.set(self.consoleId, forKey: GeofenceProvider.consoleIdKey)
+        userdefaults?.removeObject(forKey: PushNotificationProvider.pushDisabledKey)
         userdefaults?.synchronize()
         UNUserNotificationCenter.current().getNotificationSettings { (settings) in
 
@@ -87,7 +92,7 @@ public class PushNotificationProvider: NSObject {
                     DefaultsKey.dataKey: ["token": self.userdefaults?.string(forKey: DefaultsKey.fcmTokenKey)]
                     ])
 
-            case .notDetermined:
+            default:
                 UNUserNotificationCenter.current().requestAuthorization(
                     options: [.alert, .badge, .sound],
                     completionHandler: {granted, _ in
@@ -110,7 +115,9 @@ public class PushNotificationProvider: NSObject {
         }
     }
 
-    public func disbale()-> [String: Any] {
+    public func disable()-> [String: Any] {
+        userdefaults?.set(true, forKey: PushNotificationProvider.pushDisabledKey)
+        userdefaults?.synchronize()
         return [
             DefaultsKey.actionKey: Actions.providerDisable,
             DefaultsKey.providerKey: Providers.push
