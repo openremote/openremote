@@ -76,7 +76,7 @@ openremote.init({
     .then((apartment1) => {
 
         if (apartment1) {
-            console.log(apartment1);
+            console.log('apartment fetched',apartment1);
         }
     });
 
