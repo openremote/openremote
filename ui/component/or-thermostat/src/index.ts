@@ -117,7 +117,7 @@ class OrThermostat extends LitElement {
             flex-basis: 50px;
         }
         .btn {
-            width: 20px;
+            --or-icon-fill-color: var(--or-map-marker-icon-fill, #000);
         }
         .target-temp {
             padding: 0 20px;
@@ -138,9 +138,15 @@ class OrThermostat extends LitElement {
                 <or-icon icon="or:thermometer"></or-icon>
               </div>
               <div class="inner-wrapper">
-                <button class="btn" style="display:inline" @click="${this.lowerTargetTemperatureByControl}">-</button>
+                <or-icon 
+                  class="btn"
+                  icon="or:minus-circle" 
+                  @click="${this.lowerTargetTemperatureByControl}"></or-icon>
                 <span class="target-temp">${this._targetTemperature}&deg;</span>
-                <button class="btn" style="display:inline" @click="${this.raiseTargetTemperatureByControl}">+</button>
+                <or-icon 
+                  class="btn"
+                  icon="or:plus-circle"
+                  @click="${this.raiseTargetTemperatureByControl}"></or-icon>
               </div>
               <div class="display-temp">[tmp&deg;]</div>
             </div>
