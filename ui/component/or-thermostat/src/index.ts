@@ -134,7 +134,9 @@ class OrThermostat extends LitElement {
         // <p>target temp:</p>
         return html`
             <div class="wrapper">
-              <div class="icon">[i]</div>
+              <div class="icon">
+                <or-icon icon="or:thermometer"></or-icon>
+              </div>
               <div class="inner-wrapper">
                 <button class="btn" style="display:inline" @click="${this.lowerTargetTemperatureByControl}">-</button>
                 <span class="target-temp">${this._targetTemperature}&deg;</span>
