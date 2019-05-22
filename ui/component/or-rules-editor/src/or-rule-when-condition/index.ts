@@ -80,7 +80,7 @@ class OrRuleWhenCondition extends LitElement {
                                 `}
                             ` : ``}
                             
-                              ${openremote.hasRole("write:assets") ? html`
+                              ${openremote.hasRole("write:rules") ? html`
                             
                                  ${this.predicate.value.value ? html`
                                     <a style="margin-left: auto;" @click="${this.deleteCondition}">

@@ -43,7 +43,7 @@ class OrRuleWhen extends LitElement {
                             `; })}
                     ` : ``}
                     
-                    ${openremote.hasRole("write:assets") ? html`
+                    ${openremote.hasRole("write:rules") ? html`
                        ${rulesEditorConfig.controls.addWhenCondition ? html`
                             <a class="button-add" @click="${this.addWhenCondition}">+ voeg nog een voorwaarde toe</a>
                         ` : ``}

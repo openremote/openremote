@@ -98,7 +98,7 @@ class OrRulesEditor extends translate(i18next)(LitElement) {
               <side-menu class="bg-white shadow">
                     <or-rule-list .rulesets="${this.rulesets}" .ruleset="${this.ruleset}" ></or-rule-list>
                     <div class="bottom-toolbar">
-                        ${openremote.hasRole("write:assets") ? html`
+                        ${openremote.hasRole("write:rules") ? html`
                           <icon class="small-icon" @click="${this.deleteRule}"><or-icon icon="delete"></or-icon></icon>
                           <icon style="margin-left: auto;" class="small-icon" @click="${this.createRule}"><or-icon icon="plus"></or-icon></icon>
                         ` : ``}
@@ -120,7 +120,7 @@ class OrRulesEditor extends translate(i18next)(LitElement) {
               ` : html`
                 <div class="center-center">
                     <h3 style="font-weight: normal;">Kies links een profiel of maak een nieuw profiel aan.</h3>
-                    ${openremote.hasRole("write:assets") ? html`
+                    ${openremote.hasRole("write:rules") ? html`
                         <button style="margin: auto;" @click="${this.createRule}">profiel aanmaken</button>
                     ` : ``}
                 </div>

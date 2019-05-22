@@ -33,16 +33,16 @@ class OrRuleHeader extends LitElement {
             <div class="rule-container">
               
                     <div class="layout horizontal">
-                        <input ?disabled="${!openremote.hasRole("write:assets")}"  @change="${this.changeName}" type="text" .value="${this.ruleset ? this.ruleset.name : null}" />
+                        <input ?disabled="${!openremote.hasRole("write:rules")}"  @change="${this.changeName}" type="text" .value="${this.ruleset ? this.ruleset.name : null}" />
                         
                         <div class="layout horizontal" style="margin-left: auto;">
                             <span style="margin: 9px 0;" class="toggle-label" ?data-disabled="${!this.ruleset!.id}">Actief</span>
                             <label class="switch" ?data-disabled="${!this.ruleset!.id}">
-                              <input @change="${this.toggleEnabled}" ?disabled="${!this.ruleset!.id || !openremote.hasRole("write:assets")}" ?checked="${this.ruleset!.enabled}" type="checkbox">
+                              <input @change="${this.toggleEnabled}" ?disabled="${!this.ruleset!.id || !openremote.hasRole("write:rules")}" ?checked="${this.ruleset!.enabled}" type="checkbox">
                               <span class="slider round"></span>
                             </label>                    
 
-                            ${openremote.hasRole("write:assets") ? html`
+                            ${openremote.hasRole("write:rules") ? html`
                                 ${this.ruleset && this.ruleset.id ? html`
                                     <button ?disabled="${!this.valid}" @click="${this.updateRule}">opslaan</button>
                                 ` : html`

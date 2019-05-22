@@ -60,6 +60,6 @@ class OrRuleWhen extends LitElement {
 
     protected firstUpdated(_changedProperties: PropertyValues): void {
         super.firstUpdated(_changedProperties);
-        this.disabled = !openremote.hasRole("write:assets");
+        this.disabled = !openremote.hasRole("write:rules");
     }
 }
