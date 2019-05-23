@@ -14,7 +14,7 @@
     "lit-element": "^2.1.0"
   },
   "devDependencies": {
-    "@webcomponents/webcomponentsjs": "^2.0.0",
+    "@webcomponents/webcomponentsjs": "^2.2.10",
     "css-loader": "^2.0.0",
     "style-loader": "^0.23.1",
     "tslint": "^5.11.0",

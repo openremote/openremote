@@ -17,7 +17,7 @@
   "devDependencies": {
     "@polymer/decorators": "^3.0.0",
     "@polymer/iron-demo-helpers": "^3.0.0-pre.19",
-    "@webcomponents/webcomponentsjs": "^2.0.0",
+    "@webcomponents/webcomponentsjs": "^2.2.10",
     "style-loader": "^0.23.1",
     "tslint": "^5.11.0",
     "typescript": "^3.2.2",

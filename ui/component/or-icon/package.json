@@ -16,7 +16,7 @@
   "devDependencies": {
     "xmldom": "^0.1.27",
     "@mdi/svg": "^3.5.95",
-    "@webcomponents/webcomponentsjs": "^2.0.0",
+    "@webcomponents/webcomponentsjs": "^2.2.10",
     "css-loader": "^2.0.0",
     "style-loader": "^0.23.1",
     "tslint": "^5.11.0",

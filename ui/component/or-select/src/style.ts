@@ -23,7 +23,7 @@ export const selectStyle = css`
         border-bottom: 2px solid #d5d5d5;
         background-color: #f2f2f2;
 
-        background-image: url('https://cdn3.iconfinder.com/data/icons/google-material-design-icons/48/ic_keyboard_arrow_down_48px-128.png');
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath d='M7.41 7.84L12 12.42l4.59-4.58L18 9.25l-6 6-6-6z'/%3E%3C/svg%3E");
         background-repeat: no-repeat;
         background-size: 20px;
         background-position:  right 10px center;
