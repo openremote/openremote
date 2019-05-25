@@ -874,6 +874,17 @@
   resolved "https://registry.yarnpkg.com/@mdi/svg/-/svg-3.5.95.tgz#9e5c3dda43957bb436b75d5e0f3f7e57d8d2efb7"
   integrity sha512-OOHqPi6s6nEeOOvo9uZgdfLyTHGDiIXiAXtvIrCBbnU4mZFSHpskQUw7Yqmp/tluYzI6neLN5Dwy/vTusDcsdA==
 
+"@openremote/or-map@^1.0.0-alpha":
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/@openremote/or-map/-/or-map-1.0.0.tgz#dfd37ae3ddcf5b68f08077fb0f59c3172341079b"
+  integrity sha512-iWitaAwYem+3gOrU8cxSnVLjDDYIeC4llIBULSyVBWup5cuEKTpAPSgLPGcWU/wHMqzBYAsuCrcqh8sRitbmyQ==
+  dependencies:
+    "@openremote/rest" "^1.0.0"
+    "@polymer/polymer" "^3.0.0"
+    "@types/mapbox-gl" "^0.51.1"
+    mapbox-gl "^0.52.0-beta.1"
+    mapbox.js "^3.1.1"
+
 "@polymer/app-layout@^3.0.0":
   version "3.0.2"
   resolved "https://registry.yarnpkg.com/@polymer/app-layout/-/app-layout-3.0.2.tgz#8a6f3c87b405635fd3547db82db8dbb6c51b6bf9"
@@ -3319,6 +3330,11 @@ he@1.2.x:
   resolved "https://registry.yarnpkg.com/he/-/he-1.2.0.tgz#84ae65fa7eafb165fddb61566ae14baf05664f0f"
   integrity sha512-F/1DnUGPopORZi0ni+CvrCgHQ5FyEAHRLSApuYWMmrbSwoN2Mn/7k+Gl38gJnR7yyDZk6WLXwiGod1JOWNDKGw==
 
+highlight.js@^9.12.0:
+  version "9.15.6"
+  resolved "https://registry.yarnpkg.com/highlight.js/-/highlight.js-9.15.6.tgz#72d4d8d779ec066af9a17cb14360c3def0aa57c4"
+  integrity sha512-zozTAWM1D6sozHo8kqhfYgsac+B+q0PmsjXeyDrYIHHcBN0zTVT66+s2GW1GZv7DbyaROdLXKdabwS/WqPyIdQ==
+
 hmac-drbg@^1.0.0:
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/hmac-drbg/-/hmac-drbg-1.0.1.tgz#d2745701025a6c775a6c545793ed502fc0c649a1"
@@ -3432,20 +3448,10 @@ https-browserify@^1.0.0:
   resolved "https://registry.yarnpkg.com/https-browserify/-/https-browserify-1.0.0.tgz#ec06c10e0a34c0f2faf199f7fd7fc78fffd03c73"
   integrity sha1-7AbBDgo0wPL68Zn3/X/Hj//QPHM=
 
-i18next-xhr-backend@^1.5.1:
-  version "1.5.1"
-  resolved "https://registry.yarnpkg.com/i18next-xhr-backend/-/i18next-xhr-backend-1.5.1.tgz#50282610780c6a696d880dfa7f4ac1d01e8c3ad5"
-  integrity sha512-9OLdC/9YxDvTFcgsH5t2BHCODHEotHCa6h7Ly0EUlUC7Y2GS09UeoHOGj3gWKQ3HCqXz8NlH4gOrK3NNc9vPuw==
-
 i18next-xhr-backend@^2.0.1:
   version "2.0.1"
   resolved "https://registry.yarnpkg.com/i18next-xhr-backend/-/i18next-xhr-backend-2.0.1.tgz#7af735ee1b0c6d4ce49fa5756591040a0fba6db7"
   integrity sha512-CP0XPjJsTE4hY1rM1KXFYo63Ib61EBLEcTvMDyJwr0vs9p/UTuA3ENCmzSs9+ghZgWSjdOigc0oUERHaxctbsQ==
-
-i18next@^14.1.1:
-  version "14.1.1"
-  resolved "https://registry.yarnpkg.com/i18next/-/i18next-14.1.1.tgz#d569aff68c088151f09fcb0cb6f44b36d62731d3"
-  integrity sha512-HItn9RHLyrDqe6pw6qXMYHGPHNc3y1FZndJfBlD6k4sRS0FAlYLvqCDVIWFc1XultBgsv348TtvL/lleG6JgBg==
 
 i18next@^15.0.9:
   version "15.0.9"
@@ -4207,7 +4213,7 @@ mapbox-gl@^0.52.0-beta.1:
     tinyqueue "^1.1.0"
     vt-pbf "^3.0.1"
 
-mapbox.js@^3.2.0:
+mapbox.js@^3.1.1, mapbox.js@^3.2.0:
   version "3.2.0"
   resolved "https://registry.yarnpkg.com/mapbox.js/-/mapbox.js-3.2.0.tgz#f36a3e9e00daa52d387460eb7fc4d9d62ab32fc2"
   integrity sha512-705f1N+U209yOhgzY4uvENxVf2chpwaGmHNcwVybL+tM3hA4lQQfF/udM9mHOtkVgBIuQJdv7ydZbqGFcasdow==
@@ -4217,7 +4223,7 @@ mapbox.js@^3.2.0:
     mustache "3.0.1"
     sanitize-caja "0.1.4"
 
-marked@~0.3.9:
+marked@^0.3.19, marked@~0.3.9:
   version "0.3.19"
   resolved "https://registry.yarnpkg.com/marked/-/marked-0.3.19.tgz#5d47f709c4c9fc3c216b6d46127280f40b39d790"
   integrity sha512-ea2eGWOqNxPcXv8dyERdSr/6FmzvWwzjMxpfGB/sbMccXoct+xY+YukPD+QTUZwyvK7BZwcr4m21WBOW41pAkg==
@@ -6339,6 +6345,14 @@ typedarray@^0.0.6:
   version "0.0.6"
   resolved "https://registry.yarnpkg.com/typedarray/-/typedarray-0.0.6.tgz#867ac74e3864187b1d3d47d996a78ec5c8830777"
   integrity sha1-hnrHTjhkGHsdPUfZlqeOxciDB3c=
+
+typedoc-plugin-monorepo@^0.1.0:
+  version "0.1.0"
+  resolved "https://registry.yarnpkg.com/typedoc-plugin-monorepo/-/typedoc-plugin-monorepo-0.1.0.tgz#d923cb6d9ffff09d8256b679c1bce2b929c0f271"
+  integrity sha512-hx42ck+9dJCoZO0jLCmEE3R6lydYaaYIKL+g6LT5Ev+B8CdAESsML2jiGR+TFu1rUuEujjArtCHjNLj2YqnKnQ==
+  dependencies:
+    highlight.js "^9.12.0"
+    marked "^0.3.19"
 
 typescript@^3.2.2:
   version "3.3.4000"

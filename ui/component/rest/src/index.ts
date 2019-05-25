@@ -14,6 +14,10 @@ export class RestApi {
         this._axiosInstance = axios.create();
     }
 
+    get axiosInstance() {
+        return this._axiosInstance;
+    }
+
     public setTimeout(timeout: number) {
         this._axiosInstance.defaults.timeout = timeout;
     }

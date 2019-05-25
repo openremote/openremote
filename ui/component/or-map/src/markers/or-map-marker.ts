@@ -1,6 +1,4 @@
 import {css, customElement, LitElement, property, PropertyValues, query, html} from "lit-element";
-import {Type} from "../index";
-import {Marker as MarkerJS} from "mapbox.js";
 
 export enum OrMapMarkerEvent {
     CLICKED = "or-map-marker-clicked",
@@ -60,7 +58,8 @@ export const MarkerStyle = css`
             cursor: pointer;
             --or-icon-width: var(--or-map-marker-width, 48px);
             --or-icon-height: var(--or-map-marker-height, 48px);
-            --or-icon-fill-color: var(--or-map-marker-fill, #1D5632);
+            --or-icon-fill: var(--or-map-marker-fill, #1D5632);
+            --or-icon-stroke: var(--or-map-marker-stroke, none);
         }
         
         .or-map-marker.interactive .marker-container {            
@@ -77,7 +76,8 @@ export const MarkerStyle = css`
             left: 50%;
             top: 50%;
             z-index: 1000;
-            --or-icon-fill-color: var(--or-map-marker-icon-fill, #FFF);
+            --or-icon-fill: var(--or-map-marker-icon-fill, #FFF);
+            --or-icon-stroke: var(--or-map-marker-icon-stroke, none);
             --or-icon-width: var(--or-map-marker-icon-width, 24px);
             --or-icon-height: var(--or-map-marker-icon-height, 24px);
             transform: var(--or-map-marker-icon-transform, translate(-50%, -19px));            

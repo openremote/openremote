@@ -1,5 +1,5 @@
 import {css, customElement, html, LitElement, property, PropertyValues} from 'lit-element';
-import orIcons from "./or-icons";
+import orIconset from "./or-iconset";
 
 export interface IconSets {
     [name: string]: IconSet;
@@ -15,7 +15,7 @@ export enum IconEvent {
 
 class Icons {
     private _icons: IconSets = {
-        or: orIcons
+        or: orIconset
     };
 
     addIconSet(name: string, iconset: IconSet) {
@@ -33,15 +33,15 @@ export var IconSets = new Icons();
 @customElement('or-icon')
 export class OrIcon extends LitElement {
 
-    static _DEFAULT_ICONSET: string = "mdi";
+    static DEFAULT_ICONSET: string = "mdi";
 
     static styles = css`
         :host {
             display: inline-block;
             position: relative;
             vertical-align: middle;
-            fill: var(--or-icon-fill-color, currentcolor);
-            stroke: var(--or-icon-stroke-color, none);
+            fill: var(--or-icon-fill, currentcolor);
+            stroke: var(--or-icon-stroke, none);
             width: var(--or-icon-width, 24px);
             height: var(--or-icon-height, 24px);
         }
@@ -83,7 +83,7 @@ export class OrIcon extends LitElement {
         window.removeEventListener(IconEvent.ICONSET_ADDED, this._handler);
         let parts = (this.icon || "").split(":");
         let iconName = parts.pop();
-        let iconSetName = parts.pop() || OrIcon._DEFAULT_ICONSET;
+        let iconSetName = parts.pop() || OrIcon.DEFAULT_ICONSET;
         if (!iconSetName || iconSetName === "" || !iconName || iconName === "") {
             return;
         }
