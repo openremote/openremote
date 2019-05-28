@@ -38,7 +38,7 @@ class OrTimeline extends LitElement {
                       box-sizing: border-box;
                       -webkit-appearance: none;  /* Override default CSS styles */
                       appearance: none;
-                      width: calc(100% + 20px);
+                      width: 102%; /* calc() has a bug in Edge which keeps miking the element wider */
                       margin-left: -10px;
                       height: 12px;
                       background: #bdbdbd; /* Grey background */
