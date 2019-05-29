@@ -24,6 +24,7 @@ bower_components/
 node_modules/
 yarn-error.log
 ui/**/yarn.lock
+tsconfig.tsbuildinfo
 
 console/iOS/DerivedData
 console/iOS/Pods
