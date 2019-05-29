@@ -117,7 +117,7 @@ export class OrMap extends LitElement {
 
         if (!openremote.ready) {
             // Defer until openremote is initialised
-            this._initCallback = (initEvent) => {
+            this._initCallback = (initEvent: OREvent) => {
                 if (initEvent === OREvent.READY) {
                     this.loadMap();
 
