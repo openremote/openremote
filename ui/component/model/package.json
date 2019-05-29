@@ -13,7 +13,7 @@
   "dependencies": {},
   "devDependencies": {
     "tslint": "^5.11.0",
-    "typescript": "^3.2.2"
+    "typescript": "^3.4.5"
   },
   "files": [
     "dist"
