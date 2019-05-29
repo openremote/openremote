@@ -24,7 +24,7 @@ class OrTimeline extends LitElement {
                         
                         -webkit-box-shadow: 1px 1px 2px 0px rgba(0,0,0,0.28);
                         -moz-box-shadow: 1px 1px 2px 0px rgba(0,0,0,0.28);
-                        box-shadow: 1px 1px 2px 0px rgba(0,0,0,0.28);
+                        box-shadow: 1px 1px 2px 1px rgba(0,0,0,0.28);
                         
                         padding-top: 20px;
                     }
@@ -36,111 +36,69 @@ class OrTimeline extends LitElement {
                     /* The slider itself */
                     .slider {
                       box-sizing: border-box;
-                      -webkit-appearance: none;  /* Override default CSS styles */
-                      appearance: none;
-                      width: 102%; /* calc() has a bug in Edge which keeps miking the element wider */
-                      margin-left: -10px;
-                      height: 12px;
-                      background: #bdbdbd; /* Grey background */
-                      outline: none; /* Remove outline */
-                      opacity: 1; /* Set transparency (for mouse-over effects on hover) */
-                      -webkit-transition: .2s; /* 0.2 seconds transition on hover */
-                      transition: opacity .2s;
-                      
-                      border-radius: 6px;
+                      -webkit-appearance: none;
+                      outline: none;
+                      width: 102%;
+                      margin-left: -15px;
+                    }
+                    .slider::-webkit-slider-runnable-track {                      
                       cursor: pointer;
+                      border: transparent;
+                      background: #bdbdbd;
+                      border-radius: 6px;
+                      height: 12px;
                     }
-                    
-                    /* The slider handle (use -webkit- (Chrome, Opera, Safari, Edge) and -moz- (Firefox) to override default look) */ 
                     .slider::-webkit-slider-thumb {
-                        -webkit-appearance: none;
-                        appearance: none;
-                           width: 18px;
-                          height: 18px;
-                          margin: 0;
-                          border-radius: 50%;
-                          cursor: pointer;
-                          border: 0 !important;
-                          background-color: var(--timeline-accent,  blue); /* Green background */
-                    }
-                    
-                    .slider::-ms-thumb,
-                    .slider::-moz-range-thumb,
-                    .slider::-webkit-slider-thumb {
-                      width: 18px;
                       height: 18px;
-                      margin: 0;
+                      width: 18px;
                       border-radius: 50%;
                       cursor: pointer;
-                      border: 0 !important;
+                      -webkit-appearance: none;
                       background-color: var(--timeline-accent,  blue); /* Green background */
+                      pointer-events: all;
+                      margin-top: -2px;
                     }
-                    
-                      .slider::-ms-track {
-                      -webkit-appearance: none;
-                      background: transparent;
-                      color: transparent;
-                    }
-                    
+
                     .slider::-moz-range-track {
-                      -moz-appearance: none;
-                      background: transparent;
-                      color: transparent;
-                    }
-                    
-                    .slider:focus::-webkit-slider-runnable-track {
-                      background: transparent;
+                      cursor: pointer;
                       border: transparent;
+                      background: #bdbdbd;
+                      border-radius: 6px;
+                      height: 12px;
                     }
-                    
-                    .slider:focus {
-                      outline: none;
-                    }
-                    
-                    .slider::-ms-thumb {
-                      pointer-events: all;
-                      width: 18px;
-                      height: 18px;
-                      border-radius: 14px;
-                      border: 0 none;
-                      background: var(--timeline-accent,  blue); ;
-                    }
-                    
                     .slider::-moz-range-thumb {
-                      pointer-events: all;
-                      width: 18px;
-                      height: 18px;
-                      border-radius: 14px;
                       border: 0 none;
-                      background: var(--timeline-accent,  blue); ;
-                    }
-                    
-                    .slider::-webkit-slider-thumb {
-                      pointer-events: all;
-                      width: 18px;
                       height: 18px;
-                      border-radius: 14px;
-                      border: 0 none;
-                      background: var(--timeline-accent,  blue); ;
+                      width: 18px;
+                      border-radius: 50%;
+                      cursor: pointer;
                       -webkit-appearance: none;
+                      background-color: var(--timeline-accent,  blue); /* Green background */
+                      pointer-events: all;
+                      margin-top: -2px;
                     }
                     
-                    .slider::-ms-fill-lower {
-                      background: transparent;
+                    .slider::-ms-track {
+                      cursor: pointer;
+                      border: transparent;
+                      background: #bdbdbd;
+                      border-radius: 6px;
+                      height: 12px;
+                    }
+                    .slider::-ms-thumb {
                       border: 0 none;
-                    }
-                    
-                    .slider::-ms-fill-upper {
-                      background: transparent;
-                      border: 0 none;
-                    }
-                    
-                    .slider::-ms-tooltip {
-                      display: none;
+                      height: 18px;
+                      width: 18px;
+                      border-radius: 50%;
+                      cursor: pointer;
+                      -webkit-appearance: none;
+                      background-color: var(--timeline-accent,  blue); /* Green background */
+                      pointer-events: all;
+                      margin-top: -2px;
                     }
                     
                     #timelineHourMarkers {
-                        position: relative;
+                      position: relative;
                       display: -webkit-box;
                       display: -moz-box;
                       display: -ms-flexbox;
