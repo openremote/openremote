@@ -1,5 +1,5 @@
 //buildDir = "dist"
-//npmBuild.dependsOn(resolveTask(":ui:component:model:build"), resolveTask(":ui:component:rest:build"))
+//npmBuild.dependsOn(resolveTask(":ui:component:core:build"))
 //
 //task build {
 //    dependsOn npmBuild

@@ -1,5 +1,7 @@
 buildDir = "dist"
 
+npmBuild.dependsOn(resolveTask(":ui:component:model:build"), resolveTask(":ui:component:rest:build"), resolveTask(":ui:component:or-icon:generate"))
+
 task clean() {
     doLast {
         delete "dist"

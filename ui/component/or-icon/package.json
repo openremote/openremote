@@ -5,6 +5,7 @@
   "main": "dist/index.js",
   "types": "src/index.ts",
   "scripts": {
+    "generate": "node mdi-iconset-generator.js",
     "build": "node mdi-iconset-generator.js && npx tsc -b",
     "test": "echo \"No tests\" && exit 0"
   },
